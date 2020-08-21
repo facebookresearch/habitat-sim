@@ -187,7 +187,7 @@ def test_smoke_redwood_noise(scene, gpu2gpu, sim, make_cfg_settings):
 
     assert np.linalg.norm(
         obs["depth_sensor"].astype(np.float) - gt.astype(np.float)
-    ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
+    ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), "Incorrect depth_sensor output"
 
 
 @pytest.mark.gfxtest
@@ -219,4 +219,4 @@ def test_rgb_noise(scene, model_name, sim, make_cfg_settings):
 
     assert np.linalg.norm(
         obs["color_sensor"].astype(np.float) - gt.astype(np.float)
-    ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
+    ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), "Incorrect color_sensor output"

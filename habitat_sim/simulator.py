@@ -13,7 +13,7 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim.errors
-from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
@@ -254,7 +254,7 @@ class Simulator(SimulatorBackend):
         # step physics by dt
         step_start_Time = time.time()
         super().step_world(dt)
-        _previous_step_time = time.time() - step_start_Time
+        self._previous_step_time = time.time() - step_start_Time
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
@@ -416,7 +416,7 @@ class Sensor:
         if self._sim.frustum_culling:
             render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
 
-        with self._sensor_object.render_target as tgt:
+        with self._sensor_object.render_target:
             self._sim.renderer.draw(self._sensor_object, scene, render_flags)
 
         # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph

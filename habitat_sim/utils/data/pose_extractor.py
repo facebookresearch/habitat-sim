@@ -2,7 +2,6 @@ import collections
 from typing import List
 
 import numpy as np
-from matplotlib import pyplot as plt
 
 import habitat_sim
 from habitat_sim import registry as registry

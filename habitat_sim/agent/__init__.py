@@ -4,7 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from .agent import *
-from .controls import *
+from .agent import ActionSpec, Agent, AgentConfiguration, AgentState, SixDOFPose
+from .agent import __all__ as allone  # noqa: F401
+from .controls import (
+    ActuationSpec,
+    ObjectControls,
+    PyRobotNoisyActuationSpec,
+    SceneNodeControl,
+)
+from .controls import __all__ as alltwo  # noqa: F401
 
-__all__ = agent.__all__ + controls.__all__
+__all__ = allone + alltwo

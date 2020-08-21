@@ -6,7 +6,7 @@
 
 import attr
 import numpy as np
-import quaternion
+import quaternion  # noqa: F401
 
 from habitat_sim import bindings as hsim
 from habitat_sim.agent.controls.controls import ActuationSpec

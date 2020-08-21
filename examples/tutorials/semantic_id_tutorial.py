@@ -120,7 +120,7 @@ def main(show_imgs=True, save_imgs=False):
         # reconfigure the simulator with a new scene asset
         cfg = make_configuration(scene_file=scene)
         sim.reconfigure(cfg)
-        agent_transform = place_agent(sim)
+        agent_transform = place_agent(sim)  # noqa: F841
         get_obs(sim, show_imgs, save_imgs)
 
         # get the physics object attributes manager

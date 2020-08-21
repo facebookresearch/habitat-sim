@@ -117,7 +117,7 @@ def main(show_imgs=True, save_imgs=False):
     sim.close()
     cfg = make_configuration()
     sim = habitat_sim.Simulator(cfg)
-    agent_transform = place_agent(sim)
+    agent_transform = place_agent(sim)  # noqa: F841
 
     # [example 2]
 

@@ -9,14 +9,9 @@ from os import path as osp
 import magnum as mn
 import numpy as np
 import pytest
-import quaternion
+import quaternion  # noqa: F401
 
 import examples.settings
-from habitat_sim.utils.common import (
-    quat_from_angle_axis,
-    quat_from_magnum,
-    quat_to_magnum,
-)
 
 
 @pytest.mark.skipif(

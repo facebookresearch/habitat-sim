@@ -7,6 +7,27 @@
 # TODO: this whole thing needs to get removed, kept just for compatibility
 #   with existing code
 
+from habitat_sim._ext.habitat_sim_bindings import (  # noqa: F401
+    ConfigurationGroup,
+    GreedyFollowerCodes,
+    GreedyGeodesicFollowerImpl,
+    MultiGoalShortestPath,
+    PathFinder,
+    PinholeCamera,
+    RigidState,
+    SceneGraph,
+    SceneNode,
+    SceneNodeType,
+    Sensor,
+    SensorSpec,
+    SensorType,
+    ShortestPath,
+)
+from habitat_sim._ext.habitat_sim_bindings import (
+    Simulator as SimulatorBackend,  # noqa: F401
+)
+from habitat_sim._ext.habitat_sim_bindings import SimulatorConfiguration, cuda_enabled
+
 modules = [
     "cuda_enabled",
     "SceneNodeType",
@@ -25,11 +46,5 @@ modules = [
     "ConfigurationGroup",
     "RigidState",
 ]
-
-from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
-
-exec(
-    "from habitat_sim._ext.habitat_sim_bindings import ({})".format(", ".join(modules))
-)
 
 __all__ = ["SimulatorBackend"] + modules
