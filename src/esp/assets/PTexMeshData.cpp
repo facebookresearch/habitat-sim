@@ -820,6 +820,17 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                                       Magnum::GL::BufferUsage::StaticDraw);
     currentMesh->indexBuffer.setData(submeshes_[iMesh].ibo,
                                      Magnum::GL::BufferUsage::StaticDraw);
+
+    // Will it increase the memory usage on GPU? Would it be a big concern?
+    //
+    // Yes, it will increase the memory footprint, however, the effect is
+    // trivial, compared to the volume of the HDR textures.
+    //
+    // We measured the actual size of this index buffer for every model in the
+    // Replica dataset, which ranged from 9MB to 104MB. We also found that, for
+    // any Replica model, the volume of the textures was roughly 70x of it.
+    // (see the measurement here, in the comments:
+    // https://github.com/facebookresearch/habitat-sim/pull/745/files)
     currentMesh->triangleMeshIndexBuffer.setData(
         submeshes_[iMesh].ibo_tri, Magnum::GL::BufferUsage::StaticDraw);
   }
