@@ -8,7 +8,7 @@
 #   with existing code
 
 
-from habitat_sim._ext.habitat_sim_bindings import (  # noqa: F401 isort:skip
+from habitat_sim._ext.habitat_sim_bindings import (
     ConfigurationGroup,
     GreedyFollowerCodes,
     GreedyGeodesicFollowerImpl,
@@ -23,10 +23,9 @@ from habitat_sim._ext.habitat_sim_bindings import (  # noqa: F401 isort:skip
     SensorSpec,
     SensorType,
     ShortestPath,
-    Simulator as SimulatorBackend,
-    SimulatorConfiguration,
-    cuda_enabled,
 )
+from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
+from habitat_sim._ext.habitat_sim_bindings import SimulatorConfiguration, cuda_enabled
 
 modules = [
     "cuda_enabled",
@@ -43,6 +42,7 @@ modules = [
     "SensorType",
     "ShortestPath",
     "SimulatorConfiguration",
+    "SimulatorBackend",
     "ConfigurationGroup",
     "RigidState",
 ]
