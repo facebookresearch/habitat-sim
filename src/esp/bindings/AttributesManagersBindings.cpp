@@ -15,7 +15,7 @@
 #include "esp/assets/managers/AssetAttributesManager.h"
 #include "esp/assets/managers/ObjectAttributesManager.h"
 #include "esp/assets/managers/PhysicsAttributesManager.h"
-#include "esp/assets/managers/SceneAttributesManager.h"
+#include "esp/assets/managers/SceneryAttributesManager.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -314,11 +314,11 @@ void initAttributesManagersBindings(py::module& m) {
              Returns the handle for a random synthesized(primitive asset)-based template chosen from the 
              existing templates being managed.)");
 
-  // ==== Scene Attributes Template manager ====
-  declareBaseAttributesManager<PhysicsSceneAttributes::ptr>(m, "BaseScene");
-  py::class_<SceneAttributesManager,
-             AttributesManager<PhysicsSceneAttributes::ptr>,
-             SceneAttributesManager::ptr>(m, "SceneAttributesManager");
+  // ==== Scenery Attributes Template manager ====
+  declareBaseAttributesManager<PhysicsSceneryAttributes::ptr>(m, "BaseScenery");
+  py::class_<SceneryAttributesManager,
+             AttributesManager<PhysicsSceneryAttributes::ptr>,
+             SceneryAttributesManager::ptr>(m, "SceneryAttributesManager");
 
   // ==== Physics World/Manager Template manager ====
 

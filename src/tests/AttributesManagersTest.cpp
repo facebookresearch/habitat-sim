@@ -29,12 +29,12 @@ class AttributesManagersTest : public testing::Test {
     assetAttributesManager_ = resourceManager_.getAssetAttributesManager();
     objectAttributesManager_ = resourceManager_.getObjectAttributesManager();
     physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
-    sceneAttributesManager_ = resourceManager_.getSceneAttributesManager();
+    sceneryAttributesManager_ = resourceManager_.getSceneryAttributesManager();
   };
 
   /**
    * @brief Test creation, copying and removal of templates for Object, Physics
-   * and Scene Attributes Managers
+   * and Scenery Attributes Managers
    * @tparam Class of attributes manager
    * @param mgr the Attributes Manager being tested,
    * @param handle the handle of the desired attributes template to work with
@@ -190,7 +190,7 @@ class AttributesManagersTest : public testing::Test {
 
   /**
    * @brief Test creation, copying and removal of new default/empty templates
-   * for Object, Physics and Scene Attributes Managers
+   * for Object, Physics and Scenery Attributes Managers
    * @tparam Class of attributes manager
    * @param mgr the Attributes Manager being tested,
    * @param renderHandle a legal render handle to set for the new template so
@@ -317,12 +317,12 @@ class AttributesManagersTest : public testing::Test {
   AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
-  AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+  AttrMgrs::SceneryAttributesManager::ptr sceneryAttributesManager_ = nullptr;
 };  // class AttributesManagersTest
 
 TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   LOG(INFO) << "Starting AttributesManagersTest::AttributesManagersCreate";
-  std::string sceneFile = Cr::Utility::Directory::join(
+  std::string sceneryFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
 
   std::string objectFile = Cr::Utility::Directory::join(
@@ -336,17 +336,17 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   testCreateAndRemove<AttrMgrs::PhysicsAttributesManager>(
       physicsAttributesManager_, physicsConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::PhysicsAttributesManager>(
-      physicsAttributesManager_, sceneFile, false);
+      physicsAttributesManager_, sceneryFile, false);
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
-               "SceneAttributesManager @ "
-            << sceneFile;
+               "SceneryAttributesManager @ "
+            << sceneryFile;
 
   // scene attributes manager attributes verifcation
-  testCreateAndRemove<AttrMgrs::SceneAttributesManager>(sceneAttributesManager_,
-                                                        sceneFile);
-  testCreateAndRemoveDefault<AttrMgrs::SceneAttributesManager>(
-      sceneAttributesManager_, sceneFile, true);
+  testCreateAndRemove<AttrMgrs::SceneryAttributesManager>(
+      sceneryAttributesManager_, sceneryFile);
+  testCreateAndRemoveDefault<AttrMgrs::SceneryAttributesManager>(
+      sceneryAttributesManager_, sceneryFile, true);
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "ObjectAttributesManager @ "

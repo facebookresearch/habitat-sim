@@ -131,7 +131,7 @@ class Viewer : public Mn::Platform::Application {
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
   esp::scene::SceneNode* rgbSensorNode_ = nullptr;
 
-  std::string sceneFileName;
+  std::string sceneryFileName;
   esp::scene::SceneGraph* sceneGraph_;
   esp::scene::SceneNode* rootNode_;
 
@@ -214,8 +214,9 @@ Viewer::Viewer(const Arguments& arguments)
   sceneGraph_ = &sceneManager_.getSceneGraph(sceneID);
   rootNode_ = &sceneGraph_->getRootNode();
 
-  sceneFileName = args.value("scene");
-  esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(sceneFileName);
+  sceneryFileName = args.value("scene");
+  esp::assets::AssetInfo info =
+      esp::assets::AssetInfo::fromPath(sceneryFileName);
   std::string sceneLightSetup = esp::assets::ResourceManager::NO_LIGHT_KEY;
   if (args.isSet("scene-requires-lighting")) {
     info.requiresLighting = true;
@@ -237,28 +238,26 @@ Viewer::Viewer(const Arguments& arguments)
                  "Viewer::ctor : Error attempting to load world described by"
                      << physicsConfigFilename << ". Aborting", );
 
-  auto sceneAttributesMgr = resourceManager_.getSceneAttributesManager();
-  sceneAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+  auto sceneryAttributesMgr = resourceManager_.getSceneryAttributesManager();
+  sceneryAttributesMgr->setCurrPhysicsManagerAttributesHandle(
       physicsManagerAttributes->getHandle());
 
-  auto sceneAttributes =
-      sceneAttributesMgr->createAttributesTemplate(sceneFileName, true);
+  auto sceneryAttributes =
+      sceneryAttributesMgr->createAttributesTemplate(sceneryFileName, true);
 
-  sceneAttributes->setLightSetup(sceneLightSetup);
-  sceneAttributes->setRequiresLighting(info.requiresLighting);
+  sceneryAttributes->setLightSetup(sceneLightSetup);
+  sceneryAttributes->setRequiresLighting(info.requiresLighting);
 
   bool useBullet = args.isSet("enable-physics");
   // construct physics manager based on specifications in attributes
   resourceManager_.initPhysicsManager(physicsManager_, useBullet, rootNode_,
                                       physicsManagerAttributes);
 
-  // bool sceneLoadSuccess = resourceManager_.loadScene(
-  //     info, physicsManager_, &drawables, sceneLightSetup);
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool sceneLoadSuccess = resourceManager_.loadScene(
-      sceneAttributes, physicsManager_, &sceneManager_, tempIDs, false);
-  if (!sceneLoadSuccess) {
-    LOG(FATAL) << "cannot load " << sceneFileName;
+  bool sceneryLoadSuccess = resourceManager_.loadScenery(
+      sceneryAttributes, physicsManager_, &sceneManager_, tempIDs, false);
+  if (!sceneryLoadSuccess) {
+    LOG(FATAL) << "cannot load " << sceneryFileName;
   }
   if (useBullet && (args.isSet("debug-bullet"))) {
     debugBullet_ = true;
@@ -288,16 +287,16 @@ Viewer::Viewer(const Arguments& arguments)
   if (!args.value("navmesh-file").empty()) {
     navmeshFilename = Corrade::Utility::Directory::join(
         Corrade::Utility::Directory::current(), args.value("navmesh-file"));
-  } else if (sceneFileName.compare(esp::assets::EMPTY_SCENE)) {
-    navmeshFilename = esp::io::changeExtension(sceneFileName, ".navmesh");
+  } else if (sceneryFileName.compare(esp::assets::EMPTY_SCENE)) {
+    navmeshFilename = esp::io::changeExtension(sceneryFileName, ".navmesh");
 
     // TODO: short term solution to mitigate issue #430
     // we load the pre-computed navmesh for the ptex mesh to avoid
     // online computation.
     // for long term solution, see issue #430
-    if (Cr::Utility::String::endsWith(sceneFileName, "mesh.ply")) {
+    if (Cr::Utility::String::endsWith(sceneryFileName, "mesh.ply")) {
       navmeshFilename = Corrade::Utility::Directory::join(
-          Corrade::Utility::Directory::path(sceneFileName) + "/habitat",
+          Corrade::Utility::Directory::path(sceneryFileName) + "/habitat",
           "mesh_semantic.navmesh");
     }
   }
@@ -305,10 +304,10 @@ Viewer::Viewer(const Arguments& arguments)
   if (esp::io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
-  } else if (sceneFileName.compare(esp::assets::EMPTY_SCENE)) {
+  } else if (sceneryFileName.compare(esp::assets::EMPTY_SCENE)) {
     esp::nav::NavMeshSettings navMeshSettings;
     navMeshSettings.setDefaults();
-    recomputeNavMesh(sceneFileName, navMeshSettings);
+    recomputeNavMesh(sceneryFileName, navMeshSettings);
   }
 
   // connect controls to navmesh if loaded

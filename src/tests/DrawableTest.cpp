@@ -53,19 +53,19 @@ DrawableTest::DrawableTest() {
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
   // flang-format on
-  auto sceneAttributesMgr = resourceManager_.getSceneAttributesManager();
-  std::string sceneFile =
+  auto sceneryAttributesMgr = resourceManager_.getSceneryAttributesManager();
+  std::string sceneryFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
-  auto sceneAttributes =
-      sceneAttributesMgr->createAttributesTemplate(sceneFile, true);
+  auto sceneryAttributes =
+      sceneryAttributesMgr->createAttributesTemplate(sceneryFile, true);
 
   sceneID_ = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
   drawableGroup_ = &sceneGraph.getDrawables();
 
   std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-  bool result = resourceManager_.loadScene(sceneAttributes, nullptr,
-                                           &sceneManager_, tempIDs, false);
+  bool result = resourceManager_.loadScenery(sceneryAttributes, nullptr,
+                                             &sceneManager_, tempIDs, false);
 }
 
 void DrawableTest::addRemoveDrawables() {

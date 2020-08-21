@@ -5,7 +5,7 @@
 #include <Corrade/Utility/String.h>
 
 #include "AttributesManagerBase.h"
-#include "SceneAttributesManager.h"
+#include "SceneryAttributesManager.h"
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/ResourceManager.h"
@@ -18,11 +18,11 @@ namespace assets {
 
 namespace managers {
 
-SceneAttributesManager::SceneAttributesManager(
+SceneryAttributesManager::SceneryAttributesManager(
     assets::ResourceManager& resourceManager,
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
-    : AttributesManager<PhysicsSceneAttributes::ptr>::AttributesManager(
+    : AttributesManager<PhysicsSceneryAttributes::ptr>::AttributesManager(
           resourceManager,
           "Physical Scene"),
       objectAttributesMgr_(objectAttributesMgr),
@@ -31,58 +31,61 @@ SceneAttributesManager::SceneAttributesManager(
   buildCtorFuncPtrMaps();
 }
 
-PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
-    const std::string& sceneAttributesHandle,
+PhysicsSceneryAttributes::ptr
+SceneryAttributesManager::createAttributesTemplate(
+    const std::string& sceneryAttributesHandle,
     bool registerTemplate) {
-  PhysicsSceneAttributes::ptr attrs;
+  PhysicsSceneryAttributes::ptr attrs;
   std::string msg;
-  std::string strHandle = Cr::Utility::String::lowercase(sceneAttributesHandle);
-  bool fileExists = (this->isValidFileName(sceneAttributesHandle));
-  if (objectAttributesMgr_->isValidPrimitiveAttributes(sceneAttributesHandle)) {
-    // if sceneAttributesHandle == some existing primitive attributes, then
-    // this is a primitive-based scene (i.e. a plane) we are building
-    attrs = createPrimBasedAttributesTemplate(sceneAttributesHandle,
+  std::string strHandle =
+      Cr::Utility::String::lowercase(sceneryAttributesHandle);
+  bool fileExists = (this->isValidFileName(sceneryAttributesHandle));
+  if (objectAttributesMgr_->isValidPrimitiveAttributes(
+          sceneryAttributesHandle)) {
+    // if sceneryAttributesHandle == some existing primitive attributes, then
+    // this is a primitive-based scenery (i.e. a plane) we are building
+    attrs = createPrimBasedAttributesTemplate(sceneryAttributesHandle,
                                               registerTemplate);
-    msg = "Primitive Asset (" + sceneAttributesHandle + ") Based";
+    msg = "Primitive Asset (" + sceneryAttributesHandle + ") Based";
 
   } else if (fileExists) {
     if ((strHandle.find("scene_config.json") != std::string::npos) &&
         fileExists) {
-      // check if sceneAttributesHandle corresponds to an actual, existing json
-      // scene file descriptor.
-      attrs = createFileBasedAttributesTemplate(sceneAttributesHandle,
+      // check if sceneryAttributesHandle corresponds to an actual, existing
+      // json scenery file descriptor.
+      attrs = createFileBasedAttributesTemplate(sceneryAttributesHandle,
                                                 registerTemplate);
-      msg = "JSON File (" + sceneAttributesHandle + ") Based";
+      msg = "JSON File (" + sceneryAttributesHandle + ") Based";
     } else {
       // if name is not json file descriptor but still appropriate file
-      attrs = createBackCompatAttributesTemplate(sceneAttributesHandle,
+      attrs = createBackCompatAttributesTemplate(sceneryAttributesHandle,
                                                  registerTemplate);
-      msg = "File (" + sceneAttributesHandle + ") Based";
+      msg = "File (" + sceneryAttributesHandle + ") Based";
     }
 
   } else {
     // if name is not file descriptor, return default attributes.
-    attrs = createDefaultAttributesTemplate(sceneAttributesHandle,
+    attrs = createDefaultAttributesTemplate(sceneryAttributesHandle,
                                             registerTemplate);
     msg = "New default";
   }
 
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " scene attributes created"
+    LOG(INFO) << msg << " scenery attributes created"
               << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
 
-}  // SceneAttributesManager::createAttributesTemplate
+}  // SceneryAttributesManager::createAttributesTemplate
 
-int SceneAttributesManager::registerAttributesTemplateFinalize(
-    PhysicsSceneAttributes::ptr sceneAttributesTemplate,
-    const std::string& sceneAttributesHandle) {
+int SceneryAttributesManager::registerAttributesTemplateFinalize(
+    PhysicsSceneryAttributes::ptr sceneAttributesTemplate,
+    const std::string& sceneryAttributesHandle) {
   if (sceneAttributesTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
-        << "SceneAttributesManager::registerAttributesTemplateFinalize : "
+        << "SceneryAttributesManager::registerAttributesTemplateFinalize : "
            "Attributes template named"
-        << sceneAttributesHandle
+        << sceneryAttributesHandle
         << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
@@ -104,7 +107,7 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
     // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
     // to physicsFileObjTmpltLibByID_ - verify file  exists
     sceneAttributesTemplate->setRenderAssetIsPrimitive(false);
-  } else if (std::string::npos != sceneAttributesHandle.find("NONE")) {
+  } else if (std::string::npos != sceneryAttributesHandle.find("NONE")) {
     // Render asset handle will be NONE as well - force type to be unknown
     sceneAttributesTemplate->setRenderAssetType(
         static_cast<int>(AssetType::UNKNOWN));
@@ -112,10 +115,10 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
     LOG(ERROR)
-        << "SceneAttributesManager::registerAttributesTemplateFinalize "
+        << "SceneryAttributesManager::registerAttributesTemplateFinalize "
            ": Render asset template handle : "
-        << renderAssetHandle << " specified in scene template with handle : "
-        << sceneAttributesHandle
+        << renderAssetHandle << " specified in scenery template with handle : "
+        << sceneryAttributesHandle
         << " does not correspond to any existing file or primitive render "
            "asset.  Aborting. ";
     return ID_UNDEFINED;
@@ -129,7 +132,7 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     sceneAttributesTemplate->setCollisionAssetIsPrimitive(false);
-  } else if (std::string::npos != sceneAttributesHandle.find("NONE")) {
+  } else if (std::string::npos != sceneryAttributesHandle.find("NONE")) {
     // Render asset handle will be NONE as well - force type to be unknown
     sceneAttributesTemplate->setCollisionAssetType(
         static_cast<int>(AssetType::UNKNOWN));
@@ -138,10 +141,11 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
     // Else, means no collision data specified, use specified render data
     // Else, means no collision data specified, use specified render data
     LOG(INFO)
-        << "SceneAttributesManager::registerAttributesTemplateFinalize "
+        << "SceneryAttributesManager::registerAttributesTemplateFinalize "
            ": Collision asset template handle : "
-        << collisionAssetHandle << " specified in scene template with handle : "
-        << sceneAttributesHandle
+        << collisionAssetHandle
+        << " specified in scenery template with handle : "
+        << sceneryAttributesHandle
         << " does not correspond to any existing file or primitive render "
            "asset.  Overriding with given render asset handle : "
         << renderAssetHandle << ". ";
@@ -154,20 +158,20 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
   sceneAttributesTemplate->setIsClean();
 
   // adds template to library, and returns either the ID of the existing
-  // template referenced by sceneAttributesHandle, or the next available ID
+  // template referenced by sceneryAttributesHandle, or the next available ID
   // if not found.
   int sceneTemplateID = this->addTemplateToLibrary(sceneAttributesTemplate,
-                                                   sceneAttributesHandle);
+                                                   sceneryAttributesHandle);
   return sceneTemplateID;
-}  // SceneAttributesManager::registerAttributesTemplate
+}  // SceneryAttributesManager::registerAttributesTemplate
 
-PhysicsSceneAttributes::ptr
-SceneAttributesManager::createDefaultAttributesTemplate(
+PhysicsSceneryAttributes::ptr
+SceneryAttributesManager::createDefaultAttributesTemplate(
     const std::string& sceneFilename,
     bool registerTemplate) {
-  // Attributes descriptor for scene
-  PhysicsSceneAttributes::ptr sceneAttributesTemplate =
-      initNewAttribsInternal(PhysicsSceneAttributes::create(sceneFilename));
+  // Attributes descriptor for scenery
+  PhysicsSceneryAttributes::ptr sceneAttributesTemplate =
+      initNewAttribsInternal(PhysicsSceneryAttributes::create(sceneFilename));
 
   if (registerTemplate) {
     int attrID = this->registerAttributesTemplate(sceneAttributesTemplate,
@@ -178,55 +182,55 @@ SceneAttributesManager::createDefaultAttributesTemplate(
     }
   }
   return sceneAttributesTemplate;
-}  // SceneAttributesManager::createDefaultAttributesTemplate
+}  // SceneryAttributesManager::createDefaultAttributesTemplate
 
-PhysicsSceneAttributes::ptr
-SceneAttributesManager::createPrimBasedAttributesTemplate(
+PhysicsSceneryAttributes::ptr
+SceneryAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAssetHandle,
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!objectAttributesMgr_->isValidPrimitiveAttributes(primAssetHandle)) {
     LOG(ERROR)
-        << "SceneAttributesManager::createPrimBasedAttributesTemplate : No "
+        << "SceneryAttributesManager::createPrimBasedAttributesTemplate : No "
            "primitive with handle '"
         << primAssetHandle
         << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 
-  // construct a sceneAttributes
-  auto sceneAttributes =
-      initNewAttribsInternal(PhysicsSceneAttributes::create(primAssetHandle));
+  // construct a sceneryAttributes
+  auto sceneryAttributes =
+      initNewAttribsInternal(PhysicsSceneryAttributes::create(primAssetHandle));
   // set margin to be 0
-  sceneAttributes->setMargin(0.0);
+  sceneryAttributes->setMargin(0.0);
 
   // set render mesh handle
   int primType = static_cast<int>(AssetType::PRIMITIVE);
-  sceneAttributes->setRenderAssetType(primType);
+  sceneryAttributes->setRenderAssetType(primType);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
-  sceneAttributes->setCollisionAssetType(primType);
-  sceneAttributes->setUseMeshCollision(false);
+  sceneryAttributes->setCollisionAssetType(primType);
+  sceneryAttributes->setUseMeshCollision(false);
   // NOTE to eventually use mesh collisions with primitive objects, a
   // collision primitive mesh needs to be configured and set in MeshMetaData
   // and CollisionMesh
 
-  return this->postCreateRegister(sceneAttributes, registerTemplate);
-}  // SceneAttributesManager::createPrimBasedAttributesTemplate
+  return this->postCreateRegister(sceneryAttributes, registerTemplate);
+}  // SceneryAttributesManager::createPrimBasedAttributesTemplate
 
-PhysicsSceneAttributes::ptr
-SceneAttributesManager::createBackCompatAttributesTemplate(
+PhysicsSceneryAttributes::ptr
+SceneryAttributesManager::createBackCompatAttributesTemplate(
     const std::string& sceneFilename,
     bool registerTemplate) {
-  // Attributes descriptor for scene
-  PhysicsSceneAttributes::ptr sceneAttributes =
-      initNewAttribsInternal(PhysicsSceneAttributes::create(sceneFilename));
+  // Attributes descriptor for scenery
+  PhysicsSceneryAttributes::ptr sceneryAttributes =
+      initNewAttribsInternal(PhysicsSceneryAttributes::create(sceneFilename));
 
-  return this->postCreateRegister(sceneAttributes, registerTemplate);
-}  // SceneAttributesManager::createBackCompatAttributesTemplate
+  return this->postCreateRegister(sceneryAttributes, registerTemplate);
+}  // SceneryAttributesManager::createBackCompatAttributesTemplate
 
-PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
-    PhysicsSceneAttributes::ptr newAttributes) {
+PhysicsSceneryAttributes::ptr SceneryAttributesManager::initNewAttribsInternal(
+    PhysicsSceneryAttributes::ptr newAttributes) {
   this->setFileDirectoryFromHandle(newAttributes);
 
   std::string sceneFilename = newAttributes->getHandle();
@@ -283,7 +287,7 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
   // set defaults for passed semantic asset handles
   setDefaultFileNameBasedAttributes(
       newAttributes, false, newAttributes->getSemanticAssetHandle(),
-      std::bind(&PhysicsSceneAttributes::setSemanticAssetType, newAttributes,
+      std::bind(&PhysicsSceneryAttributes::setSemanticAssetType, newAttributes,
                 _1));
 
   // set default physical quantities specified in physics manager attributes
@@ -298,10 +302,10 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
         physMgrAttributes->getRestitutionCoefficient());
   }
   return newAttributes;
-}  // SceneAttributesManager::initNewAttribsInternal
+}  // SceneryAttributesManager::initNewAttribsInternal
 
-void SceneAttributesManager::setDefaultFileNameBasedAttributes(
-    PhysicsSceneAttributes::ptr attributes,
+void SceneryAttributesManager::setDefaultFileNameBasedAttributes(
+    PhysicsSceneryAttributes::ptr attributes,
     bool setFrame,
     const std::string& fileName,
     std::function<void(int)> meshTypeSetter) {
@@ -337,41 +341,42 @@ void SceneAttributesManager::setDefaultFileNameBasedAttributes(
     attributes->setOrientUp(up);
     attributes->setOrientFront(fwd);
   }
-}  // SceneAttributesManager::setDefaultFileNameBasedAttributes
+}  // SceneryAttributesManager::setDefaultFileNameBasedAttributes
 
-PhysicsSceneAttributes::ptr
-SceneAttributesManager::createFileBasedAttributesTemplate(
+PhysicsSceneryAttributes::ptr
+SceneryAttributesManager::createFileBasedAttributesTemplate(
     const std::string& sceneFilename,
     bool registerTemplate) {
-  // Load the scene config JSON here
+  // Load the scenery config JSON here
   io::JsonDocument jsonConfig;
   bool success = this->verifyLoadJson(sceneFilename, jsonConfig);
   if (!success) {
-    LOG(ERROR) << "SceneAttributesManager::createFileBasedAttributesTemplate : "
-                  "Failure reading json "
-               << sceneFilename << ". Aborting.";
+    LOG(ERROR)
+        << "SceneryAttributesManager::createFileBasedAttributesTemplate : "
+           "Failure reading json "
+        << sceneFilename << ". Aborting.";
     return nullptr;
   }
 
-  // construct a PhysicsSceneAttributes and populate with any
+  // construct a PhysicsSceneryAttributes and populate with any
   // AbstractPhysicsAttributes fields found in json.
-  auto sceneAttributes =
-      this->createPhysicsAttributesFromJson<PhysicsSceneAttributes>(
+  auto sceneryAttributes =
+      this->createPhysicsAttributesFromJson<PhysicsSceneryAttributes>(
           sceneFilename, jsonConfig);
 
-  // directory location where scene files are found
-  std::string sceneLocFileDir = sceneAttributes->getFileDirectory();
+  // directory location where scenery files are found
+  std::string sceneLocFileDir = sceneryAttributes->getFileDirectory();
 
-  // now parse scene-specific fields
-  // load scene specific gravity
+  // now parse scenery-specific fields
+  // load scenery specific gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "gravity",
-      std::bind(&PhysicsSceneAttributes::setGravity, sceneAttributes, _1));
+      std::bind(&PhysicsSceneryAttributes::setGravity, sceneryAttributes, _1));
 
-  // load scene specific origin
+  // load scenery specific origin
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "origin",
-      std::bind(&PhysicsSceneAttributes::setOrigin, sceneAttributes, _1));
+      std::bind(&PhysicsSceneryAttributes::setOrigin, sceneryAttributes, _1));
 
   // populate specified semantic file name if specified in json - defaults
   // are overridden only if specified in json.
@@ -381,37 +386,37 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
   std::string lightSetup = "";
 
   // populate semantic mesh type if present
-  std::string semanticFName = sceneAttributes->getSemanticAssetHandle();
+  std::string semanticFName = sceneryAttributes->getSemanticAssetHandle();
   if (this->setJSONAssetHandleAndType(
-          sceneAttributes, jsonConfig, "semantic mesh type", "semantic mesh",
+          sceneryAttributes, jsonConfig, "semantic mesh type", "semantic mesh",
           semanticFName,
-          std::bind(&PhysicsSceneAttributes::setSemanticAssetType,
-                    sceneAttributes, _1))) {
-    // if "semantic mesh" is specified in scene json to non-empty value, set
+          std::bind(&PhysicsSceneryAttributes::setSemanticAssetType,
+                    sceneryAttributes, _1))) {
+    // if "semantic mesh" is specified in scenery json to non-empty value, set
     // value (override default).
-    sceneAttributes->setSemanticAssetHandle(semanticFName);
+    sceneryAttributes->setSemanticAssetHandle(semanticFName);
     // TODO eventually remove this, but currently semantic mesh must be instance
-    sceneAttributes->setSemanticAssetType(
+    sceneryAttributes->setSemanticAssetType(
         static_cast<int>(AssetType::INSTANCE_MESH));
   }
 
   if (io::jsonIntoVal<std::string>(jsonConfig, "nav mesh", navmeshFName)) {
     navmeshFName = Cr::Utility::Directory::join(sceneLocFileDir, navmeshFName);
-    // if "nav mesh" is specified in scene json set value (override default).
-    sceneAttributes->setNavmeshAssetHandle(navmeshFName);
+    // if "nav mesh" is specified in scenery json set value (override default).
+    sceneryAttributes->setNavmeshAssetHandle(navmeshFName);
   }
 
   if (io::jsonIntoVal<std::string>(jsonConfig, "house filename", houseFName)) {
     houseFName = Cr::Utility::Directory::join(sceneLocFileDir, houseFName);
-    // if "house filename" is specified in scene json, set value (override
+    // if "house filename" is specified in scenery json, set value (override
     // default).
-    sceneAttributes->setHouseFilename(houseFName);
+    sceneryAttributes->setHouseFilename(houseFName);
   }
 
   if (io::jsonIntoVal<std::string>(jsonConfig, "lighting setup", lightSetup)) {
-    // if lighting is specified in scene json to non-empty value, set value
+    // if lighting is specified in scenery json to non-empty value, set value
     // (override default).
-    sceneAttributes->setLightSetup(lightSetup);
+    sceneryAttributes->setLightSetup(lightSetup);
   }
 
   // load the rigid object library metadata (no physics init yet...)
@@ -424,8 +429,8 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
     for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
       if (!paths[i].IsString()) {
         LOG(ERROR)
-            << "SceneAttributesManager::createAttributesTemplate "
-               ":Invalid value in scene config 'rigid object paths'- array "
+            << "SceneryAttributesManager::createAttributesTemplate "
+               ":Invalid value in scenery config 'rigid object paths'- array "
             << i;
         continue;
       }
@@ -437,8 +442,8 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
     }
   }  // if load rigid object library metadata
 
-  return this->postCreateRegister(sceneAttributes, registerTemplate);
-}  // SceneAttributesManager::createFileBasedAttributesTemplate
+  return this->postCreateRegister(sceneryAttributes, registerTemplate);
+}  // SceneryAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers
 }  // namespace assets

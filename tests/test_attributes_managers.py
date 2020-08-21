@@ -192,26 +192,26 @@ def test_physics_attributes_managers(sim):
     perform_add_blank_template_test(phys_attr_mgr)
 
 
-def test_scene_attributes_managers(sim):
+def test_scenery_attributes_managers(sim):
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     cfg_settings["enable_physics"] = True
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
 
-    scene_name = cfg_settings["scene"]
+    scenery_name = cfg_settings["scene"]
 
     # get attribute managers
-    scene_mgr = sim.get_scene_template_manager()
+    scenery_mgr = sim.get_scenery_template_manager()
 
     # perform general tests for this attributes manager
-    template0, _ = perform_general_tests(scene_mgr, scene_name)
+    template0, _ = perform_general_tests(scenery_mgr, scenery_name)
 
     # verify gravity in template is as expected
     assert template0.gravity == mn.Vector3(0.0, -9.8, 0.0)
 
     # verify creating new template
-    perform_add_blank_template_test(scene_mgr, template0.render_asset_handle)
+    perform_add_blank_template_test(scenery_mgr, template0.render_asset_handle)
 
 
 def test_object_attributes_managers(sim):

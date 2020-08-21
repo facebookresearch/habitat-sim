@@ -21,8 +21,8 @@ set(assets_SOURCES
   managers/ObjectAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
-  managers/SceneAttributesManager.h
-  managers/SceneAttributesManager.cpp
+  managers/SceneryAttributesManager.h
+  managers/SceneryAttributesManager.cpp
   
   ResourceManager.cpp
   ResourceManager.h

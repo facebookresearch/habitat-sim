@@ -54,19 +54,19 @@ void CullingTest::computeAbsoluteAABB() {
   // must declare these in this order due to avoid deallocation errors
   ResourceManager resourceManager;
   SceneManager sceneManager;
-  auto sceneAttributesMgr = resourceManager.getSceneAttributesManager();
-  std::string sceneFile =
+  auto sceneryAttributesMgr = resourceManager.getSceneryAttributesManager();
+  std::string sceneryFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
-  auto sceneAttributes =
-      sceneAttributesMgr->createAttributesTemplate(sceneFile, true);
+  auto sceneryAttributes =
+      sceneryAttributesMgr->createAttributesTemplate(sceneryFile, true);
 
   int sceneID = sceneManager.initSceneGraph();
   auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
   auto& drawables = sceneGraph.getDrawables();
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadScene(sceneAttributes, nullptr,
-                                          &sceneManager, tempIDs, false);
+  bool result = resourceManager.loadScenery(sceneryAttributes, nullptr,
+                                            &sceneManager, tempIDs, false);
   CORRADE_VERIFY(result);
 
   std::vector<Mn::Range3D> aabbs;
@@ -128,12 +128,12 @@ void CullingTest::frustumCulling() {
   // must declare these in this order due to avoid deallocation errors
   ResourceManager resourceManager;
   SceneManager sceneManager;
-  auto sceneAttributesMgr = resourceManager.getSceneAttributesManager();
-  std::string sceneFile =
+  auto sceneryAttributesMgr = resourceManager.getSceneryAttributesManager();
+  std::string sceneryFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
-  auto sceneAttributes =
-      sceneAttributesMgr->createAttributesTemplate(sceneFile, true);
+  auto sceneryAttributes =
+      sceneryAttributesMgr->createAttributesTemplate(sceneryFile, true);
 
   // load the scene
   int sceneID = sceneManager.initSceneGraph();
@@ -142,13 +142,11 @@ void CullingTest::frustumCulling() {
   // esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
   // const esp::assets::AssetInfo info =
-  //     esp::assets::AssetInfo::fromPath(sceneFile);
+  //     esp::assets::AssetInfo::fromPath(sceneryFile);
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  // CORRADE_VERIFY(
-  //     resourceManager.loadScene(info, nullptr, &sceneRootNode, &drawables));
-  bool result = resourceManager.loadScene(sceneAttributes, nullptr,
-                                          &sceneManager, tempIDs, false);
+  bool result = resourceManager.loadScenery(sceneryAttributes, nullptr,
+                                            &sceneManager, tempIDs, false);
   CORRADE_VERIFY(result);
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();

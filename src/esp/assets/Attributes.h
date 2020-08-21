@@ -88,8 +88,8 @@ class AbstractAttributes : public esp::core::Configuration {
 
 /**
  * @brief base attributes object holding attributes shared by all
- * PhysicsObjectAttributes and PhysicsSceneAttributes objects; Should be treated
- * as if is abstract - should never be instanced directly
+ * PhysicsObjectAttributes and PhysicsSceneryAttributes objects; Should be
+ * treated as if is abstract - should never be instanced directly
  */
 class AbstractPhysicsAttributes : public AbstractAttributes {
  public:
@@ -113,23 +113,23 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   double getMargin() const { return getDouble("margin"); }
 
   /**
-   * @brief set default up orientation for object/scene mesh
+   * @brief set default up orientation for object/scenery mesh
    */
   void setOrientUp(const Magnum::Vector3& orientUp) {
     setVec3("orientUp", orientUp);
   }
   /**
-   * @brief get default up orientation for object/scene mesh
+   * @brief get default up orientation for object/scenery mesh
    */
   Magnum::Vector3 getOrientUp() const { return getVec3("orientUp"); }
   /**
-   * @brief set default forwardd orientation for object/scene mesh
+   * @brief set default forwardd orientation for object/scenery mesh
    */
   void setOrientFront(const Magnum::Vector3& orientFront) {
     setVec3("orientFront", orientFront);
   }
   /**
-   * @brief get default forwardd orientation for object/scene mesh
+   * @brief get default forwardd orientation for object/scenery mesh
    */
   Magnum::Vector3 getOrientFront() const { return getVec3("orientFront"); }
 
@@ -312,12 +312,12 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
 };  // class PhysicsObjectAttributes
 
 ///////////////////////////////////////
-// scene and physics manager attributes
+// scenery and physics manager attributes
 
 //! attributes for a single physical scene
-class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
+class PhysicsSceneryAttributes : public AbstractPhysicsAttributes {
  public:
-  PhysicsSceneAttributes(const std::string& handle = "");
+  PhysicsSceneryAttributes(const std::string& handle = "");
 
   void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }
   Magnum::Vector3 getOrigin() const { return getVec3("origin"); }
@@ -372,9 +372,9 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
   bool getFrustrumCulling() const { return getBool("frustrumCulling"); }
 
  public:
-  ESP_SMART_POINTERS(PhysicsSceneAttributes)
+  ESP_SMART_POINTERS(PhysicsSceneryAttributes)
 
-};  // class PhysicsSceneAttributes
+};  // class PhysicsSceneryAttributes
 
 //! attributes for a single physics manager
 class PhysicsManagerAttributes : public AbstractAttributes {

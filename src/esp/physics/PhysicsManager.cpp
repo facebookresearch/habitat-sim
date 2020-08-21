@@ -24,8 +24,8 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
 
 bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
-  staticSceneObject_ =
-      physics::RigidScene::create_unique(&physicsNode_->createChild());
+  staticSceneryObject_ =
+      physics::RigidScenery::create_unique(&physicsNode_->createChild());
   return true;
 }
 
@@ -33,7 +33,7 @@ PhysicsManager::~PhysicsManager() {
   LOG(INFO) << "Deconstructing PhysicsManager";
 }
 
-bool PhysicsManager::addScene(
+bool PhysicsManager::addScenery(
     const std::string& handle,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
@@ -44,13 +44,14 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
-  bool sceneSuccess = addSceneFinalize(handle);
+  bool sceneSuccess = addSceneryFinalize(handle);
   return sceneSuccess;
 }
 
-bool PhysicsManager::addSceneFinalize(const std::string& handle) {
+bool PhysicsManager::addSceneryFinalize(const std::string& handle) {
   //! Initialize scene
-  bool sceneSuccess = staticSceneObject_->initialize(resourceManager_, handle);
+  bool sceneSuccess =
+      staticSceneryObject_->initialize(resourceManager_, handle);
   return sceneSuccess;
 }
 
@@ -73,7 +74,7 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
   int nextObjectID_ = allocateObjectID();
   scene::SceneNode* objectNode = attachmentNode;
   if (attachmentNode == nullptr) {
-    objectNode = &staticSceneObject_->node().createChild();
+    objectNode = &staticSceneryObject_->node().createChild();
   }
   // verify whether necessary assets exist, and if not, instantiate them
   // only make object if asset instantiation succeeds (short circuit)
@@ -233,7 +234,7 @@ void PhysicsManager::stepPhysics(double dt) {
 //! helps checking how many objects are active/inactive at any
 //! time step
 int PhysicsManager::checkActiveObjects() {
-  if (staticSceneObject_ == nullptr) {
+  if (staticSceneryObject_ == nullptr) {
     return 0;
   }
 

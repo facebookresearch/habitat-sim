@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MANAGERS_SCENEATTRIBUTEMANAGER_H_
-#define ESP_ASSETS_MANAGERS_SCENEATTRIBUTEMANAGER_H_
+#ifndef ESP_ASSETS_MANAGERS_SCENERYATTRIBUTEMANAGER_H_
+#define ESP_ASSETS_MANAGERS_SCENERYATTRIBUTEMANAGER_H_
 
 #include "AttributesManagerBase.h"
 
@@ -15,10 +15,10 @@ namespace assets {
 enum class AssetType;
 
 namespace managers {
-class SceneAttributesManager
-    : public AttributesManager<PhysicsSceneAttributes::ptr> {
+class SceneryAttributesManager
+    : public AttributesManager<PhysicsSceneryAttributes::ptr> {
  public:
-  SceneAttributesManager(
+  SceneryAttributesManager(
       assets::ResourceManager& resourceManager,
       ObjectAttributesManager::ptr objectAttributesMgr,
       PhysicsAttributesManager::ptr physicsAttributesManager);
@@ -38,11 +38,11 @@ class SceneAttributesManager
   }
   /**
    * @brief copy current @ref SimulatorConfiguration-driven values, such as file
-   * paths, to make them available for scene attributes defaults.
+   * paths, to make them available for scenery attributes defaults.
    *
    * @param filepaths the map of file paths from the configuration object
    * @param lightSetup the config-specified light setup
-   * @param frustrumCulling whether or not (semantic) scene should be
+   * @param frustrumCulling whether or not (semantic) scenery should be
    * partitioned for culling.
    */
   void setCurrCfgVals(const std::map<std::string, std::string>& filepaths,
@@ -54,11 +54,11 @@ class SceneAttributesManager
     cfgLightSetup_ = lightSetup;
     // set frustrum culling default from configuration
     cfgFrustrumCulling_ = frustrumCulling;
-  }  // SceneAttributesManager::setCurrCfgVals
+  }  // SceneryAttributesManager::setCurrCfgVals
 
   /**
-   * @brief Creates an instance of a scene template described by passed string.
-   * For scene templates, this a file name.
+   * @brief Creates an instance of a scenery template described by passed
+   * string. For scenery templates, this a file name.
    *
    * If a template exists with this handle, this existing template will be
    * overwritten with the newly created one if @ref registerTemplate is true.
@@ -72,12 +72,12 @@ class SceneAttributesManager
    * template.
    * @return a reference to the desired template.
    */
-  PhysicsSceneAttributes::ptr createAttributesTemplate(
+  PhysicsSceneryAttributes::ptr createAttributesTemplate(
       const std::string& sceneAttributesHandle,
       bool registerTemplate = true) override;
 
   /**
-   * @brief Creates a an instance of scene attributes template populated with
+   * @brief Creates a an instance of scenery attributes template populated with
    * default values. Assigns the @ref templateName as the template's handle,
    * and render and collision handles.
    *
@@ -94,14 +94,14 @@ class SceneAttributesManager
    * template.
    * @return a reference to the desired template, or nullptr if fails.
    */
-  PhysicsSceneAttributes::ptr createDefaultAttributesTemplate(
+  PhysicsSceneryAttributes::ptr createDefaultAttributesTemplate(
       const std::string& templateName,
       bool registerTemplate = false) override;
 
   /**
-   * @brief Creates an instance of a scene template described by passed
+   * @brief Creates an instance of a scenery template described by passed
    * string, which should be a reference to an existing primitive asset template
-   * to be used in the construction of the scene (as render and collision
+   * to be used in the construction of the scenery (as render and collision
    * mesh). It returns existing instance if there is one, and nullptr if fails.
    *
    * @param primAttrTemplateHandle The handle to an existing primitive asset
@@ -109,9 +109,9 @@ class SceneAttributesManager
    * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
    * subsequent editing will require re-registration. Defaults to true.
-   * @return a reference to the desired scene template, or nullptr if fails.
+   * @return a reference to the desired scenery template, or nullptr if fails.
    */
-  PhysicsSceneAttributes::ptr createPrimBasedAttributesTemplate(
+  PhysicsSceneryAttributes::ptr createPrimBasedAttributesTemplate(
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true);
 
@@ -131,7 +131,7 @@ class SceneAttributesManager
    * @param meshTypeSetter Setter for mesh type.
    */
   void setDefaultFileNameBasedAttributes(
-      PhysicsSceneAttributes::ptr attributes,
+      PhysicsSceneryAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
       std::function<void(int)> meshTypeSetter) override;
@@ -141,8 +141,8 @@ class SceneAttributesManager
    *
    * @param newAttributes Newly created attributes.
    */
-  PhysicsSceneAttributes::ptr initNewAttribsInternal(
-      PhysicsSceneAttributes::ptr newAttributes) override;
+  PhysicsSceneryAttributes::ptr initNewAttribsInternal(
+      PhysicsSceneryAttributes::ptr newAttributes) override;
 
   /**
    * @brief This method will perform any necessary updating that is
@@ -158,29 +158,29 @@ class SceneAttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Scene is file-based lacking a descriptive .json, described by @ref
-   * sceneFilename; populate a returned scene attributes with appropriate data.
-   * This method's intended use is to support backwards compatibility for when
-   * scene meshes are loaded without JSON files.
+   * @brief Scenery is file-based lacking a descriptive .json, described by @ref
+   * sceneryFilename; populate a returned scenery attributes with appropriate
+   * data. This method's intended use is to support backwards compatibility for
+   * when scenery meshes are loaded without JSON files.
    *
-   * @param sceneFilename The mesh file name
+   * @param sceneryFilename The mesh file name
    * @param registerTemplate whether to add this template to the library or not.
-   * @return a reference to the desired scene template, or nullptr if fails.
+   * @return a reference to the desired scenery template, or nullptr if fails.
    */
-  PhysicsSceneAttributes::ptr createBackCompatAttributesTemplate(
-      const std::string& sceneFilename,
+  PhysicsSceneryAttributes::ptr createBackCompatAttributesTemplate(
+      const std::string& sceneryFilename,
       bool registerTemplate = true);
 
   /**
-   * @brief Read and parse the json file @ref sceneFilename and populate a
-   * returned scene attributes with appropriate data.
+   * @brief Read and parse the json file @ref sceneryFilename and populate a
+   * returned scenery attributes with appropriate data.
    *
-   * @param sceneFilename The configuration file to parse.
+   * @param sceneryFilename The configuration file to parse.
    * @param registerTemplate whether to add this template to the library or not.
-   * @return a reference to the desired scene template, or nullptr if fails.
+   * @return a reference to the desired scenery template, or nullptr if fails.
    */
-  PhysicsSceneAttributes::ptr createFileBasedAttributesTemplate(
-      const std::string& sceneFilename,
+  PhysicsSceneryAttributes::ptr createFileBasedAttributesTemplate(
+      const std::string& sceneryFilename,
       bool registerTemplate = true);
 
   /**
@@ -197,7 +197,7 @@ class SceneAttributesManager
    */
 
   int registerAttributesTemplateFinalize(
-      PhysicsSceneAttributes::ptr sceneAttributesTemplate,
+      PhysicsSceneryAttributes::ptr sceneAttributesTemplate,
       const std::string& sceneAttributesHandle) override;
 
   /**
@@ -209,19 +209,19 @@ class SceneAttributesManager
   /**
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
+   * AttributesManager<PhysicsSceneryAttributes::ptr>
    */
   void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["PhysicsSceneAttributes"] =
-        &SceneAttributesManager::createAttributesCopy<
-            assets::PhysicsSceneAttributes>;
-  }  // SceneAttributesManager::buildCtorFuncPtrMaps
+    this->copyConstructorMap_["PhysicsSceneryAttributes"] =
+        &SceneryAttributesManager::createAttributesCopy<
+            assets::PhysicsSceneryAttributes>;
+  }  // SceneryAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars
 
   /**
    * @brief Reference to ObjectAttributesManager to give access to setting
-   * object template library using paths specified in SceneAttributes json
+   * object template library using paths specified in SceneryAttributes json
    */
   ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
   /**
@@ -256,12 +256,12 @@ class SceneAttributesManager
   std::string physicsManagerAttributesHandle_ = "";
 
  public:
-  ESP_SMART_POINTERS(SceneAttributesManager)
+  ESP_SMART_POINTERS(SceneryAttributesManager)
 
-};  // SceneAttributesManager
+};  // SceneryAttributesManager
 
 }  // namespace managers
 }  // namespace assets
 }  // namespace esp
 
-#endif  // ESP_ASSETS_MANAGERS_SCENEATTRIBUTEMANAGER_H_
+#endif  // ESP_ASSETS_MANAGERS_SCENERYATTRIBUTEMANAGER_H_

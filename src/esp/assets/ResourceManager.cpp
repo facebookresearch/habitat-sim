@@ -88,7 +88,7 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create(
       *this, objectAttributesManager_);
-  sceneAttributesManager_ = managers::SceneAttributesManager::create(
+  sceneryAttributesManager_ = managers::SceneryAttributesManager::create(
       *this, objectAttributesManager_, physicsAttributesManager_);
 
   // instantiate a primitive importer
@@ -158,8 +158,8 @@ void ResourceManager::initPhysicsManager(
   physicsManager->initPhysics(parent);
 }  // ResourceManager::initPhysicsManager
 
-bool ResourceManager::loadScene(
-    const PhysicsSceneAttributes::ptr& sceneAttributes,
+bool ResourceManager::loadScenery(
+    const PhysicsSceneryAttributes::ptr& sceneAttributes,
     std::shared_ptr<physics::PhysicsManager> _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
@@ -172,8 +172,8 @@ bool ResourceManager::loadScene(
             "none") != 0));
   const Magnum::ResourceKey& renderLightSetup(sceneAttributes->getLightSetup());
   std::map<std::string, AssetInfo> assetInfoMap =
-      createSceneAssetInfosFromAttributes(sceneAttributes, buildCollisionMesh,
-                                          loadSemanticMesh);
+      createSceneryAssetInfosFromAttributes(sceneAttributes, buildCollisionMesh,
+                                            loadSemanticMesh);
 
   auto& sceneGraph = sceneManagerPtr->getSceneGraph(activeSceneIDs[0]);
   auto& rootNode = sceneGraph.getRootNode();
@@ -188,17 +188,17 @@ bool ResourceManager::loadScene(
   // pass nullptr as physics manager for render mesh, since we are loading
   // collision mesh next
   bool renderMeshSuccess =
-      loadSceneInternal(renderInfo,         // AssetInfo
-                        nullptr,            // physics manager
-                        &rootNode,          // parent scene node
-                        &drawables,         //  drawable group
-                        true,               // compute Absolute AABBs or not
-                        false,              // split semantic mesh or not
-                        renderLightSetup);  // light setup
+      loadSceneryInternal(renderInfo,         // AssetInfo
+                          nullptr,            // physics manager
+                          &rootNode,          // parent scene node
+                          &drawables,         //  drawable group
+                          true,               // compute Absolute AABBs or not
+                          false,              // split semantic mesh or not
+                          renderLightSetup);  // light setup
 
   if (!renderMeshSuccess) {
     LOG(ERROR)
-        << " ResourceManager::loadScene : Scene render mesh load failed, "
+        << " ResourceManager::loadScenery : Scenery render mesh load failed, "
            "Aborting scene initialization.";
     return false;
   }
@@ -206,18 +206,18 @@ bool ResourceManager::loadScene(
     AssetInfo colInfo = assetInfoMap.at("collision");
     // should this be checked to make sure we do not reload?
     bool collisionMeshSuccess =
-        loadSceneInternal(colInfo,            // AssetInfo
-                          _physicsManager,    // physics manager
-                          nullptr,            // parent scene node
-                          nullptr,            // drawable group
-                          false,              // compute absolute AABBs or not
-                          false,              // split semantic mesh or not
-                          renderLightSetup);  // light setup
+        loadSceneryInternal(colInfo,            // AssetInfo
+                            _physicsManager,    // physics manager
+                            nullptr,            // parent scene node
+                            nullptr,            // drawable group
+                            false,              // compute absolute AABBs or not
+                            false,              // split semantic mesh or not
+                            renderLightSetup);  // light setup
 
     if (!collisionMeshSuccess) {
-      LOG(ERROR)
-          << " ResourceManager::loadScene : Scene collision mesh load failed, "
-             "Aborting scene initialization.";
+      LOG(ERROR) << " ResourceManager::loadScenery : Scenery collision mesh "
+                    "load failed, "
+                    "Aborting scene initialization.";
       return false;
     } else {
       // if we have a collision mesh, and it does not exist already as a
@@ -230,19 +230,20 @@ bool ResourceManager::loadScene(
           if (colInfo.type == AssetType::INSTANCE_MESH) {
             // PLY Instance mesh
             colMeshGroupSuccess =
-                buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
+                buildSceneryCollisionMeshGroup<GenericInstanceMeshData>(
                     colInfo.filepath, meshGroup);
           } else if (colInfo.type == AssetType::MP3D_MESH ||
                      colInfo.type == AssetType::UNKNOWN) {
             // GLB Mesh
-            colMeshGroupSuccess = buildSceneCollisionMeshGroup<GenericMeshData>(
-                colInfo.filepath, meshGroup);
+            colMeshGroupSuccess =
+                buildSceneryCollisionMeshGroup<GenericMeshData>(
+                    colInfo.filepath, meshGroup);
           }
           // TODO : PTEX collision support
 
           // failure during build of collision mesh group
           if (!colMeshGroupSuccess) {
-            LOG(ERROR) << "ResourceManager::loadScene : Scene"
+            LOG(ERROR) << "ResourceManager::loadScenery : Scenery"
                        << colInfo.filepath
                        << " Collision mesh load failed. Aborting scene "
                           "initialization.";
@@ -256,10 +257,10 @@ bool ResourceManager::loadScene(
         }
         //! Add to physics manager
         bool sceneSuccess =
-            _physicsManager->addScene(colInfo.filepath, meshGroup);
+            _physicsManager->addScenery(colInfo.filepath, meshGroup);
         if (!sceneSuccess) {
           LOG(ERROR)
-              << "ResourceManager::loadScene : Adding Scene "
+              << "ResourceManager::loadScenery : Adding Scenery "
               << colInfo.filepath
               << " to PhysicsManager failed. Aborting scene initialization.";
           return false;
@@ -268,17 +269,18 @@ bool ResourceManager::loadScene(
     }    // if collisionMeshSuccess
   }      // if collision mesh desired
 
-  bool semanticSceneSuccess = false;
+  bool semanticScenerySuccess = false;
   // set equal to current Simulator::activeSemanticSceneID_ value
   int activeSemanticSceneID = activeSceneIDs[0];
   // if semantic scene load is requested and possible
   if (assetInfoMap.count("semantic")) {
     // check if file names exist
     AssetInfo semanticInfo = assetInfoMap.at("semantic");
-    auto semanticSceneFilename = semanticInfo.filepath;
-    if (Cr::Utility::Directory::exists(semanticSceneFilename)) {
-      LOG(INFO) << "ResourceManager::loadScene : Loading semantic mesh "
-                << semanticSceneFilename;
+    auto semanticSceneryFilename = semanticInfo.filepath;
+    if (Cr::Utility::Directory::exists(semanticSceneryFilename)) {
+      LOG(INFO)
+          << "ResourceManager::loadScenery : Loading Semantic Scenery mesh : "
+          << semanticSceneryFilename;
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
       bool splitSemanticMesh = sceneAttributes->getFrustrumCulling();
 
@@ -288,7 +290,7 @@ bool ResourceManager::loadScene(
       auto& semanticDrawables = semanticSceneGraph.getDrawables();
       bool computeSemanticAABBs = splitSemanticMesh;
 
-      semanticSceneSuccess = loadSceneInternal(
+      semanticScenerySuccess = loadSceneryInternal(
           semanticInfo,          // AssetInfo
           nullptr,               // physics manager
           &semanticRootNode,     // parent scene node
@@ -298,22 +300,22 @@ bool ResourceManager::loadScene(
       // regardless of load failure, original code still changed
       // activeSemanticSceneID_
       activeSceneIDs[1] = activeSemanticSceneID;
-      if (!semanticSceneSuccess) {
-        LOG(ERROR) << " ResourceManager::loadScene : Semantic scene mesh "
+      if (!semanticScenerySuccess) {
+        LOG(ERROR) << " ResourceManager::loadScenery : Semantic Scenery mesh "
                       "load failed.";
         return false;
       } else {
-        LOG(INFO) << "ResourceManager::loadScene : Semantic Scene Mesh : "
-                  << semanticSceneFilename << " loaded.";
+        LOG(INFO) << "ResourceManager::loadScenery : Semantic Scenery mesh : "
+                  << semanticSceneryFilename << " loaded.";
       }
     } else {  // semantic file name does not exist but house does
       LOG(WARNING)
-          << "ResourceManager::loadScene : Not loading semantic mesh - "
+          << "ResourceManager::loadScenery : Not loading semantic mesh - "
              "File Name : "
-          << semanticSceneFilename << " does not exist.";
+          << semanticSceneryFilename << " does not exist.";
     }
   } else {  // not wanting to create semantic mesh
-    LOG(INFO) << "ResourceManager::loadScene : Not loading semantic mesh";
+    LOG(INFO) << "ResourceManager::loadScenery : Not loading semantic mesh";
   }
   // save active semantic scene ID so that simulator can consume
   activeSceneIDs[1] = activeSemanticSceneID;
@@ -322,8 +324,8 @@ bool ResourceManager::loadScene(
 }  // ResourceManager::loadScene
 
 std::map<std::string, AssetInfo>
-ResourceManager::createSceneAssetInfosFromAttributes(
-    const PhysicsSceneAttributes::ptr& sceneAttributes,
+ResourceManager::createSceneryAssetInfosFromAttributes(
+    const PhysicsSceneryAttributes::ptr& sceneAttributes,
     bool createCollisionInfo,
     bool createSemanticInfo) {
   std::map<std::string, AssetInfo> resMap;
@@ -369,7 +371,7 @@ ResourceManager::createSceneAssetInfosFromAttributes(
     resMap["semantic"] = semanticInfo;
   }
   return resMap;
-}  // ResourceManager::createSceneAssetInfosFromAttributes
+}  // ResourceManager::createSceneryAssetInfosFromAttributes
 
 esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     const AbstractPhysicsAttributes::ptr& attribs,
@@ -392,7 +394,7 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
   }
 }  // ResourceManager::buildCoordFrameFromAttribVals
 
-bool ResourceManager::loadSceneInternal(
+bool ResourceManager::loadSceneryInternal(
     const AssetInfo& info,
     std::shared_ptr<physics::PhysicsManager> _physicsManager,
     scene::SceneNode* parent /* = nullptr */,
@@ -406,7 +408,7 @@ bool ResourceManager::loadSceneInternal(
   if (info.filepath.compare(EMPTY_SCENE) != 0) {
     if (!Cr::Utility::Directory::exists(filename)) {
       LOG(ERROR)
-          << "ResourceManager::loadSceneInternal : Cannot find scene file "
+          << "ResourceManager::loadSceneryInternal : Cannot find scene file "
           << filename;
       meshSuccess = false;
     } else {
@@ -427,18 +429,19 @@ bool ResourceManager::loadSceneInternal(
       }
     }
   } else {
-    LOG(INFO) << "ResourceManager::loadSceneInternal : Loading empty scene for "
-              << filename;
+    LOG(INFO)
+        << "ResourceManager::loadSceneryInternal : Loading empty scene for "
+        << filename;
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
 
   return meshSuccess;
 
-}  // ResourceManager::loadSceneInternal
+}  // ResourceManager::loadSceneryInternal
 
 template <class T>
-bool ResourceManager::buildSceneCollisionMeshGroup(
+bool ResourceManager::buildSceneryCollisionMeshGroup(
     const std::string& filename,
     std::vector<CollisionMeshData>& meshGroup) {
   // TODO : refactor to manage any mesh groups, not just scene
@@ -453,7 +456,8 @@ bool ResourceManager::buildSceneCollisionMeshGroup(
     if (rawMeshData == nullptr) {
       // means dynamic cast failed
       Cr::Utility::Debug()
-          << "ResourceManager::loadPhysicsScene : AssetInfo::AssetType "
+          << "ResourceManager::buildSceneryCollisionMeshGroup : "
+             "AssetInfo::AssetType "
              "type error: unsupported mesh type, aborting. Try running "
              "without \"--enable-physics\" and consider logging an issue.";
       return false;
@@ -463,7 +467,7 @@ bool ResourceManager::buildSceneCollisionMeshGroup(
   }  // for each mesh
 
   return true;
-}  // ResourceManager::buildSceneCollisionMeshGroup
+}  // ResourceManager::buildSceneryCollisionMeshGroup
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,

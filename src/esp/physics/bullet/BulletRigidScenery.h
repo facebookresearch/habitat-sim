@@ -2,41 +2,41 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_PHYSICS_BULLET_BULLETRIGIDSCENE_H_
-#define ESP_PHYSICS_BULLET_BULLETRIGIDSCENE_H_
+#ifndef ESP_PHYSICS_BULLET_BULLETRIGIDSCENERY_H_
+#define ESP_PHYSICS_BULLET_BULLETRIGIDSCENERY_H_
 
-#include "esp/physics/RigidScene.h"
+#include "esp/physics/RigidScenery.h"
 #include "esp/physics/bullet/BulletBase.h"
 
 /** @file
- * @brief Class @ref esp::physics::bullet::BulletRigidScene
+ * @brief Class @ref esp::physics::bullet::BulletRigidScenery
  */
 namespace esp {
 namespace physics {
 
 /**
- * @brief An individual rigid scene instance implementing an interface with
+ * @brief An individual rigid scenery instance implementing an interface with
  * Bullet physics to enable dynamics. See @ref btCollisionObject
  */
 
-class BulletRigidScene : public BulletBase, public RigidScene {
+class BulletRigidScenery : public BulletBase, public RigidScenery {
  public:
-  BulletRigidScene(scene::SceneNode* rigidBodyNode,
-                   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
-                   std::shared_ptr<std::map<const btCollisionObject*, int>>
-                       collisionObjToObjIds);
+  BulletRigidScenery(scene::SceneNode* rigidBodyNode,
+                     std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
+                     std::shared_ptr<std::map<const btCollisionObject*, int>>
+                         collisionObjToObjIds);
 
   /**
-   * @brief Destructor cleans up simulation structures for the object.
+   * @brief Destructor cleans up simulation structures for the scenery object.
    */
-  virtual ~BulletRigidScene();
+  virtual ~BulletRigidScenery();
 
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidScene
-   * geometry.  This holds bullet-specific functionality for scenes.
+   * geometry.  This holds bullet-specific functionality for scenerys.
    * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the scene object
+   * pertaining to the scenery object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialization_LibSpecific(
@@ -64,46 +64,46 @@ class BulletRigidScene : public BulletBase, public RigidScene {
    */
   virtual const Magnum::Range3D getCollisionShapeAabb() const override;
 
-  /** @brief Get the scalar friction coefficient of the object. Only used for
-   * dervied dynamic implementations of @ref RigidObject.
-   * @return The scalar friction coefficient of the object.
+  /** @brief Get the scalar friction coefficient of the scenery object. Only
+   * used for dervied dynamic implementations of @ref RigidScenery.
+   * @return The scalar friction coefficient of the scenery object.
    */
   virtual double getFrictionCoefficient() const override;
 
-  /** @brief Get the scalar coefficient of restitution  of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
-   * @return The scalar coefficient of restitution  of the object.
+  /** @brief Get the scalar coefficient of restitution  of the scenery object.
+   * Only used for dervied dynamic implementations of @ref RigidScenery.
+   * @return The scalar coefficient of restitution  of the scenery object.
    */
   virtual double getRestitutionCoefficient() const override;
 
-  /** @brief Set the scalar friction coefficient of the object.
+  /** @brief Set the scalar friction coefficient of the scenery object.
    * See @ref btCollisionObject::setFriction.
    * @param frictionCoefficient The new scalar friction coefficient of the
-   * object.
+   * scenery object.
    */
   void setFrictionCoefficient(const double frictionCoefficient) override;
 
-  /** @brief Set the scalar coefficient of restitution of the object.
+  /** @brief Set the scalar coefficient of restitution of the scenery object.
    * See @ref btCollisionObject::setRestitution.
    * @param restitutionCoefficient The new scalar coefficient of restitution of
-   * the object.
+   * the scenery object.
    */
   void setRestitutionCoefficient(const double restitutionCoefficient) override;
 
  private:
-  // === Physical scene ===
+  // === Physical scenery ===
 
-  //! Scene data: Bullet triangular mesh vertices
-  std::vector<std::unique_ptr<btTriangleIndexVertexArray>> bSceneArrays_;
+  //! Scenery data: Bullet triangular mesh vertices
+  std::vector<std::unique_ptr<btTriangleIndexVertexArray>> bSceneryArrays_;
 
-  //! Scene data: Bullet triangular mesh shape
-  std::vector<std::unique_ptr<btBvhTriangleMeshShape>> bSceneShapes_;
+  //! Scenery data: Bullet triangular mesh shape
+  std::vector<std::unique_ptr<btBvhTriangleMeshShape>> bSceneryShapes_;
 
  public:
-  ESP_SMART_POINTERS(BulletRigidScene)
+  ESP_SMART_POINTERS(BulletRigidScenery)
 
-};  // class BulletRigidScene
+};  // class BulletRigidScenery
 
 }  // namespace physics
 }  // namespace esp
-#endif  // ESP_PHYSICS_BULLET_BULLETRIGIDSCENE_H_
+#endif  // ESP_PHYSICS_BULLET_BULLETRIGIDSCENERY_H_
