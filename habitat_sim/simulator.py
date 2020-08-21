@@ -13,7 +13,7 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim.errors
-from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
