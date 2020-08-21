@@ -16,6 +16,9 @@
 A flexible, high-performance 3D simulator with configurable agents, multiple sensors, and generic 3D dataset handling (with built-in support for [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets).
 When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded, and reaches <a href="#fps_table"><b>over 10,000 FPS multi-process</b></a> on a single GPU!
 
+
+[Habitat-Lab](https://github.com/facebookresearch/habitat-lab) uses [Habitat-Sim](https://github.com/facebookresearch/habitat-sim) as the core simulator and is a modular high-level library for end-to-end experiments in embodied AI -- defining embodied AI tasks (e.g. navigation, instruction following, question answering), training agents (via imitation or reinforcement learning, or no learning at all as in classical SLAM), and benchmarking their performance on the defined tasks using standard metrics.
+
 [![Habitat Demo](https://img.shields.io/static/v1?label=WebGL&message=Try%20AI%20Habitat%20In%20Your%20Browser%20&color=blue&logo=webgl&labelColor=%23990000&style=for-the-badge&link=https://aihabitat.org/demo)](https://aihabitat.org/demo)
 <p align="center">
   <img src="docs/images/habitat_compressed.gif" height="400">
@@ -151,7 +154,7 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 
 ### Docker Image
 
-We provide a pre-built docker container for habitat-lab and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
+We provide a pre-built docker container for [habitat-lab](https://github.com/facebookresearch/habitat-lab) and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
 
 ### From Source
 
