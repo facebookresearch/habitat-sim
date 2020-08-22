@@ -27,8 +27,8 @@ jobs:
           name: run isort
           command: |
               isort --version
-              isort -rc habitat_sim/. examples/. tests/. setup.py --diff
-              isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
+              isort habitat_sim/. examples/. tests/. setup.py --diff
+              isort habitat_sim/. examples/. tests/. setup.py --check-only
       - run:
           name: run flake8
           command: |
