@@ -44,7 +44,7 @@ repos:
     rev: master
     hooks:
     -   id: autoflake
-        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
+        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place', '-c']
         exclude: docs/
 
 -   repo: https://gitlab.com/pycqa/flake8
