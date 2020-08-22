@@ -1,4 +1,4 @@
-exclude: 'build|src/deps|src/obsolete'
+exclude: 'build|data/datasets|data/scene_datasets|data/objects|src/deps|src/obsolete'
 
 default_language_version:
     python: python3
@@ -41,7 +41,7 @@ repos:
         exclude: docs/
 
 -   repo: https://gitlab.com/pycqa/flake8
-    rev: '3.8.3'  # pick a git hash / tag to point to
+    rev: 3.8.3
     hooks:
     -   id: flake8
 
