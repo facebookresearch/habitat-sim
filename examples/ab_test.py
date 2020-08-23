@@ -10,7 +10,6 @@ import csv
 import distutils
 
 import demo_runner as dr
-import numpy as np
 
 parser = argparse.ArgumentParser(
     description="Running AB test on simulator", add_help=True

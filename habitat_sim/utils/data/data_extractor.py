@@ -1,13 +1,11 @@
 from typing import List, Union
 
 import numpy as np
-from matplotlib import pyplot as plt
 
 import habitat_sim
 from habitat_sim import bindings as hsim
 from habitat_sim import registry as registry
 from habitat_sim.agent import AgentState
-from habitat_sim.utils.common import quat_from_two_vectors
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor
 

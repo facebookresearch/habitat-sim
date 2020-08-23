@@ -608,7 +608,7 @@ set_object_state_from_agent(
 
 if scenario_is_kinematic:
     # use the velocity control struct to setup a constant rate kinematic motion
-    sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, obj_id_1)
+    sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, obj_id_1)
     vel_control = sim.get_object_velocity_control(obj_id_1)
     vel_control.controlling_lin_vel = True
     vel_control.linear_velocity = np.array([0, -1.0, 0])
@@ -658,7 +658,7 @@ obj_attr_mgr.register_template(cube_template_cpy, "occluder_cube")
 # Instance and place the occluder object from the template.
 occluder_id = sim.add_object_by_handle("occluder_cube")
 set_object_state_from_agent(sim, occluder_id, offset=np.array([0.0, 1.4, -0.4]))
-sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, occluder_id)
+sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, occluder_id)
 # fmt off
 # @markdown 3. Simulate at 60Hz, removing one object when it's center of mass drops below that of the occluder.
 # fmt on
@@ -715,7 +715,7 @@ if introduce_surface:
     # Instance and place the surface object from the template.
     surface_id = sim.add_object_by_handle("invisible_surface")
     set_object_state_from_agent(sim, surface_id, offset=np.array([0.4, 0.88, -1.6]))
-    sim.set_object_motion_type(habitat_sim.MotionType.STATIC, surface_id)
+    sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, surface_id)
 
 
 example_type = "physical plausibility"
@@ -779,7 +779,7 @@ if show_target_zone:
     # instance and place the object from the template
     target_zone_id = sim.add_object_by_handle("target_zone")
     sim.set_translation(target_zone.center(), target_zone_id)
-    sim.set_object_motion_type(habitat_sim.MotionType.STATIC, target_zone_id)
+    sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, target_zone_id)
     # print("target_zone_center = " + str(sim.get_translation(target_zone_id)))
 
 # @markdown ---
@@ -884,7 +884,7 @@ for obj in range(num_objects):
         sim.remove_object(obj_id_1)
     else:
         # set the objects to STATIC so they can be added to the NavMesh
-        sim.set_object_motion_type(habitat_sim.MotionType.STATIC, obj_id_1)
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, obj_id_1)
 
 print("Placement fails = " + str(fails) + "/" + str(num_objects))
 
@@ -1027,7 +1027,7 @@ def setup_path_visualization(sim, path_follower, vis_samples=100):
             return None
 
     for id in vis_ids:
-        sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, id)
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, id)
 
     return vis_ids
 
@@ -1090,7 +1090,7 @@ class ObjectGripper(object):
             print("Oops, can't carry more than one item.")
             return
         self._gripped_obj_id = obj_id
-        sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, obj_id)
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, obj_id)
         object_node = sim.get_object_scene_node(obj_id)
         self._gripped_obj_buffer = object_node.cumulative_bb.size_y() / 2.0
         self.sync_states()
@@ -1099,7 +1099,9 @@ class ObjectGripper(object):
         if self._gripped_obj_id == -1:
             print("Oops, can't release nothing.")
             return
-        sim.set_object_motion_type(habitat_sim.MotionType.DYNAMIC, self._gripped_obj_id)
+        sim.set_object_motion_type(
+            habitat_sim.physics.MotionType.DYNAMIC, self._gripped_obj_id
+        )
         sim.set_linear_velocity(
             self._node.absolute_transformation_matrix().transform_vector(
                 mn.Vector3(0, 0, -1.0)

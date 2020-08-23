@@ -1,4 +1,4 @@
-exclude: 'build|src/deps|src/obsolete'
+exclude: 'build|data/datasets|data/scene_datasets|data/objects|src/deps|src/obsolete'
 
 default_language_version:
     python: python3
@@ -20,15 +20,8 @@ repos:
     -   id: mixed-line-ending
         args: ['--fix=lf']
 
-
--   repo: https://github.com/asottile/seed-isort-config
-    rev: v2.2.0
-    hooks:
-    -   id: seed-isort-config
-        language_version: python3
-
--   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.0.7
+-   repo: https://github.com/timothycrosley/isort
+    rev: 5.4.2
     hooks:
     -   id: isort
         exclude: docs/
@@ -46,6 +39,11 @@ repos:
     -   id: autoflake
         args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place', '-c']
         exclude: docs/
+
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.8.3
+    hooks:
+    -   id: flake8
 
 -   repo: https://github.com/kynan/nbstripout
     rev: master

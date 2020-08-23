@@ -45,7 +45,7 @@ def test_empty_scene(sim):
 
     # test that empty frames can be rendered without a scene mesh
     for _ in range(2):
-        obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
+        sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
 
 
 def test_sim_reset(sim):
@@ -55,7 +55,7 @@ def test_sim_reset(sim):
     # Take random steps in the environment
     for _ in range(10):
         action = random.choice(list(agent_config.action_space.keys()))
-        obs = sim.step(action)
+        sim.step(action)
 
     sim.reset()
     new_state = sim.agents[0].get_state()
@@ -89,9 +89,7 @@ def _test_multiple_construct_destroy_tgt():
     sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
 
     for _ in range(3):
-        with habitat_sim.Simulator(
-            habitat_sim.Configuration(sim_cfg, [agent_config])
-        ) as sim:
+        with habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config])):
             pass
 
 

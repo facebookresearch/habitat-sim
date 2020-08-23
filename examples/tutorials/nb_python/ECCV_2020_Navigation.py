@@ -54,8 +54,10 @@ import git
 import imageio
 import magnum as mn
 import numpy as np
+
 # %matplotlib inline
 from matplotlib import pyplot as plt
+
 # function to display the topdown map
 from PIL import Image
 

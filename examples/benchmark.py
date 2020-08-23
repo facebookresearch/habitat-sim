@@ -8,7 +8,6 @@
 import argparse
 
 import demo_runner as dr
-import numpy as np
 
 parser = argparse.ArgumentParser("Running benchmarks on simulator")
 parser.add_argument("--scene", type=str, default=dr.default_sim_settings["scene"])

@@ -169,13 +169,13 @@ class PyRobotNoisyActuationSpec(ActuationSpec):
     """
     robot: str = attr.ib(default="LoCoBot")
 
-    @robot.validator
+    @robot.validator  # noqa: F811
     def check(self, attribute, value):
         assert value in pyrobot_noise_models.keys(), f"{value} not a known robot"
 
     controller: str = attr.ib(default="ILQR")
 
-    @controller.validator
+    @controller.validator  # noqa: F811
     def check(self, attribute, value):
         assert value in [
             "ILQR",
