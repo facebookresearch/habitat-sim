@@ -1,0 +1,20 @@
+queries:
+  exclude: "py/import-and-import-from" # remove useless alert
+extraction:
+  python:
+    python_setup:
+      version: "3"
+    index:
+      exclude: "examples/tutorials/nb_python/" #don't scan notebooks
+  cpp:
+    prepare:
+      packages: #Required apt-get packages
+      - "libassimp-dev"
+      - "libjpeg-dev"
+      - "libglm-dev"
+      - "libgl1-mesa-glx"
+      - "libegl1-mesa-dev"
+      - "mesa-utils"
+      - "libbullet-dev"
+    index: # Builds the project
+      build_command: "python3 setup.py build_ext --inplace --headless --bullet --cmake-args='-DUSE_SYSTEM_ASSIMP=ON'"
