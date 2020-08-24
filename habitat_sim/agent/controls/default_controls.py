@@ -137,3 +137,19 @@ class LookDown(SceneNodeControl):
         _rotate_local(
             scene_node, -actuation_spec.amount, _X_AXIS, actuation_spec.constraint
         )
+
+
+@registry.register_move_fn(body_action=False)
+class RotateSensorClockwise(SceneNodeControl):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+        _rotate_local(
+            scene_node, actuation_spec.amount, _Z_AXIS, actuation_spec.constraint
+        )
+
+
+@registry.register_move_fn(body_action=False)
+class RotateSensorAntiClockwise(SceneNodeControl):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+        _rotate_local(
+            scene_node, -actuation_spec.amount, _Z_AXIS, actuation_spec.constraint
+        )
