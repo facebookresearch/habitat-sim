@@ -82,6 +82,9 @@ LINKS_NAVBAR1 = [
     ),
     ("Classes", "classes", []),
 ]
+# When adding new pages / tutorials to LINKS_NAVBAR, the same option in
+# Doxyfile-mcss needs to be updated accordingly to keep the C++ and Python
+# navbar in sync.
 LINKS_NAVBAR2 = [
     ("C++ API", "./cpp.html", []),
     ("Habitat Lab Docs", "../habitat-lab/index.html", []),
