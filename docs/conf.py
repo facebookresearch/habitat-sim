@@ -91,7 +91,7 @@ LINKS_NAVBAR2 = [
 ]
 
 FINE_PRINT = f"""
-| {PROJECT_TITLE} {PROJECT_SUBTITLE}. Copyright © 2019 Facebook AI Research.
+| {PROJECT_TITLE} {PROJECT_SUBTITLE}. Copyright © 2020 Facebook AI Research.
 | Created with `m.css Python doc generator <https://mcss.mosra.cz/documentation/python/>`_."""
 THEME_COLOR = "#478cc3"
 STYLESHEETS = [

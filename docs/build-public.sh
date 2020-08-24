@@ -19,7 +19,7 @@ $mcss_path/css/postprocess.py \
 # Build C++ docs first so the Python docs can make use of the tag file
 $mcss_path/documentation/doxygen.py Doxyfile-public
 
-mv ../build/docs/habitat-sim/annotated.html ../build/docs/habitat-sim/cpp.html
+mv ../build/docs-public/habitat-sim/annotated.html ../build/docs-public/habitat-sim/cpp.html
 
 $mcss_path/documentation/python.py conf-public.py
 
