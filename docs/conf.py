@@ -83,7 +83,7 @@ LINKS_NAVBAR1 = [
     ("Classes", "classes", []),
 ]
 LINKS_NAVBAR2 = [
-    ("C++ API", "./classes-cpp.html", []),
+    ("C++ API", "./cpp.html", []),
     ("Habitat Lab Docs", "../habitat-lab/index.html", []),
 ]
 

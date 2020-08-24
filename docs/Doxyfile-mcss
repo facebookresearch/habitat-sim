@@ -19,7 +19,7 @@ XML_PROGRAMLISTING     = NO
 ##!  "<a href="pages.html">Pages</a> <a href="new-actions.html">Add new actions</a> <a href="stereo-agent.html">Stereo agent</a> <a href="lighting-setups.html">Lighting Setups</a> <a href="notebooks.html">Notebooks</a> <a href="image-extractor.html">Image extraction</a>" \
 ##!  "<a href="classes.html">Classes</a>"
 ##! M_LINKS_NAVBAR2 = \
-##!  "<a href="classes-cpp.html">C++ API</a>" \
+##!  "<a href="cpp.html">C++ API</a>" \
 ##!  "<a href="../habitat-lab/index.html">Habitat Lab Docs</a>"
 
 HTML_EXTRA_STYLESHEET = \
