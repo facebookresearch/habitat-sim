@@ -1,6 +1,6 @@
 extraction:
   cpp:
-    index: # # Builds the project
+    index: # Builds the project
       build_command: "python3 setup.py build_ext --inplace --headless --bullet"
     prepare:
       packages: # required apt-get packages
