@@ -5,13 +5,6 @@
 #include "AssetAttributesManager.h"
 #include "AttributesManagerBase.h"
 
-#include <Corrade/Utility/Assert.h>
-#include <Corrade/Utility/ConfigurationGroup.h>
-#include <Corrade/Utility/Debug.h>
-#include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
-#include <Corrade/Utility/String.h>
-
 namespace esp {
 namespace assets {
 
@@ -97,35 +90,50 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
       &AssetAttributesManager::createAttributesCopy<
           assets::UVSpherePrimitiveAttributes>;
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
-  defaultTemplateNames.clear();
+  this->undeletableTemplateNames_.clear();
   // build default AbstractPrimitiveAttributes objects
-  for (const std::pair<PrimObjTypes, const char*>& elem : PrimitiveNames3DMap) {
+  for (const std::pair<const PrimObjTypes, const char*>& elem :
+       PrimitiveNames3DMap) {
     if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       continue;
     }
     auto tmplt = createAttributesTemplate(elem.second, true);
-    std::string tmpltHandle = tmplt->getOriginHandle();
+    std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
-    defaultTemplateNames.push_back(tmpltHandle);
+    this->undeletableTemplateNames_.insert(tmpltHandle);
   }
 
   LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
                "primitive asset templates : "
-            << std::to_string(defaultTemplateNames.size());
-}  // buildMapOfPrimTypeConstructors
+            << std::to_string(defaultPrimAttributeHandles_.size());
+}  // AssetAttributesManager::buildMapOfPrimTypeConstructors
+
+AbstractPrimitiveAttributes::ptr
+AssetAttributesManager::createAttributesTemplate(
+    const std::string& primClassName,
+    bool registerTemplate) {
+  auto primAssetAttributes = buildPrimAttributes(primClassName);
+  if (nullptr == primAssetAttributes) {
+    return primAssetAttributes;
+  }
+  LOG(INFO) << "Asset attributes (" << primClassName << ") created"
+            << (registerTemplate ? " and registered." : ".");
+
+  return this->postCreateRegister(primAssetAttributes, registerTemplate);
+}  // AssetAttributesManager::createAttributesTemplate
 
 int AssetAttributesManager::registerAttributesTemplateFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&) {
-  std::string primAttributesHandle = primAttributesTemplate->getOriginHandle();
+  std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
-    LOG(ERROR)
-        << "AssetAttributesManager::registerAttributesTemplate : Primitive "
-           "asset attributes template named"
-        << primAttributesHandle
-        << "is not configured properly for specified prmitive"
-        << primAttributesTemplate->getPrimObjClassName() << ". Aborting.";
+    LOG(ERROR) << "AssetAttributesManager::registerAttributesTemplateFinalize "
+                  ": Primitive asset attributes template named"
+               << primAttributesHandle
+               << "is not configured properly for specified prmitive"
+               << primAttributesTemplate->getPrimObjClassName()
+               << ". Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -134,7 +142,7 @@ int AssetAttributesManager::registerAttributesTemplateFinalize(
   int primTemplateID =
       this->addTemplateToLibrary(primAttributesTemplate, primAttributesHandle);
   return primTemplateID;
-}  // AssetAttributesManager::registerAttributesTemplate
+}  // AssetAttributesManager::registerAttributesTemplateFinalize
 
 }  // namespace managers
 }  // namespace assets

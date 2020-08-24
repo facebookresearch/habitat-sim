@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Transform.h>
@@ -32,7 +33,8 @@
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/gfx/configure.h"
+#include "esp/physics/configure.h"
+#include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 
 #include "managers/AssetAttributesManager.h"
@@ -48,6 +50,8 @@ class AbstractShaderProgram;
 class PhongMaterialData;
 }  // namespace Trade
 }  // namespace Magnum
+
+namespace Mn = Magnum;
 
 namespace esp {
 namespace gfx {
@@ -75,7 +79,7 @@ class ResourceManager {
   /** @brief Stores references to a set of drawable elements */
   using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
-  using Importer = Magnum::Trade::AbstractImporter;
+  using Importer = Mn::Trade::AbstractImporter;
 
   /**
    * @brief The @ref ShaderManager key for @ref LightInfo which has no lights
@@ -91,6 +95,12 @@ class ResourceManager {
    *@brief The @ref ShaderManager key for the default @ref MaterialInfo
    */
   static constexpr char DEFAULT_MATERIAL_KEY[] = "";
+
+  /**
+   *@brief The @ref ShaderManager key for full ambient white @ref MaterialInfo
+   *used for primitive wire-meshes
+   */
+  static constexpr char WHITE_MATERIAL_KEY[] = "ambient_white";
 
   /**
    *@brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
@@ -118,61 +128,59 @@ class ResourceManager {
   void initDefaultPrimAttributes();
 
   /**
+   * @brief Instantiate, or reinstantiate, PhysicsManager defined by passed
+   * attributes
+   * @param physicsManager The currently defined @ref physics::PhysicsManager.
+   * Will be reseated to the specified physics implementation.
+   * @param isEnabled Whether this PhysicsManager is enabled or not.  Takes the
+   * place of old checks for nullptr.
+   * @param parent The @ref scene::SceneNode of which the scene mesh will be
+   * added as a child. Typically near the root of the scene. Expected to be
+   * static.
+   * @param physicsManagerAttributes A smart pointer to meta data structure
+   * storing configured physics simulation parameters.
+   */
+  void initPhysicsManager(
+      std::shared_ptr<physics::PhysicsManager>& physicsManager,
+      bool isEnabled,
+      scene::SceneNode* parent,
+      const PhysicsManagerAttributes::ptr& physicsManagerAttributes);
+
+  /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
    * a child of the specified @ref scene::SceneNode.
    *
    * If parent and drawables are not specified, the assets are loaded, but no
    * new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
-   * @param info The loaded @ref AssetInfo for the scene mesh.
-   * @param parent The @ref scene::SceneNode of which the scene mesh will be
-   * added as a child. Typically near the root of the scene. Expected to be
-   * static.
-   * @param drawables The @ref DrawableGroup with which the scene mesh will be
-   * rendered.
-   * @param lightSetup The @ref LightSetup used for scene lighting
-   * @param splitSemanticMesh Split the semantic mesh by objectID, used for A/B
-   * testing
+   * @param sceneAttributes The @ref PhysicsSceneAttributes that describes the
+   * scene
+   * @param _physicsManager The currently defined @ref physics::PhysicsManager.
+   * @param sceneManagerPtr Pointer to scene manager, to fetch drawables and
+   * parent node.
+   * @param [out] Current active scene ID is in idx 0, if semantic scene is
+   * made, its activeID should be pushed onto vector
+   * @param createSemanticMesh If the semantic mesh should be created, based on
+   * @ref SimulatorConfiguration
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(
-      const AssetInfo& info,
-      scene::SceneNode* parent = nullptr,
-      DrawableGroup* drawables = nullptr,
-      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{NO_LIGHT_KEY},
-      bool splitSemanticMesh = true);
+  bool loadScene(const PhysicsSceneAttributes::ptr& sceneAttributes,
+                 std::shared_ptr<physics::PhysicsManager> _physicsManager,
+                 esp::scene::SceneManager* sceneManagerPtr,
+                 std::vector<int>& activeSceneIDs,
+                 bool createSemanticMesh);
 
   /**
-   * @brief Load and instantiate a scene including physics simulation.
-   *
-   * Loads a physics simulator for the world from the parameters defined in the
-   * @ref PhysicsManagerAttributes and reseats the @ref physics::PhysicsManager
-   * based on the configured simulator implementation. Loads the scene mesh and
-   * adds it to the specified @ref DrawableGroup as a child of the specified
-   * @ref scene::SceneNode. If these are not specified, the assets are loaded,
-   * but no new @ref gfx::Drawable is added for the scene (i.e. it will not be
-   * rendered).
-   * @param info The loaded @ref AssetInfo for the scene mesh.
-   * @param _physicsManager The currently defined @ref physics::PhysicsManager.
-   * Will be reseated to the configured physics implementation.
-   * @param physicsManagerAttributes A smart pointer to meta data structure
-   * storing configured physics simulation parameters.
-   * @param parent The @ref scene::SceneNode of which the scene mesh will be
-   * added as a child. Typically near the root of the scene. Expected to be
-   * static.
-   * @param drawables The @ref DrawableGroup with which the scene mesh will be
-   * rendered.
-   * @param lightSetup The @ref LightSetup key that will be used.
-   * @return Whether or not the scene load succeeded.
+   * @brief Construct scene collision mesh group based on name and type of
+   * scene.
+   * @tparam T type of meshdata desired based on scene type.
+   * @param filename The name of the file holding the mesh data
+   * @param meshGroup The meshgroup to build
+   * @return whether built successfully or not
    */
-  bool loadPhysicsScene(
-      const AssetInfo& info,
-      std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-      const PhysicsManagerAttributes::ptr physicsManagerAttributes,
-      scene::SceneNode* parent = nullptr,
-      DrawableGroup* drawables = nullptr,
-      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
-          NO_LIGHT_KEY});
+  template <class T>
+  bool buildSceneCollisionMeshGroup(const std::string& filename,
+                                    std::vector<CollisionMeshData>& meshGroup);
 
   /**
    * @brief Load/instantiate any required render and collision assets for an
@@ -242,7 +250,7 @@ class ResourceManager {
    * @return The transformation matrix mapping from the original state to
    * its current state.
    */
-  const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) const {
+  const Mn::Matrix4& getMeshTransformation(const size_t meshIndex) const {
     return meshes_[meshIndex]->meshTransform_;
   }
 
@@ -263,9 +271,8 @@ class ResourceManager {
   /**
    * @brief Get a named @ref LightSetup
    */
-  Magnum::Resource<gfx::LightSetup> getLightSetup(
-      const Magnum::ResourceKey& key = Magnum::ResourceKey{
-          DEFAULT_LIGHTING_KEY}) {
+  Mn::Resource<gfx::LightSetup> getLightSetup(
+      const Mn::ResourceKey& key = Mn::ResourceKey{DEFAULT_LIGHTING_KEY}) {
     return shaderManager_.get<gfx::LightSetup>(key);
   }
 
@@ -279,11 +286,10 @@ class ResourceManager {
    * @param key Key to identify this @ref LightSetup
    */
   void setLightSetup(gfx::LightSetup setup,
-                     const Magnum::ResourceKey& key = Magnum::ResourceKey{
+                     const Mn::ResourceKey& key = Mn::ResourceKey{
                          DEFAULT_LIGHTING_KEY}) {
-    shaderManager_.set(key, std::move(setup),
-                       Magnum::ResourceDataState::Mutable,
-                       Magnum::ResourcePolicy::Manual);
+    shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
+                       Mn::ResourcePolicy::Manual);
   }
 
   /**
@@ -321,8 +327,8 @@ class ResourceManager {
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
                             std::vector<scene::SceneNode*>& visNodeCache,
-                            const Magnum::ResourceKey& lightSetup =
-                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY}) {
+                            const Mn::ResourceKey& lightSetup = Mn::ResourceKey{
+                                DEFAULT_LIGHTING_KEY}) {
     if (objTemplateLibID != ID_UNDEFINED) {
       const std::string& objTemplateHandleName =
           objectAttributesManager_->getTemplateHandleByID(objTemplateLibID);
@@ -356,15 +362,15 @@ class ResourceManager {
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
                             std::vector<scene::SceneNode*>& visNodeCache,
-                            const Magnum::ResourceKey& lightSetup =
-                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
+                            const Mn::ResourceKey& lightSetup = Mn::ResourceKey{
+                                DEFAULT_LIGHTING_KEY});
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
    * scene::SceneNode.
    *
    * See @ref primitive_meshes_.
-   * @param primitiveID The index of the primitive in @ref primitive_meshes_.
+   * @param primitiveID The key of the primitive in @ref primitive_meshes_.
    * @param node The @ref scene::SceneNode to which the primitive drawable
    * will be attached.
    * @param drawables The @ref DrawableGroup with which the primitive will be
@@ -373,6 +379,13 @@ class ResourceManager {
   void addPrimitiveToDrawables(int primitiveID,
                                scene::SceneNode& node,
                                DrawableGroup* drawables);
+
+  /**
+   * @brief Remove the specified primitive mesh.
+   *
+   * @param primitiveID The key of the primitive in @ref primitive_meshes_.
+   */
+  void removePrimitiveMesh(int primitiveID);
 
   /**
    * @brief generate a new primitive mesh asset for the NavMesh loaded in the
@@ -391,24 +404,25 @@ class ResourceManager {
                                DrawableGroup* drawables);
 
   /**
+   * @brief Build a configuration frame from scene or object attributes values
+   * and return it
+   *
+   * @param attribs the attributes to query for the information.
+   * @param origin Either the origin of the sceneAttributes or the COM value of
+   * the objectAttributes.
+   * @return the coordinate frame of the assets the passed attributes describes.
+   */
+  esp::geo::CoordinateFrame buildFrameFromAttributes(
+      const AbstractPhysicsAttributes::ptr& attribs,
+      const Magnum::Vector3& origin);
+
+  /**
    * @brief Set whether textures should be compressed.
    * @param newVal New texture compression setting.
    */
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
 
  private:
-  /**
-   * @brief Instantiate, or reinstatiate, PhysicsManager defined by passed
-   * attributes
-   * @param physicsManager The currently defined @ref physics::PhysicsManager.
-   * Will be reseated to the configured physics implementation.
-   * @param physicsManagerAttributes A smart pointer to meta data structure
-   * storing configured physics simulation parameters.
-   */
-  void initPhysicsManager(
-      std::shared_ptr<physics::PhysicsManager>& physicsManager,
-      const PhysicsManagerAttributes::ptr& physicsManagerAttributes);
-
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
    * specified @ref meshType used by @ref objectTemplateHandle
@@ -493,13 +507,17 @@ class ResourceManager {
    * identifying its mesh, material, transformation, and children.
    * @param[out] visNodeCache Cache for pointers to all nodes created as the
    * result of this recursive process.
+   * @param computeAABBs whether absolute bounding boxes should be computed
+   * @param staticDrawableInfo structure holding the drawable infos for aabbs
    */
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
-                    const Magnum::ResourceKey& lightSetup,
+                    const Mn::ResourceKey& lightSetup,
                     DrawableGroup* drawables,
                     const MeshTransformNode& meshTransformNode,
-                    std::vector<scene::SceneNode*>& visNodeCache);
+                    std::vector<scene::SceneNode*>& visNodeCache,
+                    bool computeAbsoluteAABBs,
+                    std::vector<StaticDrawableInfo>& staticDrawableInfo);
 
   /**
    * @brief Load textures from importer into assets, and update metaData for
@@ -552,7 +570,7 @@ class ResourceManager {
   void joinHeirarchy(MeshData& mesh,
                      const MeshMetaData& metaData,
                      const MeshTransformNode& node,
-                     const Magnum::Matrix4& transformFromParentToWorld);
+                     const Mn::Matrix4& transformFromParentToWorld);
 
   /**
    * @brief Load materials from importer into assets, and update metaData for
@@ -573,7 +591,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
-      const Magnum::Trade::PhongMaterialData& material,
+      const Mn::Trade::PhongMaterialData& material,
       int textureBaseIndex);
 
   /**
@@ -586,14 +604,60 @@ class ResourceManager {
 
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
-      const Magnum::Trade::PhongMaterialData& material,
+      const Mn::Trade::PhongMaterialData& material,
       int textureBaseIndex);
+
+  /**
+   * @brief Load a mesh describing some scene asset based on the passed
+   * assetInfo.
+   *
+   * If both parent and drawables are provided, add the mesh to the
+   * scene graph for rendering.
+   * @param info The @ref AssetInfo for the mesh, already parsed from a file.
+   * @param parent The @ref scene::SceneNode to which the mesh will be added
+   * as a child.
+   * @param drawables The @ref DrawableGroup with which the mesh will be
+   * rendered.
+   * @param computeAbsoluteAABBs Whether absolute bounding boxes should be
+   * computed
+   * @param splitSemanticMesh Split the semantic mesh by objectID, used for A/B
+   * testing
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the loaded asset.
+   */
+  bool loadSceneInternal(
+      const AssetInfo& info,
+      std::shared_ptr<physics::PhysicsManager> _physicsManager,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      bool computeAbsoluteAABBs = false,
+      bool splitSemanticMesh = true,
+      const Mn::ResourceKey& lightSetup = Mn::ResourceKey{NO_LIGHT_KEY});
+
+  /**
+   * @brief Creates a map of appropriate asset infos for scenes.  Will always
+   * create render asset info.  Will create collision asset info and semantic
+   * scene asset info if requested.
+   *
+   * @param sceneAttributes The scene attributes file holding the scene's
+   * information.
+   * @param createCollisionInfo Whether collision-based asset info should be
+   * created (only if physicsManager != nullptr)
+   * @param createSemanticInfo Whether semantic mesh-based asset info should be
+   * created
+   */
+  std::map<std::string, AssetInfo> createSceneAssetInfosFromAttributes(
+      const PhysicsSceneAttributes::ptr& sceneAttributes,
+      bool createCollisionInfo,
+      bool createSemanticInfo);
 
   /**
    * @brief Load a PTex mesh into assets from a file and add it to the scene
    * graph for rendering.
+   * @return true if the mesh is loaded, otherwise false
    *
-   * @param info The @ref AssetInfo for the mesh, already parsed from a file.
+   * @param info The @ref AssetInfo for the mesh, already parsed from a
+   * file.
    * @param parent The @ref scene::SceneNode to which the mesh will be added
    * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
@@ -612,11 +676,15 @@ class ResourceManager {
    * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
+   * @param computeAbsoluteAABBs Whether absolute bounding boxes should be
+   * computed
+   * @param splitSemanticMesh Split the semantic mesh by objectID
    */
   bool loadInstanceMeshData(const AssetInfo& info,
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
-                            bool splitSemanticMesh = true);
+                            bool computeAbsoluteAABBs,
+                            bool splitSemanticMesh);  // was default true
 
   /**
    * @brief Load a mesh (e.g. gltf) into assets from a file.
@@ -628,14 +696,17 @@ class ResourceManager {
    * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
+   * @param computeAbsoluteAABBs Whether absolute bounding boxes should be
+   * computed
    * @param lightSetup The @ref LightSetup key that will be used
    * for the loaded asset.
    */
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
                            DrawableGroup* drawables = nullptr,
-                           const Magnum::ResourceKey& lightSetup =
-                               Magnum::ResourceKey{NO_LIGHT_KEY});
+                           bool computeAbsoluteAABBs = false,
+                           const Mn::ResourceKey& lightSetup = Mn::ResourceKey{
+                               NO_LIGHT_KEY});
 
   /**
    * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:
@@ -665,7 +736,7 @@ class ResourceManager {
    * @brief Checks if light setup is compatible with loaded asset
    */
   bool isLightSetupCompatible(const LoadedAssetData& loadedAssetData,
-                              const Magnum::ResourceKey& lightSetup) const;
+                              const Mn::ResourceKey& lightSetup) const;
 
   // ======== Geometry helper functions, data structures ========
 
@@ -676,7 +747,7 @@ class ResourceManager {
    * @param meshDataGL The mesh data.
    * @param translation The translation transform to apply.
    */
-  void translateMesh(BaseMesh* meshDataGL, Magnum::Vector3 translation);
+  void translateMesh(BaseMesh* meshDataGL, Mn::Vector3 translation);
 
   /**
    * @brief Compute and return the axis aligned bounding box of a mesh in mesh
@@ -684,7 +755,7 @@ class ResourceManager {
    * @param meshDataGL The mesh data.
    * @return The mesh bounding box.
    */
-  Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
+  Mn::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
   /**
    * @brief Compute the absolute AABBs for drawables in PTex mesh in world
@@ -692,51 +763,33 @@ class ResourceManager {
    * @param baseMesh: ptex mesh
    */
 #ifdef ESP_BUILD_PTEX_SUPPORT
-  void computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh);
+  void computePTexMeshAbsoluteAABBs(
+      BaseMesh& baseMesh,
+      const std::vector<StaticDrawableInfo>& staticDrawableInfo);
 #endif
 
   /**
    * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,
    * MP3D) world space
    */
-  void computeGeneralMeshAbsoluteAABBs();
+  void computeGeneralMeshAbsoluteAABBs(
+      const std::vector<StaticDrawableInfo>& staticDrawableInfo);
 
   /**
    * @brief Compute the absolute AABBs for drawables in semantic mesh in world
    * space
    */
-  void computeInstanceMeshAbsoluteAABBs();
+  void computeInstanceMeshAbsoluteAABBs(
+      const std::vector<StaticDrawableInfo>& staticDrawableInfo);
 
   /**
    * @brief Compute absolute transformations of all drwables stored in
    * staticDrawableInfo_
    */
-  std::vector<Magnum::Matrix4> computeAbsoluteTransformations();
+  std::vector<Mn::Matrix4> computeAbsoluteTransformations(
+      const std::vector<StaticDrawableInfo>& staticDrawableInfo);
 
   // ======== Rendering Utility Functions ========
-
-  /**
-   * @brief Creates a new @ref gfx::Drawable for a mesh and adds it to the
-   * scene graph @ref scene::SceneNode.
-   *
-   * @param metaData Object meta data for the asset this mesh is linked to.
-   * @param node The @ref scene::SceneNode which the new @ref gfx::Drawable
-   * will be attached to.
-   * @param lightSetup The @ref LightSetup key that will be used
-   * for the added mesh.
-   * @param drawables The @ref DrawableGroup with which the new @ref
-   * gfx::Drawable will be rendered.
-   * @param meshIDLocal The index of the mesh within the mesh group linked to
-   * the asset via the @ref MeshMetaData.
-   * @param materialIDLocal The index of the material within the material
-   * group linked to the asset via the @ref MeshMetaData.
-   */
-  void addMeshToDrawables(const MeshMetaData& metaData,
-                          scene::SceneNode& node,
-                          const Magnum::ResourceKey& lightSetup,
-                          DrawableGroup* drawables,
-                          int meshIDLocal,
-                          int materialIDLocal);
 
   /**
    * @brief Create a @ref gfx::Drawable for the specified mesh, node,
@@ -761,21 +814,11 @@ class ResourceManager {
    * @param color Optional color parameter for the shader program. Defaults to
    * white.
    */
-  void createGenericDrawable(Magnum::GL::Mesh& mesh,
+  void createGenericDrawable(Mn::GL::Mesh& mesh,
                              scene::SceneNode& node,
-                             const Magnum::ResourceKey& lightSetup,
-                             const Magnum::ResourceKey& material,
+                             const Mn::ResourceKey& lightSetup,
+                             const Mn::ResourceKey& material,
                              DrawableGroup* group = nullptr);
-
-  // ======== Instance Variables ========
-
-  /**
-   * @brief this helper vector contains information of the drawables on which
-   * we will compute the absolute AABB pair
-   *
-   */
-  std::vector<StaticDrawableInfo> staticDrawableInfo_;
-  bool computeAbsoluteAABBs_ = false;
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
@@ -790,7 +833,7 @@ class ResourceManager {
   /**
    * @brief The texture data for loaded assets.
    */
-  std::vector<std::shared_ptr<Magnum::GL::Texture2D>> textures_;
+  std::vector<std::shared_ptr<Mn::GL::Texture2D>> textures_;
 
   /**
    * @brief The next available unique ID for loaded materials
@@ -852,11 +895,13 @@ class ResourceManager {
    */
   managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
 
+  //! tracks primitive mesh ids
+  int nextPrimitiveMeshId = 0;
   /**
    * @brief Primitive meshes available for instancing via @ref
    * addPrimitiveToDrawables for debugging or visualization purposes.
    */
-  std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
+  std::map<int, std::unique_ptr<Mn::GL::Mesh>> primitive_meshes_;
 
   /**
    * @brief Maps string keys (typically property filenames) to @ref

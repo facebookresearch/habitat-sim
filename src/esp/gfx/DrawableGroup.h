@@ -3,10 +3,13 @@
 // LICENSE file in the root directory of this source tree.
 
 #pragma once
+
 #include <Magnum/SceneGraph/Drawable.h>
 #include <Magnum/SceneGraph/FeatureGroup.h>
+#include <Magnum/SceneGraph/SceneGraph.h>
 #include <unordered_map>
 
+#include <functional>
 #include "esp/core/esp.h"
 
 namespace esp {

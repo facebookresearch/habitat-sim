@@ -4,7 +4,9 @@
 
 #include "GenericDrawable.h"
 
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
 #include "esp/scene/SceneNode.h"
@@ -54,6 +56,9 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     lightColors.emplace_back((*lightSetup_)[i].color);
   }
 
+  bool usingDrawableId =
+      static_cast<RenderCamera&>(camera).isRenderingForObjectPicking();
+
   (*shader_)
       .setAmbientColor(materialData_->ambientColor)
       .setDiffuseColor(materialData_->diffuseColor)
@@ -61,7 +66,13 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setShininess(materialData_->shininess)
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
-      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getSemanticId())
+      // e.g., semantic mesh has its own per vertex annotation, which has been
+      // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
+      // fragment shader
+      .setObjectId(
+          usingDrawableId
+              ? drawableId_
+              : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.rotationScaling());

@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import math
 from io import BytesIO
 from typing import List, Tuple
 from urllib.request import urlopen
@@ -146,6 +147,21 @@ def quat_rotate_vector(q: np.quaternion, v: np.ndarray) -> np.ndarray:
     vq = np.quaternion(0, 0, 0, 0)
     vq.imag = v
     return (q * vq * q.inverse()).imag
+
+
+def random_quaternion():
+    r"""Convenience function to sample a random Magnum::Quaternion.
+    See http://planning.cs.uiuc.edu/node198.html.
+    """
+    u = np.random.rand(3)
+    qAxis = np.array(
+        [
+            math.sqrt(1 - u[0]) * math.cos(2 * math.pi * u[1]),
+            math.sqrt(u[0]) * math.sin(2 * math.pi * u[2]),
+            math.sqrt(u[0]) * math.cos(2 * math.pi * u[2]),
+        ]
+    )
+    return mn.Quaternion(qAxis, math.sqrt(1 - u[0]) * math.sin(2 * math.pi * u[1]))
 
 
 def download_and_unzip(file_url, local_directory):

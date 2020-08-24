@@ -8,8 +8,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
-#include <Magnum/Python.h>
-#include <Magnum/SceneGraph/Python.h>
+#include <Magnum/PythonBindings.h>
+#include <Magnum/SceneGraph/PythonBindings.h>
 
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
@@ -73,6 +73,10 @@ void initSimBindings(py::module& m) {
       .def("close", &Simulator::close)
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
+      .def_property(
+          "navmesh_visualization", &Simulator::isNavMeshVisualizationActive,
+          &Simulator::setNavMeshVisualization,
+          R"(Enable or disable wireframe visualization of current pathfinder's NavMesh.)")
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
       .def_property_readonly("random", &Simulator::random)
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
@@ -91,22 +95,8 @@ void initSimBindings(py::module& m) {
       .def("get_scene_template_manager", &Simulator::getSceneAttributesManager,
            pybind11::return_value_policy::reference)
 
-      /* --- DEPRECATED - all sim-pass-through access to raw templates is being
-         removed--- */
-      .def("get_template_handle_by_ID", &Simulator::getObjectTemplateHandleByID,
-           "object_id"_a)
-      .def("get_template_handles", &Simulator::getObjectTemplateHandles,
-           "search_str"_a = "", "contains"_a = true)
-      .def("get_physics_object_library_size",
-           &Simulator::getPhysicsObjectLibrarySize)
-      .def("get_object_template", &Simulator::getObjectTemplate,
-           "object_template_id"_a, py::return_value_policy::reference)
-      .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
-      .def("load_object_template", &Simulator::registerObjectTemplate,
-           "object_template"_a, "object_template_handle"_a)
-
-      /* --- END DEPRECATED --- */
-
+      .def("get_physics_simulation_library",
+           &Simulator::getPhysicsSimulationLibrary)
       /* --- Object instancing and access --- */
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a = nullptr,
@@ -170,6 +160,8 @@ void initSimBindings(py::module& m) {
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
            "scene_id"_a = 0)
       .def("contact_test", &Simulator::contactTest, "object_id"_a,
+           "scene_id"_a = 0)
+      .def("cast_ray", &Simulator::castRay, "ray"_a, "max_distance"_a = 100.0,
            "scene_id"_a = 0)
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
            "object_id"_a, "scene_id"_a = 0)

@@ -43,21 +43,32 @@ class PhysicsManagerTest : public testing::Test {
   };
 
   void initScene(const std::string sceneFile) {
-    const esp::assets::AssetInfo info =
-        esp::assets::AssetInfo::fromPath(sceneFile);
+    // const esp::assets::AssetInfo info =
+    //     esp::assets::AssetInfo::fromPath(sceneFile);
 
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
-    esp::scene::SceneNode* navSceneNode =
-        &sceneGraph.getRootNode().createChild();
-    auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    auto& rootNode = sceneGraph.getRootNode();
 
     // construct appropriate physics attributes based on config file
     auto physicsManagerAttributes =
         physicsAttributesManager_->createAttributesTemplate(physicsConfigFile,
                                                             true);
-    resourceManager_.loadPhysicsScene(info, physicsManager_,
-                                      physicsManagerAttributes, navSceneNode,
-                                      &drawables);
+    auto sceneAttributesMgr = resourceManager_.getSceneAttributesManager();
+    if (physicsManagerAttributes != nullptr) {
+      sceneAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+          physicsManagerAttributes->getHandle());
+    }
+    auto sceneAttributes =
+        sceneAttributesMgr->createAttributesTemplate(sceneFile, true);
+
+    // construct physics manager based on specifications in attributes
+    resourceManager_.initPhysicsManager(physicsManager_, true, &rootNode,
+                                        physicsManagerAttributes);
+
+    // load scene
+    std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
+    bool result = resourceManager_.loadScene(sceneAttributes, physicsManager_,
+                                             &sceneManager_, tempIDs, false);
   }
 
   // must declare these in this order due to avoid deallocation errors

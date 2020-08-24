@@ -4,8 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os.path as osp
 import time
+from os import path as osp
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -15,10 +15,8 @@ import numpy as np
 import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
-from habitat_sim.gfx import DEFAULT_LIGHTING_KEY
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
-from habitat_sim.physics import MotionType
 from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
@@ -107,6 +105,12 @@ class Simulator(SimulatorBackend):
         self.config = None
 
         super().close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def seed(self, new_seed):
         super().seed(new_seed)
@@ -250,7 +254,7 @@ class Simulator(SimulatorBackend):
         # step physics by dt
         step_start_Time = time.time()
         super().step_world(dt)
-        _previous_step_time = time.time() - step_start_Time
+        self._previous_step_time = time.time() - step_start_Time
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
@@ -407,9 +411,24 @@ class Sensor:
         agent_node = self._agent.scene_node
         agent_node.parent = scene.get_root_node()
 
-        with self._sensor_object.render_target as tgt:
+        render_flags = habitat_sim.gfx.Camera.Flags.NONE
+
+        if self._sim.frustum_culling:
+            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
+
+        with self._sensor_object.render_target:
+            self._sim.renderer.draw(self._sensor_object, scene, render_flags)
+
+        # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
+        if (
+            self._spec.sensor_type == SensorType.SEMANTIC
+            and self._sim.get_active_scene_graph()
+            is not self._sim.get_active_semantic_scene_graph()
+        ):
+            agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
+            render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
             self._sim.renderer.draw(
-                self._sensor_object, scene, self._sim.frustum_culling
+                self._sensor_object, self._sim.get_active_scene_graph(), render_flags
             )
 
     def get_observation(self):

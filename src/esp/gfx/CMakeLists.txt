@@ -7,6 +7,8 @@ set(gfx_SOURCES
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
+  MeshVisualizerDrawable.cpp
+  MeshVisualizerDrawable.h
   LightSetup.cpp
   LightSetup.h
   MaterialData.h
@@ -60,10 +62,6 @@ find_package(Corrade REQUIRED Utility)
 # set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
-
-set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/../data/default.phys_scene_config.json)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
-                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
 add_library(gfx STATIC ${gfx_SOURCES})
 

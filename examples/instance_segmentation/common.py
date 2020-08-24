@@ -1,11 +1,8 @@
 import collections
 import random
 
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from scipy import stats
 
 
 def create_mask_filter(labels, extractor):

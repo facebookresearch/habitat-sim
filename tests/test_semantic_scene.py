@@ -4,11 +4,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os.path as osp
+from os import path as osp
 
-import numpy as np
 import pytest
-import quaternion
+import quaternion  # noqa: F401
 
 import habitat_sim
 import habitat_sim.errors

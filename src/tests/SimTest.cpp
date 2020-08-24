@@ -406,7 +406,7 @@ void SimTest::loadingObjectTemplates() {
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
   // test directory of templates
-  std::vector<int> templateIndices = simulator->loadObjectConfigs(
+  std::vector<int> templateIndices = objectAttribsMgr->loadObjectConfigs(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
   for (auto index : templateIndices) {
@@ -414,7 +414,7 @@ void SimTest::loadingObjectTemplates() {
   }
 
   // reload again and ensure that old loaded indices are returned
-  std::vector<int> templateIndices2 = simulator->loadObjectConfigs(
+  std::vector<int> templateIndices2 = objectAttribsMgr->loadObjectConfigs(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(templateIndices2 == templateIndices);
 
@@ -499,7 +499,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
       std::string className =
           esp::assets::managers::AssetAttributesManager::PrimitiveNames3DMap.at(
               static_cast<esp::assets::PrimObjTypes>(i));
-      CORRADE_VERIFY((primAttr->getOriginHandle() == handle) &&
+      CORRADE_VERIFY((primAttr->getHandle() == handle) &&
                      (handle.find(className) != std::string::npos));
     }
   }
@@ -545,14 +545,14 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     std::string origCylinderHandle = primObjAssetHandles[0];
     primAttr = assetAttribsMgr->getTemplateCopyByHandle(origCylinderHandle);
     // verify that the origin handle matches what is expected
-    CORRADE_VERIFY(primAttr->getOriginHandle() == origCylinderHandle);
+    CORRADE_VERIFY(primAttr->getHandle() == origCylinderHandle);
     // get original number of rings for this cylinder
     int origNumRings = primAttr->getNumRings();
     // modify attributes - this will change handle
     primAttr->setNumRings(2 * origNumRings);
     // verify that internal name of attributes has changed due to essential
     // quantity being modified
-    std::string newHandle = primAttr->getOriginHandle();
+    std::string newHandle = primAttr->getHandle();
     CORRADE_VERIFY(newHandle != origCylinderHandle);
     // set test label, to validate that copy is reggistered
     primAttr->setString("test", "test0");
@@ -565,7 +565,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     esp::assets::AbstractPrimitiveAttributes::ptr primAttr2 =
         assetAttribsMgr->getTemplateCopyByHandle(newHandle);
     // verify pre-reg and post-reg are named the same
-    CORRADE_VERIFY(primAttr->getOriginHandle() == primAttr2->getOriginHandle());
+    CORRADE_VERIFY(primAttr->getHandle() == primAttr2->getHandle());
     // verify retrieved attributes is copy, not original
     CORRADE_VERIFY(primAttr->getString("test") != primAttr2->getString("test"));
     // remove modified attributes
@@ -587,7 +587,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     primAttr->setNumRings(2 * primAttr->getNumRings());
     // verify that internal name of attributes has changed due to essential
     // quantity being modified
-    std::string newHandle = primAttr->getOriginHandle();
+    std::string newHandle = primAttr->getHandle();
     // register new attributes
     int idx = assetAttribsMgr->registerAttributesTemplate(primAttr);
 

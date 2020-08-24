@@ -8,10 +8,8 @@
 import argparse
 import csv
 import distutils
-from distutils import util
 
 import demo_runner as dr
-import numpy as np
 
 parser = argparse.ArgumentParser(
     description="Running AB test on simulator", add_help=True

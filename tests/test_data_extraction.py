@@ -2,12 +2,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from torch import nn as nn
+from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset
 
-import habitat_sim.utils.data
 from habitat_sim.utils.data.data_extractor import ImageExtractor, TopdownView
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 
@@ -33,7 +31,7 @@ class MyDataset(Dataset):
 
 
 def test_topdown_view(sim):
-    tdv = TopdownView(sim, height=0.0, pixels_per_meter=0.1)
+    tdv = TopdownView(sim, height=0.0, meters_per_pixel=0.1)
     topdown_view = tdv.topdown_view
     assert type(topdown_view) == np.ndarray
 
@@ -48,9 +46,9 @@ def test_data_extractor_end_to_end(sim):
 
     # Run data through network
     for i, sample_batch in enumerate(dataloader):
-        img, label = sample_batch["rgba"], sample_batch["label"]
+        img, _ = sample_batch["rgba"], sample_batch["label"]
         img = img.permute(0, 3, 2, 1).float()
-        out = net(img)
+        net(img)
 
 
 def test_extractor_cache():
@@ -59,7 +57,7 @@ def test_extractor_cache():
     cache.add(2, "two")
     cache.add(3, "three")
     assert cache[next(reversed(list(cache._order)))] == "three"
-    accessed_data = cache[2]
+    accessed_data = cache[2]  # noqa : F841
     assert cache[next(reversed(list(cache._order)))] == "two"
     cache.remove_from_back()
     assert 1 not in cache

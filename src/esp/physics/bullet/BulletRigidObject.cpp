@@ -31,9 +31,12 @@ namespace physics {
 
 BulletRigidObject::BulletRigidObject(
     scene::SceneNode* rigidBodyNode,
-    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld)
-    : BulletBase(bWorld),
-      RigidObject{rigidBodyNode},
+    int objectId,
+    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
+    std::shared_ptr<std::map<const btCollisionObject*, int> >
+        collisionObjToObjIds)
+    : BulletBase(bWorld, collisionObjToObjIds),
+      RigidObject(rigidBodyNode, objectId),
       MotionState(*rigidBodyNode) {}
 
 BulletRigidObject::~BulletRigidObject() {
@@ -44,8 +47,11 @@ BulletRigidObject::~BulletRigidObject() {
     // remove collision objects from the world
     for (auto& co : bStaticCollisionObjects_) {
       bWorld_->removeCollisionObject(co.get());
+      collisionObjToObjIds_->erase(co.get());
     }
   }
+  collisionObjToObjIds_->erase(bObjectRigidBody_.get());
+
 }  //~BulletRigidObject
 
 bool BulletRigidObject::initialization_LibSpecific(
@@ -138,6 +144,7 @@ bool BulletRigidObject::initialization_LibSpecific(
 
   //! Add to world
   bWorld_->addRigidBody(bObjectRigidBody_.get());
+  collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
   //! Sync render pose with physics
   syncPose();
   return true;
@@ -294,6 +301,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
   // remove the existing object from the world to change its type
   if (objectMotionType_ == MotionType::STATIC) {
     bWorld_->removeCollisionObject(bStaticCollisionObjects_.back().get());
+    collisionObjToObjIds_->erase(bStaticCollisionObjects_.back().get());
     bStaticCollisionObjects_.clear();
   } else {
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
@@ -328,6 +336,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
         staticCollisionObject.get(),
         2,       // collisionFilterGroup (2 == StaticFilter)
         1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+    collisionObjToObjIds_->emplace(staticCollisionObject.get(), objectId_);
     bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
     return true;
   } else if (mt == MotionType::DYNAMIC) {

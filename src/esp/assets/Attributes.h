@@ -5,16 +5,15 @@
 #ifndef ESP_ASSETS_ATTRIBUTES_H_
 #define ESP_ASSETS_ATTRIBUTES_H_
 
-//#pragma once  //remove since attributes.h might be found in other directories
-
 #include <Magnum/Magnum.h>
 #include <map>
 #include <string>
 #include <vector>
 #include "Magnum/Math/Math.h"
 #include "Magnum/Types.h"
+
+#include "esp/assets/Asset.h"
 #include "esp/core/Configuration.h"
-#include "esp/gfx/magnum.h"
 
 namespace esp {
 namespace assets {
@@ -25,10 +24,10 @@ namespace assets {
 class AbstractAttributes : public esp::core::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
-                     const std::string& originHandle)
+                     const std::string& handle)
       : Configuration() {
     setAttributesClassKey(attributesClassKey);
-    setOriginHandle(originHandle);
+    setHandle(handle);
   }
 
   virtual ~AbstractAttributes() = default;
@@ -42,17 +41,23 @@ class AbstractAttributes : public esp::core::Configuration {
    * @brief Set this attributes name/origin.  Some attributes derive their own
    * names based on their state, such as @ref AbstractPrimitiveAttributes;  in
    * such cases this should be overridden with NOP.
-   * @param originHandle the handle to set.
+   * @param handle the handle to set.
    */
-  virtual void setOriginHandle(const std::string& originHandle) {
-    setString("originHandle", originHandle);
+  virtual void setHandle(const std::string& handle) {
+    setString("handle", handle);
   }
-  std::string getOriginHandle() const { return getString("originHandle"); }
+  std::string getHandle() const { return getString("handle"); }
 
-  void setObjectTemplateID(int objectTemplateID) {
-    setInt("objectTemplateID", objectTemplateID);
+  /**
+   * @brief directory where files used to construct attributes can be found.
+   */
+  virtual void setFileDirectory(const std::string& fileDirectory) {
+    setString("fileDirectory", fileDirectory);
   }
-  int getObjectTemplateID() const { return getInt("objectTemplateID"); }
+  std::string getFileDirectory() const { return getString("fileDirectory"); }
+
+  void setID(int ID) { setInt("ID", ID); }
+  int getID() const { return getInt("ID"); }
 
   /**
    * @brief Returns configuration to be used with PrimitiveImporter to
@@ -88,13 +93,51 @@ class AbstractAttributes : public esp::core::Configuration {
  */
 class AbstractPhysicsAttributes : public AbstractAttributes {
  public:
+  /**
+   * @brief Constant static map to provide mappings from string tags to @ref
+   * AssetType values.  This will be used to map values set in json for mesh
+   * type to @ref AssetTypes.  Keys must be lowercase.
+   */
+  static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
   AbstractPhysicsAttributes(const std::string& classKey,
-                            const std::string& originHandle);
+                            const std::string& handle);
 
   virtual ~AbstractPhysicsAttributes() = default;
-
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
+
+  /**
+   * @brief collision shape inflation margin
+   */
+  void setMargin(double margin) { setDouble("margin", margin); }
+  double getMargin() const { return getDouble("margin"); }
+
+  /**
+   * @brief set default up orientation for object/scene mesh
+   */
+  void setOrientUp(const Magnum::Vector3& orientUp) {
+    setVec3("orientUp", orientUp);
+  }
+  /**
+   * @brief get default up orientation for object/scene mesh
+   */
+  Magnum::Vector3 getOrientUp() const { return getVec3("orientUp"); }
+  /**
+   * @brief set default forwardd orientation for object/scene mesh
+   */
+  void setOrientFront(const Magnum::Vector3& orientFront) {
+    setVec3("orientFront", orientFront);
+  }
+  /**
+   * @brief get default forwardd orientation for object/scene mesh
+   */
+  Magnum::Vector3 getOrientFront() const { return getVec3("orientFront"); }
+
+  // units to meters mapping
+  void setUnitsToMeters(double unitsToMeters) {
+    setDouble("unitsToMeters", unitsToMeters);
+  }
+  double getUnitsToMeters() const { return getDouble("unitsToMeters"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
     setDouble("frictionCoefficient", frictionCoefficient);
@@ -109,6 +152,10 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   double getRestitutionCoefficient() const {
     return getDouble("restitutionCoefficient");
   }
+  void setRenderAssetType(int renderAssetType) {
+    setInt("renderAssetType", renderAssetType);
+  }
+  int getRenderAssetType() { return getInt("renderAssetType"); }
 
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     setString("renderAssetHandle", renderAssetHandle);
@@ -127,6 +174,11 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
     setBool("renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
+
+  void setCollisionAssetType(int collisionAssetType) {
+    setInt("collisionAssetType", collisionAssetType);
+  }
+  int getCollisionAssetType() { return getInt("collisionAssetType"); }
 
   bool getRenderAssetIsPrimitive() const {
     return getBool("renderAssetIsPrimitive");
@@ -164,6 +216,12 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
 
   bool getUseMeshCollision() const { return getBool("useMeshCollision"); }
 
+  // if true use phong illumination model instead of flat shading
+  void setRequiresLighting(bool requiresLighting) {
+    setBool("requiresLighting", requiresLighting);
+  }
+  bool getRequiresLighting() const { return getBool("requiresLighting"); }
+
   bool getIsDirty() const { return getBool("__isDirty"); }
   void setIsClean() { setBool("__isDirty", false); }
 
@@ -176,7 +234,7 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
  public:
   ESP_SMART_POINTERS(AbstractPhysicsAttributes)
 
-};  // namespace assets
+};  // class AbstractPhysicsAttributes
 
 /**
  * @brief Specific Attributes instance which is constructed with a base set of
@@ -184,7 +242,7 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
  */
 class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
  public:
-  PhysicsObjectAttributes(const std::string& originHandle = "");
+  PhysicsObjectAttributes(const std::string& handle = "");
   // center of mass (COM)
   void setCOM(const Magnum::Vector3& com) { setVec3("COM", com); }
   Magnum::Vector3 getCOM() const { return getVec3("COM"); }
@@ -194,10 +252,6 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
     setBool("computeCOMFromShape", computeCOMFromShape);
   }
   bool getComputeCOMFromShape() const { return getBool("computeCOMFromShape"); }
-
-  // collision shape inflation margin
-  void setMargin(double margin) { setDouble("margin", margin); }
-  double getMargin() const { return getDouble("margin"); }
 
   void setMass(double mass) { setDouble("mass", mass); }
   double getMass() const { return getDouble("mass"); }
@@ -234,13 +288,10 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
   }
   bool getJoinCollisionMeshes() const { return getBool("joinCollisionMeshes"); }
 
-  // if true use phong illumination model instead of flat shading
-  void setRequiresLighting(bool requiresLighting) {
-    setBool("requiresLighting", requiresLighting);
-  }
-  bool getRequiresLighting() const { return getBool("requiresLighting"); }
-
-  // if object is visible
+  /**
+   * @brief If not visible can add dynamic non-rendered object into a scene
+   * object.  If is not visible then should not add object to drawables.
+   */
   void setIsVisible(bool isVisible) { setBool("isVisible", isVisible); }
   bool getIsVisible() const { return getBool("isVisible"); }
 
@@ -258,7 +309,7 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
  public:
   ESP_SMART_POINTERS(PhysicsObjectAttributes)
 
-};  // end PhysicsObjectAttributes class
+};  // class PhysicsObjectAttributes
 
 ///////////////////////////////////////
 // scene and physics manager attributes
@@ -266,22 +317,69 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
 //! attributes for a single physical scene
 class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
  public:
-  PhysicsSceneAttributes(const std::string& originHandle = "");
+  PhysicsSceneAttributes(const std::string& handle = "");
+
+  void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }
+  Magnum::Vector3 getOrigin() const { return getVec3("origin"); }
 
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
   }
   Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
+  void setHouseFilename(const std::string& houseFilename) {
+    setString("houseFilename", houseFilename);
+    setIsDirty();
+  }
+  std::string getHouseFilename() const { return getString("houseFilename"); }
+  void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
+    setString("semanticAssetHandle", semanticAssetHandle);
+    setIsDirty();
+  }
+  std::string getSemanticAssetHandle() const {
+    return getString("semanticAssetHandle");
+  }
+  void setSemanticAssetType(int semanticAssetType) {
+    setInt("semanticAssetType", semanticAssetType);
+  }
+  int getSemanticAssetType() { return getInt("semanticAssetType"); }
+
+  void setLoadSemanticMesh(bool loadSemanticMesh) {
+    setBool("loadSemanticMesh", loadSemanticMesh);
+  }
+  bool getLoadSemanticMesh() { return getBool("loadSemanticMesh"); }
+
+  void setNavmeshAssetHandle(const std::string& navmeshAssetHandle) {
+    setString("navmeshAssetHandle", navmeshAssetHandle);
+    setIsDirty();
+  }
+  std::string getNavmeshAssetHandle() const {
+    return getString("navmeshAssetHandle");
+  }
+
+  /**
+   * @brief set lighting setup for scene.  Default value comes from
+   * @ref SimulatorConfiguration, is overridden by any value set in json, if
+   * exists.
+   */
+  void setLightSetup(const std::string& lightSetup) {
+    setString("lightSetup", lightSetup);
+  }
+  std::string getLightSetup() { return getString("lightSetup"); }
+
+  void setFrustrumCulling(bool frustrumCulling) {
+    setBool("frustrumCulling", frustrumCulling);
+  }
+  bool getFrustrumCulling() const { return getBool("frustrumCulling"); }
 
  public:
   ESP_SMART_POINTERS(PhysicsSceneAttributes)
 
-};  // end PhysicsSceneAttributes
+};  // class PhysicsSceneAttributes
 
 //! attributes for a single physics manager
 class PhysicsManagerAttributes : public AbstractAttributes {
  public:
-  PhysicsManagerAttributes(const std::string& originHandle = "");
+  PhysicsManagerAttributes(const std::string& handle = "");
 
   void setSimulator(const std::string& simulator) {
     setString("simulator", simulator);
@@ -297,6 +395,7 @@ class PhysicsManagerAttributes : public AbstractAttributes {
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
   }
+  Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
     setDouble("frictionCoefficient", frictionCoefficient);
@@ -314,7 +413,7 @@ class PhysicsManagerAttributes : public AbstractAttributes {
 
  public:
   ESP_SMART_POINTERS(PhysicsManagerAttributes)
-};  // end PhysicsManagerAttributes
+};  // class PhysicsManagerAttributes
 
 ///////////////////////////////////
 // primitive object attributes
@@ -331,10 +430,11 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
     setPrimObjClassName(primObjClassName);
+    setFileDirectory("none");
 
     if (!isWireframe) {  // solid
-      // do not call setters since they call buildOriginHandle, which does not
-      // exist abstract base class
+      // do not call setters since they call buildHandle, which does not
+      // exist - is abstract in base class
       setBool("textureCoordinates", false);
       setBool("tangents", false);
     }
@@ -343,9 +443,9 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   // necessary since abstract
   virtual ~AbstractPrimitiveAttributes() = default;
 
-  // originHandle is set internally based on attributes configuration
+  // handle is set internally based on attributes configuration
   // setting externally is prohibited
-  void setOriginHandle(const std::string&) override {}
+  void setHandle(const std::string&) override {}
 
   bool getIsWireframe() const { return getBool("isWireframe"); }
 
@@ -353,7 +453,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   void setUseTextureCoords(bool useTextureCoords) {
     if (!getIsWireframe()) {  // check if solid
       setBool("textureCoordinates", useTextureCoords);
-      buildOriginHandle();  // build handle based on config
+      buildHandle();  // build handle based on config
     }
   }
   bool getUseTextureCoords() const { return getBool("textureCoordinates"); }
@@ -362,7 +462,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   void setUseTangents(bool tangents) {
     if (!getIsWireframe()) {  // check if solid
       setBool("tangents", tangents);
-      buildOriginHandle();  // build handle based on config
+      buildHandle();  // build handle based on config
     }
   }
   bool getUseTangents() const { return getBool("tangents"); }
@@ -372,17 +472,20 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   // set virtual so cannot be deleted in capsule attributes
   void setNumRings(int rings) {
     setInt("rings", rings);
-    buildOriginHandle();  // build handle based on config
+    buildHandle();  // build handle based on config
   }
   int getNumRings() const { return getInt("rings"); }
 
   void setNumSegments(int segments) {
     setInt("segments", segments);
-    buildOriginHandle();  // build handle based on config
+    buildHandle();  // build handle based on config
   }
   int getNumSegments() const { return getInt("segments"); }
   // capsule, cone and cylinder use halfLength
-  void setHalfLength(double halfLength) { setDouble("halfLength", halfLength); }
+  void setHalfLength(double halfLength) {
+    setDouble("halfLength", halfLength);
+    buildHandle();
+  }
   double getHalfLength() const { return getDouble("halfLength"); }
 
   std::string getPrimObjClassName() const {
@@ -401,14 +504,14 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   virtual bool isValidTemplate() { return false; }
 
   /**
-   * @brief Origin handle for primitive attribute-based templates should reflect
+   * @brief Handle for primitive attribute-based templates should reflect
    * the parameters used to construct the primitive, and so should only be set
    * internally or when relevant values are set manually.
    */
-  void buildOriginHandle() {
+  void buildHandle() {
     std::ostringstream oHndlStrm;
-    oHndlStrm << getPrimObjClassName() << buildOriginHandleDetail();
-    setString("originHandle", oHndlStrm.str());
+    oHndlStrm << getPrimObjClassName() << buildHandleDetail();
+    setString("handle", oHndlStrm.str());
   }
 
  protected:
@@ -424,11 +527,11 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     return (val >= div) && (val % div == 0);
   }
 
-  // helper for origin handle construction
+  // helper for handle construction
   std::string getBoolDispStr(bool val) const {
     return (val ? "true" : "false");
   }
-  virtual std::string buildOriginHandleDetail() = 0;
+  virtual std::string buildHandleDetail() = 0;
 
  private:
   // Should never change, only set by ctor
@@ -440,7 +543,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   void setPrimObjType(int primObjType) { setInt("primObjType", primObjType); }
 
   // not used to construct prim mesh, so setting this does not require
-  // modification to origin handle.  Should never change, only set by ctor
+  // modification to handle.  Should never change, only set by ctor
   void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
 
  public:
@@ -456,13 +559,13 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
 
   void setHemisphereRings(int hemisphereRings) {
     setInt("hemisphereRings", hemisphereRings);
-    buildOriginHandle();  // build handle based on config
+    buildHandle();  // build handle based on config
   }
   int getHemisphereRings() const { return getInt("hemisphereRings"); }
 
   void setCylinderRings(int cylinderRings) {
     setInt("cylinderRings", cylinderRings);
-    buildOriginHandle();  // build handle based on config
+    buildHandle();  // build handle based on config
   }
   int getCylinderRings() const { return getInt("cylinderRings"); }
 
@@ -482,7 +585,7 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
 
  protected:
-  std::string buildOriginHandleDetail() override {
+  std::string buildHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_hemiRings_" << getHemisphereRings() << "_cylRings_"
               << getCylinderRings() << "_segments_" << getNumSegments()
@@ -492,7 +595,7 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
                 << "_useTangents_" << getBoolDispStr(getUseTangents());
     }
     return oHndlStrm.str();
-  }  // buildOriginHandleDetail
+  }  // buildHandleDetail
 
  public:
   ESP_SMART_POINTERS(CapsulePrimitiveAttributes)
@@ -507,7 +610,7 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
   // only solid cones can have end capped
   void setCapEnd(bool capEnd) {
     setBool("capEnd", capEnd);
-    buildOriginHandle();  // build handle based on config
+    buildHandle();  // build handle based on config
   }
   bool getCapEnd() const { return getBool("capEnd"); }
 
@@ -526,7 +629,7 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
 
  protected:
-  std::string buildOriginHandleDetail() override {
+  std::string buildHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_segments_" << getNumSegments() << "_halfLen_"
               << getHalfLength();
@@ -537,7 +640,7 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
                 << getBoolDispStr(getCapEnd());
     }
     return oHndlStrm.str();
-  }  // buildOriginHandleDetail
+  }  // buildHandleDetail
 
  public:
   ESP_SMART_POINTERS(ConePrimitiveAttributes)
@@ -552,7 +655,7 @@ class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
                                     primObjType,
                                     primObjClassName,
                                     "CubePrimitiveAttributes") {
-    buildOriginHandle();  // build handle based on config
+    buildHandle();  // build handle based on config
   }
 
   /**
@@ -565,7 +668,7 @@ class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
   bool isValidTemplate() override { return true; }
 
  protected:
-  std::string buildOriginHandleDetail() override { return ""; }
+  std::string buildHandleDetail() override { return ""; }
 
  public:
   ESP_SMART_POINTERS(CubePrimitiveAttributes)
@@ -580,7 +683,7 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
   // only solid culinders can have ends capped
   void setCapEnds(bool capEnds) {
     setBool("capEnds", capEnds);
-    buildOriginHandle();  // build handle based on config
+    buildHandle();  // build handle based on config
   }
   bool getCapEnds() const { return getBool("capEnds"); }
 
@@ -598,7 +701,7 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
 
  protected:
-  std::string buildOriginHandleDetail() override {
+  std::string buildHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments()
               << "_halfLen_" << getHalfLength();
@@ -608,7 +711,7 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
                 << "_capEnds_" << getBoolDispStr(getCapEnds());
     }
     return oHndlStrm.str();
-  }  // buildOriginHandleDetail
+  }  // buildHandleDetail
 
  public:
   ESP_SMART_POINTERS(CylinderPrimitiveAttributes)
@@ -627,13 +730,13 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
     // setting manually because wireframe icosphere does not currently support
     // subdiv > 1 and setSubdivisions checks for wireframe
     setInt("subdivisions", 1);
-    buildOriginHandle();  // build handle based on config
+    buildHandle();  // build handle based on config
   }
   // only solid icospheres will support subdivision - wireframes default to 1
   void setSubdivisions(int subdivisions) {
     if (!getIsWireframe()) {
       setInt("subdivisions", subdivisions);
-      buildOriginHandle();  // build handle based on config
+      buildHandle();  // build handle based on config
     }
   }
   int getSubdivisions() const { return getInt("subdivisions"); }
@@ -649,13 +752,13 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
 
  protected:
-  std::string buildOriginHandleDetail() override {
+  std::string buildHandleDetail() override {
     std::ostringstream oHndlStrm;
     // wireframe subdivision currently does not change
     // but think about the possibilities.
     oHndlStrm << "_subdivs_" << getSubdivisions();
     return oHndlStrm.str();
-  }  // buildOriginHandleDetail
+  }  // buildHandleDetail
 
  public:
   ESP_SMART_POINTERS(IcospherePrimitiveAttributes)
@@ -681,7 +784,7 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
 
  protected:
-  std::string buildOriginHandleDetail() override {
+  std::string buildHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments();
     if (!getIsWireframe()) {
@@ -689,7 +792,7 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
                 << "_useTangents_" << getBoolDispStr(getUseTangents());
     }
     return oHndlStrm.str();
-  }  // buildOriginHandleDetail
+  }  // buildHandleDetail
 
  public:
   ESP_SMART_POINTERS(UVSpherePrimitiveAttributes)

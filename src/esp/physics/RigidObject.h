@@ -96,7 +96,7 @@ class RigidObject : public RigidBase {
    * @param rigidBodyNode The @ref scene::SceneNode this feature will be
    * attached to.
    */
-  RigidObject(scene::SceneNode* rigidBodyNode);
+  RigidObject(scene::SceneNode* rigidBodyNode, int objectId);
 
   /**
    * @brief Virtual destructor for a @ref RigidObject.
@@ -121,14 +121,13 @@ class RigidObject : public RigidBase {
   bool finalizeObject() override;
 
   /**
-   * @brief Get the template used to initialize this object or scene.
+   * @brief Get a copy of the template used to initialize this object.
    *
-   * AbstractPhysicsAttributes templates are expected to be changed between
-   * instances of objects.
-   * @return The initialization settings of this object instance.
+   * @return A copy of the @ref PhysicsObjectAttributes template used to create
+   * this object.
    */
-  const std::shared_ptr<const assets::PhysicsObjectAttributes>
-  getInitializationAttributes() const {
+  std::shared_ptr<assets::PhysicsObjectAttributes> getInitializationAttributes()
+      const {
     return RigidBase::getInitializationAttributes<
         assets::PhysicsObjectAttributes>();
   };

@@ -11,42 +11,47 @@ namespace assets {
 //  Derived attribute implementations
 //----------------------------------------//
 
+// All keys must be lowercase
+const std::map<std::string, esp::assets::AssetType>
+    AbstractPhysicsAttributes::AssetTypeNamesMap = {
+        {"mp3d", AssetType::MP3D_MESH},
+        {"navmesh", AssetType::NAVMESH},
+        {"ptex", AssetType::FRL_PTEX_MESH},
+        {"semantic", AssetType::INSTANCE_MESH},
+        {"suncg", AssetType::SUNCG_SCENE},
+};
+
 AbstractPhysicsAttributes::AbstractPhysicsAttributes(
     const std::string& attributesClassKey,
-    const std::string& originHandle)
-    : AbstractAttributes(attributesClassKey, originHandle) {
+    const std::string& handle)
+    : AbstractAttributes(attributesClassKey, handle) {
   setFrictionCoefficient(0.5);
   setRestitutionCoefficient(0.1);
+  setScale({1.0, 1.0, 1.0});
+  setMargin(0.04);
+  setOrientUp({0, 1, 0});
+  setOrientFront({0, 0, -1});
+  // default rendering and collisions will be mesh for physics objects and
+  // scenes. Primitive-based objects do not currently support mesh collisions,
+  // however, due to issues with how non-triangle meshes (i.e. wireframes) are
+  // handled in @ref GenericMeshData::setMeshData
+  setRenderAssetIsPrimitive(false);
+  setCollisionAssetIsPrimitive(false);
+  setUseMeshCollision(true);
+  setUnitsToMeters(1.0);
   setRenderAssetHandle("");
   setCollisionAssetHandle("");
 }  // AbstractPhysicsAttributes ctor
 
-/**
- * AbstractPhysicsAttributes is abstract; virtual destructor deleted;
- * definition required so instancing class can destroy base  REMOVED FOR PYBIND
- * COMPATIBILITY TODO: Find a pybind-friendly way to implement this
- *
- * AbstractPhysicsAttributes::~AbstractPhysicsAttributes() {}
- */
-
-PhysicsObjectAttributes::PhysicsObjectAttributes(
-    const std::string& originHandle)
-    : AbstractPhysicsAttributes("PhysicsObjectAttributes", originHandle) {
+PhysicsObjectAttributes::PhysicsObjectAttributes(const std::string& handle)
+    : AbstractPhysicsAttributes("PhysicsObjectAttributes", handle) {
   // fill necessary attribute defaults
   setMass(1.0);
-  setMargin(0.04);
-  setScale({1.0, 1.0, 1.0});
   setCOM({0, 0, 0});
   setInertia({0, 0, 0});
   setLinearDamping(0.2);
   setAngularDamping(0.2);
-  // default rendering and collisions will be mesh for physics objects
-  // primitive-based objects do not currently support mesh collisions, however,
-  // due to issues with how non-triangle meshes (i.e. wireframes) are handled in
-  // @ref GenericMeshData::setMeshData
-  setRenderAssetIsPrimitive(false);
-  setCollisionAssetIsPrimitive(false);
-  setUseMeshCollision(true);
+
   setComputeCOMFromShape(true);
 
   setBoundingBoxCollisions(false);
@@ -57,29 +62,25 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
   setIsCollidable(true);
 }  // PhysicsObjectAttributes ctor
 
-PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)
-    : AbstractPhysicsAttributes("PhysicsSceneAttributes", originHandle) {
+PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& handle)
+    : AbstractPhysicsAttributes("PhysicsSceneAttributes", handle) {
   setGravity({0, -9.8, 0});
-  // TODO do these defaults need to be maintained here?
-  setFrictionCoefficient(0.4);
-  setRestitutionCoefficient(0.05);
+  setOrigin({0, 0, 0});
+
+  setRequiresLighting(false);
+  // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
+  setCollisionAssetType(0);
+  // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
+  setSemanticAssetType(4);
 }  // PhysicsSceneAttributes ctor
 
-PhysicsManagerAttributes::PhysicsManagerAttributes(
-    const std::string& originHandle)
-    : AbstractAttributes("PhysicsManagerAttributes", originHandle) {
+PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
+    : AbstractAttributes("PhysicsManagerAttributes", handle) {
   setSimulator("none");
   setTimestep(0.01);
   setMaxSubsteps(10);
 }  // PhysicsManagerAttributes ctor
 
-/**
- * AbstractPrimitiveAttributes is abstract; virtual destructor deleted;
- * definition required so instancing class can destroy base  REMOVED FOR PYBIND
- * COMPATIBILITY TODO: Find a pybind-friendly way to implement this
- *
- * AbstractPrimitiveAttributes::~AbstractPrimitiveAttributes() {}
- */
 CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
     bool isWireframe,
     int primObjType,
@@ -98,7 +99,7 @@ CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
     setNumSegments(16);
     setHalfLength(1.0);
   }
-  buildOriginHandle();  // build handle based on config
+  buildHandle();  // build handle based on config
 }  // PhysicsCapsulePrimAttributes
 
 ConePrimitiveAttributes::ConePrimitiveAttributes(
@@ -118,7 +119,7 @@ ConePrimitiveAttributes::ConePrimitiveAttributes(
   } else {  // wireframe
     setNumSegments(32);
   }
-  buildOriginHandle();  // build handle based on config
+  buildHandle();  // build handle based on config
 }  // PhysicsConePrimAttributes
 
 CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
@@ -138,7 +139,7 @@ CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
   } else {  // wireframe
     setNumSegments(32);
   }
-  buildOriginHandle();  // build handle based on config
+  buildHandle();  // build handle based on config
 }  // PhysicsCylinderPrimAttributes
 
 UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
@@ -156,7 +157,7 @@ UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
     setNumRings(16);
     setNumSegments(32);
   }
-  buildOriginHandle();  // build handle based on config
+  buildHandle();  // build handle based on config
 }  // PhysicsUVSpherePrimAttributes
 
 }  // namespace assets

@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-import quaternion
+import quaternion  # noqa: F401
 
 import habitat_sim
 import habitat_sim.errors

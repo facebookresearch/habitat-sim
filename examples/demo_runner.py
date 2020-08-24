@@ -16,7 +16,7 @@ from settings import default_sim_settings, make_cfg
 
 import habitat_sim
 import habitat_sim.agent
-import habitat_sim.bindings as hsim
+from habitat_sim import bindings as hsim
 from habitat_sim.physics import MotionType
 from habitat_sim.utils.common import (
     d3_40_colors_rgb,
@@ -157,7 +157,8 @@ class DemoRunner:
         max_union_bb_dim = np.array([0.125, 0.19, 0.26])
 
         # add some objects in a grid
-        object_lib_size = self._sim.get_physics_object_library_size()
+        object_library = self._sim.get_object_template_manager()
+        object_lib_size = object_library.get_num_templates()
         object_init_grid_dim = (3, 1, 3)
         object_init_grid = {}
         assert (
@@ -336,6 +337,14 @@ class DemoRunner:
 
         random.seed(self._sim_settings["seed"])
         self._sim.seed(self._sim_settings["seed"])
+
+        recompute_navmesh = self._sim_settings.get("recompute_navmesh")
+        if recompute_navmesh or not self._sim.pathfinder.is_loaded:
+            if not self._sim_settings["silent"]:
+                print("Recomputing navmesh")
+            navmesh_settings = habitat_sim.NavMeshSettings()
+            navmesh_settings.set_defaults()
+            self._sim.recompute_navmesh(self._sim.pathfinder, navmesh_settings)
 
         # initialize the agent at a random start state
         start_state = self.init_agent_state(self._sim_settings["default_agent"])

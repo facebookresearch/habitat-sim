@@ -13,19 +13,19 @@ import builtins
 import glob
 import json
 import os
-import os.path as osp
 import re
 import shlex
 import subprocess
 import sys
 from distutils.version import StrictVersion
+from os import path as osp
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
-
+# TODO refactor to the proper way to pass options to setup.py so pip can do so.
 def build_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -184,6 +184,8 @@ class CMakeBuild(build_ext):
             with open(args_cache_file, "w") as f:
                 json.dump(cache, f, indent=4, sort_keys=True)
 
+        if not os.path.exists(self.build_temp):
+            os.makedirs(self.build_temp)
         # Save the CMake build directory -- that's where the generated setup.py
         # for magnum-bindings will appear which we need to run later
         global _cmake_build_dir
@@ -274,9 +276,7 @@ class CMakeBuild(build_ext):
         if not is_pip():
             self.create_compile_commands()
 
-        subprocess.check_call(
-            shlex.split('cmake --build "{}"'.format(self.build_temp)) + build_args
-        )
+        subprocess.check_call(["cmake", "--build", self.build_temp] + build_args)
         print()  # Add an empty line for cleaner output
 
         # The things following this don't work with pip
@@ -363,6 +363,11 @@ if __name__ == "__main__":
     with open("./requirements.txt", "r") as f:
         requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
+    # Only install pytest if we are running tests
+    if {"pytest", "test", "ptr"}.intersection(sys.argv):
+        setup_requires = ["pytest-runner"]
+    else:
+        setup_requires = []
     builtins.__HSIM_SETUP__ = True
     import habitat_sim
 
@@ -374,6 +379,9 @@ if __name__ == "__main__":
         long_description="",
         packages=find_packages(),
         install_requires=requirements,
+        setup_requires=setup_requires,
+        tests_require=["hypothesis", "pytest-cov", "pytest"],
+        python_requires=">=3.6",
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
         # add custom build_ext command
@@ -387,9 +395,13 @@ if __name__ == "__main__":
     )
 
     if not args.skip_install_magnum and not is_pip():
-        subprocess.check_call(shlex.split(f"pip install {pymagnum_build_dir}"))
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", pymagnum_build_dir]
+        )
     else:
         print(
             "Assuming magnum bindings are already installed (or we're inside pip and ¯\\_('-')_/¯)"
         )
-        print(f"Run 'pip install {pymagnum_build_dir}' if this assumption is incorrect")
+        print(
+            f"Run '{sys.executable} -m pip install {pymagnum_build_dir}' if this assumption is incorrect"
+        )

@@ -4,6 +4,7 @@
 
 #include "ResourceManager.h"
 
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/PointerStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
@@ -66,6 +67,7 @@ namespace assets {
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
+constexpr char ResourceManager::WHITE_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 ResourceManager::ResourceManager()
     :
@@ -81,11 +83,13 @@ ResourceManager::ResourceManager()
 }  // namespace assets
 
 void ResourceManager::buildImportersAndAttributesManagers() {
-  assetAttributesManager_ = managers::AssetAttributesManager::create();
-  objectAttributesManager_ = managers::ObjectAttributesManager::create();
+  assetAttributesManager_ = managers::AssetAttributesManager::create(*this);
+  objectAttributesManager_ = managers::ObjectAttributesManager::create(*this);
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
-  sceneAttributesManager_ = managers::SceneAttributesManager::create();
+  physicsAttributesManager_ = managers::PhysicsAttributesManager::create(
+      *this, objectAttributesManager_);
+  sceneAttributesManager_ = managers::SceneAttributesManager::create(
+      *this, objectAttributesManager_, physicsAttributesManager_);
 
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
@@ -110,120 +114,33 @@ void ResourceManager::initDefaultPrimAttributes() {
           ->getPrimObjClassName();
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
-  primitive_meshes_.push_back(
-      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube)));
-
-  // build default primtive object templates corresponding to given default
-  // asset templates
-  auto lib = assetAttributesManager_->getTemplateLibrary();
-  for (auto primAsset : lib) {
-    objectAttributesManager_->createPrimBasedAttributesTemplate(primAsset.first,
-                                                                true);
-  }
-
-  LOG(INFO) << "Built primitive asset templates: "
-            << std::to_string(assetAttributesManager_->getNumTemplates());
+  primitive_meshes_[nextPrimitiveMeshId++] =
+      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube));
 
 }  // initDefaultPrimAttributes
 
-bool ResourceManager::loadScene(
-    const AssetInfo& info,
-    scene::SceneNode* parent, /* = nullptr */
-    DrawableGroup* drawables, /* = nullptr */
-    const Magnum::ResourceKey& lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY} */,
-    bool splitSemanticMesh /* = true */) {
-  // we only compute absolute AABB for every mesh component when loading ptex
-  // mesh, or general mesh (e.g., MP3D)
-  staticDrawableInfo_.clear();
-  if (info.type == AssetType::FRL_PTEX_MESH ||
-      info.type == AssetType::MP3D_MESH || info.type == AssetType::UNKNOWN ||
-      (info.type == AssetType::INSTANCE_MESH && splitSemanticMesh)) {
-    computeAbsoluteAABBs_ = true;
-  }
-
-  // scene mesh loading
-  bool meshSuccess = true;
-  if (info.filepath.compare(EMPTY_SCENE) != 0) {
-    if (!Corrade::Utility::Directory::exists(info.filepath)) {
-      LOG(ERROR) << "Cannot load from file " << info.filepath;
-      meshSuccess = false;
-    } else {
-      if (info.type == AssetType::INSTANCE_MESH) {
-        meshSuccess =
-            loadInstanceMeshData(info, parent, drawables, splitSemanticMesh);
-      } else if (info.type == AssetType::FRL_PTEX_MESH) {
-        meshSuccess = loadPTexMeshData(info, parent, drawables);
-      } else if (info.type == AssetType::SUNCG_SCENE) {
-        meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
-      } else if (info.type == AssetType::MP3D_MESH) {
-        meshSuccess = loadGeneralMeshData(info, parent, drawables, lightSetup);
-      } else {
-        // Unknown type, just load general mesh data
-        meshSuccess = loadGeneralMeshData(info, parent, drawables, lightSetup);
-      }
-      // add a scene attributes for this filename or modify the existing one
-      if (meshSuccess) {
-        sceneAttributesManager_->createAttributesTemplate(info.filepath, true);
-      }
-    }
-  } else {
-    LOG(INFO) << "Loading empty scene";
-    // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
-    // scene mesh): welcome to the void
-  }
-
-  // compute the absolute transformation for each static drawables
-  if (meshSuccess && parent && computeAbsoluteAABBs_) {
-    if (info.type == AssetType::FRL_PTEX_MESH) {
-#ifdef ESP_BUILD_PTEX_SUPPORT
-      // retrieve the ptex mesh data
-      const std::string& filename = info.filepath;
-      CORRADE_ASSERT(
-          resourceDict_.count(filename) != 0,
-          "ResourceManager::loadScene: ptex mesh is not loaded. Aborting.",
-          false);
-      const MeshMetaData& metaData = getMeshMetaData(filename);
-      CORRADE_ASSERT(metaData.meshIndex.first == metaData.meshIndex.second,
-                     "ResourceManager::loadScene: ptex mesh is not loaded "
-                     "correctly. Aborting.",
-                     false);
-
-      computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first]);
-#endif
-    } else if (info.type == AssetType::MP3D_MESH ||
-               info.type == AssetType::UNKNOWN) {
-      computeGeneralMeshAbsoluteAABBs();
-    } else if (info.type == AssetType::INSTANCE_MESH) {
-      computeInstanceMeshAbsoluteAABBs();
-    }
-  }
-
-  if (computeAbsoluteAABBs_) {
-    computeAbsoluteAABBs_ = false;
-    // this is to prevent it from being misused in the future
-    staticDrawableInfo_.clear();
-  }
-
-  return meshSuccess;
-}  // ResourceManager::loadScene
-
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
+    bool isEnabled,
+    scene::SceneNode* parent,
     const PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
-  //! PHYSICS INIT: Use the above config to initialize physics engine
+  //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
-  if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
+  if (isEnabled) {
+    if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
 #ifdef ESP_BUILD_WITH_BULLET
-    physicsManager.reset(
-        new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
-    defaultToNoneSimulator = false;
+      physicsManager.reset(
+          new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
+      defaultToNoneSimulator = false;
 #else
-    LOG(WARNING)
-        << ":\n---\nPhysics was enabled and Bullet physics engine was "
-           "specified, but the project is built without Bullet support. "
-           "Objects added to the scene will be restricted to kinematic updates "
-           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
+      LOG(WARNING)
+          << ":\n---\nPhysics was enabled and Bullet physics engine was "
+             "specified, but the project is built without Bullet support. "
+             "Objects added to the scene will be restricted to kinematic "
+             "updates "
+             "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
 #endif
+    }
   }
   // reset to base PhysicsManager to override previous as default behavior
   // if the desired simulator is not supported reset to "none" in metaData
@@ -232,99 +149,321 @@ void ResourceManager::initPhysicsManager(
     physicsManager.reset(
         new physics::PhysicsManager(*this, physicsManagerAttributes));
   }
+
   // build default primitive asset templates, and default primitive object
   // templates
   initDefaultPrimAttributes();
-  // load object templates from sceneMetaData list...
-  objectAttributesManager_->loadAllFileBasedTemplates(
-      physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
-}  // ResourceManager::initPhysicsManager
-
-// TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in
-// memory?)
-//! (1) load scene mesh
-//! (2) add drawable (if parent and drawables != nullptr)
-//! (3) consume PhysicsSceneMetaData to initialize physics simulator
-//! (4) create scene collision mesh if possible
-bool ResourceManager::loadPhysicsScene(
-    const AssetInfo& info,
-    std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-    const PhysicsManagerAttributes::ptr physicsManagerAttributes,
-    scene::SceneNode* parent, /* = nullptr */
-    DrawableGroup* drawables, /* = nullptr */
-    const Magnum::ResourceKey&
-        lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY} */) {
-  // default scene mesh loading
-  bool meshSuccess = loadScene(info, parent, drawables, lightSetup);
-  // (re)init physics manager
-  initPhysicsManager(_physicsManager, physicsManagerAttributes);
 
   // initialize the physics simulator
-  _physicsManager->initPhysics(parent);
+  physicsManager->initPhysics(parent);
+}  // ResourceManager::initPhysicsManager
 
-  if (!meshSuccess) {
-    LOG(ERROR) << "Physics manager loaded. Scene mesh load failed, aborting "
-                  "scene initialization.";
-    return meshSuccess;
+bool ResourceManager::loadScene(
+    const PhysicsSceneAttributes::ptr& sceneAttributes,
+    std::shared_ptr<physics::PhysicsManager> _physicsManager,
+    esp::scene::SceneManager* sceneManagerPtr,
+    std::vector<int>& activeSceneIDs,
+    bool loadSemanticMesh) {
+  // create AssetInfos here for each potential mesh file for the scene, if they
+  // are unique.
+  bool buildCollisionMesh =
+      ((_physicsManager != nullptr) &&
+       (_physicsManager->getInitializationAttributes()->getSimulator().compare(
+            "none") != 0));
+  const Magnum::ResourceKey& renderLightSetup(sceneAttributes->getLightSetup());
+  std::map<std::string, AssetInfo> assetInfoMap =
+      createSceneAssetInfosFromAttributes(sceneAttributes, buildCollisionMesh,
+                                          loadSemanticMesh);
+
+  auto& sceneGraph = sceneManagerPtr->getSceneGraph(activeSceneIDs[0]);
+  auto& rootNode = sceneGraph.getRootNode();
+  auto& drawables = sceneGraph.getDrawables();
+
+  // bool computeAbsoluteAABBs =
+  //   (info.type == AssetType::FRL_PTEX_MESH ||
+  //    info.type == AssetType::MP3D_MESH || info.type == AssetType::UNKNOWN ||
+  //    (info.type == AssetType::INSTANCE_MESH && splitSemanticMesh));
+
+  AssetInfo renderInfo = assetInfoMap.at("render");
+  // pass nullptr as physics manager for render mesh, since we are loading
+  // collision mesh next
+  bool renderMeshSuccess =
+      loadSceneInternal(renderInfo,         // AssetInfo
+                        nullptr,            // physics manager
+                        &rootNode,          // parent scene node
+                        &drawables,         //  drawable group
+                        true,               // compute Absolute AABBs or not
+                        false,              // split semantic mesh or not
+                        renderLightSetup);  // light setup
+
+  if (!renderMeshSuccess) {
+    LOG(ERROR)
+        << " ResourceManager::loadScene : Scene render mesh load failed, "
+           "Aborting scene initialization.";
+    return false;
   }
+  if (assetInfoMap.count("collision")) {
+    AssetInfo colInfo = assetInfoMap.at("collision");
+    // should this be checked to make sure we do not reload?
+    bool collisionMeshSuccess =
+        loadSceneInternal(colInfo,            // AssetInfo
+                          _physicsManager,    // physics manager
+                          nullptr,            // parent scene node
+                          nullptr,            // drawable group
+                          false,              // compute absolute AABBs or not
+                          false,              // split semantic mesh or not
+                          renderLightSetup);  // light setup
 
-  const std::string& filename = info.filepath;
+    if (!collisionMeshSuccess) {
+      LOG(ERROR)
+          << " ResourceManager::loadScene : Scene collision mesh load failed, "
+             "Aborting scene initialization.";
+      return false;
+    } else {
+      // if we have a collision mesh, and it does not exist already as a
+      // collision object, add it
+      if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
+        std::vector<CollisionMeshData> meshGroup;
+        if (collisionMeshGroups_.count(colInfo.filepath) == 0) {
+          //! Collect collision mesh group
+          bool colMeshGroupSuccess = false;
+          if (colInfo.type == AssetType::INSTANCE_MESH) {
+            // PLY Instance mesh
+            colMeshGroupSuccess =
+                buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
+                    colInfo.filepath, meshGroup);
+          } else if (colInfo.type == AssetType::MP3D_MESH ||
+                     colInfo.type == AssetType::UNKNOWN) {
+            // GLB Mesh
+            colMeshGroupSuccess = buildSceneCollisionMeshGroup<GenericMeshData>(
+                colInfo.filepath, meshGroup);
+          }
+          // TODO : PTEX collision support
 
-  PhysicsSceneAttributes::ptr physSceneLib =
-      sceneAttributesManager_->createAttributesTemplate(filename, true);
-  // TODO: enable loading of multiple scenes from file and storing individual
-  // parameters instead of scene properties in manager global config
-  sceneAttributesManager_->setSceneValsFromPhysicsAttributes(
-      physicsManagerAttributes);
-
-  //! CONSTRUCT SCENE
-
-  // if we have a scene mesh, add it as a collision object
-  if (filename.compare(EMPTY_SCENE) != 0) {
-    const MeshMetaData& metaData = getMeshMetaData(filename);
-    auto indexPair = metaData.meshIndex;
-    int start = indexPair.first;
-    int end = indexPair.second;
-
-    //! Collect collision mesh group
-    std::vector<CollisionMeshData> meshGroup;
-    for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
-      // PLY Instance mesh
-      if (info.type == AssetType::INSTANCE_MESH) {
-        GenericInstanceMeshData* insMeshData =
-            dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
-        CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
-
-      // GLB Mesh
-      else if (info.type == AssetType::MP3D_MESH ||
-               info.type == AssetType::UNKNOWN) {
-        GenericMeshData* gltfMeshData =
-            dynamic_cast<GenericMeshData*>(meshes_[mesh_i].get());
-        if (gltfMeshData == nullptr) {
-          Corrade::Utility::Debug()
-              << "AssetInfo::AssetType type error: unsupported physical type, "
-                 "aborting. Try running without \"--enable-physics\" and "
-                 "consider logging an issue.";
+          // failure during build of collision mesh group
+          if (!colMeshGroupSuccess) {
+            LOG(ERROR) << "ResourceManager::loadScene : Scene"
+                       << colInfo.filepath
+                       << " Collision mesh load failed. Aborting scene "
+                          "initialization.";
+            return false;
+          }
+          //! Add scene meshgroup to collision mesh groups
+          collisionMeshGroups_.emplace(colInfo.filepath, meshGroup);
+        } else {
+          // collision meshGroup already exists from prior load
+          meshGroup = collisionMeshGroups_.at(colInfo.filepath);
+        }
+        //! Add to physics manager
+        bool sceneSuccess =
+            _physicsManager->addScene(colInfo.filepath, meshGroup);
+        if (!sceneSuccess) {
+          LOG(ERROR)
+              << "ResourceManager::loadScene : Adding Scene "
+              << colInfo.filepath
+              << " to PhysicsManager failed. Aborting scene initialization.";
           return false;
         }
-        CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
-        meshGroup.push_back(meshData);
+      }  // if not empty collision scene
+    }    // if collisionMeshSuccess
+  }      // if collision mesh desired
+
+  bool semanticSceneSuccess = false;
+  // set equal to current Simulator::activeSemanticSceneID_ value
+  int activeSemanticSceneID = activeSceneIDs[0];
+  // if semantic scene load is requested and possible
+  if (assetInfoMap.count("semantic")) {
+    // check if file names exist
+    AssetInfo semanticInfo = assetInfoMap.at("semantic");
+    auto semanticSceneFilename = semanticInfo.filepath;
+    if (Cr::Utility::Directory::exists(semanticSceneFilename)) {
+      LOG(INFO) << "ResourceManager::loadScene : Loading semantic mesh "
+                << semanticSceneFilename;
+      activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
+      bool splitSemanticMesh = sceneAttributes->getFrustrumCulling();
+
+      auto& semanticSceneGraph =
+          sceneManagerPtr->getSceneGraph(activeSemanticSceneID);
+      auto& semanticRootNode = semanticSceneGraph.getRootNode();
+      auto& semanticDrawables = semanticSceneGraph.getDrawables();
+      bool computeSemanticAABBs = splitSemanticMesh;
+
+      semanticSceneSuccess = loadSceneInternal(
+          semanticInfo,          // AssetInfo
+          nullptr,               // physics manager
+          &semanticRootNode,     // parent scene node
+          &semanticDrawables,    // drawable group
+          computeSemanticAABBs,  // compute absolute AABBs or not
+          splitSemanticMesh);    // split semantic mesh or not
+      // regardless of load failure, original code still changed
+      // activeSemanticSceneID_
+      activeSceneIDs[1] = activeSemanticSceneID;
+      if (!semanticSceneSuccess) {
+        LOG(ERROR) << " ResourceManager::loadScene : Semantic scene mesh "
+                      "load failed.";
+        return false;
+      } else {
+        LOG(INFO) << "ResourceManager::loadScene : Semantic Scene Mesh : "
+                  << semanticSceneFilename << " loaded.";
+      }
+    } else {  // semantic file name does not exist but house does
+      LOG(WARNING)
+          << "ResourceManager::loadScene : Not loading semantic mesh - "
+             "File Name : "
+          << semanticSceneFilename << " does not exist.";
+    }
+  } else {  // not wanting to create semantic mesh
+    LOG(INFO) << "ResourceManager::loadScene : Not loading semantic mesh";
+  }
+  // save active semantic scene ID so that simulator can consume
+  activeSceneIDs[1] = activeSemanticSceneID;
+
+  return true;
+}  // ResourceManager::loadScene
+
+std::map<std::string, AssetInfo>
+ResourceManager::createSceneAssetInfosFromAttributes(
+    const PhysicsSceneAttributes::ptr& sceneAttributes,
+    bool createCollisionInfo,
+    bool createSemanticInfo) {
+  std::map<std::string, AssetInfo> resMap;
+  auto frame =
+      buildFrameFromAttributes(sceneAttributes, sceneAttributes->getOrigin());
+  float virtualUnitToMeters = sceneAttributes->getUnitsToMeters();
+  // create render asset info
+  auto renderType =
+      static_cast<AssetType>(sceneAttributes->getRenderAssetType());
+  AssetInfo renderInfo{
+      renderType,                               // type
+      sceneAttributes->getRenderAssetHandle(),  // file path
+      frame,                                    // frame
+      virtualUnitToMeters,                      // virtualUnitToMeters
+      sceneAttributes->getRequiresLighting()    // requiresLighting
+  };
+  resMap["render"] = renderInfo;
+  if (createCollisionInfo) {
+    // create collision asset info if requested
+    auto colType =
+        static_cast<AssetType>(sceneAttributes->getCollisionAssetType());
+    AssetInfo collisionInfo{
+        colType,                                     // type
+        sceneAttributes->getCollisionAssetHandle(),  // file path
+        frame,                                       // frame
+        virtualUnitToMeters,                         // virtualUnitToMeters
+        false                                        // requiresLighting
+    };
+    resMap["collision"] = collisionInfo;
+  }
+  if (createSemanticInfo) {
+    // create semantic asset info if requested
+    auto semanticType =
+        static_cast<AssetType>(sceneAttributes->getSemanticAssetType());
+    AssetInfo semanticInfo{
+        semanticType,                               // type
+        sceneAttributes->getSemanticAssetHandle(),  // file path
+        frame,                                      // frame
+        virtualUnitToMeters,                        // virtualUnitToMeters
+        false                                       // requiresLighting
+
+    };
+    resMap["semantic"] = semanticInfo;
+  }
+  return resMap;
+}  // ResourceManager::createSceneAssetInfosFromAttributes
+
+esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
+    const AbstractPhysicsAttributes::ptr& attribs,
+    const Magnum::Vector3& origin) {
+  const vec3f upEigen{
+      Mn::EigenIntegration::cast<vec3f>(attribs->getOrientUp())};
+  const vec3f frontEigen{
+      Mn::EigenIntegration::cast<vec3f>(attribs->getOrientFront())};
+  if (upEigen.isOrthogonal(frontEigen)) {
+    const vec3f originEigen{Mn::EigenIntegration::cast<vec3f>(origin)};
+    esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
+    return frame;
+  } else {
+    LOG(INFO) << "ResourceManager::buildFrameFromAttributes : Specified frame "
+                 "in Attributes : "
+              << attribs->getHandle()
+              << " is not orthogonal, so returning default frame.";
+    esp::geo::CoordinateFrame frame;
+    return frame;
+  }
+}  // ResourceManager::buildCoordFrameFromAttribVals
+
+bool ResourceManager::loadSceneInternal(
+    const AssetInfo& info,
+    std::shared_ptr<physics::PhysicsManager> _physicsManager,
+    scene::SceneNode* parent /* = nullptr */,
+    DrawableGroup* drawables /* = nullptr */,
+    bool computeAbsoluteAABBs /*  = false */,
+    bool splitSemanticMesh /* = true */,
+    const Mn::ResourceKey& lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
+  // scene mesh loading
+  const std::string& filename = info.filepath;
+  bool meshSuccess = true;
+  if (info.filepath.compare(EMPTY_SCENE) != 0) {
+    if (!Cr::Utility::Directory::exists(filename)) {
+      LOG(ERROR)
+          << "ResourceManager::loadSceneInternal : Cannot find scene file "
+          << filename;
+      meshSuccess = false;
+    } else {
+      if (info.type == AssetType::INSTANCE_MESH) {  // semantic
+        meshSuccess = loadInstanceMeshData(
+            info, parent, drawables, computeAbsoluteAABBs, splitSemanticMesh);
+      } else if (info.type == AssetType::FRL_PTEX_MESH) {
+        meshSuccess = loadPTexMeshData(info, parent, drawables);
+      } else if (info.type == AssetType::SUNCG_SCENE) {
+        meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
+      } else if (info.type == AssetType::MP3D_MESH) {
+        meshSuccess = loadGeneralMeshData(info, parent, drawables,
+                                          computeAbsoluteAABBs, lightSetup);
+      } else {
+        // Unknown type, just load general mesh data
+        meshSuccess = loadGeneralMeshData(info, parent, drawables,
+                                          computeAbsoluteAABBs, lightSetup);
       }
     }
-
-    //! Add scene meshgroup to collision mesh groups
-    collisionMeshGroups_.emplace(filename, meshGroup);
-    //! Initialize collision mesh
-    bool sceneSuccess = _physicsManager->addScene(filename, meshGroup);
-    if (!sceneSuccess) {
-      return false;
-    }
+  } else {
+    LOG(INFO) << "ResourceManager::loadSceneInternal : Loading empty scene for "
+              << filename;
+    // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
+    // scene mesh): welcome to the void
   }
 
   return meshSuccess;
-}  // ResourceManager::loadPhysicsScene
+
+}  // ResourceManager::loadSceneInternal
+
+template <class T>
+bool ResourceManager::buildSceneCollisionMeshGroup(
+    const std::string& filename,
+    std::vector<CollisionMeshData>& meshGroup) {
+  // TODO : refactor to manage any mesh groups, not just scene
+
+  //! Collect collision mesh group
+  const MeshMetaData& metaData = getMeshMetaData(filename);
+  auto indexPair = metaData.meshIndex;
+  int start = indexPair.first;
+  int end = indexPair.second;
+  for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
+    T* rawMeshData = dynamic_cast<T*>(meshes_[mesh_i].get());
+    if (rawMeshData == nullptr) {
+      // means dynamic cast failed
+      Cr::Utility::Debug()
+          << "ResourceManager::loadPhysicsScene : AssetInfo::AssetType "
+             "type error: unsupported mesh type, aborting. Try running "
+             "without \"--enable-physics\" and consider logging an issue.";
+      return false;
+    }
+    CollisionMeshData& colMeshData = rawMeshData->getCollisionMeshData();
+    meshGroup.push_back(colMeshData);
+  }  // for each mesh
+
+  return true;
+}  // ResourceManager::buildSceneCollisionMeshGroup
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
@@ -346,16 +485,18 @@ bool ResourceManager::loadObjectMeshDataFromFile(
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
-  return Magnum::Range3D{
-      Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
+  return Mn::Math::minmax(meshData.positions);
 }
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
-void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
-  std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
+void ResourceManager::computePTexMeshAbsoluteAABBs(
+    BaseMesh& baseMesh,
+    const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
+  std::vector<Mn::Matrix4> absTransforms =
+      computeAbsoluteTransformations(staticDrawableInfo);
 
   CORRADE_ASSERT(
-      absTransforms.size() == staticDrawableInfo_.size(),
+      absTransforms.size() == staticDrawableInfo.size(),
       "ResourceManager::computePTexMeshAbsoluteAABBs: number of "
       "transformations does not match number of drawables. Aborting.", );
 
@@ -366,29 +507,31 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     // convert std::vector<vec3f> to std::vector<Mn::Vector3>
     const PTexMeshData::MeshData& submesh =
-        submeshes[staticDrawableInfo_[iEntry].meshID];
+        submeshes[staticDrawableInfo[iEntry].meshID];
     std::vector<Mn::Vector3> pos{submesh.vbo.begin(), submesh.vbo.end()};
 
     // transform the vertex positions to the world space
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
-    scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
-    node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
+    scene::SceneNode& node = staticDrawableInfo[iEntry].node;
+    node.setAbsoluteAABB(Mn::Math::minmax(pos));
   }
-}
+}  // ResourceManager::computePTexMeshAbsoluteAABBs
 #endif
 
-void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
-  std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
+void ResourceManager::computeGeneralMeshAbsoluteAABBs(
+    const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
+  std::vector<Mn::Matrix4> absTransforms =
+      computeAbsoluteTransformations(staticDrawableInfo);
 
-  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
+  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
                  "ResourceManager::computeGeneralMeshAbsoluteAABBs: number of "
                  "transforms does not match number of drawables.", );
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    const uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
+    const uint32_t meshID = staticDrawableInfo[iEntry].meshID;
 
-    Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData =
+    Cr::Containers::Optional<Magnum::Trade::MeshData>& meshData =
         meshes_[meshID]->getMeshData();
     CORRADE_ASSERT(meshData,
                    "ResourceManager::computeGeneralMeshAbsoluteAABBs: The mesh "
@@ -413,24 +556,26 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
     }
 
     // locate the scene node which contains the current drawable
-    scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
+    scene::SceneNode& node = staticDrawableInfo[iEntry].node;
 
     // set the absolute axis aligned bounding box
-    node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(bbPos)});
+    node.setAbsoluteAABB(Mn::Math::minmax(bbPos));
 
   }  // iEntry
-}
+}  // ResourceManager::computeGeneralMeshAbsoluteAABBs
 
-void ResourceManager::computeInstanceMeshAbsoluteAABBs() {
-  std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
+void ResourceManager::computeInstanceMeshAbsoluteAABBs(
+    const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
+  std::vector<Mn::Matrix4> absTransforms =
+      computeAbsoluteTransformations(staticDrawableInfo);
 
   CORRADE_ASSERT(
-      absTransforms.size() == staticDrawableInfo_.size(),
+      absTransforms.size() == staticDrawableInfo.size(),
       "ResourceManager::computeInstancelMeshAbsoluteAABBs: Number of "
       "transforms does not match number of drawables. Aborting.", );
 
   for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    const uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
+    const uint32_t meshID = staticDrawableInfo[iEntry].meshID;
 
     // convert std::vector<vec3f> to std::vector<Mn::Vector3>
     const std::vector<vec3f>& vertexPositions =
@@ -442,21 +587,21 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs() {
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry],
                                           transformedPositions);
 
-    scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
-    node.setAbsoluteAABB(
-        Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(transformedPositions)});
+    scene::SceneNode& node = staticDrawableInfo[iEntry].node;
+    node.setAbsoluteAABB(Mn::Math::minmax(transformedPositions));
   }  // iEntry
 }
 
-std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
+std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
+    const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
   // sanity check
-  if (staticDrawableInfo_.size() == 0) {
+  if (staticDrawableInfo.size() == 0) {
     return {};
   }
 
   // basic assumption is that all the drawables are in the same scene;
   // so use the 1st element in the vector to obtain this scene
-  auto* scene = dynamic_cast<MagnumScene*>(staticDrawableInfo_[0].node.scene());
+  auto* scene = dynamic_cast<MagnumScene*>(staticDrawableInfo[0].node.scene());
 
   CORRADE_ASSERT(scene != nullptr,
                  "ResourceManager::computeAbsoluteTransformations: The node is "
@@ -465,8 +610,8 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
 
   // collect all drawable objects
   std::vector<std::reference_wrapper<MagnumObject>> objects;
-  objects.reserve(staticDrawableInfo_.size());
-  std::transform(staticDrawableInfo_.begin(), staticDrawableInfo_.end(),
+  objects.reserve(staticDrawableInfo.size());
+  std::transform(staticDrawableInfo.begin(), staticDrawableInfo.end(),
                  std::back_inserter(objects),
                  [](const StaticDrawableInfo& info) -> MagnumObject& {
                    return info.node;
@@ -498,9 +643,9 @@ void ResourceManager::buildPrimitiveAssetData(
       assetAttributesManager_->getTemplateByHandle(primTemplateHandle);
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
-  auto primAssetOriginHandle = primTemplate->getOriginHandle();
-  if (resourceDict_.count(primAssetOriginHandle) > 0) {
-    LOG(INFO) << " Primitive Asset exists already : " << primAssetOriginHandle;
+  auto primAssetHandle = primTemplate->getHandle();
+  if (resourceDict_.count(primAssetHandle) > 0) {
+    LOG(INFO) << " Primitive Asset exists already : " << primAssetHandle;
     return;
   }
 
@@ -510,8 +655,8 @@ void ResourceManager::buildPrimitiveAssetData(
   primitiveImporter_->openData("");
   // configuration for PrimitiveImporter - replace appropriate group's data
   // before instancing prim object
-  auto conf = primitiveImporter_->configuration();
-  auto cfgGroup = conf.group(primClassName);
+  Cr::Utility::ConfigurationGroup& conf = primitiveImporter_->configuration();
+  Cr::Utility::ConfigurationGroup* cfgGroup = conf.group(primClassName);
   if (cfgGroup != nullptr) {  // ignore prims with no configuration like cubes
     auto newCfgGroup = primTemplate->getConfigGroup();
     // replace current conf group with passed attributes
@@ -559,11 +704,10 @@ void ResourceManager::buildPrimitiveAssetData(
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
   auto inserted =
-      resourceDict_.emplace(primAssetOriginHandle, std::move(loadedAssetData));
+      resourceDict_.emplace(primAssetHandle, std::move(loadedAssetData));
 
-  LOG(INFO) << " Primitive Asset Added : ID : "
-            << primTemplate->getObjectTemplateID()
-            << " : attr lib key : " << primTemplate->getOriginHandle()
+  LOG(INFO) << " Primitive Asset Added : ID : " << primTemplate->getID()
+            << " : attr lib key : " << primTemplate->getHandle()
             << " | instance class : " << primClassName
             << " | Conf has group for this obj type : "
             << conf.hasGroup(primClassName);
@@ -577,8 +721,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    const auto atlasDir = Corrade::Utility::Directory::join(
-        Corrade::Utility::Directory::path(filename), "textures");
+    const auto atlasDir = Cr::Utility::Directory::join(
+        Cr::Utility::Directory::path(filename), "textures");
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;
@@ -604,6 +748,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
     auto indexPair = getMeshMetaData(filename).meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
+    std::vector<StaticDrawableInfo> staticDrawableInfo;
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
       auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[iMesh].get());
@@ -618,13 +763,25 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
                                                shaderManager_, drawables);
 
-        if (computeAbsoluteAABBs_) {
-          staticDrawableInfo_.emplace_back(
-              StaticDrawableInfo{node, static_cast<uint32_t>(jSubmesh)});
-        }
+        staticDrawableInfo.emplace_back(
+            StaticDrawableInfo{node, static_cast<uint32_t>(jSubmesh)});
       }
     }
-  }
+    // always compute absolute aabb for the PTEX mesh if parent exists
+    // because the ptex mesh is for sure a static scene.
+    CORRADE_ASSERT(
+        resourceDict_.count(filename) != 0,
+        "ResourceManager::loadScene: ptex mesh is not loaded. Aborting.",
+        false);
+    const MeshMetaData& metaData = getMeshMetaData(filename);
+    CORRADE_ASSERT(metaData.meshIndex.first == metaData.meshIndex.second,
+                   "ResourceManager::loadScene: ptex mesh is not loaded "
+                   "correctly. Aborting.",
+                   false);
+
+    computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first],
+                                 staticDrawableInfo);
+  }  // if parent
 
   return true;
 #else
@@ -639,6 +796,7 @@ bool ResourceManager::loadInstanceMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent,
     DrawableGroup* drawables,
+    bool computeAbsoluteAABBs,
     bool splitSemanticMesh /* = true */) {
   if (info.type != AssetType::INSTANCE_MESH) {
     LOG(ERROR) << "loadInstanceMeshData only works with INSTANCE_MESH type!";
@@ -689,6 +847,7 @@ bool ResourceManager::loadInstanceMeshData(
 
   // create the scene graph by request
   if (parent) {
+    std::vector<StaticDrawableInfo> staticDrawableInfo;
     auto indexPair = getMeshMetaData(filename).meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
@@ -699,11 +858,16 @@ bool ResourceManager::loadInstanceMeshData(
           *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, NO_LIGHT_KEY,
           PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
 
-      if (computeAbsoluteAABBs_) {
-        staticDrawableInfo_.emplace_back(StaticDrawableInfo{node, iMesh});
+      if (computeAbsoluteAABBs) {
+        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
       }
     }
-  }
+    // compute aabb if splitSemanticMesh set here - always done if parent not
+    // null and splitSemanticMesh is set to true
+    if (computeAbsoluteAABBs) {
+      computeInstanceMeshAbsoluteAABBs(staticDrawableInfo);
+    }
+  }  // if parent not null
 
   return true;
 }
@@ -712,6 +876,7 @@ bool ResourceManager::loadGeneralMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
+    bool computeAbsoluteAABBs, /* = false */
     const Mn::ResourceKey& lightSetup) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
@@ -813,7 +978,7 @@ bool ResourceManager::loadGeneralMeshData(
 
     // Register magnum mesh
     if (fileImporter_->defaultScene() != -1) {
-      Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
+      Cr::Containers::Optional<Magnum::Trade::SceneData> sceneData =
           fileImporter_->scene(fileImporter_->defaultScene());
       if (!sceneData) {
         LOG(ERROR) << "Cannot load scene, exiting";
@@ -852,6 +1017,7 @@ bool ResourceManager::loadGeneralMeshData(
     //! Do not instantiate object
     return true;
   }
+  // parent != nullptr to reach here
 
   //! Do instantiate object
   const LoadedAssetData& loadedAssetData = resourceDict_[filename];
@@ -875,11 +1041,16 @@ bool ResourceManager::loadGeneralMeshData(
       }
     }
   }  // forceReload
-
-  std::vector<scene::SceneNode*>
-      visNodeCache;  // TODO: cache visual nodes added by this process
+     // TODO: cache visual nodes added by this process
+  std::vector<scene::SceneNode*> visNodeCache;
+  std::vector<StaticDrawableInfo> staticDrawableInfo;
   addComponent(meshMetaData, newNode, lightSetup, drawables, meshMetaData.root,
-               visNodeCache);
+               visNodeCache, computeAbsoluteAABBs, staticDrawableInfo);
+  if (computeAbsoluteAABBs) {
+    // now compute aabbs by constructed staticDrawableInfo
+    computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
+  }
+
   return true;
 }  // loadGeneralMeshData
 
@@ -927,10 +1098,10 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                     Cr::Containers::arrayView(positions)}}};
 
   // compile and add the new mesh to the structure
-  primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
-      Magnum::MeshTools::compile(visualNavMesh)));
+  primitive_meshes_[nextPrimitiveMeshId++] = std::make_unique<Magnum::GL::Mesh>(
+      Magnum::MeshTools::compile(visualNavMesh));
 
-  navMeshPrimitiveID = primitive_meshes_.size() - 1;
+  navMeshPrimitiveID = nextPrimitiveMeshId - 1;
 
   if (parent != nullptr && drawables != nullptr &&
       navMeshPrimitiveID != ID_UNDEFINED) {
@@ -953,10 +1124,10 @@ void ResourceManager::loadMaterials(Importer& importer,
     // TODO:
     // it seems we have a way to just load the material once in this case,
     // as long as the materialName includes the full path to the material
-    std::unique_ptr<Magnum::Trade::AbstractMaterialData> materialData =
+    Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
         importer.material(iMaterial);
     if (!materialData ||
-        materialData->type() != Magnum::Trade::MaterialType::Phong) {
+        !(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
       LOG(ERROR) << "Cannot load material, skipping";
       continue;
     }
@@ -991,11 +1162,11 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
   finalMaterial->diffuseColor = 0x00000000_rgbaf;
   finalMaterial->specularColor = 0x00000000_rgbaf;
 
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.ambientTexture()].get();
-  } else if (material.flags() &
-             Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
+  } else if (material.hasAttribute(
+                 Mn::Trade::MaterialAttribute::DiffuseTexture)) {
     // if we want to force flat shading, but we don't have ambient texture,
     // check for diffuse texture and use that instead
     finalMaterial->ambientTexture =
@@ -1016,31 +1187,31 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
   finalMaterial->shininess = material.shininess();
 
   // texture transform, if there's none the matrix is an identity
-  finalMaterial->textureMatrix = material.textureMatrix();
+  finalMaterial->textureMatrix = material.commonTextureMatrix();
 
   // ambient material properties
   finalMaterial->ambientColor = material.ambientColor();
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.ambientTexture()].get();
   }
 
   // diffuse material properties
   finalMaterial->diffuseColor = material.diffuseColor();
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::DiffuseTexture)) {
     finalMaterial->diffuseTexture =
         textures_[textureBaseIndex + material.diffuseTexture()].get();
   }
 
   // specular material properties
   finalMaterial->specularColor = material.specularColor();
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::SpecularTexture) {
+  if (material.hasSpecularTexture()) {
     finalMaterial->specularTexture =
         textures_[textureBaseIndex + material.specularTexture()].get();
   }
 
   // normal mapping
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::NormalTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
     finalMaterial->normalTexture =
         textures_[textureBaseIndex + material.normalTexture()].get();
   }
@@ -1194,9 +1365,9 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // registered) then re-register.  Should never return ID_UNDEFINED - this
   // would mean something has corrupted the library.
   // NOTE : this is called when an new object is being made, but before the
-  // object has acquired a copy of its parent attributes.  No object should ever
-  // have a copy of attributes with isDirty == true - any editing of attributes
-  // for objects requires object rebuilding.
+  // object has acquired a copy of its parent attributes.  No object should
+  // ever have a copy of attributes with isDirty == true - any editing of
+  // attributes for objects requires object rebuilding.
   if (physicsObjectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
         (ID_UNDEFINED != objectAttributesManager_->registerAttributesTemplate(
@@ -1220,8 +1391,8 @@ bool ResourceManager::instantiateAssetsOnDemand(
       // needs to have a primitive asset attributes with same name
       if (!assetAttributesManager_->getTemplateLibHasHandle(
               renderAssetHandle)) {
-        // this is bad, means no render primitive template exists with expected
-        // name.  should never happen
+        // this is bad, means no render primitive template exists with
+        // expected name.  should never happen
         LOG(ERROR) << "No primitive asset attributes exists with name :"
                    << renderAssetHandle
                    << " so unable to instantiate primitive-based render "
@@ -1305,9 +1476,18 @@ void ResourceManager::addObjectToDrawables(
     visNodeCache.push_back(&scalingNode);
     Magnum::Vector3 objectScaling = physicsObjectAttributes->getScale();
     scalingNode.setScaling(objectScaling);
+    // ignored for objects since computeAbsoluteAABBs is always set to false
+    // after scene is loaded.
+    std::vector<StaticDrawableInfo> staticDrawableInfo;
 
     addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
-                 drawables, loadedAssetData.meshMetaData.root, visNodeCache);
+                 drawables, loadedAssetData.meshMetaData.root, visNodeCache,
+                 false, staticDrawableInfo);
+
+    // set the node type for all cached visual nodes
+    for (auto node : visNodeCache) {
+      node->setType(scene::SceneNodeType::OBJECT);
+    }
   }  // should always be specified, otherwise won't do anything
 }  // addObjectToDrawables
 
@@ -1318,7 +1498,9 @@ void ResourceManager::addComponent(
     const Mn::ResourceKey& lightSetup,
     DrawableGroup* drawables,
     const MeshTransformNode& meshTransformNode,
-    std::vector<scene::SceneNode*>& visNodeCache) {
+    std::vector<scene::SceneNode*>& visNodeCache,
+    bool computeAbsoluteAABBs,
+    std::vector<StaticDrawableInfo>& staticDrawableInfo) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   visNodeCache.push_back(&node);
@@ -1330,53 +1512,45 @@ void ResourceManager::addComponent(
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int materialIDLocal = meshTransformNode.materialIDLocal;
-    addMeshToDrawables(metaData, node, lightSetup, drawables, meshIDLocal,
-                       materialIDLocal);
+    const uint32_t meshID = metaData.meshIndex.first + meshIDLocal;
+    Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
+    Mn::ResourceKey materialKey;
+    if (materialIDLocal == ID_UNDEFINED ||
+        metaData.materialIndex.second == ID_UNDEFINED) {
+      materialKey = DEFAULT_MATERIAL_KEY;
+    } else {
+      materialKey =
+          std::to_string(metaData.materialIndex.first + materialIDLocal);
+    }
+
+    createGenericDrawable(mesh, node, lightSetup, materialKey, drawables);
 
     // compute the bounding box for the mesh we are adding
-    const int meshID = metaData.meshIndex.first + meshIDLocal;
-    BaseMesh* mesh = meshes_[meshID].get();
-    node.setMeshBB(computeMeshBB(mesh));
+    if (computeAbsoluteAABBs) {
+      staticDrawableInfo.emplace_back(StaticDrawableInfo{node, meshID});
+    }
+    BaseMesh* meshBB = meshes_[meshID].get();
+    node.setMeshBB(computeMeshBB(meshBB));
   }
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, lightSetup, drawables, child, visNodeCache);
+    addComponent(metaData, node, lightSetup, drawables, child, visNodeCache,
+                 computeAbsoluteAABBs, staticDrawableInfo);
   }
 }  // addComponent
-
-void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
-                                         scene::SceneNode& node,
-                                         const Mn::ResourceKey& lightSetup,
-                                         DrawableGroup* drawables,
-                                         int meshIDLocal,
-                                         int materialIDLocal) {
-  const int meshStart = metaData.meshIndex.first;
-  const uint32_t meshID = meshStart + meshIDLocal;
-  Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
-
-  Mn::ResourceKey materialKey;
-  if (materialIDLocal == ID_UNDEFINED ||
-      metaData.materialIndex.second == ID_UNDEFINED) {
-    materialKey = DEFAULT_MATERIAL_KEY;
-  } else {
-    materialKey =
-        std::to_string(metaData.materialIndex.first + materialIDLocal);
-  }
-
-  createGenericDrawable(mesh, node, lightSetup, materialKey, drawables);
-
-  if (computeAbsoluteAABBs_) {
-    staticDrawableInfo_.emplace_back(StaticDrawableInfo{node, meshID});
-  }
-}  // addMeshToDrawables
 
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
-  CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
-  createGenericDrawable(*primitive_meshes_[primitiveID], node,
-                        DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY, drawables);
+  CHECK(primitive_meshes_.count(primitiveID));
+  createGenericDrawable(*primitive_meshes_.at(primitiveID), node, NO_LIGHT_KEY,
+                        WHITE_MATERIAL_KEY, drawables);
+}
+
+void ResourceManager::removePrimitiveMesh(int primitiveID) {
+  CHECK(primitive_meshes_.count(primitiveID));
+  primitive_meshes_.erase(primitiveID);
 }
 
 void ResourceManager::createGenericDrawable(
@@ -1403,7 +1577,7 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   const std::string houseId = pathTokens.back();
   pathTokens.pop_back();  // <houseId>
   pathTokens.pop_back();  // house
-  const std::string basePath = Corrade::Utility::String::join(pathTokens, '/');
+  const std::string basePath = Cr::Utility::String::join(pathTokens, '/');
 
   // store nodeIds to obtain linearized index for semantic masks
   std::vector<std::string> nodeIds;
@@ -1476,7 +1650,6 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   }
   return true;
 }
-
 void ResourceManager::initDefaultLightSetups() {
   shaderManager_.set(NO_LIGHT_KEY, gfx::LightSetup{});
   shaderManager_.setFallback(gfx::LightSetup{});
@@ -1485,6 +1658,9 @@ void ResourceManager::initDefaultLightSetups() {
 void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
+  auto whiteMaterialData = new gfx::PhongMaterialData;
+  whiteMaterialData->ambientColor = Magnum::Color4{1.0};
+  shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
   auto perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
   perVertexObjectId->vertexColored = true;

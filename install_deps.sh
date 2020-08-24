@@ -6,7 +6,7 @@
 
 # Detect the platform
 echo "Installing dependencies. You might be prompted for your sudo password."
-OS="`uname`"
+OS="$(uname)"
 case $OS in
   'Linux')
     sudo apt-get install -y libomp-dev libx11-dev

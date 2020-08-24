@@ -8,12 +8,12 @@ import itertools
 
 import numpy as np
 import pytest
-import quaternion
+import quaternion  # noqa: F401
 
 import habitat_sim
-import habitat_sim.bindings as hsim
 import habitat_sim.errors
 import habitat_sim.utils.common
+from habitat_sim import bindings as hsim
 from habitat_sim.agent.controls.pyrobot_noisy_controls import pyrobot_noise_models
 
 
