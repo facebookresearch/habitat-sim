@@ -56,9 +56,6 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     lightColors.emplace_back((*lightSetup_)[i].color);
   }
 
-  bool usingDrawableId =
-      static_cast<RenderCamera&>(camera).isRenderingForObjectPicking();
-
   (*shader_)
       .setAmbientColor(materialData_->ambientColor)
       .setDiffuseColor(materialData_->diffuseColor)
@@ -70,7 +67,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader
       .setObjectId(
-          usingDrawableId
+          static_cast<RenderCamera&>(camera).useDrawableIds()
               ? drawableId_
               : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
       .setTransformationMatrix(transformationMatrix)

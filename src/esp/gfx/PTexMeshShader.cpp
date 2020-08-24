@@ -79,6 +79,7 @@ PTexMeshShader::PTexMeshShader() {
   saturationUniform_ = uniformLocation("saturation");
   tileSizeUniform_ = uniformLocation("tileSize");
   widthInTilesUniform_ = uniformLocation("widthInTiles");
+  objectIdUniform_ = uniformLocation("objectId");
 }
 
 // Note: the texture binding points are explicitly specified above.
@@ -124,6 +125,11 @@ PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Mn::GL::Texture2D& texture,
   int mipLevel = 0;
   const auto width = texture.imageSize(mipLevel).x();
   setUniform(widthInTilesUniform_, int(width / tileSize));
+  return *this;
+}
+
+PTexMeshShader& PTexMeshShader::setObjectId(unsigned int objectId) {
+  setUniform(objectIdUniform_, objectId);
   return *this;
 }
 

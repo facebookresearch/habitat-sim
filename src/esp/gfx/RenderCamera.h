@@ -30,9 +30,13 @@ class RenderCamera : public MagnumCamera {
      */
     ObjectsOnly = 1 << 1,
     /**
-     * Render the drawables for object (drawable) picking purpose
+     * Use drawable id as the object id in the following rendering pass
+     * Internally, it is not a state machine, which means user needs to set it
+     * every frame if she needs the drawable ids.
+     * If not set, by default, it would use the semantic id (if "per vertex
+     * object id" is not set)
      */
-    ObjectPicking = 1 << 2,
+    UseDrawableIdAsObjectId = 1 << 2,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -100,9 +104,14 @@ class RenderCamera : public MagnumCamera {
                     Magnum::Matrix4>>& drawableTransforms);
 
   /**
-   *@brief if the rendering pass is for picking the object (drawable)
+   * @brief if the "immediate" following rendering pass is to use drawable ids
+   * as the object ids.
+   * By default, it uses the semantic_id, stored in the drawable's scene graph
+   * node, if no "per-vertex" object id is used.
+   * @return true, if it is to use drawable ids as the object ids in the
+   * following rendering pass, otherwise false
    */
-  bool isRenderingForObjectPicking() { return renderingForObjectPicking_; }
+  bool useDrawableIds() { return useDrawableIds_; }
   /**
    * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
    * position.
@@ -115,7 +124,7 @@ class RenderCamera : public MagnumCamera {
   esp::geo::Ray unproject(const Mn::Vector2i& viewportPosition);
 
  protected:
-  bool renderingForObjectPicking_ = false;
+  bool useDrawableIds_ = false;
   ESP_SMART_POINTERS(RenderCamera)
 };
 

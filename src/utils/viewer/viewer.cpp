@@ -619,7 +619,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
 
     // redraw the scene on the object picking framebuffer
     esp::gfx::RenderCamera::Flags flags =
-        esp::gfx::RenderCamera::Flag::ObjectPicking;
+        esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
     if (frustumCullingEnabled_)
       flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
     for (auto& it : sceneGraph_->getDrawableGroups()) {

@@ -70,6 +70,11 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
    */
   PTexMeshShader& setAtlasTextureSize(Magnum::GL::Texture2D& texture,
                                       uint32_t tileSize);
+  /**
+   *  @brief Set object id to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PTexMeshShader& setObjectId(unsigned int objectId);
 
  protected:
   // it hurts the performance to call glGetUniformLocation() every frame due to
@@ -81,6 +86,7 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
   int saturationUniform_;
   int tileSizeUniform_;
   int widthInTilesUniform_;
+  int objectIdUniform_;
 };
 
 }  // namespace gfx
