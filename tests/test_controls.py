@@ -147,6 +147,18 @@ default_sensor_control_testdata = [
             delta_rot=quat_from_angle_axis(np.deg2rad(-10.0), habitat_sim.geo.RIGHT)
         ),
     ),
+    (
+        "rotate_sensor_clockwise",
+        ExpectedDelta(
+            delta_rot=quat_from_angle_axis(np.deg2rad(-10.0), habitat_sim.geo.FRONT)
+        ),
+    ),
+    (
+        "rotate_sensor_anti_clockwise",
+        ExpectedDelta(
+            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.FRONT)
+        ),
+    ),
 ]
 
 
