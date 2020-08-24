@@ -155,8 +155,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       renderer_ = gfx::Renderer::create();
     }
 
-    flextGLInit(Magnum::GL::Context::current());
-
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
     auto& rootNode = sceneGraph.getRootNode();
     // auto& drawables = sceneGraph.getDrawables();
