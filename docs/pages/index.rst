@@ -21,7 +21,14 @@ over 10,000 FPS multi-process on a single GPU!
 -   :ref:`Extracting Images <std:doc:image-extractor>`
 -   :ref:`Interactive Rigid Objects <std:doc:rigid-object-tutorial>`
 
-.. note-warning::
+Checkout our `ECCV 2020 tutorial series`_ for quick-start code and video overviews of many core features!
 
-    Docs are currently very much a work-in-progress and are incomplete :(
-    **But it's getting better!**
+.. _ECCV 2020 tutorial series: https://aihabitat.org/tutorial/2020/
+
+.. block-info:: C++ API documentation
+
+    Habitat-sim is designed to be used primarily through its Python API. As such, the
+    end-user tutorials and docs linked above focus on Python.
+
+    If you're looking for API reference of Habitat-sim's C++ internals, please see the
+    `C++ API <cpp.html>`_ tab.

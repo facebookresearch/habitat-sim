@@ -16,14 +16,11 @@ XML_PROGRAMLISTING     = NO
 ##! M_CLASS_TREE_EXPAND_LEVELS = 2
 
 ##! M_LINKS_NAVBAR1 = \
-##!  "pages" \
-##!  "annotated" \
-##!  "files"
+##!  "<a href="pages.html">Pages</a> <a href="new-actions.html">Add new actions</a> <a href="stereo-agent.html">Stereo agent</a> <a href="lighting-setups.html">Lighting Setups</a> <a href="notebooks.html">Notebooks</a> <a href="image-extractor.html">Image extraction</a>" \
+##!  "<a href="classes.html">Classes</a>"
 ##! M_LINKS_NAVBAR2 = \
-##!  "<a href="../habitat-sim/index.html">Python Docs</a>" \
+##!  "<a href="cpp.html">C++ API</a>" \
 ##!  "<a href="../habitat-lab/index.html">Habitat Lab Docs</a>"
-##! M_PAGE_FINE_PRINT = \
-##!   "<p>Habitat Sim C++ Docs. Copyright © 2019 Facebook AI Research.<br/>Created with <a href="https://doxygen.org/">Doxygen</a> {doxygen_version} and <a href="https://mcss.mosra.cz/">m.css</a>."
 
 HTML_EXTRA_STYLESHEET = \
     https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600 \
