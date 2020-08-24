@@ -60,5 +60,33 @@ void BulletBase::constructConvexShapesFromMeshes(
   }
 }  // constructConvexShapesFromMeshes
 
+void BulletBase::constructJoinedConvexShapeFromMeshes(
+    const Magnum::Matrix4& transformFromParentToWorld,
+    const std::vector<assets::CollisionMeshData>& meshGroup,
+    const assets::MeshTransformNode& node,
+    btConvexHullShape* bConvexShape) {
+  Magnum::Matrix4 transformFromLocalToWorld =
+      transformFromParentToWorld * node.transformFromLocalToParent;
+
+  if (bConvexShape == nullptr) {
+    Cr::Utility::Debug()
+        << "constructJoinedConvexShapeFromMeshes : E - passed in null shape...";
+    return;
+  }
+  if (node.meshIDLocal != ID_UNDEFINED) {
+    const assets::CollisionMeshData& mesh = meshGroup[node.meshIDLocal];
+
+    // add points
+    for (auto& v : mesh.positions) {
+      bConvexShape->addPoint(
+          btVector3(transformFromLocalToWorld.transformPoint(v)), false);
+    }
+  }
+  for (auto& child : node.children) {
+    constructJoinedConvexShapeFromMeshes(transformFromLocalToWorld, meshGroup,
+                                         child, bConvexShape);
+  }
+}
+
 }  // namespace physics
 }  // namespace esp

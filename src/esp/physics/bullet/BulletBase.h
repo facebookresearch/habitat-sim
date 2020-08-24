@@ -90,6 +90,23 @@ class BulletBase {
    */
   virtual const Magnum::Range3D getCollisionShapeAabb() const = 0;
 
+  /**
+   * @brief Recursively construct a @ref btConvexHullShape for collision by
+   * joining loaded mesh assets.
+   * @param transformFromParentToWorld The cumulative parent-to-world
+   * transformation matrix constructed by composition down the @ref
+   * MeshTransformNode tree to the current node.
+   * @param meshGroup Access structure for collision mesh data.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   * @param bConvexShape The convex we are building. Should be a new, empty
+   * shape when passed into entry point.
+   */
+  static void constructJoinedConvexShapeFromMeshes(
+      const Magnum::Matrix4& transformFromParentToWorld,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      const assets::MeshTransformNode& node,
+      btConvexHullShape* bConvexShape);
+
  protected:
   /**
    * @brief Recursively construct a @ref btCompoundShape for collision from

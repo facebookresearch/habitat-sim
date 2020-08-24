@@ -11,6 +11,8 @@
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
 #include "BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/physics/bullet/BulletBase.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -82,9 +84,28 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
     case io::URDF_GEOM_MESH: {
       // TODO: implement this from resourceManager_ structures. Share with
       // RigidBody interface (pull that out?)
-      Cr::Utility::Debug()
-          << "!!!!!!!!! mesh collision object not implemented yet!";
+      bool meshSuccess = resourceManager_.importAsset(
+          collision->m_geometry.m_meshFileName, nullptr);
 
+      if (meshSuccess) {
+        const std::vector<assets::CollisionMeshData>& meshGroup =
+            resourceManager_.getCollisionMesh(
+                collision->m_geometry.m_meshFileName);
+        const assets::MeshMetaData& metaData = resourceManager_.getMeshMetaData(
+            collision->m_geometry.m_meshFileName);
+
+        auto convexShape = new btConvexHullShape();
+        esp::physics::BulletBase::constructJoinedConvexShapeFromMeshes(
+            Magnum::Matrix4{}, meshGroup, metaData.root, convexShape);
+        convexShape->recalcLocalAabb();
+        shape = convexShape;
+        shape->setMargin(gUrdfDefaultCollisionMargin);
+      } else {
+        Cr::Utility::Debug()
+            << "BulletURDFImporter::convertURDFToCollisionShape : E - could "
+               "not load collision mesh \""
+            << collision->m_geometry.m_meshFileName << "\"";
+      }
       break;
     }  // mesh case
 

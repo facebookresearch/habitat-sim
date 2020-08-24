@@ -1403,16 +1403,38 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
 
 bool ResourceManager::importAsset(const std::string& filename,
                                   std::shared_ptr<io::UrdfMaterial> material) {
+  bool meshSuccess = true;
   if (resourceDict_.count(filename) > 0) {
-    return true;
+    if (material == nullptr)
+      return true;
+  } else {
+    esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, filename};
+    if (Corrade::Utility::String::endsWith(filename, ".dae")) {
+      meshinfo = esp::assets::AssetInfo::fromPath(filename);
+    }
+    meshinfo.requiresLighting = true;
+    meshSuccess =
+        loadGeneralMeshData(meshinfo, nullptr, nullptr, DEFAULT_LIGHTING_KEY);
+
+    // check if collision handle exists in collision mesh groups yet.  if not
+    // then instance
+    if (collisionMeshGroups_.count(filename) == 0) {
+      // set collision mesh data
+      const MeshMetaData& meshMetaData = getMeshMetaData(filename);
+
+      int start = meshMetaData.meshIndex.first;
+      int end = meshMetaData.meshIndex.second;
+      //! Gather mesh components for meshGroup data
+      std::vector<CollisionMeshData> meshGroup;
+      for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
+        GenericMeshData& gltfMeshData =
+            dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
+        CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
+        meshGroup.push_back(meshData);
+      }
+      collisionMeshGroups_.emplace(filename, meshGroup);
+    }
   }
-  esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, filename};
-  if (Corrade::Utility::String::endsWith(filename, ".dae")) {
-    meshinfo = esp::assets::AssetInfo::fromPath(filename);
-  }
-  meshinfo.requiresLighting = true;
-  bool meshSuccess =
-      loadGeneralMeshData(meshinfo, nullptr, nullptr, DEFAULT_LIGHTING_KEY);
 
   // create/set a new PhongMaterialData
   if (meshSuccess) {
