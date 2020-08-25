@@ -110,31 +110,31 @@ void initAttributesBindings(py::module& m) {
       .def_property("semantic_id", &PhysicsObjectAttributes::getSemanticId,
                     &PhysicsObjectAttributes::setSemanticId);
 
-  // ==== PhysicsSceneAttributes ====
-  py::class_<PhysicsSceneAttributes, AbstractPhysicsAttributes,
-             PhysicsSceneAttributes::ptr>(m, "PhysicsSceneAttributes")
-      .def(py::init(&PhysicsSceneAttributes::create<>))
-      .def(py::init(&PhysicsSceneAttributes::create<const std::string&>))
-      .def_property("gravity", &PhysicsSceneAttributes::getGravity,
-                    &PhysicsSceneAttributes::setGravity)
-      .def_property("origin", &PhysicsSceneAttributes::getOrigin,
-                    &PhysicsSceneAttributes::setOrigin)
+  // ==== PhysicsStageAttributes ====
+  py::class_<PhysicsStageAttributes, AbstractPhysicsAttributes,
+             PhysicsStageAttributes::ptr>(m, "PhysicsStageAttributes")
+      .def(py::init(&PhysicsStageAttributes::create<>))
+      .def(py::init(&PhysicsStageAttributes::create<const std::string&>))
+      .def_property("gravity", &PhysicsStageAttributes::getGravity,
+                    &PhysicsStageAttributes::setGravity)
+      .def_property("origin", &PhysicsStageAttributes::getOrigin,
+                    &PhysicsStageAttributes::setOrigin)
       .def_property("semantic_asset_handle",
-                    &PhysicsSceneAttributes::getSemanticAssetHandle,
-                    &PhysicsSceneAttributes::setSemanticAssetHandle)
+                    &PhysicsStageAttributes::getSemanticAssetHandle,
+                    &PhysicsStageAttributes::setSemanticAssetHandle)
       .def_property("semantic_asset_type",
-                    &PhysicsSceneAttributes::getSemanticAssetType,
-                    &PhysicsSceneAttributes::setSemanticAssetType)
+                    &PhysicsStageAttributes::getSemanticAssetType,
+                    &PhysicsStageAttributes::setSemanticAssetType)
       .def_property("navmesh_asset_handle",
-                    &PhysicsSceneAttributes::getNavmeshAssetHandle,
-                    &PhysicsSceneAttributes::setNavmeshAssetHandle)
-      .def_property("house_filename", &PhysicsSceneAttributes::getHouseFilename,
-                    &PhysicsSceneAttributes::setHouseFilename)
-      .def_property("light_setup", &PhysicsSceneAttributes::getLightSetup,
-                    &PhysicsSceneAttributes::setLightSetup)
+                    &PhysicsStageAttributes::getNavmeshAssetHandle,
+                    &PhysicsStageAttributes::setNavmeshAssetHandle)
+      .def_property("house_filename", &PhysicsStageAttributes::getHouseFilename,
+                    &PhysicsStageAttributes::setHouseFilename)
+      .def_property("light_setup", &PhysicsStageAttributes::getLightSetup,
+                    &PhysicsStageAttributes::setLightSetup)
       .def_property("frustrum_culling",
-                    &PhysicsSceneAttributes::getFrustrumCulling,
-                    &PhysicsSceneAttributes::setFrustrumCulling);
+                    &PhysicsStageAttributes::getFrustrumCulling,
+                    &PhysicsStageAttributes::setFrustrumCulling);
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,

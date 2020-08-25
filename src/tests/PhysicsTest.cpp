@@ -42,9 +42,9 @@ class PhysicsManagerTest : public testing::Test {
     physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
   };
 
-  void initScene(const std::string sceneFile) {
+  void initScene(const std::string stageFile) {
     // const esp::assets::AssetInfo info =
-    //     esp::assets::AssetInfo::fromPath(sceneFile);
+    //     esp::assets::AssetInfo::fromPath(stageFile);
 
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
     auto& rootNode = sceneGraph.getRootNode();
@@ -53,13 +53,13 @@ class PhysicsManagerTest : public testing::Test {
     auto physicsManagerAttributes =
         physicsAttributesManager_->createAttributesTemplate(physicsConfigFile,
                                                             true);
-    auto sceneAttributesMgr = resourceManager_.getSceneAttributesManager();
+    auto stageAttributesMgr = resourceManager_.getStageAttributesManager();
     if (physicsManagerAttributes != nullptr) {
-      sceneAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+      stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
           physicsManagerAttributes->getHandle());
     }
-    auto sceneAttributes =
-        sceneAttributesMgr->createAttributesTemplate(sceneFile, true);
+    auto stageAttributes =
+        stageAttributesMgr->createAttributesTemplate(stageFile, true);
 
     // construct physics manager based on specifications in attributes
     resourceManager_.initPhysicsManager(physicsManager_, true, &rootNode,
@@ -67,7 +67,7 @@ class PhysicsManagerTest : public testing::Test {
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    bool result = resourceManager_.loadScene(sceneAttributes, physicsManager_,
+    bool result = resourceManager_.loadStage(stageAttributes, physicsManager_,
                                              &sceneManager_, tempIDs, false);
   }
 
@@ -86,12 +86,12 @@ class PhysicsManagerTest : public testing::Test {
 TEST_F(PhysicsManagerTest, JoinCompound) {
   LOG(INFO) << "Starting physics test: JoinCompound";
 
-  std::string sceneFile = Cr::Utility::Directory::join(
+  std::string stageFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
 
-  initScene(sceneFile);
+  initScene(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -166,12 +166,12 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
 TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
   LOG(INFO) << "Starting physics test: CollisionBoundingBox";
 
-  std::string sceneFile =
+  std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/objects/sphere.glb");
 
-  initScene(sceneFile);
+  initScene(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -244,12 +244,12 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
 TEST_F(PhysicsManagerTest, DiscreteContactTest) {
   LOG(INFO) << "Starting physics test: DiscreteContactTest";
 
-  std::string sceneFile =
+  std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initScene(sceneFile);
+  initScene(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -332,8 +332,8 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     esp::physics::BulletPhysicsManager* bPhysManager =
         static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
 
-    const Magnum::Range3D AabbScene =
-        bPhysManager->getSceneCollisionShapeAabb();
+    const Magnum::Range3D AabbStage =
+        bPhysManager->getStageCollisionShapeAabb();
 
     const Magnum::Range3D AabbOb0 =
         bPhysManager->getCollisionShapeAabb(objectId0);
@@ -343,9 +343,9 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
         bPhysManager->getCollisionShapeAabb(objectId2);
 
     Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
-    Magnum::Range3D sceneGroundTruth({-1.04, -1.04, -1.04}, {1.04, 1.04, 1.04});
+    Magnum::Range3D stageGroundTruth({-1.04, -1.04, -1.04}, {1.04, 1.04, 1.04});
 
-    ASSERT_EQ(AabbScene, sceneGroundTruth);
+    ASSERT_EQ(AabbStage, stageGroundTruth);
     ASSERT_EQ(AabbOb0, objectGroundTruth);
     ASSERT_EQ(AabbOb1, objectGroundTruth);
     ASSERT_EQ(AabbOb2, objectGroundTruth);
@@ -426,10 +426,10 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  std::string sceneFile =
+  std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  initScene(sceneFile);
+  initScene(stageFile);
 
   esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       esp::assets::PhysicsObjectAttributes::create();
@@ -572,10 +572,10 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  std::string sceneFile =
+  std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  initScene(sceneFile);
+  initScene(stageFile);
 
   esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       esp::assets::PhysicsObjectAttributes::create();
@@ -624,10 +624,10 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  std::string sceneFile =
+  std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  initScene(sceneFile);
+  initScene(stageFile);
 
   // ensure that changing default timestep does not affect results
   physicsManager_->setTimestep(0.0041666666);
@@ -652,7 +652,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
     std::vector<int> instancedObjects;
-    float sceneCollisionMargin = 0.04;
+    float stageCollisionMargin = 0.04;
 
     for (int testId = 0; testId < 3; testId++) {
       instancedObjects.push_back(physicsManager_->addObject(boxId, &drawables));
@@ -663,10 +663,10 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
           // test 0: stacking two DYNAMIC objects
           physicsManager_->setTranslation(
               instancedObjects[0],
-              {0, sceneCollisionMargin + boxHalfExtent, 0});
+              {0, stageCollisionMargin + boxHalfExtent, 0});
           physicsManager_->setTranslation(
               instancedObjects[1],
-              {0, sceneCollisionMargin + boxHalfExtent * 3, 0});
+              {0, stageCollisionMargin + boxHalfExtent * 3, 0});
 
           while (physicsManager_->getWorldTime() < 6.0) {
             physicsManager_->stepPhysics(0.1);
@@ -675,12 +675,12 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
           ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
           ASSERT_LE(
               (physicsManager_->getTranslation(instancedObjects[0]) -
-               Magnum::Vector3{0.0, sceneCollisionMargin + boxHalfExtent, 0.0})
+               Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent, 0.0})
                   .length(),
               1.0e-3);
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
                      Magnum::Vector3{
-                         0.0, sceneCollisionMargin + boxHalfExtent * 3, 0.0})
+                         0.0, stageCollisionMargin + boxHalfExtent * 3, 0.0})
                         .length(),
                     1.0e-3);
         } break;

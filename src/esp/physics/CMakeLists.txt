@@ -16,8 +16,8 @@ add_library(physics STATIC
   RigidBase.h
   RigidObject.cpp
   RigidObject.h
-  RigidScene.cpp
-  RigidScene.h
+  RigidStage.cpp
+  RigidStage.h
 )
 
 if(BUILD_WITH_BULLET)

@@ -88,8 +88,8 @@ if not "sim" in globals():
     obj_attr_mgr = None
     global prim_attr_mgr
     obj_attr_mgr = None
-    global scene_attr_mgr
-    scene_attr_mgr = None
+    global stage_attr_mgr
+    stage_attr_mgr = None
 
 
 # %%
@@ -180,7 +180,7 @@ def make_simulator_from_settings(sim_settings):
     global sim
     global obj_attr_mgr
     global prim_attr_mgr
-    global scene_attr_mgr
+    global stage_attr_mgr
     if sim != None:
         sim.close()
     # initialize the simulator
@@ -188,7 +188,7 @@ def make_simulator_from_settings(sim_settings):
     # Managers of various Attributes templates
     obj_attr_mgr = sim.get_object_template_manager()
     prim_attr_mgr = sim.get_asset_template_manager()
-    scene_attr_mgr = sim.get_scene_template_manager()
+    stage_attr_mgr = sim.get_stage_template_manager()
 
 
 # %%
@@ -249,7 +249,7 @@ def sample_object_state(
     tries = 0
     valid_placement = False
     # Note: following assumes sim was not reconfigured without close
-    scene_collision_margin = scene_attr_mgr.get_template_by_ID(0).margin
+    scene_collision_margin = stage_attr_mgr.get_template_by_ID(0).margin
     while not valid_placement and tries < max_tries:
         tries += 1
         # initialize sample location to random point in scene bounding box

@@ -40,7 +40,7 @@
 #include "managers/AssetAttributesManager.h"
 #include "managers/ObjectAttributesManager.h"
 #include "managers/PhysicsAttributesManager.h"
-#include "managers/SceneAttributesManager.h"
+#include "managers/StageAttributesManager.h"
 
 // forward declarations
 namespace Magnum {
@@ -153,7 +153,7 @@ class ResourceManager {
    * If parent and drawables are not specified, the assets are loaded, but no
    * new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
-   * @param sceneAttributes The @ref PhysicsSceneAttributes that describes the
+   * @param sceneAttributes The @ref PhysicsStageAttributes that describes the
    * scene
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
    * @param sceneManagerPtr Pointer to scene manager, to fetch drawables and
@@ -164,7 +164,7 @@ class ResourceManager {
    * @ref SimulatorConfiguration
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(const PhysicsSceneAttributes::ptr& sceneAttributes,
+  bool loadStage(const PhysicsStageAttributes::ptr& sceneAttributes,
                  std::shared_ptr<physics::PhysicsManager> _physicsManager,
                  esp::scene::SceneManager* sceneManagerPtr,
                  std::vector<int>& activeSceneIDs,
@@ -179,7 +179,7 @@ class ResourceManager {
    * @return whether built successfully or not
    */
   template <class T>
-  bool buildSceneCollisionMeshGroup(const std::string& filename,
+  bool buildStageCollisionMeshGroup(const std::string& filename,
                                     std::vector<CollisionMeshData>& meshGroup);
 
   /**
@@ -236,9 +236,9 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
+  const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    return sceneAttributesManager_;
+    return stageAttributesManager_;
   }
 
   /**
@@ -625,7 +625,7 @@ class ResourceManager {
    * @param lightSetup The @ref LightSetup key that will be used
    * for the loaded asset.
    */
-  bool loadSceneInternal(
+  bool loadStageInternal(
       const AssetInfo& info,
       std::shared_ptr<physics::PhysicsManager> _physicsManager,
       scene::SceneNode* parent = nullptr,
@@ -635,19 +635,19 @@ class ResourceManager {
       const Mn::ResourceKey& lightSetup = Mn::ResourceKey{NO_LIGHT_KEY});
 
   /**
-   * @brief Creates a map of appropriate asset infos for scenes.  Will always
+   * @brief Creates a map of appropriate asset infos for sceneries.  Will always
    * create render asset info.  Will create collision asset info and semantic
-   * scene asset info if requested.
+   * stage asset info if requested.
    *
-   * @param sceneAttributes The scene attributes file holding the scene's
+   * @param stageAttributes The stage attributes file holding the stage's
    * information.
    * @param createCollisionInfo Whether collision-based asset info should be
-   * created (only if physicsManager != nullptr)
+   * created (only if physicsManager type is not none)
    * @param createSemanticInfo Whether semantic mesh-based asset info should be
    * created
    */
-  std::map<std::string, AssetInfo> createSceneAssetInfosFromAttributes(
-      const PhysicsSceneAttributes::ptr& sceneAttributes,
+  std::map<std::string, AssetInfo> createStageAssetInfosFromAttributes(
+      const PhysicsStageAttributes::ptr& stageAttributes,
       bool createCollisionInfo,
       bool createSemanticInfo);
 
@@ -893,7 +893,7 @@ class ResourceManager {
   /**
    * @brief Manages all construction and access to scene attributes.
    */
-  managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+  managers::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
   //! tracks primitive mesh ids
   int nextPrimitiveMeshId = 0;

@@ -5,7 +5,7 @@
 #include <Corrade/Utility/String.h>
 
 #include "AttributesManagerBase.h"
-#include "SceneAttributesManager.h"
+#include "StageAttributesManager.h"
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/ResourceManager.h"
@@ -18,11 +18,11 @@ namespace assets {
 
 namespace managers {
 
-SceneAttributesManager::SceneAttributesManager(
+StageAttributesManager::StageAttributesManager(
     assets::ResourceManager& resourceManager,
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
-    : AttributesManager<PhysicsSceneAttributes::ptr>::AttributesManager(
+    : AttributesManager<PhysicsStageAttributes::ptr>::AttributesManager(
           resourceManager,
           "Physical Scene"),
       objectAttributesMgr_(objectAttributesMgr),
@@ -31,58 +31,58 @@ SceneAttributesManager::SceneAttributesManager(
   buildCtorFuncPtrMaps();
 }
 
-PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
-    const std::string& sceneAttributesHandle,
+PhysicsStageAttributes::ptr StageAttributesManager::createAttributesTemplate(
+    const std::string& stageAttributesHandle,
     bool registerTemplate) {
-  PhysicsSceneAttributes::ptr attrs;
+  PhysicsStageAttributes::ptr attrs;
   std::string msg;
-  std::string strHandle = Cr::Utility::String::lowercase(sceneAttributesHandle);
-  bool fileExists = (this->isValidFileName(sceneAttributesHandle));
-  if (objectAttributesMgr_->isValidPrimitiveAttributes(sceneAttributesHandle)) {
-    // if sceneAttributesHandle == some existing primitive attributes, then
-    // this is a primitive-based scene (i.e. a plane) we are building
-    attrs = createPrimBasedAttributesTemplate(sceneAttributesHandle,
+  std::string strHandle = Cr::Utility::String::lowercase(stageAttributesHandle);
+  bool fileExists = (this->isValidFileName(stageAttributesHandle));
+  if (objectAttributesMgr_->isValidPrimitiveAttributes(stageAttributesHandle)) {
+    // if stageAttributesHandle == some existing primitive attributes, then
+    // this is a primitive-based stage (i.e. a plane) we are building
+    attrs = createPrimBasedAttributesTemplate(stageAttributesHandle,
                                               registerTemplate);
-    msg = "Primitive Asset (" + sceneAttributesHandle + ") Based";
+    msg = "Primitive Asset (" + stageAttributesHandle + ") Based";
 
   } else if (fileExists) {
     if ((strHandle.find("scene_config.json") != std::string::npos) &&
         fileExists) {
-      // check if sceneAttributesHandle corresponds to an actual, existing json
-      // scene file descriptor.
-      attrs = createFileBasedAttributesTemplate(sceneAttributesHandle,
+      // check if stageAttributesHandle corresponds to an actual, existing
+      // json stage file descriptor.
+      attrs = createFileBasedAttributesTemplate(stageAttributesHandle,
                                                 registerTemplate);
-      msg = "JSON File (" + sceneAttributesHandle + ") Based";
+      msg = "JSON File (" + stageAttributesHandle + ") Based";
     } else {
       // if name is not json file descriptor but still appropriate file
-      attrs = createBackCompatAttributesTemplate(sceneAttributesHandle,
+      attrs = createBackCompatAttributesTemplate(stageAttributesHandle,
                                                  registerTemplate);
-      msg = "File (" + sceneAttributesHandle + ") Based";
+      msg = "File (" + stageAttributesHandle + ") Based";
     }
 
   } else {
     // if name is not file descriptor, return default attributes.
-    attrs = createDefaultAttributesTemplate(sceneAttributesHandle,
+    attrs = createDefaultAttributesTemplate(stageAttributesHandle,
                                             registerTemplate);
     msg = "New default";
   }
 
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " scene attributes created"
+    LOG(INFO) << msg << " stage attributes created"
               << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
 
-}  // SceneAttributesManager::createAttributesTemplate
+}  // StageAttributesManager::createAttributesTemplate
 
-int SceneAttributesManager::registerAttributesTemplateFinalize(
-    PhysicsSceneAttributes::ptr sceneAttributesTemplate,
-    const std::string& sceneAttributesHandle) {
+int StageAttributesManager::registerAttributesTemplateFinalize(
+    PhysicsStageAttributes::ptr sceneAttributesTemplate,
+    const std::string& stageAttributesHandle) {
   if (sceneAttributesTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
-        << "SceneAttributesManager::registerAttributesTemplateFinalize : "
+        << "StageAttributesManager::registerAttributesTemplateFinalize : "
            "Attributes template named"
-        << sceneAttributesHandle
+        << stageAttributesHandle
         << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
@@ -104,7 +104,7 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
     // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
     // to physicsFileObjTmpltLibByID_ - verify file  exists
     sceneAttributesTemplate->setRenderAssetIsPrimitive(false);
-  } else if (std::string::npos != sceneAttributesHandle.find("NONE")) {
+  } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
     // Render asset handle will be NONE as well - force type to be unknown
     sceneAttributesTemplate->setRenderAssetType(
         static_cast<int>(AssetType::UNKNOWN));
@@ -112,10 +112,10 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
     LOG(ERROR)
-        << "SceneAttributesManager::registerAttributesTemplateFinalize "
+        << "StageAttributesManager::registerAttributesTemplateFinalize "
            ": Render asset template handle : "
-        << renderAssetHandle << " specified in scene template with handle : "
-        << sceneAttributesHandle
+        << renderAssetHandle << " specified in stage template with handle : "
+        << stageAttributesHandle
         << " does not correspond to any existing file or primitive render "
            "asset.  Aborting. ";
     return ID_UNDEFINED;
@@ -129,7 +129,7 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     sceneAttributesTemplate->setCollisionAssetIsPrimitive(false);
-  } else if (std::string::npos != sceneAttributesHandle.find("NONE")) {
+  } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
     // Render asset handle will be NONE as well - force type to be unknown
     sceneAttributesTemplate->setCollisionAssetType(
         static_cast<int>(AssetType::UNKNOWN));
@@ -138,10 +138,10 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
     // Else, means no collision data specified, use specified render data
     // Else, means no collision data specified, use specified render data
     LOG(INFO)
-        << "SceneAttributesManager::registerAttributesTemplateFinalize "
+        << "StageAttributesManager::registerAttributesTemplateFinalize "
            ": Collision asset template handle : "
-        << collisionAssetHandle << " specified in scene template with handle : "
-        << sceneAttributesHandle
+        << collisionAssetHandle << " specified in stage template with handle : "
+        << stageAttributesHandle
         << " does not correspond to any existing file or primitive render "
            "asset.  Overriding with given render asset handle : "
         << renderAssetHandle << ". ";
@@ -154,20 +154,20 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
   sceneAttributesTemplate->setIsClean();
 
   // adds template to library, and returns either the ID of the existing
-  // template referenced by sceneAttributesHandle, or the next available ID
+  // template referenced by stageAttributesHandle, or the next available ID
   // if not found.
   int sceneTemplateID = this->addTemplateToLibrary(sceneAttributesTemplate,
-                                                   sceneAttributesHandle);
+                                                   stageAttributesHandle);
   return sceneTemplateID;
-}  // SceneAttributesManager::registerAttributesTemplate
+}  // StageAttributesManager::registerAttributesTemplate
 
-PhysicsSceneAttributes::ptr
-SceneAttributesManager::createDefaultAttributesTemplate(
+PhysicsStageAttributes::ptr
+StageAttributesManager::createDefaultAttributesTemplate(
     const std::string& sceneFilename,
     bool registerTemplate) {
-  // Attributes descriptor for scene
-  PhysicsSceneAttributes::ptr sceneAttributesTemplate =
-      initNewAttribsInternal(PhysicsSceneAttributes::create(sceneFilename));
+  // Attributes descriptor for stage
+  PhysicsStageAttributes::ptr sceneAttributesTemplate =
+      initNewAttribsInternal(PhysicsStageAttributes::create(sceneFilename));
 
   if (registerTemplate) {
     int attrID = this->registerAttributesTemplate(sceneAttributesTemplate,
@@ -178,55 +178,55 @@ SceneAttributesManager::createDefaultAttributesTemplate(
     }
   }
   return sceneAttributesTemplate;
-}  // SceneAttributesManager::createDefaultAttributesTemplate
+}  // StageAttributesManager::createDefaultAttributesTemplate
 
-PhysicsSceneAttributes::ptr
-SceneAttributesManager::createPrimBasedAttributesTemplate(
+PhysicsStageAttributes::ptr
+StageAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAssetHandle,
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!objectAttributesMgr_->isValidPrimitiveAttributes(primAssetHandle)) {
     LOG(ERROR)
-        << "SceneAttributesManager::createPrimBasedAttributesTemplate : No "
+        << "StageAttributesManager::createPrimBasedAttributesTemplate : No "
            "primitive with handle '"
         << primAssetHandle
         << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 
-  // construct a sceneAttributes
-  auto sceneAttributes =
-      initNewAttribsInternal(PhysicsSceneAttributes::create(primAssetHandle));
+  // construct a stageAttributes
+  auto stageAttributes =
+      initNewAttribsInternal(PhysicsStageAttributes::create(primAssetHandle));
   // set margin to be 0
-  sceneAttributes->setMargin(0.0);
+  stageAttributes->setMargin(0.0);
 
   // set render mesh handle
   int primType = static_cast<int>(AssetType::PRIMITIVE);
-  sceneAttributes->setRenderAssetType(primType);
+  stageAttributes->setRenderAssetType(primType);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
-  sceneAttributes->setCollisionAssetType(primType);
-  sceneAttributes->setUseMeshCollision(false);
+  stageAttributes->setCollisionAssetType(primType);
+  stageAttributes->setUseMeshCollision(false);
   // NOTE to eventually use mesh collisions with primitive objects, a
   // collision primitive mesh needs to be configured and set in MeshMetaData
   // and CollisionMesh
 
-  return this->postCreateRegister(sceneAttributes, registerTemplate);
-}  // SceneAttributesManager::createPrimBasedAttributesTemplate
+  return this->postCreateRegister(stageAttributes, registerTemplate);
+}  // StageAttributesManager::createPrimBasedAttributesTemplate
 
-PhysicsSceneAttributes::ptr
-SceneAttributesManager::createBackCompatAttributesTemplate(
+PhysicsStageAttributes::ptr
+StageAttributesManager::createBackCompatAttributesTemplate(
     const std::string& sceneFilename,
     bool registerTemplate) {
-  // Attributes descriptor for scene
-  PhysicsSceneAttributes::ptr sceneAttributes =
-      initNewAttribsInternal(PhysicsSceneAttributes::create(sceneFilename));
+  // Attributes descriptor for stage
+  PhysicsStageAttributes::ptr stageAttributes =
+      initNewAttribsInternal(PhysicsStageAttributes::create(sceneFilename));
 
-  return this->postCreateRegister(sceneAttributes, registerTemplate);
-}  // SceneAttributesManager::createBackCompatAttributesTemplate
+  return this->postCreateRegister(stageAttributes, registerTemplate);
+}  // StageAttributesManager::createBackCompatAttributesTemplate
 
-PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
-    PhysicsSceneAttributes::ptr newAttributes) {
+PhysicsStageAttributes::ptr StageAttributesManager::initNewAttribsInternal(
+    PhysicsStageAttributes::ptr newAttributes) {
   this->setFileDirectoryFromHandle(newAttributes);
 
   std::string sceneFilename = newAttributes->getHandle();
@@ -283,7 +283,7 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
   // set defaults for passed semantic asset handles
   setDefaultFileNameBasedAttributes(
       newAttributes, false, newAttributes->getSemanticAssetHandle(),
-      std::bind(&PhysicsSceneAttributes::setSemanticAssetType, newAttributes,
+      std::bind(&PhysicsStageAttributes::setSemanticAssetType, newAttributes,
                 _1));
 
   // set default physical quantities specified in physics manager attributes
@@ -298,10 +298,10 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
         physMgrAttributes->getRestitutionCoefficient());
   }
   return newAttributes;
-}  // SceneAttributesManager::initNewAttribsInternal
+}  // StageAttributesManager::initNewAttribsInternal
 
-void SceneAttributesManager::setDefaultFileNameBasedAttributes(
-    PhysicsSceneAttributes::ptr attributes,
+void StageAttributesManager::setDefaultFileNameBasedAttributes(
+    PhysicsStageAttributes::ptr attributes,
     bool setFrame,
     const std::string& fileName,
     std::function<void(int)> meshTypeSetter) {
@@ -337,41 +337,41 @@ void SceneAttributesManager::setDefaultFileNameBasedAttributes(
     attributes->setOrientUp(up);
     attributes->setOrientFront(fwd);
   }
-}  // SceneAttributesManager::setDefaultFileNameBasedAttributes
+}  // StageAttributesManager::setDefaultFileNameBasedAttributes
 
-PhysicsSceneAttributes::ptr
-SceneAttributesManager::createFileBasedAttributesTemplate(
+PhysicsStageAttributes::ptr
+StageAttributesManager::createFileBasedAttributesTemplate(
     const std::string& sceneFilename,
     bool registerTemplate) {
-  // Load the scene config JSON here
+  // Load the stage config JSON here
   io::JsonDocument jsonConfig;
   bool success = this->verifyLoadJson(sceneFilename, jsonConfig);
   if (!success) {
-    LOG(ERROR) << "SceneAttributesManager::createFileBasedAttributesTemplate : "
+    LOG(ERROR) << "StageAttributesManager::createFileBasedAttributesTemplate : "
                   "Failure reading json "
                << sceneFilename << ". Aborting.";
     return nullptr;
   }
 
-  // construct a PhysicsSceneAttributes and populate with any
+  // construct a PhysicsStageAttributes and populate with any
   // AbstractPhysicsAttributes fields found in json.
-  auto sceneAttributes =
-      this->createPhysicsAttributesFromJson<PhysicsSceneAttributes>(
+  auto stageAttributes =
+      this->createPhysicsAttributesFromJson<PhysicsStageAttributes>(
           sceneFilename, jsonConfig);
 
-  // directory location where scene files are found
-  std::string sceneLocFileDir = sceneAttributes->getFileDirectory();
+  // directory location where stage files are found
+  std::string sceneLocFileDir = stageAttributes->getFileDirectory();
 
-  // now parse scene-specific fields
-  // load scene specific gravity
+  // now parse stage-specific fields
+  // load stage specific gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "gravity",
-      std::bind(&PhysicsSceneAttributes::setGravity, sceneAttributes, _1));
+      std::bind(&PhysicsStageAttributes::setGravity, stageAttributes, _1));
 
-  // load scene specific origin
+  // load stage specific origin
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "origin",
-      std::bind(&PhysicsSceneAttributes::setOrigin, sceneAttributes, _1));
+      std::bind(&PhysicsStageAttributes::setOrigin, stageAttributes, _1));
 
   // populate specified semantic file name if specified in json - defaults
   // are overridden only if specified in json.
@@ -381,37 +381,37 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
   std::string lightSetup = "";
 
   // populate semantic mesh type if present
-  std::string semanticFName = sceneAttributes->getSemanticAssetHandle();
+  std::string semanticFName = stageAttributes->getSemanticAssetHandle();
   if (this->setJSONAssetHandleAndType(
-          sceneAttributes, jsonConfig, "semantic mesh type", "semantic mesh",
+          stageAttributes, jsonConfig, "semantic mesh type", "semantic mesh",
           semanticFName,
-          std::bind(&PhysicsSceneAttributes::setSemanticAssetType,
-                    sceneAttributes, _1))) {
-    // if "semantic mesh" is specified in scene json to non-empty value, set
+          std::bind(&PhysicsStageAttributes::setSemanticAssetType,
+                    stageAttributes, _1))) {
+    // if "semantic mesh" is specified in stage json to non-empty value, set
     // value (override default).
-    sceneAttributes->setSemanticAssetHandle(semanticFName);
+    stageAttributes->setSemanticAssetHandle(semanticFName);
     // TODO eventually remove this, but currently semantic mesh must be instance
-    sceneAttributes->setSemanticAssetType(
+    stageAttributes->setSemanticAssetType(
         static_cast<int>(AssetType::INSTANCE_MESH));
   }
 
   if (io::jsonIntoVal<std::string>(jsonConfig, "nav mesh", navmeshFName)) {
     navmeshFName = Cr::Utility::Directory::join(sceneLocFileDir, navmeshFName);
-    // if "nav mesh" is specified in scene json set value (override default).
-    sceneAttributes->setNavmeshAssetHandle(navmeshFName);
+    // if "nav mesh" is specified in stage json set value (override default).
+    stageAttributes->setNavmeshAssetHandle(navmeshFName);
   }
 
   if (io::jsonIntoVal<std::string>(jsonConfig, "house filename", houseFName)) {
     houseFName = Cr::Utility::Directory::join(sceneLocFileDir, houseFName);
-    // if "house filename" is specified in scene json, set value (override
+    // if "house filename" is specified in stage json, set value (override
     // default).
-    sceneAttributes->setHouseFilename(houseFName);
+    stageAttributes->setHouseFilename(houseFName);
   }
 
   if (io::jsonIntoVal<std::string>(jsonConfig, "lighting setup", lightSetup)) {
-    // if lighting is specified in scene json to non-empty value, set value
+    // if lighting is specified in stage json to non-empty value, set value
     // (override default).
-    sceneAttributes->setLightSetup(lightSetup);
+    stageAttributes->setLightSetup(lightSetup);
   }
 
   // load the rigid object library metadata (no physics init yet...)
@@ -424,8 +424,8 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
     for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
       if (!paths[i].IsString()) {
         LOG(ERROR)
-            << "SceneAttributesManager::createAttributesTemplate "
-               ":Invalid value in scene config 'rigid object paths'- array "
+            << "StageAttributesManager::createAttributesTemplate "
+               ":Invalid value in stage config 'rigid object paths'- array "
             << i;
         continue;
       }
@@ -437,8 +437,8 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
     }
   }  // if load rigid object library metadata
 
-  return this->postCreateRegister(sceneAttributes, registerTemplate);
-}  // SceneAttributesManager::createFileBasedAttributesTemplate
+  return this->postCreateRegister(stageAttributes, registerTemplate);
+}  // StageAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers
 }  // namespace assets

@@ -10,7 +10,7 @@
 #include "esp/assets/managers/AssetAttributesManager.h"
 #include "esp/assets/managers/ObjectAttributesManager.h"
 #include "esp/assets/managers/PhysicsAttributesManager.h"
-#include "esp/assets/managers/SceneAttributesManager.h"
+#include "esp/assets/managers/StageAttributesManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/gfx/RenderTarget.h"
@@ -141,9 +141,9 @@ class Simulator {
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const AttrMgrs::SceneAttributesManager::ptr getSceneAttributesManager()
+  const AttrMgrs::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    return resourceManager_->getSceneAttributesManager();
+    return resourceManager_->getStageAttributesManager();
   }
 
   /** @brief Return the library implementation type for the simulator currently
