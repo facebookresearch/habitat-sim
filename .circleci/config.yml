@@ -516,7 +516,7 @@ jobs:
               cd habitat-website
               git submodule update --init
 
-              for dir in habitat-sim habitat-cpp habitat-lab
+              for dir in habitat-sim habitat-lab
               do
                   rm -rf published/docs/${dir}
                   cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
