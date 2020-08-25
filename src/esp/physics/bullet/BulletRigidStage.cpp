@@ -10,26 +10,26 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
-#include "BulletRigidScenery.h"
+#include "BulletRigidStage.h"
 
 namespace esp {
 namespace physics {
 
-BulletRigidScenery::BulletRigidScenery(
+BulletRigidStage::BulletRigidStage(
     scene::SceneNode* rigidBodyNode,
     std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
     std::shared_ptr<std::map<const btCollisionObject*, int> >
         collisionObjToObjIds)
-    : BulletBase(bWorld, collisionObjToObjIds), RigidScenery{rigidBodyNode} {}
+    : BulletBase(bWorld, collisionObjToObjIds), RigidStage{rigidBodyNode} {}
 
-BulletRigidScenery::~BulletRigidScenery() {
+BulletRigidStage::~BulletRigidStage() {
   // remove collision objects from the world
   for (auto& co : bStaticCollisionObjects_) {
     bWorld_->removeCollisionObject(co.get());
     collisionObjToObjIds_->erase(co.get());
   }
 }
-bool BulletRigidScenery::initialization_LibSpecific(
+bool BulletRigidStage::initialization_LibSpecific(
     const assets::ResourceManager& resMgr) {
   const auto collisionAssetHandle =
       initializationAttributes_->getCollisionAssetHandle();
@@ -53,7 +53,7 @@ bool BulletRigidScenery::initialization_LibSpecific(
 
 }  // initialization_LibSpecific
 
-void BulletRigidScenery::constructBulletSceneFromMeshes(
+void BulletRigidStage::constructBulletSceneFromMeshes(
     const Magnum::Matrix4& transformFromParentToWorld,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     const assets::MeshTransformNode& node) {
@@ -105,8 +105,8 @@ void BulletRigidScenery::constructBulletSceneFromMeshes(
         btTransform{btMatrix3x3{transformFromLocalToWorld.rotation()},
                     btVector3{transformFromLocalToWorld.translation()}});
 
-    bSceneryArrays_.emplace_back(std::move(indexedVertexArray));
-    bSceneryShapes_.emplace_back(std::move(meshShape));
+    bStageArrays_.emplace_back(std::move(indexedVertexArray));
+    bStageShapes_.emplace_back(std::move(meshShape));
     bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
   }
 
@@ -115,21 +115,21 @@ void BulletRigidScenery::constructBulletSceneFromMeshes(
   }
 }  // constructBulletSceneFromMeshes
 
-void BulletRigidScenery::setFrictionCoefficient(
+void BulletRigidStage::setFrictionCoefficient(
     const double frictionCoefficient) {
   for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
     bStaticCollisionObjects_[i]->setFriction(frictionCoefficient);
   }
 }
 
-void BulletRigidScenery::setRestitutionCoefficient(
+void BulletRigidStage::setRestitutionCoefficient(
     const double restitutionCoefficient) {
   for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
     bStaticCollisionObjects_[i]->setRestitution(restitutionCoefficient);
   }
 }
 
-double BulletRigidScenery::getFrictionCoefficient() const {
+double BulletRigidStage::getFrictionCoefficient() const {
   if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
   } else {
@@ -138,7 +138,7 @@ double BulletRigidScenery::getFrictionCoefficient() const {
   }
 }
 
-double BulletRigidScenery::getRestitutionCoefficient() const {
+double BulletRigidStage::getRestitutionCoefficient() const {
   // Assume uniform restitution in scene parts
   if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
@@ -147,7 +147,7 @@ double BulletRigidScenery::getRestitutionCoefficient() const {
   }
 }
 
-const Magnum::Range3D BulletRigidScenery::getCollisionShapeAabb() const {
+const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   Magnum::Range3D combinedAABB;
   // concatenate all component AABBs
   for (auto& object : bStaticCollisionObjects_) {

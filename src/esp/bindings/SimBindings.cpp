@@ -92,8 +92,7 @@ void initSimBindings(py::module& m) {
       .def("get_physics_template_manager",
            &Simulator::getPhysicsAttributesManager,
            pybind11::return_value_policy::reference)
-      .def("get_scenery_template_manager",
-           &Simulator::getSceneryAttributesManager,
+      .def("get_stage_template_manager", &Simulator::getStageAttributesManager,
            pybind11::return_value_policy::reference)
 
       .def("get_physics_simulation_library",

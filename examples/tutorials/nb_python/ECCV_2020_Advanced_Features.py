@@ -94,8 +94,8 @@ if not "sim" in globals():
     obj_attr_mgr = None
     global prim_attr_mgr
     obj_attr_mgr = None
-    global scenery_attr_mgr
-    scenery_attr_mgr = None
+    global stage_attr_mgr
+    stage_attr_mgr = None
 
 
 # %%
@@ -217,7 +217,7 @@ def build_dict_of_Object_attrs(obj_template):
 # and values for the passed scene template. The values are tuples with the first
 # entry being the value,the second being whether the property is editable and
 # the third being the type.
-def build_dict_of_Scenery_attrs(scene_template):
+def build_dict_of_Stage_attrs(scene_template):
     res_dict = build_dict_of_PhyObj_attrs(scene_template)
     res_dict["gravity"] = (scene_template.gravity, True, "vector")
     res_dict["origin"] = (scene_template.origin, True, "vector")
@@ -353,7 +353,7 @@ def build_dict_from_template(template):
     if "PhysicsObjectAttributes" in template_class:
         return build_dict_of_Object_attrs(template)
     if "PhysicsSceneAttributes" in template_class:
-        return build_dict_of_Scenery_attrs(template)
+        return build_dict_of_Stage_attrs(template)
     if "PhysicsManagerAttributes" in template_class:
         return build_dict_of_PhysicsSim_attrs(template)
     if "CapsulePrimitiveAttributes" in template_class:
@@ -479,7 +479,7 @@ def make_simulator_from_settings(sim_settings):
     global sim
     global obj_attr_mgr
     global prim_attr_mgr
-    global scenery_attr_mgr
+    global stage_attr_mgr
     if sim != None:
         sim.close()
     # initialize the simulator
@@ -487,7 +487,7 @@ def make_simulator_from_settings(sim_settings):
     # Managers of various Attributes templates
     obj_attr_mgr = sim.get_object_template_manager()
     prim_attr_mgr = sim.get_asset_template_manager()
-    scenery_attr_mgr = sim.get_scenery_template_manager()
+    stage_attr_mgr = sim.get_stage_template_manager()
     # UI-populated handles used in various cells.  Need to initialize to valid
     # value in case IPyWidgets are not available.
     # Holds the user's desired file-based object template handle

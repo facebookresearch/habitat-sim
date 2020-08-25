@@ -18,7 +18,7 @@
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 
 #include "BulletRigidObject.h"
-#include "BulletRigidScenery.h"
+#include "BulletRigidStage.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletRigidObject.h"
 
@@ -26,7 +26,7 @@ namespace esp {
 namespace physics {
 
 /**
-@brief Dynamic scenery and object manager interfacing with Bullet physics
+@brief Dynamic stage and object manager interfacing with Bullet physics
 engine: https://github.com/bulletphysics/bullet3.
 
 See @ref btMultiBodyDynamicsWorld.
@@ -92,20 +92,20 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   void setMargin(const int physObjectID, const double margin) override;
 
-  /** @brief Set the friction coefficient of the scenery collision geometry. See
-   * @ref staticSceneryObject_. See @ref
+  /** @brief Set the friction coefficient of the stage collision geometry. See
+   * @ref staticStageObject_. See @ref
    * BulletRigidObject::setFrictionCoefficient.
-   * @param frictionCoefficient The scalar friction coefficient of the scenery
+   * @param frictionCoefficient The scalar friction coefficient of the stage
    * geometry.
    */
-  void setSceneryFrictionCoefficient(const double frictionCoefficient) override;
+  void setStageFrictionCoefficient(const double frictionCoefficient) override;
 
-  /** @brief Set the coefficient of restitution for the scenery collision
-   * geometry. See @ref staticSceneryObject_. See @ref
+  /** @brief Set the coefficient of restitution for the stage collision
+   * geometry. See @ref staticStageObject_. See @ref
    * BulletRigidObject::setRestitutionCoefficient.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
-  void setSceneryRestitutionCoefficient(
+  void setStageRestitutionCoefficient(
       const double restitutionCoefficient) override;
 
   //============ Bullet-specific Object Getter functions =============
@@ -119,20 +119,20 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   double getMargin(const int physObjectID) const override;
 
-  /** @brief Get the current friction coefficient of the scenery collision
-   * geometry. See @ref staticSceneryObject_ and @ref
+  /** @brief Get the current friction coefficient of the stage collision
+   * geometry. See @ref staticStageObject_ and @ref
    * BulletRigidObject::getFrictionCoefficient.
-   * @return The scalar friction coefficient of the scenery geometry.
+   * @return The scalar friction coefficient of the stage geometry.
    */
-  double getSceneryFrictionCoefficient() const override;
+  double getStageFrictionCoefficient() const override;
 
-  /** @brief Get the current coefficient of restitution for the scenery
+  /** @brief Get the current coefficient of restitution for the stage
    * collision geometry. This determines the ratio of initial to final relative
-   * velocity between the scenery and collidiing object. See @ref
-   * staticSceneryObject_ and BulletRigidObject::getRestitutionCoefficient.
-   * @return The scalar coefficient of restitution for the scenery geometry.
+   * velocity between the stage and collidiing object. See @ref
+   * staticStageObject_ and BulletRigidObject::getRestitutionCoefficient.
+   * @return The scalar coefficient of restitution for the stage geometry.
    */
-  double getSceneryRestitutionCoefficient() const override;
+  double getStageRestitutionCoefficient() const override;
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of a
@@ -145,10 +145,10 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
-   * the static scenery in its local space. See @ref btCompoundShape::getAabb.
-   * @return The scenery collision Aabb.
+   * the static stage in its local space. See @ref btCompoundShape::getAabb.
+   * @return The stage collision Aabb.
    */
-  const Magnum::Range3D getSceneryCollisionShapeAabb() const;
+  const Magnum::Range3D getStageCollisionShapeAabb() const;
 
   /** @brief Render the debugging visualizations provided by @ref
    * Magnum::BulletIntegration::DebugDraw. This draws wireframes for all
@@ -160,7 +160,7 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /**
    * @brief Check whether an object is in contact with any other objects or the
-   * scenery.
+   * stage.
    *
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
@@ -185,22 +185,22 @@ class BulletPhysicsManager : public PhysicsManager {
  protected:
   //============ Initialization =============
   /**
-   * @brief Finalize physics initialization: Setup staticSceneryObject_ and
+   * @brief Finalize physics initialization: Setup staticStageObject_ and
    * initialize any other physics-related values.
    */
   bool initPhysicsFinalize() override;
 
-  //============ Object/Scenery Instantiation =============
+  //============ Object/Stage Instantiation =============
   /**
-   * @brief Finalize scenery initialization. Checks that the collision
-   * mesh can be used by Bullet. See @ref BulletRigidObject::initializeScenery.
+   * @brief Finalize stage initialization. Checks that the collision
+   * mesh can be used by Bullet. See @ref BulletRigidObject::initializeStage.
    * Bullet mesh conversion adapted from:
    * https://github.com/mosra/magnum-integration/issues/20
    * @param handle The handle of the attributes structure defining physical
-   * properties of the scenery.
+   * properties of the stage.
    * @return true if successful and false otherwise
    */
-  bool addSceneryFinalize(const std::string& handle) override;
+  bool addStageFinalize(const std::string& handle) override;
 
   /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID

@@ -2,23 +2,23 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "RigidScenery.h"
+#include "RigidStage.h"
 
 namespace esp {
 namespace physics {
 
-RigidScenery::RigidScenery(scene::SceneNode* rigidBodyNode)
+RigidStage::RigidStage(scene::SceneNode* rigidBodyNode)
     : RigidBase(rigidBodyNode) {}
 
-bool RigidScenery::initialize(const assets::ResourceManager& resMgr,
-                              const std::string& handle) {
+bool RigidStage::initialize(const assets::ResourceManager& resMgr,
+                            const std::string& handle) {
   if (initializationAttributes_ != nullptr) {
-    LOG(ERROR) << "Cannot initialize a RigidScenery more than once";
+    LOG(ERROR) << "Cannot initialize a RigidStage more than once";
     return false;
   }
   objectMotionType_ = MotionType::STATIC;
   initializationAttributes_ =
-      resMgr.getSceneryAttributesManager()->getTemplateCopyByHandle(handle);
+      resMgr.getStageAttributesManager()->getTemplateCopyByHandle(handle);
 
   return initialization_LibSpecific(resMgr);
 }

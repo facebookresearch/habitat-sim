@@ -16,7 +16,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   LOG(INFO) << "Deconstructing BulletPhysicsManager";
 
   existingObjects_.clear();
-  staticSceneryObject_.reset(nullptr);
+  staticStageObject_.reset(nullptr);
 }
 
 bool BulletPhysicsManager::initPhysicsFinalize() {
@@ -36,21 +36,20 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   // currently GLB meshes are y-up
   bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
 
-  Corrade::Utility::Debug() << "creating staticSceneryObject_";
+  Corrade::Utility::Debug() << "creating staticStageObject_";
   //! Create new scene node
-  staticSceneryObject_ = physics::BulletRigidScenery::create_unique(
+  staticStageObject_ = physics::BulletRigidStage::create_unique(
       &physicsNode_->createChild(), bWorld_, collisionObjToObjIds_);
-  Corrade::Utility::Debug() << "creating staticSceneryObject_ .. done";
+  Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
 
   return true;
 }
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addSceneryFinalize(const std::string& handle) {
+bool BulletPhysicsManager::addStageFinalize(const std::string& handle) {
   //! Initialize scene
-  bool sceneSuccess =
-      staticSceneryObject_->initialize(resourceManager_, handle);
+  bool sceneSuccess = staticStageObject_->initialize(resourceManager_, handle);
 
   return sceneSuccess;
 }
@@ -171,14 +170,14 @@ void BulletPhysicsManager::setMargin(const int physObjectID,
       ->setMargin(margin);
 }
 
-void BulletPhysicsManager::setSceneryFrictionCoefficient(
+void BulletPhysicsManager::setStageFrictionCoefficient(
     const double frictionCoefficient) {
-  staticSceneryObject_->setFrictionCoefficient(frictionCoefficient);
+  staticStageObject_->setFrictionCoefficient(frictionCoefficient);
 }
 
-void BulletPhysicsManager::setSceneryRestitutionCoefficient(
+void BulletPhysicsManager::setStageRestitutionCoefficient(
     const double restitutionCoefficient) {
-  staticSceneryObject_->setRestitutionCoefficient(restitutionCoefficient);
+  staticStageObject_->setRestitutionCoefficient(restitutionCoefficient);
 }
 
 double BulletPhysicsManager::getMargin(const int physObjectID) const {
@@ -188,12 +187,12 @@ double BulletPhysicsManager::getMargin(const int physObjectID) const {
       ->getMargin();
 }
 
-double BulletPhysicsManager::getSceneryFrictionCoefficient() const {
-  return staticSceneryObject_->getFrictionCoefficient();
+double BulletPhysicsManager::getStageFrictionCoefficient() const {
+  return staticStageObject_->getFrictionCoefficient();
 }
 
-double BulletPhysicsManager::getSceneryRestitutionCoefficient() const {
-  return staticSceneryObject_->getRestitutionCoefficient();
+double BulletPhysicsManager::getStageRestitutionCoefficient() const {
+  return staticStageObject_->getRestitutionCoefficient();
 }
 
 const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
@@ -204,9 +203,8 @@ const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
       ->getCollisionShapeAabb();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getSceneryCollisionShapeAabb()
-    const {
-  return static_cast<BulletRigidScenery*>(staticSceneryObject_.get())
+const Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
+  return static_cast<BulletRigidStage*>(staticStageObject_.get())
       ->getCollisionShapeAabb();
 }
 

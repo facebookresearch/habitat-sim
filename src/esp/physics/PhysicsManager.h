@@ -18,7 +18,7 @@
 /* Bullet Physics Integration */
 
 #include "RigidObject.h"
-#include "RigidScenery.h"
+#include "RigidStage.h"
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/CollisionMeshData.h"
@@ -36,7 +36,7 @@ namespace physics {
 
 //! Holds information about one ray hit instance.
 struct RayHitInfo {
-  //! The id of the object hit by this ray. Scenery hits are -1.
+  //! The id of the object hit by this ray. Stage hits are -1.
   int objectId;
   //! The first impact point of the ray in world space.
   Magnum::Vector3 point;
@@ -162,8 +162,8 @@ class PhysicsManager {
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  bool addScenery(const std::string& handle,
-                  const std::vector<assets::CollisionMeshData>& meshGroup);
+  bool addStage(const std::string& handle,
+                const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
@@ -297,36 +297,36 @@ class PhysicsManager {
    */
   virtual Magnum::Vector3 getGravity() const;
 
-  // =========== Scenery Getter/Setter functions ===========
+  // =========== Stage Getter/Setter functions ===========
 
   /** @brief Get the current friction coefficient of the scene collision
-   * geometry. See @ref staticSceneryObject_.
+   * geometry. See @ref staticStageObject_.
    * @return The scalar friction coefficient of the scene geometry.
    */
-  virtual double getSceneryFrictionCoefficient() const { return 0.0; };
+  virtual double getStageFrictionCoefficient() const { return 0.0; };
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
-   * @ref staticSceneryObject_.
+   * @ref staticStageObject_.
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
-  virtual void setSceneryFrictionCoefficient(
+  virtual void setStageFrictionCoefficient(
       CORRADE_UNUSED const double frictionCoefficient){};
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
-   * between the scene and collidiing object. See @ref staticSceneryObject_. By
+   * between the scene and collidiing object. See @ref staticStageObject_. By
    * default this will always return 0, since kinametic scenes have no dynamics.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
-  virtual double getSceneryRestitutionCoefficient() const { return 0.0; };
+  virtual double getStageRestitutionCoefficient() const { return 0.0; };
 
   /** @brief Set the coefficient of restitution for the scene collision
-   * geometry. See @ref staticSceneryObject_. By default does nothing since
+   * geometry. See @ref staticStageObject_. By default does nothing since
    * kinametic scenes have no dynamics.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
-  virtual void setSceneryRestitutionCoefficient(
+  virtual void setStageRestitutionCoefficient(
       CORRADE_UNUSED const double restitutionCoefficient){};
 
   // ============ Object Transformation functions =============
@@ -937,7 +937,7 @@ class PhysicsManager {
   int deallocateObjectID(int physObjectID);
 
   /**
-   * @brief Finalize physics initialization. Setup staticSceneryObject_ and
+   * @brief Finalize physics initialization. Setup staticStageObject_ and
    * initialize any other physics-related values for physics-based scenes.
    * Overidden by instancing class if physics is supported.
    */
@@ -953,7 +953,7 @@ class PhysicsManager {
    * @return true if successful and false otherwise
    */
 
-  virtual bool addSceneryFinalize(const std::string& handle);
+  virtual bool addStageFinalize(const std::string& handle);
 
   /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
@@ -991,13 +991,13 @@ class PhysicsManager {
 
   /**
    * @brief The @ref scene::SceneNode which represents the static collision
-   * geometry of the physical world. Only one @ref staticSceneryObject_ may
-   * exist in a physical world. This @ref RigidScenery can only have @ref
+   * geometry of the physical world. Only one @ref staticStageObject_ may
+   * exist in a physical world. This @ref RigidStage can only have @ref
    * MotionType::STATIC as it is loaded as static geometry with simulation
    * efficiency in mind. See
-   * @ref addScenery.
+   * @ref addStage.
    * */
-  physics::RigidScenery::uptr staticSceneryObject_ = nullptr;
+  physics::RigidStage::uptr staticStageObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
 

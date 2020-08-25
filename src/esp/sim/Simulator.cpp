@@ -89,35 +89,35 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       resourceManager_->getPhysicsAttributesManager()->createAttributesTemplate(
           config_.physicsConfigFile, true);
   // if physicsManagerAttributes have been successfully created, inform
-  // sceneryAttributesManager of the config handle of the attributes, so that
-  // sceneryAttributes initialization can use phys Mgr Attr values as defaults
-  auto sceneryAttributesMgr = resourceManager_->getSceneryAttributesManager();
+  // stageAttributesManager of the config handle of the attributes, so that
+  // stageAttributes initialization can use phys Mgr Attr values as defaults
+  auto stageAttributesMgr = resourceManager_->getStageAttributesManager();
   if (physicsManagerAttributes != nullptr) {
-    sceneryAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+    stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
         physicsManagerAttributes->getHandle());
   }
   // set scene attributes defaults to cfg-based values, i.e. to construct
   // default semantic and navmesh file names, if they exist.  All values
   // set/built from these default values may be overridden by values in scene
   // json file, if present.
-  sceneryAttributesMgr->setCurrCfgVals(
+  stageAttributesMgr->setCurrCfgVals(
       config_.scene.filepaths, config_.sceneLightSetup, config_.frustumCulling);
 
   // Build scene file name based on config specification
-  std::string sceneryFilename = config_.scene.id;
+  std::string stageFilename = config_.scene.id;
   if (config_.scene.filepaths.count("mesh")) {
-    sceneryFilename = config_.scene.filepaths.at("mesh");
+    stageFilename = config_.scene.filepaths.at("mesh");
   }
 
   // Create scene attributes with values based on sceneFilename
-  auto sceneryAttributes =
-      sceneryAttributesMgr->createAttributesTemplate(sceneryFilename, true);
+  auto stageAttributes =
+      stageAttributesMgr->createAttributesTemplate(stageFilename, true);
 
-  std::string navmeshFilename = sceneryAttributes->getNavmeshAssetHandle();
-  std::string houseFilename = sceneryAttributes->getHouseFilename();
+  std::string navmeshFilename = stageAttributes->getNavmeshAssetHandle();
+  std::string houseFilename = stageAttributes->getHouseFilename();
 
-  esp::assets::AssetType sceneryType = static_cast<esp::assets::AssetType>(
-      sceneryAttributes->getRenderAssetType());
+  esp::assets::AssetType stageType = static_cast<esp::assets::AssetType>(
+      stageAttributes->getRenderAssetType());
 
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
@@ -167,14 +167,14 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
     // Load scene
-    loadSuccess = resourceManager_->loadScenery(
-        sceneryAttributes, physicsManager_, sceneManager_.get(), tempIDs,
-        config_.loadSemanticMesh);
+    loadSuccess = resourceManager_->loadStage(stageAttributes, physicsManager_,
+                                              sceneManager_.get(), tempIDs,
+                                              config_.loadSemanticMesh);
 
     if (!loadSuccess) {
-      LOG(ERROR) << "Cannot load " << sceneryFilename;
+      LOG(ERROR) << "Cannot load " << stageFilename;
       // Pass the error to the python through pybind11 allowing graceful exit
-      throw std::invalid_argument("Cannot load: " + sceneryFilename);
+      throw std::invalid_argument("Cannot load: " + stageFilename);
     }
 
     // refresh the NavMesh visualization if necessary after loading a new
@@ -190,7 +190,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     // set activeSemanticSceneID_ values and push onto sceneID vector if
     // appropriate - tempIDs[1] will either be old activeSemanticSceneID_ (if
-    // no semantic mesh was requested in loadScenery); ID_UNDEFINED if desired
+    // no semantic mesh was requested in loadStage); ID_UNDEFINED if desired
     // was not found; activeSceneID_, or a unique value, the last of which means
     // the semantic scene mesh is loaded.
 
@@ -203,9 +203,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       } else {  // activeSemanticSceneID_ = activeSceneID_;
         // instance meshes and suncg houses contain their semantic annotations
         // empty scene has none to worry about
-        if (!(sceneryType == assets::AssetType::SUNCG_SCENE ||
-              sceneryType == assets::AssetType::INSTANCE_MESH ||
-              sceneryFilename.compare(assets::EMPTY_SCENE) == 0)) {
+        if (!(stageType == assets::AssetType::SUNCG_SCENE ||
+              stageType == assets::AssetType::INSTANCE_MESH ||
+              stageFilename.compare(assets::EMPTY_SCENE) == 0)) {
           // TODO: programmatic generation of semantic meshes when no
           // annotations are provided.
           LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
@@ -217,7 +217,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
-  switch (sceneryType) {
+  switch (stageType) {
     case assets::AssetType::INSTANCE_MESH:
       houseFilename = Cr::Utility::Directory::join(
           Cr::Utility::Directory::path(houseFilename), "info_semantic.json");
@@ -237,7 +237,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       }
       break;
     case assets::AssetType::SUNCG_SCENE:
-      scene::SemanticScene::loadSuncgHouse(sceneryFilename, *semanticScene_);
+      scene::SemanticScene::loadSuncgHouse(stageFilename, *semanticScene_);
       break;
     default:
       break;

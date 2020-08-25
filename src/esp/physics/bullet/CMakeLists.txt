@@ -6,8 +6,8 @@ add_library(bulletphysics STATIC
   BulletBase.h
   BulletRigidObject.cpp
   BulletRigidObject.h
-  BulletRigidScenery.cpp
-  BulletRigidScenery.h
+  BulletRigidStage.cpp
+  BulletRigidStage.h
 )
 
 target_link_libraries(bulletphysics

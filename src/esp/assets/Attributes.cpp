@@ -62,8 +62,8 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(const std::string& handle)
   setIsCollidable(true);
 }  // PhysicsObjectAttributes ctor
 
-PhysicsSceneryAttributes::PhysicsSceneryAttributes(const std::string& handle)
-    : AbstractPhysicsAttributes("PhysicsSceneryAttributes", handle) {
+PhysicsStageAttributes::PhysicsStageAttributes(const std::string& handle)
+    : AbstractPhysicsAttributes("PhysicsStageAttributes", handle) {
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
 
@@ -72,7 +72,7 @@ PhysicsSceneryAttributes::PhysicsSceneryAttributes(const std::string& handle)
   setCollisionAssetType(0);
   // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
   setSemanticAssetType(4);
-}  // PhysicsSceneryAttributes ctor
+}  // PhysicsStageAttributes ctor
 
 PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
     : AbstractAttributes("PhysicsManagerAttributes", handle) {
