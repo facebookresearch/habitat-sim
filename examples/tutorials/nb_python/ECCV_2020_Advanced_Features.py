@@ -78,6 +78,7 @@ if "google.colab" in sys.modules:
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
+# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 # fmt: off
 output_directory = "examples/tutorials/advanced_features_output/"  # @param {type:"string"}
