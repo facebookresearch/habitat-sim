@@ -203,57 +203,111 @@ void initAttributesBindings(py::module& m) {
           &PhysicsStageAttributes::setSemanticAssetType,
           R"(Type of asset used for collision calculations for constructions 
           built from this template.)")
-      .def_property("navmesh_asset_handle",
-                    &PhysicsStageAttributes::getNavmeshAssetHandle,
-                    &PhysicsStageAttributes::setNavmeshAssetHandle)
-      .def_property("house_filename", &PhysicsStageAttributes::getHouseFilename,
-                    &PhysicsStageAttributes::setHouseFilename)
-      .def_property("light_setup", &PhysicsStageAttributes::getLightSetup,
-                    &PhysicsStageAttributes::setLightSetup)
-      .def_property("frustrum_culling",
-                    &PhysicsStageAttributes::getFrustrumCulling,
-                    &PhysicsStageAttributes::setFrustrumCulling);
+      .def_property(
+          "navmesh_asset_handle",
+          &PhysicsStageAttributes::getNavmeshAssetHandle,
+          &PhysicsStageAttributes::setNavmeshAssetHandle,
+          R"(Handle of the navmesh asset used for constructions built from 
+          this template.)")
+      .def_property(
+          "house_filename", &PhysicsStageAttributes::getHouseFilename,
+          &PhysicsStageAttributes::setHouseFilename,
+          R"(Handle for file containing semantic type maps and hierarchy for 
+          constructions built from this template.)")
+      .def_property(
+          "light_setup", &PhysicsStageAttributes::getLightSetup,
+          &PhysicsStageAttributes::setLightSetup,
+          R"(Habitat lighting setup to use for constructions built by this template.)")
+      .def_property(
+          "frustrum_culling", &PhysicsStageAttributes::getFrustrumCulling,
+          &PhysicsStageAttributes::setFrustrumCulling,
+          R"(Whether frustrum culling should be enabled for constructions built by this template.)");
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,
              PhysicsManagerAttributes::ptr>(m, "PhysicsManagerAttributes")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
-      .def_property_readonly("simulator",
-                             &PhysicsManagerAttributes::getSimulator)
+      .def_property_readonly(
+          "simulator", &PhysicsManagerAttributes::getSimulator,
+          R"(The simulator being used for dynamic simulation.  If none then only kinematic 
+        support is provided.)")
       .def_property("timestep", &PhysicsManagerAttributes::getTimestep,
-                    &PhysicsManagerAttributes::setTimestep)
+                    &PhysicsManagerAttributes::setTimestep,
+                    R"(The timestep to use for forward simulation.)")
       .def_property("max_substeps", &PhysicsManagerAttributes::getMaxSubsteps,
-                    &PhysicsManagerAttributes::setMaxSubsteps)
-      .def_property("gravity", &PhysicsManagerAttributes::getGravity,
-                    &PhysicsManagerAttributes::setGravity)
-      .def_property("friction_coefficient",
-                    &PhysicsManagerAttributes::getFrictionCoefficient,
-                    &PhysicsManagerAttributes::setFrictionCoefficient)
-      .def_property("restitution_coefficient",
-                    &PhysicsManagerAttributes::getRestitutionCoefficient,
-                    &PhysicsManagerAttributes::setRestitutionCoefficient);
+                    &PhysicsManagerAttributes::setMaxSubsteps,
+                    R"(Maximum simulation steps between each rendering step.  
+                    (Not currently implemented).)")
+      .def_property(
+          "gravity", &PhysicsManagerAttributes::getGravity,
+          &PhysicsManagerAttributes::setGravity,
+          R"(The default 3-vector representation of gravity to use for physically-based 
+          simulations.  Can be overridden.)")
+      .def_property(
+          "friction_coefficient",
+          &PhysicsManagerAttributes::getFrictionCoefficient,
+          &PhysicsManagerAttributes::setFrictionCoefficient,
+          R"(Default friction coefficient for contact modeling.  Can be overridden by 
+          stage and object values.)")
+      .def_property(
+          "restitution_coefficient",
+          &PhysicsManagerAttributes::getRestitutionCoefficient,
+          &PhysicsManagerAttributes::setRestitutionCoefficient,
+          R"(Default restitution coefficient for contact modeling.  Can be overridden by 
+          stage and object values.)");
 
   // ==== AbstractPrimitiveAttributes ====
   py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
              AbstractPrimitiveAttributes::ptr>(m, "AbstractPrimitiveAttributes")
-      .def_property_readonly("is_wireframe",
-                             &AbstractPrimitiveAttributes::getIsWireframe)
-      .def_property("use_texture_coords",
-                    &AbstractPrimitiveAttributes::getUseTextureCoords,
-                    &AbstractPrimitiveAttributes::setUseTextureCoords)
-      .def_property("use_tangents",
-                    &AbstractPrimitiveAttributes::getUseTangents,
-                    &AbstractPrimitiveAttributes::setUseTangents)
-      .def_property("num_rings", &AbstractPrimitiveAttributes::getNumRings,
-                    &AbstractPrimitiveAttributes::setNumRings)
-      .def_property("num_segments",
-                    &AbstractPrimitiveAttributes::getNumSegments,
-                    &AbstractPrimitiveAttributes::setNumSegments)
-      .def_property("half_length", &AbstractPrimitiveAttributes::getHalfLength,
-                    &AbstractPrimitiveAttributes::setHalfLength)
-      .def_property_readonly("prim_obj_class_name",
-                             &AbstractPrimitiveAttributes::getPrimObjClassName)
+      .def_property_readonly(
+          "is_wireframe", &AbstractPrimitiveAttributes::getIsWireframe,
+          R"(Whether primitives built from this template are wireframe or solid.)")
+      .def_property(
+          "use_texture_coords",
+          &AbstractPrimitiveAttributes::getUseTextureCoords,
+          &AbstractPrimitiveAttributes::setUseTextureCoords,
+          R"(Whether texture coordinates should be generated for objects 
+          constructed using this template.)")
+      .def_property(
+          "use_tangents", &AbstractPrimitiveAttributes::getUseTangents,
+          &AbstractPrimitiveAttributes::setUseTangents,
+          R"(Whether 4-component (homogeneous) tangents should be generated for 
+          objects constructed using this template.)")
+      .def_property(
+          "num_rings", &AbstractPrimitiveAttributes::getNumRings,
+          &AbstractPrimitiveAttributes::setNumRings,
+          R"(Number of line (for wireframe) or face (for solid) rings for 
+          primitives built from this template.
+          Must be greater than 1 for template to be valid.  
+          For all uvSpheres, must be greater than 2, and for wireframe uvSpheres
+          must also be multiple of 2.
+          Used by solid cones, cylinders, uvSpheres, and wireframe cylinders 
+          and uvSpheres)")
+      .def_property(
+          "num_segments", &AbstractPrimitiveAttributes::getNumSegments,
+          &AbstractPrimitiveAttributes::setNumSegments,
+          R"(Number of line (for wireframe) or face (for solid) segments
+          for primitives built from this template. 
+          For solid primitives, must be 3 or greater for template to 
+          be valid. For wireframe primitives, must be 4 or greater, 
+          and a multiple of 4 for template to be valid.
+          Used by solid and wireframe capsules, cones, cylinders,
+          uvSpheres.)")
+      .def_property(
+          "half_length", &AbstractPrimitiveAttributes::getHalfLength,
+          &AbstractPrimitiveAttributes::setHalfLength,
+          R"(Half the length of the cylinder (for capsules and cylinders) or the 
+          cone (for cones) primitives built from this template. Primitives is 
+          built with default radius 1.0.  In order to get a desired radius r, 
+          length l, and preserve correct normals of the primitive being built, 
+          set half_length to .5 * (l/r) and then scale by r.
+          Used by solid and wireframe capsules, cones and cylinders.)")
+      .def_property_readonly(
+          "prim_obj_class_name",
+          &AbstractPrimitiveAttributes::getPrimObjClassName,
+          R"(Name of Magnum primitive class this template uses to construct 
+          primitives)")
       .def_property_readonly("prim_obj_type",
                              &AbstractPrimitiveAttributes::getPrimObjType)
       .def("build_handle", &AbstractPrimitiveAttributes::buildHandle)
@@ -265,12 +319,16 @@ void initAttributesBindings(py::module& m) {
              CapsulePrimitiveAttributes::ptr>(m, "CapsulePrimitiveAttributes")
       .def(py::init(
           &CapsulePrimitiveAttributes::create<bool, int, const std::string&>))
-      .def_property("hemisphere_rings",
-                    &CapsulePrimitiveAttributes::getHemisphereRings,
-                    &CapsulePrimitiveAttributes::setHemisphereRings)
-      .def_property("cylinder_rings",
-                    &CapsulePrimitiveAttributes::getCylinderRings,
-                    &CapsulePrimitiveAttributes::setCylinderRings);
+      .def_property(
+          "hemisphere_rings", &CapsulePrimitiveAttributes::getHemisphereRings,
+          &CapsulePrimitiveAttributes::setHemisphereRings,
+          R"(Number of rings for each hemisphere for capsules built with this 
+          template.  Must be larger than 1 for template to be valid.)")
+      .def_property(
+          "cylinder_rings", &CapsulePrimitiveAttributes::getCylinderRings,
+          &CapsulePrimitiveAttributes::setCylinderRings,
+          R"(Number of rings for cylinder body for capsules built with this 
+          template.  Must be larger than 1 for template to be valid.)");
 
   // ==== ConePrimitiveAttributes ====
   py::class_<ConePrimitiveAttributes, AbstractPrimitiveAttributes,
