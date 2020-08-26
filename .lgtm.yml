@@ -1,10 +1,10 @@
 path_classifiers:
   docs:
-    - "docs/**"
+    - "docs"
   library:
-    - "src/deps/**"
+    - "src/deps"
   tests:
-    - "tests/**"
+    - "tests"
 extraction:
   cpp:
     index: # Builds the project
