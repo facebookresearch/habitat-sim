@@ -12,14 +12,23 @@
 namespace esp {
 namespace gfx {
 
-// todo: pass resourceKey by value?
+/**
+ * @brief get PhongMaterialInfo for a material
+ */
 gfx::PhongMaterialInfo getPhongMaterialInfo(ShaderManager& shaderManager,
-                                            Magnum::ResourceKey key);
+                                            const Magnum::ResourceKey& key);
 
+/**
+ * @brief update PhongMaterialInfo for a material
+ */
 void updatePhongMaterialInfo(ShaderManager& shaderManager,
-                             Magnum::ResourceKey key,
+                             const Magnum::ResourceKey& key,
                              const gfx::PhongMaterialInfo& materialInfo);
 
+/**
+ * @brief Find-and-replace all usages of the original material with the override
+ * material, for all Drawables in the entire subtree at root.
+ */
 void overrideMaterialForSubTree(scene::SceneNode& root,
                                 const Magnum::ResourceKey& originalMaterial,
                                 const Magnum::ResourceKey& overrideMaterial);

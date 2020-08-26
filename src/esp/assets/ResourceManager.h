@@ -389,13 +389,27 @@ class ResourceManager {
    */
   void removePrimitiveMesh(int primitiveID);
 
-  // todo: const on methods?
+  /**
+   * @brief Get material count for a render asset. See also
+   * getRenderAssetMaterial.
+   */
   int getNumRenderAssetMaterials(const assets::AssetInfo& assetInfo);
+  /**
+   * @brief Get material key for a render asset. See also
+   * getNumRenderAssetMaterials.
+   */
   Magnum::ResourceKey getRenderAssetMaterial(const assets::AssetInfo& assetInfo,
                                              int assetMaterialIndex);
-
-  gfx::ShaderManager& getShaderManager();
+  /**
+   * @brief Create a new, clone material. Use the clone material with, for
+   * example, overrideMaterialForSubTree.
+   */
   Magnum::ResourceKey clonePhongMaterial(Magnum::ResourceKey existingKey);
+
+  /**
+   * @brief Expose the ResourceManager's ShaderManager.
+   */
+  gfx::ShaderManager& getShaderManager();
 
   /**
    * @brief generate a new primitive mesh asset for the NavMesh loaded in the

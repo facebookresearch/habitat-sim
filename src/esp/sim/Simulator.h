@@ -654,19 +654,39 @@ class Simulator {
    */
   core::Random::ptr random() { return random_; }
 
-  int getNumRenderAssetMaterials(std::string renderMeshHandle);
-  gfx::PhongMaterialInfo getRenderAssetMaterial(std::string renderMeshHandle,
+  /**
+   * @brief Wrapper for ResourceManager::getNumRenderAssetMaterials
+   */
+  int getNumRenderAssetMaterials(std::string renderAssetHandle);
+  /**
+   * @brief Wrapper for ResourceManager::getRenderAssetMaterial
+   */
+  gfx::PhongMaterialInfo getRenderAssetMaterial(std::string renderAssetHandle,
                                                 int materialIndex);
 
-  // Affects existing objects and future objects that use this renderMesh.
-  // Existing objects for which the material has been overridden with
-  // overrideObjectRenderAssetMaterial are unaffected.
-  void setRenderAssetMaterial(std::string renderMeshHandle,
+  /**
+   * @brief Change material properties (PhongMaterialInfo) for a specific
+   * material within a render asset.
+   *
+   * This change affects existing objects and future objects that use this
+   * render asset. Existing objects for which the material has been overridden
+   * (with overrideObjectRenderAssetMaterial) are unaffected.
+   */
+  void setRenderAssetMaterial(std::string renderAssetHandle,
                               int materialIndex,
                               const gfx::PhongMaterialInfo& materialInfo);
 
-  // materialIndex valid range is 0..getNumRenderAssetMaterials(
-  //   getObjectInitializationTemplate(objectID)->renderMeshHandle)
+  /**
+   * @brief Change material properties for a specific material for a specific
+   * object.
+   *
+   * This change only affects this object. See also setRenderAssetMaterial.
+   *
+   * @param objectID
+   * @param materialIndex the valid range is 0..getNumRenderAssetMaterials([this
+   * object's render asset])
+   * @param materialInfo
+   */
   void overrideObjectRenderAssetMaterial(
       int objectID,
       int materialIndex,

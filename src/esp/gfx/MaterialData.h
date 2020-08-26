@@ -40,5 +40,7 @@ struct PhongMaterialData : public MaterialData {
 bool operator==(const PhongMaterialInfo& a, const PhongMaterialInfo& b);
 bool operator!=(const PhongMaterialInfo& a, const PhongMaterialInfo& b);
 
+// TODO: Ptex material data
+
 }  // namespace gfx
 }  // namespace esp

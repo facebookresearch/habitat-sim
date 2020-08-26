@@ -175,12 +175,18 @@ void initSimBindings(py::module& m) {
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_object_light_setup", &Simulator::setObjectLightSetup,
            "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0)
-      .def("get_num_render_asset_materials",
-           &Simulator::getNumRenderAssetMaterials, "render_asset_handle"_a)
-      .def("get_render_asset_material", &Simulator::getRenderAssetMaterial,
-           "render_asset_handle"_a, "material_index"_a)
-      .def("set_render_asset_material", &Simulator::setRenderAssetMaterial,
-           "render_asset_handle"_a, "material_index"_a, "material"_a);
+      .def(
+          "get_num_render_asset_materials",
+          &Simulator::getNumRenderAssetMaterials, "render_asset_handle"_a,
+          R"(Get material count for a render asset. See also get_render_asset_material.)")
+      .def(
+          "get_render_asset_material", &Simulator::getRenderAssetMaterial,
+          "render_asset_handle"_a, "material_index"_a,
+          R"(Get material properties (PhongMaterialInfo) for a specific material within a render asset. See also get_num_render_asset_materials.)")
+      .def(
+          "set_render_asset_material", &Simulator::setRenderAssetMaterial,
+          "render_asset_handle"_a, "material_index"_a, "material"_a,
+          R"(Change material properties (PhongMaterialInfo) for a specific material within a render asset. See also get_num_render_asset_materials.)");
 }
 
 }  // namespace sim

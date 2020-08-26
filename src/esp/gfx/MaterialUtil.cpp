@@ -9,16 +9,15 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
-// todo: consistency "material" vs "key"
 gfx::PhongMaterialInfo getPhongMaterialInfo(ShaderManager& shaderManager,
-                                            Mn::ResourceKey key) {
+                                            const Mn::ResourceKey& key) {
   const auto& phongMaterial =
       *shaderManager.get<MaterialData, PhongMaterialData>(key);
   return phongMaterial.info;
 }
 
 void updatePhongMaterialInfo(ShaderManager& shaderManager,
-                             Mn::ResourceKey key,
+                             const Mn::ResourceKey& key,
                              const gfx::PhongMaterialInfo& materialInfo) {
   auto& phongMaterial =
       *shaderManager.get<MaterialData, PhongMaterialData>(key);
@@ -26,8 +25,8 @@ void updatePhongMaterialInfo(ShaderManager& shaderManager,
 }
 
 void overrideMaterialForSubTree(scene::SceneNode& root,
-                                const Magnum::ResourceKey& originalMaterial,
-                                const Magnum::ResourceKey& overrideMaterial) {
+                                const Mn::ResourceKey& originalMaterial,
+                                const Mn::ResourceKey& overrideMaterial) {
   scene::preOrderFeatureTraversalWithCallback<Drawable>(
       root, [&](Drawable& drawable) {
         auto orig = drawable.getOriginalMaterial();

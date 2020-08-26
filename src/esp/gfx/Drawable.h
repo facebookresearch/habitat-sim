@@ -56,9 +56,23 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
   Magnum::GL::Mesh& getMesh() { return mesh_; }
 
+  /**
+   * @brief Get the material originally associated with this Drawable when the
+   * Drawable was constructed.
+   *
+   * This is useful for find-and-replace functionality. See also
+   * gfx::overrideMaterialForSubTree.
+   */
   virtual Magnum::ResourceKey getOriginalMaterial() {
     return Magnum::ResourceKey{};
   }
+
+  /**
+   * @brief Change the material used to draw this Drawable.
+   *
+   *  This overrides the material originally associated with this Drawable when
+   * the Drawable was constructed.
+   */
   virtual void setMaterial(const Magnum::ResourceKey&){};
 
   /**

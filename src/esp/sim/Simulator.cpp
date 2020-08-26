@@ -838,43 +838,38 @@ void Simulator::setObjectLightSetup(int objectID,
   }
 }
 
-int Simulator::getNumRenderAssetMaterials(std::string renderMeshHandle) {
-  auto info = assets::AssetInfo::fromPath(renderMeshHandle);
+int Simulator::getNumRenderAssetMaterials(std::string renderAssetHandle) {
+  auto info = assets::AssetInfo::fromPath(renderAssetHandle);
   return resourceManager_->getNumRenderAssetMaterials(info);
 }
 
 gfx::PhongMaterialInfo Simulator::getRenderAssetMaterial(
-    std::string renderMeshHandle,
+    std::string renderAssetHandle,
     int materialIndex) {
-  auto info = assets::AssetInfo::fromPath(renderMeshHandle);
+  auto info = assets::AssetInfo::fromPath(renderAssetHandle);
   auto key = resourceManager_->getRenderAssetMaterial(info, materialIndex);
   auto materialInfo =
       gfx::getPhongMaterialInfo(resourceManager_->getShaderManager(), key);
   return materialInfo;
 }
 
-// Affects existing objects and future objects that use this renderMesh.
-// However, existing objects for which the material has been overridden with
-// overrideObjectRenderAssetMaterial are unaffected.
 void Simulator::setRenderAssetMaterial(
-    std::string renderMeshHandle,
+    std::string renderAssetHandle,
     int materialIndex,
     const gfx::PhongMaterialInfo& materialInfo) {
-  auto info = assets::AssetInfo::fromPath(renderMeshHandle);
+  auto info = assets::AssetInfo::fromPath(renderAssetHandle);
   auto key = resourceManager_->getRenderAssetMaterial(info, materialIndex);
   gfx::updatePhongMaterialInfo(resourceManager_->getShaderManager(), key,
                                materialInfo);
 }
 
-// materialIndex valid range is 0..getNumRenderAssetMaterials(
-//   getObjectInitializationTemplate(objectID)->getRenderAssetHandle())
 void Simulator::overrideObjectRenderAssetMaterial(
     int objectID,
     int materialIndex,
     const gfx::PhongMaterialInfo& materialInfo) {
-  auto renderMeshHandle =
+  auto renderAssetHandle =
       getObjectInitializationTemplate(objectID)->getRenderAssetHandle();
-  auto info = assets::AssetInfo::fromPath(renderMeshHandle);
+  auto info = assets::AssetInfo::fromPath(renderAssetHandle);
   auto& shaderManager = resourceManager_->getShaderManager();
 
   auto originalKey =

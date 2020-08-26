@@ -18,6 +18,7 @@ def test_material_api(sim):
     cfg_settings[
         "scene"
     ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+    cfg_settings["enable_physics"] = True
 
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
