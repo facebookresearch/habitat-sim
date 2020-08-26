@@ -6,7 +6,7 @@
 #define ESP_ASSETS_MANAGERS_ATTRIBUTEMANAGERBASE_H_
 
 /** @file
- * @brief Class Template @ref esp::assets::AttributesManager
+ * @brief Class Template @ref esp::assets::managers::AttributesManager
  */
 
 #include <deque>
@@ -18,7 +18,8 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
-#include "esp/assets/attributes/Attributes.h"
+#include "esp/assets/attributes/AttributesBase.h"
+#include "esp/assets/attributes/ObjectAttributes.h"
 
 #include "esp/io/json.h"
 
@@ -26,14 +27,12 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
-namespace attributes {
-class AbstractPhysicsAttributes;
-}
 
 class ResourceManager;
 
 namespace managers {
 
+namespace Attrs = esp::assets::attributes;
 /**
  * @brief Template Class defining responsibilities for managing attributes for
  * different types of objects, such as scenes, primitive assets, physical
@@ -873,53 +872,56 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
   // scale
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "scale",
-      std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
+      std::bind(&Attrs::AbstractPhysicsAttributes::setScale, attributes, _1));
 
   // margin
   io::jsonIntoSetter<double>(
       jsonDoc, "margin",
-      std::bind(&AbstractPhysicsAttributes::setMargin, attributes, _1));
+      std::bind(&Attrs::AbstractPhysicsAttributes::setMargin, attributes, _1));
 
   // load the friction coefficient
   io::jsonIntoSetter<double>(
       jsonDoc, "friction coefficient",
-      std::bind(&AbstractPhysicsAttributes::setFrictionCoefficient, attributes,
-                _1));
+      std::bind(&Attrs::AbstractPhysicsAttributes::setFrictionCoefficient,
+                attributes, _1));
 
   // load the restitution coefficient
   io::jsonIntoSetter<double>(
       jsonDoc, "restitution coefficient",
-      std::bind(&AbstractPhysicsAttributes::setRestitutionCoefficient,
+      std::bind(&Attrs::AbstractPhysicsAttributes::setRestitutionCoefficient,
                 attributes, _1));
 
   // if object will be flat or phong shaded
   io::jsonIntoSetter<bool>(
       jsonDoc, "requires lighting",
-      std::bind(&AbstractPhysicsAttributes::setRequiresLighting, attributes,
-                _1));
+      std::bind(&Attrs::AbstractPhysicsAttributes::setRequiresLighting,
+                attributes, _1));
 
   // units to meters
   io::jsonIntoSetter<double>(
       jsonDoc, "units to meters",
-      std::bind(&AbstractPhysicsAttributes::setUnitsToMeters, attributes, _1));
+      std::bind(&Attrs::AbstractPhysicsAttributes::setUnitsToMeters, attributes,
+                _1));
 
   // load object/scene specific up orientation
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "up",
-      std::bind(&AbstractPhysicsAttributes::setOrientUp, attributes, _1));
+      std::bind(&Attrs::AbstractPhysicsAttributes::setOrientUp, attributes,
+                _1));
 
   // load object/scene specific front orientation
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "front",
-      std::bind(&AbstractPhysicsAttributes::setOrientFront, attributes, _1));
+      std::bind(&Attrs::AbstractPhysicsAttributes::setOrientFront, attributes,
+                _1));
 
   // 4. parse render and collision mesh filepaths
   std::string rndrFName = "";
   std::string rTmpFName = attributes->getRenderAssetHandle();
   if (setJSONAssetHandleAndType(
           attributes, jsonDoc, "render mesh type", "render mesh", rTmpFName,
-          std::bind(&AbstractPhysicsAttributes::setRenderAssetType, attributes,
-                    _1))) {
+          std::bind(&Attrs::AbstractPhysicsAttributes::setRenderAssetType,
+                    attributes, _1))) {
     rndrFName = rTmpFName;
   }
 
@@ -928,7 +930,7 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
   if (setJSONAssetHandleAndType(
           attributes, jsonDoc, "collision mesh type", "collision mesh",
           cTmpFName,
-          std::bind(&AbstractPhysicsAttributes::setCollisionAssetType,
+          std::bind(&Attrs::AbstractPhysicsAttributes::setCollisionAssetType,
                     attributes, _1))) {
     colFName = cTmpFName;
     // TODO eventually remove this, but currently collision mesh must be UNKNOWN
@@ -968,9 +970,9 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
   if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (AbstractPhysicsAttributes::AssetTypeNamesMap.count(tmpVal)) {
+    if (Attrs::AbstractPhysicsAttributes::AssetTypeNamesMap.count(tmpVal)) {
       typeVal = static_cast<int>(
-          AbstractPhysicsAttributes::AssetTypeNamesMap.at(tmpVal));
+          Attrs::AbstractPhysicsAttributes::AssetTypeNamesMap.at(tmpVal));
     } else {
       LOG(WARNING) << "AttributesManager::convertJsonStringToAssetType : "
                       "Value in json @ tag : "

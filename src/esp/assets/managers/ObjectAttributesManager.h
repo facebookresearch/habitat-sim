@@ -17,10 +17,10 @@ namespace managers {
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
-    : public AttributesManager<PhysicsObjectAttributes::ptr> {
+    : public AttributesManager<Attrs::ObjectAttributes::ptr> {
  public:
   ObjectAttributesManager(assets::ResourceManager& resourceManager)
-      : AttributesManager<PhysicsObjectAttributes::ptr>::AttributesManager(
+      : AttributesManager<Attrs::ObjectAttributes::ptr>::AttributesManager(
             resourceManager,
             "Physical Object") {
     buildCtorFuncPtrMaps();
@@ -53,7 +53,7 @@ class ObjectAttributesManager
    * template.
    * @return a reference to the desired template.
    */
-  PhysicsObjectAttributes::ptr createAttributesTemplate(
+  Attrs::ObjectAttributes::ptr createAttributesTemplate(
       const std::string& attributesTemplateHandle,
       bool registerTemplate = true) override;
 
@@ -75,7 +75,7 @@ class ObjectAttributesManager
    * template.
    * @return a reference to the desired template, or nullptr if fails.
    */
-  PhysicsObjectAttributes::ptr createDefaultAttributesTemplate(
+  Attrs::ObjectAttributes::ptr createDefaultAttributesTemplate(
       const std::string& templateName,
       bool registerTemplate = false) override;
 
@@ -93,14 +93,14 @@ class ObjectAttributesManager
    * @return a reference to the desired template, or nullptr if fails.
    */
 
-  PhysicsObjectAttributes::ptr createPrimBasedAttributesTemplate(
+  Attrs::ObjectAttributes::ptr createPrimBasedAttributesTemplate(
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true);
 
   /**
    * @brief Creates an instance of a template from a JSON file using passed
    * filename by loading and parsing the loaded JSON and generating a @ref
-   * PhysicsObjectAttributes object. It returns created instance if successful,
+   * ObjectAttributes object. It returns created instance if successful,
    * and nullptr if fails.
    *
    * @param filename the name of the file describing the object attributes.
@@ -110,7 +110,7 @@ class ObjectAttributesManager
    * subsequent editing will require re-registration. Defaults to true.
    * @return a reference to the desired template, or nullptr if fails.
    */
-  PhysicsObjectAttributes::ptr createFileBasedAttributesTemplate(
+  Attrs::ObjectAttributes::ptr createFileBasedAttributesTemplate(
       const std::string& filename,
       bool registerTemplate = true);
 
@@ -264,7 +264,7 @@ class ObjectAttributesManager
    * @param meshTypeSetter Setter for mesh type.
    */
   void setDefaultFileNameBasedAttributes(
-      PhysicsObjectAttributes::ptr attributes,
+      Attrs::ObjectAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
       std::function<void(int)> meshTypeSetter) override;
@@ -275,8 +275,8 @@ class ObjectAttributesManager
    *
    * @param newAttributes Newly created attributes.
    */
-  PhysicsObjectAttributes::ptr initNewAttribsInternal(
-      PhysicsObjectAttributes::ptr newAttributes) override;
+  Attrs::ObjectAttributes::ptr initNewAttribsInternal(
+      Attrs::ObjectAttributes::ptr newAttributes) override;
 
   /**
    * @brief This method will perform any necessary updating that is
@@ -307,7 +307,7 @@ class ObjectAttributesManager
    * template.
    */
   int registerAttributesTemplateFinalize(
-      PhysicsObjectAttributes::ptr attributesTemplate,
+      Attrs::ObjectAttributes::ptr attributesTemplate,
       const std::string& attributesTemplateHandle) override;
 
   /**
@@ -322,12 +322,11 @@ class ObjectAttributesManager
   /**
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as defined in
-   * AttributesManager<PhysicsObjectAttributes::ptr>
+   * AttributesManager<ObjectAttributes::ptr>
    */
   void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["PhysicsObjectAttributes"] =
-        &ObjectAttributesManager::createAttributesCopy<
-            assets::PhysicsObjectAttributes>;
+    this->copyConstructorMap_["ObjectAttributes"] =
+        &ObjectAttributesManager::createAttributesCopy<Attrs::ObjectAttributes>;
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
 
   // ======== Typedefs and Instance Variables ========

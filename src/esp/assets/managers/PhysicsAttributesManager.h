@@ -9,6 +9,7 @@
 
 #include "ObjectAttributesManager.h"
 
+#include "esp/assets/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/configure.h"
 
 namespace Cr = Corrade;
@@ -18,13 +19,12 @@ namespace assets {
 
 namespace managers {
 class PhysicsAttributesManager
-    : public AttributesManager<PhysicsManagerAttributes::ptr> {
+    : public AttributesManager<Attrs::PhysicsManagerAttributes::ptr> {
  public:
   PhysicsAttributesManager(assets::ResourceManager& resourceManager,
                            ObjectAttributesManager::ptr objectAttributesMgr)
-      : AttributesManager<PhysicsManagerAttributes::ptr>::AttributesManager(
-            resourceManager,
-            "Physics Manager"),
+      : AttributesManager<Attrs::PhysicsManagerAttributes::ptr>::
+            AttributesManager(resourceManager, "Physics Manager"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
@@ -48,7 +48,7 @@ class PhysicsAttributesManager
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file.
    */
-  PhysicsManagerAttributes::ptr createAttributesTemplate(
+  Attrs::PhysicsManagerAttributes::ptr createAttributesTemplate(
       const std::string& physicsFilename =
           ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH,
       bool registerTemplate = true) override;
@@ -71,7 +71,7 @@ class PhysicsAttributesManager
    * template.
    * @return a reference to the desired template, or nullptr if fails.
    */
-  PhysicsManagerAttributes::ptr createDefaultAttributesTemplate(
+  Attrs::PhysicsManagerAttributes::ptr createDefaultAttributesTemplate(
       const std::string& templateName,
       bool registerTemplate = false) override;
 
@@ -84,7 +84,7 @@ class PhysicsAttributesManager
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file, or nullptr if fails.
    */
-  PhysicsManagerAttributes::ptr createFileBasedAttributesTemplate(
+  Attrs::PhysicsManagerAttributes::ptr createFileBasedAttributesTemplate(
       const std::string& physicsFilename,
       bool registerTemplate);
 
@@ -93,7 +93,7 @@ class PhysicsAttributesManager
    * @brief Not used by PhysicsManagerAttributes.
    */
   void setDefaultFileNameBasedAttributes(
-      CORRADE_UNUSED PhysicsManagerAttributes::ptr attributes,
+      CORRADE_UNUSED Attrs::PhysicsManagerAttributes::ptr attributes,
       CORRADE_UNUSED bool setFrame,
       CORRADE_UNUSED const std::string& meshHandle,
       CORRADE_UNUSED std::function<void(int)> meshTypeSetter) override {}
@@ -104,8 +104,8 @@ class PhysicsAttributesManager
    *
    * @param newAttributes Newly created attributes.
    */
-  PhysicsManagerAttributes::ptr initNewAttribsInternal(
-      PhysicsManagerAttributes::ptr newAttributes) override {
+  Attrs::PhysicsManagerAttributes::ptr initNewAttribsInternal(
+      Attrs::PhysicsManagerAttributes::ptr newAttributes) override {
     this->setFileDirectoryFromHandle(newAttributes);
     return newAttributes;
   }
@@ -133,7 +133,7 @@ class PhysicsAttributesManager
    * template.
    */
   int registerAttributesTemplateFinalize(
-      PhysicsManagerAttributes::ptr physicsAttributesTemplate,
+      Attrs::PhysicsManagerAttributes::ptr physicsAttributesTemplate,
       const std::string& physicsAttributesHandle) override {
     // adds template to library, and returns either the ID of the existing
     // template referenced by physicsAttributesHandle, or the next available ID
@@ -157,7 +157,7 @@ class PhysicsAttributesManager
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
         &PhysicsAttributesManager::createAttributesCopy<
-            assets::PhysicsManagerAttributes>;
+            Attrs::PhysicsManagerAttributes>;
   }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars

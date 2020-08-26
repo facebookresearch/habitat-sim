@@ -7,21 +7,30 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
-#include "esp/assets/attributes/Attributes.h"
+#include "esp/assets/attributes/AttributesBase.h"
+#include "esp/assets/attributes/ObjectAttributes.h"
+#include "esp/assets/attributes/PhysicsManagerAttributes.h"
+#include "esp/assets/attributes/PrimitiveAssetAttributes.h"
+#include "esp/assets/attributes/SceneAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace esp {
 namespace assets {
-namespace attributes {
-class AbstractAttributes;
-class AbstractPhysicsAttributes;
-class PhysicsObjectAttributes;
-class PhysicsStageAttributes;
-class PhysicsManagerAttributes;
 
-}  // namespace attributes
+using attributes::AbstractAttributes;
+using attributes::AbstractPhysicsAttributes;
+using attributes::AbstractPrimitiveAttributes;
+using attributes::CapsulePrimitiveAttributes;
+using attributes::ConePrimitiveAttributes;
+using attributes::CubePrimitiveAttributes;
+using attributes::CylinderPrimitiveAttributes;
+using attributes::IcospherePrimitiveAttributes;
+using attributes::ObjectAttributes;
+using attributes::PhysicsManagerAttributes;
+using attributes::StageAttributes;
+using attributes::UVSpherePrimitiveAttributes;
 
 void initAttributesBindings(py::module& m) {
   // ==== AbstractAttributes ====
@@ -127,108 +136,101 @@ void initAttributesBindings(py::module& m) {
           R"(Whether values in this attributes have been changed requiring 
           re-registartion before they can be used an object can be created. )");
 
-  // ==== PhysicsObjectAttributes ====
-  py::class_<PhysicsObjectAttributes, AbstractPhysicsAttributes,
-             PhysicsObjectAttributes::ptr>(m, "PhysicsObjectAttributes")
-      .def(py::init(&PhysicsObjectAttributes::create<>))
-      .def(py::init(&PhysicsObjectAttributes::create<const std::string&>))
+  // ==== ObjectAttributes ====
+  py::class_<ObjectAttributes, AbstractPhysicsAttributes,
+             ObjectAttributes::ptr>(m, "ObjectAttributes")
+      .def(py::init(&ObjectAttributes::create<>))
+      .def(py::init(&ObjectAttributes::create<const std::string&>))
       .def_property(
-          "com", &PhysicsObjectAttributes::getCOM,
-          &PhysicsObjectAttributes::setCOM,
+          "com", &ObjectAttributes::getCOM, &ObjectAttributes::setCOM,
           R"(The Center of Mass for objects built from this template.)")
       .def_property(
-          "compute_COM_from_shape",
-          &PhysicsObjectAttributes::getComputeCOMFromShape,
-          &PhysicsObjectAttributes::setComputeCOMFromShape,
+          "compute_COM_from_shape", &ObjectAttributes::getComputeCOMFromShape,
+          &ObjectAttributes::setComputeCOMFromShape,
           R"(Whether the COM should be calculated when an object is created 
           based on its bounding box)")
-      .def_property("mass", &PhysicsObjectAttributes::getMass,
-                    &PhysicsObjectAttributes::setMass,
+      .def_property("mass", &ObjectAttributes::getMass,
+                    &ObjectAttributes::setMass,
                     R"(The mass of objects constructed from this template.)")
       .def_property(
-          "inertia", &PhysicsObjectAttributes::getInertia,
-          &PhysicsObjectAttributes::setInertia,
+          "inertia", &ObjectAttributes::getInertia,
+          &ObjectAttributes::setInertia,
           R"(The diagonal of the Intertia matrix for objects constructed 
           from this template.)")
       .def_property(
-          "linear_damping", &PhysicsObjectAttributes::getLinearDamping,
-          &PhysicsObjectAttributes::setLinearDamping,
+          "linear_damping", &ObjectAttributes::getLinearDamping,
+          &ObjectAttributes::setLinearDamping,
           R"(The damping of the linear velocity for objects constructed 
           from this template.)")
       .def_property(
-          "angular_damping", &PhysicsObjectAttributes::getAngularDamping,
-          &PhysicsObjectAttributes::setAngularDamping,
+          "angular_damping", &ObjectAttributes::getAngularDamping,
+          &ObjectAttributes::setAngularDamping,
           R"(The damping of angular velocity for objects constructed from 
           this template.)")
       .def_property(
           "bounding_box_collisions",
-          &PhysicsObjectAttributes::getBoundingBoxCollisions,
-          &PhysicsObjectAttributes::setBoundingBoxCollisions,
+          &ObjectAttributes::getBoundingBoxCollisions,
+          &ObjectAttributes::setBoundingBoxCollisions,
           R"(Whether objects constructed from this template should use 
           bounding box for collisions or designated mesh.)")
       .def_property(
-          "join_collision_meshes",
-          &PhysicsObjectAttributes::getJoinCollisionMeshes,
-          &PhysicsObjectAttributes::setJoinCollisionMeshes,
+          "join_collision_meshes", &ObjectAttributes::getJoinCollisionMeshes,
+          &ObjectAttributes::setJoinCollisionMeshes,
           R"(Whether collision meshes for objects constructed from this 
           template should be joined into a convex hull or kept separate.)")
       .def_property(
-          "is_visibile", &PhysicsObjectAttributes::getIsVisible,
-          &PhysicsObjectAttributes::setIsVisible,
+          "is_visibile", &ObjectAttributes::getIsVisible,
+          &ObjectAttributes::setIsVisible,
           R"(Whether objects constructed from this template are visible.)")
       .def_property(
-          "is_collidable", &PhysicsObjectAttributes::getIsCollidable,
-          &PhysicsObjectAttributes::setIsCollidable,
+          "is_collidable", &ObjectAttributes::getIsCollidable,
+          &ObjectAttributes::setIsCollidable,
           R"(Whether objects constructed from this template are collidable.)")
       .def_property(
-          "semantic_id", &PhysicsObjectAttributes::getSemanticId,
-          &PhysicsObjectAttributes::setSemanticId,
+          "semantic_id", &ObjectAttributes::getSemanticId,
+          &ObjectAttributes::setSemanticId,
           R"(The semantic ID for objects constructed from this template.)");
 
-  // ==== PhysicsStageAttributes ====
-  py::class_<PhysicsStageAttributes, AbstractPhysicsAttributes,
-             PhysicsStageAttributes::ptr>(m, "PhysicsStageAttributes")
-      .def(py::init(&PhysicsStageAttributes::create<>))
-      .def(py::init(&PhysicsStageAttributes::create<const std::string&>))
+  // ==== StageAttributes ====
+  py::class_<StageAttributes, AbstractPhysicsAttributes, StageAttributes::ptr>(
+      m, "StageAttributes")
+      .def(py::init(&StageAttributes::create<>))
+      .def(py::init(&StageAttributes::create<const std::string&>))
       .def_property(
-          "gravity", &PhysicsStageAttributes::getGravity,
-          &PhysicsStageAttributes::setGravity,
+          "gravity", &StageAttributes::getGravity, &StageAttributes::setGravity,
           R"(The 3-vector representation of gravity to use for physically-based 
           simulations on stages built from this template.)")
       .def_property(
-          "origin", &PhysicsStageAttributes::getOrigin,
-          &PhysicsStageAttributes::setOrigin,
+          "origin", &StageAttributes::getOrigin, &StageAttributes::setOrigin,
           R"(The desired location of the origin of stages built from this 
           template.)")
       .def_property(
-          "semantic_asset_handle",
-          &PhysicsStageAttributes::getSemanticAssetHandle,
-          &PhysicsStageAttributes::setSemanticAssetHandle,
+          "semantic_asset_handle", &StageAttributes::getSemanticAssetHandle,
+          &StageAttributes::setSemanticAssetHandle,
           R"(Handle of the asset used for semantic segmentation of stages 
           built from this template.)")
       .def_property(
-          "semantic_asset_type", &PhysicsStageAttributes::getSemanticAssetType,
-          &PhysicsStageAttributes::setSemanticAssetType,
+          "semantic_asset_type", &StageAttributes::getSemanticAssetType,
+          &StageAttributes::setSemanticAssetType,
           R"(Type of asset used for collision calculations for constructions 
           built from this template.)")
       .def_property(
-          "navmesh_asset_handle",
-          &PhysicsStageAttributes::getNavmeshAssetHandle,
-          &PhysicsStageAttributes::setNavmeshAssetHandle,
+          "navmesh_asset_handle", &StageAttributes::getNavmeshAssetHandle,
+          &StageAttributes::setNavmeshAssetHandle,
           R"(Handle of the navmesh asset used for constructions built from 
           this template.)")
       .def_property(
-          "house_filename", &PhysicsStageAttributes::getHouseFilename,
-          &PhysicsStageAttributes::setHouseFilename,
+          "house_filename", &StageAttributes::getHouseFilename,
+          &StageAttributes::setHouseFilename,
           R"(Handle for file containing semantic type maps and hierarchy for 
           constructions built from this template.)")
       .def_property(
-          "light_setup", &PhysicsStageAttributes::getLightSetup,
-          &PhysicsStageAttributes::setLightSetup,
+          "light_setup", &StageAttributes::getLightSetup,
+          &StageAttributes::setLightSetup,
           R"(Habitat lighting setup to use for constructions built by this template.)")
       .def_property(
-          "frustrum_culling", &PhysicsStageAttributes::getFrustrumCulling,
-          &PhysicsStageAttributes::setFrustrumCulling,
+          "frustrum_culling", &StageAttributes::getFrustrumCulling,
+          &StageAttributes::setFrustrumCulling,
           R"(Whether frustrum culling should be enabled for constructions built by this template.)");
 
   // ==== PhysicsManagerAttributes ====
@@ -319,8 +321,13 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly("prim_obj_type",
                              &AbstractPrimitiveAttributes::getPrimObjType)
       .def("build_handle", &AbstractPrimitiveAttributes::buildHandle)
-      .def_property_readonly("is_valid_template",
-                             &AbstractPrimitiveAttributes::isValidTemplate);
+      .def_property_readonly(
+          "is_valid_template", &AbstractPrimitiveAttributes::isValidTemplate,
+          R"(Certain attributes properties, such as num_segments, are subject 
+          to restrictions in allowable values. If an illegal value is entered, 
+          the template is considered invalid and no primitive will be built 
+          from it.  This property will say whether this template is valid
+          for creating its designated primitive.)");
 
   // ==== CapsulePrimitiveAttributes ====
   py::class_<CapsulePrimitiveAttributes, AbstractPrimitiveAttributes,
@@ -343,8 +350,10 @@ void initAttributesBindings(py::module& m) {
              ConePrimitiveAttributes::ptr>(m, "ConePrimitiveAttributes")
       .def(py::init(
           &ConePrimitiveAttributes::create<bool, int, const std::string&>))
-      .def_property("use_cap_end", &ConePrimitiveAttributes::getCapEnd,
-                    &ConePrimitiveAttributes::setCapEnd);
+      .def_property(
+          "use_cap_end", &ConePrimitiveAttributes::getCapEnd,
+          &ConePrimitiveAttributes::setCapEnd,
+          R"(Whether to close cone bottom.  Only used for solid cones.)");
 
   // ==== CubePrimitiveAttributes ====
   py::class_<CubePrimitiveAttributes, AbstractPrimitiveAttributes,
@@ -357,8 +366,10 @@ void initAttributesBindings(py::module& m) {
              CylinderPrimitiveAttributes::ptr>(m, "CylinderPrimitiveAttributes")
       .def(py::init(
           &CylinderPrimitiveAttributes::create<bool, int, const std::string&>))
-      .def_property("use_cap_ends", &CylinderPrimitiveAttributes::getCapEnds,
-                    &CylinderPrimitiveAttributes::setCapEnds);
+      .def_property(
+          "use_cap_ends", &CylinderPrimitiveAttributes::getCapEnds,
+          &CylinderPrimitiveAttributes::setCapEnds,
+          R"(Whether to close cylinder ends.  Only used for solid cylinders.)");
 
   // ==== IcospherePrimitiveAttributes ====
   py::class_<IcospherePrimitiveAttributes, AbstractPrimitiveAttributes,
@@ -366,9 +377,11 @@ void initAttributesBindings(py::module& m) {
                                                 "IcospherePrimitiveAttributes")
       .def(py::init(
           &IcospherePrimitiveAttributes::create<bool, int, const std::string&>))
-      .def_property("subdivisions",
-                    &IcospherePrimitiveAttributes::getSubdivisions,
-                    &IcospherePrimitiveAttributes::setSubdivisions);
+      .def_property(
+          "subdivisions", &IcospherePrimitiveAttributes::getSubdivisions,
+          &IcospherePrimitiveAttributes::setSubdivisions,
+          R"(Number of subdivisions to divide mesh for icospheres made from this 
+          template.  Only used with solid icospheres.)");
 
   // ==== UVSpherePrimitiveAttributes ====
   py::class_<UVSpherePrimitiveAttributes, AbstractPrimitiveAttributes,

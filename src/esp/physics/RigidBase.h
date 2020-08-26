@@ -12,7 +12,7 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/ResourceManager.h"
-#include "esp/assets/attributes/Attributes.h"
+#include "esp/assets/attributes/AttributesBase.h"
 #include "esp/core/RigidState.h"
 #include "esp/core/esp.h"
 #include "esp/scene/SceneNode.h"
@@ -30,6 +30,7 @@ class ResourceManager;
 }  // namespace assets
 namespace physics {
 
+namespace Attrs = esp::assets::attributes;
 /**
 @brief Motion type of a @ref RigidObject.
 Defines its treatment by the simulator and operations which can be performed on
@@ -628,8 +629,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Saved attributes when the object was initialized.
    */
-  assets::attributes::AbstractPhysicsAttributes::ptr initializationAttributes_ =
-      nullptr;
+  Attrs::AbstractPhysicsAttributes::ptr initializationAttributes_ = nullptr;
 
   //! Access for the object to its own PhysicsManager id. Scene will keep -1.
   int objectId_ = -1;

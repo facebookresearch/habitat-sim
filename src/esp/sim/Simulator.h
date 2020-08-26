@@ -22,8 +22,6 @@
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 
-namespace AttrMgrs = esp::assets::managers;
-
 namespace esp {
 namespace nav {
 class PathFinder;
@@ -40,6 +38,9 @@ class Renderer;
 
 namespace esp {
 namespace sim {
+
+namespace AttrMgrs = esp::assets::managers;
+namespace Attrs = esp::assets::attributes;
 
 struct SimulatorConfiguration {
   scene::SceneConfiguration scene;
@@ -206,7 +207,7 @@ class Simulator {
    * Use this to query the object's properties when it was initialized.  Object
    * pointed at by pointer is const, and can not be modified.
    */
-  const assets::PhysicsObjectAttributes::cptr getObjectInitializationTemplate(
+  const Attrs::ObjectAttributes::cptr getObjectInitializationTemplate(
       int objectId,
       const int sceneID = 0) const;
 

@@ -24,6 +24,17 @@ namespace esp {
 namespace assets {
 namespace managers {
 
+using attributes::AbstractPrimitiveAttributes;
+using attributes::CapsulePrimitiveAttributes;
+using attributes::ConePrimitiveAttributes;
+using attributes::CubePrimitiveAttributes;
+using attributes::CylinderPrimitiveAttributes;
+using attributes::IcospherePrimitiveAttributes;
+using attributes::ObjectAttributes;
+using attributes::PhysicsManagerAttributes;
+using attributes::StageAttributes;
+using attributes::UVSpherePrimitiveAttributes;
+
 /**
  * @brief instance class template base classes for attributes managers.
  * @tparam The type used to specialize class template for each attributes
@@ -245,9 +256,8 @@ void initAttributesManagersBindings(py::module& m) {
            "handle"_a);
 
   // ==== Physical Object Attributes Template manager ====
-  declareBaseAttributesManager<PhysicsObjectAttributes::ptr>(m, "BaseObject");
-  py::class_<ObjectAttributesManager,
-             AttributesManager<PhysicsObjectAttributes::ptr>,
+  declareBaseAttributesManager<ObjectAttributes::ptr>(m, "BaseObject");
+  py::class_<ObjectAttributesManager, AttributesManager<ObjectAttributes::ptr>,
              ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
 
       // ObjectAttributesManager-specific bindings
@@ -297,9 +307,8 @@ void initAttributesManagersBindings(py::module& m) {
              existing templates being managed.)");
 
   // ==== Stage Attributes Template manager ====
-  declareBaseAttributesManager<PhysicsStageAttributes::ptr>(m, "BaseStage");
-  py::class_<StageAttributesManager,
-             AttributesManager<PhysicsStageAttributes::ptr>,
+  declareBaseAttributesManager<StageAttributes::ptr>(m, "BaseStage");
+  py::class_<StageAttributesManager, AttributesManager<StageAttributes::ptr>,
              StageAttributesManager::ptr>(m, "StageAttributesManager");
 
   // ==== Physics World/Manager Template manager ====

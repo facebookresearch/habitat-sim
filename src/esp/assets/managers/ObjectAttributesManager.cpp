@@ -17,11 +17,13 @@ namespace Cr = Corrade;
 namespace esp {
 namespace assets {
 
+using attributes::AbstractPhysicsAttributes;
+using attributes::ObjectAttributes;
 namespace managers {
-PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
+ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) {
-  PhysicsObjectAttributes::ptr attrs;
+  ObjectAttributes::ptr attrs;
   std::string msg;
   if (isValidPrimitiveAttributes(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing primitive attributes, then
@@ -50,7 +52,7 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
 
 }  // ObjectAttributesManager::createAttributesTemplate
 
-PhysicsObjectAttributes::ptr
+ObjectAttributes::ptr
 ObjectAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAttrTemplateHandle,
     bool registerTemplate) {
@@ -64,9 +66,9 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     return nullptr;
   }
 
-  // construct a PhysicsObjectAttributes
-  auto primObjectAttributes = initNewAttribsInternal(
-      PhysicsObjectAttributes::create(primAttrTemplateHandle));
+  // construct a ObjectAttributes
+  auto primObjectAttributes =
+      initNewAttribsInternal(ObjectAttributes::create(primAttrTemplateHandle));
   // set margin to be 0
   primObjectAttributes->setMargin(0.0);
   // make smaller as default size - prims are approx meter in size
@@ -100,7 +102,7 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
-PhysicsObjectAttributes::ptr
+ObjectAttributes::ptr
 ObjectAttributesManager::createFileBasedAttributesTemplate(
     const std::string& objPhysConfigFilename,
     bool registerTemplate) {
@@ -115,59 +117,56 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
     return nullptr;
   }
 
-  // Construct a physicsObjectAttributes and populate with any
+  // Construct a ObjectAttributes and populate with any
   // AbstractPhysicsAttributes fields found in json.
-  auto objAttributes =
-      this->createPhysicsAttributesFromJson<PhysicsObjectAttributes>(
-          objPhysConfigFilename, jsonConfig);
+  auto objAttributes = this->createPhysicsAttributesFromJson<ObjectAttributes>(
+      objPhysConfigFilename, jsonConfig);
 
   // Populate with object-specific fields found in json, if any are there
   // object mass
   io::jsonIntoSetter<double>(
       jsonConfig, "mass",
-      std::bind(&PhysicsObjectAttributes::setMass, objAttributes, _1));
+      std::bind(&ObjectAttributes::setMass, objAttributes, _1));
 
   // optional set bounding box as collision object
   io::jsonIntoSetter<bool>(
       jsonConfig, "use bounding box for collision",
-      std::bind(&PhysicsObjectAttributes::setBoundingBoxCollisions,
-                objAttributes, _1));
+      std::bind(&ObjectAttributes::setBoundingBoxCollisions, objAttributes,
+                _1));
 
   //! Get collision configuration options if specified
   io::jsonIntoSetter<bool>(
       jsonConfig, "join collision meshes",
-      std::bind(&PhysicsObjectAttributes::setJoinCollisionMeshes, objAttributes,
-                _1));
+      std::bind(&ObjectAttributes::setJoinCollisionMeshes, objAttributes, _1));
 
   // object's interia matrix diag
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "inertia",
-      std::bind(&PhysicsObjectAttributes::setInertia, objAttributes, _1));
+      std::bind(&ObjectAttributes::setInertia, objAttributes, _1));
 
   // the center of mass (in the local frame of the object)
   // if COM is provided, use it for mesh shift
   bool comIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "COM",
-      std::bind(&PhysicsObjectAttributes::setCOM, objAttributes, _1));
+      std::bind(&ObjectAttributes::setCOM, objAttributes, _1));
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
 
   return this->postCreateRegister(objAttributes, registerTemplate);
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
-PhysicsObjectAttributes::ptr
-ObjectAttributesManager::createDefaultAttributesTemplate(
+ObjectAttributes::ptr ObjectAttributesManager::createDefaultAttributesTemplate(
     const std::string& templateName,
     bool registerTemplate) {
-  // construct a PhysicsObjectAttributes
-  PhysicsObjectAttributes::ptr objAttributes =
-      initNewAttribsInternal(PhysicsObjectAttributes::create(templateName));
+  // construct a ObjectAttributes
+  ObjectAttributes::ptr objAttributes =
+      initNewAttribsInternal(ObjectAttributes::create(templateName));
 
   return this->postCreateRegister(objAttributes, registerTemplate);
 }  // ObjectAttributesManager::createEmptyAttributesTemplate
 
-PhysicsObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
-    PhysicsObjectAttributes::ptr newAttributes) {
+ObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
+    ObjectAttributes::ptr newAttributes) {
   this->setFileDirectoryFromHandle(newAttributes);
   const std::string attributesHandle = newAttributes->getHandle();
   // set default render asset handle
@@ -191,7 +190,7 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
 // Eventually support explicitly configuring desirable defaults/file-name
 // base settings.
 void ObjectAttributesManager::setDefaultFileNameBasedAttributes(
-    PhysicsObjectAttributes::ptr attributes,
+    ObjectAttributes::ptr attributes,
     bool setFrame,
     const std::string&,
     std::function<void(int)> meshTypeSetter) {
@@ -205,7 +204,7 @@ void ObjectAttributesManager::setDefaultFileNameBasedAttributes(
 }  // SceneAttributesManager::setDefaultFileNameBasedAttributes
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
-    PhysicsObjectAttributes::ptr objectTemplate,
+    ObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)

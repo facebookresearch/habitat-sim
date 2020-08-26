@@ -27,6 +27,9 @@ namespace Cr = Corrade;
 namespace esp {
 namespace sim {
 
+using Attrs::PhysicsManagerAttributes;
+using Attrs::StageAttributes;
+
 Simulator::Simulator(const SimulatorConfiguration& cfg)
     : random_{core::Random::create(cfg.randomSeed)} {
   // initalize members according to cfg
@@ -327,9 +330,9 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
   return ID_UNDEFINED;
 }
 
-const assets::PhysicsObjectAttributes::cptr
-Simulator::getObjectInitializationTemplate(int objectId,
-                                           const int sceneID) const {
+const Attrs::ObjectAttributes::cptr Simulator::getObjectInitializationTemplate(
+    int objectId,
+    const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectInitAttributes(objectId);
   }
@@ -601,7 +604,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
             Eigen::Transform<float, 3, Eigen::Affine> >(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
-        const assets::PhysicsObjectAttributes::cptr initializationTemplate =
+        const Attrs::ObjectAttributes::cptr initializationTemplate =
             physicsManager_->getObjectInitAttributes(objectID);
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
             initializationTemplate->getScale()));
