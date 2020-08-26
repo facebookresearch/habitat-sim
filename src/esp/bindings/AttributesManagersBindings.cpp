@@ -8,8 +8,6 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
-#include "esp/assets/attributes/Attributes.h"
-
 #include "esp/assets/managers/AttributesManagerBase.h"
 
 #include "esp/assets/managers/AssetAttributesManager.h"

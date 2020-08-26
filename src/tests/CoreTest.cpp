@@ -4,14 +4,14 @@
 
 #include <gtest/gtest.h>
 
-#include "esp/assets/attributes/Attributes.h"
+#include "esp/assets/attributes/ObjectAttributes.h"
 #include "esp/core/Configuration.h"
 #include "esp/core/esp.h"
 #include "esp/io/json.h"
 
 using namespace esp::core;
 using esp::assets::attributes::AbstractPhysicsAttributes;
-using esp::assets::attributes::PhysicsObjectAttributes;
+using esp::assets::attributes::ObjectAttributes;
 
 TEST(CoreTest, ConfigurationTest) {
   Configuration cfg;
@@ -41,8 +41,7 @@ TEST(CoreTest, JsonTest) {
 
   // for function ptr placeholder
   using std::placeholders::_1;
-  PhysicsObjectAttributes::ptr attributes =
-      PhysicsObjectAttributes::create("temp");
+  ObjectAttributes::ptr attributes = ObjectAttributes::create("temp");
 
   bool success = false;
   // test vector
@@ -54,24 +53,21 @@ TEST(CoreTest, JsonTest) {
 
   // test double
   success = esp::io::jsonIntoSetter<double>(
-      jsonDoc, "mass",
-      std::bind(&PhysicsObjectAttributes::setMass, attributes, _1));
+      jsonDoc, "mass", std::bind(&ObjectAttributes::setMass, attributes, _1));
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getMass(), 0.066);
 
   // test bool
   success = esp::io::jsonIntoSetter<bool>(
       jsonDoc, "join collision meshes",
-      std::bind(&PhysicsObjectAttributes::setJoinCollisionMeshes, attributes,
-                _1));
+      std::bind(&ObjectAttributes::setJoinCollisionMeshes, attributes, _1));
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getJoinCollisionMeshes(), false);
 
   // test string
   success = esp::io::jsonIntoSetter<std::string>(
       jsonDoc, "render mesh",
-      std::bind(&PhysicsObjectAttributes::setRenderAssetHandle, attributes,
-                _1));
+      std::bind(&ObjectAttributes::setRenderAssetHandle, attributes, _1));
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getRenderAssetHandle(), "banana.glb");
 

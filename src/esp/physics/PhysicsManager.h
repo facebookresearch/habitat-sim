@@ -867,7 +867,7 @@ class PhysicsManager {
    *
    * @return The initialization settings of the specified object instance.
    */
-  Attrs::PhysicsObjectAttributes::ptr getObjectInitAttributes(
+  Attrs::ObjectAttributes::ptr getObjectInitAttributes(
       const int physObjectID) const {
     assertIDValidity(physObjectID);
     return existingObjects_.at(physObjectID)->getInitializationAttributes();

@@ -10,7 +10,7 @@
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 
-#include "esp/assets/attributes/Attributes.h"
+#include "esp/assets/attributes/AttributesBase.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"

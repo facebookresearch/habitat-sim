@@ -11,8 +11,8 @@ from habitat_sim._ext.habitat_sim_bindings import (
     CubePrimitiveAttributes,
     CylinderPrimitiveAttributes,
     IcospherePrimitiveAttributes,
-    PhysicsObjectAttributes,
-    PhysicsStageAttributes,
+    ObjectAttributes,
+    StageAttributes,
     UVSpherePrimitiveAttributes,
 )
 
@@ -25,7 +25,7 @@ __all__ = [
     "CubePrimitiveAttributes",
     "CylinderPrimitiveAttributes",
     "IcospherePrimitiveAttributes",
-    "PhysicsObjectAttributes",
-    "PhysicsStageAttributes",
+    "ObjectAttributes",
+    "StageAttributes",
     "UVSpherePrimitiveAttributes",
 ]
