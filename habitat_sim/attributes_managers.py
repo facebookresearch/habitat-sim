@@ -5,13 +5,13 @@
 from habitat_sim._ext.habitat_sim_bindings import (
     AssetAttributesManager,
     ObjectAttributesManager,
-    StageAttributesManager,
     PhysicsAttributesManager,
+    StageAttributesManager,
 )
 
 __all__ = [
     "AssetAttributesManager",
     "ObjectAttributesManager",
-    "StageAttributesManager",
     "PhysicsAttributesManager",
+    "StageAttributesManager",
 ]

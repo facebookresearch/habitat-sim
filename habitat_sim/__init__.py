@@ -13,6 +13,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
     from habitat_sim import (  # noqa: F401
         agent,
         attributes,
+        attributes_managers,
         geo,
         gfx,
         logging,
@@ -70,6 +71,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
     __all__ = [
         "agent",
         "attributes",
+        "attributes_managers",
         "nav",
         "sensors",
         "errors",
