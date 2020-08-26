@@ -183,16 +183,14 @@ class ImageExtractor:
         return sample
 
     def close(self) -> None:
-        r"""Deletes the instance of the simulator. Necessary for instantiating a different ImageExtractor.
-        """
+        r"""Deletes the instance of the simulator. Necessary for instantiating a different ImageExtractor."""
         if self.sim is not None:
             self.sim.close()
             del self.sim
             self.sim = None
 
     def set_mode(self, mode: str) -> None:
-        r"""Sets the mode of the simulator. This controls which poses to use; train, test, or all (full)
-        """
+        r"""Sets the mode of the simulator. This controls which poses to use; train, test, or all (full)"""
         mymode = mode.lower()
         if mymode not in ["full", "train", "test"]:
             raise Exception(
@@ -202,8 +200,7 @@ class ImageExtractor:
         self.mode = mymode
 
     def get_semantic_class_names(self) -> List[str]:
-        r"""Returns a list of english class names in the scene(s). E.g. ['wall', 'ceiling', 'chair']
-        """
+        r"""Returns a list of english class names in the scene(s). E.g. ['wall', 'ceiling', 'chair']"""
         class_names = list(set(name for name in self.instance_id_to_name.values()))
         return class_names
 

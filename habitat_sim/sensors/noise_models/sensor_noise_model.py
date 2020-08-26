@@ -14,8 +14,7 @@ from habitat_sim.sensor import SensorType
 
 @attr.s(auto_attribs=True, kw_only=True)
 class SensorNoiseModel(abc.ABC):
-    r"""Base class for all sensor noise models
-    """
+    r"""Base class for all sensor noise models"""
     gpu_device_id: Optional[int] = None
 
     @staticmethod
@@ -38,6 +37,5 @@ class SensorNoiseModel(abc.ABC):
         """
 
     def __call__(self, sensor_observation):
-        r"""Alias of `apply()`
-        """
+        r"""Alias of `apply()`"""
         return self.apply(sensor_observation)

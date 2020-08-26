@@ -15,5 +15,12 @@ extraction:
       exclude: examples/tutorials/nb_python/
     python_setup:
       version: "3"
+path_classifiers:
+  docs:
+    - "docs"
+  library:
+    - "src/deps"
+  tests:
+    - "tests"
 queries: # remove useless alerts
   exclude: py/import-and-import-from

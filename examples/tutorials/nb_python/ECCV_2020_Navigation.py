@@ -73,6 +73,7 @@ if "google.colab" in sys.modules:
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
+# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 # @markdown Optionally configure the save path for video output:
 output_directory = "examples/tutorials/nav_output/"  # @param {type:"string"}

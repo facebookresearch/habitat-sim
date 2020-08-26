@@ -54,6 +54,5 @@ class GaussianNoiseModel(SensorNoiseModel):
         return self._impl.simulate(image)
 
     def apply(self, image):
-        r"""Alias of `simulate()` to conform to base-class and expected API
-        """
+        r"""Alias of `simulate()` to conform to base-class and expected API"""
         return self.simulate(image)

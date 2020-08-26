@@ -1,10 +1,4 @@
 #!/bin/bash
-trap 'catch $? $LINENO' EXIT
-catch() {
-  if [ "$1" != "0" ]; then
-    echo "An error occured during the installation of Habitat-sim or Habitat-Lab." >&2
-  fi
-}
 set -e
 shopt -s extglob
 shopt -s globstar
@@ -13,6 +7,12 @@ shopt -s globstar
 python -c 'import google.colab' 2>/dev/null || exit
 #Don't run again if it's already installed
 [ -f /content/habitat_sim_installed ] && echo "Habitat is already installed. Aborting..." >&2 && exit
+trap 'catch $? $LINENO' EXIT # Installs trap now
+catch() {
+  if [ "$1" != "0" ]; then
+    echo "An error occured during the installation of Habitat-sim or Habitat-Lab." >&2
+  fi
+}
 #Install Miniconda
 cd /content/
 wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && bash Miniconda3-latest-Linux-x86_64.sh -bfp /usr/local
