@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_ATTRIBUTES_H_
-#define ESP_ASSETS_ATTRIBUTES_H_
+#ifndef ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
+#define ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
 
 #include <Magnum/Magnum.h>
 #include <map>
@@ -17,6 +17,7 @@
 
 namespace esp {
 namespace assets {
+namespace attributes {
 
 /**
  * @brief Base class for all implemented attributes.
@@ -801,7 +802,8 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
 ///////////////////////////////////////
 // end primitive object attributes
 
+}  // namespace attributes
 }  // namespace assets
 }  // namespace esp
 
-#endif  // ESP_ASSETS_ATTRIBUTES_H_
+#endif  // ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_

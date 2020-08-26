@@ -6,6 +6,7 @@
 
 namespace esp {
 namespace assets {
+namespace attributes {
 
 //----------------------------------------//
 //  Derived attribute implementations
@@ -160,5 +161,6 @@ UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
   buildHandle();  // build handle based on config
 }  // PhysicsUVSpherePrimAttributes
 
+}  // namespace attributes
 }  // namespace assets
 }  // namespace esp

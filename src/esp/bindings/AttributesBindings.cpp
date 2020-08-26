@@ -7,13 +7,21 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
-#include "esp/assets/Attributes.h"
+#include "esp/assets/attributes/Attributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace esp {
 namespace assets {
+namespace attributes {
+class AbstractAttributes;
+class AbstractPhysicsAttributes;
+class PhysicsObjectAttributes;
+class PhysicsStageAttributes;
+class PhysicsManagerAttributes;
+
+}  // namespace attributes
 
 void initAttributesBindings(py::module& m) {
   // ==== AbstractAttributes ====

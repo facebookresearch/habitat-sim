@@ -1,8 +1,8 @@
 set(assets_SOURCES
   Asset.cpp
   Asset.h
-  Attributes.cpp
-  Attributes.h
+  attributes/Attributes.cpp
+  attributes/Attributes.h
   BaseMesh.cpp
   BaseMesh.h
   CollisionMeshData.h

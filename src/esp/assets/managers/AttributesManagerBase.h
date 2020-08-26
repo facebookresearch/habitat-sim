@@ -18,7 +18,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
-#include "esp/assets/Attributes.h"
+#include "esp/assets/attributes/Attributes.h"
 
 #include "esp/io/json.h"
 
@@ -26,8 +26,12 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
+namespace attributes {
+class AbstractPhysicsAttributes;
+}
 
 class ResourceManager;
+
 namespace managers {
 
 /**

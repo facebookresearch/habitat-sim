@@ -8,11 +8,11 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
 #include "esp/assets/Asset.h"
-#include "esp/assets/Attributes.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/assets/attributes/Attributes.h"
 #include "esp/core/RigidState.h"
 #include "esp/core/esp.h"
 #include "esp/scene/SceneNode.h"
@@ -23,7 +23,9 @@
 
 namespace esp {
 namespace assets {
+namespace attributes {
 class AbstractPhysicsAttributes;
+}
 class ResourceManager;
 }  // namespace assets
 namespace physics {
@@ -626,7 +628,8 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Saved attributes when the object was initialized.
    */
-  assets::AbstractPhysicsAttributes::ptr initializationAttributes_ = nullptr;
+  assets::attributes::AbstractPhysicsAttributes::ptr initializationAttributes_ =
+      nullptr;
 
   //! Access for the object to its own PhysicsManager id. Scene will keep -1.
   int objectId_ = -1;

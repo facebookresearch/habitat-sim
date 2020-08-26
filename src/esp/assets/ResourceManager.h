@@ -24,12 +24,12 @@
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 
 #include "Asset.h"
-#include "Attributes.h"
 #include "BaseMesh.h"
 #include "CollisionMeshData.h"
 #include "GenericMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
+#include "attributes/Attributes.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"

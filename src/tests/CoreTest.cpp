@@ -4,14 +4,14 @@
 
 #include <gtest/gtest.h>
 
-#include "esp/assets/Attributes.h"
+#include "esp/assets/attributes/Attributes.h"
 #include "esp/core/Configuration.h"
 #include "esp/core/esp.h"
 #include "esp/io/json.h"
 
 using namespace esp::core;
-using esp::assets::AbstractPhysicsAttributes;
-using esp::assets::PhysicsObjectAttributes;
+using esp::assets::attributes::AbstractPhysicsAttributes;
+using esp::assets::attributes::PhysicsObjectAttributes;
 
 TEST(CoreTest, ConfigurationTest) {
   Configuration cfg;

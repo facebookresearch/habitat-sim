@@ -14,7 +14,6 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
 #include "esp/assets/Asset.h"
-#include "esp/assets/Attributes.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
