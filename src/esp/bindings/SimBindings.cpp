@@ -180,10 +180,7 @@ void initSimBindings(py::module& m) {
       .def("get_render_asset_material", &Simulator::getRenderAssetMaterial,
            "render_asset_handle"_a, "material_index"_a)
       .def("set_render_asset_material", &Simulator::setRenderAssetMaterial,
-           "render_asset_handle"_a, "material_index"_a, "material"_a)
-      .def("override_object_render_asset_material",
-           &Simulator::overrideObjectRenderAssetMaterial, "object_id"_a,
-           "material_index"_a, "material"_a);
+           "render_asset_handle"_a, "material_index"_a, "material"_a);
 }
 
 }  // namespace sim

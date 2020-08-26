@@ -840,16 +840,16 @@ void Simulator::setObjectLightSetup(int objectID,
 
 int Simulator::getNumRenderAssetMaterials(std::string renderMeshHandle) {
   auto info = assets::AssetInfo::fromPath(renderMeshHandle);
-  return resourceManager_.getNumRenderAssetMaterials(info);
+  return resourceManager_->getNumRenderAssetMaterials(info);
 }
 
 gfx::PhongMaterialInfo Simulator::getRenderAssetMaterial(
     std::string renderMeshHandle,
     int materialIndex) {
   auto info = assets::AssetInfo::fromPath(renderMeshHandle);
-  auto key = resourceManager_.getRenderAssetMaterial(info, materialIndex);
+  auto key = resourceManager_->getRenderAssetMaterial(info, materialIndex);
   auto materialInfo =
-      gfx::getPhongMaterialInfo(resourceManager_.getShaderManager(), key);
+      gfx::getPhongMaterialInfo(resourceManager_->getShaderManager(), key);
   return materialInfo;
 }
 
@@ -861,8 +861,8 @@ void Simulator::setRenderAssetMaterial(
     int materialIndex,
     const gfx::PhongMaterialInfo& materialInfo) {
   auto info = assets::AssetInfo::fromPath(renderMeshHandle);
-  auto key = resourceManager_.getRenderAssetMaterial(info, materialIndex);
-  gfx::updatePhongMaterialInfo(resourceManager_.getShaderManager(), key,
+  auto key = resourceManager_->getRenderAssetMaterial(info, materialIndex);
+  gfx::updatePhongMaterialInfo(resourceManager_->getShaderManager(), key,
                                materialInfo);
 }
 
@@ -875,11 +875,11 @@ void Simulator::overrideObjectRenderAssetMaterial(
   auto renderMeshHandle =
       getObjectInitializationTemplate(objectID)->getRenderAssetHandle();
   auto info = assets::AssetInfo::fromPath(renderMeshHandle);
-  auto& shaderManager = resourceManager_.getShaderManager();
+  auto& shaderManager = resourceManager_->getShaderManager();
 
   auto originalKey =
-      resourceManager_.getRenderAssetMaterial(info, materialIndex);
-  auto overrideKey = resourceManager_.clonePhongMaterial(originalKey);
+      resourceManager_->getRenderAssetMaterial(info, materialIndex);
+  auto overrideKey = resourceManager_->clonePhongMaterial(originalKey);
   gfx::updatePhongMaterialInfo(shaderManager, overrideKey, materialInfo);
 
   gfx::overrideMaterialForSubTree(physicsManager_->getObjectSceneNode(objectID),

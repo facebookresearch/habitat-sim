@@ -307,25 +307,6 @@ class Simulator(SimulatorBackend):
     def step_physics(self, dt, scene_id=0):
         self.step_world(dt)
 
-    # --- material functions ---
-    def get_num_render_asset_materials(self, render_asset_handle):
-        return self._sim.get_num_render_asset_materials(render_asset_handle)
-
-    def get_render_asset_material(self, render_asset_handle, material_index):
-        return self._sim.get_render_asset_material(render_asset_handle, material_index)
-
-    def set_render_asset_material(self, render_asset_handle, material_index, material):
-        self._sim.set_render_asset_material(
-            render_asset_handle, material_index, material
-        )
-
-    def override_object_render_asset_material(
-        self, object_id, material_index, material
-    ):
-        self._sim.override_object_render_asset_material(
-            object_id, material_index, material
-        )
-
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor

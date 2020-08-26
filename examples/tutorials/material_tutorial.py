@@ -83,12 +83,14 @@ def main(show_imgs=True, save_imgs=False):
 
     cfg = make_configuration()
     sim = habitat_sim.Simulator(cfg)
-    agent_transform = place_agent(sim)
 
     # [example 1]
 
+    # get the physics object attributes manager
+    obj_templates_mgr = sim.get_object_template_manager()
+
     # load some object templates from configuration files
-    sphere_template_id = sim.load_object_configs(
+    sphere_template_id = obj_templates_mgr.load_object_configs(
         str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
 
@@ -106,7 +108,7 @@ def main(show_imgs=True, save_imgs=False):
     # get_object_initialization_template
     render_asset_handle = sim.get_object_initialization_template(
         sphere_ids[0]
-    ).get_render_asset_handle()
+    ).render_asset_handle
     num_materials = sim.get_num_render_asset_materials(render_asset_handle)
     assert num_materials == 1
     material_index = 0
@@ -143,31 +145,34 @@ def main(show_imgs=True, save_imgs=False):
 
     # [/example 3]
 
-    # [example 4]
+    # override_object_render_asset_material API is still pending. I leave this
+    # code for reference.
+    if False:
+        # [example 4]
 
-    # randomize material properties of individual spheres
-    random.seed(5)
-    for id in sphere_ids:
-        randomized_material = PhongMaterialInfo(material)
-        randomized_material.specular_color *= random.uniform(0, 2)
-        randomized_material.diffuse_color = mn.Color4(
-            r=material.diffuse_color.r + random.uniform(-0.1, 0.1),
-            g=material.diffuse_color.g + random.uniform(-0.1, 0.1),
-            b=material.diffuse_color.b + random.uniform(-0.1, 0.1),
-        )
-        sim.override_object_render_asset_material(
-            id, material_index, randomized_material
-        )
+        # randomize material properties of individual spheres
+        random.seed(5)
+        for id in sphere_ids:
+            randomized_material = PhongMaterialInfo(material)
+            randomized_material.specular_color *= random.uniform(0, 2)
+            randomized_material.diffuse_color = mn.Color4(
+                r=material.diffuse_color.r + random.uniform(-0.1, 0.1),
+                g=material.diffuse_color.g + random.uniform(-0.1, 0.1),
+                b=material.diffuse_color.b + random.uniform(-0.1, 0.1),
+            )
+            sim.override_object_render_asset_material(
+                id, material_index, randomized_material
+            )
 
-    get_obs(sim, show_imgs, save_imgs)
+        get_obs(sim, show_imgs, save_imgs)
 
-    # [/example 4]
+        # [/example 4]
 
     # [example 5]
 
     # Add a model of an engine. We don't modify any materials yet.
-    engine_template_id = sim.load_object_configs(
-        str(os.path.join(data_path, "test_assets/objects/2CylinderEngine"))
+    engine_template_id = obj_templates_mgr.load_object_configs(
+        str(os.path.join(data_path, "test_assets/objects/torus_stack"))
     )[0]
     engine_id = sim.add_object(engine_template_id)
     sim.set_rotation(
@@ -181,18 +186,18 @@ def main(show_imgs=True, save_imgs=False):
 
     # [example 6]
 
-    # create a new material for use with the engine model: black with a matte
-    # orange/gold specular highlight.
+    # create a new material for use with the torus-stack model: purple with a
+    # green specular highlight.
     new_material = PhongMaterialInfo(
-        ambient_color=mn.Color4(0.0, 0.0, 0.0, 1),
-        diffuse_color=mn.Color4(0.0, 0.0, 0.0, 1),
-        specular_color=mn.Color4(1, 0.7, 0, 1),
+        ambient_color=mn.Color4(0.15, 0.0, 0.15, 1),
+        diffuse_color=mn.Color4(0.15, 0.0, 0.15, 1),
+        specular_color=mn.Color4(0, 1, 0, 1),
         shininess=20.0,
     )
 
-    render_asset_handle = sim.get_object_template(
-        engine_template_id
-    ).get_render_asset_handle()
+    render_asset_handle = sim.get_object_initialization_template(
+        engine_id
+    ).render_asset_handle
     num_materials = sim.get_num_render_asset_materials(render_asset_handle)
 
     # This complex model has many materials, including several that contain the
@@ -201,7 +206,7 @@ def main(show_imgs=True, save_imgs=False):
     found_count = 0
     for i in range(num_materials):
         material = sim.get_render_asset_material(render_asset_handle, i)
-        if material.import_name.find("Material_23") != -1:
+        if material.import_name.find("torus3_material") != -1:
             found_count += 1
             sim.set_render_asset_material(render_asset_handle, i, new_material)
     assert found_count

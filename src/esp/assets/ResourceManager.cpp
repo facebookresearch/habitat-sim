@@ -1589,7 +1589,7 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
 int ResourceManager::getNumRenderAssetMaterials(
     const assets::AssetInfo& assetInfo) {
   const std::string& filename = assetInfo.filepath;
-  CHECK(resourceDict_.count(filename) > 0);  // todo: decide error-handling
+  CHECK(resourceDict_.count(filename) > 0);  // check that asset exists
   const MeshMetaData& metaData = getMeshMetaData(filename);
   ASSERT(metaData.materialIndex.first != ID_UNDEFINED);
   ASSERT(metaData.materialIndex.second != ID_UNDEFINED);
@@ -1601,13 +1601,15 @@ Magnum::ResourceKey ResourceManager::getRenderAssetMaterial(
     const assets::AssetInfo& assetInfo,
     int assetMaterialIndex) {
   const std::string& filename = assetInfo.filepath;
-  CHECK(resourceDict_.count(filename) > 0);  // todo: decide error-handling
+  CHECK(resourceDict_.count(filename) > 0);  // check that asset exists
   const MeshMetaData& metaData = getMeshMetaData(filename);
 
   ASSERT(metaData.materialIndex.first != ID_UNDEFINED);
-  ASSERT(assetMaterialIndex >= 0);
+  // check that material index is valid
+  CHECK(assetMaterialIndex >= 0);
+  CHECK(assetMaterialIndex <=
+        (metaData.materialIndex.second - metaData.materialIndex.first));
   int materialID = metaData.materialIndex.first + assetMaterialIndex;
-  ASSERT(assetMaterialIndex <= metaData.materialIndex.second);
 
   // see also material ResourceKey usage in ResourceManager::loadMaterials
   return Magnum::ResourceKey(std::to_string(materialID));
@@ -1723,12 +1725,11 @@ void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
   auto whiteMaterialData = new gfx::PhongMaterialData;
-  whiteMaterialData->ambientColor = Magnum::Color4{1.0};
+  whiteMaterialData->info.ambientColor = Magnum::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
   auto perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
   perVertexObjectId->vertexColored = true;
-  perVertexObjectId->info.ambientColor = Mn::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
                                         perVertexObjectId);
   shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});

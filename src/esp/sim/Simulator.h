@@ -646,6 +646,14 @@ class Simulator {
                            const std::string& lightSetupKey,
                            int sceneID = 0);
 
+  /**
+   * @brief Getter for PRNG.
+   *
+   * Use this where-ever possible so that habitat won't be effect by
+   * python's random or np.random modules
+   */
+  core::Random::ptr random() { return random_; }
+
   int getNumRenderAssetMaterials(std::string renderMeshHandle);
   gfx::PhongMaterialInfo getRenderAssetMaterial(std::string renderMeshHandle,
                                                 int materialIndex);
