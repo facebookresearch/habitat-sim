@@ -33,6 +33,7 @@ INPUT_MODULES = [habitat_sim]
 INPUT_DOCS = ["docs.rst", "gfx.rst", "noise_models.rst"]
 INPUT_PAGES = [
     "pages/index.rst",
+    "pages/attributes.rst",
     "pages/new-actions.rst",
     "pages/stereo-agent.rst",
     "pages/lighting-setups.rst",
