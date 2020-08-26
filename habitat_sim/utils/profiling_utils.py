@@ -56,8 +56,7 @@ def range_push(msg: str):
 
 
 def range_pop():
-    r"""Annotates the end of a range for profiling. See also range_push.
-    """
+    r"""Annotates the end of a range for profiling. See also range_push."""
     if enable_profiling:
         nvtx.range_pop()
 

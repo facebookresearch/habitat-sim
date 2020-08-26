@@ -28,7 +28,7 @@ repos:
         additional_dependencies: [toml]
 
 -   repo: https://github.com/ambv/black
-    rev: 19.3b0
+    rev: 20.8b1
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
