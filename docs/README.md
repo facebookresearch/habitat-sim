@@ -1,5 +1,12 @@
 ## Building Docs Locally
+### First Time Setup:
+Install required packages:
+```
+conda install -c conda-forge doxygen==1.8.16
+conda install jinja2 pygments docutils
+```
 
+### Building Docs:
 ```bash
 python setup.py install
 cd docs
