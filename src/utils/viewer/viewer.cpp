@@ -184,6 +184,10 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH)
       .setHelp("physics-config", "physics scene config file")
+      .addBooleanOption("disable-navmesh")
+      .setHelp("disable-navmesh",
+               "disable the navmesh, so no navigation constraints and "
+               "collision response")
       .addOption("navmesh-file")
       .setHelp("navmesh-file", "manual override path to scene navmesh file")
       .addBooleanOption("recompute-navmesh")
@@ -281,51 +285,54 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
 
-  // Load navmesh if available
-  std::string navmeshFilename;
-  if (!args.value("navmesh-file").empty()) {
-    navmeshFilename = Corrade::Utility::Directory::join(
-        Corrade::Utility::Directory::current(), args.value("navmesh-file"));
-  } else if (stageFileName.compare(esp::assets::EMPTY_SCENE)) {
-    navmeshFilename = esp::io::changeExtension(stageFileName, ".navmesh");
-
-    // TODO: short term solution to mitigate issue #430
-    // we load the pre-computed navmesh for the ptex mesh to avoid
-    // online computation.
-    // for long term solution, see issue #430
-    if (Cr::Utility::String::endsWith(stageFileName, "mesh.ply")) {
+  if (!args.isSet("disable-navmesh")) {
+    // Load navmesh if available
+    std::string navmeshFilename;
+    if (!args.value("navmesh-file").empty()) {
       navmeshFilename = Corrade::Utility::Directory::join(
-          Corrade::Utility::Directory::path(stageFileName) + "/habitat",
-          "mesh_semantic.navmesh");
+          Corrade::Utility::Directory::current(), args.value("navmesh-file"));
+    } else if (stageFileName.compare(esp::assets::EMPTY_SCENE)) {
+      navmeshFilename = esp::io::changeExtension(stageFileName, ".navmesh");
+
+      // TODO: short term solution to mitigate issue #430
+      // we load the pre-computed navmesh for the ptex mesh to avoid
+      // online computation.
+      // for long term solution, see issue #430
+      if (Cr::Utility::String::endsWith(stageFileName, "mesh.ply")) {
+        navmeshFilename = Corrade::Utility::Directory::join(
+            Corrade::Utility::Directory::path(stageFileName) + "/habitat",
+            "mesh_semantic.navmesh");
+      }
     }
-  }
 
-  if (esp::io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-  } else if (stageFileName.compare(esp::assets::EMPTY_SCENE)) {
-    esp::nav::NavMeshSettings navMeshSettings;
-    navMeshSettings.setDefaults();
-    recomputeNavMesh(stageFileName, navMeshSettings);
-  }
+    if (esp::io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
+      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+      pathfinder_->loadNavMesh(navmeshFilename);
+    } else if (stageFileName.compare(esp::assets::EMPTY_SCENE)) {
+      esp::nav::NavMeshSettings navMeshSettings;
+      navMeshSettings.setDefaults();
+      recomputeNavMesh(stageFileName, navMeshSettings);
+    }
 
-  // connect controls to navmesh if loaded
-  if (pathfinder_->isLoaded()) {
-    // some scenes could have pathable roof polygons. We are not filtering
-    // those starting points here.
-    esp::vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Mn::Vector3(position));
+    // connect controls to navmesh if loaded
+    if (pathfinder_->isLoaded()) {
+      // some scenes could have pathable roof polygons. We are not filtering
+      // those starting points here.
+      esp::vec3f position = pathfinder_->getRandomNavigablePoint();
+      agentBodyNode_->setTranslation(Mn::Vector3(position));
 
-    controls_.setMoveFilterFunction([&](const esp::vec3f& start,
-                                        const esp::vec3f& end) {
-      esp::vec3f currentPosition = pathfinder_->tryStep(start, end);
-      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
-                << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
-      LOG(INFO) << "Distance to closest obstacle: "
-                << pathfinder_->distanceToClosestObstacle(currentPosition);
+      controls_.setMoveFilterFunction([&](const esp::vec3f& start,
+                                          const esp::vec3f& end) {
+        esp::vec3f currentPosition = pathfinder_->tryStep(start, end);
+        LOG(INFO)
+            << "position=" << currentPosition.transpose() << " rotation="
+            << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
+        LOG(INFO) << "Distance to closest obstacle: "
+                  << pathfinder_->distanceToClosestObstacle(currentPosition);
 
-      return currentPosition;
-    });
+        return currentPosition;
+      });
+    }
   }
 
   renderCamera_->node().setTransformation(
