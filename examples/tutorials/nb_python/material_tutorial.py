@@ -1,8 +1,31 @@
-# [setup]
+# ---
+# jupyter:
+#   accelerator: GPU
+#   jupytext:
+#     cell_metadata_filter: -all
+#     formats: nb_python//py:percent,colabs//ipynb
+#     notebook_metadata_filter: all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.5.2
+#   kernelspec:
+#     display_name: Python 3
+#     name: python3
+# ---
+
+# %%
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+
+# %%
+# %cd /content/habitat-sim
 import math
 import os
 import random
+import sys
 
+import git
 import magnum as mn
 import numpy as np
 from matplotlib import pyplot as plt
@@ -11,40 +34,12 @@ import habitat_sim
 from habitat_sim.gfx import PhongMaterialInfo
 from habitat_sim.utils.common import quat_from_angle_axis
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-data_path = os.path.join(dir_path, "../../data")
-output_path = os.path.join(dir_path, "material_tutorial_output/")
+if "google.colab" in sys.modules:
+    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
-save_index = 0
-
-
-def show_img(data, save):
-    plt.figure(figsize=(12, 12))
-    plt.imshow(data, interpolation="nearest")
-    plt.axis("off")
-    plt.show(block=False)
-    if save:
-        global save_index
-        plt.savefig(
-            output_path + str(save_index) + ".jpg",
-            bbox_inches="tight",
-            pad_inches=0,
-            quality=50,
-        )
-        save_index += 1
-    plt.pause(1)
-
-
-def get_obs(sim, show, save):
-    obs = sim.get_sensor_observations()["rgba_camera"]
-    if show:
-        show_img(obs, save)
-    return obs
-
-
-def remove_all_objects(sim):
-    for id in sim.get_existing_object_ids():
-        sim.remove_object(id)
+repo = git.Repo(".", search_parent_directories=True)
+dir_path = repo.working_tree_dir
+data_path = os.path.join(dir_path, "data")
 
 
 def place_agent(sim):
@@ -73,23 +68,28 @@ def make_configuration():
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
 
-# [/setup]
+def show_obs(sim):
+    data = sim.get_sensor_observations()["rgba_camera"]
+    plt.figure(figsize=(12, 12))
+    plt.imshow(data, interpolation="nearest")
+    plt.axis("off")
+    plt.show(block=False)
+    plt.pause(1)
 
-# This is wrapped such that it can be added to a unit test
-def main(show_imgs=True, save_imgs=False):
-    if save_imgs:
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
+
+if __name__ == "__main__":
+
+# %%
+    # set up the scene and agent (camera position)
 
     cfg = make_configuration()
     sim = habitat_sim.Simulator(cfg)
+    place_agent(sim)
 
-    # [example 1]
-
-    # get the physics object attributes manager
+# %%
+    # place a sphere in the scene
     obj_templates_mgr = sim.get_object_template_manager()
 
-    # load some object templates from configuration files
     sphere_template_id = obj_templates_mgr.load_object_configs(
         str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
@@ -98,11 +98,10 @@ def main(show_imgs=True, save_imgs=False):
     sphere_ids.append(sim.add_object(sphere_template_id))
     sim.set_translation([3.7, 0.23, 0.0], sphere_ids[0])
 
-    get_obs(sim, show_imgs, save_imgs)
+    show_obs(sim)
 
-    # [/example 1]
-
-    # [example 2]
+# %%
+    # change the material for the sphere render asset
 
     # could also use sim.get_object_template(sphere_template_id) instead of
     # get_object_initialization_template
@@ -128,12 +127,9 @@ def main(show_imgs=True, save_imgs=False):
     # the existing sphere.
     sim.set_render_asset_material(render_asset_handle, material_index, material)
 
-    get_obs(sim, show_imgs, save_imgs)
+    show_obs(sim)
 
-    # [/example 2]
-
-    # [example 3]
-
+# %%
     # create more spheres. They will also use the modified material.
 
     for x in [3.0, 2.3, 1.6, 0.9]:
@@ -141,15 +137,12 @@ def main(show_imgs=True, save_imgs=False):
         sim.set_translation([x, 0.23, 0.0], id)
         sphere_ids.append(id)
 
-    get_obs(sim, show_imgs, save_imgs)
+    show_obs(sim)
 
-    # [/example 3]
-
+# %%
     # override_object_render_asset_material API is still pending. I leave this
     # code for reference.
     if False:
-        # [example 4]
-
         # randomize material properties of individual spheres
         random.seed(5)
         for id in sphere_ids:
@@ -164,13 +157,9 @@ def main(show_imgs=True, save_imgs=False):
                 id, material_index, randomized_material
             )
 
-        get_obs(sim, show_imgs, save_imgs)
-
-        # [/example 4]
-
-    # [example 5]
-
-    # Add a model of an engine. We don't modify any materials yet.
+        show_obs(sim)
+# %%
+    # place another test object, a torus stack. We don't modify any materials yet.
     engine_template_id = obj_templates_mgr.load_object_configs(
         str(os.path.join(data_path, "test_assets/objects/torus_stack"))
     )[0]
@@ -180,13 +169,9 @@ def main(show_imgs=True, save_imgs=False):
     )
     sim.set_translation([2.2, 0.47, 1.15], engine_id)
 
-    get_obs(sim, show_imgs, save_imgs)
-
-    # [/example 5]
-
-    # [example 6]
-
-    # create a new material for use with the torus-stack model: purple with a
+    show_obs(sim)
+# %%
+    # create a new material for use with the torus stack: purple with a
     # green specular highlight.
     new_material = PhongMaterialInfo(
         ambient_color=mn.Color4(0.15, 0.0, 0.15, 1),
@@ -200,9 +185,8 @@ def main(show_imgs=True, save_imgs=False):
     ).render_asset_handle
     num_materials = sim.get_num_render_asset_materials(render_asset_handle)
 
-    # This complex model has many materials, including several that contain the
-    # substring "Material_23". We iterate over all materials, check the import_name,
-    # and update all matches for Material_23.
+    # This model has several materials. We iterate over them and change only
+    # "torus3_material".
     found_count = 0
     for i in range(num_materials):
         material = sim.get_render_asset_material(render_asset_handle, i)
@@ -211,12 +195,4 @@ def main(show_imgs=True, save_imgs=False):
             sim.set_render_asset_material(render_asset_handle, i, new_material)
     assert found_count
 
-    get_obs(sim, show_imgs, save_imgs)
-
-    # [/example 6]
-
-    remove_all_objects(sim)
-
-
-if __name__ == "__main__":
-    main(show_imgs=True, save_imgs=True)
+    show_obs(sim)
