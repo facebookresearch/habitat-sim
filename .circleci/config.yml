@@ -15,7 +15,7 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo pip install -U black flake8 flake8-bugbear "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
+              sudo pip install -U black flake8 flake8-bugbear flake8-comprehensions "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
               sudo pip install -r requirements.txt --progress-bar off
       - run:
           name: run black

@@ -8,13 +8,11 @@ import torch
 
 def create_mask_filter(labels, extractor):
     instance_id_to_name = extractor.instance_id_to_name
-    labels_we_care_about = set(
-        [
-            instance_id
-            for instance_id, name in instance_id_to_name.items()
-            if name in labels
-        ]
-    )
+    labels_we_care_about = {
+        instance_id
+        for instance_id, name in instance_id_to_name.items()
+        if name in labels
+    }
 
     # Function that filters out instance of objects we do not care about
     mask_filter = np.vectorize(lambda x: x * int(x in labels_we_care_about))
@@ -90,7 +88,7 @@ class InstanceVisualizer:
             visuals = {}
             num_out_so_far = 1
             for images, targets in self.dataloader:
-                images = list(img.to(self.device) for img in images)
+                images = [img.to(self.device) for img in images]
                 targets = [
                     {k: v.to(self.device) for k, v in t.items()} for t in targets
                 ]
