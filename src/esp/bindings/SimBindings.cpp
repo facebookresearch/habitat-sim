@@ -107,7 +107,7 @@ void initSimBindings(py::module& m) {
            "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
            "scene_id"_a = 0)
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
-           "delete_object_node"_a = Py_True, "delete_visual_node"_a = Py_True,
+           "delete_object_node"_a = true, "delete_visual_node"_a = true,
            "scene_id"_a = 0)
       .def("get_object_initialization_template",
            &Simulator::getObjectInitializationTemplate, "object_id"_a,
@@ -168,7 +168,7 @@ void initSimBindings(py::module& m) {
       .def("set_object_semantic_id", &Simulator::setObjectSemanticId,
            "semantic_id"_a, "object_id"_a, "scene_id"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
-           "navmesh_settings"_a, "include_static_objects"_a = Py_False)
+           "navmesh_settings"_a, "include_static_objects"_a = false)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,

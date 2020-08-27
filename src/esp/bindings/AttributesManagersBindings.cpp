@@ -62,19 +62,19 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
               &AttrClass::getTemplateHandlesBySubstring),
           R"(Returns a list of template handles that either contain or explicitly do not
             contain the passed search_str, based on the value of boolean contains.)",
-          "search_str"_a = "", "contains"_a = Py_True)
+          "search_str"_a = "", "contains"_a = true)
       .def("create_template",
            static_cast<T (AttrClass::*)(const std::string&, bool)>(
                &AttrClass::createAttributesTemplate),
            R"(Creates a template based on passed handle, and registers it in
             the library if register_template is True.)",
-           "handle"_a, "register_template"_a = Py_True)
+           "handle"_a, "register_template"_a = true)
       .def("create_new_template",
            static_cast<T (AttrClass::*)(const std::string&, bool)>(
                &AttrClass::createDefaultAttributesTemplate),
            R"(Creates a template built with default values, and registers it in
             the library if register_template is True.)",
-           "handle"_a, "register_template"_a = Py_False)
+           "handle"_a, "register_template"_a = true)
       .def("is_valid_filename", &AttrClass::isValidFileName, R"(
              Returns whether the passed handle exists and the user has access.)",
            "handle"_a)
@@ -108,7 +108,7 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
              Returns a list of handles for templates locked by this function
              call. Lock == True makes the template unable to be deleted.
              Note : Locked templates can still be edited.)",
-           "lock"_a, "search_str"_a = "", "contains"_a = Py_True)
+           "lock"_a, "search_str"_a = "", "contains"_a = true)
       .def("set_template_list_lock", &AttrClass::setTemplateLockByHandles,
            R"(This sets the lock state for all templates whose handles
              are passed in list. Returns a list of handles for templates
@@ -124,7 +124,7 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
              in the library that have not been marked undeletable by the system
              or read-only by the user and whose handles either contain or explictly
              do not contain the passed search_str.)",
-           "search_str"_a = "", "contains"_a = Py_True)
+           "search_str"_a = "", "contains"_a = true)
       .def("remove_template_by_ID", &AttrClass::removeTemplateByID,
            R"(This removes, and returns the template referenced by the passed ID
              from the library.)",
@@ -263,7 +263,7 @@ void initAttributesManagersBindings(py::module& m) {
             the provided file or directory path. If save_as_defaults is true, then
             these templates will be unable to be deleted)"
           "path"_a,
-          "save_as_defaults"_a = Py_False)
+          "save_as_defaults"_a = true)
 
       // manage file-based templates access
       .def(
@@ -277,7 +277,7 @@ void initAttributesManagersBindings(py::module& m) {
               &ObjectAttributesManager::getFileTemplateHandlesBySubstring),
           R"(Returns a list of file-based template handles that either contain or explicitly do not
             contain the passed search_str, based on the value of contains.)",
-          "search_str"_a = "", "contains"_a = Py_True)
+          "search_str"_a = "", "contains"_a = true)
       .def(
           "get_random_file_template_handle",
           &ObjectAttributesManager::getRandomFileTemplateHandle,
@@ -295,7 +295,7 @@ void initAttributesManagersBindings(py::module& m) {
            R"(
             Returns a list of template synthesized(primitive asset)-based handles that either contain or explicitly do not
             contain the passed search_str, based on the value of contains.)",
-           "search_str"_a = "", "contains"_a = Py_True)
+           "search_str"_a = "", "contains"_a = true)
       .def(
           "get_random_synth_template_handle",
           &ObjectAttributesManager::getRandomSynthTemplateHandle,
