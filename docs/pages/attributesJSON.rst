@@ -95,7 +95,7 @@ The tags below are used to build a coordinate frame for the stage, and will over
 Stage Physics and Object-related Parameters
 -------------------------------------------
 
-Below are stage-specific physical and object-related quantities.  These values will override similarly-named values specified in the Scene Attributes or Physics Manager Attributes.
+Below are stage-specific physical and object-related quantities.  These values will override similarly-named values specified in the Physics Manager Attributes.
 
 "scale"
 	- 3-vector
@@ -160,7 +160,7 @@ The tags below are used to build a coordinate frame for the object, and will ove
 	- Describes the **forward** direction for the object.
 
 
-Below are object-specific physical quantities.  These values will override similarly-named values specified in a Scene Attributes or Physics Manager Attributes.
+Below are object-specific physical quantities.  These values will override similarly-named values specified in a Physics Manager Attributes.
 
 "scale"
 	- 3-vector
