@@ -81,6 +81,10 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
                              std::bind(&PhysicsManagerAttributes::setTimestep,
                                        physicsManagerAttributes, _1));
 
+  // load the max substeps between time step
+  io::jsonIntoSetter<int>(jsonConfig, "max substeps",
+                          std::bind(&PhysicsManagerAttributes::setMaxSubsteps,
+                                    physicsManagerAttributes, _1));
   // load the friction coefficient
   io::jsonIntoSetter<double>(
       jsonConfig, "friction coefficient",
