@@ -74,7 +74,7 @@ class InstanceVisualizer:
     ):
         def visual_filter(masks, labels, segment_type):
             masks = masks.astype(int)
-            H, W = masks.shape[2:]
+            # H, W = masks.shape[2:]
 
             # Instead of T/F for each mask, use Class_label/0
             for i, mask in enumerate(masks):
