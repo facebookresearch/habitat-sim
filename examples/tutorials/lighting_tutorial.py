@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import habitat_sim
-from habitat_sim.gfx import LightInfo, LightPositionModel
+from habitat_sim.gfx import LightInfo, LightPositionModel, PhongMaterialInfo
 from habitat_sim.utils.common import quat_from_angle_axis
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -131,6 +131,9 @@ def main(show_imgs=True, save_imgs=False):
     chair_template_id = obj_templates_mgr.load_object_configs(
         str(os.path.join(data_path, "test_assets/objects/chair"))
     )[0]
+    box_template_id = obj_templates_mgr.load_object_configs(
+        str(os.path.join(data_path, "test_assets/objects/transform_box"))
+    )[0]
 
     id_1 = sim.add_object(sphere_template_id)
     sim.set_translation([3.2, 0.23, 0.03], id_1)
@@ -217,6 +220,78 @@ def main(show_imgs=True, save_imgs=False):
     get_obs(sim, show_imgs, save_imgs)
 
     # [/example 9]
+
+    remove_all_objects(sim)
+
+    # [example 10]
+
+    # set a new default light setup
+    my_default_lighting = [
+        LightInfo(position=[8.0, 8.0, 8.0], model=LightPositionModel.GLOBAL),
+        LightInfo(position=[8.0, 8.0, -8.0], model=LightPositionModel.GLOBAL),
+        LightInfo(position=[-8.0, 8.0, 8.0], model=LightPositionModel.GLOBAL),
+        LightInfo(position=[-8.0, 8.0, -8.0], model=LightPositionModel.GLOBAL),
+    ]
+    sim.set_light_setup(my_default_lighting)
+
+    # add a box
+    id_1 = sim.add_object(box_template_id)
+    sim.set_translation([3.2, 0.23, 0.4], id_1)
+
+    get_obs(sim, show_imgs, save_imgs)
+
+    # The box render asset uses different materials for its faces. There are
+    # three materials in total, named "Material", "Material.001", and
+    # "Material.002" in the GLB file. Let's change Material.002.
+
+    # get the render asset for the box template
+    render_asset_handle = sim.get_object_initialization_template(
+        id_1
+    ).render_asset_handle
+
+    # create a new material: purple with a yellow specular highlight.
+    new_material = PhongMaterialInfo(
+        ambient_color=mn.Color4(0.15, 0.0, 0.15, 1),
+        diffuse_color=mn.Color4(0.15, 0.0, 0.15, 1),
+        specular_color=mn.Color4(1.0, 1.0, 0.0, 1),
+        shininess=20.0,
+    )
+
+    # do a linear search to find "Material.002" and set the new material.
+    found_count = 0
+    num_materials = sim.get_num_render_asset_materials(render_asset_handle)
+    for i in range(num_materials):
+        material = sim.get_render_asset_material(render_asset_handle, i)
+        if material.import_name.find("Material.002") != -1:
+            found_count += 1
+            sim.set_render_asset_material(render_asset_handle, i, new_material)
+    assert found_count
+
+    get_obs(sim, show_imgs, save_imgs)
+
+    # Add two more boxes using the same render asset.
+    id_2 = sim.add_object(box_template_id)
+    sim.set_translation([3.2, 0.23, -0.2], id_2)
+
+    id_3 = sim.add_object(box_template_id)
+    sim.set_translation([3.2, 0.23, 1.0], id_3)
+
+    get_obs(sim, show_imgs, save_imgs)
+
+    # Next, let's change Material.001's diffuse to be darker.
+    found_count = 0
+    num_materials = sim.get_num_render_asset_materials(render_asset_handle)
+    for i in range(num_materials):
+        material = sim.get_render_asset_material(render_asset_handle, i)
+        if material.import_name.find("Material.001") != -1:
+            found_count += 1
+            material.diffuse_color *= 0.3
+            sim.set_render_asset_material(render_asset_handle, i, material)
+    assert found_count
+
+    get_obs(sim, show_imgs, save_imgs)
+
+    # [/example 10]
 
 
 if __name__ == "__main__":

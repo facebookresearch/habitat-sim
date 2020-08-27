@@ -5,10 +5,10 @@
     habitat_sim.agent
     habitat_sim.attributes
 
-Working with Lights
-###################
+Working with Lights And Materials
+#################################
 
-:summary: This tutorial demonstrates lighting of scenes and objects in Habitat -- creation, placement, configuration, and manipulation of light sources and shaders.
+:summary: This tutorial demonstrates lighting of scenes and objects in Habitat -- creation, placement, configuration, and manipulation of light sources and shaders. This tutorial also demonstrates material-editing.
 
 .. contents::
     :class: m-block m-default
@@ -173,8 +173,8 @@ The light setup any individual object uses can be changed at any time with :ref:
 .. image:: images/lighting-setups-images/8.jpg
     :width: 20em
 
-`Feature Detail Review`_
-========================
+`Lighting Feature Detail Review`_
+=================================
 
 A light setup consists of a set of :ref:`LightInfo` structures defining the common configuration
 of a set of point lights used to render objects in a scene. Once defined and registered,
@@ -212,3 +212,17 @@ An existing object's light setup can be modified at any time with :ref:`Simulato
 .. code:: python
 
     sim.set_object_light_setup(my_object_id, "my_custom_lighting_key")
+
+`Material Editing`_
+===================
+
+The following code demonstrates the material-editing API. To view the output images, run:
+
+.. code:: shell-session
+
+    $ python examples/tutorials/lighting_tutorial.py
+
+.. include:: ../../examples/tutorials/lighting_tutorial.py
+    :code: py
+    :start-after: # [example 10]
+    :end-before: # [/example 10]
