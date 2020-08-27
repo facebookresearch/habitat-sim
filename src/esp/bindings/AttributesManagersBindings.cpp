@@ -74,7 +74,7 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
                &AttrClass::createDefaultAttributesTemplate),
            R"(Creates a template built with default values, and registers it in
             the library if register_template is True.)",
-           "handle"_a, "register_template"_a = true)
+           "handle"_a, "register_template"_a = false)
       .def("is_valid_filename", &AttrClass::isValidFileName, R"(
              Returns whether the passed handle exists and the user has access.)",
            "handle"_a)
@@ -263,7 +263,7 @@ void initAttributesManagersBindings(py::module& m) {
             the provided file or directory path. If save_as_defaults is true, then
             these templates will be unable to be deleted)"
           "path"_a,
-          "save_as_defaults"_a = true)
+          "save_as_defaults"_a = false)
 
       // manage file-based templates access
       .def(
