@@ -863,23 +863,5 @@ void Simulator::setRenderAssetMaterial(
                                materialInfo);
 }
 
-void Simulator::overrideObjectRenderAssetMaterial(
-    int objectID,
-    int materialIndex,
-    const gfx::PhongMaterialInfo& materialInfo) {
-  auto renderAssetHandle =
-      getObjectInitializationTemplate(objectID)->getRenderAssetHandle();
-  auto info = assets::AssetInfo::fromPath(renderAssetHandle);
-  auto& shaderManager = resourceManager_->getShaderManager();
-
-  auto originalKey =
-      resourceManager_->getRenderAssetMaterial(info, materialIndex);
-  auto overrideKey = resourceManager_->clonePhongMaterial(originalKey);
-  gfx::updatePhongMaterialInfo(shaderManager, overrideKey, materialInfo);
-
-  gfx::overrideMaterialForSubTree(physicsManager_->getObjectSceneNode(objectID),
-                                  originalKey, overrideKey);
-}
-
 }  // namespace sim
 }  // namespace esp
