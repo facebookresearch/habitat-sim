@@ -205,7 +205,7 @@ class ImageExtractor:
 
     def get_semantic_class_names(self) -> List[str]:
         r"""Returns a list of english class names in the scene(s). E.g. ['wall', 'ceiling', 'chair']"""
-        class_names = list(set(name for name in self.instance_id_to_name.values()))
+        class_names = list(set(self.instance_id_to_name.values()))
         return class_names
 
     def _preprocessing(self, sim, scene_filepaths, meters_per_pixel):

@@ -33,9 +33,7 @@ def main():
     rooms = data["room"]
     for room in rooms.values():
         listify(room)
-    output = dict()
-    output["objects"] = list(objs.values())
-    output["rooms"] = list(rooms.values())
+    output = {"objects": list(objs.values()), "rooms": list(rooms.values())}
     with open(args.scn_path, "w") as f:
         x = f.write(json.dumps(output, indent=2))
         print("wrote %d bytes" % x)
