@@ -132,8 +132,6 @@ def make_video(
         "border_color": overlay image border color [0-255] (3d: array, list, or tuple). Defaults to gray [150]\n
         "obs": observation key (string)\n
     """
-    videodims = observations[0][primary_obs].shape
-    videodims = (videodims[1], videodims[0])  # flip to w,h order
     if not video_file.endswith(".mp4"):
         video_file = video_file + ".mp4"
     print("Encoding the video: %s " % video_file)
