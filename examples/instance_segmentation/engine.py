@@ -82,7 +82,7 @@ def train_one_epoch(
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
     epoch_losses["total_loss"] = total_loss
-    for loss_name, loss_val in epoch_losses.items():
+    for loss_name in epoch_losses:
         epoch_losses[loss_name] = epoch_losses[loss_name] / num_examples
         if writer is not None:
             writer.add_scalar("Losses/" + loss_name, epoch_losses[loss_name], epoch)

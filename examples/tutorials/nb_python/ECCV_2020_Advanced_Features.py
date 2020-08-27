@@ -644,7 +644,7 @@ def display_sample(
         ax.set_title(titles[i])
         # plot points on images
         if key_points is not None:
-            for pix, point in enumerate(key_points):
+            for point in key_points:
                 plt.plot(point[0], point[1], marker="o", markersize=10, alpha=0.8)
         plt.imshow(data)
 
@@ -1719,7 +1719,7 @@ init_config = init_camera_track_config(sim)
 offset_solid = np.array([-1.1, 0.6, -1.8])
 objs_to_sim = []
 # Create primitive-attributes based object templates for solid and wireframe objects
-for k, solidHandle in solid_handles_to_use.items():
+for solidHandle in solid_handles_to_use.values():
     # Create object template with passed handle
     obj_template = obj_attr_mgr.create_template(solidHandle)
     # Create object from object template handle
@@ -1733,7 +1733,7 @@ for k, solidHandle in solid_handles_to_use.items():
 
 offset_wf = np.array([-1.1, 0.6, -1.0])
 
-for k, wireframeHandle in wireframe_handles_to_use.items():
+for wireframeHandle in wireframe_handles_to_use.values():
     # Create object template with passed handle
     obj_template = obj_attr_mgr.create_template(wireframeHandle)
     # Create object from object template handle

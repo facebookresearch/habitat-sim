@@ -45,7 +45,7 @@ def test_data_extractor_end_to_end(sim):
     net = TrivialNet()
 
     # Run data through network
-    for i, sample_batch in enumerate(dataloader):
+    for sample_batch in dataloader:
         img, _ = sample_batch["rgba"], sample_batch["label"]
         img = img.permute(0, 3, 2, 1).float()
         net(img)

@@ -169,7 +169,7 @@ class DemoRunner:
         for old_obj_id in self._sim.get_existing_object_ids():
             self._sim.remove_object(old_obj_id)
 
-        for obj_id in range(num_objects):
+        for _obj_id in range(num_objects):
             # rand_obj_index = random.randint(0, object_lib_size - 1)
             # rand_obj_index = 0  # overwrite for specific object only
             rand_obj_index = self._sim_settings.get("test_object_index")

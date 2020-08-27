@@ -61,7 +61,7 @@ def test_change_state():
         state.rotation *= quat_from_angle_axis(
             np.random.uniform(0, 2 * np.pi), np.array([0.0, 1.0, 0.0])
         )
-        for k, v in state.sensor_states.items():
+        for v in state.sensor_states.values():
             v.position += np.random.uniform(-1, 1, size=3)
             v.rotation *= quat_from_angle_axis(
                 np.random.uniform(0, 2 * np.pi), np.array([1.0, 1.0, 1.0])

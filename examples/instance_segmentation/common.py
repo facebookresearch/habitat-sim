@@ -1,4 +1,5 @@
 import collections
+import math
 import random
 
 import numpy as np
@@ -69,7 +70,7 @@ class InstanceVisualizer:
         ]  # Make sure background (class 0) stays all the same color
 
     def visualize_instance_segmentation_output(
-        self, max_num_outputs=float("inf"), segment_type="instance"
+        self, max_num_outputs=math.inf, segment_type="instance"
     ):
         def visual_filter(masks, labels, segment_type):
             masks = masks.astype(int)
