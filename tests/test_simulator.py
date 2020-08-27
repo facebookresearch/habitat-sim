@@ -133,7 +133,7 @@ def test_object_template_editing(sim):
 
     # test creating a new template with a test asset
     transform_box_path = osp.abspath("data/test_assets/objects/transform_box.glb")
-    transform_box_template = habitat_sim.attributes.PhysicsObjectAttributes()
+    transform_box_template = habitat_sim.attributes.ObjectAttributes()
     transform_box_template.render_asset_handle = transform_box_path
     obj_mgr = sim.get_object_template_manager()
     old_library_size = obj_mgr.get_num_templates()
