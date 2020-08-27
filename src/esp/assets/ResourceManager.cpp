@@ -64,7 +64,7 @@ namespace Mn = Magnum;
 namespace esp {
 namespace assets {
 
-using attributes::AbstractPhysicsAttributes;
+using attributes::AbstractObjectAttributes;
 using attributes::CubePrimitiveAttributes;
 using attributes::ObjectAttributes;
 using attributes::PhysicsManagerAttributes;
@@ -378,7 +378,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
 }  // ResourceManager::createStageAssetInfosFromAttributes
 
 esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
-    const AbstractPhysicsAttributes::ptr& attribs,
+    const AbstractObjectAttributes::ptr& attribs,
     const Magnum::Vector3& origin) {
   const vec3f upEigen{
       Mn::EigenIntegration::cast<vec3f>(attribs->getOrientUp())};

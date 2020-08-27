@@ -17,7 +17,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace assets {
 
-using attributes::AbstractPhysicsAttributes;
+using attributes::AbstractObjectAttributes;
 using attributes::ObjectAttributes;
 namespace managers {
 ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
@@ -176,13 +176,13 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
   // set defaults for passed render asset handles
   setDefaultFileNameBasedAttributes(
       newAttributes, true, newAttributes->getRenderAssetHandle(),
-      std::bind(&AbstractPhysicsAttributes::setRenderAssetType, newAttributes,
+      std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
                 _1));
   // set defaults for passed collision asset handles
   setDefaultFileNameBasedAttributes(
       newAttributes, false, newAttributes->getCollisionAssetHandle(),
-      std::bind(&AbstractPhysicsAttributes::setCollisionAssetType,
-                newAttributes, _1));
+      std::bind(&AbstractObjectAttributes::setCollisionAssetType, newAttributes,
+                _1));
 
   return newAttributes;
 }  // ObjectAttributesManager::initNewAttribsInternal

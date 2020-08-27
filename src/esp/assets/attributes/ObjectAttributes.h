@@ -16,7 +16,7 @@ namespace attributes {
  * ObjectAttributes and StageAttributes objects; Should be
  * treated as if is abstract - should never be instanced directly
  */
-class AbstractPhysicsAttributes : public AbstractAttributes {
+class AbstractObjectAttributes : public AbstractAttributes {
  public:
   /**
    * @brief Constant static map to provide mappings from string tags to @ref
@@ -24,10 +24,10 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
    * type to @ref AssetTypes.  Keys must be lowercase.
    */
   static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
-  AbstractPhysicsAttributes(const std::string& classKey,
-                            const std::string& handle);
+  AbstractObjectAttributes(const std::string& classKey,
+                           const std::string& handle);
 
-  virtual ~AbstractPhysicsAttributes() = default;
+  virtual ~AbstractObjectAttributes() = default;
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
 
@@ -152,12 +152,9 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
 
  protected:
   void setIsDirty() { setBool("__isDirty", true); }
-  std::string getBoolDispStr(bool val) const {
-    return (val ? "true" : "false");
-  }
 
  public:
-  ESP_SMART_POINTERS(AbstractPhysicsAttributes)
+  ESP_SMART_POINTERS(AbstractObjectAttributes)
 
 };  // class AbstractPhysicsAttributes
 
@@ -165,7 +162,7 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
  * @brief Specific Attributes instance which is constructed with a base set of
  * object required attributes
  */
-class ObjectAttributes : public AbstractPhysicsAttributes {
+class ObjectAttributes : public AbstractObjectAttributes {
  public:
   ObjectAttributes(const std::string& handle = "");
   // center of mass (COM)
@@ -240,7 +237,7 @@ class ObjectAttributes : public AbstractPhysicsAttributes {
 // stage and physics manager attributes
 
 //! attributes for a single physical scene
-class StageAttributes : public AbstractPhysicsAttributes {
+class StageAttributes : public AbstractObjectAttributes {
  public:
   StageAttributes(const std::string& handle = "");
 

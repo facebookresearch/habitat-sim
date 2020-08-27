@@ -9,7 +9,7 @@ namespace attributes {
 
 // All keys must be lowercase
 const std::map<std::string, esp::assets::AssetType>
-    AbstractPhysicsAttributes::AssetTypeNamesMap = {
+    AbstractObjectAttributes::AssetTypeNamesMap = {
         {"mp3d", AssetType::MP3D_MESH},
         {"navmesh", AssetType::NAVMESH},
         {"ptex", AssetType::FRL_PTEX_MESH},
@@ -17,7 +17,7 @@ const std::map<std::string, esp::assets::AssetType>
         {"suncg", AssetType::SUNCG_SCENE},
 };
 
-AbstractPhysicsAttributes::AbstractPhysicsAttributes(
+AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& attributesClassKey,
     const std::string& handle)
     : AbstractAttributes(attributesClassKey, handle) {
@@ -40,7 +40,7 @@ AbstractPhysicsAttributes::AbstractPhysicsAttributes(
 }  // AbstractPhysicsAttributes ctor
 
 ObjectAttributes::ObjectAttributes(const std::string& handle)
-    : AbstractPhysicsAttributes("ObjectAttributes", handle) {
+    : AbstractObjectAttributes("ObjectAttributes", handle) {
   // fill necessary attribute defaults
   setMass(1.0);
   setCOM({0, 0, 0});
@@ -59,7 +59,7 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 }  // ObjectAttributes ctor
 
 StageAttributes::StageAttributes(const std::string& handle)
-    : AbstractPhysicsAttributes("StageAttributes", handle) {
+    : AbstractObjectAttributes("StageAttributes", handle) {
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
 

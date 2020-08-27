@@ -20,7 +20,9 @@ namespace assets {
 namespace attributes {
 
 /**
- * @brief Base class for all implemented attributes.
+ * @brief Base class for all implemented attributes.  This abstract base class
+ * also illustrates the functionality exectation of @ref AttributesManagerBase
+ * class template specializations.
  */
 class AbstractAttributes : public esp::core::Configuration {
  public:

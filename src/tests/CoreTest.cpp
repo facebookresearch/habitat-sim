@@ -10,7 +10,7 @@
 #include "esp/io/json.h"
 
 using namespace esp::core;
-using esp::assets::attributes::AbstractPhysicsAttributes;
+using esp::assets::attributes::AbstractObjectAttributes;
 using esp::assets::attributes::ObjectAttributes;
 
 TEST(CoreTest, ConfigurationTest) {
@@ -47,7 +47,7 @@ TEST(CoreTest, JsonTest) {
   // test vector
   success = esp::io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "scale",
-      std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
+      std::bind(&AbstractObjectAttributes::setScale, attributes, _1));
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getScale()[1], 2);
 

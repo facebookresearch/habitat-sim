@@ -24,7 +24,7 @@
 namespace esp {
 namespace assets {
 namespace attributes {
-class AbstractPhysicsAttributes;
+class AbstractObjectAttributes;
 }
 class ResourceManager;
 }  // namespace assets
@@ -629,7 +629,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Saved attributes when the object was initialized.
    */
-  Attrs::AbstractPhysicsAttributes::ptr initializationAttributes_ = nullptr;
+  Attrs::AbstractObjectAttributes::ptr initializationAttributes_ = nullptr;
 
   //! Access for the object to its own PhysicsManager id. Scene will keep -1.
   int objectId_ = -1;

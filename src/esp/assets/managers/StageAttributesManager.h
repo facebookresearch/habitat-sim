@@ -25,9 +25,9 @@ class StageAttributesManager
 
   /**
    * @brief This will set the current physics manager attributes that is
-   * governing the world that this sceneAttributesManager's scenes will be
-   * created in.  This is used so that upon creation of new sceneAttributes,
-   * PhysicsManagerAttributes defaults can be set in the sceneAttributes before
+   * governing the world that this StageAttributesManager's scenes will be
+   * created in.  This is used so that upon creation of new StageAttributes,
+   * PhysicsManagerAttributes defaults can be set in the StageAttributes before
    * any scene-specific values are set.
    *
    * @param handle The string handle referencing the physicsManagerAttributes
@@ -63,7 +63,7 @@ class StageAttributesManager
    * If a template exists with this handle, this existing template will be
    * overwritten with the newly created one if @ref registerTemplate is true.
    *
-   * @param sceneAttributesHandle the origin of the desired template to be
+   * @param StageAttributesHandle the origin of the desired template to be
    * created, in this case, a file name.
    * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
@@ -73,7 +73,7 @@ class StageAttributesManager
    * @return a reference to the desired template.
    */
   Attrs::StageAttributes::ptr createAttributesTemplate(
-      const std::string& sceneAttributesHandle,
+      const std::string& StageAttributesHandle,
       bool registerTemplate = true) override;
 
   /**
@@ -189,16 +189,16 @@ class StageAttributesManager
    * set properly.  We are doing this since these values can be modified by the
    * user.
    *
-   * @param sceneAttributesTemplate The attributes template.
-   * @param sceneAttributesHandle The key for referencing the template in the
+   * @param StageAttributesTemplate The attributes template.
+   * @param StageAttributesHandle The key for referencing the template in the
    * @ref templateLibrary_.
    * @return The index in the @ref templateLibrary_ of object
    * template.
    */
 
   int registerAttributesTemplateFinalize(
-      Attrs::StageAttributes::ptr sceneAttributesTemplate,
-      const std::string& sceneAttributesHandle) override;
+      Attrs::StageAttributes::ptr StageAttributesTemplate,
+      const std::string& StageAttributesHandle) override;
 
   /**
    * @brief Any scene-attributes-specific resetting that needs to happen on
@@ -225,7 +225,7 @@ class StageAttributesManager
   ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
   /**
    * @brief Reference to PhysicsAttributesManager to give access to default
-   * physics manager attributes settings when sceneAttributes are created.
+   * physics manager attributes settings when StageAttributes are created.
    */
   PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
 

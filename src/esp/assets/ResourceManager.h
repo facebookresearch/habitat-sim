@@ -415,7 +415,7 @@ class ResourceManager {
    * @return the coordinate frame of the assets the passed attributes describes.
    */
   esp::geo::CoordinateFrame buildFrameFromAttributes(
-      const Attrs::AbstractPhysicsAttributes::ptr& attribs,
+      const Attrs::AbstractObjectAttributes::ptr& attribs,
       const Magnum::Vector3& origin);
 
   /**

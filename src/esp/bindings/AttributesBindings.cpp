@@ -20,7 +20,7 @@ namespace esp {
 namespace assets {
 
 using attributes::AbstractAttributes;
-using attributes::AbstractPhysicsAttributes;
+using attributes::AbstractObjectAttributes;
 using attributes::AbstractPrimitiveAttributes;
 using attributes::CapsulePrimitiveAttributes;
 using attributes::ConePrimitiveAttributes;
@@ -51,94 +51,94 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly("template_class", &AbstractAttributes::getClassKey,
                              R"(Class name of Attributes template.)");
 
-  // ==== AbstractPhysicsAttributes ====
-  py::class_<AbstractPhysicsAttributes, AbstractAttributes,
-             AbstractPhysicsAttributes::ptr>(m, "AbstractPhysicsAttributes")
-      .def(py::init(&AbstractPhysicsAttributes::create<const std::string&,
-                                                       const std::string&>))
+  // ==== AbstractObjectAttributes ====
+  py::class_<AbstractObjectAttributes, AbstractAttributes,
+             AbstractObjectAttributes::ptr>(m, "AbstractObjectAttributes")
+      .def(py::init(&AbstractObjectAttributes::create<const std::string&,
+                                                      const std::string&>))
       .def_property(
-          "scale", &AbstractPhysicsAttributes::getScale,
-          &AbstractPhysicsAttributes::setScale,
+          "scale", &AbstractObjectAttributes::getScale,
+          &AbstractObjectAttributes::setScale,
           R"(Scale multiplier for constructions built from this template in x,y,z)")
       .def_property(
-          "margin", &AbstractPhysicsAttributes::getMargin,
-          &AbstractPhysicsAttributes::setMargin,
+          "margin", &AbstractObjectAttributes::getMargin,
+          &AbstractObjectAttributes::setMargin,
           R"(Collision margin for constructions built from this template.)")
       .def_property(
-          "orient_up", &AbstractPhysicsAttributes::getOrientUp,
-          &AbstractPhysicsAttributes::setOrientUp,
+          "orient_up", &AbstractObjectAttributes::getOrientUp,
+          &AbstractObjectAttributes::setOrientUp,
           R"(Up direction for constructions built from this template.)")
       .def_property(
-          "orient_front", &AbstractPhysicsAttributes::getOrientFront,
-          &AbstractPhysicsAttributes::setOrientFront,
+          "orient_front", &AbstractObjectAttributes::getOrientFront,
+          &AbstractObjectAttributes::setOrientFront,
           R"(Forward direction for constructions built from this template.)")
       .def_property("units_to_meters",
-                    &AbstractPhysicsAttributes::getUnitsToMeters,
-                    &AbstractPhysicsAttributes::setUnitsToMeters,
+                    &AbstractObjectAttributes::getUnitsToMeters,
+                    &AbstractObjectAttributes::setUnitsToMeters,
                     R"(Conversion ratio for given units to meters.)")
       .def_property(
           "friction_coefficient",
-          &AbstractPhysicsAttributes::getFrictionCoefficient,
-          &AbstractPhysicsAttributes::setFrictionCoefficient,
+          &AbstractObjectAttributes::getFrictionCoefficient,
+          &AbstractObjectAttributes::setFrictionCoefficient,
           R"(Friction coefficient for constructions built from this template.)")
       .def_property(
           "restitution_coefficient",
-          &AbstractPhysicsAttributes::getRestitutionCoefficient,
-          &AbstractPhysicsAttributes::setRestitutionCoefficient,
+          &AbstractObjectAttributes::getRestitutionCoefficient,
+          &AbstractObjectAttributes::setRestitutionCoefficient,
           R"(Coefficient of restitution for constructions built from this template.)")
       .def_property(
-          "render_asset_type", &AbstractPhysicsAttributes::getRenderAssetType,
-          &AbstractPhysicsAttributes::setRenderAssetType,
+          "render_asset_type", &AbstractObjectAttributes::getRenderAssetType,
+          &AbstractObjectAttributes::setRenderAssetType,
           R"(Type of the mesh asset used to render constructions built 
           from this template.)")
       .def_property(
           "collision_asset_type",
-          &AbstractPhysicsAttributes::getCollisionAssetType,
-          &AbstractPhysicsAttributes::setCollisionAssetType,
+          &AbstractObjectAttributes::getCollisionAssetType,
+          &AbstractObjectAttributes::setCollisionAssetType,
           R"(Type of the mesh asset used for collision calculations for 
           constructions built from this template.)")
       .def_property(
           "render_asset_handle",
-          &AbstractPhysicsAttributes::getRenderAssetHandle,
-          &AbstractPhysicsAttributes::setRenderAssetHandle,
+          &AbstractObjectAttributes::getRenderAssetHandle,
+          &AbstractObjectAttributes::setRenderAssetHandle,
           R"(Handle of the asset used to render constructions built from 
           this template.)")
       .def_property(
           "collision_asset_handle",
-          &AbstractPhysicsAttributes::getCollisionAssetHandle,
-          &AbstractPhysicsAttributes::setCollisionAssetHandle,
+          &AbstractObjectAttributes::getCollisionAssetHandle,
+          &AbstractObjectAttributes::setCollisionAssetHandle,
           R"(Handle of the asset used to calculate collsions for constructions 
           built from this template.)")
       .def_property(
-          "requires_lighting", &AbstractPhysicsAttributes::getRequiresLighting,
-          &AbstractPhysicsAttributes::setRequiresLighting,
+          "requires_lighting", &AbstractObjectAttributes::getRequiresLighting,
+          &AbstractObjectAttributes::setRequiresLighting,
           R"(Whether constructions built from this template should use phong 
           shading or not.)")
       .def_property_readonly(
           "render_asset_is_primitive",
-          &AbstractPhysicsAttributes::getRenderAssetIsPrimitive,
+          &AbstractObjectAttributes::getRenderAssetIsPrimitive,
           R"(Whether constructions built from this template should 
           be rendered using an internally sourced primitive.)")
       .def_property_readonly(
           "collision_asset_is_primitive",
-          &AbstractPhysicsAttributes::getCollisionAssetIsPrimitive,
+          &AbstractObjectAttributes::getCollisionAssetIsPrimitive,
           R"(Whether collisions invloving constructions built from 
           this template should be solved using an internally sourced 
           primitive.)")
       .def_property_readonly(
           "use_mesh_for_collision",
-          &AbstractPhysicsAttributes::getUseMeshCollision,
+          &AbstractObjectAttributes::getUseMeshCollision,
           R"(Whether collisions involving constructions built from 
            this template should be solved using the collision mesh 
            or a primitive.)")
       .def_property_readonly(
-          "is_dirty", &AbstractPhysicsAttributes::getIsDirty,
+          "is_dirty", &AbstractObjectAttributes::getIsDirty,
           R"(Whether values in this attributes have been changed requiring 
           re-registartion before they can be used an object can be created. )");
 
   // ==== ObjectAttributes ====
-  py::class_<ObjectAttributes, AbstractPhysicsAttributes,
-             ObjectAttributes::ptr>(m, "ObjectAttributes")
+  py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(
+      m, "ObjectAttributes")
       .def(py::init(&ObjectAttributes::create<>))
       .def(py::init(&ObjectAttributes::create<const std::string&>))
       .def_property(
@@ -192,7 +192,7 @@ void initAttributesBindings(py::module& m) {
           R"(The semantic ID for objects constructed from this template.)");
 
   // ==== StageAttributes ====
-  py::class_<StageAttributes, AbstractPhysicsAttributes, StageAttributes::ptr>(
+  py::class_<StageAttributes, AbstractObjectAttributes, StageAttributes::ptr>(
       m, "StageAttributes")
       .def(py::init(&StageAttributes::create<>))
       .def(py::init(&StageAttributes::create<const std::string&>))
