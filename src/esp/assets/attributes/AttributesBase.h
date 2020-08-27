@@ -30,7 +30,7 @@ class AbstractAttributes : public esp::core::Configuration {
                      const std::string& handle)
       : Configuration() {
     setAttributesClassKey(attributesClassKey);
-    setHandle(handle);
+    AbstractAttributes::setHandle(handle);
   }
 
   virtual ~AbstractAttributes() = default;

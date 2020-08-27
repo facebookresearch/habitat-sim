@@ -23,6 +23,8 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
                               const std::string& primObjClassName,
                               const std::string& attributesClassKey)
       : AbstractAttributes(attributesClassKey, "") {
+    // clear handle that was set in base class constructor
+    AbstractAttributes::setHandle("");
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
     setPrimObjClassName(primObjClassName);
@@ -34,6 +36,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
       setBool("textureCoordinates", false);
       setBool("tangents", false);
     }
+
   }  // ctor
 
   // necessary since abstract
