@@ -38,10 +38,8 @@ class RigidStage : public RigidBase {
    * @return A copy of the @ref PhysicsSceneAttributes template used to create
    * this scene object.
    */
-  std::shared_ptr<assets::PhysicsStageAttributes> getInitializationAttributes()
-      const {
-    return RigidBase::getInitializationAttributes<
-        assets::PhysicsStageAttributes>();
+  std::shared_ptr<Attrs::StageAttributes> getInitializationAttributes() const {
+    return RigidBase::getInitializationAttributes<Attrs::StageAttributes>();
   };
   /**
    * @brief Finalize the creation of this @ref RigidScene

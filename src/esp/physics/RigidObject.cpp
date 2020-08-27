@@ -30,15 +30,15 @@ bool RigidObject::finalizeObject() {
   node().computeCumulativeBB();
 
   // cast initialization attributes
-  assets::PhysicsObjectAttributes::cptr physicsObjectAttributes =
-      std::dynamic_pointer_cast<const assets::PhysicsObjectAttributes>(
+  Attrs::ObjectAttributes::cptr ObjectAttributes =
+      std::dynamic_pointer_cast<const Attrs::ObjectAttributes>(
           initializationAttributes_);
 
-  if (!physicsObjectAttributes->getComputeCOMFromShape()) {
+  if (!ObjectAttributes->getComputeCOMFromShape()) {
     // will be false if the COM is provided; shift by that COM
-    Magnum::Vector3 comShift = -physicsObjectAttributes->getCOM();
+    Magnum::Vector3 comShift = -ObjectAttributes->getCOM();
     // first apply scale
-    comShift = physicsObjectAttributes->getScale() * comShift;
+    comShift = ObjectAttributes->getScale() * comShift;
     shiftOrigin(comShift);
   } else {
     // otherwise use the bounding box center
@@ -46,7 +46,7 @@ bool RigidObject::finalizeObject() {
   }
 
   // set the visualization semantic id
-  setSemanticId(physicsObjectAttributes->getSemanticId());
+  setSemanticId(ObjectAttributes->getSemanticId());
 
   // finish object by instancing any dynamics library-specific code required
   return finalizeObject_LibSpecific();

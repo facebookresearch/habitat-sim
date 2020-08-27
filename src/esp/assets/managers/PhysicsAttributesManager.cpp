@@ -14,6 +14,7 @@ namespace esp {
 
 namespace assets {
 
+using attributes::PhysicsManagerAttributes;
 namespace managers {
 
 PhysicsManagerAttributes::ptr

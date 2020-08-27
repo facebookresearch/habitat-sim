@@ -16,7 +16,7 @@ enum class AssetType;
 
 namespace managers {
 class StageAttributesManager
-    : public AttributesManager<PhysicsStageAttributes::ptr> {
+    : public AttributesManager<Attrs::StageAttributes::ptr> {
  public:
   StageAttributesManager(
       assets::ResourceManager& resourceManager,
@@ -25,9 +25,9 @@ class StageAttributesManager
 
   /**
    * @brief This will set the current physics manager attributes that is
-   * governing the world that this sceneAttributesManager's scenes will be
-   * created in.  This is used so that upon creation of new sceneAttributes,
-   * PhysicsManagerAttributes defaults can be set in the sceneAttributes before
+   * governing the world that this StageAttributesManager's scenes will be
+   * created in.  This is used so that upon creation of new StageAttributes,
+   * PhysicsManagerAttributes defaults can be set in the StageAttributes before
    * any scene-specific values are set.
    *
    * @param handle The string handle referencing the physicsManagerAttributes
@@ -63,7 +63,7 @@ class StageAttributesManager
    * If a template exists with this handle, this existing template will be
    * overwritten with the newly created one if @ref registerTemplate is true.
    *
-   * @param sceneAttributesHandle the origin of the desired template to be
+   * @param StageAttributesHandle the origin of the desired template to be
    * created, in this case, a file name.
    * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
@@ -72,8 +72,8 @@ class StageAttributesManager
    * template.
    * @return a reference to the desired template.
    */
-  PhysicsStageAttributes::ptr createAttributesTemplate(
-      const std::string& sceneAttributesHandle,
+  Attrs::StageAttributes::ptr createAttributesTemplate(
+      const std::string& StageAttributesHandle,
       bool registerTemplate = true) override;
 
   /**
@@ -94,7 +94,7 @@ class StageAttributesManager
    * template.
    * @return a reference to the desired template, or nullptr if fails.
    */
-  PhysicsStageAttributes::ptr createDefaultAttributesTemplate(
+  Attrs::StageAttributes::ptr createDefaultAttributesTemplate(
       const std::string& templateName,
       bool registerTemplate = false) override;
 
@@ -111,7 +111,7 @@ class StageAttributesManager
    * subsequent editing will require re-registration. Defaults to true.
    * @return a reference to the desired stage template, or nullptr if fails.
    */
-  PhysicsStageAttributes::ptr createPrimBasedAttributesTemplate(
+  Attrs::StageAttributes::ptr createPrimBasedAttributesTemplate(
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true);
 
@@ -131,7 +131,7 @@ class StageAttributesManager
    * @param meshTypeSetter Setter for mesh type.
    */
   void setDefaultFileNameBasedAttributes(
-      PhysicsStageAttributes::ptr attributes,
+      Attrs::StageAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
       std::function<void(int)> meshTypeSetter) override;
@@ -141,8 +141,8 @@ class StageAttributesManager
    *
    * @param newAttributes Newly created attributes.
    */
-  PhysicsStageAttributes::ptr initNewAttribsInternal(
-      PhysicsStageAttributes::ptr newAttributes) override;
+  Attrs::StageAttributes::ptr initNewAttribsInternal(
+      Attrs::StageAttributes::ptr newAttributes) override;
 
   /**
    * @brief This method will perform any necessary updating that is
@@ -167,7 +167,7 @@ class StageAttributesManager
    * @param registerTemplate whether to add this template to the library or not.
    * @return a reference to the desired stage template, or nullptr if fails.
    */
-  PhysicsStageAttributes::ptr createBackCompatAttributesTemplate(
+  Attrs::StageAttributes::ptr createBackCompatAttributesTemplate(
       const std::string& stageFilename,
       bool registerTemplate = true);
 
@@ -179,7 +179,7 @@ class StageAttributesManager
    * @param registerTemplate whether to add this template to the library or not.
    * @return a reference to the desired stage template, or nullptr if fails.
    */
-  PhysicsStageAttributes::ptr createFileBasedAttributesTemplate(
+  Attrs::StageAttributes::ptr createFileBasedAttributesTemplate(
       const std::string& stageFilename,
       bool registerTemplate = true);
 
@@ -189,16 +189,16 @@ class StageAttributesManager
    * set properly.  We are doing this since these values can be modified by the
    * user.
    *
-   * @param sceneAttributesTemplate The attributes template.
-   * @param sceneAttributesHandle The key for referencing the template in the
+   * @param StageAttributesTemplate The attributes template.
+   * @param StageAttributesHandle The key for referencing the template in the
    * @ref templateLibrary_.
    * @return The index in the @ref templateLibrary_ of object
    * template.
    */
 
   int registerAttributesTemplateFinalize(
-      PhysicsStageAttributes::ptr sceneAttributesTemplate,
-      const std::string& sceneAttributesHandle) override;
+      Attrs::StageAttributes::ptr StageAttributesTemplate,
+      const std::string& StageAttributesHandle) override;
 
   /**
    * @brief Any scene-attributes-specific resetting that needs to happen on
@@ -209,12 +209,11 @@ class StageAttributesManager
   /**
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsStageAttributes::ptr>
+   * AttributesManager<StageAttributes::ptr>
    */
   void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["PhysicsStageAttributes"] =
-        &StageAttributesManager::createAttributesCopy<
-            assets::PhysicsStageAttributes>;
+    this->copyConstructorMap_["StageAttributes"] =
+        &StageAttributesManager::createAttributesCopy<Attrs::StageAttributes>;
   }  // StageAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars
@@ -226,7 +225,7 @@ class StageAttributesManager
   ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
   /**
    * @brief Reference to PhysicsAttributesManager to give access to default
-   * physics manager attributes settings when sceneAttributes are created.
+   * physics manager attributes settings when StageAttributes are created.
    */
   PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
 

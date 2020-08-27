@@ -25,6 +25,8 @@ using esp::agent::Agent;
 using esp::agent::AgentConfiguration;
 using esp::agent::AgentState;
 using esp::assets::ResourceManager;
+using esp::assets::attributes::AbstractPrimitiveAttributes;
+using esp::assets::attributes::ObjectAttributes;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
@@ -377,7 +379,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   simulator->removeObject(objectID);
 
   // test scaling
-  esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
+  ObjectAttributes::ptr objectTemplate =
       objectAttribsMgr->getTemplateCopyByID(0);
   objectTemplate->setScale({0.5, 0.5, 0.5});
   int tmplateID = objectAttribsMgr->registerAttributesTemplate(objectTemplate);
@@ -439,7 +441,7 @@ void SimTest::loadingObjectTemplates() {
   CORRADE_VERIFY(matchTmpltHandles[0] == fullTmpHndl);
 
   // test fresh template as smart pointer
-  esp::assets::PhysicsObjectAttributes::ptr newTemplate =
+  ObjectAttributes::ptr newTemplate =
       objectAttribsMgr->createAttributesTemplate("new template", false);
   std::string boxPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
@@ -457,7 +459,7 @@ void SimTest::loadingObjectTemplates() {
 
   CORRADE_VERIFY(templateIndex2 != esp::ID_UNDEFINED);
   CORRADE_VERIFY(templateIndex2 == templateIndex);
-  esp::assets::PhysicsObjectAttributes::ptr newTemplate2 =
+  ObjectAttributes::ptr newTemplate2 =
       objectAttribsMgr->getTemplateCopyByHandle(boxPath);
   CORRADE_VERIFY(newTemplate2->getRenderAssetHandle() == chairPath);
 }
@@ -484,7 +486,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   // verify the number of primitive templates
   CORRADE_VERIFY(numPrimsExpected == primObjAssetHandles.size());
 
-  esp::assets::AbstractPrimitiveAttributes::ptr primAttr;
+  AbstractPrimitiveAttributes::ptr primAttr;
   {
     // test that there are existing templates for each key, and that they have
     // valid values to be used to construct magnum primitives
@@ -562,14 +564,14 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // set new test label, to validate against retrieved copy
     primAttr->setString("test", "test1");
     // retrieve registered attributes copy
-    esp::assets::AbstractPrimitiveAttributes::ptr primAttr2 =
+    AbstractPrimitiveAttributes::ptr primAttr2 =
         assetAttribsMgr->getTemplateCopyByHandle(newHandle);
     // verify pre-reg and post-reg are named the same
     CORRADE_VERIFY(primAttr->getHandle() == primAttr2->getHandle());
     // verify retrieved attributes is copy, not original
     CORRADE_VERIFY(primAttr->getString("test") != primAttr2->getString("test"));
     // remove modified attributes
-    esp::assets::AbstractPrimitiveAttributes::ptr primAttr3 =
+    AbstractPrimitiveAttributes::ptr primAttr3 =
         assetAttribsMgr->removeTemplateByHandle(newHandle);
     CORRADE_VERIFY(nullptr != primAttr3);
   }

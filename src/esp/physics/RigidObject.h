@@ -14,7 +14,6 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
 #include "esp/assets/Asset.h"
-#include "esp/assets/Attributes.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
@@ -28,7 +27,7 @@
 namespace esp {
 
 namespace assets {
-class PhysicsObjectAttributes;
+
 class ResourceManager;
 }  // namespace assets
 namespace physics {
@@ -123,13 +122,11 @@ class RigidObject : public RigidBase {
   /**
    * @brief Get a copy of the template used to initialize this object.
    *
-   * @return A copy of the @ref PhysicsObjectAttributes template used to create
+   * @return A copy of the @ref ObjectAttributes template used to create
    * this object.
    */
-  std::shared_ptr<assets::PhysicsObjectAttributes> getInitializationAttributes()
-      const {
-    return RigidBase::getInitializationAttributes<
-        assets::PhysicsObjectAttributes>();
+  std::shared_ptr<Attrs::ObjectAttributes> getInitializationAttributes() const {
+    return RigidBase::getInitializationAttributes<Attrs::ObjectAttributes>();
   };
 
  private:

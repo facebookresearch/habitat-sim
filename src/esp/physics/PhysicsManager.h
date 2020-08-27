@@ -34,6 +34,7 @@ namespace esp {
 //! core physics simulation namespace
 namespace physics {
 
+namespace Attrs = esp::assets::attributes;
 //! Holds information about one ray hit instance.
 struct RayHitInfo {
   //! The id of the object hit by this ray. Stage hits are -1.
@@ -124,7 +125,7 @@ class PhysicsManager {
    */
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const assets::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
+      const Attrs::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
         physicsManagerAttributes_(_physicsManagerAttributes){};
 
@@ -866,7 +867,7 @@ class PhysicsManager {
    *
    * @return The initialization settings of the specified object instance.
    */
-  assets::PhysicsObjectAttributes::ptr getObjectInitAttributes(
+  Attrs::ObjectAttributes::ptr getObjectInitAttributes(
       const int physObjectID) const {
     assertIDValidity(physObjectID);
     return existingObjects_.at(physObjectID)->getInitializationAttributes();
@@ -877,8 +878,8 @@ class PhysicsManager {
    *
    * @return The initialization settings for this physics manager
    */
-  assets::PhysicsManagerAttributes::ptr getInitializationAttributes() const {
-    return assets::PhysicsManagerAttributes::create(
+  Attrs::PhysicsManagerAttributes::ptr getInitializationAttributes() const {
+    return Attrs::PhysicsManagerAttributes::create(
         *physicsManagerAttributes_.get());
   }
 
@@ -975,7 +976,7 @@ class PhysicsManager {
 
   /** @brief A pointer to the @ref assets::PhysicsManagerAttributes describing
    * this physics manager */
-  const assets::PhysicsManagerAttributes::cptr physicsManagerAttributes_;
+  const Attrs::PhysicsManagerAttributes::cptr physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager

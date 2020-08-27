@@ -63,6 +63,12 @@ namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
+
+using attributes::AbstractObjectAttributes;
+using attributes::CubePrimitiveAttributes;
+using attributes::ObjectAttributes;
+using attributes::PhysicsManagerAttributes;
+using attributes::StageAttributes;
 // static constexpr arrays require redundant definitions until C++17
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
@@ -159,7 +165,7 @@ void ResourceManager::initPhysicsManager(
 }  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadStage(
-    const PhysicsStageAttributes::ptr& sceneAttributes,
+    const StageAttributes::ptr& sceneAttributes,
     std::shared_ptr<physics::PhysicsManager> _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
@@ -323,7 +329,7 @@ bool ResourceManager::loadStage(
 
 std::map<std::string, AssetInfo>
 ResourceManager::createStageAssetInfosFromAttributes(
-    const PhysicsStageAttributes::ptr& sceneAttributes,
+    const StageAttributes::ptr& sceneAttributes,
     bool createCollisionInfo,
     bool createSemanticInfo) {
   std::map<std::string, AssetInfo> resMap;
@@ -372,7 +378,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
 }  // ResourceManager::createStageAssetInfosFromAttributes
 
 esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
-    const AbstractPhysicsAttributes::ptr& attribs,
+    const AbstractObjectAttributes::ptr& attribs,
     const Magnum::Vector3& origin) {
   const vec3f upEigen{
       Mn::EigenIntegration::cast<vec3f>(attribs->getOrientUp())};
@@ -1359,7 +1365,7 @@ void ResourceManager::loadTextures(Importer& importer,
 bool ResourceManager::instantiateAssetsOnDemand(
     const std::string& objectTemplateHandle) {
   // Meta data
-  PhysicsObjectAttributes::ptr physicsObjectAttributes =
+  ObjectAttributes::ptr ObjectAttributes =
       objectAttributesManager_->getTemplateByHandle(objectTemplateHandle);
 
   // if attributes are "dirty" (important values have changed since last
@@ -1369,10 +1375,10 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // object has acquired a copy of its parent attributes.  No object should
   // ever have a copy of attributes with isDirty == true - any editing of
   // attributes for objects requires object rebuilding.
-  if (physicsObjectAttributes->getIsDirty()) {
+  if (ObjectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
         (ID_UNDEFINED != objectAttributesManager_->registerAttributesTemplate(
-                             physicsObjectAttributes, objectTemplateHandle)),
+                             ObjectAttributes, objectTemplateHandle)),
         "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
             << objectTemplateHandle
@@ -1381,14 +1387,13 @@ bool ResourceManager::instantiateAssetsOnDemand(
   }
 
   // get render asset handle
-  std::string renderAssetHandle =
-      physicsObjectAttributes->getRenderAssetHandle();
+  std::string renderAssetHandle = ObjectAttributes->getRenderAssetHandle();
   // whether attributes requires lighting
-  bool requiresLighting = physicsObjectAttributes->getRequiresLighting();
+  bool requiresLighting = ObjectAttributes->getRequiresLighting();
   bool renderMeshSuccess = false;
   // no resource dict entry exists for renderAssetHandle
   if (resourceDict_.count(renderAssetHandle) == 0) {
-    if (physicsObjectAttributes->getRenderAssetIsPrimitive()) {
+    if (ObjectAttributes->getRenderAssetIsPrimitive()) {
       // needs to have a primitive asset attributes with same name
       if (!assetAttributesManager_->getTemplateLibHasHandle(
               renderAssetHandle)) {
@@ -1412,9 +1417,9 @@ bool ResourceManager::instantiateAssetsOnDemand(
   }  // if no render asset exists
 
   // check if uses collision mesh
-  if (!physicsObjectAttributes->getCollisionAssetIsPrimitive()) {
+  if (!ObjectAttributes->getCollisionAssetIsPrimitive()) {
     const auto collisionAssetHandle =
-        physicsObjectAttributes->getCollisionAssetHandle();
+        ObjectAttributes->getCollisionAssetHandle();
     if (resourceDict_.count(collisionAssetHandle) == 0) {
       bool collisionMeshSuccess = loadObjectMeshDataFromFile(
           collisionAssetHandle, objectTemplateHandle, "collision",
@@ -1457,11 +1462,11 @@ void ResourceManager::addObjectToDrawables(
     //! Add mesh to rendering stack
 
     // Meta data
-    PhysicsObjectAttributes::ptr physicsObjectAttributes =
+    ObjectAttributes::ptr ObjectAttributes =
         objectAttributesManager_->getTemplateByHandle(objTemplateHandle);
 
     const std::string& renderObjectName =
-        physicsObjectAttributes->getRenderAssetHandle();
+        ObjectAttributes->getRenderAssetHandle();
 
     const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
     if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
@@ -1475,7 +1480,7 @@ void ResourceManager::addObjectToDrawables(
     // set at the physical node
     scene::SceneNode& scalingNode = parent->createChild();
     visNodeCache.push_back(&scalingNode);
-    Magnum::Vector3 objectScaling = physicsObjectAttributes->getScale();
+    Magnum::Vector3 objectScaling = ObjectAttributes->getScale();
     scalingNode.setScaling(objectScaling);
     // ignored for objects since computeAbsoluteAABBs is always set to false
     // after scene is loaded.
