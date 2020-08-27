@@ -63,8 +63,8 @@ repos:
         pass_filenames: true
         additional_dependencies:
             - 'jupytext==1.5.2'
-            - black
-            - isort
+            - 'black==20.8b1'
+            - 'isort==5.4.2'
         always_run: false
         language: python
 

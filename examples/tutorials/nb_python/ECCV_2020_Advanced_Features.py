@@ -714,7 +714,10 @@ def set_handle_ddl_widget(obj_handles, handle_types, sel_handle, on_change):
 
 
 def set_button_launcher(desc):
-    button = widgets.Button(description=desc, layout={"width": "max-content"},)
+    button = widgets.Button(
+        description=desc,
+        layout={"width": "max-content"},
+    )
     return button
 
 

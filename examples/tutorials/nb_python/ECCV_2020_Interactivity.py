@@ -398,7 +398,10 @@ def set_handle_ddl_widget(obj_handles, handle_types, sel_handle, on_change):
 
 
 def set_button_launcher(desc):
-    button = widgets.Button(description=desc, layout={"width": "max-content"},)
+    button = widgets.Button(
+        description=desc,
+        layout={"width": "max-content"},
+    )
     return button
 
 
@@ -1070,7 +1073,10 @@ def track_waypoint(waypoint, rs, vc, dt=1.0 / 60.0):
 # grip/release and sync gripped object state kineamtically
 class ObjectGripper(object):
     def __init__(
-        self, sim, agent_scene_node, end_effector_offset,
+        self,
+        sim,
+        agent_scene_node,
+        end_effector_offset,
     ):
         self._sim = sim
         self._node = agent_scene_node
