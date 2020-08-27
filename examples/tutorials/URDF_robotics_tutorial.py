@@ -168,7 +168,9 @@ def main(make_video=True, show_video=True):
         "aliengo": os.path.join(
             data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
         ),
-        "iiwa": os.path.join(data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"),
+        "iiwa": os.path.join(
+            data_path, "test_assets/urdf/kuka_iiwa/model_free_base.urdf"
+        ),
         "locobot": os.path.join(
             data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
         ),
@@ -178,23 +180,25 @@ def main(make_video=True, show_video=True):
     }
 
     # load a URDF file
-    robot_id = sim.add_articulated_object_from_urdf(urdf_files["aliengo"])
+    robot_file = urdf_files["aliengo"]
+    robot_id = sim.add_articulated_object_from_urdf(robot_file)
 
     # place the robot root state relative to the agent
-    local_base_pos = np.array([0.0, 1.0, -2.0])
+    local_base_pos = np.array([0.0, 0.5, -2.0])
     agent_transform = sim.agents[0].scene_node.transformation_matrix()
     base_transform = mn.Matrix4.rotation(mn.Rad(-1.56), mn.Vector3(1.0, 0, 0))
     base_transform.translation = agent_transform.transform_point(local_base_pos)
     sim.set_articulated_object_root_state(robot_id, base_transform)
 
     # set a better initial joint state for the aliengo
-    pose = sim.get_articulated_object_positions(robot_id)
-    calfDofs = [2, 5, 8, 11]
-    for dof in calfDofs:
-        pose[dof] = -1.0
-        pose[dof - 1] = 0.45
-        # also set a thigh
-    sim.set_articulated_object_positions(robot_id, pose)
+    if robot_file == urdf_files["aliengo"]:
+        pose = sim.get_articulated_object_positions(robot_id)
+        calfDofs = [2, 5, 8, 11]
+        for dof in calfDofs:
+            pose[dof] = -1.0
+            pose[dof - 1] = 0.45
+            # also set a thigh
+        sim.set_articulated_object_positions(robot_id, pose)
 
     # simulate
     observations = simulate(sim, dt=1.5, get_frames=make_video)
