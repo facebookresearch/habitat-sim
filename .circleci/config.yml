@@ -65,6 +65,39 @@ jobs:
           command: |
             npm run lint
 
+  pre-commit:
+    docker:
+      - image: circleci/python:3.6
+    working_directory: ~/repo/
+
+    steps:
+      - checkout
+      - run:
+          name: Combine precommit config and python versions for caching
+          command: |
+            cat .pre-commit-config.yaml > pre-commit-deps.txt
+            python -VV >> pre-commit-deps.txt
+      - restore_cache:
+          keys:
+          - v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Install Dependencies
+          command: |
+            sudo pip install -U pip setuptools pre-commit
+            # Install the hooks now so that they'll be cached
+            pre-commit install-hooks
+
+      - save_cache:
+          paths:
+            - ~/.cache/pre-commit
+          key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Check Code Style using pre-commit
+          command: |
+            pre-commit run --show-diff-on-failure --all-files
+
   install_and_test_ubuntu:
     <<: *gpu
     steps:
