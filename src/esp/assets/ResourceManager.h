@@ -24,12 +24,12 @@
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 
 #include "Asset.h"
-#include "Attributes.h"
 #include "BaseMesh.h"
 #include "CollisionMeshData.h"
 #include "GenericMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
+#include "attributes/AttributesBase.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
@@ -52,6 +52,8 @@ class PhongMaterialData;
 }  // namespace Magnum
 
 namespace Mn = Magnum;
+
+namespace Attrs = esp::assets::attributes;
 
 namespace esp {
 namespace gfx {
@@ -144,7 +146,7 @@ class ResourceManager {
       std::shared_ptr<physics::PhysicsManager>& physicsManager,
       bool isEnabled,
       scene::SceneNode* parent,
-      const PhysicsManagerAttributes::ptr& physicsManagerAttributes);
+      const Attrs::PhysicsManagerAttributes::ptr& physicsManagerAttributes);
 
   /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
@@ -153,7 +155,7 @@ class ResourceManager {
    * If parent and drawables are not specified, the assets are loaded, but no
    * new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
-   * @param sceneAttributes The @ref PhysicsStageAttributes that describes the
+   * @param sceneAttributes The @ref StageAttributes that describes the
    * scene
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
    * @param sceneManagerPtr Pointer to scene manager, to fetch drawables and
@@ -164,7 +166,7 @@ class ResourceManager {
    * @ref SimulatorConfiguration
    * @return Whether or not the scene load succeeded.
    */
-  bool loadStage(const PhysicsStageAttributes::ptr& sceneAttributes,
+  bool loadStage(const Attrs::StageAttributes::ptr& sceneAttributes,
                  std::shared_ptr<physics::PhysicsManager> _physicsManager,
                  esp::scene::SceneManager* sceneManagerPtr,
                  std::vector<int>& activeSceneIDs,
@@ -413,7 +415,7 @@ class ResourceManager {
    * @return the coordinate frame of the assets the passed attributes describes.
    */
   esp::geo::CoordinateFrame buildFrameFromAttributes(
-      const AbstractPhysicsAttributes::ptr& attribs,
+      const Attrs::AbstractObjectAttributes::ptr& attribs,
       const Magnum::Vector3& origin);
 
   /**
@@ -483,7 +485,7 @@ class ResourceManager {
    * instanced, as defined in @ref PrimitiveNames3D
    */
   typedef std::map<std::string,
-                   std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
+                   std::shared_ptr<Attrs::AbstractPrimitiveAttributes> (
                        esp::assets::ResourceManager::*)()>
       Map_Of_PrimTypes;
 
@@ -647,7 +649,7 @@ class ResourceManager {
    * created
    */
   std::map<std::string, AssetInfo> createStageAssetInfosFromAttributes(
-      const PhysicsStageAttributes::ptr& stageAttributes,
+      const Attrs::StageAttributes::ptr& stageAttributes,
       bool createCollisionInfo,
       bool createSemanticInfo);
 

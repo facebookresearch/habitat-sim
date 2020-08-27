@@ -154,7 +154,7 @@ def main(show_imgs=True, save_imgs=False):
         get_obs(sim, show_imgs, save_imgs)
 
         # add a box with default semanticId configured in the template
-        box_template = habitat_sim.attributes.PhysicsObjectAttributes()
+        box_template = habitat_sim.attributes.ObjectAttributes()
         box_template.render_asset_handle = str(
             os.path.join(data_path, "test_assets/objects/transform_box.glb")
         )

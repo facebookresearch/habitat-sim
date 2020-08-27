@@ -351,9 +351,9 @@ def build_dict_of_UVSphere_prim_attrs(uvsphere_template):
 # editable and the third being the type.
 def build_dict_from_template(template):
     template_class = template.template_class
-    if "PhysicsObjectAttributes" in template_class:
+    if "ObjectAttributes" in template_class:
         return build_dict_of_Object_attrs(template)
-    if "PhysicsSceneAttributes" in template_class:
+    if "StageAttributes" in template_class:
         return build_dict_of_Stage_attrs(template)
     if "PhysicsManagerAttributes" in template_class:
         return build_dict_of_PhysicsSim_attrs(template)
