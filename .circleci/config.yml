@@ -86,7 +86,7 @@ jobs:
           command: |
             sudo pip install -U pip setuptools pre-commit
             # Install the hooks now so that they'll be cached
-            pre-commit install-hook --install-hooks
+            pre-commit install-hooks
 
       - save_cache:
           paths:
