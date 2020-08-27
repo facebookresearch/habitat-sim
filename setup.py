@@ -123,7 +123,7 @@ def in_git():
     try:
         subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"])
         return True
-    except:
+    except subprocess.CalledProcessError:
         return False
 
 
@@ -131,7 +131,7 @@ def has_ninja():
     try:
         subprocess.check_output(["ninja", "--version"])
         return True
-    except:
+    except subprocess.CalledProcessError:
         return False
 
 

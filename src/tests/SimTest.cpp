@@ -116,7 +116,7 @@ SimTest::SimTest() {
             &SimTest::updateObjectLightSetupRGBAObservation,
             &SimTest::multipleLightingSetupsRGBAObservation,
             &SimTest::recomputeNavmeshWithStaticObjects,
-            &SimTest::loadingObjectTemplates, 
+            &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates});
   // clang-format on
 }
