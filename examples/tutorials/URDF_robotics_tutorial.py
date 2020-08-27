@@ -232,6 +232,22 @@ def main(make_video=True, show_video=True):
         == habitat_sim.physics.MotionType.KINEMATIC
     )
 
+    # reset the object state (sets dof positions/velocities/forces to 0, recomputes forward kinematics, udpate collision state)
+    sim.reset_articulated_object(robot_id)
+    # note: reset does not change the robot base state, do this manually
+    sim.set_articulated_object_root_state(robot_id, base_transform)
+
+    # get rigid state of robot links and show proxy object at each link COM
+    cube_id = sim.add_object_by_handle(sim.get_template_handles("cube")[0])
+    sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, cube_id)
+    num_links = sim.get_num_articulated_links(robot_id)
+    for link_id in range(num_links):
+        link_rigid_state = sim.get_articulated_link_rigid_state(robot_id, link_id)
+        sim.set_translation(link_rigid_state.translation, cube_id)
+        sim.set_rotation(link_rigid_state.rotation, cube_id)
+        observations += simulate(sim, dt=0.5, get_frames=make_video)
+    sim.remove_object(cube_id)
+
     sim.set_articulated_object_motion_type(
         robot_id, habitat_sim.physics.MotionType.DYNAMIC
     )

@@ -866,6 +866,21 @@ esp::physics::MotionType Simulator::getArticulatedObjectMotionType(
   return esp::physics::MotionType::ERROR_MOTIONTYPE;
 };
 
+int Simulator::getNumArticulatedLinks(int objectId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getNumArticulatedLinks(objectId);
+  }
+  return ID_UNDEFINED;
+};
+
+core::RigidState Simulator::getArticulatedLinkRigidState(int objectId,
+                                                         int linkId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getArticulatedLinkRigidState(objectId, linkId);
+  }
+  return core::RigidState();
+};
+
 // END: Articulated Object API (UNSTABLE!)
 //===============================================================================//
 

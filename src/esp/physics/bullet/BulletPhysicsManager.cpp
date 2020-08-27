@@ -93,6 +93,9 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(std::string filepath,
     return ID_UNDEFINED;
   }
 
+  Cr::Utility::Debug() << "Articulated Link Indices: "
+                       << articulatedObject->getLinkIds();
+
   int nextObjectID_ = allocateObjectID();
   existingArticulatedObjects_.emplace(nextObjectID_,
                                       std::move(articulatedObject));

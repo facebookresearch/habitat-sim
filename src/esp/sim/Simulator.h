@@ -539,6 +539,9 @@ class Simulator {
 
   esp::physics::MotionType getArticulatedObjectMotionType(int objectId);
 
+  int getNumArticulatedLinks(int objectId);
+  core::RigidState getArticulatedLinkRigidState(int objectId, int linkId);
+
   // END: Articulated Object API (UNSTABLE!)
   //===============================================================================//
 

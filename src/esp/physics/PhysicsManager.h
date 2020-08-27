@@ -853,6 +853,18 @@ class PhysicsManager {
         .translation();
   }
 
+  core::RigidState getArticulatedLinkRigidState(int objectId, int linkId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)
+        ->getLink(linkId)
+        .getRigidState();
+  }
+
+  int getNumArticulatedLinks(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getNumLinks();
+  }
+
   void addArticulatedLinkForce(int objectId,
                                int linkId,
                                Magnum::Vector3 force) {

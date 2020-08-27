@@ -188,7 +188,12 @@ void initSimBindings(py::module& m) {
            &Simulator::setArticulatedObjectMotionType, "object_id"_a,
            "motion_type"_a)
       .def("get_articulated_object_motion_type",
-           &Simulator::getArticulatedObjectMotionType, "object_id"_a);
+           &Simulator::getArticulatedObjectMotionType, "object_id"_a)
+      .def("get_num_articulated_links", &Simulator::getNumArticulatedLinks,
+           "object_id"_a)
+      .def("get_articulated_link_rigid_state",
+           &Simulator::getArticulatedLinkRigidState, "object_id"_a,
+           "link_id"_a);
 }
 
 }  // namespace sim
