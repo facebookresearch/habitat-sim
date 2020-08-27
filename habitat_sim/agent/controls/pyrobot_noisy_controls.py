@@ -3,7 +3,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+r"""
+Parameters contributed from PyRobot
+https://pyrobot.org/
+https://github.com/facebookresearch/pyrobot
 
+Please cite PyRobot if you use this noise model
+"""
 
 import attr
 import magnum as mn
@@ -75,13 +81,6 @@ class RobotNoiseModel:
         return getattr(self, key)
 
 
-r"""
-Parameters contributed from PyRobot
-https://pyrobot.org/
-https://github.com/facebookresearch/pyrobot
-
-Please cite PyRobot if you use this noise model
-"""
 pyrobot_noise_models = {
     "LoCoBot": RobotNoiseModel(
         ILQR=ControllerNoiseModel(

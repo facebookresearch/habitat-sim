@@ -69,54 +69,54 @@ void initAttributesBindings(py::module& m) {
           &AbstractPhysicsAttributes::getRestitutionCoefficient,
           &AbstractPhysicsAttributes::setRestitutionCoefficient,
           R"(Coefficient of restitution for constructions built from this template.)")
-      .def_property(
-          "render_asset_type", &AbstractPhysicsAttributes::getRenderAssetType,
-          &AbstractPhysicsAttributes::setRenderAssetType,
-          R"(Type of the mesh asset used to render constructions built 
+      .def_property("render_asset_type",
+                    &AbstractPhysicsAttributes::getRenderAssetType,
+                    &AbstractPhysicsAttributes::setRenderAssetType,
+                    R"(Type of the mesh asset used to render constructions built
           from this template.)")
       .def_property(
           "collision_asset_type",
           &AbstractPhysicsAttributes::getCollisionAssetType,
           &AbstractPhysicsAttributes::setCollisionAssetType,
-          R"(Type of the mesh asset used for collision calculations for 
+          R"(Type of the mesh asset used for collision calculations for
           constructions built from this template.)")
       .def_property(
           "render_asset_handle",
           &AbstractPhysicsAttributes::getRenderAssetHandle,
           &AbstractPhysicsAttributes::setRenderAssetHandle,
-          R"(Handle of the asset used to render constructions built from 
+          R"(Handle of the asset used to render constructions built from
           this template.)")
       .def_property(
           "collision_asset_handle",
           &AbstractPhysicsAttributes::getCollisionAssetHandle,
           &AbstractPhysicsAttributes::setCollisionAssetHandle,
-          R"(Handle of the asset used to calculate collsions for constructions 
+          R"(Handle of the asset used to calculate collsions for constructions
           built from this template.)")
       .def_property(
           "requires_lighting", &AbstractPhysicsAttributes::getRequiresLighting,
           &AbstractPhysicsAttributes::setRequiresLighting,
-          R"(Whether constructions built from this template should use phong 
+          R"(Whether constructions built from this template should use phong
           shading or not.)")
       .def_property_readonly(
           "render_asset_is_primitive",
           &AbstractPhysicsAttributes::getRenderAssetIsPrimitive,
-          R"(Whether constructions built from this template should 
+          R"(Whether constructions built from this template should
           be rendered using an internally sourced primitive.)")
       .def_property_readonly(
           "collision_asset_is_primitive",
           &AbstractPhysicsAttributes::getCollisionAssetIsPrimitive,
-          R"(Whether collisions invloving constructions built from 
-          this template should be solved using an internally sourced 
+          R"(Whether collisions invloving constructions built from
+          this template should be solved using an internally sourced
           primitive.)")
       .def_property_readonly(
           "use_mesh_for_collision",
           &AbstractPhysicsAttributes::getUseMeshCollision,
-          R"(Whether collisions involving constructions built from 
-           this template should be solved using the collision mesh 
+          R"(Whether collisions involving constructions built from
+           this template should be solved using the collision mesh
            or a primitive.)")
       .def_property_readonly(
           "is_dirty", &AbstractPhysicsAttributes::getIsDirty,
-          R"(Whether values in this attributes have been changed requiring 
+          R"(Whether values in this attributes have been changed requiring
           re-registartion before they can be used an object can be created. )");
 
   // ==== PhysicsObjectAttributes ====
@@ -132,7 +132,7 @@ void initAttributesBindings(py::module& m) {
           "compute_COM_from_shape",
           &PhysicsObjectAttributes::getComputeCOMFromShape,
           &PhysicsObjectAttributes::setComputeCOMFromShape,
-          R"(Whether the COM should be calculated when an object is created 
+          R"(Whether the COM should be calculated when an object is created
           based on its bounding box)")
       .def_property("mass", &PhysicsObjectAttributes::getMass,
                     &PhysicsObjectAttributes::setMass,
@@ -140,29 +140,28 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "inertia", &PhysicsObjectAttributes::getInertia,
           &PhysicsObjectAttributes::setInertia,
-          R"(The diagonal of the Intertia matrix for objects constructed 
+          R"(The diagonal of the Intertia matrix for objects constructed
           from this template.)")
       .def_property(
           "linear_damping", &PhysicsObjectAttributes::getLinearDamping,
           &PhysicsObjectAttributes::setLinearDamping,
-          R"(The damping of the linear velocity for objects constructed 
+          R"(The damping of the linear velocity for objects constructed
           from this template.)")
       .def_property(
           "angular_damping", &PhysicsObjectAttributes::getAngularDamping,
           &PhysicsObjectAttributes::setAngularDamping,
-          R"(The damping of angular velocity for objects constructed from 
+          R"(The damping of angular velocity for objects constructed from
           this template.)")
-      .def_property(
-          "bounding_box_collisions",
-          &PhysicsObjectAttributes::getBoundingBoxCollisions,
-          &PhysicsObjectAttributes::setBoundingBoxCollisions,
-          R"(Whether objects constructed from this template should use 
+      .def_property("bounding_box_collisions",
+                    &PhysicsObjectAttributes::getBoundingBoxCollisions,
+                    &PhysicsObjectAttributes::setBoundingBoxCollisions,
+                    R"(Whether objects constructed from this template should use
           bounding box for collisions or designated mesh.)")
       .def_property(
           "join_collision_meshes",
           &PhysicsObjectAttributes::getJoinCollisionMeshes,
           &PhysicsObjectAttributes::setJoinCollisionMeshes,
-          R"(Whether collision meshes for objects constructed from this 
+          R"(Whether collision meshes for objects constructed from this
           template should be joined into a convex hull or kept separate.)")
       .def_property(
           "is_visibile", &PhysicsObjectAttributes::getIsVisible,
@@ -185,34 +184,34 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "gravity", &PhysicsStageAttributes::getGravity,
           &PhysicsStageAttributes::setGravity,
-          R"(The 3-vector representation of gravity to use for physically-based 
+          R"(The 3-vector representation of gravity to use for physically-based
           simulations on stages built from this template.)")
       .def_property(
           "origin", &PhysicsStageAttributes::getOrigin,
           &PhysicsStageAttributes::setOrigin,
-          R"(The desired location of the origin of stages built from this 
+          R"(The desired location of the origin of stages built from this
           template.)")
       .def_property(
           "semantic_asset_handle",
           &PhysicsStageAttributes::getSemanticAssetHandle,
           &PhysicsStageAttributes::setSemanticAssetHandle,
-          R"(Handle of the asset used for semantic segmentation of stages 
+          R"(Handle of the asset used for semantic segmentation of stages
           built from this template.)")
       .def_property(
           "semantic_asset_type", &PhysicsStageAttributes::getSemanticAssetType,
           &PhysicsStageAttributes::setSemanticAssetType,
-          R"(Type of asset used for collision calculations for constructions 
+          R"(Type of asset used for collision calculations for constructions
           built from this template.)")
       .def_property(
           "navmesh_asset_handle",
           &PhysicsStageAttributes::getNavmeshAssetHandle,
           &PhysicsStageAttributes::setNavmeshAssetHandle,
-          R"(Handle of the navmesh asset used for constructions built from 
+          R"(Handle of the navmesh asset used for constructions built from
           this template.)")
       .def_property(
           "house_filename", &PhysicsStageAttributes::getHouseFilename,
           &PhysicsStageAttributes::setHouseFilename,
-          R"(Handle for file containing semantic type maps and hierarchy for 
+          R"(Handle for file containing semantic type maps and hierarchy for
           constructions built from this template.)")
       .def_property(
           "light_setup", &PhysicsStageAttributes::getLightSetup,
@@ -230,31 +229,31 @@ void initAttributesBindings(py::module& m) {
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
       .def_property_readonly(
           "simulator", &PhysicsManagerAttributes::getSimulator,
-          R"(The simulator being used for dynamic simulation.  If none then only kinematic 
+          R"(The simulator being used for dynamic simulation.  If none then only kinematic
         support is provided.)")
       .def_property("timestep", &PhysicsManagerAttributes::getTimestep,
                     &PhysicsManagerAttributes::setTimestep,
                     R"(The timestep to use for forward simulation.)")
       .def_property("max_substeps", &PhysicsManagerAttributes::getMaxSubsteps,
                     &PhysicsManagerAttributes::setMaxSubsteps,
-                    R"(Maximum simulation steps between each rendering step.  
+                    R"(Maximum simulation steps between each rendering step.
                     (Not currently implemented).)")
       .def_property(
           "gravity", &PhysicsManagerAttributes::getGravity,
           &PhysicsManagerAttributes::setGravity,
-          R"(The default 3-vector representation of gravity to use for physically-based 
+          R"(The default 3-vector representation of gravity to use for physically-based
           simulations.  Can be overridden.)")
       .def_property(
           "friction_coefficient",
           &PhysicsManagerAttributes::getFrictionCoefficient,
           &PhysicsManagerAttributes::setFrictionCoefficient,
-          R"(Default friction coefficient for contact modeling.  Can be overridden by 
+          R"(Default friction coefficient for contact modeling.  Can be overridden by
           stage and object values.)")
       .def_property(
           "restitution_coefficient",
           &PhysicsManagerAttributes::getRestitutionCoefficient,
           &PhysicsManagerAttributes::setRestitutionCoefficient,
-          R"(Default restitution coefficient for contact modeling.  Can be overridden by 
+          R"(Default restitution coefficient for contact modeling.  Can be overridden by
           stage and object values.)");
 
   // ==== AbstractPrimitiveAttributes ====
@@ -267,46 +266,46 @@ void initAttributesBindings(py::module& m) {
           "use_texture_coords",
           &AbstractPrimitiveAttributes::getUseTextureCoords,
           &AbstractPrimitiveAttributes::setUseTextureCoords,
-          R"(Whether texture coordinates should be generated for objects 
+          R"(Whether texture coordinates should be generated for objects
           constructed using this template.)")
       .def_property(
           "use_tangents", &AbstractPrimitiveAttributes::getUseTangents,
           &AbstractPrimitiveAttributes::setUseTangents,
-          R"(Whether 4-component (homogeneous) tangents should be generated for 
+          R"(Whether 4-component (homogeneous) tangents should be generated for
           objects constructed using this template.)")
       .def_property(
           "num_rings", &AbstractPrimitiveAttributes::getNumRings,
           &AbstractPrimitiveAttributes::setNumRings,
-          R"(Number of line (for wireframe) or face (for solid) rings for 
+          R"(Number of line (for wireframe) or face (for solid) rings for
           primitives built from this template.
-          Must be greater than 1 for template to be valid.  
+          Must be greater than 1 for template to be valid.
           For all uvSpheres, must be greater than 2, and for wireframe uvSpheres
           must also be multiple of 2.
-          Used by solid cones, cylinders, uvSpheres, and wireframe cylinders 
+          Used by solid cones, cylinders, uvSpheres, and wireframe cylinders
           and uvSpheres)")
       .def_property(
           "num_segments", &AbstractPrimitiveAttributes::getNumSegments,
           &AbstractPrimitiveAttributes::setNumSegments,
           R"(Number of line (for wireframe) or face (for solid) segments
-          for primitives built from this template. 
-          For solid primitives, must be 3 or greater for template to 
-          be valid. For wireframe primitives, must be 4 or greater, 
+          for primitives built from this template.
+          For solid primitives, must be 3 or greater for template to
+          be valid. For wireframe primitives, must be 4 or greater,
           and a multiple of 4 for template to be valid.
           Used by solid and wireframe capsules, cones, cylinders,
           uvSpheres.)")
       .def_property(
           "half_length", &AbstractPrimitiveAttributes::getHalfLength,
           &AbstractPrimitiveAttributes::setHalfLength,
-          R"(Half the length of the cylinder (for capsules and cylinders) or the 
-          cone (for cones) primitives built from this template. Primitives is 
-          built with default radius 1.0.  In order to get a desired radius r, 
-          length l, and preserve correct normals of the primitive being built, 
+          R"(Half the length of the cylinder (for capsules and cylinders) or the
+          cone (for cones) primitives built from this template. Primitives is
+          built with default radius 1.0.  In order to get a desired radius r,
+          length l, and preserve correct normals of the primitive being built,
           set half_length to .5 * (l/r) and then scale by r.
           Used by solid and wireframe capsules, cones and cylinders.)")
       .def_property_readonly(
           "prim_obj_class_name",
           &AbstractPrimitiveAttributes::getPrimObjClassName,
-          R"(Name of Magnum primitive class this template uses to construct 
+          R"(Name of Magnum primitive class this template uses to construct
           primitives)")
       .def_property_readonly("prim_obj_type",
                              &AbstractPrimitiveAttributes::getPrimObjType)
@@ -322,12 +321,12 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "hemisphere_rings", &CapsulePrimitiveAttributes::getHemisphereRings,
           &CapsulePrimitiveAttributes::setHemisphereRings,
-          R"(Number of rings for each hemisphere for capsules built with this 
+          R"(Number of rings for each hemisphere for capsules built with this
           template.  Must be larger than 1 for template to be valid.)")
       .def_property(
           "cylinder_rings", &CapsulePrimitiveAttributes::getCylinderRings,
           &CapsulePrimitiveAttributes::setCylinderRings,
-          R"(Number of rings for cylinder body for capsules built with this 
+          R"(Number of rings for cylinder body for capsules built with this
           template.  Must be larger than 1 for template to be valid.)");
 
   // ==== ConePrimitiveAttributes ====

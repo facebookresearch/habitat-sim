@@ -84,13 +84,9 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
-            sudo apt-get update -y
-            sudo apt-get install -y clang-format-8 nodejs npm
-            sudo ln -s /usr/bin/clang-format-8 /usr/bin/clang-format
-            clang-format --version
             sudo pip install -U pip setuptools pre-commit
             # Install the hooks now so that they'll be cached
-            pre-commit install-hooks
+            pre-commit install-hook --install-hookss
 
       - save_cache:
           paths:
@@ -100,7 +96,7 @@ jobs:
       - run:
           name: Check Code Style using pre-commit
           command: |
-            pre-commit run --show-diff-on-failure --all-files
+            SKIP=clang-format,eslint pre-commit run --show-diff-on-failure --all-files
 
   install_and_test_ubuntu:
     <<: *gpu

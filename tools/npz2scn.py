@@ -5,7 +5,6 @@
 
 import argparse
 import json
-import sys
 from typing import Any, Dict
 
 import numpy as np
