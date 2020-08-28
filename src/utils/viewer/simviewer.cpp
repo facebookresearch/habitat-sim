@@ -23,6 +23,7 @@
 #include <Magnum/Shaders/Shaders.h>
 
 #include "esp/gfx/RenderCamera.h"
+#include "esp/gfx/Renderer.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneNode.h"
@@ -69,7 +70,6 @@ class SimViewer : public Mn::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
-  void updateRenderCamera();
 
   // Interactive functions
   void addObject(const std::string& configHandle);
@@ -125,20 +125,15 @@ class SimViewer : public Mn::Platform::Application {
 
   esp::scene::SceneNode* rootNode_ = nullptr;
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
-  esp::scene::SceneNode* rgbSensorNode_ = nullptr;
 
   std::string sceneFileName;
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
-
-  esp::scene::ObjectControls controls_;
-
   bool drawObjectBBs = false;
 
   Mn::Timeline timeline_;
 
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = true;
-  bool frustumCullingEnabled_ = true;
 
   // NOTE: Mouse + shift is to select object on the screen!!
   void createPickedObjectVisualizer(unsigned int objectId);
@@ -146,16 +141,13 @@ class SimViewer : public Mn::Platform::Application {
 };
 
 SimViewer::SimViewer(const Arguments& arguments)
-    : Mn::Platform::Application{arguments,
-                                Configuration{}
-                                    .setTitle("Viewer")
-                                    .setWindowFlags(
-                                        Configuration::WindowFlag::Resizable),
-                                GLConfiguration{}
-                                    .setColorBufferSize(
-                                        Mn::Vector4i(8, 8, 8, 8))
-                                    .setSampleCount(4)},
-      controls_() {
+    : Mn::Platform::Application{
+          arguments,
+          Configuration{}.setTitle("Viewer").setWindowFlags(
+              Configuration::WindowFlag::Resizable),
+          GLConfiguration{}
+              .setColorBufferSize(Mn::Vector4i(8, 8, 8, 8))
+              .setSampleCount(4)} {
   Cr::Utility::Arguments args;
 #ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
@@ -207,6 +199,7 @@ SimViewer::SimViewer(const Arguments& arguments)
   auto simConfig = esp::sim::SimulatorConfiguration();
   simConfig.scene.id = sceneFileName;
   simConfig.enablePhysics = useBullet;
+  simConfig.frustumCulling = true;
 
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
@@ -215,51 +208,19 @@ SimViewer::SimViewer(const Arguments& arguments)
   sceneAttrManager_ = simulator_->getSceneAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();
 
-  // configure and initialize Agent and Sensor
+  // configure and initialize default Agent and Sensor
   auto agentConfig = esp::agent::AgentConfiguration();
-  // TODO: finish this
+  // TODO: add extra, non-default actions
+  agentConfig.sensorSpecifications[0]->resolution =
+      esp::vec2i(viewportSize[1], viewportSize[0]);
+  // add selects a random initial state and sets up the default controls and
+  // step filter
+  simulator_->addAgent(agentConfig);
 
   // Set up camera
   renderCamera_ = &simulator_->getActiveSceneGraph().getDefaultRenderCamera();
   rootNode_ = &simulator_->getActiveSceneGraph().getRootNode();
-  agentBodyNode_ = &rootNode_->createChild();
-  rgbSensorNode_ = &agentBodyNode_->createChild();
-
-  rgbSensorNode_->translate({0.0f, rgbSensorHeight, 0.0f});
-  agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
-
-  renderCamera_->setProjectionMatrix(viewportSize.x(),  // width
-                                     viewportSize.y(),  // height
-                                     0.01f,             // znear
-                                     1000.0f,           // zfar
-                                     90.0f);            // hfov
-  renderCamera_->setAspectRatioPolicy(
-      Mn::SceneGraph::AspectRatioPolicy::Extend);
-
-  // connect controls to navmesh if loaded
-  if (simulator_->getPathFinder()->isLoaded()) {
-    // some scenes could have pathable roof polygons. We are not filtering
-    // those starting points here.
-    esp::vec3f position =
-        simulator_->getPathFinder()->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Mn::Vector3(position));
-
-    controls_.setMoveFilterFunction([&](const esp::vec3f& start,
-                                        const esp::vec3f& end) {
-      esp::vec3f currentPosition =
-          simulator_->getPathFinder()->tryStep(start, end);
-      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
-                << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
-      LOG(INFO) << "Distance to closest obstacle: "
-                << simulator_->getPathFinder()->distanceToClosestObstacle(
-                       currentPosition);
-
-      return currentPosition;
-    });
-  }
-
-  renderCamera_->node().setTransformation(
-      rgbSensorNode_->absoluteTransformation());
+  agentBodyNode_ = &simulator_->getAgent(0)->node();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
@@ -394,24 +355,18 @@ void SimViewer::drawEvent() {
     timeSinceLastSimulation = 0.0;
   }
 
-  uint32_t visibles = 0;
-  for (auto& it : simulator_->getActiveSceneGraph().getDrawableGroups()) {
-    // TODO: remove || true
-    if (it.second.prepareForDraw(*renderCamera_) || true) {
-      esp::gfx::RenderCamera::Flags flags;
-      if (frustumCullingEnabled_)
-        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-      visibles += renderCamera_->draw(it.second, flags);
-    }
+  // TODO: enable other sensors to be displayed
+  simulator_->displayObservation(0, "rgba_camera");
+
+  // TODO: not hooked up to Simulator
+  /*
+  if (debugBullet_) {
+    Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+    Mn::Matrix4 projM(renderCamera_->projectionMatrix());
+
+    physicsManager_->debugDraw(projM * camM);
   }
-
-  // TODO: not attached to Simulator
-  // if (debugBullet_) {
-  //   Mn::Matrix4 camM(renderCamera_->cameraMatrix());
-  //   Mn::Matrix4 projM(renderCamera_->projectionMatrix());
-
-  //   physicsManager_->debugDraw(projM * camM);
-  // }
+  */
 
   // draw picked object
   if (objectPickingHelper_->isObjectPicked()) {
@@ -420,21 +375,11 @@ void SimViewer::drawEvent() {
 
     // rendering
     esp::gfx::RenderCamera::Flags flags;
-    if (frustumCullingEnabled_) {
+    if (simulator_->isFrustumCullingEnabled()) {
       flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
     }
     renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
 
-    // Neither the blend equation, nor the blend function is changed,
-    // so no need to restore the "blending" status before the imgui draw
-    /*
-    // The following is to make imgui work properly:
-    Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
-                                       Mn::GL::Renderer::BlendEquation::Add);
-    Mn::GL::Renderer::setBlendFunction(
-        Mn::GL::Renderer::BlendFunction::SourceAlpha,
-        Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
-    */
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
   }
 
@@ -449,7 +394,8 @@ void SimViewer::drawEvent() {
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = simulator_->getActiveSceneGraph().getDrawables().size();
     ImGui::Text("%u drawables", total);
-    ImGui::Text("%u culled", total - visibles);
+    // TODO: how to get number culled from sensor?
+    // ImGui::Text("%u culled", total - visibles);
     ImGui::End();
   }
 
@@ -476,8 +422,19 @@ void SimViewer::drawEvent() {
 }
 
 void SimViewer::viewportEvent(ViewportEvent& event) {
+  auto& sensors = simulator_->getAgent(0)->getSensorSuite();
+  for (auto entry : sensors.getSensors()) {
+    auto visualSensor =
+        dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
+    if (visualSensor != nullptr) {
+      visualSensor->specification()->resolution = {event.windowSize()[1],
+                                                   event.windowSize()[0]};
+      simulator_->getRenderer()->bindRenderTarget(*visualSensor);
+      Cr::Utility::Debug() << visualSensor->framebufferSize();
+    }
+  }
   Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
-  renderCamera_->setViewport(event.windowSize());
+
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 
@@ -505,7 +462,7 @@ void SimViewer::mousePressEvent(MouseEvent& event) {
     // redraw the scene on the object picking framebuffer
     esp::gfx::RenderCamera::Flags flags =
         esp::gfx::RenderCamera::Flag::ObjectPicking;
-    if (frustumCullingEnabled_)
+    if (simulator_->isFrustumCullingEnabled())
       flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
     for (auto& it : simulator_->getActiveSceneGraph().getDrawableGroups()) {
       renderCamera_->draw(it.second, flags);
@@ -577,11 +534,11 @@ void SimViewer::mouseScrollEvent(MouseScrollEvent& event) {
       renderCamera_->node().transformation().translation().z();
 
   /* Move 15% of the distance back or forward */
-  controls_(*agentBodyNode_, "moveForward",
-            distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f)));
+  // TODO: update this
+  // controls_(*agentBodyNode_, "moveForward",
+  //          distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f)));
 
   logAgentStateMsg(true, true);
-  updateRenderCamera();
   redraw();
 
   event.setAccepted();
@@ -591,12 +548,14 @@ void SimViewer::mouseMoveEvent(MouseMoveEvent& event) {
   if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
     return;
   }
+  // TODO: update this
+  /*
   const Mn::Vector2i delta = event.relativePosition();
   controls_(*agentBodyNode_, "turnRight", delta.x());
   controls_(*rgbSensorNode_, "lookDown", delta.y(), false);
+   */
 
-  logAgentStateMsg(true, true);
-  updateRenderCamera();
+  // logAgentStateMsg(true, true);
   redraw();
 
   event.setAccepted();
@@ -611,20 +570,16 @@ void SimViewer::keyPressEvent(KeyEvent& event) {
       std::exit(0);
       break;
     case KeyEvent::Key::Left:
-      controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("turnLeft");
       break;
     case KeyEvent::Key::Right:
-      controls_(*agentBodyNode_, "turnRight", lookSensitivity);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("turnRight");
       break;
     case KeyEvent::Key::Up:
-      controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("lookUp");
       break;
     case KeyEvent::Key::Down:
-      controls_(*rgbSensorNode_, "lookDown", lookSensitivity, false);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("lookDown");
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
@@ -637,31 +592,26 @@ void SimViewer::keyPressEvent(KeyEvent& event) {
       }
       break;
     case KeyEvent::Key::A:
-      controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("moveLeft");
       break;
     case KeyEvent::Key::D:
-      controls_(*agentBodyNode_, "moveRight", moveSensitivity);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("moveRight");
       break;
     case KeyEvent::Key::S:
-      controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("moveBackward");
       break;
     case KeyEvent::Key::W:
-      controls_(*agentBodyNode_, "moveForward", moveSensitivity);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("moveForward");
       break;
     case KeyEvent::Key::X:
-      controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("moveDown");
       break;
     case KeyEvent::Key::Z:
-      controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
-      agentMoved = true;
+      simulator_->getAgent(0)->act("moveUp");
       break;
     case KeyEvent::Key::E:
-      frustumCullingEnabled_ ^= true;
+      simulator_->setFrustumCullingEnabled(
+          !simulator_->isFrustumCullingEnabled());
       break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
@@ -710,13 +660,7 @@ void SimViewer::keyPressEvent(KeyEvent& event) {
   if (agentMoved) {
     logAgentStateMsg(true, true);
   }
-  updateRenderCamera();
   redraw();
-}
-
-void SimViewer::updateRenderCamera() {
-  renderCamera_->node().setTransformation(
-      rgbSensorNode_->absoluteTransformation());
 }
 
 }  // namespace
