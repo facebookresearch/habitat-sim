@@ -210,7 +210,42 @@ SimViewer::SimViewer(const Arguments& arguments)
 
   // configure and initialize default Agent and Sensor
   auto agentConfig = esp::agent::AgentConfiguration();
-  // TODO: add extra, non-default actions
+  agentConfig.height = rgbSensorHeight;
+  agentConfig.actionSpace = {
+      // setup viewer action space
+      {"moveForward",
+       esp::agent::ActionSpec::create(
+           "moveForward",
+           esp::agent::ActuationMap{{"amount", moveSensitivity}})},
+      {"moveBackward",
+       esp::agent::ActionSpec::create(
+           "moveBackward",
+           esp::agent::ActuationMap{{"amount", moveSensitivity}})},
+      {"moveLeft",
+       esp::agent::ActionSpec::create(
+           "moveLeft", esp::agent::ActuationMap{{"amount", moveSensitivity}})},
+      {"moveRight",
+       esp::agent::ActionSpec::create(
+           "moveRight", esp::agent::ActuationMap{{"amount", moveSensitivity}})},
+      {"moveDown",
+       esp::agent::ActionSpec::create(
+           "moveDown", esp::agent::ActuationMap{{"amount", moveSensitivity}})},
+      {"moveUp",
+       esp::agent::ActionSpec::create(
+           "moveUp", esp::agent::ActuationMap{{"amount", moveSensitivity}})},
+      {"turnLeft",
+       esp::agent::ActionSpec::create(
+           "turnLeft", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
+      {"turnRight",
+       esp::agent::ActionSpec::create(
+           "turnRight", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
+      {"lookUp",
+       esp::agent::ActionSpec::create(
+           "lookUp", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
+      {"lookDown",
+       esp::agent::ActionSpec::create(
+           "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
+  };
   agentConfig.sensorSpecifications[0]->resolution =
       esp::vec2i(viewportSize[1], viewportSize[0]);
   // add selects a random initial state and sets up the default controls and
@@ -359,6 +394,7 @@ void SimViewer::drawEvent() {
 
   // TODO: enable other sensors to be displayed
   simulator_->displayObservation(0, "rgba_camera");
+  uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
 
   // TODO: not hooked up to Simulator
   /*
@@ -396,8 +432,7 @@ void SimViewer::drawEvent() {
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = simulator_->getActiveSceneGraph().getDrawables().size();
     ImGui::Text("%u drawables", total);
-    // TODO: how to get number culled from sensor?
-    // ImGui::Text("%u culled", total - visibles);
+    ImGui::Text("%u culled", total - visibles);
     ImGui::End();
   }
 
