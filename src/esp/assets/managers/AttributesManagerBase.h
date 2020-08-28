@@ -514,13 +514,13 @@ class AttributesManager {
   /**
    * @brief Create either an object or a scene attributes from a json config.
    * Since both object attributes and scene attributes inherit from @ref
-   * AbstractPhysicsAttributes, the functionality to populate these fields from
+   * AbstractObjectAttributes, the functionality to populate these fields from
    * json can be shared.  Also will will populate render mesh and collision mesh
    * handles in object and scene attributes with value(s) specified in json.  If
    * one is blank will use other for both.
    *
    * @tparam type of attributes to create : MUST INHERIT FROM @ref
-   * AbstractPhysicsAttributes
+   * AbstractObjectAttributes
    * @param filename name of json descriptor file
    * @param jsonDoc json document to parse
    * @return an appropriately cast attributes pointer with base class fields
@@ -531,13 +531,13 @@ class AttributesManager {
                                              const io::JsonDocument& jsonDoc);
 
   /**
-   * @brief Only used by @ref AbstractPhysicsAttributes derived-attributes. Set
+   * @brief Only used by @ref AbstractObjectAttributes derived-attributes. Set
    * the asset type and mesh asset filename from json file. If mesh asset
    * filename has changed in json, but type has not been specified in json,
    * re-run file-path-driven configuration to get asset type and possibly
    * orientation frame, if appropriate.
    *
-   * @param attributes The AbstractPhysicsAttributes object to be populated
+   * @param attributes The AbstractObjectAttributes object to be populated
    * @param jsonDoc The json document
    * @param jsonMeshTypeTag The string tag denoting the desired mesh type in the
    * json.
@@ -583,7 +583,7 @@ class AttributesManager {
    * specifying the asset type corresponding to that handle.  These settings
    * should not restrict anything, only provide defaults.
    *
-   * @param attributes The AbstractPhysicsAttributes object to be configured
+   * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
    * @param fileName Mesh Handle to check.
@@ -960,7 +960,7 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
   // clear var to get new value
   fileName = "";
   // Map a json string value to its corresponding AssetType if found and cast to
-  // int, based on @ref AbstractPhysicsAttributes::AssetTypeNamesMap mappings.
+  // int, based on @ref AbstractObjectAttributes::AssetTypeNamesMap mappings.
   // Casts an int of the @ref esp::AssetType enum value if found and understood,
   // 0 (AssetType::UNKNOWN) if found but not understood, and
   //-1 if tag is not found in json.
@@ -977,7 +977,7 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
                       "Value in json @ tag : "
                    << jsonMeshTypeTag << " : `" << tmpVal
                    << "` does not map to a valid "
-                      "AbstractPhysicsAttributes::AssetTypeNamesMap value, so "
+                      "AbstractObjectAttributes::AssetTypeNamesMap value, so "
                       "defaulting mesh type to AssetType::UNKNOWN.";
       typeVal = static_cast<int>(AssetType::UNKNOWN);
     }

@@ -118,7 +118,7 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
   }
 
   // Construct a ObjectAttributes and populate with any
-  // AbstractPhysicsAttributes fields found in json.
+  // AbstractObjectAttributes fields found in json.
   auto objAttributes = this->createPhysicsAttributesFromJson<ObjectAttributes>(
       objPhysConfigFilename, jsonConfig);
 

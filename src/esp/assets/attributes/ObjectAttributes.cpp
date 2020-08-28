@@ -37,7 +37,7 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setUnitsToMeters(1.0);
   setRenderAssetHandle("");
   setCollisionAssetHandle("");
-}  // AbstractPhysicsAttributes ctor
+}  // AbstractObjectAttributes ctor
 
 ObjectAttributes::ObjectAttributes(const std::string& handle)
     : AbstractObjectAttributes("ObjectAttributes", handle) {

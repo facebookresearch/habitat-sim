@@ -348,7 +348,7 @@ StageAttributes::ptr StageAttributesManager::createFileBasedAttributesTemplate(
   }
 
   // construct a StageAttributes and populate with any
-  // AbstractPhysicsAttributes fields found in json.
+  // AbstractObjectAttributes fields found in json.
   auto stageAttributes = this->createPhysicsAttributesFromJson<StageAttributes>(
       stageFilename, jsonConfig);
 

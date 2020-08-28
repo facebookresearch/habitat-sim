@@ -156,7 +156,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributes)
 
-};  // class AbstractPhysicsAttributes
+};  // class AbstractObjectAttributes
 
 /**
  * @brief Specific Attributes instance which is constructed with a base set of
