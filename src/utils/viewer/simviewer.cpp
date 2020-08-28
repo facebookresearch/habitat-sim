@@ -565,16 +565,6 @@ void SimViewer::mouseScrollEvent(MouseScrollEvent& event) {
     return;
   }
 
-  /* Distance to origin */
-  const float distance =
-      renderCamera_->node().transformation().translation().z();
-
-  /* Move 15% of the distance back or forward */
-  // TODO: update this
-  // controls_(*agentBodyNode_, "moveForward",
-  //          distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f)));
-
-  logAgentStateMsg(true, true);
   redraw();
 
   event.setAccepted();
@@ -584,14 +574,16 @@ void SimViewer::mouseMoveEvent(MouseMoveEvent& event) {
   if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
     return;
   }
-  // TODO: update this
-  /*
-  const Mn::Vector2i delta = event.relativePosition();
-  controls_(*agentBodyNode_, "turnRight", delta.x());
-  controls_(*rgbSensorNode_, "lookDown", delta.y(), false);
-   */
 
-  // logAgentStateMsg(true, true);
+  const Mn::Vector2i delta = event.relativePosition();
+  auto& controls = *simulator_->getAgent(0)->getControls().get();
+  controls(*agentBodyNode_, "turnRight", delta.x());
+  // apply the transformation to all sensors
+  for (auto p : simulator_->getAgent(0)->getSensorSuite().getSensors()) {
+    controls(p.second->object(), "lookDown", delta.y(),
+             /*applyFilter=*/false);
+  }
+
   redraw();
 
   event.setAccepted();
@@ -600,7 +592,6 @@ void SimViewer::mouseMoveEvent(MouseMoveEvent& event) {
 // NOTE: Mouse + shift is to select object on the screen!!
 void SimViewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
-  bool agentMoved = false;
   switch (key) {
     case KeyEvent::Key::Esc:
       std::exit(0);
@@ -683,6 +674,10 @@ void SimViewer::keyPressEvent(KeyEvent& event) {
       Mn::DebugTools::screenshot(Mn::GL::defaultFramebuffer,
                                  "test_image_save.png");
       break;
+    case KeyEvent::Key::Q:
+      // query the agent state
+      logAgentStateMsg(true, true);
+      break;
     case KeyEvent::Key::B: {
       // toggle bounding box on objects
       drawObjectBBs = !drawObjectBBs;
@@ -692,9 +687,6 @@ void SimViewer::keyPressEvent(KeyEvent& event) {
     } break;
     default:
       break;
-  }
-  if (agentMoved) {
-    logAgentStateMsg(true, true);
   }
   redraw();
 }
