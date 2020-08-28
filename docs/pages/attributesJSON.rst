@@ -52,26 +52,15 @@ Stage Mesh Handles And Types
 
 Below are the handles and descriptors for various mesh assets used by a stage.
 	
-Mesh types are included to support future format flexibility. In the JSON they are limited to string keys used by :ref:`AbstractObjectAttributes::AssetTypeNamesMap`, which map to values in :ref:`AssetType`.  Any mesh type specification used in JSON but not found in :ref:`AbstractObjectAttributes::AssetTypeNamesMap` results in that mesh type being set to :ref:`AssetType::UNKNOWN`.  JSON-Specified mesh types will override any default settings, such as those that might be derived from file name extensions.
-
 "render mesh" 
 	- string
 	- The name of the file describing the render mesh to be used by the stage. 
-"render mesh type"
-	- string
-	- The type of the render mesh. If not specified, value will be derived based on given **"render mesh"** file extension. 
 "collision mesh"
 	- string
 	- The name of the file describing the collision mesh to be used by the stage. 
-"collision mesh type"
-	- string
-	- The type of the collision mesh. If not specified, value will be derived based on given **"collision mesh"** file extension.  Currently only "mp3d" is supported, other values default to :ref:`AssetType::UNKNOWN` 
 "semantic mesh"
 	- string
 	- The name of the file describing the stage's semantic mesh. 
-"semantic mesh type"
-	- string
-	- The type of the render mesh. If not specified, value will be derived based on given **"semantic mesh"** file extension.  Currently only "mp3d" is supported, other values default to :ref:`AssetType::INSTANCE_MESH`
 "house filename"
 	- string
 	- The name of the file containing semantic type maps and hierarchy.  
@@ -127,21 +116,13 @@ Object Mesh Handles And Types
 
 Below are the handles and descriptors for various mesh assets used by an object.
 	
-Mesh types are included to support future format flexibility. In the JSON they are limited to string keys used by :ref:`AbstractObjectAttributes::AssetTypeNamesMap`, which map to values in :ref:`AssetType`.  Any mesh type specification used in JSON but not found in :ref:`AbstractObjectAttributes::AssetTypeNamesMap` results in that mesh type being set to :ref:`AssetType::UNKNOWN`.  JSON-Specified mesh types will override any default settings, such as those that might be derived from file name extensions.
-
 
 "render mesh" 
 	- string
 	- The name of the file describing the render mesh to be used by the object.
-"render mesh type"
-	- string
-	- The type of the render mesh. If not specified, defaults to :ref:`AssetType::UNKNOWN`.
 "collision mesh"
 	- string
 	- The name of the file describing the collision mesh to be used by the object. 
-"collision mesh type"
-	- string
-	- The type of the collision mesh. If not specified, defaults to :ref:`AssetType::UNKNOWN`.
 	
 
 Object Frame and Origin
