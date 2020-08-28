@@ -397,14 +397,13 @@ void SimViewer::drawEvent() {
   uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
 
   // TODO: not hooked up to Simulator
-  /*
+
   if (debugBullet_) {
     Mn::Matrix4 camM(renderCamera_->cameraMatrix());
     Mn::Matrix4 projM(renderCamera_->projectionMatrix());
 
-    physicsManager_->debugDraw(projM * camM);
+    simulator_->physicsDebugDraw(projM * camM);
   }
-  */
 
   // draw picked object
   if (objectPickingHelper_->isObjectPicked()) {

@@ -161,6 +161,16 @@ class Simulator {
     return physicsManager_->getPhysicsSimulationLibrary();
   };
 
+  /** @brief Render any debugging visualizations provided by the underlying
+   * physics simulator implementation. By default does nothing. See @ref
+   * BulletPhysicsManager::debugDraw.
+   * @param projTrans The composed projection and transformation matrix for the
+   * render camera.
+   */
+  void physicsDebugDraw(const Magnum::Matrix4& projTrans) const {
+    physicsManager_->debugDraw(projTrans);
+  };
+
   /**
    * @brief Instance an object from a template index in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_. See @ref
