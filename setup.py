@@ -290,12 +290,6 @@ class CMakeBuild(build_ext):
                     osp.abspath(osp.join(self.build_temp, "utils/viewer/viewer")),
                     link_dst,
                 )
-            link_dst = osp.join(self.build_temp, "simviewer")
-            if not osp.islink(link_dst):
-                os.symlink(
-                    osp.abspath(osp.join(self.build_temp, "utils/viewer/simviewer")),
-                    link_dst,
-                )
 
     def run_cmake(self, cmake_args):
         if args.force_cmake:
