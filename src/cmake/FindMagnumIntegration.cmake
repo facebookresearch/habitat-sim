@@ -71,27 +71,31 @@
 #
 
 # Magnum library dependencies
-set(_MAGNUMINTEGRATION_DEPENDENCIES )
+set(_MAGNUMINTEGRATION_DEPENDENCIES)
 foreach(_component ${MagnumIntegration_FIND_COMPONENTS})
     if(_component STREQUAL Bullet)
-        set(_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES SceneGraph Shaders GL)
+        set(_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES SceneGraph
+                                                                 Shaders GL)
     elseif(_component STREQUAL Dart)
-        set(_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES SceneGraph Primitives MeshTools GL)
+        set(_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES
+            SceneGraph Primitives MeshTools GL)
     elseif(_component STREQUAL ImGui)
         set(_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES GL Shaders)
     endif()
 
-    list(APPEND _MAGNUMINTEGRATION_DEPENDENCIES ${_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES})
-    list(APPEND _MAGNUMINTEGRATION_OPTIONAL_DEPENDENCIES ${_MAGNUMINTEGRATION_${_component}_MAGNUM_OPTIONAL_DEPENDENCIES})
+    list(APPEND _MAGNUMINTEGRATION_DEPENDENCIES
+         ${_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES})
+    list(APPEND _MAGNUMINTEGRATION_OPTIONAL_DEPENDENCIES
+         ${_MAGNUMINTEGRATION_${_component}_MAGNUM_OPTIONAL_DEPENDENCIES})
 endforeach()
 find_package(Magnum REQUIRED ${_MAGNUMINTEGRATION_DEPENDENCIES})
 if(_MAGNUMINTEGRATION_OPTIONAL_DEPENDENCIES)
-    find_package(Magnum OPTIONAL_COMPONENTS ${_MAGNUMINTEGRATION_OPTIONAL_DEPENDENCIES})
+    find_package(
+        Magnum OPTIONAL_COMPONENTS ${_MAGNUMINTEGRATION_OPTIONAL_DEPENDENCIES})
 endif()
 
 # Global integration include dir
-find_path(MAGNUMINTEGRATION_INCLUDE_DIR Magnum
-    HINTS ${MAGNUM_INCLUDE_DIR})
+find_path(MAGNUMINTEGRATION_INCLUDE_DIR Magnum HINTS ${MAGNUM_INCLUDE_DIR})
 mark_as_advanced(MAGNUMINTEGRATION_INCLUDE_DIR)
 
 # Component distinction (listing them explicitly to avoid mistakes with finding
@@ -103,7 +107,7 @@ set(_MAGNUMINTEGRATION_HEADER_ONLY_COMPONENT_LIST Eigen)
 # set(_MAGNUMINTEGRATION_Component_DEPENDENCIES Dependency)
 
 # Ensure that all inter-component dependencies are specified as well
-set(_MAGNUMINTEGRATION_ADDITIONAL_COMPONENTS )
+set(_MAGNUMINTEGRATION_ADDITIONAL_COMPONENTS)
 foreach(_component ${MagnumIntegration_FIND_COMPONENTS})
     # Mark the dependencies as required if the component is also required
     if(MagnumIntegration_FIND_REQUIRED_${_component})
@@ -112,12 +116,14 @@ foreach(_component ${MagnumIntegration_FIND_COMPONENTS})
         endforeach()
     endif()
 
-    list(APPEND _MAGNUMINTEGRATION_ADDITIONAL_COMPONENTS ${_MAGNUMINTEGRATION_${_component}_DEPENDENCIES})
+    list(APPEND _MAGNUMINTEGRATION_ADDITIONAL_COMPONENTS
+         ${_MAGNUMINTEGRATION_${_component}_DEPENDENCIES})
 endforeach()
 
 # Join the lists, remove duplicate components
 if(_MAGNUMINTEGRATION_ADDITIONAL_COMPONENTS)
-    list(INSERT MagnumIntegration_FIND_COMPONENTS 0 ${_MAGNUMINTEGRATION_ADDITIONAL_COMPONENTS})
+    list(INSERT MagnumIntegration_FIND_COMPONENTS 0
+         ${_MAGNUMINTEGRATION_ADDITIONAL_COMPONENTS})
 endif()
 if(MagnumIntegration_FIND_COMPONENTS)
     list(REMOVE_DUPLICATES MagnumIntegration_FIND_COMPONENTS)
@@ -126,8 +132,10 @@ endif()
 # Convert components lists to regular expressions so I can use if(MATCHES).
 # TODO: Drop this once CMake 3.3 and if(IN_LIST) can be used
 foreach(_WHAT LIBRARY HEADER_ONLY)
-    string(REPLACE ";" "|" _MAGNUMINTEGRATION_${_WHAT}_COMPONENTS "${_MAGNUMINTEGRATION_${_WHAT}_COMPONENT_LIST}")
-    set(_MAGNUMINTEGRATION_${_WHAT}_COMPONENTS "^(${_MAGNUMINTEGRATION_${_WHAT}_COMPONENTS})$")
+    string(REPLACE ";" "|" _MAGNUMINTEGRATION_${_WHAT}_COMPONENTS
+                   "${_MAGNUMINTEGRATION_${_WHAT}_COMPONENT_LIST}")
+    set(_MAGNUMINTEGRATION_${_WHAT}_COMPONENTS
+        "^(${_MAGNUMINTEGRATION_${_WHAT}_COMPONENTS})$")
 endforeach()
 
 # Find all components
@@ -141,27 +149,39 @@ foreach(_component ${MagnumIntegration_FIND_COMPONENTS})
         set(MagnumIntegration_${_component}_FOUND TRUE)
     else()
         # Library components
-        if(_component MATCHES ${_MAGNUMINTEGRATION_LIBRARY_COMPONENTS} AND NOT _component MATCHES ${_MAGNUMINTEGRATION_HEADER_ONLY_COMPONENTS})
+        if(_component MATCHES ${_MAGNUMINTEGRATION_LIBRARY_COMPONENTS}
+           AND NOT _component MATCHES
+               ${_MAGNUMINTEGRATION_HEADER_ONLY_COMPONENTS})
             add_library(MagnumIntegration::${_component} UNKNOWN IMPORTED)
 
             # Try to find both debug and release version
-            find_library(MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_DEBUG Magnum${_component}Integration-d)
-            find_library(MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_RELEASE Magnum${_component}Integration)
+            find_library(MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_DEBUG
+                         Magnum${_component}Integration-d)
+            find_library(MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_RELEASE
+                         Magnum${_component}Integration)
             mark_as_advanced(MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_DEBUG
-                MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_RELEASE)
+                             MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_RELEASE)
 
             if(MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_RELEASE)
-                set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                    IMPORTED_CONFIGURATIONS RELEASE)
-                set_property(TARGET MagnumIntegration::${_component} PROPERTY
-                    IMPORTED_LOCATION_RELEASE ${MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_RELEASE})
+                set_property(
+                    TARGET MagnumIntegration::${_component}
+                    APPEND
+                    PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+                set_property(
+                    TARGET MagnumIntegration::${_component}
+                    PROPERTY IMPORTED_LOCATION_RELEASE
+                             ${MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_RELEASE})
             endif()
 
             if(MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_DEBUG)
-                set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                    IMPORTED_CONFIGURATIONS DEBUG)
-                set_property(TARGET MagnumIntegration::${_component} PROPERTY
-                    IMPORTED_LOCATION_DEBUG ${MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_DEBUG})
+                set_property(
+                    TARGET MagnumIntegration::${_component}
+                    APPEND
+                    PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+                set_property(
+                    TARGET MagnumIntegration::${_component}
+                    PROPERTY IMPORTED_LOCATION_DEBUG
+                             ${MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_DEBUG})
             endif()
         endif()
 
@@ -175,45 +195,74 @@ foreach(_component ${MagnumIntegration_FIND_COMPONENTS})
             # On Emscripten, Bullet could be taken from ports. If that's the
             # case, propagate proper compiler flag.
             if(CORRADE_TARGET_EMSCRIPTEN)
-                find_file(_MAGNUMINTEGRATION_${_COMPONENT}_CONFIGURE_FILE configure.h
-                    HINTS ${MAGNUMINTEGRATION_INCLUDE_DIR}/Magnum/${_component}Integration)
-                file(READ ${_MAGNUMINTEGRATION_${_COMPONENT}_CONFIGURE_FILE} _magnum${_component}IntegrationConfigure)
-                string(FIND "${_magnum${_component}IntegrationConfigure}" "#define MAGNUM_USE_EMSCRIPTEN_PORTS_BULLET" _magnum${_component}Integration_USE_EMSCRIPTEN_PORTS_BULLET)
-                if(NOT _magnum${_component}Integration_USE_EMSCRIPTEN_PORTS_BULLET EQUAL -1)
+                find_file(
+                    _MAGNUMINTEGRATION_${_COMPONENT}_CONFIGURE_FILE configure.h
+                    HINTS
+                        ${MAGNUMINTEGRATION_INCLUDE_DIR}/Magnum/${_component}Integration
+                )
+                file(READ ${_MAGNUMINTEGRATION_${_COMPONENT}_CONFIGURE_FILE}
+                     _magnum${_component}IntegrationConfigure)
+                string(
+                    FIND "${_magnum${_component}IntegrationConfigure}"
+                         "#define MAGNUM_USE_EMSCRIPTEN_PORTS_BULLET"
+                         _magnum${_component}Integration_USE_EMSCRIPTEN_PORTS_BULLET
+                )
+                if(NOT
+                   _magnum${_component}Integration_USE_EMSCRIPTEN_PORTS_BULLET
+                   EQUAL -1)
                     set(MAGNUM_USE_EMSCRIPTEN_PORTS_BULLET 1)
                 endif()
             endif()
 
             if(MAGNUM_USE_EMSCRIPTEN_PORTS_BULLET)
                 if(CMAKE_VERSION VERSION_LESS 3.13)
-                    message(FATAL_ERROR "BulletIntegration was compiled against emscripten-ports version but linking to it requires CMake 3.13 at least")
+                    message(
+                        FATAL_ERROR
+                            "BulletIntegration was compiled against emscripten-ports version but linking to it requires CMake 3.13 at least"
+                    )
                 endif()
-                set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                    INTERFACE_COMPILE_OPTIONS "SHELL:-s USE_BULLET=1")
-                set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                    INTERFACE_LINK_OPTIONS "SHELL:-s USE_BULLET=1")
+                set_property(
+                    TARGET MagnumIntegration::${_component}
+                    APPEND
+                    PROPERTY INTERFACE_COMPILE_OPTIONS "SHELL:-s USE_BULLET=1")
+                set_property(
+                    TARGET MagnumIntegration::${_component}
+                    APPEND
+                    PROPERTY INTERFACE_LINK_OPTIONS "SHELL:-s USE_BULLET=1")
             else()
                 find_package(Bullet)
 
-                set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                    INTERFACE_INCLUDE_DIRECTORIES ${BULLET_INCLUDE_DIRS})
+                set_property(
+                    TARGET MagnumIntegration::${_component}
+                    APPEND
+                    PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+                             ${BULLET_INCLUDE_DIRS})
                 # Need to handle special cases where both debug and release
                 # libraries are available (in form of debug;A;optimized;B in
                 # BULLET_LIBRARIES), thus appending them one by one
-                foreach(lib BULLET_DYNAMICS_LIBRARY BULLET_COLLISION_LIBRARY BULLET_MATH_LIBRARY BULLET_SOFTBODY_LIBRARY)
+                foreach(lib BULLET_DYNAMICS_LIBRARY BULLET_COLLISION_LIBRARY
+                            BULLET_MATH_LIBRARY BULLET_SOFTBODY_LIBRARY)
                     if(${lib}_DEBUG)
-                        set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                            INTERFACE_LINK_LIBRARIES "$<$<NOT:$<CONFIG:Debug>>:${${lib}}>;$<$<CONFIG:Debug>:${${lib}_DEBUG}>")
+                        set_property(
+                            TARGET MagnumIntegration::${_component}
+                            APPEND
+                            PROPERTY
+                                INTERFACE_LINK_LIBRARIES
+                                "$<$<NOT:$<CONFIG:Debug>>:${${lib}}>;$<$<CONFIG:Debug>:${${lib}_DEBUG}>"
+                        )
                     else()
-                        set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                            INTERFACE_LINK_LIBRARIES ${${lib}})
+                        set_property(
+                            TARGET MagnumIntegration::${_component}
+                            APPEND
+                            PROPERTY INTERFACE_LINK_LIBRARIES ${${lib}})
                     endif()
                 endforeach()
             endif()
 
-            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES MotionState.h)
+            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES
+                MotionState.h)
 
-        # Eigen integration library
+            # Eigen integration library
         elseif(_component STREQUAL Eigen)
             find_package(Eigen3)
             # We could drop this once we can use at least 3.3.1 (Ubuntu 16.04
@@ -225,77 +274,114 @@ foreach(_component ${MagnumIntegration_FIND_COMPONENTS})
             # Also, FindEigen3 only defines EIGEN3_INCLUDE_DIR, not even
             # EIGEN3_INCLUDE_DIRS, so be extra careful.
             # http://eigen.tuxfamily.org/index.php?title=ChangeLog#Eigen_3.3.1
-            set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
+            set_property(
+                TARGET MagnumIntegration::${_component}
+                APPEND
+                PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
 
-            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES Integration.h)
+            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES
+                Integration.h)
 
-        # ImGui integration library
+            # ImGui integration library
         elseif(_component STREQUAL ImGui)
             find_package(ImGui)
-            set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES ImGui::ImGui)
+            set_property(
+                TARGET MagnumIntegration::${_component}
+                APPEND
+                PROPERTY INTERFACE_LINK_LIBRARIES ImGui::ImGui)
 
-            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES Integration.h)
+            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES
+                Integration.h)
 
-        # GLM integration library
+            # GLM integration library
         elseif(_component STREQUAL Glm)
             find_package(GLM)
-            set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES GLM::GLM)
+            set_property(
+                TARGET MagnumIntegration::${_component}
+                APPEND
+                PROPERTY INTERFACE_LINK_LIBRARIES GLM::GLM)
 
-            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES Integration.h)
+            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES
+                Integration.h)
 
-        # Dart integration library
+            # Dart integration library
         elseif(_component STREQUAL Dart)
             find_package(DART 6.0.0 CONFIG REQUIRED)
-            set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES dart)
+            set_property(
+                TARGET MagnumIntegration::${_component}
+                APPEND
+                PROPERTY INTERFACE_LINK_LIBRARIES dart)
 
-            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES ConvertShapeNode.h)
+            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES
+                ConvertShapeNode.h)
 
-        # Oculus SDK integration library
+            # Oculus SDK integration library
         elseif(_component STREQUAL Ovr)
             find_package(OVR)
-            set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES OVR::OVR)
+            set_property(
+                TARGET MagnumIntegration::${_component}
+                APPEND
+                PROPERTY INTERFACE_LINK_LIBRARIES OVR::OVR)
 
-            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES OvrIntegration.h)
+            set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES
+                OvrIntegration.h)
         endif()
 
         # Find library includes
         if(_component MATCHES ${_MAGNUMINTEGRATION_LIBRARY_COMPONENTS})
-            find_path(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_DIR
+            find_path(
+                _MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_DIR
                 NAMES ${_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES}
-                HINTS ${MAGNUMINTEGRATION_INCLUDE_DIR}/Magnum/${_component}Integration)
+                HINTS
+                    ${MAGNUMINTEGRATION_INCLUDE_DIR}/Magnum/${_component}Integration
+            )
             mark_as_advanced(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_DIR)
         endif()
 
         if(_component MATCHES ${_MAGNUMINTEGRATION_LIBRARY_COMPONENTS})
             # Link to core Magnum library, add other Magnum required and
             # optional dependencies
-            set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES Magnum::Magnum)
-            foreach(_dependency ${_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES})
-                set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                    INTERFACE_LINK_LIBRARIES Magnum::${_dependency})
+            set_property(
+                TARGET MagnumIntegration::${_component}
+                APPEND
+                PROPERTY INTERFACE_LINK_LIBRARIES Magnum::Magnum)
+            foreach(_dependency
+                    ${_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES})
+                set_property(
+                    TARGET MagnumIntegration::${_component}
+                    APPEND
+                    PROPERTY INTERFACE_LINK_LIBRARIES Magnum::${_dependency})
             endforeach()
-            foreach(_dependency ${_MAGNUMINTEGRATION_${_component}_MAGNUM_OPTIONAL_DEPENDENCIES})
+            foreach(
+                _dependency
+                ${_MAGNUMINTEGRATION_${_component}_MAGNUM_OPTIONAL_DEPENDENCIES}
+            )
                 if(Magnum_${_dependency}_FOUND)
-                    set_property(TARGET MagnumIntegration::${_component} APPEND     PROPERTY
-                        INTERFACE_LINK_LIBRARIES Magnum::${_dependency})
+                    set_property(
+                        TARGET MagnumIntegration::${_component}
+                        APPEND
+                        PROPERTY INTERFACE_LINK_LIBRARIES
+                                 Magnum::${_dependency})
                 endif()
             endforeach()
 
             # Add inter-project dependencies
-            foreach(_dependency ${_MAGNUMINTEGRATION_${_component}_DEPENDENCIES})
-                set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                    INTERFACE_LINK_LIBRARIES MagnumIntegration::${_dependency})
+            foreach(_dependency
+                    ${_MAGNUMINTEGRATION_${_component}_DEPENDENCIES})
+                set_property(
+                    TARGET MagnumIntegration::${_component}
+                    APPEND
+                    PROPERTY INTERFACE_LINK_LIBRARIES
+                             MagnumIntegration::${_dependency})
             endforeach()
         endif()
 
         # Decide if the library was found
-        if(_component MATCHES ${_MAGNUMINTEGRATION_LIBRARY_COMPONENTS} AND _MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_DIR AND (_component MATCHES ${_MAGNUMINTEGRATION_HEADER_ONLY_COMPONENTS} OR MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_DEBUG OR MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_RELEASE))
+        if(_component MATCHES ${_MAGNUMINTEGRATION_LIBRARY_COMPONENTS}
+           AND _MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_DIR
+           AND (_component MATCHES ${_MAGNUMINTEGRATION_HEADER_ONLY_COMPONENTS}
+                OR MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_DEBUG
+                OR MAGNUMINTEGRATION_${_COMPONENT}_LIBRARY_RELEASE))
             set(MagnumIntegration_${_component}_FOUND TRUE)
         else()
             set(MagnumIntegration_${_component}_FOUND FALSE)
@@ -304,6 +390,7 @@ foreach(_component ${MagnumIntegration_FIND_COMPONENTS})
 endforeach()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(MagnumIntegration
+find_package_handle_standard_args(
+    MagnumIntegration
     REQUIRED_VARS MAGNUMINTEGRATION_INCLUDE_DIR
     HANDLE_COMPONENTS)

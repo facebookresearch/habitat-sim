@@ -49,6 +49,13 @@ repos:
         - flake8-bugbear
         - flake8-comprehensions
 
+# -   repo: https://github.com/codespell-project/codespell
+#     rev: v1.17.1
+#     hooks:
+#     -   id: codespell
+#         args: ['-w', '-L', 'inout']
+#         exclude: (^docs/(m.css)|^src/deps|\.ipynb|\.tag|\.css)
+
 -   repo: https://github.com/kynan/nbstripout
     rev: master
     hooks:
@@ -78,6 +85,12 @@ repos:
       types: [text]
       files: '.*\.(cpp|h|hpp|cu|cuh)$'
       language: system
+
+-   repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+    -   id: cmake-format
+        exclude: (^src/esp|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
     rev: v6.4.0

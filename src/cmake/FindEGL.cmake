@@ -41,46 +41,47 @@
 # Under Emscripten, GL is linked implicitly. With MINIMAL_RUNTIME you need to
 # specify -lGL. Simply set the library name to that.
 if(CORRADE_TARGET_EMSCRIPTEN)
-    set(EGL_LIBRARY GL CACHE STRING "Path to a library." FORCE)
+    set(EGL_LIBRARY
+        GL
+        CACHE STRING "Path to a library." FORCE)
 else()
-    find_library(EGL_LIBRARY NAMES
-        EGL
-
-        # ANGLE (CMake doesn't search for lib prefix on Windows)
-        libEGL
-
-        # On iOS a part of OpenGLES
-        OpenGLES)
+    find_library(
+        EGL_LIBRARY
+        NAMES EGL
+              # ANGLE (CMake doesn't search for lib prefix on Windows)
+              libEGL
+              # On iOS a part of OpenGLES
+              OpenGLES)
 endif()
 
 # Include dir
-find_path(EGL_INCLUDE_DIR NAMES
-    EGL/egl.h
-
-    # iOS
-    EAGL.h)
+find_path(
+    EGL_INCLUDE_DIR
+    NAMES EGL/egl.h
+          # iOS
+          EAGL.h)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(EGL DEFAULT_MSG
-    EGL_LIBRARY
-    EGL_INCLUDE_DIR)
+find_package_handle_standard_args(EGL DEFAULT_MSG EGL_LIBRARY EGL_INCLUDE_DIR)
 
 if(NOT TARGET EGL::EGL)
     # Work around BUGGY framework support on macOS. Do this also in case of
     # Emscripten, since there we don't have a location either.
     # http://public.kitware.com/pipermail/cmake/2016-April/063179.html
-    if((APPLE AND ${EGL_LIBRARY} MATCHES "\\.framework$") OR CORRADE_TARGET_EMSCRIPTEN)
+    if((APPLE AND ${EGL_LIBRARY} MATCHES "\\.framework$")
+       OR CORRADE_TARGET_EMSCRIPTEN)
         add_library(EGL::EGL INTERFACE IMPORTED)
-        set_property(TARGET EGL::EGL APPEND PROPERTY
-            INTERFACE_LINK_LIBRARIES ${EGL_LIBRARY})
+        set_property(
+            TARGET EGL::EGL
+            APPEND
+            PROPERTY INTERFACE_LINK_LIBRARIES ${EGL_LIBRARY})
     else()
         add_library(EGL::EGL UNKNOWN IMPORTED)
-        set_property(TARGET EGL::EGL PROPERTY
-            IMPORTED_LOCATION ${EGL_LIBRARY})
+        set_property(TARGET EGL::EGL PROPERTY IMPORTED_LOCATION ${EGL_LIBRARY})
     endif()
 
-    set_target_properties(EGL::EGL PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES ${EGL_INCLUDE_DIR})
+    set_target_properties(EGL::EGL PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+                                              ${EGL_INCLUDE_DIR})
 endif()
 
 mark_as_advanced(EGL_LIBRARY EGL_INCLUDE_DIR)

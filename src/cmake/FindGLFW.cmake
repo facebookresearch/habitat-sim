@@ -61,14 +61,16 @@ if(TARGET glfw)
         # properties (which are impossible to track of) and then attempting to
         # rebuild them into a new target.
         add_library(GLFW::GLFW INTERFACE IMPORTED)
-        set_target_properties(GLFW::GLFW PROPERTIES INTERFACE_LINK_LIBRARIES glfw)
+        set_target_properties(GLFW::GLFW PROPERTIES INTERFACE_LINK_LIBRARIES
+                                                    glfw)
     endif()
 
     # Just to make FPHSA print some meaningful location, nothing else
-    get_target_property(_GLFW_INTERFACE_INCLUDE_DIRECTORIES glfw INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(_GLFW_INTERFACE_INCLUDE_DIRECTORIES glfw
+                        INTERFACE_INCLUDE_DIRECTORIES)
     include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args("GLFW" DEFAULT_MSG
-        _GLFW_INTERFACE_INCLUDE_DIRECTORIES)
+                                      _GLFW_INTERFACE_INCLUDE_DIRECTORIES)
 
     if(CORRADE_TARGET_WINDOWS)
         # .dll is in LOCATION, .lib is in IMPLIB. Yay, useful!
@@ -99,25 +101,25 @@ endif()
 
 # In case no config file was found, try manually finding the library. Prefer
 # the glfw3dll as it's a dynamic library.
-find_library(GLFW_LIBRARY
+find_library(
+    GLFW_LIBRARY
     NAMES glfw glfw3dll glfw3
     PATH_SUFFIXES ${_GLFW_LIBRARY_PATH_SUFFIX})
 
 if(CORRADE_TARGET_WINDOWS AND GLFW_LIBRARY MATCHES "glfw3dll.(lib|a)$")
     # TODO: debug?
-    find_file(GLFW_DLL_RELEASE
+    find_file(
+        GLFW_DLL_RELEASE
         NAMES glfw3.dll
         PATH_SUFFIXES ${_GLFW_LIBRARY_PATH_SUFFIX})
 endif()
 
 # Include dir
-find_path(GLFW_INCLUDE_DIR
-    NAMES GLFW/glfw3.h)
+find_path(GLFW_INCLUDE_DIR NAMES GLFW/glfw3.h)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args("GLFW" DEFAULT_MSG
-    GLFW_LIBRARY
-    GLFW_INCLUDE_DIR)
+find_package_handle_standard_args("GLFW" DEFAULT_MSG GLFW_LIBRARY
+                                  GLFW_INCLUDE_DIR)
 
 if(NOT TARGET GLFW::GLFW)
     add_library(GLFW::GLFW UNKNOWN IMPORTED)
@@ -125,13 +127,15 @@ if(NOT TARGET GLFW::GLFW)
     # Work around BUGGY framework support on macOS
     # https://cmake.org/Bug/view.php?id=14105
     if(CORRADE_TARGET_APPLE AND GLFW_LIBRARY MATCHES "\\.framework$")
-        set_property(TARGET GLFW::GLFW PROPERTY IMPORTED_LOCATION ${GLFW_LIBRARY}/GLFW)
+        set_property(TARGET GLFW::GLFW PROPERTY IMPORTED_LOCATION
+                                                ${GLFW_LIBRARY}/GLFW)
     else()
-        set_property(TARGET GLFW::GLFW PROPERTY IMPORTED_LOCATION ${GLFW_LIBRARY})
+        set_property(TARGET GLFW::GLFW PROPERTY IMPORTED_LOCATION
+                                                ${GLFW_LIBRARY})
     endif()
 
-    set_property(TARGET GLFW::GLFW PROPERTY
-        INTERFACE_INCLUDE_DIRECTORIES ${GLFW_INCLUDE_DIR})
+    set_property(TARGET GLFW::GLFW PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+                                            ${GLFW_INCLUDE_DIR})
 endif()
 
 mark_as_advanced(GLFW_LIBRARY GLFW_INCLUDE_DIR)
