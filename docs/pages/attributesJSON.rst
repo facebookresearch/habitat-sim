@@ -64,7 +64,9 @@ Below are the handles and descriptors for various mesh assets used by a stage.
 "house filename"
 	- string
 	- The name of the file containing semantic type maps and hierarchy.  
-
+"nav mesh"
+	- string
+	- The name of the file describing the NavMesh for this stage.
 
 Stage Frame and Origin
 ----------------------
