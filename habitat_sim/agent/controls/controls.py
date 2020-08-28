@@ -5,11 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import abc
-from typing import Dict, Optional, Type
+from typing import Optional
 
 import attr
-import numpy as np
-import quaternion
 
 from habitat_sim import bindings as hsim
 
@@ -58,4 +56,3 @@ class SceneNodeControl(abc.ABC):
         :param scene_node: The scene node to control
         :param acutation_spec: Struct holding any parameters of the control
         """
-        pass

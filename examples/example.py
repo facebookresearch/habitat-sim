@@ -8,7 +8,6 @@
 import argparse
 
 import demo_runner as dr
-import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--scene", type=str, default=dr.default_sim_settings["scene"])
@@ -66,7 +65,7 @@ def make_settings():
 settings = make_settings()
 
 perfs = []
-for i in range(1):
+for _i in range(1):
     demo_runner = dr.DemoRunner(settings, dr.DemoRunnerType.EXAMPLE)
     perf = demo_runner.example()
     perfs.append(perf)

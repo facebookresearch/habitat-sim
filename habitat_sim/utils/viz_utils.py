@@ -7,7 +7,7 @@ import sys
 if "google.colab" in sys.modules:
     os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import imageio
 import numpy as np
@@ -18,15 +18,14 @@ from habitat_sim.utils.common import d3_40_colors_rgb
 
 
 def is_notebook():
-    """This utility function detects if the code is running in a notebook
-    """
+    """This utility function detects if the code is running in a notebook"""
     try:
         get_ipython = sys.modules["IPython"].get_ipython
         if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             raise ImportError("console")
         if "VSCODE_PID" in os.environ:  # pragma: no cover
             raise ImportError("vscode")
-    except:
+    except (AttributeError, ImportError, KeyError):
         return False
     else:
         return True
@@ -133,8 +132,6 @@ def make_video(
         "border_color": overlay image border color [0-255] (3d: array, list, or tuple). Defaults to gray [150]\n
         "obs": observation key (string)\n
     """
-    videodims = observations[0][primary_obs].shape
-    videodims = (videodims[1], videodims[0])  # flip to w,h order
     if not video_file.endswith(".mp4"):
         video_file = video_file + ".mp4"
     print("Encoding the video: %s " % video_file)
@@ -254,6 +251,6 @@ def observation_to_image(
     else:
         print(
             "semantic_to_rgb : Failed, unsupported observation type: "
-            + primary_obs_type
+            + observation_type
         )
     return rgb_image

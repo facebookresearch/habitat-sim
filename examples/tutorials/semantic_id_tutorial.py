@@ -7,8 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import habitat_sim
-from habitat_sim.gfx import LightInfo, LightPositionModel
-from habitat_sim.utils.common import quat_from_angle_axis, quat_to_magnum
+from habitat_sim.utils.common import quat_from_angle_axis
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
@@ -121,7 +120,7 @@ def main(show_imgs=True, save_imgs=False):
         # reconfigure the simulator with a new scene asset
         cfg = make_configuration(scene_file=scene)
         sim.reconfigure(cfg)
-        agent_transform = place_agent(sim)
+        agent_transform = place_agent(sim)  # noqa: F841
         get_obs(sim, show_imgs, save_imgs)
 
         # get the physics object attributes manager
@@ -155,7 +154,7 @@ def main(show_imgs=True, save_imgs=False):
         get_obs(sim, show_imgs, save_imgs)
 
         # add a box with default semanticId configured in the template
-        box_template = habitat_sim.attributes.PhysicsObjectAttributes()
+        box_template = habitat_sim.attributes.ObjectAttributes()
         box_template.render_asset_handle = str(
             os.path.join(data_path, "test_assets/objects/transform_box.glb")
         )

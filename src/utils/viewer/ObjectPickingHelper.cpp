@@ -120,7 +120,7 @@ void ObjectPickingHelper::createPickedObjectVisualizer(
   // recycle it by the end of the simulation
   meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       static_cast<esp::scene::SceneNode&>(pickedObject->object()), shader_,
-      pickedObject->getMesh(), &pickedObjectDrawbles_);
+      pickedObject->getVisualizerMesh(), &pickedObjectDrawbles_);
 
   return;
 }

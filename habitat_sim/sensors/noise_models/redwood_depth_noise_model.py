@@ -142,6 +142,5 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
             return self._impl.simulate(gt_depth)
 
     def apply(self, gt_depth):
-        r"""Alias of `simulate()` to conform to base-class and expected API
-        """
+        r"""Alias of `simulate()` to conform to base-class and expected API"""
         return self.simulate(gt_depth)

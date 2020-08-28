@@ -131,7 +131,7 @@ class Viewer : public Mn::Platform::Application {
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
   esp::scene::SceneNode* rgbSensorNode_ = nullptr;
 
-  std::string sceneFileName;
+  std::string stageFileName;
   esp::scene::SceneGraph* sceneGraph_;
   esp::scene::SceneNode* rootNode_;
 
@@ -184,6 +184,10 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH)
       .setHelp("physics-config", "physics scene config file")
+      .addBooleanOption("disable-navmesh")
+      .setHelp("disable-navmesh",
+               "disable the navmesh, so no navigation constraints and "
+               "collision response")
       .addOption("navmesh-file")
       .setHelp("navmesh-file", "manual override path to scene navmesh file")
       .addBooleanOption("recompute-navmesh")
@@ -214,8 +218,8 @@ Viewer::Viewer(const Arguments& arguments)
   sceneGraph_ = &sceneManager_.getSceneGraph(sceneID);
   rootNode_ = &sceneGraph_->getRootNode();
 
-  sceneFileName = args.value("scene");
-  esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(sceneFileName);
+  stageFileName = args.value("scene");
+  esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(stageFileName);
   std::string sceneLightSetup = esp::assets::ResourceManager::NO_LIGHT_KEY;
   if (args.isSet("scene-requires-lighting")) {
     info.requiresLighting = true;
@@ -237,28 +241,26 @@ Viewer::Viewer(const Arguments& arguments)
                  "Viewer::ctor : Error attempting to load world described by"
                      << physicsConfigFilename << ". Aborting", );
 
-  auto sceneAttributesMgr = resourceManager_.getSceneAttributesManager();
-  sceneAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+  auto stageAttributesMgr = resourceManager_.getStageAttributesManager();
+  stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
       physicsManagerAttributes->getHandle());
 
-  auto sceneAttributes =
-      sceneAttributesMgr->createAttributesTemplate(sceneFileName, true);
+  auto stageAttributes =
+      stageAttributesMgr->createAttributesTemplate(stageFileName, true);
 
-  sceneAttributes->setLightSetup(sceneLightSetup);
-  sceneAttributes->setRequiresLighting(info.requiresLighting);
+  stageAttributes->setLightSetup(sceneLightSetup);
+  stageAttributes->setRequiresLighting(info.requiresLighting);
 
   bool useBullet = args.isSet("enable-physics");
   // construct physics manager based on specifications in attributes
   resourceManager_.initPhysicsManager(physicsManager_, useBullet, rootNode_,
                                       physicsManagerAttributes);
 
-  // bool sceneLoadSuccess = resourceManager_.loadScene(
-  //     info, physicsManager_, &drawables, sceneLightSetup);
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool sceneLoadSuccess = resourceManager_.loadScene(
-      sceneAttributes, physicsManager_, &sceneManager_, tempIDs, false);
-  if (!sceneLoadSuccess) {
-    LOG(FATAL) << "cannot load " << sceneFileName;
+  bool stageLoadSuccess = resourceManager_.loadStage(
+      stageAttributes, physicsManager_, &sceneManager_, tempIDs, false);
+  if (!stageLoadSuccess) {
+    LOG(FATAL) << "cannot load " << stageFileName;
   }
   if (useBullet && (args.isSet("debug-bullet"))) {
     debugBullet_ = true;
@@ -283,51 +285,54 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
 
-  // Load navmesh if available
-  std::string navmeshFilename;
-  if (!args.value("navmesh-file").empty()) {
-    navmeshFilename = Corrade::Utility::Directory::join(
-        Corrade::Utility::Directory::current(), args.value("navmesh-file"));
-  } else if (sceneFileName.compare(esp::assets::EMPTY_SCENE)) {
-    navmeshFilename = esp::io::changeExtension(sceneFileName, ".navmesh");
-
-    // TODO: short term solution to mitigate issue #430
-    // we load the pre-computed navmesh for the ptex mesh to avoid
-    // online computation.
-    // for long term solution, see issue #430
-    if (Cr::Utility::String::endsWith(sceneFileName, "mesh.ply")) {
+  if (!args.isSet("disable-navmesh")) {
+    // Load navmesh if available
+    std::string navmeshFilename;
+    if (!args.value("navmesh-file").empty()) {
       navmeshFilename = Corrade::Utility::Directory::join(
-          Corrade::Utility::Directory::path(sceneFileName) + "/habitat",
-          "mesh_semantic.navmesh");
+          Corrade::Utility::Directory::current(), args.value("navmesh-file"));
+    } else if (stageFileName.compare(esp::assets::EMPTY_SCENE)) {
+      navmeshFilename = esp::io::changeExtension(stageFileName, ".navmesh");
+
+      // TODO: short term solution to mitigate issue #430
+      // we load the pre-computed navmesh for the ptex mesh to avoid
+      // online computation.
+      // for long term solution, see issue #430
+      if (Cr::Utility::String::endsWith(stageFileName, "mesh.ply")) {
+        navmeshFilename = Corrade::Utility::Directory::join(
+            Corrade::Utility::Directory::path(stageFileName) + "/habitat",
+            "mesh_semantic.navmesh");
+      }
     }
-  }
 
-  if (esp::io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-  } else if (sceneFileName.compare(esp::assets::EMPTY_SCENE)) {
-    esp::nav::NavMeshSettings navMeshSettings;
-    navMeshSettings.setDefaults();
-    recomputeNavMesh(sceneFileName, navMeshSettings);
-  }
+    if (esp::io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
+      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+      pathfinder_->loadNavMesh(navmeshFilename);
+    } else if (stageFileName.compare(esp::assets::EMPTY_SCENE)) {
+      esp::nav::NavMeshSettings navMeshSettings;
+      navMeshSettings.setDefaults();
+      recomputeNavMesh(stageFileName, navMeshSettings);
+    }
 
-  // connect controls to navmesh if loaded
-  if (pathfinder_->isLoaded()) {
-    // some scenes could have pathable roof polygons. We are not filtering
-    // those starting points here.
-    esp::vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Mn::Vector3(position));
+    // connect controls to navmesh if loaded
+    if (pathfinder_->isLoaded()) {
+      // some scenes could have pathable roof polygons. We are not filtering
+      // those starting points here.
+      esp::vec3f position = pathfinder_->getRandomNavigablePoint();
+      agentBodyNode_->setTranslation(Mn::Vector3(position));
 
-    controls_.setMoveFilterFunction([&](const esp::vec3f& start,
-                                        const esp::vec3f& end) {
-      esp::vec3f currentPosition = pathfinder_->tryStep(start, end);
-      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
-                << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
-      LOG(INFO) << "Distance to closest obstacle: "
-                << pathfinder_->distanceToClosestObstacle(currentPosition);
+      controls_.setMoveFilterFunction([&](const esp::vec3f& start,
+                                          const esp::vec3f& end) {
+        esp::vec3f currentPosition = pathfinder_->tryStep(start, end);
+        LOG(INFO)
+            << "position=" << currentPosition.transpose() << " rotation="
+            << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
+        LOG(INFO) << "Distance to closest obstacle: "
+                  << pathfinder_->distanceToClosestObstacle(currentPosition);
 
-      return currentPosition;
-    });
+        return currentPosition;
+      });
+    }
   }
 
   renderCamera_->node().setTransformation(
@@ -619,7 +624,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
 
     // redraw the scene on the object picking framebuffer
     esp::gfx::RenderCamera::Flags flags =
-        esp::gfx::RenderCamera::Flag::ObjectPicking;
+        esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
     if (frustumCullingEnabled_)
       flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
     for (auto& it : sceneGraph_->getDrawableGroups()) {

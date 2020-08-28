@@ -4,22 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import math
-import random
 from os import path as osp
 
 import magnum as mn
 import numpy as np
 import pytest
-import quaternion
+import quaternion  # noqa: F401
 
 import examples.settings
-import habitat_sim.physics
-from habitat_sim.utils.common import (
-    quat_from_angle_axis,
-    quat_from_magnum,
-    quat_to_magnum,
-)
 
 
 @pytest.mark.skipif(

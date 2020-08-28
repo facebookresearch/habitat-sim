@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import abc
-from typing import Dict, Optional, Type
+from typing import Optional
 
 import attr
 
@@ -14,8 +14,7 @@ from habitat_sim.sensor import SensorType
 
 @attr.s(auto_attribs=True, kw_only=True)
 class SensorNoiseModel(abc.ABC):
-    r"""Base class for all sensor noise models
-    """
+    r"""Base class for all sensor noise models"""
     gpu_device_id: Optional[int] = None
 
     @staticmethod
@@ -26,7 +25,6 @@ class SensorNoiseModel(abc.ABC):
 
         :return: True if this noise model can be applied to this sensor input type
         """
-        pass
 
     @abc.abstractmethod
     def apply(self, sensor_observation):
@@ -37,9 +35,7 @@ class SensorNoiseModel(abc.ABC):
 
         :return: The sensor observation with noise applied.
         """
-        pass
 
     def __call__(self, sensor_observation):
-        r"""Alias of `apply()`
-        """
+        r"""Alias of `apply()`"""
         return self.apply(sensor_observation)

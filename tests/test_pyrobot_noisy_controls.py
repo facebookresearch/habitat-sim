@@ -8,7 +8,7 @@ import itertools
 
 import numpy as np
 import pytest
-import quaternion
+import quaternion  # noqa: F401
 
 import habitat_sim
 import habitat_sim.errors

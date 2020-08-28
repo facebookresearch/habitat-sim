@@ -41,16 +41,13 @@
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-import functools
 # %cd /content/habitat-sim
 ## [setup]
 import math
 import os
 import random
 import sys
-import time
 
-import cv2
 import git
 import magnum as mn
 import numpy as np
@@ -58,8 +55,8 @@ import numpy as np
 try:
     import ipywidgets as widgets
     from IPython.display import display as ipydisplay
+
     # For using jupyter/ipywidget IO components
-    from ipywidgets import fixed, interact, interact_manual, interactive
 
     HAS_WIDGETS = True
 except ImportError:
@@ -77,6 +74,7 @@ if "google.colab" in sys.modules:
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
+# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_directory = "examples/tutorials/interactivity_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
@@ -91,8 +89,8 @@ if not "sim" in globals():
     obj_attr_mgr = None
     global prim_attr_mgr
     obj_attr_mgr = None
-    global scene_attr_mgr
-    scene_attr_mgr = None
+    global stage_attr_mgr
+    stage_attr_mgr = None
 
 
 # %%
@@ -183,7 +181,7 @@ def make_simulator_from_settings(sim_settings):
     global sim
     global obj_attr_mgr
     global prim_attr_mgr
-    global scene_attr_mgr
+    global stage_attr_mgr
     if sim != None:
         sim.close()
     # initialize the simulator
@@ -191,7 +189,7 @@ def make_simulator_from_settings(sim_settings):
     # Managers of various Attributes templates
     obj_attr_mgr = sim.get_object_template_manager()
     prim_attr_mgr = sim.get_asset_template_manager()
-    scene_attr_mgr = sim.get_scene_template_manager()
+    stage_attr_mgr = sim.get_stage_template_manager()
 
 
 # %%
@@ -252,7 +250,7 @@ def sample_object_state(
     tries = 0
     valid_placement = False
     # Note: following assumes sim was not reconfigured without close
-    scene_collision_margin = scene_attr_mgr.get_template_by_ID(0).margin
+    scene_collision_margin = stage_attr_mgr.get_template_by_ID(0).margin
     while not valid_placement and tries < max_tries:
         tries += 1
         # initialize sample location to random point in scene bounding box
@@ -332,7 +330,7 @@ def display_sample(
         ax.set_title(titles[i])
         # plot points on images
         if key_points is not None:
-            for pix, point in enumerate(key_points):
+            for point in key_points:
                 plt.plot(point[0], point[1], marker="o", markersize=10, alpha=0.8)
         plt.imshow(data)
 
@@ -400,7 +398,10 @@ def set_handle_ddl_widget(obj_handles, handle_types, sel_handle, on_change):
 
 
 def set_button_launcher(desc):
-    button = widgets.Button(description=desc, layout={"width": "max-content"},)
+    button = widgets.Button(
+        description=desc,
+        layout={"width": "max-content"},
+    )
     return button
 
 
@@ -611,7 +612,7 @@ set_object_state_from_agent(
 
 if scenario_is_kinematic:
     # use the velocity control struct to setup a constant rate kinematic motion
-    sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, obj_id_1)
+    sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, obj_id_1)
     vel_control = sim.get_object_velocity_control(obj_id_1)
     vel_control.controlling_lin_vel = True
     vel_control.linear_velocity = np.array([0, -1.0, 0])
@@ -661,7 +662,7 @@ obj_attr_mgr.register_template(cube_template_cpy, "occluder_cube")
 # Instance and place the occluder object from the template.
 occluder_id = sim.add_object_by_handle("occluder_cube")
 set_object_state_from_agent(sim, occluder_id, offset=np.array([0.0, 1.4, -0.4]))
-sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, occluder_id)
+sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, occluder_id)
 # fmt off
 # @markdown 3. Simulate at 60Hz, removing one object when it's center of mass drops below that of the occluder.
 # fmt on
@@ -718,7 +719,7 @@ if introduce_surface:
     # Instance and place the surface object from the template.
     surface_id = sim.add_object_by_handle("invisible_surface")
     set_object_state_from_agent(sim, surface_id, offset=np.array([0.4, 0.88, -1.6]))
-    sim.set_object_motion_type(habitat_sim.MotionType.STATIC, surface_id)
+    sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, surface_id)
 
 
 example_type = "physical plausibility"
@@ -760,7 +761,7 @@ target_zone = mn.Range3D.from_center(
     mn.Vector3(-2.07496, 1.07245, -0.2894), mn.Vector3(0.5, 0.05, 0.1)
 )
 num_targets = 9  # @param{type:"integer"}
-for target in range(num_targets):
+for _target in range(num_targets):
     obj_id = sim.add_object_by_handle(cheezit_handle)
     # rotate boxes off of their sides
     rotate = mn.Quaternion.rotation(mn.Rad(-mn.math.pi_half), mn.Vector3(1.0, 0, 0))
@@ -782,7 +783,7 @@ if show_target_zone:
     # instance and place the object from the template
     target_zone_id = sim.add_object_by_handle("target_zone")
     sim.set_translation(target_zone.center(), target_zone_id)
-    sim.set_object_motion_type(habitat_sim.MotionType.STATIC, target_zone_id)
+    sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, target_zone_id)
     # print("target_zone_center = " + str(sim.get_translation(target_zone_id)))
 
 # @markdown ---
@@ -875,7 +876,7 @@ obj_attr_mgr.register_template(sel_obj_template_cpy, "scaled_sel_obj")
 sim.navmesh_visualization = True
 remove_all_objects(sim)
 fails = 0
-for obj in range(num_objects):
+for _obj in range(num_objects):
     obj_id_1 = sim.add_object_by_handle("scaled_sel_obj")
 
     # place the object
@@ -887,7 +888,7 @@ for obj in range(num_objects):
         sim.remove_object(obj_id_1)
     else:
         # set the objects to STATIC so they can be added to the NavMesh
-        sim.set_object_motion_type(habitat_sim.MotionType.STATIC, obj_id_1)
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, obj_id_1)
 
 print("Placement fails = " + str(fails) + "/" + str(num_objects))
 
@@ -1030,7 +1031,7 @@ def setup_path_visualization(sim, path_follower, vis_samples=100):
             return None
 
     for id in vis_ids:
-        sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, id)
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, id)
 
     return vis_ids
 
@@ -1072,7 +1073,10 @@ def track_waypoint(waypoint, rs, vc, dt=1.0 / 60.0):
 # grip/release and sync gripped object state kineamtically
 class ObjectGripper(object):
     def __init__(
-        self, sim, agent_scene_node, end_effector_offset,
+        self,
+        sim,
+        agent_scene_node,
+        end_effector_offset,
     ):
         self._sim = sim
         self._node = agent_scene_node
@@ -1093,7 +1097,7 @@ class ObjectGripper(object):
             print("Oops, can't carry more than one item.")
             return
         self._gripped_obj_id = obj_id
-        sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, obj_id)
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, obj_id)
         object_node = sim.get_object_scene_node(obj_id)
         self._gripped_obj_buffer = object_node.cumulative_bb.size_y() / 2.0
         self.sync_states()
@@ -1102,7 +1106,9 @@ class ObjectGripper(object):
         if self._gripped_obj_id == -1:
             print("Oops, can't release nothing.")
             return
-        sim.set_object_motion_type(habitat_sim.MotionType.DYNAMIC, self._gripped_obj_id)
+        sim.set_object_motion_type(
+            habitat_sim.physics.MotionType.DYNAMIC, self._gripped_obj_id
+        )
         sim.set_linear_velocity(
             self._node.absolute_transformation_matrix().transform_vector(
                 mn.Vector3(0, 0, -1.0)
@@ -1323,7 +1329,7 @@ if make_video:
         primary_obs_type="color",
         video_file=output_path + video_prefix,
         fps=int(1.0 / time_step),
-        open_vid=show_vid,
+        open_vid=show_video,
         overlay_settings=overlay_settings,
         depth_clip=10.0,
     )

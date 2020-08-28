@@ -17,6 +17,18 @@ namespace AttrMgrs = esp::assets::managers;
 using esp::assets::PrimObjTypes;
 using esp::assets::ResourceManager;
 using esp::assets::managers::AttributesManager;
+
+using esp::assets::attributes::AbstractPrimitiveAttributes;
+using esp::assets::attributes::CapsulePrimitiveAttributes;
+using esp::assets::attributes::ConePrimitiveAttributes;
+using esp::assets::attributes::CubePrimitiveAttributes;
+using esp::assets::attributes::CylinderPrimitiveAttributes;
+using esp::assets::attributes::IcospherePrimitiveAttributes;
+using esp::assets::attributes::ObjectAttributes;
+using esp::assets::attributes::PhysicsManagerAttributes;
+using esp::assets::attributes::StageAttributes;
+using esp::assets::attributes::UVSpherePrimitiveAttributes;
+
 const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
 const std::string physicsConfigFile = Cr::Utility::Directory::join(
     SCENE_DATASETS,
@@ -29,12 +41,12 @@ class AttributesManagersTest : public testing::Test {
     assetAttributesManager_ = resourceManager_.getAssetAttributesManager();
     objectAttributesManager_ = resourceManager_.getObjectAttributesManager();
     physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
-    sceneAttributesManager_ = resourceManager_.getSceneAttributesManager();
+    stageAttributesManager_ = resourceManager_.getStageAttributesManager();
   };
 
   /**
    * @brief Test creation, copying and removal of templates for Object, Physics
-   * and Scene Attributes Managers
+   * and Stage Attributes Managers
    * @tparam Class of attributes manager
    * @param mgr the Attributes Manager being tested,
    * @param handle the handle of the desired attributes template to work with
@@ -190,7 +202,7 @@ class AttributesManagersTest : public testing::Test {
 
   /**
    * @brief Test creation, copying and removal of new default/empty templates
-   * for Object, Physics and Scene Attributes Managers
+   * for Object, Physics and Stage Attributes Managers
    * @tparam Class of attributes manager
    * @param mgr the Attributes Manager being tested,
    * @param renderHandle a legal render handle to set for the new template so
@@ -317,12 +329,12 @@ class AttributesManagersTest : public testing::Test {
   AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
-  AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+  AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 };  // class AttributesManagersTest
 
 TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   LOG(INFO) << "Starting AttributesManagersTest::AttributesManagersCreate";
-  std::string sceneFile = Cr::Utility::Directory::join(
+  std::string stageFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
 
   std::string objectFile = Cr::Utility::Directory::join(
@@ -336,17 +348,17 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   testCreateAndRemove<AttrMgrs::PhysicsAttributesManager>(
       physicsAttributesManager_, physicsConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::PhysicsAttributesManager>(
-      physicsAttributesManager_, sceneFile, false);
+      physicsAttributesManager_, stageFile, false);
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
-               "SceneAttributesManager @ "
-            << sceneFile;
+               "StageAttributesManager @ "
+            << stageFile;
 
   // scene attributes manager attributes verifcation
-  testCreateAndRemove<AttrMgrs::SceneAttributesManager>(sceneAttributesManager_,
-                                                        sceneFile);
-  testCreateAndRemoveDefault<AttrMgrs::SceneAttributesManager>(
-      sceneAttributesManager_, sceneFile, true);
+  testCreateAndRemove<AttrMgrs::StageAttributesManager>(stageAttributesManager_,
+                                                        stageFile);
+  testCreateAndRemoveDefault<AttrMgrs::StageAttributesManager>(
+      stageAttributesManager_, stageFile, true);
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "ObjectAttributesManager @ "
@@ -404,13 +416,13 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   {
     LOG(INFO) << "Starting "
                  "AttributesManagersTest::CapsulePrimitiveAttributes";
-    esp::assets::CapsulePrimitiveAttributes::ptr dfltCapsAttribs =
+    CapsulePrimitiveAttributes::ptr dfltCapsAttribs =
         assetAttributesManager_->getDefaultCapsuleTemplate(false);
     // verify it exists
     ASSERT_NE(nullptr, dfltCapsAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
-    testAssetAttributesModRegRemove<esp::assets::CapsulePrimitiveAttributes>(
+    testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
         dfltCapsAttribs, "segments", legalModValSolid, &illegalModValSolid);
 
     // test wireframe version
@@ -418,7 +430,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // verify it exists
     ASSERT_NE(nullptr, dfltCapsAttribs);
     // segments must be mult of 4 for wireframe primtives
-    testAssetAttributesModRegRemove<esp::assets::CapsulePrimitiveAttributes>(
+    testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
         dfltCapsAttribs, "segments", legalModValWF, &illegalModValWF);
   }
   //////////////////////////
@@ -427,13 +439,13 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     LOG(INFO) << "Starting "
                  "AttributesManagersTest::ConePrimitiveAttributes";
 
-    esp::assets::ConePrimitiveAttributes::ptr dfltConeAttribs =
+    ConePrimitiveAttributes::ptr dfltConeAttribs =
         assetAttributesManager_->getDefaultConeTemplate(false);
     // verify it exists
     ASSERT_NE(nullptr, dfltConeAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
-    testAssetAttributesModRegRemove<esp::assets::ConePrimitiveAttributes>(
+    testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
         dfltConeAttribs, "segments", legalModValSolid, &illegalModValSolid);
 
     // test wireframe version
@@ -441,7 +453,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // verify it exists
     ASSERT_NE(nullptr, dfltConeAttribs);
     // segments must be mult of 4 for wireframe primtives
-    testAssetAttributesModRegRemove<esp::assets::ConePrimitiveAttributes>(
+    testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
         dfltConeAttribs, "segments", legalModValWF, &illegalModValWF);
   }
   //////////////////////////
@@ -450,13 +462,13 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     LOG(INFO) << "Starting "
                  "AttributesManagersTest::CylinderPrimitiveAttributes";
 
-    esp::assets::CylinderPrimitiveAttributes::ptr dfltCylAttribs =
+    CylinderPrimitiveAttributes::ptr dfltCylAttribs =
         assetAttributesManager_->getDefaultCylinderTemplate(false);
     // verify it exists
     ASSERT_NE(nullptr, dfltCylAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
-    testAssetAttributesModRegRemove<esp::assets::CylinderPrimitiveAttributes>(
+    testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
         dfltCylAttribs, "segments", 5, &illegalModValSolid);
 
     // test wireframe version
@@ -464,7 +476,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // verify it exists
     ASSERT_NE(nullptr, dfltCylAttribs);
     // segments must be mult of 4 for wireframe primtives
-    testAssetAttributesModRegRemove<esp::assets::CylinderPrimitiveAttributes>(
+    testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
         dfltCylAttribs, "segments", legalModValWF, &illegalModValWF);
   }
   //////////////////////////
@@ -473,13 +485,13 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     LOG(INFO) << "Starting "
                  "AttributesManagersTest::UVSpherePrimitiveAttributes";
 
-    esp::assets::UVSpherePrimitiveAttributes::ptr dfltUVSphereAttribs =
+    UVSpherePrimitiveAttributes::ptr dfltUVSphereAttribs =
         assetAttributesManager_->getDefaultUVSphereTemplate(false);
     // verify it exists
     ASSERT_NE(nullptr, dfltUVSphereAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
-    testAssetAttributesModRegRemove<esp::assets::UVSpherePrimitiveAttributes>(
+    testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
         dfltUVSphereAttribs, "segments", 5, &illegalModValSolid);
 
     // test wireframe version
@@ -488,7 +500,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // verify it exists
     ASSERT_NE(nullptr, dfltUVSphereAttribs);
     // segments must be mult of 4 for wireframe primtives
-    testAssetAttributesModRegRemove<esp::assets::UVSpherePrimitiveAttributes>(
+    testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
         dfltUVSphereAttribs, "segments", legalModValWF, &illegalModValWF);
   }
 }  // AttributesManagersTest::AsssetAttributesManagerGetAndModify test

@@ -116,8 +116,8 @@ class SimViewer : public Mn::Platform::Application {
       objectAttrManager_ = nullptr;
   std::shared_ptr<esp::assets::managers::AssetAttributesManager>
       assetAttrManager_ = nullptr;
-  std::shared_ptr<esp::assets::managers::SceneAttributesManager>
-      sceneAttrManager_ = nullptr;
+  std::shared_ptr<esp::assets::managers::StageAttributesManager>
+      stageAttrManager_ = nullptr;
   std::shared_ptr<esp::assets::managers::PhysicsAttributesManager>
       physAttrManager_ = nullptr;
 
@@ -205,7 +205,7 @@ SimViewer::SimViewer(const Arguments& arguments)
 
   objectAttrManager_ = simulator_->getObjectAttributesManager();
   assetAttrManager_ = simulator_->getAssetAttributesManager();
-  sceneAttrManager_ = simulator_->getSceneAttributesManager();
+  stageAttrManager_ = simulator_->getStageAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();
 
   // configure and initialize default Agent and Sensor
@@ -497,7 +497,7 @@ void SimViewer::mousePressEvent(MouseEvent& event) {
 
     // redraw the scene on the object picking framebuffer
     esp::gfx::RenderCamera::Flags flags =
-        esp::gfx::RenderCamera::Flag::ObjectPicking;
+        esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
     if (simulator_->isFrustumCullingEnabled())
       flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
     for (auto& it : simulator_->getActiveSceneGraph().getDrawableGroups()) {

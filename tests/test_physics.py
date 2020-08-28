@@ -88,7 +88,7 @@ def test_kinematics(sim):
     assert np.allclose(quat_from_magnum(sim.get_rotation(object_id)), Q)
 
     # test object removal
-    old_object_id = sim.remove_object(object_id)
+    sim.remove_object(object_id)
     assert len(sim.get_existing_object_ids()) == 0
 
     obj_handle_list = obj_mgr.get_template_handles("cheezit")
@@ -98,10 +98,10 @@ def test_kinematics(sim):
     for _ in range(2):
         # do some kinematics here (todo: translating or rotating instead of absolute)
         sim.set_translation(np.random.rand(3), object_id)
-        T = sim.get_transformation(object_id)
+        T = sim.get_transformation(object_id)  # noqa : F841
 
         # test getting observation
-        obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
+        sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
 
         # check that time is increasing in the world
         assert sim.get_world_time() > prev_time
@@ -191,7 +191,7 @@ def test_dynamics(sim):
             # TODO: test other physics functions
 
             # test getting observation
-            obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
+            sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
 
             # check that time is increasing in the world
             assert sim.get_world_time() > prev_time
@@ -224,7 +224,7 @@ def test_dynamics(sim):
             == habitat_sim.physics.MotionType.KINEMATIC
         )
 
-        obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
+        sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
 
         # 2nd object should no longer rotate or translate
         assert np.allclose(

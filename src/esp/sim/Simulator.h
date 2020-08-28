@@ -10,7 +10,7 @@
 #include "esp/assets/managers/AssetAttributesManager.h"
 #include "esp/assets/managers/ObjectAttributesManager.h"
 #include "esp/assets/managers/PhysicsAttributesManager.h"
-#include "esp/assets/managers/SceneAttributesManager.h"
+#include "esp/assets/managers/StageAttributesManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/gfx/RenderTarget.h"
@@ -21,8 +21,6 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
-
-namespace AttrMgrs = esp::assets::managers;
 
 namespace esp {
 namespace nav {
@@ -40,6 +38,9 @@ class Renderer;
 
 namespace esp {
 namespace sim {
+
+namespace AttrMgrs = esp::assets::managers;
+namespace Attrs = esp::assets::attributes;
 
 struct SimulatorConfiguration {
   scene::SceneConfiguration scene;
@@ -146,9 +147,9 @@ class Simulator {
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const AttrMgrs::SceneAttributesManager::ptr getSceneAttributesManager()
+  const AttrMgrs::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    return resourceManager_->getSceneAttributesManager();
+    return resourceManager_->getStageAttributesManager();
   }
 
   /** @brief Return the library implementation type for the simulator currently
@@ -211,7 +212,7 @@ class Simulator {
    * Use this to query the object's properties when it was initialized.  Object
    * pointed at by pointer is const, and can not be modified.
    */
-  const assets::PhysicsObjectAttributes::cptr getObjectInitializationTemplate(
+  const Attrs::ObjectAttributes::cptr getObjectInitializationTemplate(
       int objectId,
       const int sceneID = 0) const;
 

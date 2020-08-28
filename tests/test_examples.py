@@ -1,6 +1,5 @@
 import itertools
 import multiprocessing
-import os
 import runpy
 import sys
 from os import path as osp

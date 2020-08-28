@@ -25,7 +25,6 @@ import math
 import os
 import random
 import sys
-import time
 
 import cv2
 import git
@@ -33,7 +32,6 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
-from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
 
 if "google.colab" in sys.modules:
@@ -41,6 +39,7 @@ if "google.colab" in sys.modules:
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
+# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(dir_path, "examples/tutorials/rigid_object_tutorial_output/")
 

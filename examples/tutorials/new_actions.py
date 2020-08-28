@@ -7,7 +7,7 @@
 import attr
 import magnum as mn
 import numpy as np
-import quaternion
+import quaternion  # noqa: F401
 
 import habitat_sim
 from habitat_sim.utils.common import quat_from_angle_axis, quat_rotate_vector

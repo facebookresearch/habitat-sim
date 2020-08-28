@@ -1,8 +1,15 @@
 set(assets_SOURCES
   Asset.cpp
   Asset.h
-  Attributes.cpp
-  Attributes.h
+  attributes/AttributesBase.h
+  attributes/ObjectAttributes.h
+  attributes/ObjectAttributes.cpp
+  attributes/SceneAttributes.h
+  attributes/SceneAttributes.cpp
+  attributes/PhysicsManagerAttributes.h
+  attributes/PhysicsManagerAttributes.cpp
+  attributes/PrimitiveAssetAttributes.h
+  attributes/PrimitiveAssetAttributes.cpp
   BaseMesh.cpp
   BaseMesh.h
   CollisionMeshData.h
@@ -21,9 +28,9 @@ set(assets_SOURCES
   managers/ObjectAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
-  managers/SceneAttributesManager.h
-  managers/SceneAttributesManager.cpp
-  
+  managers/StageAttributesManager.h
+  managers/StageAttributesManager.cpp
+
   ResourceManager.cpp
   ResourceManager.h
 

@@ -1,4 +1,4 @@
-exclude: 'build|src/deps|src/obsolete'
+exclude: 'build|data/datasets|data/scene_datasets|data/objects|src/deps|src/obsolete'
 
 default_language_version:
     python: python3
@@ -11,30 +11,43 @@ repos:
     -   id: check-added-large-files
         args: ['--maxkb=2000']
     -   id: end-of-file-fixer
-    -   id: check-executables-have-shebangs
     -   id: check-case-conflict
+    -   id: check-docstring-first
+    -   id: check-executables-have-shebangs
     -   id: check-merge-conflict
     -   id: check-toml
+    -   id: debug-statements
+    -   id: mixed-line-ending
+        args: ['--fix=lf']
 
-
--   repo: https://github.com/asottile/seed-isort-config
-    rev: v2.2.0
-    hooks:
-    -   id: seed-isort-config
-        language_version: python3
-
--   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.0.7
+-   repo: https://github.com/timothycrosley/isort
+    rev: 5.4.2
     hooks:
     -   id: isort
         exclude: docs/
         additional_dependencies: [toml]
 
 -   repo: https://github.com/ambv/black
-    rev: 19.3b0
+    rev: 20.8b1
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
+
+-   repo: https://github.com/myint/autoflake
+    rev: master
+    hooks:
+    -   id: autoflake
+        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place', '-c']
+        exclude: docs/
+
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.8.3
+    hooks:
+    -   id: flake8
+        exclude: docs/
+        additional_dependencies:
+        - flake8-bugbear
+        - flake8-comprehensions
 
 -   repo: https://github.com/kynan/nbstripout
     rev: master
@@ -51,8 +64,8 @@ repos:
         pass_filenames: true
         additional_dependencies:
             - 'jupytext==1.5.2'
-            - black
-            - isort
+            - 'black==20.8b1'
+            - 'isort==5.4.2'
         always_run: false
         language: python
 
@@ -60,6 +73,7 @@ repos:
     hooks:
     - id: clang-format
       name: Run clang-format
+      exclude: src/deps
       entry: clang-format -i -style=file
       types: [text]
       files: '.*\.(cpp|h|hpp|cu|cuh)$'

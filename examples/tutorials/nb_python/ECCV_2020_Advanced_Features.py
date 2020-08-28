@@ -51,9 +51,7 @@ import math
 import os
 import random
 import sys
-import time
 
-import cv2
 import git
 import magnum as mn
 import numpy as np
@@ -61,8 +59,8 @@ import numpy as np
 try:
     import ipywidgets as widgets
     from IPython.display import display as ipydisplay
+
     # For using jupyter/ipywidget IO components
-    from ipywidgets import fixed, interact, interact_manual, interactive
 
     HAS_WIDGETS = True
 except ImportError:
@@ -80,6 +78,7 @@ if "google.colab" in sys.modules:
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
+# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 # fmt: off
 output_directory = "examples/tutorials/advanced_features_output/"  # @param {type:"string"}
@@ -96,8 +95,8 @@ if not "sim" in globals():
     obj_attr_mgr = None
     global prim_attr_mgr
     obj_attr_mgr = None
-    global scene_attr_mgr
-    scene_attr_mgr = None
+    global stage_attr_mgr
+    stage_attr_mgr = None
 
 
 # %%
@@ -219,7 +218,7 @@ def build_dict_of_Object_attrs(obj_template):
 # and values for the passed scene template. The values are tuples with the first
 # entry being the value,the second being whether the property is editable and
 # the third being the type.
-def build_dict_of_Scene_attrs(scene_template):
+def build_dict_of_Stage_attrs(scene_template):
     res_dict = build_dict_of_PhyObj_attrs(scene_template)
     res_dict["gravity"] = (scene_template.gravity, True, "vector")
     res_dict["origin"] = (scene_template.origin, True, "vector")
@@ -352,10 +351,10 @@ def build_dict_of_UVSphere_prim_attrs(uvsphere_template):
 # editable and the third being the type.
 def build_dict_from_template(template):
     template_class = template.template_class
-    if "PhysicsObjectAttributes" in template_class:
+    if "ObjectAttributes" in template_class:
         return build_dict_of_Object_attrs(template)
-    if "PhysicsSceneAttributes" in template_class:
-        return build_dict_of_Scene_attrs(template)
+    if "StageAttributes" in template_class:
+        return build_dict_of_Stage_attrs(template)
     if "PhysicsManagerAttributes" in template_class:
         return build_dict_of_PhysicsSim_attrs(template)
     if "CapsulePrimitiveAttributes" in template_class:
@@ -481,7 +480,7 @@ def make_simulator_from_settings(sim_settings):
     global sim
     global obj_attr_mgr
     global prim_attr_mgr
-    global scene_attr_mgr
+    global stage_attr_mgr
     if sim != None:
         sim.close()
     # initialize the simulator
@@ -489,7 +488,7 @@ def make_simulator_from_settings(sim_settings):
     # Managers of various Attributes templates
     obj_attr_mgr = sim.get_object_template_manager()
     prim_attr_mgr = sim.get_asset_template_manager()
-    scene_attr_mgr = sim.get_scene_template_manager()
+    stage_attr_mgr = sim.get_stage_template_manager()
     # UI-populated handles used in various cells.  Need to initialize to valid
     # value in case IPyWidgets are not available.
     # Holds the user's desired file-based object template handle
@@ -645,7 +644,7 @@ def display_sample(
         ax.set_title(titles[i])
         # plot points on images
         if key_points is not None:
-            for pix, point in enumerate(key_points):
+            for point in key_points:
                 plt.plot(point[0], point[1], marker="o", markersize=10, alpha=0.8)
         plt.imshow(data)
 
@@ -715,7 +714,10 @@ def set_handle_ddl_widget(obj_handles, handle_types, sel_handle, on_change):
 
 
 def set_button_launcher(desc):
-    button = widgets.Button(description=desc, layout={"width": "max-content"},)
+    button = widgets.Button(
+        description=desc,
+        layout={"width": "max-content"},
+    )
     return button
 
 
@@ -725,7 +727,13 @@ def make_sim_and_vid_button(prefix, dt=1.0):
 
     def on_sim_click(b):
         observations = simulate(sim, dt=dt)
-        make_video_cv2(observations, prefix=prefix, open_vid=True, multi_obs=False)
+        vut.make_video(
+            observations,
+            "color_sensor_1st_person",
+            "color",
+            output_path + prefix,
+            open_vid=show_video,
+        )
 
     sim_and_vid_btn = set_button_launcher("Simulate and Make Video")
     sim_and_vid_btn.on_click(on_sim_click)
@@ -1587,6 +1595,7 @@ cylinder_wireframe_template = prim_attr_mgr.get_default_cylinder_template(True)
 def edit_wireframe_cylinder(edit_template):
     # @markdown Number of (face) rings. Must be larger or equal to 1.
     num_rings = 1  # @param {type:"slider", min:1, max:10, step:1}
+    edit_template.num_rings = num_rings
     # @markdown Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
     num_segments = 28  # @param {type:"slider", min:4, max:64, step:4}
     edit_template.num_segments = num_segments
@@ -1680,6 +1689,7 @@ UVSphere_wireframe_template = prim_attr_mgr.get_default_UVsphere_template(True)
 def edit_wireframe_UVSphere(edit_template):
     # @markdown Number of (line) rings. Must be larger or equal to 2 and multiple of 2.
     num_rings = 16  # @param {type:"slider", min:2, max:64, step:2}
+    edit_template.num_rings = num_rings
     # @markdown Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
     num_segments = 40  # @param {type:"slider", min:4, max:64, step:4}
     edit_template.num_segments = num_segments
@@ -1712,7 +1722,7 @@ init_config = init_camera_track_config(sim)
 offset_solid = np.array([-1.1, 0.6, -1.8])
 objs_to_sim = []
 # Create primitive-attributes based object templates for solid and wireframe objects
-for k, solidHandle in solid_handles_to_use.items():
+for solidHandle in solid_handles_to_use.values():
     # Create object template with passed handle
     obj_template = obj_attr_mgr.create_template(solidHandle)
     # Create object from object template handle
@@ -1726,7 +1736,7 @@ for k, solidHandle in solid_handles_to_use.items():
 
 offset_wf = np.array([-1.1, 0.6, -1.0])
 
-for k, wireframeHandle in wireframe_handles_to_use.items():
+for wireframeHandle in wireframe_handles_to_use.values():
     # Create object template with passed handle
     obj_template = obj_attr_mgr.create_template(wireframeHandle)
     # Create object from object template handle

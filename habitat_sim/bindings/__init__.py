@@ -26,7 +26,9 @@ modules = [
     "RigidState",
 ]
 
-from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
+from habitat_sim._ext.habitat_sim_bindings import (  # noqa: F401 isort:skip
+    Simulator as SimulatorBackend,
+)
 
 exec(
     "from habitat_sim._ext.habitat_sim_bindings import ({})".format(", ".join(modules))

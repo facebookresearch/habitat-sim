@@ -50,13 +50,14 @@ import os
 import random
 import sys
 
-import cv2
 import git
 import imageio
 import magnum as mn
 import numpy as np
+
 # %matplotlib inline
 from matplotlib import pyplot as plt
+
 # function to display the topdown map
 from PIL import Image
 
@@ -72,6 +73,7 @@ if "google.colab" in sys.modules:
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
+# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 # @markdown Optionally configure the save path for video output:
 output_directory = "examples/tutorials/nav_output/"  # @param {type:"string"}
@@ -491,7 +493,7 @@ def display_map(topdown_map, key_points=None):
     plt.imshow(topdown_map)
     # plot points on map
     if key_points is not None:
-        for pix, point in enumerate(key_points):
+        for point in key_points:
             plt.plot(point[0], point[1], marker="o", markersize=10, alpha=0.8)
     plt.show(block=False)
 
@@ -988,7 +990,7 @@ if continuous_nav:
 fps = control_frequency * frame_skip
 print("fps = " + str(fps))
 control_sequence = []
-for action in range(int(sim_time * control_frequency)):
+for _action in range(int(sim_time * control_frequency)):
     if continuous_nav:
         # allow forward velocity and y rotation to vary
         control_sequence.append(
@@ -1056,7 +1058,7 @@ for iteration in range(2):
                     )
 
         # simulate and collect frames
-        for frame in range(frame_skip):
+        for _frame in range(frame_skip):
             if continuous_nav:
                 # Integrate the velocity and apply the transform.
                 # Note: this can be done at a higher frequency for more accuracy

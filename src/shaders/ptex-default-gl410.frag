@@ -171,11 +171,14 @@ void applySaturation(inout vec4 c, float saturation) {
 }
 
 layout(location = 0) out vec4 FragColor;
+layout(location = 1) out highp uint fragmentObjectId;
+
 uniform sampler2D atlasTex;
 
 uniform float exposure;
 uniform float gamma;
 uniform float saturation;
+uniform highp uint objectId;
 
 in vec2 uv;
 
@@ -184,4 +187,6 @@ void main() {
 	applySaturation(c, saturation);
 	c.rgb = pow(c.rgb, vec3(gamma));
 	FragColor = vec4(c.rgb, 1.0f);
+
+  fragmentObjectId = objectId;
 }
