@@ -313,6 +313,22 @@ class Simulator {
                   const int sceneID = 0);
 
   /**
+   * @brief Apply an impulse to an object. See @ref
+   * esp::physics::PhysicsManager::applyImpulse.
+   * @param impulse The desired linear impulse to apply.
+   * @param relPos The desired location relative to the object origin at which
+   * to apply the impulse.
+   * @param objectID The ID of the object identifying it in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void applyImpulse(const Magnum::Vector3& impulse,
+                    const Magnum::Vector3& relPos,
+                    const int objectID,
+                    const int sceneID = 0);
+
+  /**
    * @brief Get a reference to the object's scene node or nullptr if failed.
    */
   scene::SceneNode* getObjectSceneNode(const int objectID,

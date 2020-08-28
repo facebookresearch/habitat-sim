@@ -402,6 +402,15 @@ void Simulator::applyForce(const Magnum::Vector3& force,
   }
 }
 
+void Simulator::applyImpulse(const Magnum::Vector3& impulse,
+                             const Magnum::Vector3& relPos,
+                             const int objectID,
+                             const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->applyForce(objectID, impulse, relPos);
+  }
+}
+
 scene::SceneNode* Simulator::getObjectSceneNode(const int objectID,
                                                 const int sceneID) {
   if (sceneHasPhysics(sceneID)) {

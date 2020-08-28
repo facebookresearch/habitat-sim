@@ -325,10 +325,8 @@ void SimViewer::pokeLastObject() {
                                                              // agent bodynode
   Mn::Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
   Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
-  // TODO: not in Simulator yet
-  Cr::Utility::Debug() << "SimViewer::pokeLastObject() failed. applyImpulse "
-                          "not in Simulator class.";
-  // simulator_->applyImpulse(impulse, rel_pos, existingObjectIDs.back());
+
+  simulator_->applyImpulse(impulse, rel_pos, existingObjectIDs.back());
 }
 
 void SimViewer::pushLastObject() {
@@ -395,8 +393,6 @@ void SimViewer::drawEvent() {
   // TODO: enable other sensors to be displayed
   simulator_->displayObservation(0, "rgba_camera");
   uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
-
-  // TODO: not hooked up to Simulator
 
   if (debugBullet_) {
     Mn::Matrix4 camM(renderCamera_->cameraMatrix());
