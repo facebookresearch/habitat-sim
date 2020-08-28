@@ -140,7 +140,7 @@ def test_sensors(
     # particular importer parses transforms
     assert np.linalg.norm(
         obs[sensor_type].astype(np.float) - gt.astype(np.float)
-    ) < 5.0e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
+    ) < 9.0e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
 
 
 # Tests to make sure that no sensors is supported and doesn't crash
