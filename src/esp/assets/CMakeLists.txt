@@ -34,7 +34,11 @@ set(assets_SOURCES
     ResourceManager.h)
 
 if(BUILD_PTEX_SUPPORT)
-    list(APPEND assets_SOURCES PTexMeshData.cpp PTexMeshData.h)
+    list(
+        APPEND
+        assets_SOURCES
+        PTexMeshData.cpp
+        PTexMeshData.h)
 endif()
 
 find_package(

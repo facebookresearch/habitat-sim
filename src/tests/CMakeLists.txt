@@ -1,4 +1,8 @@
-find_package(Magnum REQUIRED DebugTools AnyImageConverter)
+find_package(
+    Magnum
+    REQUIRED
+    DebugTools
+    AnyImageConverter)
 find_package(MagnumPlugins REQUIRED StbImageImporter)
 
 macro(TEST TEST_NAME)
@@ -39,9 +43,17 @@ corrade_add_test(
     MagnumPlugins::StbImageImporter)
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(GeoTest GeoTest.cpp LIBRARIES geo)
+corrade_add_test(
+    GeoTest
+    GeoTest.cpp
+    LIBRARIES
+    geo)
 
-corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES gfx)
+corrade_add_test(
+    DrawableTest
+    DrawableTest.cpp
+    LIBRARIES
+    gfx)
 target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(PhysicsTest physics)
@@ -51,7 +63,11 @@ test(ResourceManagerTest assets)
 target_include_directories(ResourceManagerTest
                            PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
+corrade_add_test(
+    CullingTest
+    CullingTest.cpp
+    LIBRARIES
+    gfx)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(SuncgTest scene)

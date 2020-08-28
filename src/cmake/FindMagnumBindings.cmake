@@ -59,7 +59,8 @@
 find_package(Magnum REQUIRED)
 
 # Global bindings include dir
-find_path(MAGNUMBINDINGS_INCLUDE_DIR Magnum HINTS ${MAGNUMBINDINGS_INCLUDE_DIR})
+find_path(MAGNUMBINDINGS_INCLUDE_DIR Magnum
+    HINTS ${MAGNUMBINDINGS_INCLUDE_DIR})
 mark_as_advanced(MAGNUMBINDINGS_INCLUDE_DIR)
 
 # Component distinction (listing them explicitly to avoid mistakes with finding
@@ -69,10 +70,8 @@ set(_MAGNUMBINDINGS_HEADER_ONLY_COMPONENT_LIST Python)
 # Convert components lists to regular expressions so I can use if(MATCHES).
 # TODO: Drop this once CMake 3.3 and if(IN_LIST) can be used
 foreach(_WHAT HEADER_ONLY)
-    string(REPLACE ";" "|" _MAGNUMBINDINGS_${_WHAT}_COMPONENTS
-                   "${_MAGNUMBINDINGS_${_WHAT}_COMPONENT_LIST}")
-    set(_MAGNUMBINDINGS_${_WHAT}_COMPONENTS
-        "^(${_MAGNUMBINDINGS_${_WHAT}_COMPONENTS})$")
+    string(REPLACE ";" "|" _MAGNUMBINDINGS_${_WHAT}_COMPONENTS "${_MAGNUMBINDINGS_${_WHAT}_COMPONENT_LIST}")
+    set(_MAGNUMBINDINGS_${_WHAT}_COMPONENTS "^(${_MAGNUMBINDINGS_${_WHAT}_COMPONENTS})$")
 endforeach()
 
 # Find all components
@@ -87,40 +86,32 @@ foreach(_component ${MagnumBindings_FIND_COMPONENTS})
     else()
         # Header-only components
         if(_component MATCHES ${_MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS})
-            add_library(MagnumBindings::${_component} INTERFACE IMPORTED)
+          add_library(MagnumBindings::${_component} INTERFACE IMPORTED)
         endif()
 
         # Python bindings
         if(_component STREQUAL Python)
-            set(_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_PATH_NAMES
-                Magnum/SceneGraph/PythonBindings.h)
+            set(_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_PATH_NAMES Magnum/SceneGraph/PythonBindings.h)
         endif()
 
         if(_component MATCHES ${_MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS})
             # Find includes
-            find_path(
-                _MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_DIR
+            find_path(_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_DIR
                 NAMES ${_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_PATH_NAMES}
                 HINTS ${MAGNUMBINDINGS_INCLUDE_DIR})
             mark_as_advanced(_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_DIR)
 
             # Link to core Magnum library
-            set_property(
-                TARGET MagnumBindings::${_component}
-                APPEND
-                PROPERTY INTERFACE_LINK_LIBRARIES Magnum::Magnum)
+            set_property(TARGET MagnumBindings::${_component} APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES Magnum::Magnum)
 
             # Add bindings incldue dir
-            set_property(
-                TARGET MagnumBindings::${_component}
-                APPEND
-                PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-                         ${MAGNUMBINDINGS_INCLUDE_DIR})
+            set_property(TARGET MagnumBindings::${_component} APPEND PROPERTY
+                INTERFACE_INCLUDE_DIRECTORIES ${MAGNUMBINDINGS_INCLUDE_DIR})
         endif()
 
         # Decide if the component was found
-        if(_component MATCHES ${_MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS}
-           AND _MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_DIR)
+        if(_component MATCHES ${_MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS} AND _MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_DIR)
             set(MagnumBindings_${_component}_FOUND TRUE)
         else()
             set(MagnumBindings_${_component}_FOUND FALSE)
@@ -129,7 +120,6 @@ foreach(_component ${MagnumBindings_FIND_COMPONENTS})
 endforeach()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(
-    MagnumBindings
+find_package_handle_standard_args(MagnumBindings
     REQUIRED_VARS MAGNUMBINDINGS_INCLUDE_DIR
     HANDLE_COMPONENTS)

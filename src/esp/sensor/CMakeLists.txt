@@ -1,8 +1,16 @@
-set(sensor_SOURCES PinholeCamera.cpp PinholeCamera.h Sensor.cpp Sensor.h
-                   VisualSensor.h)
+set(sensor_SOURCES
+    PinholeCamera.cpp
+    PinholeCamera.h
+    Sensor.cpp
+    Sensor.h
+    VisualSensor.h)
 
 if(BUILD_WITH_CUDA)
-    list(APPEND sensor_SOURCES RedwoodNoiseModel.cpp RedwoodNoiseModel.h)
+    list(
+        APPEND
+        sensor_SOURCES
+        RedwoodNoiseModel.cpp
+        RedwoodNoiseModel.h)
 endif()
 
 add_library(sensor STATIC ${sensor_SOURCES})

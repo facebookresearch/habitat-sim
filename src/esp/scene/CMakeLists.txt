@@ -21,7 +21,13 @@ add_library(
     SuncgSemanticScene.cpp
     SuncgSemanticScene.h)
 
-target_link_libraries(scene PUBLIC assets core geo gfx io)
+target_link_libraries(
+    scene
+    PUBLIC assets
+           core
+           geo
+           gfx
+           io)
 
 if(BUILD_TEST)
     add_subdirectory(test)

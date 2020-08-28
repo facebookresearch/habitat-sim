@@ -39,10 +39,7 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-find_path(
-    ASSIMP_INCLUDE_DIR
-    NAMES assimp/anim.h
-    HINTS include)
+find_path(ASSIMP_INCLUDE_DIR NAMES assimp/anim.h HINTS include)
 
 if(WIN32 AND MSVC)
     # Adapted from https://github.com/assimp/assimp/blob/799fd74714f9ffac29004c6b5a674b3402524094/CMakeLists.txt#L645-L655
@@ -67,10 +64,8 @@ if(WIN32 AND MSVC)
         set(ASSIMP_LIBRARY_DIR "lib32")
     endif()
 
-    find_library(ASSIMP_LIBRARY_RELEASE assimp-${ASSIMP_MSVC_VERSION}-mt.lib
-                 PATHS ${ASSIMP_LIBRARY_DIR})
-    find_library(ASSIMP_LIBRARY_DEBUG assimp-${ASSIMP_MSVC_VERSION}-mtd.lib
-                 PATHS ${ASSIMP_LIBRARY_DIR})
+    find_library(ASSIMP_LIBRARY_RELEASE assimp-${ASSIMP_MSVC_VERSION}-mt.lib PATHS ${ASSIMP_LIBRARY_DIR})
+    find_library(ASSIMP_LIBRARY_DEBUG assimp-${ASSIMP_MSVC_VERSION}-mtd.lib PATHS ${ASSIMP_LIBRARY_DIR})
 else()
     find_library(ASSIMP_LIBRARY_RELEASE assimp)
     find_library(ASSIMP_LIBRARY_DEBUG assimpd)
@@ -80,8 +75,7 @@ endif()
 # that one as well. If not found, simply don't link to it --- it might be a
 # dynamic build (on Windows it's a *.lib either way), or a static build using
 # system IrrXML. Related issue: https://github.com/Microsoft/vcpkg/issues/5012
-if(ASSIMP_LIBRARY_DEBUG MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}$"
-   OR ASSIMP_LIBRARY_RELEASE MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}$")
+if(ASSIMP_LIBRARY_DEBUG MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}$" OR ASSIMP_LIBRARY_RELEASE MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}$")
     find_library(ASSIMP_IRRXML_LIBRARY_RELEASE IrrXML)
     find_library(ASSIMP_IRRXML_LIBRARY_DEBUG IrrXMLd)
 endif()
@@ -90,39 +84,32 @@ include(SelectLibraryConfigurations)
 select_library_configurations(ASSIMP)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Assimp DEFAULT_MSG ASSIMP_LIBRARY
-                                  ASSIMP_INCLUDE_DIR)
+find_package_handle_standard_args(Assimp DEFAULT_MSG
+    ASSIMP_LIBRARY
+    ASSIMP_INCLUDE_DIR)
 
 if(NOT TARGET Assimp::Assimp)
     add_library(Assimp::Assimp UNKNOWN IMPORTED)
 
     if(ASSIMP_LIBRARY_DEBUG AND ASSIMP_LIBRARY_RELEASE)
-        set_target_properties(
-            Assimp::Assimp
-            PROPERTIES IMPORTED_LOCATION_DEBUG ${ASSIMP_LIBRARY_DEBUG}
-                       IMPORTED_LOCATION_RELEASE ${ASSIMP_LIBRARY_RELEASE})
+        set_target_properties(Assimp::Assimp PROPERTIES
+            IMPORTED_LOCATION_DEBUG ${ASSIMP_LIBRARY_DEBUG}
+            IMPORTED_LOCATION_RELEASE ${ASSIMP_LIBRARY_RELEASE})
     else()
-        set_target_properties(Assimp::Assimp PROPERTIES IMPORTED_LOCATION
-                                                        ${ASSIMP_LIBRARY})
+        set_target_properties(Assimp::Assimp PROPERTIES
+            IMPORTED_LOCATION ${ASSIMP_LIBRARY})
     endif()
 
     # Link to IrrXML as well, if found. See the comment above for details.
     if(ASSIMP_IRRXML_LIBRARY_RELEASE)
-        set_property(
-            TARGET Assimp::Assimp
-            APPEND
-            PROPERTY INTERFACE_LINK_LIBRARIES
-                     $<$<NOT:$<CONFIG:Debug>>:${ASSIMP_IRRXML_LIBRARY_RELEASE}>)
+        set_property(TARGET Assimp::Assimp APPEND PROPERTY
+            INTERFACE_LINK_LIBRARIES $<$<NOT:$<CONFIG:Debug>>:${ASSIMP_IRRXML_LIBRARY_RELEASE}>)
     endif()
     if(ASSIMP_IRRXML_LIBRARY_DEBUG)
-        set_property(
-            TARGET Assimp::Assimp
-            APPEND
-            PROPERTY INTERFACE_LINK_LIBRARIES
-                     $<$<CONFIG:Debug>:${ASSIMP_IRRXML_LIBRARY_DEBUG}>)
+        set_property(TARGET Assimp::Assimp APPEND PROPERTY
+            INTERFACE_LINK_LIBRARIES $<$<CONFIG:Debug>:${ASSIMP_IRRXML_LIBRARY_DEBUG}>)
     endif()
 
-    set_target_properties(
-        Assimp::Assimp PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-                                  ${ASSIMP_INCLUDE_DIR})
+    set_target_properties(Assimp::Assimp PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES ${ASSIMP_INCLUDE_DIR})
 endif()

@@ -1,5 +1,9 @@
-find_package(MagnumPlugins REQUIRED StbImageImporter StbImageConverter
-             TinyGltfImporter)
+find_package(
+    MagnumPlugins
+    REQUIRED
+    StbImageImporter
+    StbImageConverter
+    TinyGltfImporter)
 
 set(ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH
     ./data/default.phys_scene_config.json)
@@ -26,7 +30,11 @@ endif()
 
 target_link_libraries(
     physics
-    PUBLIC core scene assets MagnumPlugins::StbImageImporter
-           MagnumPlugins::StbImageConverter MagnumPlugins::TinyGltfImporter)
+    PUBLIC core
+           scene
+           assets
+           MagnumPlugins::StbImageImporter
+           MagnumPlugins::StbImageConverter
+           MagnumPlugins::TinyGltfImporter)
 
 set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
