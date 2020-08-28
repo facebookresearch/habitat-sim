@@ -676,22 +676,6 @@ class Simulator {
                               int materialIndex,
                               const gfx::PhongMaterialInfo& materialInfo);
 
-  /**
-   * @brief Change material properties for a specific material for a specific
-   * object.
-   *
-   * This change only affects this object. See also setRenderAssetMaterial.
-   *
-   * @param objectID
-   * @param materialIndex the valid range is 0..getNumRenderAssetMaterials([this
-   * object's render asset])
-   * @param materialInfo
-   */
-  void overrideObjectRenderAssetMaterial(
-      int objectID,
-      int materialIndex,
-      const gfx::PhongMaterialInfo& materialInfo);
-
  protected:
   Simulator(){};
 

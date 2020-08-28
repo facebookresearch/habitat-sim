@@ -12,7 +12,9 @@ from habitat_sim.gfx import PhongMaterialInfo
     or not osp.exists("data/objects/"),
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
-def test_material_api(sim):
+
+# change the material for a render asset (mesh)
+def test_render_asset_material_api(sim):
     cfg_settings = examples.settings.default_sim_settings.copy()
 
     cfg_settings[
