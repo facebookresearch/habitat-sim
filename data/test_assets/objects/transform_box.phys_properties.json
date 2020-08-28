@@ -1,0 +1,6 @@
+{
+    "render mesh": "transform_box.glb",
+    "scale": [0.2, 0.2, 0.2],
+    "collision mesh": "transform_box.glb",
+    "mass": 5.0
+}
