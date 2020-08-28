@@ -15,7 +15,7 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo pip install -U black flake8 "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
+              sudo pip install -U black flake8 flake8-bugbear flake8-comprehensions "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
               sudo pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
@@ -64,6 +64,39 @@ jobs:
           name: run eslint
           command: |
             npm run lint
+
+  pre-commit:
+    docker:
+      - image: circleci/python:3.6
+    working_directory: ~/repo/
+
+    steps:
+      - checkout
+      - run:
+          name: Combine precommit config and python versions for caching
+          command: |
+            cat .pre-commit-config.yaml > pre-commit-deps.txt
+            python -VV >> pre-commit-deps.txt
+      - restore_cache:
+          keys:
+          - v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Install Dependencies
+          command: |
+            sudo pip install -U pip setuptools pre-commit
+            # Install the hooks now so that they'll be cached
+            pre-commit install-hooks
+
+      - save_cache:
+          paths:
+            - ~/.cache/pre-commit
+          key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Check Code Style using pre-commit
+          command: |
+            SKIP=clang-format,eslint pre-commit run --show-diff-on-failure --all-files
 
   install_and_test_ubuntu:
     <<: *gpu
@@ -549,6 +582,7 @@ workflows:
       - cpp_lint
       - js_lint
       - install_and_test_ubuntu
+      - pre-commit
   nightly:
     triggers:
       - schedule:

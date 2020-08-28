@@ -59,9 +59,9 @@ class ImageExtractor:
     def __init__(
         self,
         scene_filepath: Union[str, List[str]],
-        labels: List[float] = [0.0],
+        labels: List[float] = None,
         img_size: tuple = (512, 512),
-        output: List[str] = ["rgba"],
+        output: List[str] = None,
         pose_extractor_name: str = "closest_point_extractor",
         sim=None,
         shuffle: bool = True,
@@ -69,6 +69,10 @@ class ImageExtractor:
         use_caching: bool = True,
         meters_per_pixel: float = 0.1,
     ):
+        if labels is None:
+            labels = [0.0]
+        if output is None:
+            output = ["rgba"]
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
 
@@ -201,7 +205,7 @@ class ImageExtractor:
 
     def get_semantic_class_names(self) -> List[str]:
         r"""Returns a list of english class names in the scene(s). E.g. ['wall', 'ceiling', 'chair']"""
-        class_names = list(set(name for name in self.instance_id_to_name.values()))
+        class_names = list(set(self.instance_id_to_name.values()))
         return class_names
 
     def _preprocessing(self, sim, scene_filepaths, meters_per_pixel):

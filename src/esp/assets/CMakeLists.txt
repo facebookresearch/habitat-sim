@@ -30,7 +30,7 @@ set(assets_SOURCES
   managers/PhysicsAttributesManager.cpp
   managers/StageAttributesManager.h
   managers/StageAttributesManager.cpp
-  
+
   ResourceManager.cpp
   ResourceManager.h
 

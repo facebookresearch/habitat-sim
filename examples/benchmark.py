@@ -125,12 +125,12 @@ for nproc, performance in performance_all.items():
         )
     )
     title = "Resolution "
-    for key, value in perf.items():
+    for key in perf:
         title += "\t%-10s" % key
     print(title)
     for idx in range(len(performance)):
         row = "%d x %d" % (resolutions[idx], resolutions[idx])
-        for key, value in performance[idx].items():
+        for value in performance[idx].values():
             row += "\t%-8.1f" % value.get("fps")
         print(row)
     print(
@@ -145,12 +145,12 @@ for nproc, performance in performance_all.items():
             )
         )
         title = "Resolution "
-        for key, value in perf.items():
+        for key in perf:
             title += "\t%-10s" % key
         print(title)
         for idx in range(len(performance)):
             row = "%d x %d" % (resolutions[idx], resolutions[idx])
-            for key, value in performance[idx].items():
+            for value in performance[idx].values():
                 row += "\t%-8.2f" % (value.get("avg_sim_step_time") * 1000)
             print(row)
         print(

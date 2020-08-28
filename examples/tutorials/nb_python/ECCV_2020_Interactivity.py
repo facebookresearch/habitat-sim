@@ -330,7 +330,7 @@ def display_sample(
         ax.set_title(titles[i])
         # plot points on images
         if key_points is not None:
-            for pix, point in enumerate(key_points):
+            for point in key_points:
                 plt.plot(point[0], point[1], marker="o", markersize=10, alpha=0.8)
         plt.imshow(data)
 
@@ -398,7 +398,10 @@ def set_handle_ddl_widget(obj_handles, handle_types, sel_handle, on_change):
 
 
 def set_button_launcher(desc):
-    button = widgets.Button(description=desc, layout={"width": "max-content"},)
+    button = widgets.Button(
+        description=desc,
+        layout={"width": "max-content"},
+    )
     return button
 
 
@@ -758,7 +761,7 @@ target_zone = mn.Range3D.from_center(
     mn.Vector3(-2.07496, 1.07245, -0.2894), mn.Vector3(0.5, 0.05, 0.1)
 )
 num_targets = 9  # @param{type:"integer"}
-for target in range(num_targets):
+for _target in range(num_targets):
     obj_id = sim.add_object_by_handle(cheezit_handle)
     # rotate boxes off of their sides
     rotate = mn.Quaternion.rotation(mn.Rad(-mn.math.pi_half), mn.Vector3(1.0, 0, 0))
@@ -873,7 +876,7 @@ obj_attr_mgr.register_template(sel_obj_template_cpy, "scaled_sel_obj")
 sim.navmesh_visualization = True
 remove_all_objects(sim)
 fails = 0
-for obj in range(num_objects):
+for _obj in range(num_objects):
     obj_id_1 = sim.add_object_by_handle("scaled_sel_obj")
 
     # place the object
@@ -1070,7 +1073,10 @@ def track_waypoint(waypoint, rs, vc, dt=1.0 / 60.0):
 # grip/release and sync gripped object state kineamtically
 class ObjectGripper(object):
     def __init__(
-        self, sim, agent_scene_node, end_effector_offset,
+        self,
+        sim,
+        agent_scene_node,
+        end_effector_offset,
     ):
         self._sim = sim
         self._node = agent_scene_node
