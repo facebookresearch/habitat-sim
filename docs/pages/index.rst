@@ -25,17 +25,15 @@ Advanced Topics                                     `Video <https://youtu.be/w_k
 
 Profiling and Optimization                          `Video <https://youtu.be/I4MjX598ZYs?list=PLGywud_-HlCORC0c4uj97oppQrGiB6JNy>`__                                     `Interactive Colab <https://colab.research.google.com/gist/eundersander/b62bb497519b44cf4ceb10e2079525dc/faster-rl-training-profiling-and-optimization.ipynb>`__
 
-New Actions                                         :ref:`Web page <std:doc:new-actions>`
+New Actions                                         :ref:`Page <std:doc:new-actions>`
 
-Notebooks                                           :ref:`Web page <std:doc:notebooks>`
+Creating a stereo agent                             :ref:`Page <std:doc:stereo-agent>`
 
-Creating a stereo agent                             :ref:`Web page <std:doc:stereo-agent>`
+Working with light setups                           :ref:`Page <std:doc:lighting-setups>`
 
-Working with light setups                           :ref:`Web page <std:doc:lighting-setups>`
+Extracting Images                                   :ref:`Page <std:doc:image-extractor>`
 
-Extracting Images                                   :ref:`Web page <std:doc:image-extractor>`
-
-Interactive Rigid Objects                           :ref:`Web page <std:doc:rigid-object-tutorial>`
+Interactive Rigid Objects                           :ref:`Page <std:doc:rigid-object-tutorial>`
 =================================================== ======================================================================================== ======================
 
 Python Classes
@@ -48,20 +46,19 @@ Python Unit Tests
 
 Browse selected unit tests that demonstrate essential *Habitat-Sim* interfaces.
 
-- `test_agent.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_agent.py>`_
-- `test_attributes_manager.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_attributes_manager.py>`_
-- `test_configs.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_configs.py>`_
-- `test_controls.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_controls.py>`_
-- `test_gfx.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_gfx.py>`_
-- `test_greedy_follower.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_greedy_follower.py>`_
-- `test_light_setup.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_light_setup.py>`_
-- `test_material.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_material.py>`_
-- `test_navmesh.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_navmesh.py>`_
-- `test_physics.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_physics.py>`_
-- `test_pyrobot_noisy_controls.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_pyrobot_noisy_controls.py>`_
-- `test_semantic_scene.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_semantic_scene.py>`_
-- `test_sensors.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_sensors.py>`_
-- `test_simulator.py <https://github.com/facebookresearch/habitat-sim/blob/master/tests/test_simulator.py>`_
+- :gh:`test_agent.py <facebookresearch/habitat-sim/blob/master/tests/test_agent.py>`
+- :gh:`test_attributes_managers.py <facebookresearch/habitat-sim/blob/master/tests/test_attributes_managers.py>`
+- :gh:`test_configs.py <facebookresearch/habitat-sim/blob/master/tests/test_configs.py>`
+- :gh:`test_controls.py <facebookresearch/habitat-sim/blob/master/tests/test_controls.py>`
+- :gh:`test_gfx.py <facebookresearch/habitat-sim/blob/master/tests/test_gfx.py>`
+- :gh:`test_greedy_follower.py <facebookresearch/habitat-sim/blob/master/tests/test_greedy_follower.py>`
+- :gh:`test_light_setup.py <facebookresearch/habitat-sim/blob/master/tests/test_light_setup.py>`
+- :gh:`test_navmesh.py <facebookresearch/habitat-sim/blob/master/tests/test_navmesh.py>`
+- :gh:`test_physics.py <facebookresearch/habitat-sim/blob/master/tests/test_physics.py>`
+- :gh:`test_pyrobot_noisy_controls.py <facebookresearch/habitat-sim/blob/master/tests/test_pyrobot_noisy_controls.py>`
+- :gh:`test_semantic_scene.py <facebookresearch/habitat-sim/blob/master/tests/test_semantic_scene.py>`
+- :gh:`test_sensors.py <facebookresearch/habitat-sim/blob/master/tests/test_sensors.py>`
+- :gh:`test_simulator.py <facebookresearch/habitat-sim/blob/master/tests/test_simulator.py>`
 
 .. We exclude unit tests that aren't particularly self-explanatory or interesting.
 .. test_snap_points
