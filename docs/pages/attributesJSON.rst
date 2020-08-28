@@ -27,7 +27,7 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 	- What physics engine should be used for dynamics simulation.  Currently supports "bullet" for Bullet physics simulation, and "none", meaning kinematic motion is to be used.	
 "gravity"  
 	- 3-vector
-	- Gravity to use for physical modeling. 
+	- Gravity to use for physical modeling. This can be overridden by Stage attributes.
 "timestep" 
 	- double
 	- The timestep to use for forward simulation. 
@@ -91,6 +91,9 @@ Below are stage-specific physical and object-related quantities.  These values w
 "scale"
 	- 3-vector
 	- The default scale to be used for the stage.
+"gravity"  
+	- 3-vector
+	- Gravity to use for physical modeling.
 "margin"
 	- double
 	- Distance margin for collision calculations.
