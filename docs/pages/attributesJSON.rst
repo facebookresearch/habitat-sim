@@ -15,9 +15,9 @@ Attributes templates provide a mechanism by which the various constructions in H
 
 `Physics Manager Attributes`_
 =============================
-Physics Manager Attributes templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be named in the following format : 
+Physics Manager Attributes templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be named in the following format :
 
- 	<worldname>.physics_config.json
+ 	<worldname>.phys_scene_config.json
 
 
 Below are the supported JSON tags for Physics Manager Attributes templates, and their meanings.
