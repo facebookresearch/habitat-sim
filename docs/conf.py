@@ -33,8 +33,8 @@ INPUT_MODULES = [habitat_sim]
 INPUT_DOCS = ["docs.rst", "gfx.rst", "noise_models.rst"]
 INPUT_PAGES = [
     "pages/index.rst",
-    "pages/attributesJSON.rst",
     "pages/new-actions.rst",
+    "pages/attributesJSON.rst",
     "pages/stereo-agent.rst",
     "pages/lighting-setups.rst",
     "pages/image-extractor.rst",
@@ -74,6 +74,7 @@ LINKS_NAVBAR1 = [
         "pages",
         [
             ("Add new actions", "new-actions"),
+            ("Attributes JSON", "attributesJSON"),
             ("Stereo agent", "stereo-agent"),
             ("Lighting Setups", "lighting-setups"),
             ("Image extraction", "image-extractor"),

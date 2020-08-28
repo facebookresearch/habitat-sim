@@ -1,12 +1,12 @@
+Using JSON Files to configure Attributes
+########################################
+
 :ref-prefix:
     habitat_sim.sim
     habitat_sim.attributes
     habitat_sim.attributes_managers
 
-Using JSON Files to configure Attributes
-########################################
-
-:summary: Attributes templates are used in Habitat to configure the simulation world and specify characteristics for scenes and objects. This document describes the appropriate tags to be used when authoring JSON files to properly customize these various attributes templates.
+:summary: This document describes the appropriate tags to be used when authoring JSON files to properly customize attributes templates.
 
 .. contents::
     :class: m-block m-default
@@ -33,10 +33,10 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 	- The timestep to use for forward simulation. 
 "friction coefficient"
 	- double
-	- The coefficient of friction. 
+	- The coefficient of friction. This can be overridden in Stage and Object Attributes.
 "restitution coefficient"
 	- double
-	- The coefficient of restitution. 
+	- The coefficient of restitution. This can be overridden in Stage and Object Attributes.
 "rigid object paths"
 	- list of strings
 	- A list of locations to query for supported object files that should be available to be loaded into the world.
@@ -52,7 +52,7 @@ Stage Mesh Handles And Types
 
 Below are the handles and descriptors for various mesh assets used by a stage.
 	
-Mesh types are included to support future format flexibility. In the JSON they are limited to string keys used by :ref:`AbstractPhysicsAttributes::AssetTypeNamesMap`, which map to values in :ref:`AssetType`.  Any mesh type specification used in JSON but not found in :ref:`AbstractPhysicsAttributes::AssetTypeNamesMap` results in that mesh type being set to :ref:`AssetType::UNKNOWN`.  JSON-Specified mesh types will override any default settings, such as those that might be derived from file name extensions.
+Mesh types are included to support future format flexibility. In the JSON they are limited to string keys used by :ref:`AbstractObjectAttributes::AssetTypeNamesMap`, which map to values in :ref:`AssetType`.  Any mesh type specification used in JSON but not found in :ref:`AbstractObjectAttributes::AssetTypeNamesMap` results in that mesh type being set to :ref:`AssetType::UNKNOWN`.  JSON-Specified mesh types will override any default settings, such as those that might be derived from file name extensions.
 
 "render mesh" 
 	- string
@@ -100,9 +100,6 @@ Below are stage-specific physical and object-related quantities.  These values w
 "scale"
 	- 3-vector
 	- The default scale to be used for the stage.
-"use absolute scale"
-	- boolean
-	- Whether the scale used is absolute or should be relative to (Hadamard product with) scene scale.
 "margin"
 	- double
 	- Distance margin for collision calculations.
@@ -130,7 +127,7 @@ Object Mesh Handles And Types
 
 Below are the handles and descriptors for various mesh assets used by an object.
 	
-Mesh types are included to support future format flexibility. In the JSON they are limited to string keys used by :ref:`AbstractPhysicsAttributes::AssetTypeNamesMap`, which map to values in :ref:`AssetType`.  Any mesh type specification used in JSON but not found in :ref:`AbstractPhysicsAttributes::AssetTypeNamesMap` results in that mesh type being set to :ref:`AssetType::UNKNOWN`.  JSON-Specified mesh types will override any default settings, such as those that might be derived from file name extensions.
+Mesh types are included to support future format flexibility. In the JSON they are limited to string keys used by :ref:`AbstractObjectAttributes::AssetTypeNamesMap`, which map to values in :ref:`AssetType`.  Any mesh type specification used in JSON but not found in :ref:`AbstractObjectAttributes::AssetTypeNamesMap` results in that mesh type being set to :ref:`AssetType::UNKNOWN`.  JSON-Specified mesh types will override any default settings, such as those that might be derived from file name extensions.
 
 
 "render mesh" 
@@ -165,9 +162,6 @@ Below are object-specific physical quantities.  These values will override simil
 "scale"
 	- 3-vector
 	- The default scale to be used for the object.
-"use absolute scale"
-	- boolean
-	- Whether the scale used is absolute or should be relative to (Hadamard product with) scene scale.
 "margin"
 	- double
 	- Distance margin for collision calculations.
