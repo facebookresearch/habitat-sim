@@ -219,6 +219,8 @@ SimViewer::SimViewer(const Arguments& arguments)
 
   // Set up camera
   renderCamera_ = &simulator_->getActiveSceneGraph().getDefaultRenderCamera();
+  renderCamera_->setAspectRatioPolicy(
+      Mn::SceneGraph::AspectRatioPolicy::Extend);
   rootNode_ = &simulator_->getActiveSceneGraph().getRootNode();
   agentBodyNode_ = &simulator_->getAgent(0)->node();
 
@@ -430,7 +432,6 @@ void SimViewer::viewportEvent(ViewportEvent& event) {
       visualSensor->specification()->resolution = {event.windowSize()[1],
                                                    event.windowSize()[0]};
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
-      Cr::Utility::Debug() << visualSensor->framebufferSize();
     }
   }
   Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
