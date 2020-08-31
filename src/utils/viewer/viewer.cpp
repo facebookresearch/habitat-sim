@@ -51,8 +51,6 @@ constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
 
-constexpr int defaultAgentId_ = 0;
-
 // for ease of access
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -174,6 +172,9 @@ Key Commands:
   bool debugBullet_ = false;
 
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
+
+  const int defaultAgentId_ = 0;
+  esp::agent::Agent::ptr defaultAgent_ = nullptr;
 
   // Scene or stage file to load
   std::string sceneFileName;
@@ -344,7 +345,8 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_ = &activeSceneGraph_->getDefaultRenderCamera();
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
-  agentBodyNode_ = &simulator_->getAgent(defaultAgentId_)->node();
+  defaultAgent_ = simulator_->getAgent(defaultAgentId_);
+  agentBodyNode_ = &defaultAgent_->node();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
@@ -542,7 +544,7 @@ void Viewer::drawEvent() {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  auto& sensors = simulator_->getAgent(defaultAgentId_)->getSensorSuite();
+  auto& sensors = defaultAgent_->getSensorSuite();
   for (auto entry : sensors.getSensors()) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
@@ -650,11 +652,10 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   }
 
   const Mn::Vector2i delta = event.relativePosition();
-  auto& controls = *simulator_->getAgent(defaultAgentId_)->getControls().get();
+  auto& controls = *defaultAgent_->getControls().get();
   controls(*agentBodyNode_, "turnRight", delta.x());
   // apply the transformation to all sensors
-  for (auto p :
-       simulator_->getAgent(defaultAgentId_)->getSensorSuite().getSensors()) {
+  for (auto p : defaultAgent_->getSensorSuite().getSensors()) {
     controls(p.second->object(),  // SceneNode
              "lookDown",          // action name
              delta.y(),           // amount
@@ -674,16 +675,16 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       std::exit(0);
       break;
     case KeyEvent::Key::Left:
-      simulator_->getAgent(defaultAgentId_)->act("turnLeft");
+      defaultAgent_->act("turnLeft");
       break;
     case KeyEvent::Key::Right:
-      simulator_->getAgent(defaultAgentId_)->act("turnRight");
+      defaultAgent_->act("turnRight");
       break;
     case KeyEvent::Key::Up:
-      simulator_->getAgent(defaultAgentId_)->act("lookUp");
+      defaultAgent_->act("lookUp");
       break;
     case KeyEvent::Key::Down:
-      simulator_->getAgent(defaultAgentId_)->act("lookDown");
+      defaultAgent_->act("lookDown");
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
@@ -696,22 +697,22 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
       break;
     case KeyEvent::Key::A:
-      simulator_->getAgent(defaultAgentId_)->act("moveLeft");
+      defaultAgent_->act("moveLeft");
       break;
     case KeyEvent::Key::D:
-      simulator_->getAgent(defaultAgentId_)->act("moveRight");
+      defaultAgent_->act("moveRight");
       break;
     case KeyEvent::Key::S:
-      simulator_->getAgent(defaultAgentId_)->act("moveBackward");
+      defaultAgent_->act("moveBackward");
       break;
     case KeyEvent::Key::W:
-      simulator_->getAgent(defaultAgentId_)->act("moveForward");
+      defaultAgent_->act("moveForward");
       break;
     case KeyEvent::Key::X:
-      simulator_->getAgent(defaultAgentId_)->act("moveDown");
+      defaultAgent_->act("moveDown");
       break;
     case KeyEvent::Key::Z:
-      simulator_->getAgent(defaultAgentId_)->act("moveUp");
+      defaultAgent_->act("moveUp");
       break;
     case KeyEvent::Key::E:
       simulator_->setFrustumCullingEnabled(
