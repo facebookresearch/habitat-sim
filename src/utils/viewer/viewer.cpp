@@ -50,6 +50,9 @@
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
+
+constexpr int defaultAgentId_ = 0;
+
 // for ease of access
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -170,7 +173,6 @@ Key Commands:
 
   bool debugBullet_ = false;
 
-  esp::scene::SceneNode* rootNode_ = nullptr;
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
 
   // Scene or stage file to load
@@ -340,8 +342,7 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_ = &simulator_->getActiveSceneGraph().getDefaultRenderCamera();
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
-  rootNode_ = &simulator_->getActiveSceneGraph().getRootNode();
-  agentBodyNode_ = &simulator_->getAgent(0)->node();
+  agentBodyNode_ = &simulator_->getAgent(defaultAgentId_)->node();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
@@ -476,7 +477,7 @@ void Viewer::drawEvent() {
   }
 
   // TODO: enable other sensors to be displayed
-  simulator_->displayObservation(0, "rgba_camera");
+  simulator_->displayObservation(defaultAgentId_, "rgba_camera");
   uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
 
   if (debugBullet_) {
@@ -539,7 +540,7 @@ void Viewer::drawEvent() {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  auto& sensors = simulator_->getAgent(0)->getSensorSuite();
+  auto& sensors = simulator_->getAgent(defaultAgentId_)->getSensorSuite();
   for (auto entry : sensors.getSensors()) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
@@ -647,10 +648,11 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   }
 
   const Mn::Vector2i delta = event.relativePosition();
-  auto& controls = *simulator_->getAgent(0)->getControls().get();
+  auto& controls = *simulator_->getAgent(defaultAgentId_)->getControls().get();
   controls(*agentBodyNode_, "turnRight", delta.x());
   // apply the transformation to all sensors
-  for (auto p : simulator_->getAgent(0)->getSensorSuite().getSensors()) {
+  for (auto p :
+       simulator_->getAgent(defaultAgentId_)->getSensorSuite().getSensors()) {
     controls(p.second->object(), "lookDown", delta.y(),
              /*applyFilter=*/false);
   }
@@ -668,16 +670,16 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       std::exit(0);
       break;
     case KeyEvent::Key::Left:
-      simulator_->getAgent(0)->act("turnLeft");
+      simulator_->getAgent(defaultAgentId_)->act("turnLeft");
       break;
     case KeyEvent::Key::Right:
-      simulator_->getAgent(0)->act("turnRight");
+      simulator_->getAgent(defaultAgentId_)->act("turnRight");
       break;
     case KeyEvent::Key::Up:
-      simulator_->getAgent(0)->act("lookUp");
+      simulator_->getAgent(defaultAgentId_)->act("lookUp");
       break;
     case KeyEvent::Key::Down:
-      simulator_->getAgent(0)->act("lookDown");
+      simulator_->getAgent(defaultAgentId_)->act("lookDown");
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
@@ -690,22 +692,22 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
       break;
     case KeyEvent::Key::A:
-      simulator_->getAgent(0)->act("moveLeft");
+      simulator_->getAgent(defaultAgentId_)->act("moveLeft");
       break;
     case KeyEvent::Key::D:
-      simulator_->getAgent(0)->act("moveRight");
+      simulator_->getAgent(defaultAgentId_)->act("moveRight");
       break;
     case KeyEvent::Key::S:
-      simulator_->getAgent(0)->act("moveBackward");
+      simulator_->getAgent(defaultAgentId_)->act("moveBackward");
       break;
     case KeyEvent::Key::W:
-      simulator_->getAgent(0)->act("moveForward");
+      simulator_->getAgent(defaultAgentId_)->act("moveForward");
       break;
     case KeyEvent::Key::X:
-      simulator_->getAgent(0)->act("moveDown");
+      simulator_->getAgent(defaultAgentId_)->act("moveDown");
       break;
     case KeyEvent::Key::Z:
-      simulator_->getAgent(0)->act("moveUp");
+      simulator_->getAgent(defaultAgentId_)->act("moveUp");
       break;
     case KeyEvent::Key::E:
       simulator_->setFrustumCullingEnabled(
