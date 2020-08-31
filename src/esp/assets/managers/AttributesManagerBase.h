@@ -500,7 +500,7 @@ class AttributesManager {
       try {
         jsonDoc = io::parseJsonFile(filename);
       } catch (...) {
-        LOG(ERROR) << "Failed to parse " << filename << "as JSON.";
+        LOG(ERROR) << "Failed to parse " << filename << " as JSON.";
         return false;
       }
       return true;
