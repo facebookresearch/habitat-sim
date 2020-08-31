@@ -503,6 +503,16 @@ void Viewer::drawEvent() {
     }
     renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
 
+    // Neither the blend equation, nor the blend function is changed,
+    // so no need to restore the "blending" status before the imgui draw
+    /*
+    // The following is to make imgui work properly:
+    Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
+                                       Mn::GL::Renderer::BlendEquation::Add);
+    Mn::GL::Renderer::setBlendFunction(
+        Mn::GL::Renderer::BlendFunction::SourceAlpha,
+        Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
+    */
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
   }
 
