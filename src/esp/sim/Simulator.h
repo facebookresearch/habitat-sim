@@ -310,7 +310,8 @@ class Simulator {
 
   /**
    * @brief Apply an impulse to an object. See @ref
-   * esp::physics::PhysicsManager::applyImpulse.
+   * esp::physics::PhysicsManager::applyImpulse. Impulse is applied instantly to
+   * modify object velocity (i.e., not integrated through dynamic equations).
    * @param impulse The desired linear impulse to apply.
    * @param relPos The desired location relative to the object origin at which
    * to apply the impulse.
