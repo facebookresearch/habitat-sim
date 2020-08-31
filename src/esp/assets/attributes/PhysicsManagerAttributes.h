@@ -14,6 +14,13 @@ namespace attributes {
 //! attributes for a single physics manager
 class PhysicsManagerAttributes : public AbstractAttributes {
  public:
+  /**
+   * @brief This defines an example JSON descriptor for @ref
+   * PhysicsManagerAttributes. Has values that are different than defaults so
+   * this can be used to test JSON loading.  These values may break the code, so
+   * should not be used.
+   */
+  static const std::string JSONConfigTemplate;
   PhysicsManagerAttributes(const std::string& handle = "");
 
   void setSimulator(const std::string& simulator) {

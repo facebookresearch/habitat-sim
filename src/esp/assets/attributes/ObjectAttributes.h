@@ -21,6 +21,14 @@ namespace attributes {
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
   /**
+   * @brief This defines an example JSON descriptor for @ref
+   * AbstractObjectAttributes Has values that are different than defaults so
+   * this can be used to test JSON loading. These values may break the code, so
+   * should not be used.
+   */
+  static const std::string JSONConfigTemplate;
+
+  /**
    * @brief Constant static map to provide mappings from string tags to @ref
    * AssetType values.  This will be used to map values set in json for mesh
    * type to @ref AssetTypes.  Keys must be lowercase.
@@ -166,6 +174,13 @@ class AbstractObjectAttributes : public AbstractAttributes {
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
+  /**
+   * @brief This defines an example JSON descriptor for @ref ObjectAttributes.
+   * Has values that are different than defaults so this can be used to test
+   * JSON loading. These values may break the code, so should not be used.
+   */
+  static const std::string JSONConfigTemplate;
+
   ObjectAttributes(const std::string& handle = "");
   // center of mass (COM)
   void setCOM(const Magnum::Vector3& com) { setVec3("COM", com); }
@@ -241,6 +256,12 @@ class ObjectAttributes : public AbstractObjectAttributes {
 //! attributes for a single physical scene
 class StageAttributes : public AbstractObjectAttributes {
  public:
+  /**
+   * @brief This defines an example JSON descriptor for @ref StageAttributes
+   * Has values that are different than defaults so this can be used to test
+   * JSON loading. These values may break the code, so should not be used.
+   */
+  static const std::string JSONConfigTemplate;
   StageAttributes(const std::string& handle = "");
 
   void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }

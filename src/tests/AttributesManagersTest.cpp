@@ -13,6 +13,7 @@
 namespace Cr = Corrade;
 
 namespace AttrMgrs = esp::assets::managers;
+namespace Attrs = esp::assets::attributes;
 
 using esp::assets::PrimObjTypes;
 using esp::assets::ResourceManager;
@@ -43,6 +44,33 @@ class AttributesManagersTest : public testing::Test {
     physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
     stageAttributesManager_ = resourceManager_.getStageAttributesManager();
   };
+
+  /**
+   * @brief Test loading from JSON
+   * @tparam T Class of attributes manager
+   * @tparam U Class of attributes
+   * @param mgr the Attributes Manager being tested
+   * @return attributes template built from JSON parsed from string
+   */
+  template <typename T, typename U>
+  std::shared_ptr<U> testBuildAttributesFromJSONString(std::shared_ptr<T> mgr) {
+    // get JSON sample config from static Attributes string
+    const std::string& jsonString = U::JSONConfigTemplate;
+    // create JSON document
+    try {
+      const auto& jsonDoc = esp::io::parseJsonString(jsonString);
+      // create an empty template
+      std::shared_ptr<U> attrTemplate1 =
+          mgr->loadAttributesFromJSONDoc("new default template", jsonDoc);
+
+      return attrTemplate1;
+    } catch (...) {
+      LOG(ERROR) << "testBuildAttributesFromJSONString : Failed to parse "
+                 << jsonString << " as JSON.";
+      return nullptr;
+    }
+
+  }  // testBuildAttributesFromJSONString
 
   /**
    * @brief Test creation, copying and removal of templates for Object, Physics
@@ -332,7 +360,79 @@ class AttributesManagersTest : public testing::Test {
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 };  // class AttributesManagersTest
 
-TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {}
+/**
+ * @brief This test will verify that the attributes' managers' JSON loading
+ * process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {
+  LOG(INFO)
+      << "Starting AttributesManagersTest::AttributesManagers_JSONLoadTest";
+
+  auto physMgrAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::PhysicsAttributesManager,
+                                        Attrs::PhysicsManagerAttributes>(
+          physicsAttributesManager_);
+  // verify exists
+  ASSERT_NE(nullptr, physMgrAttr);
+  // match values set in test JSON
+  // TODO : get these values programmatically?
+  ASSERT_EQ(physMgrAttr->getGravity(), Magnum::Vector3(1, 2, 3));
+  ASSERT_EQ(physMgrAttr->getTimestep(), 1.0);
+  ASSERT_EQ(physMgrAttr->getSimulator(), "bullet_test");
+  ASSERT_EQ(physMgrAttr->getFrictionCoefficient(), 1.4);
+  ASSERT_EQ(physMgrAttr->getRestitutionCoefficient(), 1.1);
+
+  auto stageAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::StageAttributesManager,
+                                        Attrs::StageAttributes>(
+          stageAttributesManager_);
+  // verify exists
+  ASSERT_NE(nullptr, stageAttr);
+  // match values set in test JSON
+  // TODO : get these values programmatically?
+  ASSERT_EQ(stageAttr->getScale(), Magnum::Vector3(2, 3, 4));
+  ASSERT_EQ(stageAttr->getMargin(), 0.9);
+  ASSERT_EQ(stageAttr->getFrictionCoefficient(), 0.321);
+  ASSERT_EQ(stageAttr->getRestitutionCoefficient(), 0.456);
+  ASSERT_EQ(stageAttr->getRequiresLighting(), false);
+  ASSERT_EQ(stageAttr->getUnitsToMeters(), 1.1);
+  ASSERT_EQ(stageAttr->getOrientUp(), Magnum::Vector3(2.1, 0, 0));
+  ASSERT_EQ(stageAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));
+  ASSERT_EQ(stageAttr->getRenderAssetHandle(), "testJSONRenderAsset.glb");
+  ASSERT_EQ(stageAttr->getCollisionAssetHandle(), "testJSONCollisionAsset.glb");
+  // stage-specific attributes
+  ASSERT_EQ(stageAttr->getGravity(), Magnum::Vector3(9, 8, 7));
+  ASSERT_EQ(stageAttr->getOrigin(), Magnum::Vector3(1, 2, 3));
+  ASSERT_EQ(stageAttr->getSemanticAssetHandle(), "testJSONSemanticAsset.glb");
+  ASSERT_EQ(stageAttr->getNavmeshAssetHandle(), "testJSONNavMeshAsset.glb");
+  ASSERT_EQ(stageAttr->getHouseFilename(), "testJSONHouseFileName.glb");
+
+  auto objAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::ObjectAttributesManager,
+                                        Attrs::ObjectAttributes>(
+          objectAttributesManager_);
+  // verify exists
+  ASSERT_NE(nullptr, objAttr);
+  // match values set in test JSON
+  // TODO : get these values programmatically?
+  ASSERT_EQ(objAttr->getScale(), Magnum::Vector3(2, 3, 4));
+  ASSERT_EQ(objAttr->getMargin(), 0.9);
+  ASSERT_EQ(objAttr->getFrictionCoefficient(), 0.321);
+  ASSERT_EQ(objAttr->getRestitutionCoefficient(), 0.456);
+  ASSERT_EQ(objAttr->getRequiresLighting(), false);
+  ASSERT_EQ(objAttr->getUnitsToMeters(), 1.1);
+  ASSERT_EQ(objAttr->getOrientUp(), Magnum::Vector3(2.1, 0, 0));
+  ASSERT_EQ(objAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));
+  ASSERT_EQ(objAttr->getRenderAssetHandle(), "testJSONRenderAsset.glb");
+  ASSERT_EQ(objAttr->getCollisionAssetHandle(), "testJSONCollisionAsset.glb");
+  // object-specific attributes
+  ASSERT_EQ(objAttr->getMass(), 9);
+  ASSERT_EQ(objAttr->getBoundingBoxCollisions(), true);
+  ASSERT_EQ(objAttr->getJoinCollisionMeshes(), true);
+  ASSERT_EQ(objAttr->getInertia(), Magnum::Vector3(1.1, 0.9, 0.3));
+  ASSERT_EQ(objAttr->getCOM(), Magnum::Vector3(0.1, 0.2, 0.3));
+
+}  // AttributesManagersTest::AttributesManagers_JSONLoadTest
 
 /**
  * @brief This test will test creating, modifying, registering and deleting
