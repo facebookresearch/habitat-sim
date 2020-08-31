@@ -149,6 +149,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   sceneID_.push_back(activeSceneID_);
 
   if (config_.createRenderer) {
+    /* When creating a viewer based app, there is no need to create a
+    WindowlessContext since a (windowed) context already exists. */
     if (!context_ && !Magnum::GL::Context::hasCurrent()) {
       context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
     }
