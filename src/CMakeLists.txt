@@ -9,20 +9,20 @@ option(BUILD_WITH_CUDA
 )
 
 if(BUILD_WITH_CUDA)
-    project(esp LANGUAGES C CXX CUDA)
-    find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+  project(esp LANGUAGES C CXX CUDA)
+  find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 else()
-    project(esp LANGUAGES C CXX)
+  project(esp LANGUAGES C CXX)
 endif()
 
 if(MSVC)
-    add_definitions(/DNOMINMAX)
+  add_definitions(/DNOMINMAX)
 endif()
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif()
 
 set(SCENE_DATASETS ${CMAKE_CURRENT_SOURCE_DIR}/../data/scene_datasets)
@@ -52,12 +52,13 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE
-        RelWithDebInfo
-        CACHE STRING
-              "Choose build, options are: None Debug Release RelWithDebInfo MinSizeRel"
-              FORCE
-    )
+  set(CMAKE_BUILD_TYPE
+      RelWithDebInfo
+      CACHE
+        STRING
+        "Choose build, options are: None Debug Release RelWithDebInfo MinSizeRel"
+        FORCE
+  )
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
 # but need cmake_policy(SET CMP0063 NEW) also which seems to not work
@@ -68,10 +69,10 @@ include(cmake/dependencies.cmake)
 
 # build tests
 if(BUILD_TEST)
-    message("Building TESTS")
-    enable_testing()
-    find_package(Corrade REQUIRED TestSuite)
-    find_package(Magnum REQUIRED OpenGLTester)
+  message("Building TESTS")
+  enable_testing()
+  find_package(Corrade REQUIRED TestSuite)
+  find_package(Magnum REQUIRED OpenGLTester)
 endif()
 
 # include source dirs
@@ -81,34 +82,34 @@ include_directories(${PROJECT_SOURCE_DIR})
 add_definitions(-DBT_ENABLE_PROFILE)
 # compiler define for enabling ptex support
 if(BUILD_PTEX_SUPPORT)
-    message("Building with ptex support")
+  message("Building with ptex support")
 endif()
 
 # add subdirectories
 add_subdirectory(esp)
 
 if(BUILD_DATATOOL)
-    message("Building datatool")
-    add_subdirectory(utils/datatool)
+  message("Building datatool")
+  add_subdirectory(utils/datatool)
 endif()
 
 if(BUILD_GUI_VIEWERS)
-    message("Building GUI viewer")
-    add_subdirectory(utils/viewer)
+  message("Building GUI viewer")
+  add_subdirectory(utils/viewer)
 endif()
 
 if(BUILD_TEST)
-    add_subdirectory(tests)
+  add_subdirectory(tests)
 endif()
 
 # pybind bindings
 if(BUILD_PYTHON_BINDINGS)
-    message("Building Python bindings")
-    add_subdirectory(esp/bindings)
+  message("Building Python bindings")
+  add_subdirectory(esp/bindings)
 endif()
 
 # emscripten js bindings
 if(CORRADE_TARGET_EMSCRIPTEN)
-    message("Building Emscripten JS bindings")
-    add_subdirectory(esp/bindings_js)
+  message("Building Emscripten JS bindings")
+  add_subdirectory(esp/bindings_js)
 endif()

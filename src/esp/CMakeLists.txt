@@ -8,13 +8,13 @@
 
 option(BUILD_WARNINGS_AS_ERRORS "Build with warnings as errors" OFF)
 if(BUILD_WARNINGS_AS_ERRORS)
-    if(MSVC)
-        add_compile_options(/WX)
-    else()
-        # TODO(msb) remove -Wall once we enable CORRADE_USE_PEDANTIC
-        add_compile_options(-Wall)
-        add_compile_options(-Werror)
-    endif()
+  if(MSVC)
+    add_compile_options(/WX)
+  else()
+    # TODO(msb) remove -Wall once we enable CORRADE_USE_PEDANTIC
+    add_compile_options(-Wall)
+    add_compile_options(-Werror)
+  endif()
 endif()
 
 add_subdirectory(core)

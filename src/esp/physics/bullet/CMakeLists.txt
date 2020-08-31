@@ -1,13 +1,14 @@
 find_package(MagnumIntegration REQUIRED Bullet)
 
-add_library(bulletphysics STATIC
-            BulletPhysicsManager.cpp
-            BulletPhysicsManager.h
-            BulletBase.h
-            BulletRigidObject.cpp
-            BulletRigidObject.h
-            BulletRigidStage.cpp
-            BulletRigidStage.h
+add_library(
+  bulletphysics STATIC
+  BulletPhysicsManager.cpp
+  BulletPhysicsManager.h
+  BulletBase.h
+  BulletRigidObject.cpp
+  BulletRigidObject.h
+  BulletRigidStage.cpp
+  BulletRigidStage.h
 )
 
 target_link_libraries(bulletphysics PUBLIC assets MagnumIntegration::Bullet)

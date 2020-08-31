@@ -27,32 +27,35 @@ set(gfx_SOURCES
 
 # If ptex support is enabled add relevant source files
 if(BUILD_PTEX_SUPPORT)
-    list(APPEND
-         gfx_SOURCES
-         PTexMeshDrawable.cpp
-         PTexMeshDrawable.h
-         PTexMeshShader.cpp
-         PTexMeshShader.h
-    )
+  list(
+    APPEND
+    gfx_SOURCES
+    PTexMeshDrawable.cpp
+    PTexMeshDrawable.h
+    PTexMeshShader.cpp
+    PTexMeshShader.h
+  )
 endif()
 
-find_package(Magnum
-             REQUIRED
-             AnyImageImporter
-             AnySceneImporter
-             GL
-             MeshTools
-             SceneGraph
-             Shaders
-             Trade
-             AnyImageConverter
+find_package(
+  Magnum
+  REQUIRED
+  AnyImageImporter
+  AnySceneImporter
+  GL
+  MeshTools
+  SceneGraph
+  Shaders
+  Trade
+  AnyImageConverter
 )
 
-find_package(MagnumPlugins
-             REQUIRED
-             StbImageImporter
-             StbImageConverter
-             TinyGltfImporter
+find_package(
+  MagnumPlugins
+  REQUIRED
+  StbImageImporter
+  StbImageConverter
+  TinyGltfImporter
 )
 
 find_package(MagnumIntegration REQUIRED Eigen)
@@ -66,67 +69,67 @@ list(APPEND gfx_SOURCES ${ShaderResources})
 add_library(gfx STATIC ${gfx_SOURCES})
 
 if(BUILD_WITH_CUDA)
-    target_include_directories(
-        gfx PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-                    ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
-    )
+  target_include_directories(
+    gfx PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+                ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
+  )
 
-    target_link_libraries(gfx PUBLIC ${CUDART_LIBRARY})
+  target_link_libraries(gfx PUBLIC ${CUDART_LIBRARY})
 endif()
 
 target_link_libraries(
-    gfx
-    PUBLIC assets
-           core
-           io
-           physics
-           Magnum::AnyImageImporter
-           Magnum::AnySceneImporter
-           Magnum::GL
-           Magnum::Magnum
-           Magnum::MeshTools
-           Magnum::SceneGraph
-           Magnum::Shaders
-           Magnum::Trade
-           MagnumPlugins::StbImageImporter
-           MagnumPlugins::StbImageConverter
-           MagnumPlugins::TinyGltfImporter
-           MagnumIntegration::Eigen
-           Corrade::Utility
-           Magnum::AnyImageConverter
+  gfx
+  PUBLIC assets
+         core
+         io
+         physics
+         Magnum::AnyImageImporter
+         Magnum::AnySceneImporter
+         Magnum::GL
+         Magnum::Magnum
+         Magnum::MeshTools
+         Magnum::SceneGraph
+         Magnum::Shaders
+         Magnum::Trade
+         MagnumPlugins::StbImageImporter
+         MagnumPlugins::StbImageConverter
+         MagnumPlugins::TinyGltfImporter
+         MagnumIntegration::Eigen
+         Corrade::Utility
+         Magnum::AnyImageConverter
 )
 
 # Link windowed application library if needed
 if(BUILD_GUI_VIEWERS)
-    if(CORRADE_TARGET_EMSCRIPTEN)
-        find_package(Magnum REQUIRED EmscriptenApplication)
-        target_link_libraries(gfx PUBLIC Magnum::EmscriptenApplication)
-    else()
-        find_package(Magnum REQUIRED GlfwApplication)
-        target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)
-    endif()
+  if(CORRADE_TARGET_EMSCRIPTEN)
+    find_package(Magnum REQUIRED EmscriptenApplication)
+    target_link_libraries(gfx PUBLIC Magnum::EmscriptenApplication)
+  else()
+    find_package(Magnum REQUIRED GlfwApplication)
+    target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)
+  endif()
 endif()
 
 # Link appropriate windowless library
 if(APPLE)
-    find_package(Magnum REQUIRED WindowlessCglApplication)
-    target_link_libraries(gfx PUBLIC Magnum::WindowlessCglApplication)
+  find_package(Magnum REQUIRED WindowlessCglApplication)
+  target_link_libraries(gfx PUBLIC Magnum::WindowlessCglApplication)
 elseif(WIN32)
-    find_package(Magnum REQUIRED WindowlessWglApplication)
-    target_link_libraries(gfx PUBLIC Magnum::WindowlessWglApplication)
+  find_package(Magnum REQUIRED WindowlessWglApplication)
+  target_link_libraries(gfx PUBLIC Magnum::WindowlessWglApplication)
 elseif(CORRADE_TARGET_EMSCRIPTEN)
+  find_package(Magnum REQUIRED WindowlessEglApplication)
+  target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
+elseif(UNIX)
+  if(BUILD_GUI_VIEWERS)
+    find_package(Magnum REQUIRED WindowlessGlxApplication)
+    target_link_libraries(gfx PUBLIC Magnum::WindowlessGlxApplication)
+  else()
     find_package(Magnum REQUIRED WindowlessEglApplication)
     target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
-elseif(UNIX)
-    if(BUILD_GUI_VIEWERS)
-        find_package(Magnum REQUIRED WindowlessGlxApplication)
-        target_link_libraries(gfx PUBLIC Magnum::WindowlessGlxApplication)
-    else()
-        find_package(Magnum REQUIRED WindowlessEglApplication)
-        target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
-    endif()
+  endif()
 endif()
 
 if(BUILD_TEST)
-    add_subdirectory(test)
+  add_subdirectory(test)
 endif()
