@@ -27,13 +27,8 @@ set(gfx_SOURCES
 
 # If ptex support is enabled add relevant source files
 if(BUILD_PTEX_SUPPORT)
-  list(
-    APPEND
-    gfx_SOURCES
-    PTexMeshDrawable.cpp
-    PTexMeshDrawable.h
-    PTexMeshShader.cpp
-    PTexMeshShader.h
+  list(APPEND gfx_SOURCES PTexMeshDrawable.cpp PTexMeshDrawable.h PTexMeshShader.cpp
+       PTexMeshShader.h
   )
 endif()
 
@@ -50,13 +45,7 @@ find_package(
   AnyImageConverter
 )
 
-find_package(
-  MagnumPlugins
-  REQUIRED
-  StbImageImporter
-  StbImageConverter
-  TinyGltfImporter
-)
+find_package(MagnumPlugins REQUIRED StbImageImporter StbImageConverter TinyGltfImporter)
 
 find_package(MagnumIntegration REQUIRED Eigen)
 

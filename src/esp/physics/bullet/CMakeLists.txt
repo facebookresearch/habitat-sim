@@ -11,7 +11,10 @@ add_library(
   BulletRigidStage.h
 )
 
-target_link_libraries(bulletphysics PUBLIC assets MagnumIntegration::Bullet)
+target_link_libraries(
+  bulletphysics
+  PUBLIC assets MagnumIntegration::Bullet
+)
 
 ## Enable physics profiling
 #add_compile_definitions(BT_ENABLE_PROFILE=0)

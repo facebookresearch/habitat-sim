@@ -35,12 +35,7 @@ set(assets_SOURCES
 )
 
 if(BUILD_PTEX_SUPPORT)
-  list(
-    APPEND
-    assets_SOURCES
-    PTexMeshData.cpp
-    PTexMeshData.h
-  )
+  list(APPEND assets_SOURCES PTexMeshData.cpp PTexMeshData.h)
 endif()
 
 find_package(
@@ -99,9 +94,7 @@ target_link_libraries(
 
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(
-    assets
-    PUBLIC MagnumPlugins::AssimpImporter
-    PRIVATE Assimp::Assimp
+    assets PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
   )
 endif()
 

@@ -28,10 +28,8 @@ foreach(resource ${resources})
   get_filename_component(filename ${resource} NAME)
   get_filename_component(path ${resource} ABSOLUTE)
   add_custom_command(
-    TARGET hsim_bindings
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E create_symlink ${path}
-            ${CMAKE_CURRENT_BINARY_DIR}/${filename}
+    TARGET hsim_bindings POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink ${path}
+                                            ${CMAKE_CURRENT_BINARY_DIR}/${filename}
   )
 endforeach()
 

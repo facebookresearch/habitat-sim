@@ -1,10 +1,4 @@
-add_library(
-  nav STATIC
-  GreedyFollower.cpp
-  GreedyFollower.h
-  PathFinder.cpp
-  PathFinder.h
-)
+add_library(nav STATIC GreedyFollower.cpp GreedyFollower.h PathFinder.cpp PathFinder.h)
 
 target_include_directories(
   nav PRIVATE "${DEPS_DIR}/recastnavigation/Detour/Include"
