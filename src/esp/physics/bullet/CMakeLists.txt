@@ -2,9 +2,9 @@ find_package(MagnumIntegration REQUIRED Bullet)
 
 add_library(
   bulletphysics STATIC
+  BulletBase.h
   BulletPhysicsManager.cpp
   BulletPhysicsManager.h
-  BulletBase.h
   BulletRigidObject.cpp
   BulletRigidObject.h
   BulletRigidStage.cpp
