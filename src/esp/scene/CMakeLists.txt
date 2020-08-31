@@ -1,4 +1,5 @@
-add_library(scene STATIC
+add_library(
+  scene STATIC
   GibsonSemanticScene.cpp
   GibsonSemanticScene.h
   Mp3dSemanticScene.cpp
@@ -21,13 +22,9 @@ add_library(scene STATIC
   SuncgSemanticScene.h
 )
 
-target_link_libraries(scene
-  PUBLIC
-    assets
-    core
-    geo
-    gfx
-    io
+target_link_libraries(
+  scene
+  PUBLIC assets core geo gfx io
 )
 
 if(BUILD_TEST)
