@@ -89,6 +89,9 @@ class Viewer : public Mn::Platform::Application {
   void invertGravity();
   Mn::Vector3 randomDirection();
 
+  //! Print viewer help text to terminal output.
+  void printHelpText();
+
   // single inline for logging agent state msgs, so can be easily modified
   inline void logAgentStateMsg(bool showPos, bool showOrient) {
     std::stringstream strDat("");
@@ -154,20 +157,26 @@ Viewer::Viewer(const Arguments& arguments)
 #else
   args.addArgument("scene")
 #endif
-      .setHelp("scene", "scene file to load")
+      .setHelp("scene", "scene/stage file to load")
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
-      .addBooleanOption("scene-requires-lighting")
-      .setHelp("scene-requires-lighting", "scene requires lighting")
+      .addBooleanOption("stage-requires-lighting")
+      .setHelp("stage-requires-lighting",
+               "Stage asset should be lit with Phong shading.")
       .addBooleanOption("debug-bullet")
-      .setHelp("debug-bullet", "render Bullet physics debug wireframes")
+      .setHelp("debug-bullet", "Render Bullet physics debug wireframes.")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH)
-      .setHelp("physics-config", "physics scene config file")
+      .setHelp("physics-config",
+               "Provide a non-default PhysicsManager config file.")
+      .addBooleanOption("disable-navmesh")
+      .setHelp("disable-navmesh",
+               "Disable the navmesh, disabling agent navigation constraints.")
       .addOption("navmesh-file")
-      .setHelp("navmesh-file", "manual override path to scene navmesh file")
+      .setHelp("navmesh-file", "Manual override path to scene navmesh file.")
       .addBooleanOption("recompute-navmesh")
-      .setHelp("recompute-navmesh", "programmatically generate scene navmesh")
+      .setHelp("recompute-navmesh",
+               "Programmatically re-generate the scene navmesh.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -200,6 +209,19 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig.scene.id = sceneFileName;
   simConfig.enablePhysics = useBullet;
   simConfig.frustumCulling = true;
+  if (args.isSet("stage-requires-lighting")) {
+    Cr::Utility::Debug() << "Stage using DEFAULT_LIGHTING_KEY";
+    simConfig.sceneLightSetup =
+        esp::assets::ResourceManager::DEFAULT_LIGHTING_KEY;
+  }
+
+  // setup the PhysicsManager config file
+  std::string physicsConfig = Cr::Utility::Directory::join(
+      Corrade::Utility::Directory::current(), args.value("physics-config"));
+  if (Cr::Utility::Directory::exists(physicsConfig)) {
+    Cr::Utility::Debug() << "Using PhysicsManager config: " << physicsConfig;
+    simConfig.physicsConfigFile = physicsConfig;
+  }
 
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
@@ -207,6 +229,23 @@ Viewer::Viewer(const Arguments& arguments)
   assetAttrManager_ = simulator_->getAssetAttributesManager();
   stageAttrManager_ = simulator_->getStageAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();
+
+  // NavMesh customization options
+  if (args.isSet("disable-navmesh")) {
+    if (simulator_->getPathFinder()->isLoaded()) {
+      simulator_->setPathFinder(esp::nav::PathFinder::create());
+    }
+  } else if (args.isSet("recompute-navmesh")) {
+    esp::nav::NavMeshSettings navMeshSettings;
+    simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
+                                 navMeshSettings, true);
+  } else if (!args.value("navmesh-file").empty()) {
+    std::string navmeshFile = Cr::Utility::Directory::join(
+        Corrade::Utility::Directory::current(), args.value("navmesh-file"));
+    if (Cr::Utility::Directory::exists(navmeshFile)) {
+      simulator_->getPathFinder()->loadNavMesh(navmeshFile);
+    }
+  }
 
   // configure and initialize default Agent and Sensor
   auto agentConfig = esp::agent::AgentConfiguration();
@@ -262,6 +301,7 @@ Viewer::Viewer(const Arguments& arguments)
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
+  printHelpText();
 }  // end Viewer::Viewer
 
 void Viewer::addObject(int ID) {
@@ -509,42 +549,45 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   }  // drawable selection
   // add primitive w/ right click
   else if (event.button() == MouseEvent::Button::Right) {
-    auto viewportPoint = event.position();
-    auto ray = renderCamera_->unproject(viewportPoint);
-    Corrade::Utility::Debug()
-        << "Ray: (org=" << ray.origin << ", dir=" << ray.direction << ")";
+    if (simulator_->getPhysicsSimulationLibrary() !=
+        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      auto viewportPoint = event.position();
+      auto ray = renderCamera_->unproject(viewportPoint);
+      Corrade::Utility::Debug()
+          << "Ray: (org=" << ray.origin << ", dir=" << ray.direction << ")";
 
-    esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
+      esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
-    for (auto& hit : raycastResults.hits) {
-      Corrade::Utility::Debug() << "Hit: ";
-      Corrade::Utility::Debug() << "  distance: " << hit.rayDistance;
-      Corrade::Utility::Debug() << "  object: " << hit.objectId;
-      Corrade::Utility::Debug() << "  point: " << hit.point;
-      Corrade::Utility::Debug() << "  normal: " << hit.normal;
+      for (auto& hit : raycastResults.hits) {
+        Corrade::Utility::Debug() << "Hit: ";
+        Corrade::Utility::Debug() << "  distance: " << hit.rayDistance;
+        Corrade::Utility::Debug() << "  object: " << hit.objectId;
+        Corrade::Utility::Debug() << "  point: " << hit.point;
+        Corrade::Utility::Debug() << "  normal: " << hit.normal;
+      }
+
+      addPrimitiveObject();
+      auto existingObjectIDs = simulator_->getExistingObjectIDs();
+      if (raycastResults.hasHits()) {
+        // use the bounding box to create a safety margin for adding the object
+        float boundingBuffer =
+            simulator_->getObjectSceneNode(existingObjectIDs.back())
+                    ->computeCumulativeBB()
+                    .size()
+                    .max() /
+                2.0 +
+            0.04;
+        simulator_->setTranslation(
+            raycastResults.hits[0].point +
+                raycastResults.hits[0].normal * boundingBuffer,
+            existingObjectIDs.back());
+      } else {
+        simulator_->setTranslation(ray.origin + ray.direction,
+                                   existingObjectIDs.back());
+      }
+      simulator_->setRotation(esp::core::randomRotation(),
+                              existingObjectIDs.back());
     }
-
-    addPrimitiveObject();
-    auto existingObjectIDs = simulator_->getExistingObjectIDs();
-    if (raycastResults.hasHits()) {
-      // use the bounding box to create a safety margin for adding the object
-      float boundingBuffer =
-          simulator_->getObjectSceneNode(existingObjectIDs.back())
-                  ->computeCumulativeBB()
-                  .size()
-                  .max() /
-              2.0 +
-          0.04;
-      simulator_->setTranslation(
-          raycastResults.hits[0].point +
-              raycastResults.hits[0].normal * boundingBuffer,
-          existingObjectIDs.back());
-    } else {
-      simulator_->setTranslation(ray.origin + ray.direction,
-                                 existingObjectIDs.back());
-    }
-    simulator_->setRotation(esp::core::randomRotation(),
-                            existingObjectIDs.back());
   }  // end add primitive w/ right click
 
   event.setAccepted();
@@ -680,10 +723,70 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         simulator_->setObjectBBDraw(drawObjectBBs, id);
       }
     } break;
+    case KeyEvent::Key::H:
+      printHelpText();
+      break;
     default:
       break;
   }
   redraw();
+}
+
+void Viewer::printHelpText() {
+  Cr::Utility::Debug() << "==================================================";
+  Cr::Utility::Debug() << "Welcome to the Habitat-sim C++ Viewer application!";
+  Cr::Utility::Debug() << "==================================================";
+  Cr::Utility::Debug() << " Mouse Functions:";
+  Cr::Utility::Debug() << " ----------------";
+  Cr::Utility::Debug() << "   LEFT: ";
+  Cr::Utility::Debug()
+      << "     Click and drag to rotate the agent and look up/down.";
+  Cr::Utility::Debug() << "   RIGHT: ";
+  Cr::Utility::Debug()
+      << "     (With 'enable-physics') Click a surface to instance a random "
+         "primitive object at that location.";
+  Cr::Utility::Debug() << "   SHIFT-RIGHT: ";
+  Cr::Utility::Debug() << "     Click a mesh to highlight it.";
+  Cr::Utility::Debug() << "";
+  Cr::Utility::Debug() << " Key Commands:";
+  Cr::Utility::Debug() << " -------------";
+  Cr::Utility::Debug() << "   esc: Exit the application.";
+  Cr::Utility::Debug() << "   'h': Display this help message.";
+  Cr::Utility::Debug() << "";
+  Cr::Utility::Debug() << "   Agent Controls:";
+  Cr::Utility::Debug()
+      << "   'wasd': Move the agent's body forward/backward, left/right.";
+  Cr::Utility::Debug() << "   'zx': Move the agent's body up/down.";
+  Cr::Utility::Debug() << "   arrow keys: Turn the agent's body left/right and "
+                          "camera look up/down.";
+  Cr::Utility::Debug()
+      << "   '9': Randomly place agent on NavMesh (if loaded).";
+  Cr::Utility::Debug()
+      << "   'q': Query the agent's state and print to terminal.";
+  Cr::Utility::Debug() << "";
+  Cr::Utility::Debug() << "   Utilities:";
+  Cr::Utility::Debug() << "   'e' enable/disable frustum culling.";
+  Cr::Utility::Debug() << "   'c' show/hide FPS overlay.";
+  Cr::Utility::Debug() << "   'n' show/hide NavMesh wireframe.";
+  Cr::Utility::Debug() << "   'i' Save a screenshot to \"test_image_save.png\"";
+  Cr::Utility::Debug() << "";
+  Cr::Utility::Debug() << "   Object Interactions:";
+  Cr::Utility::Debug()
+      << "   '8': Instance a random primitive object in front of the agent.";
+  Cr::Utility::Debug()
+      << "   'o': Instance a random file-based object in front of the agent.";
+  Cr::Utility::Debug() << "   'u': Remove most recently instanced object.";
+  Cr::Utility::Debug() << "   'b': Toggle display of object bounding boxes.";
+  Cr::Utility::Debug()
+      << "   'p': (physics) Poke the most recently added object.";
+  Cr::Utility::Debug()
+      << "   'f': (physics) Push the most recently added object.";
+  Cr::Utility::Debug()
+      << "   't': (physics) Torque the most recently added object.";
+  Cr::Utility::Debug() << "   'v': (physics) Invert gravity.";
+  Cr::Utility::Debug()
+      << "   'k': Kinematically wiggle the most recently added object.";
+  Cr::Utility::Debug() << "==================================================";
 }
 
 }  // namespace
