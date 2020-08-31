@@ -655,8 +655,10 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   // apply the transformation to all sensors
   for (auto p :
        simulator_->getAgent(defaultAgentId_)->getSensorSuite().getSensors()) {
-    controls(p.second->object(), "lookDown", delta.y(),
-             /*applyFilter=*/false);
+    controls(p.second->object(),  // SceneNode
+             "lookDown",          // action name
+             delta.y(),           // amount
+             false);              // applyFilter
   }
 
   redraw();
