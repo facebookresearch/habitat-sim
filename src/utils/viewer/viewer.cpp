@@ -594,28 +594,18 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     createPickedObjectVisualizer(pickedObject);
     return;
   }  // drawable selection
-  // add primitive w/ right click
+
+  // add primitive w/ right click if a collision object is hit by a raycast
   else if (event.button() == MouseEvent::Button::Right) {
     if (simulator_->getPhysicsSimulationLibrary() !=
         esp::physics::PhysicsManager::PhysicsSimulationLibrary::NONE) {
       auto viewportPoint = event.position();
       auto ray = renderCamera_->unproject(viewportPoint);
-      Corrade::Utility::Debug()
-          << "Ray: (org=" << ray.origin << ", dir=" << ray.direction << ")";
-
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
-      for (auto& hit : raycastResults.hits) {
-        Corrade::Utility::Debug() << "Hit: ";
-        Corrade::Utility::Debug() << "  distance: " << hit.rayDistance;
-        Corrade::Utility::Debug() << "  object: " << hit.objectId;
-        Corrade::Utility::Debug() << "  point: " << hit.point;
-        Corrade::Utility::Debug() << "  normal: " << hit.normal;
-      }
-
-      addPrimitiveObject();
-      auto existingObjectIDs = simulator_->getExistingObjectIDs();
       if (raycastResults.hasHits()) {
+        addPrimitiveObject();
+        auto existingObjectIDs = simulator_->getExistingObjectIDs();
         // use the bounding box to create a safety margin for adding the object
         float boundingBuffer =
             simulator_->getObjectSceneNode(existingObjectIDs.back())
@@ -628,12 +618,10 @@ void Viewer::mousePressEvent(MouseEvent& event) {
             raycastResults.hits[0].point +
                 raycastResults.hits[0].normal * boundingBuffer,
             existingObjectIDs.back());
-      } else {
-        simulator_->setTranslation(ray.origin + ray.direction,
-                                   existingObjectIDs.back());
+
+        simulator_->setRotation(esp::core::randomRotation(),
+                                existingObjectIDs.back());
       }
-      simulator_->setRotation(esp::core::randomRotation(),
-                              existingObjectIDs.back());
     }
   }  // end add primitive w/ right click
 
