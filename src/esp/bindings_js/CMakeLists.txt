@@ -15,13 +15,14 @@ target_link_libraries(
 set_target_properties(hsim_bindings PROPERTIES LINK_FLAGS "--bind")
 
 # copy JS/HTML/CSS resources for WebGL build
-set(resources
-    ${SCENE_DATASETS}/habitat-test-scenes/skokloster-castle.glb
-    ${SCENE_DATASETS}/habitat-test-scenes/skokloster-castle.navmesh
-    ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.glb
-    ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.navmesh
-    ${MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS}
-    ${MAGNUM_WEBAPPLICATION_CSS}
+set(
+  resources
+  ${SCENE_DATASETS}/habitat-test-scenes/skokloster-castle.glb
+  ${SCENE_DATASETS}/habitat-test-scenes/skokloster-castle.navmesh
+  ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.glb
+  ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.navmesh
+  ${MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS}
+  ${MAGNUM_WEBAPPLICATION_CSS}
 )
 
 foreach(resource ${resources})
@@ -44,23 +45,24 @@ add_custom_command(
   COMMENT "Trying npm install"
 )
 
-set(bundle_files
-    bindings.html
-    webvr.html
-    viewer.html
-    bindings.css
-    viewer.css
-    webpack.config.js
-    index.js
-    modules/object_sensor.js
-    modules/navigate.js
-    modules/simenv_embind.js
-    modules/topdown.js
-    modules/web_demo.js
-    modules/viewer_demo.js
-    modules/defaults.js
-    modules/vr_demo.js
-    modules/utils.js
+set(
+  bundle_files
+  bindings.html
+  webvr.html
+  viewer.html
+  bindings.css
+  viewer.css
+  webpack.config.js
+  index.js
+  modules/object_sensor.js
+  modules/navigate.js
+  modules/simenv_embind.js
+  modules/topdown.js
+  modules/web_demo.js
+  modules/viewer_demo.js
+  modules/defaults.js
+  modules/vr_demo.js
+  modules/utils.js
 )
 
 add_custom_command(

@@ -48,11 +48,12 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE
-      RelWithDebInfo
-      CACHE STRING
-            "Choose build, options are: None Debug Release RelWithDebInfo MinSizeRel"
-            FORCE
+  set(
+    CMAKE_BUILD_TYPE
+    RelWithDebInfo
+    CACHE STRING
+          "Choose build, options are: None Debug Release RelWithDebInfo MinSizeRel"
+          FORCE
   )
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET

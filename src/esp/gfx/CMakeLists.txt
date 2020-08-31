@@ -1,28 +1,29 @@
-set(gfx_SOURCES
-    DepthUnprojection.cpp
-    DepthUnprojection.h
-    Drawable.cpp
-    Drawable.h
-    DrawableGroup.cpp
-    DrawableGroup.h
-    GenericDrawable.cpp
-    GenericDrawable.h
-    MeshVisualizerDrawable.cpp
-    MeshVisualizerDrawable.h
-    LightSetup.cpp
-    LightSetup.h
-    MaterialData.h
-    magnum.h
-    RenderCamera.cpp
-    RenderCamera.h
-    Renderer.cpp
-    Renderer.h
-    WindowlessContext.cpp
-    WindowlessContext.h
-    RenderTarget.cpp
-    RenderTarget.h
-    ShaderManager.cpp
-    ShaderManager.h
+set(
+  gfx_SOURCES
+  DepthUnprojection.cpp
+  DepthUnprojection.h
+  Drawable.cpp
+  Drawable.h
+  DrawableGroup.cpp
+  DrawableGroup.h
+  GenericDrawable.cpp
+  GenericDrawable.h
+  MeshVisualizerDrawable.cpp
+  MeshVisualizerDrawable.h
+  LightSetup.cpp
+  LightSetup.h
+  MaterialData.h
+  magnum.h
+  RenderCamera.cpp
+  RenderCamera.h
+  Renderer.cpp
+  Renderer.h
+  WindowlessContext.cpp
+  WindowlessContext.h
+  RenderTarget.cpp
+  RenderTarget.h
+  ShaderManager.cpp
+  ShaderManager.h
 )
 
 # If ptex support is enabled add relevant source files
