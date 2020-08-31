@@ -136,8 +136,6 @@ Key Commands:
   //! Print viewer help text to terminal output.
   void printHelpText() { Mn::Debug{} << helpText; };
 
-  void printHelpText2();
-
   // single inline for logging agent state msgs, so can be easily modified
   inline void logAgentStateMsg(bool showPos, bool showOrient) {
     std::stringstream strDat("");
