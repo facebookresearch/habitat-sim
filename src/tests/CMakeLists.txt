@@ -1,9 +1,5 @@
-find_package(
-  Magnum REQUIRED DebugTools AnyImageConverter
-)
-find_package(
-  MagnumPlugins REQUIRED StbImageImporter
-)
+find_package(Magnum REQUIRED DebugTools AnyImageConverter)
+find_package(MagnumPlugins REQUIRED StbImageImporter)
 
 macro(TEST TEST_NAME)
   add_executable(${TEST_NAME} "${TEST_NAME}.cpp")

@@ -1,6 +1,11 @@
 add_library(
   geo STATIC
-  CoordinateFrame.cpp CoordinateFrame.h geo.cpp geo.h OBB.cpp OBB.h
+  CoordinateFrame.cpp
+  CoordinateFrame.h
+  geo.cpp
+  geo.h
+  OBB.cpp
+  OBB.h
 )
 
 target_link_libraries(

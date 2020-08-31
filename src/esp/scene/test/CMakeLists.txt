@@ -13,9 +13,7 @@ target_link_libraries(
 
 gtest_discover_tests(GibsonSceneTest)
 
-find_package(
-  Corrade REQUIRED Utility TestSuite
-)
+find_package(Corrade REQUIRED Utility TestSuite)
 corrade_add_test(
   ReplicaSceneTest
   ReplicaSceneTest.cpp

@@ -1,6 +1,4 @@
-find_package(
-  MagnumIntegration REQUIRED Bullet
-)
+find_package(MagnumIntegration REQUIRED Bullet)
 
 add_library(
   bulletphysics STATIC

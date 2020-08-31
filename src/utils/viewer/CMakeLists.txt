@@ -1,10 +1,6 @@
-find_package(
-  Magnum REQUIRED DebugTools
-)
+find_package(Magnum REQUIRED DebugTools)
 
-find_package(
-  MagnumIntegration REQUIRED ImGui
-)
+find_package(MagnumIntegration REQUIRED ImGui)
 
 set(viewer_SOURCES viewer.cpp ObjectPickingHelper.cpp ObjectPickingHelper.h)
 
@@ -13,7 +9,12 @@ add_executable(viewer ${viewer_SOURCES})
 
 target_link_libraries(
   viewer
-  PRIVATE assets gfx nav scene Magnum::DebugTools MagnumIntegration::ImGui
+  PRIVATE assets
+          gfx
+          nav
+          scene
+          Magnum::DebugTools
+          MagnumIntegration::ImGui
 )
 
 # copy JS/HTML/CSS scaffolding for WebGL build

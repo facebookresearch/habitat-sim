@@ -12,14 +12,10 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(WITH_INTERCONNECT OFF CACHE BOOL "" FORCE)
   add_subdirectory("${DEPS_DIR}/corrade")
 endif()
-find_package(
-  Corrade REQUIRED Utility
-)
+find_package(Corrade REQUIRED Utility)
 
 # OpenMP
-find_package(
-  OpenMP
-)
+find_package(OpenMP)
 # We don't find_package(OpenGL REQUIRED) here, but let Magnum do that instead
 # as it sets up various things related to GLVND.
 

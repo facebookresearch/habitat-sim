@@ -1,6 +1,7 @@
 # flake8: noqa
 with section("format"):
     line_width = 88  # Give a little more length
+    max_pargs_hwrap = 5
     max_subgroups_hwrap = 3  # So set commands dont get wrapped
     min_prefix_chars = 2
     dangle_parens = True  # Dangle Parens to make diffs cleaner
