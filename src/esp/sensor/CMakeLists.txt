@@ -4,7 +4,10 @@ if(BUILD_WITH_CUDA)
   list(APPEND sensor_SOURCES RedwoodNoiseModel.cpp RedwoodNoiseModel.h)
 endif()
 
-add_library(sensor STATIC ${sensor_SOURCES})
+add_library(
+  sensor STATIC
+  ${sensor_SOURCES}
+)
 
 target_link_libraries(
   sensor

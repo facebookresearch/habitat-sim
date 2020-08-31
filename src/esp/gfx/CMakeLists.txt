@@ -55,7 +55,10 @@ find_package(Corrade REQUIRED Utility)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
 
-add_library(gfx STATIC ${gfx_SOURCES})
+add_library(
+  gfx STATIC
+  ${gfx_SOURCES}
+)
 
 if(BUILD_WITH_CUDA)
   target_include_directories(

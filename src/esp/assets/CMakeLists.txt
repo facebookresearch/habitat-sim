@@ -66,7 +66,10 @@ if(BUILD_ASSIMP_SUPPORT)
   find_package(MagnumPlugins REQUIRED AssimpImporter)
 endif()
 
-add_library(assets STATIC ${assets_SOURCES})
+add_library(
+  assets STATIC
+  ${assets_SOURCES}
+)
 
 target_link_libraries(
   assets
