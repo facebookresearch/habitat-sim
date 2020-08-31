@@ -31,37 +31,38 @@ set(assets_SOURCES
     managers/StageAttributesManager.h
     managers/StageAttributesManager.cpp
     ResourceManager.cpp
-    ResourceManager.h)
+    ResourceManager.h
+)
 
 if(BUILD_PTEX_SUPPORT)
-    list(
-        APPEND
-        assets_SOURCES
-        PTexMeshData.cpp
-        PTexMeshData.h)
+    list(APPEND
+         assets_SOURCES
+         PTexMeshData.cpp
+         PTexMeshData.h
+    )
 endif()
 
-find_package(
-    Magnum
-    REQUIRED
-    AnyImageImporter
-    AnySceneImporter
-    GL
-    MeshTools
-    SceneGraph
-    Shaders
-    Trade
-    Primitives)
+find_package(Magnum
+             REQUIRED
+             AnyImageImporter
+             AnySceneImporter
+             GL
+             MeshTools
+             SceneGraph
+             Shaders
+             Trade
+             Primitives
+)
 
-find_package(
-    MagnumPlugins
-    REQUIRED
-    BasisImporter
-    PrimitiveImporter
-    StanfordImporter
-    StbImageImporter
-    StbImageConverter
-    TinyGltfImporter)
+find_package(MagnumPlugins
+             REQUIRED
+             BasisImporter
+             PrimitiveImporter
+             StanfordImporter
+             StbImageImporter
+             StbImageConverter
+             TinyGltfImporter
+)
 
 if(BUILD_ASSIMP_SUPPORT)
     find_package(MagnumPlugins REQUIRED AssimpImporter)
@@ -90,13 +91,15 @@ target_link_libraries(
            MagnumPlugins::StbImageImporter
            MagnumPlugins::StbImageConverter
            MagnumPlugins::TinyGltfImporter
-    PRIVATE geo io)
+    PRIVATE geo io
+)
 
 if(BUILD_ASSIMP_SUPPORT)
     target_link_libraries(
         assets
         PUBLIC MagnumPlugins::AssimpImporter
-        PRIVATE Assimp::Assimp)
+        PRIVATE Assimp::Assimp
+    )
 endif()
 
 if(OpenMP_CXX_FOUND)

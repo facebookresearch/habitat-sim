@@ -9,7 +9,8 @@ target_link_libraries(
            gfx
            nav
            sensor
-           sim)
+           sim
+)
 
 set_target_properties(hsim_bindings PROPERTIES LINK_FLAGS "--bind")
 
@@ -20,7 +21,8 @@ set(resources
     ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.glb
     ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.navmesh
     ${MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS}
-    ${MAGNUM_WEBAPPLICATION_CSS})
+    ${MAGNUM_WEBAPPLICATION_CSS}
+)
 
 foreach(resource ${resources})
     get_filename_component(filename ${resource} NAME)
@@ -29,7 +31,8 @@ foreach(resource ${resources})
         TARGET hsim_bindings
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E create_symlink ${path}
-                ${CMAKE_CURRENT_BINARY_DIR}/${filename})
+                ${CMAKE_CURRENT_BINARY_DIR}/${filename}
+    )
 endforeach()
 
 set(package_files ${PROJECT_SOURCE_DIR}/../package.json)
@@ -40,7 +43,8 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/empty.stamp
     DEPENDS ${package_files}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Trying npm install")
+    COMMENT "Trying npm install"
+)
 
 set(bundle_files
     bindings.html
@@ -58,7 +62,8 @@ set(bundle_files
     modules/viewer_demo.js
     modules/defaults.js
     modules/vr_demo.js
-    modules/utils.js)
+    modules/utils.js
+)
 
 add_custom_command(
     OUTPUT bundle.js
@@ -66,7 +71,8 @@ add_custom_command(
     COMMAND npm run build -- --build_dir ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS hsim_bindings ${bundle_files} empty.stamp
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Building JS files now")
+    COMMENT "Building JS files now"
+)
 
 add_custom_target(hsim_bundle ALL DEPENDS bundle.js)
 

@@ -8,4 +8,5 @@ corrade_add_test(
     Magnum::MeshTools
     Magnum::OpenGLTester
     Magnum::Trade
-    Magnum::Primitives)
+    Magnum::Primitives
+)

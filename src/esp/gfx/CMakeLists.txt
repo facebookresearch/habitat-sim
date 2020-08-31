@@ -22,37 +22,38 @@ set(gfx_SOURCES
     RenderTarget.cpp
     RenderTarget.h
     ShaderManager.cpp
-    ShaderManager.h)
+    ShaderManager.h
+)
 
 # If ptex support is enabled add relevant source files
 if(BUILD_PTEX_SUPPORT)
-    list(
-        APPEND
-        gfx_SOURCES
-        PTexMeshDrawable.cpp
-        PTexMeshDrawable.h
-        PTexMeshShader.cpp
-        PTexMeshShader.h)
+    list(APPEND
+         gfx_SOURCES
+         PTexMeshDrawable.cpp
+         PTexMeshDrawable.h
+         PTexMeshShader.cpp
+         PTexMeshShader.h
+    )
 endif()
 
-find_package(
-    Magnum
-    REQUIRED
-    AnyImageImporter
-    AnySceneImporter
-    GL
-    MeshTools
-    SceneGraph
-    Shaders
-    Trade
-    AnyImageConverter)
+find_package(Magnum
+             REQUIRED
+             AnyImageImporter
+             AnySceneImporter
+             GL
+             MeshTools
+             SceneGraph
+             Shaders
+             Trade
+             AnyImageConverter
+)
 
-find_package(
-    MagnumPlugins
-    REQUIRED
-    StbImageImporter
-    StbImageConverter
-    TinyGltfImporter)
+find_package(MagnumPlugins
+             REQUIRED
+             StbImageImporter
+             StbImageConverter
+             TinyGltfImporter
+)
 
 find_package(MagnumIntegration REQUIRED Eigen)
 
@@ -67,7 +68,8 @@ add_library(gfx STATIC ${gfx_SOURCES})
 if(BUILD_WITH_CUDA)
     target_include_directories(
         gfx PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-                    ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers)
+                    ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
+    )
 
     target_link_libraries(gfx PUBLIC ${CUDART_LIBRARY})
 endif()
@@ -91,7 +93,8 @@ target_link_libraries(
            MagnumPlugins::TinyGltfImporter
            MagnumIntegration::Eigen
            Corrade::Utility
-           Magnum::AnyImageConverter)
+           Magnum::AnyImageConverter
+)
 
 # Link windowed application library if needed
 if(BUILD_GUI_VIEWERS)

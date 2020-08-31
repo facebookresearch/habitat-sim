@@ -12,7 +12,8 @@ pybind11_add_module(
     SceneBindings.cpp
     SensorBindings.cpp
     ShortestPathBindings.cpp
-    SimBindings.cpp)
+    SimBindings.cpp
+)
 target_link_libraries(
     habitat_sim_bindings
     PRIVATE MagnumBindings::Python
@@ -24,7 +25,8 @@ target_link_libraries(
            nav
            sensor
            physics
-           sim)
+           sim
+)
 
 # target_include_directories(environment
 #   PUBLIC

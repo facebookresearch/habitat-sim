@@ -14,11 +14,13 @@ target_link_libraries(
             nav
             scene
             Magnum::DebugTools
-            MagnumIntegration::ImGui)
+            MagnumIntegration::ImGui
+)
 
 # copy JS/HTML/CSS scaffolding for WebGL build
 if(CORRADE_TARGET_EMSCRIPTEN)
     install(FILES viewer.html ${MAGNUM_EMSCRIPTENAPPLICATION_JS}
                   ${MAGNUM_WEBAPPLICATION_CSS}
-            DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+            DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+    )
 endif()

@@ -1,6 +1,7 @@
 if(NOT BUILD_GUI_VIEWERS
    AND CORRADE_TARGET_UNIX
-   AND NOT CORRADE_TARGET_APPLE)
+   AND NOT CORRADE_TARGET_APPLE
+)
     set(ESP_BUILD_EGL_SUPPORT ON)
 endif()
 
@@ -25,21 +26,22 @@ if(BUILD_WITH_BULLET)
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
-               ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+               ${CMAKE_CURRENT_BINARY_DIR}/configure.h
+)
 
 find_package(Corrade REQUIRED Utility)
 
-add_library(
-    core STATIC
-    Buffer.cpp
-    Buffer.h
-    Configuration.h
-    esp.cpp
-    esp.h
-    logging.h
-    random.h
-    spimpl.h
-    Utility.h)
+add_library(core STATIC
+            Buffer.cpp
+            Buffer.h
+            Configuration.h
+            esp.cpp
+            esp.h
+            logging.h
+            random.h
+            spimpl.h
+            Utility.h
+)
 
 target_link_libraries(core PUBLIC Corrade::Utility Magnum::Magnum glog)
 

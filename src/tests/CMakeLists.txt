@@ -1,8 +1,8 @@
-find_package(
-    Magnum
-    REQUIRED
-    DebugTools
-    AnyImageConverter)
+find_package(Magnum
+             REQUIRED
+             DebugTools
+             AnyImageConverter
+)
 find_package(MagnumPlugins REQUIRED StbImageImporter)
 
 macro(TEST TEST_NAME)
@@ -16,11 +16,13 @@ macro(TEST TEST_NAME)
 endmacro(TEST)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
-               ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+               ${CMAKE_CURRENT_BINARY_DIR}/configure.h
+)
 
 test(AttributesManagersTest assets)
-target_include_directories(AttributesManagersTest
-                           PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(
+    AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 test(CoreTest io assets)
 
@@ -40,34 +42,39 @@ corrade_add_test(
     sim
     Magnum::DebugTools
     Magnum::AnyImageConverter
-    MagnumPlugins::StbImageImporter)
+    MagnumPlugins::StbImageImporter
+)
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
     GeoTest
     GeoTest.cpp
     LIBRARIES
-    geo)
+    geo
+)
 
 corrade_add_test(
     DrawableTest
     DrawableTest.cpp
     LIBRARIES
-    gfx)
+    gfx
+)
 target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(PhysicsTest physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(ResourceManagerTest assets)
-target_include_directories(ResourceManagerTest
-                           PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(
+    ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 corrade_add_test(
     CullingTest
     CullingTest.cpp
     LIBRARIES
-    gfx)
+    gfx
+)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(SuncgTest scene)
@@ -78,7 +85,9 @@ target_include_directories(SceneGraphTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Some tests are LOUD, we don't want to include their full log (but OTOH we
 # want to have full log from others, so this is a compromise)
-set_tests_properties(NavTest Mp3dTest SuncgTest PROPERTIES ENVIRONMENT
-                                                           GLOG_minloglevel=1)
-set_tests_properties(SimTest PROPERTIES ENVIRONMENT
-                                        "GLOG_minloglevel=1;MAGNUM_LOG=QUIET")
+set_tests_properties(
+    NavTest Mp3dTest SuncgTest PROPERTIES ENVIRONMENT GLOG_minloglevel=1
+)
+set_tests_properties(
+    SimTest PROPERTIES ENVIRONMENT "GLOG_minloglevel=1;MAGNUM_LOG=QUIET"
+)
