@@ -143,6 +143,57 @@ int AssetAttributesManager::registerAttributesTemplateFinalize(
   return primTemplateID;
 }  // AssetAttributesManager::registerAttributesTemplateFinalize
 
+AbstractPrimitiveAttributes::ptr
+AssetAttributesManager::loadAttributesFromJSONDoc(
+    const std::string& filename,
+    const io::JsonDocument& jsonDoc) {
+  // find type of attributes - file name should contain handle
+  auto locSt = filename.find_last_of("/");
+  auto locEnd = filename.find_last_of(".");
+  // if not legal primitive asset attributes file name, have message and return
+  // default sphere attributes.
+  bool error = false;
+  std::string errorMsg = "";
+  std::string primClassName = "uvSphereSolid";
+  if ((locSt == std::string::npos) || (locEnd == std::string::npos)) {
+    errorMsg.assign("Unparseable JSON file name : " + filename);
+    error = true;
+  } else {
+    // this is the handle of the attributes that was saved
+    std::string primAttrHandle = filename.substr(locSt, locEnd);
+    auto locEndClassType = primAttrHandle.find_first_of("_");
+    // split on underscore - first part is string key for magnum class
+    primClassName = primAttrHandle.substr(0, locEndClassType);
+    // currently just return default attributes for
+    if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
+      errorMsg.assign("Unknown primitive class type : " + primClassName);
+      error = true;
+    }
+  }
+  if (error) {
+    LOG(ERROR) << "AssetAttributesManager::loadAttributesFromJSONDoc : "
+               << errorMsg
+               << " so returning default attributes for solid uvSphere.";
+    return this->getTemplateCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
+        defaultPrimAttributeHandles_.at("uvSphereSolid"));
+  }
+  // create attributes for this
+  auto primAssetAttributes = buildPrimAttributes(primClassName);
+  if (nullptr == primAssetAttributes) {
+    LOG(ERROR)
+        << "AssetAttributesManager::loadAttributesFromJSONDoc : unable to "
+           "create default primitive asset attributes from primClassName "
+        << primClassName
+        << " so returning default attributes for solid uvSphere.";
+    return this->getTemplateCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
+        defaultPrimAttributeHandles_.at("uvSphereSolid"));
+  }
+
+  // TODO support loading values from JSON docs
+
+  return primAssetAttributes;
+}  // AssetAttributesManager::loadAttributesFromJSONDoc
+
 }  // namespace managers
 }  // namespace assets
 }  // namespace esp

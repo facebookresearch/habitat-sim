@@ -18,12 +18,12 @@ configure_file(
 test(AttributesManagersTest assets)
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(CoreTest io assets)
+TEST(CoreTest io)
 
 test(NavTest nav assets)
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(IOTest io)
+TEST(IOTest io assets)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(Mp3dTest scene)

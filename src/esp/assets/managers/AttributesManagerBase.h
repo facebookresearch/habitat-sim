@@ -92,15 +92,60 @@ class AttributesManager {
       bool registerTemplate = false) = 0;
 
   /**
+   * @brief Creates an instance of a template from a JSON file using passed
+   * filename by loading and parsing the loaded JSON and generating a @ref
+   * AttribsPtr object. It returns created instance if successful,
+   * and nullptr if fails.
+   *
+   * @param filename the name of the file describing the object attributes.
+   * Assumes it exists and fails if it does not.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true.
+   * @return a reference to the desired template, or nullptr if fails.
+   */
+
+  AttribsPtr createFileBasedAttributesTemplate(const std::string& filename,
+                                               bool registerTemplate = true) {
+    // Load JSON config file
+    io::JsonDocument jsonConfig;
+    bool success = this->verifyLoadJson(filename, jsonConfig);
+    if (!success) {
+      LOG(ERROR) << attrType_
+                 << "AttributesManager::createFileBasedAttributesTemplate : "
+                    "Failure reading json : "
+                 << filename << ". Aborting.";
+      return nullptr;
+    }
+    AttribsPtr attr = this->loadAttributesFromJSONDoc(filename, jsonConfig);
+    return this->postCreateRegister(attr, registerTemplate);
+  }  // AttributesManager::createFileBasedAttributesTemplate
+
+  /**
+   * @brief Parse passed JSON Document specifically for @ref AttribsPtr object.
+   * It always returns a  @ref AttribsPtr object.
+   * @param filename Can be the name of the file describing the @ref AttribsPtr,
+   * used for attributes handle on create and, for some attributes such as @ref
+   * PrimAssetAttributes, to determine type of actual instanced attributes
+   * template.
+   * @param jsonConfig json document to parse - assumed to be legal JSON doc.
+   * @return a reference to the desired template.
+   */
+  virtual AttribsPtr loadAttributesFromJSONDoc(
+      const std::string& filename,
+      const io::JsonDocument& jsonConfig) = 0;
+
+  /**
    * @brief Add a copy of @ref AbstractAttributes object to the @ref
    * templateLibrary_.
    *
    * @param attributesTemplate The attributes template.
-   * @param attributesTemplateHandle The key for referencing the template in the
-   * @ref templateLibrary_. Will be set as origin handle for template. If empty
-   * string, use existing origin handle.
-   * @return The unique ID of the template being registered, or ID_UNDEFINED if
-   * failed
+   * @param attributesTemplateHandle The key for referencing the template in
+   * the
+   * @ref templateLibrary_. Will be set as origin handle for template. If
+   * empty string, use existing origin handle.
+   * @return The unique ID of the template being registered, or ID_UNDEFINED
+   * if failed
    */
   int registerAttributesTemplate(
       AttribsPtr attributesTemplate,
@@ -500,13 +545,16 @@ class AttributesManager {
       try {
         jsonDoc = io::parseJsonFile(filename);
       } catch (...) {
-        LOG(ERROR) << "Failed to parse " << filename << " as JSON.";
+        LOG(ERROR) << attrType_
+                   << "AttributesManager::verifyLoadJson : Failed to parse "
+                   << filename << " as JSON.";
         return false;
       }
       return true;
     } else {
       // by here always fail
-      LOG(ERROR) << "File " << filename << " does not exist";
+      LOG(ERROR) << attrType_ << "AttributesManager::verifyLoadJson : File "
+                 << filename << " does not exist";
       return false;
     }
   }  // AttributesManager::verifyLoadJson

@@ -5,14 +5,6 @@
 #ifndef ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
 #define ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
 
-#include <Magnum/Magnum.h>
-#include <map>
-#include <string>
-#include <vector>
-#include "Magnum/Math/Math.h"
-#include "Magnum/Types.h"
-
-#include "esp/assets/Asset.h"
 #include "esp/core/Configuration.h"
 
 namespace esp {

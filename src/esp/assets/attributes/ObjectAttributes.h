@@ -7,6 +7,8 @@
 
 #include "AttributesBase.h"
 
+#include "esp/assets/Asset.h"
+
 namespace esp {
 namespace assets {
 namespace attributes {

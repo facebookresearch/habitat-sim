@@ -51,7 +51,7 @@ class AttributesManagersTest : public testing::Test {
    * @param mgr the Attributes Manager being tested,
    * @param handle the handle of the desired attributes template to work with
    */
-  template <class T>
+  template <typename T>
   void testCreateAndRemove(std::shared_ptr<T> mgr, const std::string& handle) {
     // meaningless key to modify attributes for verifcation of behavior
     std::string keyStr = "tempKey";
@@ -136,7 +136,7 @@ class AttributesManagersTest : public testing::Test {
    * @param renderHandle a legal render handle to set for the new template so
    * that registration won't fail.
    */
-  template <class T>
+  template <typename T>
   void testRemoveAllButDefault(std::shared_ptr<T> mgr,
                                const std::string& handle,
                                bool setRenderHandle) {
@@ -208,7 +208,7 @@ class AttributesManagersTest : public testing::Test {
    * @param renderHandle a legal render handle to set for the new template so
    * that registration won't fail.
    */
-  template <class T>
+  template <typename T>
   void testCreateAndRemoveDefault(std::shared_ptr<T> mgr,
                                   const std::string& handle,
                                   bool setRenderHandle) {
@@ -263,7 +263,7 @@ class AttributesManagersTest : public testing::Test {
    * @param illegalVal a legal value of ctorModField.  If null ptr then no
    * illegal values possible.
    */
-  template <class T>
+  template <typename T>
   void testAssetAttributesModRegRemove(std::shared_ptr<T> defaultAttribs,
                                        const std::string& ctorModField,
                                        int legalVal,
@@ -332,12 +332,24 @@ class AttributesManagersTest : public testing::Test {
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 };  // class AttributesManagersTest
 
+TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {}
+
+/**
+ * @brief This test will test creating, modifying, registering and deleting
+ * Attributes via Attributes Mangers for all existing attributes
+ * (PhysicsManagerAttributes, StageAttributes, ObjectAttributes, etc). These
+ * tests should be consistent with most types of future attributes managers
+ * specializing the AttributesManager class template that follow the same
+ * expected behavior paths as extent attributes/attributesManagers.  Note :
+ * PrimitiveAssetAttributes exhibit slightly different behavior and need their
+ * own tests.
+ */
 TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   LOG(INFO) << "Starting AttributesManagersTest::AttributesManagersCreate";
-  std::string stageFile = Cr::Utility::Directory::join(
+  std::string stageConfigFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
 
-  std::string objectFile = Cr::Utility::Directory::join(
+  std::string objectConfigFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/chair.phys_properties.json");
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
@@ -348,28 +360,28 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   testCreateAndRemove<AttrMgrs::PhysicsAttributesManager>(
       physicsAttributesManager_, physicsConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::PhysicsAttributesManager>(
-      physicsAttributesManager_, stageFile, false);
+      physicsAttributesManager_, stageConfigFile, false);
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "StageAttributesManager @ "
-            << stageFile;
+            << stageConfigFile;
 
   // scene attributes manager attributes verifcation
   testCreateAndRemove<AttrMgrs::StageAttributesManager>(stageAttributesManager_,
-                                                        stageFile);
+                                                        stageConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::StageAttributesManager>(
-      stageAttributesManager_, stageFile, true);
+      stageAttributesManager_, stageConfigFile, true);
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "ObjectAttributesManager @ "
-            << objectFile;
+            << objectConfigFile;
 
   int origNumFileBased = objectAttributesManager_->getNumFileTemplateObjects();
   int origNumPrimBased = objectAttributesManager_->getNumSynthTemplateObjects();
 
   // object attributes manager attributes verifcation
   testCreateAndRemove<AttrMgrs::ObjectAttributesManager>(
-      objectAttributesManager_, objectFile);
+      objectAttributesManager_, objectConfigFile);
   // verify that no new file-based and no new synth based template objects
   // remain
   int newNumFileBased1 = objectAttributesManager_->getNumFileTemplateObjects();
@@ -377,7 +389,7 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   ASSERT_EQ(origNumFileBased, newNumFileBased1);
   ASSERT_EQ(origNumPrimBased, newNumPrimBased1);
   testCreateAndRemoveDefault<AttrMgrs::ObjectAttributesManager>(
-      objectAttributesManager_, objectFile, true);
+      objectAttributesManager_, objectConfigFile, true);
   // verify that no new file-based and no new synth based template objects
   // remain
   int newNumFileBased2 = objectAttributesManager_->getNumFileTemplateObjects();
@@ -387,7 +399,7 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
 
   // test adding many and removing all but defaults
   testRemoveAllButDefault<AttrMgrs::ObjectAttributesManager>(
-      objectAttributesManager_, objectFile, true);
+      objectAttributesManager_, objectConfigFile, true);
   // verify that no new file-based and no new synth based template objects
   // remain
   int newNumFileBased3 = objectAttributesManager_->getNumFileTemplateObjects();
@@ -396,15 +408,21 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   ASSERT_EQ(origNumPrimBased, newNumPrimBased3);
 }  // AttributesManagersTest::AttributesManagersCreate test
 
+/**
+ * @brief test primitive asset attributes functionality in attirbutes managers.
+ * This includes testing handle auto-gen when relevant fields in asset
+ * attributes are changed.
+ */
 TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   LOG(INFO) << "Starting "
                "AttributesManagersTest::PrimitiveAssetAttributesTest";
   /**
-   * primitive asset attributes require slightly different testing since a
-   * default set of attributes are created on program load and are always
-   * present.  User modification of asset attributes always starts by
-   * modifying an existing default template - users will never create an
-   * attributes template from scratch.
+   * Primitive asset attributes require slightly different testing since a
+   * default set of attributes (matching the default Magnum::Primitive
+   * parameters) are created on program load and are always present.  User
+   * modification of asset attributes always starts by modifying an existing
+   * default template - users will never create an attributes template from
+   * scratch.
    */
   int legalModValWF = 64;
   int illegalModValWF = 25;

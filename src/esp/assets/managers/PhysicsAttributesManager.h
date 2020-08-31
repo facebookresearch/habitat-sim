@@ -76,17 +76,18 @@ class PhysicsAttributesManager
       bool registerTemplate = false) override;
 
   /**
-   * @brief Read and parse the json file @ref physicsFileName and populate a
-   * returned physics manager attributes with appropriate data.
+   * @brief Parse passed JSON Document specifically for @ref
+   * PhysicsManagerAttributes object. It always returns a valid @ref
+   * PhysicsManagerAttributes::ptr object.
    *
-   * @param physicsFilename The configuration file to parse.
-   * @param registerTemplate whether to add this template to the library.
-   * @return a reference to the physics simulation meta data object parsed from
-   * the specified configuration file, or nullptr if fails.
+   * @param templateName the desired handle of the @ref
+   * PhysicsManagerAttributes.
+   * @param jsonConfig json document to parse
+   * @return a reference to the desired template.
    */
-  Attrs::PhysicsManagerAttributes::ptr createFileBasedAttributesTemplate(
-      const std::string& physicsFilename,
-      bool registerTemplate);
+  Attrs::PhysicsManagerAttributes::ptr loadAttributesFromJSONDoc(
+      const std::string& templateName,
+      const io::JsonDocument& jsonConfig) override;
 
  protected:
   /**

@@ -115,6 +115,19 @@ class StageAttributesManager
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true);
 
+  /**
+   * @brief Parse passed JSON Document specifically for @ref StageAttributes
+   * object. It always returns a valid @ref StageAttributes::ptr object.
+   *
+   * @param templateName the desired handle of the @ref StageAttributes
+   * attributes.
+   * @param jsonConfig json document to parse
+   * @return a reference to the desired template.
+   */
+  Attrs::StageAttributes::ptr loadAttributesFromJSONDoc(
+      const std::string& templateName,
+      const io::JsonDocument& jsonConfig) override;
+
  protected:
   /**
    * @brief Perform file-name-based attributes initialization. This is to
@@ -168,18 +181,6 @@ class StageAttributesManager
    * @return a reference to the desired stage template, or nullptr if fails.
    */
   Attrs::StageAttributes::ptr createBackCompatAttributesTemplate(
-      const std::string& stageFilename,
-      bool registerTemplate = true);
-
-  /**
-   * @brief Read and parse the json file @ref stageFilename and populate a
-   * returned stage attributes with appropriate data.
-   *
-   * @param stageFilename The configuration file to parse.
-   * @param registerTemplate whether to add this template to the library or not.
-   * @return a reference to the desired stage template, or nullptr if fails.
-   */
-  Attrs::StageAttributes::ptr createFileBasedAttributesTemplate(
       const std::string& stageFilename,
       bool registerTemplate = true);
 
