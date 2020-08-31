@@ -178,6 +178,7 @@ Key Commands:
   // Scene or stage file to load
   std::string sceneFileName;
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
+  esp::scene::SceneGraph* activeSceneGraph_ = nullptr;
   bool drawObjectBBs = false;
 
   Mn::Timeline timeline_;
@@ -339,7 +340,8 @@ Viewer::Viewer(const Arguments& arguments)
   simulator_->addAgent(agentConfig);
 
   // Set up camera
-  renderCamera_ = &simulator_->getActiveSceneGraph().getDefaultRenderCamera();
+  activeSceneGraph_ = &simulator_->getActiveSceneGraph();
+  renderCamera_ = &activeSceneGraph_->getDefaultRenderCamera();
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
   agentBodyNode_ = &simulator_->getAgent(defaultAgentId_)->node();
@@ -511,7 +513,7 @@ void Viewer::drawEvent() {
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
-    uint32_t total = simulator_->getActiveSceneGraph().getDrawables().size();
+    uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
     ImGui::End();
@@ -559,7 +561,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
 }
 
 void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
-  for (auto& it : simulator_->getActiveSceneGraph().getDrawableGroups()) {
+  for (auto& it : activeSceneGraph_->getDrawableGroups()) {
     if (it.second.hasDrawable(objectId)) {
       auto* pickedDrawable = it.second.getDrawable(objectId);
       objectPickingHelper_->createPickedObjectVisualizer(pickedDrawable);
@@ -581,7 +583,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
     if (simulator_->isFrustumCullingEnabled())
       flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-    for (auto& it : simulator_->getActiveSceneGraph().getDrawableGroups()) {
+    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
       renderCamera_->draw(it.second, flags);
     }
 
