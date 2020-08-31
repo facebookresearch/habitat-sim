@@ -49,13 +49,6 @@ repos:
         - flake8-bugbear
         - flake8-comprehensions
 
-# -   repo: https://github.com/codespell-project/codespell
-#     rev: v1.17.1
-#     hooks:
-#     -   id: codespell
-#         args: ['-w', '-L', 'inout']
-#         exclude: (^docs/(m.css)|^src/deps|\.ipynb$|\.tag$|\.css$)
-
 -   repo: https://github.com/kynan/nbstripout
     rev: master
     hooks:
