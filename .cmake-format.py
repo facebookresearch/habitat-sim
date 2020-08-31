@@ -6,7 +6,6 @@ with section("format"):
     dangle_parens = True  # Dangle Parens to make diffs cleaner
     always_wrap = [
         "add_library",
-        "find_package",
         "target_link_libraries",
     ]  # Always wrap these ones
     autosort = True  # Try to autosort lists
