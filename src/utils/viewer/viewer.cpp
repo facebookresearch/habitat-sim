@@ -129,6 +129,7 @@ class Viewer : public Mn::Platform::Application {
   esp::scene::SceneNode* rootNode_ = nullptr;
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
 
+  // Scene or stage file to load
   std::string sceneFileName;
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   bool drawObjectBBs = false;
