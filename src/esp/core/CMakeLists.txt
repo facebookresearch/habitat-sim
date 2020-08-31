@@ -26,7 +26,9 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )
 
-find_package(Corrade REQUIRED Utility)
+find_package(
+  Corrade REQUIRED Utility
+)
 
 add_library(
   core STATIC

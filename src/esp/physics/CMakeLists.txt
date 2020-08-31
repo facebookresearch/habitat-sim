@@ -1,4 +1,6 @@
-find_package(MagnumPlugins REQUIRED StbImageImporter StbImageConverter TinyGltfImporter)
+find_package(
+  MagnumPlugins REQUIRED StbImageImporter StbImageConverter TinyGltfImporter
+)
 
 set(ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH ./data/default.phys_scene_config.json)
 set(ESP_DEFAULT_PHYS_SCENE_CONFIG

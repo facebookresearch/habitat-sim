@@ -2,7 +2,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-find_package(Corrade REQUIRED Utility TestSuite)
+find_package(
+  Corrade REQUIRED Utility TestSuite
+)
 
 configure_file(configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 

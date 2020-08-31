@@ -46,11 +46,17 @@ find_package(
   AnyImageConverter
 )
 
-find_package(MagnumPlugins REQUIRED StbImageImporter StbImageConverter TinyGltfImporter)
+find_package(
+  MagnumPlugins REQUIRED StbImageImporter StbImageConverter TinyGltfImporter
+)
 
-find_package(MagnumIntegration REQUIRED Eigen)
+find_package(
+  MagnumIntegration REQUIRED Eigen
+)
 
-find_package(Corrade REQUIRED Utility)
+find_package(
+  Corrade REQUIRED Utility
+)
 # TODO: enable the following flag and fix the compilation warnings
 # set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)

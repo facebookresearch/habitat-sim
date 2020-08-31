@@ -4,7 +4,11 @@ with section("format"):
     max_subgroups_hwrap = 3  # So set commands dont get wrapped
     min_prefix_chars = 2
     dangle_parens = True  # Dangle Parens to make diffs cleaner
-    always_wrap = ["add_library", "target_link_libraries"]  # Always wrap these ones
+    always_wrap = [
+        "add_library",
+        "find_package",
+        "target_link_libraries",
+    ]  # Always wrap these ones
     autosort = True  # Try to autosort lists
 with section("markup"):
     enable_markup = False  # Don't format comments

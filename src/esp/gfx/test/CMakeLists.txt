@@ -1,4 +1,6 @@
-find_package(Magnum REQUIRED Primitives)
+find_package(
+  Magnum REQUIRED Primitives
+)
 
 corrade_add_test(
   gfxDepthUnprojectionTest

@@ -1,6 +1,10 @@
-find_package(Magnum REQUIRED DebugTools)
+find_package(
+  Magnum REQUIRED DebugTools
+)
 
-find_package(MagnumIntegration REQUIRED ImGui)
+find_package(
+  MagnumIntegration REQUIRED ImGui
+)
 
 set(viewer_SOURCES viewer.cpp ObjectPickingHelper.cpp ObjectPickingHelper.h)
 
