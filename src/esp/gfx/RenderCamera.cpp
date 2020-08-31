@@ -127,6 +127,7 @@ size_t RenderCamera::removeNonObjects(
 }
 
 uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
+  previousNumVisibleDrawables_ = drawables.size();
   if (flags == Flags()) {  // empty set
     MagnumCamera::draw(drawables);
     return drawables.size();
