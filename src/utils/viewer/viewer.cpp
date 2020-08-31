@@ -89,8 +89,54 @@ class Viewer : public Mn::Platform::Application {
   void invertGravity();
   Mn::Vector3 randomDirection();
 
+  std::string helpText = R"(
+==================================================
+Welcome to the Habitat-sim C++ Viewer application!
+==================================================
+Mouse Functions:
+----------------
+  LEFT:
+    Click and drag to rotate the agent and look up/down.
+  RIGHT:
+    (With 'enable-physics') Click a surface to instance a random primitive object at that location.
+  SHIFT-RIGHT:
+    Click a mesh to highlight it.
+
+Key Commands:
+-------------
+  esc: Exit the application.
+  'H': Display this help message.
+
+  Agent Controls:
+  'wasd': Move the agent's body forward/backward, left/right.
+  'zx': Move the agent's body up/down.
+  arrow keys: Turn the agent's body left/right and camera look up/down.
+  '9': Randomly place agent on NavMesh (if loaded).
+  'q': Query the agent's state and print to terminal.
+
+  Utilities:
+  'e' enable/disable frustum culling.
+  'c' show/hide FPS overlay.
+  'n' show/hide NavMesh wireframe.
+  'i' Save a screenshot to \"test_image_save.png\"
+
+  Object Interactions:
+  '8': Instance a random primitive object in front of the agent.
+  'o': Instance a random file-based object in front of the agent.
+  'u': Remove most recently instanced object.
+  'b': Toggle display of object bounding boxes.
+  'k': Kinematically wiggle the most recently added object.
+  'p': (physics) Poke the most recently added object.
+  'f': (physics) Push the most recently added object.
+  't': (physics) Torque the most recently added object.
+  'v': (physics) Invert gravity.
+==================================================
+  )";
+
   //! Print viewer help text to terminal output.
-  void printHelpText();
+  void printHelpText() { Mn::Debug{} << helpText; };
+
+  void printHelpText2();
 
   // single inline for logging agent state msgs, so can be easily modified
   inline void logAgentStateMsg(bool showPos, bool showOrient) {
@@ -211,7 +257,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig.enablePhysics = useBullet;
   simConfig.frustumCulling = true;
   if (args.isSet("stage-requires-lighting")) {
-    Cr::Utility::Debug() << "Stage using DEFAULT_LIGHTING_KEY";
+    Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig.sceneLightSetup =
         esp::assets::ResourceManager::DEFAULT_LIGHTING_KEY;
   }
@@ -220,7 +266,7 @@ Viewer::Viewer(const Arguments& arguments)
   std::string physicsConfig = Cr::Utility::Directory::join(
       Corrade::Utility::Directory::current(), args.value("physics-config"));
   if (Cr::Utility::Directory::exists(physicsConfig)) {
-    Cr::Utility::Debug() << "Using PhysicsManager config: " << physicsConfig;
+    Mn::Debug{} << "Using PhysicsManager config: " << physicsConfig;
     simConfig.physicsConfigFile = physicsConfig;
   }
 
@@ -731,63 +777,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
   }
   redraw();
-}
-
-void Viewer::printHelpText() {
-  Cr::Utility::Debug() << "==================================================";
-  Cr::Utility::Debug() << "Welcome to the Habitat-sim C++ Viewer application!";
-  Cr::Utility::Debug() << "==================================================";
-  Cr::Utility::Debug() << " Mouse Functions:";
-  Cr::Utility::Debug() << " ----------------";
-  Cr::Utility::Debug() << "   LEFT: ";
-  Cr::Utility::Debug()
-      << "     Click and drag to rotate the agent and look up/down.";
-  Cr::Utility::Debug() << "   RIGHT: ";
-  Cr::Utility::Debug()
-      << "     (With 'enable-physics') Click a surface to instance a random "
-         "primitive object at that location.";
-  Cr::Utility::Debug() << "   SHIFT-RIGHT: ";
-  Cr::Utility::Debug() << "     Click a mesh to highlight it.";
-  Cr::Utility::Debug() << "";
-  Cr::Utility::Debug() << " Key Commands:";
-  Cr::Utility::Debug() << " -------------";
-  Cr::Utility::Debug() << "   esc: Exit the application.";
-  Cr::Utility::Debug() << "   'h': Display this help message.";
-  Cr::Utility::Debug() << "";
-  Cr::Utility::Debug() << "   Agent Controls:";
-  Cr::Utility::Debug()
-      << "   'wasd': Move the agent's body forward/backward, left/right.";
-  Cr::Utility::Debug() << "   'zx': Move the agent's body up/down.";
-  Cr::Utility::Debug() << "   arrow keys: Turn the agent's body left/right and "
-                          "camera look up/down.";
-  Cr::Utility::Debug()
-      << "   '9': Randomly place agent on NavMesh (if loaded).";
-  Cr::Utility::Debug()
-      << "   'q': Query the agent's state and print to terminal.";
-  Cr::Utility::Debug() << "";
-  Cr::Utility::Debug() << "   Utilities:";
-  Cr::Utility::Debug() << "   'e' enable/disable frustum culling.";
-  Cr::Utility::Debug() << "   'c' show/hide FPS overlay.";
-  Cr::Utility::Debug() << "   'n' show/hide NavMesh wireframe.";
-  Cr::Utility::Debug() << "   'i' Save a screenshot to \"test_image_save.png\"";
-  Cr::Utility::Debug() << "";
-  Cr::Utility::Debug() << "   Object Interactions:";
-  Cr::Utility::Debug()
-      << "   '8': Instance a random primitive object in front of the agent.";
-  Cr::Utility::Debug()
-      << "   'o': Instance a random file-based object in front of the agent.";
-  Cr::Utility::Debug() << "   'u': Remove most recently instanced object.";
-  Cr::Utility::Debug() << "   'b': Toggle display of object bounding boxes.";
-  Cr::Utility::Debug()
-      << "   'p': (physics) Poke the most recently added object.";
-  Cr::Utility::Debug()
-      << "   'f': (physics) Push the most recently added object.";
-  Cr::Utility::Debug()
-      << "   't': (physics) Torque the most recently added object.";
-  Cr::Utility::Debug() << "   'v': (physics) Invert gravity.";
-  Cr::Utility::Debug()
-      << "   'k': Kinematically wiggle the most recently added object.";
-  Cr::Utility::Debug() << "==================================================";
 }
 
 }  // namespace

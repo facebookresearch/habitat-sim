@@ -333,7 +333,7 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
 
 const Attrs::ObjectAttributes::cptr Simulator::getObjectInitializationTemplate(
     int objectId,
-    const int sceneID) const {
+    int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectInitAttributes(objectId);
   }
@@ -341,7 +341,7 @@ const Attrs::ObjectAttributes::cptr Simulator::getObjectInitializationTemplate(
 }
 
 // return a list of existing objected IDs in a physical scene
-std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
+std::vector<int> Simulator::getExistingObjectIDs(int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getExistingObjectIDs();
   }
@@ -349,17 +349,17 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
 }
 
 // remove object objectID instance in sceneID
-void Simulator::removeObject(const int objectID,
+void Simulator::removeObject(int objectID,
                              bool deleteObjectNode,
                              bool deleteVisualNode,
-                             const int sceneID) {
+                             int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
   }
 }
 
-esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
-                                                        const int sceneID) {
+esp::physics::MotionType Simulator::getObjectMotionType(int objectID,
+                                                        int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectMotionType(objectID);
   }
@@ -367,8 +367,8 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
 }
 
 bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
-                                    const int objectID,
-                                    const int sceneID) {
+                                    int objectID,
+                                    int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->setObjectMotionType(objectID, motionType);
   }
@@ -376,8 +376,8 @@ bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
 }
 
 physics::VelocityControl::ptr Simulator::getObjectVelocityControl(
-    const int objectID,
-    const int sceneID) const {
+    int objectID,
+    int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getVelocityControl(objectID);
   }
@@ -386,8 +386,8 @@ physics::VelocityControl::ptr Simulator::getObjectVelocityControl(
 
 // apply forces and torques to objects
 void Simulator::applyTorque(const Magnum::Vector3& tau,
-                            const int objectID,
-                            const int sceneID) {
+                            int objectID,
+                            int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyTorque(objectID, tau);
   }
@@ -395,8 +395,8 @@ void Simulator::applyTorque(const Magnum::Vector3& tau,
 
 void Simulator::applyForce(const Magnum::Vector3& force,
                            const Magnum::Vector3& relPos,
-                           const int objectID,
-                           const int sceneID) {
+                           int objectID,
+                           int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyForce(objectID, force, relPos);
   }
@@ -404,15 +404,14 @@ void Simulator::applyForce(const Magnum::Vector3& force,
 
 void Simulator::applyImpulse(const Magnum::Vector3& impulse,
                              const Magnum::Vector3& relPos,
-                             const int objectID,
-                             const int sceneID) {
+                             int objectID,
+                             int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    physicsManager_->applyForce(objectID, impulse, relPos);
+    physicsManager_->applyImpulse(objectID, impulse, relPos);
   }
 }
 
-scene::SceneNode* Simulator::getObjectSceneNode(const int objectID,
-                                                const int sceneID) {
+scene::SceneNode* Simulator::getObjectSceneNode(int objectID, int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return &physicsManager_->getObjectSceneNode(objectID);
   }
@@ -420,8 +419,8 @@ scene::SceneNode* Simulator::getObjectSceneNode(const int objectID,
 }
 
 std::vector<scene::SceneNode*> Simulator::getObjectVisualSceneNodes(
-    const int objectID,
-    const int sceneID) {
+    int objectID,
+    int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectVisualSceneNodes(objectID);
   }
@@ -430,23 +429,22 @@ std::vector<scene::SceneNode*> Simulator::getObjectVisualSceneNodes(
 
 // set object transform (kinemmatic control)
 void Simulator::setTransformation(const Magnum::Matrix4& transform,
-                                  const int objectID,
-                                  const int sceneID) {
+                                  int objectID,
+                                  int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->setTransformation(objectID, transform);
   }
 }
 
-Magnum::Matrix4 Simulator::getTransformation(const int objectID,
-                                             const int sceneID) {
+Magnum::Matrix4 Simulator::getTransformation(int objectID, int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getTransformation(objectID);
   }
   return Magnum::Matrix4::fromDiagonal(Magnum::Vector4(1));
 }
 
-esp::core::RigidState Simulator::getRigidState(const int objectID,
-                                               const int sceneID) const {
+esp::core::RigidState Simulator::getRigidState(int objectID,
+                                               int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getRigidState(objectID);
   }
@@ -454,8 +452,8 @@ esp::core::RigidState Simulator::getRigidState(const int objectID,
 }
 
 void Simulator::setRigidState(const esp::core::RigidState& rigidState,
-                              const int objectID,
-                              const int sceneID) {
+                              int objectID,
+                              int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->setRigidState(objectID, rigidState);
   }
@@ -463,15 +461,14 @@ void Simulator::setRigidState(const esp::core::RigidState& rigidState,
 
 // set object translation directly
 void Simulator::setTranslation(const Magnum::Vector3& translation,
-                               const int objectID,
-                               const int sceneID) {
+                               int objectID,
+                               int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->setTranslation(objectID, translation);
   }
 }
 
-Magnum::Vector3 Simulator::getTranslation(const int objectID,
-                                          const int sceneID) {
+Magnum::Vector3 Simulator::getTranslation(int objectID, int sceneID) {
   // can throw if physicsManager is not initialized or either objectID/sceneID
   // is invalid
   if (sceneHasPhysics(sceneID)) {
@@ -482,15 +479,14 @@ Magnum::Vector3 Simulator::getTranslation(const int objectID,
 
 // set object orientation directly
 void Simulator::setRotation(const Magnum::Quaternion& rotation,
-                            const int objectID,
-                            const int sceneID) {
+                            int objectID,
+                            int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->setRotation(objectID, rotation);
   }
 }
 
-Magnum::Quaternion Simulator::getRotation(const int objectID,
-                                          const int sceneID) {
+Magnum::Quaternion Simulator::getRotation(int objectID, int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getRotation(objectID);
   }
@@ -498,15 +494,14 @@ Magnum::Quaternion Simulator::getRotation(const int objectID,
 }
 
 void Simulator::setLinearVelocity(const Magnum::Vector3& linVel,
-                                  const int objectID,
-                                  const int sceneID) {
+                                  int objectID,
+                                  int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->setLinearVelocity(objectID, linVel);
   }
 }
 
-Magnum::Vector3 Simulator::getLinearVelocity(const int objectID,
-                                             const int sceneID) {
+Magnum::Vector3 Simulator::getLinearVelocity(int objectID, int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getLinearVelocity(objectID);
   }
@@ -514,22 +509,21 @@ Magnum::Vector3 Simulator::getLinearVelocity(const int objectID,
 }
 
 void Simulator::setAngularVelocity(const Magnum::Vector3& angVel,
-                                   const int objectID,
-                                   const int sceneID) {
+                                   int objectID,
+                                   int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->setAngularVelocity(objectID, angVel);
   }
 }
 
-Magnum::Vector3 Simulator::getAngularVelocity(const int objectID,
-                                              const int sceneID) {
+Magnum::Vector3 Simulator::getAngularVelocity(int objectID, int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getAngularVelocity(objectID);
   }
   return Magnum::Vector3();
 }
 
-bool Simulator::contactTest(const int objectID, const int sceneID) {
+bool Simulator::contactTest(int objectID, int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->contactTest(objectID);
   }
@@ -538,16 +532,14 @@ bool Simulator::contactTest(const int objectID, const int sceneID) {
 
 esp::physics::RaycastResults Simulator::castRay(const esp::geo::Ray& ray,
                                                 float maxDistance,
-                                                const int sceneID) {
+                                                int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->castRay(ray, maxDistance);
   }
   return esp::physics::RaycastResults();
 }
 
-void Simulator::setObjectBBDraw(bool drawBB,
-                                const int objectID,
-                                const int sceneID) {
+void Simulator::setObjectBBDraw(bool drawBB, int objectID, int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
@@ -556,8 +548,8 @@ void Simulator::setObjectBBDraw(bool drawBB,
 }
 
 void Simulator::setObjectSemanticId(uint32_t semanticId,
-                                    const int objectID,
-                                    const int sceneID) {
+                                    int objectID,
+                                    int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->setSemanticId(objectID, semanticId);
   }
@@ -578,13 +570,13 @@ double Simulator::getWorldTime() {
   return NO_TIME;
 }
 
-void Simulator::setGravity(const Magnum::Vector3& gravity, const int sceneID) {
+void Simulator::setGravity(const Magnum::Vector3& gravity, int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->setGravity(gravity);
   }
 }
 
-Magnum::Vector3 Simulator::getGravity(const int sceneID) const {
+Magnum::Vector3 Simulator::getGravity(int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getGravity();
   }
