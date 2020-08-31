@@ -68,6 +68,7 @@ repos:
             - 'isort==5.4.2'
         always_run: false
         language: python
+        require_serial: true
 
 -   repo: local
     hooks:
