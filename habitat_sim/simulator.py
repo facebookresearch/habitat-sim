@@ -47,7 +47,8 @@ class Simulator(SimulatorBackend):
     :property config: configuration for the simulator
 
     The simulator ties together the backend, the agent, controls functions,
-    and collision checking/pathfinding.
+    NavMesh collision checking/pathfinding, attribute template management,
+    object manipulation, and physics simulation.
     """
 
     config: Configuration

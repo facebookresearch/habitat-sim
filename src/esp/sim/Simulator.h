@@ -157,37 +157,37 @@ class Simulator {
   };
 
   /**
-   * @brief Instance an object from a template index in @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_. See @ref
+   * @brief Instance an object from a template ID in @ref
+   * esp::managers::ObjectAttributesManager. See @ref
    * esp::physics::PhysicsManager::addObject().
-   * @param objectLibIndex The index of the object's template in @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param objectLibId The ID of the object's template in @ref
+   * esp::managers::ObjectAttributesManager.
    * @param attachmentNode If provided, attach the RigidObject Feature to this
    * node instead of creating a new one.
-   * @param lightSetupKey The string key for the LightSetup to be used by this
-   * object.
+   * @param lightSetupKey The string key for the @ref gfx::LightSetup to be used
+   * by this object.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * add an object to.
    * @return The ID assigned to new object which identifies it in @ref
    * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
    * instancing fails.
    */
-  int addObject(int objectLibIndex,
+  int addObject(int objectLibId,
                 scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetupKey =
                     assets::ResourceManager::DEFAULT_LIGHTING_KEY,
                 int sceneID = 0);
 
   /**
-   * @brief Instance an object from a template index in @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_. See @ref
+   * @brief Instance an object from a template ID in @ref
+   * esp::managers::ObjectAttributesManager. See @ref
    * esp::physics::PhysicsManager::addObject().
-   * @param objectLibHandle The config/origin handle of the object's template in
-   * @ref esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param objectLibHandle The handle of the object's template in
+   * @ref esp::managers::ObjectAttributesManager.
    * @param attachmentNode If provided, attach the RigidObject Feature to this
    * node instead of creating a new one.
-   * @param lightSetupKey The string key for the LightSetup to be used by this
-   * object.
+   * @param lightSetupKey The string key for the @ref gfx::LightSetup to be used
+   * by this object.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * add an object to.
    * @return The ID assigned to new object which identifies it in @ref
@@ -407,7 +407,7 @@ class Simulator {
 
   /**
    * @brief Set the Linear Velocity of object.
-   * See @ref esp::phyics::PhysicsManager::setLinearVelocity.
+   * See @ref esp::physics::PhysicsManager::setLinearVelocity.
    * @param linVel The desired linear velocity of the object.
    * @param objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
@@ -431,7 +431,7 @@ class Simulator {
 
   /**
    * @brief Set the Angular Velocity of object.
-   * See @ref esp::phyics::PhysicsManager::setAngularVelocity.
+   * See @ref esp::physics::PhysicsManager::setAngularVelocity.
    * @param angVel The desired angular velocity of the object.
    * @param objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
@@ -470,7 +470,7 @@ class Simulator {
   void setObjectBBDraw(bool drawBB, const int objectID, const int sceneID = 0);
 
   /**
-   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
    * belonging to an object.
    *
    * @param semanticId The desired semantic id for the object.
@@ -565,8 +565,7 @@ class Simulator {
   bool setNavMeshVisualization(bool visualize);
 
   /**
-   * @brief Query active state of the current NavMesh @ref pathfinder_
-   * visualization.
+   * @brief Query active state of the current NavMesh visualization.
    */
   bool isNavMeshVisualizationActive();
 
@@ -604,7 +603,7 @@ class Simulator {
 
   /**
    * @brief Enable or disable frustum culling (enabled by default)
-   * @param val, true = enable, false = disable
+   * @param val true = enable, false = disable
    */
   void setFrustumCullingEnabled(bool val) { frustumCulling_ = val; }
 
@@ -615,19 +614,21 @@ class Simulator {
   bool isFrustumCullingEnabled() { return frustumCulling_; }
 
   /**
-   * @brief Get a named @ref LightSetup
+   * @brief Get a copy of an existing @ref gfx::LightSetup by its key.
+   *
+   * @param key The string key of the @ref gfx::LightSetup.
    */
   gfx::LightSetup getLightSetup(
       const std::string& key = assets::ResourceManager::DEFAULT_LIGHTING_KEY);
 
   /**
-   * @brief Set a named @ref LightSetup
+   * @brief Register a @ref gfx::LightSetup with a key name.
    *
-   * If this name already exists, the @ref LightSetup is updated and all @ref
-   * Drawables using this setup are updated.
+   * If this name already exists, the @ref gfx::LightSetup is updated and all
+   * @ref esp::gfx::Drawable s using this setup are updated.
    *
-   * @param lightSetup Light setup this key will now reference
-   * @param key Key to identify this @ref LightSetup
+   * @param lightSetup The @ref gfx::LightSetup this key will now reference.
+   * @param key Key to identify this @ref gfx::LightSetup.
    */
   void setLightSetup(
       gfx::LightSetup lightSetup,
@@ -638,7 +639,7 @@ class Simulator {
    *
    * @param objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
-   * @param lightSetupKey @ref LightSetup key
+   * @param lightSetupKey @ref gfx::LightSetup key
    * @param sceneID !! Not used currently !! Specifies which physical scene
    * of the object.
    */
@@ -649,8 +650,8 @@ class Simulator {
   /**
    * @brief Getter for PRNG.
    *
-   * Use this where-ever possible so that habitat won't be effect by
-   * python's random or np.random modules
+   * Use this where-ever possible so that habitat won't be effected by
+   * python random or numpy.random modules.
    */
   core::Random::ptr random() { return random_; }
 
