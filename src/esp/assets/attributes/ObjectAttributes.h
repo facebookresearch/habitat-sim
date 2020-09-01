@@ -23,10 +23,10 @@ class AbstractObjectAttributes : public AbstractAttributes {
   /**
    * @brief This defines an example JSON descriptor for @ref
    * AbstractObjectAttributes Has values that are different than defaults so
-   * this can be used to test JSON loading. These values may break the code, so
-   * should not be used.
+   * this can be used to test JSON loading. These values are set to be
+   * purposefully invalid, for testing purposes, and so should not be used.
    */
-  static const std::string JSONConfigTemplate;
+  static const std::string JSONConfigExample;
 
   /**
    * @brief Constant static map to provide mappings from string tags to @ref
@@ -177,9 +177,10 @@ class ObjectAttributes : public AbstractObjectAttributes {
   /**
    * @brief This defines an example JSON descriptor for @ref ObjectAttributes.
    * Has values that are different than defaults so this can be used to test
-   * JSON loading. These values may break the code, so should not be used.
+   * JSON loading. These values are set to be purposefully invalid, for testing
+   * purposes, and so should not be used.
    */
-  static const std::string JSONConfigTemplate;
+  static const std::string JSONConfigExample;
 
   ObjectAttributes(const std::string& handle = "");
   // center of mass (COM)
@@ -251,17 +252,18 @@ class ObjectAttributes : public AbstractObjectAttributes {
 };  // class ObjectAttributes
 
 ///////////////////////////////////////
-// stage and physics manager attributes
+// stage attributes
 
-//! attributes for a single physical scene
+//! attributes for a single stage
 class StageAttributes : public AbstractObjectAttributes {
  public:
   /**
    * @brief This defines an example JSON descriptor for @ref StageAttributes
    * Has values that are different than defaults so this can be used to test
-   * JSON loading. These values may break the code, so should not be used.
+   * JSON loading. These values are set to be purposefully invalid, for testing
+   * purposes, and so should not be used.
    */
-  static const std::string JSONConfigTemplate;
+  static const std::string JSONConfigExample;
   StageAttributes(const std::string& handle = "");
 
   void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }

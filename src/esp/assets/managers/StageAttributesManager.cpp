@@ -340,7 +340,7 @@ StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
     const io::JsonDocument& jsonConfig) {
   // construct a StageAttributes and populate with any AbstractObjectAttributes
   // fields found in json.
-  auto stageAttributes = this->createPhysicsAttributesFromJson<StageAttributes>(
+  auto stageAttributes = this->createObjectAttributesFromJson<StageAttributes>(
       templateName, jsonConfig);
 
   // directory location where stage files are found

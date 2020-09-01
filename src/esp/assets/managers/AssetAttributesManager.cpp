@@ -2,6 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Containers/StaticArray.h>
+#include <Corrade/Utility/String.h>
+
 #include "AssetAttributesManager.h"
 #include "AttributesManagerBase.h"
 
@@ -148,36 +151,25 @@ AssetAttributesManager::loadAttributesFromJSONDoc(
     const std::string& filename,
     const io::JsonDocument& jsonDoc) {
   // find type of attributes - file name should contain handle
-  auto locSt = filename.find_last_of("/");
-  auto locEnd = filename.find_last_of(".");
+  const std::string primAttrHandle =
+      Cr::Utility::Directory::splitExtension(
+          Cr::Utility::Directory::filename(filename))
+          .first;
+
+  std::string primClassName =
+      Cr::Utility::String::partition(primAttrHandle, '_')[0];
   // if not legal primitive asset attributes file name, have message and return
   // default sphere attributes.
-  bool error = false;
-  std::string errorMsg = "";
-  std::string primClassName = "uvSphereSolid";
-  if ((locSt == std::string::npos) || (locEnd == std::string::npos)) {
-    errorMsg.assign("Unparseable JSON file name : " + filename);
-    error = true;
-  } else {
-    // this is the handle of the attributes that was saved
-    std::string primAttrHandle = filename.substr(locSt, locEnd);
-    auto locEndClassType = primAttrHandle.find_first_of("_");
-    // split on underscore - first part is string key for magnum class
-    primClassName = primAttrHandle.substr(0, locEndClassType);
-    // currently just return default attributes for
-    if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
-      errorMsg.assign("Unknown primitive class type : " + primClassName);
-      error = true;
-    }
-  }
-  if (error) {
-    LOG(ERROR) << "AssetAttributesManager::loadAttributesFromJSONDoc : "
-               << errorMsg
+  if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
+    LOG(ERROR) << "AssetAttributesManager::loadAttributesFromJSONDoc :Unknown "
+                  "primitive class type : "
+               << primClassName
                << " so returning default attributes for solid uvSphere.";
     return this->getTemplateCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }
-  // create attributes for this
+
+  // create attributes for this primitive
   auto primAssetAttributes = buildPrimAttributes(primClassName);
   if (nullptr == primAssetAttributes) {
     LOG(ERROR)

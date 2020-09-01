@@ -575,8 +575,8 @@ class AttributesManager {
    * filled in.
    */
   template <typename U>
-  AttribsPtr createPhysicsAttributesFromJson(const std::string& filename,
-                                             const io::JsonDocument& jsonDoc);
+  AttribsPtr createObjectAttributesFromJson(const std::string& filename,
+                                            const io::JsonDocument& jsonDoc);
 
   /**
    * @brief Only used by @ref AbstractObjectAttributes derived-attributes. Set
@@ -910,7 +910,7 @@ class AttributesManager {
 
 template <class AttribsPtr>
 template <class U>
-AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
+AttribsPtr AttributesManager<AttribsPtr>::createObjectAttributesFromJson(
     const std::string& configFilename,
     const io::JsonDocument& jsonDoc) {
   auto attributes = initNewAttribsInternal(U::create(configFilename));
@@ -992,7 +992,7 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
   attributes->setUseMeshCollision(true);
 
   return attributes;
-}  // AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson
+}  // AttributesManager<AttribsPtr>::createObjectAttributesFromJson
 
 template <class T>
 bool AttributesManager<T>::setJSONAssetHandleAndType(

@@ -107,7 +107,7 @@ ObjectAttributes::ptr ObjectAttributesManager::loadAttributesFromJSONDoc(
     const io::JsonDocument& jsonConfig) {
   // Construct a ObjectAttributes and populate with any AbstractObjectAttributes
   // fields found in json.
-  auto objAttributes = this->createPhysicsAttributesFromJson<ObjectAttributes>(
+  auto objAttributes = this->createObjectAttributesFromJson<ObjectAttributes>(
       templateName, jsonConfig);
 
   // Populate with object-specific fields found in json, if any are there.
