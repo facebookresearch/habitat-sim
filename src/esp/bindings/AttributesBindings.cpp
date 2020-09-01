@@ -141,6 +141,11 @@ void initAttributesBindings(py::module& m) {
       m, "ObjectAttributes")
       .def(py::init(&ObjectAttributes::create<>))
       .def(py::init(&ObjectAttributes::create<const std::string&>))
+      .def_property_readonly_static(
+          "JSON_config_example",
+          [](py::object) { return ObjectAttributes::JSONConfigTemplate; },
+          R"(A JSON example illustrating the possible user-modifiable 
+          fields (via JSON) for ObjectAttributes)")
       .def_property(
           "com", &ObjectAttributes::getCOM, &ObjectAttributes::setCOM,
           R"(The Center of Mass for objects built from this template.)")
@@ -195,6 +200,11 @@ void initAttributesBindings(py::module& m) {
       m, "StageAttributes")
       .def(py::init(&StageAttributes::create<>))
       .def(py::init(&StageAttributes::create<const std::string&>))
+      .def_property_readonly_static(
+          "JSON_config_example",
+          [](py::object) { return StageAttributes::JSONConfigTemplate; },
+          R"(A JSON example illustrating the possible user-modifiable 
+          fields (via JSON) for StageAttributes)")
       .def_property(
           "gravity", &StageAttributes::getGravity, &StageAttributes::setGravity,
           R"(The 3-vector representation of gravity to use for physically-based
@@ -237,6 +247,13 @@ void initAttributesBindings(py::module& m) {
              PhysicsManagerAttributes::ptr>(m, "PhysicsManagerAttributes")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
+      .def_property_readonly_static(
+          "JSON_config_example",
+          [](py::object) {
+            return PhysicsManagerAttributes::JSONConfigTemplate;
+          },
+          R"(A JSON example illustrating the possible user-modifiable 
+          fields (via JSON) for PhysicsManagerAttributes)")
       .def_property_readonly(
           "simulator", &PhysicsManagerAttributes::getSimulator,
           R"(The simulator being used for dynamic simulation.  If none then only kinematic
