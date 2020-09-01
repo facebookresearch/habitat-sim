@@ -221,7 +221,7 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "house_filename", &StageAttributes::getHouseFilename,
           &StageAttributes::setHouseFilename,
-          R"(Handle for file containing semantic type maps and hierarchy for 
+          R"(Handle for file containing semantic type maps and hierarchy for
           constructions built from this template.)")
       .def_property(
           "light_setup", &StageAttributes::getLightSetup,
