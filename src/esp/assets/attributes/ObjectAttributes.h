@@ -7,6 +7,8 @@
 
 #include "AttributesBase.h"
 
+#include "esp/assets/Asset.h"
+
 namespace esp {
 namespace assets {
 namespace attributes {
@@ -18,6 +20,14 @@ namespace attributes {
  */
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
+  /**
+   * @brief This defines an example json descriptor for @ref
+   * AbstractObjectAttributes Has values that are different than defaults so
+   * this can be used to test json loading. These values are set to be
+   * purposefully invalid, for testing purposes, and so should not be used.
+   */
+  static const std::string JSONConfigTestString;
+
   /**
    * @brief Constant static map to provide mappings from string tags to @ref
    * AssetType values.  This will be used to map values set in json for mesh
@@ -156,7 +166,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributes)
 
-};  // class AbstractPhysicsAttributes
+};  // class AbstractObjectAttributes
 
 /**
  * @brief Specific Attributes instance which is constructed with a base set of
@@ -164,6 +174,14 @@ class AbstractObjectAttributes : public AbstractAttributes {
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
+  /**
+   * @brief This defines an example json descriptor for @ref ObjectAttributes.
+   * Has values that are different than defaults so this can be used to test
+   * json loading. These values are set to be purposefully invalid, for testing
+   * purposes, and so should not be used.
+   */
+  static const std::string JSONConfigTestString;
+
   ObjectAttributes(const std::string& handle = "");
   // center of mass (COM)
   void setCOM(const Magnum::Vector3& com) { setVec3("COM", com); }
@@ -234,11 +252,18 @@ class ObjectAttributes : public AbstractObjectAttributes {
 };  // class ObjectAttributes
 
 ///////////////////////////////////////
-// stage and physics manager attributes
+// stage attributes
 
-//! attributes for a single physical scene
+//! attributes for a single stage
 class StageAttributes : public AbstractObjectAttributes {
  public:
+  /**
+   * @brief This defines an example json descriptor for @ref StageAttributes
+   * Has values that are different than defaults so this can be used to test
+   * json loading. These values are set to be purposefully invalid, for testing
+   * purposes, and so should not be used.
+   */
+  static const std::string JSONConfigTestString;
   StageAttributes(const std::string& handle = "");
 
   void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }

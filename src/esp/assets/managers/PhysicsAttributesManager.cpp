@@ -5,7 +5,6 @@
 #include "PhysicsAttributesManager.h"
 #include "AttributesManagerBase.h"
 
-#include "esp/io/io.h"
 #include "esp/io/json.h"
 
 using std::placeholders::_1;
@@ -25,8 +24,9 @@ PhysicsAttributesManager::createAttributesTemplate(
   std::string msg;
   if (this->isValidFileName(physicsFilename)) {
     // check if physicsFilename corresponds to an actual file descriptor
-    attrs =
-        createFileBasedAttributesTemplate(physicsFilename, registerTemplate);
+    // this method lives in class template.
+    attrs = this->createFileBasedAttributesTemplate(physicsFilename,
+                                                    registerTemplate);
     msg = "File (" + physicsFilename + ") Based";
   } else {
     // if name is not file descriptor, return default attributes.
@@ -53,22 +53,12 @@ PhysicsAttributesManager::createDefaultAttributesTemplate(
 }  // PhysicsAttributesManager::createDefaultAttributesTemplate
 
 PhysicsManagerAttributes::ptr
-PhysicsAttributesManager::createFileBasedAttributesTemplate(
-    const std::string& physicsFilename,
-    bool registerTemplate) {
+PhysicsAttributesManager::loadAttributesFromJSONDoc(
+    const std::string& templateName,
+    const io::JsonDocument& jsonConfig) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
-
-  // Load the global physics manager config JSON here
-  io::JsonDocument jsonConfig;
-  bool success = this->verifyLoadJson(physicsFilename, jsonConfig);
-  if (!success) {
-    LOG(ERROR)
-        << " Aborting "
-           "PhysicsAttributesManager::createFileBasedAttributesTemplate.";
-    return nullptr;
-  }
+      initNewAttribsInternal(PhysicsManagerAttributes::create(templateName));
 
   // load the simulator preference - default is "none" simulator, set in
   // attributes ctor.
@@ -107,8 +97,7 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
   // load the rigid object library metadata (no physics init yet...)
   if (jsonConfig.HasMember("rigid object paths") &&
       jsonConfig["rigid object paths"].IsArray()) {
-    std::string configDirectory =
-        physicsFilename.substr(0, physicsFilename.find_last_of("/"));
+    std::string configDirectory = physicsManagerAttributes->getFileDirectory();
 
     const auto& paths = jsonConfig["rigid object paths"];
     for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
@@ -127,7 +116,7 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
     }
   }  // if load rigid object library metadata
 
-  return this->postCreateRegister(physicsManagerAttributes, registerTemplate);
+  return physicsManagerAttributes;
 }  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers

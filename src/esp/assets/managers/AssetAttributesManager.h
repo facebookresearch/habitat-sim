@@ -132,6 +132,22 @@ class AssetAttributesManager
   }  // Attrs::AbstractPrimitiveAttributes::ptr createDefaultAttributesTemplate
 
   /**
+   * @brief Parse passed JSON Document specifically for @ref
+   * AbstractPrimitiveAttributes object. It always returns a valid @ref
+   * AbstractPrimitiveAttributes::ptr object.
+   *
+   * TODO : currently do not support file-based Primitive Assets, so no actual
+   * JSON parsing.
+   * @param filename the name of the file describing the asset attributes, used
+   * to determine type of attributes template.
+   * @param jsonConfig json document to parse
+   * @return a reference to the desired template.
+   */
+  Attrs::AbstractPrimitiveAttributes::ptr loadAttributesFromJSONDoc(
+      const std::string& filename,
+      const io::JsonDocument& jsonConfig) override;
+
+  /**
    * @brief Should only be called internally. Creates an instance of a
    * primtive asset attributes template described by passed enum value. For
    * primitive assets this mapes to the Magnum primitive class name

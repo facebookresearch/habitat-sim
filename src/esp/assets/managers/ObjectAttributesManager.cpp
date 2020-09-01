@@ -8,7 +8,6 @@
 #include <Corrade/Utility/String.h>
 
 #include "esp/assets/Asset.h"
-#include "esp/io/io.h"
 #include "esp/io/json.h"
 
 using std::placeholders::_1;
@@ -34,8 +33,9 @@ ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
   } else if (this->isValidFileName(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing file then
     // assume this is a file-based object template we are building.
-    attrs = createFileBasedAttributesTemplate(attributesTemplateHandle,
-                                              registerTemplate);
+    // this method lives in class template.
+    attrs = this->createFileBasedAttributesTemplate(attributesTemplateHandle,
+                                                    registerTemplate);
     msg = "File (" + attributesTemplateHandle + ") Based";
   } else {
     // if neither of these is true, then build an empty template and assign the
@@ -102,49 +102,37 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
-ObjectAttributes::ptr
-ObjectAttributesManager::createFileBasedAttributesTemplate(
-    const std::string& objPhysConfigFilename,
-    bool registerTemplate) {
-  // Load JSON config file
-  io::JsonDocument jsonConfig;
-  bool success = this->verifyLoadJson(objPhysConfigFilename, jsonConfig);
-  if (!success) {
-    LOG(ERROR)
-        << "ObjectAttributesManager::createFileBasedAttributesTemplate : "
-           "Failure reading json : "
-        << objPhysConfigFilename << ". Aborting.";
-    return nullptr;
-  }
+ObjectAttributes::ptr ObjectAttributesManager::loadAttributesFromJSONDoc(
+    const std::string& templateName,
+    const io::JsonDocument& jsonConfig) {
+  // Construct a ObjectAttributes and populate with any AbstractObjectAttributes
+  // fields found in json.
+  auto objAttributes = this->createObjectAttributesFromJson<ObjectAttributes>(
+      templateName, jsonConfig);
 
-  // Construct a ObjectAttributes and populate with any
-  // AbstractPhysicsAttributes fields found in json.
-  auto objAttributes = this->createPhysicsAttributesFromJson<ObjectAttributes>(
-      objPhysConfigFilename, jsonConfig);
-
-  // Populate with object-specific fields found in json, if any are there
+  // Populate with object-specific fields found in json, if any are there.
   // object mass
   io::jsonIntoSetter<double>(
       jsonConfig, "mass",
       std::bind(&ObjectAttributes::setMass, objAttributes, _1));
 
-  // optional set bounding box as collision object
+  // Use bounding box as collision object
   io::jsonIntoSetter<bool>(
       jsonConfig, "use bounding box for collision",
       std::bind(&ObjectAttributes::setBoundingBoxCollisions, objAttributes,
                 _1));
 
-  //! Get collision configuration options if specified
+  // Join collision meshes if specified
   io::jsonIntoSetter<bool>(
       jsonConfig, "join collision meshes",
       std::bind(&ObjectAttributes::setJoinCollisionMeshes, objAttributes, _1));
 
-  // object's interia matrix diag
+  // The object's interia matrix diagonal
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "inertia",
       std::bind(&ObjectAttributes::setInertia, objAttributes, _1));
 
-  // the center of mass (in the local frame of the object)
+  // The center of mass (in the local frame of the object)
   // if COM is provided, use it for mesh shift
   bool comIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "COM",
@@ -152,7 +140,7 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
 
-  return this->postCreateRegister(objAttributes, registerTemplate);
+  return objAttributes;
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
 ObjectAttributes::ptr ObjectAttributesManager::createDefaultAttributesTemplate(

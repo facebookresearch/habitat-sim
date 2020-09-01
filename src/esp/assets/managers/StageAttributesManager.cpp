@@ -26,12 +26,12 @@ StageAttributesManager::StageAttributesManager(
     PhysicsAttributesManager::ptr physicsAttributesManager)
     : AttributesManager<StageAttributes::ptr>::AttributesManager(
           resourceManager,
-          "Physical Stage"),
+          "Stage"),
       objectAttributesMgr_(objectAttributesMgr),
       physicsAttributesManager_(physicsAttributesManager),
       cfgLightSetup_(assets::ResourceManager::NO_LIGHT_KEY) {
   buildCtorFuncPtrMaps();
-}
+}  // StageAttributesManager ctor
 
 StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
     const std::string& stageAttributesHandle,
@@ -52,8 +52,9 @@ StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
         fileExists) {
       // check if stageAttributesHandle corresponds to an actual, existing
       // json stage file descriptor.
-      attrs = createFileBasedAttributesTemplate(stageAttributesHandle,
-                                                registerTemplate);
+      // this method lives in class template.
+      attrs = this->createFileBasedAttributesTemplate(stageAttributesHandle,
+                                                      registerTemplate);
       msg = "JSON File (" + stageAttributesHandle + ") Based";
     } else {
       // if name is not json file descriptor but still appropriate file
@@ -334,28 +335,18 @@ void StageAttributesManager::setDefaultFileNameBasedAttributes(
   }
 }  // StageAttributesManager::setDefaultFileNameBasedAttributes
 
-StageAttributes::ptr StageAttributesManager::createFileBasedAttributesTemplate(
-    const std::string& stageFilename,
-    bool registerTemplate) {
-  // Load the stage config JSON here
-  io::JsonDocument jsonConfig;
-  bool success = this->verifyLoadJson(stageFilename, jsonConfig);
-  if (!success) {
-    LOG(ERROR) << "StageAttributesManager::createFileBasedAttributesTemplate : "
-                  "Failure reading json "
-               << stageFilename << ". Aborting.";
-    return nullptr;
-  }
-
-  // construct a StageAttributes and populate with any
-  // AbstractPhysicsAttributes fields found in json.
-  auto stageAttributes = this->createPhysicsAttributesFromJson<StageAttributes>(
-      stageFilename, jsonConfig);
+StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
+    const std::string& templateName,
+    const io::JsonDocument& jsonConfig) {
+  // construct a StageAttributes and populate with any AbstractObjectAttributes
+  // fields found in json.
+  auto stageAttributes = this->createObjectAttributesFromJson<StageAttributes>(
+      templateName, jsonConfig);
 
   // directory location where stage files are found
   std::string stageLocFileDir = stageAttributes->getFileDirectory();
 
-  // now parse stage-specific fields
+  // now parse stage-specific fields.
   // load stage specific gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "gravity",
@@ -410,14 +401,12 @@ StageAttributes::ptr StageAttributesManager::createFileBasedAttributesTemplate(
   // load the rigid object library metadata (no physics init yet...)
   if (jsonConfig.HasMember("rigid object paths") &&
       jsonConfig["rigid object paths"].IsArray()) {
-    std::string configDirectory =
-        stageFilename.substr(0, stageFilename.find_last_of("/"));
-
+    std::string configDirectory = stageAttributes->getFileDirectory();
     const auto& paths = jsonConfig["rigid object paths"];
     for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
       if (!paths[i].IsString()) {
         LOG(ERROR)
-            << "StageAttributesManager::createAttributesTemplate "
+            << "StageAttributesManager::loadAttributesFromJSONDoc "
                ":Invalid value in stage config 'rigid object paths'- array "
             << i;
         continue;
@@ -430,8 +419,8 @@ StageAttributes::ptr StageAttributesManager::createFileBasedAttributesTemplate(
     }
   }  // if load rigid object library metadata
 
-  return this->postCreateRegister(stageAttributes, registerTemplate);
-}  // StageAttributesManager::createFileBasedAttributesTemplate
+  return stageAttributes;
+}  // StageAttributesManager::loadAttributesFromJSONDoc
 
 }  // namespace managers
 }  // namespace assets

@@ -2,6 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Containers/StaticArray.h>
+#include <Corrade/Utility/String.h>
+
 #include "AssetAttributesManager.h"
 #include "AttributesManagerBase.h"
 
@@ -142,6 +145,46 @@ int AssetAttributesManager::registerAttributesTemplateFinalize(
       this->addTemplateToLibrary(primAttributesTemplate, primAttributesHandle);
   return primTemplateID;
 }  // AssetAttributesManager::registerAttributesTemplateFinalize
+
+AbstractPrimitiveAttributes::ptr
+AssetAttributesManager::loadAttributesFromJSONDoc(
+    const std::string& filename,
+    const io::JsonDocument& jsonDoc) {
+  // find type of attributes - file name should contain handle
+  const std::string primAttrHandle =
+      Cr::Utility::Directory::splitExtension(
+          Cr::Utility::Directory::filename(filename))
+          .first;
+
+  std::string primClassName =
+      Cr::Utility::String::partition(primAttrHandle, '_')[0];
+  // if not legal primitive asset attributes file name, have message and return
+  // default sphere attributes.
+  if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
+    LOG(ERROR) << "AssetAttributesManager::loadAttributesFromJSONDoc :Unknown "
+                  "primitive class type : "
+               << primClassName
+               << " so returning default attributes for solid uvSphere.";
+    return this->getTemplateCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
+        defaultPrimAttributeHandles_.at("uvSphereSolid"));
+  }
+
+  // create attributes for this primitive
+  auto primAssetAttributes = buildPrimAttributes(primClassName);
+  if (nullptr == primAssetAttributes) {
+    LOG(ERROR)
+        << "AssetAttributesManager::loadAttributesFromJSONDoc : unable to "
+           "create default primitive asset attributes from primClassName "
+        << primClassName
+        << " so returning default attributes for solid uvSphere.";
+    return this->getTemplateCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
+        defaultPrimAttributeHandles_.at("uvSphereSolid"));
+  }
+
+  // TODO support loading values from JSON docs
+
+  return primAssetAttributes;
+}  // AssetAttributesManager::loadAttributesFromJSONDoc
 
 }  // namespace managers
 }  // namespace assets
