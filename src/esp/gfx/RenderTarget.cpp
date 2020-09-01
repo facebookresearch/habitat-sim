@@ -154,6 +154,8 @@ struct RenderTarget::Impl {
     return framebuffer_.viewport().size();
   }
 
+  Mn::GL::Framebuffer& getFramebuffer() { return framebuffer_; }
+
 #ifdef ESP_BUILD_WITH_CUDA
   void readFrameRgbaGPU(uint8_t* devPtr) {
     // TODO: Consider implementing the GPU read functions with EGLImage
@@ -282,6 +284,10 @@ void RenderTarget::blitRgbaToDefault() {
 
 Mn::Vector2i RenderTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
+}
+
+Mn::GL::Framebuffer& RenderTarget::getFramebuffer() {
+  return pimpl_->getFramebuffer();
 }
 
 #ifdef ESP_BUILD_WITH_CUDA

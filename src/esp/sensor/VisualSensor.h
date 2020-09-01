@@ -98,6 +98,16 @@ class VisualSensor : public Sensor {
     return *tgt_;
   }
 
+  /**
+   * @brief Draw an observation to the frame buffer using simulator's renderer
+   * @return true if success, otherwise false (e.g., frame buffer is not set)
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be drawn
+   */
+  virtual bool drawObservationToFramebuffer(sim::Simulator& sim) {
+    return false;
+  }
+
  protected:
   gfx::RenderTarget::uptr tgt_ = nullptr;
 

@@ -53,6 +53,14 @@ class PinholeCamera : public VisualSensor {
   virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
       const override;
 
+  /**
+   * @brief Draw an observation to the frame buffer using simulator's renderer
+   * @return true if success, otherwise false (e.g., frame buffer is not set)
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be drawn
+   */
+  virtual bool drawObservationToFramebuffer(sim::Simulator& sim) override;
+
  protected:
   // projection parameters
   int width_ = 640;      // canvas width
@@ -62,13 +70,6 @@ class PinholeCamera : public VisualSensor {
   float hfov_ = 35.0f;   // field of vision (in degrees)
 
   ESP_SMART_POINTERS(PinholeCamera)
-
-  /**
-   * @brief Draw an observation using simulator's renderer
-   * @param[in] sim Instance of Simulator class for which the observation needs
-   *                to be drawn
-   */
-  void drawObservation(sim::Simulator& sim);
 
   /**
    * @brief Read the observation that was rendered by the simulator

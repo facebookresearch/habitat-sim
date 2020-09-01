@@ -96,13 +96,17 @@ bool PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs) {
   if (!hasRenderTarget())
     return false;
 
-  drawObservation(sim);
+  drawObservationToFramebuffer(sim);
   readObservation(obs);
 
   return true;
 }
 
-void PinholeCamera::drawObservation(sim::Simulator& sim) {
+bool PinholeCamera::drawObservationToFramebuffer(sim::Simulator& sim) {
+  if (!hasRenderTarget()) {
+    return false;
+  }
+
   renderTarget().renderEnter();
 
   gfx::RenderCamera::Flags flags;
@@ -123,6 +127,8 @@ void PinholeCamera::drawObservation(sim::Simulator& sim) {
   }
 
   renderTarget().renderExit();
+
+  return true;
 }
 
 void PinholeCamera::readObservation(Observation& obs) {
@@ -157,7 +163,7 @@ bool PinholeCamera::displayObservation(sim::Simulator& sim) {
     return false;
   }
 
-  drawObservation(sim);
+  drawObservationToFramebuffer(sim);
   renderTarget().blitRgbaToDefault();
 
   return true;

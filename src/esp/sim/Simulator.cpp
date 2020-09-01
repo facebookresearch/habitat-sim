@@ -4,6 +4,7 @@
 
 #include "Simulator.h"
 
+#include <memory>
 #include <string>
 
 #include <Corrade/Utility/Directory.h>
@@ -22,6 +23,7 @@
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
+#include "esp/sensor/VisualSensor.h"
 
 namespace Cr = Corrade;
 
@@ -757,6 +759,19 @@ nav::PathFinder::ptr Simulator::getPathFinder() {
 void Simulator::setPathFinder(nav::PathFinder::ptr pathfinder) {
   pathfinder_ = pathfinder;
 }
+gfx::RenderTarget* Simulator::getRenderTarget(int agentId,
+                                              const std::string& sensorId) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr && sensor->isVisualSensor()) {
+      return &(std::static_pointer_cast<sensor::VisualSensor>(sensor)
+                   ->renderTarget());
+    }
+  }
+  return nullptr;
+}
 
 bool Simulator::displayObservation(const int agentId,
                                    const std::string& sensorId) {
@@ -766,6 +781,20 @@ bool Simulator::displayObservation(const int agentId,
     sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
     if (sensor != nullptr) {
       return sensor->displayObservation(*this);
+    }
+  }
+  return false;
+}
+
+bool Simulator::drawObservationToFramebuffer(const int agentId,
+                                             const std::string& sensorId) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr) {
+      return std::static_pointer_cast<sensor::VisualSensor>(sensor)
+          ->drawObservationToFramebuffer(*this);
     }
   }
   return false;

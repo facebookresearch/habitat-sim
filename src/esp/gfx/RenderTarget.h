@@ -67,6 +67,11 @@ class RenderTarget {
   Magnum::Vector2i framebufferSize() const;
 
   /**
+   * @brief get the framebuffer
+   */
+  Magnum::GL::Framebuffer& getFramebuffer();
+
+  /**
    * @brief Retrieve the RGBA rendering results.
    *
    * @param[in, out] view Preallocated memory that will be populated with the

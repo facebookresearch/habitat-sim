@@ -29,6 +29,9 @@
 #include "esp/scene/SceneNode.h"
 
 #include <Corrade/Utility/Arguments.h>
+#include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/Debug.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/Screenshot.h>
@@ -190,6 +193,9 @@ Key Commands:
   // NOTE: Mouse + shift is to select object on the screen!!
   void createPickedObjectVisualizer(unsigned int objectId);
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
+  // returns the number of visible drawables (meshVisualizer drawables are not
+  // included)
+  uint32_t displayObservatationWithPickedObject();
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -468,6 +474,40 @@ void Viewer::wiggleLastObject() {
                              existingObjectIDs.back());
 }
 
+uint32_t Viewer::displayObservatationWithPickedObject() {
+  // ONLY draw the content to the frame buffer but not immediately blit the
+  // result to the default main buffer
+  simulator_->drawObservationToFramebuffer(defaultAgentId_, "rgba_camera");
+  uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
+
+  // we need to immediately draw picked object to the SAME frame buffer
+  // so bind it first
+  esp::gfx::RenderTarget* sensorRenderTarget =
+      simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
+  CORRADE_ASSERT(sensorRenderTarget,
+                 "Error in Viewer::displayObservatationWithPickedObject: "
+                 "sensor's rendering target "
+                 "cannot be nullptr.",
+                 0);
+  Mn::GL::Framebuffer& framebuffer = sensorRenderTarget->getFramebuffer();
+  framebuffer.bind();
+
+  // setup blending function
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+  // render the picked object on top of the existing contents
+  esp::gfx::RenderCamera::Flags flags;
+  if (simulator_->isFrustumCullingEnabled()) {
+    flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+  }
+  renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+  sensorRenderTarget->blitRgbaToDefault();
+
+  return visibles;
+}
+
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
@@ -481,39 +521,22 @@ void Viewer::drawEvent() {
   }
 
   // TODO: enable other sensors to be displayed
-  simulator_->displayObservation(defaultAgentId_, "rgba_camera");
-  uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
+  uint32_t visibles = 0;
+  if (objectPickingHelper_->isObjectPicked()) {
+    visibles = displayObservatationWithPickedObject();
+  } else {
+    simulator_->displayObservation(defaultAgentId_, "rgba_camera");
+    visibles = renderCamera_->getPreviousNumVisibileDrawables();
+  }
+  // Immediately bind the main buffer back so that the "imgui" below can work
+  // properly
+  Mn::GL::defaultFramebuffer.bind();
 
   if (debugBullet_) {
     Mn::Matrix4 camM(renderCamera_->cameraMatrix());
     Mn::Matrix4 projM(renderCamera_->projectionMatrix());
 
     simulator_->physicsDebugDraw(projM * camM);
-  }
-
-  // draw picked object
-  if (objectPickingHelper_->isObjectPicked()) {
-    // setup blending function
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
-
-    // rendering
-    esp::gfx::RenderCamera::Flags flags;
-    if (simulator_->isFrustumCullingEnabled()) {
-      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-    }
-    renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
-
-    // Neither the blend equation, nor the blend function is changed,
-    // so no need to restore the "blending" status before the imgui draw
-    /*
-    // The following is to make imgui work properly:
-    Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
-                                       Mn::GL::Renderer::BlendEquation::Add);
-    Mn::GL::Renderer::setBlendFunction(
-        Mn::GL::Renderer::BlendFunction::SourceAlpha,
-        Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
-    */
-    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
   }
 
   imgui_.newFrame();
