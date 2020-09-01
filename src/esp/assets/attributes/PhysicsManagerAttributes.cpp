@@ -8,7 +8,7 @@ namespace esp {
 namespace assets {
 namespace attributes {
 
-const std::string PhysicsManagerAttributes::JSONConfigExample =
+const std::string PhysicsManagerAttributes::JSONConfigTestString =
     R"({
       "physics simulator": "bullet_test",
       "timestep": 1.0,

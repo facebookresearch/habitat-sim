@@ -123,7 +123,7 @@ class AttributesManager {
 
   /**
    * @brief Parse passed JSON Document specifically for @ref AttribsPtr object.
-   * It always returns a  @ref AttribsPtr object.
+   * It always returns a @ref AttribsPtr object.
    * @param filename Can be the name of the file describing the @ref AttribsPtr,
    * used for attributes handle on create and, for some attributes such as @ref
    * PrimAssetAttributes, to determine type of actual instanced attributes

@@ -15,12 +15,12 @@ namespace attributes {
 class PhysicsManagerAttributes : public AbstractAttributes {
  public:
   /**
-   * @brief This defines an example JSON descriptor for @ref
+   * @brief This defines an example json descriptor for @ref
    * PhysicsManagerAttributes. Has values that are different than defaults so
-   * this can be used to test JSON loading. These values are set to be
+   * this can be used to test json loading. These values are set to be
    * purposefully invalid, for testing purposes, and so should not be used.
    */
-  static const std::string JSONConfigExample;
+  static const std::string JSONConfigTestString;
   PhysicsManagerAttributes(const std::string& handle = "");
 
   void setSimulator(const std::string& simulator) {

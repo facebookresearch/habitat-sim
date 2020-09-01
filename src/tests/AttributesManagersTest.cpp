@@ -55,7 +55,7 @@ class AttributesManagersTest : public testing::Test {
   template <typename T, typename U>
   std::shared_ptr<U> testBuildAttributesFromJSONString(std::shared_ptr<T> mgr) {
     // get JSON sample config from static Attributes string
-    const std::string& jsonString = U::JSONConfigExample;
+    const std::string& jsonString = U::JSONConfigTestString;
     // create JSON document
     try {
       const auto& jsonDoc = esp::io::parseJsonString(jsonString);

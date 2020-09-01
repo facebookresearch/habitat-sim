@@ -17,7 +17,7 @@ const std::map<std::string, esp::assets::AssetType>
         {"suncg", AssetType::SUNCG_SCENE},
 };
 
-const std::string AbstractObjectAttributes::JSONConfigExample =
+const std::string AbstractObjectAttributes::JSONConfigTestString =
     R"({
       "scale":[2,3,4],
       "margin": 0.9,
@@ -30,8 +30,8 @@ const std::string AbstractObjectAttributes::JSONConfigExample =
       "render mesh": "testJSONRenderAsset.glb",
       "collision mesh": "testJSONCollisionAsset.glb")";
 
-const std::string ObjectAttributes::JSONConfigExample =
-    AbstractObjectAttributes::JSONConfigExample +
+const std::string ObjectAttributes::JSONConfigTestString =
+    AbstractObjectAttributes::JSONConfigTestString +
     R"(,
       "mass": 9,
       "use bounding box for collision": true,
@@ -40,8 +40,8 @@ const std::string ObjectAttributes::JSONConfigExample =
       "COM": [0.1,0.2,0.3]
     })";
 
-const std::string StageAttributes::JSONConfigExample =
-    AbstractObjectAttributes::JSONConfigExample +
+const std::string StageAttributes::JSONConfigTestString =
+    AbstractObjectAttributes::JSONConfigTestString +
     R"(,
       "gravity": [9,8,7],
       "origin":[1,2,3],
