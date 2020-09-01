@@ -144,7 +144,7 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly_static(
           "JSON_config_example",
           [](py::object) { return ObjectAttributes::JSONConfigTemplate; },
-          R"(A JSON example illustrating the possible user-modifiable 
+          R"(A JSON example illustrating the possible user-modifiable
           fields (via JSON) for ObjectAttributes)")
       .def_property(
           "com", &ObjectAttributes::getCOM, &ObjectAttributes::setCOM,
@@ -203,7 +203,7 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly_static(
           "JSON_config_example",
           [](py::object) { return StageAttributes::JSONConfigTemplate; },
-          R"(A JSON example illustrating the possible user-modifiable 
+          R"(A JSON example illustrating the possible user-modifiable
           fields (via JSON) for StageAttributes)")
       .def_property(
           "gravity", &StageAttributes::getGravity, &StageAttributes::setGravity,
@@ -252,7 +252,7 @@ void initAttributesBindings(py::module& m) {
           [](py::object) {
             return PhysicsManagerAttributes::JSONConfigTemplate;
           },
-          R"(A JSON example illustrating the possible user-modifiable 
+          R"(A JSON example illustrating the possible user-modifiable
           fields (via JSON) for PhysicsManagerAttributes)")
       .def_property_readonly(
           "simulator", &PhysicsManagerAttributes::getSimulator,
