@@ -622,7 +622,11 @@ example_type = "kinematic vs dynamic"
 observations = simulate(sim, dt=2.0)
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 
 remove_all_objects(sim)
@@ -683,7 +687,11 @@ while sim.get_world_time() < start_time + dt:
 example_type = "object permanence"
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 remove_all_objects(sim)
 
@@ -726,7 +734,11 @@ example_type = "physical plausibility"
 observations = simulate(sim, dt=3.0)
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 remove_all_objects(sim)
 
@@ -817,7 +829,11 @@ example_type = "trajectory prediction"
 observations = simulate(sim, dt=3.0)
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 remove_all_objects(sim)
 
@@ -904,7 +920,11 @@ example_type = "clutter generation"
 observations = simulate(sim, dt=2.0)
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 remove_all_objects(sim)
 sim.navmesh_visualization = False
