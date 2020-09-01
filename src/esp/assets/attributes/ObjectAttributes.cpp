@@ -21,7 +21,7 @@ const std::string AbstractObjectAttributes::JSONConfigExample =
     R"({
       "scale":[2,3,4],
       "margin": 0.9,
-      "friction coefficient": 0.321, 
+      "friction coefficient": 0.321,
       "restitution coefficient": 0.456,
       "requires lighting": false,
       "units to meters": 1.1,
