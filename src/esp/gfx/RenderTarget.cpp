@@ -115,6 +115,8 @@ struct RenderTarget::Impl {
     framebuffer_.bind();
   }
 
+  void renderReEnter() { framebuffer_.bind(); }
+
   void renderExit() {}
 
   void blitRgbaToDefault() {
@@ -153,8 +155,6 @@ struct RenderTarget::Impl {
   Mn::Vector2i framebufferSize() const {
     return framebuffer_.viewport().size();
   }
-
-  Mn::GL::Framebuffer& getFramebuffer() { return framebuffer_; }
 
 #ifdef ESP_BUILD_WITH_CUDA
   void readFrameRgbaGPU(uint8_t* devPtr) {
@@ -262,6 +262,10 @@ void RenderTarget::renderEnter() {
   pimpl_->renderEnter();
 }
 
+void RenderTarget::renderReEnter() {
+  pimpl_->renderReEnter();
+}
+
 void RenderTarget::renderExit() {
   pimpl_->renderExit();
 }
@@ -284,10 +288,6 @@ void RenderTarget::blitRgbaToDefault() {
 
 Mn::Vector2i RenderTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
-}
-
-Mn::GL::Framebuffer& RenderTarget::getFramebuffer() {
-  return pimpl_->getFramebuffer();
 }
 
 #ifdef ESP_BUILD_WITH_CUDA

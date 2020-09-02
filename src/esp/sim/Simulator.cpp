@@ -786,15 +786,15 @@ bool Simulator::displayObservation(const int agentId,
   return false;
 }
 
-bool Simulator::drawObservationToFramebuffer(const int agentId,
-                                             const std::string& sensorId) {
+bool Simulator::drawObservation(const int agentId,
+                                const std::string& sensorId) {
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
     sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
     if (sensor != nullptr) {
       return std::static_pointer_cast<sensor::VisualSensor>(sensor)
-          ->drawObservationToFramebuffer(*this);
+          ->drawObservation(*this);
     }
   }
   return false;

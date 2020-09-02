@@ -632,7 +632,7 @@ class Simulator {
    * @param sensorId   Id of the sensor for which the observation is to
    *                   be returned
    */
-  bool drawObservationToFramebuffer(int agentId, const std::string& sensorId);
+  bool drawObservation(int agentId, const std::string& sensorId);
 
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,

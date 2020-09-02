@@ -57,6 +57,12 @@ class RenderTarget {
   void renderEnter();
 
   /**
+   * @brief Prepare for another render pass (e.g., to bind the framebuffer).
+   * Compared to @renderEnter, it will NOT clear the framebuffer.
+   */
+  void renderReEnter();
+
+  /**
    * @brief Called after any draw calls that target this RenderTarget
    */
   void renderExit();
@@ -65,11 +71,6 @@ class RenderTarget {
    * @brief The size of the framebuffer in WxH
    */
   Magnum::Vector2i framebufferSize() const;
-
-  /**
-   * @brief get the framebuffer
-   */
-  Magnum::GL::Framebuffer& getFramebuffer();
 
   /**
    * @brief Retrieve the RGBA rendering results.

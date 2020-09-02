@@ -59,7 +59,7 @@ class PinholeCamera : public VisualSensor {
    * @param[in] sim Instance of Simulator class for which the observation needs
    *                to be drawn
    */
-  virtual bool drawObservationToFramebuffer(sim::Simulator& sim) override;
+  virtual bool drawObservation(sim::Simulator& sim) override;
 
  protected:
   // projection parameters
