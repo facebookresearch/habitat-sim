@@ -610,6 +610,30 @@ class Simulator {
    *                   be returned
    */
   bool displayObservation(int agentId, const std::string& sensorId);
+
+  /**
+   * @brief
+   * get the render target of a particular sensor of an agent
+   * @return pointer to the render target if it is a valid visual sensor,
+   * otherwise nullptr
+   * @param agentId    Id of the agent for which the observation is to
+   *                   be returned
+   * @param sensorId   Id of the sensor for which the observation is to
+   *                   be returned
+   */
+  gfx::RenderTarget* getRenderTarget(int agentId, const std::string& sensorId);
+
+  /**
+   * @brief draw observations to the frame buffer stored in that
+   * particular sensor of an agent. Unlike the @displayObservation, it will not
+   * display the observation on the default frame buffer
+   * @param agentId    Id of the agent for which the observation is to
+   *                   be returned
+   * @param sensorId   Id of the sensor for which the observation is to
+   *                   be returned
+   */
+  bool drawObservation(int agentId, const std::string& sensorId);
+
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,
                            sensor::Observation& observation);
