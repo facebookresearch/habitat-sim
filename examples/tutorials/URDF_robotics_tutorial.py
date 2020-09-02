@@ -159,6 +159,7 @@ def main(make_video=True, show_video=True):
     cfg = make_configuration()
     sim = habitat_sim.Simulator(cfg)
     agent_transform = place_agent(sim)
+    observations = []
 
     # [/initialize]
 
@@ -178,6 +179,23 @@ def main(make_video=True, show_video=True):
             data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
         ),
     }
+
+    # load a URDF file
+    robot_file = urdf_files["iiwa"]
+    robot_id = sim.add_articulated_object_from_urdf(robot_file)
+
+    # place the robot root state relative to the agent
+    local_base_pos = np.array([0.0, 0.5, -2.0])
+    agent_transform = sim.agents[0].scene_node.transformation_matrix()
+    base_transform = mn.Matrix4.rotation(mn.Rad(-1.56), mn.Vector3(1.0, 0, 0))
+    base_transform.translation = agent_transform.transform_point(local_base_pos)
+    sim.set_articulated_object_root_state(robot_id, base_transform)
+
+    # simulate
+    observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+    # remove the object
+    sim.remove_articulated_object(robot_id)
 
     # load a URDF file
     robot_file = urdf_files["aliengo"]
@@ -201,7 +219,7 @@ def main(make_video=True, show_video=True):
         sim.set_articulated_object_positions(robot_id, pose)
 
     # simulate
-    observations = simulate(sim, dt=1.5, get_frames=make_video)
+    observations += simulate(sim, dt=1.5, get_frames=make_video)
 
     # get/set forces and velocities
     tau = sim.get_articulated_object_forces(robot_id)

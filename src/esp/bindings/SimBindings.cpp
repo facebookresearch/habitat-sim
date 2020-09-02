@@ -160,6 +160,8 @@ void initSimBindings(py::module& m) {
       .def("add_articulated_object_from_urdf",
            &Simulator::addArticulatedObjectFromURDF, "object_id"_a,
            "fixed_base"_a = false)
+      .def("remove_articulated_object", &Simulator::removeArticulatedObject,
+           "object_id"_a)
       .def("set_articulated_object_root_state",
            &Simulator::setArticulatedObjectRootState, "object_id"_a, "state"_a)
       .def("get_articulated_object_root_state",

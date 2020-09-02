@@ -777,6 +777,12 @@ int Simulator::addArticulatedObjectFromURDF(std::string filepath,
   return esp::ID_UNDEFINED;
 }
 
+void Simulator::removeArticulatedObject(int objectId) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->removeArticulatedObject(objectId);
+  }
+}
+
 void Simulator::setArticulatedObjectRootState(int objectId,
                                               const Magnum::Matrix4& state) {
   if (sceneHasPhysics(0)) {

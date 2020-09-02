@@ -510,6 +510,8 @@ class Simulator {
   int addArticulatedObjectFromURDF(std::string filepath,
                                    bool fixedBase = false);
 
+  void removeArticulatedObject(int objectId);
+
   void setArticulatedObjectRootState(int objectId,
                                      const Magnum::Matrix4& state);
 
