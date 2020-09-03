@@ -491,6 +491,14 @@ void Viewer::drawEvent() {
   // result to the default main buffer
   // (this is the reason we do not call displayObservation)
   simulator_->drawObservation(defaultAgentId_, "rgba_camera");
+
+  if (debugBullet_) {
+    Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+    Mn::Matrix4 projM(renderCamera_->projectionMatrix());
+
+    simulator_->physicsDebugDraw(projM * camM);
+  }
+
   uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
 
   esp::gfx::RenderTarget* sensorRenderTarget =
@@ -516,17 +524,11 @@ void Viewer::drawEvent() {
 
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
   }
+
   sensorRenderTarget->blitRgbaToDefault();
   // Immediately bind the main buffer back so that the "imgui" below can work
   // properly
   Mn::GL::defaultFramebuffer.bind();
-
-  if (debugBullet_) {
-    Mn::Matrix4 camM(renderCamera_->cameraMatrix());
-    Mn::Matrix4 projM(renderCamera_->projectionMatrix());
-
-    simulator_->physicsDebugDraw(projM * camM);
-  }
 
   imgui_.newFrame();
 
