@@ -485,19 +485,28 @@ void Viewer::drawEvent() {
     timeSinceLastSimulation = 0.0;
   }
 
-  // TODO: enable other sensors to be displayed
+  // using polygon offset to increase mesh depth to a avoid z-fighting with
+  // debug draw (since lines will not respond to offset).
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+  Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
 
   // ONLY draw the content to the frame buffer but not immediately blit the
   // result to the default main buffer
   // (this is the reason we do not call displayObservation)
   simulator_->drawObservation(defaultAgentId_, "rgba_camera");
+  // TODO: enable other sensors to be displayed
 
+  Mn::GL::Renderer::setDepthFunction(
+      Mn::GL::Renderer::DepthFunction::LessOrEqual);
   if (debugBullet_) {
     Mn::Matrix4 camM(renderCamera_->cameraMatrix());
     Mn::Matrix4 projM(renderCamera_->projectionMatrix());
 
     simulator_->physicsDebugDraw(projM * camM);
   }
+  Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
+  Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
+  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
 
