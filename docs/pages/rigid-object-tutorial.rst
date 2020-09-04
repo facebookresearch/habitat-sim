@@ -1,12 +1,12 @@
+Interactive Rigid Objects
+#########################
+
 :ref-prefix:
     habitat_sim.simulator
     habitat_sim.sim
     habitat_sim.agent
     habitat_sim.attributes
     habitat_sim.scene
-
-Interactive Rigid Objects
-#########################
 
 :summary: This tutorial demonstrates rigid object interactions in Habitat-sim -- instancing, dynamic simulation, and kinematic manipulation.
 

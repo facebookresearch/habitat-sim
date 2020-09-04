@@ -1,12 +1,12 @@
+Working with Lights
+###################
+
 :ref-prefix:
     habitat_sim.gfx
     habitat_sim.simulator
     habitat_sim.sim
     habitat_sim.agent
     habitat_sim.attributes
-
-Working with Lights
-###################
 
 :summary: This tutorial demonstrates lighting of scenes and objects in Habitat -- creation, placement, configuration, and manipulation of light sources and shaders.
 

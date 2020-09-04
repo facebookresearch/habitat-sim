@@ -36,7 +36,6 @@ INPUT_PAGES = [
     "pages/new-actions.rst",
     "pages/stereo-agent.rst",
     "pages/lighting-setups.rst",
-    "pages/notebooks.rst",
     "pages/image-extractor.rst",
     "pages/rigid-object-tutorial.rst",
 ]
@@ -76,8 +75,8 @@ LINKS_NAVBAR1 = [
             ("Add new actions", "new-actions"),
             ("Stereo agent", "stereo-agent"),
             ("Lighting Setups", "lighting-setups"),
-            ("Notebooks", "notebooks"),
             ("Image extraction", "image-extractor"),
+            ("Rigid Object Tutorial", "rigid-object-tutorial"),
         ],
     ),
     ("Classes", "classes", []),
