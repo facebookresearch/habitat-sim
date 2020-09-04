@@ -40,7 +40,9 @@ StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
   std::string msg;
   std::string strHandle = Cr::Utility::String::lowercase(stageAttributesHandle);
   std::string jsonStageFileName =
-      io::changeExtension(stageAttributesHandle, "stage_config.json");
+      (strHandle.find("stage_config.json") != std::string::npos)
+          ? std::string(stageAttributesHandle)
+          : io::changeExtension(stageAttributesHandle, "stage_config.json");
   bool fileExists = (this->isValidFileName(stageAttributesHandle));
   bool jsonFileExists = (this->isValidFileName(jsonStageFileName));
   if (objectAttributesMgr_->isValidPrimitiveAttributes(stageAttributesHandle)) {
