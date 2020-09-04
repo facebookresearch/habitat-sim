@@ -162,6 +162,8 @@ void initSimBindings(py::module& m) {
            "fixed_base"_a = false)
       .def("remove_articulated_object", &Simulator::removeArticulatedObject,
            "object_id"_a)
+      .def("get_existing_articulated_object_ids",
+           &Simulator::getExistingArticulatedObjectIDs, "scene_id"_a = 0)
       .def("set_articulated_object_root_state",
            &Simulator::setArticulatedObjectRootState, "object_id"_a, "state"_a)
       .def("get_articulated_object_root_state",
@@ -194,8 +196,21 @@ void initSimBindings(py::module& m) {
       .def("get_num_articulated_links", &Simulator::getNumArticulatedLinks,
            "object_id"_a)
       .def("get_articulated_link_rigid_state",
-           &Simulator::getArticulatedLinkRigidState, "object_id"_a,
-           "link_id"_a);
+           &Simulator::getArticulatedLinkRigidState, "object_id"_a, "link_id"_a)
+
+      /* --- Joint Motor API --- */
+      .def("create_joint_motor", &Simulator::createJointMotor, "object_id"_a,
+           "dof"_a, "settings"_a)
+      .def("remove_joint_motor", &Simulator::removeJointMotor, "object_id"_a,
+           "motor_id"_a)
+      .def("get_joint_motor_settings", &Simulator::getJointMotorSettings,
+           "object_id"_a, "motor_id"_a)
+      .def("update_joint_motor", &Simulator::updateJointMotor, "object_id"_a,
+           "motor_id"_a, "settings"_a)
+      .def("get_existing_joint_motors", &Simulator::getExistingJointMotors,
+           "object_id"_a)
+      .def("create_motors_for_all_dofs", &Simulator::createMotorsForAllDofs,
+           "object_id"_a, "settings"_a = esp::physics::JointMotorSettings());
 }
 
 }  // namespace sim

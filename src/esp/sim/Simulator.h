@@ -12,6 +12,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/ArticulatedObject.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
@@ -512,6 +513,11 @@ class Simulator {
 
   void removeArticulatedObject(int objectId);
 
+  /** @brief Get a list of existing object IDs for articulated objects (i.e.,
+   * existing keys in @ref PhysicsManager::existingArticulatedObjects_.)
+   */
+  std::vector<int> getExistingArticulatedObjectIDs(int sceneID = 0);
+
   void setArticulatedObjectRootState(int objectId,
                                      const Magnum::Matrix4& state);
 
@@ -543,6 +549,56 @@ class Simulator {
 
   int getNumArticulatedLinks(int objectId);
   core::RigidState getArticulatedLinkRigidState(int objectId, int linkId);
+
+  // Joint Motor API
+
+  /**
+   * @brief Create a new JointMotor for a dof in an ArticulatedObject from a
+   * JointMotorSettings.
+   *
+   * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
+   */
+  int createJointMotor(const int objectId,
+                       const int dof,
+                       const esp::physics::JointMotorSettings& settings);
+
+  /**
+   * @brief Remove and destroy a JointMotor for an ArticulatedObject.
+   */
+  void removeJointMotor(const int objectId, const int motorId);
+
+  /**
+   * @brief Get a copy of the JointMotorSettings for an ArticulatedObject's
+   * existing JointMotor .
+   */
+  esp::physics::JointMotorSettings getJointMotorSettings(const int objectId,
+                                                         const int motorId);
+
+  /**
+   * @brief Update an ArticulatedObject's JointMotor with new settings.
+   */
+  void updateJointMotor(const int objectId,
+                        const int motorId,
+                        const esp::physics::JointMotorSettings& settings);
+
+  /**
+   * @brief Query a map of motorIds -> dofs for all active JointMotors attached
+   * to an ArticulatedObject.
+   */
+  std::map<int, int> getExistingJointMotors(const int objectId);
+
+  /**
+   * @brief Create a new set of default JointMotors for all valid dofs in an
+   * ArticulatedObject.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   *
+   * @return A map of dofs -> motorIds for the new motors.
+   */
+  std::map<int, int> createMotorsForAllDofs(
+      const int objectId,
+      esp::physics::JointMotorSettings settings =
+          esp::physics::JointMotorSettings());
 
   // END: Articulated Object API (UNSTABLE!)
   //===============================================================================//

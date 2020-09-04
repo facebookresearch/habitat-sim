@@ -136,21 +136,19 @@ struct LocobotController {
                     int _rWheelDof = 3)
       : bpm(_bpm), objectId(_articulatedObjectId) {
     Corrade::Utility::Debug() << "LocobotController constructor.";
-    esp::physics::BulletArticulatedObject& bao =
-        *(static_cast<esp::physics::BulletArticulatedObject*>(
-            &_bpm->getArticulatedObject(objectId)));
-    dofsToMotorIds = bao.createMotorsForAllDofs();
+    dofsToMotorIds = bpm->createMotorsForAllDofs(objectId);
     Corrade::Utility::Debug() << "dofsToMotorIds = " << dofsToMotorIds;
-    std::vector<float> pose = bao.getPositions();
+    std::vector<float> pose = bpm->getArticulatedObjectPositions(objectId);
     for (auto id : dofsToMotorIds) {
-      bao.updateJointMotorParams(id.second, 0, 0.0, pose[id.first], 1.0, 1.0);
+      bpm->updateJointMotor(objectId, id.second,
+                            {pose[id.first], 1.0, 0, 0, 1.0});
     }
     lWheelDof = _lWheelDof;
     rWheelDof = _rWheelDof;
     lWheelMotorId = dofsToMotorIds.at(lWheelDof);
     rWheelMotorId = dofsToMotorIds.at(rWheelDof);
-    bao.updateJointMotorParams(lWheelMotorId, 0, 0.0, 0, 0.0, 10.0);
-    bao.updateJointMotorParams(rWheelMotorId, 0, 0.0, 0, 0.0, 10.0);
+    bpm->updateJointMotor(objectId, lWheelMotorId, {0, 0, 0, 0, 10.0});
+    bpm->updateJointMotor(objectId, rWheelMotorId, {0, 0, 0, 0, 10.0});
   }
 
   ~LocobotController() {
@@ -163,10 +161,6 @@ struct LocobotController {
   }
 
   void toggle() {
-    esp::physics::BulletArticulatedObject& bao =
-        *(static_cast<esp::physics::BulletArticulatedObject*>(
-            &bpm->getArticulatedObject(objectId)));
-
     // toggle the mode
     mode = LocobotControlMode(int(mode + 1) % 6);
     Corrade::Utility::Debug() << "Set Locobot mode: " << mode;
@@ -175,41 +169,43 @@ struct LocobotController {
     float maxImpulse = 10.0;
     switch (mode) {
       case NO_OP: {
-        bao.updateJointMotorParams(lWheelMotorId, 0, 0.0, 0, 0, maxImpulse);
-        bao.updateJointMotorParams(rWheelMotorId, 0, 0.0, 0, 0, maxImpulse);
+        bpm->updateJointMotor(objectId, lWheelMotorId,
+                              {0, 0, 0, 0, maxImpulse});
+        bpm->updateJointMotor(objectId, rWheelMotorId,
+                              {0, 0, 0, 0, maxImpulse});
         return;
       } break;
       case FORWARD: {
-        bao.updateJointMotorParams(lWheelMotorId, wheelVel * 2, 1.0, 0, 0,
-                                   maxImpulse);
-        bao.updateJointMotorParams(rWheelMotorId, wheelVel * 2, 1.0, 0, 0,
-                                   maxImpulse);
+        bpm->updateJointMotor(objectId, lWheelMotorId,
+                              {0, 0, wheelVel * 2, 1.0, maxImpulse});
+        bpm->updateJointMotor(objectId, rWheelMotorId,
+                              {0, 0, wheelVel * 2, 1.0, maxImpulse});
       } break;
       case BACK: {
-        bao.updateJointMotorParams(lWheelMotorId, -wheelVel * 2, 1.0, 0, 0,
-                                   maxImpulse);
-        bao.updateJointMotorParams(rWheelMotorId, -wheelVel * 2, 1.0, 0, 0,
-                                   maxImpulse);
+        bpm->updateJointMotor(objectId, lWheelMotorId,
+                              {0, 0, -wheelVel * 2, 1.0, maxImpulse});
+        bpm->updateJointMotor(objectId, rWheelMotorId,
+                              {0, 0, -wheelVel * 2, 1.0, maxImpulse});
       } break;
       case LEFT: {
-        bao.updateJointMotorParams(lWheelMotorId, -wheelVel, 1.0, 0, 0,
-                                   maxImpulse);
-        bao.updateJointMotorParams(rWheelMotorId, wheelVel, 1.0, 0, 0,
-                                   maxImpulse);
+        bpm->updateJointMotor(objectId, lWheelMotorId,
+                              {0, 0, -wheelVel, 1.0, maxImpulse});
+        bpm->updateJointMotor(objectId, rWheelMotorId,
+                              {0, 0, wheelVel, 1.0, maxImpulse});
       } break;
       case RIGHT: {
-        bao.updateJointMotorParams(lWheelMotorId, wheelVel, 1.0, 0, 0,
-                                   maxImpulse);
-        bao.updateJointMotorParams(rWheelMotorId, -wheelVel, 1.0, 0, 0,
-                                   maxImpulse);
+        bpm->updateJointMotor(objectId, lWheelMotorId,
+                              {0, 0, wheelVel, 1.0, maxImpulse});
+        bpm->updateJointMotor(objectId, rWheelMotorId,
+                              {0, 0, -wheelVel, 1.0, maxImpulse});
       } break;
       case RANDOM: {
         float randL = (float)((rand() % 2000 - 1000) / 1000.0);
         float randR = (float)((rand() % 2000 - 1000) / 1000.0);
-        bao.updateJointMotorParams(lWheelMotorId, wheelVel * randL, 1.0, 0, 0,
-                                   1.0);
-        bao.updateJointMotorParams(rWheelMotorId, wheelVel * randR, 1.0, 0, 0,
-                                   1.0);
+        bpm->updateJointMotor(objectId, lWheelMotorId,
+                              {0, 0, wheelVel * randL, 1.0, 1.0});
+        bpm->updateJointMotor(objectId, rWheelMotorId,
+                              {0, 0, wheelVel * randR, 1.0, 1.0});
       } break;
 
       default:
@@ -233,22 +229,14 @@ struct AliengoController {
   AliengoController(esp::physics::BulletPhysicsManager* _bpm,
                     int _articulatedObjectId)
       : bpm(_bpm), objectId(_articulatedObjectId) {
-    Corrade::Utility::Debug() << "AliengoController constructor.";
-    esp::physics::BulletArticulatedObject& bao =
-        *(static_cast<esp::physics::BulletArticulatedObject*>(
-            &_bpm->getArticulatedObject(objectId)));
-    dofsToMotorIds = bao.createMotorsForAllDofs();
-    Corrade::Utility::Debug() << "dofsToMotorIds = " << dofsToMotorIds;
-    initialPose = bao.getPositions();
-    cyclePose = bao.getPositions();
+    dofsToMotorIds = bpm->createMotorsForAllDofs(objectId);
+    initialPose = bpm->getArticulatedObjectPositions(objectId);
+    cyclePose = bpm->getArticulatedObjectPositions(objectId);
   }
 
   ~AliengoController() {
-    esp::physics::BulletArticulatedObject& bao =
-        *(static_cast<esp::physics::BulletArticulatedObject*>(
-            &bpm->getArticulatedObject(objectId)));
     for (auto id : dofsToMotorIds) {
-      bao.removeJointMotor(id.second);
+      bpm->removeJointMotor(objectId, id.second);
     }
   }
 
@@ -259,18 +247,15 @@ struct AliengoController {
     if (mode != 0) {
       positionGain = 1.0;
     }
-    esp::physics::BulletArticulatedObject& bao =
-        *(static_cast<esp::physics::BulletArticulatedObject*>(
-            &bpm->getArticulatedObject(objectId)));
     for (auto id : dofsToMotorIds) {
       if (mode != 2) {
-        bao.updateJointMotorParams(id.second, 0, maxImpulse / 2.0,
-                                   initialPose[id.first], positionGain,
-                                   maxImpulse);
+        bpm->updateJointMotor(objectId, id.second,
+                              {initialPose[id.first], positionGain, 0,
+                               maxImpulse / 2.0, maxImpulse});
       } else {
-        bao.updateJointMotorParams(id.second, 0, maxImpulse / 2.0,
-                                   cyclePose[id.first], positionGain,
-                                   maxImpulse);
+        bpm->updateJointMotor(objectId, id.second,
+                              {cyclePose[id.first], positionGain, 0,
+                               maxImpulse / 2.0, maxImpulse});
       }
     }
   }
@@ -283,13 +268,10 @@ struct AliengoController {
       for (auto dof : shoulderDofs) {
         cyclePose[dof] = sinDof;
       }
-      // Corrade::Utility::Debug() << " cyclePose = " << cyclePose;
-      esp::physics::BulletArticulatedObject& bao =
-          *(static_cast<esp::physics::BulletArticulatedObject*>(
-              &bpm->getArticulatedObject(objectId)));
       for (auto id : dofsToMotorIds) {
-        bao.updateJointMotorParams(id.second, 0, maxImpulse / 2.0,
-                                   cyclePose[id.first], 1.0, maxImpulse);
+        bpm->updateJointMotor(
+            objectId, id.second,
+            {cyclePose[id.first], 1.0, 0, maxImpulse / 2.0, maxImpulse});
       }
     }
   }
@@ -482,7 +464,7 @@ class Viewer : public Mn::Platform::Application {
   // add primiitive object
   void addPrimitiveObject();
 
-  void addArticulatedObject(std::string urdfFilename, bool fixedBase = false);
+  int addArticulatedObject(std::string urdfFilename, bool fixedBase = false);
 
   void clearAllObjects();
 
@@ -823,11 +805,12 @@ void Viewer::throwSphere(Mn::Vector3 direction) {
   physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
 }
 
-void Viewer::addArticulatedObject(std::string urdfFilename, bool fixedBase) {
+int Viewer::addArticulatedObject(std::string urdfFilename, bool fixedBase) {
   int articulatedObjectId = physicsManager_->addArticulatedObjectFromURDF(
       urdfFilename, &sceneGraph_->getDrawables(), fixedBase);
   articulatedObjectIDs_.push_back(articulatedObjectId);
   placeArticulatedObjectAgentFront(articulatedObjectId);
+  return articulatedObjectId;
 }
 
 void Viewer::placeArticulatedObjectAgentFront(int objectId) {
@@ -1412,40 +1395,39 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Zero: {
       std::string urdfFilePath =
           "data/URDF_demo_assets/aliengo/urdf/aliengo.urdf";
-      addArticulatedObject(urdfFilePath);
+      int objectId = addArticulatedObject(urdfFilePath);
       auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
       R.translation() =
-          bpm->getArticulatedObjectRootState(articulatedObjectIDs_.back())
-              .translation();
-      bpm->setArticulatedObjectRootState(articulatedObjectIDs_.back(), R);
+          bpm->getArticulatedObjectRootState(objectId).translation();
+      bpm->setArticulatedObjectRootState(objectId, R);
       // manually set joint damping
-      auto bao = static_cast<esp::physics::BulletArticulatedObject*>(
-          &bpm->getArticulatedObject(articulatedObjectIDs_.back()));
-      for (int motorId = 0; motorId < bao->nextJointMotorId_; ++motorId) {
-        bao->updateJointMotorParams(motorId, 0, 1.0, 0, 0, 0.1);
+      for (auto motor : physicsManager_->getExistingJointMotors(objectId)) {
+        bpm->updateJointMotor(objectId, motor.first, {0, 0, 0, 1.0, 0.1});
       }
       // modify the pose to account for joint limits
-      std::vector<float> pose = bao->getPositions();
+      std::vector<float> pose =
+          physicsManager_->getArticulatedObjectPositions(objectId);
       std::vector<int> calfDofs = {2, 5, 8, 11};
       for (auto dof : calfDofs) {
         pose[dof] = -1.0;
         pose[dof - 1] = 0.45;  // also set a thigh
       }
-      bao->setPositions(pose);
-      auto aliengoController = std::make_unique<AliengoController>(
-          bpm, articulatedObjectIDs_.back());
+      physicsManager_->setArticulatedObjectPositions(objectId, pose);
+      auto aliengoController =
+          std::make_unique<AliengoController>(bpm, objectId);
       aliengoControllers.push_back(std::move(aliengoController));
     } break;
     case KeyEvent::Key::One: {
       std::string urdfFilePath =
           "data/test_assets/URDF/kuka_iiwa/model_free_base.urdf";
-      addArticulatedObject(urdfFilePath, true);
-      // manually adjust joint damping
-      auto bao = static_cast<esp::physics::BulletArticulatedObject*>(
-          &bpm->getArticulatedObject(articulatedObjectIDs_.back()));
-      for (int motorId = 0; motorId < bao->nextJointMotorId_; ++motorId) {
-        bao->updateJointMotorParams(
-            motorId, 0, 1.0, 0, 0, bao->getJointMotorMaxImpulse(motorId) / 2.0);
+      int objectId = addArticulatedObject(urdfFilePath, true);
+      // manually adjust joint damping (half impulse)
+      for (auto motor : physicsManager_->getExistingJointMotors(objectId)) {
+        auto settings =
+            physicsManager_->getJointMotorSettings(objectId, motor.first);
+        Mn::Debug{} << "motor: " << motor;
+        physicsManager_->updateJointMotor(
+            objectId, motor.first, {0, 0, 0, 1.0, settings.maxImpulse / 2.0});
       }
     } break;
     case KeyEvent::Key::Two: {
@@ -1455,7 +1437,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       std::string urdfFilePath =
           "data/URDF_demo_assets/locobot/urdf/"
           "locobot_description_lite2.urdf";
-      addArticulatedObject(urdfFilePath);
+      int objectId = addArticulatedObject(urdfFilePath);
       auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
       R.translation() =
           bpm->getArticulatedObjectRootState(articulatedObjectIDs_.back())
@@ -1470,21 +1452,20 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       std::string urdfFilePath =
           "data/URDF_demo_assets/locobot/urdf/"
           "locobot_description2.urdf";
-      addArticulatedObject(urdfFilePath);
+      int objectId = addArticulatedObject(urdfFilePath);
       auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
       R.translation() =
           bpm->getArticulatedObjectRootState(articulatedObjectIDs_.back())
               .translation();
       bpm->setArticulatedObjectRootState(articulatedObjectIDs_.back(), R);
       // manually set joint damping
-      auto bao = static_cast<esp::physics::BulletArticulatedObject*>(
-          &bpm->getArticulatedObject(articulatedObjectIDs_.back()));
-      for (int motorId = 0; motorId < bao->nextJointMotorId_; ++motorId) {
-        bao->updateJointMotorParams(motorId, 0, 1.0, 0, 0, 0.1);
+      for (auto motor : physicsManager_->getExistingJointMotors(objectId)) {
+        bpm->updateJointMotor(objectId, motor.first, {0, 0, 0, 1.0, 0.1});
       }
-      std::vector<float> pose = bao->getPositions();
+      std::vector<float> pose =
+          physicsManager_->getArticulatedObjectPositions(objectId);
       pose[4] = -1.7;
-      bao->setPositions(pose);
+      physicsManager_->setArticulatedObjectPositions(objectId, pose);
       auto locobotController = std::make_unique<LocobotController>(
           bpm, articulatedObjectIDs_.back(), 9, 10);
       locobotControllers.push_back(std::move(locobotController));

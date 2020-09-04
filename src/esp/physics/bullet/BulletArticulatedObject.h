@@ -135,28 +135,24 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   //============ Joint Motor Constraints =============
 
-  //! create a new set of motors with 0 gains for all valid dofs and return a
-  //! map of dof to motor id
-  std::map<int, int> createMotorsForAllDofs();
+  virtual int createJointMotor(const int dof,
+                               const JointMotorSettings& settings) override;
 
-  int createJointMotor(int linkId,
-                       int linkDof,
-                       float velocityTarget = 0.0,
-                       float velGain = 1.0,
-                       float positionTarget = 0.0,
-                       float posGain = 0.0,
-                       float maxImpulse = 1000.0);
+  //! internal version specific to Bullet setup to simplify the creation
+  //! process.
+  int createJointMotor(const int linkIx,
+                       const int linkDof,
+                       const int globalDof,
+                       const JointMotorSettings& settings);
 
-  void updateJointMotorParams(int motorId,
-                              float velocityTarget = 0.0,
-                              float velGain = 1.0,
-                              float positionTarget = 0.0,
-                              float posGain = 0.0,
-                              float maxImpulse = 1000.0);
+  virtual void removeJointMotor(const int motorId) override;
+  virtual void updateJointMotor(const int motorId,
+                                const JointMotorSettings& settings) override;
+
+  virtual std::map<int, int> createMotorsForAllDofs(
+      JointMotorSettings settings = JointMotorSettings()) override;
 
   float getJointMotorMaxImpulse(int motorId);
-
-  void removeJointMotor(int jointMotorId);
 
   int nextJointMotorId_ = 0;
 

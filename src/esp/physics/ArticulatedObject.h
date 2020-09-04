@@ -32,6 +32,43 @@ namespace physics {
 class URDFImporter;
 
 ////////////////////////////////////
+// Joint Motor Interface
+////////////////////////////////////
+
+struct JointMotorSettings {
+ public:
+  JointMotorSettings(){};
+
+  JointMotorSettings(double _positionTarget,
+                     double _positionGain,
+                     double _velocityTarget,
+                     double _velocityGain,
+                     double _maxImpulse) {
+    positionTarget = _positionTarget;
+    positionGain = _positionGain;
+    velocityTarget = _velocityTarget;
+    velocityGain = _velocityGain;
+    maxImpulse = _maxImpulse;
+  };
+
+  double positionTarget = 0.0;
+  double positionGain = 0.0;
+  double velocityTarget = 0.0;
+  double velocityGain = 1.0;
+  double maxImpulse = 1000.0;
+
+  ESP_SMART_POINTERS(JointMotorSettings)
+};
+
+struct JointMotor {
+  JointMotorSettings settings;
+  int dof;
+  int motorId;
+
+  ESP_SMART_POINTERS(JointMotor)
+};
+
+////////////////////////////////////
 // Link
 ////////////////////////////////////
 
@@ -258,6 +295,75 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual void setMotionType(CORRADE_UNUSED MotionType mt){};
 
+  //=========== Joint Motor API ===========
+
+  /**
+   * @brief Create a new JointMotor for a dof from a JointMotorSettings.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   *
+   * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
+   */
+  virtual int createJointMotor(const int dof,
+                               const JointMotorSettings& settings) {
+    Magnum::Debug{} << "No base implementation of \"createJointMotor\". "
+                       "Requires a physics simulator implementation.";
+    return ID_UNDEFINED;
+  };
+
+  /**
+   * @brief Remove and destroy a joint motor.
+   */
+  virtual void removeJointMotor(const int motorId) {
+    CHECK(jointMotors_.count(motorId) > 0);
+    jointMotors_.erase(motorId);
+  };
+
+  /**
+   * @brief Get a copy of the JointMotorSettings for an existing motor.
+   */
+  virtual JointMotorSettings getJointMotorSettings(const int motorId) {
+    CHECK(jointMotors_.count(motorId) > 0);
+    return jointMotors_.at(motorId)->settings;
+  };
+
+  /**
+   * @brief Update a JointMotor with new settings.
+   */
+  virtual void updateJointMotor(const int motorId,
+                                const JointMotorSettings& settings) {
+    CHECK(jointMotors_.count(motorId) > 0);
+    jointMotors_.at(motorId)->settings = settings;
+  };
+
+  /**
+   * @brief Query a map of motorIds -> dofs for all active JointMotors.
+   */
+  virtual std::map<int, int> getExistingJointMotors() {
+    std::map<int, int> motorIdsToDofIds;
+    for (auto& motor : jointMotors_) {
+      motorIdsToDofIds[motor.first] = motor.second->dof;
+    }
+    return motorIdsToDofIds;
+  };
+
+  /**
+   * @brief Create a new set of default JointMotors for all valid dofs in an
+   * ArticulatedObject.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   *
+   * @return A map of dofs -> motorIds for the new motors.
+   */
+  virtual std::map<int, int> createMotorsForAllDofs(
+      JointMotorSettings settings = JointMotorSettings()) {
+    Magnum::Debug{} << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
+                       "SHOULD NOT BE CALLED WITH BULLET ";
+    return std::map<int, int>();
+  };
+
+  //=========== END - Joint Motor API ===========
+
  protected:
   virtual bool attachGeometry(
       CORRADE_UNUSED scene::SceneNode& node,
@@ -269,7 +375,11 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
     return false;
   };
 
+  //! map linkId to ArticulatedLink
   std::map<int, ArticulatedLink::uptr> links_;
+
+  //! map motorId to JointMotor
+  std::map<int, JointMotor::uptr> jointMotors_;
 
   MotionType motionType_ = MotionType::KINEMATIC;
 

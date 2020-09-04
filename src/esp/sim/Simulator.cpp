@@ -783,6 +783,13 @@ void Simulator::removeArticulatedObject(int objectId) {
   }
 }
 
+std::vector<int> Simulator::getExistingArticulatedObjectIDs(const int sceneID) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getExistingArticulatedObjectIDs();
+  }
+  return std::vector<int>();
+}
+
 void Simulator::setArticulatedObjectRootState(int objectId,
                                               const Magnum::Matrix4& state) {
   if (sceneHasPhysics(0)) {
@@ -886,6 +893,59 @@ core::RigidState Simulator::getArticulatedLinkRigidState(int objectId,
   }
   return core::RigidState();
 };
+
+// --- Joint Motor API --- //
+//-------------------------//
+
+int Simulator::createJointMotor(
+    const int objectId,
+    const int dof,
+    const esp::physics::JointMotorSettings& settings) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->createJointMotor(objectId, dof, settings);
+  }
+  return ID_UNDEFINED;
+}
+
+void Simulator::removeJointMotor(const int objectId, const int motorId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->removeJointMotor(objectId, motorId);
+  }
+}
+
+esp::physics::JointMotorSettings Simulator::getJointMotorSettings(
+    const int objectId,
+    const int motorId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getJointMotorSettings(objectId, motorId);
+  }
+  return {};
+}
+
+void Simulator::updateJointMotor(
+    const int objectId,
+    const int motorId,
+    const esp::physics::JointMotorSettings& settings) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->updateJointMotor(objectId, motorId, settings);
+  }
+}
+
+std::map<int, int> Simulator::getExistingJointMotors(const int objectId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getExistingJointMotors(objectId);
+  }
+  return std::map<int, int>();
+}
+
+std::map<int, int> Simulator::createMotorsForAllDofs(
+    const int objectId,
+    esp::physics::JointMotorSettings settings) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->createMotorsForAllDofs(objectId, settings);
+  }
+  return std::map<int, int>();
+}
 
 // END: Articulated Object API (UNSTABLE!)
 //===============================================================================//

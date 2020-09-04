@@ -27,6 +27,18 @@ void initPhysicsBindings(py::module& m) {
       .def_readwrite("ang_vel_is_local", &VelocityControl::angVelIsLocal)
       .def("integrate_transform", &VelocityControl::integrateTransform, "dt"_a,
            "rigid_state"_a);
+
+  // ==== struct object JointMotorSettings ====
+  py::class_<JointMotorSettings, JointMotorSettings::ptr>(m,
+                                                          "JointMotorSettings")
+      .def(py::init(&JointMotorSettings::create<>))
+      .def(py::init(
+          &JointMotorSettings::create<double, double, double, double, double>))
+      .def_readwrite("position_target", &JointMotorSettings::positionTarget)
+      .def_readwrite("position_gain", &JointMotorSettings::positionGain)
+      .def_readwrite("velocity_target", &JointMotorSettings::velocityTarget)
+      .def_readwrite("velocity_gain", &JointMotorSettings::velocityGain)
+      .def_readwrite("max_impulse", &JointMotorSettings::maxImpulse);
 }
 
 }  // namespace physics

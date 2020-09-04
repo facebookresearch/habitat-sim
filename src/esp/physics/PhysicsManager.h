@@ -207,6 +207,19 @@ class PhysicsManager {
     return v;
   };
 
+  /** @brief Get a list of existing object IDs for articulated objects (i.e.,
+   * existing keys in @ref PhysicsManager::existingArticulatedObjects_.)
+   *  @return List of object ID keys from @ref
+   * PhysicsManager::existingArticulatedObjects_.
+   */
+  std::vector<int> getExistingArticulatedObjectIDs() const {
+    std::vector<int> v;
+    for (auto& bro : existingArticulatedObjects_) {
+      v.push_back(bro.first);
+    }
+    return v;
+  };
+
   /** @brief Set the @ref MotionType of an object, allowing or disallowing its
    * manipulation by dynamic processes or kinematic control.
    * @param  physObjectID The object ID and key identifying the object in @ref
@@ -260,6 +273,77 @@ class PhysicsManager {
   ArticulatedObject& getArticulatedObject(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return *existingArticulatedObjects_.at(objectId).get();
+  };
+
+  //============= ArticulatedObject JointMotor API =============
+
+  /**
+   * @brief Create a new JointMotor for a dof in an ArticulatedObject from a
+   * JointMotorSettings.
+   *
+   * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
+   */
+  int createJointMotor(const int objectId,
+                       const int dof,
+                       const JointMotorSettings& settings) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->createJointMotor(dof,
+                                                                      settings);
+  }
+
+  /**
+   * @brief Remove and destroy a JointMotor for an ArticulatedObject.
+   */
+  void removeJointMotor(const int objectId, const int motorId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->removeJointMotor(motorId);
+  }
+
+  /**
+   * @brief Get a copy of the JointMotorSettings for an ArticulatedObject's
+   * existing JointMotor .
+   */
+  JointMotorSettings getJointMotorSettings(const int objectId,
+                                           const int motorId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getJointMotorSettings(
+        motorId);
+  };
+
+  /**
+   * @brief Update an ArticulatedObject's JointMotor with new settings.
+   */
+  void updateJointMotor(const int objectId,
+                        const int motorId,
+                        const JointMotorSettings& settings) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->updateJointMotor(motorId,
+                                                               settings);
+  };
+
+  /**
+   * @brief Query a map of motorIds -> dofs for all active JointMotors attached
+   * to an ArticulatedObject.
+   */
+  std::map<int, int> getExistingJointMotors(const int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getExistingJointMotors();
+  };
+
+  /**
+   * @brief Create a new set of default JointMotors for all valid dofs in an
+   * ArticulatedObject.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   *
+   * @return A map of dofs -> motorIds for the new motors.
+   */
+  virtual std::map<int, int> createMotorsForAllDofs(
+      const int objectId,
+      JointMotorSettings settings = JointMotorSettings()) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->createMotorsForAllDofs(
+        settings);
   };
 
   //============ Simulator functions =============

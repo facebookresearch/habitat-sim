@@ -73,6 +73,8 @@ def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
 def remove_all_objects(sim):
     for id in sim.get_existing_object_ids():
         sim.remove_object(id)
+    for id in sim.get_existing_articulated_object_ids():
+        sim.remove_articulated_object(id)
 
 
 def place_agent(sim):
@@ -163,8 +165,6 @@ def main(make_video=True, show_video=True):
 
     # [/initialize]
 
-    # [basics]
-
     urdf_files = {
         "aliengo": os.path.join(
             data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
@@ -179,6 +179,8 @@ def main(make_video=True, show_video=True):
             data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
         ),
     }
+
+    # [basics]
 
     # load a URDF file
     robot_file = urdf_files["iiwa"]
@@ -281,9 +283,102 @@ def main(make_video=True, show_video=True):
     if make_video:
         make_video_cv2(observations, prefix="URDF_basics", open_vid=show_video)
 
+    # clear all robots
+    for robot_id in sim.get_existing_articulated_object_ids():
+        sim.remove_articulated_object(robot_id)
     # [/basics]
 
-    remove_all_objects(sim)  # TODO: remove all robots also
+    # [joint motors]
+    observations = []
+
+    # load a URDF file with a fixed base
+    robot_file = urdf_files["iiwa"]
+    robot_id = sim.add_articulated_object_from_urdf(robot_file, True)
+
+    # place the robot root state relative to the agent
+    local_base_pos = np.array([0.0, 0.5, -2.0])
+    agent_transform = sim.agents[0].scene_node.transformation_matrix()
+    base_transform = mn.Matrix4.rotation(mn.Rad(-3.14), mn.Vector3(1.0, 0, 0))
+    base_transform.translation = agent_transform.transform_point(local_base_pos)
+    sim.set_articulated_object_root_state(robot_id, base_transform)
+
+    # query any damping motors created by default
+    existing_joint_motors = sim.get_existing_joint_motors(robot_id)
+    print("default damping motors (motor_id -> dof): " + str(existing_joint_motors))
+
+    # get the max_impulse of the damping motors
+    for motor_id in existing_joint_motors:
+        motor_settings = sim.get_joint_motor_settings(robot_id, motor_id)
+        print(
+            "   motor("
+            + str(motor_id)
+            + "): max_impulse = "
+            + str(motor_settings.max_impulse)
+        )
+
+    # simulate
+    observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+    # create a new velocity motor
+    joint_motor_settings = habitat_sim.physics.JointMotorSettings(
+        0,  # position_target
+        0,  # position_gain
+        1.0,  # velocity_target
+        1.0,  # velocity_gain
+        10.0,  # max_impulse
+    )
+    new_motor_id = sim.create_joint_motor(
+        robot_id, 1, joint_motor_settings  # robot object id  # dof  # settings
+    )
+    existing_joint_motors = sim.get_existing_joint_motors(robot_id)
+    print("new_motor_id: " + str(new_motor_id))
+    print(
+        "existing motors after create (motor_id -> dof): " + str(existing_joint_motors)
+    )
+
+    # simulate
+    observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+    # reverse the motor velocity
+    joint_motor_settings.velocity_target = -1.0
+    sim.update_joint_motor(robot_id, new_motor_id, joint_motor_settings)
+
+    # simulate
+    observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+    # remove the new joint motor
+    sim.remove_joint_motor(robot_id, new_motor_id)
+
+    # create joint motors for all valid dofs to control a pose (1.1 for all dofs)
+    joint_motor_settings = habitat_sim.physics.JointMotorSettings(0.5, 1.0, 0, 0, 1.0)
+    dofs_to_motor_ids = sim.create_motors_for_all_dofs(
+        robot_id,
+        joint_motor_settings,  # (optional) motor settings, if not provided will be default (no gains)
+    )
+    print("New motors (motor_ids -> dofs): " + str(dofs_to_motor_ids))
+
+    # simulate
+    observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+    # remove all motors
+    existing_joint_motors = sim.get_existing_joint_motors(robot_id)
+    print("All motors (motor_id -> dof) before removal: " + str(existing_joint_motors))
+    for motor_id in existing_joint_motors:
+        sim.remove_joint_motor(robot_id, motor_id)
+    print(
+        "All motors (motor_id -> dof) before removal: "
+        + str(sim.get_existing_joint_motors(robot_id))
+    )
+
+    # simulate
+    observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+    if make_video:
+        make_video_cv2(observations, prefix="URDF_joint_motors", open_vid=show_video)
+
+    # [/joint motors]
+
+    remove_all_objects(sim)
 
 
 if __name__ == "__main__":

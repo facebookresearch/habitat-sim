@@ -129,15 +129,22 @@ bool BulletArticulatedObject::initializeFromURDF(
     }
 
     // Build damping motors
+    int dofCount = 0;
     for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
       if (supportsJointMotor(linkIx)) {
         btMultibodyLink& link = btMultiBody_->getLink(linkIx);
         for (int dof = 0; dof < link.m_dofCount; ++dof) {
-          createJointMotor(linkIx, dof, 0.0, 1.0, 0, 0, link.m_jointDamping);
+          JointMotorSettings settings;
+          settings.maxImpulse = link.m_jointDamping;
+          createJointMotor(linkIx, dof, dofCount, settings);
+          dofCount++;
         }
+      } else {
+        dofCount += btMultiBody_->getLink(linkIx).m_dofCount;
       }
     }
   }
+  Mn::Debug{} << "Automatically created damping JointMotors: " << jointMotors_;
 
   Corrade::Utility::Debug()
       << "done - BulletArticulatedObject::initializeFromURDF";
@@ -396,52 +403,25 @@ bool BulletArticulatedObject::supportsJointMotor(int linkIx) {
   return canHaveMotor;
 }
 
-int BulletArticulatedObject::createJointMotor(int linkId,
-                                              int linkDof,
-                                              float velocityTarget,
-                                              float velGain,
-                                              float positionTarget,
-                                              float posGain,
-                                              float maxImpulse) {
-  CHECK(getNumLinks() > linkId);
-  CHECK(supportsJointMotor(linkId));
-  btMultiBodyJointMotor* motor = new btMultiBodyJointMotor(
-      btMultiBody_, linkId, linkDof, velocityTarget, maxImpulse);
-  motor->setPositionTarget(positionTarget, posGain);
-  motor->setVelocityTarget(velocityTarget, velGain);
-  bWorld_->addMultiBodyConstraint(motor);
-  articulatedJointMotors[nextJointMotorId_] = motor;
-  return nextJointMotorId_++;
-}
-
-std::map<int, int> BulletArticulatedObject::createMotorsForAllDofs() {
+std::map<int, int> BulletArticulatedObject::createMotorsForAllDofs(
+    JointMotorSettings settings) {
   std::map<int, int> dofsToMotorIds;
   int dofCount = 0;
   for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
     if (supportsJointMotor(linkIx)) {
       for (int dof = 0; dof < btMultiBody_->getLink(linkIx).m_dofCount; ++dof) {
-        dofsToMotorIds[dofCount] = createJointMotor(linkIx, dof, 0, 0, 0, 0, 0);
+        int motorId = createJointMotor(linkIx, dof, dofCount, settings);
+        dofsToMotorIds[dofCount] = motorId;
         dofCount++;
       }
     } else {
       dofCount += btMultiBody_->getLink(linkIx).m_dofCount;
     }
   }
+  Mn::Debug{} << "BulletArticulatedObject::createMotorsForAllDofs(): "
+              << dofsToMotorIds;
   return dofsToMotorIds;
 }
-
-void BulletArticulatedObject::updateJointMotorParams(int motorId,
-                                                     float velocityTarget,
-                                                     float velGain,
-                                                     float positionTarget,
-                                                     float posGain,
-                                                     float maxImpulse) {
-  CHECK(articulatedJointMotors.count(motorId));
-  btMultiBodyJointMotor* motor = articulatedJointMotors.at(motorId);
-  motor->setPositionTarget(positionTarget, posGain);
-  motor->setVelocityTarget(velocityTarget, velGain);
-  motor->setMaxAppliedImpulse(maxImpulse);
-};
 
 float BulletArticulatedObject::getJointMotorMaxImpulse(int motorId) {
   CHECK(articulatedJointMotors.count(motorId));
@@ -449,11 +429,86 @@ float BulletArticulatedObject::getJointMotorMaxImpulse(int motorId) {
   return motor->getMaxAppliedImpulse();
 }
 
-void BulletArticulatedObject::removeJointMotor(int jointMotorId) {
-  CHECK(articulatedJointMotors.count(jointMotorId));
-  btMultiBodyJointMotor* motor = articulatedJointMotors.at(jointMotorId);
+int BulletArticulatedObject::createJointMotor(
+    const int linkIx,
+    const int linkDof,
+    const int globalDof,
+    const JointMotorSettings& settings) {
+  auto motor = JointMotor::create_unique();
+  motor->settings = settings;
+  motor->dof = globalDof;
+
+  btMultiBodyJointMotor* btMotor =
+      new btMultiBodyJointMotor(btMultiBody_, linkIx, linkDof,
+                                settings.velocityTarget, settings.maxImpulse);
+  btMotor->setPositionTarget(settings.positionTarget, settings.positionGain);
+  btMotor->setVelocityTarget(settings.velocityTarget, settings.velocityGain);
+  bWorld_->addMultiBodyConstraint(btMotor);
+  articulatedJointMotors[nextJointMotorId_] = btMotor;
+  motor->motorId = nextJointMotorId_;
+  jointMotors_.emplace(motor->motorId, std::move(motor));
+
+  return nextJointMotorId_++;
+}
+
+int BulletArticulatedObject::createJointMotor(
+    const int dof,
+    const JointMotorSettings& settings) {
+  int linkIx = 0;
+  int linkDof = -1;
+  int dofCount = 0;
+  for (; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
+    if (dofCount > dof) {
+      Mn::Debug{} << "BulletArticulatedObject::createJointMotor failed. " << dof
+                  << " is not a valid JointMotor type.";
+      return ID_UNDEFINED;
+    }
+    if (supportsJointMotor(linkIx)) {
+      for (int _dof = 0; _dof < btMultiBody_->getLink(linkIx).m_dofCount;
+           ++_dof) {
+        if (dofCount == dof) {
+          linkDof = _dof;
+          break;
+        }
+        dofCount++;
+      }
+    } else {
+      dofCount += btMultiBody_->getLink(linkIx).m_dofCount;
+    }
+    if (linkDof >= 0) {
+      // break out of the loop if we found what we are looking for
+      break;
+    }
+  }
+
+  if (dof > dofCount) {
+    Mn::Debug{} << "BulletArticulatedObject::createJointMotor failed. " << dof
+                << " is not a valid DOF for this model.";
+    return ID_UNDEFINED;
+  }
+
+  return createJointMotor(linkIx, linkDof, dof, settings);
+}
+
+void BulletArticulatedObject::removeJointMotor(const int motorId) {
+  CHECK(jointMotors_.count(motorId) > 0);
+  CHECK(articulatedJointMotors.count(motorId));
+  btMultiBodyJointMotor* motor = articulatedJointMotors.at(motorId);
   bWorld_->removeMultiBodyConstraint(motor);
   delete motor;
+  jointMotors_.erase(motorId);
+}
+
+void BulletArticulatedObject::updateJointMotor(
+    const int motorId,
+    const JointMotorSettings& settings) {
+  CHECK(jointMotors_.count(motorId) > 0);
+  jointMotors_.at(motorId)->settings = settings;
+  CHECK(articulatedJointMotors.count(motorId));
+  btMultiBodyJointMotor* motor = articulatedJointMotors.at(motorId);
+  motor->setPositionTarget(settings.positionTarget, settings.positionGain);
+  motor->setVelocityTarget(settings.velocityTarget, settings.velocityGain);
+  motor->setMaxAppliedImpulse(settings.maxImpulse);
 }
 
 }  // namespace physics
