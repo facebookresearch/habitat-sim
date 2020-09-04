@@ -39,7 +39,10 @@ StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
   StageAttributes::ptr attrs;
   std::string msg;
   std::string strHandle = Cr::Utility::String::lowercase(stageAttributesHandle);
+  std::string jsonStageFileName =
+      io::changeExtension(stageAttributesHandle, "stage_config.json");
   bool fileExists = (this->isValidFileName(stageAttributesHandle));
+  bool jsonFileExists = (this->isValidFileName(jsonStageFileName));
   if (objectAttributesMgr_->isValidPrimitiveAttributes(stageAttributesHandle)) {
     // if stageAttributesHandle == some existing primitive attributes, then
     // this is a primitive-based stage (i.e. a plane) we are building
@@ -48,14 +51,13 @@ StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
     msg = "Primitive Asset (" + stageAttributesHandle + ") Based";
 
   } else if (fileExists) {
-    if ((strHandle.find("stage_config.json") != std::string::npos) &&
-        fileExists) {
+    if (jsonFileExists) {
       // check if stageAttributesHandle corresponds to an actual, existing
       // json stage file descriptor.
       // this method lives in class template.
-      attrs = this->createFileBasedAttributesTemplate(stageAttributesHandle,
+      attrs = this->createFileBasedAttributesTemplate(jsonStageFileName,
                                                       registerTemplate);
-      msg = "JSON File (" + stageAttributesHandle + ") Based";
+      msg = "JSON File (" + jsonStageFileName + ") Based";
     } else {
       // if name is not json file descriptor but still appropriate file
       attrs = createBackCompatAttributesTemplate(stageAttributesHandle,
