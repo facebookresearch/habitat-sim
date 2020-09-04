@@ -3,10 +3,8 @@
 #   accelerator: GPU
 #   colab:
 #     collapsed_sections: []
-#     include_colab_link: true
 #     name: 'ECCV 2020: Habitat-sim Interactivity'
 #     provenance: []
-#     toc_visible: true
 #   jupytext:
 #     cell_metadata_filter: -all
 #     formats: nb_python//py:percent,colabs//ipynb
@@ -20,6 +18,9 @@
 #     display_name: Python 3
 #     name: python3
 # ---
+
+# %% [markdown]
+# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim Interactivity
