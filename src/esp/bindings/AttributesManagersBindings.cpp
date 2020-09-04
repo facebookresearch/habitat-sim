@@ -275,8 +275,8 @@ void initAttributesManagersBindings(py::module& m) {
           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
               const std::string&, bool) const>(
               &ObjectAttributesManager::getFileTemplateHandlesBySubstring),
-          R"(Returns a list of file-based template handles that either contain or 
-          explicitly do not contain the passed search_str, based on the value of 
+          R"(Returns a list of file-based template handles that either contain or
+          explicitly do not contain the passed search_str, based on the value of
           contains.)",
           "search_str"_a = "", "contains"_a = true)
       .def(
@@ -288,21 +288,20 @@ void initAttributesManagersBindings(py::module& m) {
       // manage synthesized/primitive asset-based templates access
       .def("get_num_synth_templates",
            &ObjectAttributesManager::getNumSynthTemplateObjects, R"(
-             Returns the number of existing synthesized(primitive asset)-based 
+             Returns the number of existing synthesized(primitive asset)-based
              templates being managed.)")
       .def(
           "get_synth_template_handles",
           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
               const std::string&, bool) const>(
               &ObjectAttributesManager::getSynthTemplateHandlesBySubstring),
-          R"(Returns a list of synthesized(primitive asset)-based template handles 
-            that either contain or explicitly do not contain the passed search_str, 
+          R"(Returns a list of synthesized(primitive asset)-based template handles
+            that either contain or explicitly do not contain the passed search_str,
             based on the value of contains.)",
           "search_str"_a = "", "contains"_a = true)
-      .def(
-          "get_random_synth_template_handle",
-          &ObjectAttributesManager::getRandomSynthTemplateHandle,
-          R"(Returns the handle for a random synthesized(primitive asset)-based 
+      .def("get_random_synth_template_handle",
+           &ObjectAttributesManager::getRandomSynthTemplateHandle,
+           R"(Returns the handle for a random synthesized(primitive asset)-based
           template chosen from the existing templates being managed.)");
 
   // ==== Stage Attributes Template manager ====
