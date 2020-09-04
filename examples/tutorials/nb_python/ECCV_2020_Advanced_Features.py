@@ -11,6 +11,7 @@
 #     name: 'ECCV 2020: Habitat-sim Advanced Features'
 #     private_outputs: true
 #     provenance: []
+#     toc_visible: true
 #   jupytext:
 #     cell_metadata_filter: -all
 #     formats: nb_python//py:percent,colabs//ipynb

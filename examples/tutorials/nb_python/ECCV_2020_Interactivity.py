@@ -6,6 +6,7 @@
 #     include_colab_link: true
 #     name: 'ECCV 2020: Habitat-sim Interactivity'
 #     provenance: []
+#     toc_visible: true
 #   jupytext:
 #     cell_metadata_filter: -all
 #     formats: nb_python//py:percent,colabs//ipynb
