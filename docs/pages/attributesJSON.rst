@@ -19,6 +19,11 @@ Physics Manager Attributes templates describe quantities pertinent to building t
 
  	<worldname>.phys_scene_config.json
 
+An example of an appropriate configured file can be found below :
+
+.. include:: ../../data/test_assets/testing.phys_scene_config.json
+    :code: json
+
 
 Below are the supported JSON tags for Physics Manager Attributes templates, and their meanings.
 
@@ -46,6 +51,12 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 A stage in Habitat-Sim is a static object consisting of background scenery wherein an agent acts.  Stage Attributes templates hold relevant information describing a stage's mesh, geometry and physical properties.  Any source configuration files used to build these attributes should be named in the format :
 
  	<stagename>.stage_config.json
+
+An example of an appropriate configured file can be found below :
+
+.. include:: ../../data/test_assets/scenes/stage_floor1.stage_config.json
+    :code: json
+
 
 Stage Mesh Handles And Types
 ----------------------------
@@ -115,6 +126,11 @@ Below are stage-specific physical and object-related quantities.  These values w
 Object Attributes templates hold descriptive information for type of object that can be loaded into Habitat.  These files should be named in the format :
 
  	<objectname>.phys_properties.json
+
+An example of an appropriate configured file can be found below :
+
+.. include:: ../../data/test_assets/objects/donut.phys_properties.json
+    :code: json
 
 Object Mesh Handles And Types
 -----------------------------
