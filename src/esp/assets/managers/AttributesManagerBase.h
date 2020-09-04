@@ -87,9 +87,15 @@ class AttributesManager {
    * returns a copy of the registered template.
    * @return a reference to the desired template.
    */
-  virtual AttribsPtr createDefaultAttributesTemplate(
-      const std::string& templateName,
-      bool registerTemplate = false) = 0;
+  AttribsPtr createDefaultAttributesTemplate(const std::string& templateName,
+                                             bool registerTemplate = false) {
+    // create default attributes descriptor
+    AttribsPtr attributes = initNewAttribsInternal(templateName);
+    if (nullptr == attributes) {
+      return attributes;
+    }
+    return this->postCreateRegister(attributes, registerTemplate);
+  }
 
   /**
    * @brief Creates an instance of a template from a JSON file using passed
@@ -560,21 +566,18 @@ class AttributesManager {
   }  // AttributesManager::verifyLoadJson
 
   /**
-   * @brief Create either an object or a scene attributes from a json config.
-   * Since both object attributes and scene attributes inherit from @ref
+   * @brief Create either an object or a stage attributes from a json config.
+   * Since both object attributes and stage attributes inherit from @ref
    * AbstractObjectAttributes, the functionality to populate these fields from
    * json can be shared.  Also will will populate render mesh and collision mesh
-   * handles in object and scene attributes with value(s) specified in json.  If
+   * handles in object and stage attributes with value(s) specified in json.  If
    * one is blank will use other for both.
    *
-   * @tparam type of attributes to create : MUST INHERIT FROM @ref
-   * AbstractObjectAttributes
    * @param filename name of json descriptor file
    * @param jsonDoc json document to parse
    * @return an appropriately cast attributes pointer with base class fields
    * filled in.
    */
-  template <typename U>
   AttribsPtr createObjectAttributesFromJson(const std::string& filename,
                                             const io::JsonDocument& jsonDoc);
 
@@ -658,12 +661,12 @@ class AttributesManager {
   }  // setFileDirectoryFromHandle
 
   /**
-   * @brief Used Internally.  Configure newly-created attributes with any
-   * default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes with
+   * any default values, before any specific values are set.
    *
-   * @param newAttributes Newly created attributes.
+   * @param handleName handle name to be assigned to attributes
    */
-  virtual AttribsPtr initNewAttribsInternal(AttribsPtr newAttributes) = 0;
+  virtual AttribsPtr initNewAttribsInternal(const std::string& handleName) = 0;
 
   /**
    * @brief Used Internally. Remove the template referenced by the passed
@@ -757,8 +760,8 @@ class AttributesManager {
   virtual void resetFinalize() = 0;
 
   /**
-   * @brief Build a shared pointer to the appropriate attributes for passed
-   * object type.
+   * @brief Build a shared pointer to a copy of a the passed attributes, of
+   * appropriate attributes type for passed object type.
    * @tparam U Type of attributes being created - must be a derived class of
    * AttribsPtr
    * @param orig original object of type AttribsPtr being copied
@@ -909,11 +912,10 @@ class AttributesManager {
 // Class Template Method Definitions
 
 template <class AttribsPtr>
-template <class U>
 AttribsPtr AttributesManager<AttribsPtr>::createObjectAttributesFromJson(
     const std::string& configFilename,
     const io::JsonDocument& jsonDoc) {
-  auto attributes = initNewAttribsInternal(U::create(configFilename));
+  auto attributes = this->initNewAttribsInternal(configFilename);
 
   using std::placeholders::_1;
 

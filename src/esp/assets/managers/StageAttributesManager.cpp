@@ -66,8 +66,8 @@ StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
     } else {
       // if name is not json file descriptor but still appropriate file, or if
       // is not a file or known prim
-      attrs = createDefaultAttributesTemplate(attributesTemplateHandle,
-                                              registerTemplate);
+      attrs = this->createDefaultAttributesTemplate(attributesTemplateHandle,
+                                                    registerTemplate);
 
       if (fileExists) {
         msg = "File (" + attributesTemplateHandle + ") Based";
@@ -183,8 +183,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   }
 
   // construct a stageAttributes
-  auto stageAttributes =
-      initNewAttribsInternal(StageAttributes::create(primAssetHandle));
+  auto stageAttributes = initNewAttribsInternal(primAssetHandle);
   // set margin to be 0
   stageAttributes->setMargin(0.0);
 
@@ -202,21 +201,14 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   return this->postCreateRegister(stageAttributes, registerTemplate);
 }  // StageAttributesManager::createPrimBasedAttributesTemplate
 
-StageAttributes::ptr StageAttributesManager::createDefaultAttributesTemplate(
-    const std::string& stageFilename,
-    bool registerTemplate) {
-  // Attributes descriptor for stage
-  StageAttributes::ptr stageAttributes =
-      initNewAttribsInternal(StageAttributes::create(stageFilename));
-
-  return this->postCreateRegister(stageAttributes, registerTemplate);
-}  // StageAttributesManager::createDefaultAttributesTemplate
-
 StageAttributes::ptr StageAttributesManager::initNewAttribsInternal(
-    StageAttributes::ptr newAttributes) {
-  this->setFileDirectoryFromHandle(newAttributes);
+    const std::string& stageFilename) {
+  // TODO if default template exists from some source, create this template as a
+  // copy
+  auto newAttributes = StageAttributes::create(stageFilename);
 
-  std::string stageFilename = newAttributes->getHandle();
+  // attempt to set source directory if exists
+  this->setFileDirectoryFromHandle(newAttributes);
 
   // set defaults that config files or other constructive processes might
   // override
@@ -331,8 +323,8 @@ StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
     const io::JsonDocument& jsonConfig) {
   // construct a StageAttributes and populate with any
   // AbstractObjectAttributes fields found in json.
-  auto stageAttributes = this->createObjectAttributesFromJson<StageAttributes>(
-      templateName, jsonConfig);
+  auto stageAttributes =
+      this->createObjectAttributesFromJson(templateName, jsonConfig);
 
   // directory location where stage files are found
   std::string stageLocFileDir = stageAttributes->getFileDirectory();

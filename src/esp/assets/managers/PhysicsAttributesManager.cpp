@@ -43,23 +43,12 @@ PhysicsAttributesManager::createAttributesTemplate(
 }  // PhysicsAttributesManager::createAttributesTemplate
 
 PhysicsManagerAttributes::ptr
-PhysicsAttributesManager::createDefaultAttributesTemplate(
-    const std::string& physicsFilename,
-    bool registerTemplate) {
-  // Attributes descriptor for physics world
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
-
-  return this->postCreateRegister(physicsManagerAttributes, registerTemplate);
-}  // PhysicsAttributesManager::createDefaultAttributesTemplate
-
-PhysicsManagerAttributes::ptr
 PhysicsAttributesManager::loadAttributesFromJSONDoc(
     const std::string& templateName,
     const io::JsonDocument& jsonConfig) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      initNewAttribsInternal(PhysicsManagerAttributes::create(templateName));
+      initNewAttribsInternal(templateName);
 
   // load the simulator preference - default is "none" simulator, set in
   // attributes ctor.

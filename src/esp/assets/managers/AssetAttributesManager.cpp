@@ -114,7 +114,8 @@ AbstractPrimitiveAttributes::ptr
 AssetAttributesManager::createAttributesTemplate(
     const std::string& primClassName,
     bool registerTemplate) {
-  auto primAssetAttributes = buildPrimAttributes(primClassName);
+  auto primAssetAttributes =
+      this->createDefaultAttributesTemplate(primClassName, false);
   if (nullptr == primAssetAttributes) {
     return primAssetAttributes;
   }
@@ -170,7 +171,7 @@ AssetAttributesManager::loadAttributesFromJSONDoc(
   }
 
   // create attributes for this primitive
-  auto primAssetAttributes = buildPrimAttributes(primClassName);
+  auto primAssetAttributes = this->initNewAttribsInternal(primClassName);
   if (nullptr == primAssetAttributes) {
     LOG(ERROR)
         << "AssetAttributesManager::loadAttributesFromJSONDoc : unable to "
