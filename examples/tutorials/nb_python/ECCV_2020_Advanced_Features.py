@@ -7,7 +7,8 @@
 #     - LfhL_ZcW-HsF
 #     - -dFprz9y_HSQ
 #     - twCl8wAR_R4d
-#     name: ECCV_2020_Advanced_Features.ipynb
+#     include_colab_link: true
+#     name: 'ECCV 2020: Habitat-sim Advanced Features'
 #     private_outputs: true
 #     provenance: []
 #   jupytext:

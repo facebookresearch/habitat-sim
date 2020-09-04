@@ -3,7 +3,8 @@
 #   accelerator: GPU
 #   colab:
 #     collapsed_sections: []
-#     name: 'ECCV 2020: Interactivity.ipynb'
+#     include_colab_link: true
+#     name: 'ECCV 2020: Habitat-sim Interactivity'
 #     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
