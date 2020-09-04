@@ -30,20 +30,36 @@ ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
                                               registerTemplate);
     msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
-  } else if (this->isValidFileName(attributesTemplateHandle)) {
-    // if attributesTemplateHandle == some existing file then
-    // assume this is a file-based object template we are building.
-    // this method lives in class template.
-    attrs = this->createFileBasedAttributesTemplate(attributesTemplateHandle,
-                                                    registerTemplate);
-    msg = "File (" + attributesTemplateHandle + ") Based";
   } else {
-    // if neither of these is true, then build an empty template and assign the
-    // passed handle to its origin handle and its render asset handle
-    attrs = createDefaultAttributesTemplate(attributesTemplateHandle,
-                                            registerTemplate);
-    msg = "New default";
-  }
+    std::string JSONTypeExt("phys_properties.json");
+    std::string strHandle =
+        Cr::Utility::String::lowercase(attributesTemplateHandle);
+    std::string jsonAttrFileName =
+        (strHandle.find(JSONTypeExt) != std::string::npos)
+            ? std::string(attributesTemplateHandle)
+            : io::changeExtension(attributesTemplateHandle, JSONTypeExt);
+    bool fileExists = (this->isValidFileName(attributesTemplateHandle));
+    bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+    if (jsonFileExists) {
+      // check if stageAttributesHandle corresponds to an actual, existing
+      // json stage file descriptor.
+      // this method lives in class template.
+      attrs = this->createFileBasedAttributesTemplate(jsonAttrFileName,
+                                                      registerTemplate);
+      msg = "JSON File (" + jsonAttrFileName + ") Based";
+    } else {
+      // if name is not json file descriptor but still appropriate file, or if
+      // is not a file or known prim
+      attrs = createDefaultAttributesTemplate(attributesTemplateHandle,
+                                              registerTemplate);
+
+      if (fileExists) {
+        msg = "File (" + attributesTemplateHandle + ") Based";
+      } else {
+        msg = "New default (" + attributesTemplateHandle + ")";
+      }
+    }
+  }  // if this is prim else
   if (nullptr != attrs) {
     LOG(INFO) << msg << " object attributes created"
               << (registerTemplate ? " and registered." : ".");

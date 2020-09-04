@@ -63,8 +63,8 @@ class StageAttributesManager
    * If a template exists with this handle, this existing template will be
    * overwritten with the newly created one if @ref registerTemplate is true.
    *
-   * @param StageAttributesHandle the origin of the desired template to be
-   * created, in this case, a file name.
+   * @param attributesTemplateHandle the origin of the desired stage template to
+   * be created.
    * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
    * subsequent editing will require re-registration. Defaults to true. If
@@ -73,7 +73,7 @@ class StageAttributesManager
    * @return a reference to the desired template.
    */
   Attrs::StageAttributes::ptr createAttributesTemplate(
-      const std::string& StageAttributesHandle,
+      const std::string& attributesTemplateHandle,
       bool registerTemplate = true) override;
 
   /**
@@ -169,20 +169,6 @@ class StageAttributesManager
   void updateTemplateHandleLists(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
-
-  /**
-   * @brief Stage is file-based lacking a descriptive .json, described by @ref
-   * stageFilename; populate a returned stage attributes with appropriate
-   * data. This method's intended use is to support backwards compatibility for
-   * when stage meshes are loaded without JSON files.
-   *
-   * @param stageFilename The mesh file name
-   * @param registerTemplate whether to add this template to the library or not.
-   * @return a reference to the desired stage template, or nullptr if fails.
-   */
-  Attrs::StageAttributes::ptr createBackCompatAttributesTemplate(
-      const std::string& stageFilename,
-      bool registerTemplate = true);
 
   /**
    * @brief Add a @ref std::shared_ptr<attributesType> object to the

@@ -30,7 +30,8 @@ PhysicsAttributesManager::createAttributesTemplate(
     msg = "File (" + physicsFilename + ") Based";
   } else {
     // if name is not file descriptor, return default attributes.
-    attrs = createDefaultAttributesTemplate(physicsFilename, registerTemplate);
+    attrs = this->createDefaultAttributesTemplate(physicsFilename,
+                                                  registerTemplate);
     msg = "File (" + physicsFilename + ") not found so new, default";
   }
 
