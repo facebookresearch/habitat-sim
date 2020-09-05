@@ -30,7 +30,8 @@ PhysicsAttributesManager::createAttributesTemplate(
     msg = "File (" + physicsFilename + ") Based";
   } else {
     // if name is not file descriptor, return default attributes.
-    attrs = createDefaultAttributesTemplate(physicsFilename, registerTemplate);
+    attrs = this->createDefaultAttributesTemplate(physicsFilename,
+                                                  registerTemplate);
     msg = "File (" + physicsFilename + ") not found so new, default";
   }
 
@@ -42,23 +43,12 @@ PhysicsAttributesManager::createAttributesTemplate(
 }  // PhysicsAttributesManager::createAttributesTemplate
 
 PhysicsManagerAttributes::ptr
-PhysicsAttributesManager::createDefaultAttributesTemplate(
-    const std::string& physicsFilename,
-    bool registerTemplate) {
-  // Attributes descriptor for physics world
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
-
-  return this->postCreateRegister(physicsManagerAttributes, registerTemplate);
-}  // PhysicsAttributesManager::createDefaultAttributesTemplate
-
-PhysicsManagerAttributes::ptr
 PhysicsAttributesManager::loadAttributesFromJSONDoc(
     const std::string& templateName,
     const io::JsonDocument& jsonConfig) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      initNewAttribsInternal(PhysicsManagerAttributes::create(templateName));
+      initNewAttribsInternal(templateName);
 
   // load the simulator preference - default is "none" simulator, set in
   // attributes ctor.

@@ -54,28 +54,6 @@ class PhysicsAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Creates a an instance of physics manager attributes template
-   * populated with default values. Assigns the @ref templateName as the
-   * template's handle.
-   *
-   * If a template exists with this handle, the existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
-   * This method is specifically intended to directly construct an attributes
-   * template for editing, and so defaults to false for @ref registerTemplate
-
-   * @param templateName Name to use for the attributes handle.
-   * @param registerTemplate whether to add this template to the library.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration. Defaults to false. If
-   * specified as true, then this function returns a copy of the registered
-   * template.
-   * @return a reference to the desired template, or nullptr if fails.
-   */
-  Attrs::PhysicsManagerAttributes::ptr createDefaultAttributesTemplate(
-      const std::string& templateName,
-      bool registerTemplate = false) override;
-
-  /**
    * @brief Parse passed JSON Document specifically for @ref
    * PhysicsManagerAttributes object. It always returns a valid @ref
    * PhysicsManagerAttributes::ptr object.
@@ -100,13 +78,14 @@ class PhysicsAttributesManager
       CORRADE_UNUSED std::function<void(int)> meshTypeSetter) override {}
 
   /**
-   * @brief Used Internally.  Configure newly-created attributes with any
-   * default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes with
+   * any default values, before any specific values are set.
    *
-   * @param newAttributes Newly created attributes.
+   * @param handleName handle name to be assigned to attributes
    */
   Attrs::PhysicsManagerAttributes::ptr initNewAttribsInternal(
-      Attrs::PhysicsManagerAttributes::ptr newAttributes) override {
+      const std::string& handleName) override {
+    auto newAttributes = Attrs::PhysicsManagerAttributes::create(handleName);
     this->setFileDirectoryFromHandle(newAttributes);
     return newAttributes;
   }

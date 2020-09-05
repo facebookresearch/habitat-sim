@@ -58,28 +58,6 @@ class ObjectAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Creates an instance of an empty object template populated with
-   * default values. Assigns the @ref templateName as the template's handle and
-   * as the renderAssetHandle.
-   *
-   * If a template exists with this handle, the existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
-   * This method is specifically intended to directly construct an attributes
-   * template for editing, and so defaults to false for @ref registerTemplate.
-   *
-   * @param templateName The desired name for this template.
-   * @param registerTemplate whether to add this template to the library.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration. Defaults to false. If
-   * specified as true, then this function returns a copy of the registered
-   * template.
-   * @return a reference to the desired template, or nullptr if fails.
-   */
-  Attrs::ObjectAttributes::ptr createDefaultAttributesTemplate(
-      const std::string& templateName,
-      bool registerTemplate = false) override;
-
-  /**
    * @brief Creates an instance of an object template described by passed
    * string, which should be a reference to an existing primitive asset template
    * to be used in the construction of the object (as render and collision
@@ -266,13 +244,13 @@ class ObjectAttributesManager
       std::function<void(int)> meshTypeSetter) override;
 
   /**
-   * @brief Used Internally.  Configure newly-created attributes with any
-   * default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes with
+   * any default values, before any specific values are set.
    *
-   * @param newAttributes Newly created attributes.
+   * @param handleName handle name to be assigned to attributes
    */
   Attrs::ObjectAttributes::ptr initNewAttribsInternal(
-      Attrs::ObjectAttributes::ptr newAttributes) override;
+      const std::string& handleName) override;
 
   /**
    * @brief This method will perform any necessary updating that is

@@ -165,7 +165,7 @@ void ResourceManager::initPhysicsManager(
 }  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadStage(
-    const StageAttributes::ptr& sceneAttributes,
+    const StageAttributes::ptr& stageAttributes,
     std::shared_ptr<physics::PhysicsManager> _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
@@ -176,9 +176,9 @@ bool ResourceManager::loadStage(
       ((_physicsManager != nullptr) &&
        (_physicsManager->getInitializationAttributes()->getSimulator().compare(
             "none") != 0));
-  const Magnum::ResourceKey& renderLightSetup(sceneAttributes->getLightSetup());
+  const Magnum::ResourceKey& renderLightSetup(stageAttributes->getLightSetup());
   std::map<std::string, AssetInfo> assetInfoMap =
-      createStageAssetInfosFromAttributes(sceneAttributes, buildCollisionMesh,
+      createStageAssetInfosFromAttributes(stageAttributes, buildCollisionMesh,
                                           loadSemanticMesh);
 
   auto& sceneGraph = sceneManagerPtr->getSceneGraph(activeSceneIDs[0]);
@@ -262,7 +262,7 @@ bool ResourceManager::loadStage(
         }
         //! Add to physics manager
         bool sceneSuccess =
-            _physicsManager->addStage(colInfo.filepath, meshGroup);
+            _physicsManager->addStage(stageAttributes->getHandle(), meshGroup);
         if (!sceneSuccess) {
           LOG(ERROR)
               << "ResourceManager::loadStage : Adding Stage "
@@ -286,7 +286,7 @@ bool ResourceManager::loadStage(
       LOG(INFO) << "ResourceManager::loadStage : Loading Semantic Stage mesh : "
                 << semanticStageFilename;
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
-      bool splitSemanticMesh = sceneAttributes->getFrustrumCulling();
+      bool splitSemanticMesh = stageAttributes->getFrustrumCulling();
 
       auto& semanticSceneGraph =
           sceneManagerPtr->getSceneGraph(activeSemanticSceneID);
@@ -329,31 +329,31 @@ bool ResourceManager::loadStage(
 
 std::map<std::string, AssetInfo>
 ResourceManager::createStageAssetInfosFromAttributes(
-    const StageAttributes::ptr& sceneAttributes,
+    const StageAttributes::ptr& stageAttributes,
     bool createCollisionInfo,
     bool createSemanticInfo) {
   std::map<std::string, AssetInfo> resMap;
   auto frame =
-      buildFrameFromAttributes(sceneAttributes, sceneAttributes->getOrigin());
-  float virtualUnitToMeters = sceneAttributes->getUnitsToMeters();
+      buildFrameFromAttributes(stageAttributes, stageAttributes->getOrigin());
+  float virtualUnitToMeters = stageAttributes->getUnitsToMeters();
   // create render asset info
   auto renderType =
-      static_cast<AssetType>(sceneAttributes->getRenderAssetType());
+      static_cast<AssetType>(stageAttributes->getRenderAssetType());
   AssetInfo renderInfo{
       renderType,                               // type
-      sceneAttributes->getRenderAssetHandle(),  // file path
+      stageAttributes->getRenderAssetHandle(),  // file path
       frame,                                    // frame
       virtualUnitToMeters,                      // virtualUnitToMeters
-      sceneAttributes->getRequiresLighting()    // requiresLighting
+      stageAttributes->getRequiresLighting()    // requiresLighting
   };
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
     auto colType =
-        static_cast<AssetType>(sceneAttributes->getCollisionAssetType());
+        static_cast<AssetType>(stageAttributes->getCollisionAssetType());
     AssetInfo collisionInfo{
         colType,                                     // type
-        sceneAttributes->getCollisionAssetHandle(),  // file path
+        stageAttributes->getCollisionAssetHandle(),  // file path
         frame,                                       // frame
         virtualUnitToMeters,                         // virtualUnitToMeters
         false                                        // requiresLighting
@@ -363,10 +363,10 @@ ResourceManager::createStageAssetInfosFromAttributes(
   if (createSemanticInfo) {
     // create semantic asset info if requested
     auto semanticType =
-        static_cast<AssetType>(sceneAttributes->getSemanticAssetType());
+        static_cast<AssetType>(stageAttributes->getSemanticAssetType());
     AssetInfo semanticInfo{
         semanticType,                               // type
-        sceneAttributes->getSemanticAssetHandle(),  // file path
+        stageAttributes->getSemanticAssetHandle(),  // file path
         frame,                                      // frame
         virtualUnitToMeters,                        // virtualUnitToMeters
         false                                       // requiresLighting
