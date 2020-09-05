@@ -2,7 +2,7 @@
 # jupyter:
 #   accelerator: GPU
 #   colab:
-#     name: rigid_object_tutorial.ipynb
+#     name: Rigid Object Tutorial
 #     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
