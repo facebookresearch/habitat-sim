@@ -44,6 +44,7 @@ using attributes::UVSpherePrimitiveAttributes;
 template <class T>
 void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
   using AttrClass = AttributesManager<T>;
+  using AttribsPtr = std::shared_ptr<T>;
   std::string pyclass_name = classStrPrefix + std::string("AttributesManager");
   py::class_<AttrClass, std::shared_ptr<AttrClass>>(m, pyclass_name.c_str())
       .def(
@@ -64,13 +65,13 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
             contain the passed search_str, based on the value of boolean contains.)",
           "search_str"_a = "", "contains"_a = true)
       .def("create_template",
-           static_cast<T (AttrClass::*)(const std::string&, bool)>(
+           static_cast<AttribsPtr (AttrClass::*)(const std::string&, bool)>(
                &AttrClass::createAttributesTemplate),
            R"(Creates a template based on passed handle, and registers it in
             the library if register_template is True.)",
            "handle"_a, "register_template"_a = true)
       .def("create_new_template",
-           static_cast<T (AttrClass::*)(const std::string&, bool)>(
+           static_cast<AttribsPtr (AttrClass::*)(const std::string&, bool)>(
                &AttrClass::createDefaultAttributesTemplate),
            R"(Creates a template built with default values, and registers it in
             the library if register_template is True.)",
@@ -139,12 +140,13 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
              returns the template's integer ID.)",
            "template"_a, "specified_handle"_a = "")
       .def("get_template_by_ID",
-           static_cast<T (AttrClass::*)(int)>(&AttrClass::getTemplateCopyByID),
+           static_cast<AttribsPtr (AttrClass::*)(int)>(
+               &AttrClass::getTemplateCopyByID),
            R"(This returns a copy of the template specified by the passed
              ID if it exists, and NULL if it does not.)",
            "ID"_a)
       .def("get_template_by_handle",
-           static_cast<T (AttrClass::*)(const std::string&)>(
+           static_cast<AttribsPtr (AttrClass::*)(const std::string&)>(
                &AttrClass::getTemplateCopyByHandle),
            R"(This returns a copy of the template specified by the passed
              handle if it exists, and NULL if it does not.)",
@@ -169,10 +171,9 @@ void initAttributesManagersBindings(py::module& m) {
       .value("END_PRIM_OBJ_TYPE", assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
 
   // ==== Primitive Asset Attributes Template manager ====
-  declareBaseAttributesManager<AbstractPrimitiveAttributes::ptr>(m,
-                                                                 "BaseAsset");
+  declareBaseAttributesManager<AbstractPrimitiveAttributes>(m, "BaseAsset");
   py::class_<AssetAttributesManager,
-             AttributesManager<AbstractPrimitiveAttributes::ptr>,
+             AttributesManager<AbstractPrimitiveAttributes>,
              AssetAttributesManager::ptr>(m, "AssetAttributesManager")
       // AssetAttributesMangaer-specific bindings
       // return appropriately cast capsule templates
@@ -252,8 +253,8 @@ void initAttributesManagersBindings(py::module& m) {
            "handle"_a);
 
   // ==== Physical Object Attributes Template manager ====
-  declareBaseAttributesManager<ObjectAttributes::ptr>(m, "BaseObject");
-  py::class_<ObjectAttributesManager, AttributesManager<ObjectAttributes::ptr>,
+  declareBaseAttributesManager<ObjectAttributes>(m, "BaseObject");
+  py::class_<ObjectAttributesManager, AttributesManager<ObjectAttributes>,
              ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
 
       // ObjectAttributesManager-specific bindings
@@ -303,15 +304,15 @@ void initAttributesManagersBindings(py::module& m) {
              existing templates being managed.)");
 
   // ==== Stage Attributes Template manager ====
-  declareBaseAttributesManager<StageAttributes::ptr>(m, "BaseStage");
-  py::class_<StageAttributesManager, AttributesManager<StageAttributes::ptr>,
+  declareBaseAttributesManager<StageAttributes>(m, "BaseStage");
+  py::class_<StageAttributesManager, AttributesManager<StageAttributes>,
              StageAttributesManager::ptr>(m, "StageAttributesManager");
 
   // ==== Physics World/Manager Template manager ====
 
-  declareBaseAttributesManager<PhysicsManagerAttributes::ptr>(m, "BasePhysics");
+  declareBaseAttributesManager<PhysicsManagerAttributes>(m, "BasePhysics");
   py::class_<PhysicsAttributesManager,
-             AttributesManager<PhysicsManagerAttributes::ptr>,
+             AttributesManager<PhysicsManagerAttributes>,
              PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
 
 }  // namespace managers
