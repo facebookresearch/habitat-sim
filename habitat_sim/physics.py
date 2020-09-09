@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    JointMotorSettings,
     MotionType,
     PhysicsSimulationLibrary,
     RaycastResults,
@@ -16,4 +17,5 @@ __all__ = [
     "VelocityControl",
     "RayHitInfo",
     "RaycastResults",
+    "JointMotorSettings",
 ]
