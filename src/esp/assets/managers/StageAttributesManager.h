@@ -63,8 +63,8 @@ class StageAttributesManager
    * If a template exists with this handle, this existing template will be
    * overwritten with the newly created one if @ref registerTemplate is true.
    *
-   * @param StageAttributesHandle the origin of the desired template to be
-   * created, in this case, a file name.
+   * @param attributesTemplateHandle the origin of the desired stage template to
+   * be created.
    * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
    * subsequent editing will require re-registration. Defaults to true. If
@@ -73,30 +73,8 @@ class StageAttributesManager
    * @return a reference to the desired template.
    */
   Attrs::StageAttributes::ptr createAttributesTemplate(
-      const std::string& StageAttributesHandle,
+      const std::string& attributesTemplateHandle,
       bool registerTemplate = true) override;
-
-  /**
-   * @brief Creates a an instance of stage attributes template populated with
-   * default values. Assigns the @ref templateName as the template's handle,
-   * and render and collision handles.
-   *
-   * If a template exists with this handle, the existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
-   * This method is specifically intended to directly construct an attributes
-   * template for editing, and so defaults to false for @ref registerTemplate
-   *
-   * @param templateName Name to use for the attributes handle.
-   * @param registerTemplate whether to add this template to the library.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration. Defaults to false. If
-   * specified as true, then this function returns a copy of the registered
-   * template.
-   * @return a reference to the desired template, or nullptr if fails.
-   */
-  Attrs::StageAttributes::ptr createDefaultAttributesTemplate(
-      const std::string& templateName,
-      bool registerTemplate = false) override;
 
   /**
    * @brief Creates an instance of a stage template described by passed
@@ -115,6 +93,19 @@ class StageAttributesManager
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true);
 
+  /**
+   * @brief Parse passed JSON Document specifically for @ref StageAttributes
+   * object. It always returns a valid @ref StageAttributes::ptr object.
+   *
+   * @param templateName the desired handle of the @ref StageAttributes
+   * attributes.
+   * @param jsonConfig json document to parse
+   * @return a reference to the desired template.
+   */
+  Attrs::StageAttributes::ptr loadAttributesFromJSONDoc(
+      const std::string& templateName,
+      const io::JsonDocument& jsonConfig) override;
+
  protected:
   /**
    * @brief Perform file-name-based attributes initialization. This is to
@@ -124,7 +115,7 @@ class StageAttributesManager
    * specifying the asset type corresponding to that handle.  These settings
    * should not restrict anything, only provide defaults.
    *
-   * @param attributes The AbstractPhysicsAttributes object to be configured
+   * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
    * @param fileName Mesh Handle to check.
@@ -136,13 +127,13 @@ class StageAttributesManager
       const std::string& meshHandle,
       std::function<void(int)> meshTypeSetter) override;
   /**
-   * @brief Used Internally.  Configure newly-created attributes with any
-   * default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes with
+   * any default values, before any specific values are set.
    *
-   * @param newAttributes Newly created attributes.
+   * @param handleName handle name to be assigned to attributes
    */
   Attrs::StageAttributes::ptr initNewAttribsInternal(
-      Attrs::StageAttributes::ptr newAttributes) override;
+      const std::string& handleName) override;
 
   /**
    * @brief This method will perform any necessary updating that is
@@ -156,32 +147,6 @@ class StageAttributesManager
   void updateTemplateHandleLists(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
-
-  /**
-   * @brief Stage is file-based lacking a descriptive .json, described by @ref
-   * stageFilename; populate a returned stage attributes with appropriate
-   * data. This method's intended use is to support backwards compatibility for
-   * when stage meshes are loaded without JSON files.
-   *
-   * @param stageFilename The mesh file name
-   * @param registerTemplate whether to add this template to the library or not.
-   * @return a reference to the desired stage template, or nullptr if fails.
-   */
-  Attrs::StageAttributes::ptr createBackCompatAttributesTemplate(
-      const std::string& stageFilename,
-      bool registerTemplate = true);
-
-  /**
-   * @brief Read and parse the json file @ref stageFilename and populate a
-   * returned stage attributes with appropriate data.
-   *
-   * @param stageFilename The configuration file to parse.
-   * @param registerTemplate whether to add this template to the library or not.
-   * @return a reference to the desired stage template, or nullptr if fails.
-   */
-  Attrs::StageAttributes::ptr createFileBasedAttributesTemplate(
-      const std::string& stageFilename,
-      bool registerTemplate = true);
 
   /**
    * @brief Add a @ref std::shared_ptr<attributesType> object to the

@@ -31,19 +31,36 @@ ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
                                               registerTemplate);
     msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
-  } else if (this->isValidFileName(attributesTemplateHandle)) {
-    // if attributesTemplateHandle == some existing file then
-    // assume this is a file-based object template we are building.
-    attrs = createFileBasedAttributesTemplate(attributesTemplateHandle,
-                                              registerTemplate);
-    msg = "File (" + attributesTemplateHandle + ") Based";
   } else {
-    // if neither of these is true, then build an empty template and assign the
-    // passed handle to its origin handle and its render asset handle
-    attrs = createDefaultAttributesTemplate(attributesTemplateHandle,
-                                            registerTemplate);
-    msg = "New default";
-  }
+    std::string JSONTypeExt("phys_properties.json");
+    std::string strHandle =
+        Cr::Utility::String::lowercase(attributesTemplateHandle);
+    std::string jsonAttrFileName =
+        (strHandle.find(JSONTypeExt) != std::string::npos)
+            ? std::string(attributesTemplateHandle)
+            : io::changeExtension(attributesTemplateHandle, JSONTypeExt);
+    bool fileExists = (this->isValidFileName(attributesTemplateHandle));
+    bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+    if (jsonFileExists) {
+      // check if stageAttributesHandle corresponds to an actual, existing
+      // json stage file descriptor.
+      // this method lives in class template.
+      attrs = this->createFileBasedAttributesTemplate(jsonAttrFileName,
+                                                      registerTemplate);
+      msg = "JSON File (" + jsonAttrFileName + ") Based";
+    } else {
+      // if name is not json file descriptor but still appropriate file, or if
+      // is not a file or known prim
+      attrs = this->createDefaultAttributesTemplate(attributesTemplateHandle,
+                                                    registerTemplate);
+
+      if (fileExists) {
+        msg = "File (" + attributesTemplateHandle + ") Based";
+      } else {
+        msg = "New default (" + attributesTemplateHandle + ")";
+      }
+    }
+  }  // if this is prim else
   if (nullptr != attrs) {
     LOG(INFO) << msg << " object attributes created"
               << (registerTemplate ? " and registered." : ".");
@@ -68,7 +85,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
 
   // construct a ObjectAttributes
   auto primObjectAttributes =
-      initNewAttribsInternal(ObjectAttributes::create(primAttrTemplateHandle));
+      this->initNewAttribsInternal(primAttrTemplateHandle);
   // set margin to be 0
   primObjectAttributes->setMargin(0.0);
   // make smaller as default size - prims are approx meter in size
@@ -102,49 +119,37 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
-ObjectAttributes::ptr
-ObjectAttributesManager::createFileBasedAttributesTemplate(
-    const std::string& objPhysConfigFilename,
-    bool registerTemplate) {
-  // Load JSON config file
-  io::JsonDocument jsonConfig;
-  bool success = this->verifyLoadJson(objPhysConfigFilename, jsonConfig);
-  if (!success) {
-    LOG(ERROR)
-        << "ObjectAttributesManager::createFileBasedAttributesTemplate : "
-           "Failure reading json : "
-        << objPhysConfigFilename << ". Aborting.";
-    return nullptr;
-  }
+ObjectAttributes::ptr ObjectAttributesManager::loadAttributesFromJSONDoc(
+    const std::string& templateName,
+    const io::JsonDocument& jsonConfig) {
+  // Construct a ObjectAttributes and populate with any AbstractObjectAttributes
+  // fields found in json.
+  auto objAttributes =
+      this->createObjectAttributesFromJson(templateName, jsonConfig);
 
-  // Construct a ObjectAttributes and populate with any
-  // AbstractPhysicsAttributes fields found in json.
-  auto objAttributes = this->createPhysicsAttributesFromJson<ObjectAttributes>(
-      objPhysConfigFilename, jsonConfig);
-
-  // Populate with object-specific fields found in json, if any are there
+  // Populate with object-specific fields found in json, if any are there.
   // object mass
   io::jsonIntoSetter<double>(
       jsonConfig, "mass",
       std::bind(&ObjectAttributes::setMass, objAttributes, _1));
 
-  // optional set bounding box as collision object
+  // Use bounding box as collision object
   io::jsonIntoSetter<bool>(
       jsonConfig, "use bounding box for collision",
       std::bind(&ObjectAttributes::setBoundingBoxCollisions, objAttributes,
                 _1));
 
-  //! Get collision configuration options if specified
+  // Join collision meshes if specified
   io::jsonIntoSetter<bool>(
       jsonConfig, "join collision meshes",
       std::bind(&ObjectAttributes::setJoinCollisionMeshes, objAttributes, _1));
 
-  // object's interia matrix diag
+  // The object's interia matrix diagonal
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "inertia",
       std::bind(&ObjectAttributes::setInertia, objAttributes, _1));
 
-  // the center of mass (in the local frame of the object)
+  // The center of mass (in the local frame of the object)
   // if COM is provided, use it for mesh shift
   bool comIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "COM",
@@ -152,23 +157,16 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
 
-  return this->postCreateRegister(objAttributes, registerTemplate);
+  return objAttributes;
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
-ObjectAttributes::ptr ObjectAttributesManager::createDefaultAttributesTemplate(
-    const std::string& templateName,
-    bool registerTemplate) {
-  // construct a ObjectAttributes
-  ObjectAttributes::ptr objAttributes =
-      initNewAttribsInternal(ObjectAttributes::create(templateName));
-
-  return this->postCreateRegister(objAttributes, registerTemplate);
-}  // ObjectAttributesManager::createEmptyAttributesTemplate
-
 ObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
-    ObjectAttributes::ptr newAttributes) {
+    const std::string& attributesHandle) {
+  // TODO if default template exists from some source, create this template as a
+  // copy
+  auto newAttributes = ObjectAttributes::create(attributesHandle);
+
   this->setFileDirectoryFromHandle(newAttributes);
-  const std::string attributesHandle = newAttributes->getHandle();
   // set default render asset handle
   newAttributes->setRenderAssetHandle(attributesHandle);
   // set default collision asset handle

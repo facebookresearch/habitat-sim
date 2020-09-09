@@ -1,6 +1,7 @@
 find_package(MagnumBindings REQUIRED Python)
 
-pybind11_add_module(habitat_sim_bindings
+pybind11_add_module(
+  habitat_sim_bindings
   bindings.cpp
   AttributesBindings.cpp
   AttributesManagersBindings.cpp
@@ -13,19 +14,18 @@ pybind11_add_module(habitat_sim_bindings
   ShortestPathBindings.cpp
   SimBindings.cpp
 )
-target_link_libraries(habitat_sim_bindings
-  PRIVATE
-    MagnumBindings::Python
-  PUBLIC
-    agent
-    assets
-    scene
-    core
-    gfx
-    nav
-    sensor
-    physics
-    sim
+target_link_libraries(
+  habitat_sim_bindings
+  PRIVATE MagnumBindings::Python
+  PUBLIC agent
+         assets
+         scene
+         core
+         gfx
+         nav
+         sensor
+         physics
+         sim
 )
 
 # target_include_directories(environment

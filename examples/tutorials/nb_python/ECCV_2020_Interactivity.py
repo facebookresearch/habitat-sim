@@ -3,7 +3,7 @@
 #   accelerator: GPU
 #   colab:
 #     collapsed_sections: []
-#     name: 'ECCV 2020: Interactivity.ipynb'
+#     name: 'ECCV 2020: Habitat-sim Interactivity'
 #     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
@@ -18,6 +18,9 @@
 #     display_name: Python 3
 #     name: python3
 # ---
+
+# %% [markdown]
+# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim Interactivity
@@ -622,7 +625,11 @@ example_type = "kinematic vs dynamic"
 observations = simulate(sim, dt=2.0)
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 
 remove_all_objects(sim)
@@ -683,7 +690,11 @@ while sim.get_world_time() < start_time + dt:
 example_type = "object permanence"
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 remove_all_objects(sim)
 
@@ -726,7 +737,11 @@ example_type = "physical plausibility"
 observations = simulate(sim, dt=3.0)
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 remove_all_objects(sim)
 
@@ -817,7 +832,11 @@ example_type = "trajectory prediction"
 observations = simulate(sim, dt=3.0)
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 remove_all_objects(sim)
 
@@ -904,7 +923,11 @@ example_type = "clutter generation"
 observations = simulate(sim, dt=2.0)
 if make_video:
     vut.make_video(
-        observations, "color_sensor_1st_person", "color", output_path + example_type
+        observations,
+        "color_sensor_1st_person",
+        "color",
+        output_path + example_type,
+        open_vid=show_video,
     )
 remove_all_objects(sim)
 sim.navmesh_visualization = False

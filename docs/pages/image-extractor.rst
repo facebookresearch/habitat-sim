@@ -5,7 +5,7 @@ Habitat Sim Image Extractor Tutorial
     :class: m-block m-default
 
 
-This notebook will go over how to use the Image Extraction API in Habitat Sim and the different user options available.
+:summary: This tutorial will demonstrate how to use the Image Extraction API in Habitat Sim and the different user options available.
 
 .. code:: py
 

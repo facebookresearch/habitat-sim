@@ -87,20 +87,71 @@ class AttributesManager {
    * returns a copy of the registered template.
    * @return a reference to the desired template.
    */
-  virtual AttribsPtr createDefaultAttributesTemplate(
-      const std::string& templateName,
-      bool registerTemplate = false) = 0;
+  AttribsPtr createDefaultAttributesTemplate(const std::string& templateName,
+                                             bool registerTemplate = false) {
+    // create default attributes descriptor
+    AttribsPtr attributes = initNewAttribsInternal(templateName);
+    if (nullptr == attributes) {
+      return attributes;
+    }
+    return this->postCreateRegister(attributes, registerTemplate);
+  }
+
+  /**
+   * @brief Creates an instance of a template from a JSON file using passed
+   * filename by loading and parsing the loaded JSON and generating a @ref
+   * AttribsPtr object. It returns created instance if successful,
+   * and nullptr if fails.
+   *
+   * @param filename the name of the file describing the object attributes.
+   * Assumes it exists and fails if it does not.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true.
+   * @return a reference to the desired template, or nullptr if fails.
+   */
+
+  AttribsPtr createFileBasedAttributesTemplate(const std::string& filename,
+                                               bool registerTemplate = true) {
+    // Load JSON config file
+    io::JsonDocument jsonConfig;
+    bool success = this->verifyLoadJson(filename, jsonConfig);
+    if (!success) {
+      LOG(ERROR) << attrType_
+                 << "AttributesManager::createFileBasedAttributesTemplate : "
+                    "Failure reading json : "
+                 << filename << ". Aborting.";
+      return nullptr;
+    }
+    AttribsPtr attr = this->loadAttributesFromJSONDoc(filename, jsonConfig);
+    return this->postCreateRegister(attr, registerTemplate);
+  }  // AttributesManager::createFileBasedAttributesTemplate
+
+  /**
+   * @brief Parse passed JSON Document specifically for @ref AttribsPtr object.
+   * It always returns a @ref AttribsPtr object.
+   * @param filename Can be the name of the file describing the @ref AttribsPtr,
+   * used for attributes handle on create and, for some attributes such as @ref
+   * PrimAssetAttributes, to determine type of actual instanced attributes
+   * template.
+   * @param jsonConfig json document to parse - assumed to be legal JSON doc.
+   * @return a reference to the desired template.
+   */
+  virtual AttribsPtr loadAttributesFromJSONDoc(
+      const std::string& filename,
+      const io::JsonDocument& jsonConfig) = 0;
 
   /**
    * @brief Add a copy of @ref AbstractAttributes object to the @ref
    * templateLibrary_.
    *
    * @param attributesTemplate The attributes template.
-   * @param attributesTemplateHandle The key for referencing the template in the
-   * @ref templateLibrary_. Will be set as origin handle for template. If empty
-   * string, use existing origin handle.
-   * @return The unique ID of the template being registered, or ID_UNDEFINED if
-   * failed
+   * @param attributesTemplateHandle The key for referencing the template in
+   * the
+   * @ref templateLibrary_. Will be set as origin handle for template. If
+   * empty string, use existing origin handle.
+   * @return The unique ID of the template being registered, or ID_UNDEFINED
+   * if failed
    */
   int registerAttributesTemplate(
       AttribsPtr attributesTemplate,
@@ -500,44 +551,44 @@ class AttributesManager {
       try {
         jsonDoc = io::parseJsonFile(filename);
       } catch (...) {
-        LOG(ERROR) << "Failed to parse " << filename << "as JSON.";
+        LOG(ERROR) << attrType_
+                   << "AttributesManager::verifyLoadJson : Failed to parse "
+                   << filename << " as JSON.";
         return false;
       }
       return true;
     } else {
       // by here always fail
-      LOG(ERROR) << "File " << filename << " does not exist";
+      LOG(ERROR) << attrType_ << "AttributesManager::verifyLoadJson : File "
+                 << filename << " does not exist";
       return false;
     }
   }  // AttributesManager::verifyLoadJson
 
   /**
-   * @brief Create either an object or a scene attributes from a json config.
-   * Since both object attributes and scene attributes inherit from @ref
-   * AbstractPhysicsAttributes, the functionality to populate these fields from
+   * @brief Create either an object or a stage attributes from a json config.
+   * Since both object attributes and stage attributes inherit from @ref
+   * AbstractObjectAttributes, the functionality to populate these fields from
    * json can be shared.  Also will will populate render mesh and collision mesh
-   * handles in object and scene attributes with value(s) specified in json.  If
+   * handles in object and stage attributes with value(s) specified in json.  If
    * one is blank will use other for both.
    *
-   * @tparam type of attributes to create : MUST INHERIT FROM @ref
-   * AbstractPhysicsAttributes
    * @param filename name of json descriptor file
    * @param jsonDoc json document to parse
    * @return an appropriately cast attributes pointer with base class fields
    * filled in.
    */
-  template <typename U>
-  AttribsPtr createPhysicsAttributesFromJson(const std::string& filename,
-                                             const io::JsonDocument& jsonDoc);
+  AttribsPtr createObjectAttributesFromJson(const std::string& filename,
+                                            const io::JsonDocument& jsonDoc);
 
   /**
-   * @brief Only used by @ref AbstractPhysicsAttributes derived-attributes. Set
+   * @brief Only used by @ref AbstractObjectAttributes derived-attributes. Set
    * the asset type and mesh asset filename from json file. If mesh asset
    * filename has changed in json, but type has not been specified in json,
    * re-run file-path-driven configuration to get asset type and possibly
    * orientation frame, if appropriate.
    *
-   * @param attributes The AbstractPhysicsAttributes object to be populated
+   * @param attributes The AbstractObjectAttributes object to be populated
    * @param jsonDoc The json document
    * @param jsonMeshTypeTag The string tag denoting the desired mesh type in the
    * json.
@@ -583,7 +634,7 @@ class AttributesManager {
    * specifying the asset type corresponding to that handle.  These settings
    * should not restrict anything, only provide defaults.
    *
-   * @param attributes The AbstractPhysicsAttributes object to be configured
+   * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
    * @param fileName Mesh Handle to check.
@@ -610,12 +661,12 @@ class AttributesManager {
   }  // setFileDirectoryFromHandle
 
   /**
-   * @brief Used Internally.  Configure newly-created attributes with any
-   * default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes with
+   * any default values, before any specific values are set.
    *
-   * @param newAttributes Newly created attributes.
+   * @param handleName handle name to be assigned to attributes
    */
-  virtual AttribsPtr initNewAttribsInternal(AttribsPtr newAttributes) = 0;
+  virtual AttribsPtr initNewAttribsInternal(const std::string& handleName) = 0;
 
   /**
    * @brief Used Internally. Remove the template referenced by the passed
@@ -709,8 +760,8 @@ class AttributesManager {
   virtual void resetFinalize() = 0;
 
   /**
-   * @brief Build a shared pointer to the appropriate attributes for passed
-   * object type.
+   * @brief Build a shared pointer to a copy of a the passed attributes, of
+   * appropriate attributes type for passed object type.
    * @tparam U Type of attributes being created - must be a derived class of
    * AttribsPtr
    * @param orig original object of type AttribsPtr being copied
@@ -861,11 +912,10 @@ class AttributesManager {
 // Class Template Method Definitions
 
 template <class AttribsPtr>
-template <class U>
-AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
+AttribsPtr AttributesManager<AttribsPtr>::createObjectAttributesFromJson(
     const std::string& configFilename,
     const io::JsonDocument& jsonDoc) {
-  auto attributes = initNewAttribsInternal(U::create(configFilename));
+  auto attributes = this->initNewAttribsInternal(configFilename);
 
   using std::placeholders::_1;
 
@@ -944,7 +994,7 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
   attributes->setUseMeshCollision(true);
 
   return attributes;
-}  // AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson
+}  // AttributesManager<AttribsPtr>::createObjectAttributesFromJson
 
 template <class T>
 bool AttributesManager<T>::setJSONAssetHandleAndType(
@@ -960,7 +1010,7 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
   // clear var to get new value
   fileName = "";
   // Map a json string value to its corresponding AssetType if found and cast to
-  // int, based on @ref AbstractPhysicsAttributes::AssetTypeNamesMap mappings.
+  // int, based on @ref AbstractObjectAttributes::AssetTypeNamesMap mappings.
   // Casts an int of the @ref esp::AssetType enum value if found and understood,
   // 0 (AssetType::UNKNOWN) if found but not understood, and
   //-1 if tag is not found in json.
@@ -977,7 +1027,7 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
                       "Value in json @ tag : "
                    << jsonMeshTypeTag << " : `" << tmpVal
                    << "` does not map to a valid "
-                      "AbstractPhysicsAttributes::AssetTypeNamesMap value, so "
+                      "AbstractObjectAttributes::AssetTypeNamesMap value, so "
                       "defaulting mesh type to AssetType::UNKNOWN.";
       typeVal = static_cast<int>(AssetType::UNKNOWN);
     }

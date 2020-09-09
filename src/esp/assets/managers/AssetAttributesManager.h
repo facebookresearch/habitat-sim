@@ -112,24 +112,20 @@ class AssetAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Creates an instance of a template holding default values. For asset
-   * attributes this is the same functionality as @ref createAttributesTemplate.
+   * @brief Parse passed JSON Document specifically for @ref
+   * AbstractPrimitiveAttributes object. It always returns a valid @ref
+   * AbstractPrimitiveAttributes::ptr object.
    *
-   * @param primClassName A string descriptor of the primitive asset
-   * template to be created, corresponding to the Magnum Primitive class
-   * name.
-   * @param registerTemplate whether to add this template to the library.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration. Defaults to false. If
-   * specified as true, then this function returns a copy of the registered
-   * template.
+   * TODO : currently do not support file-based Primitive Assets, so no actual
+   * JSON parsing.
+   * @param filename the name of the file describing the asset attributes, used
+   * to determine type of attributes template.
+   * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  Attrs::AbstractPrimitiveAttributes::ptr createDefaultAttributesTemplate(
-      const std::string& primClassName,
-      bool registerTemplate = false) override {
-    return createAttributesTemplate(primClassName, registerTemplate);
-  }  // Attrs::AbstractPrimitiveAttributes::ptr createDefaultAttributesTemplate
+  Attrs::AbstractPrimitiveAttributes::ptr loadAttributesFromJSONDoc(
+      const std::string& filename,
+      const io::JsonDocument& jsonConfig) override;
 
   /**
    * @brief Should only be called internally. Creates an instance of a
@@ -434,33 +430,22 @@ class AssetAttributesManager
       const std::string& ignored = "") override;
 
   /**
-   * @brief Used Internally.  Configure newly-created attributes with any
-   * default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes with
+   * any default values, before any specific values are set.
    *
    * @param newAttributes Newly created attributes.
    */
   Attrs::AbstractPrimitiveAttributes::ptr initNewAttribsInternal(
-      Attrs::AbstractPrimitiveAttributes::ptr newAttributes) override {
-    return newAttributes;
-  }
-
-  /**
-   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
-   * with passed class name
-   * @param primClassName Magnum::Primitives class name of primitive being
-   * constructed
-   */
-  Attrs::AbstractPrimitiveAttributes::ptr buildPrimAttributes(
-      const std::string& primClassName) {
+      const std::string& primClassName) override {
     if (primTypeConstructorMap_.count(primClassName) == 0) {
       LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
                     "primitive class"
                  << primClassName << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
-    return initNewAttribsInternal(
-        (*this.*primTypeConstructorMap_[primClassName])());
-  }  // AssetAttributeManager::buildPrimAttributes
+    auto newAttributes = (*this.*primTypeConstructorMap_[primClassName])();
+    return newAttributes;
+  }
 
   /**
    * @brief Build a shared pointer to the appropriate attributes for passed

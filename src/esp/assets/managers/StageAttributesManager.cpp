@@ -26,49 +26,57 @@ StageAttributesManager::StageAttributesManager(
     PhysicsAttributesManager::ptr physicsAttributesManager)
     : AttributesManager<StageAttributes::ptr>::AttributesManager(
           resourceManager,
-          "Physical Stage"),
+          "Stage"),
       objectAttributesMgr_(objectAttributesMgr),
       physicsAttributesManager_(physicsAttributesManager),
       cfgLightSetup_(assets::ResourceManager::NO_LIGHT_KEY) {
   buildCtorFuncPtrMaps();
-}
+}  // StageAttributesManager ctor
 
 StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
-    const std::string& stageAttributesHandle,
+    const std::string& attributesTemplateHandle,
     bool registerTemplate) {
   StageAttributes::ptr attrs;
   std::string msg;
-  std::string strHandle = Cr::Utility::String::lowercase(stageAttributesHandle);
-  bool fileExists = (this->isValidFileName(stageAttributesHandle));
-  if (objectAttributesMgr_->isValidPrimitiveAttributes(stageAttributesHandle)) {
-    // if stageAttributesHandle == some existing primitive attributes, then
+  if (objectAttributesMgr_->isValidPrimitiveAttributes(
+          attributesTemplateHandle)) {
+    // if attributesTemplateHandle == some existing primitive attributes, then
     // this is a primitive-based stage (i.e. a plane) we are building
-    attrs = createPrimBasedAttributesTemplate(stageAttributesHandle,
+    attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
                                               registerTemplate);
-    msg = "Primitive Asset (" + stageAttributesHandle + ") Based";
-
-  } else if (fileExists) {
-    if ((strHandle.find("stage_config.json") != std::string::npos) &&
-        fileExists) {
-      // check if stageAttributesHandle corresponds to an actual, existing
-      // json stage file descriptor.
-      attrs = createFileBasedAttributesTemplate(stageAttributesHandle,
-                                                registerTemplate);
-      msg = "JSON File (" + stageAttributesHandle + ") Based";
-    } else {
-      // if name is not json file descriptor but still appropriate file
-      attrs = createBackCompatAttributesTemplate(stageAttributesHandle,
-                                                 registerTemplate);
-      msg = "File (" + stageAttributesHandle + ") Based";
-    }
+    msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
 
   } else {
-    // if name is not file descriptor, return default attributes.
-    attrs = createDefaultAttributesTemplate(stageAttributesHandle,
-                                            registerTemplate);
-    msg = "New default";
-  }
+    std::string JSONTypeExt("stage_config.json");
+    std::string strHandle =
+        Cr::Utility::String::lowercase(attributesTemplateHandle);
+    std::string jsonAttrFileName =
+        (strHandle.find(JSONTypeExt) != std::string::npos)
+            ? std::string(attributesTemplateHandle)
+            : io::changeExtension(attributesTemplateHandle, JSONTypeExt);
+    bool fileExists = (this->isValidFileName(attributesTemplateHandle));
+    bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+    if (jsonFileExists) {
+      // check if stageAttributesHandle corresponds to an actual, existing
+      // json stage file descriptor.
+      // this method lives in class template.
+      attrs = this->createFileBasedAttributesTemplate(jsonAttrFileName,
+                                                      registerTemplate);
+      msg = "JSON File (" + jsonAttrFileName + ") Based";
+    } else {
+      // if name is not json file descriptor but still appropriate file, or if
+      // is not a file or known prim
+      attrs = this->createDefaultAttributesTemplate(attributesTemplateHandle,
+                                                    registerTemplate);
 
+      if (fileExists) {
+        msg = "File (" + attributesTemplateHandle + ") Based";
+
+      } else {
+        msg = "New default (" + attributesTemplateHandle + ")";
+      }
+    }
+  }  // if is prim else
   if (nullptr != attrs) {
     LOG(INFO) << msg << " stage attributes created"
               << (registerTemplate ? " and registered." : ".");
@@ -100,9 +108,10 @@ int StageAttributesManager::registerAttributesTemplateFinalize(
     // physicsSynthObjTmpltLibByID_
     stageAttributes->setRenderAssetIsPrimitive(true);
   } else if (this->isValidFileName(renderAssetHandle)) {
-    // Check if renderAssetHandle is valid file name and is found in file system
-    // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
-    // to physicsFileObjTmpltLibByID_ - verify file  exists
+    // Check if renderAssetHandle is valid file name and is found in file
+    // system
+    // - if so then setRenderAssetIsPrimitive to false and set map of
+    // IDs->Names to physicsFileObjTmpltLibByID_ - verify file  exists
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
     // Render asset handle will be NONE as well - force type to be unknown
@@ -160,24 +169,6 @@ int StageAttributesManager::registerAttributesTemplateFinalize(
   return stageTemplateID;
 }  // StageAttributesManager::registerAttributesTemplate
 
-StageAttributes::ptr StageAttributesManager::createDefaultAttributesTemplate(
-    const std::string& stageFilename,
-    bool registerTemplate) {
-  // Attributes descriptor for stage
-  StageAttributes::ptr stageAttributes =
-      initNewAttribsInternal(StageAttributes::create(stageFilename));
-
-  if (registerTemplate) {
-    int attrID =
-        this->registerAttributesTemplate(stageAttributes, stageFilename);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-  return stageAttributes;
-}  // StageAttributesManager::createDefaultAttributesTemplate
-
 StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAssetHandle,
     bool registerTemplate) {
@@ -192,8 +183,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   }
 
   // construct a stageAttributes
-  auto stageAttributes =
-      initNewAttribsInternal(StageAttributes::create(primAssetHandle));
+  auto stageAttributes = initNewAttribsInternal(primAssetHandle);
   // set margin to be 0
   stageAttributes->setMargin(0.0);
 
@@ -211,21 +201,14 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   return this->postCreateRegister(stageAttributes, registerTemplate);
 }  // StageAttributesManager::createPrimBasedAttributesTemplate
 
-StageAttributes::ptr StageAttributesManager::createBackCompatAttributesTemplate(
-    const std::string& stageFilename,
-    bool registerTemplate) {
-  // Attributes descriptor for stage
-  StageAttributes::ptr stageAttributes =
-      initNewAttribsInternal(StageAttributes::create(stageFilename));
-
-  return this->postCreateRegister(stageAttributes, registerTemplate);
-}  // StageAttributesManager::createBackCompatAttributesTemplate
-
 StageAttributes::ptr StageAttributesManager::initNewAttribsInternal(
-    StageAttributes::ptr newAttributes) {
-  this->setFileDirectoryFromHandle(newAttributes);
+    const std::string& stageFilename) {
+  // TODO if default template exists from some source, create this template as a
+  // copy
+  auto newAttributes = StageAttributes::create(stageFilename);
 
-  std::string stageFilename = newAttributes->getHandle();
+  // attempt to set source directory if exists
+  this->setFileDirectoryFromHandle(newAttributes);
 
   // set defaults that config files or other constructive processes might
   // override
@@ -241,7 +224,8 @@ StageAttributes::ptr StageAttributesManager::initNewAttribsInternal(
   // set value from config so not necessary to be passed as argument
   newAttributes->setFrustrumCulling(cfgFrustrumCulling_);
 
-  // set defaults for navmesh default handles and semantic mesh default handles
+  // set defaults for navmesh default handles and semantic mesh default
+  // handles
   std::string navmeshFilename = io::changeExtension(stageFilename, ".navmesh");
   if (cfgFilepaths_.count("navmesh")) {
     navmeshFilename = cfgFilepaths_.at("navmesh");
@@ -334,28 +318,18 @@ void StageAttributesManager::setDefaultFileNameBasedAttributes(
   }
 }  // StageAttributesManager::setDefaultFileNameBasedAttributes
 
-StageAttributes::ptr StageAttributesManager::createFileBasedAttributesTemplate(
-    const std::string& stageFilename,
-    bool registerTemplate) {
-  // Load the stage config JSON here
-  io::JsonDocument jsonConfig;
-  bool success = this->verifyLoadJson(stageFilename, jsonConfig);
-  if (!success) {
-    LOG(ERROR) << "StageAttributesManager::createFileBasedAttributesTemplate : "
-                  "Failure reading json "
-               << stageFilename << ". Aborting.";
-    return nullptr;
-  }
-
+StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
+    const std::string& templateName,
+    const io::JsonDocument& jsonConfig) {
   // construct a StageAttributes and populate with any
-  // AbstractPhysicsAttributes fields found in json.
-  auto stageAttributes = this->createPhysicsAttributesFromJson<StageAttributes>(
-      stageFilename, jsonConfig);
+  // AbstractObjectAttributes fields found in json.
+  auto stageAttributes =
+      this->createObjectAttributesFromJson(templateName, jsonConfig);
 
   // directory location where stage files are found
   std::string stageLocFileDir = stageAttributes->getFileDirectory();
 
-  // now parse stage-specific fields
+  // now parse stage-specific fields.
   // load stage specific gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "gravity",
@@ -383,7 +357,8 @@ StageAttributes::ptr StageAttributesManager::createFileBasedAttributesTemplate(
     // if "semantic mesh" is specified in stage json to non-empty value, set
     // value (override default).
     stageAttributes->setSemanticAssetHandle(semanticFName);
-    // TODO eventually remove this, but currently semantic mesh must be instance
+    // TODO eventually remove this, but currently semantic mesh must be
+    // instance
     stageAttributes->setSemanticAssetType(
         static_cast<int>(AssetType::INSTANCE_MESH));
   }
@@ -410,14 +385,12 @@ StageAttributes::ptr StageAttributesManager::createFileBasedAttributesTemplate(
   // load the rigid object library metadata (no physics init yet...)
   if (jsonConfig.HasMember("rigid object paths") &&
       jsonConfig["rigid object paths"].IsArray()) {
-    std::string configDirectory =
-        stageFilename.substr(0, stageFilename.find_last_of("/"));
-
+    std::string configDirectory = stageAttributes->getFileDirectory();
     const auto& paths = jsonConfig["rigid object paths"];
     for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
       if (!paths[i].IsString()) {
         LOG(ERROR)
-            << "StageAttributesManager::createAttributesTemplate "
+            << "StageAttributesManager::loadAttributesFromJSONDoc "
                ":Invalid value in stage config 'rigid object paths'- array "
             << i;
         continue;
@@ -430,8 +403,8 @@ StageAttributes::ptr StageAttributesManager::createFileBasedAttributesTemplate(
     }
   }  // if load rigid object library metadata
 
-  return this->postCreateRegister(stageAttributes, registerTemplate);
-}  // StageAttributesManager::createFileBasedAttributesTemplate
+  return stageAttributes;
+}  // StageAttributesManager::loadAttributesFromJSONDoc
 
 }  // namespace managers
 }  // namespace assets
