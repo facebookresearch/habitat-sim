@@ -15,11 +15,11 @@ Attributes templates provide a mechanism by which the various constructions in H
 
 `Physics Manager Attributes`_
 =============================
-Physics Manager Attributes templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be named in the following format :
+Physics Manager Attributes templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be formatted as follows:
 
  	<worldname>.phys_scene_config.json
 
-An example of an appropriate configured file can be found below :
+`An example of an appropriately configured Physics Manager Attributes file can be found below <../../../data/test_assets/testing.phys_scene_config.json>`_:
 
 .. include:: ../../data/test_assets/testing.phys_scene_config.json
     :code: json
@@ -32,27 +32,27 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 	- What physics engine should be used for dynamics simulation.  Currently supports "bullet" for Bullet physics simulation, and "none", meaning kinematic motion is to be used.
 "gravity"
 	- 3-vector
-	- Gravity to use for physical modeling. This can be overridden by Stage attributes.
+	- The default gravity to use for physical modeling. This can be overridden by Stage attributes.
 "timestep"
 	- double
 	- The timestep to use for forward simulation.
 "friction coefficient"
 	- double
-	- The coefficient of friction. This can be overridden in Stage and Object Attributes.
+	- The default coefficient of friction. This can be overridden in Stage and Object Attributes.
 "restitution coefficient"
 	- double
-	- The coefficient of restitution. This can be overridden in Stage and Object Attributes.
+	- The default coefficient of restitution. This can be overridden in Stage and Object Attributes.
 "rigid object paths"
 	- list of strings
 	- A list of locations to query for supported object files that should be available to be loaded into the world.
 
 `Stage Attributes`_
 ===================
-A stage in Habitat-Sim is a static object consisting of background scenery wherein an agent acts.  Stage Attributes templates hold relevant information describing a stage's mesh, geometry and physical properties.  Any source configuration files used to build these attributes should be named in the format :
+A stage in Habitat-Sim is a static object consisting of static background scenery wherein an agent acts.  Stage Attributes templates hold relevant information describing a stage's render and collision assets and physical properties.  Any source configuration files used to build these attributes should be formatted as follows:
 
  	<stagename>.stage_config.json
 
-An example of an appropriate configured file can be found below :
+`An example of an appropriately configured Stage Attributes file can be found below <../../../data/test_assets/scenes/stage_floor1.stage_config.json>`_:
 
 .. include:: ../../data/test_assets/scenes/stage_floor1.stage_config.json
     :code: json
@@ -86,13 +86,13 @@ The tags below are used to build a coordinate frame for the stage, and will over
 
 "up"
 	- 3-vector
-	- Describes the **up** direction for the stage.
+	- Describes the **up** direction for the stage in the asset's local space.
 "front"
 	- 3-vector
-	- Describes the **forward** direction for the stage.
+	- Describes the **forward** direction for the stage in the asset's local space.
 "origin"
 	- 3-vector
-	- Describes the **origin** of the stage, for alignment purposes.
+	- Describes the **origin** of the stage in the world frame, for alignment purposes.
 
 Stage Physics and Object-related Parameters
 -------------------------------------------
@@ -119,15 +119,15 @@ Below are stage-specific physical and object-related quantities.  These values w
 	- The conversion of given units to meters.
 "requires lighting"
 	- boolean
-	- Whether or not the stage should use lighting.
+	- Whether the stage should be rendered with lighting or flat shading.
 
 `Object Attributes`_
 ====================
-Object Attributes templates hold descriptive information for type of object that can be loaded into Habitat.  These files should be named in the format :
+Object Attributes templates hold descriptive information for instancing rigid objects into Habitat-Sim.  These files should be formatted as follows:
 
  	<objectname>.phys_properties.json
 
-An example of an appropriate configured file can be found below :
+`An example of an appropriately configured Object Attributes file can be found below <../../../data/test_assets/objects/donut.phys_properties.json>`_:
 
 .. include:: ../../data/test_assets/objects/donut.phys_properties.json
     :code: json
@@ -151,10 +151,10 @@ The tags below are used to build a coordinate frame for the object, and will ove
 
 "up"
 	- 3-vector
-	- Describes the **up** direction for the object.
+	- Describes the **up** direction for the object in the asset's local space.
 "front"
 	- 3-vector
-	- Describes the **forward** direction for the object.
+	- Describes the **forward** direction for the object in the asset's local space.
 
 
 Below are object-specific physical quantities.  These values will override similarly-named values specified in a Physics Manager Attributes.
@@ -176,19 +176,19 @@ Below are object-specific physical quantities.  These values will override simil
 	- The conversion of given units to meters.
 "requires lighting"
 	- boolean
-	- Whether or not the object should use lighting.
+	- Whether the object should be rendered with lighting or flat shading.
 "mass"
 	- double
 	- The mass of the object, for physics calculations.
 "inertia"
 	- 3-vector
-	- The values of the diagonal of the inertia matrix for the object.
+	- The values of the diagonal of the inertia matrix for the object.  If not provided, will be computed automatically from the object's mass and bounding box.
 "COM"
 	- 3-vector
 	- The center of mass for the object.  If this is not specified in JSON, it will be derived from the object's bounding box in Habitat-Sim.
 "use bounding box for collision"
 	- boolean
-	- Whether collision calculations should be based on object's bounding box geometry.
+	- Whether or not to use the object's bounding box as collision geometry. Note: dynamic simulation will be significantly faster and more stable if this is true.
 "join collision meshes"
 	- boolean
-	- Whether collision mesh assets should be joined into a single unified collision object.
+	- Whether or not sub-components of the object's collision asset should be joined into a single unified collision object.
