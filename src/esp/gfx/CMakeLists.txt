@@ -1,11 +1,15 @@
-set(gfx_SOURCES
+set(
+  gfx_SOURCES
   DepthUnprojection.cpp
   DepthUnprojection.h
   Drawable.cpp
   Drawable.h
+  DrawableGroup.cpp
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
+  MeshVisualizerDrawable.cpp
+  MeshVisualizerDrawable.h
   LightSetup.cpp
   LightSetup.h
   MaterialData.h
@@ -24,7 +28,9 @@ set(gfx_SOURCES
 
 # If ptex support is enabled add relevant source files
 if(BUILD_PTEX_SUPPORT)
-  list(APPEND gfx_SOURCES
+  list(
+    APPEND
+    gfx_SOURCES
     PTexMeshDrawable.cpp
     PTexMeshDrawable.h
     PTexMeshShader.cpp
@@ -32,25 +38,20 @@ if(BUILD_PTEX_SUPPORT)
   )
 endif()
 
-
-find_package(Magnum
+find_package(
+  Magnum
   REQUIRED
-    AnyImageImporter
-    AnySceneImporter
-    GL
-    MeshTools
-    SceneGraph
-    Shaders
-    Trade
-    AnyImageConverter
+  AnyImageImporter
+  AnySceneImporter
+  GL
+  MeshTools
+  SceneGraph
+  Shaders
+  Trade
+  AnyImageConverter
 )
 
-find_package(MagnumPlugins
-  REQUIRED
-    StbImageImporter
-    StbImageConverter
-    TinyGltfImporter
-)
+find_package(MagnumPlugins REQUIRED StbImageImporter StbImageConverter TinyGltfImporter)
 
 find_package(MagnumIntegration REQUIRED Eigen)
 
@@ -60,47 +61,40 @@ find_package(Corrade REQUIRED Utility)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
 
-set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/../data/default.phys_scene_config.json)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
-                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
-
-add_library(gfx STATIC ${gfx_SOURCES})
-
+add_library(
+  gfx STATIC
+  ${gfx_SOURCES}
+)
 
 if(BUILD_WITH_CUDA)
-  target_include_directories(gfx
-    PRIVATE
-      ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-      ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
+  target_include_directories(
+    gfx PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+                ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
   )
 
-  target_link_libraries(gfx
-    PUBLIC
-      ${CUDART_LIBRARY}
-  )
+  target_link_libraries(gfx PUBLIC ${CUDART_LIBRARY})
 endif()
 
-
-target_link_libraries(gfx
-  PUBLIC
-    assets
-    core
-    io
-    physics
-    Magnum::AnyImageImporter
-    Magnum::AnySceneImporter
-    Magnum::GL
-    Magnum::Magnum
-    Magnum::MeshTools
-    Magnum::SceneGraph
-    Magnum::Shaders
-    Magnum::Trade
-    MagnumPlugins::StbImageImporter
-    MagnumPlugins::StbImageConverter
-    MagnumPlugins::TinyGltfImporter
-    MagnumIntegration::Eigen
-    Corrade::Utility
-    Magnum::AnyImageConverter
+target_link_libraries(
+  gfx
+  PUBLIC assets
+         core
+         io
+         physics
+         Magnum::AnyImageImporter
+         Magnum::AnySceneImporter
+         Magnum::GL
+         Magnum::Magnum
+         Magnum::MeshTools
+         Magnum::SceneGraph
+         Magnum::Shaders
+         Magnum::Trade
+         MagnumPlugins::StbImageImporter
+         MagnumPlugins::StbImageConverter
+         MagnumPlugins::TinyGltfImporter
+         MagnumIntegration::Eigen
+         Corrade::Utility
+         Magnum::AnyImageConverter
 )
 
 # Link windowed application library if needed

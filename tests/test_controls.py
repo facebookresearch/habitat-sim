@@ -6,11 +6,11 @@
 
 import attr
 import hypothesis
-import hypothesis.strategies as st
 import magnum as mn
 import numpy as np
 import pytest
-import quaternion
+import quaternion  # noqa: F401
+from hypothesis import strategies as st
 
 import habitat_sim
 import habitat_sim.errors
@@ -147,6 +147,18 @@ default_sensor_control_testdata = [
             delta_rot=quat_from_angle_axis(np.deg2rad(-10.0), habitat_sim.geo.RIGHT)
         ),
     ),
+    (
+        "rotate_sensor_clockwise",
+        ExpectedDelta(
+            delta_rot=quat_from_angle_axis(np.deg2rad(-10.0), habitat_sim.geo.FRONT)
+        ),
+    ),
+    (
+        "rotate_sensor_anti_clockwise",
+        ExpectedDelta(
+            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.FRONT)
+        ),
+    ),
 ]
 
 
@@ -172,6 +184,12 @@ def test_default_sensor_contorls(action, expected):
         ),
         look_down=habitat_sim.ActionSpec(
             "look_down", habitat_sim.ActuationSpec(amount=10.0)
+        ),
+        rotate_sensor_clockwise=habitat_sim.ActionSpec(
+            "rotate_sensor_clockwise", habitat_sim.ActuationSpec(amount=10.0)
+        ),
+        rotate_sensor_anti_clockwise=habitat_sim.ActionSpec(
+            "rotate_sensor_anti_clockwise", habitat_sim.ActuationSpec(amount=10.0)
         ),
     )
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child(), agent_config)

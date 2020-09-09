@@ -1,14 +1,25 @@
 [![CircleCI](https://circleci.com/gh/facebookresearch/habitat-sim.svg?style=shield)](https://circleci.com/gh/facebookresearch/habitat-sim)
 [![codecov](https://codecov.io/gh/facebookresearch/habitat-sim/branch/master/graph/badge.svg)](https://codecov.io/gh/facebookresearch/habitat-sim)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
+[![Anaconda-Server Badge](https://anaconda.org/aihabitat/habitat-sim/badges/version.svg)](https://anaconda.org/aihabitat/habitat-sim)
+[![Anaconda-Server Badge](https://anaconda.org/aihabitat/habitat-sim/badges/platforms.svg)](https://anaconda.org/aihabitat/habitat-sim)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/facebookresearch/habitat-sim)](https://github.com/facebookresearch/habitat-sim/releases/latest)
+[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![Supports Bullet](https://img.shields.io/static/v1?label=Supports&message=Bullet%20Physics&color=informational&link=https://opensource.google/projects/bullet3)](https://opensource.google/projects/bullet3)
+[![Slack Join](http://img.shields.io/static/v1?label=Join%20us%20on&message=%23habitat-dev&labelColor=%234A154B&logo=slack)](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI)
+[![Twitter Follow](https://img.shields.io/twitter/follow/ai_habitat?style=social)](https://twitter.com/ai_habitat)
 
 # Habitat-Sim
 
 A flexible, high-performance 3D simulator with configurable agents, multiple sensors, and generic 3D dataset handling (with built-in support for [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets).
 When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded, and reaches <a href="#fps_table"><b>over 10,000 FPS multi-process</b></a> on a single GPU!
 
-[Try Habitat in your browser!](https://aihabitat.org/demo)
 
+[Habitat-Lab](https://github.com/facebookresearch/habitat-lab) uses [Habitat-Sim](https://github.com/facebookresearch/habitat-sim) as the core simulator and is a modular high-level library for end-to-end experiments in embodied AI -- defining embodied AI tasks (e.g. navigation, instruction following, question answering), training agents (via imitation or reinforcement learning, or no learning at all as in classical SLAM), and benchmarking their performance on the defined tasks using standard metrics.
+
+[![Habitat Demo](https://img.shields.io/static/v1?label=WebGL&message=Try%20AI%20Habitat%20In%20Your%20Browser%20&color=blue&logo=webgl&labelColor=%23990000&style=for-the-badge&link=https://aihabitat.org/demo)](https://aihabitat.org/demo)
 <p align="center">
   <img src="docs/images/habitat_compressed.gif" height="400">
 </p>
@@ -194,7 +205,7 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 
 ### Docker Image
 
-We provide a pre-built docker container for habitat-api and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
+We provide a pre-built docker container for [habitat-lab](https://github.com/facebookresearch/habitat-lab) and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
 
 ### From Source
 
@@ -274,7 +285,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    Note3: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful.
 
 
-1. [Only if using `build.sh`] For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
+1. [Only if using `build.sh`] For use with [Habitat Lab](https://github.com/facebookresearch/habitat-lab) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
    ```bash
    export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
    ```
@@ -324,7 +335,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
   `640 x 480, total time: 3.208 sec. FPS: 311.7`.
   Note that the test scenes do not provide semantic meshes.
   If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)).
-  We have also provided an [example demo](https://aihabitat.org/docs/habitat-api/habitat-api-demo.html) for reference.
+  We have also provided an [example demo](https://aihabitat.org/docs/habitat-lab/habitat-lab-demo.html) for reference.
 
     To run a physics example in python (after building with "Physics simulation via Bullet"):
     ```bash
@@ -370,7 +381,7 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
 ## WebGL
 
 1. Download the [test scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally to habitat-sim creating habitat-sim/data.
-1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (version 1.38.38 is verified to work)
+1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (version 1.38.42 is verified to work)
 1. Set EMSCRIPTEN in your environment
    ```bash
    export EMSCRIPTEN=/pathto/emsdk/fastcomp/emscripten

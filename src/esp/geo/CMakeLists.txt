@@ -1,4 +1,5 @@
-add_library(geo STATIC
+add_library(
+  geo STATIC
   CoordinateFrame.cpp
   CoordinateFrame.h
   geo.cpp
@@ -7,10 +8,7 @@ add_library(geo STATIC
   OBB.h
 )
 
-target_link_libraries(geo
-  PUBLIC
-   core
-   glog
-   io
-   gfx
+target_link_libraries(
+  geo
+  PUBLIC core glog io gfx
 )

@@ -54,17 +54,20 @@ void CullingTest::computeAbsoluteAABB() {
   // must declare these in this order due to avoid deallocation errors
   ResourceManager resourceManager;
   SceneManager sceneManager;
-
-  std::string sceneFile =
+  auto stageAttributesMgr = resourceManager.getStageAttributesManager();
+  std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+  // create scene attributes file
+  auto stageAttributes =
+      stageAttributesMgr->createAttributesTemplate(stageFile, true);
 
   int sceneID = sceneManager.initSceneGraph();
   auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
-  esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
-  const esp::assets::AssetInfo info =
-      esp::assets::AssetInfo::fromPath(sceneFile);
-  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool result = resourceManager.loadStage(stageAttributes, nullptr,
+                                          &sceneManager, tempIDs, false);
+  CORRADE_VERIFY(result);
 
   std::vector<Mn::Range3D> aabbs;
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
@@ -125,19 +128,26 @@ void CullingTest::frustumCulling() {
   // must declare these in this order due to avoid deallocation errors
   ResourceManager resourceManager;
   SceneManager sceneManager;
-
-  std::string sceneFile =
+  auto stageAttributesMgr = resourceManager.getStageAttributesManager();
+  std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+  // create scene attributes file
+  auto stageAttributes =
+      stageAttributesMgr->createAttributesTemplate(stageFile, true);
 
   // load the scene
   int sceneID = sceneManager.initSceneGraph();
-  auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
-  esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
-  auto& drawables = sceneGraph.getDrawables();
-  const esp::assets::AssetInfo info =
-      esp::assets::AssetInfo::fromPath(sceneFile);
-  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
 
+  auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
+  // esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
+  auto& drawables = sceneGraph.getDrawables();
+  // const esp::assets::AssetInfo info =
+  //     esp::assets::AssetInfo::fromPath(stageFile);
+
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool result = resourceManager.loadStage(stageAttributes, nullptr,
+                                          &sceneManager, tempIDs, false);
+  CORRADE_VERIFY(result);
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
 
@@ -255,8 +265,9 @@ void CullingTest::frustumCulling() {
   // ============== Test 3 ==================
   // draw using the RenderCamera overload draw()
   target->renderEnter();
-  size_t numVisibleObjects =
-      renderCamera.draw(drawables, true /* enable frustum culling */);
+  size_t numVisibleObjects = renderCamera.draw(
+      drawables, {esp::gfx::RenderCamera::Flag::
+                      FrustumCulling} /* enable frustum culling */);
   target->renderExit();
   CORRADE_COMPARE(numVisibleObjects, numVisibleObjectsGroundTruth);
 }

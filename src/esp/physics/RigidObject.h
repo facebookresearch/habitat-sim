@@ -14,7 +14,6 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
 #include "esp/assets/Asset.h"
-#include "esp/assets/Attributes.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
@@ -28,7 +27,7 @@
 namespace esp {
 
 namespace assets {
-class PhysicsObjectAttributes;
+
 class ResourceManager;
 }  // namespace assets
 namespace physics {
@@ -45,8 +44,8 @@ struct VelocityControl {
   Magnum::Vector3 angVel;
   /**@brief Whether or not to set linear control velocity before stepping. */
   bool controllingLinVel = false;
-  /**@brief Whether or not to set linear control velocity in local space.
-   *
+  /**
+   * @brief Whether or not to set linear control velocity in local space.
    * Useful for commanding actions such as "forward", or "strafe".
    */
   bool linVelIsLocal = false;
@@ -54,8 +53,8 @@ struct VelocityControl {
   /**@brief Whether or not to set angular control velocity before stepping. */
   bool controllingAngVel = false;
 
-  /**@brief Whether or not to set angular control velocity in local space.
-   *
+  /**
+   * @brief Whether or not to set angular control velocity in local space.
    * Useful for commanding actions such as "roll" and "yaw".
    */
   bool angVelIsLocal = false;
@@ -81,14 +80,14 @@ struct VelocityControl {
 };
 
 /**
-@brief An AbstractFeature3D representing an individual rigid object instance
-attached to a SceneNode, updating its state through simulation. This may be a
-@ref MotionType::STATIC scene collision geometry or an object of any @ref
-MotionType which can interact with other members of a physical world. Must have
-a collision mesh. By default, a RigidObject is @ref MotionType::KINEMATIC
-without an underlying simulator implementation. Derived classes can be used to
-introduce specific implementations of dynamics.
-*/
+ * @brief An AbstractFeature3D representing an individual rigid object instance
+ * attached to a SceneNode, updating its state through simulation. This may be a
+ * @ref MotionType::STATIC scene collision geometry or an object of any @ref
+ * MotionType which can interact with other members of a physical world. Must
+ * have a collision mesh. By default, a RigidObject is @ref
+ * MotionType::KINEMATIC without an underlying simulator implementation. Derived
+ * classes can be used to introduce specific implementations of dynamics.
+ */
 class RigidObject : public RigidBase {
  public:
   /**
@@ -96,50 +95,76 @@ class RigidObject : public RigidBase {
    * @param rigidBodyNode The @ref scene::SceneNode this feature will be
    * attached to.
    */
-  RigidObject(scene::SceneNode* rigidBodyNode);
+  RigidObject(scene::SceneNode* rigidBodyNode, int objectId);
 
   /**
    * @brief Virtual destructor for a @ref RigidObject.
    */
-  virtual ~RigidObject(){};
+  virtual ~RigidObject() {}
 
   /**
-   * @brief Initializes the @ref RigidObject or @ref RigidScene that inherits
-   * from this class
-   * @param physicsAttributes The template structure defining relevant
+   * @brief Initializes the @ref RigidObject that inherits from this class
+   * @param resMgr a reference to ResourceManager object
+   * @param handle The handle for the template structure defining relevant
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialize(
-      const assets::ResourceManager& resMgr,
-      const assets::AbstractPhysicsAttributes::ptr physicsAttributes) override;
+  bool initialize(const assets::ResourceManager& resMgr,
+                  const std::string& handle) override;
+
+  /**
+   * @brief Finalize the creation of @ref RigidObject or @ref RigidScene that
+   * inherits from this class.
+   * @return whether successful finalization.
+   */
+  bool finalizeObject() override;
+
+  /**
+   * @brief Get a copy of the template used to initialize this object.
+   *
+   * @return A copy of the @ref ObjectAttributes template used to create
+   * this object.
+   */
+  std::shared_ptr<Attrs::ObjectAttributes> getInitializationAttributes() const {
+    return RigidBase::getInitializationAttributes<Attrs::ObjectAttributes>();
+  };
 
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidScene
-   * geometry.  This is overridden by inheriting objects
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the scene object
+   * geometry. This is overridden by inheriting class specific to certain
+   * physics libraries. Necessary to support kinematic objects without any
+   * dynamics support.
+   * @param resMgr Reference to resource manager, to access relevant
+   * components pertaining to the scene object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initializationFinalize(
+  bool initialization_LibSpecific(
       const assets::ResourceManager& resMgr) override;
+
+  /**
+   * @brief any physics-lib-specific finalization code that needs to be run
+   * after @ref RigidObject is created. Overridden by inheriting class specific
+   * to certain physics libraries. Necessary to support kinematic objects
+   * without any dynamics support.
+   * @return whether successful finalization.
+   */
+  bool finalizeObject_LibSpecific() override { return true; }
 
  public:
   /**
    * @brief Set the @ref MotionType of the object. If the object is @ref
-   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object
-   * is
-   * @ref ObjectType::OBJECT is can also be set to @ref
-   * MotionType::KINEMATIC. Only if a dervied @ref PhysicsManager
-   * implementing dynamics is in use can the object be set to @ref
-   * MotionType::DYNAMIC.
+   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
+   * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC.
+   * Only if a dervied @ref PhysicsManager implementing dynamics is in use can
+   * the object be set to @ref MotionType::DYNAMIC.
    * @param mt The desirved @ref MotionType.
    * @return true if successfully set, false otherwise.
    */
-  virtual bool setMotionType(MotionType mt) override;
+  bool setMotionType(MotionType mt) override;
 
-  /**@brief Retrieves a reference to the VelocityControl struct for this object.
+  /**
+   * @brief Retrieves a reference to the VelocityControl struct for this object.
    */
   VelocityControl::ptr getVelocityControl() { return velControl_; };
 
@@ -152,7 +177,7 @@ class RigidObject : public RigidBase {
 
  public:
   ESP_SMART_POINTERS(RigidObject)
-};
+};  // class RigidObject
 
 }  // namespace physics
 }  // namespace esp

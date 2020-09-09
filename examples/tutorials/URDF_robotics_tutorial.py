@@ -1,73 +1,18 @@
 # [setup]
-import math
+
 import os
 
-import cv2
 import magnum as mn
 import numpy as np
 
 import habitat_sim
-import habitat_sim.utils.common as ut
+
+# import habitat_sim.utils.common as ut
+import habitat_sim.utils.viz_utils as vut
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
 output_path = os.path.join(dir_path, "URDF_robotics_tutorial_output/")
-
-
-def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
-    videodims = (720, 540)
-    fourcc = cv2.VideoWriter_fourcc("m", "p", "4", "v")
-    video = cv2.VideoWriter(output_path + prefix + ".mp4", fourcc, 60, videodims)
-    thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
-    outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
-    for ob in observations:
-
-        # If in RGB/RGBA format, change first to RGB and change to BGR
-        bgr_im_1st_person = ob["rgba_camera_1stperson"][..., 0:3][..., ::-1]
-
-        if multi_obs:
-            # embed the 1st person RBG frame into the 3rd person frame
-            bgr_im_3rd_person = ob["rgba_camera_3rdperson"][..., 0:3][..., ::-1]
-            resized_1st_person_rgb = cv2.resize(
-                bgr_im_1st_person, thumb_size, interpolation=cv2.INTER_AREA
-            )
-            x_offset = 50
-            y_offset_rgb = 50
-            bgr_im_3rd_person[
-                y_offset_rgb - 1 : y_offset_rgb + outline_frame.shape[0] - 1,
-                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
-            ] = outline_frame
-            bgr_im_3rd_person[
-                y_offset_rgb : y_offset_rgb + resized_1st_person_rgb.shape[0],
-                x_offset : x_offset + resized_1st_person_rgb.shape[1],
-            ] = resized_1st_person_rgb
-
-            # embed the 1st person DEPTH frame into the 3rd person frame
-            # manually normalize depth into [0, 1] so that images are always consistent
-            d_im = np.clip(ob["depth_camera_1stperson"], 0, 10)
-            d_im /= 10.0
-            bgr_d_im = cv2.cvtColor((d_im * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
-            resized_1st_person_depth = cv2.resize(
-                bgr_d_im, thumb_size, interpolation=cv2.INTER_AREA
-            )
-            y_offset_d = y_offset_rgb + 10 + thumb_size[1]
-            bgr_im_3rd_person[
-                y_offset_d - 1 : y_offset_d + outline_frame.shape[0] - 1,
-                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
-            ] = outline_frame
-            bgr_im_3rd_person[
-                y_offset_d : y_offset_d + resized_1st_person_depth.shape[0],
-                x_offset : x_offset + resized_1st_person_depth.shape[1],
-            ] = resized_1st_person_depth
-
-            # write the video frame
-            video.write(bgr_im_3rd_person)
-        else:
-            # write the 1st person observation to video
-            video.write(bgr_im_1st_person)
-    video.release()
-    if open_vid:
-        os.system("open " + output_path + prefix + ".mp4")
 
 
 def remove_all_objects(sim):
@@ -262,7 +207,8 @@ def main(make_video=True, show_video=True):
     sim.set_articulated_object_root_state(robot_id, base_transform)
 
     # get rigid state of robot links and show proxy object at each link COM
-    cube_id = sim.add_object_by_handle(sim.get_template_handles("cube")[0])
+    obj_mgr = sim.get_object_template_manager()
+    cube_id = sim.add_object_by_handle(obj_mgr.get_template_handles("cube")[0])
     sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, cube_id)
     num_links = sim.get_num_articulated_links(robot_id)
     for link_id in range(num_links):
@@ -281,7 +227,13 @@ def main(make_video=True, show_video=True):
     )
 
     if make_video:
-        make_video_cv2(observations, prefix="URDF_basics", open_vid=show_video)
+        vut.make_video(
+            observations,
+            "rgba_camera_1stperson",
+            "color",
+            output_path + "URDF_basics",
+            open_vid=show_video,
+        )
 
     # clear all robots
     for robot_id in sim.get_existing_articulated_object_ids():
@@ -374,8 +326,13 @@ def main(make_video=True, show_video=True):
     observations += simulate(sim, dt=1.5, get_frames=make_video)
 
     if make_video:
-        make_video_cv2(observations, prefix="URDF_joint_motors", open_vid=show_video)
-
+        vut.make_video(
+            observations,
+            "rgba_camera_1stperson",
+            "color",
+            output_path + "URDF_joint_motors",
+            open_vid=show_video,
+        )
     # [/joint motors]
 
     remove_all_objects(sim)

@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Optional
 import attr
 import numpy as np
 
-from habitat_sim import agent, errors, scene
+from habitat_sim import errors, scene
+from habitat_sim.agent import agent
 from habitat_sim.nav import GreedyFollowerCodes, GreedyGeodesicFollowerImpl, PathFinder
 from habitat_sim.utils.common import quat_to_magnum
 

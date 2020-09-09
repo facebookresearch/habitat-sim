@@ -9,6 +9,8 @@
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/SceneGraph/Drawable.h>
+#include "esp/gfx/Drawable.h"
+#include "esp/gfx/DrawableGroup.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -107,25 +109,79 @@ size_t RenderCamera::cull(
   return (newEndIter - drawableTransforms.begin());
 }
 
-uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
-                            bool frustumCulling) {
-  if (!frustumCulling) {
+size_t RenderCamera::removeNonObjects(
+    std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>>& drawableTransforms) {
+  auto newEndIter = std::remove_if(
+      drawableTransforms.begin(), drawableTransforms.end(),
+      [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>& a) {
+        auto& node = static_cast<scene::SceneNode&>(a.first.get().object());
+        if (node.getType() == scene::SceneNodeType::OBJECT) {
+          // don't remove OBJECT types
+          return false;
+        }
+        return true;
+      });
+  return (newEndIter - drawableTransforms.begin());
+}
+
+uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
+  if (flags == Flags()) {  // empty set
     MagnumCamera::draw(drawables);
     return drawables.size();
+  }
+
+  if (flags & Flag::UseDrawableIdAsObjectId) {
+    useDrawableIds_ = true;
   }
 
   std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                         Mn::Matrix4>>
       drawableTransforms = drawableTransformations(drawables);
 
-  // draw just the visible part
-  size_t numVisibles = cull(drawableTransforms);
-  // erase all items that did not pass the frustum visibility test
-  drawableTransforms.erase(drawableTransforms.begin() + numVisibles,
-                           drawableTransforms.end());
+  if (flags & Flag::ObjectsOnly) {
+    // draw just the OBJECTS
+    size_t numObjects = removeNonObjects(drawableTransforms);
+    drawableTransforms.erase(drawableTransforms.begin() + numObjects,
+                             drawableTransforms.end());
+  }
+
+  if (flags & Flag::FrustumCulling) {
+    // draw just the visible part
+    size_t numVisibles = cull(drawableTransforms);
+    // erase all items that did not pass the frustum visibility test
+    drawableTransforms.erase(drawableTransforms.begin() + numVisibles,
+                             drawableTransforms.end());
+  }
 
   MagnumCamera::draw(drawableTransforms);
+
+  // reset
+  if (useDrawableIds_) {
+    useDrawableIds_ = false;
+  }
   return drawableTransforms.size();
+}
+
+esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
+  esp::geo::Ray ray;
+  ray.origin = object().absoluteTranslation();
+
+  const Magnum::Vector2i viewPos{viewportPosition.x(),
+                                 viewport().y() - viewportPosition.y() - 1};
+
+  const Magnum::Vector3 normalizedPos{
+      2 * Magnum::Vector2{viewPos} / Magnum::Vector2{viewport()} -
+          Magnum::Vector2{1.0f},
+      1.0};
+
+  ray.direction =
+      ((object().absoluteTransformationMatrix() * projectionMatrix().inverted())
+           .transformPoint(normalizedPos) -
+       ray.origin)
+          .normalized();
+  return ray;
 }
 
 }  // namespace gfx

@@ -7,6 +7,7 @@
 #include "magnum.h"
 
 #include "esp/core/esp.h"
+#include "esp/geo/geo.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -14,6 +15,33 @@ namespace gfx {
 
 class RenderCamera : public MagnumCamera {
  public:
+  /**
+   * @brief Rendering Flags
+   */
+  enum class Flag : unsigned int {
+    /**
+     * Cull Drawables with bounding boxes not intersecting the camera frustum.
+     */
+    FrustumCulling = 1 << 0,
+
+    /**
+     * Cull Drawables not attached to @ref SceneNodes with @ref
+     * scene::SceneNodeType::OBJECT.
+     */
+    ObjectsOnly = 1 << 1,
+    /**
+     * Use drawable id as the object id in the following rendering pass
+     * Internally, it is not a state machine, which means user needs to set it
+     * every frame if she needs the drawable ids.
+     * If not set, by default, it would use the semantic id (if "per vertex
+     * object id" is not set)
+     */
+    UseDrawableIdAsObjectId = 1 << 2,
+  };
+
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+  CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
+
   RenderCamera(scene::SceneNode& node);
   RenderCamera(scene::SceneNode& node,
                const vec3f& eye,
@@ -47,7 +75,8 @@ class RenderCamera : public MagnumCamera {
    * @param frustumCulling, whether do frustum culling or not, default: false
    * @return the number of drawables that are drawn
    */
-  uint32_t draw(MagnumDrawableGroup& drawables, bool frustumCulling = false);
+  uint32_t draw(MagnumDrawableGroup& drawables, Flags flags = {});
+
   /**
    * @brief performs the frustum culling
    * @param drawableTransforms, a vector of pairs of Drawable3D object and its
@@ -62,7 +91,40 @@ class RenderCamera : public MagnumCamera {
               std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
                         Magnum::Matrix4>>& drawableTransforms);
 
+  /**
+   * @brief Cull Drawables for SceneNodes which are not OBJECT type.
+   *
+   * @param drawableTransforms, a vector of pairs of Drawable3D object and its
+   * absolute transformation
+   * @return the number of drawables that are not culled
+   */
+  size_t removeNonObjects(
+      std::vector<
+          std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                    Magnum::Matrix4>>& drawableTransforms);
+
+  /**
+   * @brief if the "immediate" following rendering pass is to use drawable ids
+   * as the object ids.
+   * By default, it uses the semantic_id, stored in the drawable's scene graph
+   * node, if no "per-vertex" object id is used.
+   * @return true, if it is to use drawable ids as the object ids in the
+   * following rendering pass, otherwise false
+   */
+  bool useDrawableIds() { return useDrawableIds_; }
+  /**
+   * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
+   * position.
+   *
+   * @param viewportPosition The 2D point on the viewport to unproject
+   * ([0,width], [0,height]).
+   * @return a @ref esp::geo::Ray with unit length direction or zero direction
+   * if failed.
+   */
+  esp::geo::Ray unproject(const Mn::Vector2i& viewportPosition);
+
  protected:
+  bool useDrawableIds_ = false;
   ESP_SMART_POINTERS(RenderCamera)
 };
 

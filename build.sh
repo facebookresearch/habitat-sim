@@ -27,7 +27,7 @@ done
 
 
 # devfair/learnfair custom stuff: EGL path, and module loads
-my_hostname=`hostname`
+my_hostname=$(hostname)
 if [[ $my_hostname =~ "fair" ]]; then
   module purge
   module load cuda/10.0

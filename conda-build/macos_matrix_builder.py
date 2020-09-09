@@ -47,7 +47,7 @@ def main():
 
         # including a timestamp in anticipation of nightly builds
         env["VERSION"] = habitat_sim.__version__ + time.strftime(".%Y.%m.%d")
-        env["WITH_BULLET"] = "1" if use_bullet else "0"
+        env["WITH_BULLET"] = "0"
         env["WITH_CUDA"] = "0"
         env["HEADLESS"] = "0"
         env["HSIM_SOURCE_PATH"] = osp.abspath(osp.join(osp.dirname(__file__), ".."))
@@ -55,11 +55,9 @@ def main():
         build_string = f"py{py_ver}_"
         if use_bullet:
             build_string += "bullet_"
+            env["WITH_BULLET"] = "1"
             env["CONDA_BULLET"] = "- bullet"
             env["CONDA_BULLET_FEATURE"] = "- withbullet"
-        else:
-            env["CONDA_BULLET"] = ""
-            env["CONDA_BULLET_FEATURE"] = ""
 
         build_string += "osx"
 

@@ -15,21 +15,25 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
+              sudo pip install -U black flake8 flake8-bugbear flake8-comprehensions "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
               sudo pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
           command: |
               black --version
-              black habitat_sim/. examples/. tests/. setup.py --diff
-              black habitat_sim/. examples/. tests/. setup.py --check
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --diff
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --check
       - run:
           name: run isort
           command: |
               isort --version
-              isort -rc habitat_sim/. examples/. tests/. setup.py --diff
-              isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
-
+              isort habitat_sim/. examples/. tests/. setup.py --diff
+              isort habitat_sim/. examples/. tests/. setup.py --check-only
+      - run:
+          name: run flake8
+          command: |
+              flake8 --version
+              flake8 habitat_sim/. examples/. tests/. setup.py
   cpp_lint:
     docker:
       - image: circleci/buildpack-deps:18.04
@@ -61,6 +65,39 @@ jobs:
           command: |
             npm run lint
 
+  pre-commit:
+    docker:
+      - image: circleci/python:3.6
+    working_directory: ~/repo/
+
+    steps:
+      - checkout
+      - run:
+          name: Combine precommit config and python versions for caching
+          command: |
+            cat .pre-commit-config.yaml > pre-commit-deps.txt
+            python -VV >> pre-commit-deps.txt
+      - restore_cache:
+          keys:
+          - v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Install Dependencies
+          command: |
+            sudo pip install -U pip setuptools pre-commit
+            # Install the hooks now so that they'll be cached
+            pre-commit install-hooks
+
+      - save_cache:
+          paths:
+            - ~/.cache/pre-commit
+          key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Check Code Style using pre-commit
+          command: |
+            SKIP=clang-format,eslint pre-commit run --show-diff-on-failure --all-files
+
   install_and_test_ubuntu:
     <<: *gpu
     steps:
@@ -86,13 +123,13 @@ jobs:
           # has 3.5, so once tinyply is removed, we could go lower (well, if
           # anybody actually needs that)
           command: |
-              echo $(git ls-remote https://github.com/facebookresearch/habitat-api.git HEAD | awk '{ print $1}') > ./hapi_sha
-              cat ./hapi_sha
+              echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
+              cat ./hablab_sha
               wget https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh
               sudo mkdir /opt/cmake
               sudo sh ./cmake-3.10.3-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
               sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
-      - run:
+      - run: &install_deps
           name: Install dependencies
           no_output_timeout: 20m
           command: |
@@ -114,11 +151,6 @@ jobs:
                   libbullet-dev\
                   lcov\
                   unzip || true
-              sudo apt install --allow-change-held-packages \
-                  texlive-base \
-                  texlive-latex-extra \
-                  texlive-fonts-extra \
-                  texlive-fonts-recommended
       - run:
           name: Install Headless Chrome dependencies
           command: |
@@ -177,7 +209,7 @@ jobs:
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-      - run:
+      - run: &install_conda
           name: Install conda and dependencies
           no_output_timeout: 20m
           command: |
@@ -204,8 +236,10 @@ jobs:
                 git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
                 cd ~/emsdk
                 git checkout 6a4c0f98
-                ./emsdk install 1.38.38
-                ./emsdk activate 1.38.38
+                # Use 1.38.42 that has the following integrated:
+                # https://github.com/emscripten-core/emscripten/pull/9220
+                ./emsdk install 1.38.42
+                ./emsdk activate 1.38.42
                 touch ~/emscripten_installed
               fi
       - run:
@@ -236,7 +270,7 @@ jobs:
               fi
       - restore_cache:
           keys:
-            - habitat-api-{{ checksum "./hapi_sha" }}
+            - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache:
           keys:
             - ccache-{{ arch }}-master
@@ -259,6 +293,7 @@ jobs:
               . activate habitat;
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
+              pip install imageio imageio-ffmpeg
               python setup.py install --headless
       - run:
           name: run clang-tidy
@@ -303,6 +338,14 @@ jobs:
                 rm locobot_merged.zip
                 cd ..
               fi
+              if [ ! -d ./habitat-sim/data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb ]
+              then
+                cd habitat-sim
+                wget http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip
+                unzip mp3d_example.zip -d data/scene_datasets/mp3d/
+                rm mp3d_example.zip
+                cd ..
+              fi
       - run:
           name: Build Javascript bindings
           command: |
@@ -341,8 +384,16 @@ jobs:
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
+              #This way, pytest shows partial progress
+              export PYTHONUNBUFFERED=1
+
               # run tests with code coverage
-              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
+                --bullet \
+                --with-cuda \
+                --build-datatool \
+                --run-tests \
+                --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pytest --cov-report=xml --cov=./
@@ -378,6 +429,12 @@ jobs:
       - run:
           name: Build sim documentation
           command: |
+              sudo apt install --allow-change-held-packages \
+                  texlive-base \
+                  texlive-latex-extra \
+                  texlive-fonts-extra \
+                  texlive-fonts-recommended
+
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               cd habitat-sim
@@ -389,15 +446,15 @@ jobs:
               git submodule update --init
               ./build-public.sh
       - run:
-          name: Install api
+          name: Install Habitat Lab
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
-              if [ ! -d ./habitat-api ]
+              if [ ! -d ./habitat-lab ]
               then
-                git clone -q https://github.com/facebookresearch/habitat-api.git
+                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
               fi
-              cd habitat-api
+              cd habitat-lab
               pip install -r requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
@@ -407,24 +464,24 @@ jobs:
           paths:
             - ~/miniconda
       - run:
-          name: Run api tests
+          name: Run Habitat Lab tests
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat; cd habitat-api
+              . activate habitat; cd habitat-lab
               python setup.py develop --all
               python setup.py test
       - save_cache:
-          key: habitat-api-{{ checksum "./hapi_sha" }}
+          key: habitat-lab-{{ checksum "./hablab_sha" }}
           background: true
           paths:
-            - ./habitat-api
+            - ./habitat-lab
       - run:
-          name: Build api documentation
+          name: Build Habitat Lab documentation
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat; cd habitat-api
+              . activate habitat; cd habitat-lab
               python setup.py develop --all
-              
+
               cd docs
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
@@ -434,6 +491,44 @@ jobs:
           background: true
           paths:
             - ./habitat-sim/build/docs-public
+      - run:
+          name: Build conda Linux packages for CI
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
+              rm -rf build
+              cd conda-build
+              python linux_matrix_builder.py --ci_test
+
+  build_conda_binaries:
+    <<: *gpu
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - restore_cache:
+          keys:
+            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+      - run: *install_conda
+      - run: *install_deps
+      - run:
+          name: Build conda Linux packages
+          no_output_timeout: 240m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim/conda-build
+
+              # install Docker
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+              sudo apt-get update
+              apt-cache policy docker-ce
+              sudo apt-get install -y docker-ce
+
+              docker build -t hsim_condabuild_dcontainer -f Dockerfile . --build-arg AIHABITAT_NIGHTLY_CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD
+              docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py36 && cd /remote/habitat-sim/conda-build && python linux_matrix_builder.py --conda_upload"
 
   update_docs:
     docker:
@@ -454,17 +549,17 @@ jobs:
               cd habitat-website
               git submodule update --init
 
-              for dir in habitat-sim habitat-cpp habitat-api
+              for dir in habitat-sim habitat-lab
               do
                   rm -rf published/docs/${dir}
                   cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
               done
-              
+
               git config --global user.name "Habitat"
               git config --global user.email habitat@fb.com
               NOW=$(date +"%m-%d-%Y")
               git add .
-              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-api ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
               git push origin master
 
               # Deploy to public
@@ -476,7 +571,7 @@ jobs:
               rsync -a published/ ./.
               rm -rf published
               git add .
-              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-api ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
               git push origin gh-pages
 
 workflows:
@@ -487,10 +582,11 @@ workflows:
       - cpp_lint
       - js_lint
       - install_and_test_ubuntu
+      - pre-commit
   nightly:
     triggers:
       - schedule:
-          cron: "0 0 * * *"
+          cron: "0 7 * * *"
           filters:
             branches:
               only:
@@ -498,6 +594,12 @@ workflows:
     jobs:
       - install_and_test_ubuntu
       - update_docs:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            branches:
+              only: master
+      - build_conda_binaries:
           requires:
             - install_and_test_ubuntu
           filters:

@@ -35,9 +35,11 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   bWorld_->removeMultiBody(btMultiBody_);
   for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
     bWorld_->removeCollisionObject(btMultiBody_->getLinkCollider(colIx));
+    collisionObjToObjIds_->erase(btMultiBody_->getLinkCollider(colIx));
   }
   bWorld_->btCollisionWorld::removeCollisionObject(
       btMultiBody_->getBaseCollider());
+  collisionObjToObjIds_->erase(btMultiBody_->getBaseCollider());
 }
 
 bool BulletArticulatedObject::initializeFromURDF(
@@ -116,7 +118,8 @@ bool BulletArticulatedObject::initializeFromURDF(
       scene::SceneNode* linkNode = &node();
       if (bulletLinkIx >= 0) {
         links_[bulletLinkIx] = std::make_unique<BulletArticulatedLink>(
-            &physicsNode->createChild(), bWorld_, bulletLinkIx);
+            &physicsNode->createChild(), bWorld_, bulletLinkIx,
+            collisionObjToObjIds_);
         linkNode = &links_[bulletLinkIx]->node();
       }
 

@@ -4,8 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os.path as osp
 import time
+from os import path as osp
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -15,10 +15,8 @@ import numpy as np
 import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
-from habitat_sim.gfx import DEFAULT_LIGHTING_KEY
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
-from habitat_sim.physics import MotionType
 from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
@@ -62,10 +60,31 @@ class Simulator(SimulatorBackend):
         default=0.0, init=False
     )  # track the compute time of each step
 
+    @staticmethod
+    def _sanitize_config(config: Configuration):
+        if not len(config.agents) > 0:
+            raise RuntimeError(
+                "Config has not agents specified.  Must specify at least 1 agent"
+            )
+
+        config.sim_cfg.create_renderer = any(
+            map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
+        )
+        config.sim_cfg.load_semantic_mesh = any(
+            map(
+                lambda cfg: any(
+                    map(
+                        lambda sens_spec: sens_spec.sensor_type == SensorType.SEMANTIC,
+                        cfg.sensor_specifications,
+                    )
+                ),
+                config.agents,
+            )
+        )
+
     def __attrs_post_init__(self):
-        config = self.config
-        self.config = None
-        self.reconfigure(config)
+        self._sanitize_config(self.config)
+        self.__set_from_config(self.config)
 
     def close(self):
         for sensor in self._sensors.values():
@@ -86,6 +105,12 @@ class Simulator(SimulatorBackend):
         self.config = None
 
         super().close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def seed(self, new_seed):
         super().seed(new_seed)
@@ -114,9 +139,6 @@ class Simulator(SimulatorBackend):
             super().reconfigure(config.sim_cfg)
 
     def _config_agents(self, config: Configuration):
-        if self.config is not None and self.config.agents == config.agents:
-            return
-
         self.agents = [
             Agent(self.get_active_scene_graph().get_root_node().create_child(), cfg)
             for cfg in config.agents
@@ -167,37 +189,20 @@ class Simulator(SimulatorBackend):
         self.pathfinder.seed(config.sim_cfg.random_seed)
 
     def reconfigure(self, config: Configuration):
-        assert len(config.agents) > 0
+        self._sanitize_config(config)
 
-        config.sim_cfg.create_renderer = any(
-            map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
-        )
-        config.sim_cfg.load_semantic_mesh = any(
-            map(
-                lambda cfg: any(
-                    map(
-                        lambda sens_spec: sens_spec.sensor_type == SensorType.SEMANTIC,
-                        cfg.sensor_specifications,
-                    )
-                ),
-                config.agents,
-            )
-        )
+        if self.config != config:
+            self.__set_from_config(config)
+            self.config = config
 
-        if self.config == config:
-            return
-
-        # NB: Configure backend last as this gives more time for python's GC
-        # to delete any previous instances of the simulator
-        # TODO: can't do the above, sorry -- the Agent constructor needs access
-        # to self._sim.get_active_scene_graph()
+    def __set_from_config(self, config: Configuration):
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
         self.frustum_culling = config.sim_cfg.frustum_culling
 
         for i in range(len(self.agents)):
-            self.agents[i].controls.move_filter_fn = self._step_filter
+            self.agents[i].controls.move_filter_fn = self.step_filter
 
         self._default_agent = self.get_agent(config.sim_cfg.default_agent_id)
 
@@ -210,8 +215,6 @@ class Simulator(SimulatorBackend):
 
         for i in range(len(self.agents)):
             self.initialize_agent(i)
-
-        self.config = config
 
     def get_agent(self, agent_id):
         return self.agents[agent_id]
@@ -251,7 +254,7 @@ class Simulator(SimulatorBackend):
         # step physics by dt
         step_start_Time = time.time()
         super().step_world(dt)
-        _previous_step_time = time.time() - step_start_Time
+        self._previous_step_time = time.time() - step_start_Time
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
@@ -283,7 +286,13 @@ class Simulator(SimulatorBackend):
             thrashing_threshold=thrashing_threshold,
         )
 
-    def _step_filter(self, start_pos, end_pos):
+    def step_filter(self, start_pos, end_pos):
+        r"""Computes a valid navigable end point given a target translation on the NavMesh.
+        Uses the configured sliding flag.
+
+        :param start_pos: The valid initial position of a translation.
+        :param end_pos: The target end position of a translation.
+        """
         if self.pathfinder.is_loaded:
             if self.config.sim_cfg.allow_sliding:
                 end_pos = self.pathfinder.try_step(start_pos, end_pos)
@@ -402,9 +411,24 @@ class Sensor:
         agent_node = self._agent.scene_node
         agent_node.parent = scene.get_root_node()
 
-        with self._sensor_object.render_target as tgt:
+        render_flags = habitat_sim.gfx.Camera.Flags.NONE
+
+        if self._sim.frustum_culling:
+            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
+
+        with self._sensor_object.render_target:
+            self._sim.renderer.draw(self._sensor_object, scene, render_flags)
+
+        # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
+        if (
+            self._spec.sensor_type == SensorType.SEMANTIC
+            and self._sim.get_active_scene_graph()
+            is not self._sim.get_active_semantic_scene_graph()
+        ):
+            agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
+            render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
             self._sim.renderer.draw(
-                self._sensor_object, scene, self._sim.frustum_culling
+                self._sensor_object, self._sim.get_active_scene_graph(), render_flags
             )
 
     def get_observation(self):

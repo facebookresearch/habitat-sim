@@ -63,8 +63,10 @@ struct SimulationContactResultCallback
 
 class BulletBase {
  public:
-  BulletBase(std::shared_ptr<btMultiBodyDynamicsWorld> bWorld)
-      : bWorld_(bWorld) {}
+  BulletBase(std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
+             std::shared_ptr<std::map<const btCollisionObject*, int>>
+                 collisionObjToObjIds)
+      : bWorld_(bWorld), collisionObjToObjIds_(collisionObjToObjIds) {}
 
   /**
    * @brief Destructor cleans up simulation structures for the object.
@@ -144,6 +146,10 @@ class BulletBase {
   //! list of @ref btCollisionShape for storing arbitrary collision shapes
   //! referenced within the @ref bObjectShape_.
   std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
+  //! keep a map of collision objects to object ids for quick lookups from
+  //! Bullet collision checking.
+  std::shared_ptr<std::map<const btCollisionObject*, int>>
+      collisionObjToObjIds_;
 
  public:
   ESP_SMART_POINTERS(BulletBase)

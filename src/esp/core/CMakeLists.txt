@@ -22,12 +22,14 @@ if(BUILD_WITH_BULLET)
   set(ESP_BUILD_WITH_BULLET ON)
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
-               ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
+)
 
 find_package(Corrade REQUIRED Utility)
 
-add_library(core STATIC
+add_library(
+  core STATIC
   Buffer.cpp
   Buffer.h
   Configuration.h
@@ -39,13 +41,9 @@ add_library(core STATIC
   Utility.h
 )
 
-target_link_libraries(core
-  PUBLIC
-    Corrade::Utility
-    Magnum::Magnum
-    glog
+target_link_libraries(
+  core
+  PUBLIC Corrade::Utility Magnum::Magnum glog
 )
 
-target_include_directories(core
-  PUBLIC
-    ${PROJECT_BINARY_DIR})
+target_include_directories(core PUBLIC ${PROJECT_BINARY_DIR})

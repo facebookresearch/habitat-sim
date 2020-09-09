@@ -7,7 +7,7 @@ NPZ_PATH=$1
 OBJ_PATH=$2
 OUT_PATH=$3
 
-TOOLS_DIR=$(dirname $0)
+TOOLS_DIR=$(dirname "$0")
 
 if [ $# -ne 3 ]; then
   echo "Usage: $0 NPZ_PATH OBJ_PATH OUT_PATH"
@@ -15,11 +15,11 @@ if [ $# -ne 3 ]; then
 fi
 
 for npz in "${NPZ_PATH}"/*.npz; do
-  filename=$(basename ${npz})
+  filename=$(basename "${npz}")
   tmp=${filename#3DSceneGraph_}
   scene=${tmp%.npz}
-  echo ${scene}
-  ${TOOLS_DIR}/npz2ids.py ${npz} ${OUT_PATH}/${scene}.ids
-  ${TOOLS_DIR}/npz2scn.py ${npz} ${OUT_PATH}/${scene}.scn
-  ${TOOLS_DIR}/../build/utils/datatool/datatool create_gibson_semantic_mesh ${OBJ_PATH}/${scene}/mesh.obj ${OUT_PATH}/${scene}.ids ${OUT_PATH}/${scene}_semantic.ply
+  echo "${scene}"
+  "${TOOLS_DIR}"/npz2ids.py "${npz}" "${OUT_PATH}"/"${scene}".ids
+  "${TOOLS_DIR}"/npz2scn.py "${npz}" "${OUT_PATH}"/"${scene}".scn
+  "${TOOLS_DIR}"/../build/utils/datatool/datatool create_gibson_semantic_mesh "${OBJ_PATH}"/"${scene}"/mesh.obj "${OUT_PATH}"/"${scene}".ids "${OUT_PATH}"/"${scene}"_semantic.ply
 done

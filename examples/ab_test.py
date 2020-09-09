@@ -8,10 +8,8 @@
 import argparse
 import csv
 import distutils
-from distutils import util
 
 import demo_runner as dr
-import numpy as np
 
 parser = argparse.ArgumentParser(
     description="Running AB test on simulator", add_help=True
@@ -144,8 +142,12 @@ def print_metric(
 
 
 def get_csv_data(
-    performance_all, resolutions, title_list, metrics=["fps"], metric_transformer={}
+    performance_all, resolutions, title_list, metrics=None, metric_transformer=None
 ):
+    if metrics is None:
+        metrics = ["fps"]
+    if metric_transformer is None:
+        metric_transformer = {}
     fields = ["num_procs", "resolution", "sensor_types"]
     for metric in metrics:
         fields.append(f"{metric}_control")

@@ -1,5 +1,4 @@
 import examples.settings
-import habitat_sim
 
 
 def test_random_seed(sim):

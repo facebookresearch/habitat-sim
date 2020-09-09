@@ -15,18 +15,16 @@ namespace gfx {
 class GenericDrawable : public Drawable {
  public:
   //! Create a GenericDrawable for the given object using shader and mesh.
-  //! Adds drawable to given group and uses provided texture, objectId, and
-  //! color for textured, object id buffer and color shader output respectively
+  //! Adds drawable to given group and uses provided texture, and
+  //! color for textured buffer and color shader output respectively
   explicit GenericDrawable(scene::SceneNode& node,
                            Magnum::GL::Mesh& mesh,
                            ShaderManager& shaderManager,
                            const Magnum::ResourceKey& lightSetup,
                            const Magnum::ResourceKey& materialData,
-                           DrawableGroup* group = nullptr,
-                           int objectId = ID_UNDEFINED);
+                           DrawableGroup* group = nullptr);
 
   void setLightSetup(const Magnum::ResourceKey& lightSetup) override;
-
   static constexpr const char* SHADER_KEY_TEMPLATE = "Phong-lights={}-flags={}";
 
  protected:
@@ -39,7 +37,6 @@ class GenericDrawable : public Drawable {
                                    Magnum::Shaders::Phong::Flags flags) const;
 
   Magnum::GL::Texture2D* texture_;
-  int objectId_;
   Magnum::Color4 color_;
 
   // shader parameters

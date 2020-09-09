@@ -10,6 +10,7 @@
 
 #include <Magnum/Math/Range.h>
 #include "esp/gfx/magnum.h"
+namespace Mn = Magnum;
 
 namespace esp {
 namespace geo {
@@ -28,6 +29,14 @@ typedef Eigen::Transform<float, 3, Eigen::Affine, Eigen::DontAlign> Transform;
 // compute convex hull of 2D points and return as vector of vertices
 std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points);
 
+/**
+ * @brief Compute the axis-aligned bounding box which results from applying a
+ * transform to an existing bounding box.
+ *
+ * @param range The initial axis-aligned bounding box.
+ * @param xform The desired transform to apply.
+ * @return The resulting, transformed axis-aligned bounding box.
+ */
 Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
                                  const Magnum::Matrix4& xform);
 
@@ -35,6 +44,20 @@ template <typename T>
 T clamp(const T& n, const T& low, const T& high) {
   return std::max(low, std::min(n, high));
 }
+
+//! A simple 3D ray defined by an origin point and direction (not necessarily
+//! unit length)
+struct Ray {
+  Mn::Vector3 origin;
+  Mn::Vector3 direction;
+
+  Ray(){};
+
+  Ray(Mn::Vector3 _origin, Mn::Vector3 _direction)
+      : origin(_origin), direction(_direction){};
+
+  ESP_SMART_POINTERS(Ray)
+};
 
 }  // namespace geo
 }  // namespace esp

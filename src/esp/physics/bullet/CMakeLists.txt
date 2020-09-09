@@ -1,24 +1,25 @@
 find_package(MagnumIntegration REQUIRED Bullet)
 
-add_library(bulletphysics STATIC
+add_library(
+  bulletphysics STATIC
+  BulletArticulatedObject.cpp
+  BulletArticulatedObject.h
+  BulletBase.cpp
+  BulletBase.h
+  BulletBase.h
   BulletPhysicsManager.cpp
   BulletPhysicsManager.h
-  BulletBase.h
-  BulletBase.cpp
   BulletRigidObject.cpp
   BulletRigidObject.h
-  BulletRigidScene.cpp
-  BulletRigidScene.h
-  BulletURDFImporter.h
+  BulletRigidStage.cpp
+  BulletRigidStage.h
   BulletURDFImporter.cpp
-  BulletArticulatedObject.h
-  BulletArticulatedObject.cpp
+  BulletURDFImporter.h
 )
 
-target_link_libraries(bulletphysics
-  PUBLIC
-    assets
-    MagnumIntegration::Bullet
+target_link_libraries(
+  bulletphysics
+  PUBLIC assets MagnumIntegration::Bullet
 )
 
 ## Enable physics profiling

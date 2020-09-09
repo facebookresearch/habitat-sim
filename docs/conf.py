@@ -25,7 +25,7 @@ habitat_sim.utils.__all__.remove("quat_from_angle_axis")
 habitat_sim.utils.__all__.remove("quat_rotate_vector")
 
 PROJECT_TITLE = "Habitat"
-PROJECT_SUBTITLE = "Sim Python Docs"
+PROJECT_SUBTITLE = "Sim Docs"
 PROJECT_LOGO = "habitat.svg"
 FAVICON = "habitat-blue.png"
 MAIN_PROJECT_URL = "/"
@@ -36,7 +36,6 @@ INPUT_PAGES = [
     "pages/new-actions.rst",
     "pages/stereo-agent.rst",
     "pages/lighting-setups.rst",
-    "pages/notebooks.rst",
     "pages/image-extractor.rst",
     "pages/rigid-object-tutorial.rst",
 ]
@@ -76,19 +75,22 @@ LINKS_NAVBAR1 = [
             ("Add new actions", "new-actions"),
             ("Stereo agent", "stereo-agent"),
             ("Lighting Setups", "lighting-setups"),
-            ("Notebooks", "notebooks"),
             ("Image extraction", "image-extractor"),
+            ("Rigid Object Tutorial", "rigid-object-tutorial"),
         ],
     ),
     ("Classes", "classes", []),
 ]
+# When adding new pages / tutorials to LINKS_NAVBAR, the same option in
+# Doxyfile-mcss needs to be updated accordingly to keep the C++ and Python
+# navbar in sync.
 LINKS_NAVBAR2 = [
-    ("C++ Docs", "../habitat-cpp/index.html", []),
-    ("Habitat API Docs", "../habitat-api/index.html", []),
+    ("C++ API", "./cpp.html", []),
+    ("Habitat Lab Docs", "../habitat-lab/index.html", []),
 ]
 
 FINE_PRINT = f"""
-| {PROJECT_TITLE} {PROJECT_SUBTITLE}. Copyright © 2019 Facebook AI Research.
+| {PROJECT_TITLE} {PROJECT_SUBTITLE}. Copyright © 2020 Facebook AI Research.
 | Created with `m.css Python doc generator <https://mcss.mosra.cz/documentation/python/>`_."""
 THEME_COLOR = "#478cc3"
 STYLESHEETS = [
@@ -143,5 +145,5 @@ M_DOX_TAGFILES = [
         ["Magnum::"],
         ["m-doc-external"],
     ),
-    ("../build/docs/habitat-cpp.tag", "../habitat-cpp/", [], ["m-doc-external"]),
+    ("../build/docs/habitat-cpp.tag", "../habitat-sim/", [], ["m-doc-external"]),
 ]
