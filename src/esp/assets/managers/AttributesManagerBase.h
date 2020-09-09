@@ -45,7 +45,7 @@ template <class T>
 class AttributesManager {
  public:
   static_assert(std::is_base_of<Attrs::AbstractAttributes, T>::value,
-                "Managed typedd must be derived from AbstractAttributes");
+                "Managed type must be derived from AbstractAttributes");
 
   typedef std::shared_ptr<T> AttribsPtr;
 
@@ -917,8 +917,7 @@ class AttributesManager {
 // Class Template Method Definitions
 
 template <class T>
-typename AttributesManager<T>::AttribsPtr
-AttributesManager<T>::createObjectAttributesFromJson(
+std::shared_ptr<T> AttributesManager<T>::createObjectAttributesFromJson(
     const std::string& configFilename,
     const io::JsonDocument& jsonDoc) {
   auto attributes = this->initNewAttribsInternal(configFilename);
@@ -1004,7 +1003,7 @@ AttributesManager<T>::createObjectAttributesFromJson(
 
 template <class T>
 bool AttributesManager<T>::setJSONAssetHandleAndType(
-    typename AttributesManager<T>::AttribsPtr attributes,
+    AttribsPtr attributes,
     const io::JsonDocument& jsonDoc,
     const char* jsonMeshTypeTag,
     const char* jsonMeshHandleTag,
@@ -1078,7 +1077,7 @@ bool AttributesManager<T>::setTemplateLock(const std::string& templateHandle,
 }  // AttributesManager::setTemplateLock
 
 template <class T>
-std::vector<typename AttributesManager<T>::AttribsPtr>
+std::vector<std::shared_ptr<T>>
 AttributesManager<T>::removeTemplatesBySubstring(const std::string& subStr,
                                                  bool contains) {
   std::vector<AttribsPtr> res;
@@ -1096,9 +1095,9 @@ AttributesManager<T>::removeTemplatesBySubstring(const std::string& subStr,
 }  // removeAllTemplates
 
 template <class T>
-typename AttributesManager<T>::AttribsPtr
-AttributesManager<T>::removeTemplateInternal(const std::string& templateHandle,
-                                             const std::string& sourceStr) {
+std::shared_ptr<T> AttributesManager<T>::removeTemplateInternal(
+    const std::string& templateHandle,
+    const std::string& sourceStr) {
   if (!checkExistsWithMessage(templateHandle, sourceStr)) {
     LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
               << " template " << templateHandle << " : Does not exist.";
