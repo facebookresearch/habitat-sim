@@ -48,6 +48,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   lightPositions.reserve(lightSetup_->size());
   std::vector<Mn::Color4> lightColors;
   lightColors.reserve(lightSetup_->size());
+  const Mn::Color4 ambientLightColor = getAmbientLightColor(*lightSetup_);
 
   for (Mn::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
     lightPositions.emplace_back(getLightPositionRelativeToCamera(
@@ -57,7 +58,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   (*shader_)
-      .setAmbientColor(materialData_->ambientColor)
+      .setAmbientColor(materialData_->ambientColor * ambientLightColor)
       .setDiffuseColor(materialData_->diffuseColor)
       .setSpecularColor(materialData_->specularColor)
       .setShininess(materialData_->shininess)

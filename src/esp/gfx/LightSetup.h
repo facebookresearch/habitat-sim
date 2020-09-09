@@ -56,5 +56,11 @@ LightSetup getLightsAtBoxCorners(
     const Magnum::Range3D& box,
     const Magnum::Color4& lightColor = Magnum::Color4{0.4f});
 
+/**
+ * @brief Get get a single, combined ambient light color for use with the Phong
+ * lighting model.
+ */
+Magnum::Color4 getAmbientLightColor(const LightSetup& lightSetup);
+
 }  // namespace gfx
 }  // namespace esp

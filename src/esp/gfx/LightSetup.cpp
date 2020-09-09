@@ -43,5 +43,11 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
       {box.backBottomLeft(), lightColor},  {box.backBottomRight(), lightColor}};
 }
 
+Magnum::Color4 getAmbientLightColor(const LightSetup& lightSetup) {
+  // todo: add up ambient terms from all lights in lightSetup
+  // temp: hard-coded ambient light color
+  return Magnum::Color4(0.2, 0.2, 0.2, 1);
+}
+
 }  // namespace gfx
 }  // namespace esp
