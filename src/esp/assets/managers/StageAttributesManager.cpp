@@ -24,9 +24,8 @@ StageAttributesManager::StageAttributesManager(
     assets::ResourceManager& resourceManager,
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
-    : AttributesManager<StageAttributes::ptr>::AttributesManager(
-          resourceManager,
-          "Stage"),
+    : AttributesManager<StageAttributes>::AttributesManager(resourceManager,
+                                                            "Stage"),
       objectAttributesMgr_(objectAttributesMgr),
       physicsAttributesManager_(physicsAttributesManager),
       cfgLightSetup_(assets::ResourceManager::NO_LIGHT_KEY) {

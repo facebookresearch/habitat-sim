@@ -575,7 +575,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   virtual void setAngularDamping(CORRADE_UNUSED const double angDamping) {}
 
   /**
-   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
    * belonging to the object.
    *
    * @param semanticId The desired semantic id for the object.

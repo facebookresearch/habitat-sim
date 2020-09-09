@@ -123,7 +123,7 @@ def in_git():
     try:
         subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"])
         return True
-    except subprocess.CalledProcessError:
+    except (OSError, subprocess.SubprocessError):
         return False
 
 
@@ -131,7 +131,7 @@ def has_ninja():
     try:
         subprocess.check_output(["ninja", "--version"])
         return True
-    except subprocess.CalledProcessError:
+    except (OSError, subprocess.SubprocessError):
         return False
 
 
@@ -194,7 +194,7 @@ class CMakeBuild(build_ext):
     def run(self):
         try:
             subprocess.check_output(["cmake", "--version"])
-        except OSError:
+        except (OSError, subprocess.SubprocessError):
             raise RuntimeError(
                 "CMake must be installed to build the following extensions: "
                 + ", ".join(e.name for e in self.extensions)

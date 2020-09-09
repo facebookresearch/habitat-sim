@@ -16,7 +16,7 @@ enum class AssetType;
 
 namespace managers {
 class StageAttributesManager
-    : public AttributesManager<Attrs::StageAttributes::ptr> {
+    : public AttributesManager<Attrs::StageAttributes> {
  public:
   StageAttributesManager(
       assets::ResourceManager& resourceManager,
