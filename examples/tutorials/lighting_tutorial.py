@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 import habitat_sim
 from habitat_sim.gfx import LightInfo, LightPositionModel
-from habitat_sim.utils.common import quat_from_angle_axis, quat_to_magnum
+from habitat_sim.utils.common import quat_from_angle_axis
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
@@ -117,15 +117,18 @@ def main(show_imgs=True, save_imgs=False):
     sim.close()
     cfg = make_configuration()
     sim = habitat_sim.Simulator(cfg)
-    agent_transform = place_agent(sim)
+    agent_transform = place_agent(sim)  # noqa: F841
 
     # [example 2]
 
+    # get the physics object attributes manager
+    obj_templates_mgr = sim.get_object_template_manager()
+
     # load some object templates from configuration files
-    sphere_template_id = sim.load_object_configs(
+    sphere_template_id = obj_templates_mgr.load_object_configs(
         str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
-    chair_template_id = sim.load_object_configs(
+    chair_template_id = obj_templates_mgr.load_object_configs(
         str(os.path.join(data_path, "test_assets/objects/chair"))
     )[0]
 
@@ -217,4 +220,11 @@ def main(show_imgs=True, save_imgs=False):
 
 
 if __name__ == "__main__":
-    main(show_imgs=True, save_imgs=True)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-show-images", dest="show_images", action="store_false")
+    parser.add_argument("--no-save-images", dest="save_images", action="store_false")
+    parser.set_defaults(show_images=True, save_images=True)
+    args = parser.parse_args()
+    main(show_imgs=args.show_images, save_imgs=args.save_images)

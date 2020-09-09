@@ -103,6 +103,24 @@ class ArticulatedLink : public RigidBase {
 
   // RigidBase overrides
 
+  /**
+   * @brief Initializes the link.
+   * @param resMgr a reference to ResourceManager object
+   * @param handle The handle for the template structure defining relevant
+   * phyiscal parameters for this object
+   * @return true if initialized successfully, false otherwise.
+   */
+  virtual bool initialize(CORRADE_UNUSED const assets::ResourceManager& resMgr,
+                          CORRADE_UNUSED const std::string& handle) override {
+    return true;
+  };
+
+  /**
+   * @brief Finalize the creation of the link.
+   * @return whether successful finalization.
+   */
+  virtual bool finalizeObject() override { return true; };
+
   virtual void setTransformation(
       CORRADE_UNUSED const Magnum::Matrix4& transformation) override {
     Corrade::Utility::Debug()
@@ -180,6 +198,26 @@ class ArticulatedLink : public RigidBase {
     Corrade::Utility::Debug()
         << "(rotateZLocal) - ArticulatedLink can't do this.";
   }
+
+ private:
+  /**
+   * @brief Finalize the initialization of this link.
+   * @param resMgr Reference to resource manager, to access relevant components
+   * pertaining to the object
+   * @return true if initialized successfully, false otherwise.
+   */
+  virtual bool initialization_LibSpecific(
+      CORRADE_UNUSED const assets::ResourceManager& resMgr) override {
+    return true;
+  };
+  /**
+   * @brief any physics-lib-specific finalization code that needs to be run
+   * after creation.
+   * @return whether successful finalization.
+   */
+  virtual bool finalizeObject_LibSpecific() override { return true; };
+
+  // end RigidBase overrides
 
  protected:
   int mbIndex_;
@@ -363,6 +401,9 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   };
 
   //=========== END - Joint Motor API ===========
+
+  //! map PhysicsManager objectId to local multibody linkId
+  std::map<int, int> objectIdToLinkId_;
 
  protected:
   virtual bool attachGeometry(

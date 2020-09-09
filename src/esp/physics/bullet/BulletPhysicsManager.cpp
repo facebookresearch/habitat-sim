@@ -7,6 +7,7 @@
 
 #include "BulletPhysicsManager.h"
 #include "BulletArticulatedObject.h"
+#include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
 #include "BulletURDFImporter.h"
 #include "esp/assets/ResourceManager.h"
@@ -19,7 +20,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
 
   existingObjects_.clear();
   existingArticulatedObjects_.clear();
-  staticSceneObject_.reset(nullptr);
+  staticStageObject_.reset(nullptr);
 }
 
 bool BulletPhysicsManager::initPhysicsFinalize() {
@@ -37,32 +38,32 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   bWorld_->setDebugDrawer(&debugDrawer_);
 
   // currently GLB meshes are y-up
-  bWorld_->setGravity(btVector3(physicsManagerAttributes->getVec3("gravity")));
+  bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
 
+  Corrade::Utility::Debug() << "creating staticStageObject_";
   //! Create new scene node
-  staticSceneObject_ = physics::BulletRigidScene::create_unique(
-      &physicsNode_->createChild(), bWorld_);
+  staticStageObject_ = physics::BulletRigidStage::create_unique(
+      &physicsNode_->createChild(), bWorld_, collisionObjToObjIds_);
+  Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
 
   return true;
 }
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addSceneFinalize(
-    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes) {
+bool BulletPhysicsManager::addStageFinalize(const std::string& handle) {
   //! Initialize scene
-  bool sceneSuccess =
-      staticSceneObject_->initialize(resourceManager_, physicsSceneAttributes);
+  bool sceneSuccess = staticStageObject_->initialize(resourceManager_, handle);
 
   return sceneSuccess;
 }
 
-bool BulletPhysicsManager::makeAndAddRigidObject(
-    int newObjectID,
-    assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-    scene::SceneNode* objectNode) {
-  auto ptr = physics::BulletRigidObject::create_unique(objectNode, bWorld_);
-  bool objSuccess = ptr->initialize(resourceManager_, physicsObjectAttributes);
+bool BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
+                                                 const std::string& handle,
+                                                 scene::SceneNode* objectNode) {
+  auto ptr = physics::BulletRigidObject::create_unique(
+      objectNode, newObjectID, bWorld_, collisionObjToObjIds_);
+  bool objSuccess = ptr->initialize(resourceManager_, handle);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
@@ -81,9 +82,10 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(std::string filepath,
   }
 
   // parse succeeded, attempt to create the articulated object
-  scene::SceneNode* objectNode = &staticSceneObject_->node().createChild();
+  scene::SceneNode* objectNode = &staticStageObject_->node().createChild();
   BulletArticulatedObject::uptr articulatedObject =
-      BulletArticulatedObject::create_unique(objectNode, bWorld_);
+      BulletArticulatedObject::create_unique(objectNode, bWorld_,
+                                             collisionObjToObjIds_);
 
   bool objectSuccess = articulatedObject->initializeFromURDF(
       urdfImporter_, {}, resourceManager_, drawables, physicsNode_, fixedBase);
@@ -96,11 +98,24 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(std::string filepath,
   Cr::Utility::Debug() << "Articulated Link Indices: "
                        << articulatedObject->getLinkIds();
 
-  int nextObjectID_ = allocateObjectID();
-  existingArticulatedObjects_.emplace(nextObjectID_,
+  int articulatedObjectID_ = allocateObjectID();
+
+  // allocate ids for links
+  for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
+       ++linkIx) {
+    int linkObjectId = allocateObjectID();
+    articulatedObject->objectIdToLinkId_[linkObjectId] = linkIx;
+    collisionObjToObjIds_->emplace(
+        articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
+  }
+  // base collider refers to the articulated object's id
+  collisionObjToObjIds_->emplace(
+      articulatedObject->btMultiBody_->getBaseCollider(), articulatedObjectID_);
+
+  existingArticulatedObjects_.emplace(articulatedObjectID_,
                                       std::move(articulatedObject));
 
-  return nextObjectID_;
+  return articulatedObjectID_;
 }
 
 //! Check if mesh primitive is compatible with physics
@@ -213,14 +228,14 @@ void BulletPhysicsManager::setMargin(const int physObjectID,
       ->setMargin(margin);
 }
 
-void BulletPhysicsManager::setSceneFrictionCoefficient(
+void BulletPhysicsManager::setStageFrictionCoefficient(
     const double frictionCoefficient) {
-  staticSceneObject_->setFrictionCoefficient(frictionCoefficient);
+  staticStageObject_->setFrictionCoefficient(frictionCoefficient);
 }
 
-void BulletPhysicsManager::setSceneRestitutionCoefficient(
+void BulletPhysicsManager::setStageRestitutionCoefficient(
     const double restitutionCoefficient) {
-  staticSceneObject_->setRestitutionCoefficient(restitutionCoefficient);
+  staticStageObject_->setRestitutionCoefficient(restitutionCoefficient);
 }
 
 double BulletPhysicsManager::getMargin(const int physObjectID) const {
@@ -230,12 +245,12 @@ double BulletPhysicsManager::getMargin(const int physObjectID) const {
       ->getMargin();
 }
 
-double BulletPhysicsManager::getSceneFrictionCoefficient() const {
-  return staticSceneObject_->getFrictionCoefficient();
+double BulletPhysicsManager::getStageFrictionCoefficient() const {
+  return staticStageObject_->getFrictionCoefficient();
 }
 
-double BulletPhysicsManager::getSceneRestitutionCoefficient() const {
-  return staticSceneObject_->getRestitutionCoefficient();
+double BulletPhysicsManager::getStageRestitutionCoefficient() const {
+  return staticStageObject_->getRestitutionCoefficient();
 }
 
 const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
@@ -246,8 +261,8 @@ const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
       ->getCollisionShapeAabb();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getSceneCollisionShapeAabb() const {
-  return static_cast<BulletRigidScene*>(staticSceneObject_.get())
+const Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
+  return static_cast<BulletRigidStage*>(staticStageObject_.get())
       ->getCollisionShapeAabb();
 }
 
@@ -262,50 +277,6 @@ bool BulletPhysicsManager::contactTest(const int physObjectID) {
   return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->contactTest();
-}
-
-btCollisionWorld::AllHitsRayResultCallback BulletPhysicsManager::castRay(
-    Magnum::Vector3 origin,
-    Magnum::Vector3 direction) {
-  btVector3 from(origin);
-  btVector3 to(origin + direction * 100.0);
-  // m_dynamicsWorld->getDebugDrawer()->drawLine(from, to, btVector4(0, 0, 0,
-  // 1));
-  btCollisionWorld::AllHitsRayResultCallback allResults(from, to);
-  bWorld_->rayTest(from, to, allResults);
-  return allResults;
-}
-
-int BulletPhysicsManager::getObjectIDFromCollisionObject(
-    const btCollisionObject* collisionObject) {
-  for (auto& obj : existingObjects_) {
-    BulletRigidObject* bro = static_cast<BulletRigidObject*>(obj.second.get());
-    if (bro->isMe(collisionObject)) {
-      return obj.first;
-    }
-  }
-  return ID_UNDEFINED;
-}
-
-// TODO: this logic belongs in BulletArticulatedLink
-int BulletPhysicsManager::getLinkIDFromCollisionObject(
-    int objectId,
-    const btCollisionObject* collisionObject) {
-  CHECK(existingArticulatedObjects_.count(objectId));
-
-  BulletArticulatedObject* bao = static_cast<BulletArticulatedObject*>(
-      existingArticulatedObjects_.at(objectId).get());
-
-  std::map<int, btCollisionShape*>::iterator it =
-      bao->linkCollisionShapes_.begin();
-
-  while (it != bao->linkCollisionShapes_.end()) {
-    if (it->second == collisionObject->getCollisionShape()) {
-      return it->first;
-    }
-    it++;
-  }
-  return ID_UNDEFINED;
 }
 
 int BulletPhysicsManager::createRigidP2PConstraint(
@@ -410,6 +381,42 @@ void BulletPhysicsManager::removeP2PConstraint(int p2pId) {
     Corrade::Utility::Debug() << "No P2P constraint with ID: " << p2pId;
   }
 };
+
+RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
+                                             double maxDistance) {
+  RaycastResults results;
+  results.ray = ray;
+  double rayLength = ray.direction.length();
+  if (rayLength == 0) {
+    LOG(ERROR) << "BulletPhysicsManager::castRay : Cannot case ray with zero "
+                  "length, aborting. ";
+    return results;
+  }
+  btVector3 from(ray.origin);
+  btVector3 to(ray.origin + ray.direction * maxDistance);
+
+  btCollisionWorld::AllHitsRayResultCallback allResults(from, to);
+  bWorld_->rayTest(from, to, allResults);
+
+  // convert to RaycastResults
+  for (int i = 0; i < allResults.m_hitPointWorld.size(); ++i) {
+    RayHitInfo hit;
+
+    hit.normal = Magnum::Vector3{allResults.m_hitNormalWorld[i]};
+    hit.point = Magnum::Vector3{allResults.m_hitPointWorld[i]};
+    hit.rayDistance = (allResults.m_hitFractions[i] * maxDistance) / rayLength;
+    // default to -1 for "scene collision" if we don't know which object was
+    // involved
+    hit.objectId = -1;
+    if (collisionObjToObjIds_->count(allResults.m_collisionObjects[i]) > 0) {
+      hit.objectId =
+          collisionObjToObjIds_->at(allResults.m_collisionObjects[i]);
+    }
+    results.hits.push_back(hit);
+  }
+  results.sortByDistance();
+  return results;
+}
 
 }  // namespace physics
 }  // namespace esp

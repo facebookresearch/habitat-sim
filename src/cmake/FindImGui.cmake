@@ -35,8 +35,8 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
-#             Vladimír Vondruš <mosra@centrum.cz>
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
+#               2020 Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2018 Jonathan Hale <squareys@googlemail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -69,8 +69,10 @@ endif()
 # Vcpkg distributes imgui as a library with a config file, so try that first --
 # but only if IMGUI_DIR wasn't explicitly passed, in which case we'll look
 # there instead
-find_package(imgui CONFIG QUIET)
-if(imgui_FOUND AND NOT IMGUI_DIR)
+if(NOT IMGUI_DIR AND NOT TARGET imgui::imgui)
+    find_package(imgui CONFIG QUIET)
+endif()
+if(NOT IMGUI_DIR AND TARGET imgui::imgui)
     if(NOT TARGET ImGui::ImGui)
         add_library(ImGui::ImGui INTERFACE IMPORTED)
         # TODO: remove once 1.71 is obsolete
@@ -92,7 +94,9 @@ else()
     # Disable the find root path here, it overrides the
     # CMAKE_FIND_ROOT_PATH_MODE_INCLUDE setting potentially set in
     # toolchains.
-    find_path(ImGui_INCLUDE_DIR NAMES imgui.h HINTS ${IMGUI_DIR}
+    find_path(ImGui_INCLUDE_DIR NAMES imgui.h
+        HINTS ${IMGUI_DIR}
+        PATH_SUFFIXES MagnumExternal/ImGui
         NO_CMAKE_FIND_ROOT_PATH)
     mark_as_advanced(ImGui_INCLUDE_DIR)
 

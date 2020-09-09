@@ -19,7 +19,7 @@
 
 #include "ArticulatedObject.h"
 #include "RigidObject.h"
-#include "RigidScene.h"
+#include "RigidStage.h"
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/CollisionMeshData.h"
@@ -34,6 +34,39 @@ namespace esp {
 
 //! core physics simulation namespace
 namespace physics {
+
+namespace Attrs = esp::assets::attributes;
+//! Holds information about one ray hit instance.
+struct RayHitInfo {
+  //! The id of the object hit by this ray. Stage hits are -1.
+  int objectId;
+  //! The first impact point of the ray in world space.
+  Magnum::Vector3 point;
+  //! The collision object normal at the point of impact.
+  Magnum::Vector3 normal;
+  //! Distance along the ray direction from the ray origin (in units of ray
+  //! length).
+  double rayDistance;
+
+  ESP_SMART_POINTERS(RayHitInfo)
+};
+
+//! Holds information about all ray hit instances from a ray cast.
+struct RaycastResults {
+  std::vector<RayHitInfo> hits;
+  esp::geo::Ray ray;
+
+  bool hasHits() { return hits.size() > 0; }
+
+  void sortByDistance() {
+    std::sort(hits.begin(), hits.end(),
+              [](const RayHitInfo& A, const RayHitInfo& B) {
+                return A.rayDistance < B.rayDistance;
+              });
+  }
+
+  ESP_SMART_POINTERS(RaycastResults)
+};
 
 // TODO: repurpose to manage multiple physical worlds. Currently represents
 // exactly one world.
@@ -93,9 +126,9 @@ class PhysicsManager {
    */
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const assets::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
+      const Attrs::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
-        physicsManagerAttributes(_physicsManagerAttributes){};
+        physicsManagerAttributes_(_physicsManagerAttributes){};
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();
@@ -106,8 +139,6 @@ class PhysicsManager {
    *
    * @param node    The scene graph node which will act as the parent of all
    * physical scene and object nodes.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
    */
   bool initPhysics(scene::SceneNode* node);
 
@@ -118,7 +149,7 @@ class PhysicsManager {
   virtual void reset() {
     /* TODO: reset object states or clear them? Other? */
     worldTime_ = 0.0;
-  };
+  }
 
   /** @brief Stores references to a set of drawable elements. */
   using DrawableGroup = gfx::DrawableGroup;
@@ -128,14 +159,13 @@ class PhysicsManager {
    * Only one 'scene' may be initialized per simulated world, but this scene may
    * contain several components (e.g. GLB heirarchy).
    *
-   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * @param handle The handle to the attributes structure defining physical
    * properties of the scene.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  bool addScene(
-      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup);
+  bool addStage(const std::string& handle,
+                const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
@@ -392,36 +422,36 @@ class PhysicsManager {
    */
   virtual Magnum::Vector3 getGravity() const;
 
-  // =========== Scene Getter/Setter functions ===========
+  // =========== Stage Getter/Setter functions ===========
 
   /** @brief Get the current friction coefficient of the scene collision
-   * geometry. See @ref staticSceneObject_.
+   * geometry. See @ref staticStageObject_.
    * @return The scalar friction coefficient of the scene geometry.
    */
-  virtual double getSceneFrictionCoefficient() const { return 0.0; };
+  virtual double getStageFrictionCoefficient() const { return 0.0; };
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
-   * @ref staticSceneObject_.
+   * @ref staticStageObject_.
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
-  virtual void setSceneFrictionCoefficient(
+  virtual void setStageFrictionCoefficient(
       CORRADE_UNUSED const double frictionCoefficient){};
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
-   * between the scene and collidiing object. See @ref staticSceneObject_. By
+   * between the scene and collidiing object. See @ref staticStageObject_. By
    * default this will always return 0, since kinametic scenes have no dynamics.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
-  virtual double getSceneRestitutionCoefficient() const { return 0.0; };
+  virtual double getStageRestitutionCoefficient() const { return 0.0; };
 
   /** @brief Set the coefficient of restitution for the scene collision
-   * geometry. See @ref staticSceneObject_. By default does nothing since
+   * geometry. See @ref staticStageObject_. By default does nothing since
    * kinametic scenes have no dynamics.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
-  virtual void setSceneRestitutionCoefficient(
+  virtual void setStageRestitutionCoefficient(
       CORRADE_UNUSED const double restitutionCoefficient){};
 
   // ============ Object Transformation functions =============
@@ -434,6 +464,16 @@ class PhysicsManager {
    * @param trans The desired 4x4 transform of the object.
    */
   void setTransformation(const int physObjectID, const Magnum::Matrix4& trans);
+
+  /** @brief Set the @ref esp::core::RigidState of an object kinematically.
+   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
+   * recommended.
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param trans The desired @ref esp::core::RigidState of the object.
+   */
+  void setRigidState(const int physObjectID,
+                     const esp::core::RigidState& rigidState);
 
   /** @brief Set the 3D position of an object kinematically.
    * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
@@ -565,6 +605,13 @@ class PhysicsManager {
    * @return The 4x4 transform of the object.
    */
   Magnum::Matrix4 getTransformation(const int physObjectID) const;
+
+  /** @brief Get the current @ref esp::core::RigidState of an object.
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return The @ref esp::core::RigidState of the object.
+   */
+  esp::core::RigidState getRigidState(const int objectID) const;
 
   /** @brief Get the current 3D position of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
@@ -887,6 +934,16 @@ class PhysicsManager {
    */
   const scene::SceneNode& getObjectVisualSceneNode(int physObjectID) const;
 
+  /**
+   * @brief Get pointers to an object's visual SceneNodes.
+   *
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return pointers to the object's visual scene nodes.
+   */
+  std::vector<scene::SceneNode*> getObjectVisualSceneNodes(
+      const int objectID) const;
+
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
    * BulletPhysicsManager::debugDraw.
@@ -920,14 +977,55 @@ class PhysicsManager {
   };
 
   /**
-   * @brief Get the template used to initialize an object.
+   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * belonging to an object.
    *
-   * PhysicsObjectAttributes templates are expected to be changed between
-   * instances of objects.
+   * @param objectID The object ID and key identifying the object in @ref
+   * existingObjects_.
+   * @param semanticId The desired semantic id for the object.
+   */
+  void setSemanticId(int physObjectID, uint32_t semanticId);
+
+  /**
+   * @brief Get a copy of the template used to initialize an object.
+   *
    * @return The initialization settings of the specified object instance.
    */
-  const assets::PhysicsObjectAttributes::cptr getInitializationAttributes(
-      const int physObjectID) const;
+  Attrs::ObjectAttributes::ptr getObjectInitAttributes(
+      const int physObjectID) const {
+    assertIDValidity(physObjectID);
+    return existingObjects_.at(physObjectID)->getInitializationAttributes();
+  }
+
+  /**
+   * @brief Get a copy of the template used to initialize this physics manager
+   *
+   * @return The initialization settings for this physics manager
+   */
+  Attrs::PhysicsManagerAttributes::ptr getInitializationAttributes() const {
+    return Attrs::PhysicsManagerAttributes::create(
+        *physicsManagerAttributes_.get());
+  }
+
+  /**
+   * @brief Cast a ray into the collision world and return a @ref RaycastResults
+   * with hit information.
+   *
+   * Note: not implemented here in default PhysicsManager as there are no
+   * collision objects without a simulation implementation.
+   *
+   * @param ray The ray to cast. Need not be unit length, but returned hit
+   * distances will be in units of ray length.
+   * @param maxDistance The maximum distance along the ray direction to search.
+   * In units of ray length.
+   * @return The raycast results sorted by distance.
+   */
+  virtual RaycastResults castRay(const esp::geo::Ray& ray,
+                                 CORRADE_UNUSED double maxDistance = 100.0) {
+    RaycastResults results;
+    results.ray = ray;
+    return results;
+  }
 
   Magnum::Vector3 getArticulatedLinkCOM(int objectId, int linkId) {
     CHECK(existingArticulatedObjects_.count(objectId));
@@ -1059,11 +1157,9 @@ class PhysicsManager {
   int deallocateObjectID(int physObjectID);
 
   /**
-   * @brief Finalize physics initialization. Setup staticSceneObject_ and
+   * @brief Finalize physics initialization. Setup staticStageObject_ and
    * initialize any other physics-related values for physics-based scenes.
    * Overidden by instancing class if physics is supported.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
    */
   virtual bool initPhysicsFinalize();
 
@@ -1071,29 +1167,27 @@ class PhysicsManager {
    * @brief Finalize scene initialization for kinematic scenes.  Overidden by
    * instancing class if physics is supported.
    *
-   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * @param handle the handle to the attributes structure defining physical
    * properties of the scene.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
 
-  virtual bool addSceneFinalize(
-      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes);
+  virtual bool addStageFinalize(const std::string& handle);
 
   /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
    * @param meshGroup The object's mesh.
-   * @param physicsObjectAttributes The physical object's template defining its
+   * @param handle The handle to the physical object's template defining its
    * physical parameters.
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map
    */
-  virtual bool makeAndAddRigidObject(
-      int newObjectID,
-      assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-      scene::SceneNode* objectNode);
+  virtual bool makeAndAddRigidObject(int newObjectID,
+                                     const std::string& handle,
+                                     scene::SceneNode* objectNode);
 
   /** @brief A reference to a @ref esp::assets::ResourceManager which holds
    * assets that can be accessed by this @ref PhysicsManager*/
@@ -1101,7 +1195,7 @@ class PhysicsManager {
 
   /** @brief A pointer to the @ref assets::PhysicsManagerAttributes describing
    * this physics manager */
-  const assets::PhysicsManagerAttributes::cptr physicsManagerAttributes;
+  const Attrs::PhysicsManagerAttributes::cptr physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
@@ -1117,13 +1211,13 @@ class PhysicsManager {
 
   /**
    * @brief The @ref scene::SceneNode which represents the static collision
-   * geometry of the physical world. Only one @ref staticSceneObject_ may exist
-   * in a physical world. This @ref RigidScene can only have @ref
+   * geometry of the physical world. Only one @ref staticStageObject_ may
+   * exist in a physical world. This @ref RigidStage can only have @ref
    * MotionType::STATIC as it is loaded as static geometry with simulation
    * efficiency in mind. See
-   * @ref addScene.
+   * @ref addStage.
    * */
-  RigidScene::uptr staticSceneObject_ = nullptr;
+  physics::RigidStage::uptr staticStageObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
 

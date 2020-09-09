@@ -100,7 +100,7 @@ GLOG_PREFIX_REGEX = (
     )
     % "".join(_level_letters)
 )
-"""Regex you can use to parse glog line prefixes."""
+# """Regex you can use to parse glog line prefixes."""
 
 
 # Define functions emulating C++ glog check-macros
@@ -147,7 +147,6 @@ def check_failed(message):
             )
             handler.handle(log_record)
         raise
-    return
 
 
 def check(condition, message=None):

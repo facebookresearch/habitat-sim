@@ -2,7 +2,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import random
 
 import numpy as np
 
@@ -105,4 +104,10 @@ def main(display=True):
 
 
 if __name__ == "__main__":
-    main(display=True)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-display", dest="display", action="store_false")
+    parser.set_defaults(display=True)
+    args = parser.parse_args()
+    main(display=args.display)

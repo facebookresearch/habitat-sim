@@ -6,16 +6,30 @@
 
 #include <string>
 
+#include <Corrade/PluginManager/Manager.h>
+
 #include "esp/assets/Asset.h"
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/MeshData.h"
+
+namespace Magnum {
+namespace Trade {
+class AbstractImporter;
+}
+}  // namespace Magnum
 
 namespace esp {
 namespace assets {
 
 class SceneLoader {
+  using Importer = Magnum::Trade::AbstractImporter;
+
  public:
+  SceneLoader();
   MeshData load(const AssetInfo& info);
+
+ private:
+  Corrade::PluginManager::Manager<Importer> importerManager_;
 };
 
 }  // namespace assets

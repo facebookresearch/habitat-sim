@@ -24,24 +24,15 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
  public:
   BulletArticulatedLink(scene::SceneNode* bodyNode,
                         std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
-                        int index)
-      : ArticulatedLink(bodyNode, index), BulletBase(bWorld){};
-
-  int getIndex() { return mbIndex_; };
-
-  bool isMe(const btCollisionObject* collisionObject);
+                        int index,
+                        std::shared_ptr<std::map<const btCollisionObject*, int>>
+                            collisionObjToObjIds)
+      : ArticulatedLink(bodyNode, index),
+        BulletBase(bWorld, collisionObjToObjIds){};
 
   virtual const Magnum::Range3D getCollisionShapeAabb() const override {
     // TODO: collision object should be linked here
     return Magnum::Range3D();
-  };
-
-  // RigidBase overrides
-  virtual bool initialize(
-      const assets::ResourceManager& resMgr,
-      const assets::AbstractPhysicsAttributes::ptr physicsAttributes) override {
-    // TODO: this should initialize the link visual shape from a template
-    return false;
   };
 
   //! link can't do this.
@@ -51,12 +42,6 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
   int mbIndex_;
 
  private:
-  // RigidBase overrides
-  virtual bool initializationFinalize(
-      CORRADE_UNUSED const assets::ResourceManager& resMgr) override {
-    return false;
-  };
-
   ESP_SMART_POINTERS(BulletArticulatedLink)
 };
 
@@ -66,10 +51,14 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
 
 class BulletArticulatedObject : public ArticulatedObject {
  public:
-  BulletArticulatedObject(scene::SceneNode* rootNode,
-                          std::shared_ptr<btMultiBodyDynamicsWorld> bWorld)
+  BulletArticulatedObject(
+      scene::SceneNode* rootNode,
+      std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
+      std::shared_ptr<std::map<const btCollisionObject*, int>>
+          collisionObjToObjIds)
       : bWorld_(bWorld), ArticulatedObject(rootNode) {
     motionType_ = MotionType::DYNAMIC;
+    collisionObjToObjIds_ = collisionObjToObjIds;
   };
 
   virtual ~BulletArticulatedObject();
@@ -129,6 +118,10 @@ class BulletArticulatedObject : public ArticulatedObject {
   // TODO: should be stored in the link
   std::map<int, btCollisionShape*> linkCollisionShapes_;
 
+  // used to update raycast objectId checks (maps to link ids)
+  std::shared_ptr<std::map<const btCollisionObject*, int>>
+      collisionObjToObjIds_;
+
   // std::unique_ptr<btMultiBody> btMultiBody_; //TODO:
   // TODO: also protected? not due to p2p constraint system
   btMultiBody* btMultiBody_;
@@ -162,8 +155,7 @@ class BulletArticulatedObject : public ArticulatedObject {
   virtual bool attachGeometry(
       scene::SceneNode& node,
       std::shared_ptr<io::UrdfLink> link,
-      const std::map<std::string, std::shared_ptr<io::UrdfMaterial> >&
-          materials,
+      const std::map<std::string, std::shared_ptr<io::UrdfMaterial>>& materials,
       assets::ResourceManager& resourceManager,
       gfx::DrawableGroup* drawables) override;
 

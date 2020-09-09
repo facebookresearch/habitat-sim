@@ -1,13 +1,10 @@
 import collections
-import copy
-import math
-from typing import List, Union
+from typing import List
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import habitat_sim
-import habitat_sim.registry as registry
+from habitat_sim import registry as registry
 from habitat_sim.utils.common import quat_from_two_vectors
 
 
@@ -20,13 +17,13 @@ class PoseExtractor:
             scene_filepath: The file path to the mesh file. Necessary for scene switches.
             reference point: A reference point from the coordinate system of the scene. Necessary for specifying poses in the scene's coordinate system.
 
-    :property pixels_per_meter: Resolution of topdown map. 0.1 means each pixel in the topdown map
+    :property meters_per_pixel: Resolution of topdown map. 0.1 means each pixel in the topdown map
         represents 0.1 x 0.1 meters in the coordinate system of the scene that the map represents.
     """
 
-    def __init__(self, topdown_views, pixels_per_meter=0.1):
+    def __init__(self, topdown_views, meters_per_pixel=0.1):
         self.tdv_fp_ref_triples = topdown_views
-        self.pixels_per_meter = pixels_per_meter
+        self.meters_per_pixel = meters_per_pixel
 
     def extract_all_poses(self, labels: List[float]) -> np.ndarray:
         r"""Returns a numpy array of camera poses. For each scene, this method extends the list of poses according to the extraction rule defined in extract_poses.
@@ -80,16 +77,16 @@ class PoseExtractor:
             r2, c2 = cpi
             new_pos = np.array(
                 [
-                    startw + c1 * self.pixels_per_meter,
+                    startw + c1 * self.meters_per_pixel,
                     starty,
-                    starth + r1 * self.pixels_per_meter,
+                    starth + r1 * self.meters_per_pixel,
                 ]
             )
             new_cpi = np.array(
                 [
-                    startw + c2 * self.pixels_per_meter,
+                    startw + c2 * self.meters_per_pixel,
                     starty,
-                    starth + r2 * self.pixels_per_meter,
+                    starth + r2 * self.meters_per_pixel,
                 ]
             )
             cam_normal = new_cpi - new_pos
@@ -101,8 +98,8 @@ class PoseExtractor:
 
 @registry.register_pose_extractor(name="closest_point_extractor")
 class ClosestPointExtractor(PoseExtractor):
-    def __init__(self, topdown_views, pixels_per_meter=0.1):
-        super().__init__(topdown_views, pixels_per_meter)
+    def __init__(self, topdown_views, meters_per_pixel=0.1):
+        super().__init__(topdown_views, meters_per_pixel)
 
     def extract_poses(self, labels, view, fp):
         # Determine the physical spacing between each camera position
@@ -187,8 +184,8 @@ class ClosestPointExtractor(PoseExtractor):
 
 @registry.register_pose_extractor(name="panorama_extractor")
 class PanoramaExtractor(PoseExtractor):
-    def __init__(self, topdown_views, pixels_per_meter=0.1):
-        super().__init__(topdown_views, pixels_per_meter)
+    def __init__(self, topdown_views, meters_per_pixel=0.1):
+        super().__init__(topdown_views, meters_per_pixel)
 
     def extract_poses(self, labels, view, fp):
         # Determine the physical spacing between each camera position

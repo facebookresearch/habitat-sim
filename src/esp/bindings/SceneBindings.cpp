@@ -7,8 +7,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
-#include <Magnum/Python.h>
-#include <Magnum/SceneGraph/Python.h>
+#include <Magnum/PythonBindings.h>
+#include <Magnum/SceneGraph/PythonBindings.h>
 
 #include "esp/scene/Mp3dSemanticScene.h"
 #include "esp/scene/ObjectControls.h"
@@ -72,6 +72,8 @@ void initSceneBindings(py::module& m) {
       .def(py::init_alias<std::reference_wrapper<SceneNode>>(),
            R"(Constructor: creates a scene node, and sets its parent.)")
       .def_property("type", &SceneNode::getType, &SceneNode::setType)
+      .def_property("semantic_id", &SceneNode::getSemanticId,
+                    &SceneNode::setSemanticId)
       .def(
           "create_child", [](SceneNode& self) { return &self.createChild(); },
           R"(Creates a child node, and sets its parent to the current node.)")

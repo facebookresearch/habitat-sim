@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os.path as osp
+from os import path as osp
 
 import attr
 import numba
@@ -142,6 +142,5 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
             return self._impl.simulate(gt_depth)
 
     def apply(self, gt_depth):
-        r"""Alias of `simulate()` to conform to base-class and expected API
-        """
+        r"""Alias of `simulate()` to conform to base-class and expected API"""
         return self.simulate(gt_depth)

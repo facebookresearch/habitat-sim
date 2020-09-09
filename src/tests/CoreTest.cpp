@@ -6,7 +6,6 @@
 
 #include "esp/core/Configuration.h"
 #include "esp/core/esp.h"
-#include "esp/io/json.h"
 
 using namespace esp::core;
 
@@ -18,13 +17,4 @@ TEST(CoreTest, ConfigurationTest) {
   EXPECT_TRUE(cfg.hasValue("myString"));
   EXPECT_EQ(cfg.get<int>("myInt"), 10);
   EXPECT_EQ(cfg.get<std::string>("myString"), "test");
-}
-
-TEST(CoreTest, JsonTest) {
-  std::string s = "{\"test\":[1, 2, 3, 4]}";
-  const auto& json = esp::io::parseJsonString(s);
-  std::vector<int> t;
-  esp::io::toIntVector(json["test"], &t);
-  EXPECT_EQ(t[1], 2);
-  EXPECT_EQ(esp::io::jsonToString(json), "{\"test\":[1,2,3,4]}");
 }

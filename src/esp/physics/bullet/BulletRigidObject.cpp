@@ -31,9 +31,12 @@ namespace physics {
 
 BulletRigidObject::BulletRigidObject(
     scene::SceneNode* rigidBodyNode,
-    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld)
-    : BulletBase(bWorld),
-      RigidObject{rigidBodyNode},
+    int objectId,
+    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
+    std::shared_ptr<std::map<const btCollisionObject*, int> >
+        collisionObjToObjIds)
+    : BulletBase(bWorld, collisionObjToObjIds),
+      RigidObject(rigidBodyNode, objectId),
       MotionState(*rigidBodyNode) {}
 
 BulletRigidObject::~BulletRigidObject() {
@@ -44,20 +47,22 @@ BulletRigidObject::~BulletRigidObject() {
     // remove collision objects from the world
     for (auto& co : bStaticCollisionObjects_) {
       bWorld_->removeCollisionObject(co.get());
+      collisionObjToObjIds_->erase(co.get());
     }
   }
+  collisionObjToObjIds_->erase(bObjectRigidBody_.get());
+
 }  //~BulletRigidObject
 
-bool BulletRigidObject::initializationFinalize(
+bool BulletRigidObject::initialization_LibSpecific(
     const assets::ResourceManager& resMgr) {
   objectMotionType_ = MotionType::DYNAMIC;
-  auto tmpAttr = static_cast<esp::assets::PhysicsObjectAttributes*>(
-      initializationAttributes_.get());
+  // get this object's creation template, appropriately cast
+  auto tmpAttr = getInitializationAttributes();
+
   //! Physical parameters
   double margin = tmpAttr->getMargin();
-
   bool joinCollisionMeshes = tmpAttr->getJoinCollisionMeshes();
-
   usingBBCollisionShape_ = tmpAttr->getBoundingBoxCollisions();
 
   // TODO(alexanderwclegg): should provide the option for joinCollisionMeshes
@@ -71,22 +76,25 @@ bool BulletRigidObject::initializationFinalize(
   const std::string collisionAssetHandle =
       initializationAttributes_->getCollisionAssetHandle();
 
-  if (!initializationAttributes_
-           ->getUseMeshCollision()) {  // if using prim collider
-    // prim stuff here
-    // get appropriate bullet collision primitive attributes
-    auto primAttrMgr = resMgr.getAssetAttributesManager();
-
+  if (!initializationAttributes_->getUseMeshCollision()) {
+    // if using prim collider get appropriate bullet collision primitive
+    // attributes and build bullet collision shape
     auto primAttributes =
-        primAttrMgr->getTemplateByHandle(collisionAssetHandle);
+        resMgr.getAssetAttributesManager()->getTemplateCopyByHandle(
+            collisionAssetHandle);
     // primitive object pointer construction
-    auto primObjPtr = buildPrimitiveCollisionObject(primAttributes);
+    auto primObjPtr = buildPrimitiveCollisionObject(
+        primAttributes->getPrimObjType(), primAttributes->getHalfLength());
+    if (nullptr == primObjPtr) {
+      return false;
+    }
     bGenericShapes_.clear();
     bGenericShapes_.emplace_back(std::move(primObjPtr));
     bObjectShape_->addChildShape(btTransform::getIdentity(),
                                  bGenericShapes_.back().get());
     bObjectShape_->recalculateLocalAabb();
   } else {
+    // mesh collider
     const std::vector<assets::CollisionMeshData>& meshGroup =
         resMgr.getCollisionMesh(collisionAssetHandle);
     const assets::MeshMetaData& metaData =
@@ -105,7 +113,7 @@ bool BulletRigidObject::initializationFinalize(
                                      bObjectConvexShapes_.back().get());
       }
     }
-  }  // if using mesh collider
+  }  // if using prim collider else use mesh collider
 
   //! Set properties
   bObjectShape_->setMargin(margin);
@@ -119,8 +127,6 @@ bool BulletRigidObject::initializationFinalize(
       // allow bullet to compute the inertia tensor if we don't have one
       bObjectShape_->calculateLocalInertia(tmpAttr->getMass(),
                                            bInertia);  // overrides bInertia
-      LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
-                << bInertia.y() << " " << bInertia.z();
     }
   }
 
@@ -139,21 +145,23 @@ bool BulletRigidObject::initializationFinalize(
 
   //! Add to world
   bWorld_->addRigidBody(bObjectRigidBody_.get());
+  collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
   //! Sync render pose with physics
   syncPose();
   return true;
-}  // initializeObjectFinalize
+}  // initialization_LibSpecific
 
-void BulletRigidObject::finalizeObject() {
+bool BulletRigidObject::finalizeObject_LibSpecific() {
   if (usingBBCollisionShape_) {
     setCollisionFromBB();
   }
-}  // finalizeObject
+  return true;
+}  // finalizeObject_LibSpecifc
 
 std::unique_ptr<btCollisionShape>
-BulletRigidObject::buildPrimitiveCollisionObject(
-    assets::AbstractPrimitiveAttributes::ptr primAttributes) {
-  int primTypeVal = primAttributes->getPrimObjType();
+BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
+                                                 double halfLength) {
+  // int primTypeVal = primAttributes.getPrimObjType();
   CORRADE_ASSERT(
       (primTypeVal >= 0) &&
           (primTypeVal <
@@ -171,7 +179,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(
     case assets::PrimObjTypes::CAPSULE_WF: {
       // use bullet capsule :  btCapsuleShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
-      btScalar height = 2.0 * primAttributes->getHalfLength();
+      btScalar height = 2.0 * halfLength;
       obj = std::make_unique<btCapsuleShape>(radius, height);
       break;
     }
@@ -179,7 +187,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(
     case assets::PrimObjTypes::CONE_WF: {
       // use bullet cone : btConeShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
-      btScalar height = 2.0 * primAttributes->getHalfLength();
+      btScalar height = 2.0 * halfLength;
       obj = std::make_unique<btConeShape>(radius, height);
       break;
     }
@@ -236,9 +244,6 @@ void BulletRigidObject::setCollisionFromBB() {
     bObjectShape_->calculateLocalInertia(getMass(),
                                          bInertia);  // overrides bInertia
 
-    LOG(INFO) << "Automatic BB object inertia computed: " << bInertia.x() << " "
-              << bInertia.y() << " " << bInertia.z();
-
     setInertiaVector(Magnum::Vector3(bInertia));
   }
 }  // setCollisionFromBB
@@ -251,6 +256,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
   // remove the existing object from the world to change its type
   if (objectMotionType_ == MotionType::STATIC) {
     bWorld_->removeCollisionObject(bStaticCollisionObjects_.back().get());
+    collisionObjToObjIds_->erase(bStaticCollisionObjects_.back().get());
     bStaticCollisionObjects_.clear();
   } else {
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
@@ -285,6 +291,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
         staticCollisionObject.get(),
         2,       // collisionFilterGroup (2 == StaticFilter)
         1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+    collisionObjToObjIds_->emplace(staticCollisionObject.get(), objectId_);
     bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
     return true;
   } else if (mt == MotionType::DYNAMIC) {
@@ -304,8 +311,6 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
 }  // setMotionType
 
 void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
-  Corrade::Utility::Debug() << "shiftOrigin: " << shift;
-
   if (visualNode_)
     visualNode_->translate(shift);
 

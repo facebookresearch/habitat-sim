@@ -1,17 +1,11 @@
-import collections
-import copy
-import math
-import os
 from typing import List, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import habitat_sim
-import habitat_sim.bindings as hsim
-import habitat_sim.registry as registry
+from habitat_sim import bindings as hsim
+from habitat_sim import registry as registry
 from habitat_sim.agent import AgentState
-from habitat_sim.utils.common import quat_from_two_vectors
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor
 
@@ -40,7 +34,7 @@ class ImageExtractor:
     :property img_size: Tuple of image output dimensions (height, width)
     :property cfg: configuration for simulator of type SimulatorConfiguration
     :property sim: Simulator object
-    :property pixels_per_meter: Resolution of topdown map. 0.1 means each pixel in the topdown map
+    :property meters_per_pixel: Resolution of topdown map. 0.1 means each pixel in the topdown map
         represents 0.1 x 0.1 meters in the coordinate system of the pathfinder
 
     :property tdv_fp_ref_triples: List of tuples containing (TopdownView Object, scene_filepath, reference point)
@@ -65,16 +59,20 @@ class ImageExtractor:
     def __init__(
         self,
         scene_filepath: Union[str, List[str]],
-        labels: List[float] = [0.0],
+        labels: List[float] = None,
         img_size: tuple = (512, 512),
-        output: List[str] = ["rgba"],
+        output: List[str] = None,
         pose_extractor_name: str = "closest_point_extractor",
         sim=None,
         shuffle: bool = True,
         split: tuple = (70, 30),
         use_caching: bool = True,
-        pixels_per_meter: float = 0.1,
+        meters_per_pixel: float = 0.1,
     ):
+        if labels is None:
+            labels = [0.0]
+        if output is None:
+            output = ["rgba"]
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
 
@@ -99,22 +97,22 @@ class ImageExtractor:
             sim.reconfigure(self.cfg)
 
         self.sim = sim
-        self.pixels_per_meter = pixels_per_meter
+        self.meters_per_pixel = meters_per_pixel
         if not sim_provided:
             self.tdv_fp_ref_triples = self._preprocessing(
-                self.sim, self.scene_filepaths, self.pixels_per_meter
+                self.sim, self.scene_filepaths, self.meters_per_pixel
             )
         else:
             ref_point = self._get_pathfinder_reference_point(self.sim.pathfinder)
             self.tdv_fp_ref_triples = [
                 (
-                    TopdownView(self.sim, ref_point[1], pixels_per_meter),
+                    TopdownView(self.sim, ref_point[1], meters_per_pixel),
                     self.sim.config.sim_cfg.scene.id,
                     ref_point,
                 )
             ]
 
-        args = (self.tdv_fp_ref_triples, self.pixels_per_meter)
+        args = (self.tdv_fp_ref_triples, self.meters_per_pixel)
         self.pose_extractor = get_pose_extractor(pose_extractor_name)(*args)
         self.poses = self.pose_extractor.extract_all_poses(labels=self.labels)
 
@@ -189,16 +187,14 @@ class ImageExtractor:
         return sample
 
     def close(self) -> None:
-        r"""Deletes the instance of the simulator. Necessary for instantiating a different ImageExtractor.
-        """
+        r"""Deletes the instance of the simulator. Necessary for instantiating a different ImageExtractor."""
         if self.sim is not None:
             self.sim.close()
             del self.sim
             self.sim = None
 
     def set_mode(self, mode: str) -> None:
-        r"""Sets the mode of the simulator. This controls which poses to use; train, test, or all (full)
-        """
+        r"""Sets the mode of the simulator. This controls which poses to use; train, test, or all (full)"""
         mymode = mode.lower()
         if mymode not in ["full", "train", "test"]:
             raise Exception(
@@ -208,18 +204,17 @@ class ImageExtractor:
         self.mode = mymode
 
     def get_semantic_class_names(self) -> List[str]:
-        r"""Returns a list of english class names in the scene(s). E.g. ['wall', 'ceiling', 'chair']
-        """
-        class_names = list(set(name for name in self.instance_id_to_name.values()))
+        r"""Returns a list of english class names in the scene(s). E.g. ['wall', 'ceiling', 'chair']"""
+        class_names = list(set(self.instance_id_to_name.values()))
         return class_names
 
-    def _preprocessing(self, sim, scene_filepaths, pixels_per_meter):
+    def _preprocessing(self, sim, scene_filepaths, meters_per_pixel):
         tdv_fp_ref = []
         for filepath in scene_filepaths:
             cfg = self._config_sim(filepath, self.img_size)
             sim.reconfigure(cfg)
             ref_point = self._get_pathfinder_reference_point(sim.pathfinder)
-            tdv = TopdownView(sim, ref_point[1], pixels_per_meter=pixels_per_meter)
+            tdv = TopdownView(sim, ref_point[1], meters_per_pixel=meters_per_pixel)
             tdv_fp_ref.append((tdv, filepath, ref_point))
 
         return tdv_fp_ref
@@ -313,7 +308,7 @@ class ImageExtractor:
 
 
 class TopdownView(object):
-    def __init__(self, sim, height, pixels_per_meter=0.1):
+    def __init__(self, sim, height, meters_per_pixel=0.1):
         self.topdown_view = sim.pathfinder.get_topdown_view(
-            pixels_per_meter, height
+            meters_per_pixel, height
         ).astype(np.float64)

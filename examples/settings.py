@@ -4,7 +4,7 @@
 
 import habitat_sim
 import habitat_sim.agent
-import habitat_sim.bindings as hsim
+from habitat_sim import bindings as hsim
 
 default_sim_settings = {
     # settings shared by example.py and benchmark.py
@@ -45,7 +45,8 @@ def make_cfg(settings):
         sim_cfg.enable_physics = settings["enable_physics"]
     if "physics_config_file" in settings:
         sim_cfg.physics_config_file = settings["physics_config_file"]
-    print("sim_cfg.physics_config_file = " + sim_cfg.physics_config_file)
+    if not settings["silent"]:
+        print("sim_cfg.physics_config_file = " + sim_cfg.physics_config_file)
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]
     sim_cfg.gpu_device_id = 0

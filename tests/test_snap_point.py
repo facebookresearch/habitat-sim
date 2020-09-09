@@ -1,9 +1,8 @@
 import math
 
 import hypothesis
-import hypothesis.strategies as st
-import numpy as np
 import pytest
+from hypothesis import strategies as st
 
 import habitat_sim
 

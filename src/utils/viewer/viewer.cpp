@@ -11,8 +11,16 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
+#include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
+
+#include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/Renderbuffer.h>
+#include <Magnum/GL/RenderbufferFormat.h>
+#include <Magnum/Image.h>
+#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/Shaders.h>
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
@@ -41,7 +49,8 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/sim/Simulator.h"
 
-#include "esp/gfx/configure.h"
+#include "ObjectPickingHelper.h"
+#include "esp/physics/configure.h"
 
 // for ease of access
 namespace Cr = Corrade;
@@ -440,8 +449,6 @@ class Viewer : public Mn::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
   void updateRenderCamera();
 
-  Mn::Vector3 unproject(const Mn::Vector2i& windowPosition, float depth) const;
-
   esp::scene::SceneNode* clickNode_ = nullptr;
 
   std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
@@ -521,12 +528,12 @@ class Viewer : public Mn::Platform::Application {
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
   esp::scene::SceneNode* rgbSensorNode_ = nullptr;
 
-  esp::scene::SceneNode* navSceneNode_ = nullptr;
-
+  std::string stageFileName;
   esp::scene::SceneGraph* sceneGraph_;
   esp::scene::SceneNode* rootNode_;
 
-  esp::scene::SceneNode* navmeshVisNode_ = nullptr;
+  int navMeshVisPrimID_ = esp::ID_UNDEFINED;
+  esp::scene::SceneNode* navMeshVisNode_ = nullptr;
 
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::nav::PathFinder::ptr pathfinder_;
@@ -542,6 +549,10 @@ class Viewer : public Mn::Platform::Application {
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = false;
   bool frustumCullingEnabled_ = true;
+
+  // NOTE: Mouse + shift is to select object on the screen!!
+  void createPickedObjectVisualizer(unsigned int objectId);
+  std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -570,8 +581,12 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("scene-requires-lighting", "scene requires lighting")
       .addBooleanOption("debug-bullet")
       .setHelp("debug-bullet", "render Bullet physics debug wireframes")
-      .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
+      .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH)
       .setHelp("physics-config", "physics scene config file")
+      .addBooleanOption("disable-navmesh")
+      .setHelp("disable-navmesh",
+               "disable the navmesh, so no navigation constraints and "
+               "collision response")
       .addOption("navmesh-file")
       .setHelp("navmesh-file", "manual override path to scene navmesh file")
       .addBooleanOption("recompute-navmesh")
@@ -601,37 +616,53 @@ Viewer::Viewer(const Arguments& arguments)
   sceneID_.push_back(sceneID);
   sceneGraph_ = &sceneManager_.getSceneGraph(sceneID);
   rootNode_ = &sceneGraph_->getRootNode();
-  navSceneNode_ = &rootNode_->createChild();
 
-  auto& drawables = sceneGraph_->getDrawables();
-  const std::string& file = args.value("scene");
-  esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(file);
+  stageFileName = args.value("scene");
+  esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(stageFileName);
   std::string sceneLightSetup = esp::assets::ResourceManager::NO_LIGHT_KEY;
   if (args.isSet("scene-requires-lighting")) {
     info.requiresLighting = true;
     sceneLightSetup = esp::assets::ResourceManager::DEFAULT_LIGHTING_KEY;
   }
 
-  if (args.isSet("enable-physics")) {
-    std::string physicsConfigFilename = args.value("physics-config");
-    if (!Cr::Utility::Directory::exists(physicsConfigFilename)) {
-      LOG(FATAL)
-          << physicsConfigFilename
-          << " was not found, specify an existing file in --physics-config";
-    }
-    if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
-                                    &drawables, sceneLightSetup,
-                                    physicsConfigFilename)) {
-      LOG(FATAL) << "cannot load " << file;
-    }
-    if (args.isSet("debug-bullet")) {
-      debugBullet_ = true;
-    }
-  } else {
-    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables,
-                                    sceneLightSetup)) {
-      LOG(FATAL) << "cannot load " << file;
-    }
+  std::string physicsConfigFilename = args.value("physics-config");
+  if (!Cr::Utility::Directory::exists(physicsConfigFilename)) {
+    LOG(FATAL)
+        << physicsConfigFilename
+        << " was not found, specify an existing file in --physics-config";
+  }
+  // use physics world attributes manager to get physics manager attributes
+  // described by config file
+  auto physicsManagerAttributes =
+      resourceManager_.getPhysicsAttributesManager()->createAttributesTemplate(
+          physicsConfigFilename, true);
+  CORRADE_ASSERT(physicsManagerAttributes != nullptr,
+                 "Viewer::ctor : Error attempting to load world described by"
+                     << physicsConfigFilename << ". Aborting", );
+
+  auto stageAttributesMgr = resourceManager_.getStageAttributesManager();
+  stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+      physicsManagerAttributes->getHandle());
+
+  auto stageAttributes =
+      stageAttributesMgr->createAttributesTemplate(stageFileName, true);
+
+  stageAttributes->setLightSetup(sceneLightSetup);
+  stageAttributes->setRequiresLighting(info.requiresLighting);
+
+  bool useBullet = args.isSet("enable-physics");
+  // construct physics manager based on specifications in attributes
+  resourceManager_.initPhysicsManager(physicsManager_, useBullet, rootNode_,
+                                      physicsManagerAttributes);
+
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool stageLoadSuccess = resourceManager_.loadStage(
+      stageAttributes, physicsManager_, &sceneManager_, tempIDs, false);
+  if (!stageLoadSuccess) {
+    LOG(FATAL) << "cannot load " << stageFileName;
+  }
+  if (useBullet && (args.isSet("debug-bullet"))) {
+    debugBullet_ = true;
   }
 
   const Mn::Range3D& sceneBB = rootNode_->computeCumulativeBB();
@@ -653,51 +684,54 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
 
-  // Load navmesh if available
-  std::string navmeshFilename;
-  if (!args.value("navmesh-file").empty()) {
-    navmeshFilename = Corrade::Utility::Directory::join(
-        Corrade::Utility::Directory::current(), args.value("navmesh-file"));
-  } else if (file.compare(esp::assets::EMPTY_SCENE)) {
-    navmeshFilename = esp::io::changeExtension(file, ".navmesh");
-
-    // TODO: short term solution to mitigate issue #430
-    // we load the pre-computed navmesh for the ptex mesh to avoid
-    // online computation.
-    // for long term solution, see issue #430
-    if (Cr::Utility::String::endsWith(file, "mesh.ply")) {
+  if (!args.isSet("disable-navmesh")) {
+    // Load navmesh if available
+    std::string navmeshFilename;
+    if (!args.value("navmesh-file").empty()) {
       navmeshFilename = Corrade::Utility::Directory::join(
-          Corrade::Utility::Directory::path(file) + "/habitat",
-          "mesh_semantic.navmesh");
+          Corrade::Utility::Directory::current(), args.value("navmesh-file"));
+    } else if (stageFileName.compare(esp::assets::EMPTY_SCENE)) {
+      navmeshFilename = esp::io::changeExtension(stageFileName, ".navmesh");
+
+      // TODO: short term solution to mitigate issue #430
+      // we load the pre-computed navmesh for the ptex mesh to avoid
+      // online computation.
+      // for long term solution, see issue #430
+      if (Cr::Utility::String::endsWith(stageFileName, "mesh.ply")) {
+        navmeshFilename = Corrade::Utility::Directory::join(
+            Corrade::Utility::Directory::path(stageFileName) + "/habitat",
+            "mesh_semantic.navmesh");
+      }
     }
-  }
 
-  if (esp::io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-  } else if (file.compare(esp::assets::EMPTY_SCENE)) {
-    esp::nav::NavMeshSettings navMeshSettings;
-    navMeshSettings.setDefaults();
-    recomputeNavMesh(file, navMeshSettings);
-  }
+    if (esp::io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
+      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+      pathfinder_->loadNavMesh(navmeshFilename);
+    } else if (stageFileName.compare(esp::assets::EMPTY_SCENE)) {
+      esp::nav::NavMeshSettings navMeshSettings;
+      navMeshSettings.setDefaults();
+      recomputeNavMesh(stageFileName, navMeshSettings);
+    }
 
-  // connect controls to navmesh if loaded
-  if (pathfinder_->isLoaded()) {
-    // some scenes could have pathable roof polygons. We are not filtering
-    // those starting points here.
-    esp::vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Mn::Vector3(position));
+    // connect controls to navmesh if loaded
+    if (pathfinder_->isLoaded()) {
+      // some scenes could have pathable roof polygons. We are not filtering
+      // those starting points here.
+      esp::vec3f position = pathfinder_->getRandomNavigablePoint();
+      agentBodyNode_->setTranslation(Mn::Vector3(position));
 
-    controls_.setMoveFilterFunction([&](const esp::vec3f& start,
-                                        const esp::vec3f& end) {
-      esp::vec3f currentPosition = pathfinder_->tryStep(start, end);
-      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
-                << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
-      LOG(INFO) << "Distance to closest obstacle: "
-                << pathfinder_->distanceToClosestObstacle(currentPosition);
+      controls_.setMoveFilterFunction([&](const esp::vec3f& start,
+                                          const esp::vec3f& end) {
+        esp::vec3f currentPosition = pathfinder_->tryStep(start, end);
+        LOG(INFO)
+            << "position=" << currentPosition.transpose() << " rotation="
+            << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
+        LOG(INFO) << "Distance to closest obstacle: "
+                  << pathfinder_->distanceToClosestObstacle(currentPosition);
 
-      return currentPosition;
-    });
+        return currentPosition;
+      });
+    }
   }
 
   // Setting manual agent position
@@ -708,27 +742,20 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
 
+  objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
 }  // end Viewer::Viewer
 
 void Viewer::addObject(int ID) {
-  if (physicsManager_ == nullptr) {
-    return;
-  }
   const std::string& configHandle =
       resourceManager_.getObjectAttributesManager()->getTemplateHandleByID(ID);
   addObject(configHandle);
 }  // addObject
 
 void Viewer::addObject(const std::string& configFile) {
-  if (physicsManager_ == nullptr) {
-    return;
-  }
-
-  Mn::Matrix4 T =
-      agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  // Relative to agent bodynode
+  Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();
@@ -744,33 +771,28 @@ void Viewer::addObject(const std::string& configFile) {
 
 // add file-based template derived object from keypress
 void Viewer::addTemplateObject() {
-  if (physicsManager_ != nullptr) {
-    int numObjTemplates = resourceManager_.getObjectAttributesManager()
-                              ->getNumFileTemplateObjects();
-    if (numObjTemplates > 0) {
-      addObject(resourceManager_.getObjectAttributesManager()
-                    ->getRandomFileTemplateHandle());
-    } else
-      LOG(WARNING) << "No objects loaded, can't add any";
+  int numObjTemplates = resourceManager_.getObjectAttributesManager()
+                            ->getNumFileTemplateObjects();
+  if (numObjTemplates > 0) {
+    addObject(resourceManager_.getObjectAttributesManager()
+                  ->getRandomFileTemplateHandle());
   } else
-    LOG(WARNING) << "Run the app with --enable-physics in order to add "
-                    "templated-based physically modeled objects";
+    LOG(WARNING) << "No objects loaded, can't add any";
+
 }  // addTemplateObject
 
 // add synthesized primiitive object from keypress
 void Viewer::addPrimitiveObject() {
   // TODO : use this to implement synthesizing rendered physical objects
-  if (physicsManager_ != nullptr) {
-    int numObjPrims = resourceManager_.getObjectAttributesManager()
-                          ->getNumSynthTemplateObjects();
-    if (numObjPrims > 0) {
-      addObject(resourceManager_.getObjectAttributesManager()
-                    ->getRandomSynthTemplateHandle());
-    } else
-      LOG(WARNING) << "No primitive templates available, can't add any objects";
+
+  int numObjPrims = resourceManager_.getObjectAttributesManager()
+                        ->getNumSynthTemplateObjects();
+  if (numObjPrims > 0) {
+    addObject(resourceManager_.getObjectAttributesManager()
+                  ->getRandomSynthTemplateHandle());
   } else
-    LOG(WARNING) << "Run the app with --enable-physics in order to add "
-                    "physically modelled primitives";
+    LOG(WARNING) << "No primitive templates available, can't add any objects";
+
 }  // addPrimitiveObject
 
 void Viewer::throwSphere(Mn::Vector3 direction) {
@@ -784,14 +806,13 @@ void Viewer::throwSphere(Mn::Vector3 direction) {
 
   esp::assets::PrimObjTypes icoSphere =
       esp::assets::PrimObjTypes::ICOSPHERE_SOLID;
-  esp::assets::AbstractPrimitiveAttributes::ptr sphereAttributes =
+  esp::assets::attributes::AbstractPrimitiveAttributes::ptr sphereAttributes =
       resourceManager_.getAssetAttributesManager()->createAttributesTemplate(
           icoSphere);
-  int sphereObjectTemplateId =
-      resourceManager_.getObjectAttributesManager()
-          ->createPrimBasedAttributesTemplate(
-              sphereAttributes->getOriginHandle(), true)
-          ->getObjectTemplateID();
+  int sphereObjectTemplateId = resourceManager_.getObjectAttributesManager()
+                                   ->createPrimBasedAttributesTemplate(
+                                       sphereAttributes->getHandle(), true)
+                                   ->getID();
 
   int physObjectID = physicsManager_->addObject(sphereObjectTemplateId,
                                                 &sceneGraph_->getDrawables());
@@ -845,7 +866,7 @@ void Viewer::toggleArticulatedMotionType(int objectId) {
 }
 
 void Viewer::removeLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0) {
+  if (objectIDs_.size() == 0) {
     return;
   }
   physicsManager_->removeObject(objectIDs_.back());
@@ -867,31 +888,28 @@ void Viewer::clearAllObjects() {
 }
 
 void Viewer::invertGravity() {
-  if (physicsManager_ == nullptr) {
-    return;
-  }
   const Mn::Vector3& gravity = physicsManager_->getGravity();
   const Mn::Vector3 invGravity = -1 * gravity;
   physicsManager_->setGravity(invGravity);
 }
 
 void Viewer::pokeLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (objectIDs_.size() == 0)
     return;
   Mn::Matrix4 T =
-      agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
+                                                             // agent bodynode
   Mn::Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
   Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
 }
 
 void Viewer::pushLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (objectIDs_.size() == 0)
     return;
   Mn::Matrix4 T =
-      agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
+                                                             // agent bodynode
   Mn::Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
   Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
@@ -911,10 +929,16 @@ void Viewer::recomputeNavMesh(const std::string& sceneFilename,
 
   LOG(INFO) << "reconstruct navmesh successful";
   pathfinder_ = pf;
+
+  // reset the visualization if necessary
+  if (navMeshVisNode_ != nullptr) {
+    toggleNavMeshVisualization();  // first clear old vis
+    toggleNavMeshVisualization();
+  }
 }
 
 void Viewer::torqueLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (objectIDs_.size() == 0)
     return;
   Mn::Vector3 torque = randomDirection() * 30;
   physicsManager_->applyTorque(objectIDs_.back(), torque);
@@ -935,7 +959,7 @@ Mn::Vector3 Viewer::randomDirection() {
 void Viewer::wiggleLastObject() {
   // demo of kinematic motion capability
   // randomly translate last added object
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (objectIDs_.size() == 0)
     return;
 
   Mn::Vector3 randDir = randomDirection();
@@ -946,15 +970,22 @@ void Viewer::wiggleLastObject() {
 }
 
 void Viewer::toggleNavMeshVisualization() {
-  if (navmeshVisNode_ == nullptr && pathfinder_->isLoaded()) {
+  if (navMeshVisNode_ == nullptr && pathfinder_->isLoaded()) {
     // test navmesh visualization
-    navmeshVisNode_ = &rootNode_->createChild();
-    int nevMeshVisPrimID = resourceManager_.loadNavMeshVisualization(
-        *pathfinder_, navmeshVisNode_, &sceneGraph_->getDrawables());
-    navmeshVisNode_->translate({0, 0.1, 0});
-  } else if (navmeshVisNode_ != nullptr) {
-    delete navmeshVisNode_;
-    navmeshVisNode_ = nullptr;
+    navMeshVisNode_ = &rootNode_->createChild();
+    navMeshVisPrimID_ = resourceManager_.loadNavMeshVisualization(
+        *pathfinder_, navMeshVisNode_, &sceneGraph_->getDrawables());
+    Corrade::Utility::Debug() << "navMeshVisPrimID_ = " << navMeshVisPrimID_;
+    if (navMeshVisPrimID_ == esp::ID_UNDEFINED) {
+      LOG(ERROR) << "Viewer::toggleNavMeshVisualization : Failed to load "
+                    "navmesh visualization.";
+      delete navMeshVisNode_;
+    }
+  } else if (navMeshVisNode_ != nullptr) {
+    delete navMeshVisNode_;
+    navMeshVisNode_ = nullptr;
+    resourceManager_.removePrimitiveMesh(navMeshVisPrimID_);
+    navMeshVisPrimID_ = esp::ID_UNDEFINED;
   }
 }
 
@@ -965,30 +996,24 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
-  if (physicsManager_ != nullptr) {
-    esp::physics::BulletPhysicsManager* bpm =
-        static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
-
-    // step physics at a fixed rate
-    timeSinceLastSimulation += timeline_.previousFrameDuration();
-    if (timeSinceLastSimulation >= 1.0 / 60.0) {
-      for (auto& aliengoController : aliengoControllers) {
-        aliengoController->cycleUpdate(1.0 / 60.0);
-      }
-      physicsManager_->stepPhysics(1.0 / 60.0);
-      timeSinceLastSimulation = 0.0;
+  // step physics at a fixed rate
+  timeSinceLastSimulation += timeline_.previousFrameDuration();
+  if (timeSinceLastSimulation >= 1.0 / 60.0) {
+    for (auto& aliengoController : aliengoControllers) {
+      aliengoController->cycleUpdate(1.0 / 60.0);
     }
+    physicsManager_->stepPhysics(1.0 / 60.0);
+    timeSinceLastSimulation = 0.0;
   }
 
-  int DEFAULT_SCENE = 0;
-  int sceneID = sceneID_[DEFAULT_SCENE];
-  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   uint32_t visibles = 0;
-
-  for (auto& it : sceneGraph.getDrawableGroups()) {
+  for (auto& it : sceneGraph_->getDrawableGroups()) {
     // TODO: remove || true
     if (it.second.prepareForDraw(*renderCamera_) || true) {
-      visibles += renderCamera_->draw(it.second, frustumCullingEnabled_);
+      esp::gfx::RenderCamera::Flags flags;
+      if (frustumCullingEnabled_)
+        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      visibles += renderCamera_->draw(it.second, flags);
     }
   }
 
@@ -997,6 +1022,31 @@ void Viewer::drawEvent() {
     Mn::Matrix4 projM(renderCamera_->projectionMatrix());
 
     physicsManager_->debugDraw(projM * camM);
+  }
+
+  // draw picked object
+  if (objectPickingHelper_->isObjectPicked()) {
+    // setup blending function
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+    // rendering
+    esp::gfx::RenderCamera::Flags flags;
+    if (frustumCullingEnabled_) {
+      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+    }
+    renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+    // Neither the blend equation, nor the blend function is changed,
+    // so no need to restore the "blending" status before the imgui draw
+    /*
+    // The following is to make imgui work properly:
+    Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
+                                       Mn::GL::Renderer::BlendEquation::Add);
+    Mn::GL::Renderer::setBlendFunction(
+        Mn::GL::Renderer::BlendFunction::SourceAlpha,
+        Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
+    */
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
   }
 
   imgui_.newFrame();
@@ -1008,7 +1058,7 @@ void Viewer::drawEvent() {
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
-    uint32_t total = sceneGraph.getDrawables().size();
+    uint32_t total = sceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
     ImGui::End();
@@ -1035,6 +1085,7 @@ void Viewer::drawEvent() {
 
   /* Reset state. Only needed if you want to draw something else with
      different state after. */
+
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::ScissorTest);
@@ -1050,13 +1101,54 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   renderCamera_->setViewport(event.windowSize());
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
+
+  objectPickingHelper_->handleViewportChange(event.framebufferSize());
+}
+
+void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
+  for (auto& it : sceneGraph_->getDrawableGroups()) {
+    if (it.second.hasDrawable(objectId)) {
+      auto* pickedDrawable = it.second.getDrawable(objectId);
+      objectPickingHelper_->createPickedObjectVisualizer(pickedDrawable);
+      break;
+    }
+  }
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
+  if (event.button() == MouseEvent::Button::Right &&
+      (event.modifiers() & MouseEvent::Modifier::Shift)) {
+    // cannot use the default framebuffer, so setup another framebuffer,
+    // also, setup the color attachment for rendering, and remove the visualizer
+    // for the previously picked object
+    objectPickingHelper_->prepareToDraw();
+
+    // redraw the scene on the object picking framebuffer
+    esp::gfx::RenderCamera::Flags flags =
+        esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
+    if (frustumCullingEnabled_)
+      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+    for (auto& it : sceneGraph_->getDrawableGroups()) {
+      renderCamera_->draw(it.second, flags);
+    }
+
+    // Read the object Id
+    unsigned int pickedObject =
+        objectPickingHelper_->getObjectId(event.position(), windowSize());
+
+    // if an object is selected, create a visualizer
+    createPickedObjectVisualizer(pickedObject);
+    return;
+  }  // drawable selection
+
   if (event.button() == MouseEvent::Button::Left ||
       event.button() == MouseEvent::Button::Right) {
-    // TODO: get depth from buffer
-    Magnum::Vector3 clickPoint = unproject(event.position(), 1.0);
+    auto viewportPoint = event.position();
+    auto ray = renderCamera_->unproject(viewportPoint);
+    Corrade::Utility::Debug()
+        << "Ray: (org=" << ray.origin << ", dir=" << ray.direction << ")";
+
+    esp::physics::RaycastResults raycastResults = physicsManager_->castRay(ray);
 
     // create the clickNode primitive if not present
     if (clickNode_ == nullptr) {
@@ -1066,109 +1158,102 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       clickNode_->setScaling({0.1, 0.1, 0.1});
     }
 
-    // Bullet physics raycast
-    Magnum::Vector3 cast =
-        (clickPoint - renderCamera_->node().absoluteTranslation()).normalized();
     clickNode_->setTranslation(renderCamera_->node().absoluteTranslation() +
-                               cast * 1.0);
+                               ray.direction);
 
-    esp::physics::BulletPhysicsManager* bpm =
-        static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+    // ray hit a collision object, visualize this and determine the hit object
+    if (raycastResults.hasHits()) {
+      auto hitInfo = raycastResults.hits[0];  // first hit
+      clickNode_->setTranslation(hitInfo.point);
 
-    btCollisionWorld::AllHitsRayResultCallback hit =
-        bpm->castRay(renderCamera_->node().absoluteTranslation(), cast);
-    float best_fraction = 99999.0;
-    int hitID = esp::ID_UNDEFINED;
-    Magnum::Vector3 hitPoint;
-    int bestHitIx = esp::ID_UNDEFINED;
+      if (hitInfo.objectId != esp::ID_UNDEFINED) {
+        // we hit an non-stage collision object
 
-    for (int hitIx = 0; hitIx < hit.m_hitPointWorld.size(); hitIx++) {
-      if (hit.m_hitFractions.at(hitIx) < best_fraction) {
-        best_fraction = hit.m_hitFractions.at(hitIx);
-        clickNode_->setTranslation(
-            Magnum::Vector3{hit.m_hitPointWorld.at(hitIx)});
-        hitID = bpm->getObjectIDFromCollisionObject(
-            hit.m_collisionObjects.at(hitIx));
-        bestHitIx = hitIx;
-        hitPoint = Magnum::Vector3{hit.m_hitPointWorld.at(hitIx)};
-      }
-    }
+        esp::physics::BulletPhysicsManager* bpm =
+            static_cast<esp::physics::BulletPhysicsManager*>(
+                physicsManager_.get());
 
-    if (bestHitIx != esp::ID_UNDEFINED) {
-      Corrade::Utility::Debug() << " hitPoint = " << hitPoint;
-    }
-
-    // then check articulated objects
-    int hitArticulatedObjectId = esp::ID_UNDEFINED;
-    if (hitID == esp::ID_UNDEFINED && bestHitIx != esp::ID_UNDEFINED) {
-      for (auto id : bpm->getArticulatedObjectIds()) {
-        hitID = bpm->getLinkIDFromCollisionObject(
-            id, hit.m_collisionObjects.at(bestHitIx));
-        if (hitID != esp::ID_UNDEFINED) {
-          hitArticulatedObjectId = id;
-          break;
-        }
-      }
-    }
-
-    if (hitID != esp::ID_UNDEFINED) {
-      if (mouseInteractionMode == GRAB) {
-        if (hitArticulatedObjectId != esp::ID_UNDEFINED) {
-          if (event.button() == MouseEvent::Button::Right) {
-            mouseGrabber_ = std::make_unique<MouseArticulatedBaseGrabber>(
-                hitPoint,
-                (hitPoint - renderCamera_->node().translation()).length(),
-                hitArticulatedObjectId, bpm);
-          } else if (event.button() == MouseEvent::Button::Left) {
-            mouseGrabber_ = std::make_unique<MouseLinkGrabber>(
-                hitPoint,
-                (hitPoint - renderCamera_->node().translation()).length(),
-                hitArticulatedObjectId, hitID, bpm);
-          }
-        } else {
-          if (event.button() == MouseEvent::Button::Right) {
-            mouseGrabber_ = std::make_unique<MouseObjectKinematicGrabber>(
-                hitPoint,
-                (hitPoint - renderCamera_->node().translation()).length(),
-                hitID, bpm);
-          } else if (event.button() == MouseEvent::Button::Left) {
-            mouseGrabber_ = std::make_unique<MouseObjectGrabber>(
-                hitPoint,
-                (hitPoint - renderCamera_->node().translation()).length(),
-                hitID, bpm);
+        bool hitArticulatedObject = false;
+        // TODO: determine if this is true (link id?)
+        int hitArticulatedObjectId = esp::ID_UNDEFINED;
+        int hitArticulatedLinkIndex = esp::ID_UNDEFINED;
+        // TODO: get this info from link?
+        for (auto aoId : physicsManager_->getExistingArticulatedObjectIDs()) {
+          if (aoId == hitInfo.objectId) {
+            // TODO: grabbed the base link, do something with this
+          } else if (physicsManager_->getArticulatedObject(aoId)
+                         .objectIdToLinkId_.count(hitInfo.objectId) > 0) {
+            hitArticulatedObject = true;
+            hitArticulatedObjectId = aoId;
+            hitArticulatedLinkIndex =
+                physicsManager_->getArticulatedObject(aoId)
+                    .objectIdToLinkId_.at(hitInfo.objectId);
           }
         }
-      } else if (mouseInteractionMode == OPENCLOSE) {
-        if (hitArticulatedObjectId != esp::ID_UNDEFINED) {
-          Corrade::Utility::Debug()
-              << "OPENCLOSE: aoid = " << hitArticulatedObjectId
-              << ", linkId = " << hitID;
-          for (auto openable : openableObjects) {
-            if (openable.articulatedObjectId == hitArticulatedObjectId) {
-              if (openable.linkId == hitID) {
-                openable.openClose();
+
+        if (mouseInteractionMode == GRAB) {
+          if (hitArticulatedObject) {
+            if (event.button() == MouseEvent::Button::Right) {
+              mouseGrabber_ = std::make_unique<MouseArticulatedBaseGrabber>(
+                  hitInfo.point,
+                  (hitInfo.point - renderCamera_->node().translation())
+                      .length(),
+                  hitArticulatedObjectId, bpm);
+            } else if (event.button() == MouseEvent::Button::Left) {
+              mouseGrabber_ = std::make_unique<MouseLinkGrabber>(
+                  hitInfo.point,
+                  (hitInfo.point - renderCamera_->node().translation())
+                      .length(),
+                  hitArticulatedObjectId, hitArticulatedLinkIndex, bpm);
+            }
+          } else {
+            if (event.button() == MouseEvent::Button::Right) {
+              mouseGrabber_ = std::make_unique<MouseObjectKinematicGrabber>(
+                  hitInfo.point,
+                  (hitInfo.point - renderCamera_->node().translation())
+                      .length(),
+                  hitInfo.objectId, bpm);
+            } else if (event.button() == MouseEvent::Button::Left) {
+              mouseGrabber_ = std::make_unique<MouseObjectGrabber>(
+                  hitInfo.point,
+                  (hitInfo.point - renderCamera_->node().translation())
+                      .length(),
+                  hitInfo.objectId, bpm);
+            }
+          }
+        } else if (mouseInteractionMode == OPENCLOSE) {
+          if (hitArticulatedObject) {
+            Corrade::Utility::Debug()
+                << "OPENCLOSE: aoid = " << hitArticulatedObjectId
+                << ", linkId = " << hitInfo.objectId;
+            for (auto openable : openableObjects) {
+              if (openable.articulatedObjectId == hitArticulatedObjectId) {
+                if (openable.linkId == hitArticulatedLinkIndex) {
+                  openable.openClose();
+                }
+              }
+            }
+            for (auto& locobotController : locobotControllers) {
+              if (locobotController->objectId == hitArticulatedObjectId) {
+                locobotController->toggle();
+              }
+            }
+            for (auto& aliengoController : aliengoControllers) {
+              if (aliengoController->objectId == hitArticulatedObjectId) {
+                aliengoController->toggle();
               }
             }
           }
-          for (auto& locobotController : locobotControllers) {
-            if (locobotController->objectId == hitArticulatedObjectId) {
-              locobotController->toggle();
-            }
-          }
-          for (auto& aliengoController : aliengoControllers) {
-            if (aliengoController->objectId == hitArticulatedObjectId) {
-              aliengoController->toggle();
-            }
-          }
         }
-      }
-    }
+      }  // end if not hit stage
+    }    // end raycastResults.hasHits()
     if (mouseInteractionMode == THROW) {
-      throwSphere(cast * 10);
+      throwSphere(ray.direction * 10);
     }
   }  // end MouseEvent::Button::Left || Right
 
   event.setAccepted();
+  redraw();
 }
 
 int mouseDofDelta = 0;
@@ -1203,12 +1288,10 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
 
   if (mouseGrabber_ != nullptr) {
     // adjust the depth
+    auto ray = renderCamera_->unproject(event.position());
     mouseGrabber_->gripDepth += event.offset().y() * 0.01;
-    Magnum::Vector3 point = unproject(event.position(), 1.0);
-    Magnum::Vector3 cast =
-        (point - renderCamera_->node().absoluteTranslation()).normalized();
     mouseGrabber_->target = renderCamera_->node().absoluteTranslation() +
-                            cast * mouseGrabber_->gripDepth;
+                            ray.direction * mouseGrabber_->gripDepth;
     mouseGrabber_->updatePivotB(mouseGrabber_->target);
     clickNode_->setTranslation(mouseGrabber_->target);
   } else {
@@ -1227,11 +1310,9 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   if (mouseGrabber_ != nullptr) {
-    Magnum::Vector3 point = unproject(event.position(), 1.0);
-    Magnum::Vector3 cast =
-        (point - renderCamera_->node().absoluteTranslation()).normalized();
+    auto ray = renderCamera_->unproject(event.position());
     mouseGrabber_->target = renderCamera_->node().absoluteTranslation() +
-                            cast * mouseGrabber_->gripDepth;
+                            ray.direction * mouseGrabber_->gripDepth;
     mouseGrabber_->updatePivotB(mouseGrabber_->target);
     clickNode_->setTranslation(mouseGrabber_->target);
   } else if (mouseInteractionMode == DOF) {
@@ -1268,25 +1349,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   event.setAccepted();
 }
 
-Mn::Vector3 Viewer::unproject(const Mn::Vector2i& windowPosition,
-                              float depth) const {
-  /* We have to take window size, not framebuffer size, since the position is
-     in window coordinates and the two can be different on HiDPI systems */
-  const Mn::Vector2i viewSize = windowSize();
-  const Mn::Vector2i viewPosition{windowPosition.x(),
-                                  viewSize.y() - windowPosition.y() - 1};
-  const Mn::Vector3 in{
-      2 * Mn::Vector2{viewPosition} / Mn::Vector2{viewSize} - Mn::Vector2{1.0f},
-      depth};
-
-  // global
-  return (renderCamera_->node().absoluteTransformationMatrix() *
-          renderCamera_->projectionMatrix().inverted())
-      .transformPoint(in);
-  // camera local
-  // return renderCamera_->projectionMatrix().inverted().transformPoint(in);
-}
-
+// NOTE: Mouse + shift is to select object on the screen!!
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   bool agentMoved = false;
@@ -1657,7 +1720,7 @@ void Viewer::setupDemoFurniture() {
       parsedObjectIds.push_back(
           resourceManager_.getObjectAttributesManager()
               ->createFileBasedAttributesTemplate(filename)
-              ->getObjectTemplateID());
+              ->getID());
     }
     std::vector<std::pair<int, Mn::Vector3>> objectPositions = {
         {0, {2.2311, -0.425956, 3.58849}},      // lamp 1

@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-import quaternion
+import quaternion  # noqa: F401
 
 import habitat_sim
 import habitat_sim.errors
@@ -61,7 +61,7 @@ def test_change_state():
         state.rotation *= quat_from_angle_axis(
             np.random.uniform(0, 2 * np.pi), np.array([0.0, 1.0, 0.0])
         )
-        for k, v in state.sensor_states.items():
+        for v in state.sensor_states.values():
             v.position += np.random.uniform(-1, 1, size=3)
             v.rotation *= quat_from_angle_axis(
                 np.random.uniform(0, 2 * np.pi), np.array([1.0, 1.0, 1.0])

@@ -1,21 +1,17 @@
 import collections
+import math
 import random
 
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from scipy import stats
 
 
 def create_mask_filter(labels, extractor):
     instance_id_to_name = extractor.instance_id_to_name
     labels_we_care_about = set(
-        [
-            instance_id
-            for instance_id, name in instance_id_to_name.items()
-            if name in labels
-        ]
+        instance_id
+        for instance_id, name in instance_id_to_name.items()
+        if name in labels
     )
 
     # Function that filters out instance of objects we do not care about
@@ -72,11 +68,11 @@ class InstanceVisualizer:
         ]  # Make sure background (class 0) stays all the same color
 
     def visualize_instance_segmentation_output(
-        self, max_num_outputs=float("inf"), segment_type="instance"
+        self, max_num_outputs=math.inf, segment_type="instance"
     ):
         def visual_filter(masks, labels, segment_type):
             masks = masks.astype(int)
-            H, W = masks.shape[2:]
+            # H, W = masks.shape[2:]
 
             # Instead of T/F for each mask, use Class_label/0
             for i, mask in enumerate(masks):
@@ -92,7 +88,7 @@ class InstanceVisualizer:
             visuals = {}
             num_out_so_far = 1
             for images, targets in self.dataloader:
-                images = list(img.to(self.device) for img in images)
+                images = [img.to(self.device) for img in images]
                 targets = [
                     {k: v.to(self.device) for k, v in t.items()} for t in targets
                 ]
