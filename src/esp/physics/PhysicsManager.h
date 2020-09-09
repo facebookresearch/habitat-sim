@@ -167,11 +167,10 @@ class PhysicsManager {
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
+   * the @ref esp::managers::ObjectAttributesManager.
    *  @anchor addObject_string
    *  @param configFile The filename of the object's physical properties file
-   * used as the key to query @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_
+   * used as the key to query @ref esp::managers::ObjectAttributesManager.
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
    *  @param attachmentNode If supplied, attach the new physical object to an
@@ -186,10 +185,9 @@ class PhysicsManager {
                     assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::assets::ResourceManager::physicsObjectLibrary_ by object
-   * library index.
-   *  @param objectLibIndex The index of the object's template in @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_
+   * the @ref esp::managers::ObjectAttributesManager by template handle.
+   *  @param objectLibId The ID of the object's template in @ref
+   * esp::managers::ObjectAttributesManager
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
    *  @param attachmentNode If supplied, attach the new physical object to an
@@ -197,7 +195,7 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const int objectLibIndex,
+  int addObject(const int objectLibId,
                 DrawableGroup* drawables,
                 scene::SceneNode* attachmentNode = nullptr,
                 const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
@@ -853,7 +851,7 @@ class PhysicsManager {
   };
 
   /**
-   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
    * belonging to an object.
    *
    * @param objectID The object ID and key identifying the object in @ref

@@ -54,13 +54,13 @@ bool PhysicsManager::addStageFinalize(const std::string& handle) {
   return sceneSuccess;
 }
 
-int PhysicsManager::addObject(const int objectLibIndex,
+int PhysicsManager::addObject(const int objectLibId,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
   const std::string& configHandle =
       resourceManager_.getObjectAttributesManager()->getTemplateHandleByID(
-          objectLibIndex);
+          objectLibId);
 
   return addObject(configHandle, drawables, attachmentNode, lightSetup);
 }

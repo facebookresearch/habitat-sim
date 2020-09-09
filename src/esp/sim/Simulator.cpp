@@ -300,7 +300,7 @@ bool operator!=(const SimulatorConfiguration& a,
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(int objectLibIndex,
+int Simulator::addObject(int objectLibId,
                          scene::SceneNode* attachmentNode,
                          const std::string& lightSetupKey,
                          int sceneID) {
@@ -309,8 +309,8 @@ int Simulator::addObject(int objectLibIndex,
     // to own reference to a sceneGraph to avoid this.
     auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
-    return physicsManager_->addObject(objectLibIndex, &drawables,
-                                      attachmentNode, lightSetupKey);
+    return physicsManager_->addObject(objectLibId, &drawables, attachmentNode,
+                                      lightSetupKey);
   }
   return ID_UNDEFINED;
 }
