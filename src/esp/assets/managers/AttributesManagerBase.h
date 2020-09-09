@@ -917,10 +917,10 @@ class AttributesManager {
 // Class Template Method Definitions
 
 template <class T>
-std::shared_ptr<T> AttributesManager<T>::createObjectAttributesFromJson(
+auto AttributesManager<T>::createObjectAttributesFromJson(
     const std::string& configFilename,
-    const io::JsonDocument& jsonDoc) {
-  auto attributes = this->initNewAttribsInternal(configFilename);
+    const io::JsonDocument& jsonDoc) -> AttribsPtr {
+  AttribsPtr attributes = this->initNewAttribsInternal(configFilename);
 
   using std::placeholders::_1;
 
@@ -1077,9 +1077,9 @@ bool AttributesManager<T>::setTemplateLock(const std::string& templateHandle,
 }  // AttributesManager::setTemplateLock
 
 template <class T>
-std::vector<std::shared_ptr<T>>
-AttributesManager<T>::removeTemplatesBySubstring(const std::string& subStr,
-                                                 bool contains) {
+auto AttributesManager<T>::removeTemplatesBySubstring(const std::string& subStr,
+                                                      bool contains)
+    -> std::vector<AttribsPtr> {
   std::vector<AttribsPtr> res;
   // get all handles that match query elements first
   std::vector<std::string> handles =
@@ -1095,9 +1095,9 @@ AttributesManager<T>::removeTemplatesBySubstring(const std::string& subStr,
 }  // removeAllTemplates
 
 template <class T>
-std::shared_ptr<T> AttributesManager<T>::removeTemplateInternal(
+auto AttributesManager<T>::removeTemplateInternal(
     const std::string& templateHandle,
-    const std::string& sourceStr) {
+    const std::string& sourceStr) -> AttribsPtr {
   if (!checkExistsWithMessage(templateHandle, sourceStr)) {
     LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
               << " template " << templateHandle << " : Does not exist.";
