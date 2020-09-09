@@ -19,12 +19,13 @@ namespace assets {
 
 namespace managers {
 class PhysicsAttributesManager
-    : public AttributesManager<Attrs::PhysicsManagerAttributes::ptr> {
+    : public AttributesManager<Attrs::PhysicsManagerAttributes> {
  public:
   PhysicsAttributesManager(assets::ResourceManager& resourceManager,
                            ObjectAttributesManager::ptr objectAttributesMgr)
-      : AttributesManager<Attrs::PhysicsManagerAttributes::ptr>::
-            AttributesManager(resourceManager, "Physics Manager"),
+      : AttributesManager<Attrs::PhysicsManagerAttributes>::AttributesManager(
+            resourceManager,
+            "Physics Manager"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }

@@ -41,9 +41,14 @@ namespace Attrs = esp::assets::attributes;
  * references
  */
 
-template <class AttribsPtr>
+template <class T>
 class AttributesManager {
  public:
+  static_assert(std::is_base_of<Attrs::AbstractAttributes, T>::value,
+                "Managed type must be derived from AbstractAttributes");
+
+  typedef std::shared_ptr<T> AttribsPtr;
+
   AttributesManager(assets::ResourceManager& resourceManager,
                     const std::string& attrType)
       : resourceManager_(resourceManager), attrType_(attrType) {}
@@ -854,7 +859,7 @@ class AttributesManager {
    * defined in @ref AssetAttributesManager::PrimNames3D.)
    */
   typedef std::map<std::string,
-                   AttribsPtr (AttributesManager<AttribsPtr>::*)(AttribsPtr&)>
+                   AttribsPtr (AttributesManager<T>::*)(AttribsPtr&)>
       Map_Of_CopyCtors;
 
   /**
@@ -911,11 +916,11 @@ class AttributesManager {
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class AttribsPtr>
-AttribsPtr AttributesManager<AttribsPtr>::createObjectAttributesFromJson(
+template <class T>
+auto AttributesManager<T>::createObjectAttributesFromJson(
     const std::string& configFilename,
-    const io::JsonDocument& jsonDoc) {
-  auto attributes = this->initNewAttribsInternal(configFilename);
+    const io::JsonDocument& jsonDoc) -> AttribsPtr {
+  AttribsPtr attributes = this->initNewAttribsInternal(configFilename);
 
   using std::placeholders::_1;
 
@@ -998,7 +1003,7 @@ AttribsPtr AttributesManager<AttribsPtr>::createObjectAttributesFromJson(
 
 template <class T>
 bool AttributesManager<T>::setJSONAssetHandleAndType(
-    T attributes,
+    AttribsPtr attributes,
     const io::JsonDocument& jsonDoc,
     const char* jsonMeshTypeTag,
     const char* jsonMeshHandleTag,
@@ -1052,10 +1057,9 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
   return false;
 }  // AttributesManager<AttribsPtr>::setAssetHandleAndType
 
-template <class AttribsPtr>
-bool AttributesManager<AttribsPtr>::setTemplateLock(
-    const std::string& templateHandle,
-    bool lock) {
+template <class T>
+bool AttributesManager<T>::setTemplateLock(const std::string& templateHandle,
+                                           bool lock) {
   // if template does not currently exist then do not attempt to modify its
   // lock state
   if (!checkExistsWithMessage(templateHandle,
@@ -1072,11 +1076,10 @@ bool AttributesManager<AttribsPtr>::setTemplateLock(
   return true;
 }  // AttributesManager::setTemplateLock
 
-template <class AttribsPtr>
-std::vector<AttribsPtr>
-AttributesManager<AttribsPtr>::removeTemplatesBySubstring(
-    const std::string& subStr,
-    bool contains) {
+template <class T>
+auto AttributesManager<T>::removeTemplatesBySubstring(const std::string& subStr,
+                                                      bool contains)
+    -> std::vector<AttribsPtr> {
   std::vector<AttribsPtr> res;
   // get all handles that match query elements first
   std::vector<std::string> handles =
@@ -1092,16 +1095,16 @@ AttributesManager<AttribsPtr>::removeTemplatesBySubstring(
 }  // removeAllTemplates
 
 template <class T>
-T AttributesManager<T>::removeTemplateInternal(
+auto AttributesManager<T>::removeTemplateInternal(
     const std::string& templateHandle,
-    const std::string& sourceStr) {
+    const std::string& sourceStr) -> AttribsPtr {
   if (!checkExistsWithMessage(templateHandle, sourceStr)) {
     LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
               << " template " << templateHandle << " : Does not exist.";
     return nullptr;
   }
 
-  T attribsTemplate = getTemplateCopyByHandle(templateHandle);
+  auto attribsTemplate = getTemplateCopyByHandle(templateHandle);
   std::string msg;
   if (this->undeletableTemplateNames_.count(templateHandle) > 0) {
     msg = "Required Undeletable Template";
