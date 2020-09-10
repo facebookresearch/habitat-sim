@@ -20,8 +20,8 @@
 	path = src/deps/pybind11
 	url = https://github.com/pybind/pybind11.git
 [submodule "src/deps/eigen-git-mirror"]
-	path = src/deps/eigen-git-mirror
-	url = https://github.com/eigenteam/eigen-git-mirror
+	path = src/deps/eigen
+	url = https://gitlab.com/libeigen/eigen.git
 [submodule "src/deps/assimp"]
 	path = src/deps/assimp
 	url = https://github.com/assimp/assimp
