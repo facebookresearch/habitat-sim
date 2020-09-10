@@ -229,7 +229,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
       best_area = area;
     }
   }
-
+  ASSERT(best_bottom_dir.size() >= 2);
   const auto T_w2b =
       quatf::FromTwoVectors(vec3f(best_bottom_dir[0], best_bottom_dir[1], 0),
                             vec3f::UnitX()) *
