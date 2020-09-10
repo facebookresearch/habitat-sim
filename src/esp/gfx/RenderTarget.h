@@ -48,13 +48,19 @@ class RenderTarget {
                const Magnum::Vector2& depthUnprojection)
       : RenderTarget{size, depthUnprojection, nullptr} {};
 
-  ~RenderTarget() { LOG(INFO) << "Deconstructing RenderTarget"; }
+  ~RenderTarget() {}
 
   /**
    * @brief Called before any draw calls that target this RenderTarget
    * Clears the framebuffer and binds it
    */
   void renderEnter();
+
+  /**
+   * @brief Prepare for another render pass (e.g., to bind the framebuffer).
+   * Compared to @renderEnter, it will NOT clear the framebuffer.
+   */
+  void renderReEnter();
 
   /**
    * @brief Called after any draw calls that target this RenderTarget

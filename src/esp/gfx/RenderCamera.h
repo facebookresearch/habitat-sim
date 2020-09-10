@@ -123,7 +123,16 @@ class RenderCamera : public MagnumCamera {
    */
   esp::geo::Ray unproject(const Mn::Vector2i& viewportPosition);
 
+  /**
+   * @brief Query the cached number of Drawables visible after frustum culling
+   * for the most recent render pass.
+   */
+  size_t getPreviousNumVisibileDrawables() const {
+    return previousNumVisibleDrawables_;
+  }
+
  protected:
+  size_t previousNumVisibleDrawables_ = 0;
   bool useDrawableIds_ = false;
   ESP_SMART_POINTERS(RenderCamera)
 };

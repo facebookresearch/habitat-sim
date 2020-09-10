@@ -115,6 +115,8 @@ struct RenderTarget::Impl {
     framebuffer_.bind();
   }
 
+  void renderReEnter() { framebuffer_.bind(); }
+
   void renderExit() {}
 
   void blitRgbaToDefault() {
@@ -258,6 +260,10 @@ RenderTarget::RenderTarget(const Mn::Vector2i& size,
 
 void RenderTarget::renderEnter() {
   pimpl_->renderEnter();
+}
+
+void RenderTarget::renderReEnter() {
+  pimpl_->renderReEnter();
 }
 
 void RenderTarget::renderExit() {

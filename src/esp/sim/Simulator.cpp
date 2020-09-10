@@ -4,11 +4,13 @@
 
 #include "Simulator.h"
 
+#include <memory>
 #include <string>
 
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/GL/Context.h>
 
 #include "esp/assets/attributes/AttributesBase.h"
 #include "esp/core/esp.h"
@@ -21,6 +23,7 @@
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
+#include "esp/sensor/VisualSensor.h"
 
 namespace Cr = Corrade;
 
@@ -148,7 +151,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   sceneID_.push_back(activeSceneID_);
 
   if (config_.createRenderer) {
-    if (!context_) {
+    /* When creating a viewer based app, there is no need to create a
+    WindowlessContext since a (windowed) context already exists. */
+    if (!context_ && !Magnum::GL::Context::hasCurrent()) {
       context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
     }
 
@@ -300,10 +305,10 @@ bool operator!=(const SimulatorConfiguration& a,
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(int objectLibId,
+int Simulator::addObject(const int objectLibId,
                          scene::SceneNode* attachmentNode,
                          const std::string& lightSetupKey,
-                         int sceneID) {
+                         const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
@@ -318,7 +323,7 @@ int Simulator::addObject(int objectLibId,
 int Simulator::addObjectByHandle(const std::string& objectLibHandle,
                                  scene::SceneNode* attachmentNode,
                                  const std::string& lightSetupKey,
-                                 int sceneID) {
+                                 const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
@@ -331,7 +336,7 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
 }
 
 const Attrs::ObjectAttributes::cptr Simulator::getObjectInitializationTemplate(
-    int objectId,
+    const int objectId,
     const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectInitAttributes(objectId);
@@ -398,6 +403,15 @@ void Simulator::applyForce(const Magnum::Vector3& force,
                            const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyForce(objectID, force, relPos);
+  }
+}
+
+void Simulator::applyImpulse(const Magnum::Vector3& impulse,
+                             const Magnum::Vector3& relPos,
+                             const int objectID,
+                             const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->applyImpulse(objectID, impulse, relPos);
   }
 }
 
@@ -733,7 +747,7 @@ agent::Agent::ptr Simulator::addAgent(
   return addAgent(agentConfig, getActiveSceneGraph().getRootNode());
 }
 
-agent::Agent::ptr Simulator::getAgent(int agentId) {
+agent::Agent::ptr Simulator::getAgent(const int agentId) {
   ASSERT(0 <= agentId && agentId < agents_.size());
   return agents_[agentId];
 }
@@ -745,8 +759,22 @@ nav::PathFinder::ptr Simulator::getPathFinder() {
 void Simulator::setPathFinder(nav::PathFinder::ptr pathfinder) {
   pathfinder_ = pathfinder;
 }
+gfx::RenderTarget* Simulator::getRenderTarget(int agentId,
+                                              const std::string& sensorId) {
+  agent::Agent::ptr ag = getAgent(agentId);
 
-bool Simulator::displayObservation(int agentId, const std::string& sensorId) {
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr && sensor->isVisualSensor()) {
+      return &(std::static_pointer_cast<sensor::VisualSensor>(sensor)
+                   ->renderTarget());
+    }
+  }
+  return nullptr;
+}
+
+bool Simulator::displayObservation(const int agentId,
+                                   const std::string& sensorId) {
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
@@ -758,7 +786,21 @@ bool Simulator::displayObservation(int agentId, const std::string& sensorId) {
   return false;
 }
 
-bool Simulator::getAgentObservation(int agentId,
+bool Simulator::drawObservation(const int agentId,
+                                const std::string& sensorId) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr) {
+      return std::static_pointer_cast<sensor::VisualSensor>(sensor)
+          ->drawObservation(*this);
+    }
+  }
+  return false;
+}
+
+bool Simulator::getAgentObservation(const int agentId,
                                     const std::string& sensorId,
                                     sensor::Observation& observation) {
   agent::Agent::ptr ag = getAgent(agentId);
@@ -772,7 +814,7 @@ bool Simulator::getAgentObservation(int agentId,
 }
 
 int Simulator::getAgentObservations(
-    int agentId,
+    const int agentId,
     std::map<std::string, sensor::Observation>& observations) {
   observations.clear();
   agent::Agent::ptr ag = getAgent(agentId);
@@ -789,7 +831,7 @@ int Simulator::getAgentObservations(
   return observations.size();
 }
 
-bool Simulator::getAgentObservationSpace(int agentId,
+bool Simulator::getAgentObservationSpace(const int agentId,
                                          const std::string& sensorId,
                                          sensor::ObservationSpace& space) {
   agent::Agent::ptr ag = getAgent(agentId);
@@ -803,7 +845,7 @@ bool Simulator::getAgentObservationSpace(int agentId,
 }
 
 int Simulator::getAgentObservationSpaces(
-    int agentId,
+    const int agentId,
     std::map<std::string, sensor::ObservationSpace>& spaces) {
   spaces.clear();
   agent::Agent::ptr ag = getAgent(agentId);
@@ -828,9 +870,9 @@ gfx::LightSetup Simulator::getLightSetup(const std::string& key) {
   return *resourceManager_->getLightSetup(key);
 }
 
-void Simulator::setObjectLightSetup(int objectID,
+void Simulator::setObjectLightSetup(const int objectID,
                                     const std::string& lightSetupKey,
-                                    int sceneID) {
+                                    const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     gfx::setLightSetupForSubTree(physicsManager_->getObjectSceneNode(objectID),
                                  lightSetupKey);

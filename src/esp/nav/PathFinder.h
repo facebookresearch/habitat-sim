@@ -152,6 +152,8 @@ struct NavMeshSettings {
     filterWalkableLowHeightSpans = true;
   }
 
+  NavMeshSettings() { setDefaults(); }
+
   ESP_SMART_POINTERS(NavMeshSettings)
 };
 
