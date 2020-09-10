@@ -172,7 +172,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
         top_dir = vec2f(-1, 0), bottom_dir = vec2f(1, 0);
 
   float best_area = 1e10;
-  vec2f best_bottom_dir;
+  vec2f best_bottom_dir = vec2f(NAN, NAN);
   for (size_t i = 0; i < hull.size(); ++i) {
     const std::vector<float> angles(
         {std::acos(left_dir.dot(edge_dirs[left_idx])),
