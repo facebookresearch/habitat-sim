@@ -135,6 +135,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
   }
 
   const auto hull = convexHull2D(in_plane_points);
+  ASSERT(hull.size() > 0);
 
   std::vector<vec2f> edge_dirs;
   for (size_t i = 0; i < hull.size(); ++i) {
