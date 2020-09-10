@@ -33,7 +33,6 @@
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/gfx/configure.h"
 #include "esp/io/URDFParser.h"
 #include "esp/physics/configure.h"
 #include "esp/scene/SceneManager.h"

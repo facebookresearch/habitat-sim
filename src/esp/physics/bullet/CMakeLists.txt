@@ -6,7 +6,6 @@ add_library(
   BulletArticulatedObject.h
   BulletBase.cpp
   BulletBase.h
-  BulletBase.h
   BulletPhysicsManager.cpp
   BulletPhysicsManager.h
   BulletRigidObject.cpp

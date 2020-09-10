@@ -23,7 +23,7 @@ enum class LightPositionModel {
   OBJECT = 2,
 };
 
-/** @brief Contains a single light's information */
+/** @brief Contains a single light's information. */
 struct LightInfo {
   Magnum::Vector3 position;
   Magnum::Color4 color{1};
@@ -33,6 +33,7 @@ struct LightInfo {
 bool operator==(const LightInfo& a, const LightInfo& b);
 bool operator!=(const LightInfo& a, const LightInfo& b);
 
+//! A set of LightInfos.
 using LightSetup = std::vector<LightInfo>;
 
 /**

@@ -17,10 +17,10 @@ namespace managers {
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
-    : public AttributesManager<Attrs::ObjectAttributes::ptr> {
+    : public AttributesManager<Attrs::ObjectAttributes> {
  public:
   ObjectAttributesManager(assets::ResourceManager& resourceManager)
-      : AttributesManager<Attrs::ObjectAttributes::ptr>::AttributesManager(
+      : AttributesManager<Attrs::ObjectAttributes>::AttributesManager(
             resourceManager,
             "Object") {
     buildCtorFuncPtrMaps();
