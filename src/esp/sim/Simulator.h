@@ -5,6 +5,7 @@
 #ifndef ESP_SIM_SIMULATOR_H_
 #define ESP_SIM_SIMULATOR_H_
 
+#include <Corrade/Utility/Assert.h>
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/assets/managers/AssetAttributesManager.h"
@@ -113,9 +114,8 @@ class Simulator {
    * --headless mode on linux
    */
   int gpuDevice() const {
-    if (context_ == nullptr) {
-      return 0;
-    }
+    CORRADE_ASSERT(context_ != nullptr,
+                   "Simulator::gpuDevice: no OpenGL context.", 0);
     return context_->gpuDevice();
   }
 
