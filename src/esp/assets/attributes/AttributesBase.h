@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
-#define ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
+#ifndef ESP_ASSETS_ATTRIBUTES_ATTRIBUTESBASE_H_
+#define ESP_ASSETS_ATTRIBUTES_ATTRIBUTESBASE_H_
 
 #include "esp/core/Configuration.h"
 
@@ -85,4 +85,4 @@ class AbstractAttributes : public esp::core::Configuration {
 }  // namespace assets
 }  // namespace esp
 
-#endif  // ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
+#endif  // ESP_ASSETS_ATTRIBUTES_ATTRIBUTESBASE_H_
