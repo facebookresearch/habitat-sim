@@ -195,7 +195,6 @@ bool ResourceManager::loadStage(
   // collision mesh next
   bool renderMeshSuccess =
       loadStageInternal(renderInfo,         // AssetInfo
-                        nullptr,            // physics manager
                         &rootNode,          // parent scene node
                         &drawables,         //  drawable group
                         true,               // compute Absolute AABBs or not
@@ -208,12 +207,14 @@ bool ResourceManager::loadStage(
            "Aborting scene initialization.";
     return false;
   }
+  // declare mesh group variable
+  std::vector<CollisionMeshData> meshGroup;
+  AssetInfo& infoToUse = renderInfo;
   if (assetInfoMap.count("collision")) {
     AssetInfo colInfo = assetInfoMap.at("collision");
     // should this be checked to make sure we do not reload?
     bool collisionMeshSuccess =
         loadStageInternal(colInfo,            // AssetInfo
-                          _physicsManager,    // physics manager
                           nullptr,            // parent scene node
                           nullptr,            // drawable group
                           false,              // compute absolute AABBs or not
@@ -222,57 +223,37 @@ bool ResourceManager::loadStage(
 
     if (!collisionMeshSuccess) {
       LOG(ERROR) << " ResourceManager::loadStage : Stage collision mesh "
-                    "load failed, "
-                    "Aborting scene initialization.";
+                    "load failed.  Aborting scene initialization.";
       return false;
-    } else {
-      // if we have a collision mesh, and it does not exist already as a
-      // collision object, add it
-      if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
-        std::vector<CollisionMeshData> meshGroup;
-        if (collisionMeshGroups_.count(colInfo.filepath) == 0) {
-          //! Collect collision mesh group
-          bool colMeshGroupSuccess = false;
-          if (colInfo.type == AssetType::INSTANCE_MESH) {
-            // PLY Instance mesh
-            colMeshGroupSuccess =
-                buildStageCollisionMeshGroup<GenericInstanceMeshData>(
-                    colInfo.filepath, meshGroup);
-          } else if (colInfo.type == AssetType::MP3D_MESH ||
-                     colInfo.type == AssetType::UNKNOWN) {
-            // GLB Mesh
-            colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
-                colInfo.filepath, meshGroup);
-          }
-          // TODO : PTEX collision support
+    }
+    // if we have a collision mesh, and it does not exist already as a
+    // collision object, add it
+    if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
+      infoToUse = colInfo;
+    }  // if not colInfo.filepath.compare(EMPTY_SCENE)
+  }    // if collision mesh desired
+  // build the appropriate mesh groups, either for the collision mesh, or, if
+  // the collision mesh is empty scene
 
-          // failure during build of collision mesh group
-          if (!colMeshGroupSuccess) {
-            LOG(ERROR) << "ResourceManager::loadStage : Stage "
-                       << colInfo.filepath
-                       << " Collision mesh load failed. Aborting scene "
-                          "initialization.";
-            return false;
-          }
-          //! Add scene meshgroup to collision mesh groups
-          collisionMeshGroups_.emplace(colInfo.filepath, meshGroup);
-        } else {
-          // collision meshGroup already exists from prior load
-          meshGroup = collisionMeshGroups_.at(colInfo.filepath);
-        }
-        //! Add to physics manager
-        bool sceneSuccess =
-            _physicsManager->addStage(stageAttributes->getHandle(), meshGroup);
-        if (!sceneSuccess) {
-          LOG(ERROR)
-              << "ResourceManager::loadStage : Adding Stage "
-              << colInfo.filepath
-              << " to PhysicsManager failed. Aborting scene initialization.";
-          return false;
-        }
-      }  // if not empty collision scene
-    }    // if collisionMeshSuccess
-  }      // if collision mesh desired
+  if ((_physicsManager != nullptr) &&
+      (infoToUse.filepath.compare(EMPTY_SCENE) != 0)) {
+    bool success = buildMeshGroups(infoToUse, meshGroup);
+    if (!success) {
+      return false;
+    }
+    //! Add to physics manager - will only be null for certain tests
+    // Either add with pre-built meshGroup if collision assets are loaded
+    // or empty vector for mesh group - this should only be the case if
+    // we are using None-type physicsManager.
+    bool sceneSuccess =
+        _physicsManager->addStage(stageAttributes->getHandle(), meshGroup);
+    if (!sceneSuccess) {
+      LOG(ERROR) << "ResourceManager::loadStage : Adding Stage "
+                 << stageAttributes->getHandle()
+                 << " to PhysicsManager failed. Aborting scene initialization.";
+      return false;
+    }
+  }
 
   bool semanticStageSuccess = false;
   // set equal to current Simulator::activeSemanticSceneID_ value
@@ -296,7 +277,6 @@ bool ResourceManager::loadStage(
 
       semanticStageSuccess = loadStageInternal(
           semanticInfo,          // AssetInfo
-          nullptr,               // physics manager
           &semanticRootNode,     // parent scene node
           &semanticDrawables,    // drawable group
           computeSemanticAABBs,  // compute absolute AABBs or not
@@ -326,6 +306,41 @@ bool ResourceManager::loadStage(
 
   return true;
 }  // ResourceManager::loadScene
+
+bool ResourceManager::buildMeshGroups(
+    const AssetInfo& info,
+    std::vector<CollisionMeshData>& meshGroup) {
+  if (collisionMeshGroups_.count(info.filepath) == 0) {
+    //! Collect collision mesh group
+    bool colMeshGroupSuccess = false;
+    if (info.type == AssetType::INSTANCE_MESH) {
+      // PLY Instance mesh
+      colMeshGroupSuccess =
+          buildStageCollisionMeshGroup<GenericInstanceMeshData>(info.filepath,
+                                                                meshGroup);
+    } else if (info.type == AssetType::MP3D_MESH ||
+               info.type == AssetType::UNKNOWN) {
+      // GLB Mesh
+      colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
+          info.filepath, meshGroup);
+    }
+    // TODO : PTEX collision support
+
+    // failure during build of collision mesh group
+    if (!colMeshGroupSuccess) {
+      LOG(ERROR) << "ResourceManager::loadStage : Stage " << info.filepath
+                 << " Collision mesh load failed. Aborting scene "
+                    "initialization.";
+      return false;
+    }
+    //! Add scene meshgroup to collision mesh groups
+    collisionMeshGroups_.emplace(info.filepath, meshGroup);
+  } else {
+    // collision meshGroup already exists from prior load
+    meshGroup = collisionMeshGroups_.at(info.filepath);
+  }
+  return true;
+}  // ResourceManager::buildMeshGroups
 
 std::map<std::string, AssetInfo>
 ResourceManager::createStageAssetInfosFromAttributes(
@@ -400,7 +415,6 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
 
 bool ResourceManager::loadStageInternal(
     const AssetInfo& info,
-    std::shared_ptr<physics::PhysicsManager> _physicsManager,
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs /*  = false */,

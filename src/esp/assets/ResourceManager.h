@@ -627,14 +627,23 @@ class ResourceManager {
    * @param lightSetup The @ref LightSetup key that will be used
    * for the loaded asset.
    */
-  bool loadStageInternal(
-      const AssetInfo& info,
-      std::shared_ptr<physics::PhysicsManager> _physicsManager,
-      scene::SceneNode* parent = nullptr,
-      DrawableGroup* drawables = nullptr,
-      bool computeAbsoluteAABBs = false,
-      bool splitSemanticMesh = true,
-      const Mn::ResourceKey& lightSetup = Mn::ResourceKey{NO_LIGHT_KEY});
+  bool loadStageInternal(const AssetInfo& info,
+                         scene::SceneNode* parent = nullptr,
+                         DrawableGroup* drawables = nullptr,
+                         bool computeAbsoluteAABBs = false,
+                         bool splitSemanticMesh = true,
+                         const Mn::ResourceKey& lightSetup = Mn::ResourceKey{
+                             NO_LIGHT_KEY});
+
+  /**
+   * @brief Builds the appropriate collision mesh groups for the passed
+   * assetInfo, and adds it to the @ref collisionMeshGroup map.
+   * @param info The @ref AssetInfo for the mesh, already parsed from a file.
+   * @param meshGroup The constructed @ref meshGroup
+   * @return Whether the meshgroup was successfully built or not
+   */
+  bool buildMeshGroups(const AssetInfo& info,
+                       std::vector<CollisionMeshData>& meshGroup);
 
   /**
    * @brief Creates a map of appropriate asset infos for sceneries.  Will always
