@@ -606,8 +606,12 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                  "loaded without renderer initialization.",
                  false);
 
-  assets::MeshData::uptr joinedMesh =
-      resourceManager_->createJoinedCollisionMesh(config_.scene.id);
+  assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
+  auto stageInitAttrs = physicsManager_->getStageInitAttributes();
+  if (stageInitAttrs != nullptr) {
+    joinedMesh = resourceManager_->createJoinedCollisionMesh(
+        stageInitAttrs->getRenderAssetHandle());
+  }
 
   // add STATIC collision objects
   if (includeStaticObjects) {

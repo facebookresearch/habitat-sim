@@ -872,6 +872,16 @@ class PhysicsManager {
   }
 
   /**
+   * @brief Get a copy of the template used to initialize the stage.
+   *
+   * @return The initialization settings of the stage or nullptr if the stage is
+   * not initialized.
+   */
+  Attrs::StageAttributes::ptr getStageInitAttributes() const {
+    return staticStageObject_->getInitializationAttributes();
+  }
+
+  /**
    * @brief Get a copy of the template used to initialize this physics manager
    *
    * @return The initialization settings for this physics manager
