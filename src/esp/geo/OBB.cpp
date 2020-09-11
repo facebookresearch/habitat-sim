@@ -135,6 +135,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
   }
 
   const auto hull = convexHull2D(in_plane_points);
+  ASSERT(hull.size() > 0);
 
   std::vector<vec2f> edge_dirs;
   for (size_t i = 0; i < hull.size(); ++i) {
@@ -171,7 +172,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
         top_dir = vec2f(-1, 0), bottom_dir = vec2f(1, 0);
 
   float best_area = 1e10;
-  vec2f best_bottom_dir;
+  vec2f best_bottom_dir = vec2f(NAN, NAN);
   for (size_t i = 0; i < hull.size(); ++i) {
     const std::vector<float> angles(
         {std::acos(left_dir.dot(edge_dirs[left_idx])),
@@ -228,7 +229,6 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
       best_area = area;
     }
   }
-
   const auto T_w2b =
       quatf::FromTwoVectors(vec3f(best_bottom_dir[0], best_bottom_dir[1], 0),
                             vec3f::UnitX()) *
