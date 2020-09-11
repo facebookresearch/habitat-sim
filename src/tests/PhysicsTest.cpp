@@ -43,7 +43,7 @@ class PhysicsManagerTest : public testing::Test {
     physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
   };
 
-  void initScene(const std::string stageFile) {
+  void initStage(const std::string stageFile) {
     // const esp::assets::AssetInfo info =
     //     esp::assets::AssetInfo::fromPath(stageFile);
 
@@ -92,7 +92,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -171,7 +171,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
   std::string objectFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/objects/sphere.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -248,7 +248,7 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -291,7 +291,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initScene(objectFile);
+  initStage(objectFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
@@ -354,10 +354,13 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   // test scaling of objects via template configuration (visual and collision)
   LOG(INFO) << "Starting physics test: ConfigurableScaling";
 
+  std::string stageFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initScene("NONE");
+  initStage(stageFile);
 
   // test joined vs. unjoined
   ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
@@ -425,7 +428,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
   ObjectAttributes->setRenderAssetHandle(objectFile);
@@ -570,7 +573,7 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
   ObjectAttributes->setRenderAssetHandle(objectFile);
@@ -621,7 +624,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   // ensure that changing default timestep does not affect results
   physicsManager_->setTimestep(0.0041666666);

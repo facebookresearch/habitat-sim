@@ -948,7 +948,6 @@ class PhysicsManager {
    *
    * @param handle the handle to the attributes structure defining physical
    * properties of the scene.
-   * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
 
