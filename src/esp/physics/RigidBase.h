@@ -594,7 +594,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   template <class T>
   std::shared_ptr<T> getInitializationAttributes() const {
-    if (!initializationAttributes_){
+    if (!initializationAttributes_) {
       return nullptr;
     }
     return T::create(*(static_cast<T*>(initializationAttributes_.get())));
