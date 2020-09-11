@@ -152,6 +152,15 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 
 ## Installation
 
+### Conda Packages
+
+We provide conda packages for [the most recent release](https://anaconda.org/aihabitat) and built [nightly for the master branch](https://anaconda.org/aihabitat-nightly). Packages are provided for standard and headless systems with and without Bullet physics support. When possible, we suggest this method of installation for the most simple and straight-forward installation experience. To learn more about building your own conda packages for Habitat-sim, checkout the [conda-build README](https://github.com/facebookresearch/habitat-sim/tree/master/conda-build).
+
+Example of installing conda package for master branch with display system and Bullet physics support:
+```
+conda install -c aihabitat-nightly withbullet
+```
+
 ### Docker Image
 
 We provide a pre-built docker container for [habitat-lab](https://github.com/facebookresearch/habitat-lab) and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
