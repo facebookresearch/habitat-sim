@@ -1028,7 +1028,7 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
       typeVal = static_cast<int>(
           Attrs::AbstractObjectAttributes::AssetTypeNamesMap.at(tmpVal));
     } else {
-      LOG(WARNING) << "AttributesManager::convertJsonStringToAssetType : "
+      LOG(WARNING) << "AttributesManager::setJSONAssetHandleAndType : "
                       "Value in json @ tag : "
                    << jsonMeshTypeTag << " : `" << tmpVal
                    << "` does not map to a valid "
