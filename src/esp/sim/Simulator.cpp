@@ -344,6 +344,14 @@ const Attrs::ObjectAttributes::cptr Simulator::getObjectInitializationTemplate(
   return nullptr;
 }
 
+const Attrs::StageAttributes::cptr Simulator::getStageInitializationTemplate(
+    const int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getStageInitAttributes();
+  }
+  return nullptr;
+}
+
 // return a list of existing objected IDs in a physical scene
 std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
   if (sceneHasPhysics(sceneID)) {

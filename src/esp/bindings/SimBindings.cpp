@@ -134,6 +134,10 @@ void initSimBindings(py::module& m) {
           &Simulator::getObjectInitializationTemplate, "object_id"_a,
           "scene_id"_a = 0,
           R"(Get a copy of the ObjectAttributes template used to instance an object.)")
+      .def(
+          "get_stage_initialization_template",
+          &Simulator::getStageInitializationTemplate, "scene_id"_a = 0,
+          R"(Get a copy of the StageAttributes template used to instance a scene's stage or None if it does not exist.)")
       .def("get_object_motion_type", &Simulator::getObjectMotionType,
            "object_id"_a, "scene_id"_a = 0,
            R"(Get the MotionType of an object.)")

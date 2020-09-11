@@ -43,6 +43,8 @@ def test_empty_scene(sim):
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
 
+    assert sim.get_stage_initialization_template() == None
+
     # test that empty frames can be rendered without a scene mesh
     for _ in range(2):
         sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
@@ -162,3 +164,10 @@ def test_object_template_editing(sim):
     # test adding a new object
     object_id = sim.add_object(template_ids[0])
     assert object_id != -1
+
+    # test getting initialization templates
+    stage_init_template = sim.get_stage_initialization_template()
+    assert stage_init_template.render_asset_handle == cfg_settings["scene"]
+
+    obj_init_template = sim.get_object_initialization_template(object_id)
+    assert obj_init_template.render_asset_handle.endswith("sphere.glb")
