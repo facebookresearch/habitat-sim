@@ -260,9 +260,9 @@ void initAttributesManagersBindings(py::module& m) {
       // ObjectAttributesManager-specific bindings
       .def(
           "load_object_configs", &ObjectAttributesManager::loadObjectConfigs,
-          R"(Build templates for all "*.phys_properties.json" files that exist in
-            the provided file or directory path. If save_as_defaults is true, then
-            these templates will be unable to be deleted)"
+          R"(Build templates for all files with ".phys_properties.json" extension
+            that exist in the provided file or directory path. If save_as_defaults
+            is true, then these templates will be unable to be deleted)"
           "path"_a,
           "save_as_defaults"_a = false)
 
@@ -276,8 +276,9 @@ void initAttributesManagersBindings(py::module& m) {
           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
               const std::string&, bool) const>(
               &ObjectAttributesManager::getFileTemplateHandlesBySubstring),
-          R"(Returns a list of file-based template handles that either contain or explicitly do not
-            contain the passed search_str, based on the value of contains.)",
+          R"(Returns a list of file-based template handles that either contain or
+          explicitly do not contain the passed search_str, based on the value of
+          contains.)",
           "search_str"_a = "", "contains"_a = true)
       .def(
           "get_random_file_template_handle",
@@ -288,20 +289,21 @@ void initAttributesManagersBindings(py::module& m) {
       // manage synthesized/primitive asset-based templates access
       .def("get_num_synth_templates",
            &ObjectAttributesManager::getNumSynthTemplateObjects, R"(
-             Returns the number of existing synthesized(primitive asset)-based templates being managed.)")
-      .def("get_synth_template_handles",
-           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
-               const std::string&, bool) const>(
-               &ObjectAttributesManager::getSynthTemplateHandlesBySubstring),
-           R"(
-            Returns a list of template synthesized(primitive asset)-based handles that either contain or explicitly do not
-            contain the passed search_str, based on the value of contains.)",
-           "search_str"_a = "", "contains"_a = true)
+             Returns the number of existing synthesized(primitive asset)-based
+             templates being managed.)")
       .def(
-          "get_random_synth_template_handle",
-          &ObjectAttributesManager::getRandomSynthTemplateHandle,
-          R"(Returns the handle for a random synthesized(primitive asset)-based template chosen from the
-             existing templates being managed.)");
+          "get_synth_template_handles",
+          static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
+              const std::string&, bool) const>(
+              &ObjectAttributesManager::getSynthTemplateHandlesBySubstring),
+          R"(Returns a list of synthesized(primitive asset)-based template handles
+            that either contain or explicitly do not contain the passed search_str,
+            based on the value of contains.)",
+          "search_str"_a = "", "contains"_a = true)
+      .def("get_random_synth_template_handle",
+           &ObjectAttributesManager::getRandomSynthTemplateHandle,
+           R"(Returns the handle for a random synthesized(primitive asset)-based
+          template chosen from the existing templates being managed.)");
 
   // ==== Stage Attributes Template manager ====
   declareBaseAttributesManager<StageAttributes>(m, "BaseStage");
