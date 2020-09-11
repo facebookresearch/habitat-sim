@@ -227,6 +227,14 @@ class Simulator {
       int sceneID = 0) const;
 
   /**
+   * @brief Get a copy of a stage's template when the stage was instanced.
+   *
+   * Use this to query the stage's properties when it was initialized.
+   */
+  const Attrs::StageAttributes::cptr getStageInitializationTemplate(
+      int sceneID = 0) const;
+
+  /**
    * @brief Remove an instanced object by ID. See @ref
    * esp::physics::PhysicsManager::removeObject().
    * @param objectID The ID of the object identifying it in @ref

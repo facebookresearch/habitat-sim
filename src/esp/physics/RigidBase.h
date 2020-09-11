@@ -590,10 +590,13 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Get a copy of the template used to initialize this object
    * or scene.
    * @return A copy of the initialization template used to create this object
-   * instance.
+   * instance or nullptr if no template exists.
    */
   template <class T>
   std::shared_ptr<T> getInitializationAttributes() const {
+    if (!initializationAttributes_) {
+      return nullptr;
+    }
     return T::create(*(static_cast<T*>(initializationAttributes_.get())));
   }
 
