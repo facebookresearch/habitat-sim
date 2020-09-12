@@ -26,7 +26,8 @@ namespace esp {
 namespace gfx {
 
 struct Renderer::Impl {
-  Impl(bool hasTextures) : depthShader_{nullptr}, hasTextures_{hasTextures} {
+  explicit Impl(bool hasTextures)
+      : depthShader_{nullptr}, hasTextures_{hasTextures} {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
