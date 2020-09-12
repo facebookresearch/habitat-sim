@@ -26,7 +26,7 @@ namespace esp {
 namespace gfx {
 
 struct Renderer::Impl {
-  Impl() {
+  Impl(bool hasTextures) : depthShader_{nullptr}, hasTextures_{hasTextures} {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
@@ -67,14 +67,19 @@ struct Renderer::Impl {
     }
 
     sensor.bindRenderTarget(RenderTarget::create_unique(
-        sensor.framebufferSize(), *depthUnprojection, depthShader_.get()));
+        sensor.framebufferSize(), *depthUnprojection, depthShader_.get(),
+        hasTextures_));
   }
 
  private:
-  std::unique_ptr<DepthShader> depthShader_ = nullptr;
+  std::unique_ptr<DepthShader> depthShader_;
+  const bool hasTextures_;
 };
 
-Renderer::Renderer() : pimpl_(spimpl::make_unique_impl<Impl>()) {}
+Renderer::Renderer(bool hasTextures)
+    : pimpl_(spimpl::make_unique_impl<Impl>(hasTextures)) {}
+
+Renderer::Renderer() : Renderer{true} {}
 
 void Renderer::draw(RenderCamera& camera,
                     scene::SceneGraph& sceneGraph,

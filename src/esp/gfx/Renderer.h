@@ -15,6 +15,7 @@ namespace gfx {
 class Renderer {
  public:
   Renderer();
+  explicit Renderer(bool hasTextures);
 
   // draw the scene graph with the camera specified by user
   void draw(RenderCamera& camera,

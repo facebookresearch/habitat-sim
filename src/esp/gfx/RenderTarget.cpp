@@ -44,7 +44,8 @@ const Mn::GL::Framebuffer::ColorAttachment UnprojectedDepthBuffer =
 struct RenderTarget::Impl {
   Impl(const Mn::Vector2i& size,
        const Mn::Vector2& depthUnprojection,
-       DepthShader* depthShader)
+       DepthShader* depthShader,
+       bool hasTextures)
       : colorBuffer_{},
         objectIdBuffer_{},
         depthRenderTexture_{},
@@ -53,7 +54,8 @@ struct RenderTarget::Impl {
         depthShader_{depthShader},
         unprojectedDepth_{Mn::NoCreate},
         depthUnprojectionMesh_{Mn::NoCreate},
-        depthUnprojectionFrameBuffer_{Mn::NoCreate} {
+        depthUnprojectionFrameBuffer_{Mn::NoCreate},
+        hasTextures_{hasTextures} {
     if (depthShader_) {
       CORRADE_INTERNAL_ASSERT(depthShader_->flags() &
                               DepthShader::Flag::UnprojectExistingDepth);
@@ -120,6 +122,10 @@ struct RenderTarget::Impl {
   void renderExit() {}
 
   void blitRgbaToDefault() {
+    if (!hasTextures_)
+      throw std::runtime_error(
+          "Simulator was initialized with requiresTextures = false");
+
     framebuffer_.mapForRead(RgbaBuffer);
     ASSERT(framebuffer_.viewport() == Mn::GL::defaultFramebuffer.viewport());
 
@@ -130,6 +136,10 @@ struct RenderTarget::Impl {
   }
 
   void readFrameRgba(const Mn::MutableImageView2D& view) {
+    if (!hasTextures_)
+      throw std::runtime_error(
+          "Simulator was initialized with requiresTextures = false");
+
     framebuffer_.mapForRead(RgbaBuffer).read(framebuffer_.viewport(), view);
   }
 
@@ -161,6 +171,10 @@ struct RenderTarget::Impl {
     // TODO: Consider implementing the GPU read functions with EGLImage
     // See discussion here:
     // https://github.com/facebookresearch/habitat-sim/pull/114#discussion_r312718502
+
+    if (!hasTextures_)
+      throw std::runtime_error(
+          "Simulator was initialized with requiresTextures = false");
 
     if (colorBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
@@ -244,6 +258,8 @@ struct RenderTarget::Impl {
   Mn::GL::Mesh depthUnprojectionMesh_;
   Mn::GL::Framebuffer depthUnprojectionFrameBuffer_;
 
+  const bool hasTextures_;
+
 #ifdef ESP_BUILD_WITH_CUDA
   cudaGraphicsResource_t colorBufferCugl_ = nullptr;
   cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
@@ -253,10 +269,12 @@ struct RenderTarget::Impl {
 
 RenderTarget::RenderTarget(const Mn::Vector2i& size,
                            const Mn::Vector2& depthUnprojection,
-                           DepthShader* depthShader)
+                           DepthShader* depthShader,
+                           bool hasTextures)
     : pimpl_(spimpl::make_unique_impl<Impl>(size,
                                             depthUnprojection,
-                                            depthShader)) {}
+                                            depthShader,
+                                            hasTextures)) {}
 
 void RenderTarget::renderEnter() {
   pimpl_->renderEnter();

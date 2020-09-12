@@ -117,6 +117,8 @@ def test_sensors(
     if not habitat_sim.cuda_enabled and gpu2gpu:
         pytest.skip("Skipping GPU->GPU test")
 
+    sim.close()
+
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["semantic_sensor"] = has_sem and sensor_type == "semantic_sensor"
     make_cfg_settings["scene"] = scene
@@ -125,11 +127,6 @@ def test_sensors(
     cfg = make_cfg(make_cfg_settings)
     for sensor_spec in cfg.agents[0].sensor_specifications:
         sensor_spec.gpu2gpu_transfer = gpu2gpu
-
-    # The scene loading may be done differently with/without frustum culling,
-    # thus we need to force a reload when frustum culling gets swapped
-    if cfg.sim_cfg.frustum_culling != sim.config.sim_cfg.frustum_culling:
-        sim.close()
 
     sim.reconfigure(cfg)
 
@@ -141,6 +138,8 @@ def test_sensors(
     assert np.linalg.norm(
         obs[sensor_type].astype(np.float) - gt.astype(np.float)
     ) < 9.0e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
+
+    sim.close()
 
 
 # Tests to make sure that no sensors is supported and doesn't crash
@@ -171,6 +170,8 @@ def test_smoke_redwood_noise(scene, gpu2gpu, sim, make_cfg_settings):
     if not habitat_sim.cuda_enabled and gpu2gpu:
         pytest.skip("Skipping GPU->GPU test")
 
+    sim.close()
+
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["depth_sensor"] = True
     make_cfg_settings["color_sensor"] = False
@@ -188,6 +189,8 @@ def test_smoke_redwood_noise(scene, gpu2gpu, sim, make_cfg_settings):
     assert np.linalg.norm(
         obs["depth_sensor"].astype(np.float) - gt.astype(np.float)
     ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), "Incorrect depth_sensor output"
+
+    sim.close()
 
 
 @pytest.mark.gfxtest

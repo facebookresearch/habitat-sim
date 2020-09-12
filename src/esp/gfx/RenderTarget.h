@@ -31,10 +31,14 @@ class RenderTarget {
    *                           Unprojects the depth on the CPU if nullptr.
    *                           Must be not nullptr to use @ref
    *                           readFrameDepthGPU()
+   * @param hasTextures        Tracks whether or not textures where loaded
+   *                           so that we can throw an error if readFrameRgba
+   *                           is called if this is false.
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
-               DepthShader* depthShader);
+               DepthShader* depthShader,
+               bool hasTextures);
 
   /**
    * @brief Constructor
@@ -45,8 +49,9 @@ class RenderTarget {
    * Equivalent to calling @ref RenderTarget(size, depthUnprojection, nullptr)
    */
   RenderTarget(const Magnum::Vector2i& size,
-               const Magnum::Vector2& depthUnprojection)
-      : RenderTarget{size, depthUnprojection, nullptr} {};
+               const Magnum::Vector2& depthUnprojection,
+               bool hasTextures)
+      : RenderTarget{size, depthUnprojection, nullptr, hasTextures} {};
 
   ~RenderTarget() {}
 

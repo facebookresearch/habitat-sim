@@ -83,6 +83,18 @@ class Simulator(SimulatorBackend):
             )
         )
 
+        config.sim_cfg.requires_textures = any(
+            map(
+                lambda cfg: any(
+                    map(
+                        lambda sens_spec: sens_spec.sensor_type == SensorType.COLOR,
+                        cfg.sensor_specifications,
+                    )
+                ),
+                config.agents,
+            )
+        )
+
     def __attrs_post_init__(self):
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)

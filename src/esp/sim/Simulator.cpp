@@ -68,6 +68,7 @@ void Simulator::close() {
   config_ = SimulatorConfiguration{};
 
   frustumCulling_ = true;
+  requiresTextures_ = -1;
 }
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
@@ -87,6 +88,21 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // otherwise set current configuration and initialize
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
+
+  if (requiresTextures_ == -1) {
+    requiresTextures_ = config_.requiresTextures ? 1 : 0;
+    resourceManager_->setRequiresTextures(config_.requiresTextures);
+  } else if (requiresTextures_ == 0 && config_.requiresTextures) {
+    throw std::runtime_error(
+        "requiresTextures was changed to True from False.  Must call close() "
+        "before changing "
+        "value.\n Got " +
+        std::to_string(config_.requiresTextures) + " expected " +
+        std::to_string(requiresTextures_));
+  } else if (requiresTextures_ == 1 && !config_.requiresTextures) {
+    LOG(WARNING) << "Not changing requiresTextures as the simulator was "
+                    "initialized with True.  Call close() to change this.";
+  }
 
   // use physics attributes manager to get physics manager attributes
   // described by config file - this always exists to configure scene
@@ -159,13 +175,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     // reinitalize members
     if (!renderer_) {
-      renderer_ = gfx::Renderer::create();
+      renderer_ = gfx::Renderer::create(config_.requiresTextures);
     }
 
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
     auto& rootNode = sceneGraph.getRootNode();
     // auto& drawables = sceneGraph.getDrawables();
-    resourceManager_->compressTextures(config_.compressTextures);
 
     bool loadSuccess = false;
 
