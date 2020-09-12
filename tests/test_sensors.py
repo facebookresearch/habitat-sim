@@ -83,20 +83,14 @@ _test_scenes = [
     ),
 ]
 
+sensor_types = ["color_sensor", "depth_sensor", "semantic_sensor"]
+
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
-    "scene,has_sem,sensor_type",
-    list(
-        itertools.product(
-            _test_scenes[0:2],
-            [True],
-            ["color_sensor", "depth_sensor", "semantic_sensor"],
-        )
-    )
-    + list(
-        itertools.product(_test_scenes[2:], [False], ["color_sensor", "depth_sensor"])
-    ),
+    "scene,sensor_type",
+    list(itertools.product(_test_scenes[0:2], sensor_types))
+    + list(itertools.product(_test_scenes[2:], sensor_types[0:2])),
 )
 @pytest.mark.parametrize("gpu2gpu", [True, False])
 # NB: This should go last, we have to force a close on the simulator when
@@ -104,7 +98,6 @@ _test_scenes = [
 @pytest.mark.parametrize("frustum_culling", [True, False])
 def test_sensors(
     scene,
-    has_sem,
     sensor_type,
     gpu2gpu,
     frustum_culling,
@@ -120,7 +113,10 @@ def test_sensors(
     sim.close()
 
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
-    make_cfg_settings["semantic_sensor"] = has_sem and sensor_type == "semantic_sensor"
+    for k in sensor_types:
+        make_cfg_settings[k] = False
+
+    make_cfg_settings[sensor_type] = True
     make_cfg_settings["scene"] = scene
     make_cfg_settings["frustum_culling"] = frustum_culling
 
