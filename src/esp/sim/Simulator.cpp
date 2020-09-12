@@ -95,10 +95,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   } else if (requiresTextures_ == 0 && config_.requiresTextures) {
     throw std::runtime_error(
         "requiresTextures was changed to True from False.  Must call close() "
-        "before changing "
-        "value.\n Got " +
-        std::to_string(config_.requiresTextures) + " expected " +
-        std::to_string(requiresTextures_));
+        "before changing this value.");
   } else if (requiresTextures_ == 1 && !config_.requiresTextures) {
     LOG(WARNING) << "Not changing requiresTextures as the simulator was "
                     "initialized with True.  Call close() to change this.";
