@@ -154,7 +154,7 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 
 ### Conda Packages
 
-We provide conda packages for [the most recent release](https://anaconda.org/aihabitat) and built [nightly for the master branch](https://anaconda.org/aihabitat-nightly). Packages are provided for standard and headless systems with and without Bullet physics support. When possible, we suggest this method of installation for the most simple and straight-forward installation experience. To learn more about building your own conda packages for Habitat-sim, checkout the [conda-build README](https://github.com/facebookresearch/habitat-sim/tree/master/conda-build).
+We provide conda packages for [the most recent release](https://anaconda.org/aihabitat) and built [nightly for the master branch](https://anaconda.org/aihabitat-nightly). Packages are provided for standard and headless systems with and without Bullet physics support. When possible, we suggest this method of installation for the most simple and straight-forward installation experience.
 
 Example of installing conda package for master branch with display system and Bullet physics support:
 ```
