@@ -108,7 +108,6 @@ def test_sensors(
     sensor_type,
     gpu2gpu,
     frustum_culling,
-    sim: habitat_sim.Simulator,
     make_cfg_settings,
 ):
     if not osp.exists(scene):
@@ -117,7 +116,6 @@ def test_sensors(
     if not habitat_sim.cuda_enabled and gpu2gpu:
         pytest.skip("Skipping GPU->GPU test")
 
-    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["semantic_sensor"] = has_sem and sensor_type == "semantic_sensor"
     make_cfg_settings["scene"] = scene
     make_cfg_settings["frustum_culling"] = frustum_culling
@@ -126,21 +124,46 @@ def test_sensors(
     for sensor_spec in cfg.agents[0].sensor_specifications:
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
-    # The scene loading may be done differently with/without frustum culling,
-    # thus we need to force a reload when frustum culling gets swapped
-    if cfg.sim_cfg.frustum_culling != sim.config.sim_cfg.frustum_culling:
-        sim.close()
+    with habitat_sim.Simulator(cfg) as sim:
+        obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
 
-    sim.reconfigure(cfg)
+        # Different GPUs and different driver version will produce slightly
+        # different images; differences on aliased edges might also stem from how a
+        # particular importer parses transforms
+        assert np.linalg.norm(
+            obs[sensor_type].astype(np.float) - gt.astype(np.float)
+        ) < 9.0e-2 * np.linalg.norm(
+            gt.astype(np.float)
+        ), f"Incorrect {sensor_type} output"
 
-    obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
 
-    # Different GPUs and different driver version will produce slightly
-    # different images; differences on aliased edges might also stem from how a
-    # particular importer parses transforms
-    assert np.linalg.norm(
-        obs[sensor_type].astype(np.float) - gt.astype(np.float)
-    ) < 9.0e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
+@pytest.mark.gfxtest
+@pytest.mark.parametrize("scene", _test_scenes)
+def test_reconfigure_render(
+    scene,
+    make_cfg_settings,
+):
+    if not osp.exists(scene):
+        pytest.skip("Skipping {}".format(scene))
+
+    make_cfg_settings["semantic_sensor"] = False
+    make_cfg_settings["depth_sensor"] = True
+    make_cfg_settings["color_sensor"] = True
+
+    cfg = make_cfg(make_cfg_settings)
+
+    with habitat_sim.Simulator(cfg) as sim:
+        for sensor_type in ["color_sensor", "depth_sensor"]:
+            obs, gt = _render_and_load_gt(sim, scene, sensor_type, False)
+
+            # Different GPUs and different driver version will produce slightly
+            # different images; differences on aliased edges might also stem from how a
+            # particular importer parses transforms
+            assert np.linalg.norm(
+                obs[sensor_type].astype(np.float) - gt.astype(np.float)
+            ) < 9.0e-2 * np.linalg.norm(
+                gt.astype(np.float)
+            ), f"Incorrect {sensor_type} output"
 
 
 # Tests to make sure that no sensors is supported and doesn't crash
@@ -164,14 +187,13 @@ def test_smoke_no_sensors(make_cfg_settings):
 @pytest.mark.parametrize(
     "scene,gpu2gpu", itertools.product(_test_scenes, [True, False])
 )
-def test_smoke_redwood_noise(scene, gpu2gpu, sim, make_cfg_settings):
+def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
     if not habitat_sim.cuda_enabled and gpu2gpu:
         pytest.skip("Skipping GPU->GPU test")
 
-    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["depth_sensor"] = True
     make_cfg_settings["color_sensor"] = False
     make_cfg_settings["semantic_sensor"] = False
@@ -181,13 +203,14 @@ def test_smoke_redwood_noise(scene, gpu2gpu, sim, make_cfg_settings):
     for sensor_spec in hsim_cfg.agents[0].sensor_specifications:
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
-    sim.reconfigure(hsim_cfg)
+    with habitat_sim.Simulator(hsim_cfg) as sim:
+        obs, gt = _render_and_load_gt(sim, scene, "depth_sensor", gpu2gpu)
 
-    obs, gt = _render_and_load_gt(sim, scene, "depth_sensor", gpu2gpu)
-
-    assert np.linalg.norm(
-        obs["depth_sensor"].astype(np.float) - gt.astype(np.float)
-    ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), "Incorrect depth_sensor output"
+        assert np.linalg.norm(
+            obs["depth_sensor"].astype(np.float) - gt.astype(np.float)
+        ) > 1.5e-2 * np.linalg.norm(
+            gt.astype(np.float)
+        ), "Incorrect depth_sensor output"
 
 
 @pytest.mark.gfxtest
@@ -201,11 +224,10 @@ def test_smoke_redwood_noise(scene, gpu2gpu, sim, make_cfg_settings):
         "PoissonNoiseModel",
     ],
 )
-def test_rgb_noise(scene, model_name, sim, make_cfg_settings):
+def test_rgb_noise(scene, model_name, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
-    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["depth_sensor"] = False
     make_cfg_settings["color_sensor"] = True
     make_cfg_settings["semantic_sensor"] = False
@@ -213,10 +235,11 @@ def test_rgb_noise(scene, model_name, sim, make_cfg_settings):
     hsim_cfg = make_cfg(make_cfg_settings)
     hsim_cfg.agents[0].sensor_specifications[0].noise_model = model_name
 
-    sim.reconfigure(hsim_cfg)
+    with habitat_sim.Simulator(hsim_cfg) as sim:
+        obs, gt = _render_and_load_gt(sim, scene, "color_sensor", False)
 
-    obs, gt = _render_and_load_gt(sim, scene, "color_sensor", False)
-
-    assert np.linalg.norm(
-        obs["color_sensor"].astype(np.float) - gt.astype(np.float)
-    ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), "Incorrect color_sensor output"
+        assert np.linalg.norm(
+            obs["color_sensor"].astype(np.float) - gt.astype(np.float)
+        ) > 1.5e-2 * np.linalg.norm(
+            gt.astype(np.float)
+        ), "Incorrect color_sensor output"
