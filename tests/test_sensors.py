@@ -153,6 +153,8 @@ def test_reconfigure_render(
     cfg = make_cfg(make_cfg_settings)
 
     with habitat_sim.Simulator(cfg) as sim:
+        make_cfg_settings["scene"] = scene
+        sim.reconfigure(make_cfg(make_cfg_settings))
         for sensor_type in ["color_sensor", "depth_sensor"]:
             obs, gt = _render_and_load_gt(sim, scene, sensor_type, False)
 
