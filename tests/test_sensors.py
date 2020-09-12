@@ -83,20 +83,14 @@ _test_scenes = [
     ),
 ]
 
+all_sensor_types = ["color_sensor", "depth_sensor", "semantic_sensor"]
+
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
-    "scene,has_sem,sensor_type",
-    list(
-        itertools.product(
-            _test_scenes[0:2],
-            [True],
-            ["color_sensor", "depth_sensor", "semantic_sensor"],
-        )
-    )
-    + list(
-        itertools.product(_test_scenes[2:], [False], ["color_sensor", "depth_sensor"])
-    ),
+    "scene,sensor_type",
+    list(itertools.product(_test_scenes[0:2], all_sensor_types))
+    + list(itertools.product(_test_scenes[2:], all_sensor_types[0:2])),
 )
 @pytest.mark.parametrize("gpu2gpu", [True, False])
 # NB: This should go last, we have to force a close on the simulator when
@@ -104,7 +98,6 @@ _test_scenes = [
 @pytest.mark.parametrize("frustum_culling", [True, False])
 def test_sensors(
     scene,
-    has_sem,
     sensor_type,
     gpu2gpu,
     frustum_culling,
@@ -116,7 +109,10 @@ def test_sensors(
     if not habitat_sim.cuda_enabled and gpu2gpu:
         pytest.skip("Skipping GPU->GPU test")
 
-    make_cfg_settings["semantic_sensor"] = has_sem and sensor_type == "semantic_sensor"
+    for sens in all_sensor_types:
+        make_cfg_settings[sens] = False
+
+    make_cfg_settings[sensor_type] = True
     make_cfg_settings["scene"] = scene
     make_cfg_settings["frustum_culling"] = frustum_culling
 
@@ -139,33 +135,36 @@ def test_sensors(
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize("scene", _test_scenes)
+@pytest.mark.parametrize("sensor_type", all_sensor_types[0:2])
 def test_reconfigure_render(
     scene,
+    sensor_type,
     make_cfg_settings,
 ):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
-    make_cfg_settings["semantic_sensor"] = False
-    make_cfg_settings["depth_sensor"] = True
-    make_cfg_settings["color_sensor"] = True
+    for sens in all_sensor_types:
+        make_cfg_settings[sens] = False
+
+    make_cfg_settings["scene"] = _test_scenes[-1]
+    make_cfg_settings[sensor_type] = True
 
     cfg = make_cfg(make_cfg_settings)
 
     with habitat_sim.Simulator(cfg) as sim:
         make_cfg_settings["scene"] = scene
         sim.reconfigure(make_cfg(make_cfg_settings))
-        for sensor_type in ["color_sensor", "depth_sensor"]:
-            obs, gt = _render_and_load_gt(sim, scene, sensor_type, False)
+        obs, gt = _render_and_load_gt(sim, scene, sensor_type, False)
 
-            # Different GPUs and different driver version will produce slightly
-            # different images; differences on aliased edges might also stem from how a
-            # particular importer parses transforms
-            assert np.linalg.norm(
-                obs[sensor_type].astype(np.float) - gt.astype(np.float)
-            ) < 9.0e-2 * np.linalg.norm(
-                gt.astype(np.float)
-            ), f"Incorrect {sensor_type} output"
+        # Different GPUs and different driver version will produce slightly
+        # different images; differences on aliased edges might also stem from how a
+        # particular importer parses transforms
+        assert np.linalg.norm(
+            obs[sensor_type].astype(np.float) - gt.astype(np.float)
+        ) < 9.0e-2 * np.linalg.norm(
+            gt.astype(np.float)
+        ), f"Incorrect {sensor_type} output"
 
 
 # Tests to make sure that no sensors is supported and doesn't crash

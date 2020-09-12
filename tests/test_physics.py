@@ -356,7 +356,7 @@ def test_velocity_control():
     not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
     reason="Requires the habitat-test-scenes",
 )
-def test_raycast(sim):
+def test_raycast():
     cfg_settings = examples.settings.default_sim_settings.copy()
 
     # configure some settings in case defaults change
