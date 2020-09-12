@@ -9,18 +9,21 @@
 #include "esp/core/esp.h"
 
 #include "esp/gfx/RenderCamera.h"
-#include "esp/gfx/RenderTarget.h"
 #include "esp/sensor/Sensor.h"
 
 namespace esp {
+namespace gfx {
+class RenderTarget;
+}
+
 namespace sensor {
 
 // Represents a sensor that provides visual data from the environment to an
 // agent
 class VisualSensor : public Sensor {
  public:
-  using Sensor::Sensor;
-  virtual ~VisualSensor() {}
+  explicit VisualSensor(scene::SceneNode& node, SensorSpec::ptr spec);
+  virtual ~VisualSensor();
 
   /**
    * @brief Return the size of the framebuffer corresponding to the sensor's
@@ -83,11 +86,7 @@ class VisualSensor : public Sensor {
    * @brief Binds the given given RenderTarget to the sensor.  The sensor takes
    * ownership of the RenderTarget
    */
-  void bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
-    if (tgt->framebufferSize() != framebufferSize())
-      throw std::runtime_error("RenderTarget is not the correct size");
-    tgt_ = std::move(tgt);
-  }
+  void bindRenderTarget(std::unique_ptr<gfx::RenderTarget>&& tgt);
 
   /**
    * @brief Returns a reference to the sensors render target
@@ -109,7 +108,7 @@ class VisualSensor : public Sensor {
   }
 
  protected:
-  gfx::RenderTarget::uptr tgt_ = nullptr;
+  std::unique_ptr<gfx::RenderTarget> tgt_;
 
   ESP_SMART_POINTERS(VisualSensor)
 };

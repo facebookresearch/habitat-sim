@@ -34,7 +34,8 @@ using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 
 Simulator::Simulator(const SimulatorConfiguration& cfg)
-    : random_{core::Random::create(cfg.randomSeed)} {
+    : random_{core::Random::create(cfg.randomSeed)},
+      requiresTextures_{Cr::Containers::NullOpt} {
   // initalize members according to cfg
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
   //       Maybe better not to do this reconfigure
@@ -68,7 +69,7 @@ void Simulator::close() {
   config_ = SimulatorConfiguration{};
 
   frustumCulling_ = true;
-  requiresTextures_ = -1;
+  requiresTextures_ = Cr::Containers::NullOpt;
 }
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
@@ -89,14 +90,14 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
-  if (requiresTextures_ == -1) {
-    requiresTextures_ = config_.requiresTextures ? 1 : 0;
+  if (requiresTextures_ == Cr::Containers::NullOpt) {
+    requiresTextures_ = config_.requiresTextures;
     resourceManager_->setRequiresTextures(config_.requiresTextures);
-  } else if (requiresTextures_ == 0 && config_.requiresTextures) {
+  } else if (!(*requiresTextures_) && config_.requiresTextures) {
     throw std::runtime_error(
         "requiresTextures was changed to True from False.  Must call close() "
         "before changing this value.");
-  } else if (requiresTextures_ == 1 && !config_.requiresTextures) {
+  } else if ((*requiresTextures_) && !config_.requiresTextures) {
     LOG(WARNING) << "Not changing requiresTextures as the simulator was "
                     "initialized with True.  Call close() to change this.";
   }
@@ -172,7 +173,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     // reinitalize members
     if (!renderer_) {
-      renderer_ = gfx::Renderer::create(config_.requiresTextures);
+      gfx::Renderer::Flags flags;
+      if (!config_.requiresTextures)
+        flags |= gfx::Renderer::Flag::NoTextures;
+      renderer_ = gfx::Renderer::create(flags);
     }
 
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);

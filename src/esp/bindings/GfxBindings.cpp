@@ -16,6 +16,7 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/LightSetup.h"
 #include "esp/gfx/RenderCamera.h"
+#include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
 

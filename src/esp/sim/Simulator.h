@@ -778,7 +778,7 @@ class Simulator {
    * to load textures.  Because we cache mesh loading, this should
    * *not* be changed without calling close() first
    */
-  int requiresTextures_ = -1;
+  Corrade::Containers::Optional<bool> requiresTextures_;
 
   ESP_SMART_POINTERS(Simulator)
 };
