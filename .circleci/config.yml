@@ -470,7 +470,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-lab
               python setup.py develop --all
-              python setup.py test
+              pytest --workers 4 --verbose -rsxX -q
       - save_cache:
           key: habitat-lab-{{ checksum "./hablab_sha" }}
           background: true
