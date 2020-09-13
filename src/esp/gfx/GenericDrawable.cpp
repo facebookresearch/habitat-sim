@@ -43,10 +43,13 @@ void GenericDrawable::updateShaderLightingParameters(
     Mn::SceneGraph::Camera3D& camera) {
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
 
+  // todo: move to MaterialHelper or elsewhere
   std::vector<Mn::Vector4> lightPositions;
   lightPositions.reserve(lightSetup_->size());
   std::vector<Mn::Color3> lightColors;
   lightColors.reserve(lightSetup_->size());
+  std::vector<Mn::Color3> lightSpecularColors;
+  lightSpecularColors.reserve(lightSetup_->size());
   constexpr float dummyRange = 10000;
   std::vector<float> lightRanges(lightSetup_->size(), dummyRange);
   const Mn::Color4 ambientLightColor = getAmbientLightColor(*lightSetup_);
@@ -56,7 +59,14 @@ void GenericDrawable::updateShaderLightingParameters(
     lightPositions.emplace_back(Mn::Vector4(getLightPositionRelativeToCamera(
         lightInfo, transformationMatrix, cameraMatrix)));
 
-    lightColors.emplace_back((*lightSetup_)[i].color);
+    const auto& lightColor = (*lightSetup_)[i].color;
+    lightColors.emplace_back(lightColor);
+
+    // In general, a light's specular color should match its base color.
+    // However, negative lights have zero (black) specular.
+    constexpr Mn::Color3 blackColor(0.0, 0.0, 0.0);
+    bool isNegativeLight = lightColor.x() < 0;
+    lightSpecularColors.emplace_back(isNegativeLight ? blackColor : lightColor);
   }
 
   // See documentation in src/deps/magnum/src/Magnum/Shaders/Phong.h
