@@ -151,14 +151,14 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 
 ## Installation
 
-Habitat-Sim can be installed in 3 ways: 
-1. Via Conda - Recommended method for most users. Nightly and stable release builds. 
-2. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/). 
-3. Via Source - For active development.  
+Habitat-Sim can be installed in 3 ways:
+1. Via Conda - Recommended method for most users. Nightly and stable release builds.
+2. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/).
+3. Via Source - For active development.
 
 ### [Recommended] Conda Packages
 
-We provide conda packages for [the most recent release](https://anaconda.org/aihabitat) and built [nightly for the master branch](https://anaconda.org/aihabitat-nightly). Packages are provided for standard (with display) and headless (without display) systems, with and without Bullet physics support. 
+We provide conda packages for [the most recent release](https://anaconda.org/aihabitat) and built [nightly for the master branch](https://anaconda.org/aihabitat-nightly). Packages are provided for standard (with display) and headless (without display) systems, with and without Bullet physics support.
 
 
 To install habitat-sim on machines with an attached display:
@@ -167,7 +167,7 @@ To install habitat-sim on machines with an attached display:
 conda install habitat-sim -c conda-forge -c aihabitat
 ```
 
-To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs: 
+To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs:
 
 ```
 conda install habitat-sim headless -c conda-forge -c aihabitat
@@ -188,7 +188,7 @@ We provide a pre-built docker container for [habitat-lab](https://github.com/fac
 
 ### From Source
 
-Read [build instructions and common build issues](BUILD_FROM_SOURCE.md). 
+Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 ## Testing
 

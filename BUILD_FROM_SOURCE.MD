@@ -16,7 +16,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 1. Install Dependencies
 
     Common
-    
+
    ```bash
    # We require python>=3.6 and cmake>=3.10
    conda create -n habitat python=3.6 cmake=3.14.0
@@ -25,7 +25,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    ```
 
     Linux (Tested with Ubuntu 18.04 with gcc 7.4.0)
-    
+
    ```bash
    sudo apt-get update || true
    # These are fairly ubiquitous packages and your system likely has them already,
@@ -39,20 +39,20 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 1. Build Habitat-Sim
 
     Default build (for machines with a display attached)
-    
+
    ```bash
    # Assuming we're still within habitat conda environment
    python setup.py install
    ```
 
     For headless systems (i.e. without an attached display, e.g. in a cluster) and multiple GPU systems
-    
+
    ```bash
    python setup.py install --headless
    ```
 
     For systems with CUDA (to build CUDA features)
-    
+
    ```bash
    python setup.py install --with-cuda
    ```
@@ -61,19 +61,19 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    First, install Bullet Physics using your system's package manager.
 
     Mac
-    
+
    ```bash
    brew install bullet
    ```
 
     Linux
-    
+
    ```bash
    sudo apt-get install libbullet-dev
    ```
 
     Next, enable bullet physics build via:
-    
+
    ```bash
    python setup.py install --bullet    # build habitat with bullet physics
    ```
@@ -102,4 +102,3 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 - Build is tested on Tested with Ubuntu 18.04 with gcc 7.4.0 and MacOS 10.13.6 with Xcode 10 and clang-1000.10.25.5. If you experience compilation issues, please open an issue with the details of your OS and compiler versions.
 
   We also have a dev slack channel, please follow this [link](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI) to get added to the channel.
-
