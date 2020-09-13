@@ -32,6 +32,9 @@ class GenericDrawable : public Drawable {
                     Magnum::SceneGraph::Camera3D& camera) override;
 
   void updateShader();
+  void updateShaderLightingParameters(
+      const Magnum::Matrix4& transformationMatrix,
+      Magnum::SceneGraph::Camera3D& camera);
 
   Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
                                    Magnum::Shaders::Phong::Flags flags) const;

@@ -149,8 +149,8 @@ void initGfxBindings(py::module& m) {
       m, "LightInfo",
       R"(Defines the position, color and LightPositionModel of a single point light source.)")
       .def(py::init())
-      .def(py::init<Magnum::Vector3, Magnum::Color4, LightPositionModel>(),
-           "position"_a, "color"_a = Magnum::Color4{1},
+      .def(py::init<Magnum::Vector4, Magnum::Color3, LightPositionModel>(),
+           "position"_a, "color"_a = Magnum::Color3{1},
            "model"_a = LightPositionModel::GLOBAL)
       .def_readwrite("position", &LightInfo::position)
       .def_readwrite("color", &LightInfo::color)

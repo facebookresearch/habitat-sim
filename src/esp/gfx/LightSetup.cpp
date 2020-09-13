@@ -15,38 +15,63 @@ bool operator!=(const LightInfo& a, const LightInfo& b) {
   return !(a == b);
 }
 
-Magnum::Vector3 getLightPositionRelativeToCamera(
+Magnum::Vector4 getLightPositionRelativeToCamera(
     const LightInfo& light,
     const Magnum::Matrix4& transformationMatrix,
     const Magnum::Matrix4& cameraMatrix) {
+  ASSERT(light.position.w() == 1 || light.position.w() == 0);
+  const auto pos = light.position.xyz();
+
+  bool isDirectional = light.position.w() == 0;
+  Magnum::Vector4 out{0};
+
   switch (light.model) {
     case LightPositionModel::OBJECT:
-      return transformationMatrix.transformPoint(light.position);
+      out.xyz() = isDirectional ? transformationMatrix.transformVector(pos)
+                                : transformationMatrix.transformPoint(pos);
+      break;
     case LightPositionModel::GLOBAL:
-      return cameraMatrix.transformPoint(light.position);
+      out.xyz() = isDirectional ? cameraMatrix.transformVector(pos)
+                                : cameraMatrix.transformPoint(pos);
+      break;
     case LightPositionModel::CAMERA:
-      return light.position;
+      out.xyz() = pos;
+      break;
   }
 
-  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  out.w() = light.position.w();
+  return out;
 }
 
 LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
-                                 const Magnum::Color4& lightColor) {
+                                 const Magnum::Color3& lightColor) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Magnum::Math::Literals;
 
-  return LightSetup{
-      {box.frontTopLeft(), lightColor},    {box.frontTopRight(), lightColor},
-      {box.frontBottomLeft(), lightColor}, {box.frontBottomRight(), lightColor},
-      {box.backTopLeft(), lightColor},     {box.backTopRight(), lightColor},
-      {box.backBottomLeft(), lightColor},  {box.backBottomRight(), lightColor}};
+  constexpr float w = 1;
+  return LightSetup{{Magnum::Vector4(box.frontTopLeft(), w), lightColor},
+                    {Magnum::Vector4(box.frontTopRight(), w), lightColor},
+                    {Magnum::Vector4(box.frontBottomLeft(), w), lightColor},
+                    {Magnum::Vector4(box.frontBottomRight(), w), lightColor},
+                    {Magnum::Vector4(box.backTopLeft(), w), lightColor},
+                    {Magnum::Vector4(box.backTopRight(), w), lightColor},
+                    {Magnum::Vector4(box.backBottomLeft(), w), lightColor},
+                    {Magnum::Vector4(box.backBottomRight(), w), lightColor}};
 }
 
-Magnum::Color4 getAmbientLightColor(const LightSetup& lightSetup) {
-  // todo: add up ambient terms from all lights in lightSetup
-  // temp: hard-coded ambient light color
-  return Magnum::Color4(0.2, 0.2, 0.2, 1);
+Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
+  if (lightSetup.size() == 0) {
+    // We assume an empty light setup means the user wants "flat" shading,
+    // meaning object ambient color should be copied directly to pixels as-is.
+    // We can achieve this in the Phong shader using an ambient light color of
+    // (1,1,1) and no additional light sources.
+    return Magnum::Color3(1.0, 1.0, 1.0);
+  } else {
+    // todo: add up ambient terms from all lights in lightSetup
+    // temp: hard-coded ambient light tuned for ReplicaCAD
+    float ambientIntensity = 0.4;
+    return Magnum::Color3(ambientIntensity, ambientIntensity, ambientIntensity);
+  }
 }
 
 }  // namespace gfx
