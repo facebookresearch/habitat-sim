@@ -38,8 +38,19 @@ class AbstractObjectAttributes : public AbstractAttributes {
                            const std::string& handle);
 
   virtual ~AbstractObjectAttributes() = default;
+
+  /**
+   * @brief Scale of the ojbect
+   */
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
+
+  void setCollisionAssetSize(const Magnum::Vector3& collisionAssetSize) {
+    setVec3("collisionAssetSize", collisionAssetSize);
+  }
+  Magnum::Vector3 getCollisionAssetSize() const {
+    return getVec3("collisionAssetSize");
+  }
 
   /**
    * @brief collision shape inflation margin

@@ -937,6 +937,12 @@ auto AttributesManager<T>::createObjectAttributesFromJson(
       jsonDoc, "scale",
       std::bind(&Attrs::AbstractObjectAttributes::setScale, attributes, _1));
 
+  // collision asset size
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "collision asset size",
+      std::bind(&Attrs::AbstractObjectAttributes::setCollisionAssetSize,
+                attributes, _1));
+
   // margin
   io::jsonIntoSetter<double>(
       jsonDoc, "margin",
