@@ -14,7 +14,17 @@ namespace gfx {
 
 class Renderer {
  public:
-  Renderer();
+  enum class Flag {
+    NoTextures = 1 << 0,
+  };
+
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+  CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
+
+  /**
+   * @brief Constructor
+   */
+  explicit Renderer(Flags flags = {});
 
   // draw the scene graph with the camera specified by user
   void draw(RenderCamera& camera,

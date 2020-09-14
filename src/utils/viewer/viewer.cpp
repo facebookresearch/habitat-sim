@@ -263,6 +263,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig.scene.id = sceneFileName;
   simConfig.enablePhysics = useBullet;
   simConfig.frustumCulling = true;
+  simConfig.requiresTextures = true;
   if (args.isSet("stage-requires-lighting")) {
     Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig.sceneLightSetup =
