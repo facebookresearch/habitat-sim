@@ -64,8 +64,8 @@ void initAttributesBindings(py::module& m) {
           "collision_asset_size",
           &AbstractObjectAttributes::getCollisionAssetSize,
           &AbstractObjectAttributes::setCollisionAssetSize,
-          R"(Size of collsion assets for constructions built from this template in 
-          x,y,z.  Default is [1.0,1.0,1.0].  This is used to resize a collision asset 
+          R"(Size of collsion assets for constructions built from this template in
+          x,y,z.  Default is [1.0,1.0,1.0].  This is used to resize a collision asset
           to match a render asset if necessary, such as when using a primitive.)")
       .def_property(
           "margin", &AbstractObjectAttributes::getMargin,
