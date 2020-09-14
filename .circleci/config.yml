@@ -504,6 +504,13 @@ jobs:
 
   build_conda_binaries:
     <<: *gpu
+    parameters:
+      AIHABITAT_CONDA_CHN:
+        type: string
+        default: "aihabitat"
+      AIHABITAT_CONDA_CHN_PWD_VAR:
+        type: string
+        default: "AIHABITAT_CONDA_PWD"
     steps:
       - checkout:
           path: ./habitat-sim
@@ -527,7 +534,7 @@ jobs:
               apt-cache policy docker-ce
               sudo apt-get install -y docker-ce
 
-              docker build -t hsim_condabuild_dcontainer -f Dockerfile . --build-arg AIHABITAT_NIGHTLY_CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD
+              docker build -t hsim_condabuild_dcontainer -f Dockerfile . --build-arg AIHABITAT_CONDA_CHN_PWD=$<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>,AIHABITAT_CONDA_CHN=$<< parameters.AIHABITAT_CONDA_CHN >>
               docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py36 && cd /remote/habitat-sim/conda-build && python linux_matrix_builder.py --conda_upload"
 
   update_docs:
@@ -584,13 +591,15 @@ workflows:
       - install_and_test_ubuntu
       - pre-commit
   nightly:
-    triggers:
-      - schedule:
-          cron: "0 7 * * *"
-          filters:
-            branches:
-              only:
-                - master
+    AIHABITAT_CONDA_CHN: aihabitat-nightly
+    AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
+#    triggers:
+#      - schedule:
+#          cron: "0 7 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
       - install_and_test_ubuntu
       - update_docs:
