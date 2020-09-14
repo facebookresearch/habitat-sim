@@ -166,6 +166,8 @@ def test_reconfigure_render(
             gt.astype(np.float)
         ), f"Incorrect {sensor_type} output"
 
+    sim.close()
+
 
 # Tests to make sure that no sensors is supported and doesn't crash
 # Also tests to make sure we can have multiple instances
@@ -212,6 +214,8 @@ def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
         ) > 1.5e-2 * np.linalg.norm(
             gt.astype(np.float)
         ), "Incorrect depth_sensor output"
+
+    sim.close()
 
 
 @pytest.mark.gfxtest

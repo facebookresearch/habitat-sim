@@ -34,8 +34,6 @@ void initSimBindings(py::module& m) {
       .def_readwrite("default_camera_uuid",
                      &SimulatorConfiguration::defaultCameraUuid)
       .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
-      .def_readwrite("compress_textures",
-                     &SimulatorConfiguration::compressTextures)
       .def_readwrite("allow_sliding", &SimulatorConfiguration::allowSliding)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
       .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling)
@@ -46,6 +44,8 @@ void initSimBindings(py::module& m) {
                      &SimulatorConfiguration::sceneLightSetup)
       .def_readwrite("load_semantic_mesh",
                      &SimulatorConfiguration::loadSemanticMesh)
+      .def_readwrite("requires_textures",
+                     &SimulatorConfiguration::requiresTextures)
       .def(py::self == py::self)
       .def(py::self != py::self);
 
