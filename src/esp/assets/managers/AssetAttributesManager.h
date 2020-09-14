@@ -374,9 +374,19 @@ class AssetAttributesManager
 
  protected:
   /**
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  bool isValidPrimitiveAttributes(const std::string& handle) override {
+    return this->getTemplateLibHasHandle(handle);
+  }
+
+  /**
    * @brief Not used by Attrs::AbstractPrimitiveAttributes.
    */
-  void setDefaultFileNameBasedAttributes(
+  void setDefaultAssetNameBasedAttributes(
       CORRADE_UNUSED Attrs::AbstractPrimitiveAttributes::ptr attributes,
       CORRADE_UNUSED bool setFrame,
       CORRADE_UNUSED const std::string& meshHandle,

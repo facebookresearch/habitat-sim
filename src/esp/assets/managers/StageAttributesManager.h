@@ -108,6 +108,15 @@ class StageAttributesManager
 
  protected:
   /**
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  bool isValidPrimitiveAttributes(const std::string& handle) override {
+    return objectAttributesMgr_->getTemplateLibHasHandle(handle);
+  }
+  /**
    * @brief Perform file-name-based attributes initialization. This is to
    * take the place of the AssetInfo::fromPath functionality, and is only
    * intended to provide default values and other help if certain mistakes
@@ -119,13 +128,13 @@ class StageAttributesManager
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
    * @param fileName Mesh Handle to check.
-   * @param meshTypeSetter Setter for mesh type.
+   * @param assetTypeSetter Setter for mesh type.
    */
-  void setDefaultFileNameBasedAttributes(
+  void setDefaultAssetNameBasedAttributes(
       Attrs::StageAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      std::function<void(int)> meshTypeSetter) override;
+      std::function<void(int)> assetTypeSetter) override;
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
