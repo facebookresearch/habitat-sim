@@ -614,3 +614,28 @@ workflows:
 #          filters:
 #            branches:
 #              only: master
+
+  version_conda_release:
+    jobs:
+      - install_and_test_ubuntu
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              only: master
+      - update_docs:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              only: master
+      - build_conda_binaries:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              only: master
