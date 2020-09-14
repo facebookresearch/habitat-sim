@@ -192,7 +192,7 @@ def main(show_imgs=True, save_imgs=False):
     # [example 7]
     existing_light_setup = sim.get_light_setup("my_custom_lighting")
 
-    # create a new setup with an additional light, a directional camera light
+    # create a new setup with an additional light
     new_light_setup = existing_light_setup + [
         LightInfo(
             position=[0.0, 0.0, 1.0, 0.0],
