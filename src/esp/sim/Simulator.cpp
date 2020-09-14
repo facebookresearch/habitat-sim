@@ -11,12 +11,7 @@
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 
-#include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Context.h>
-#include <Magnum/GL/DefaultFramebuffer.h>
-#include <Magnum/GL/PixelFormat.h>
-#include <Magnum/GL/Renderer.h>
-#include <Magnum/Image.h>
 
 #include "esp/assets/attributes/AttributesBase.h"
 #include "esp/core/esp.h"

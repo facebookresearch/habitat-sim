@@ -62,7 +62,9 @@ echo "Then open in browser:"
 echo "http://0.0.0.0:8000/build_js/utils/viewer/viewer.html?scene=skokloster-castle.glb"
 echo "Or:"
 echo "http://0.0.0.0:8000/build_js/esp/bindings_js/bindings.html?scene=skokloster-castle.glb"
-echo "To enable physics use:"
-echo "http://0.0.0.0:8000/build_js/utils/viewer/viewer.html?scene=skokloster-castle.glb&enablePhysics=true"
-echo "Or:"
-echo "http://0.0.0.0:8000/build_js/esp/bindings_js/bindings.html?scene=skokloster-castle.glb&enablePhysics=true"
+if ${BULLET}; then
+    echo "To enable physics use:"
+    echo "http://0.0.0.0:8000/build_js/utils/viewer/viewer.html?scene=skokloster-castle.glb&enablePhysics=true"
+    echo "Or:"
+    echo "http://0.0.0.0:8000/build_js/esp/bindings_js/bindings.html?scene=skokloster-castle.glb&enablePhysics=true"
+fi
