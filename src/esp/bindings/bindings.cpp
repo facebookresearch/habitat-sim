@@ -80,8 +80,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // TODO(msb) sim and sensor should not cross-depend
   esp::initEspBindings(m);
   esp::core::initCoreBindings(m);
-  esp::assets::initAttributesBindings(m);
-  esp::assets::managers::initAttributesManagersBindings(m);
+  esp::metadata::initAttributesBindings(m);
+  esp::metadata::managers::initAttributesManagersBindings(m);
   esp::geo::initGeoBindings(m);
   esp::physics::initPhysicsBindings(m);
   esp::scene::initSceneBindings(m);

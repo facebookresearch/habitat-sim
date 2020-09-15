@@ -6,7 +6,7 @@
 #define ESP_METADATA_MANAGERS_ATTRIBUTEMANAGERBASE_H_
 
 /** @file
- * @brief Class Template @ref esp::assets::managers::AttributesManager
+ * @brief Class Template @ref esp::metadata::managers::AttributesManager
  */
 
 #include <deque>
