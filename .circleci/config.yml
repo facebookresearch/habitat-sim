@@ -622,7 +622,7 @@ workflows:
             tags:
               only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
             branches:
-              only: master
+              ignore: /.*/
       - update_docs:
           requires:
             - install_and_test_ubuntu
@@ -630,7 +630,7 @@ workflows:
             tags:
               only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
             branches:
-              only: master
+              ignore: /.*/
       - build_conda_binaries:
           requires:
             - install_and_test_ubuntu
@@ -638,4 +638,4 @@ workflows:
             tags:
               only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
             branches:
-              only: master
+              ignore: /.*/
