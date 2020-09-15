@@ -119,32 +119,11 @@ bool BulletRigidObject::initialization_LibSpecific(
 
   bObjectShape_->setLocalScaling(btVector3{tmpAttr->getScale()});
 
-  btVector3 bInertia = btVector3(tmpAttr->getInertia());
-
-  if (!usingBBCollisionShape_) {
-    if (bInertia == btVector3{0, 0, 0}) {
-      // allow bullet to compute the inertia tensor if we don't have one
-      bObjectShape_->calculateLocalInertia(tmpAttr->getMass(),
-                                           bInertia);  // overrides bInertia
-    }
-  }
-
-  //! Bullet rigid body setup
-  btRigidBody::btRigidBodyConstructionInfo info =
-      btRigidBody::btRigidBodyConstructionInfo(tmpAttr->getMass(),
-                                               &(btMotionState()),
-                                               bObjectShape_.get(), bInertia);
-  info.m_friction = tmpAttr->getFrictionCoefficient();
-  info.m_restitution = tmpAttr->getRestitutionCoefficient();
-  info.m_linearDamping = tmpAttr->getLinearDamping();
-  info.m_angularDamping = tmpAttr->getAngularDamping();
-
-  //! Create rigid body
-  bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
+  // create the bObjectRigidBody_
+  constructRigidBody(false);
 
   //! Add to world
   bWorld_->addRigidBody(bObjectRigidBody_.get());
-  collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
   //! Sync render pose with physics
   syncPose();
   return true;
@@ -308,22 +287,15 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
   }
 
   if (mt == MotionType::KINEMATIC) {
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() |
-        btCollisionObject::CF_KINEMATIC_OBJECT);
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() &
-        ~btCollisionObject::CF_STATIC_OBJECT);
+    if (objectMotionType_ == MotionType::DYNAMIC) {
+      // we need to construct a new rigidBody configured for kinematics
+      constructRigidBody(true);
+    }
     objectMotionType_ = MotionType::KINEMATIC;
     bWorld_->addRigidBody(bObjectRigidBody_.get());
+    setActive();
     return true;
   } else if (mt == MotionType::STATIC) {
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() |
-        btCollisionObject::CF_STATIC_OBJECT);
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() &
-        ~btCollisionObject::CF_KINEMATIC_OBJECT);
     objectMotionType_ = MotionType::STATIC;
 
     // create a static collision object at the current transform
@@ -340,12 +312,10 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
     bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
     return true;
   } else if (mt == MotionType::DYNAMIC) {
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() &
-        ~btCollisionObject::CF_STATIC_OBJECT);
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() &
-        ~btCollisionObject::CF_KINEMATIC_OBJECT);
+    if (objectMotionType_ == MotionType::KINEMATIC) {
+      // we need to construct a new rigidBody configured for dynamics
+      constructRigidBody(false);
+    }
     objectMotionType_ = MotionType::DYNAMIC;
     bWorld_->addRigidBody(bObjectRigidBody_.get());
     setActive();
@@ -377,6 +347,48 @@ void BulletRigidObject::syncPose() {
   bObjectRigidBody_->setWorldTransform(
       btTransform(node().transformationMatrix()));
 }  // syncPose
+
+void BulletRigidObject::constructRigidBody(bool kinematic) {
+  // get this object's creation template, appropriately cast
+  auto tmpAttr = getInitializationAttributes();
+
+  double mass = 0;
+  btVector3 bInertia = {0, 0, 0};
+  if (!kinematic) {
+    mass = tmpAttr->getMass();
+    btVector3 bInertia = btVector3(tmpAttr->getInertia());
+    if (bInertia == btVector3{0, 0, 0}) {
+      // allow bullet to compute the inertia tensor if we don't have one
+      bObjectShape_->calculateLocalInertia(mass,
+                                           bInertia);  // overrides bInertia
+    }
+  }
+
+  //! Bullet rigid body setup
+  btRigidBody::btRigidBodyConstructionInfo info =
+      btRigidBody::btRigidBodyConstructionInfo(mass, &(btMotionState()),
+                                               bObjectShape_.get(), bInertia);
+
+  info.m_friction = tmpAttr->getFrictionCoefficient();
+  info.m_restitution = tmpAttr->getRestitutionCoefficient();
+  info.m_linearDamping = tmpAttr->getLinearDamping();
+  info.m_angularDamping = tmpAttr->getAngularDamping();
+
+  //! Create rigid body
+  if (collisionObjToObjIds_->count(bObjectRigidBody_.get())) {
+    collisionObjToObjIds_->erase(bObjectRigidBody_.get());
+  }
+  bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
+  collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
+
+  // set the
+  if (kinematic) {
+    bObjectRigidBody_->setCollisionFlags(
+        bObjectRigidBody_->getCollisionFlags() |
+        btCollisionObject::CF_KINEMATIC_OBJECT);
+  }
+  syncPose();
+}
 
 void BulletRigidObject::setCOM(const Magnum::Vector3&) {
   // Current not supported
