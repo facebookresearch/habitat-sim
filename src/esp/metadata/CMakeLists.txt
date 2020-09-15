@@ -23,20 +23,8 @@ set(
 find_package(
   Magnum
   REQUIRED
-  AnyImageImporter
-  AnySceneImporter
-  GL
-  MeshTools
-  SceneGraph
-  Shaders
-  Trade
   Primitives
 )
-
-
-if(BUILD_ASSIMP_SUPPORT)
-  find_package(MagnumPlugins REQUIRED AssimpImporter)
-endif()
 
 add_library(
   metadata STATIC
@@ -45,28 +33,7 @@ add_library(
 
 target_link_libraries(
   metadata
-  PUBLIC core
-         physics
-         scene
-         nav
-         Magnum::AnyImageImporter
-         Magnum::AnySceneImporter
-         Magnum::GL
-         Magnum::Magnum
-         Magnum::MeshTools
-         Magnum::SceneGraph
-         Magnum::Shaders
-         Magnum::Trade
+  PUBLIC Magnum::Magnum
          Magnum::Primitives
   PRIVATE geo io
 )
-
-if(BUILD_ASSIMP_SUPPORT)
-  target_link_libraries(
-    metadata PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
-  )
-endif()
-
-if(OpenMP_CXX_FOUND)
-  target_link_libraries(metadata PUBLIC OpenMP::OpenMP_CXX)
-endif()

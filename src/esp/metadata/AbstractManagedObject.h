@@ -25,8 +25,6 @@ class AbstractManagedObject {
   virtual std::string getClassKey() = 0;
   ESP_SMART_POINTERS(AbstractManagedObject)
 };  // class AbstractAttributes
-
 }  // namespace metadata
 }  // namespace esp
-
 #endif  // ESP_METADATA_ABSTRACTMANAGEDOBJECT_H_

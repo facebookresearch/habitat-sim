@@ -31,8 +31,8 @@ using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
 namespace esp {
-namespace assets {
-  
+namespace metadata {
+ 
 void initAttributesBindings(py::module& m) {
   // ==== AbstractAttributes ====
   py::class_<AbstractAttributes, esp::core::Configuration,

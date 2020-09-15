@@ -36,7 +36,6 @@ namespace esp {
 namespace metadata {
 namespace managers {
 
-
 /**
  * @brief instance class template base classes for attributes managers.
  * @tparam The type used to specialize class template for each attributes
@@ -322,8 +321,6 @@ void initAttributesManagersBindings(py::module& m) {
              PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
 
 }  // initAttributesManagersBindings
-
 }  // namespace managers
-
 }  // namespace metadata
 }  // namespace esp
