@@ -88,6 +88,7 @@ bool BulletRigidObject::initialization_LibSpecific(
     if (nullptr == primObjPtr) {
       return false;
     }
+    primObjPtr->setLocalScaling(btVector3(tmpAttr->getCollisionAssetSize()));
     bGenericShapes_.clear();
     bGenericShapes_.emplace_back(std::move(primObjPtr));
     bObjectShape_->addChildShape(btTransform::getIdentity(),
@@ -106,6 +107,8 @@ bool BulletRigidObject::initialization_LibSpecific(
 
       // add the final object after joining meshes
       if (joinCollisionMeshes) {
+        bObjectConvexShapes_.back()->setLocalScaling(
+            btVector3(tmpAttr->getCollisionAssetSize()));
         bObjectConvexShapes_.back()->setMargin(0.0);
         bObjectConvexShapes_.back()->recalcLocalAabb();
         bObjectShape_->addChildShape(btTransform::getIdentity(),

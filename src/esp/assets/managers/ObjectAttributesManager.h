@@ -128,7 +128,7 @@ class ObjectAttributesManager
    * @param handle String name of primitive asset attributes desired
    * @return whether handle exists or not in asset attributes library
    */
-  bool isValidPrimitiveAttributes(const std::string& handle) {
+  bool isValidPrimitiveAttributes(const std::string& handle) override {
     return assetAttributesMgr_->getTemplateLibHasHandle(handle);
   }
 
@@ -235,13 +235,13 @@ class ObjectAttributesManager
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
    * @param fileName Mesh Handle to check.
-   * @param meshTypeSetter Setter for mesh type.
+   * @param assetTypeSetter Setter for mesh type.
    */
-  void setDefaultFileNameBasedAttributes(
+  void setDefaultAssetNameBasedAttributes(
       Attrs::ObjectAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      std::function<void(int)> meshTypeSetter) override;
+      std::function<void(int)> assetTypeSetter) override;
 
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
