@@ -40,6 +40,12 @@ BulletRigidObject::BulletRigidObject(
       MotionState(*rigidBodyNode) {}
 
 BulletRigidObject::~BulletRigidObject() {
+  if (!isActive()) {
+    // This object may be supporting other sleeping objects, so wake them before
+    // removing.
+    activateCollisionIsland();
+  }
+
   if (objectMotionType_ != MotionType::STATIC) {
     // remove rigid body from the world
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
@@ -380,6 +386,21 @@ void BulletRigidObject::syncPose() {
   bObjectRigidBody_->setWorldTransform(
       btTransform(node().transformationMatrix()));
 }  // syncPose
+
+void BulletRigidObject::activateCollisionIsland() {
+  // activate nearby objects in the simulation island as computed on the
+  // previous collision detection pass
+  btCollisionObject* thisColObj = bObjectRigidBody_.get();
+  if (getMotionType() == MotionType::STATIC) {
+    thisColObj = bStaticCollisionObjects_.back().get();
+  }
+  auto& colObjs = bWorld_->getCollisionWorld()->getCollisionObjectArray();
+  for (auto objIx = 0; objIx < colObjs.size(); ++objIx) {
+    if (colObjs[objIx]->getIslandTag() == thisColObj->getIslandTag()) {
+      colObjs[objIx]->activate();
+    }
+  }
+}
 
 void BulletRigidObject::setCOM(const Magnum::Vector3&) {
   // Current not supported
