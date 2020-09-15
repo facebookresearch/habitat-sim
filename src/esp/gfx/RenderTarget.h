@@ -9,6 +9,7 @@
 #include "esp/core/esp.h"
 
 #include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx/Renderer.h"
 
 namespace esp {
 namespace gfx {
@@ -31,10 +32,16 @@ class RenderTarget {
    *                           Unprojects the depth on the CPU if nullptr.
    *                           Must be not nullptr to use @ref
    *                           readFrameDepthGPU()
+   * @param flags              The flags of the renderer that constructed this
+   *                           render target.  Currently just used to track
+   *                           whether or not @ref readFrameRgba,
+   *                           @ref blitRgbaToDefault, and @readFrameRgbaGPU
+   *                           are valid calls.
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
-               DepthShader* depthShader);
+               DepthShader* depthShader,
+               Renderer::Flags flags);
 
   /**
    * @brief Constructor
@@ -42,11 +49,12 @@ class RenderTarget {
    * @param depthUnprojection  Depth unrpojection parameters.  See @ref
    *                           calculateDepthUnprojection()
    *
-   * Equivalent to calling @ref RenderTarget(size, depthUnprojection, nullptr)
+   * Equivalent to calling
+   * @ref RenderTarget(size, depthUnprojection, nullptr, {})
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection)
-      : RenderTarget{size, depthUnprojection, nullptr} {};
+      : RenderTarget{size, depthUnprojection, nullptr, {}} {}
 
   ~RenderTarget() {}
 

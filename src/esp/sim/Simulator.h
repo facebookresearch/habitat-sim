@@ -60,7 +60,15 @@ struct SimulatorConfiguration {
    * simulation, if a suitable library (i.e. Bullet) has been installed.
    */
   bool enablePhysics = false;
+  /**
+   * @brief Whether or not to load the semantic mesh
+   */
   bool loadSemanticMesh = true;
+  /**
+   * @brief Whether or not to load textures for the meshes. This MUST be true
+   * for RGB rendering
+   */
+  bool requiresTextures = true;
   std::string physicsConfigFile =
       ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH;  // should we instead link a
                                                // PhysicsManagerConfiguration
@@ -764,6 +772,13 @@ class Simulator {
   //! NavMesh visualization variables
   int navMeshVisPrimID_ = esp::ID_UNDEFINED;
   esp::scene::SceneNode* navMeshVisNode_ = nullptr;
+
+  /**
+   * @brief Tracks whether or not the simulator was initialized
+   * to load textures.  Because we cache mesh loading, this should
+   * *not* be changed without calling close() first
+   */
+  Corrade::Containers::Optional<bool> requiresTextures_;
 
   ESP_SMART_POINTERS(Simulator)
 };

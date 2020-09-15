@@ -991,8 +991,10 @@ bool ResourceManager::loadGeneralMeshData(
 
     // if this is a new file, load it and add it to the dictionary
     LoadedAssetData loadedAssetData{info};
-    loadTextures(*fileImporter_, loadedAssetData);
-    loadMaterials(*fileImporter_, loadedAssetData);
+    if (requiresTextures_) {
+      loadTextures(*fileImporter_, loadedAssetData);
+      loadMaterials(*fileImporter_, loadedAssetData);
+    }
     loadMeshes(*fileImporter_, loadedAssetData);
     auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
     MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
@@ -1283,9 +1285,13 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh &&
       meshIDLocal != ID_UNDEFINED) {
     parent.children.back().meshIDLocal = meshIDLocal;
-    parent.children.back().materialIDLocal =
-        static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
-            ->material();
+    if (requiresTextures_) {
+      parent.children.back().materialIDLocal =
+          static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
+              ->material();
+    } else {
+      parent.children.back().materialIDLocal = ID_UNDEFINED;
+    }
   }
 
   // Recursively add children
@@ -1338,12 +1344,6 @@ void ResourceManager::loadTextures(Importer& importer,
       Mn::GL::TextureFormat format;
       if (image->isCompressed()) {
         format = Mn::GL::textureFormat(image->compressedFormat());
-      } else if (compressTextures_ &&
-                 image->format() == Mn::PixelFormat::RGBA8Unorm) {
-        format = Mn::GL::TextureFormat::CompressedRGBAS3tcDxt1;
-      } else if (compressTextures_ &&
-                 image->format() == Mn::PixelFormat::RGB8Unorm) {
-        format = Mn::GL::TextureFormat::CompressedRGBS3tcDxt1;
       } else {
         format = Mn::GL::textureFormat(image->format());
       }

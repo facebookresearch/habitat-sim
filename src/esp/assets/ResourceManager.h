@@ -419,10 +419,10 @@ class ResourceManager {
       const Magnum::Vector3& origin);
 
   /**
-   * @brief Set whether textures should be compressed.
-   * @param newVal New texture compression setting.
+   * @brief Sets whether or not the current agent sensor suite requires textures
+   * for rendering. Textures will not be loaded if this is false.
    */
-  inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+  inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }
 
  private:
   /**
@@ -921,9 +921,9 @@ class ResourceManager {
   std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
 
   /**
-   * @brief Flag to denote the desire to compress textures. TODO: unused?
+   * @brief Flag to load textures of meshes
    */
-  bool compressTextures_ = false;
+  bool requiresTextures_ = true;
 };
 
 }  // namespace assets

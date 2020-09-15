@@ -223,6 +223,7 @@ jobs:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
+                pip install pytest-parallel
               fi
       - run:
           name: Install emscripten
@@ -396,12 +397,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest --cov-report=xml --cov=./
+              pytest --workers 4 --cov-report=xml --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              pytest --workers 4 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
