@@ -20,11 +20,7 @@ set(
   managers/StageAttributesManager.h
   managers/StageAttributesManager.cpp
 )
-find_package(
-  Magnum
-  REQUIRED
-  Primitives
-)
+find_package(Magnum REQUIRED Primitives)
 
 add_library(
   metadata STATIC
@@ -33,7 +29,6 @@ add_library(
 
 target_link_libraries(
   metadata
-  PUBLIC Magnum::Magnum
-         Magnum::Primitives
+  PUBLIC Magnum::Magnum Magnum::Primitives
   PRIVATE geo io
 )

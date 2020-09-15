@@ -32,7 +32,7 @@ using Attrs::UVSpherePrimitiveAttributes;
 
 namespace esp {
 namespace metadata {
- 
+
 void initAttributesBindings(py::module& m) {
   // ==== AbstractAttributes ====
   py::class_<AbstractAttributes, esp::core::Configuration,
@@ -398,5 +398,5 @@ void initAttributesBindings(py::module& m) {
 
 }  // initAttributesBindings
 
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
