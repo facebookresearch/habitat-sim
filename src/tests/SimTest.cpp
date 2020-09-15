@@ -25,11 +25,11 @@ using esp::agent::Agent;
 using esp::agent::AgentConfiguration;
 using esp::agent::AgentState;
 using esp::assets::ResourceManager;
-using esp::metadata::attributes::AbstractPrimitiveAttributes;
-using esp::metadata::attributes::ObjectAttributes;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
+using esp::metadata::attributes::AbstractPrimitiveAttributes;
+using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
 using esp::scene::SceneConfiguration;
 using esp::sensor::Observation;
@@ -499,8 +499,8 @@ void SimTest::buildingPrimAssetObjectTemplates() {
       // verify that the attributes contains the handle, and the handle contains
       // the expected class name
       std::string className =
-          esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap.at(
-              static_cast<esp::metadata::PrimObjTypes>(i));
+          esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap
+              .at(static_cast<esp::metadata::PrimObjTypes>(i));
       CORRADE_VERIFY((primAttr->getHandle() == handle) &&
                      (handle.find(className) != std::string::npos));
     }

@@ -22,7 +22,10 @@ set(
 )
 find_package(Magnum REQUIRED Primitives)
 
-add_library(metadata STATIC ${metadata_SOURCES})
+add_library(
+  metadata STATIC
+  ${metadata_SOURCES}
+)
 
 target_link_libraries(
   metadata

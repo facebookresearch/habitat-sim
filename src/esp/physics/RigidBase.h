@@ -22,13 +22,13 @@
  */
 
 namespace esp {
-namespace assets{
+namespace assets {
 class ResourceManager;
 }
 namespace metadata {
 namespace attributes {
 class AbstractObjectAttributes;
-} // namespace attributes
+}  // namespace attributes
 }  // namespace metadata
 
 namespace physics {

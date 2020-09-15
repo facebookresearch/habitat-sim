@@ -31,7 +31,6 @@ using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
-
 namespace esp {
 namespace metadata {
 namespace managers {
