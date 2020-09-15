@@ -57,6 +57,7 @@ add_library(
 target_link_libraries(
   assets
   PUBLIC core
+         metadata
          physics
          scene
          nav
