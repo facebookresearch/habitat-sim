@@ -56,6 +56,7 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setFrictionCoefficient(0.5);
   setRestitutionCoefficient(0.1);
   setScale({1.0, 1.0, 1.0});
+  setCollisionAssetSize({1.0, 1.0, 1.0});
   setMargin(0.04);
   setOrientUp({0, 1, 0});
   setOrientFront({0, 0, -1});

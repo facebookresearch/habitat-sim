@@ -40,6 +40,12 @@ BulletRigidObject::BulletRigidObject(
       MotionState(*rigidBodyNode) {}
 
 BulletRigidObject::~BulletRigidObject() {
+  if (!isActive()) {
+    // This object may be supporting other sleeping objects, so wake them before
+    // removing.
+    activateCollisionIsland();
+  }
+
   if (objectMotionType_ != MotionType::STATIC) {
     // remove rigid body from the world
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
@@ -88,6 +94,7 @@ bool BulletRigidObject::initialization_LibSpecific(
     if (nullptr == primObjPtr) {
       return false;
     }
+    primObjPtr->setLocalScaling(btVector3(tmpAttr->getCollisionAssetSize()));
     bGenericShapes_.clear();
     bGenericShapes_.emplace_back(std::move(primObjPtr));
     bObjectShape_->addChildShape(btTransform::getIdentity(),
@@ -106,6 +113,8 @@ bool BulletRigidObject::initialization_LibSpecific(
 
       // add the final object after joining meshes
       if (joinCollisionMeshes) {
+        bObjectConvexShapes_.back()->setLocalScaling(
+            btVector3(tmpAttr->getCollisionAssetSize()));
         bObjectConvexShapes_.back()->setMargin(0.0);
         bObjectConvexShapes_.back()->recalcLocalAabb();
         bObjectShape_->addChildShape(btTransform::getIdentity(),
@@ -388,6 +397,21 @@ void BulletRigidObject::constructRigidBody(bool kinematic) {
         btCollisionObject::CF_KINEMATIC_OBJECT);
   }
   syncPose();
+}
+
+void BulletRigidObject::activateCollisionIsland() {
+  // activate nearby objects in the simulation island as computed on the
+  // previous collision detection pass
+  btCollisionObject* thisColObj = bObjectRigidBody_.get();
+  if (getMotionType() == MotionType::STATIC) {
+    thisColObj = bStaticCollisionObjects_.back().get();
+  }
+  auto& colObjs = bWorld_->getCollisionWorld()->getCollisionObjectArray();
+  for (auto objIx = 0; objIx < colObjs.size(); ++objIx) {
+    if (colObjs[objIx]->getIslandTag() == thisColObj->getIslandTag()) {
+      colObjs[objIx]->activate();
+    }
+  }
 }
 
 void BulletRigidObject::setCOM(const Magnum::Vector3&) {

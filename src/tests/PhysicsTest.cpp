@@ -739,3 +739,53 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
     }
   }
 }
+
+TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
+  // test that removing a sleeping support object wakes its collision island
+  LOG(INFO) << "Starting physics test: TestRemoveSleepingSupport";
+
+  std::string stageFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/scenes/simple_room.glb");
+
+  initStage(stageFile);
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    auto objectAttributesManager =
+        resourceManager_.getObjectAttributesManager();
+
+    std::string cubeHandle =
+        objectAttributesManager->getTemplateHandlesBySubstring("cubeSolid")[0];
+
+    // create a stack of cubes on the table
+    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
+    std::vector<int> cubeIds;
+    int stackSize = 3;
+    for (int i = 0; i < stackSize; ++i) {
+      cubeIds.push_back(physicsManager_->addObject(cubeHandle, &drawables));
+      physicsManager_->setTranslation(cubeIds.back(),
+                                      (Mn::Vector3(0, 0.2, 0) * i) + stackBase);
+    }
+
+    // simulate to stabilize the stack and populate collision islands
+    while (physicsManager_->getWorldTime() < 4.0) {
+      physicsManager_->stepPhysics(0.1);
+    }
+
+    // cubes should be sleeping
+    for (auto id : cubeIds) {
+      assert(!physicsManager_->isActive(id));
+    }
+
+    // remove the bottom cube
+    physicsManager_->removeObject(cubeIds.front());
+    cubeIds.erase(cubeIds.begin());
+
+    // remaining cubes should now be awake
+    for (auto id : cubeIds) {
+      assert(physicsManager_->isActive(id));
+    }
+  }
+}

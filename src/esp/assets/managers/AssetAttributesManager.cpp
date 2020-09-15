@@ -119,7 +119,8 @@ AssetAttributesManager::createAttributesTemplate(
   if (nullptr == primAssetAttributes) {
     return primAssetAttributes;
   }
-  LOG(INFO) << "Asset attributes (" << primClassName << ") created"
+  LOG(INFO) << "Asset attributes (" << primClassName << " : "
+            << primAssetAttributes->getHandle() << ") created"
             << (registerTemplate ? " and registered." : ".");
 
   return this->postCreateRegister(primAssetAttributes, registerTemplate);
