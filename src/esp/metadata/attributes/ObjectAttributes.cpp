@@ -104,5 +104,5 @@ StageAttributes::StageAttributes(const std::string& handle)
 }  // StageAttributes ctor
 
 }  // namespace attributes
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

@@ -12,12 +12,12 @@
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/Context.h>
 
-#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/io/io.h"
+#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/ObjectControls.h"

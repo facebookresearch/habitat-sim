@@ -74,7 +74,6 @@ using metadata::managers::StageAttributesManager;
 
 namespace assets {
 
-
 // static constexpr arrays require redundant definitions until C++17
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
@@ -98,8 +97,8 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   assetAttributesManager_ = AssetAttributesManager::create(*this);
   objectAttributesManager_ = ObjectAttributesManager::create(*this);
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ = PhysicsAttributesManager::create(
-      *this, objectAttributesManager_);
+  physicsAttributesManager_ =
+      PhysicsAttributesManager::create(*this, objectAttributesManager_);
   stageAttributesManager_ = StageAttributesManager::create(
       *this, objectAttributesManager_, physicsAttributesManager_);
 

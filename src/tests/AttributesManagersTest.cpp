@@ -6,12 +6,11 @@
 #include <string>
 
 #include "esp/assets/ResourceManager.h"
-#include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
-
 
 #include "configure.h"
 
@@ -20,8 +19,8 @@ namespace Cr = Corrade;
 namespace AttrMgrs = esp::metadata::managers;
 namespace Attrs = esp::metadata::attributes;
 
-using esp::metadata::PrimObjTypes;
 using esp::assets::ResourceManager;
+using esp::metadata::PrimObjTypes;
 
 using AttrMgrs::AttributesManager;
 using Attrs::AbstractPrimitiveAttributes;

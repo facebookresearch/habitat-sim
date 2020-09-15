@@ -8,14 +8,14 @@
 #include <Corrade/Utility/Assert.h>
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
-#include "esp/metadata/managers/AssetAttributesManager.h"
-#include "esp/metadata/managers/ObjectAttributesManager.h"
-#include "esp/metadata/managers/PhysicsAttributesManager.h"
-#include "esp/metadata/managers/StageAttributesManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/StageAttributesManager.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
@@ -39,7 +39,6 @@ class Renderer;
 
 namespace esp {
 namespace sim {
-
 namespace AttrMgrs = esp::metadata::managers;
 namespace Attrs = esp::metadata::attributes;
 

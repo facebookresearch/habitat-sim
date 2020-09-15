@@ -26,14 +26,12 @@
 namespace Cr = Corrade;
 
 namespace esp {
-namespace assets{
+namespace assets {
 class ResourceManager;
 }
 
 namespace metadata {
-
 namespace managers {
-
 namespace Attrs = esp::metadata::attributes;
 /**
  * @brief Template Class defining responsibilities for managing attributes for
@@ -990,7 +988,8 @@ auto AttributesManager<T>::createObjectAttributesFromJson(
                     attributes, _1))) {
     colFName = cTmpFName;
     // TODO eventually remove this, but currently collision mesh must be UNKNOWN
-    attributes->setCollisionAssetType(static_cast<int>(esp::assets::AssetType::UNKNOWN));
+    attributes->setCollisionAssetType(
+        static_cast<int>(esp::assets::AssetType::UNKNOWN));
   }
 
   // use non-empty result if either result is empty
@@ -1192,6 +1191,6 @@ AttributesManager<T>::getTemplateHandlesBySubStringPerType(
 }  // AttributesManager::getTemplateHandlesBySubStringPerType
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 #endif  // ESP_METADATA_MANAGERS_ATTRIBUTESMANAGERBASE_H_

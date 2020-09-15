@@ -11,11 +11,10 @@
 #include "PhysicsAttributesManager.h"
 
 namespace esp {
-namespace assets{
+namespace assets {
 enum class AssetType;
 }
 namespace metadata {
-
 
 namespace managers {
 class StageAttributesManager
