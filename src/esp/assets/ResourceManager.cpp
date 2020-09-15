@@ -62,13 +62,19 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
+using metadata::attributes::AbstractObjectAttributes;
+using metadata::attributes::CubePrimitiveAttributes;
+using metadata::attributes::ObjectAttributes;
+using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::StageAttributes;
+using metadata::managers::AssetAttributesManager;
+using metadata::managers::ObjectAttributesManager;
+using metadata::managers::PhysicsAttributesManager;
+using metadata::managers::StageAttributesManager;
+
 namespace assets {
 
-using attributes::AbstractObjectAttributes;
-using attributes::CubePrimitiveAttributes;
-using attributes::ObjectAttributes;
-using attributes::PhysicsManagerAttributes;
-using attributes::StageAttributes;
+
 // static constexpr arrays require redundant definitions until C++17
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
@@ -89,12 +95,12 @@ ResourceManager::ResourceManager()
 }  // namespace assets
 
 void ResourceManager::buildImportersAndAttributesManagers() {
-  assetAttributesManager_ = managers::AssetAttributesManager::create(*this);
-  objectAttributesManager_ = managers::ObjectAttributesManager::create(*this);
+  assetAttributesManager_ = AssetAttributesManager::create(*this);
+  objectAttributesManager_ = ObjectAttributesManager::create(*this);
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ = managers::PhysicsAttributesManager::create(
+  physicsAttributesManager_ = PhysicsAttributesManager::create(
       *this, objectAttributesManager_);
-  stageAttributesManager_ = managers::StageAttributesManager::create(
+  stageAttributesManager_ = StageAttributesManager::create(
       *this, objectAttributesManager_, physicsAttributesManager_);
 
   // instantiate a primitive importer
@@ -129,7 +135,7 @@ void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
     bool isEnabled,
     scene::SceneNode* parent,
-    const PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
+    const Attrs::PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {

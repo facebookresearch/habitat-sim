@@ -29,7 +29,6 @@
 #include "GenericMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
-#include "attributes/AttributesBase.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
@@ -37,10 +36,11 @@
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 
-#include "managers/AssetAttributesManager.h"
-#include "managers/ObjectAttributesManager.h"
-#include "managers/PhysicsAttributesManager.h"
-#include "managers/StageAttributesManager.h"
+#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h" 
+#include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/StageAttributesManager.h"
 
 // forward declarations
 namespace Magnum {
@@ -53,7 +53,8 @@ class PhongMaterialData;
 
 namespace Mn = Magnum;
 
-namespace Attrs = esp::assets::attributes;
+namespace Attrs = esp::metadata::attributes;
+namespace AttrMgrs = esp::metadata::managers;
 
 namespace esp {
 namespace gfx {
@@ -216,14 +217,14 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const managers::AssetAttributesManager::ptr getAssetAttributesManager()
+  const AttrMgrs::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
     return assetAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
+  const AttrMgrs::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
     return objectAttributesManager_;
   }
@@ -231,14 +232,14 @@ class ResourceManager {
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
+  const AttrMgrs::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
       const {
     return physicsAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const managers::StageAttributesManager::ptr getStageAttributesManager()
+  const AttrMgrs::StageAttributesManager::ptr getStageAttributesManager()
       const {
     return stageAttributesManager_;
   }
@@ -889,22 +890,22 @@ class ResourceManager {
   /**
    * @brief Manages all construction and access to asset attributes.
    */
-  managers::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
+  AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to object attributes.
    */
-  managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to physics world attributes.
    */
-  managers::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+  AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to scene attributes.
    */
-  managers::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
+  AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
   //! tracks primitive mesh ids
   int nextPrimitiveMeshId = 0;

@@ -150,51 +150,51 @@ BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
   CORRADE_ASSERT(
       (primTypeVal >= 0) &&
           (primTypeVal <
-           static_cast<int>(assets::PrimObjTypes::END_PRIM_OBJ_TYPES)),
+           static_cast<int>(metadata::PrimObjTypes::END_PRIM_OBJ_TYPES)),
       "BulletRigidObject::buildPrimitiveCollisionObject : Illegal primitive "
       "value requested : "
           << primTypeVal,
       nullptr);
-  assets::PrimObjTypes primType =
-      static_cast<assets::PrimObjTypes>(primTypeVal);
+  metadata::PrimObjTypes primType =
+      static_cast<metadata::PrimObjTypes>(primTypeVal);
 
   std::unique_ptr<btCollisionShape> obj(nullptr);
   switch (primType) {
-    case assets::PrimObjTypes::CAPSULE_SOLID:
-    case assets::PrimObjTypes::CAPSULE_WF: {
+    case metadata::PrimObjTypes::CAPSULE_SOLID:
+    case metadata::PrimObjTypes::CAPSULE_WF: {
       // use bullet capsule :  btCapsuleShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
       btScalar height = 2.0 * halfLength;
       obj = std::make_unique<btCapsuleShape>(radius, height);
       break;
     }
-    case assets::PrimObjTypes::CONE_SOLID:
-    case assets::PrimObjTypes::CONE_WF: {
+    case metadata::PrimObjTypes::CONE_SOLID:
+    case metadata::PrimObjTypes::CONE_WF: {
       // use bullet cone : btConeShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
       btScalar height = 2.0 * halfLength;
       obj = std::make_unique<btConeShape>(radius, height);
       break;
     }
-    case assets::PrimObjTypes::CUBE_SOLID:
-    case assets::PrimObjTypes::CUBE_WF: {
+    case metadata::PrimObjTypes::CUBE_SOLID:
+    case metadata::PrimObjTypes::CUBE_WF: {
       // use bullet box shape : btBoxShape( const btVector3& boxHalfExtents);
       btVector3 dim(1.0, 1.0, 1.0);
       obj = std::make_unique<btBoxShape>(dim);
       break;
     }
-    case assets::PrimObjTypes::CYLINDER_SOLID:
-    case assets::PrimObjTypes::CYLINDER_WF: {
+    case metadata::PrimObjTypes::CYLINDER_SOLID:
+    case metadata::PrimObjTypes::CYLINDER_WF: {
       // use bullet cylinder shape :btCylinderShape (const btVector3&
       // halfExtents);
       btVector3 dim(1.0, 1.0, 1.0);
       obj = std::make_unique<btCylinderShape>(dim);
       break;
     }
-    case assets::PrimObjTypes::ICOSPHERE_SOLID:
-    case assets::PrimObjTypes::ICOSPHERE_WF:
-    case assets::PrimObjTypes::UVSPHERE_SOLID:
-    case assets::PrimObjTypes::UVSPHERE_WF: {
+    case metadata::PrimObjTypes::ICOSPHERE_SOLID:
+    case metadata::PrimObjTypes::ICOSPHERE_WF:
+    case metadata::PrimObjTypes::UVSPHERE_SOLID:
+    case metadata::PrimObjTypes::UVSPHERE_WF: {
       // use bullet sphere shape :btSphereShape (btScalar radius)
       btScalar radius = 1.0f;
       obj = std::make_unique<btSphereShape>(radius);

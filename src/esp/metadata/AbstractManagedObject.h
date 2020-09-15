@@ -2,15 +2,13 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_ATTRIBUTES_ABSTRACTMANAGEDOBJECT_H_
-#define ESP_ASSETS_ATTRIBUTES_ABSTRACTMANAGEDOBJECT_H_
+#ifndef ESP_METADATA_ABSTRACTMANAGEDOBJECT_H_
+#define ESP_METADATA_ABSTRACTMANAGEDOBJECT_H_
 
 #include "esp/core/Configuration.h"
 
 namespace esp {
-namespace assets {
-namespace attributes {
-
+namespace metadata {
 /**
  * @brief This abstract base class provides the interface of expected
  * functionality for an object to be manageable by @ref ManagedContainers class
@@ -28,8 +26,7 @@ class AbstractManagedObject {
   ESP_SMART_POINTERS(AbstractManagedObject)
 };  // class AbstractAttributes
 
-}  // namespace attributes
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_ASSETS_ATTRIBUTES_ABSTRACTMANAGEDOBJECT_H_
+#endif  // ESP_METADATA_ABSTRACTMANAGEDOBJECT_H_

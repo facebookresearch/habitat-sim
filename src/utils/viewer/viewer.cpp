@@ -163,13 +163,13 @@ Key Commands:
   std::unique_ptr<esp::sim::Simulator> simulator_;
 
   // The managers belonging to the simulator
-  std::shared_ptr<esp::assets::managers::ObjectAttributesManager>
+  std::shared_ptr<esp::metadata::managers::ObjectAttributesManager>
       objectAttrManager_ = nullptr;
-  std::shared_ptr<esp::assets::managers::AssetAttributesManager>
+  std::shared_ptr<esp::metadata::managers::AssetAttributesManager>
       assetAttrManager_ = nullptr;
-  std::shared_ptr<esp::assets::managers::StageAttributesManager>
+  std::shared_ptr<esp::metadata::managers::StageAttributesManager>
       stageAttrManager_ = nullptr;
-  std::shared_ptr<esp::assets::managers::PhysicsAttributesManager>
+  std::shared_ptr<esp::metadata::managers::PhysicsAttributesManager>
       physAttrManager_ = nullptr;
 
   bool debugBullet_ = false;

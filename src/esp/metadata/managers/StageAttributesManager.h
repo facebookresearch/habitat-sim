@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef tageESP_ASSETS_MANAGERS_STAGEATTRIBUTEMANAGER_H_
-#define tageESP_ASSETS_MANAGERS_STAGEATTRIBUTEMANAGER_H_
+#ifndef ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
+#define ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 
 #include "AttributesManagerBase.h"
 
@@ -11,15 +11,18 @@
 #include "PhysicsAttributesManager.h"
 
 namespace esp {
-namespace assets {
+namespace assets{
 enum class AssetType;
+}
+namespace metadata {
+
 
 namespace managers {
 class StageAttributesManager
     : public AttributesManager<Attrs::StageAttributes> {
  public:
   StageAttributesManager(
-      assets::ResourceManager& resourceManager,
+      esp::assets::ResourceManager& resourceManager,
       ObjectAttributesManager::ptr objectAttributesMgr,
       PhysicsAttributesManager::ptr physicsAttributesManager);
 
@@ -234,7 +237,7 @@ class StageAttributesManager
 };  // StageAttributesManager
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 
-#endif  // tageESP_ASSETS_MANAGERS_STAGEATTRIBUTEMANAGER_H_
+#endif  // ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_

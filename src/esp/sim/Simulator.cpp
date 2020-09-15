@@ -12,7 +12,7 @@
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/Context.h>
 
-#include "esp/assets/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"

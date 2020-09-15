@@ -25,8 +25,8 @@ using esp::agent::Agent;
 using esp::agent::AgentConfiguration;
 using esp::agent::AgentState;
 using esp::assets::ResourceManager;
-using esp::assets::attributes::AbstractPrimitiveAttributes;
-using esp::assets::attributes::ObjectAttributes;
+using esp::metadata::attributes::AbstractPrimitiveAttributes;
+using esp::metadata::attributes::ObjectAttributes;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
@@ -482,7 +482,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 
   // there should be 1 prim template per default primitive asset template
   int numPrimsExpected =
-      static_cast<int>(esp::assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
+      static_cast<int>(esp::metadata::PrimObjTypes::END_PRIM_OBJ_TYPES);
   // verify the number of primitive templates
   CORRADE_VERIFY(numPrimsExpected == primObjAssetHandles.size());
 
@@ -499,8 +499,8 @@ void SimTest::buildingPrimAssetObjectTemplates() {
       // verify that the attributes contains the handle, and the handle contains
       // the expected class name
       std::string className =
-          esp::assets::managers::AssetAttributesManager::PrimitiveNames3DMap.at(
-              static_cast<esp::assets::PrimObjTypes>(i));
+          esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap.at(
+              static_cast<esp::metadata::PrimObjTypes>(i));
       CORRADE_VERIFY((primAttr->getHandle() == handle) &&
                      (handle.find(className) != std::string::npos));
     }
@@ -540,7 +540,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   {
     // get existing default cylinder handle
     primObjAssetHandles = assetAttribsMgr->getTemplateHandlesByPrimType(
-        esp::assets::PrimObjTypes::CYLINDER_SOLID);
+        esp::metadata::PrimObjTypes::CYLINDER_SOLID);
     // should only be one handle in this vector
     CORRADE_VERIFY(1 == primObjAssetHandles.size());
     // primitive render object uses primitive render asset as handle
@@ -581,7 +581,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // test creation of new object, using edited attributes
     // get existing default cylinder handle
     primObjAssetHandles = assetAttribsMgr->getTemplateHandlesByPrimType(
-        esp::assets::PrimObjTypes::CYLINDER_SOLID);
+        esp::metadata::PrimObjTypes::CYLINDER_SOLID);
     // primitive render object uses primitive render asset as handle
     std::string origCylinderHandle = primObjAssetHandles[0];
     primAttr = assetAttribsMgr->getTemplateCopyByHandle(origCylinderHandle);

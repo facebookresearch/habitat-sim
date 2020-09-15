@@ -20,11 +20,11 @@
 
 namespace Cr = Corrade;
 
-namespace AttrMgrs = esp::assets::managers;
+namespace AttrMgrs = esp::metadata::managers;
 using esp::assets::ResourceManager;
-using esp::assets::attributes::ObjectAttributes;
-using esp::assets::managers::ObjectAttributesManager;
-using esp::assets::managers::PhysicsAttributesManager;
+using esp::metadata::attributes::ObjectAttributes;
+using AttrMgrs::ObjectAttributesManager;
+using AttrMgrs::PhysicsAttributesManager;
 using esp::physics::PhysicsManager;
 using esp::scene::SceneManager;
 

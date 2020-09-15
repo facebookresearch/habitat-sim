@@ -5,7 +5,7 @@
 #include "PrimitiveAssetAttributes.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 namespace attributes {
 
 CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
@@ -88,5 +88,5 @@ UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
 }  // PhysicsUVSpherePrimAttributes
 
 }  // namespace attributes
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

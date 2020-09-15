@@ -9,7 +9,7 @@
 #include "AttributesManagerBase.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 
 using attributes::AbstractPrimitiveAttributes;
 using attributes::CapsulePrimitiveAttributes;
@@ -189,5 +189,5 @@ AssetAttributesManager::loadAttributesFromJSONDoc(
 }  // AssetAttributesManager::loadAttributesFromJSONDoc
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

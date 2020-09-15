@@ -5,7 +5,7 @@
 #include "PhysicsManagerAttributes.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 namespace attributes {
 
 const std::string PhysicsManagerAttributes::JSONConfigTestString =
@@ -25,5 +25,5 @@ PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
 }  // PhysicsManagerAttributes ctor
 
 }  // namespace attributes
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

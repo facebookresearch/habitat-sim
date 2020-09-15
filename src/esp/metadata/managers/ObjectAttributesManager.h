@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
-#define ESP_ASSETS_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
+#ifndef ESP_METADATA_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
+#define ESP_METADATA_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
 
 #include <Corrade/Utility/Assert.h>
 
@@ -11,7 +11,7 @@
 #include "AttributesManagerBase.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 namespace managers {
 /**
  * @brief single instance class managing templates describing physical objects
@@ -19,7 +19,7 @@ namespace managers {
 class ObjectAttributesManager
     : public AttributesManager<Attrs::ObjectAttributes> {
  public:
-  ObjectAttributesManager(assets::ResourceManager& resourceManager)
+  ObjectAttributesManager(esp::assets::ResourceManager& resourceManager)
       : AttributesManager<Attrs::ObjectAttributes>::AttributesManager(
             resourceManager,
             "Object") {
@@ -329,7 +329,7 @@ class ObjectAttributesManager
 };  // ObjectAttributesManager
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_ASSETS_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
+#endif  // ESP_METADATA_MANAGERS_OBJECTATTRIBUTEMANAGER_H_

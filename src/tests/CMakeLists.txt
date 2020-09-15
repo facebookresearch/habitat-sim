@@ -15,7 +15,7 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )
 
-test(AttributesManagersTest assets)
+test(AttributesManagersTest assets metadata)
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(CoreTest io)
@@ -23,7 +23,7 @@ test(CoreTest io)
 test(NavTest nav assets)
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(IOTest io assets)
+test(IOTest io metadata)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(Mp3dTest scene)
