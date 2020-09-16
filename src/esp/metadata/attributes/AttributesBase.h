@@ -21,7 +21,7 @@ class AbstractAttributes : public esp::core::Configuration {
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)
       : Configuration() {
-    setAttributesClassKey(attributesClassKey);
+    setClassKey(attributesClassKey);
     AbstractAttributes::setHandle(handle);
   }
 
@@ -73,7 +73,7 @@ class AbstractAttributes : public esp::core::Configuration {
    * @param attributesClassKey the string handle corresponding to the
    * constructors used to make copies of this object in copy constructor map.
    */
-  void setAttributesClassKey(const std::string& attributesClassKey) {
+  void setClassKey(const std::string& attributesClassKey) {
     setString("attributesClassKey", attributesClassKey);
   }
 
