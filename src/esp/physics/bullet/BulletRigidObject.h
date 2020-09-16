@@ -440,6 +440,12 @@ class BulletRigidObject : public BulletBase,
   void syncPose() override;
 
   /**
+   * @brief construct a @ref btRigidBody for this object configured for either
+   * kinematics or dynamics.
+   */
+  void constructRigidBody(bool kinematic = false);
+
+  /**
    * @brief Iterate through all collision objects and active all objects sharing
    * a collision island tag with this object's collision shape.
    */
