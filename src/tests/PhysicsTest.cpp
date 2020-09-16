@@ -724,7 +724,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
                         .length(),
                     1.0e-4);
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
-                     Magnum::Vector3{0.556, boxHalfExtent * 4, 0.0})
+                     Magnum::Vector3{0.578, boxHalfExtent * 4, 0.0})
                         .length(),
                     2.0e-2);
         } break;

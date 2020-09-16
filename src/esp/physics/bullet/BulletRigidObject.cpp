@@ -133,8 +133,6 @@ bool BulletRigidObject::initialization_LibSpecific(
 
   //! Add to world
   bWorld_->addRigidBody(bObjectRigidBody_.get());
-  //! Sync render pose with physics
-  syncPose();
   return true;
 }  // initialization_LibSpecific
 
@@ -271,8 +269,9 @@ void BulletRigidObject::setCollisionFromBB() {
   bObjectShape_->recalculateLocalAabb();
   bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
 
-  if (bObjectRigidBody_->getInvInertiaDiagLocal() == btVector3{0, 0, 0}) {
-    btVector3 bInertia(getInertiaVector());
+  auto tmpAttr = getInitializationAttributes();
+  btVector3 bInertia(tmpAttr->getInertia());
+  if (bInertia == btVector3{0, 0, 0}) {
     // allow bullet to compute the inertia tensor if we don't have one
     bObjectShape_->calculateLocalInertia(getMass(),
                                          bInertia);  // overrides bInertia
@@ -296,7 +295,8 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
   }
 
   if (mt == MotionType::KINEMATIC) {
-    if (objectMotionType_ == MotionType::DYNAMIC) {
+    if (!(bObjectRigidBody_->getCollisionFlags() &
+          btCollisionObject::CF_KINEMATIC_OBJECT)) {
       // we need to construct a new rigidBody configured for kinematics
       constructRigidBody(true);
     }
@@ -321,7 +321,8 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
     bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
     return true;
   } else if (mt == MotionType::DYNAMIC) {
-    if (objectMotionType_ == MotionType::KINEMATIC) {
+    if (bObjectRigidBody_->getCollisionFlags() &
+        btCollisionObject::CF_KINEMATIC_OBJECT) {
       // we need to construct a new rigidBody configured for dynamics
       constructRigidBody(false);
     }
@@ -365,7 +366,7 @@ void BulletRigidObject::constructRigidBody(bool kinematic) {
   btVector3 bInertia = {0, 0, 0};
   if (!kinematic) {
     mass = tmpAttr->getMass();
-    btVector3 bInertia = btVector3(tmpAttr->getInertia());
+    bInertia = btVector3(tmpAttr->getInertia());
     if (bInertia == btVector3{0, 0, 0}) {
       // allow bullet to compute the inertia tensor if we don't have one
       bObjectShape_->calculateLocalInertia(mass,
