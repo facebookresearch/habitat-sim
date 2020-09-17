@@ -7,16 +7,19 @@
 
 #include "esp/core/Configuration.h"
 
+#include "esp/metadata/AbstractManagedObject.h"
+
 namespace esp {
 namespace metadata {
 namespace attributes {
 
 /**
- * @brief Base class for all implemented attributes.  This abstract base class
- * also illustrates the functionality exectation of @ref AttributesManagerBase
- * class template specializations.
+ * @brief Base class for all implemented attributes.  Inherits from @ref
+ * AbstractManagedObject so the attributes can be managed by a @ref
+ * ManagedContainer.
  */
-class AbstractAttributes : public esp::core::Configuration {
+class AbstractAttributes : public AbstractManagedObject,
+                           public esp::core::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)
@@ -30,7 +33,9 @@ class AbstractAttributes : public esp::core::Configuration {
    * @brief Get this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.
    */
-  std::string getClassKey() const { return getString("attributesClassKey"); }
+  std::string getClassKey() const override {
+    return getString("attributesClassKey");
+  }
 
   /**
    * @brief Set this attributes name/origin.  Some attributes derive their own
@@ -38,21 +43,26 @@ class AbstractAttributes : public esp::core::Configuration {
    * such cases this should be overridden with NOP.
    * @param handle the handle to set.
    */
-  virtual void setHandle(const std::string& handle) {
+  virtual void setHandle(const std::string& handle) override {
     setString("handle", handle);
   }
-  std::string getHandle() const { return getString("handle"); }
+  std::string getHandle() const override { return getString("handle"); }
 
   /**
    * @brief directory where files used to construct attributes can be found.
    */
-  virtual void setFileDirectory(const std::string& fileDirectory) {
+  virtual void setFileDirectory(const std::string& fileDirectory) override {
     setString("fileDirectory", fileDirectory);
   }
-  std::string getFileDirectory() const { return getString("fileDirectory"); }
+  std::string getFileDirectory() const override {
+    return getString("fileDirectory");
+  }
 
-  void setID(int ID) { setInt("ID", ID); }
-  int getID() const { return getInt("ID"); }
+  /**
+   *  @brief Unique ID referencing attributes
+   */
+  void setID(int ID) override { setInt("ID", ID); }
+  int getID() const override { return getInt("ID"); }
 
   /**
    * @brief Returns configuration to be used with PrimitiveImporter to
@@ -73,7 +83,7 @@ class AbstractAttributes : public esp::core::Configuration {
    * @param attributesClassKey the string handle corresponding to the
    * constructors used to make copies of this object in copy constructor map.
    */
-  void setClassKey(const std::string& attributesClassKey) {
+  void setClassKey(const std::string& attributesClassKey) override {
     setString("attributesClassKey", attributesClassKey);
   }
 

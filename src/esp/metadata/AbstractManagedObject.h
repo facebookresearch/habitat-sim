@@ -11,7 +11,7 @@ namespace esp {
 namespace metadata {
 /**
  * @brief This abstract base class provides the interface of expected
- * functionality for an object to be manageable by @ref ManagedContainers class
+ * functionality for an object to be manageable by @ref ManagedContainer class
  * template specializations.
  */
 class AbstractManagedObject {
@@ -32,6 +32,18 @@ class AbstractManagedObject {
    */
   virtual void setHandle(const std::string&) = 0;
   virtual std::string getHandle() const = 0;
+
+  /**
+   * @brief directory where files used to construct attributes can be found.
+   */
+  virtual void setFileDirectory(const std::string& fileDirectory) = 0;
+  virtual std::string getFileDirectory() const = 0;
+
+  /**
+   *  @brief Unique ID referencing attributes
+   */
+  virtual void setID(int ID) = 0;
+  virtual int getID() const = 0;
 
  protected:
   virtual void setClassKey(const std::string&) = 0;

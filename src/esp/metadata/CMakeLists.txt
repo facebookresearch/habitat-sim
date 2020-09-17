@@ -14,6 +14,7 @@ set(
   attributes/PhysicsManagerAttributes.cpp
   attributes/PrimitiveAssetAttributes.h
   attributes/PrimitiveAssetAttributes.cpp
+  managers/ManagedContainerBase.h
   managers/AttributesManagerBase.h
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp

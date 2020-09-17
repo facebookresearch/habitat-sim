@@ -14,7 +14,6 @@
 #include <map>
 #include <set>
 
-#include <Corrade/Utility/ConfigurationGroup.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
@@ -34,18 +33,17 @@ namespace metadata {
 namespace managers {
 namespace Attrs = esp::metadata::attributes;
 /**
- * @brief Template Class defining responsibilities for managing attributes for
- * different types of objects, such as scenes, primitive assets, physical
- * objects, etc.
- * @tparam AttribsPtr the type of attributes shared pointer object this class
- * references
+ * @brief Template Class defining responsibilities and functionality for
+ * managing @ref AbstractAttributes constructs.
+ * @tparam AttribsPtr the type of managed attributes a particular specialization
+ * of this class works with.  Must inherit from @ref AbstractAttributes.
  */
-
 template <class T>
 class AttributesManager {
  public:
   static_assert(std::is_base_of<Attrs::AbstractAttributes, T>::value,
-                "Managed type must be derived from AbstractAttributes");
+                "AttributesManager :: Managed object type must be derived from "
+                "AbstractAttributes");
 
   typedef std::shared_ptr<T> AttribsPtr;
 
