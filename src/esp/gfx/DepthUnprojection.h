@@ -154,4 +154,4 @@ void unprojectDepth(const Magnum::Vector2& unprojection,
 }  // namespace gfx
 }  // namespace esp
 
-#endif  // ESP_GFX_DEPTHUNPROJECT_H_
+#endif  // ESP_GFX_DEPTHUNPROJECTION_H_

@@ -60,4 +60,4 @@ LightSetup getLightsAtBoxCorners(
 }  // namespace gfx
 }  // namespace esp
 
-#endif  // ESP_GFX_LIGHTINGSETUP_H_
+#endif  // ESP_GFX_LIGHTSETUP_H_

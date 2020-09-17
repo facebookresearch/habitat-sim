@@ -44,4 +44,4 @@ class MeshVisualizerDrawable : public Drawable {
 }  // namespace gfx
 }  // namespace esp
 
-#endif  // ESP_GFX_MESHVISUALIZATIONDRAWABLE_H_
+#endif  // ESP_GFX_MESHVISUALIZERDRAWABLE_H_
