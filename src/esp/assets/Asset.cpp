@@ -28,10 +28,10 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
     info.frame = {geo::ESP_BACK, geo::ESP_UP};
   } else if (endsWith(path, ".dae")) {
     // assumes Collada DAE with gravity = -Z
-    info.type = AssetType::COLLADA;
+    //info.type = AssetType::COLLADA;
     // Create a coordinate for the mesh by rotating the default ESP
     // coordinate frame to -Z gravity
-    info.frame = {quatf::FromTwoVectors(geo::ESP_GRAVITY, -vec3f::UnitZ())};
+    //info.frame = {quatf::FromTwoVectors(geo::ESP_GRAVITY, -vec3f::UnitZ())};
   }
 
   return info;
