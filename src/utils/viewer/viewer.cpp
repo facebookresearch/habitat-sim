@@ -362,7 +362,7 @@ Viewer::Viewer(const Arguments& arguments)
 
 void Viewer::addObject(int ID) {
   const std::string& configHandle =
-      simulator_->getObjectAttributesManager()->getTemplateHandleByID(ID);
+      simulator_->getObjectAttributesManager()->getObjectHandleByID(ID);
   addObject(configHandle);
 }  // addObject
 

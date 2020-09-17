@@ -74,7 +74,7 @@ class StageAttributesManager
    * template.
    * @return a reference to the desired template.
    */
-  Attrs::StageAttributes::ptr createAttributesTemplate(
+  Attrs::StageAttributes::ptr createObject(
       const std::string& attributesTemplateHandle,
       bool registerTemplate = true) override;
 
@@ -104,7 +104,7 @@ class StageAttributesManager
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  Attrs::StageAttributes::ptr loadAttributesFromJSONDoc(
+  Attrs::StageAttributes::ptr loadFromJSONDoc(
       const std::string& templateName,
       const io::JsonDocument& jsonConfig) override;
 
@@ -116,7 +116,7 @@ class StageAttributesManager
    * @return whether handle exists or not in asset attributes library
    */
   bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return objectAttributesMgr_->getTemplateLibHasHandle(handle);
+    return objectAttributesMgr_->getObjectLibHasHandle(handle);
   }
   /**
    * @brief Perform file-name-based attributes initialization. This is to
@@ -143,7 +143,7 @@ class StageAttributesManager
    *
    * @param handleName handle name to be assigned to attributes
    */
-  Attrs::StageAttributes::ptr initNewAttribsInternal(
+  Attrs::StageAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override;
 
   /**
@@ -155,7 +155,7 @@ class StageAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(
+  void updateObjectHandleLists(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -172,7 +172,7 @@ class StageAttributesManager
    * template.
    */
 
-  int registerAttributesTemplateFinalize(
+  int registerObjectFinalize(
       Attrs::StageAttributes::ptr StageAttributesTemplate,
       const std::string& StageAttributesHandle) override;
 
@@ -189,7 +189,7 @@ class StageAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["StageAttributes"] =
-        &StageAttributesManager::createAttributesCopy<Attrs::StageAttributes>;
+        &StageAttributesManager::createObjectCopy<Attrs::StageAttributes>;
   }  // StageAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars

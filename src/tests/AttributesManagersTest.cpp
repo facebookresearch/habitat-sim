@@ -65,7 +65,7 @@ class AttributesManagersTest : public testing::Test {
       const auto& jsonDoc = esp::io::parseJsonString(jsonString);
       // create an empty template
       std::shared_ptr<U> attrTemplate1 =
-          mgr->loadAttributesFromJSONDoc("new default template", jsonDoc);
+          mgr->loadFromJSONDoc("new default template", jsonDoc);
 
       return attrTemplate1;
     } catch (...) {
@@ -88,19 +88,19 @@ class AttributesManagersTest : public testing::Test {
     // meaningless key to modify attributes for verifcation of behavior
     std::string keyStr = "tempKey";
     // get starting number of templates
-    int orignNumTemplates = mgr->getNumTemplates();
+    int orignNumTemplates = mgr->getNumObjects();
     // verify template is not present - should not be
-    bool isPresentAlready = mgr->getTemplateLibHasHandle(handle);
+    bool isPresentAlready = mgr->getObjectLibHasHandle(handle);
     ASSERT_NE(isPresentAlready, true);
 
     // create template from source handle, register it and retrieve it
     // Note: registration of template means this is a copy of registered
     // template
-    auto attrTemplate1 = mgr->createAttributesTemplate(handle, true);
+    auto attrTemplate1 = mgr->createObject(handle, true);
     // verify it exists
     ASSERT_NE(nullptr, attrTemplate1);
     // retrieve a copy of the named attributes template
-    auto attrTemplate2 = mgr->getTemplateCopyByHandle(handle);
+    auto attrTemplate2 = mgr->getObjectCopyByHandle(handle);
     // verify copy has same quantities and values as original
     ASSERT_EQ(attrTemplate1->getHandle(), attrTemplate2->getHandle());
 
@@ -115,12 +115,12 @@ class AttributesManagersTest : public testing::Test {
 
     // register modified template and verify that this is the template now
     // stored
-    int newID = mgr->registerAttributesTemplate(attrTemplate2, handle);
+    int newID = mgr->registerObject(attrTemplate2, handle);
     // verify IDs are the same
     ASSERT_EQ(oldID, newID);
 
     // get another copy
-    auto attrTemplate3 = mgr->getTemplateCopyByHandle(handle);
+    auto attrTemplate3 = mgr->getObjectCopyByHandle(handle);
     // verify added field is present and the same
     ASSERT_EQ(attrTemplate3->getString(keyStr),
               attrTemplate2->getString(keyStr));
@@ -133,31 +133,31 @@ class AttributesManagersTest : public testing::Test {
     // test removal
     int removeID = attrTemplate2->getID();
     // remove template by ID, acquire copy of removed template
-    auto oldTemplate = mgr->removeTemplateByID(removeID);
+    auto oldTemplate = mgr->removeObjectByID(removeID);
     // verify it exists
     ASSERT_NE(nullptr, oldTemplate);
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
     // re-add template copy via registration
-    int newAddID = mgr->registerAttributesTemplate(attrTemplate2, handle);
+    int newAddID = mgr->registerObject(attrTemplate2, handle);
     // verify IDs are the same
     ASSERT_EQ(removeID, newAddID);
 
     // lock template referenced by handle
-    bool success = mgr->setTemplateLock(handle, true);
+    bool success = mgr->setLock(handle, true);
     // attempt to remove attributes via handle
-    auto oldTemplate2 = mgr->removeTemplateByHandle(handle);
+    auto oldTemplate2 = mgr->removeObjectByHandle(handle);
     // verify no template was deleted
     ASSERT_EQ(nullptr, oldTemplate2);
     // unlock template
-    success = mgr->setTemplateLock(handle, false);
+    success = mgr->setLock(handle, false);
 
     // remove  attributes via handle
-    auto oldTemplate3 = mgr->removeTemplateByHandle(handle);
+    auto oldTemplate3 = mgr->removeObjectByHandle(handle);
     // verify deleted template  exists
     ASSERT_NE(nullptr, oldTemplate3);
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
 
   }  // AttributesManagersTest::testCreateAndRemove
 
@@ -173,10 +173,10 @@ class AttributesManagersTest : public testing::Test {
                                const std::string& handle,
                                bool setRenderHandle) {
     // get starting number of templates
-    int orignNumTemplates = mgr->getNumTemplates();
+    int orignNumTemplates = mgr->getNumObjects();
     // lock all current handles
     std::vector<std::string> origHandles =
-        mgr->setTemplatesLockBySubstring(true, "", true);
+        mgr->setLockBySubstring(true, "", true);
     // make sure we have locked all original handles
     ASSERT_EQ(orignNumTemplates, origHandles.size());
 
@@ -187,44 +187,43 @@ class AttributesManagersTest : public testing::Test {
       // assign template a handle
       std::string newHandleIter("newTemplateHandle_" + std::to_string(i));
       // create a template with a legal handle
-      auto attrTemplate1 = mgr->createAttributesTemplate(handle, false);
+      auto attrTemplate1 = mgr->createObject(handle, false);
       // register template with new handle
-      int tmpltID =
-          mgr->registerAttributesTemplate(attrTemplate1, newHandleIter);
+      int tmpltID = mgr->registerObject(attrTemplate1, newHandleIter);
       // verify template added
       ASSERT_NE(tmpltID, -1);
-      auto attrTemplate2 = mgr->getTemplateCopyByHandle(newHandleIter);
+      auto attrTemplate2 = mgr->getObjectCopyByHandle(newHandleIter);
       // verify added template  exists
       ASSERT_NE(nullptr, attrTemplate2);
     }
 
     // now delete all templates that
     auto removedNamedTemplates =
-        mgr->removeTemplatesBySubstring("newTemplateHandle_", true);
+        mgr->removeObjectsBySubstring("newTemplateHandle_", true);
     // verify that the number removed == the number added
     ASSERT_EQ(removedNamedTemplates.size(), numToAdd);
 
     // re-add templates
     for (auto& tmplt : removedNamedTemplates) {
       // register template with new handle
-      int tmpltID = mgr->registerAttributesTemplate(tmplt);
+      int tmpltID = mgr->registerObject(tmplt);
       // verify template added
       ASSERT_NE(tmpltID, -1);
-      auto attrTemplate2 = mgr->getTemplateCopyByHandle(tmplt->getHandle());
+      auto attrTemplate2 = mgr->getObjectCopyByHandle(tmplt->getHandle());
       // verify added template  exists
       ASSERT_NE(nullptr, attrTemplate2);
     }
 
     // now delete all templates that have just been added
-    auto removedTemplates = mgr->removeAllTemplates();
+    auto removedTemplates = mgr->removeAllObjects();
     // verify that the number removed == the number added
     ASSERT_EQ(removedTemplates.size(), numToAdd);
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
 
     // unlock all original handles
     std::vector<std::string> newOrigHandles =
-        mgr->setTemplateLockByHandles(origHandles, false);
+        mgr->setLockByHandles(origHandles, false);
     // verify orig handles are those that have been unlocked
     ASSERT_EQ(newOrigHandles, origHandles);
     // make sure we have unlocked all original handles
@@ -245,13 +244,12 @@ class AttributesManagersTest : public testing::Test {
                                   const std::string& handle,
                                   bool setRenderHandle) {
     // get starting number of templates
-    int orignNumTemplates = mgr->getNumTemplates();
+    int orignNumTemplates = mgr->getNumObjects();
     // assign template a handle
     std::string newHandle = "newTemplateHandle";
 
     // create new template but do not register it
-    auto newAttrTemplate0 =
-        mgr->createDefaultAttributesTemplate(newHandle, false);
+    auto newAttrTemplate0 = mgr->createDefaultObject(newHandle, false);
     // verify real template was returned
     ASSERT_NE(nullptr, newAttrTemplate0);
 
@@ -259,7 +257,7 @@ class AttributesManagersTest : public testing::Test {
     // Note: registration of template means this is a copy of registered
     // template
     if (setRenderHandle) {
-      auto attrTemplate1 = mgr->createAttributesTemplate(handle, false);
+      auto attrTemplate1 = mgr->createObject(handle, false);
       // set legitimate render handle in template
       newAttrTemplate0->set(
           "renderAssetHandle",
@@ -268,18 +266,18 @@ class AttributesManagersTest : public testing::Test {
 
     // register modified template and verify that this is the template now
     // stored
-    int newID = mgr->registerAttributesTemplate(newAttrTemplate0, newHandle);
+    int newID = mgr->registerObject(newAttrTemplate0, newHandle);
 
     // get a copy of added template
-    auto attrTemplate3 = mgr->getTemplateCopyByHandle(newHandle);
+    auto attrTemplate3 = mgr->getObjectCopyByHandle(newHandle);
 
     // remove new template by name
-    auto newAttrTemplate1 = mgr->removeTemplateByHandle(newHandle);
+    auto newAttrTemplate1 = mgr->removeObjectByHandle(newHandle);
 
     // verify it exists
     ASSERT_NE(nullptr, newAttrTemplate1);
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
 
   }  // AttributesManagersTest::testCreateAndRemoveDefault
 
@@ -301,7 +299,7 @@ class AttributesManagersTest : public testing::Test {
                                        int legalVal,
                                        int const* illegalVal) {
     // get starting number of templates
-    int orignNumTemplates = assetAttributesManager_->getNumTemplates();
+    int orignNumTemplates = assetAttributesManager_->getNumObjects();
 
     // get name of default template
     std::string oldHandle = defaultAttribs->getHandle();
@@ -331,28 +329,28 @@ class AttributesManagersTest : public testing::Test {
     std::string newHandle = defaultAttribs->getHandle();
     LOG(INFO) << "Modified Template Handle : " << newHandle;
     // register modified template
-    assetAttributesManager_->registerAttributesTemplate(defaultAttribs);
+    assetAttributesManager_->registerObject(defaultAttribs);
 
     // verify new handle is in template library
     // get template by handle
-    ASSERT(assetAttributesManager_->getTemplateLibHasHandle(newHandle));
+    ASSERT(assetAttributesManager_->getObjectLibHasHandle(newHandle));
     // verify old template is still present as well
-    ASSERT(assetAttributesManager_->getTemplateLibHasHandle(oldHandle));
+    ASSERT(assetAttributesManager_->getObjectLibHasHandle(oldHandle));
 
     // get new template
     std::shared_ptr<T> newAttribs =
-        assetAttributesManager_->getTemplateCopyByHandle<T>(newHandle);
+        assetAttributesManager_->getObjectCopyByHandle<T>(newHandle);
     // verify template has modified values
     int newValue = newAttribs->template get<int>(ctorModField);
     ASSERT_EQ(legalVal, newValue);
     // remove modified template via handle
     auto oldTemplate2 =
-        assetAttributesManager_->removeTemplateByHandle(newHandle);
+        assetAttributesManager_->removeObjectByHandle(newHandle);
     // verify deleted template  exists
     ASSERT_NE(nullptr, oldTemplate2);
 
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, assetAttributesManager_->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, assetAttributesManager_->getNumObjects());
 
   }  // AttributesManagersTest::testAssetAttributesModRegRemove
 

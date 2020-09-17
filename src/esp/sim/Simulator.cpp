@@ -106,7 +106,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // described by config file - this always exists to configure scene
   // attributes
   auto physicsManagerAttributes =
-      resourceManager_->getPhysicsAttributesManager()->createAttributesTemplate(
+      resourceManager_->getPhysicsAttributesManager()->createObject(
           config_.physicsConfigFile, true);
   // if physicsManagerAttributes have been successfully created, inform
   // stageAttributesManager of the config handle of the attributes, so that
@@ -130,8 +130,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   // Create scene attributes with values based on sceneFilename
-  auto stageAttributes =
-      stageAttributesMgr->createAttributesTemplate(stageFilename, true);
+  auto stageAttributes = stageAttributesMgr->createObject(stageFilename, true);
 
   std::string navmeshFilename = stageAttributes->getNavmeshAssetHandle();
   std::string houseFilename = stageAttributes->getHouseFilename();

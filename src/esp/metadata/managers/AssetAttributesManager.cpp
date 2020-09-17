@@ -77,32 +77,29 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
 
   // function pointers to asset attributes copy constructors
   this->copyConstructorMap_["CapsulePrimitiveAttributes"] =
-      &AssetAttributesManager::createAttributesCopy<CapsulePrimitiveAttributes>;
+      &AssetAttributesManager::createObjectCopy<CapsulePrimitiveAttributes>;
   this->copyConstructorMap_["ConePrimitiveAttributes"] =
-      &AssetAttributesManager::createAttributesCopy<ConePrimitiveAttributes>;
+      &AssetAttributesManager::createObjectCopy<ConePrimitiveAttributes>;
   this->copyConstructorMap_["CubePrimitiveAttributes"] =
-      &AssetAttributesManager::createAttributesCopy<CubePrimitiveAttributes>;
+      &AssetAttributesManager::createObjectCopy<CubePrimitiveAttributes>;
   this->copyConstructorMap_["CylinderPrimitiveAttributes"] =
-      &AssetAttributesManager::createAttributesCopy<
-          CylinderPrimitiveAttributes>;
+      &AssetAttributesManager::createObjectCopy<CylinderPrimitiveAttributes>;
   this->copyConstructorMap_["IcospherePrimitiveAttributes"] =
-      &AssetAttributesManager::createAttributesCopy<
-          IcospherePrimitiveAttributes>;
+      &AssetAttributesManager::createObjectCopy<IcospherePrimitiveAttributes>;
   this->copyConstructorMap_["UVSpherePrimitiveAttributes"] =
-      &AssetAttributesManager::createAttributesCopy<
-          UVSpherePrimitiveAttributes>;
+      &AssetAttributesManager::createObjectCopy<UVSpherePrimitiveAttributes>;
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
-  this->undeletableTemplateNames_.clear();
+  this->undeletableObjectNames_.clear();
   // build default AbstractPrimitiveAttributes objects
   for (const std::pair<const PrimObjTypes, const char*>& elem :
        PrimitiveNames3DMap) {
     if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       continue;
     }
-    auto tmplt = createAttributesTemplate(elem.second, true);
+    auto tmplt = this->createObject(elem.second, true);
     std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
-    this->undeletableTemplateNames_.insert(tmpltHandle);
+    this->undeletableObjectNames_.insert(tmpltHandle);
   }
 
   LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
@@ -110,12 +107,10 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
             << std::to_string(defaultPrimAttributeHandles_.size());
 }  // AssetAttributesManager::buildMapOfPrimTypeConstructors
 
-AbstractPrimitiveAttributes::ptr
-AssetAttributesManager::createAttributesTemplate(
+AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
     const std::string& primClassName,
     bool registerTemplate) {
-  auto primAssetAttributes =
-      this->createDefaultAttributesTemplate(primClassName, false);
+  auto primAssetAttributes = this->createDefaultObject(primClassName, false);
   if (nullptr == primAssetAttributes) {
     return primAssetAttributes;
   }
@@ -124,15 +119,15 @@ AssetAttributesManager::createAttributesTemplate(
             << (registerTemplate ? " and registered." : ".");
 
   return this->postCreateRegister(primAssetAttributes, registerTemplate);
-}  // AssetAttributesManager::createAttributesTemplate
+}  // AssetAttributesManager::createObject
 
-int AssetAttributesManager::registerAttributesTemplateFinalize(
+int AssetAttributesManager::registerObjectFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&) {
   std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
-    LOG(ERROR) << "AssetAttributesManager::registerAttributesTemplateFinalize "
+    LOG(ERROR) << "AssetAttributesManager::registerObjectFinalize "
                   ": Primitive asset attributes template named"
                << primAttributesHandle
                << "is not configured properly for specified prmitive"
@@ -144,12 +139,11 @@ int AssetAttributesManager::registerAttributesTemplateFinalize(
   // return either the ID of the existing template referenced by
   // primAttributesHandle, or the next available ID if not found.
   int primTemplateID =
-      this->addTemplateToLibrary(primAttributesTemplate, primAttributesHandle);
+      this->addObjectToLibrary(primAttributesTemplate, primAttributesHandle);
   return primTemplateID;
-}  // AssetAttributesManager::registerAttributesTemplateFinalize
+}  // AssetAttributesManager::registerObjectFinalize
 
-AbstractPrimitiveAttributes::ptr
-AssetAttributesManager::loadAttributesFromJSONDoc(
+AbstractPrimitiveAttributes::ptr AssetAttributesManager::loadFromJSONDoc(
     const std::string& filename,
     const io::JsonDocument& jsonDoc) {
   // find type of attributes - file name should contain handle
@@ -163,30 +157,30 @@ AssetAttributesManager::loadAttributesFromJSONDoc(
   // if not legal primitive asset attributes file name, have message and return
   // default sphere attributes.
   if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
-    LOG(ERROR) << "AssetAttributesManager::loadAttributesFromJSONDoc :Unknown "
+    LOG(ERROR) << "AssetAttributesManager::loadFromJSONDoc :Unknown "
                   "primitive class type : "
                << primClassName
                << " so returning default attributes for solid uvSphere.";
-    return this->getTemplateCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
+    return this->getObjectCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }
 
   // create attributes for this primitive
-  auto primAssetAttributes = this->initNewAttribsInternal(primClassName);
+  auto primAssetAttributes = this->initNewObjectInternal(primClassName);
   if (nullptr == primAssetAttributes) {
     LOG(ERROR)
-        << "AssetAttributesManager::loadAttributesFromJSONDoc : unable to "
+        << "AssetAttributesManager::loadFromJSONDoc : unable to "
            "create default primitive asset attributes from primClassName "
         << primClassName
         << " so returning default attributes for solid uvSphere.";
-    return this->getTemplateCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
+    return this->getObjectCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }
 
   // TODO support loading values from JSON docs
 
   return primAssetAttributes;
-}  // AssetAttributesManager::loadAttributesFromJSONDoc
+}  // AssetAttributesManager::loadFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata

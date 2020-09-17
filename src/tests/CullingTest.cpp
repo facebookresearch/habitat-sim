@@ -58,8 +58,7 @@ void CullingTest::computeAbsoluteAABB() {
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
-  auto stageAttributes =
-      stageAttributesMgr->createAttributesTemplate(stageFile, true);
+  auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
   int sceneID = sceneManager.initSceneGraph();
   auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
@@ -132,8 +131,7 @@ void CullingTest::frustumCulling() {
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
-  auto stageAttributes =
-      stageAttributesMgr->createAttributesTemplate(stageFile, true);
+  auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
   // load the scene
   int sceneID = sceneManager.initSceneGraph();

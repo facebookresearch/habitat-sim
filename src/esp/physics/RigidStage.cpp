@@ -18,7 +18,7 @@ bool RigidStage::initialize(const assets::ResourceManager& resMgr,
   }
   objectMotionType_ = MotionType::STATIC;
   initializationAttributes_ =
-      resMgr.getStageAttributesManager()->getTemplateCopyByHandle(handle);
+      resMgr.getStageAttributesManager()->getObjectCopyByHandle(handle);
 
   return initialization_LibSpecific(resMgr);
 }

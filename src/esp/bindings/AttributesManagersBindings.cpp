@@ -50,106 +50,106 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
   std::string pyclass_name = classStrPrefix + std::string("AttributesManager");
   py::class_<AttrClass, std::shared_ptr<AttrClass>>(m, pyclass_name.c_str())
       .def(
-          "get_template_handle_by_ID", &AttrClass::getTemplateHandleByID,
+          "get_template_handle_by_ID", &AttrClass::getObjectHandleByID,
           R"(Returns string handle for the template corresponding to passed ID.)",
           "ID"_a)
       .def("get_template_ID_by_handle",
            py::overload_cast<const std::string&>(
-               &AttrClass::getTemplateIDByHandle),
+               &AttrClass::getObjectIDByHandle),
            R"(Returns integer ID for the template with the passed handle.)",
            "handle"_a)
       .def(
           "get_template_handles",
           static_cast<std::vector<std::string> (AttrClass::*)(
               const std::string&, bool) const>(
-              &AttrClass::getTemplateHandlesBySubstring),
+              &AttrClass::getObjectHandlesBySubstring),
           R"(Returns a list of template handles that either contain or explicitly do not
             contain the passed search_str, based on the value of boolean contains.)",
           "search_str"_a = "", "contains"_a = true)
       .def("create_template",
            static_cast<AttribsPtr (AttrClass::*)(const std::string&, bool)>(
-               &AttrClass::createAttributesTemplate),
+               &AttrClass::createObject),
            R"(Creates a template based on passed handle, and registers it in
             the library if register_template is True.)",
            "handle"_a, "register_template"_a = true)
       .def("create_new_template",
            static_cast<AttribsPtr (AttrClass::*)(const std::string&, bool)>(
-               &AttrClass::createDefaultAttributesTemplate),
+               &AttrClass::createDefaultObject),
            R"(Creates a template built with default values, and registers it in
             the library if register_template is True.)",
            "handle"_a, "register_template"_a = false)
       .def("is_valid_filename", &AttrClass::isValidFileName, R"(
              Returns whether the passed handle exists and the user has access.)",
            "handle"_a)
-      .def("get_num_templates", &AttrClass::getNumTemplates, R"(
+      .def("get_num_templates", &AttrClass::getNumObjects, R"(
              Returns the number of existing templates being managed.)")
-      .def("get_random_template_handle", &AttrClass::getRandomTemplateHandle,
+      .def("get_random_template_handle", &AttrClass::getRandomObjectHandle,
            R"(Returns the handle for a random template chosen from the
              existing templates being managed.)")
       .def(
-          "get_undeletable_handles", &AttrClass::getUndeletableTemplateHandles,
+          "get_undeletable_handles", &AttrClass::getUndeletableObjectHandles,
           R"(Returns a list of template handles for templates that have been marked
             undeletable by the system. These templates can still be edited.)")
       .def(
-          "get_user_locked_handles", &AttrClass::getUserLockedTemplateHandles,
+          "get_user_locked_handles", &AttrClass::getUserLockedObjectHandles,
           R"(Returns a list of template handles for templates that have been marked
             locked by the user. These will be undeletable until unlocked by the user.
             These templates can still be edited.)")
-      .def("get_library_has_handle", &AttrClass::getTemplateLibHasHandle,
+      .def("get_library_has_handle", &AttrClass::getObjectLibHasHandle,
            R"(Returns whether the passed handle describes an existing template
              in the library.)",
            "handle"_a)
       .def(
-          "set_template_lock", &AttrClass::setTemplateLock,
+          "set_template_lock", &AttrClass::setLock,
           R"(This sets the lock state for the template that has the passed name.
              Lock == True makes the template unable to be deleted.
              Note : Locked templates can still be edited.)",
           "handle"_a, "lock"_a)
-      .def("set_lock_by_substring", &AttrClass::setTemplatesLockBySubstring,
+      .def("set_lock_by_substring", &AttrClass::setLockBySubstring,
            R"(This sets the lock state for all templates whose handles either
              contain or explictly do not contain the passed search_str.
              Returns a list of handles for templates locked by this function
              call. Lock == True makes the template unable to be deleted.
              Note : Locked templates can still be edited.)",
            "lock"_a, "search_str"_a = "", "contains"_a = true)
-      .def("set_template_list_lock", &AttrClass::setTemplateLockByHandles,
+      .def("set_template_list_lock", &AttrClass::setLockByHandles,
            R"(This sets the lock state for all templates whose handles
              are passed in list. Returns a list of handles for templates
              locked by this function call. Lock == True makes the template unable
              to be deleted. Note : Locked templates can still be edited.)",
            "handles"_a, "lock"_a)
-      .def("remove_all_templates", &AttrClass::removeAllTemplates,
+      .def("remove_all_templates", &AttrClass::removeAllObjects,
            R"(This removes, and returns, a list of all the templates referenced
              in the library that have not been marked undeletable by the system
              or read-only by the user.)")
-      .def("remove_templates_by_str", &AttrClass::removeTemplatesBySubstring,
+      .def("remove_templates_by_str", &AttrClass::removeObjectsBySubstring,
            R"(This removes, and returns, a list of all the templates referenced
              in the library that have not been marked undeletable by the system
              or read-only by the user and whose handles either contain or explictly
              do not contain the passed search_str.)",
            "search_str"_a = "", "contains"_a = true)
-      .def("remove_template_by_ID", &AttrClass::removeTemplateByID,
+      .def("remove_template_by_ID", &AttrClass::removeObjectByID,
            R"(This removes, and returns the template referenced by the passed ID
              from the library.)",
            "ID"_a)
       .def(
-          "remove_template_by_handle", &AttrClass::removeTemplateByHandle,
+          "remove_template_by_handle", &AttrClass::removeObjectByHandle,
           R"(This removes, and returns the template referenced by the passed handle
              from the library.)",
           "handle"_a)
-      .def("register_template", &AttrClass::registerAttributesTemplate,
+      .def("register_template", &AttrClass::registerObject,
            R"(This registers a copy of the passed template in the library, and
              returns the template's integer ID.)",
            "template"_a, "specified_handle"_a = "")
       .def("get_template_by_ID",
            static_cast<AttribsPtr (AttrClass::*)(int)>(
-               &AttrClass::getTemplateCopyByID),
+               &AttrClass::getObjectCopyByID),
            R"(This returns a copy of the template specified by the passed
              ID if it exists, and NULL if it does not.)",
            "ID"_a)
       .def("get_template_by_handle",
            static_cast<AttribsPtr (AttrClass::*)(const std::string&)>(
-               &AttrClass::getTemplateCopyByHandle),
+               &AttrClass::getObjectCopyByHandle),
            R"(This returns a copy of the template specified by the passed
              handle if it exists, and NULL if it does not.)",
            "handle"_a);

@@ -49,7 +49,7 @@ class PhysicsAttributesManager
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file.
    */
-  Attrs::PhysicsManagerAttributes::ptr createAttributesTemplate(
+  Attrs::PhysicsManagerAttributes::ptr createObject(
       const std::string& physicsFilename =
           ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH,
       bool registerTemplate = true) override;
@@ -64,7 +64,7 @@ class PhysicsAttributesManager
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  Attrs::PhysicsManagerAttributes::ptr loadAttributesFromJSONDoc(
+  Attrs::PhysicsManagerAttributes::ptr loadFromJSONDoc(
       const std::string& templateName,
       const io::JsonDocument& jsonConfig) override;
 
@@ -76,7 +76,7 @@ class PhysicsAttributesManager
    * @return whether handle exists or not in asset attributes library
    */
   bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return objectAttributesMgr_->getTemplateLibHasHandle(handle);
+    return objectAttributesMgr_->getObjectLibHasHandle(handle);
   }
 
   /**
@@ -94,7 +94,7 @@ class PhysicsAttributesManager
    *
    * @param handleName handle name to be assigned to attributes
    */
-  Attrs::PhysicsManagerAttributes::ptr initNewAttribsInternal(
+  Attrs::PhysicsManagerAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override {
     auto newAttributes = Attrs::PhysicsManagerAttributes::create(handleName);
     this->setFileDirectoryFromHandle(newAttributes);
@@ -109,7 +109,7 @@ class PhysicsAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(
+  void updateObjectHandleLists(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -123,14 +123,14 @@ class PhysicsAttributesManager
    * @return The index in the @ref templateLibrary_ of object
    * template.
    */
-  int registerAttributesTemplateFinalize(
+  int registerObjectFinalize(
       Attrs::PhysicsManagerAttributes::ptr physicsAttributesTemplate,
       const std::string& physicsAttributesHandle) override {
     // adds template to library, and returns either the ID of the existing
     // template referenced by physicsAttributesHandle, or the next available ID
     // if not found.
-    int physicsTemplateID = this->addTemplateToLibrary(
-        physicsAttributesTemplate, physicsAttributesHandle);
+    int physicsTemplateID = this->addObjectToLibrary(physicsAttributesTemplate,
+                                                     physicsAttributesHandle);
     return physicsTemplateID;
   }  // PhysicsAttributesManager::registerAttributesTemplate
 
@@ -147,7 +147,7 @@ class PhysicsAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
-        &PhysicsAttributesManager::createAttributesCopy<
+        &PhysicsAttributesManager::createObjectCopy<
             Attrs::PhysicsManagerAttributes>;
   }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
 

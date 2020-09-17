@@ -334,7 +334,7 @@ class ResourceManager {
                                 DEFAULT_LIGHTING_KEY}) {
     if (objTemplateLibID != ID_UNDEFINED) {
       const std::string& objTemplateHandleName =
-          objectAttributesManager_->getTemplateHandleByID(objTemplateLibID);
+          objectAttributesManager_->getObjectHandleByID(objTemplateLibID);
 
       addObjectToDrawables(objTemplateHandleName, parent, drawables,
                            visNodeCache, lightSetup);

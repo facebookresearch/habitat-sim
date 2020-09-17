@@ -53,7 +53,7 @@ class ObjectAttributesManager
    * template.
    * @return a reference to the desired template.
    */
-  Attrs::ObjectAttributes::ptr createAttributesTemplate(
+  Attrs::ObjectAttributes::ptr createObject(
       const std::string& attributesTemplateHandle,
       bool registerTemplate = true) override;
 
@@ -84,7 +84,7 @@ class ObjectAttributesManager
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  Attrs::ObjectAttributes::ptr loadAttributesFromJSONDoc(
+  Attrs::ObjectAttributes::ptr loadFromJSONDoc(
       const std::string& templateName,
       const io::JsonDocument& jsonConfig) override;
 
@@ -129,7 +129,7 @@ class ObjectAttributesManager
    * @return whether handle exists or not in asset attributes library
    */
   bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return assetAttributesMgr_->getTemplateLibHasHandle(handle);
+    return assetAttributesMgr_->getObjectLibHasHandle(handle);
   }
 
   // ======== File-based and primitive-based partition functions ========
@@ -153,8 +153,8 @@ class ObjectAttributesManager
    * attributes template, or empty string if none loaded
    */
   std::string getRandomFileTemplateHandle() const {
-    return this->getRandomTemplateHandlePerType(physicsFileObjTmpltLibByID_,
-                                                "file-based ");
+    return this->getRandomObjectHandlePerType(physicsFileObjTmpltLibByID_,
+                                              "file-based ");
   }
 
   /**
@@ -170,8 +170,8 @@ class ObjectAttributesManager
   std::vector<std::string> getFileTemplateHandlesBySubstring(
       const std::string& subStr = "",
       bool contains = true) const {
-    return this->getTemplateHandlesBySubStringPerType(
-        physicsFileObjTmpltLibByID_, subStr, contains);
+    return this->getObjectHandlesBySubStringPerType(physicsFileObjTmpltLibByID_,
+                                                    subStr, contains);
   }
 
   /**
@@ -193,8 +193,8 @@ class ObjectAttributesManager
    * attributes template, or empty string if none loaded
    */
   std::string getRandomSynthTemplateHandle() const {
-    return this->getRandomTemplateHandlePerType(physicsSynthObjTmpltLibByID_,
-                                                "synthesized ");
+    return this->getRandomObjectHandlePerType(physicsSynthObjTmpltLibByID_,
+                                              "synthesized ");
   }
 
   /**
@@ -210,7 +210,7 @@ class ObjectAttributesManager
   std::vector<std::string> getSynthTemplateHandlesBySubstring(
       const std::string& subStr = "",
       bool contains = true) const {
-    return this->getTemplateHandlesBySubStringPerType(
+    return this->getObjectHandlesBySubStringPerType(
         physicsSynthObjTmpltLibByID_, subStr, contains);
   }
 
@@ -249,7 +249,7 @@ class ObjectAttributesManager
    *
    * @param handleName handle name to be assigned to attributes
    */
-  Attrs::ObjectAttributes::ptr initNewAttribsInternal(
+  Attrs::ObjectAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override;
 
   /**
@@ -261,7 +261,7 @@ class ObjectAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(
+  void updateObjectHandleLists(
       int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {
     physicsFileObjTmpltLibByID_.erase(templateID);
@@ -280,7 +280,7 @@ class ObjectAttributesManager
    * @return The index in the @ref templateLibrary_ of object
    * template.
    */
-  int registerAttributesTemplateFinalize(
+  int registerObjectFinalize(
       Attrs::ObjectAttributes::ptr attributesTemplate,
       const std::string& attributesTemplateHandle) override;
 
@@ -300,7 +300,7 @@ class ObjectAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["ObjectAttributes"] =
-        &ObjectAttributesManager::createAttributesCopy<Attrs::ObjectAttributes>;
+        &ObjectAttributesManager::createObjectCopy<Attrs::ObjectAttributes>;
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
 
   // ======== Typedefs and Instance Variables ========

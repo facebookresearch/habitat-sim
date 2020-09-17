@@ -22,7 +22,7 @@ namespace metadata {
 using attributes::AbstractObjectAttributes;
 using attributes::ObjectAttributes;
 namespace managers {
-ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
+ObjectAttributes::ptr ObjectAttributesManager::createObject(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) {
   ObjectAttributes::ptr attrs;
@@ -47,14 +47,13 @@ ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
       // check if stageAttributesHandle corresponds to an actual, existing
       // json stage file descriptor.
       // this method lives in class template.
-      attrs = this->createFileBasedAttributesTemplate(jsonAttrFileName,
-                                                      registerTemplate);
+      attrs = this->createObjectFromFile(jsonAttrFileName, registerTemplate);
       msg = "JSON File (" + jsonAttrFileName + ") Based";
     } else {
       // if name is not json file descriptor but still appropriate file, or if
       // is not a file or known prim
-      attrs = this->createDefaultAttributesTemplate(attributesTemplateHandle,
-                                                    registerTemplate);
+      attrs =
+          this->createDefaultObject(attributesTemplateHandle, registerTemplate);
 
       if (fileExists) {
         msg = "File (" + attributesTemplateHandle + ") Based";
@@ -69,7 +68,7 @@ ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
   }
   return attrs;
 
-}  // ObjectAttributesManager::createAttributesTemplate
+}  // ObjectAttributesManager::createObject
 
 ObjectAttributes::ptr
 ObjectAttributesManager::createPrimBasedAttributesTemplate(
@@ -87,7 +86,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
 
   // construct a ObjectAttributes
   auto primObjectAttributes =
-      this->initNewAttribsInternal(primAttrTemplateHandle);
+      this->initNewObjectInternal(primAttrTemplateHandle);
   // set margin to be 0
   primObjectAttributes->setMargin(0.0);
   // make smaller as default size - prims are approx meter in size
@@ -108,20 +107,20 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
 void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
-  this->undeletableTemplateNames_.clear();
+  this->undeletableObjectNames_.clear();
   // build default primtive object templates corresponding to given default
   // asset templates
   std::vector<std::string> lib =
-      assetAttributesMgr_->getUndeletableTemplateHandles();
+      assetAttributesMgr_->getUndeletableObjectHandles();
   for (const std::string& elem : lib) {
     auto tmplt = createPrimBasedAttributesTemplate(elem, true);
     // save handles in list of defaults, so they are not removed
     std::string tmpltHandle = tmplt->getHandle();
-    this->undeletableTemplateNames_.insert(tmpltHandle);
+    this->undeletableObjectNames_.insert(tmpltHandle);
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
-ObjectAttributes::ptr ObjectAttributesManager::loadAttributesFromJSONDoc(
+ObjectAttributes::ptr ObjectAttributesManager::loadFromJSONDoc(
     const std::string& templateName,
     const io::JsonDocument& jsonConfig) {
   // Construct a ObjectAttributes and populate with any AbstractObjectAttributes
@@ -162,7 +161,7 @@ ObjectAttributes::ptr ObjectAttributesManager::loadAttributesFromJSONDoc(
   return objAttributes;
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
-ObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
+ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     const std::string& attributesHandle) {
   // TODO if default template exists from some source, create this template as a
   // copy
@@ -185,7 +184,7 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
                 _1));
 
   return newAttributes;
-}  // ObjectAttributesManager::initNewAttribsInternal
+}  // ObjectAttributesManager::initNewObjectInternal
 
 // Eventually support explicitly configuring desirable defaults/file-name
 // base settings.
@@ -207,12 +206,12 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
   }
 }  // SceneAttributesManager::setDefaultAssetNameBasedAttributes
 
-int ObjectAttributesManager::registerAttributesTemplateFinalize(
+int ObjectAttributesManager::registerObjectFinalize(
     ObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
-        << "ObjectAttributesManager::registerAttributesTemplateFinalize : "
+        << "ObjectAttributesManager::registerObjectFinalize : "
            "Attributes template named"
         << objectTemplateHandle
         << "does not have a valid render asset handle specified. Aborting.";
@@ -241,7 +240,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     // attributes template hande, fail
     // by here always fail
     LOG(ERROR)
-        << "ObjectAttributesManager::registerAttributesTemplateFinalize "
+        << "ObjectAttributesManager::registerObjectFinalize "
            ": Render asset template handle : "
         << renderAssetHandle << " specified in object template with handle : "
         << objectTemplateHandle
@@ -261,7 +260,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
   } else {
     // Else, means no collision data specified, use specified render data
     LOG(INFO)
-        << "ObjectAttributesManager::registerAttributesTemplateFinalize "
+        << "ObjectAttributesManager::registerObjectFinalize "
            ": Collision asset template handle : "
         << collisionAssetHandle
         << " specified in object template with handle : "
@@ -280,12 +279,12 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
 
   // Add object template to template library
   int objectTemplateID =
-      this->addTemplateToLibrary(objectTemplate, objectTemplateHandle);
+      this->addObjectToLibrary(objectTemplate, objectTemplateHandle);
 
   mapToUse->emplace(objectTemplateID, objectTemplateHandle);
 
   return objectTemplateID;
-}  // ObjectAttributesManager::registerAttributesTemplateFinalize
+}  // ObjectAttributesManager::registerObjectFinalize
 
 std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
     const std::vector<std::string>& tmpltFilenames,
@@ -295,13 +294,12 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
     auto objPhysPropertiesFilename = tmpltFilenames[i];
     LOG(INFO) << "Loading file-based object template: "
               << objPhysPropertiesFilename;
-    auto tmplt =
-        createFileBasedAttributesTemplate(objPhysPropertiesFilename, true);
+    auto tmplt = this->createObjectFromFile(objPhysPropertiesFilename, true);
 
     // save handles in list of defaults, so they are not removed, if desired.
     if (saveAsDefaults) {
       std::string tmpltHandle = tmplt->getHandle();
-      this->undeletableTemplateNames_.insert(tmpltHandle);
+      this->undeletableObjectNames_.insert(tmpltHandle);
     }
     resIDs[i] = tmplt->getID();
   }

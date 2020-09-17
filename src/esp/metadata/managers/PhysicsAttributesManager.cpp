@@ -16,8 +16,7 @@ namespace metadata {
 using attributes::PhysicsManagerAttributes;
 namespace managers {
 
-PhysicsManagerAttributes::ptr
-PhysicsAttributesManager::createAttributesTemplate(
+PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
     const std::string& physicsFilename,
     bool registerTemplate) {
   PhysicsManagerAttributes::ptr attrs;
@@ -25,13 +24,11 @@ PhysicsAttributesManager::createAttributesTemplate(
   if (this->isValidFileName(physicsFilename)) {
     // check if physicsFilename corresponds to an actual file descriptor
     // this method lives in class template.
-    attrs = this->createFileBasedAttributesTemplate(physicsFilename,
-                                                    registerTemplate);
+    attrs = this->createObjectFromFile(physicsFilename, registerTemplate);
     msg = "File (" + physicsFilename + ") Based";
   } else {
     // if name is not file descriptor, return default attributes.
-    attrs = this->createDefaultAttributesTemplate(physicsFilename,
-                                                  registerTemplate);
+    attrs = this->createDefaultObject(physicsFilename, registerTemplate);
     msg = "File (" + physicsFilename + ") not found so new, default";
   }
 
@@ -40,15 +37,14 @@ PhysicsAttributesManager::createAttributesTemplate(
               << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
-}  // PhysicsAttributesManager::createAttributesTemplate
+}  // PhysicsAttributesManager::createObject
 
-PhysicsManagerAttributes::ptr
-PhysicsAttributesManager::loadAttributesFromJSONDoc(
+PhysicsManagerAttributes::ptr PhysicsAttributesManager::loadFromJSONDoc(
     const std::string& templateName,
     const io::JsonDocument& jsonConfig) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      initNewAttribsInternal(templateName);
+      initNewObjectInternal(templateName);
 
   // load the simulator preference - default is "none" simulator, set in
   // attributes ctor.
