@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_GFX_PTEXMESHDATA_H_
-#define ESP_GFX_PTEXMESHDATA_H_
+#ifndef ESP_GFX_PTEXMESHDRAWABLE_H_
+#define ESP_GFX_PTEXMESHDRAWABLE_H_
 
 #include "Drawable.h"
 #include "esp/gfx/ShaderManager.h"
@@ -48,4 +48,4 @@ class PTexMeshDrawable : public Drawable {
 }  // namespace gfx
 }  // namespace esp
 
-#endif  // ESP_GFX_PTEXMESHDATA_H_
+#endif  // ESP_GFX_PTEXMESHDRAWABLE_H_
