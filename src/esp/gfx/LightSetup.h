@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_LIGHTINGSETUP_H_
+#define ESP_GFX_LIGHTINGSETUP_H_
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Color.h>
@@ -58,3 +59,5 @@ LightSetup getLightsAtBoxCorners(
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_LIGHTINGSETUP_H_

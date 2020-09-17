@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_PHYSICS_BASE_RIGIDBASE_H_
-#define ESP_PHYSICS_BASE_RIGIDBASE_H_
+#ifndef ESP_PHYSICS_RIGIDBASE_H_
+#define ESP_PHYSICS_RIGIDBASE_H_
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
@@ -643,4 +643,4 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
 
 }  // namespace physics
 }  // namespace esp
-#endif  // ESP_PHYSICS_BASE_RIGIDBASE_H_
+#endif  // ESP_PHYSICS_RIGIDBASE_H_

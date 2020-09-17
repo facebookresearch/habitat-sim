@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_ASSETS_ASSET_H_
+#define ESP_ASSETS_ASSET_H_
 
 #include "esp/core/esp.h"
 #include "esp/geo/CoordinateFrame.h"
@@ -65,3 +66,5 @@ struct Asset {
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_ASSETS_ASSET_H_

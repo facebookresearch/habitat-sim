@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_DEPTHUNPROJECT_H_
+#define ESP_GFX_DEPTHUNPROJECT_H_
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
@@ -152,3 +153,5 @@ void unprojectDepth(const Magnum::Vector2& unprojection,
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_DEPTHUNPROJECT_H_

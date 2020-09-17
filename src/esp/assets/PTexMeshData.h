@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_ASSETS_PTEXMESHDATA_H_
+#define ESP_ASSETS_PTEXMESHDATA_H_
 
 #include <memory>
 #include <string>
@@ -101,3 +102,5 @@ class PTexMeshData : public BaseMesh {
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_ASSETS_PTEXMESHDATA_H_

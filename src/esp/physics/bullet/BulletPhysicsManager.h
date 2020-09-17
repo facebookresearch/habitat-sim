@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_PHYSICS_BULLET_BULLETPHYSICSMANAGER_H_
+#define ESP_PHYSICS_BULLET_BULLETPHYSICSMANAGER_H_
 
 /** @file
  * @brief Class @ref esp::physics::BulletPhysicsManager
@@ -247,3 +248,5 @@ class BulletPhysicsManager : public PhysicsManager {
 };  // end class BulletPhysicsManager
 }  // end namespace physics
 }  // end namespace esp
+
+#endif  // ESP_PHYSICS_BULLET_BULLETPHYSICSMANAGER_H_

@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_UTILS_DATATOOL_SCENELOADER_H_
+#define ESP_UTILS_DATATOOL_SCENELOADER_H_
 
 #include <string>
 
@@ -34,3 +35,5 @@ class SceneLoader {
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_UTILS_DATATOOL_SCENELOADER_H_

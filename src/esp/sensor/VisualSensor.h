@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_SENSOR_VISUALSENSOR_H_
+#define ESP_SENSOR_VISUALSENSOR_H_
 
 #include <Corrade/Containers/Optional.h>
 
@@ -115,3 +116,5 @@ class VisualSensor : public Sensor {
 
 }  // namespace sensor
 }  // namespace esp
+
+#endif  // ESP_SENSOR_VISUALSENSOR_H_

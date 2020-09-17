@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_MATERIALDATA_H_
+#define ESP_GFX_MATERIALDATA_H_
 
 #include <Magnum/GL/Texture.h>
 #include <Magnum/Magnum.h>
@@ -33,3 +34,5 @@ struct PhongMaterialData : public MaterialData {
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_MATERIALDATA_H_

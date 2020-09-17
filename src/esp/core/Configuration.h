@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_CORE_CONFIGURATION_H_
+#define ESP_CORE_CONFIGURATION_H_
 
 #include <Corrade/Utility/Configuration.h>
 #include <Magnum/Magnum.h>
@@ -111,3 +112,5 @@ class Configuration {
 
 }  // namespace core
 }  // namespace esp
+
+#endif  // ESP_CORE_CONFIGURATION_H_

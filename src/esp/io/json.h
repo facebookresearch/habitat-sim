@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_IO_JSON_H_
+#define ESP_IO_JSON_H_
 
 #include <cstdint>
 #define RAPIDJSON_NO_INT64DEFINE
@@ -298,3 +299,5 @@ void toDoubleVector(const GV& value, std::vector<double>* vec) {
 
 }  // namespace io
 }  // namespace esp
+
+#endif  // ESP_IO_JSON_H_

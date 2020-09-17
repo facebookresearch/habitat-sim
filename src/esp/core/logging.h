@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_CORE_LOGGING_H_
+#define ESP_CORE_LOGGING_H_
 
 #include "esp/core/configure.h"
 
@@ -66,3 +67,5 @@ class LogMessageVoidify {
       exit(-1);                                                     \
     }                                                               \
   } while (false)
+
+#endif  // ESP_CORE_LOGGING_H_
