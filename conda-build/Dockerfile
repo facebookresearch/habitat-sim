@@ -16,7 +16,6 @@ ENV LD_LIBRARY_PATH=/opt/rh/devtoolset-7/root/usr/lib64:/opt/rh/devtoolset-7/roo
 RUN yum install -y autoconf aclocal automake make
 RUN yum install -y mesa-libEGL-devel mesa-libGL-devel
 
-
 # Install patchelf
 ADD ./common/install_patchelf.sh install_patchelf.sh
 RUN bash ./install_patchelf.sh && rm install_patchelf.sh
@@ -35,6 +34,7 @@ RUN bash ./install_conda.sh && rm install_conda.sh
 
 RUN anaconda login --username $AIHABITAT_CONDA_CHN --password $AIHABITAT_CONDA_CHN_PWD
 RUN conda create --name py36 python=3.6 -y && conda init bash
+RUN conda create --name py37 python=3.7 -y
 RUN source ~/.bashrc && conda activate py36 && conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
 RUN conda config --set anaconda_upload yes
 
