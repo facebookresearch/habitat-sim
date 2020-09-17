@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_GFX_MESHVISUALIZATIONDRAWABLE_H_
-#define ESP_GFX_MESHVISUALIZATIONDRAWABLE_H_
+#ifndef ESP_GFX_MESHVISUALIZERDRAWABLE_H_
+#define ESP_GFX_MESHVISUALIZERDRAWABLE_H_
 
 #include <Magnum/Shaders/MeshVisualizer.h>
 #include "Drawable.h"
