@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_GFX_LIGHTINGSETUP_H_
-#define ESP_GFX_LIGHTINGSETUP_H_
+#ifndef ESP_GFX_LIGHTSETUP_H_
+#define ESP_GFX_LIGHTSETUP_H_
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Color.h>
