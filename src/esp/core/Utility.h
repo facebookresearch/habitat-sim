@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_CORE_UTILITY_H_
+#define ESP_CORE_UTILITY_H_
 
 /** @file */
 
@@ -34,3 +35,5 @@ Magnum::Quaternion randomRotation() {
 }
 }  // namespace core
 }  // namespace esp
+
+#endif  // ESP_CORE_UTILITY_H_

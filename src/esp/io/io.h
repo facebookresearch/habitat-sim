@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_IO_IO_H_
+#define ESP_IO_IO_H_
 
 #include <string>
 #include <vector>
@@ -32,3 +33,5 @@ std::vector<std::string> tokenize(const std::string& string,
 
 }  // namespace io
 }  // namespace esp
+
+#endif  // ESP_IO_IO_H_

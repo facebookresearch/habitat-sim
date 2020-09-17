@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_NAV_PATHFINDER_H_
+#define ESP_NAV_PATHFINDER_H_
 
 #include <string>
 #include <vector>
@@ -352,3 +353,5 @@ class PathFinder {
 
 }  // namespace nav
 }  // namespace esp
+
+#endif  // ESP_NAV_PATHFINDER_H_

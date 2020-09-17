@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_ASSETS_MP3DINSTANCEDATA_H_
+#define ESP_ASSETS_MP3DINSTANCEDATA_H_
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
@@ -45,3 +46,5 @@ class Mp3dInstanceMeshData : public GenericInstanceMeshData {
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_ASSETS_MP3DINSTANCEDATA_H_

@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_BINDINGS_BINDINGS_H_
+#define ESP_BINDINGS_BINDINGS_H_
 
 #include <pybind11/pybind11.h>
 #include "esp/bindings/OpaqueTypes.h"
@@ -45,3 +46,5 @@ void initSimBindings(pybind11::module& m);
 }
 
 }  // namespace esp
+
+#endif  // ESP_BINDINGS_BINDINGS_H_

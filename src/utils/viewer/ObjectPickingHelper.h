@@ -1,4 +1,10 @@
-#pragma once
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+#ifndef ESP_UTILS_VIEWER_OBJECTPICKINGHELPER_H_
+#define ESP_UTILS_VIEWER_OBJECTPICKINGHELPER_H_
+
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/Magnum.h>
@@ -67,3 +73,5 @@ class ObjectPickingHelper {
   esp::gfx::DrawableGroup pickedObjectDrawbles_;
   ObjectPickingHelper& mapForDraw();
 };
+
+#endif  // ESP_UTILS_VIEWER_OBJECTPICKINGHELPER_H_
