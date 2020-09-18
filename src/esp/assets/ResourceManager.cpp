@@ -1178,7 +1178,7 @@ void ResourceManager::loadMaterials(Importer& importer,
       }
 
       const auto& phongMaterialData =
-          static_cast<Mn::Trade::PhongMaterialData&>(*materialData);
+          materialData->as<Mn::Trade::PhongMaterialData>();
       if (loadedAssetData.assetInfo.requiresLighting) {
         finalMaterial =
             buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);

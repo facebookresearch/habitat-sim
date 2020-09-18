@@ -25,7 +25,11 @@ enum class LightPositionModel {
 
 /** @brief Contains a single light's information. */
 struct LightInfo {
-  Magnum::Vector4 position;  // use w == 1 for position or w == 0 for direction
+  // Vector4 homogeneous-coordinate position
+  // Use a Vector3 position and w == 1 to specify a point light with distance
+  // attenuation. Or, use a Vector3 direction and w == 0 to specify a
+  // directional light with no distance attenuation.
+  Magnum::Vector4 vector;
   Magnum::Color3 color{1};
   LightPositionModel model = LightPositionModel::GLOBAL;
 };

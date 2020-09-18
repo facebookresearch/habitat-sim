@@ -43,7 +43,6 @@ void GenericDrawable::updateShaderLightingParameters(
     Mn::SceneGraph::Camera3D& camera) {
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
 
-  // todo: move to MaterialHelper or elsewhere
   std::vector<Mn::Vector4> lightPositions;
   lightPositions.reserve(lightSetup_->size());
   std::vector<Mn::Color3> lightColors;

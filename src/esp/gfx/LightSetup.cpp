@@ -8,7 +8,7 @@ namespace esp {
 namespace gfx {
 
 bool operator==(const LightInfo& a, const LightInfo& b) {
-  return a.position == b.position && a.color == b.color && a.model == b.model;
+  return a.vector == b.vector && a.color == b.color && a.model == b.model;
 }
 
 bool operator!=(const LightInfo& a, const LightInfo& b) {
@@ -19,28 +19,23 @@ Magnum::Vector4 getLightPositionRelativeToCamera(
     const LightInfo& light,
     const Magnum::Matrix4& transformationMatrix,
     const Magnum::Matrix4& cameraMatrix) {
-  ASSERT(light.position.w() == 1 || light.position.w() == 0);
-  const auto pos = light.position.xyz();
-
-  bool isDirectional = light.position.w() == 0;
-  Magnum::Vector4 out{0};
+  CORRADE_ASSERT(light.vector.w() == 1 || light.vector.w() == 0,
+                 "Light vector"
+                     << light.vector
+                     << "is expected to have w == 0 for a directional light or "
+                        "w == 1 for a point light",
+                 {});
 
   switch (light.model) {
     case LightPositionModel::OBJECT:
-      out.xyz() = isDirectional ? transformationMatrix.transformVector(pos)
-                                : transformationMatrix.transformPoint(pos);
-      break;
+      return transformationMatrix * light.vector;
     case LightPositionModel::GLOBAL:
-      out.xyz() = isDirectional ? cameraMatrix.transformVector(pos)
-                                : cameraMatrix.transformPoint(pos);
-      break;
+      return cameraMatrix * light.vector;
     case LightPositionModel::CAMERA:
-      out.xyz() = pos;
-      break;
+      return light.vector;
   }
 
-  out.w() = light.position.w();
-  return out;
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
 LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
@@ -49,14 +44,14 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
   using namespace Magnum::Math::Literals;
 
   constexpr float w = 1;
-  return LightSetup{{Magnum::Vector4(box.frontTopLeft(), w), lightColor},
-                    {Magnum::Vector4(box.frontTopRight(), w), lightColor},
-                    {Magnum::Vector4(box.frontBottomLeft(), w), lightColor},
-                    {Magnum::Vector4(box.frontBottomRight(), w), lightColor},
-                    {Magnum::Vector4(box.backTopLeft(), w), lightColor},
-                    {Magnum::Vector4(box.backTopRight(), w), lightColor},
-                    {Magnum::Vector4(box.backBottomLeft(), w), lightColor},
-                    {Magnum::Vector4(box.backBottomRight(), w), lightColor}};
+  return LightSetup{{{box.frontTopLeft(), w}, lightColor},
+                    {{box.frontTopRight(), w}, lightColor},
+                    {{box.frontBottomLeft(), w}, lightColor},
+                    {{box.frontBottomRight(), w}, lightColor},
+                    {{box.backTopLeft(), w}, lightColor},
+                    {{box.backTopRight(), w}, lightColor},
+                    {{box.backBottomLeft(), w}, lightColor},
+                    {{box.backBottomRight(), w}, lightColor}};
 }
 
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
