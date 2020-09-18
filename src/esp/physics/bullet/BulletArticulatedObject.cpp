@@ -147,7 +147,6 @@ bool BulletArticulatedObject::initializeFromURDF(
       }
     }
   }
-  Mn::Debug{} << "Automatically created damping JointMotors: " << jointMotors_;
 
   Corrade::Utility::Debug()
       << "done - BulletArticulatedObject::initializeFromURDF";
