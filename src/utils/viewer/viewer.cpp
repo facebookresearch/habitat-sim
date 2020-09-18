@@ -122,7 +122,7 @@ Key Commands:
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
-  'i' Save a screenshot to \"test_image_save.png\"
+  'i' Save a screenshot to "./screenshots/#.png"
 
   Object Interactions:
   '8': Instance a random primitive object in front of the agent.
