@@ -5,7 +5,7 @@
 #include "SceneAttributes.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 namespace attributes {}  // namespace attributes
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

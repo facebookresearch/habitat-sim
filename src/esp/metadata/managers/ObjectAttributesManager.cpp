@@ -15,7 +15,9 @@ using std::placeholders::_1;
 namespace Cr = Corrade;
 
 namespace esp {
-namespace assets {
+
+using assets::AssetType;
+namespace metadata {
 
 using attributes::AbstractObjectAttributes;
 using attributes::ObjectAttributes;
@@ -349,5 +351,5 @@ std::vector<int> ObjectAttributesManager::loadObjectConfigs(
 }  // ObjectAttributesManager::buildObjectConfigPaths
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

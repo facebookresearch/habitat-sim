@@ -2,11 +2,11 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MANAGERS_ATTRIBUTEMANAGERBASE_H_
-#define ESP_ASSETS_MANAGERS_ATTRIBUTEMANAGERBASE_H_
+#ifndef ESP_METADATA_MANAGERS_ATTRIBUTEMANAGERBASE_H_
+#define ESP_METADATA_MANAGERS_ATTRIBUTEMANAGERBASE_H_
 
 /** @file
- * @brief Class Template @ref esp::assets::managers::AttributesManager
+ * @brief Class Template @ref esp::metadata::managers::AttributesManager
  */
 
 #include <deque>
@@ -18,8 +18,8 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
-#include "esp/assets/attributes/AttributesBase.h"
-#include "esp/assets/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "esp/io/json.h"
 
@@ -27,12 +27,12 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
-
 class ResourceManager;
+}
 
+namespace metadata {
 namespace managers {
-
-namespace Attrs = esp::assets::attributes;
+namespace Attrs = esp::metadata::attributes;
 /**
  * @brief Template Class defining responsibilities for managing attributes for
  * different types of objects, such as scenes, primitive assets, physical
@@ -49,7 +49,7 @@ class AttributesManager {
 
   typedef std::shared_ptr<T> AttribsPtr;
 
-  AttributesManager(assets::ResourceManager& resourceManager,
+  AttributesManager(esp::assets::ResourceManager& resourceManager,
                     const std::string& attrType)
       : resourceManager_(resourceManager), attrType_(attrType) {}
   virtual ~AttributesManager() = default;
@@ -942,7 +942,6 @@ auto AttributesManager<T>::createObjectAttributesFromJson(
       jsonDoc, "collision asset size",
       std::bind(&Attrs::AbstractObjectAttributes::setCollisionAssetSize,
                 attributes, _1));
-
   // margin
   io::jsonIntoSetter<double>(
       jsonDoc, "margin",
@@ -1019,12 +1018,14 @@ auto AttributesManager<T>::createObjectAttributesFromJson(
   auto colAssetHandle = attributes->getCollisionAssetHandle();
   if (this->isValidPrimitiveAttributes(colAssetHandle)) {
     // value is valid primitive, and value is different than existing value
-    attributes->setCollisionAssetType(static_cast<int>(AssetType::PRIMITIVE));
+    attributes->setCollisionAssetType(
+        static_cast<int>(esp::assets::AssetType::PRIMITIVE));
     attributes->setUseMeshCollision(false);
   } else {
     // TODO eventually remove this, but currently non-prim collision mesh must
     // be UNKNOWN
-    attributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
+    attributes->setCollisionAssetType(
+        static_cast<int>(esp::assets::AssetType::UNKNOWN));
     attributes->setUseMeshCollision(true);
   }
   return attributes;
@@ -1046,7 +1047,7 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
   // Map a json string value to its corresponding AssetType if found and cast to
   // int, based on @ref AbstractObjectAttributes::AssetTypeNamesMap mappings.
   // Casts an int of the @ref esp::AssetType enum value if found and understood,
-  // 0 (AssetType::UNKNOWN) if found but not understood, and
+  // 0 (esp::assets::AssetType::UNKNOWN) if found but not understood, and
   //-1 if tag is not found in json.
   int typeVal = -1;
   std::string tmpVal = "";
@@ -1063,7 +1064,7 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
                    << "` does not map to a valid "
                       "AbstractObjectAttributes::AssetTypeNamesMap value, so "
                       "defaulting mesh type to AssetType::UNKNOWN.";
-      typeVal = static_cast<int>(AssetType::UNKNOWN);
+      typeVal = static_cast<int>(esp::assets::AssetType::UNKNOWN);
     }
     // value found so override current value, otherwise do not.
     meshTypeSetter(typeVal);
@@ -1228,6 +1229,6 @@ AttributesManager<T>::getTemplateHandlesBySubStringPerType(
 }  // AttributesManager::getTemplateHandlesBySubStringPerType
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
-#endif  // ESP_ASSETS_MANAGERS_ATTRIBUTESMANAGERBASE_H_
+#endif  // ESP_METADATA_MANAGERS_ATTRIBUTESMANAGERBASE_H_

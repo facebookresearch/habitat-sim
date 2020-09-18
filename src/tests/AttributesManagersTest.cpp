@@ -6,29 +6,33 @@
 #include <string>
 
 #include "esp/assets/ResourceManager.h"
-#include "esp/assets/managers/AttributesManagerBase.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/AttributesManagerBase.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/StageAttributesManager.h"
 
 #include "configure.h"
 
 namespace Cr = Corrade;
 
-namespace AttrMgrs = esp::assets::managers;
-namespace Attrs = esp::assets::attributes;
+namespace AttrMgrs = esp::metadata::managers;
+namespace Attrs = esp::metadata::attributes;
 
-using esp::assets::PrimObjTypes;
 using esp::assets::ResourceManager;
-using esp::assets::managers::AttributesManager;
+using esp::metadata::PrimObjTypes;
 
-using esp::assets::attributes::AbstractPrimitiveAttributes;
-using esp::assets::attributes::CapsulePrimitiveAttributes;
-using esp::assets::attributes::ConePrimitiveAttributes;
-using esp::assets::attributes::CubePrimitiveAttributes;
-using esp::assets::attributes::CylinderPrimitiveAttributes;
-using esp::assets::attributes::IcospherePrimitiveAttributes;
-using esp::assets::attributes::ObjectAttributes;
-using esp::assets::attributes::PhysicsManagerAttributes;
-using esp::assets::attributes::StageAttributes;
-using esp::assets::attributes::UVSpherePrimitiveAttributes;
+using AttrMgrs::AttributesManager;
+using Attrs::AbstractPrimitiveAttributes;
+using Attrs::CapsulePrimitiveAttributes;
+using Attrs::ConePrimitiveAttributes;
+using Attrs::CubePrimitiveAttributes;
+using Attrs::CylinderPrimitiveAttributes;
+using Attrs::IcospherePrimitiveAttributes;
+using Attrs::ObjectAttributes;
+using Attrs::PhysicsManagerAttributes;
+using Attrs::StageAttributes;
+using Attrs::UVSpherePrimitiveAttributes;
 
 const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
 const std::string physicsConfigFile = Cr::Utility::Directory::join(

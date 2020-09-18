@@ -2,13 +2,13 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
-#define ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
+#ifndef ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
+#define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 
 #include "esp/core/Configuration.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 namespace attributes {
 
 /**
@@ -21,7 +21,7 @@ class AbstractAttributes : public esp::core::Configuration {
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)
       : Configuration() {
-    setAttributesClassKey(attributesClassKey);
+    setClassKey(attributesClassKey);
     AbstractAttributes::setHandle(handle);
   }
 
@@ -73,7 +73,7 @@ class AbstractAttributes : public esp::core::Configuration {
    * @param attributesClassKey the string handle corresponding to the
    * constructors used to make copies of this object in copy constructor map.
    */
-  void setAttributesClassKey(const std::string& attributesClassKey) {
+  void setClassKey(const std::string& attributesClassKey) {
     setString("attributesClassKey", attributesClassKey);
   }
 
@@ -82,7 +82,7 @@ class AbstractAttributes : public esp::core::Configuration {
 };  // class AbstractAttributes
 
 }  // namespace attributes
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_ASSETS_ATTRIBUTES_ATTRIBUTES_H_
+#endif  // ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_

@@ -14,7 +14,8 @@
 
 using std::placeholders::_1;
 namespace esp {
-namespace assets {
+using assets::AssetType;
+namespace metadata {
 
 using attributes::AbstractObjectAttributes;
 using attributes::StageAttributes;
@@ -407,5 +408,5 @@ StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
 }  // StageAttributesManager::loadAttributesFromJSONDoc
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

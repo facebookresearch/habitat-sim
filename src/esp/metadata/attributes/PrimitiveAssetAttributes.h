@@ -2,13 +2,13 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_ATTRIBUTES_PRIMITIVEASSETATTRIBUTES_H_
-#define ESP_ASSETS_ATTRIBUTES_PRIMITIVEASSETATTRIBUTES_H_
+#ifndef ESP_METADATA_ATTRIBUTES_PRIMITIVEASSETATTRIBUTES_H_
+#define ESP_METADATA_ATTRIBUTES_PRIMITIVEASSETATTRIBUTES_H_
 
 #include "AttributesBase.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 namespace attributes {
 
 ///////////////////////////////////
@@ -401,7 +401,7 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
 // end primitive object attributes
 
 }  // namespace attributes
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_ASSETS_ATTRIBUTES_PRIMITIVEASSETATTRIBUTES_H_
+#endif  // ESP_METADATA_ATTRIBUTES_PRIMITIVEASSETATTRIBUTES_H_
