@@ -701,6 +701,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   event.setAccepted();
 }
 
+int savedFrames = 0;
 // NOTE: Mouse + shift is to select object on the screen!!
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
@@ -783,8 +784,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           !simulator_->isNavMeshVisualizationActive());
       break;
     case KeyEvent::Key::I:
-      Mn::DebugTools::screenshot(Mn::GL::defaultFramebuffer,
-                                 "test_image_save.png");
+      if (!Cr::Utility::Directory::exists("screenshots/")) {
+        Cr::Utility::Directory::mkpath("screenshots/");
+      }
+      Mn::DebugTools::screenshot(
+          Mn::GL::defaultFramebuffer,
+          "screenshots/" + std::to_string(savedFrames++) + ".png");
       break;
     case KeyEvent::Key::Q:
       // query the agent state
