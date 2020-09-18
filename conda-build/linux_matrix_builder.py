@@ -34,6 +34,7 @@ def call(cmd, env=None):
 def build_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ci_test', help="Test package conda build during continues integration test.", action='store_true')
+    parser.add_argument('--nightly', help="Make conda nightly build.", action='store_true')
     parser.add_argument('--conda_upload', help="Upload conda binaries as package to authenticated Anaconda cloud account.",
                         action='store_true')
 
@@ -57,8 +58,10 @@ def main():
     ):
         env = os.environ.copy()
 
+        env["VERSION"] = habitat_sim.__version__
         # including a timestamp in anticipation of nightly builds
-        env["VERSION"] = habitat_sim.__version__ + time.strftime(".%Y.%m.%d")
+        if args.nightly:
+            env["VERSION"] = env["VERSION"] + time.strftime(".%Y.%m.%d")
         env["WITH_BULLET"] = "0"
         env["WITH_CUDA"] = "0"
         env["HEADLESS"] = "0"
