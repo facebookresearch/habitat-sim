@@ -26,9 +26,9 @@ if(USE_SYSTEM_EIGEN)
   find_package(Eigen3 REQUIRED)
   include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 else()
-  include_directories(SYSTEM "${DEPS_DIR}/eigen-git-mirror")
-  set(EIGEN3_INCLUDE_DIR "${DEPS_DIR}/eigen-git-mirror")
-  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen-git-mirror/cmake")
+  include_directories(SYSTEM "${DEPS_DIR}/eigen")
+  set(EIGEN3_INCLUDE_DIR "${DEPS_DIR}/eigen")
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen/cmake")
 endif()
 
 if(NOT IMGUI_DIR)
@@ -98,19 +98,18 @@ set(RECASTNAVIGATION_STATIC ON CACHE BOOL "RECASTNAVIGATION_STATIC" FORCE)
 add_subdirectory("${DEPS_DIR}/recastnavigation/Recast")
 add_subdirectory("${DEPS_DIR}/recastnavigation/Detour")
 # Needed so that Detour doesn't hide the implementation of the method on dtQueryFilter
-target_compile_definitions(Detour
-  PUBLIC
-  DT_VIRTUAL_QUERYFILTER)
+target_compile_definitions(Detour PUBLIC DT_VIRTUAL_QUERYFILTER)
 
 if(BUILD_PYTHON_BINDINGS)
   # Before calling find_package(PythonInterp) search for python executable not
   # in the default paths to pick up activated virtualenv/conda python
-  find_program(PYTHON_EXECUTABLE
+  find_program(
+    PYTHON_EXECUTABLE
     # macOS still defaults to `python` being Python 2, so look for `python3`
     # first
     NAMES python3 python
-    PATHS ENV PATH   # look in the PATH environment variable
-    NO_DEFAULT_PATH  # do not look anywhere else...
+    PATHS ENV PATH # look in the PATH environment variable
+    NO_DEFAULT_PATH # do not look anywhere else...
   )
 
   # Let the Find module do proper version checks on what we found (it uses the
@@ -141,7 +140,7 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are not enabled by default but we need them
   set(WITH_ANYSCENEIMPORTER ON CACHE BOOL "WITH_ANYSCENEIMPORTER" FORCE)
-  if (BUILD_ASSIMP_SUPPORT)
+  if(BUILD_ASSIMP_SUPPORT)
     set(WITH_ASSIMPIMPORTER ON CACHE BOOL "WITH_ASSIMPIMPORTER" FORCE)
   endif()
   set(WITH_TINYGLTFIMPORTER ON CACHE BOOL "WITH_TINYGLTFIMPORTER" FORCE)
@@ -171,7 +170,10 @@ if(NOT USE_SYSTEM_MAGNUM)
   # formats (BC7 mode 6 has > 1 MB tables, ATC/FXT1/PVRTC2 are quite rare and
   # not supported by Magnum).
   set(BASIS_UNIVERSAL_DIR "${DEPS_DIR}/basis-universal")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBASISD_SUPPORT_BC7_MODE6_OPAQUE_ONLY=0 -DBASISD_SUPPORT_ATC=0 -DBASISD_SUPPORT_FXT1=0 -DBASISD_SUPPORT_PVRTC2=0")
+  set(
+    CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -DBASISD_SUPPORT_BC7_MODE6_OPAQUE_ONLY=0 -DBASISD_SUPPORT_ATC=0 -DBASISD_SUPPORT_FXT1=0 -DBASISD_SUPPORT_PVRTC2=0"
+  )
   set(WITH_BASISIMPORTER ON CACHE BOOL "" FORCE)
 
   if(BUILD_WITH_BULLET)
@@ -190,18 +192,32 @@ if(NOT USE_SYSTEM_MAGNUM)
     endif()
   endif()
   if(APPLE)
-    set(WITH_WINDOWLESSCGLAPPLICATION ON CACHE BOOL "WITH_WINDOWLESSCGLAPPLICATION" FORCE)
+    set(WITH_WINDOWLESSCGLAPPLICATION ON CACHE BOOL "WITH_WINDOWLESSCGLAPPLICATION"
+                                               FORCE
+    )
   elseif(WIN32)
-    set(WITH_WINDOWLESSWGLAPPLICATION ON CACHE BOOL "WITH_WINDOWLESSWGLAPPLICATION" FORCE)
+    set(WITH_WINDOWLESSWGLAPPLICATION ON CACHE BOOL "WITH_WINDOWLESSWGLAPPLICATION"
+                                               FORCE
+    )
   elseif(CORRADE_TARGET_EMSCRIPTEN)
-    set(WITH_WINDOWLESSEGLAPPLICATION ON  CACHE INTERNAL "WITH_WINDOWLESSEGLAPPLICATION" FORCE)
+    set(WITH_WINDOWLESSEGLAPPLICATION ON CACHE INTERNAL "WITH_WINDOWLESSEGLAPPLICATION"
+                                               FORCE
+    )
   elseif(UNIX)
     if(BUILD_GUI_VIEWERS)
-      set(WITH_WINDOWLESSGLXAPPLICATION ON  CACHE INTERNAL "WITH_WINDOWLESSGLXAPPLICATION" FORCE)
-      set(WITH_WINDOWLESSEGLAPPLICATION OFF CACHE INTERNAL "WITH_WINDOWLESSEGLAPPLICATION" FORCE)
+      set(WITH_WINDOWLESSGLXAPPLICATION ON CACHE INTERNAL
+                                                 "WITH_WINDOWLESSGLXAPPLICATION" FORCE
+      )
+      set(WITH_WINDOWLESSEGLAPPLICATION OFF CACHE INTERNAL
+                                                  "WITH_WINDOWLESSEGLAPPLICATION" FORCE
+      )
     else()
-      set(WITH_WINDOWLESSGLXAPPLICATION OFF CACHE INTERNAL "WITH_WINDOWLESSGLXAPPLICATION" FORCE)
-      set(WITH_WINDOWLESSEGLAPPLICATION ON  CACHE INTERNAL "WITH_WINDOWLESSEGLAPPLICATION" FORCE)
+      set(WITH_WINDOWLESSGLXAPPLICATION OFF CACHE INTERNAL
+                                                  "WITH_WINDOWLESSGLXAPPLICATION" FORCE
+      )
+      set(WITH_WINDOWLESSEGLAPPLICATION ON CACHE INTERNAL
+                                                 "WITH_WINDOWLESSEGLAPPLICATION" FORCE
+      )
     endif()
   endif()
   add_subdirectory("${DEPS_DIR}/magnum")

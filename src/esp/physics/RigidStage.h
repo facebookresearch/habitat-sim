@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_PHYSICS_RIGIDSCENE_H_
-#define ESP_PHYSICS_RIGIDSCENE_H_
+#ifndef ESP_PHYSICS_RIGIDSTAGE_H_
+#define ESP_PHYSICS_RIGIDSTAGE_H_
 
 #include "esp/physics/RigidBase.h"
 
@@ -12,14 +12,14 @@
  */
 namespace esp {
 namespace physics {
-class RigidScene : public RigidBase {
+class RigidStage : public RigidBase {
  public:
-  RigidScene(scene::SceneNode* rigidBodyNode);
+  RigidStage(scene::SceneNode* rigidBodyNode);
 
   /**
    * @brief Virtual destructor for a @ref RigidScene.
    */
-  virtual ~RigidScene() {}
+  virtual ~RigidStage() {}
 
   /**
    * @brief Initializes the @ref RigidScene that inherits
@@ -38,10 +38,8 @@ class RigidScene : public RigidBase {
    * @return A copy of the @ref PhysicsSceneAttributes template used to create
    * this scene object.
    */
-  std::shared_ptr<assets::PhysicsSceneAttributes> getInitializationAttributes()
-      const {
-    return RigidBase::getInitializationAttributes<
-        assets::PhysicsSceneAttributes>();
+  std::shared_ptr<Attrs::StageAttributes> getInitializationAttributes() const {
+    return RigidBase::getInitializationAttributes<Attrs::StageAttributes>();
   };
   /**
    * @brief Finalize the creation of this @ref RigidScene
@@ -87,9 +85,9 @@ class RigidScene : public RigidBase {
   }
 
  public:
-  ESP_SMART_POINTERS(RigidScene)
+  ESP_SMART_POINTERS(RigidStage)
 };
 }  // namespace physics
 }  // namespace esp
 
-#endif
+#endif  // ESP_PHYSICS_RIGIDSTAGE_H_

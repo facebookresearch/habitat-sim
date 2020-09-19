@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
-#define ESP_ASSETS_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
+#ifndef ESP_METADATA_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
+#define ESP_METADATA_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
 
 #include <Corrade/Utility/Assert.h>
 
@@ -11,18 +11,18 @@
 #include "AttributesManagerBase.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 namespace managers {
 /**
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
-    : public AttributesManager<PhysicsObjectAttributes::ptr> {
+    : public AttributesManager<Attrs::ObjectAttributes> {
  public:
-  ObjectAttributesManager(assets::ResourceManager& resourceManager)
-      : AttributesManager<PhysicsObjectAttributes::ptr>::AttributesManager(
+  ObjectAttributesManager(esp::assets::ResourceManager& resourceManager)
+      : AttributesManager<Attrs::ObjectAttributes>::AttributesManager(
             resourceManager,
-            "Physical Object") {
+            "Object") {
     buildCtorFuncPtrMaps();
   }
 
@@ -53,31 +53,9 @@ class ObjectAttributesManager
    * template.
    * @return a reference to the desired template.
    */
-  PhysicsObjectAttributes::ptr createAttributesTemplate(
+  Attrs::ObjectAttributes::ptr createAttributesTemplate(
       const std::string& attributesTemplateHandle,
       bool registerTemplate = true) override;
-
-  /**
-   * @brief Creates an instance of an empty object template populated with
-   * default values. Assigns the @ref templateName as the template's handle and
-   * as the renderAssetHandle.
-   *
-   * If a template exists with this handle, the existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
-   * This method is specifically intended to directly construct an attributes
-   * template for editing, and so defaults to false for @ref registerTemplate.
-   *
-   * @param templateName The desired name for this template.
-   * @param registerTemplate whether to add this template to the library.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration. Defaults to false. If
-   * specified as true, then this function returns a copy of the registered
-   * template.
-   * @return a reference to the desired template, or nullptr if fails.
-   */
-  PhysicsObjectAttributes::ptr createDefaultAttributesTemplate(
-      const std::string& templateName,
-      bool registerTemplate = false) override;
 
   /**
    * @brief Creates an instance of an object template described by passed
@@ -93,26 +71,22 @@ class ObjectAttributesManager
    * @return a reference to the desired template, or nullptr if fails.
    */
 
-  PhysicsObjectAttributes::ptr createPrimBasedAttributesTemplate(
+  Attrs::ObjectAttributes::ptr createPrimBasedAttributesTemplate(
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true);
 
   /**
-   * @brief Creates an instance of a template from a JSON file using passed
-   * filename by loading and parsing the loaded JSON and generating a @ref
-   * PhysicsObjectAttributes object. It returns created instance if successful,
-   * and nullptr if fails.
+   * @brief Parse passed JSON Document specifically for @ref ObjectAttributes
+   * object. It always returns a valid @ref ObjectAttributes::ptr object.
    *
-   * @param filename the name of the file describing the object attributes.
-   * Assumes it exists and fails if it does not.
-   * @param registerTemplate whether to add this template to the library.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration. Defaults to true.
-   * @return a reference to the desired template, or nullptr if fails.
+   * @param templateName The desired name for this @ref ObjectAttributes
+   * template.
+   * @param jsonConfig json document to parse
+   * @return a reference to the desired template.
    */
-  PhysicsObjectAttributes::ptr createFileBasedAttributesTemplate(
-      const std::string& filename,
-      bool registerTemplate = true);
+  Attrs::ObjectAttributes::ptr loadAttributesFromJSONDoc(
+      const std::string& templateName,
+      const io::JsonDocument& jsonConfig) override;
 
   /**
    * @brief Load file-based object templates for all "*.phys_properties.json"
@@ -154,7 +128,7 @@ class ObjectAttributesManager
    * @param handle String name of primitive asset attributes desired
    * @return whether handle exists or not in asset attributes library
    */
-  bool isValidPrimitiveAttributes(const std::string& handle) {
+  bool isValidPrimitiveAttributes(const std::string& handle) override {
     return assetAttributesMgr_->getTemplateLibHasHandle(handle);
   }
 
@@ -257,26 +231,26 @@ class ObjectAttributesManager
    * specifying the asset type corresponding to that handle.  These settings
    * should not restrict anything, only provide defaults.
    *
-   * @param attributes The AbstractPhysicsAttributes object to be configured
+   * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
    * @param fileName Mesh Handle to check.
-   * @param meshTypeSetter Setter for mesh type.
+   * @param assetTypeSetter Setter for mesh type.
    */
-  void setDefaultFileNameBasedAttributes(
-      PhysicsObjectAttributes::ptr attributes,
+  void setDefaultAssetNameBasedAttributes(
+      Attrs::ObjectAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      std::function<void(int)> meshTypeSetter) override;
+      std::function<void(int)> assetTypeSetter) override;
 
   /**
-   * @brief Used Internally.  Configure newly-created attributes with any
-   * default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes with
+   * any default values, before any specific values are set.
    *
-   * @param newAttributes Newly created attributes.
+   * @param handleName handle name to be assigned to attributes
    */
-  PhysicsObjectAttributes::ptr initNewAttribsInternal(
-      PhysicsObjectAttributes::ptr newAttributes) override;
+  Attrs::ObjectAttributes::ptr initNewAttribsInternal(
+      const std::string& handleName) override;
 
   /**
    * @brief This method will perform any necessary updating that is
@@ -307,7 +281,7 @@ class ObjectAttributesManager
    * template.
    */
   int registerAttributesTemplateFinalize(
-      PhysicsObjectAttributes::ptr attributesTemplate,
+      Attrs::ObjectAttributes::ptr attributesTemplate,
       const std::string& attributesTemplateHandle) override;
 
   /**
@@ -322,12 +296,11 @@ class ObjectAttributesManager
   /**
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as defined in
-   * AttributesManager<PhysicsObjectAttributes::ptr>
+   * AttributesManager<ObjectAttributes::ptr>
    */
   void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["PhysicsObjectAttributes"] =
-        &ObjectAttributesManager::createAttributesCopy<
-            assets::PhysicsObjectAttributes>;
+    this->copyConstructorMap_["ObjectAttributes"] =
+        &ObjectAttributesManager::createAttributesCopy<Attrs::ObjectAttributes>;
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
 
   // ======== Typedefs and Instance Variables ========
@@ -356,7 +329,7 @@ class ObjectAttributesManager
 };  // ObjectAttributesManager
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_ASSETS_MANAGERS_OBJECTATTRIBUTEMANAGER_H_
+#endif  // ESP_METADATA_MANAGERS_OBJECTATTRIBUTEMANAGER_H_

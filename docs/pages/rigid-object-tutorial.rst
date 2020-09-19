@@ -1,12 +1,12 @@
+Interactive Rigid Objects
+#########################
+
 :ref-prefix:
     habitat_sim.simulator
     habitat_sim.sim
     habitat_sim.agent
     habitat_sim.attributes
     habitat_sim.scene
-
-Interactive Rigid Objects
-#########################
 
 :summary: This tutorial demonstrates rigid object interactions in Habitat-sim -- instancing, dynamic simulation, and kinematic manipulation.
 
@@ -178,7 +178,7 @@ With NavMesh sliding dis-allowed:
 Adding/Removing Objects
 ***********************
 
-Objects can be instanced from templates (i.e. :ref:`PhysicsObjectAttributes`) into the scene by template id with :ref:`Simulator.add_object` or by template string key with :ref:`Simulator.add_object_by_handle`.
+Objects can be instanced from templates (i.e. :ref:`ObjectAttributes`) into the scene by template id with :ref:`Simulator.add_object` or by template string key with :ref:`Simulator.add_object_by_handle`.
 These functions return a unique id which can be used to refer to the object instance. In the case of errors in construction, -1 is returned.
 
 By default, a new :ref:`SceneNode` will be created when an object is instanced. However, the object can be attached to an existing :ref:`SceneNode` (e.g. that of the :ref:`Agent`) if provided. This is demonstrated in `Embodied Agents`_.

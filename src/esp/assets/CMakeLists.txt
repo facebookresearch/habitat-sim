@@ -1,8 +1,7 @@
-set(assets_SOURCES
+set(
+  assets_SOURCES
   Asset.cpp
   Asset.h
-  Attributes.cpp
-  Attributes.h
   BaseMesh.cpp
   BaseMesh.h
   CollisionMeshData.h
@@ -14,91 +13,75 @@ set(assets_SOURCES
   MeshMetaData.h
   Mp3dInstanceMeshData.cpp
   Mp3dInstanceMeshData.h
-  managers/AttributesManagerBase.h
-  managers/AssetAttributesManager.h
-  managers/AssetAttributesManager.cpp
-  managers/ObjectAttributesManager.h
-  managers/ObjectAttributesManager.cpp
-  managers/PhysicsAttributesManager.h
-  managers/PhysicsAttributesManager.cpp
-  managers/SceneAttributesManager.h
-  managers/SceneAttributesManager.cpp
-  
   ResourceManager.cpp
   ResourceManager.h
-
 )
 
 if(BUILD_PTEX_SUPPORT)
-  list(APPEND assets_SOURCES
-    PTexMeshData.cpp
-    PTexMeshData.h
-  )
+  list(APPEND assets_SOURCES PTexMeshData.cpp PTexMeshData.h)
 endif()
 
-find_package(Magnum
+find_package(
+  Magnum
   REQUIRED
-    AnyImageImporter
-    AnySceneImporter
-    GL
-    MeshTools
-    SceneGraph
-    Shaders
-    Trade
-    Primitives
+  AnyImageImporter
+  AnySceneImporter
+  GL
+  MeshTools
+  SceneGraph
+  Shaders
+  Trade
+  Primitives
 )
 
-find_package(MagnumPlugins
+find_package(
+  MagnumPlugins
   REQUIRED
-    BasisImporter
-    PrimitiveImporter
-    StanfordImporter
-    StbImageImporter
-    StbImageConverter
-    TinyGltfImporter
+  BasisImporter
+  PrimitiveImporter
+  StanfordImporter
+  StbImageImporter
+  StbImageConverter
+  TinyGltfImporter
 )
 
 if(BUILD_ASSIMP_SUPPORT)
-  find_package(MagnumPlugins
-    REQUIRED
-      AssimpImporter
-  )
+  find_package(MagnumPlugins REQUIRED AssimpImporter)
 endif()
 
-add_library(assets STATIC ${assets_SOURCES})
+add_library(
+  assets STATIC
+  ${assets_SOURCES}
+)
 
-target_link_libraries(assets
-  PUBLIC
-    core
-    physics
-    scene
-    nav
-    Magnum::AnyImageImporter
-    Magnum::AnySceneImporter
-    Magnum::GL
-    Magnum::Magnum
-    Magnum::MeshTools
-    Magnum::SceneGraph
-    Magnum::Shaders
-    Magnum::Trade
-    Magnum::Primitives
-    MagnumPlugins::BasisImporter
-    MagnumPlugins::PrimitiveImporter
-    MagnumPlugins::StanfordImporter
-    MagnumPlugins::StbImageImporter
-    MagnumPlugins::StbImageConverter
-    MagnumPlugins::TinyGltfImporter
-  PRIVATE
-    geo
-    io
+target_link_libraries(
+  assets
+  PUBLIC core
+         metadata
+         physics
+         scene
+         nav
+         Magnum::AnyImageImporter
+         Magnum::AnySceneImporter
+         Magnum::GL
+         Magnum::Magnum
+         Magnum::MeshTools
+         Magnum::SceneGraph
+         Magnum::Shaders
+         Magnum::Trade
+         Magnum::Primitives
+         MagnumPlugins::BasisImporter
+         MagnumPlugins::PrimitiveImporter
+         MagnumPlugins::StanfordImporter
+         MagnumPlugins::StbImageImporter
+         MagnumPlugins::StbImageConverter
+         MagnumPlugins::TinyGltfImporter
+  PRIVATE geo io
 )
 
 if(BUILD_ASSIMP_SUPPORT)
-  target_link_libraries(assets
-    PUBLIC
-      MagnumPlugins::AssimpImporter
-    PRIVATE
-      Assimp::Assimp
+  target_link_libraries(
+    assets PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
   )
 endif()
 

@@ -3,6 +3,7 @@
 import magnum as mn
 
 import examples.settings
+import habitat_sim
 
 
 def perform_general_tests(attr_mgr, search_string):
@@ -56,20 +57,66 @@ def perform_general_tests(attr_mgr, search_string):
     # same object
     assert template0.get_string("test_key") != template2.get_string("test_key")
 
-    # add new template
-    attr_mgr.register_template(template0, "new_template_0")
+    # add new template with specified handle
+    new_template_handle = "new_template_0"
+
+    attr_mgr.register_template(template0, new_template_handle)
 
     # register new template and verify size is greater than original
     curr_num_templates = attr_mgr.get_num_templates()
     assert curr_num_templates != orig_num_templates
 
-    # get template that is removed
-    template3 = attr_mgr.remove_template_by_handle("new_template_0")
+    # lock template
+    attr_mgr.set_template_lock(new_template_handle, True)
+    # attempt to delete
+    template3 = attr_mgr.remove_template_by_handle(new_template_handle)
+    # verify that template was not deleted
+    assert template3 == None
+    # unlock template
+    attr_mgr.set_template_lock(new_template_handle, False)
 
+    # remove template that has been unlocked; retrieves removed template
+    template3 = attr_mgr.remove_template_by_handle(new_template_handle)
     # verify not NONE
     assert template3 != None
     # verify has expected handle
-    assert template3.handle == "new_template_0"
+    assert template3.handle == new_template_handle
+
+    # get new size of library after remove and verify same as original
+    curr_num_templates = attr_mgr.get_num_templates()
+    assert curr_num_templates == orig_num_templates
+
+    # add many templates with specified handles, then remove them
+    new_handle_stub = "new_template_"
+    num_to_add = 10
+    for i in range(num_to_add):
+        new_iter_handle = new_handle_stub + str(i)
+        tmplt_id = attr_mgr.register_template(template3, new_iter_handle)
+        assert tmplt_id != -1
+
+    # lock all added templates
+    locked_template_handles = attr_mgr.set_lock_by_substring(
+        True, new_handle_stub, True
+    )
+    # verify that the number of added and locked templates are equal
+    assert num_to_add == len(locked_template_handles)
+    # attempt to remove templates that are locked
+    removed_templates = attr_mgr.remove_templates_by_str(new_handle_stub, True)
+    # verify that no templates were removed that have the new handle stub
+    assert 0 == len(removed_templates)
+    # unlock all added templates
+    unlocked_template_handles = attr_mgr.set_lock_by_substring(
+        False, new_handle_stub, True
+    )
+    # verify that the number of added and unlocked templates are equal
+    assert num_to_add == len(unlocked_template_handles)
+    # verify lists of names are same
+    assert sorted(unlocked_template_handles) == sorted(locked_template_handles)
+
+    # now delete all templates with handle stub
+    removed_templates = attr_mgr.remove_templates_by_str(new_handle_stub, True)
+    # verify that the number of added and removed templates are equal
+    assert num_to_add == len(removed_templates)
 
     # get new size of library after remove and verify same as original
     curr_num_templates = attr_mgr.get_num_templates()
@@ -123,69 +170,66 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
     assert curr_num_templates == orig_num_templates
 
 
-def test_physics_attributes_managers(sim):
+def test_physics_attributes_managers():
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     cfg_settings["enable_physics"] = True
     hab_cfg = examples.settings.make_cfg(cfg_settings)
-    sim.reconfigure(hab_cfg)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # get attribute managers
+        phys_attr_mgr = sim.get_physics_template_manager()
 
-    # get attribute managers
-    phys_attr_mgr = sim.get_physics_template_manager()
+        # perform general tests for this attributes manager
+        template0, _ = perform_general_tests(
+            phys_attr_mgr, cfg_settings["physics_config_file"]
+        )
 
-    # perform general tests for this attributes manager
-    template0, _ = perform_general_tests(
-        phys_attr_mgr, cfg_settings["physics_config_file"]
-    )
+        # verify that physics template matches expected values in file
+        assert template0.timestep == 0.008
+        assert template0.simulator == "bullet"
 
-    # verify that physics template matches expected values in file
-    assert template0.timestep == 0.008
-    assert template0.simulator == "bullet"
-
-    # verify creating new template
-    perform_add_blank_template_test(phys_attr_mgr)
+        # verify creating new template
+        perform_add_blank_template_test(phys_attr_mgr)
 
 
-def test_scene_attributes_managers(sim):
+def test_stage_attributes_managers():
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     cfg_settings["enable_physics"] = True
     hab_cfg = examples.settings.make_cfg(cfg_settings)
-    sim.reconfigure(hab_cfg)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        stage_name = cfg_settings["scene"]
 
-    scene_name = cfg_settings["scene"]
+        # get attribute managers
+        stage_mgr = sim.get_stage_template_manager()
 
-    # get attribute managers
-    scene_mgr = sim.get_scene_template_manager()
+        # perform general tests for this attributes manager
+        template0, _ = perform_general_tests(stage_mgr, stage_name)
 
-    # perform general tests for this attributes manager
-    template0, _ = perform_general_tests(scene_mgr, scene_name)
+        # verify gravity in template is as expected
+        assert template0.gravity == mn.Vector3(0.0, -9.8, 0.0)
 
-    # verify gravity in template is as expected
-    assert template0.gravity == mn.Vector3(0.0, -9.8, 0.0)
-
-    # verify creating new template
-    perform_add_blank_template_test(scene_mgr, template0.render_asset_handle)
+        # verify creating new template
+        perform_add_blank_template_test(stage_mgr, template0.render_asset_handle)
 
 
-def test_object_attributes_managers(sim):
+def test_object_attributes_managers():
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     cfg_settings["enable_physics"] = True
     hab_cfg = examples.settings.make_cfg(cfg_settings)
-    sim.reconfigure(hab_cfg)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # get object attribute managers
+        obj_mgr = sim.get_object_template_manager()
 
-    # get object attribute managers
-    obj_mgr = sim.get_object_template_manager()
+        # get object template random handle
+        rand_obj_handle = obj_mgr.get_random_template_handle()
 
-    # get object template random handle
-    rand_obj_handle = obj_mgr.get_random_template_handle()
+        # perform general tests for object attribute manager
+        template0, _ = perform_general_tests(obj_mgr, rand_obj_handle)
 
-    # perform general tests for object attribute manager
-    template0, _ = perform_general_tests(obj_mgr, rand_obj_handle)
-
-    # verify creating new template
-    perform_add_blank_template_test(obj_mgr, template0.render_asset_handle)
+        # verify creating new template
+        perform_add_blank_template_test(obj_mgr, template0.render_asset_handle)
 
 
 def perform_asset_attrib_mgr_tests(
@@ -246,70 +290,73 @@ def perform_asset_attrib_mgr_tests(
     assert orig_num_templates == attr_mgr.get_num_templates()
 
 
-def test_asset_attributes_managers(sim):
+def test_asset_attributes_managers():
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     cfg_settings["enable_physics"] = True
     hab_cfg = examples.settings.make_cfg(cfg_settings)
-    sim.reconfigure(hab_cfg)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # legal and illegal vals for primitives based on wireframe or solid
+        legal_mod_val_wf = 64
+        illegal_mod_val_wf = 25
+        legal_mod_val_solid = 5
+        illegal_mod_val_solid = 0
 
-    # legal and illegal vals for primitives based on wireframe or solid
-    legal_mod_val_wf = 64
-    illegal_mod_val_wf = 25
-    legal_mod_val_solid = 5
-    illegal_mod_val_solid = 0
+        # get object attribute managers
+        attr_mgr = sim.get_asset_template_manager()
 
-    # get object attribute managers
-    attr_mgr = sim.get_asset_template_manager()
+        # capsule
+        print("Test Capsule attributes construction, modification, saving and removal.")
+        dflt_solid_attribs = attr_mgr.get_default_capsule_template(False)
+        perform_asset_attrib_mgr_tests(
+            attr_mgr,
+            dflt_solid_attribs,
+            "segments",
+            legal_mod_val_solid,
+            illegal_mod_val_solid,
+        )
+        dflt_wf_attribs = attr_mgr.get_default_capsule_template(True)
+        perform_asset_attrib_mgr_tests(
+            attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
+        )
 
-    # capsule
-    print("Test Capsule attributes construction, modification, saving and removal.")
-    dflt_solid_attribs = attr_mgr.get_default_capsule_template(False)
-    perform_asset_attrib_mgr_tests(
-        attr_mgr,
-        dflt_solid_attribs,
-        "segments",
-        legal_mod_val_solid,
-        illegal_mod_val_solid,
-    )
-    dflt_wf_attribs = attr_mgr.get_default_capsule_template(True)
-    perform_asset_attrib_mgr_tests(
-        attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
-    )
+        # cone
+        print("Test Cone attributes construction, modification, saving and removal.")
+        dflt_solid_attribs = attr_mgr.get_default_cone_template(False)
+        perform_asset_attrib_mgr_tests(
+            attr_mgr,
+            dflt_solid_attribs,
+            "segments",
+            legal_mod_val_solid,
+            illegal_mod_val_solid,
+        )
+        dflt_wf_attribs = attr_mgr.get_default_cone_template(True)
+        perform_asset_attrib_mgr_tests(
+            attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
+        )
 
-    # cone
-    print("Test Cone attributes construction, modification, saving and removal.")
-    dflt_solid_attribs = attr_mgr.get_default_cone_template(False)
-    perform_asset_attrib_mgr_tests(
-        attr_mgr,
-        dflt_solid_attribs,
-        "segments",
-        legal_mod_val_solid,
-        illegal_mod_val_solid,
-    )
-    dflt_wf_attribs = attr_mgr.get_default_cone_template(True)
-    perform_asset_attrib_mgr_tests(
-        attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
-    )
+        # cylinder
+        print(
+            "Test Cylinder attributes construction, modification, saving and removal."
+        )
+        dflt_solid_attribs = attr_mgr.get_default_cylinder_template(False)
+        perform_asset_attrib_mgr_tests(
+            attr_mgr, dflt_solid_attribs, "segments", 5, illegal_mod_val_solid
+        )
+        dflt_wf_attribs = attr_mgr.get_default_cylinder_template(True)
+        perform_asset_attrib_mgr_tests(
+            attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
+        )
 
-    # cylinder
-    print("Test Cylinder attributes construction, modification, saving and removal.")
-    dflt_solid_attribs = attr_mgr.get_default_cylinder_template(False)
-    perform_asset_attrib_mgr_tests(
-        attr_mgr, dflt_solid_attribs, "segments", 5, illegal_mod_val_solid
-    )
-    dflt_wf_attribs = attr_mgr.get_default_cylinder_template(True)
-    perform_asset_attrib_mgr_tests(
-        attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
-    )
-
-    # UVSphere
-    print("Test UVSphere attributes construction, modification, saving and removal.")
-    dflt_solid_attribs = attr_mgr.get_default_UVsphere_template(False)
-    perform_asset_attrib_mgr_tests(
-        attr_mgr, dflt_solid_attribs, "segments", 5, illegal_mod_val_solid
-    )
-    dflt_wf_attribs = attr_mgr.get_default_UVsphere_template(True)
-    perform_asset_attrib_mgr_tests(
-        attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
-    )
+        # UVSphere
+        print(
+            "Test UVSphere attributes construction, modification, saving and removal."
+        )
+        dflt_solid_attribs = attr_mgr.get_default_UVsphere_template(False)
+        perform_asset_attrib_mgr_tests(
+            attr_mgr, dflt_solid_attribs, "segments", 5, illegal_mod_val_solid
+        )
+        dflt_wf_attribs = attr_mgr.get_default_UVsphere_template(True)
+        perform_asset_attrib_mgr_tests(
+            attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
+        )

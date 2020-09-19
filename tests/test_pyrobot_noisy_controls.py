@@ -8,7 +8,7 @@ import itertools
 
 import numpy as np
 import pytest
-import quaternion
+import quaternion  # noqa: F401
 
 import habitat_sim
 import habitat_sim.errors
@@ -92,9 +92,7 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
     )
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child(), agent_config)
 
-    for base_action in set(
-        act.replace("noisy_", "") for act in agent_config.action_space
-    ):
+    for base_action in {act.replace("noisy_", "") for act in agent_config.action_space}:
         state = agent.state
         state.rotation = np.quaternion(1, 0, 0, 0)
         agent.state = state

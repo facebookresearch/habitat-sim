@@ -53,18 +53,18 @@ DrawableTest::DrawableTest() {
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
   // flang-format on
-  auto sceneAttributesMgr = resourceManager_.getSceneAttributesManager();
-  std::string sceneFile =
+  auto stageAttributesMgr = resourceManager_.getStageAttributesManager();
+  std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
-  auto sceneAttributes =
-      sceneAttributesMgr->createAttributesTemplate(sceneFile, true);
+  auto stageAttributes =
+      stageAttributesMgr->createAttributesTemplate(stageFile, true);
 
   sceneID_ = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
   drawableGroup_ = &sceneGraph.getDrawables();
 
   std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-  bool result = resourceManager_.loadScene(sceneAttributes, nullptr,
+  bool result = resourceManager_.loadStage(stageAttributes, nullptr,
                                            &sceneManager_, tempIDs, false);
 }
 

@@ -27,7 +27,9 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
       tileSize_(ptexMeshData.tileSize()),
       exposure_(ptexMeshData.exposure()),
       gamma_(ptexMeshData.gamma()),
-      saturation_(ptexMeshData.saturation()) {
+      saturation_(ptexMeshData.saturation()),
+      visualizerTriangleMesh_(
+          ptexMeshData.getRenderingBuffer(submeshID)->triangleMesh) {
   auto shaderResource =
       shaderManager.get<Magnum::GL::AbstractShaderProgram, PTexMeshShader>(
           SHADER_KEY);
@@ -47,6 +49,12 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .setSaturation(saturation_)
       .setAtlasTextureSize(atlasTexture_, tileSize_)
       .bindAtlasTexture(atlasTexture_)
+      // e.g., semantic mesh has its own per vertex annotation, which has been
+      // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
+      // fragment shader
+      .setObjectId(static_cast<RenderCamera&>(camera).useDrawableIds()
+                       ? drawableId_
+                       : node_.getSemanticId())
 #ifndef CORRADE_TARGET_APPLE
       .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
 #endif

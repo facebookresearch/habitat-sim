@@ -7,13 +7,31 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
-#include "esp/assets/Attributes.h"
+#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/PhysicsManagerAttributes.h"
+#include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
+#include "esp/metadata/attributes/SceneAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
 
+namespace Attrs = esp::metadata::attributes;
+using Attrs::AbstractAttributes;
+using Attrs::AbstractObjectAttributes;
+using Attrs::AbstractPrimitiveAttributes;
+using Attrs::CapsulePrimitiveAttributes;
+using Attrs::ConePrimitiveAttributes;
+using Attrs::CubePrimitiveAttributes;
+using Attrs::CylinderPrimitiveAttributes;
+using Attrs::IcospherePrimitiveAttributes;
+using Attrs::ObjectAttributes;
+using Attrs::PhysicsManagerAttributes;
+using Attrs::StageAttributes;
+using Attrs::UVSpherePrimitiveAttributes;
+
 namespace esp {
-namespace assets {
+namespace metadata {
 
 void initAttributesBindings(py::module& m) {
   // ==== AbstractAttributes ====
@@ -22,185 +40,327 @@ void initAttributesBindings(py::module& m) {
       .def(py::init(
           &AbstractAttributes::create<const std::string&, const std::string&>))
       .def_property("handle", &AbstractAttributes::getHandle,
-                    &AbstractAttributes::setHandle)
-      .def_property_readonly("file_directory",
-                             &AbstractAttributes::getFileDirectory)
-      .def_property_readonly("ID", &AbstractAttributes::getID)
-      .def_property_readonly("template_class",
-                             &AbstractAttributes::getClassKey);
+                    &AbstractAttributes::setHandle,
+                    R"(Name of attributes template. )")
+      .def_property_readonly(
+          "file_directory", &AbstractAttributes::getFileDirectory,
+          R"(Directory where file-based templates were loaded from.)")
+      .def_property_readonly(
+          "ID", &AbstractAttributes::getID,
+          R"(System-generated ID for template.  Will be unique among templates
+          of same type.)")
+      .def_property_readonly("template_class", &AbstractAttributes::getClassKey,
+                             R"(Class name of Attributes template.)");
 
-  // ==== AbstractPhysicsAttributes ====
-  py::class_<AbstractPhysicsAttributes, AbstractAttributes,
-             AbstractPhysicsAttributes::ptr>(m, "AbstractPhysicsAttributes")
-      .def(py::init(&AbstractPhysicsAttributes::create<const std::string&,
-                                                       const std::string&>))
-      .def_property("scale", &AbstractPhysicsAttributes::getScale,
-                    &AbstractPhysicsAttributes::setScale)
-      .def_property("margin", &AbstractPhysicsAttributes::getMargin,
-                    &AbstractPhysicsAttributes::setMargin)
-      .def_property("orient_up", &AbstractPhysicsAttributes::getOrientUp,
-                    &AbstractPhysicsAttributes::setOrientUp)
-      .def_property("orient_front", &AbstractPhysicsAttributes::getOrientFront,
-                    &AbstractPhysicsAttributes::setOrientFront)
+  // ==== AbstractObjectAttributes ====
+  py::class_<AbstractObjectAttributes, AbstractAttributes,
+             AbstractObjectAttributes::ptr>(m, "AbstractObjectAttributes")
+      .def(py::init(&AbstractObjectAttributes::create<const std::string&,
+                                                      const std::string&>))
+      .def_property(
+          "scale", &AbstractObjectAttributes::getScale,
+          &AbstractObjectAttributes::setScale,
+          R"(Scale multiplier for constructions built from this template in x,y,z)")
+      .def_property(
+          "collision_asset_size",
+          &AbstractObjectAttributes::getCollisionAssetSize,
+          &AbstractObjectAttributes::setCollisionAssetSize,
+          R"(Size of collsion assets for constructions built from this template in
+          x,y,z.  Default is [1.0,1.0,1.0].  This is used to resize a collision asset
+          to match a render asset if necessary, such as when using a primitive.)")
+      .def_property(
+          "margin", &AbstractObjectAttributes::getMargin,
+          &AbstractObjectAttributes::setMargin,
+          R"(Collision margin for constructions built from this template.)")
+      .def_property(
+          "orient_up", &AbstractObjectAttributes::getOrientUp,
+          &AbstractObjectAttributes::setOrientUp,
+          R"(Up direction for constructions built from this template.)")
+      .def_property(
+          "orient_front", &AbstractObjectAttributes::getOrientFront,
+          &AbstractObjectAttributes::setOrientFront,
+          R"(Forward direction for constructions built from this template.)")
       .def_property("units_to_meters",
-                    &AbstractPhysicsAttributes::getUnitsToMeters,
-                    &AbstractPhysicsAttributes::setUnitsToMeters)
-      .def_property("friction_coefficient",
-                    &AbstractPhysicsAttributes::getFrictionCoefficient,
-                    &AbstractPhysicsAttributes::setFrictionCoefficient)
-      .def_property("restitution_coefficient",
-                    &AbstractPhysicsAttributes::getRestitutionCoefficient,
-                    &AbstractPhysicsAttributes::setRestitutionCoefficient)
+                    &AbstractObjectAttributes::getUnitsToMeters,
+                    &AbstractObjectAttributes::setUnitsToMeters,
+                    R"(Conversion ratio for given units to meters.)")
+      .def_property(
+          "friction_coefficient",
+          &AbstractObjectAttributes::getFrictionCoefficient,
+          &AbstractObjectAttributes::setFrictionCoefficient,
+          R"(Friction coefficient for constructions built from this template.)")
+      .def_property(
+          "restitution_coefficient",
+          &AbstractObjectAttributes::getRestitutionCoefficient,
+          &AbstractObjectAttributes::setRestitutionCoefficient,
+          R"(Coefficient of restitution for constructions built from this template.)")
       .def_property("render_asset_type",
-                    &AbstractPhysicsAttributes::getRenderAssetType,
-                    &AbstractPhysicsAttributes::setRenderAssetType)
-      .def_property("collision_asset_type",
-                    &AbstractPhysicsAttributes::getCollisionAssetType,
-                    &AbstractPhysicsAttributes::setCollisionAssetType)
-      .def_property("render_asset_handle",
-                    &AbstractPhysicsAttributes::getRenderAssetHandle,
-                    &AbstractPhysicsAttributes::setRenderAssetHandle)
-      .def_property("collision_asset_handle",
-                    &AbstractPhysicsAttributes::getCollisionAssetHandle,
-                    &AbstractPhysicsAttributes::setCollisionAssetHandle)
-      .def_property("requires_lighting",
-                    &AbstractPhysicsAttributes::getRequiresLighting,
-                    &AbstractPhysicsAttributes::setRequiresLighting)
+                    &AbstractObjectAttributes::getRenderAssetType,
+                    &AbstractObjectAttributes::setRenderAssetType,
+                    R"(Type of the mesh asset used to render constructions built
+          from this template.)")
+      .def_property(
+          "collision_asset_type",
+          &AbstractObjectAttributes::getCollisionAssetType,
+          &AbstractObjectAttributes::setCollisionAssetType,
+          R"(Type of the mesh asset used for collision calculations for
+          constructions built from this template.)")
+      .def_property(
+          "render_asset_handle",
+          &AbstractObjectAttributes::getRenderAssetHandle,
+          &AbstractObjectAttributes::setRenderAssetHandle,
+          R"(Handle of the asset used to render constructions built from
+          this template.)")
+      .def_property(
+          "collision_asset_handle",
+          &AbstractObjectAttributes::getCollisionAssetHandle,
+          &AbstractObjectAttributes::setCollisionAssetHandle,
+          R"(Handle of the asset used to calculate collsions for constructions
+          built from this template.)")
+      .def_property(
+          "requires_lighting", &AbstractObjectAttributes::getRequiresLighting,
+          &AbstractObjectAttributes::setRequiresLighting,
+          R"(Whether constructions built from this template should use phong
+          shading or not.)")
       .def_property_readonly(
           "render_asset_is_primitive",
-          &AbstractPhysicsAttributes::getRenderAssetIsPrimitive)
+          &AbstractObjectAttributes::getRenderAssetIsPrimitive,
+          R"(Whether constructions built from this template should
+          be rendered using an internally sourced primitive.)")
       .def_property_readonly(
           "collision_asset_is_primitive",
-          &AbstractPhysicsAttributes::getCollisionAssetIsPrimitive)
-      .def_property_readonly("use_mesh_for_collision",
-                             &AbstractPhysicsAttributes::getUseMeshCollision)
-      .def_property_readonly("is_dirty",
-                             &AbstractPhysicsAttributes::getIsDirty);
+          &AbstractObjectAttributes::getCollisionAssetIsPrimitive,
+          R"(Whether collisions invloving constructions built from
+          this template should be solved using an internally sourced
+          primitive.)")
+      .def_property_readonly(
+          "use_mesh_for_collision",
+          &AbstractObjectAttributes::getUseMeshCollision,
+          R"(Whether collisions involving constructions built from
+           this template should be solved using the collision mesh
+           or a primitive.)")
+      .def_property_readonly(
+          "is_dirty", &AbstractObjectAttributes::getIsDirty,
+          R"(Whether values in this attributes have been changed requiring
+          re-registartion before they can be used an object can be created. )");
 
-  // ==== PhysicsObjectAttributes ====
-  py::class_<PhysicsObjectAttributes, AbstractPhysicsAttributes,
-             PhysicsObjectAttributes::ptr>(m, "PhysicsObjectAttributes")
-      .def(py::init(&PhysicsObjectAttributes::create<>))
-      .def(py::init(&PhysicsObjectAttributes::create<const std::string&>))
-      .def_property("com", &PhysicsObjectAttributes::getCOM,
-                    &PhysicsObjectAttributes::setCOM)
-      .def_property("compute_COM_from_shape",
-                    &PhysicsObjectAttributes::getComputeCOMFromShape,
-                    &PhysicsObjectAttributes::setComputeCOMFromShape)
-      .def_property("mass", &PhysicsObjectAttributes::getMass,
-                    &PhysicsObjectAttributes::setMass)
-      .def_property("inertia", &PhysicsObjectAttributes::getInertia,
-                    &PhysicsObjectAttributes::setInertia)
-      .def_property("linear_damping",
-                    &PhysicsObjectAttributes::getLinearDamping,
-                    &PhysicsObjectAttributes::setLinearDamping)
-      .def_property("angular_damping",
-                    &PhysicsObjectAttributes::getAngularDamping,
-                    &PhysicsObjectAttributes::setAngularDamping)
+  // ==== ObjectAttributes ====
+  py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(
+      m, "ObjectAttributes")
+      .def(py::init(&ObjectAttributes::create<>))
+      .def(py::init(&ObjectAttributes::create<const std::string&>))
+      .def_property(
+          "com", &ObjectAttributes::getCOM, &ObjectAttributes::setCOM,
+          R"(The Center of Mass for objects built from this template.)")
+      .def_property(
+          "compute_COM_from_shape", &ObjectAttributes::getComputeCOMFromShape,
+          &ObjectAttributes::setComputeCOMFromShape,
+          R"(Whether the COM should be calculated when an object is created
+          based on its bounding box)")
+      .def_property("mass", &ObjectAttributes::getMass,
+                    &ObjectAttributes::setMass,
+                    R"(The mass of objects constructed from this template.)")
+      .def_property(
+          "inertia", &ObjectAttributes::getInertia,
+          &ObjectAttributes::setInertia,
+          R"(The diagonal of the Intertia matrix for objects constructed
+          from this template.)")
+      .def_property(
+          "linear_damping", &ObjectAttributes::getLinearDamping,
+          &ObjectAttributes::setLinearDamping,
+          R"(The damping of the linear velocity for objects constructed
+          from this template.)")
+      .def_property(
+          "angular_damping", &ObjectAttributes::getAngularDamping,
+          &ObjectAttributes::setAngularDamping,
+          R"(The damping of angular velocity for objects constructed from
+          this template.)")
       .def_property("bounding_box_collisions",
-                    &PhysicsObjectAttributes::getBoundingBoxCollisions,
-                    &PhysicsObjectAttributes::setBoundingBoxCollisions)
-      .def_property("join_collision_meshes",
-                    &PhysicsObjectAttributes::getJoinCollisionMeshes,
-                    &PhysicsObjectAttributes::setJoinCollisionMeshes)
-      .def_property("is_visibile", &PhysicsObjectAttributes::getIsVisible,
-                    &PhysicsObjectAttributes::setIsVisible)
-      .def_property("is_collidable", &PhysicsObjectAttributes::getIsCollidable,
-                    &PhysicsObjectAttributes::setIsCollidable)
-      .def_property("semantic_id", &PhysicsObjectAttributes::getSemanticId,
-                    &PhysicsObjectAttributes::setSemanticId);
+                    &ObjectAttributes::getBoundingBoxCollisions,
+                    &ObjectAttributes::setBoundingBoxCollisions,
+                    R"(Whether objects constructed from this template should use
+          bounding box for collisions or designated mesh.)")
+      .def_property(
+          "join_collision_meshes", &ObjectAttributes::getJoinCollisionMeshes,
+          &ObjectAttributes::setJoinCollisionMeshes,
+          R"(Whether collision meshes for objects constructed from this
+          template should be joined into a convex hull or kept separate.)")
+      .def_property(
+          "is_visibile", &ObjectAttributes::getIsVisible,
+          &ObjectAttributes::setIsVisible,
+          R"(Whether objects constructed from this template are visible.)")
+      .def_property(
+          "is_collidable", &ObjectAttributes::getIsCollidable,
+          &ObjectAttributes::setIsCollidable,
+          R"(Whether objects constructed from this template are collidable.)")
+      .def_property(
+          "semantic_id", &ObjectAttributes::getSemanticId,
+          &ObjectAttributes::setSemanticId,
+          R"(The semantic ID for objects constructed from this template.)");
 
-  // ==== PhysicsSceneAttributes ====
-  py::class_<PhysicsSceneAttributes, AbstractPhysicsAttributes,
-             PhysicsSceneAttributes::ptr>(m, "PhysicsSceneAttributes")
-      .def(py::init(&PhysicsSceneAttributes::create<>))
-      .def(py::init(&PhysicsSceneAttributes::create<const std::string&>))
-      .def_property("gravity", &PhysicsSceneAttributes::getGravity,
-                    &PhysicsSceneAttributes::setGravity)
-      .def_property("origin", &PhysicsSceneAttributes::getOrigin,
-                    &PhysicsSceneAttributes::setOrigin)
-      .def_property("semantic_asset_handle",
-                    &PhysicsSceneAttributes::getSemanticAssetHandle,
-                    &PhysicsSceneAttributes::setSemanticAssetHandle)
-      .def_property("semantic_asset_type",
-                    &PhysicsSceneAttributes::getSemanticAssetType,
-                    &PhysicsSceneAttributes::setSemanticAssetType)
-      .def_property("navmesh_asset_handle",
-                    &PhysicsSceneAttributes::getNavmeshAssetHandle,
-                    &PhysicsSceneAttributes::setNavmeshAssetHandle)
-      .def_property("house_filename", &PhysicsSceneAttributes::getHouseFilename,
-                    &PhysicsSceneAttributes::setHouseFilename)
-      .def_property("light_setup", &PhysicsSceneAttributes::getLightSetup,
-                    &PhysicsSceneAttributes::setLightSetup)
-      .def_property("frustrum_culling",
-                    &PhysicsSceneAttributes::getFrustrumCulling,
-                    &PhysicsSceneAttributes::setFrustrumCulling);
+  // ==== StageAttributes ====
+  py::class_<StageAttributes, AbstractObjectAttributes, StageAttributes::ptr>(
+      m, "StageAttributes")
+      .def(py::init(&StageAttributes::create<>))
+      .def(py::init(&StageAttributes::create<const std::string&>))
+      .def_property(
+          "gravity", &StageAttributes::getGravity, &StageAttributes::setGravity,
+          R"(The 3-vector representation of gravity to use for physically-based
+          simulations on stages built from this template.)")
+      .def_property(
+          "origin", &StageAttributes::getOrigin, &StageAttributes::setOrigin,
+          R"(The desired location of the origin of stages built from this
+          template.)")
+      .def_property(
+          "semantic_asset_handle", &StageAttributes::getSemanticAssetHandle,
+          &StageAttributes::setSemanticAssetHandle,
+          R"(Handle of the asset used for semantic segmentation of stages
+          built from this template.)")
+      .def_property(
+          "semantic_asset_type", &StageAttributes::getSemanticAssetType,
+          &StageAttributes::setSemanticAssetType,
+          R"(Type of asset used for collision calculations for constructions
+          built from this template.)")
+      .def_property(
+          "navmesh_asset_handle", &StageAttributes::getNavmeshAssetHandle,
+          &StageAttributes::setNavmeshAssetHandle,
+          R"(Handle of the navmesh asset used for constructions built from
+          this template.)")
+      .def_property(
+          "house_filename", &StageAttributes::getHouseFilename,
+          &StageAttributes::setHouseFilename,
+          R"(Handle for file containing semantic type maps and hierarchy for
+          constructions built from this template.)")
+      .def_property(
+          "light_setup", &StageAttributes::getLightSetup,
+          &StageAttributes::setLightSetup,
+          R"(Habitat lighting setup to use for constructions built by this template.)")
+      .def_property(
+          "frustrum_culling", &StageAttributes::getFrustrumCulling,
+          &StageAttributes::setFrustrumCulling,
+          R"(Whether frustrum culling should be enabled for constructions built by this template.)");
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,
              PhysicsManagerAttributes::ptr>(m, "PhysicsManagerAttributes")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
-      .def_property_readonly("simulator",
-                             &PhysicsManagerAttributes::getSimulator)
+      .def_property_readonly(
+          "simulator", &PhysicsManagerAttributes::getSimulator,
+          R"(The simulator being used for dynamic simulation.  If none then only kinematic
+        support is provided.)")
       .def_property("timestep", &PhysicsManagerAttributes::getTimestep,
-                    &PhysicsManagerAttributes::setTimestep)
+                    &PhysicsManagerAttributes::setTimestep,
+                    R"(The timestep to use for forward simulation.)")
       .def_property("max_substeps", &PhysicsManagerAttributes::getMaxSubsteps,
-                    &PhysicsManagerAttributes::setMaxSubsteps)
-      .def_property("gravity", &PhysicsManagerAttributes::getGravity,
-                    &PhysicsManagerAttributes::setGravity)
-      .def_property("friction_coefficient",
-                    &PhysicsManagerAttributes::getFrictionCoefficient,
-                    &PhysicsManagerAttributes::setFrictionCoefficient)
-      .def_property("restitution_coefficient",
-                    &PhysicsManagerAttributes::getRestitutionCoefficient,
-                    &PhysicsManagerAttributes::setRestitutionCoefficient);
+                    &PhysicsManagerAttributes::setMaxSubsteps,
+                    R"(Maximum simulation steps between each rendering step.
+                    (Not currently implemented).)")
+      .def_property(
+          "gravity", &PhysicsManagerAttributes::getGravity,
+          &PhysicsManagerAttributes::setGravity,
+          R"(The default 3-vector representation of gravity to use for physically-based
+          simulations.  Can be overridden.)")
+      .def_property(
+          "friction_coefficient",
+          &PhysicsManagerAttributes::getFrictionCoefficient,
+          &PhysicsManagerAttributes::setFrictionCoefficient,
+          R"(Default friction coefficient for contact modeling.  Can be overridden by
+          stage and object values.)")
+      .def_property(
+          "restitution_coefficient",
+          &PhysicsManagerAttributes::getRestitutionCoefficient,
+          &PhysicsManagerAttributes::setRestitutionCoefficient,
+          R"(Default restitution coefficient for contact modeling.  Can be overridden by
+          stage and object values.)");
 
   // ==== AbstractPrimitiveAttributes ====
   py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
              AbstractPrimitiveAttributes::ptr>(m, "AbstractPrimitiveAttributes")
-      .def_property_readonly("is_wireframe",
-                             &AbstractPrimitiveAttributes::getIsWireframe)
-      .def_property("use_texture_coords",
-                    &AbstractPrimitiveAttributes::getUseTextureCoords,
-                    &AbstractPrimitiveAttributes::setUseTextureCoords)
-      .def_property("use_tangents",
-                    &AbstractPrimitiveAttributes::getUseTangents,
-                    &AbstractPrimitiveAttributes::setUseTangents)
-      .def_property("num_rings", &AbstractPrimitiveAttributes::getNumRings,
-                    &AbstractPrimitiveAttributes::setNumRings)
-      .def_property("num_segments",
-                    &AbstractPrimitiveAttributes::getNumSegments,
-                    &AbstractPrimitiveAttributes::setNumSegments)
-      .def_property("half_length", &AbstractPrimitiveAttributes::getHalfLength,
-                    &AbstractPrimitiveAttributes::setHalfLength)
-      .def_property_readonly("prim_obj_class_name",
-                             &AbstractPrimitiveAttributes::getPrimObjClassName)
+      .def_property_readonly(
+          "is_wireframe", &AbstractPrimitiveAttributes::getIsWireframe,
+          R"(Whether primitives built from this template are wireframe or solid.)")
+      .def_property(
+          "use_texture_coords",
+          &AbstractPrimitiveAttributes::getUseTextureCoords,
+          &AbstractPrimitiveAttributes::setUseTextureCoords,
+          R"(Whether texture coordinates should be generated for objects
+          constructed using this template.)")
+      .def_property(
+          "use_tangents", &AbstractPrimitiveAttributes::getUseTangents,
+          &AbstractPrimitiveAttributes::setUseTangents,
+          R"(Whether 4-component (homogeneous) tangents should be generated for
+          objects constructed using this template.)")
+      .def_property(
+          "num_rings", &AbstractPrimitiveAttributes::getNumRings,
+          &AbstractPrimitiveAttributes::setNumRings,
+          R"(Number of line (for wireframe) or face (for solid) rings for
+          primitives built from this template.
+          Must be greater than 1 for template to be valid.
+          For all uvSpheres, must be greater than 2, and for wireframe uvSpheres
+          must also be multiple of 2.
+          Used by solid cones, cylinders, uvSpheres, and wireframe cylinders
+          and uvSpheres)")
+      .def_property(
+          "num_segments", &AbstractPrimitiveAttributes::getNumSegments,
+          &AbstractPrimitiveAttributes::setNumSegments,
+          R"(Number of line (for wireframe) or face (for solid) segments
+          for primitives built from this template.
+          For solid primitives, must be 3 or greater for template to
+          be valid. For wireframe primitives, must be 4 or greater,
+          and a multiple of 4 for template to be valid.
+          Used by solid and wireframe capsules, cones, cylinders,
+          uvSpheres.)")
+      .def_property(
+          "half_length", &AbstractPrimitiveAttributes::getHalfLength,
+          &AbstractPrimitiveAttributes::setHalfLength,
+          R"(Half the length of the cylinder (for capsules and cylinders) or the
+          cone (for cones) primitives built from this template. Primitives is
+          built with default radius 1.0.  In order to get a desired radius r,
+          length l, and preserve correct normals of the primitive being built,
+          set half_length to .5 * (l/r) and then scale by r.
+          Used by solid and wireframe capsules, cones and cylinders.)")
+      .def_property_readonly(
+          "prim_obj_class_name",
+          &AbstractPrimitiveAttributes::getPrimObjClassName,
+          R"(Name of Magnum primitive class this template uses to construct
+          primitives)")
       .def_property_readonly("prim_obj_type",
                              &AbstractPrimitiveAttributes::getPrimObjType)
       .def("build_handle", &AbstractPrimitiveAttributes::buildHandle)
-      .def_property_readonly("is_valid_template",
-                             &AbstractPrimitiveAttributes::isValidTemplate);
+      .def_property_readonly(
+          "is_valid_template", &AbstractPrimitiveAttributes::isValidTemplate,
+          R"(Certain attributes properties, such as num_segments, are subject
+          to restrictions in allowable values. If an illegal value is entered,
+          the template is considered invalid and no primitive will be built
+          from it.  This property will say whether this template is valid
+          for creating its designated primitive.)");
 
   // ==== CapsulePrimitiveAttributes ====
   py::class_<CapsulePrimitiveAttributes, AbstractPrimitiveAttributes,
              CapsulePrimitiveAttributes::ptr>(m, "CapsulePrimitiveAttributes")
       .def(py::init(
           &CapsulePrimitiveAttributes::create<bool, int, const std::string&>))
-      .def_property("hemisphere_rings",
-                    &CapsulePrimitiveAttributes::getHemisphereRings,
-                    &CapsulePrimitiveAttributes::setHemisphereRings)
-      .def_property("cylinder_rings",
-                    &CapsulePrimitiveAttributes::getCylinderRings,
-                    &CapsulePrimitiveAttributes::setCylinderRings);
+      .def_property(
+          "hemisphere_rings", &CapsulePrimitiveAttributes::getHemisphereRings,
+          &CapsulePrimitiveAttributes::setHemisphereRings,
+          R"(Number of rings for each hemisphere for capsules built with this
+          template.  Must be larger than 1 for template to be valid.)")
+      .def_property(
+          "cylinder_rings", &CapsulePrimitiveAttributes::getCylinderRings,
+          &CapsulePrimitiveAttributes::setCylinderRings,
+          R"(Number of rings for cylinder body for capsules built with this
+          template.  Must be larger than 1 for template to be valid.)");
 
   // ==== ConePrimitiveAttributes ====
   py::class_<ConePrimitiveAttributes, AbstractPrimitiveAttributes,
              ConePrimitiveAttributes::ptr>(m, "ConePrimitiveAttributes")
       .def(py::init(
           &ConePrimitiveAttributes::create<bool, int, const std::string&>))
-      .def_property("use_cap_end", &ConePrimitiveAttributes::getCapEnd,
-                    &ConePrimitiveAttributes::setCapEnd);
+      .def_property(
+          "use_cap_end", &ConePrimitiveAttributes::getCapEnd,
+          &ConePrimitiveAttributes::setCapEnd,
+          R"(Whether to close cone bottom.  Only used for solid cones.)");
 
   // ==== CubePrimitiveAttributes ====
   py::class_<CubePrimitiveAttributes, AbstractPrimitiveAttributes,
@@ -213,8 +373,10 @@ void initAttributesBindings(py::module& m) {
              CylinderPrimitiveAttributes::ptr>(m, "CylinderPrimitiveAttributes")
       .def(py::init(
           &CylinderPrimitiveAttributes::create<bool, int, const std::string&>))
-      .def_property("use_cap_ends", &CylinderPrimitiveAttributes::getCapEnds,
-                    &CylinderPrimitiveAttributes::setCapEnds);
+      .def_property(
+          "use_cap_ends", &CylinderPrimitiveAttributes::getCapEnds,
+          &CylinderPrimitiveAttributes::setCapEnds,
+          R"(Whether to close cylinder ends.  Only used for solid cylinders.)");
 
   // ==== IcospherePrimitiveAttributes ====
   py::class_<IcospherePrimitiveAttributes, AbstractPrimitiveAttributes,
@@ -222,9 +384,11 @@ void initAttributesBindings(py::module& m) {
                                                 "IcospherePrimitiveAttributes")
       .def(py::init(
           &IcospherePrimitiveAttributes::create<bool, int, const std::string&>))
-      .def_property("subdivisions",
-                    &IcospherePrimitiveAttributes::getSubdivisions,
-                    &IcospherePrimitiveAttributes::setSubdivisions);
+      .def_property(
+          "subdivisions", &IcospherePrimitiveAttributes::getSubdivisions,
+          &IcospherePrimitiveAttributes::setSubdivisions,
+          R"(Number of subdivisions to divide mesh for icospheres made from this
+          template.  Only used with solid icospheres.)");
 
   // ==== UVSpherePrimitiveAttributes ====
   py::class_<UVSpherePrimitiveAttributes, AbstractPrimitiveAttributes,
@@ -234,5 +398,5 @@ void initAttributesBindings(py::module& m) {
 
 }  // initAttributesBindings
 
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

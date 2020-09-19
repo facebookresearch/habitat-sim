@@ -15,33 +15,54 @@ using std::placeholders::_1;
 namespace Cr = Corrade;
 
 namespace esp {
-namespace assets {
 
+using assets::AssetType;
+namespace metadata {
+
+using attributes::AbstractObjectAttributes;
+using attributes::ObjectAttributes;
 namespace managers {
-PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
+ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) {
-  PhysicsObjectAttributes::ptr attrs;
+  ObjectAttributes::ptr attrs;
   std::string msg;
-  if (isValidPrimitiveAttributes(attributesTemplateHandle)) {
+  if (this->isValidPrimitiveAttributes(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing primitive attributes, then
     // this is a primitive-based object we are building
     attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
                                               registerTemplate);
     msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
-  } else if (this->isValidFileName(attributesTemplateHandle)) {
-    // if attributesTemplateHandle == some existing file then
-    // assume this is a file-based object template we are building.
-    attrs = createFileBasedAttributesTemplate(attributesTemplateHandle,
-                                              registerTemplate);
-    msg = "File (" + attributesTemplateHandle + ") Based";
   } else {
-    // if neither of these is true, then build an empty template and assign the
-    // passed handle to its origin handle and its render asset handle
-    attrs = createDefaultAttributesTemplate(attributesTemplateHandle,
-                                            registerTemplate);
-    msg = "New default";
-  }
+    std::string JSONTypeExt("phys_properties.json");
+    std::string strHandle =
+        Cr::Utility::String::lowercase(attributesTemplateHandle);
+    std::string jsonAttrFileName =
+        (strHandle.find(JSONTypeExt) != std::string::npos)
+            ? std::string(attributesTemplateHandle)
+            : io::changeExtension(attributesTemplateHandle, JSONTypeExt);
+    bool fileExists = (this->isValidFileName(attributesTemplateHandle));
+    bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+    if (jsonFileExists) {
+      // check if stageAttributesHandle corresponds to an actual, existing
+      // json stage file descriptor.
+      // this method lives in class template.
+      attrs = this->createFileBasedAttributesTemplate(jsonAttrFileName,
+                                                      registerTemplate);
+      msg = "JSON File (" + jsonAttrFileName + ") Based";
+    } else {
+      // if name is not json file descriptor but still appropriate file, or if
+      // is not a file or known prim
+      attrs = this->createDefaultAttributesTemplate(attributesTemplateHandle,
+                                                    registerTemplate);
+
+      if (fileExists) {
+        msg = "File (" + attributesTemplateHandle + ") Based";
+      } else {
+        msg = "New default (" + attributesTemplateHandle + ")";
+      }
+    }
+  }  // if this is prim else
   if (nullptr != attrs) {
     LOG(INFO) << msg << " object attributes created"
               << (registerTemplate ? " and registered." : ".");
@@ -50,12 +71,12 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
 
 }  // ObjectAttributesManager::createAttributesTemplate
 
-PhysicsObjectAttributes::ptr
+ObjectAttributes::ptr
 ObjectAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAttrTemplateHandle,
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
-  if (!isValidPrimitiveAttributes(primAttrTemplateHandle)) {
+  if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
     LOG(ERROR)
         << "ObjectAttributesManager::createPrimBasedAttributesTemplate : No "
            "primitive with handle '"
@@ -64,9 +85,9 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     return nullptr;
   }
 
-  // construct a PhysicsObjectAttributes
-  auto primObjectAttributes = initNewAttribsInternal(
-      PhysicsObjectAttributes::create(primAttrTemplateHandle));
+  // construct a ObjectAttributes
+  auto primObjectAttributes =
+      this->initNewAttribsInternal(primAttrTemplateHandle);
   // set margin to be 0
   primObjectAttributes->setMargin(0.0);
   // make smaller as default size - prims are approx meter in size
@@ -87,125 +108,107 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
 void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
-  this->defaultTemplateNames_.clear();
+  this->undeletableTemplateNames_.clear();
   // build default primtive object templates corresponding to given default
   // asset templates
-  const std::vector<std::string> lib =
-      assetAttributesMgr_->getDefaultTemplateHandles();
-  for (std::string primAssetHandle : lib) {
-    auto tmplt = createPrimBasedAttributesTemplate(primAssetHandle, true);
+  std::vector<std::string> lib =
+      assetAttributesMgr_->getUndeletableTemplateHandles();
+  for (const std::string& elem : lib) {
+    auto tmplt = createPrimBasedAttributesTemplate(elem, true);
     // save handles in list of defaults, so they are not removed
     std::string tmpltHandle = tmplt->getHandle();
-    this->defaultTemplateNames_.push_back(tmpltHandle);
+    this->undeletableTemplateNames_.insert(tmpltHandle);
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
-PhysicsObjectAttributes::ptr
-ObjectAttributesManager::createFileBasedAttributesTemplate(
-    const std::string& objPhysConfigFilename,
-    bool registerTemplate) {
-  // Load JSON config file
-  io::JsonDocument jsonConfig;
-  bool success = this->verifyLoadJson(objPhysConfigFilename, jsonConfig);
-  if (!success) {
-    LOG(ERROR)
-        << "ObjectAttributesManager::createFileBasedAttributesTemplate : "
-           "Failure reading json : "
-        << objPhysConfigFilename << ". Aborting.";
-    return nullptr;
-  }
-
-  // Construct a physicsObjectAttributes and populate with any
-  // AbstractPhysicsAttributes fields found in json.
+ObjectAttributes::ptr ObjectAttributesManager::loadAttributesFromJSONDoc(
+    const std::string& templateName,
+    const io::JsonDocument& jsonConfig) {
+  // Construct a ObjectAttributes and populate with any AbstractObjectAttributes
+  // fields found in json.
   auto objAttributes =
-      this->createPhysicsAttributesFromJson<PhysicsObjectAttributes>(
-          objPhysConfigFilename, jsonConfig);
+      this->createObjectAttributesFromJson(templateName, jsonConfig);
 
-  // Populate with object-specific fields found in json, if any are there
+  // Populate with object-specific fields found in json, if any are there.
   // object mass
   io::jsonIntoSetter<double>(
       jsonConfig, "mass",
-      std::bind(&PhysicsObjectAttributes::setMass, objAttributes, _1));
+      std::bind(&ObjectAttributes::setMass, objAttributes, _1));
 
-  // optional set bounding box as collision object
+  // Use bounding box as collision object
   io::jsonIntoSetter<bool>(
       jsonConfig, "use bounding box for collision",
-      std::bind(&PhysicsObjectAttributes::setBoundingBoxCollisions,
-                objAttributes, _1));
-
-  //! Get collision configuration options if specified
-  io::jsonIntoSetter<bool>(
-      jsonConfig, "join collision meshes",
-      std::bind(&PhysicsObjectAttributes::setJoinCollisionMeshes, objAttributes,
+      std::bind(&ObjectAttributes::setBoundingBoxCollisions, objAttributes,
                 _1));
 
-  // object's interia matrix diag
+  // Join collision meshes if specified
+  io::jsonIntoSetter<bool>(
+      jsonConfig, "join collision meshes",
+      std::bind(&ObjectAttributes::setJoinCollisionMeshes, objAttributes, _1));
+
+  // The object's interia matrix diagonal
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "inertia",
-      std::bind(&PhysicsObjectAttributes::setInertia, objAttributes, _1));
+      std::bind(&ObjectAttributes::setInertia, objAttributes, _1));
 
-  // the center of mass (in the local frame of the object)
+  // The center of mass (in the local frame of the object)
   // if COM is provided, use it for mesh shift
   bool comIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "COM",
-      std::bind(&PhysicsObjectAttributes::setCOM, objAttributes, _1));
+      std::bind(&ObjectAttributes::setCOM, objAttributes, _1));
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
 
-  return this->postCreateRegister(objAttributes, registerTemplate);
+  return objAttributes;
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
-PhysicsObjectAttributes::ptr
-ObjectAttributesManager::createDefaultAttributesTemplate(
-    const std::string& templateName,
-    bool registerTemplate) {
-  // construct a PhysicsObjectAttributes
-  PhysicsObjectAttributes::ptr objAttributes =
-      initNewAttribsInternal(PhysicsObjectAttributes::create(templateName));
+ObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
+    const std::string& attributesHandle) {
+  // TODO if default template exists from some source, create this template as a
+  // copy
+  auto newAttributes = ObjectAttributes::create(attributesHandle);
 
-  return this->postCreateRegister(objAttributes, registerTemplate);
-}  // ObjectAttributesManager::createEmptyAttributesTemplate
-
-PhysicsObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
-    PhysicsObjectAttributes::ptr newAttributes) {
   this->setFileDirectoryFromHandle(newAttributes);
-  const std::string attributesHandle = newAttributes->getHandle();
   // set default render asset handle
   newAttributes->setRenderAssetHandle(attributesHandle);
   // set default collision asset handle
   newAttributes->setCollisionAssetHandle(attributesHandle);
   // set defaults for passed render asset handles
-  setDefaultFileNameBasedAttributes(
+  this->setDefaultAssetNameBasedAttributes(
       newAttributes, true, newAttributes->getRenderAssetHandle(),
-      std::bind(&AbstractPhysicsAttributes::setRenderAssetType, newAttributes,
+      std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
                 _1));
   // set defaults for passed collision asset handles
-  setDefaultFileNameBasedAttributes(
+  this->setDefaultAssetNameBasedAttributes(
       newAttributes, false, newAttributes->getCollisionAssetHandle(),
-      std::bind(&AbstractPhysicsAttributes::setCollisionAssetType,
-                newAttributes, _1));
+      std::bind(&AbstractObjectAttributes::setCollisionAssetType, newAttributes,
+                _1));
 
   return newAttributes;
 }  // ObjectAttributesManager::initNewAttribsInternal
 
 // Eventually support explicitly configuring desirable defaults/file-name
 // base settings.
-void ObjectAttributesManager::setDefaultFileNameBasedAttributes(
-    PhysicsObjectAttributes::ptr attributes,
+void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
+    ObjectAttributes::ptr attributes,
     bool setFrame,
-    const std::string&,
-    std::function<void(int)> meshTypeSetter) {
-  // TODO : support future mesh-name specific type setting?
-  meshTypeSetter(static_cast<int>(AssetType::UNKNOWN));
-
+    const std::string& meshHandle,
+    std::function<void(int)> assetTypeSetter) {
+  if (this->isValidPrimitiveAttributes(meshHandle)) {
+    // value is valid primitive, and value is different than existing value
+    assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
+  } else {
+    // use unknown for object mesh types of non-primitives
+    assetTypeSetter(static_cast<int>(AssetType::UNKNOWN));
+  }
   if (setFrame) {
     attributes->setOrientUp({0, 1, 0});
     attributes->setOrientFront({0, 0, -1});
   }
-}  // SceneAttributesManager::setDefaultFileNameBasedAttributes
+}  // SceneAttributesManager::setDefaultAssetNameBasedAttributes
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
-    PhysicsObjectAttributes::ptr objectTemplate,
+    ObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
@@ -221,7 +224,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
 
-  if (isValidPrimitiveAttributes(renderAssetHandle)) {
+  if (this->isValidPrimitiveAttributes(renderAssetHandle)) {
     // If renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
@@ -247,7 +250,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     return ID_UNDEFINED;
   }
 
-  if (isValidPrimitiveAttributes(collisionAssetHandle)) {
+  if (this->isValidPrimitiveAttributes(collisionAssetHandle)) {
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
@@ -295,10 +298,11 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
     auto tmplt =
         createFileBasedAttributesTemplate(objPhysPropertiesFilename, true);
 
-    // save handles in list of defaults, so they are not removed
-    std::string tmpltHandle = tmplt->getHandle();
-    this->defaultTemplateNames_.push_back(tmpltHandle);
-
+    // save handles in list of defaults, so they are not removed, if desired.
+    if (saveAsDefaults) {
+      std::string tmpltHandle = tmplt->getHandle();
+      this->undeletableTemplateNames_.insert(tmpltHandle);
+    }
     resIDs[i] = tmplt->getID();
   }
   LOG(INFO) << "Loaded file-based object templates: "
@@ -347,5 +351,5 @@ std::vector<int> ObjectAttributesManager::loadObjectConfigs(
 }  // ObjectAttributesManager::buildObjectConfigPaths
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

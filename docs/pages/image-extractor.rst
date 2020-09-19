@@ -1,6 +1,8 @@
 Habitat Sim Image Extractor Tutorial
 ####################################
 
+:summary: This tutorial will demonstrate how to use the Image Extraction API in Habitat Sim and the different user options available.
+
 .. contents::
     :class: m-block m-default
 
@@ -9,7 +11,6 @@ In this tutorial we will learn how to use the image extraction API in Habitat Si
 We will first provide an overview of how to use the image extraction API. Next we will show how to use the API to train a semantic segmentation model. Finally, we will show how to define a custom pose extraction method, which is how a user programmatically defines the camera poses for image extraction.
 
 `Overview of Image Extraction`_
-===============================
 
 Habitat Sim provides an API to extract static images from a scene. The main class that handles image data extraction in Habitat Sim is called ImageExtractor. The user only needs to provide the scene filepath (either a .glb or .ply file).
 
@@ -473,7 +474,7 @@ habitat_sim.registry (i.e. adding the @registry.register_pose_extractor(name) de
 `Default Behavior`_
 -------------------
 
-The default behavior is reliant on something called the topdown view of a scene, which is just a two-dimensional birds-eye representation of the scene. The topdown view is a two-dimensional array of 1s and 0s where 1 means that pixel is "navigable" in the scene (i.e. an agent can walk on top of that point) and 0 means that pixel is "unnavigable".
+The default behavior is reliant on something called the topdown view of a scene, which is just a two-dimensional birds-eye representation of the scene. The topdown view is a two-dimensional array of 1s and 0s where 1 means that pixel is "navigable" in the scene (i.e. an agent can walk on top of that point) and 0 means that pixel is "unnavigable". For more detailed information about navigability and computing topdown maps, please refer to the `Habitat-Sim Basics for Navigation Colab notebook`_.
 
 The default pose extractor is the ClosestPointExtractor, which behaves as follows. For each camera poisition, the pose extractor will aim the camera pose at the closest point that is "unnvaigable". For example, if the camera position is right next to a chair in the scene, and that chair is the closest point that an agent in the environment cannot walk on top of, the camera will point at the chair.
 
@@ -549,6 +550,15 @@ is an example of a pose extractor that simply chooses some random navigable poin
 In the above code, we registered a new pose extractor with Habitat Sim and then used the name of
 the new pose extractor in the ImageExtractor constructor.
 
+NOTE: If you want to adjust the tilt of the camera (i.e. looking more toward the ground or the ceiling instead of straight ahead), you will need to modify the "_convert_to_scene_coordinate_system" method inside the PoseExtractor class. Specifically, in the computation of the rotation for the camera angle. Instead of calling "_compute_quat" to determine the camera angle, you can implement new logic.
+
+.. code::
+    ...
+    cam_normal = new_cpi - new_pos
+    new_rot = self._compute_quat(cam_normal)
+    poses[i] = (new_pos, new_rot, filepath)
+    return poses
+
 
 `Appendix`_
 ===========
@@ -590,3 +600,5 @@ Thank you for reading!
 
 
 .. _this code: https://github.com/facebookresearch/habitat-sim/blob/master/habitat_sim/utils/data/pose_extractor.py
+
+.. _Habitat-Sim Basics for Navigation Colab notebook: https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Navigation.ipynb

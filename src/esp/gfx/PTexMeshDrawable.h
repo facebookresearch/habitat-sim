@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_PTEXMESHDRAWABLE_H_
+#define ESP_GFX_PTEXMESHDRAWABLE_H_
 
 #include "Drawable.h"
 #include "esp/gfx/ShaderManager.h"
@@ -24,6 +25,9 @@ class PTexMeshDrawable : public Drawable {
                             DrawableGroup* group = nullptr);
 
   static constexpr char SHADER_KEY[] = "PTexMeshShader";
+  virtual Magnum::GL::Mesh& getVisualizerMesh() override {
+    return visualizerTriangleMesh_;
+  }
 
  protected:
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
@@ -37,8 +41,11 @@ class PTexMeshDrawable : public Drawable {
   float exposure_;
   float gamma_;
   float saturation_;
+  Magnum::GL::Mesh& visualizerTriangleMesh_;
   PTexMeshShader* shader_ = nullptr;
 };
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_PTEXMESHDRAWABLE_H_

@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 import habitat_sim
 from habitat_sim.gfx import LightInfo, LightPositionModel
-from habitat_sim.utils.common import quat_from_angle_axis, quat_to_magnum
+from habitat_sim.utils.common import quat_from_angle_axis
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
@@ -117,7 +117,7 @@ def main(show_imgs=True, save_imgs=False):
     sim.close()
     cfg = make_configuration()
     sim = habitat_sim.Simulator(cfg)
-    agent_transform = place_agent(sim)
+    agent_transform = place_agent(sim)  # noqa: F841
 
     # [example 2]
 

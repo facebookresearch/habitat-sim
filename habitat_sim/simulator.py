@@ -15,10 +15,8 @@ import numpy as np
 import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
-from habitat_sim.gfx import DEFAULT_LIGHTING_KEY
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
-from habitat_sim.physics import MotionType
 from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
@@ -49,7 +47,8 @@ class Simulator(SimulatorBackend):
     :property config: configuration for the simulator
 
     The simulator ties together the backend, the agent, controls functions,
-    and collision checking/pathfinding.
+    NavMesh collision checking/pathfinding, attribute template management,
+    object manipulation, and physics simulation.
     """
 
     config: Configuration
@@ -77,6 +76,18 @@ class Simulator(SimulatorBackend):
                 lambda cfg: any(
                     map(
                         lambda sens_spec: sens_spec.sensor_type == SensorType.SEMANTIC,
+                        cfg.sensor_specifications,
+                    )
+                ),
+                config.agents,
+            )
+        )
+
+        config.sim_cfg.requires_textures = any(
+            map(
+                lambda cfg: any(
+                    map(
+                        lambda sens_spec: sens_spec.sensor_type == SensorType.COLOR,
                         cfg.sensor_specifications,
                     )
                 ),
@@ -256,7 +267,7 @@ class Simulator(SimulatorBackend):
         # step physics by dt
         step_start_Time = time.time()
         super().step_world(dt)
-        _previous_step_time = time.time() - step_start_Time
+        self._previous_step_time = time.time() - step_start_Time
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
@@ -418,7 +429,7 @@ class Sensor:
         if self._sim.frustum_culling:
             render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
 
-        with self._sensor_object.render_target as tgt:
+        with self._sensor_object.render_target:
             self._sim.renderer.draw(self._sensor_object, scene, render_flags)
 
         # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph

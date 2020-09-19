@@ -5,15 +5,15 @@
 #include "PhysicsAttributesManager.h"
 #include "AttributesManagerBase.h"
 
-#include "esp/io/io.h"
 #include "esp/io/json.h"
 
 using std::placeholders::_1;
 namespace Cr = Corrade;
 namespace esp {
 
-namespace assets {
+namespace metadata {
 
+using attributes::PhysicsManagerAttributes;
 namespace managers {
 
 PhysicsManagerAttributes::ptr
@@ -24,12 +24,14 @@ PhysicsAttributesManager::createAttributesTemplate(
   std::string msg;
   if (this->isValidFileName(physicsFilename)) {
     // check if physicsFilename corresponds to an actual file descriptor
-    attrs =
-        createFileBasedAttributesTemplate(physicsFilename, registerTemplate);
+    // this method lives in class template.
+    attrs = this->createFileBasedAttributesTemplate(physicsFilename,
+                                                    registerTemplate);
     msg = "File (" + physicsFilename + ") Based";
   } else {
     // if name is not file descriptor, return default attributes.
-    attrs = createDefaultAttributesTemplate(physicsFilename, registerTemplate);
+    attrs = this->createDefaultAttributesTemplate(physicsFilename,
+                                                  registerTemplate);
     msg = "File (" + physicsFilename + ") not found so new, default";
   }
 
@@ -41,33 +43,12 @@ PhysicsAttributesManager::createAttributesTemplate(
 }  // PhysicsAttributesManager::createAttributesTemplate
 
 PhysicsManagerAttributes::ptr
-PhysicsAttributesManager::createDefaultAttributesTemplate(
-    const std::string& physicsFilename,
-    bool registerTemplate) {
+PhysicsAttributesManager::loadAttributesFromJSONDoc(
+    const std::string& templateName,
+    const io::JsonDocument& jsonConfig) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
-
-  return this->postCreateRegister(physicsManagerAttributes, registerTemplate);
-}  // PhysicsAttributesManager::createDefaultAttributesTemplate
-
-PhysicsManagerAttributes::ptr
-PhysicsAttributesManager::createFileBasedAttributesTemplate(
-    const std::string& physicsFilename,
-    bool registerTemplate) {
-  // Attributes descriptor for physics world
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
-
-  // Load the global physics manager config JSON here
-  io::JsonDocument jsonConfig;
-  bool success = this->verifyLoadJson(physicsFilename, jsonConfig);
-  if (!success) {
-    LOG(ERROR)
-        << " Aborting "
-           "PhysicsAttributesManager::createFileBasedAttributesTemplate.";
-    return nullptr;
-  }
+      initNewAttribsInternal(templateName);
 
   // load the simulator preference - default is "none" simulator, set in
   // attributes ctor.
@@ -81,6 +62,10 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
                              std::bind(&PhysicsManagerAttributes::setTimestep,
                                        physicsManagerAttributes, _1));
 
+  // load the max substeps between time step
+  io::jsonIntoSetter<int>(jsonConfig, "max substeps",
+                          std::bind(&PhysicsManagerAttributes::setMaxSubsteps,
+                                    physicsManagerAttributes, _1));
   // load the friction coefficient
   io::jsonIntoSetter<double>(
       jsonConfig, "friction coefficient",
@@ -102,8 +87,7 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
   // load the rigid object library metadata (no physics init yet...)
   if (jsonConfig.HasMember("rigid object paths") &&
       jsonConfig["rigid object paths"].IsArray()) {
-    std::string configDirectory =
-        physicsFilename.substr(0, physicsFilename.find_last_of("/"));
+    std::string configDirectory = physicsManagerAttributes->getFileDirectory();
 
     const auto& paths = jsonConfig["rigid object paths"];
     for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
@@ -122,9 +106,9 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
     }
   }  // if load rigid object library metadata
 
-  return this->postCreateRegister(physicsManagerAttributes, registerTemplate);
+  return physicsManagerAttributes;
 }  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

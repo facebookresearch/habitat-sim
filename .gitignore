@@ -152,6 +152,7 @@ venv.bak/
 compile_commands.json
 .vimtags
 .ycm*
+.clangd
 
 .autoenv*
 
@@ -164,7 +165,9 @@ run_example
 *.swp
 
 tests/17DRP5sb8fy
-/data/
+/data/datasets/
+/data/objects/
+/data/scene_datasets/
 *.zip
 habitat_sim/_ext
 build_js/
@@ -180,4 +183,3 @@ yarn-debug.log*
 yarn-error.log*
 .npm/
 coverage_js/
-

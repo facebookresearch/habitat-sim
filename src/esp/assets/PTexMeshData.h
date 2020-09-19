@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_ASSETS_PTEXMESHDATA_H_
+#define ESP_ASSETS_PTEXMESHDATA_H_
 
 #include <memory>
 #include <string>
@@ -26,13 +27,16 @@ class PTexMeshData : public BaseMesh {
     std::vector<vec4f> nbo;
     std::vector<vec4uc> cbo;
     std::vector<uint32_t> ibo;
+    std::vector<uint32_t> ibo_tri;
   };
 
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
+    Magnum::GL::Mesh triangleMesh;
     Magnum::GL::Texture2D atlasTexture;
     Magnum::GL::Buffer vertexBuffer;
     Magnum::GL::Buffer indexBuffer;
+    Magnum::GL::Buffer triangleMeshIndexBuffer;
     Magnum::GL::Buffer adjFacesBuffer;
     Magnum::GL::BufferTexture adjFacesBufferTexture;
 
@@ -98,3 +102,5 @@ class PTexMeshData : public BaseMesh {
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_ASSETS_PTEXMESHDATA_H_

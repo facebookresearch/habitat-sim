@@ -439,6 +439,18 @@ class BulletRigidObject : public BulletBase,
    * updates. See @ref btRigidBody::setWorldTransform. */
   void syncPose() override;
 
+  /**
+   * @brief construct a @ref btRigidBody for this object configured for either
+   * kinematics or dynamics.
+   */
+  void constructRigidBody(bool kinematic = false);
+
+  /**
+   * @brief Iterate through all collision objects and active all objects sharing
+   * a collision island tag with this object's collision shape.
+   */
+  void activateCollisionIsland();
+
  private:
   // === Physical object ===
   //! If true, the object's bounding box will be used for collision once

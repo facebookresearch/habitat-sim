@@ -24,7 +24,6 @@
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 
 #include "Asset.h"
-#include "Attributes.h"
 #include "BaseMesh.h"
 #include "CollisionMeshData.h"
 #include "GenericMeshData.h"
@@ -37,10 +36,11 @@
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 
-#include "managers/AssetAttributesManager.h"
-#include "managers/ObjectAttributesManager.h"
-#include "managers/PhysicsAttributesManager.h"
-#include "managers/SceneAttributesManager.h"
+#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/StageAttributesManager.h"
 
 // forward declarations
 namespace Magnum {
@@ -52,6 +52,9 @@ class PhongMaterialData;
 }  // namespace Magnum
 
 namespace Mn = Magnum;
+
+namespace Attrs = esp::metadata::attributes;
+namespace AttrMgrs = esp::metadata::managers;
 
 namespace esp {
 namespace gfx {
@@ -144,7 +147,7 @@ class ResourceManager {
       std::shared_ptr<physics::PhysicsManager>& physicsManager,
       bool isEnabled,
       scene::SceneNode* parent,
-      const PhysicsManagerAttributes::ptr& physicsManagerAttributes);
+      const Attrs::PhysicsManagerAttributes::ptr& physicsManagerAttributes);
 
   /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
@@ -153,7 +156,7 @@ class ResourceManager {
    * If parent and drawables are not specified, the assets are loaded, but no
    * new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
-   * @param sceneAttributes The @ref PhysicsSceneAttributes that describes the
+   * @param sceneAttributes The @ref StageAttributes that describes the
    * scene
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
    * @param sceneManagerPtr Pointer to scene manager, to fetch drawables and
@@ -164,7 +167,7 @@ class ResourceManager {
    * @ref SimulatorConfiguration
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(const PhysicsSceneAttributes::ptr& sceneAttributes,
+  bool loadStage(const Attrs::StageAttributes::ptr& sceneAttributes,
                  std::shared_ptr<physics::PhysicsManager> _physicsManager,
                  esp::scene::SceneManager* sceneManagerPtr,
                  std::vector<int>& activeSceneIDs,
@@ -179,7 +182,7 @@ class ResourceManager {
    * @return whether built successfully or not
    */
   template <class T>
-  bool buildSceneCollisionMeshGroup(const std::string& filename,
+  bool buildStageCollisionMeshGroup(const std::string& filename,
                                     std::vector<CollisionMeshData>& meshGroup);
 
   /**
@@ -214,14 +217,14 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const managers::AssetAttributesManager::ptr getAssetAttributesManager()
+  const AttrMgrs::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
     return assetAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
+  const AttrMgrs::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
     return objectAttributesManager_;
   }
@@ -229,16 +232,16 @@ class ResourceManager {
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
+  const AttrMgrs::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
       const {
     return physicsAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
+  const AttrMgrs::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    return sceneAttributesManager_;
+    return stageAttributesManager_;
   }
 
   /**
@@ -413,14 +416,14 @@ class ResourceManager {
    * @return the coordinate frame of the assets the passed attributes describes.
    */
   esp::geo::CoordinateFrame buildFrameFromAttributes(
-      const AbstractPhysicsAttributes::ptr& attribs,
+      const Attrs::AbstractObjectAttributes::ptr& attribs,
       const Magnum::Vector3& origin);
 
   /**
-   * @brief Set whether textures should be compressed.
-   * @param newVal New texture compression setting.
+   * @brief Sets whether or not the current agent sensor suite requires textures
+   * for rendering. Textures will not be loaded if this is false.
    */
-  inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+  inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }
 
  private:
   /**
@@ -483,7 +486,7 @@ class ResourceManager {
    * instanced, as defined in @ref PrimitiveNames3D
    */
   typedef std::map<std::string,
-                   std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
+                   std::shared_ptr<Attrs::AbstractPrimitiveAttributes> (
                        esp::assets::ResourceManager::*)()>
       Map_Of_PrimTypes;
 
@@ -625,35 +628,45 @@ class ResourceManager {
    * @param lightSetup The @ref LightSetup key that will be used
    * for the loaded asset.
    */
-  bool loadSceneInternal(
-      const AssetInfo& info,
-      std::shared_ptr<physics::PhysicsManager> _physicsManager,
-      scene::SceneNode* parent = nullptr,
-      DrawableGroup* drawables = nullptr,
-      bool computeAbsoluteAABBs = false,
-      bool splitSemanticMesh = true,
-      const Mn::ResourceKey& lightSetup = Mn::ResourceKey{NO_LIGHT_KEY});
+  bool loadStageInternal(const AssetInfo& info,
+                         scene::SceneNode* parent = nullptr,
+                         DrawableGroup* drawables = nullptr,
+                         bool computeAbsoluteAABBs = false,
+                         bool splitSemanticMesh = true,
+                         const Mn::ResourceKey& lightSetup = Mn::ResourceKey{
+                             NO_LIGHT_KEY});
 
   /**
-   * @brief Creates a map of appropriate asset infos for scenes.  Will always
+   * @brief Builds the appropriate collision mesh groups for the passed
+   * assetInfo, and adds it to the @ref collisionMeshGroup map.
+   * @param info The @ref AssetInfo for the mesh, already parsed from a file.
+   * @param meshGroup The constructed @ref meshGroup
+   * @return Whether the meshgroup was successfully built or not
+   */
+  bool buildMeshGroups(const AssetInfo& info,
+                       std::vector<CollisionMeshData>& meshGroup);
+
+  /**
+   * @brief Creates a map of appropriate asset infos for sceneries.  Will always
    * create render asset info.  Will create collision asset info and semantic
-   * scene asset info if requested.
+   * stage asset info if requested.
    *
-   * @param sceneAttributes The scene attributes file holding the scene's
+   * @param stageAttributes The stage attributes file holding the stage's
    * information.
    * @param createCollisionInfo Whether collision-based asset info should be
-   * created (only if physicsManager != nullptr)
+   * created (only if physicsManager type is not none)
    * @param createSemanticInfo Whether semantic mesh-based asset info should be
    * created
    */
-  std::map<std::string, AssetInfo> createSceneAssetInfosFromAttributes(
-      const PhysicsSceneAttributes::ptr& sceneAttributes,
+  std::map<std::string, AssetInfo> createStageAssetInfosFromAttributes(
+      const Attrs::StageAttributes::ptr& stageAttributes,
       bool createCollisionInfo,
       bool createSemanticInfo);
 
   /**
    * @brief Load a PTex mesh into assets from a file and add it to the scene
    * graph for rendering.
+   * @return true if the mesh is loaded, otherwise false
    *
    * @param info The @ref AssetInfo for the mesh, already parsed from a
    * file.
@@ -661,13 +674,10 @@ class ResourceManager {
    * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
-   * @param computeAbsoluteAABBs Whether absolute bounding boxes should be
-   * computed
    */
   bool loadPTexMeshData(const AssetInfo& info,
                         scene::SceneNode* parent,
-                        DrawableGroup* drawables,
-                        bool computeAbsoluteAABBs);
+                        DrawableGroup* drawables);
 
   /**
    * @brief Load an instance mesh (e.g. Matterport reconstruction) into assets
@@ -822,16 +832,6 @@ class ResourceManager {
                              const Mn::ResourceKey& material,
                              DrawableGroup* group = nullptr);
 
-  // ======== Instance Variables ========
-
-  /**
-   * @brief this helper vector contains information of the drawables on which
-   * we will compute the absolute AABB pair
-   *
-   */
-  // std::vector<StaticDrawableInfo> staticDrawableInfo_;
-  bool computeAbsoluteAABBs_ = false;
-
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
   // std::optional because shared_ptr is reference type, not value type, and
@@ -890,22 +890,22 @@ class ResourceManager {
   /**
    * @brief Manages all construction and access to asset attributes.
    */
-  managers::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
+  AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to object attributes.
    */
-  managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to physics world attributes.
    */
-  managers::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+  AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to scene attributes.
    */
-  managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+  AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
   //! tracks primitive mesh ids
   int nextPrimitiveMeshId = 0;
@@ -922,9 +922,9 @@ class ResourceManager {
   std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
 
   /**
-   * @brief Flag to denote the desire to compress textures. TODO: unused?
+   * @brief Flag to load textures of meshes
    */
-  bool compressTextures_ = false;
+  bool requiresTextures_ = true;
 };
 
 }  // namespace assets

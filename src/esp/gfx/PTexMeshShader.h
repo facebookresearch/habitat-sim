@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_PTEXMESHSHADER_H_
+#define ESP_GFX_PTEXMESHSHADER_H_
 
 #include <memory>
 #include <vector>
@@ -70,6 +71,11 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
    */
   PTexMeshShader& setAtlasTextureSize(Magnum::GL::Texture2D& texture,
                                       uint32_t tileSize);
+  /**
+   *  @brief Set object id to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PTexMeshShader& setObjectId(unsigned int objectId);
 
  protected:
   // it hurts the performance to call glGetUniformLocation() every frame due to
@@ -81,7 +87,10 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
   int saturationUniform_;
   int tileSizeUniform_;
   int widthInTilesUniform_;
+  int objectIdUniform_;
 };
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_PTEXMESHSHADER_H_

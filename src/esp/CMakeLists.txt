@@ -7,8 +7,8 @@
 # set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 
 option(BUILD_WARNINGS_AS_ERRORS "Build with warnings as errors" OFF)
-if (BUILD_WARNINGS_AS_ERRORS)
-  if (MSVC)
+if(BUILD_WARNINGS_AS_ERRORS)
+  if(MSVC)
     add_compile_options(/WX)
   else()
     # TODO(msb) remove -Wall once we enable CORRADE_USE_PEDANTIC
@@ -21,6 +21,7 @@ add_subdirectory(core)
 add_subdirectory(geo)
 add_subdirectory(gfx)
 add_subdirectory(assets)
+add_subdirectory(metadata)
 add_subdirectory(io)
 add_subdirectory(scene)
 add_subdirectory(physics)

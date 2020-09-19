@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_CORE_ESP_H_
+#define ESP_CORE_ESP_H_
 
 /** @file */
 
@@ -173,3 +174,5 @@ inline bool equal(const std::map<K, std::shared_ptr<V>>& a,
 }
 
 }  // namespace esp
+
+#endif  // ESP_CORE_ESP_H_

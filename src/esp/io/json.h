@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_IO_JSON_H_
+#define ESP_IO_JSON_H_
 
 #include <cstdint>
 #define RAPIDJSON_NO_INT64DEFINE
@@ -56,9 +57,9 @@ bool jsonIntoVal(CORRADE_UNUSED const JsonDocument& d,
 
 /**
  * @brief Check passed json doc for existence of passed @ref tag as
- * float. If present, populate passed @ref val with
- * value. Returns whether tag is found and successfully populated, or not. Logs
- * an error if tag is found but is inappropriate type.
+ * float. If present, populate passed @ref val with value. Returns whether tag
+ * is found and successfully populated, or not. Logs an error if tag is found
+ * but is inappropriate type.
  *
  * @param d json document to parse
  * @param tag string tag to look for in json doc
@@ -79,9 +80,9 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, float& val) {
 
 /**
  * @brief Check passed json doc for existence of passed @ref tag as
- * double. If present, populate passed @ref val with
- * value. Returns whether tag is found and successfully populated, or not. Logs
- * an error if tag is found but is inappropriate type.
+ * double. If present, populate passed @ref val with value. Returns whether tag
+ * is found and successfully populated, or not. Logs an error if tag is found
+ * but is inappropriate type.
  *
  * @param d json document to parse
  * @param tag string tag to look for in json doc
@@ -103,9 +104,33 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, double& val) {
 
 /**
  * @brief Check passed json doc for existence of passed @ref tag as
- * double. If present, populate passed @ref val with
- * value. Returns whether tag is found and successfully populated, or not. Logs
- * an error if tag is found but is inappropriate type.
+ * int. If present, populate passed @ref val with value. Returns whether tag
+ * is found and successfully populated, or not. Logs an error if tag is found
+ * but is inappropriate type.
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool jsonIntoVal(const JsonDocument& d, const char* tag, int& val) {
+  if (d.HasMember(tag)) {
+    if (d[tag].IsNumber()) {
+      val = d[tag].GetInt();
+      return true;
+    }
+    LOG(ERROR) << "Invalid int value specified in JSON config at " << tag;
+  }
+  return false;
+}  // jsonIntoInt
+
+/**
+ * @brief Check passed json doc for existence of passed @ref tag as
+ * boolean. If present, populate passed @ref val with value. Returns whether tag
+ * is found and successfully populated, or not. Logs an error if tag is found
+ * but is inappropriate type.
  *
  * @param d json document to parse
  * @param tag string tag to look for in json doc
@@ -274,3 +299,5 @@ void toDoubleVector(const GV& value, std::vector<double>* vec) {
 
 }  // namespace io
 }  // namespace esp
+
+#endif  // ESP_IO_JSON_H_

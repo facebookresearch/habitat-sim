@@ -25,8 +25,8 @@
         - Released
  */
 
-#ifndef SPIMPL_H_
-#define SPIMPL_H_
+#ifndef ESP_CORE_SPIMPL_H_
+#define ESP_CORE_SPIMPL_H_
 
 #include <cassert>
 #include <memory>
@@ -440,4 +440,4 @@ struct hash<spimpl::impl_ptr<T, D, C>> {
 };
 }  // namespace std
 
-#endif  // SPIMPL_H_
+#endif  // ESP_CORE_SPIMPL_H_

@@ -2,19 +2,20 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
-#define ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
+#ifndef ESP_METADATA_MANAGERS_ASSETATTRIBUTEMANAGER_H_
+#define ESP_METADATA_MANAGERS_ASSETATTRIBUTEMANAGER_H_
 
 /** @file
- * @brief Class Template @ref esp::assets::AssetAttributesManager
+ * @brief Class Template @ref esp::metadata::AssetAttributesManager
  * This class manages attributes describing/configuring magnum mesh
  * primitives.
  */
 
 #include "AttributesManagerBase.h"
+#include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 /**
  * @brief The kinds of primitive modelled objects supported. Paired with
  * Magnum::Primitive namespace objects
@@ -74,9 +75,8 @@ enum class PrimObjTypes : uint32_t {
   END_PRIM_OBJ_TYPES
 };
 namespace managers {
-
 class AssetAttributesManager
-    : public AttributesManager<AbstractPrimitiveAttributes::ptr> {
+    : public AttributesManager<Attrs::AbstractPrimitiveAttributes> {
  public:
   /**
    * @brief Constant Map holding names of all Magnum 3D primitive classes
@@ -86,9 +86,8 @@ class AssetAttributesManager
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
 
   AssetAttributesManager(assets::ResourceManager& resourceManager)
-      : AttributesManager<AbstractPrimitiveAttributes::ptr>::AttributesManager(
-            resourceManager,
-            "Primitive Asset") {
+      : AttributesManager<Attrs::AbstractPrimitiveAttributes>::
+            AttributesManager(resourceManager, "Primitive Asset") {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
 
@@ -108,29 +107,25 @@ class AssetAttributesManager
    * @return a reference to the desired template.
    */
 
-  AbstractPrimitiveAttributes::ptr createAttributesTemplate(
+  Attrs::AbstractPrimitiveAttributes::ptr createAttributesTemplate(
       const std::string& primClassName,
       bool registerTemplate = true) override;
 
   /**
-   * @brief Creates an instance of a template holding default values. For asset
-   * attributes this is the same functionality as @ref createAttributesTemplate.
+   * @brief Parse passed JSON Document specifically for @ref
+   * AbstractPrimitiveAttributes object. It always returns a valid @ref
+   * AbstractPrimitiveAttributes::ptr object.
    *
-   * @param primClassName A string descriptor of the primitive asset
-   * template to be created, corresponding to the Magnum Primitive class
-   * name.
-   * @param registerTemplate whether to add this template to the library.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration. Defaults to false. If
-   * specified as true, then this function returns a copy of the registered
-   * template.
+   * TODO : currently do not support file-based Primitive Assets, so no actual
+   * JSON parsing.
+   * @param filename the name of the file describing the asset attributes, used
+   * to determine type of attributes template.
+   * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  AbstractPrimitiveAttributes::ptr createDefaultAttributesTemplate(
-      const std::string& primClassName,
-      bool registerTemplate = false) override {
-    return createAttributesTemplate(primClassName, registerTemplate);
-  }  // AbstractPrimitiveAttributes::ptr createDefaultAttributesTemplate
+  Attrs::AbstractPrimitiveAttributes::ptr loadAttributesFromJSONDoc(
+      const std::string& filename,
+      const io::JsonDocument& jsonConfig) override;
 
   /**
    * @brief Should only be called internally. Creates an instance of a
@@ -143,7 +138,7 @@ class AssetAttributesManager
    * not. If the user is going to edit this template, this should be false.
    * @return a reference to the desired template.
    */
-  AbstractPrimitiveAttributes::ptr createAttributesTemplate(
+  Attrs::AbstractPrimitiveAttributes::ptr createAttributesTemplate(
       PrimObjTypes primObjType,
       bool registerTemplate = true) {
     if (primObjType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
@@ -186,14 +181,15 @@ class AssetAttributesManager
    * @param isWireFrame whether should be wireframe or solid template
    * @return appropriately cast template
    */
-  CapsulePrimitiveAttributes::ptr getDefaultCapsuleTemplate(bool isWireFrame) {
+  Attrs::CapsulePrimitiveAttributes::ptr getDefaultCapsuleTemplate(
+      bool isWireFrame) {
     std::string templateHndle;
     if (isWireFrame) {
       templateHndle = defaultPrimAttributeHandles_.at("capsule3DWireframe");
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("capsule3DSolid");
     }
-    return this->getTemplateCopyByHandle<CapsulePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::CapsulePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getDefaultCapsuleTemplate
 
@@ -204,12 +200,12 @@ class AssetAttributesManager
    * @return appropriately cast template, or nullptr if template handle
    * incorrectly specified.
    */
-  CapsulePrimitiveAttributes::ptr getCapsuleTemplate(
+  Attrs::CapsulePrimitiveAttributes::ptr getCapsuleTemplate(
       const std::string& templateHndle) {
     if (!verifyTemplateHandle(templateHndle, "capsule")) {
       return nullptr;
     }
-    return this->getTemplateCopyByHandle<CapsulePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::CapsulePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getCapsuleTemplate
 
@@ -218,14 +214,14 @@ class AssetAttributesManager
    * @param isWireFrame whether should be wireframe or solid template
    * @return appropriately cast template
    */
-  ConePrimitiveAttributes::ptr getDefaultConeTemplate(bool isWireFrame) {
+  Attrs::ConePrimitiveAttributes::ptr getDefaultConeTemplate(bool isWireFrame) {
     std::string templateHndle;
     if (isWireFrame) {
       templateHndle = defaultPrimAttributeHandles_.at("coneWireframe");
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("coneSolid");
     }
-    return this->getTemplateCopyByHandle<ConePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::ConePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getDefaultConeTemplate
 
@@ -236,12 +232,12 @@ class AssetAttributesManager
    * @return appropriately cast template, or nullptr if template handle
    * incorrectly specified.
    */
-  ConePrimitiveAttributes::ptr getConeTemplate(
+  Attrs::ConePrimitiveAttributes::ptr getConeTemplate(
       const std::string& templateHndle) {
     if (!verifyTemplateHandle(templateHndle, "cone")) {
       return nullptr;
     }
-    return this->getTemplateCopyByHandle<ConePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::ConePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getConeTemplate
 
@@ -250,14 +246,14 @@ class AssetAttributesManager
    * @param isWireFrame whether should be wireframe or solid template
    * @return appropriately cast template
    */
-  CubePrimitiveAttributes::ptr getDefaultCubeTemplate(bool isWireFrame) {
+  Attrs::CubePrimitiveAttributes::ptr getDefaultCubeTemplate(bool isWireFrame) {
     std::string templateHndle;
     if (isWireFrame) {
       templateHndle = defaultPrimAttributeHandles_.at("cubeWireframe");
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("cubeSolid");
     }
-    return this->getTemplateCopyByHandle<CubePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::CubePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getDefaultCubeTemplate
 
@@ -268,12 +264,12 @@ class AssetAttributesManager
    * @return appropriately cast template, or nullptr if template handle
    * incorrectly specified.
    */
-  CubePrimitiveAttributes::ptr getCubeTemplate(
+  Attrs::CubePrimitiveAttributes::ptr getCubeTemplate(
       const std::string& templateHndle) {
     if (!verifyTemplateHandle(templateHndle, "cube")) {
       return nullptr;
     }
-    return this->getTemplateCopyByHandle<CubePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::CubePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getCubeTemplate
 
@@ -282,7 +278,7 @@ class AssetAttributesManager
    * @param isWireFrame whether should be wireframe or solid template
    * @return appropriately cast template
    */
-  CylinderPrimitiveAttributes::ptr getDefaultCylinderTemplate(
+  Attrs::CylinderPrimitiveAttributes::ptr getDefaultCylinderTemplate(
       bool isWireFrame) {
     std::string templateHndle;
     if (isWireFrame) {
@@ -290,7 +286,7 @@ class AssetAttributesManager
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("cylinderSolid");
     }
-    return this->getTemplateCopyByHandle<CylinderPrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::CylinderPrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getDefaultCylinderTemplate
 
@@ -301,12 +297,12 @@ class AssetAttributesManager
    * @return appropriately cast template, or nullptr if template handle
    * incorrectly specified.
    */
-  CylinderPrimitiveAttributes::ptr getCylinderTemplate(
+  Attrs::CylinderPrimitiveAttributes::ptr getCylinderTemplate(
       const std::string& templateHndle) {
     if (!verifyTemplateHandle(templateHndle, "cylinder")) {
       return nullptr;
     }
-    return this->getTemplateCopyByHandle<CylinderPrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::CylinderPrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getCylinderTemplate
 
@@ -315,7 +311,7 @@ class AssetAttributesManager
    * @param isWireFrame whether should be wireframe or solid template
    * @return appropriately cast template
    */
-  IcospherePrimitiveAttributes::ptr getDefaultIcosphereTemplate(
+  Attrs::IcospherePrimitiveAttributes::ptr getDefaultIcosphereTemplate(
       bool isWireFrame) {
     std::string templateHndle;
     if (isWireFrame) {
@@ -323,7 +319,7 @@ class AssetAttributesManager
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("icosphereSolid");
     }
-    return this->getTemplateCopyByHandle<IcospherePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::IcospherePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getDefaultIcosphereTemplate
 
@@ -334,12 +330,12 @@ class AssetAttributesManager
    * @return appropriately cast template, or nullptr if template handle
    * incorrectly specified.
    */
-  IcospherePrimitiveAttributes::ptr getIcosphereTemplate(
+  Attrs::IcospherePrimitiveAttributes::ptr getIcosphereTemplate(
       const std::string& templateHndle) {
     if (!verifyTemplateHandle(templateHndle, "icosphere")) {
       return nullptr;
     }
-    return this->getTemplateCopyByHandle<IcospherePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::IcospherePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getIcosphereTemplate
 
@@ -348,7 +344,7 @@ class AssetAttributesManager
    * @param isWireFrame whether should be wireframe or solid template
    * @return appropriately cast template
    */
-  UVSpherePrimitiveAttributes::ptr getDefaultUVSphereTemplate(
+  Attrs::UVSpherePrimitiveAttributes::ptr getDefaultUVSphereTemplate(
       bool isWireFrame) {
     std::string templateHndle;
     if (isWireFrame) {
@@ -356,7 +352,7 @@ class AssetAttributesManager
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("uvSphereSolid");
     }
-    return this->getTemplateCopyByHandle<UVSpherePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getDefaultUVSphereTemplate
 
@@ -367,21 +363,31 @@ class AssetAttributesManager
    * @return appropriately cast template, or nullptr if template handle
    * incorrectly specified.
    */
-  UVSpherePrimitiveAttributes::ptr getUVSphereTemplate(
+  Attrs::UVSpherePrimitiveAttributes::ptr getUVSphereTemplate(
       const std::string& templateHndle) {
     if (!verifyTemplateHandle(templateHndle, "uvSphere")) {
       return nullptr;
     }
-    return this->getTemplateCopyByHandle<UVSpherePrimitiveAttributes>(
+    return this->getTemplateCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getUVSphereTemplate
 
  protected:
   /**
-   * @brief Not used by AbstractPrimitiveAttributes.
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
    */
-  void setDefaultFileNameBasedAttributes(
-      CORRADE_UNUSED AbstractPrimitiveAttributes::ptr attributes,
+  bool isValidPrimitiveAttributes(const std::string& handle) override {
+    return this->getTemplateLibHasHandle(handle);
+  }
+
+  /**
+   * @brief Not used by Attrs::AbstractPrimitiveAttributes.
+   */
+  void setDefaultAssetNameBasedAttributes(
+      CORRADE_UNUSED Attrs::AbstractPrimitiveAttributes::ptr attributes,
       CORRADE_UNUSED bool setFrame,
       CORRADE_UNUSED const std::string& meshHandle,
       CORRADE_UNUSED std::function<void(int)> meshTypeSetter) override {}
@@ -420,7 +426,7 @@ class AssetAttributesManager
   }  // AttributesManager::verifyTemplateHandle
 
   /**
-   * @brief Add an @ref AbstractPrimitiveAttributes object to the @ref
+   * @brief Add an @ref Attrs::AbstractPrimitiveAttributes object to the @ref
    * templateLibrary_.
    *
    * @param attributesTemplate The attributes template.
@@ -430,37 +436,26 @@ class AssetAttributesManager
    * template.
    */
   int registerAttributesTemplateFinalize(
-      AbstractPrimitiveAttributes::ptr attributesTemplate,
+      Attrs::AbstractPrimitiveAttributes::ptr attributesTemplate,
       const std::string& ignored = "") override;
 
   /**
-   * @brief Used Internally.  Configure newly-created attributes with any
-   * default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes with
+   * any default values, before any specific values are set.
    *
    * @param newAttributes Newly created attributes.
    */
-  AbstractPrimitiveAttributes::ptr initNewAttribsInternal(
-      AbstractPrimitiveAttributes::ptr newAttributes) override {
-    return newAttributes;
-  }
-
-  /**
-   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
-   * with passed class name
-   * @param primClassName Magnum::Primitives class name of primitive being
-   * constructed
-   */
-  AbstractPrimitiveAttributes::ptr buildPrimAttributes(
-      const std::string& primClassName) {
+  Attrs::AbstractPrimitiveAttributes::ptr initNewAttribsInternal(
+      const std::string& primClassName) override {
     if (primTypeConstructorMap_.count(primClassName) == 0) {
       LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
                     "primitive class"
                  << primClassName << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
-    return initNewAttribsInternal(
-        (*this.*primTypeConstructorMap_[primClassName])());
-  }  // AssetAttributeManager::buildPrimAttributes
+    auto newAttributes = (*this.*primTypeConstructorMap_[primClassName])();
+    return newAttributes;
+  }
 
   /**
    * @brief Build a shared pointer to the appropriate attributes for passed
@@ -468,11 +463,11 @@ class AssetAttributesManager
    * END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
    */
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
-  AbstractPrimitiveAttributes::ptr createPrimAttributes() {
+  Attrs::AbstractPrimitiveAttributes::ptr createPrimAttributes() {
     if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       LOG(ERROR)
           << "AssetAttributeManager::createPrimAttributes : Cannot instantiate "
-             "AbstractPrimitiveAttributes object for "
+             "Attrs::AbstractPrimitiveAttributes object for "
              "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
       return nullptr;
     }
@@ -485,8 +480,8 @@ class AssetAttributesManager
    * reset.
    */
   void resetFinalize() override {
-    // build default AbstractPrimitiveAttributes objects - reset does not remove
-    // constructor mappings;
+    // build default Attrs::AbstractPrimitiveAttributes objects - reset does not
+    // remove constructor mappings;
     for (const std::pair<PrimObjTypes, const char*>& elem :
          PrimitiveNames3DMap) {
       if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
@@ -512,7 +507,7 @@ class AssetAttributesManager
    * instanced, as defined in @ref PrimNames3D
    */
   typedef std::map<std::string,
-                   AbstractPrimitiveAttributes::ptr (
+                   Attrs::AbstractPrimitiveAttributes::ptr (
                        AssetAttributesManager::*)()>
       Map_Of_PrimTypeCtors;
 
@@ -535,7 +530,7 @@ class AssetAttributesManager
 
 };  // AssetAttributesManager
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
+#endif  // ESP_METADATA_MANAGERS_ASSETATTRIBUTEMANAGER_H_

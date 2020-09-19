@@ -20,9 +20,14 @@ HTML_HEADER = """<!-- Global site tag (gtag.js) - Google Analytics -->
 </script>
 """
 
-SEARCH_DOWNLOAD_BINARY = "searchdata-v1.bin"
+SEARCH_DOWNLOAD_BINARY = "searchdata-python-v1.bin"
 SEARCH_BASE_URL = "https://aihabitat.org/docs/habitat-sim/"
 SEARCH_EXTERNAL_URL = "https://google.com/search?q=site:aihabitat.org+{query}"
 
 assert M_DOX_TAGFILES[2][0] == "../build/docs/habitat-cpp.tag"
-M_DOX_TAGFILES[2] = ("../build/docs-public/habitat-cpp.tag", "../habitat-cpp/", [], ["m-doc-external"])
+M_DOX_TAGFILES[2] = (
+    "../build/docs-public/habitat-cpp.tag",
+    "../habitat-sim/",
+    [],
+    ["m-doc-external"],
+)

@@ -3,7 +3,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+r"""
+Parameters contributed from PyRobot
+https://pyrobot.org/
+https://github.com/facebookresearch/pyrobot
 
+Please cite PyRobot if you use this noise model
+"""
 
 import attr
 import magnum as mn
@@ -75,13 +81,6 @@ class RobotNoiseModel:
         return getattr(self, key)
 
 
-r"""
-Parameters contributed from PyRobot
-https://pyrobot.org/
-https://github.com/facebookresearch/pyrobot
-
-Please cite PyRobot if you use this noise model
-"""
 pyrobot_noise_models = {
     "LoCoBot": RobotNoiseModel(
         ILQR=ControllerNoiseModel(
@@ -169,13 +168,13 @@ class PyRobotNoisyActuationSpec(ActuationSpec):
     """
     robot: str = attr.ib(default="LoCoBot")
 
-    @robot.validator
+    @robot.validator  # noqa: F811
     def check(self, attribute, value):
         assert value in pyrobot_noise_models.keys(), f"{value} not a known robot"
 
     controller: str = attr.ib(default="ILQR")
 
-    @controller.validator
+    @controller.validator  # noqa: F811
     def check(self, attribute, value):
         assert value in [
             "ILQR",

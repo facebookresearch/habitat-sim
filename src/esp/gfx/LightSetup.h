@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_LIGHTSETUP_H_
+#define ESP_GFX_LIGHTSETUP_H_
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Color.h>
@@ -23,7 +24,7 @@ enum class LightPositionModel {
   OBJECT = 2,
 };
 
-/** @brief Contains a single light's information */
+/** @brief Contains a single light's information. */
 struct LightInfo {
   Magnum::Vector3 position;
   Magnum::Color4 color{1};
@@ -33,6 +34,7 @@ struct LightInfo {
 bool operator==(const LightInfo& a, const LightInfo& b);
 bool operator!=(const LightInfo& a, const LightInfo& b);
 
+//! A set of LightInfos.
 using LightSetup = std::vector<LightInfo>;
 
 /**
@@ -57,3 +59,5 @@ LightSetup getLightsAtBoxCorners(
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_LIGHTSETUP_H_

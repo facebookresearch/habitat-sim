@@ -15,7 +15,7 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
+              sudo pip install -U black flake8 flake8-bugbear flake8-comprehensions "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
               sudo pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
@@ -27,9 +27,13 @@ jobs:
           name: run isort
           command: |
               isort --version
-              isort -rc habitat_sim/. examples/. tests/. setup.py --diff
-              isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
-
+              isort habitat_sim/. examples/. tests/. setup.py --diff
+              isort habitat_sim/. examples/. tests/. setup.py --check-only
+      - run:
+          name: run flake8
+          command: |
+              flake8 --version
+              flake8 habitat_sim/. examples/. tests/. setup.py
   cpp_lint:
     docker:
       - image: circleci/buildpack-deps:18.04
@@ -60,6 +64,39 @@ jobs:
           name: run eslint
           command: |
             npm run lint
+
+  pre-commit:
+    docker:
+      - image: circleci/python:3.6
+    working_directory: ~/repo/
+
+    steps:
+      - checkout
+      - run:
+          name: Combine precommit config and python versions for caching
+          command: |
+            cat .pre-commit-config.yaml > pre-commit-deps.txt
+            python -VV >> pre-commit-deps.txt
+      - restore_cache:
+          keys:
+          - v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Install Dependencies
+          command: |
+            sudo pip install -U pip setuptools pre-commit
+            # Install the hooks now so that they'll be cached
+            pre-commit install-hooks
+
+      - save_cache:
+          paths:
+            - ~/.cache/pre-commit
+          key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Check Code Style using pre-commit
+          command: |
+            SKIP=clang-format,eslint pre-commit run --show-diff-on-failure --all-files
 
   install_and_test_ubuntu:
     <<: *gpu
@@ -186,6 +223,7 @@ jobs:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
+                pip install pytest-parallel
               fi
       - run:
           name: Install emscripten
@@ -301,6 +339,14 @@ jobs:
                 rm locobot_merged.zip
                 cd ..
               fi
+              if [ ! -d ./habitat-sim/data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb ]
+              then
+                cd habitat-sim
+                wget http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip
+                unzip mp3d_example.zip -d data/scene_datasets/mp3d/
+                rm mp3d_example.zip
+                cd ..
+              fi
       - run:
           name: Build Javascript bindings
           command: |
@@ -339,6 +385,9 @@ jobs:
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
+              #This way, pytest shows partial progress
+              export PYTHONUNBUFFERED=1
+
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
                 --bullet \
@@ -348,12 +397,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest --cov-report=xml --cov=./
+              pytest --workers 4 --cov-report=xml --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              pytest --workers 4 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
@@ -456,6 +505,13 @@ jobs:
 
   build_conda_binaries:
     <<: *gpu
+    parameters:
+      AIHABITAT_CONDA_CHN:
+        type: string
+        default: "aihabitat"
+      AIHABITAT_CONDA_CHN_PWD_VAR:
+        type: string
+        default: "AIHABITAT_CONDA_PWD"
     steps:
       - checkout:
           path: ./habitat-sim
@@ -479,7 +535,7 @@ jobs:
               apt-cache policy docker-ce
               sudo apt-get install -y docker-ce
 
-              docker build -t hsim_condabuild_dcontainer -f Dockerfile . --build-arg AIHABITAT_NIGHTLY_CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD
+              docker build -t hsim_condabuild_dcontainer -f Dockerfile . --build-arg AIHABITAT_CONDA_CHN_PWD=$<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --build-arg AIHABITAT_CONDA_CHN=<< parameters.AIHABITAT_CONDA_CHN >>
               docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py36 && cd /remote/habitat-sim/conda-build && python linux_matrix_builder.py --conda_upload"
 
   update_docs:
@@ -501,7 +557,7 @@ jobs:
               cd habitat-website
               git submodule update --init
 
-              for dir in habitat-sim habitat-cpp habitat-lab
+              for dir in habitat-sim habitat-lab
               do
                   rm -rf published/docs/${dir}
                   cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
@@ -534,6 +590,7 @@ workflows:
       - cpp_lint
       - js_lint
       - install_and_test_ubuntu
+      - pre-commit
   nightly:
     triggers:
       - schedule:
@@ -551,8 +608,35 @@ workflows:
             branches:
               only: master
       - build_conda_binaries:
+          AIHABITAT_CONDA_CHN: aihabitat-nightly
+          AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
           requires:
             - install_and_test_ubuntu
           filters:
             branches:
               only: master
+
+  version_conda_release:
+    jobs:
+      - install_and_test_ubuntu:
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              ignore: /.*/
+      - update_docs:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              ignore: /.*/
+      - build_conda_binaries:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              ignore: /.*/

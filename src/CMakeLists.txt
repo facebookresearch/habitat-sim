@@ -4,7 +4,9 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA" OFF)
+option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA"
+       OFF
+)
 
 if(BUILD_WITH_CUDA)
   project(esp LANGUAGES C CXX CUDA)
@@ -19,8 +21,8 @@ endif()
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif()
 
 set(SCENE_DATASETS ${CMAKE_CURRENT_SOURCE_DIR}/../data/scene_datasets)
@@ -31,7 +33,9 @@ option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
 option(BUILD_DATATOOL "Whether to build datatool utility binary" ON)
 option(BUILD_PTEX_SUPPORT "Whether to build ptex mesh support" ON)
 option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" OFF)
-option(BUILD_WITH_BULLET "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF)
+option(BUILD_WITH_BULLET
+       "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF
+)
 option(BUILD_TEST "Build test binaries" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
@@ -40,14 +44,17 @@ option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
 option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
 
-
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
-      "Choose build, options are: None Debug Release RelWithDebInfo MinSizeRel"
-      FORCE)
+  set(
+    CMAKE_BUILD_TYPE
+    RelWithDebInfo
+    CACHE STRING
+          "Choose build, options are: None Debug Release RelWithDebInfo MinSizeRel"
+          FORCE
+  )
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
 # but need cmake_policy(SET CMP0063 NEW) also which seems to not work

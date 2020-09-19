@@ -2,22 +2,24 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MANAGERS_ATTRIBUTEMANAGERBASE_H_
-#define ESP_ASSETS_MANAGERS_ATTRIBUTEMANAGERBASE_H_
+#ifndef ESP_METADATA_MANAGERS_ATTRIBUTEMANAGERBASE_H_
+#define ESP_METADATA_MANAGERS_ATTRIBUTEMANAGERBASE_H_
 
 /** @file
- * @brief Class Template @ref esp::assets::AttributesManager
+ * @brief Class Template @ref esp::metadata::managers::AttributesManager
  */
 
 #include <deque>
 #include <functional>
 #include <map>
+#include <set>
 
 #include <Corrade/Utility/ConfigurationGroup.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
-#include "esp/assets/Attributes.h"
+#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "esp/io/json.h"
 
@@ -25,10 +27,12 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
-
 class ResourceManager;
-namespace managers {
+}
 
+namespace metadata {
+namespace managers {
+namespace Attrs = esp::metadata::attributes;
 /**
  * @brief Template Class defining responsibilities for managing attributes for
  * different types of objects, such as scenes, primitive assets, physical
@@ -37,14 +41,17 @@ namespace managers {
  * references
  */
 
-template <class AttribsPtr>
+template <class T>
 class AttributesManager {
  public:
-  AttributesManager(assets::ResourceManager& resourceManager,
+  static_assert(std::is_base_of<Attrs::AbstractAttributes, T>::value,
+                "Managed type must be derived from AbstractAttributes");
+
+  typedef std::shared_ptr<T> AttribsPtr;
+
+  AttributesManager(esp::assets::ResourceManager& resourceManager,
                     const std::string& attrType)
-      : resourceManager_(resourceManager), attrType_(attrType) {
-    this->defaultTemplateNames_.clear();
-  }
+      : resourceManager_(resourceManager), attrType_(attrType) {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -85,20 +92,71 @@ class AttributesManager {
    * returns a copy of the registered template.
    * @return a reference to the desired template.
    */
-  virtual AttribsPtr createDefaultAttributesTemplate(
-      const std::string& templateName,
-      bool registerTemplate = false) = 0;
+  AttribsPtr createDefaultAttributesTemplate(const std::string& templateName,
+                                             bool registerTemplate = false) {
+    // create default attributes descriptor
+    AttribsPtr attributes = initNewAttribsInternal(templateName);
+    if (nullptr == attributes) {
+      return attributes;
+    }
+    return this->postCreateRegister(attributes, registerTemplate);
+  }
+
+  /**
+   * @brief Creates an instance of a template from a JSON file using passed
+   * filename by loading and parsing the loaded JSON and generating a @ref
+   * AttribsPtr object. It returns created instance if successful,
+   * and nullptr if fails.
+   *
+   * @param filename the name of the file describing the object attributes.
+   * Assumes it exists and fails if it does not.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true.
+   * @return a reference to the desired template, or nullptr if fails.
+   */
+
+  AttribsPtr createFileBasedAttributesTemplate(const std::string& filename,
+                                               bool registerTemplate = true) {
+    // Load JSON config file
+    io::JsonDocument jsonConfig;
+    bool success = this->verifyLoadJson(filename, jsonConfig);
+    if (!success) {
+      LOG(ERROR) << attrType_
+                 << "AttributesManager::createFileBasedAttributesTemplate : "
+                    "Failure reading json : "
+                 << filename << ". Aborting.";
+      return nullptr;
+    }
+    AttribsPtr attr = this->loadAttributesFromJSONDoc(filename, jsonConfig);
+    return this->postCreateRegister(attr, registerTemplate);
+  }  // AttributesManager::createFileBasedAttributesTemplate
+
+  /**
+   * @brief Parse passed JSON Document specifically for @ref AttribsPtr object.
+   * It always returns a @ref AttribsPtr object.
+   * @param filename Can be the name of the file describing the @ref AttribsPtr,
+   * used for attributes handle on create and, for some attributes such as @ref
+   * PrimAssetAttributes, to determine type of actual instanced attributes
+   * template.
+   * @param jsonConfig json document to parse - assumed to be legal JSON doc.
+   * @return a reference to the desired template.
+   */
+  virtual AttribsPtr loadAttributesFromJSONDoc(
+      const std::string& filename,
+      const io::JsonDocument& jsonConfig) = 0;
 
   /**
    * @brief Add a copy of @ref AbstractAttributes object to the @ref
    * templateLibrary_.
    *
    * @param attributesTemplate The attributes template.
-   * @param attributesTemplateHandle The key for referencing the template in the
-   * @ref templateLibrary_. Will be set as origin handle for template. If empty
-   * string, use existing origin handle.
-   * @return The unique ID of the template being registered, or ID_UNDEFINED if
-   * failed
+   * @param attributesTemplateHandle The key for referencing the template in
+   * the
+   * @ref templateLibrary_. Will be set as origin handle for template. If
+   * empty string, use existing origin handle.
+   * @return The unique ID of the template being registered, or ID_UNDEFINED
+   * if failed
    */
   int registerAttributesTemplate(
       AttribsPtr attributesTemplate,
@@ -168,7 +226,54 @@ class AttributesManager {
    */
   bool isValidFileName(const std::string& handle) const {
     return (Corrade::Utility::Directory::exists(handle));
-  }  // isValidFileName
+  }  // AttributesManager::isValidFileName
+
+  /**
+   * @brief Sets/Clears lock state for a template, preventing or allowing
+   * deletion of template.
+   * @param templateHandle handle of template to set state of
+   * @param lock boolean to set or clear lock
+   * @return whether successful or not.
+   */
+  bool setTemplateLock(const std::string& templateHandle, bool lock);
+
+  /**
+   * @brief Sets/Clears lock state for a template, preventing or allowing
+   * deletion of template.
+   * @param templateHandles Vector of handles of templates to set state of
+   * @param lock boolean to set or clear lock for all templates
+   * @return the list of handles actually set to desired lock state.
+   */
+  std::vector<std::string> setTemplateLockByHandles(
+      const std::vector<std::string>& templateHandles,
+      bool lock) {
+    std::vector<std::string> res;
+    for (std::string templateHandle : templateHandles) {
+      if (setTemplateLock(templateHandle, lock)) {
+        res.push_back(templateHandle);
+      }
+    }
+    return res;
+  }  // AttributesManager::setTemplateLockByHandles
+
+  /**
+   * @brief set lock state on all templates that contain passed substring.
+   * @param lock boolean to set or clear lock on templates
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @param contains whether to search for keys containing, or excluding,
+   * @ref subStr
+   * @return A vector containing the template handles of templates whose lock
+   * state has been set to passed state.
+   */
+  std::vector<std::string> setTemplatesLockBySubstring(
+      bool lock,
+      const std::string& subStr = "",
+      bool contains = true) {
+    std::vector<std::string> handles =
+        getTemplateHandlesBySubstring(subStr, contains);
+    return this->setTemplateLockByHandles(handles, lock);
+  }  // AttributesManager::setTemplatesLockBySubstring
 
   // ======== Accessor functions ========
   /**
@@ -189,7 +294,8 @@ class AttributesManager {
 
   /**
    * @brief Get a reference to the attributes template identified by the
-   * attributesTemplateID.
+   * attributesTemplateID.  Should only be used internally. Users should
+   * only ever access copies of templates.
    *
    * Can be used to manipulate a template before instancing new objects.
    * @param attributesTemplateID The ID of the template. Is mapped to the key
@@ -208,7 +314,8 @@ class AttributesManager {
 
   /**
    * @brief Get a reference to the attributes template for the asset
-   * identified by the passed templateHandle.
+   * identified by the passed templateHandle.  Should only be used
+   * internally. Users should only ever access copies of templates.
    *
    * Can be used to manipulate a template before instancing new objects.
    * @param templateHandle The key referencing the asset in @ref
@@ -260,18 +367,23 @@ class AttributesManager {
    * the library.
    */
   std::vector<AttribsPtr> removeAllTemplates() {
-    std::vector<AttribsPtr> res;
-    // get all handles first
-    std::vector<std::string> handles = getTemplateHandlesBySubstring("");
-    for (std::string templateHandle : handles) {
-      AttribsPtr ptr = removeTemplateInternal(
-          templateHandle, "AttributesManager::removeAllTemplates");
-      if (nullptr != ptr) {
-        res.push_back(ptr);
-      }
-    }
-    return res;
+    return removeTemplatesBySubstring();
   }  // removeAllTemplates
+
+  /**
+   * @brief remove templates that contain passed substring and that have not
+   * been marked as default/non-removable, and return a vector of the templates
+   * removed.
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @param contains whether to search for keys containing, or excluding,
+   * @ref subStr
+   * @return A vector containing all the templates that have been removed from
+   * the library.
+   */
+  std::vector<AttribsPtr> removeTemplatesBySubstring(
+      const std::string& subStr = "",
+      bool contains = true);
 
   /**
    * @brief Get the key in @ref templateLibrary_ for the object template
@@ -306,10 +418,9 @@ class AttributesManager {
   /**
    * @brief Get a list of all templates whose origin handles contain @ref
    * subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing primitive object
-   * templates
+   * @param subStr substring to search for within existing templates.
    * @param contains whether to search for keys containing, or excluding,
-   * @ref subStr
+   * passed @ref subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
@@ -408,12 +519,26 @@ class AttributesManager {
   }  // AttributesManager::getTemplateCopyByHandle
 
   /**
-   * @brief return a read-only reference to the default primitive asset template
-   * handles managed by this object.
+   * @brief returns a vector of template handles representing the
+   * system-specified undeletable templates this manager manages. These
+   * templates cannot be deleted, although they can be edited.
    */
-  const std::vector<std::string>& getDefaultTemplateHandles() const {
-    return this->defaultTemplateNames_;
-  }
+  std::vector<std::string> getUndeletableTemplateHandles() const {
+    std::vector<std::string> res(this->undeletableTemplateNames_.begin(),
+                                 this->undeletableTemplateNames_.end());
+    return res;
+  }  // AttributesManager::getUndeletableTemplateHandles
+
+  /**
+   * @brief returns a vector of template handles representing templates that
+   * have been locked by the user.  These templates cannot be deleted until
+   * they have been unlocked, although they can be edited while locked.
+   */
+  std::vector<std::string> getUserLockedTemplateHandles() const {
+    std::vector<std::string> res(this->userLockedTemplateNames_.begin(),
+                                 this->userLockedTemplateNames_.end());
+    return res;
+  }  // AttributesManager::
 
  protected:
   //======== Common JSON import functions ========
@@ -431,60 +556,68 @@ class AttributesManager {
       try {
         jsonDoc = io::parseJsonFile(filename);
       } catch (...) {
-        LOG(ERROR) << "Failed to parse " << filename << "as JSON.";
+        LOG(ERROR) << attrType_
+                   << "AttributesManager::verifyLoadJson : Failed to parse "
+                   << filename << " as JSON.";
         return false;
       }
       return true;
     } else {
       // by here always fail
-      LOG(ERROR) << "File " << filename << " does not exist";
+      LOG(ERROR) << attrType_ << "AttributesManager::verifyLoadJson : File "
+                 << filename << " does not exist";
       return false;
     }
   }  // AttributesManager::verifyLoadJson
 
   /**
-   * @brief Create either an object or a scene attributes from a json config.
-   * Since both object attributes and scene attributes inherit from @ref
-   * AbstractPhysicsAttributes, the functionality to populate these fields from
+   * @brief Create either an object or a stage attributes from a json config.
+   * Since both object attributes and stage attributes inherit from @ref
+   * AbstractObjectAttributes, the functionality to populate these fields from
    * json can be shared.  Also will will populate render mesh and collision mesh
-   * handles in object and scene attributes with value(s) specified in json.  If
+   * handles in object and stage attributes with value(s) specified in json.  If
    * one is blank will use other for both.
    *
-   * @tparam type of attributes to create : MUST INHERIT FROM @ref
-   * AbstractPhysicsAttributes
    * @param filename name of json descriptor file
    * @param jsonDoc json document to parse
    * @return an appropriately cast attributes pointer with base class fields
    * filled in.
    */
-  template <typename U>
-  AttribsPtr createPhysicsAttributesFromJson(const std::string& filename,
-                                             const io::JsonDocument& jsonDoc);
+  AttribsPtr createObjectAttributesFromJson(const std::string& filename,
+                                            const io::JsonDocument& jsonDoc);
 
   /**
-   * @brief Only used by @ref AbstractPhysicsAttributes derived-attributes. Set
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  virtual bool isValidPrimitiveAttributes(const std::string& handle) = 0;
+
+  /**
+   * @brief Only used by @ref AbstractObjectAttributes derived-attributes. Set
    * the asset type and mesh asset filename from json file. If mesh asset
    * filename has changed in json, but type has not been specified in json,
    * re-run file-path-driven configuration to get asset type and possibly
    * orientation frame, if appropriate.
    *
-   * @param attributes The AbstractPhysicsAttributes object to be populated
+   * @param attributes The AbstractObjectAttributes object to be populated
    * @param jsonDoc The json document
    * @param jsonMeshTypeTag The string tag denoting the desired mesh type in the
    * json.
    * @param jsonMeshHandleTag The string for the mesh asset handle.
-   * @param fileName [in/out] On entry this is old mesh file handle, on exit is
-   * new mesh file handle, or empty.
+   * @param assetName [in/out] On entry this is old mesh handle, on exit is
+   * new mesh handle, or empty.
    * @param meshTypeSetter Function pointer to the appropriate mesh type setter
    * in the Attributes object.
    * @return Whether the render asset name was specified in the json and should
-   * be set from fileName variable.
+   * be set from assetName variable.
    */
   bool setJSONAssetHandleAndType(AttribsPtr attributes,
                                  const io::JsonDocument& jsonDoc,
                                  const char* jsonMeshTypeTag,
                                  const char* jsonMeshHandleTag,
-                                 std::string& fileName,
+                                 std::string& assetName,
                                  std::function<void(int)> meshTypeSetter);
 
   //======== Internally accessed functions ========
@@ -507,23 +640,23 @@ class AttributesManager {
   }  // postCreateRegister
 
   /**
-   * @brief Perform file-name-based attributes initialization. This is to
+   * @brief Perform asset-name-based attributes initialization. This is to
    * take the place of the AssetInfo::fromPath functionality, and is only
    * intended to provide default values and other help if certain mistakes
    * are made by the user, such as specifying an asset handle in json but not
    * specifying the asset type corresponding to that handle.  These settings
    * should not restrict anything, only provide defaults.
    *
-   * @param attributes The AbstractPhysicsAttributes object to be configured
+   * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
-   * @param fileName Mesh Handle to check.
+   * @param assetName Mesh Handle to check.
    * @param meshTypeSetter Setter for mesh type.
    */
-  virtual void setDefaultFileNameBasedAttributes(
+  virtual void setDefaultAssetNameBasedAttributes(
       AttribsPtr attributes,
       bool setFrame,
-      const std::string& fileName,
+      const std::string& assetName,
       std::function<void(int)> meshTypeSetter) = 0;
 
   /**
@@ -541,12 +674,12 @@ class AttributesManager {
   }  // setFileDirectoryFromHandle
 
   /**
-   * @brief Used Internally.  Configure newly-created attributes with any
-   * default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes with
+   * any default values, before any specific values are set.
    *
-   * @param newAttributes Newly created attributes.
+   * @param handleName handle name to be assigned to attributes
    */
-  virtual AttribsPtr initNewAttribsInternal(AttribsPtr newAttributes) = 0;
+  virtual AttribsPtr initNewAttribsInternal(const std::string& handleName) = 0;
 
   /**
    * @brief Used Internally. Remove the template referenced by the passed
@@ -640,25 +773,8 @@ class AttributesManager {
   virtual void resetFinalize() = 0;
 
   /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. Do not wish to remove certain default templates, such as
-   * primitive asset templates.
-   * @param templateHandle the handle to the template to verify removability.
-   * Assumes template exists.
-   * @return Whether the template is read-only or not
-   */
-  bool isTemplateReadOnly(const std::string& templateHandle) {
-    for (auto handle : this->defaultTemplateNames_) {
-      if (handle.compare(templateHandle) == 0) {
-        return true;
-      }
-    }
-    return false;
-  }  // isTemplateReadOnly
-
-  /**
-   * @brief Build a shared pointer to the appropriate attributes for passed
-   * object type.
+   * @brief Build a shared pointer to a copy of a the passed attributes, of
+   * appropriate attributes type for passed object type.
    * @tparam U Type of attributes being created - must be a derived class of
    * AttribsPtr
    * @param orig original object of type AttribsPtr being copied
@@ -751,7 +867,7 @@ class AttributesManager {
    * defined in @ref AssetAttributesManager::PrimNames3D.)
    */
   typedef std::map<std::string,
-                   AttribsPtr (AttributesManager<AttribsPtr>::*)(AttribsPtr&)>
+                   AttribsPtr (AttributesManager<T>::*)(AttribsPtr&)>
       Map_Of_CopyCtors;
 
   /**
@@ -786,11 +902,19 @@ class AttributesManager {
    * recycled before using map-size-based IDs
    */
   std::deque<int> availableTemplateIDs_;
+
   /**
-   * @brief vector holding string template handles of all default templates, to
-   * make sure they are never deleted.
+   * @brief set holding string template handles of all system-locked templates,
+   * to make sure they are never deleted.  Should not be overridden by user.
    */
-  std::vector<std::string> defaultTemplateNames_;
+  std::set<std::string> undeletableTemplateNames_;
+
+  /**
+   * @brief set holding string template handles of all user-locked
+   * templates, to make sure they are not deleted unless the user
+   * unlocks them.
+   */
+  std::set<std::string> userLockedTemplateNames_;
 
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
@@ -800,78 +924,88 @@ class AttributesManager {
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class AttribsPtr>
-template <class U>
-AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
+template <class T>
+auto AttributesManager<T>::createObjectAttributesFromJson(
     const std::string& configFilename,
-    const io::JsonDocument& jsonDoc) {
-  auto attributes = initNewAttribsInternal(U::create(configFilename));
+    const io::JsonDocument& jsonDoc) -> AttribsPtr {
+  AttribsPtr attributes = this->initNewAttribsInternal(configFilename);
 
   using std::placeholders::_1;
 
   // scale
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "scale",
-      std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
+      std::bind(&Attrs::AbstractObjectAttributes::setScale, attributes, _1));
 
+  // collision asset size
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "collision asset size",
+      std::bind(&Attrs::AbstractObjectAttributes::setCollisionAssetSize,
+                attributes, _1));
   // margin
   io::jsonIntoSetter<double>(
       jsonDoc, "margin",
-      std::bind(&AbstractPhysicsAttributes::setMargin, attributes, _1));
+      std::bind(&Attrs::AbstractObjectAttributes::setMargin, attributes, _1));
 
   // load the friction coefficient
   io::jsonIntoSetter<double>(
       jsonDoc, "friction coefficient",
-      std::bind(&AbstractPhysicsAttributes::setFrictionCoefficient, attributes,
-                _1));
+      std::bind(&Attrs::AbstractObjectAttributes::setFrictionCoefficient,
+                attributes, _1));
 
   // load the restitution coefficient
   io::jsonIntoSetter<double>(
       jsonDoc, "restitution coefficient",
-      std::bind(&AbstractPhysicsAttributes::setRestitutionCoefficient,
+      std::bind(&Attrs::AbstractObjectAttributes::setRestitutionCoefficient,
                 attributes, _1));
 
   // if object will be flat or phong shaded
   io::jsonIntoSetter<bool>(
       jsonDoc, "requires lighting",
-      std::bind(&AbstractPhysicsAttributes::setRequiresLighting, attributes,
-                _1));
+      std::bind(&Attrs::AbstractObjectAttributes::setRequiresLighting,
+                attributes, _1));
 
   // units to meters
   io::jsonIntoSetter<double>(
       jsonDoc, "units to meters",
-      std::bind(&AbstractPhysicsAttributes::setUnitsToMeters, attributes, _1));
+      std::bind(&Attrs::AbstractObjectAttributes::setUnitsToMeters, attributes,
+                _1));
 
   // load object/scene specific up orientation
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "up",
-      std::bind(&AbstractPhysicsAttributes::setOrientUp, attributes, _1));
+      std::bind(&Attrs::AbstractObjectAttributes::setOrientUp, attributes, _1));
 
   // load object/scene specific front orientation
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "front",
-      std::bind(&AbstractPhysicsAttributes::setOrientFront, attributes, _1));
+      std::bind(&Attrs::AbstractObjectAttributes::setOrientFront, attributes,
+                _1));
 
   // 4. parse render and collision mesh filepaths
   std::string rndrFName = "";
+  // current value - also place holder for json read result
   std::string rTmpFName = attributes->getRenderAssetHandle();
+  // is true if mesh name is found in JSON and different than current value
   if (setJSONAssetHandleAndType(
           attributes, jsonDoc, "render mesh type", "render mesh", rTmpFName,
-          std::bind(&AbstractPhysicsAttributes::setRenderAssetType, attributes,
-                    _1))) {
+          std::bind(&Attrs::AbstractObjectAttributes::setRenderAssetType,
+                    attributes, _1))) {
+    // set asset name to be what was read in json
     rndrFName = rTmpFName;
   }
 
   std::string colFName = "";
+  // current value - also place holder for json read result
   std::string cTmpFName = attributes->getCollisionAssetHandle();
+  // is true if mesh name is found in JSON and different than current value
   if (setJSONAssetHandleAndType(
           attributes, jsonDoc, "collision mesh type", "collision mesh",
           cTmpFName,
-          std::bind(&AbstractPhysicsAttributes::setCollisionAssetType,
+          std::bind(&Attrs::AbstractObjectAttributes::setCollisionAssetType,
                     attributes, _1))) {
+    // set asset name to be what was read in json
     colFName = cTmpFName;
-    // TODO eventually remove this, but currently collision mesh must be UNKNOWN
-    attributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
   }
 
   // use non-empty result if either result is empty
@@ -879,84 +1013,148 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
                                                               : rndrFName);
   attributes->setCollisionAssetHandle(colFName.compare("") == 0 ? rndrFName
                                                                 : colFName);
-  attributes->setUseMeshCollision(true);
 
+  // check if primitive collision mesh
+  auto colAssetHandle = attributes->getCollisionAssetHandle();
+  if (this->isValidPrimitiveAttributes(colAssetHandle)) {
+    // value is valid primitive, and value is different than existing value
+    attributes->setCollisionAssetType(
+        static_cast<int>(esp::assets::AssetType::PRIMITIVE));
+    attributes->setUseMeshCollision(false);
+  } else {
+    // TODO eventually remove this, but currently non-prim collision mesh must
+    // be UNKNOWN
+    attributes->setCollisionAssetType(
+        static_cast<int>(esp::assets::AssetType::UNKNOWN));
+    attributes->setUseMeshCollision(true);
+  }
   return attributes;
-}  // AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson
+}  // AttributesManager<AttribsPtr>::createObjectAttributesFromJson
 
 template <class T>
 bool AttributesManager<T>::setJSONAssetHandleAndType(
-    T attributes,
+    AttribsPtr attributes,
     const io::JsonDocument& jsonDoc,
     const char* jsonMeshTypeTag,
     const char* jsonMeshHandleTag,
-    std::string& fileName,
+    std::string& assetName,
     std::function<void(int)> meshTypeSetter) {
   std::string propertiesFileDirectory = attributes->getFileDirectory();
   // save current file name
-  const std::string oldFName(fileName);
-  // clear var to get new value
-  fileName = "";
+  const std::string oldFName(assetName);
+  // clear var to get new value - if returns true use this as new value
+  assetName = "";
   // Map a json string value to its corresponding AssetType if found and cast to
-  // int, based on @ref AbstractPhysicsAttributes::AssetTypeNamesMap mappings.
+  // int, based on @ref AbstractObjectAttributes::AssetTypeNamesMap mappings.
   // Casts an int of the @ref esp::AssetType enum value if found and understood,
-  // 0 (AssetType::UNKNOWN) if found but not understood, and
+  // 0 (esp::assets::AssetType::UNKNOWN) if found but not understood, and
   //-1 if tag is not found in json.
   int typeVal = -1;
   std::string tmpVal = "";
   if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (AbstractPhysicsAttributes::AssetTypeNamesMap.count(tmpVal)) {
+    if (Attrs::AbstractObjectAttributes::AssetTypeNamesMap.count(tmpVal)) {
       typeVal = static_cast<int>(
-          AbstractPhysicsAttributes::AssetTypeNamesMap.at(tmpVal));
+          Attrs::AbstractObjectAttributes::AssetTypeNamesMap.at(tmpVal));
     } else {
-      LOG(WARNING) << "AttributesManager::convertJsonStringToAssetType : "
+      LOG(WARNING) << "AttributesManager::setJSONAssetHandleAndType : "
                       "Value in json @ tag : "
                    << jsonMeshTypeTag << " : `" << tmpVal
                    << "` does not map to a valid "
-                      "AbstractPhysicsAttributes::AssetTypeNamesMap value, so "
+                      "AbstractObjectAttributes::AssetTypeNamesMap value, so "
                       "defaulting mesh type to AssetType::UNKNOWN.";
-      typeVal = static_cast<int>(AssetType::UNKNOWN);
+      typeVal = static_cast<int>(esp::assets::AssetType::UNKNOWN);
     }
     // value found so override current value, otherwise do not.
     meshTypeSetter(typeVal);
   }  // if type is found in json.  If not typeVal is -1
 
   // Read json for new mesh handle
-  if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshHandleTag, fileName)) {
-    // value has changed
-    fileName = Cr::Utility::Directory::join(propertiesFileDirectory, fileName);
-    if ((typeVal == -1) && (oldFName.compare(fileName) != 0)) {
-      std::string strToFind(jsonMeshTypeTag);
-      // if file name is different, and type val has not been specified, perform
-      // name-specific mesh type config
-      // do not override orientation - should be specified in json.
-      setDefaultFileNameBasedAttributes(attributes, false, fileName,
-                                        meshTypeSetter);
-    }
+  if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshHandleTag, assetName)) {
+    // value is specified in json doc
+    if ((this->isValidPrimitiveAttributes(assetName)) &&
+        (oldFName.compare(assetName) != 0)) {
+      // if mesh name is specified and different than old value,
+      // perform name-specific mesh-type config.
+      setDefaultAssetNameBasedAttributes(attributes, false, assetName,
+                                         meshTypeSetter);
+    } else {
+      // is not valid primitive, check if valid file name
+      assetName =
+          Cr::Utility::Directory::join(propertiesFileDirectory, assetName);
+      if ((typeVal == -1) && (oldFName.compare(assetName) != 0)) {
+        // if file name is different, and type val has not been specified,
+        // perform name-specific mesh type config do not override orientation -
+        // should be specified in json.
+        setDefaultAssetNameBasedAttributes(attributes, false, assetName,
+                                           meshTypeSetter);
+      }
+    }  // value is valid prim and exists, else value is valid file and exists
     return true;
-  }
+  }  // value is present in json
   return false;
 }  // AttributesManager<AttribsPtr>::setAssetHandleAndType
 
 template <class T>
-T AttributesManager<T>::removeTemplateInternal(
+bool AttributesManager<T>::setTemplateLock(const std::string& templateHandle,
+                                           bool lock) {
+  // if template does not currently exist then do not attempt to modify its
+  // lock state
+  if (!checkExistsWithMessage(templateHandle,
+                              "AttributesManager::setTemplateLock")) {
+    return false;
+  }
+  // if setting lock else clearing lock
+  if (lock) {
+    userLockedTemplateNames_.insert(templateHandle);
+  } else if (userLockedTemplateNames_.count(templateHandle) > 0) {
+    // if clearing, verify exists
+    userLockedTemplateNames_.erase(templateHandle);
+  }
+  return true;
+}  // AttributesManager::setTemplateLock
+
+template <class T>
+auto AttributesManager<T>::removeTemplatesBySubstring(const std::string& subStr,
+                                                      bool contains)
+    -> std::vector<AttribsPtr> {
+  std::vector<AttribsPtr> res;
+  // get all handles that match query elements first
+  std::vector<std::string> handles =
+      getTemplateHandlesBySubstring(subStr, contains);
+  for (std::string templateHandle : handles) {
+    AttribsPtr ptr = removeTemplateInternal(
+        templateHandle, "AttributesManager::removeTemplatesBySubstring");
+    if (nullptr != ptr) {
+      res.push_back(ptr);
+    }
+  }
+  return res;
+}  // removeAllTemplates
+
+template <class T>
+auto AttributesManager<T>::removeTemplateInternal(
     const std::string& templateHandle,
-    const std::string& sourceStr) {
-  std::string msg;
+    const std::string& sourceStr) -> AttribsPtr {
   if (!checkExistsWithMessage(templateHandle, sourceStr)) {
-    msg = "Does not exist";
-  } else if (isTemplateReadOnly(templateHandle)) {
-    msg = "Required Default Template";
+    LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
+              << " template " << templateHandle << " : Does not exist.";
+    return nullptr;
+  }
+
+  auto attribsTemplate = getTemplateCopyByHandle(templateHandle);
+  std::string msg;
+  if (this->undeletableTemplateNames_.count(templateHandle) > 0) {
+    msg = "Required Undeletable Template";
+  } else if (this->userLockedTemplateNames_.count(templateHandle) > 0) {
+    msg = "User-locked Template.  To delete template, unlock it.";
   }
   if (msg.length() != 0) {
     LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
               << " template " << templateHandle << " : " << msg << ".";
     return nullptr;
   }
-
-  T attribsTemplate = getTemplateCopyByHandle(templateHandle);
   int templateID = attribsTemplate->getID();
   templateLibKeyByID_.erase(templateID);
   templateLibrary_.erase(templateHandle);
@@ -1031,6 +1229,6 @@ AttributesManager<T>::getTemplateHandlesBySubStringPerType(
 }  // AttributesManager::getTemplateHandlesBySubStringPerType
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
-#endif  // ESP_ASSETS_MANAGERS_ATTRIBUTESMANAGERBASE_H_
+#endif  // ESP_METADATA_MANAGERS_ATTRIBUTESMANAGERBASE_H_

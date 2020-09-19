@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_DRAWABLE_H_
+#define ESP_GFX_DRAWABLE_H_
 
 #include "esp/core/esp.h"
 #include "magnum.h"
@@ -54,6 +55,17 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
   Magnum::GL::Mesh& getMesh() { return mesh_; }
 
+  /**
+   * @brief Get the Magnum GL mesh for visualization, highlighting (e.g., used
+   * in object picking)
+   * See MeshVisualizer3D in Magnum library for more details.
+   *
+   * @return mesh_ by default.
+   * NOTE: sub-class should override this function if the "visualizer mesh" is
+   * different from mesh_ (check the example in the PTexMeshDrawable class)
+   */
+  virtual Magnum::GL::Mesh& getVisualizerMesh() { return mesh_; }
+
  protected:
   /**
    * @brief Draw the object using given camera
@@ -76,3 +88,5 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_DRAWABLE_H_

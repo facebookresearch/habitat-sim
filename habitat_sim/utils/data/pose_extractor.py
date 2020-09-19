@@ -1,10 +1,7 @@
 import collections
-import copy
-import math
-from typing import List, Union
+from typing import List
 
 import numpy as np
-from matplotlib import pyplot as plt
 
 import habitat_sim
 from habitat_sim import registry as registry
@@ -31,8 +28,7 @@ class PoseExtractor:
         self.labels = [0.0]
 
     def extract_all_poses(self) -> np.ndarray:
-        r"""Returns a numpy array of camera poses. For each scene, this method extends the list of poses according to the extraction rule defined in extract_poses.
-        """
+        r"""Returns a numpy array of camera poses. For each scene, this method extends the list of poses according to the extraction rule defined in extract_poses."""
         poses = []
         for tdv, fp, ref_point in self.tdv_fp_ref_triples:
             view = (

@@ -1,12 +1,12 @@
+Working with Lights
+###################
+
 :ref-prefix:
     habitat_sim.gfx
     habitat_sim.simulator
     habitat_sim.sim
     habitat_sim.agent
     habitat_sim.attributes
-
-Working with Lights
-###################
 
 :summary: This tutorial demonstrates lighting of scenes and objects in Habitat -- creation, placement, configuration, and manipulation of light sources and shaders.
 
@@ -82,7 +82,7 @@ It is often desirable to add new objects (such as furniture, robots, or navigati
 These objects are handled separately from the scene and can be configured with the same or different light setups.
 
 By default, object assets are loaded with Phong shading compatibility. This is not ideal for assets with illumination baked into textures.
-Objects can be loaded for Flat shading by using the asset template's :ref:`PhysicsObjectAttributes.set_requires_lighting` function *before* loading the asset.
+Objects can be loaded for Flat shading by using the asset template's :ref:`ObjectAttributes.requires_lighting` property *before* loading the asset.
 Alternatively, this option can be set in the object template's configuration file:
 
 E.g. in ``my_object.phys_properties.json``

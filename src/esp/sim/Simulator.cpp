@@ -4,31 +4,38 @@
 
 #include "Simulator.h"
 
+#include <memory>
 #include <string>
 
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/GL/Context.h>
 
-#include "esp/assets/Attributes.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/io/io.h"
+#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
+#include "esp/sensor/VisualSensor.h"
 
 namespace Cr = Corrade;
 
 namespace esp {
 namespace sim {
 
+using Attrs::PhysicsManagerAttributes;
+using Attrs::StageAttributes;
+
 Simulator::Simulator(const SimulatorConfiguration& cfg)
-    : random_{core::Random::create(cfg.randomSeed)} {
+    : random_{core::Random::create(cfg.randomSeed)},
+      requiresTextures_{Cr::Containers::NullOpt} {
   // initalize members according to cfg
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
   //       Maybe better not to do this reconfigure
@@ -62,6 +69,7 @@ void Simulator::close() {
   config_ = SimulatorConfiguration{};
 
   frustumCulling_ = true;
+  requiresTextures_ = Cr::Containers::NullOpt;
 }
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
@@ -82,6 +90,18 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
+  if (requiresTextures_ == Cr::Containers::NullOpt) {
+    requiresTextures_ = config_.requiresTextures;
+    resourceManager_->setRequiresTextures(config_.requiresTextures);
+  } else if (!(*requiresTextures_) && config_.requiresTextures) {
+    throw std::runtime_error(
+        "requiresTextures was changed to True from False.  Must call close() "
+        "before changing this value.");
+  } else if ((*requiresTextures_) && !config_.requiresTextures) {
+    LOG(WARNING) << "Not changing requiresTextures as the simulator was "
+                    "initialized with True.  Call close() to change this.";
+  }
+
   // use physics attributes manager to get physics manager attributes
   // described by config file - this always exists to configure scene
   // attributes
@@ -89,35 +109,35 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       resourceManager_->getPhysicsAttributesManager()->createAttributesTemplate(
           config_.physicsConfigFile, true);
   // if physicsManagerAttributes have been successfully created, inform
-  // sceneAttributesManager of the config handle of the attributes, so that
-  // sceneAttributes initialization can use phys Mgr Attr values as defaults
-  auto sceneAttributesMgr = resourceManager_->getSceneAttributesManager();
+  // stageAttributesManager of the config handle of the attributes, so that
+  // stageAttributes initialization can use phys Mgr Attr values as defaults
+  auto stageAttributesMgr = resourceManager_->getStageAttributesManager();
   if (physicsManagerAttributes != nullptr) {
-    sceneAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+    stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
         physicsManagerAttributes->getHandle());
   }
   // set scene attributes defaults to cfg-based values, i.e. to construct
   // default semantic and navmesh file names, if they exist.  All values
   // set/built from these default values may be overridden by values in scene
   // json file, if present.
-  sceneAttributesMgr->setCurrCfgVals(
+  stageAttributesMgr->setCurrCfgVals(
       config_.scene.filepaths, config_.sceneLightSetup, config_.frustumCulling);
 
   // Build scene file name based on config specification
-  std::string sceneFilename = config_.scene.id;
+  std::string stageFilename = config_.scene.id;
   if (config_.scene.filepaths.count("mesh")) {
-    sceneFilename = config_.scene.filepaths.at("mesh");
+    stageFilename = config_.scene.filepaths.at("mesh");
   }
 
   // Create scene attributes with values based on sceneFilename
-  auto sceneAttributes =
-      sceneAttributesMgr->createAttributesTemplate(sceneFilename, true);
+  auto stageAttributes =
+      stageAttributesMgr->createAttributesTemplate(stageFilename, true);
 
-  std::string navmeshFilename = sceneAttributes->getNavmeshAssetHandle();
-  std::string houseFilename = sceneAttributes->getHouseFilename();
+  std::string navmeshFilename = stageAttributes->getNavmeshAssetHandle();
+  std::string houseFilename = stageAttributes->getHouseFilename();
 
-  esp::assets::AssetType sceneType = static_cast<esp::assets::AssetType>(
-      sceneAttributes->getRenderAssetType());
+  esp::assets::AssetType stageType = static_cast<esp::assets::AssetType>(
+      stageAttributes->getRenderAssetType());
 
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
@@ -145,19 +165,23 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   sceneID_.push_back(activeSceneID_);
 
   if (config_.createRenderer) {
-    if (!context_) {
+    /* When creating a viewer based app, there is no need to create a
+    WindowlessContext since a (windowed) context already exists. */
+    if (!context_ && !Magnum::GL::Context::hasCurrent()) {
       context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
     }
 
     // reinitalize members
     if (!renderer_) {
-      renderer_ = gfx::Renderer::create();
+      gfx::Renderer::Flags flags;
+      if (!config_.requiresTextures)
+        flags |= gfx::Renderer::Flag::NoTextures;
+      renderer_ = gfx::Renderer::create(flags);
     }
 
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
     auto& rootNode = sceneGraph.getRootNode();
     // auto& drawables = sceneGraph.getDrawables();
-    resourceManager_->compressTextures(config_.compressTextures);
 
     bool loadSuccess = false;
 
@@ -167,14 +191,14 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
     // Load scene
-    loadSuccess = resourceManager_->loadScene(sceneAttributes, physicsManager_,
+    loadSuccess = resourceManager_->loadStage(stageAttributes, physicsManager_,
                                               sceneManager_.get(), tempIDs,
                                               config_.loadSemanticMesh);
 
     if (!loadSuccess) {
-      LOG(ERROR) << "Cannot load " << sceneFilename;
+      LOG(ERROR) << "Cannot load " << stageFilename;
       // Pass the error to the python through pybind11 allowing graceful exit
-      throw std::invalid_argument("Cannot load: " + sceneFilename);
+      throw std::invalid_argument("Cannot load: " + stageFilename);
     }
 
     // refresh the NavMesh visualization if necessary after loading a new
@@ -190,9 +214,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     // set activeSemanticSceneID_ values and push onto sceneID vector if
     // appropriate - tempIDs[1] will either be old activeSemanticSceneID_ (if
-    // no semantic mesh was requested in loadScene); ID_UNDEFINED if desired was
-    // not found; activeSceneID_, or a unique value, the last of which means the
-    // semantic scene mesh is loaded.
+    // no semantic mesh was requested in loadStage); ID_UNDEFINED if desired
+    // was not found; activeSceneID_, or a unique value, the last of which means
+    // the semantic scene mesh is loaded.
 
     if (activeSemanticSceneID_ != tempIDs[1]) {
       // id has changed so act - if ID has not changed, do nothing
@@ -203,9 +227,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       } else {  // activeSemanticSceneID_ = activeSceneID_;
         // instance meshes and suncg houses contain their semantic annotations
         // empty scene has none to worry about
-        if (!(sceneType == assets::AssetType::SUNCG_SCENE ||
-              sceneType == assets::AssetType::INSTANCE_MESH ||
-              sceneFilename.compare(assets::EMPTY_SCENE) == 0)) {
+        if (!(stageType == assets::AssetType::SUNCG_SCENE ||
+              stageType == assets::AssetType::INSTANCE_MESH ||
+              stageFilename.compare(assets::EMPTY_SCENE) == 0)) {
           // TODO: programmatic generation of semantic meshes when no
           // annotations are provided.
           LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
@@ -217,7 +241,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
-  switch (sceneType) {
+  switch (stageType) {
     case assets::AssetType::INSTANCE_MESH:
       houseFilename = Cr::Utility::Directory::join(
           Cr::Utility::Directory::path(houseFilename), "info_semantic.json");
@@ -237,7 +261,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       }
       break;
     case assets::AssetType::SUNCG_SCENE:
-      scene::SemanticScene::loadSuncgHouse(sceneFilename, *semanticScene_);
+      scene::SemanticScene::loadSuncgHouse(stageFilename, *semanticScene_);
       break;
     default:
       break;
@@ -297,17 +321,17 @@ bool operator!=(const SimulatorConfiguration& a,
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(int objectLibIndex,
+int Simulator::addObject(const int objectLibId,
                          scene::SceneNode* attachmentNode,
                          const std::string& lightSetupKey,
-                         int sceneID) {
+                         const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
     auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
-    return physicsManager_->addObject(objectLibIndex, &drawables,
-                                      attachmentNode, lightSetupKey);
+    return physicsManager_->addObject(objectLibId, &drawables, attachmentNode,
+                                      lightSetupKey);
   }
   return ID_UNDEFINED;
 }
@@ -315,7 +339,7 @@ int Simulator::addObject(int objectLibIndex,
 int Simulator::addObjectByHandle(const std::string& objectLibHandle,
                                  scene::SceneNode* attachmentNode,
                                  const std::string& lightSetupKey,
-                                 int sceneID) {
+                                 const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
@@ -327,11 +351,19 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
   return ID_UNDEFINED;
 }
 
-const assets::PhysicsObjectAttributes::cptr
-Simulator::getObjectInitializationTemplate(int objectId,
-                                           const int sceneID) const {
+const Attrs::ObjectAttributes::cptr Simulator::getObjectInitializationTemplate(
+    const int objectId,
+    const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectInitAttributes(objectId);
+  }
+  return nullptr;
+}
+
+const Attrs::StageAttributes::cptr Simulator::getStageInitializationTemplate(
+    const int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getStageInitAttributes();
   }
   return nullptr;
 }
@@ -395,6 +427,15 @@ void Simulator::applyForce(const Magnum::Vector3& force,
                            const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyForce(objectID, force, relPos);
+  }
+}
+
+void Simulator::applyImpulse(const Magnum::Vector3& impulse,
+                             const Magnum::Vector3& relPos,
+                             const int objectID,
+                             const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->applyImpulse(objectID, impulse, relPos);
   }
 }
 
@@ -589,8 +630,12 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                  "loaded without renderer initialization.",
                  false);
 
-  assets::MeshData::uptr joinedMesh =
-      resourceManager_->createJoinedCollisionMesh(config_.scene.id);
+  assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
+  auto stageInitAttrs = physicsManager_->getStageInitAttributes();
+  if (stageInitAttrs != nullptr) {
+    joinedMesh = resourceManager_->createJoinedCollisionMesh(
+        stageInitAttrs->getRenderAssetHandle());
+  }
 
   // add STATIC collision objects
   if (includeStaticObjects) {
@@ -601,7 +646,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
             Eigen::Transform<float, 3, Eigen::Affine> >(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
-        const assets::PhysicsObjectAttributes::cptr initializationTemplate =
+        const Attrs::ObjectAttributes::cptr initializationTemplate =
             physicsManager_->getObjectInitAttributes(objectID);
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
             initializationTemplate->getScale()));
@@ -730,7 +775,7 @@ agent::Agent::ptr Simulator::addAgent(
   return addAgent(agentConfig, getActiveSceneGraph().getRootNode());
 }
 
-agent::Agent::ptr Simulator::getAgent(int agentId) {
+agent::Agent::ptr Simulator::getAgent(const int agentId) {
   ASSERT(0 <= agentId && agentId < agents_.size());
   return agents_[agentId];
 }
@@ -742,8 +787,22 @@ nav::PathFinder::ptr Simulator::getPathFinder() {
 void Simulator::setPathFinder(nav::PathFinder::ptr pathfinder) {
   pathfinder_ = pathfinder;
 }
+gfx::RenderTarget* Simulator::getRenderTarget(int agentId,
+                                              const std::string& sensorId) {
+  agent::Agent::ptr ag = getAgent(agentId);
 
-bool Simulator::displayObservation(int agentId, const std::string& sensorId) {
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr && sensor->isVisualSensor()) {
+      return &(std::static_pointer_cast<sensor::VisualSensor>(sensor)
+                   ->renderTarget());
+    }
+  }
+  return nullptr;
+}
+
+bool Simulator::displayObservation(const int agentId,
+                                   const std::string& sensorId) {
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
@@ -755,7 +814,21 @@ bool Simulator::displayObservation(int agentId, const std::string& sensorId) {
   return false;
 }
 
-bool Simulator::getAgentObservation(int agentId,
+bool Simulator::drawObservation(const int agentId,
+                                const std::string& sensorId) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr) {
+      return std::static_pointer_cast<sensor::VisualSensor>(sensor)
+          ->drawObservation(*this);
+    }
+  }
+  return false;
+}
+
+bool Simulator::getAgentObservation(const int agentId,
                                     const std::string& sensorId,
                                     sensor::Observation& observation) {
   agent::Agent::ptr ag = getAgent(agentId);
@@ -769,7 +842,7 @@ bool Simulator::getAgentObservation(int agentId,
 }
 
 int Simulator::getAgentObservations(
-    int agentId,
+    const int agentId,
     std::map<std::string, sensor::Observation>& observations) {
   observations.clear();
   agent::Agent::ptr ag = getAgent(agentId);
@@ -786,7 +859,7 @@ int Simulator::getAgentObservations(
   return observations.size();
 }
 
-bool Simulator::getAgentObservationSpace(int agentId,
+bool Simulator::getAgentObservationSpace(const int agentId,
                                          const std::string& sensorId,
                                          sensor::ObservationSpace& space) {
   agent::Agent::ptr ag = getAgent(agentId);
@@ -800,7 +873,7 @@ bool Simulator::getAgentObservationSpace(int agentId,
 }
 
 int Simulator::getAgentObservationSpaces(
-    int agentId,
+    const int agentId,
     std::map<std::string, sensor::ObservationSpace>& spaces) {
   spaces.clear();
   agent::Agent::ptr ag = getAgent(agentId);
@@ -825,9 +898,9 @@ gfx::LightSetup Simulator::getLightSetup(const std::string& key) {
   return *resourceManager_->getLightSetup(key);
 }
 
-void Simulator::setObjectLightSetup(int objectID,
+void Simulator::setObjectLightSetup(const int objectID,
                                     const std::string& lightSetupKey,
-                                    int sceneID) {
+                                    const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     gfx::setLightSetupForSubTree(physicsManager_->getObjectSceneNode(objectID),
                                  lightSetupKey);

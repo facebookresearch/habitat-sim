@@ -2,19 +2,19 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_PHYSICS_BASE_RIGIDBASE_H_
-#define ESP_PHYSICS_BASE_RIGIDBASE_H_
+#ifndef ESP_PHYSICS_RIGIDBASE_H_
+#define ESP_PHYSICS_RIGIDBASE_H_
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
 #include "esp/assets/Asset.h"
-#include "esp/assets/Attributes.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/RigidState.h"
 #include "esp/core/esp.h"
+#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/scene/SceneNode.h"
 
 /** @file
@@ -23,11 +23,17 @@
 
 namespace esp {
 namespace assets {
-class AbstractPhysicsAttributes;
 class ResourceManager;
-}  // namespace assets
+}
+namespace metadata {
+namespace attributes {
+class AbstractObjectAttributes;
+}  // namespace attributes
+}  // namespace metadata
+
 namespace physics {
 
+namespace Attrs = esp::metadata::attributes;
 /**
 @brief Motion type of a @ref RigidObject.
 Defines its treatment by the simulator and operations which can be performed on
@@ -572,7 +578,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   virtual void setAngularDamping(CORRADE_UNUSED const double angDamping) {}
 
   /**
-   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
    * belonging to the object.
    *
    * @param semanticId The desired semantic id for the object.
@@ -587,10 +593,13 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Get a copy of the template used to initialize this object
    * or scene.
    * @return A copy of the initialization template used to create this object
-   * instance.
+   * instance or nullptr if no template exists.
    */
   template <class T>
   std::shared_ptr<T> getInitializationAttributes() const {
+    if (!initializationAttributes_) {
+      return nullptr;
+    }
     return T::create(*(static_cast<T*>(initializationAttributes_.get())));
   }
 
@@ -626,7 +635,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Saved attributes when the object was initialized.
    */
-  assets::AbstractPhysicsAttributes::ptr initializationAttributes_ = nullptr;
+  Attrs::AbstractObjectAttributes::ptr initializationAttributes_ = nullptr;
 
   //! Access for the object to its own PhysicsManager id. Scene will keep -1.
   int objectId_ = -1;
@@ -637,4 +646,4 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
 
 }  // namespace physics
 }  // namespace esp
-#endif  // ESP_PHYSICS_BASE_RIGIDBASE_H_
+#endif  // ESP_PHYSICS_RIGIDBASE_H_

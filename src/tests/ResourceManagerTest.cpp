@@ -31,20 +31,20 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   // must declare these in this order due to avoid deallocation errors
   ResourceManager resourceManager;
   SceneManager sceneManager_;
-  auto sceneAttributesMgr = resourceManager.getSceneAttributesManager();
+  auto stageAttributesMgr = resourceManager.getStageAttributesManager();
   std::string boxFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
 
-  // create scene attributes file
-  auto sceneAttributes =
-      sceneAttributesMgr->createAttributesTemplate(boxFile, true);
+  // create stage attributes file
+  auto stageAttributes =
+      stageAttributesMgr->createAttributesTemplate(boxFile, true);
 
   int sceneID = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadScene(sceneAttributes, nullptr,
+  bool result = resourceManager.loadStage(stageAttributes, nullptr,
                                           &sceneManager_, tempIDs, false);
 
   esp::assets::MeshData::uptr joinedBox =
