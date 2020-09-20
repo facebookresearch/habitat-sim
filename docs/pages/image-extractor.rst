@@ -11,6 +11,7 @@ In this tutorial we will learn how to use the image extraction API in Habitat Si
 We will first provide an overview of how to use the image extraction API. Next we will show how to use the API to train a semantic segmentation model. Finally, we will show how to define a custom pose extraction method, which is how a user programmatically defines the camera poses for image extraction.
 
 `Overview of Image Extraction`_
+===============================
 
 Habitat Sim provides an API to extract static images from a scene. The main class that handles image data extraction in Habitat Sim is called ImageExtractor. The user only needs to provide the scene filepath (either a .glb or .ply file).
 
@@ -552,7 +553,8 @@ the new pose extractor in the ImageExtractor constructor.
 
 NOTE: If you want to adjust the tilt of the camera (i.e. looking more toward the ground or the ceiling instead of straight ahead), you will need to modify the "_convert_to_scene_coordinate_system" method inside the PoseExtractor class. Specifically, in the computation of the rotation for the camera angle. Instead of calling "_compute_quat" to determine the camera angle, you can implement new logic.
 
-.. code::
+.. code:: bash
+
     ...
     cam_normal = new_cpi - new_pos
     new_rot = self._compute_quat(cam_normal)
