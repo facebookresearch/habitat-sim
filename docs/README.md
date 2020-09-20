@@ -10,8 +10,6 @@ conda install jinja2 pygments docutils
 ```bash
 python setup.py install
 cd docs
-conda install -y -c conda-forge doxygen==1.8.16
-conda install -y  jinja2 pygments docutils
 git submodule update --init
 ./build.sh # or ./build-public.sh when deploying to aihabitat.org
 ```
