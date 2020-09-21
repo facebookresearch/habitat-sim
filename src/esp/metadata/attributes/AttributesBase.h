@@ -7,7 +7,7 @@
 
 #include "esp/core/Configuration.h"
 
-#include "esp/metadata/AbstractManagedObject.h"
+#include "esp/core/AbstractManagedObject.h"
 
 namespace esp {
 namespace metadata {
@@ -18,7 +18,7 @@ namespace attributes {
  * AbstractManagedObject so the attributes can be managed by a @ref
  * ManagedContainer.
  */
-class AbstractAttributes : public AbstractManagedObject,
+class AbstractAttributes : public esp::core::AbstractManagedObject,
                            public esp::core::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,

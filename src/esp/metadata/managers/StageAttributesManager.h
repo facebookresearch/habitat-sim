@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 
-#include "AttributesManagerBase.h"
+#include "AbsObjAttributesManagerBase.h"
 
 #include "ObjectAttributesManager.h"
 #include "PhysicsAttributesManager.h"
@@ -18,7 +18,7 @@ namespace metadata {
 
 namespace managers {
 class StageAttributesManager
-    : public AttributesManager<Attrs::StageAttributes> {
+    : public AbsObjAttributesManager<Attrs::StageAttributes> {
  public:
   StageAttributesManager(
       esp::assets::ResourceManager& resourceManager,

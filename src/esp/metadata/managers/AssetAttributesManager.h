@@ -383,15 +383,6 @@ class AssetAttributesManager
   }
 
   /**
-   * @brief Not used by Attrs::AbstractPrimitiveAttributes.
-   */
-  void setDefaultAssetNameBasedAttributes(
-      CORRADE_UNUSED Attrs::AbstractPrimitiveAttributes::ptr attributes,
-      CORRADE_UNUSED bool setFrame,
-      CORRADE_UNUSED const std::string& meshHandle,
-      CORRADE_UNUSED std::function<void(int)> meshTypeSetter) override {}
-
-  /**
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in

@@ -2,17 +2,18 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_ABSTRACTMANAGEDOBJECT_H_
-#define ESP_METADATA_ABSTRACTMANAGEDOBJECT_H_
+#ifndef ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
+#define ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
 
-#include "esp/core/Configuration.h"
+#include "Configuration.h"
 
 namespace esp {
-namespace metadata {
+namespace core {
 /**
  * @brief This abstract base class provides the interface of expected
  * functionality for an object to be manageable by @ref ManagedContainer class
- * template specializations.
+ * template specializations. Any class that inherits from this class properly
+ * can be managed by a @ref ManagedContainer specilization.
  */
 class AbstractManagedObject {
  public:
@@ -51,6 +52,6 @@ class AbstractManagedObject {
  public:
   ESP_SMART_POINTERS(AbstractManagedObject)
 };  // class AbstractAttributes
-}  // namespace metadata
+}  // namespace core
 }  // namespace esp
-#endif  // ESP_METADATA_ABSTRACTMANAGEDOBJECT_H_
+#endif  // ESP_CORE_ABSTRACTMANAGEDOBJECT_H_

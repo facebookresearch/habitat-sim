@@ -7,8 +7,8 @@
 
 #include <Corrade/Utility/Assert.h>
 
+#include "AbsObjAttributesManagerBase.h"
 #include "AssetAttributesManager.h"
-#include "AttributesManagerBase.h"
 
 namespace esp {
 namespace metadata {
@@ -17,12 +17,12 @@ namespace managers {
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
-    : public AttributesManager<Attrs::ObjectAttributes> {
+    : public AbsObjAttributesManager<Attrs::ObjectAttributes> {
  public:
   ObjectAttributesManager(esp::assets::ResourceManager& resourceManager)
-      : AttributesManager<Attrs::ObjectAttributes>::AttributesManager(
-            resourceManager,
-            "Object") {
+      : AbsObjAttributesManager<
+            Attrs::ObjectAttributes>::AbsObjAttributesManager(resourceManager,
+                                                              "Object") {
     buildCtorFuncPtrMaps();
   }
 

@@ -2,11 +2,11 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_MANAGERS_MANAGEDCONTAINERBASE_H_
-#define ESP_METADATA_MANAGERS_MANAGEDCONTAINERBASE_H_
+#ifndef ESP_CORE_MANAGEDCONTAINERBASE_H_
+#define ESP_CORE_MANAGEDCONTAINERBASE_H_
 
 /** @file
- * @brief Class Template @ref esp::metadata::managers::AttributesManager
+ * @brief Class Template @ref esp::ManagedContainer
  */
 
 #include <deque>
@@ -17,7 +17,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
-#include "esp/metadata/AbstractManagedObject.h"
+#include "esp/core/AbstractManagedObject.h"
 
 #include "esp/io/json.h"
 
@@ -28,8 +28,7 @@ namespace assets {
 class ResourceManager;
 }
 
-namespace metadata {
-namespace managers {
+namespace core {
 
 /**
  * @brief Class template defining responsibilities and functionality for
@@ -978,7 +977,6 @@ ManagedContainer<T>::getObjectHandlesBySubStringPerType(
   return res;
 }  // ManagedContainer::getObjectHandlesBySubStringPerType
 
-}  // namespace managers
-}  // namespace metadata
+}  // namespace core
 }  // namespace esp
-#endif  // ESP_METADATA_MANAGERS_MANAGEDCONTAINERBASE_H_
+#endif  // ESP_CORE_MANAGEDCONTAINERBASE_H_

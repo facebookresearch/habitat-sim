@@ -4,7 +4,7 @@
 
 set(
   metadata_SOURCES
-  AbstractManagedObject.h
+  #AbstractManagedObject.h
   attributes/AttributesBase.h
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
@@ -14,8 +14,9 @@ set(
   attributes/PhysicsManagerAttributes.cpp
   attributes/PrimitiveAssetAttributes.h
   attributes/PrimitiveAssetAttributes.cpp
-  managers/ManagedContainerBase.h
+  #managers/ManagedContainerBase.h
   managers/AttributesManagerBase.h
+  managers/AbsObjAttributesManagerBase.h
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
   managers/ObjectAttributesManager.h
@@ -35,5 +36,5 @@ add_library(
 target_link_libraries(
   metadata
   PUBLIC Magnum::Magnum Magnum::Primitives
-  PRIVATE geo io
+  PRIVATE core geo io
 )

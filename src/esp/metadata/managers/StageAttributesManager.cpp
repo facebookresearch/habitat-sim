@@ -4,7 +4,7 @@
 
 #include <Corrade/Utility/String.h>
 
-#include "AttributesManagerBase.h"
+#include "AbsObjAttributesManagerBase.h"
 #include "StageAttributesManager.h"
 
 #include "esp/assets/Asset.h"
@@ -25,8 +25,9 @@ StageAttributesManager::StageAttributesManager(
     assets::ResourceManager& resourceManager,
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
-    : AttributesManager<StageAttributes>::AttributesManager(resourceManager,
-                                                            "Stage"),
+    : AbsObjAttributesManager<StageAttributes>::AbsObjAttributesManager(
+          resourceManager,
+          "Stage"),
       objectAttributesMgr_(objectAttributesMgr),
       physicsAttributesManager_(physicsAttributesManager),
       cfgLightSetup_(assets::ResourceManager::NO_LIGHT_KEY) {

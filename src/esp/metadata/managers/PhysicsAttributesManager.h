@@ -80,15 +80,6 @@ class PhysicsAttributesManager
   }
 
   /**
-   * @brief Not used by PhysicsManagerAttributes.
-   */
-  void setDefaultAssetNameBasedAttributes(
-      CORRADE_UNUSED Attrs::PhysicsManagerAttributes::ptr attributes,
-      CORRADE_UNUSED bool setFrame,
-      CORRADE_UNUSED const std::string& meshHandle,
-      CORRADE_UNUSED std::function<void(int)> meshTypeSetter) override {}
-
-  /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
    *
