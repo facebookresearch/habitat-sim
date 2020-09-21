@@ -38,31 +38,54 @@ void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
   updateShader();
 }
 
-void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
-                           Mn::SceneGraph::Camera3D& camera) {
-  updateShader();
-
+void GenericDrawable::updateShaderLightingParameters(
+    const Mn::Matrix4& transformationMatrix,
+    Mn::SceneGraph::Camera3D& camera) {
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
 
-  std::vector<Mn::Vector3> lightPositions;
+  std::vector<Mn::Vector4> lightPositions;
   lightPositions.reserve(lightSetup_->size());
-  std::vector<Mn::Color4> lightColors;
+  std::vector<Mn::Color3> lightColors;
   lightColors.reserve(lightSetup_->size());
+  std::vector<Mn::Color3> lightSpecularColors;
+  lightSpecularColors.reserve(lightSetup_->size());
+  constexpr float dummyRange = 10000;
+  std::vector<float> lightRanges(lightSetup_->size(), dummyRange);
+  const Mn::Color4 ambientLightColor = getAmbientLightColor(*lightSetup_);
 
   for (Mn::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
-    lightPositions.emplace_back(getLightPositionRelativeToCamera(
-        (*lightSetup_)[i], transformationMatrix, cameraMatrix));
+    const auto& lightInfo = (*lightSetup_)[i];
+    lightPositions.emplace_back(Mn::Vector4(getLightPositionRelativeToCamera(
+        lightInfo, transformationMatrix, cameraMatrix)));
 
-    lightColors.emplace_back((*lightSetup_)[i].color);
+    const auto& lightColor = (*lightSetup_)[i].color;
+    lightColors.emplace_back(lightColor);
+
+    // In general, a light's specular color should match its base color.
+    // However, negative lights have zero (black) specular.
+    constexpr Mn::Color3 blackColor(0.0, 0.0, 0.0);
+    bool isNegativeLight = lightColor.x() < 0;
+    lightSpecularColors.emplace_back(isNegativeLight ? blackColor : lightColor);
   }
 
+  // See documentation in src/deps/magnum/src/Magnum/Shaders/Phong.h
   (*shader_)
-      .setAmbientColor(materialData_->ambientColor)
+      .setAmbientColor(materialData_->ambientColor * ambientLightColor)
       .setDiffuseColor(materialData_->diffuseColor)
       .setSpecularColor(materialData_->specularColor)
       .setShininess(materialData_->shininess)
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
+      .setLightRanges(lightRanges);
+}
+
+void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
+                           Mn::SceneGraph::Camera3D& camera) {
+  updateShader();
+
+  updateShaderLightingParameters(transformationMatrix, camera);
+
+  (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader

@@ -140,19 +140,21 @@ void initGfxBindings(py::module& m) {
 
   py::enum_<LightPositionModel>(
       m, "LightPositionModel",
-      R"(Defines the coordinate frame of a point light source.)")
+      R"(Defines the coordinate frame of a light source.)")
       .value("CAMERA", LightPositionModel::CAMERA)
       .value("GLOBAL", LightPositionModel::GLOBAL)
       .value("OBJECT", LightPositionModel::OBJECT);
 
   py::class_<LightInfo>(
       m, "LightInfo",
-      R"(Defines the position, color and LightPositionModel of a single point light source.)")
+      R"(Defines the vector, color and LightPositionModel of a single light source.
+      For vector, use a Vector3 position and w == 1 to specify a point light with distance attenuation.
+      Or, use a Vector3 direction and w == 0 to specify a directional light with no distance attenuation.)")
       .def(py::init())
-      .def(py::init<Magnum::Vector3, Magnum::Color4, LightPositionModel>(),
-           "position"_a, "color"_a = Magnum::Color4{1},
+      .def(py::init<Magnum::Vector4, Magnum::Color3, LightPositionModel>(),
+           "vector"_a, "color"_a = Magnum::Color3{1},
            "model"_a = LightPositionModel::GLOBAL)
-      .def_readwrite("position", &LightInfo::position)
+      .def_readwrite("vector", &LightInfo::vector)
       .def_readwrite("color", &LightInfo::color)
       .def_readwrite("model", &LightInfo::model)
       .def(py::self == py::self)

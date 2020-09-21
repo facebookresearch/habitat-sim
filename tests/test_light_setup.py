@@ -15,7 +15,8 @@ def test_get_no_light_setup(make_cfg_settings):
 
 def test_set_default_light_setup(make_cfg_settings):
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
-        light_setup = [LightInfo(position=[1.0, 1.0, 1.0])]
+        # define a directional light (w == 0)
+        light_setup = [LightInfo(vector=[1.0, 1.0, 1.0, 0.0])]
 
         sim.set_light_setup(light_setup)
         assert sim.get_light_setup() == light_setup
@@ -35,7 +36,8 @@ def test_set_custom_light_setup(make_cfg_settings):
         light_setup = sim.get_light_setup(custom_setup_key)
         assert len(light_setup) == 0
 
-        light_setup.append(LightInfo(position=[1.0, 1.0, 1.0]))
+        # define a point light (w == 1)
+        light_setup.append(LightInfo(vector=[1.0, 1.0, 1.0, 1.0]))
         assert sim.get_light_setup() != light_setup
 
         sim.set_light_setup(light_setup, custom_setup_key)
