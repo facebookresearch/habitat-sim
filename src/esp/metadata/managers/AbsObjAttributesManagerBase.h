@@ -14,7 +14,6 @@
 
 #include "esp/metadata/managers/AttributesManagerBase.h"
 
-
 namespace Cr = Corrade;
 
 namespace esp {

@@ -9,7 +9,6 @@
  * @brief Class Template @ref esp::metadata::managers::AttributesManager
  */
 
-
 #include "esp/metadata/attributes/AttributesBase.h"
 
 #include "esp/core/ManagedContainerBase.h"
