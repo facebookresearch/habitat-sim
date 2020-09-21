@@ -9,13 +9,6 @@
  * @brief Class Template @ref esp::metadata::managers::AttributesManager
  */
 
-#include <deque>
-#include <functional>
-#include <map>
-#include <set>
-
-#include <Corrade/Utility/Directory.h>
-#include <Corrade/Utility/String.h>
 
 #include "esp/metadata/attributes/AttributesBase.h"
 

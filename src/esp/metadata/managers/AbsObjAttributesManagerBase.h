@@ -10,20 +10,10 @@
  * esp::metadata::managers::AbsObjAttributesManager
  */
 
-#include <deque>
-#include <functional>
-#include <map>
-#include <set>
-
-#include <Corrade/Utility/Directory.h>
-#include <Corrade/Utility/String.h>
-
-#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "esp/metadata/managers/AttributesManagerBase.h"
 
-#include "esp/io/json.h"
 
 namespace Cr = Corrade;
 
