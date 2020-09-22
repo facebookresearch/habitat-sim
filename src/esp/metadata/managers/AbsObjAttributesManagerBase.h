@@ -17,10 +17,6 @@
 namespace Cr = Corrade;
 
 namespace esp {
-namespace assets {
-class ResourceManager;
-}
-
 namespace metadata {
 namespace managers {
 namespace Attrs = esp::metadata::attributes;

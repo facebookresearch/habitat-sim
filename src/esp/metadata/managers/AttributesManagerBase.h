@@ -16,9 +16,6 @@
 namespace Cr = Corrade;
 
 namespace esp {
-namespace assets {
-class ResourceManager;
-}
 namespace core {
 class ManagedContainerBase;
 }
