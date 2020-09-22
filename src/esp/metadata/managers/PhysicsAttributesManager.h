@@ -37,10 +37,10 @@ class PhysicsAttributesManager
    * from the specified configuration file.
    *
    * If a template exists with this handle, this existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
+   * overwritten with the newly created one if registerTemplate is true.
    *
    * @param physicsFilename The configuration file to parse. Defaults to the
-   * file location @ref ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH set by cmake.
+   * file location ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH set by cmake.
    * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
    * subsequent editing will require re-registration. Defaults to true. If
@@ -56,11 +56,12 @@ class PhysicsAttributesManager
 
   /**
    * @brief Parse passed JSON Document specifically for @ref
-   * PhysicsManagerAttributes object. It always returns a valid @ref
-   * PhysicsManagerAttributes::ptr object.
+   * esp::metadata::attributes::PhysicsManagerAttributes object. It always
+   * returns a valid @ref
+   * esp::metadata::attributes::PhysicsManagerAttributes shared_ptr object.
    *
    * @param templateName the desired handle of the @ref
-   * PhysicsManagerAttributes.
+   * esp::metadata::attributes::PhysicsManagerAttributes.
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
@@ -105,13 +106,14 @@ class PhysicsAttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Add a @ref PhysicsManagerAttributes::ptr object to the @ref
-   * templateLibrary_.
+   * @brief Add a copy of the @ref
+   * esp::metadata::attributes::PhysicsManagerAttributes shared_ptr object to
+   * the @ref objectLibrary_.
    *
    * @param physicsAttributesTemplate The attributes template.
    * @param physicsAttributesHandle The key for referencing the template in the
-   * @ref templateLibrary_.
-   * @return The index in the @ref templateLibrary_ of object
+   * @ref objectLibrary_.
+   * @return The index in the @ref objectLibrary_ of object
    * template.
    */
   int registerObjectFinalize(

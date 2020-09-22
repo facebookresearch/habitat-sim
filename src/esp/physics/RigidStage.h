@@ -8,7 +8,7 @@
 #include "esp/physics/RigidBase.h"
 
 /** @file
- * @brief Class @ref esp::physics::RigidScene
+ * @brief Class @ref esp::physics::RigidStage
  */
 namespace esp {
 namespace physics {
@@ -17,12 +17,12 @@ class RigidStage : public RigidBase {
   RigidStage(scene::SceneNode* rigidBodyNode);
 
   /**
-   * @brief Virtual destructor for a @ref RigidScene.
+   * @brief Virtual destructor for a @ref RigidStage.
    */
   virtual ~RigidStage() {}
 
   /**
-   * @brief Initializes the @ref RigidScene that inherits
+   * @brief Initializes the @ref RigidStage that inherits
    * from this class
    * @param resMgr a reference to ResourceManager object
    * @param handle The handle for the template structure defining relevant
@@ -35,21 +35,21 @@ class RigidStage : public RigidBase {
   /**
    * @brief Get a copy of the template used to initialize this scene object.
    *
-   * @return A copy of the @ref PhysicsSceneAttributes template used to create
-   * this scene object.
+   * @return A copy of the @ref esp::metadata::attributes::SceneAttributes
+   * template used to create this scene object.
    */
   std::shared_ptr<Attrs::StageAttributes> getInitializationAttributes() const {
     return RigidBase::getInitializationAttributes<Attrs::StageAttributes>();
   };
   /**
-   * @brief Finalize the creation of this @ref RigidScene
+   * @brief Finalize the creation of this @ref RigidStage
    * @return whether successful finalization.
    */
   bool finalizeObject() override { return finalizeObject_LibSpecific(); }
 
  private:
   /**
-   * @brief Finalize the initialization of this @ref RigidScene
+   * @brief Finalize the initialization of this @ref RigidStage
    * geometry.  This is overridden by inheriting class specific to certain
    * physics libraries.Necessary to support kinematic objects without any
    * dynamics support.
@@ -63,7 +63,7 @@ class RigidStage : public RigidBase {
   }
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
-   * after@ref RigidScene is created.  Called from finalizeObject.  Overridden
+   * after@ref RigidStage is created.  Called from finalizeObject.  Overridden
    * by inheriting class specific to certain physics libraries. Necessary to
    * support kinematic objects without any dynamics support.
    * @return whether successful finalization.

@@ -15,8 +15,8 @@ namespace attributes {
 
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref
- * AbstractManagedObject so the attributes can be managed by a @ref
- * ManagedContainer.
+ * esp::core::AbstractManagedObject so the attributes can be managed by a @ref
+ * esp::core::ManagedContainer.
  */
 class AbstractAttributes : public esp::core::AbstractManagedObject,
                            public esp::core::Configuration {

@@ -11,9 +11,10 @@ namespace esp {
 namespace core {
 /**
  * @brief This abstract base class provides the interface of expected
- * functionality for an object to be manageable by @ref ManagedContainer class
- * template specializations. Any class that inherits from this class properly
- * can be managed by a @ref ManagedContainer specilization.
+ * functionality for an object to be manageable by @ref
+ * esp::core::ManagedContainer class template specializations. Any class that
+ * inherits from this class properly can be managed by a @ref
+ * esp::core::ManagedContainer specilization.
  */
 class AbstractManagedObject {
  public:
@@ -21,17 +22,18 @@ class AbstractManagedObject {
   /**
    * @brief Get the instancing class of the ManagedObject instantior.  Should
    * only be set from implementer's constructor. Used as key in constructor
-   * function pointer maps in @ref ManagedContainers.
+   * function pointer maps in @ref esp::core::ManagedContainer.
    */
   virtual std::string getClassKey() const = 0;
 
   /**
    * @brief Set this attributes name/origin.  Some attributes derive their own
-   * names based on their state, such as @ref AbstractPrimitiveAttributes;  in
-   * such cases this should be overridden with NOP.
+   * names based on their state, such as @ref
+   * esp::metadata::attributes::AbstractPrimitiveAttributes;  in such cases this
+   * should be overridden with NOP.
    * @param handle the handle to set.
    */
-  virtual void setHandle(const std::string&) = 0;
+  virtual void setHandle(const std::string& handle) = 0;
   virtual std::string getHandle() const = 0;
 
   /**

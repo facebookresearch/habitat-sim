@@ -6,7 +6,7 @@
 #define ESP_METADATA_MANAGERS_ASSETATTRIBUTEMANAGER_H_
 
 /** @file
- * @brief Class Template @ref esp::metadata::AssetAttributesManager
+ * @brief Class Template @ref esp::metadata::managers::AssetAttributesManager
  * This class manages attributes describing/configuring magnum mesh
  * primitives.
  */
@@ -113,8 +113,9 @@ class AssetAttributesManager
 
   /**
    * @brief Parse passed JSON Document specifically for @ref
-   * AbstractPrimitiveAttributes object. It always returns a valid @ref
-   * AbstractPrimitiveAttributes::ptr object.
+   * esp::metadata::attributes::AbstractPrimitiveAttributes object. It always
+   * returns a valid @ref esp::metadata::attributes::AbstractPrimitiveAttributes
+   * shared_ptr object.
    *
    * TODO : currently do not support file-based Primitive Assets, so no actual
    * JSON parsing.
@@ -153,13 +154,13 @@ class AssetAttributesManager
 
   /**
    * @brief Get list of primitive asset template handles used as keys in @ref
-   * primitiveAssetTemplateLibrary_ related to passed primitive descriptor enum.
+   * objectLibrary_ related to passed primitive descriptor enum.
    *
    * @param primType Enum describing primitive type
    * @param contains whether to search for keys containing, or not containing,
-   * @ref subStr
+   * subStr
    * @return list containing 0 or more string keys corresponding to templates in
-   * @ref primitiveAssetTemplateLibrary_ that contain the passed substring
+   * @ref objectLibrary_ that contain the passed substring
    */
   std::vector<std::string> getTemplateHandlesByPrimType(
       PrimObjTypes primType,
@@ -416,13 +417,13 @@ class AssetAttributesManager
   }  // AttributesManager::verifyTemplateHandle
 
   /**
-   * @brief Add an @ref Attrs::AbstractPrimitiveAttributes object to the @ref
-   * templateLibrary_.
+   * @brief Add an @ref esp::metadata::attributes::AbstractPrimitiveAttributes
+   * object to the @ref objectLibrary_.
    *
    * @param attributesTemplate The attributes template.
    * @param ignored Not used for asset attributes templates - handle is derived
    * by configuration.
-   * @return The index in the @ref templateLibrary_ of object
+   * @return The index in the @ref objectLibrary_ of object
    * template.
    */
   int registerObjectFinalize(
@@ -432,8 +433,8 @@ class AssetAttributesManager
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
-   *
-   * @param newAttributes Newly created attributes.
+   * @param primClassName Primitive Magnum class name.
+   * @return newAttributes Newly created attributes.
    */
   Attrs::AbstractPrimitiveAttributes::ptr initNewObjectInternal(
       const std::string& primClassName) override {
@@ -450,7 +451,7 @@ class AssetAttributesManager
   /**
    * @brief Build a shared pointer to the appropriate attributes for passed
    * object type as defined in @ref PrimObjTypes, where each entry except @ref
-   * END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
+   * PrimObjTypes::END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
    */
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
   Attrs::AbstractPrimitiveAttributes::ptr createPrimAttributes() {
@@ -484,7 +485,7 @@ class AssetAttributesManager
   /**
    * @brief This function will assign the appropriately configured function
    * pointers for @ref createPrimAttributes calls for each type of
-   * supported primitive to the @ref primTypeConstructorMap, keyed by type of
+   * supported primitive to the @ref primTypeConstructorMap_, keyed by type of
    * primtive
    */
   void buildCtorFuncPtrMaps() override;
@@ -494,7 +495,7 @@ class AssetAttributesManager
   /**
    * @brief Define a map type referencing function pointers to @ref
    * createPrimAttributes() keyed by string names of classes being
-   * instanced, as defined in @ref PrimNames3D
+   * instanced, as defined in @ref PrimitiveNames3DMap
    */
   typedef std::map<std::string,
                    Attrs::AbstractPrimitiveAttributes::ptr (
@@ -504,8 +505,8 @@ class AssetAttributesManager
   /**
    * @brief Map of function pointers to instantiate a primitive attributes
    * object, keyed by the Magnum primitive class name as listed in @ref
-   * PrimNames3D. A primitive attributes object is instanced by accessing
-   * the approrpiate function pointer.
+   * PrimitiveNames3DMap. A primitive attributes object is instanced by
+   * accessing the approrpiate function pointer.
    */
   Map_Of_PrimTypeCtors primTypeConstructorMap_;
 

@@ -6,7 +6,8 @@
 #define ESP_CORE_MANAGEDCONTAINERBASE_H_
 
 /** @file
- * @brief Class Template @ref esp::ManagedContainer
+ * @brief Class Template @ref esp::core::ManagedContainer : container
+ * functionality to manage @ref esp::core::AbstractManagedObject objects
  */
 
 #include <deque>
@@ -32,9 +33,10 @@ namespace core {
 
 /**
  * @brief Class template defining responsibilities and functionality for
- * managing @ref AbstractManagedObject constructs.
+ * managing @ref esp::core::AbstractManagedObject constructs.
  * @tparam MngdObjPtr the type of managed object a particular specialization of
- * this class works with.  Must inherit from @ref AbstractManagedObject.
+ * this class works with.  Must inherit from @ref
+ * esp::core::AbstractManagedObject.
  */
 template <class T>
 class ManagedContainer {
@@ -55,7 +57,7 @@ class ManagedContainer {
    *
    * If a managed object exists with this handle, the existing managed object
    * will be overwritten with the newly created one if @ref
-   * register is true.
+   * registerObject is true.
    *
    * @param objectHandle the origin of the desired managed object to be
    * created.
@@ -138,7 +140,7 @@ class ManagedContainer {
                                      const io::JsonDocument& jsonConfig) = 0;
 
   /**
-   * @brief Add a copy of @ref AbstractAttributes object to the @ref
+   * @brief Add a copy of @ref esp::core::AbstractManagedObject to the @ref
    * objectLibrary_.
    *
    * @param managedObject The managed object.
@@ -251,7 +253,7 @@ class ManagedContainer {
    * @param subStr substring to search for within existing primitive object
    * managed objects
    * @param contains whether to search for keys containing, or excluding,
-   * @ref subStr
+   * substr
    * @return A vector containing the managed object handles of managed objects
    * whose lock state has been set to passed state.
    */
@@ -368,7 +370,7 @@ class ManagedContainer {
    * @param subStr substring to search for within existing primitive object
    * managed objects
    * @param contains whether to search for keys containing, or excluding,
-   * @ref subStr
+   * substr
    * @return A vector containing all the managed objects that have been removed
    * from the library.
    */
@@ -408,11 +410,11 @@ class ManagedContainer {
   }  // ManagedContainer::getObjectIDByHandle
 
   /**
-   * @brief Get a list of all managed objects whose origin handles contain @ref
+   * @brief Get a list of all managed objects whose origin handles contain
    * subStr, ignoring subStr's case
    * @param subStr substring to search for within existing managed objects.
    * @param contains whether to search for keys containing, or excluding,
-   * passed @ref subStr
+   * passed subStr
    * @return vector of 0 or more managed object handles containing the passed
    * substring
    */
@@ -582,8 +584,8 @@ class ManagedContainer {
 
   /**
    * @brief Get directory component of managed object handle and call @ref
-   * AbstractManagedObject::setFileDirectory if a legitimate directory exists in
-   * handle.
+   * esp::core::AbstractManagedObject::setFileDirectory if a legitimate
+   * directory exists in handle.
    *
    * @param object pointer to managed object to set
    */
@@ -713,8 +715,8 @@ class ManagedContainer {
   virtual void buildCtorFuncPtrMaps() = 0;
 
   /**
-   * @brief Build an @ref AbstractManagedObject object of type associated
-   * with passed object.
+   * @brief Build an @ref esp::core::AbstractManagedObject object of type
+   * associated with passed object.
    * @param origAttr The ptr to the original AbstractManagedObject object to
    * copy
    */
@@ -765,13 +767,13 @@ class ManagedContainer {
 
   /**
    * @brief Get a list of all managed objects of passed type whose origin
-   * handles contain @ref subStr, ignoring subStr's case
+   * handles contain substr, ignoring subStr's case
    * @param mapOfHandles map containing the desired object-type managed object
    * handles
    * @param subStr substring to search for within existing primitive object
    * managed objects
    * @param contains Whether to search for handles containing, or not
-   * containting, @ref subStr
+   * containting, substr
    * @return vector of 0 or more managed object handles containing/not
    * containing the passed substring
    */
@@ -785,8 +787,6 @@ class ManagedContainer {
   /**
    * @brief Define a map type referencing function pointers to @ref
    * createObjectCopy keyed by string names of classes being instanced,
-   * (for asset managed object these are the names of of classes being instanced
-   * defined in @ref AssetManagedContainer::PrimNames3D.)
    */
   typedef std::map<std::string,
                    MngdObjPtr (ManagedContainer<T>::*)(MngdObjPtr&)>
@@ -799,8 +799,8 @@ class ManagedContainer {
    */
   Map_Of_CopyCtors copyConstructorMap_;
 
-  /** @brief A reference to a @ref esp::assets::ResourceManager which holds
-   * assets that can be accessed by this @ref PhysicsManager*/
+  /** @brief A reference to a @ref esp::assets::ResourceManager
+   */
   assets::ResourceManager& resourceManager_;
 
   /** @brief A descriptive name of the managed object being managed by this

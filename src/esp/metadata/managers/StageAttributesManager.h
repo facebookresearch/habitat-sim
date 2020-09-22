@@ -28,19 +28,21 @@ class StageAttributesManager
   /**
    * @brief This will set the current physics manager attributes that is
    * governing the world that this StageAttributesManager's scenes will be
-   * created in.  This is used so that upon creation of new StageAttributes,
-   * PhysicsManagerAttributes defaults can be set in the StageAttributes before
-   * any scene-specific values are set.
+   * created in.  This is used so that upon creation of new
+   * esp::metadata::attributes::StageAttributes, PhysicsManagerAttributes
+   * defaults can be set in the esp::metadata::attributes::StageAttributes
+   * before any scene-specific values are set.
    *
-   * @param handle The string handle referencing the physicsManagerAttributes
-   * governing the current physicsManager.
+   * @param handle The string handle referencing the @ref
+   * esp::metadata::attributes::PhysicsManagerAttributes governing the current
+   * @ref esp::physics::PhysicsManager.
    */
   void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
     physicsManagerAttributesHandle_ = handle;
   }
   /**
-   * @brief copy current @ref SimulatorConfiguration-driven values, such as file
-   * paths, to make them available for stage attributes defaults.
+   * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
+   * such as file paths, to make them available for stage attributes defaults.
    *
    * @param filepaths the map of file paths from the configuration object
    * @param lightSetup the config-specified light setup
@@ -63,7 +65,7 @@ class StageAttributesManager
    * string. For stage templates, this a file name.
    *
    * If a template exists with this handle, this existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
+   * overwritten with the newly created one if registerTemplate is true.
    *
    * @param attributesTemplateHandle the origin of the desired stage template to
    * be created.
@@ -96,11 +98,13 @@ class StageAttributesManager
       bool registerTemplate = true);
 
   /**
-   * @brief Parse passed JSON Document specifically for @ref StageAttributes
-   * object. It always returns a valid @ref StageAttributes::ptr object.
+   * @brief Parse passed JSON Document specifically for @ref
+   * esp::metadata::attributes::StageAttributes object. It always returns a
+   * valid @ref esp::metadata::attributes::StageAttributes shared pointer
+   * object.
    *
-   * @param templateName the desired handle of the @ref StageAttributes
-   * attributes.
+   * @param templateName the desired handle of the @ref
+   * esp::metadata::attributes::StageAttributes attributes.
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
@@ -129,7 +133,7 @@ class StageAttributesManager
    * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
-   * @param fileName Mesh Handle to check.
+   * @param meshHandle Mesh Handle to check.
    * @param assetTypeSetter Setter for mesh type.
    */
   void setDefaultAssetNameBasedAttributes(
@@ -161,14 +165,14 @@ class StageAttributesManager
 
   /**
    * @brief Add a @ref std::shared_ptr<attributesType> object to the
-   * @ref templateLibrary_.  Verify that render and collision handles have been
+   * @ref objectLibrary_.  Verify that render and collision handles have been
    * set properly.  We are doing this since these values can be modified by the
    * user.
    *
    * @param StageAttributesTemplate The attributes template.
    * @param StageAttributesHandle The key for referencing the template in the
-   * @ref templateLibrary_.
-   * @return The index in the @ref templateLibrary_ of object
+   * @ref objectLibrary_.
+   * @return The index in the @ref objectLibrary_ of object
    * template.
    */
 
@@ -196,32 +200,34 @@ class StageAttributesManager
 
   /**
    * @brief Reference to ObjectAttributesManager to give access to setting
-   * object template library using paths specified in StageAttributes json
+   * object template library using paths specified in
+   * esp::metadata::attributes::StageAttributes json
    */
   ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
   /**
    * @brief Reference to PhysicsAttributesManager to give access to default
-   * physics manager attributes settings when StageAttributes are created.
+   * physics manager attributes settings when
+   * esp::metadata::attributes::StageAttributes are created.
    */
   PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
 
   /**
-   * @brief Current file paths based on @ref SimulatorConfiguration settings.
-   * Paths can be overridden by json-specified values.
+   * @brief Current file paths based on @ref esp::sim::SimulatorConfiguration
+   * settings. Paths can be overridden by json-specified values.
    */
   std::map<std::string, std::string> cfgFilepaths_;
 
   /**
    * @brief Current lighting default value based on current @ref
-   * SimulatorConfiguration settings. Potentially overridden by scene-specific
-   * json.
+   * esp::sim::SimulatorConfiguration settings. Potentially overridden by
+   * scene-specific json.
    */
   std::string cfgLightSetup_;
 
   /**
    * @brief Current frustrum culling setting based on current @ref
-   * SimulatorConfiguration settings. Potentially overridden by scene-specific
-   * json.
+   * esp::sim::SimulatorConfiguration settings. Potentially overridden by
+   * scene-specific json.
    */
   bool cfgFrustrumCulling_ = false;
 

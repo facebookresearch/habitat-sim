@@ -166,10 +166,11 @@ class PhysicsManager {
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::managers::ObjectAttributesManager.
+   * the @ref esp::metadata::managers::ObjectAttributesManager.
    *  @anchor addObject_string
    *  @param configFile The filename of the object's physical properties file
-   * used as the key to query @ref esp::managers::ObjectAttributesManager.
+   * used as the key to query @ref
+   * esp::metadata::managers::ObjectAttributesManager.
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
    *  @param attachmentNode If supplied, attach the new physical object to an
@@ -184,9 +185,10 @@ class PhysicsManager {
                     assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::managers::ObjectAttributesManager by template handle.
+   * the @ref esp::metadata::managers::ObjectAttributesManager by template
+   * handle.
    *  @param objectLibId The ID of the object's template in @ref
-   * esp::managers::ObjectAttributesManager
+   * esp::metadata::managers::ObjectAttributesManager
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
    *  @param attachmentNode If supplied, attach the new physical object to an
@@ -980,7 +982,8 @@ class PhysicsManager {
    * assets that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager& resourceManager_;
 
-  /** @brief A pointer to the @ref assets::PhysicsManagerAttributes describing
+  /** @brief A pointer to the @ref
+   * esp::metadata::attributes::PhysicsManagerAttributes describing
    * this physics manager */
   const Attrs::PhysicsManagerAttributes::cptr physicsManagerAttributes_;
 

@@ -9,7 +9,7 @@
 #include "esp/physics/bullet/BulletBase.h"
 
 /** @file
- * @brief Class @ref esp::physics::bullet::BulletRigidStage
+ * @brief Class @ref esp::physics::BulletRigidStage
  */
 namespace esp {
 namespace physics {

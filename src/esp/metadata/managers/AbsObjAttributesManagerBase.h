@@ -26,9 +26,10 @@ namespace managers {
 namespace Attrs = esp::metadata::attributes;
 /**
  * @brief Class template defining responsibilities and functionality for
- * managing @ref AbstractObjectAttributes constructs.
+ * managing @ref esp::metadata::attributes::AbstractObjectAttributes constructs.
  * @tparam T the type of managed attributes a particular specialization
- * of this class works with.  Must inherit from @ref AbstractObjectAttributes.
+ * of this class works with.  Must inherit from @ref
+ * esp::metadata::attributes::AbstractObjectAttributes.
  */
 template <class T>
 class AbsObjAttributesManager : public AttributesManager<T> {
@@ -50,10 +51,10 @@ class AbsObjAttributesManager : public AttributesManager<T> {
   /**
    * @brief Create either an object or a stage attributes from a json config.
    * Since both object attributes and stage attributes inherit from @ref
-   * AbstractObjectAttributes, the functionality to populate these fields from
-   * json can be shared.  Also will will populate render mesh and collision mesh
-   * handles in object and stage attributes with value(s) specified in json.  If
-   * one is blank will use other for both.
+   * esp::metadata::attributes::AbstractObjectAttributes, the functionality to
+   * populate these fields from json can be shared.  Also will will populate
+   * render mesh and collision mesh handles in object and stage attributes with
+   * value(s) specified in json.  If one is blank will use other for both.
    *
    * @param filename name of json descriptor file
    * @param jsonDoc json document to parse
@@ -64,7 +65,8 @@ class AbsObjAttributesManager : public AttributesManager<T> {
                                                const io::JsonDocument& jsonDoc);
 
   /**
-   * @brief Only used by @ref AbstractObjectAttributes derived-attributes. Set
+   * @brief Only used by @ref
+   * esp::metadata::attributes::AbstractObjectAttributes derived-attributes. Set
    * the asset type and mesh asset filename from json file. If mesh asset
    * filename has changed in json, but type has not been specified in json,
    * re-run file-path-driven configuration to get asset type and possibly
@@ -242,8 +244,8 @@ bool AbsObjAttributesManager<T>::setJSONAssetHandleAndType(
   // clear var to get new value - if returns true use this as new value
   assetName = "";
   // Map a json string value to its corresponding AssetType if found and cast to
-  // int, based on @ref AbstractObjectAttributes::AssetTypeNamesMap mappings.
-  // Casts an int of the @ref esp::AssetType enum value if found and understood,
+  // int, based on AbstractObjectAttributes::AssetTypeNamesMap mappings.
+  // Casts an int of the esp::AssetType enum value if found and understood,
   // 0 (esp::assets::AssetType::UNKNOWN) if found but not understood, and
   //-1 if tag is not found in json.
   int typeVal = -1;

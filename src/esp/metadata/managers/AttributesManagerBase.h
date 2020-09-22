@@ -27,9 +27,10 @@ namespace managers {
 namespace Attrs = esp::metadata::attributes;
 /**
  * @brief Class template defining responsibilities and functionality for
- * managing @ref AbstractAttributes constructs.
+ * managing @ref esp::metadata::attributes::AbstractAttributes constructs.
  * @tparam T the type of managed attributes a particular specialization
- * of this class works with.  Must inherit from @ref AbstractAttributes.
+ * of this class works with.  Must inherit from @ref
+ * esp::metadata::attributes::AbstractAttributes.
  */
 template <class T>
 class AttributesManager : public esp::core::ManagedContainer<T> {

@@ -180,10 +180,10 @@ class Simulator {
 
   /**
    * @brief Instance an object from a template ID in @ref
-   * esp::managers::ObjectAttributesManager. See @ref
+   * esp::metadata::managers::ObjectAttributesManager. See @ref
    * esp::physics::PhysicsManager::addObject().
    * @param objectLibId The ID of the object's template in @ref
-   * esp::managers::ObjectAttributesManager.
+   * esp::metadata::managers::ObjectAttributesManager.
    * @param attachmentNode If provided, attach the RigidObject Feature to this
    * node instead of creating a new one.
    * @param lightSetupKey The string key for the @ref gfx::LightSetup to be used
@@ -202,10 +202,10 @@ class Simulator {
 
   /**
    * @brief Instance an object from a template ID in @ref
-   * esp::managers::ObjectAttributesManager. See @ref
+   * esp::metadata::managers::ObjectAttributesManager. See @ref
    * esp::physics::PhysicsManager::addObject().
    * @param objectLibHandle The handle of the object's template in
-   * @ref esp::managers::ObjectAttributesManager.
+   * @ref esp::metadata::managers::ObjectAttributesManager.
    * @param attachmentNode If provided, attach the RigidObject Feature to this
    * node instead of creating a new one.
    * @param lightSetupKey The string key for the @ref gfx::LightSetup to be used

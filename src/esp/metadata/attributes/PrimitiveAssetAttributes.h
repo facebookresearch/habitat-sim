@@ -115,7 +115,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
 
  protected:
   /**
-   * @brief Verifies that @ref val is larger than, and a multiple of, divisor
+   * @brief Verifies that val is larger than, and a multiple of, divisor
    * div
    * @param val the value to check
    * @param div the divsior (value to verify is greater than and a multiple of)

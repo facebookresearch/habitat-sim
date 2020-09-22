@@ -40,7 +40,7 @@ class ObjectAttributesManager
    * result in a new default template being created.
    *
    * If a template exists with this handle, this existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
+   * overwritten with the newly created one if registerTemplate is true.
    *
    * @param attributesTemplateHandle the origin of the desired template to be
    * created, either a file name or an existing primitive asset template. If
@@ -76,11 +76,13 @@ class ObjectAttributesManager
       bool registerTemplate = true);
 
   /**
-   * @brief Parse passed JSON Document specifically for @ref ObjectAttributes
-   * object. It always returns a valid @ref ObjectAttributes::ptr object.
+   * @brief Parse passed JSON Document specifically for @ref
+   * esp::metadata::attributes::ObjectAttributes object. It always returns a
+   * valid @ref esp::metadata::attributes::ObjectAttributes shared
+   * pointer.
    *
-   * @param templateName The desired name for this @ref ObjectAttributes
-   * template.
+   * @param templateName The desired name for this @ref
+   * esp::metadata::attributes::ObjectAttributes template.
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
@@ -136,9 +138,9 @@ class ObjectAttributesManager
 
   /**
    * @brief Gets the number of file-based loaded object templates stored in the
-   * @ref physicsObjTemplateLibrary_.
+   * @ref physicsFileObjTmpltLibByID_.
    *
-   * @return The number of entries in @ref physicsObjTemplateLibrary_ that are
+   * @return The number of entries in @ref physicsFileObjTmpltLibByID_ that are
    * loaded from files.
    */
   int getNumFileTemplateObjects() const {
@@ -159,11 +161,11 @@ class ObjectAttributesManager
 
   /**
    * @brief Get a list of all file-based templates whose origin handles contain
-   * @ref subStr, ignoring subStr's case
+   * subStr, ignoring subStr's case
    * @param subStr substring to search for within existing file-based object
    * templates
    * @param contains whether to search for keys containing, or not containing,
-   * @ref subStr
+   * subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
@@ -176,9 +178,9 @@ class ObjectAttributesManager
 
   /**
    * @brief Gets the number of synthesized (primitive-based)  template objects
-   * stored in the @ref physicsObjTemplateLibrary_.
+   * stored in the @ref physicsSynthObjTmpltLibByID_.
    *
-   * @return The number of entries in @ref physicsObjTemplateLibrary_ that
+   * @return The number of entries in @ref physicsSynthObjTmpltLibByID_ that
    * describe primitives.
    */
   int getNumSynthTemplateObjects() const {
@@ -199,11 +201,11 @@ class ObjectAttributesManager
 
   /**
    * @brief Get a list of all synthesized (primitive-based) object templates
-   * whose origin handles contain @ref subStr, ignoring subStr's case
+   * whose origin handles contain subStr, ignoring subStr's case
    * @param subStr substring to search for within existing primitive object
    * templates
    * @param contains whether to search for keys containing, or not containing,
-   * @ref subStr
+   * subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
@@ -234,7 +236,7 @@ class ObjectAttributesManager
    * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
-   * @param fileName Mesh Handle to check.
+   * @param meshHandle Mesh Handle to check.
    * @param assetTypeSetter Setter for mesh type.
    */
   void setDefaultAssetNameBasedAttributes(
@@ -269,15 +271,15 @@ class ObjectAttributesManager
   }
 
   /**
-   * @brief Add a copy of @ref AbstractAttributes object to the @ref
-   * templateLibrary_. Verify that render and collision handles have been
-   * set properly.  We are doing this since these values can be modified by the
-   * user.
+   * @brief Add a copy of @ref  esp::metadata::attributes::AbstractAttributes
+   * object to the @ref objectLibrary_. Verify that render and collision
+   * handles have been set properly.  We are doing this since these values can
+   * be modified by the user.
    *
    * @param attributesTemplate The attributes template.
    * @param attributesTemplateHandle The key for referencing the template in the
-   * @ref templateLibrary_. Will be set as origin handle for template.
-   * @return The index in the @ref templateLibrary_ of object
+   * @ref objectLibrary_. Will be set as origin handle for template.
+   * @return The index in the @ref objectLibrary_ of object
    * template.
    */
   int registerObjectFinalize(

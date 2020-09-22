@@ -29,7 +29,7 @@ namespace physics {
 /**
  * @brief An individual rigid object instance implementing an interface with
  * Bullet physics to enable dynamic objects. See @ref btRigidBody for @ref
- * RigidObjectType::OBJECT.
+ * esp::physics::RigidObjectType::OBJECT.
  *
  * Utilizes Magnum::BulletIntegration::MotionState to synchronize SceneNode
  * state with internal btRigidBody states
