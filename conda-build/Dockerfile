@@ -16,7 +16,6 @@ ENV LD_LIBRARY_PATH=/opt/rh/devtoolset-7/root/usr/lib64:/opt/rh/devtoolset-7/roo
 RUN yum install -y autoconf aclocal automake make
 RUN yum install -y mesa-libEGL-devel mesa-libGL-devel
 
-
 # Install patchelf
 ADD ./common/install_patchelf.sh install_patchelf.sh
 RUN bash ./install_patchelf.sh && rm install_patchelf.sh
