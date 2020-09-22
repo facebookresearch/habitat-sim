@@ -2,12 +2,12 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_MANAGERS_ABSOBJATTRIBUTESMANAGERBASE_H_
-#define ESP_METADATA_MANAGERS_ABSOBJATTRIBUTESMANAGERBASE_H_
+#ifndef ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGERBASE_H_
+#define ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGERBASE_H_
 
 /** @file
  * @brief Class Template @ref
- * esp::metadata::managers::AbsObjAttributesManager
+ * esp::metadata::managers::AbstractObjectAttributesManager
  */
 
 #include "esp/metadata/attributes/ObjectAttributes.h"
@@ -28,18 +28,18 @@ namespace Attrs = esp::metadata::attributes;
  * esp::metadata::attributes::AbstractObjectAttributes.
  */
 template <class T>
-class AbsObjAttributesManager : public AttributesManager<T> {
+class AbstractObjectAttributesManager : public AttributesManager<T> {
  public:
   static_assert(std::is_base_of<Attrs::AbstractObjectAttributes, T>::value,
-                "AbsObjAttributesManager :: Managed object type must "
+                "AbstractObjectAttributesManager :: Managed object type must "
                 "be derived from AbstractObjectAttributes");
 
   typedef std::shared_ptr<T> AbsObjAttrPtr;
 
-  AbsObjAttributesManager(esp::assets::ResourceManager& resourceManager,
-                          const std::string& attrType)
+  AbstractObjectAttributesManager(esp::assets::ResourceManager& resourceManager,
+                                  const std::string& attrType)
       : AttributesManager<T>::AttributesManager(resourceManager, attrType) {}
-  virtual ~AbsObjAttributesManager() = default;
+  virtual ~AbstractObjectAttributesManager() = default;
 
  protected:
   //======== Common JSON import functions ========
@@ -112,7 +112,7 @@ class AbsObjAttributesManager : public AttributesManager<T> {
   // ======== Typedefs and Instance Variables ========
 
  public:
-  ESP_SMART_POINTERS(AbsObjAttributesManager<AbsObjAttrPtr>)
+  ESP_SMART_POINTERS(AbstractObjectAttributesManager<AbsObjAttrPtr>)
 
 };  // namespace managers
 
@@ -120,7 +120,7 @@ class AbsObjAttributesManager : public AttributesManager<T> {
 // Class Template Method Definitions
 
 template <class T>
-auto AbsObjAttributesManager<T>::createObjectAttributesFromJson(
+auto AbstractObjectAttributesManager<T>::createObjectAttributesFromJson(
     const std::string& configFilename,
     const io::JsonDocument& jsonDoc) -> AbsObjAttrPtr {
   AbsObjAttrPtr attributes = this->initNewObjectInternal(configFilename);
@@ -224,10 +224,10 @@ auto AbsObjAttributesManager<T>::createObjectAttributesFromJson(
     attributes->setUseMeshCollision(true);
   }
   return attributes;
-}  // AbsObjAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
+}  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
 
 template <class T>
-bool AbsObjAttributesManager<T>::setJSONAssetHandleAndType(
+bool AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,
     const io::JsonDocument& jsonDoc,
     const char* jsonMeshTypeTag,
@@ -253,12 +253,13 @@ bool AbsObjAttributesManager<T>::setJSONAssetHandleAndType(
       typeVal = static_cast<int>(
           Attrs::AbstractObjectAttributes::AssetTypeNamesMap.at(tmpVal));
     } else {
-      LOG(WARNING) << "AbsObjAttributesManager::setJSONAssetHandleAndType : "
-                      "Value in json @ tag : "
-                   << jsonMeshTypeTag << " : `" << tmpVal
-                   << "` does not map to a valid "
-                      "AbstractObjectAttributes::AssetTypeNamesMap value, so "
-                      "defaulting mesh type to AssetType::UNKNOWN.";
+      LOG(WARNING)
+          << "AbstractObjectAttributesManager::setJSONAssetHandleAndType : "
+             "Value in json @ tag : "
+          << jsonMeshTypeTag << " : `" << tmpVal
+          << "` does not map to a valid "
+             "AbstractObjectAttributes::AssetTypeNamesMap value, so "
+             "defaulting mesh type to AssetType::UNKNOWN.";
       typeVal = static_cast<int>(esp::assets::AssetType::UNKNOWN);
     }
     // value found so override current value, otherwise do not.
@@ -289,9 +290,9 @@ bool AbsObjAttributesManager<T>::setJSONAssetHandleAndType(
     return true;
   }  // value is present in json
   return false;
-}  // AbsObjAttributesManager<AbsObjAttrPtr>::setJSONAssetHandleAndType
+}  // AbstractObjectAttributesManager<AbsObjAttrPtr>::setJSONAssetHandleAndType
 
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp
-#endif  // ESP_METADATA_MANAGERS_ABSOBJATTRIBUTESMANAGERBASE_H_
+#endif  // ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGERBASE_H_

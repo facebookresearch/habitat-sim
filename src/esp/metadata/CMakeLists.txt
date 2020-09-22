@@ -14,7 +14,7 @@ set(
   attributes/PrimitiveAssetAttributes.h
   attributes/PrimitiveAssetAttributes.cpp
   managers/AttributesManagerBase.h
-  managers/AbsObjAttributesManagerBase.h
+  managers/AbstractObjectAttributesManager.h
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
   managers/ObjectAttributesManager.h

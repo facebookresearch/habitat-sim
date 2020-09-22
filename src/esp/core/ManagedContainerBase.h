@@ -34,7 +34,7 @@ namespace core {
 /**
  * @brief Class template defining responsibilities and functionality for
  * managing @ref esp::core::AbstractManagedObject constructs.
- * @tparam MngdObjPtr the type of managed object a particular specialization of
+ * @tparam ManagedPtr the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
  * esp::core::AbstractManagedObject.
  */
@@ -45,7 +45,7 @@ class ManagedContainer {
                 "ManagedContainer :: Managed object type must be derived from "
                 "AbstractManagedObject");
 
-  typedef std::shared_ptr<T> MngdObjPtr;
+  typedef std::shared_ptr<T> ManagedPtr;
 
   ManagedContainer(esp::assets::ResourceManager& resourceManager,
                    const std::string& metadataType)
@@ -67,7 +67,7 @@ class ManagedContainer {
    * returns a copy of the registered managed object.
    * @return a reference to the desired managed object.
    */
-  virtual MngdObjPtr createObject(const std::string& objectHandle,
+  virtual ManagedPtr createObject(const std::string& objectHandle,
                                   bool registerObject = true) = 0;
 
   /**
@@ -87,10 +87,10 @@ class ManagedContainer {
    * then this function returns a copy of the registered managed object.
    * @return a reference to the desired managed object.
    */
-  MngdObjPtr createDefaultObject(const std::string& objectName,
+  ManagedPtr createDefaultObject(const std::string& objectName,
                                  bool registerObject = false) {
     // create default managed object
-    MngdObjPtr object = this->initNewObjectInternal(objectName);
+    ManagedPtr object = this->initNewObjectInternal(objectName);
     if (nullptr == object) {
       return object;
     }
@@ -100,7 +100,7 @@ class ManagedContainer {
   /**
    * @brief Creates an instance of a managed object from a JSON file using
    * passed filename by loading and parsing the loaded JSON and generating a
-   * @ref MngdObjPtr object. It returns created instance if successful, and
+   * @ref ManagedPtr object. It returns created instance if successful, and
    * nullptr if fails.
    *
    * @param filename the name of the file describing the object managed object.
@@ -112,7 +112,7 @@ class ManagedContainer {
    * @return a reference to the desired managed object, or nullptr if fails.
    */
 
-  MngdObjPtr createObjectFromFile(const std::string& filename,
+  ManagedPtr createObjectFromFile(const std::string& filename,
                                   bool registerObject = true) {
     // Load JSON config file
     io::JsonDocument jsonConfig;
@@ -124,19 +124,19 @@ class ManagedContainer {
                  << filename << ". Aborting.";
       return nullptr;
     }
-    MngdObjPtr attr = this->loadFromJSONDoc(filename, jsonConfig);
+    ManagedPtr attr = this->loadFromJSONDoc(filename, jsonConfig);
     return this->postCreateRegister(attr, registerObject);
   }  // ManagedContainer::createObjectFromFile
 
   /**
-   * @brief Parse passed JSON Document specifically for @ref MngdObjPtr object.
-   * It always returns a @ref MngdObjPtr object.
-   * @param filename The name of the file describing the @ref MngdObjPtr,
+   * @brief Parse passed JSON Document specifically for @ref ManagedPtr object.
+   * It always returns a @ref ManagedPtr object.
+   * @param filename The name of the file describing the @ref ManagedPtr,
    * used as managed object handle/name on create.
    * @param jsonConfig json document to parse - assumed to be legal JSON doc.
    * @return a reference to the desired managed object.
    */
-  virtual MngdObjPtr loadFromJSONDoc(const std::string& filename,
+  virtual ManagedPtr loadFromJSONDoc(const std::string& filename,
                                      const io::JsonDocument& jsonConfig) = 0;
 
   /**
@@ -151,7 +151,7 @@ class ManagedContainer {
    * @return The unique ID of the managed object being registered, or
    * ID_UNDEFINED if failed
    */
-  int registerObject(MngdObjPtr managedObject,
+  int registerObject(ManagedPtr managedObject,
                      const std::string& objectHandle = "") {
     if (nullptr == managedObject) {
       LOG(ERROR) << "ManagedContainer::registerObject : Invalid "
@@ -183,7 +183,7 @@ class ManagedContainer {
    * @return The unique ID of the managed object being registered, or
    * ID_UNDEFINED if failed
    */
-  int registerObjectAndUpdate(MngdObjPtr managedObject) {
+  int registerObjectAndUpdate(ManagedPtr managedObject) {
     std::string originalHandle = managedObject->getHandle();
     int ID = this->registerObject(managedObject, originalHandle);
     // If undefined then some error occurred.
@@ -295,7 +295,7 @@ class ManagedContainer {
    * @return A mutable reference to the object managed object, or nullptr if
    * does not exist
    */
-  MngdObjPtr getObjectByID(int managedObjectID) const {
+  ManagedPtr getObjectByID(int managedObjectID) const {
     std::string objectHandle = getObjectHandleByID(managedObjectID);
     if (!checkExistsWithMessage(objectHandle,
                                 "ManagedContainer::getObjectByID")) {
@@ -314,7 +314,7 @@ class ManagedContainer {
    * @return A reference to the managed object, or nullptr if does not
    * exist
    */
-  MngdObjPtr getObjectByHandle(const std::string& objectHandle) const {
+  ManagedPtr getObjectByHandle(const std::string& objectHandle) const {
     if (!checkExistsWithMessage(objectHandle,
                                 "ManagedContainer::getObjectByHandle")) {
       return nullptr;
@@ -330,7 +330,7 @@ class ManagedContainer {
    * @return the desired managed object being deleted, or nullptr if does not
    * exist
    */
-  MngdObjPtr removeObjectByID(int objectID) {
+  ManagedPtr removeObjectByID(int objectID) {
     std::string objectHandle = getObjectHandleByID(objectID);
     if (!checkExistsWithMessage(objectHandle,
                                 "ManagedContainer::removeObjectByID")) {
@@ -348,7 +348,7 @@ class ManagedContainer {
    * @return the desired managed object being deleted, or nullptr if does not
    * exist
    */
-  MngdObjPtr removeObjectByHandle(const std::string& objectHandle) {
+  ManagedPtr removeObjectByHandle(const std::string& objectHandle) {
     return removeObjectInternal(objectHandle,
                                 "ManagedContainer::removeObjectByHandle");
   }
@@ -359,7 +359,7 @@ class ManagedContainer {
    * @return A vector containing all the managed objects that have been removed
    * from the library.
    */
-  std::vector<MngdObjPtr> removeAllObjects() {
+  std::vector<ManagedPtr> removeAllObjects() {
     return removeObjectsBySubstring();
   }  // removeAllObjects
 
@@ -374,7 +374,7 @@ class ManagedContainer {
    * @return A vector containing all the managed objects that have been removed
    * from the library.
    */
-  std::vector<MngdObjPtr> removeObjectsBySubstring(
+  std::vector<ManagedPtr> removeObjectsBySubstring(
       const std::string& subStr = "",
       bool contains = true);
 
@@ -447,7 +447,7 @@ class ManagedContainer {
    * @return A mutable reference to the object managed object, or nullptr if
    * does not exist
    */
-  MngdObjPtr getObjectCopyByID(int managedObjectID) {
+  ManagedPtr getObjectCopyByID(int managedObjectID) {
     std::string objectHandle = getObjectHandleByID(managedObjectID);
     if (!checkExistsWithMessage(objectHandle,
                                 "ManagedContainer::getObjectCopyByID")) {
@@ -465,7 +465,7 @@ class ManagedContainer {
    * @return a copy of the desired managed object, or nullptr if does
    * not exist
    */
-  MngdObjPtr getObjectCopyByHandle(const std::string& objectHandle) {
+  ManagedPtr getObjectCopyByHandle(const std::string& objectHandle) {
     if (!checkExistsWithMessage(objectHandle,
                                 "ManagedContainer::getObjectCopyByHandle")) {
       return nullptr;
@@ -573,7 +573,7 @@ class ManagedContainer {
    * @param doRegistration If managed object should be registered
    * @return managed object, or null ptr if registration failed.
    */
-  inline MngdObjPtr postCreateRegister(MngdObjPtr object, bool doRegistration) {
+  inline ManagedPtr postCreateRegister(ManagedPtr object, bool doRegistration) {
     if (!doRegistration) {
       return object;
     }
@@ -589,7 +589,7 @@ class ManagedContainer {
    *
    * @param object pointer to managed object to set
    */
-  void setFileDirectoryFromHandle(MngdObjPtr object) {
+  void setFileDirectoryFromHandle(ManagedPtr object) {
     std::string handleName = object->getHandle();
     auto loc = handleName.find_last_of("/");
     if (loc != std::string::npos) {
@@ -603,7 +603,7 @@ class ManagedContainer {
    *
    * @param objectHandle handle name to be assigned to the managed object.
    */
-  virtual MngdObjPtr initNewObjectInternal(const std::string& objectHandle) = 0;
+  virtual ManagedPtr initNewObjectInternal(const std::string& objectHandle) = 0;
 
   /**
    * @brief Used Internally. Remove the managed object referenced by the passed
@@ -614,7 +614,7 @@ class ManagedContainer {
    * @return the desired managed object being deleted, or nullptr if does not
    * exist
    */
-  MngdObjPtr removeObjectInternal(const std::string& objectHandle,
+  ManagedPtr removeObjectInternal(const std::string& objectHandle,
                                   const std::string& src);
 
   /**
@@ -673,7 +673,7 @@ class ManagedContainer {
    * @return The unique ID of the managed object being registered, or
    * ID_UNDEFINED if failed
    */
-  virtual int registerObjectFinalize(MngdObjPtr object,
+  virtual int registerObjectFinalize(ManagedPtr object,
                                      const std::string& objectHandle) = 0;
 
   /**
@@ -699,11 +699,11 @@ class ManagedContainer {
    * @brief Build a shared pointer to a copy of a the passed managed object, of
    * appropriate managed object type for passed object type.
    * @tparam U Type of managed object being created - must be a derived class of
-   * MngdObjPtr
-   * @param orig original object of type MngdObjPtr being copied
+   * ManagedPtr
+   * @param orig original object of type ManagedPtr being copied
    */
   template <typename U>
-  MngdObjPtr createObjectCopy(MngdObjPtr& orig) {
+  ManagedPtr createObjectCopy(ManagedPtr& orig) {
     // don't call init on copy - assume copy is already properly initialized.
     return U::create(*(static_cast<U*>(orig.get())));
   }  // ManagedContainer::
@@ -720,7 +720,7 @@ class ManagedContainer {
    * @param origAttr The ptr to the original AbstractManagedObject object to
    * copy
    */
-  MngdObjPtr copyObject(MngdObjPtr& origAttr) {
+  ManagedPtr copyObject(ManagedPtr& origAttr) {
     const std::string ctorKey = origAttr->getClassKey();
     return (*this.*(this->copyConstructorMap_[ctorKey]))(origAttr);
   }  // ManagedContainer::copyObject
@@ -735,7 +735,7 @@ class ManagedContainer {
    * here, in case this managed object is constructed with a different handle.
    * @return the managedObjectID of the managed object
    */
-  int addObjectToLibrary(MngdObjPtr object, const std::string& objectHandle) {
+  int addObjectToLibrary(ManagedPtr object, const std::string& objectHandle) {
     // set handle for managed object - might not have been set during
     // construction
     object->setHandle(objectHandle);
@@ -745,7 +745,7 @@ class ManagedContainer {
     object->setID(objectID);
     // make a copy of this managed object so that user can continue to edit
     // original
-    MngdObjPtr managedObjectCopy = copyObject(object);
+    ManagedPtr managedObjectCopy = copyObject(object);
     // add to libraries
     objectLibrary_[objectHandle] = managedObjectCopy;
     objectLibKeyByID_.emplace(objectID, objectHandle);
@@ -789,7 +789,7 @@ class ManagedContainer {
    * createObjectCopy keyed by string names of classes being instanced,
    */
   typedef std::map<std::string,
-                   MngdObjPtr (ManagedContainer<T>::*)(MngdObjPtr&)>
+                   ManagedPtr (ManagedContainer<T>::*)(ManagedPtr&)>
       Map_Of_CopyCtors;
 
   /**
@@ -811,7 +811,7 @@ class ManagedContainer {
   /**
    * @brief Maps string keys to managed object managed objects
    */
-  std::map<std::string, MngdObjPtr> objectLibrary_;
+  std::map<std::string, ManagedPtr> objectLibrary_;
 
   /**
    * @brief Maps all object attribute IDs to the appropriate handles used
@@ -840,7 +840,7 @@ class ManagedContainer {
   std::set<std::string> userLockedObjectNames_;
 
  public:
-  ESP_SMART_POINTERS(ManagedContainer<MngdObjPtr>)
+  ESP_SMART_POINTERS(ManagedContainer<ManagedPtr>)
 
 };  // namespace managers
 
@@ -867,13 +867,13 @@ bool ManagedContainer<T>::setLock(const std::string& objectHandle, bool lock) {
 template <class T>
 auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
                                                    bool contains)
-    -> std::vector<MngdObjPtr> {
-  std::vector<MngdObjPtr> res;
+    -> std::vector<ManagedPtr> {
+  std::vector<ManagedPtr> res;
   // get all handles that match query elements first
   std::vector<std::string> handles =
       getObjectHandlesBySubstring(subStr, contains);
   for (std::string objectHandle : handles) {
-    MngdObjPtr ptr = removeObjectInternal(
+    ManagedPtr ptr = removeObjectInternal(
         objectHandle, "ManagedContainer::removeObjectsBySubstring");
     if (nullptr != ptr) {
       res.push_back(ptr);
@@ -885,7 +885,7 @@ auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
 template <class T>
 auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
                                                const std::string& sourceStr)
-    -> MngdObjPtr {
+    -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
     LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
               << " managed object " << objectHandle << " : Does not exist.";

@@ -36,7 +36,7 @@ std::string jsonToString(const JsonDocument& d);
 esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
 
 /**
- * @brief Check passed json doc for existence of passed tag as @tparam T.
+ * @brief Check passed json doc for existence of passed @p tag as @tparam T.
  * MUST BE SPECIALIZED due to json tag queries relying on named, type-specific
  * getters.
  *
@@ -56,8 +56,8 @@ bool jsonIntoVal(CORRADE_UNUSED const JsonDocument& d,
 }  // jsonIntoVal template definition
 
 /**
- * @brief Check passed json doc for existence of passed tag as
- * float. If present, populate passed val with value. Returns whether tag
+ * @brief Check passed json doc for existence of passed @p tag as
+ * float. If present, populate passed @p val with value. Returns whether tag
  * is found and successfully populated, or not. Logs an error if tag is found
  * but is inappropriate type.
  *
@@ -79,8 +79,8 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, float& val) {
 }  // jsonIntoFloat
 
 /**
- * @brief Check passed json doc for existence of passed tag as
- * double. If present, populate passed val with value. Returns whether tag
+ * @brief Check passed json doc for existence of passed @p tag as
+ * double. If present, populate passed @p val with value. Returns whether tag
  * is found and successfully populated, or not. Logs an error if tag is found
  * but is inappropriate type.
  *
@@ -103,8 +103,8 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, double& val) {
 }  // jsonIntoDouble
 
 /**
- * @brief Check passed json doc for existence of passed tag as
- * int. If present, populate passed val with value. Returns whether tag
+ * @brief Check passed json doc for existence of passed @p tag as
+ * int. If present, populate passed @p val with value. Returns whether tag
  * is found and successfully populated, or not. Logs an error if tag is found
  * but is inappropriate type.
  *
@@ -127,8 +127,8 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, int& val) {
 }  // jsonIntoInt
 
 /**
- * @brief Check passed json doc for existence of passed tag as
- * boolean. If present, populate passed val with value. Returns whether tag
+ * @brief Check passed json doc for existence of passed @p tag as
+ * boolean. If present, populate passed @p val with value. Returns whether tag
  * is found and successfully populated, or not. Logs an error if tag is found
  * but is inappropriate type.
  *
@@ -151,8 +151,8 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, bool& val) {
 }  // jsonIntoBool
 
 /**
- * @brief Check passed json doc for existence of passed tag as
- * double. If present, populate passed val with
+ * @brief Check passed json doc for existence of passed @p tag as
+ * double. If present, populate passed @p val with
  * value. Returns whether tag is found and successfully populated, or not. Logs
  * an error if tag is found but is inappropriate type.
  *
@@ -178,8 +178,8 @@ inline bool jsonIntoVal(const JsonDocument& d,
 
 /**
  * @brief Specialization to handle Magnum::Vector3 values.  Check passed json
- * doc for existence of passed tag as Magnum::Vector3. If present, populate
- * passed val with value. Returns whether tag is found and successfully
+ * doc for existence of passed @p tag as Magnum::Vector3. If present, populate
+ * passed @p val with value. Returns whether tag is found and successfully
  * populated, or not. Logs an error if tag is found but is inappropriate type.
  *
  * @param d json document to parse
@@ -210,8 +210,8 @@ inline bool jsonIntoVal(const JsonDocument& d,
 /**
  * @brief Check passed json doc for existence of passed jsonTag as value of
  * type T. If present, populate passed setter with value. Returns
- * whether tag is found and successfully populated, or not. Logs an error if tag
- * is found but is inappropriate type.  Should use explicit type cast on
+ * whether tag is found and successfully populated, or not. Logs an error if @p
+ * tag is found but is inappropriate type.  Should use explicit type cast on
  * function call if setter is specified using std::bind()
  *
  * @tparam T type of destination variable - must be supported type.
@@ -236,7 +236,7 @@ bool jsonIntoSetter(const JsonDocument& d,
 /**
  * @brief Check passed json doc for existence of passed jsonTag as value of
  * type T, where the consuming setter will treat the value as const. If
- * present, populate passed setter with value. Returns whether tag is found
+ * present, populate passed setter with value. Returns whether @p tag is found
  * and successfully populated, or not. Logs an error if tag is found but is
  * inappropriate type.  Should use explicit type cast on function call if setter
  * is specified using std::bind()

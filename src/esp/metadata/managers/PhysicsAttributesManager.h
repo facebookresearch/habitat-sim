@@ -40,7 +40,7 @@ class PhysicsAttributesManager
    * overwritten with the newly created one if registerTemplate is true.
    *
    * @param physicsFilename The configuration file to parse. Defaults to the
-   * file location ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH set by cmake.
+   * file location `ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH` set by cmake.
    * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
    * subsequent editing will require re-registration. Defaults to true. If
