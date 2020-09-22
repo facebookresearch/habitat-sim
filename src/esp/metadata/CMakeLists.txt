@@ -4,7 +4,6 @@
 
 set(
   metadata_SOURCES
-  #AbstractManagedObject.h
   attributes/AttributesBase.h
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
@@ -14,7 +13,6 @@ set(
   attributes/PhysicsManagerAttributes.cpp
   attributes/PrimitiveAssetAttributes.h
   attributes/PrimitiveAssetAttributes.cpp
-  #managers/ManagedContainerBase.h
   managers/AttributesManagerBase.h
   managers/AbsObjAttributesManagerBase.h
   managers/AssetAttributesManager.h
