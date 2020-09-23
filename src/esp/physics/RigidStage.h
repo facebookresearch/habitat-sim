@@ -33,10 +33,10 @@ class RigidStage : public RigidBase {
                   const std::string& handle) override;
 
   /**
-   * @brief Get a copy of the template used to initialize this scene object.
+   * @brief Get a copy of the template used to initialize this stage object.
    *
-   * @return A copy of the @ref esp::metadata::attributes::SceneAttributes
-   * template used to create this scene object.
+   * @return A copy of the @ref esp::metadata::attributes::StageAttributes
+   * template used to create this stage object.
    */
   std::shared_ptr<Attrs::StageAttributes> getInitializationAttributes() const {
     return RigidBase::getInitializationAttributes<Attrs::StageAttributes>();
@@ -54,7 +54,7 @@ class RigidStage : public RigidBase {
    * physics libraries.Necessary to support kinematic objects without any
    * dynamics support.
    * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the scene object
+   * pertaining to the stage object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialization_LibSpecific(
