@@ -120,7 +120,7 @@ class ResourceManager {
 
   /**
    * @brief This function will build the various @ref Importers and @ref
-   * AttributesManagers used by the system.
+   * esp::metadata::managers::AttributesManager s used by the system.
    */
   void buildImportersAndAttributesManagers();
 
@@ -189,10 +189,10 @@ class ResourceManager {
    * @brief Load/instantiate any required render and collision assets for an
    * object, if they do not already exist in @ref resourceDict_ or @ref
    * collisionMeshGroups_, respectively. Assumes valid render and collisions
-   * asset handles have been specified (This is checked/verified in
-   * @ref registerObjectTemplate())
-   * @param objectTemplateHandle The key for referencing the template in the
-   * @ref physicsObjTemplateLibrary_.
+   * asset handles have been specified (This is checked/verified during
+   * registration.)
+   * @param objTemplateHandle The key for referencing the template in the
+   * @ref esp::metadata::managers::ObjectAttributesManager::objectLibrary_.
    * @return whether process succeeded or not - only currently fails if
    * registration call fails.
    */
@@ -204,7 +204,8 @@ class ResourceManager {
    * particular asset.
    *
    * @param collisionAssetHandle The key by which the asset is referenced in
-   * @ref collisionMeshGroups_, from the @ref physicsObjTemplateLibrary_.
+   * @ref collisionMeshGroups_, from the @ref
+   * esp::metadata::managers::ObjectAttributesManager::objectLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
@@ -313,10 +314,12 @@ class ResourceManager {
    * scene::SceneNode if provided.
    *
    * If the attributes specified by objTemplateID exists in @ref
-   * physicsObjTemplateLibrary_, and both parent and drawables are
-   * specified, than an object referenced by that key is added to the scene.
+   * esp::metadata::managers::ObjectAttributesManager::objectLibrary_, and both
+   * parent and drawables are specified, than an object referenced by that key
+   * is added to the scene.
    * @param objTemplateLibID The ID of the object attributes in the @ref
-   * physicsObjTemplateLibrary_.  This is expected to exist
+   * esp::metadata::managers::ObjectAttributesManager::objectLibrary_.  This is
+   * expected to exist
    * @param parent The @ref scene::SceneNode of which the object will be a
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
@@ -334,7 +337,7 @@ class ResourceManager {
                                 DEFAULT_LIGHTING_KEY}) {
     if (objTemplateLibID != ID_UNDEFINED) {
       const std::string& objTemplateHandleName =
-          objectAttributesManager_->getTemplateHandleByID(objTemplateLibID);
+          objectAttributesManager_->getObjectHandleByID(objTemplateLibID);
 
       addObjectToDrawables(objTemplateHandleName, parent, drawables,
                            visNodeCache, lightSetup);
@@ -347,8 +350,9 @@ class ResourceManager {
    * scene::SceneNode if provided.
    *
    * If the attributes specified by objTemplateHandle exists in @ref
-   * physicsObjTemplateLibrary_, and both parent and drawables are
-   * specified, than an object referenced by that key is added to the scene.
+   * esp::metadata::managers::ObjectAttributesManager::objectLibrary_, and both
+   * parent and drawables are specified, than an object referenced by that key
+   * is added to the scene.
    * @param objTemplateHandle The key of the attributes in the @ref  to parse
    * and load.  The attributes are expected to exist but will be created (in the
    * case of synthesized objects) if it does not.
@@ -479,16 +483,6 @@ class ResourceManager {
     esp::scene::SceneNode& node;
     uint32_t meshID;
   };
-
-  /**
-   * @brief Define a map type referencing function pointers to @ref
-   * createPrimitiveAttributes() keyed by string names of classes being
-   * instanced, as defined in @ref PrimitiveNames3D
-   */
-  typedef std::map<std::string,
-                   std::shared_ptr<Attrs::AbstractPrimitiveAttributes> (
-                       esp::assets::ResourceManager::*)()>
-      Map_Of_PrimTypes;
 
   //======== Scene Functions ========
 

@@ -123,7 +123,7 @@ void ResourceManager::initDefaultPrimAttributes() {
   // objects)
   auto cubeMeshName =
       assetAttributesManager_
-          ->getTemplateCopyByHandle<CubePrimitiveAttributes>("cubeWireframe")
+          ->getObjectCopyByHandle<CubePrimitiveAttributes>("cubeWireframe")
           ->getPrimObjClassName();
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
@@ -668,7 +668,7 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
   auto primTemplate =
-      assetAttributesManager_->getTemplateByHandle(primTemplateHandle);
+      assetAttributesManager_->getObjectByHandle(primTemplateHandle);
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetHandle = primTemplate->getHandle();
@@ -1406,7 +1406,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
     const std::string& objectTemplateHandle) {
   // Meta data
   ObjectAttributes::ptr ObjectAttributes =
-      objectAttributesManager_->getTemplateByHandle(objectTemplateHandle);
+      objectAttributesManager_->getObjectByHandle(objectTemplateHandle);
 
   // if attributes are "dirty" (important values have changed since last
   // registered) then re-register.  Should never return ID_UNDEFINED - this
@@ -1417,7 +1417,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // attributes for objects requires object rebuilding.
   if (ObjectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
-        (ID_UNDEFINED != objectAttributesManager_->registerAttributesTemplate(
+        (ID_UNDEFINED != objectAttributesManager_->registerObject(
                              ObjectAttributes, objectTemplateHandle)),
         "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
@@ -1435,8 +1435,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   if (resourceDict_.count(renderAssetHandle) == 0) {
     if (ObjectAttributes->getRenderAssetIsPrimitive()) {
       // needs to have a primitive asset attributes with same name
-      if (!assetAttributesManager_->getTemplateLibHasHandle(
-              renderAssetHandle)) {
+      if (!assetAttributesManager_->getObjectLibHasHandle(renderAssetHandle)) {
         // this is bad, means no render primitive template exists with
         // expected name.  should never happen
         LOG(ERROR) << "No primitive asset attributes exists with name :"
@@ -1503,7 +1502,7 @@ void ResourceManager::addObjectToDrawables(
 
     // Meta data
     ObjectAttributes::ptr ObjectAttributes =
-        objectAttributesManager_->getTemplateByHandle(objTemplateHandle);
+        objectAttributesManager_->getObjectByHandle(objTemplateHandle);
 
     const std::string& renderObjectName =
         ObjectAttributes->getRenderAssetHandle();

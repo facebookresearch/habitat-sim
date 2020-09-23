@@ -7,8 +7,8 @@
 
 #include <Corrade/Utility/Assert.h>
 
+#include "AbstractObjectAttributesManagerBase.h"
 #include "AssetAttributesManager.h"
-#include "AttributesManagerBase.h"
 
 namespace esp {
 namespace metadata {
@@ -17,12 +17,11 @@ namespace managers {
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
-    : public AttributesManager<Attrs::ObjectAttributes> {
+    : public AbstractObjectAttributesManager<Attrs::ObjectAttributes> {
  public:
   ObjectAttributesManager(esp::assets::ResourceManager& resourceManager)
-      : AttributesManager<Attrs::ObjectAttributes>::AttributesManager(
-            resourceManager,
-            "Object") {
+      : AbstractObjectAttributesManager<Attrs::ObjectAttributes>::
+            AbstractObjectAttributesManager(resourceManager, "Object") {
     buildCtorFuncPtrMaps();
   }
 
@@ -40,7 +39,7 @@ class ObjectAttributesManager
    * result in a new default template being created.
    *
    * If a template exists with this handle, this existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
+   * overwritten with the newly created one if registerTemplate is true.
    *
    * @param attributesTemplateHandle the origin of the desired template to be
    * created, either a file name or an existing primitive asset template. If
@@ -53,7 +52,7 @@ class ObjectAttributesManager
    * template.
    * @return a reference to the desired template.
    */
-  Attrs::ObjectAttributes::ptr createAttributesTemplate(
+  Attrs::ObjectAttributes::ptr createObject(
       const std::string& attributesTemplateHandle,
       bool registerTemplate = true) override;
 
@@ -76,15 +75,17 @@ class ObjectAttributesManager
       bool registerTemplate = true);
 
   /**
-   * @brief Parse passed JSON Document specifically for @ref ObjectAttributes
-   * object. It always returns a valid @ref ObjectAttributes::ptr object.
+   * @brief Parse passed JSON Document specifically for @ref
+   * esp::metadata::attributes::ObjectAttributes object. It always returns a
+   * valid @ref esp::metadata::attributes::ObjectAttributes shared
+   * pointer.
    *
-   * @param templateName The desired name for this @ref ObjectAttributes
-   * template.
+   * @param templateName The desired name for this @ref
+   * esp::metadata::attributes::ObjectAttributes template.
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  Attrs::ObjectAttributes::ptr loadAttributesFromJSONDoc(
+  Attrs::ObjectAttributes::ptr loadFromJSONDoc(
       const std::string& templateName,
       const io::JsonDocument& jsonConfig) override;
 
@@ -129,16 +130,16 @@ class ObjectAttributesManager
    * @return whether handle exists or not in asset attributes library
    */
   bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return assetAttributesMgr_->getTemplateLibHasHandle(handle);
+    return assetAttributesMgr_->getObjectLibHasHandle(handle);
   }
 
   // ======== File-based and primitive-based partition functions ========
 
   /**
    * @brief Gets the number of file-based loaded object templates stored in the
-   * @ref physicsObjTemplateLibrary_.
+   * @ref physicsFileObjTmpltLibByID_.
    *
-   * @return The number of entries in @ref physicsObjTemplateLibrary_ that are
+   * @return The number of entries in @ref physicsFileObjTmpltLibByID_ that are
    * loaded from files.
    */
   int getNumFileTemplateObjects() const {
@@ -153,32 +154,32 @@ class ObjectAttributesManager
    * attributes template, or empty string if none loaded
    */
   std::string getRandomFileTemplateHandle() const {
-    return this->getRandomTemplateHandlePerType(physicsFileObjTmpltLibByID_,
-                                                "file-based ");
+    return this->getRandomObjectHandlePerType(physicsFileObjTmpltLibByID_,
+                                              "file-based ");
   }
 
   /**
    * @brief Get a list of all file-based templates whose origin handles contain
-   * @ref subStr, ignoring subStr's case
+   * subStr, ignoring subStr's case
    * @param subStr substring to search for within existing file-based object
    * templates
    * @param contains whether to search for keys containing, or not containing,
-   * @ref subStr
+   * subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
   std::vector<std::string> getFileTemplateHandlesBySubstring(
       const std::string& subStr = "",
       bool contains = true) const {
-    return this->getTemplateHandlesBySubStringPerType(
-        physicsFileObjTmpltLibByID_, subStr, contains);
+    return this->getObjectHandlesBySubStringPerType(physicsFileObjTmpltLibByID_,
+                                                    subStr, contains);
   }
 
   /**
    * @brief Gets the number of synthesized (primitive-based)  template objects
-   * stored in the @ref physicsObjTemplateLibrary_.
+   * stored in the @ref physicsSynthObjTmpltLibByID_.
    *
-   * @return The number of entries in @ref physicsObjTemplateLibrary_ that
+   * @return The number of entries in @ref physicsSynthObjTmpltLibByID_ that
    * describe primitives.
    */
   int getNumSynthTemplateObjects() const {
@@ -193,24 +194,24 @@ class ObjectAttributesManager
    * attributes template, or empty string if none loaded
    */
   std::string getRandomSynthTemplateHandle() const {
-    return this->getRandomTemplateHandlePerType(physicsSynthObjTmpltLibByID_,
-                                                "synthesized ");
+    return this->getRandomObjectHandlePerType(physicsSynthObjTmpltLibByID_,
+                                              "synthesized ");
   }
 
   /**
    * @brief Get a list of all synthesized (primitive-based) object templates
-   * whose origin handles contain @ref subStr, ignoring subStr's case
+   * whose origin handles contain subStr, ignoring subStr's case
    * @param subStr substring to search for within existing primitive object
    * templates
    * @param contains whether to search for keys containing, or not containing,
-   * @ref subStr
+   * subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
   std::vector<std::string> getSynthTemplateHandlesBySubstring(
       const std::string& subStr = "",
       bool contains = true) const {
-    return this->getTemplateHandlesBySubStringPerType(
+    return this->getObjectHandlesBySubStringPerType(
         physicsSynthObjTmpltLibByID_, subStr, contains);
   }
 
@@ -234,7 +235,7 @@ class ObjectAttributesManager
    * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
-   * @param fileName Mesh Handle to check.
+   * @param meshHandle Mesh Handle to check.
    * @param assetTypeSetter Setter for mesh type.
    */
   void setDefaultAssetNameBasedAttributes(
@@ -249,7 +250,7 @@ class ObjectAttributesManager
    *
    * @param handleName handle name to be assigned to attributes
    */
-  Attrs::ObjectAttributes::ptr initNewAttribsInternal(
+  Attrs::ObjectAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override;
 
   /**
@@ -261,7 +262,7 @@ class ObjectAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(
+  void updateObjectHandleLists(
       int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {
     physicsFileObjTmpltLibByID_.erase(templateID);
@@ -269,18 +270,18 @@ class ObjectAttributesManager
   }
 
   /**
-   * @brief Add a copy of @ref AbstractAttributes object to the @ref
-   * templateLibrary_. Verify that render and collision handles have been
-   * set properly.  We are doing this since these values can be modified by the
-   * user.
+   * @brief Add a copy of @ref  esp::metadata::attributes::AbstractAttributes
+   * object to the @ref objectLibrary_. Verify that render and collision
+   * handles have been set properly.  We are doing this since these values can
+   * be modified by the user.
    *
    * @param attributesTemplate The attributes template.
    * @param attributesTemplateHandle The key for referencing the template in the
-   * @ref templateLibrary_. Will be set as origin handle for template.
-   * @return The index in the @ref templateLibrary_ of object
+   * @ref objectLibrary_. Will be set as origin handle for template.
+   * @return The index in the @ref objectLibrary_ of object
    * template.
    */
-  int registerAttributesTemplateFinalize(
+  int registerObjectFinalize(
       Attrs::ObjectAttributes::ptr attributesTemplate,
       const std::string& attributesTemplateHandle) override;
 
@@ -300,7 +301,7 @@ class ObjectAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["ObjectAttributes"] =
-        &ObjectAttributesManager::createAttributesCopy<Attrs::ObjectAttributes>;
+        &ObjectAttributesManager::createObjectCopy<Attrs::ObjectAttributes>;
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
 
   // ======== Typedefs and Instance Variables ========

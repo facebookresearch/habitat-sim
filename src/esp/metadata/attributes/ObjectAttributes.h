@@ -15,23 +15,25 @@ namespace attributes {
 
 /**
  * @brief base attributes object holding attributes shared by all
- * ObjectAttributes and StageAttributes objects; Should be
- * treated as if is abstract - should never be instanced directly
+ * @ref esp::metadata::attributes::ObjectAttributes and @ref
+ * esp::metadata::attributes::StageAttributes objects; Should be treated as if
+ * is abstract - should never be instanced directly
  */
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
   /**
    * @brief This defines an example json descriptor for @ref
-   * AbstractObjectAttributes Has values that are different than defaults so
-   * this can be used to test json loading. These values are set to be
-   * purposefully invalid, for testing purposes, and so should not be used.
+   * esp::metadata::attributes::AbstractObjectAttributes Has values that are
+   * different than defaults so this can be used to test json loading. These
+   * values are set to be purposefully invalid, for testing purposes, and so
+   * should not be used.
    */
   static const std::string JSONConfigTestString;
 
   /**
    * @brief Constant static map to provide mappings from string tags to @ref
-   * AssetType values.  This will be used to map values set in json for mesh
-   * type to @ref AssetTypes.  Keys must be lowercase.
+   * esp::assets::AssetType values.  This will be used to map values set in json
+   * for mesh type to @ref esp::assets::AssetType.  Keys must be lowercase.
    */
   static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
   AbstractObjectAttributes(const std::string& classKey,
@@ -316,8 +318,8 @@ class StageAttributes : public AbstractObjectAttributes {
 
   /**
    * @brief set lighting setup for scene.  Default value comes from
-   * @ref SimulatorConfiguration, is overridden by any value set in json, if
-   * exists.
+   * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
+   * json, if exists.
    */
   void setLightSetup(const std::string& lightSetup) {
     setString("lightSetup", lightSetup);

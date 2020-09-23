@@ -4,7 +4,7 @@
 
 #include <Corrade/Utility/String.h>
 
-#include "AttributesManagerBase.h"
+#include "AbstractObjectAttributesManagerBase.h"
 #include "StageAttributesManager.h"
 
 #include "esp/assets/Asset.h"
@@ -25,7 +25,8 @@ StageAttributesManager::StageAttributesManager(
     assets::ResourceManager& resourceManager,
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
-    : AttributesManager<StageAttributes>::AttributesManager(resourceManager,
+    : AbstractObjectAttributesManager<
+          StageAttributes>::AbstractObjectAttributesManager(resourceManager,
                                                             "Stage"),
       objectAttributesMgr_(objectAttributesMgr),
       physicsAttributesManager_(physicsAttributesManager),
@@ -33,7 +34,7 @@ StageAttributesManager::StageAttributesManager(
   buildCtorFuncPtrMaps();
 }  // StageAttributesManager ctor
 
-StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
+StageAttributes::ptr StageAttributesManager::createObject(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) {
   StageAttributes::ptr attrs;
@@ -59,14 +60,13 @@ StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
       // check if stageAttributesHandle corresponds to an actual, existing
       // json stage file descriptor.
       // this method lives in class template.
-      attrs = this->createFileBasedAttributesTemplate(jsonAttrFileName,
-                                                      registerTemplate);
+      attrs = this->createObjectFromFile(jsonAttrFileName, registerTemplate);
       msg = "JSON File (" + jsonAttrFileName + ") Based";
     } else {
       // if name is not json file descriptor but still appropriate file, or if
       // is not a file or known prim
-      attrs = this->createDefaultAttributesTemplate(attributesTemplateHandle,
-                                                    registerTemplate);
+      attrs =
+          this->createDefaultObject(attributesTemplateHandle, registerTemplate);
 
       if (fileExists) {
         msg = "File (" + attributesTemplateHandle + ") Based";
@@ -82,14 +82,14 @@ StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
   }
   return attrs;
 
-}  // StageAttributesManager::createAttributesTemplate
+}  // StageAttributesManager::createObject
 
-int StageAttributesManager::registerAttributesTemplateFinalize(
+int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
     const std::string& stageAttributesHandle) {
   if (stageAttributes->getRenderAssetHandle() == "") {
     LOG(ERROR)
-        << "StageAttributesManager::registerAttributesTemplateFinalize : "
+        << "StageAttributesManager::registerObjectFinalize : "
            "Attributes template named"
         << stageAttributesHandle
         << "does not have a valid render asset handle specified. Aborting.";
@@ -119,7 +119,7 @@ int StageAttributesManager::registerAttributesTemplateFinalize(
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
     LOG(ERROR)
-        << "StageAttributesManager::registerAttributesTemplateFinalize "
+        << "StageAttributesManager::registerObjectFinalize "
            ": Render asset template handle : "
         << renderAssetHandle << " specified in stage template with handle : "
         << stageAttributesHandle
@@ -145,7 +145,7 @@ int StageAttributesManager::registerAttributesTemplateFinalize(
     // Else, means no collision data specified, use specified render data
     // Else, means no collision data specified, use specified render data
     LOG(INFO)
-        << "StageAttributesManager::registerAttributesTemplateFinalize "
+        << "StageAttributesManager::registerObjectFinalize "
            ": Collision asset template handle : "
         << collisionAssetHandle << " specified in stage template with handle : "
         << stageAttributesHandle
@@ -164,7 +164,7 @@ int StageAttributesManager::registerAttributesTemplateFinalize(
   // template referenced by stageAttributesHandle, or the next available ID
   // if not found.
   int stageTemplateID =
-      this->addTemplateToLibrary(stageAttributes, stageAttributesHandle);
+      this->addObjectToLibrary(stageAttributes, stageAttributesHandle);
   return stageTemplateID;
 }  // StageAttributesManager::registerAttributesTemplate
 
@@ -182,7 +182,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   }
 
   // construct a stageAttributes
-  auto stageAttributes = initNewAttribsInternal(primAssetHandle);
+  auto stageAttributes = initNewObjectInternal(primAssetHandle);
   // set margin to be 0
   stageAttributes->setMargin(0.0);
 
@@ -200,7 +200,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   return this->postCreateRegister(stageAttributes, registerTemplate);
 }  // StageAttributesManager::createPrimBasedAttributesTemplate
 
-StageAttributes::ptr StageAttributesManager::initNewAttribsInternal(
+StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     const std::string& stageFilename) {
   // TODO if default template exists from some source, create this template as a
   // copy
@@ -265,9 +265,9 @@ StageAttributes::ptr StageAttributesManager::initNewAttribsInternal(
       std::bind(&StageAttributes::setSemanticAssetType, newAttributes, _1));
 
   // set default physical quantities specified in physics manager attributes
-  if (physicsAttributesManager_->getTemplateLibHasHandle(
+  if (physicsAttributesManager_->getObjectLibHasHandle(
           physicsManagerAttributesHandle_)) {
-    auto physMgrAttributes = physicsAttributesManager_->getTemplateByHandle(
+    auto physMgrAttributes = physicsAttributesManager_->getObjectByHandle(
         physicsManagerAttributesHandle_);
     newAttributes->setGravity(physMgrAttributes->getGravity());
     newAttributes->setFrictionCoefficient(
@@ -276,7 +276,7 @@ StageAttributes::ptr StageAttributesManager::initNewAttribsInternal(
         physMgrAttributes->getRestitutionCoefficient());
   }
   return newAttributes;
-}  // StageAttributesManager::initNewAttribsInternal
+}  // StageAttributesManager::initNewObjectInternal
 
 void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     StageAttributes::ptr attributes,
@@ -319,7 +319,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   }
 }  // StageAttributesManager::setDefaultAssetNameBasedAttributes
 
-StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
+StageAttributes::ptr StageAttributesManager::loadFromJSONDoc(
     const std::string& templateName,
     const io::JsonDocument& jsonConfig) {
   // construct a StageAttributes and populate with any
@@ -391,7 +391,7 @@ StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
     for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
       if (!paths[i].IsString()) {
         LOG(ERROR)
-            << "StageAttributesManager::loadAttributesFromJSONDoc "
+            << "StageAttributesManager::loadFromJSONDoc "
                ":Invalid value in stage config 'rigid object paths'- array "
             << i;
         continue;
@@ -405,7 +405,7 @@ StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
   }  // if load rigid object library metadata
 
   return stageAttributes;
-}  // StageAttributesManager::loadAttributesFromJSONDoc
+}  // StageAttributesManager::loadFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata

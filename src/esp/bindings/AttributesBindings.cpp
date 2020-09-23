@@ -7,6 +7,7 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
+#include "esp/core/AbstractManagedObject.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
@@ -29,14 +30,20 @@ using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
+using esp::core::AbstractManagedObject;
 
 namespace esp {
 namespace metadata {
 
 void initAttributesBindings(py::module& m) {
+  // ==== AbstractManagedObject ====
+  py::class_<AbstractManagedObject, AbstractManagedObject::ptr>(
+      m, "AbstractManagedObject");
+
   // ==== AbstractAttributes ====
-  py::class_<AbstractAttributes, esp::core::Configuration,
-             AbstractAttributes::ptr>(m, "AbstractAttributes")
+  py::class_<AbstractAttributes, esp::core::AbstractManagedObject,
+             esp::core::Configuration, AbstractAttributes::ptr>(
+      m, "AbstractAttributes")
       .def(py::init(
           &AbstractAttributes::create<const std::string&, const std::string&>))
       .def_property("handle", &AbstractAttributes::getHandle,

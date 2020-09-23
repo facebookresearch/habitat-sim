@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 
-#include "AttributesManagerBase.h"
+#include "AbstractObjectAttributesManagerBase.h"
 
 #include "ObjectAttributesManager.h"
 #include "PhysicsAttributesManager.h"
@@ -18,7 +18,7 @@ namespace metadata {
 
 namespace managers {
 class StageAttributesManager
-    : public AttributesManager<Attrs::StageAttributes> {
+    : public AbstractObjectAttributesManager<Attrs::StageAttributes> {
  public:
   StageAttributesManager(
       esp::assets::ResourceManager& resourceManager,
@@ -28,19 +28,21 @@ class StageAttributesManager
   /**
    * @brief This will set the current physics manager attributes that is
    * governing the world that this StageAttributesManager's scenes will be
-   * created in.  This is used so that upon creation of new StageAttributes,
-   * PhysicsManagerAttributes defaults can be set in the StageAttributes before
-   * any scene-specific values are set.
+   * created in.  This is used so that upon creation of new
+   * esp::metadata::attributes::StageAttributes, PhysicsManagerAttributes
+   * defaults can be set in the esp::metadata::attributes::StageAttributes
+   * before any scene-specific values are set.
    *
-   * @param handle The string handle referencing the physicsManagerAttributes
-   * governing the current physicsManager.
+   * @param handle The string handle referencing the @ref
+   * esp::metadata::attributes::PhysicsManagerAttributes governing the current
+   * @ref esp::physics::PhysicsManager.
    */
   void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
     physicsManagerAttributesHandle_ = handle;
   }
   /**
-   * @brief copy current @ref SimulatorConfiguration-driven values, such as file
-   * paths, to make them available for stage attributes defaults.
+   * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
+   * such as file paths, to make them available for stage attributes defaults.
    *
    * @param filepaths the map of file paths from the configuration object
    * @param lightSetup the config-specified light setup
@@ -63,7 +65,7 @@ class StageAttributesManager
    * string. For stage templates, this a file name.
    *
    * If a template exists with this handle, this existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
+   * overwritten with the newly created one if registerTemplate is true.
    *
    * @param attributesTemplateHandle the origin of the desired stage template to
    * be created.
@@ -74,7 +76,7 @@ class StageAttributesManager
    * template.
    * @return a reference to the desired template.
    */
-  Attrs::StageAttributes::ptr createAttributesTemplate(
+  Attrs::StageAttributes::ptr createObject(
       const std::string& attributesTemplateHandle,
       bool registerTemplate = true) override;
 
@@ -96,15 +98,17 @@ class StageAttributesManager
       bool registerTemplate = true);
 
   /**
-   * @brief Parse passed JSON Document specifically for @ref StageAttributes
-   * object. It always returns a valid @ref StageAttributes::ptr object.
+   * @brief Parse passed JSON Document specifically for @ref
+   * esp::metadata::attributes::StageAttributes object. It always returns a
+   * valid @ref esp::metadata::attributes::StageAttributes shared pointer
+   * object.
    *
-   * @param templateName the desired handle of the @ref StageAttributes
-   * attributes.
+   * @param templateName the desired handle of the @ref
+   * esp::metadata::attributes::StageAttributes attributes.
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  Attrs::StageAttributes::ptr loadAttributesFromJSONDoc(
+  Attrs::StageAttributes::ptr loadFromJSONDoc(
       const std::string& templateName,
       const io::JsonDocument& jsonConfig) override;
 
@@ -116,7 +120,7 @@ class StageAttributesManager
    * @return whether handle exists or not in asset attributes library
    */
   bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return objectAttributesMgr_->getTemplateLibHasHandle(handle);
+    return objectAttributesMgr_->getObjectLibHasHandle(handle);
   }
   /**
    * @brief Perform file-name-based attributes initialization. This is to
@@ -129,7 +133,7 @@ class StageAttributesManager
    * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
-   * @param fileName Mesh Handle to check.
+   * @param meshHandle Mesh Handle to check.
    * @param assetTypeSetter Setter for mesh type.
    */
   void setDefaultAssetNameBasedAttributes(
@@ -143,7 +147,7 @@ class StageAttributesManager
    *
    * @param handleName handle name to be assigned to attributes
    */
-  Attrs::StageAttributes::ptr initNewAttribsInternal(
+  Attrs::StageAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override;
 
   /**
@@ -155,24 +159,24 @@ class StageAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(
+  void updateObjectHandleLists(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
    * @brief Add a @ref std::shared_ptr<attributesType> object to the
-   * @ref templateLibrary_.  Verify that render and collision handles have been
+   * @ref objectLibrary_.  Verify that render and collision handles have been
    * set properly.  We are doing this since these values can be modified by the
    * user.
    *
    * @param StageAttributesTemplate The attributes template.
    * @param StageAttributesHandle The key for referencing the template in the
-   * @ref templateLibrary_.
-   * @return The index in the @ref templateLibrary_ of object
+   * @ref objectLibrary_.
+   * @return The index in the @ref objectLibrary_ of object
    * template.
    */
 
-  int registerAttributesTemplateFinalize(
+  int registerObjectFinalize(
       Attrs::StageAttributes::ptr StageAttributesTemplate,
       const std::string& StageAttributesHandle) override;
 
@@ -189,39 +193,41 @@ class StageAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["StageAttributes"] =
-        &StageAttributesManager::createAttributesCopy<Attrs::StageAttributes>;
+        &StageAttributesManager::createObjectCopy<Attrs::StageAttributes>;
   }  // StageAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars
 
   /**
    * @brief Reference to ObjectAttributesManager to give access to setting
-   * object template library using paths specified in StageAttributes json
+   * object template library using paths specified in
+   * esp::metadata::attributes::StageAttributes json
    */
   ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
   /**
    * @brief Reference to PhysicsAttributesManager to give access to default
-   * physics manager attributes settings when StageAttributes are created.
+   * physics manager attributes settings when
+   * esp::metadata::attributes::StageAttributes are created.
    */
   PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
 
   /**
-   * @brief Current file paths based on @ref SimulatorConfiguration settings.
-   * Paths can be overridden by json-specified values.
+   * @brief Current file paths based on @ref esp::sim::SimulatorConfiguration
+   * settings. Paths can be overridden by json-specified values.
    */
   std::map<std::string, std::string> cfgFilepaths_;
 
   /**
    * @brief Current lighting default value based on current @ref
-   * SimulatorConfiguration settings. Potentially overridden by scene-specific
-   * json.
+   * esp::sim::SimulatorConfiguration settings. Potentially overridden by
+   * scene-specific json.
    */
   std::string cfgLightSetup_;
 
   /**
    * @brief Current frustrum culling setting based on current @ref
-   * SimulatorConfiguration settings. Potentially overridden by scene-specific
-   * json.
+   * esp::sim::SimulatorConfiguration settings. Potentially overridden by
+   * scene-specific json.
    */
   bool cfgFrustrumCulling_ = false;
 

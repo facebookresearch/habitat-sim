@@ -56,8 +56,7 @@ DrawableTest::DrawableTest() {
   auto stageAttributesMgr = resourceManager_.getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
-  auto stageAttributes =
-      stageAttributesMgr->createAttributesTemplate(stageFile, true);
+  auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
   sceneID_ = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);

@@ -21,7 +21,7 @@ bool RigidObject::initialize(const assets::ResourceManager& resMgr,
 
   // save a copy of the template at initialization time
   initializationAttributes_ =
-      resMgr.getObjectAttributesManager()->getTemplateCopyByHandle(handle);
+      resMgr.getObjectAttributesManager()->getObjectCopyByHandle(handle);
 
   return initialization_LibSpecific(resMgr);
 }  // RigidObject::initialize

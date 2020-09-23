@@ -18,7 +18,7 @@
 #include "esp/scene/SceneNode.h"
 
 /** @file
- * @brief Class @ref esp::physics::base::Rigidbase
+ * @brief Class @ref esp::physics::Rigidbase
  */
 
 namespace esp {
@@ -94,7 +94,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
   /**
-   * @brief Initializes the @ref RigidObject or @ref RigidScene that inherits
+   * @brief Initializes the @ref RigidObject or @ref RigidStage that inherits
    * from this class.  This is overridden
    * @param resMgr a reference to ResourceManager object
    * @param handle The handle for the template structure defining relevant
@@ -105,7 +105,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
                           const std::string& handle) = 0;
 
   /**
-   * @brief Finalize the creation of @ref RigidObject or @ref RigidScene that
+   * @brief Finalize the creation of @ref RigidObject or @ref RigidStage that
    * inherits from this class.
    * @return whether successful finalization.
    */
@@ -113,8 +113,8 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
 
  private:
   /**
-   * @brief Finalize the initialization of this @ref Rigid. This is overridden
-   * by inheriting objects
+   * @brief Finalize the initialization of this @ref RigidBase. This is
+   * overridden by inheriting objects
    * @param resMgr Reference to resource manager, to access relevant components
    * pertaining to the object
    * @return true if initialized successfully, false otherwise.
@@ -123,7 +123,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
       const assets::ResourceManager& resMgr) = 0;
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
-   * after @ref RigidObject or @ref RigidScene is created.
+   * after @ref RigidObject or @ref RigidStage is created.
    * @return whether successful finalization.
    */
   virtual bool finalizeObject_LibSpecific() = 0;

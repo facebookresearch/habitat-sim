@@ -86,7 +86,7 @@ bool BulletRigidObject::initialization_LibSpecific(
     // if using prim collider get appropriate bullet collision primitive
     // attributes and build bullet collision shape
     auto primAttributes =
-        resMgr.getAssetAttributesManager()->getTemplateCopyByHandle(
+        resMgr.getAssetAttributesManager()->getObjectCopyByHandle(
             collisionAssetHandle);
     // primitive object pointer construction
     auto primObjPtr = buildPrimitiveCollisionObject(

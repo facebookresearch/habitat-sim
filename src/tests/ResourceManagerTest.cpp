@@ -36,8 +36,7 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
 
   // create stage attributes file
-  auto stageAttributes =
-      stageAttributesMgr->createAttributesTemplate(boxFile, true);
+  auto stageAttributes = stageAttributesMgr->createObject(boxFile, true);
 
   int sceneID = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);

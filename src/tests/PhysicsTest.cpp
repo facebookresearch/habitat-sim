@@ -52,15 +52,13 @@ class PhysicsManagerTest : public testing::Test {
 
     // construct appropriate physics attributes based on config file
     auto physicsManagerAttributes =
-        physicsAttributesManager_->createAttributesTemplate(physicsConfigFile,
-                                                            true);
+        physicsAttributesManager_->createObject(physicsConfigFile, true);
     auto stageAttributesMgr = resourceManager_.getStageAttributesManager();
     if (physicsManagerAttributes != nullptr) {
       stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
           physicsManagerAttributes->getHandle());
     }
-    auto stageAttributes =
-        stageAttributesMgr->createAttributesTemplate(stageFile, true);
+    auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
     // construct physics manager based on specifications in attributes
     resourceManager_.initPhysicsManager(physicsManager_, true, &rootNode,
@@ -103,12 +101,11 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
     ObjectAttributes->setRenderAssetHandle(objectFile);
     auto objectAttributesManager =
         resourceManager_.getObjectAttributesManager();
-    objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                        objectFile);
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     ObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getTemplateCopyByHandle(objectFile);
+        objectAttributesManager->getObjectCopyByHandle(objectFile);
 
     for (int i = 0; i < 2; i++) {
       // mark the object not joined
@@ -117,7 +114,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       } else {
         objectTemplate->setJoinCollisionMeshes(true);
       }
-      objectAttributesManager->registerAttributesTemplate(objectTemplate);
+      objectAttributesManager->registerObject(objectTemplate);
       physicsManager_->reset();
 
       std::vector<int> objectIds;
@@ -185,12 +182,11 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
 
     auto objectAttributesManager =
         resourceManager_.getObjectAttributesManager();
-    objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                        objectFile);
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     ObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getTemplateCopyByHandle(objectFile);
+        objectAttributesManager->getObjectCopyByHandle(objectFile);
 
     for (int i = 0; i < 2; i++) {
       if (i == 0) {
@@ -198,7 +194,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
       } else {
         objectTemplate->setBoundingBoxCollisions(true);
       }
-      objectAttributesManager->registerAttributesTemplate(objectTemplate);
+      objectAttributesManager->registerObject(objectTemplate);
       physicsManager_->reset();
 
       int objectId = physicsManager_->addObject(
@@ -257,8 +253,7 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     ObjectAttributes->setMargin(0.0);
     auto objectAttributesManager =
         resourceManager_.getObjectAttributesManager();
-    objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                        objectFile);
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // generate two centered boxes with dimension 2x2x2
     int objectId0 = physicsManager_->addObject(objectFile, nullptr);
@@ -302,28 +297,27 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
 
     auto objectAttributesManager =
         resourceManager_.getObjectAttributesManager();
-    objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                        objectFile);
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     ObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getTemplateCopyByHandle(objectFile);
+        objectAttributesManager->getObjectCopyByHandle(objectFile);
 
     auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
     // add the unjoined object
     objectTemplate->setJoinCollisionMeshes(false);
-    objectAttributesManager->registerAttributesTemplate(objectTemplate);
+    objectAttributesManager->registerObject(objectTemplate);
     int objectId0 = physicsManager_->addObject(objectFile, drawables);
 
     // add the joined object
     objectTemplate->setJoinCollisionMeshes(true);
-    objectAttributesManager->registerAttributesTemplate(objectTemplate);
+    objectAttributesManager->registerObject(objectTemplate);
     int objectId1 = physicsManager_->addObject(objectFile, drawables);
 
     // add bounding box object
     objectTemplate->setBoundingBoxCollisions(true);
-    objectAttributesManager->registerAttributesTemplate(objectTemplate);
+    objectAttributesManager->registerObject(objectTemplate);
     int objectId2 = physicsManager_->addObject(objectFile, drawables);
 
     esp::physics::BulletPhysicsManager* bPhysManager =
@@ -368,12 +362,11 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   ObjectAttributes->setMargin(0.0);
 
   auto objectAttributesManager = resourceManager_.getObjectAttributesManager();
-  objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                      objectFile);
+  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
   // get a reference to the stored template to edit
   ObjectAttributes::ptr objectTemplate =
-      objectAttributesManager->getTemplateCopyByHandle(objectFile);
+      objectAttributesManager->getObjectCopyByHandle(objectFile);
 
   std::vector<Magnum::Vector3> testScales{
       {1.0, 1.0, 1.0},  {4.0, 3.0, 2.0},    {0.1, 0.2, 0.3},
@@ -385,7 +378,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   std::vector<int> objectIDs;
   for (auto& testScale : testScales) {
     objectTemplate->setScale(testScale);
-    objectAttributesManager->registerAttributesTemplate(objectTemplate);
+    objectAttributesManager->registerObject(objectTemplate);
 
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
@@ -434,8 +427,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   ObjectAttributes->setRenderAssetHandle(objectFile);
   ObjectAttributes->setMargin(0.0);
   auto objectAttributesManager = resourceManager_.getObjectAttributesManager();
-  objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                      objectFile);
+  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
@@ -578,8 +570,7 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
   ObjectAttributes->setRenderAssetHandle(objectFile);
   auto objectAttributesManager = resourceManager_.getObjectAttributesManager();
-  objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                      objectFile);
+  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
   esp::scene::SceneNode& root =
       sceneManager_.getSceneGraph(sceneID_).getRootNode();
@@ -641,8 +632,8 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
     auto objectAttributesManager =
         resourceManager_.getObjectAttributesManager();
 
-    int boxId = objectAttributesManager->registerAttributesTemplate(
-        ObjectAttributes, objectFile);
+    int boxId =
+        objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
@@ -757,7 +748,7 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
         resourceManager_.getObjectAttributesManager();
 
     std::string cubeHandle =
-        objectAttributesManager->getTemplateHandlesBySubstring("cubeSolid")[0];
+        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
 
     // create a stack of cubes on the table
     Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);

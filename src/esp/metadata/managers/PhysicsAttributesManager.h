@@ -37,10 +37,10 @@ class PhysicsAttributesManager
    * from the specified configuration file.
    *
    * If a template exists with this handle, this existing template will be
-   * overwritten with the newly created one if @ref registerTemplate is true.
+   * overwritten with the newly created one if registerTemplate is true.
    *
    * @param physicsFilename The configuration file to parse. Defaults to the
-   * file location @ref ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH set by cmake.
+   * file location `ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH` set by cmake.
    * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
    * subsequent editing will require re-registration. Defaults to true. If
@@ -49,22 +49,23 @@ class PhysicsAttributesManager
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file.
    */
-  Attrs::PhysicsManagerAttributes::ptr createAttributesTemplate(
+  Attrs::PhysicsManagerAttributes::ptr createObject(
       const std::string& physicsFilename =
           ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH,
       bool registerTemplate = true) override;
 
   /**
    * @brief Parse passed JSON Document specifically for @ref
-   * PhysicsManagerAttributes object. It always returns a valid @ref
-   * PhysicsManagerAttributes::ptr object.
+   * esp::metadata::attributes::PhysicsManagerAttributes object. It always
+   * returns a valid @ref
+   * esp::metadata::attributes::PhysicsManagerAttributes shared_ptr object.
    *
    * @param templateName the desired handle of the @ref
-   * PhysicsManagerAttributes.
+   * esp::metadata::attributes::PhysicsManagerAttributes.
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  Attrs::PhysicsManagerAttributes::ptr loadAttributesFromJSONDoc(
+  Attrs::PhysicsManagerAttributes::ptr loadFromJSONDoc(
       const std::string& templateName,
       const io::JsonDocument& jsonConfig) override;
 
@@ -76,17 +77,8 @@ class PhysicsAttributesManager
    * @return whether handle exists or not in asset attributes library
    */
   bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return objectAttributesMgr_->getTemplateLibHasHandle(handle);
+    return objectAttributesMgr_->getObjectLibHasHandle(handle);
   }
-
-  /**
-   * @brief Not used by PhysicsManagerAttributes.
-   */
-  void setDefaultAssetNameBasedAttributes(
-      CORRADE_UNUSED Attrs::PhysicsManagerAttributes::ptr attributes,
-      CORRADE_UNUSED bool setFrame,
-      CORRADE_UNUSED const std::string& meshHandle,
-      CORRADE_UNUSED std::function<void(int)> meshTypeSetter) override {}
 
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
@@ -94,7 +86,7 @@ class PhysicsAttributesManager
    *
    * @param handleName handle name to be assigned to attributes
    */
-  Attrs::PhysicsManagerAttributes::ptr initNewAttribsInternal(
+  Attrs::PhysicsManagerAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override {
     auto newAttributes = Attrs::PhysicsManagerAttributes::create(handleName);
     this->setFileDirectoryFromHandle(newAttributes);
@@ -109,28 +101,29 @@ class PhysicsAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(
+  void updateObjectHandleLists(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Add a @ref PhysicsManagerAttributes::ptr object to the @ref
-   * templateLibrary_.
+   * @brief Add a copy of the @ref
+   * esp::metadata::attributes::PhysicsManagerAttributes shared_ptr object to
+   * the @ref objectLibrary_.
    *
    * @param physicsAttributesTemplate The attributes template.
    * @param physicsAttributesHandle The key for referencing the template in the
-   * @ref templateLibrary_.
-   * @return The index in the @ref templateLibrary_ of object
+   * @ref objectLibrary_.
+   * @return The index in the @ref objectLibrary_ of object
    * template.
    */
-  int registerAttributesTemplateFinalize(
+  int registerObjectFinalize(
       Attrs::PhysicsManagerAttributes::ptr physicsAttributesTemplate,
       const std::string& physicsAttributesHandle) override {
     // adds template to library, and returns either the ID of the existing
     // template referenced by physicsAttributesHandle, or the next available ID
     // if not found.
-    int physicsTemplateID = this->addTemplateToLibrary(
-        physicsAttributesTemplate, physicsAttributesHandle);
+    int physicsTemplateID = this->addObjectToLibrary(physicsAttributesTemplate,
+                                                     physicsAttributesHandle);
     return physicsTemplateID;
   }  // PhysicsAttributesManager::registerAttributesTemplate
 
@@ -147,7 +140,7 @@ class PhysicsAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
-        &PhysicsAttributesManager::createAttributesCopy<
+        &PhysicsAttributesManager::createObjectCopy<
             Attrs::PhysicsManagerAttributes>;
   }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
 
