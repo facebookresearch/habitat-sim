@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <stdlib.h>
+#include <ctime>
 
 #include <Magnum/configure.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
@@ -60,6 +61,17 @@ namespace Mn = Magnum;
 
 namespace {
 
+//! return current time as string in format
+//! "year_month_day_hour-minutes-seconds"
+std::string getCurrentTimeString() {
+  time_t now = time(0);
+  tm* ltm = localtime(&now);
+  return std::to_string(1900 + ltm->tm_year) + "_" +
+         std::to_string(1 + ltm->tm_mon) + "_" + std::to_string(ltm->tm_mday) +
+         "_" + std::to_string(ltm->tm_hour) + "-" +
+         std::to_string(ltm->tm_min) + "-" + std::to_string(ltm->tm_sec);
+}
+
 using namespace Mn::Math::Literals;
 
 class Viewer : public Mn::Platform::Application {
@@ -93,6 +105,10 @@ class Viewer : public Mn::Platform::Application {
   void invertGravity();
   Mn::Vector3 randomDirection();
 
+  //! string rep of time when viewer application was started
+  std::string viewerStartTimeString = getCurrentTimeString();
+  void screenshot();
+
   std::string helpText = R"(
 ==================================================
 Welcome to the Habitat-sim C++ Viewer application!
@@ -122,7 +138,7 @@ Key Commands:
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
-  'i' Save a screenshot to \"test_image_save.png\"
+  'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
 
   Object Interactions:
   '8': Instance a random primitive object in front of the agent.
@@ -783,8 +799,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           !simulator_->isNavMeshVisualizationActive());
       break;
     case KeyEvent::Key::I:
-      Mn::DebugTools::screenshot(Mn::GL::defaultFramebuffer,
-                                 "test_image_save.png");
+      screenshot();
       break;
     case KeyEvent::Key::Q:
       // query the agent state
@@ -804,6 +819,19 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
   }
   redraw();
+}
+
+int savedFrames = 0;
+//! Save a screenshot to "screenshots/year_month_day_hour-minute-second/#.png"
+void Viewer::screenshot() {
+  std::string screenshot_directory =
+      "screenshots/" + viewerStartTimeString + "/";
+  if (!Cr::Utility::Directory::exists(screenshot_directory)) {
+    Cr::Utility::Directory::mkpath(screenshot_directory);
+  }
+  Mn::DebugTools::screenshot(
+      Mn::GL::defaultFramebuffer,
+      screenshot_directory + std::to_string(savedFrames++) + ".png");
 }
 
 }  // namespace
