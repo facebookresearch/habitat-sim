@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_ASSETS_MESHMETADATA_H_
+#define ESP_ASSETS_MESHMETADATA_H_
 
 /** @file
  * @brief Struct @ref esp::assets::MeshTransformNode, Struct @ref
@@ -141,3 +142,5 @@ struct MeshMetaData {
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_ASSETS_MESHMETADATA_H_

@@ -2,26 +2,26 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
-#define ESP_ASSETS_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
+#ifndef ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
+#define ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
 
 #include "AttributesManagerBase.h"
 
 #include "ObjectAttributesManager.h"
 
-#include "esp/assets/attributes/PhysicsManagerAttributes.h"
+#include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/configure.h"
 
 namespace Cr = Corrade;
 
 namespace esp {
-namespace assets {
+namespace metadata {
 
 namespace managers {
 class PhysicsAttributesManager
     : public AttributesManager<Attrs::PhysicsManagerAttributes> {
  public:
-  PhysicsAttributesManager(assets::ResourceManager& resourceManager,
+  PhysicsAttributesManager(esp::assets::ResourceManager& resourceManager,
                            ObjectAttributesManager::ptr objectAttributesMgr)
       : AttributesManager<Attrs::PhysicsManagerAttributes>::AttributesManager(
             resourceManager,
@@ -70,9 +70,19 @@ class PhysicsAttributesManager
 
  protected:
   /**
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  bool isValidPrimitiveAttributes(const std::string& handle) override {
+    return objectAttributesMgr_->getTemplateLibHasHandle(handle);
+  }
+
+  /**
    * @brief Not used by PhysicsManagerAttributes.
    */
-  void setDefaultFileNameBasedAttributes(
+  void setDefaultAssetNameBasedAttributes(
       CORRADE_UNUSED Attrs::PhysicsManagerAttributes::ptr attributes,
       CORRADE_UNUSED bool setFrame,
       CORRADE_UNUSED const std::string& meshHandle,
@@ -155,7 +165,7 @@ class PhysicsAttributesManager
 };  // PhysicsAttributesManager
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_ASSETS_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
+#endif  // ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_

@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_GENERICDRAWABLE_H_
+#define ESP_GFX_GENERICDRAWABLE_H_
 
 #include <Magnum/Shaders/Phong.h>
 
@@ -32,6 +33,9 @@ class GenericDrawable : public Drawable {
                     Magnum::SceneGraph::Camera3D& camera) override;
 
   void updateShader();
+  void updateShaderLightingParameters(
+      const Magnum::Matrix4& transformationMatrix,
+      Magnum::SceneGraph::Camera3D& camera);
 
   Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
                                    Magnum::Shaders::Phong::Flags flags) const;
@@ -49,3 +53,5 @@ class GenericDrawable : public Drawable {
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_GENERICDRAWABLE_H_

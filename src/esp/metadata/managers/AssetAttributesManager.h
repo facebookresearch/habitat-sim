@@ -2,20 +2,20 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
-#define ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
+#ifndef ESP_METADATA_MANAGERS_ASSETATTRIBUTEMANAGER_H_
+#define ESP_METADATA_MANAGERS_ASSETATTRIBUTEMANAGER_H_
 
 /** @file
- * @brief Class Template @ref esp::assets::AssetAttributesManager
+ * @brief Class Template @ref esp::metadata::AssetAttributesManager
  * This class manages attributes describing/configuring magnum mesh
  * primitives.
  */
 
 #include "AttributesManagerBase.h"
-#include "esp/assets/attributes/PrimitiveAssetAttributes.h"
+#include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 /**
  * @brief The kinds of primitive modelled objects supported. Paired with
  * Magnum::Primitive namespace objects
@@ -374,9 +374,19 @@ class AssetAttributesManager
 
  protected:
   /**
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  bool isValidPrimitiveAttributes(const std::string& handle) override {
+    return this->getTemplateLibHasHandle(handle);
+  }
+
+  /**
    * @brief Not used by Attrs::AbstractPrimitiveAttributes.
    */
-  void setDefaultFileNameBasedAttributes(
+  void setDefaultAssetNameBasedAttributes(
       CORRADE_UNUSED Attrs::AbstractPrimitiveAttributes::ptr attributes,
       CORRADE_UNUSED bool setFrame,
       CORRADE_UNUSED const std::string& meshHandle,
@@ -520,7 +530,7 @@ class AssetAttributesManager
 
 };  // AssetAttributesManager
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
+#endif  // ESP_METADATA_MANAGERS_ASSETATTRIBUTEMANAGER_H_

@@ -14,7 +14,8 @@
 
 using std::placeholders::_1;
 namespace esp {
-namespace assets {
+using assets::AssetType;
+namespace metadata {
 
 using attributes::AbstractObjectAttributes;
 using attributes::StageAttributes;
@@ -37,8 +38,7 @@ StageAttributes::ptr StageAttributesManager::createAttributesTemplate(
     bool registerTemplate) {
   StageAttributes::ptr attrs;
   std::string msg;
-  if (objectAttributesMgr_->isValidPrimitiveAttributes(
-          attributesTemplateHandle)) {
+  if (this->isValidPrimitiveAttributes(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing primitive attributes, then
     // this is a primitive-based stage (i.e. a plane) we are building
     attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
@@ -101,7 +101,7 @@ int StageAttributesManager::registerAttributesTemplateFinalize(
   std::string collisionAssetHandle = stageAttributes->getCollisionAssetHandle();
 
   // verify these represent legitimate assets
-  if (objectAttributesMgr_->isValidPrimitiveAttributes(renderAssetHandle)) {
+  if (this->isValidPrimitiveAttributes(renderAssetHandle)) {
     // If renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
@@ -128,7 +128,7 @@ int StageAttributesManager::registerAttributesTemplateFinalize(
     return ID_UNDEFINED;
   }
 
-  if (objectAttributesMgr_->isValidPrimitiveAttributes(collisionAssetHandle)) {
+  if (this->isValidPrimitiveAttributes(collisionAssetHandle)) {
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     stageAttributes->setCollisionAssetIsPrimitive(true);
@@ -172,7 +172,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAssetHandle,
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
-  if (!objectAttributesMgr_->isValidPrimitiveAttributes(primAssetHandle)) {
+  if (!this->isValidPrimitiveAttributes(primAssetHandle)) {
     LOG(ERROR)
         << "StageAttributesManager::createPrimBasedAttributesTemplate : No "
            "primitive with handle '"
@@ -249,18 +249,18 @@ StageAttributes::ptr StageAttributesManager::initNewAttribsInternal(
   // set default origin and orientation values based on file name
   // from AssetInfo::fromPath
   // set defaults for passed render asset handles
-  setDefaultFileNameBasedAttributes(
+  this->setDefaultAssetNameBasedAttributes(
       newAttributes, true, newAttributes->getRenderAssetHandle(),
       std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
                 _1));
   // set defaults for passed collision asset handles
-  setDefaultFileNameBasedAttributes(
+  this->setDefaultAssetNameBasedAttributes(
       newAttributes, false, newAttributes->getCollisionAssetHandle(),
       std::bind(&AbstractObjectAttributes::setCollisionAssetType, newAttributes,
                 _1));
 
   // set defaults for passed semantic asset handles
-  setDefaultFileNameBasedAttributes(
+  this->setDefaultAssetNameBasedAttributes(
       newAttributes, false, newAttributes->getSemanticAssetHandle(),
       std::bind(&StageAttributes::setSemanticAssetType, newAttributes, _1));
 
@@ -278,11 +278,11 @@ StageAttributes::ptr StageAttributesManager::initNewAttribsInternal(
   return newAttributes;
 }  // StageAttributesManager::initNewAttribsInternal
 
-void StageAttributesManager::setDefaultFileNameBasedAttributes(
+void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     StageAttributes::ptr attributes,
     bool setFrame,
     const std::string& fileName,
-    std::function<void(int)> meshTypeSetter) {
+    std::function<void(int)> assetTypeSetter) {
   // TODO : support future mesh-name specific type setting?
   using Corrade::Utility::String::endsWith;
 
@@ -294,28 +294,30 @@ void StageAttributesManager::setDefaultFileNameBasedAttributes(
   up = up1;
   fwd = fwd1;
   if (endsWith(fileName, "_semantic.ply")) {
-    meshTypeSetter(static_cast<int>(AssetType::INSTANCE_MESH));
+    assetTypeSetter(static_cast<int>(AssetType::INSTANCE_MESH));
   } else if (endsWith(fileName, "mesh.ply")) {
-    meshTypeSetter(static_cast<int>(AssetType::FRL_PTEX_MESH));
+    assetTypeSetter(static_cast<int>(AssetType::FRL_PTEX_MESH));
     up = up2;
     fwd = fwd2;
   } else if (endsWith(fileName, "house.json")) {
-    meshTypeSetter(static_cast<int>(AssetType::SUNCG_SCENE));
+    assetTypeSetter(static_cast<int>(AssetType::SUNCG_SCENE));
   } else if (endsWith(fileName, ".glb")) {
     // assumes MP3D glb with gravity = -Z
-    meshTypeSetter(static_cast<int>(AssetType::MP3D_MESH));
+    assetTypeSetter(static_cast<int>(AssetType::MP3D_MESH));
     // Create a coordinate for the mesh by rotating the default ESP
     // coordinate frame to -Z gravity
     up = up2;
     fwd = fwd2;
+  } else if (this->isValidPrimitiveAttributes(fileName)) {
+    assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
   } else {
-    meshTypeSetter(static_cast<int>(AssetType::UNKNOWN));
+    assetTypeSetter(static_cast<int>(AssetType::UNKNOWN));
   }
   if (setFrame) {
     attributes->setOrientUp(up);
     attributes->setOrientFront(fwd);
   }
-}  // StageAttributesManager::setDefaultFileNameBasedAttributes
+}  // StageAttributesManager::setDefaultAssetNameBasedAttributes
 
 StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
     const std::string& templateName,
@@ -406,5 +408,5 @@ StageAttributes::ptr StageAttributesManager::loadAttributesFromJSONDoc(
 }  // StageAttributesManager::loadAttributesFromJSONDoc
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

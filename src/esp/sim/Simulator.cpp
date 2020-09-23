@@ -13,12 +13,12 @@
 
 #include <Magnum/GL/Context.h>
 
-#include "esp/assets/attributes/AttributesBase.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/io/io.h"
+#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/ObjectControls.h"
@@ -35,7 +35,8 @@ using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 
 Simulator::Simulator(const SimulatorConfiguration& cfg)
-    : random_{core::Random::create(cfg.randomSeed)} {
+    : random_{core::Random::create(cfg.randomSeed)},
+      requiresTextures_{Cr::Containers::NullOpt} {
   // initalize members according to cfg
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
   //       Maybe better not to do this reconfigure
@@ -69,6 +70,7 @@ void Simulator::close() {
   config_ = SimulatorConfiguration{};
 
   frustumCulling_ = true;
+  requiresTextures_ = Cr::Containers::NullOpt;
 }
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
@@ -88,6 +90,18 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // otherwise set current configuration and initialize
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
+
+  if (requiresTextures_ == Cr::Containers::NullOpt) {
+    requiresTextures_ = config_.requiresTextures;
+    resourceManager_->setRequiresTextures(config_.requiresTextures);
+  } else if (!(*requiresTextures_) && config_.requiresTextures) {
+    throw std::runtime_error(
+        "requiresTextures was changed to True from False.  Must call close() "
+        "before changing this value.");
+  } else if ((*requiresTextures_) && !config_.requiresTextures) {
+    LOG(WARNING) << "Not changing requiresTextures as the simulator was "
+                    "initialized with True.  Call close() to change this.";
+  }
 
   // use physics attributes manager to get physics manager attributes
   // described by config file - this always exists to configure scene
@@ -160,13 +174,15 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     // reinitalize members
     if (!renderer_) {
-      renderer_ = gfx::Renderer::create();
+      gfx::Renderer::Flags flags;
+      if (!config_.requiresTextures)
+        flags |= gfx::Renderer::Flag::NoTextures;
+      renderer_ = gfx::Renderer::create(flags);
     }
 
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
     auto& rootNode = sceneGraph.getRootNode();
     // auto& drawables = sceneGraph.getDrawables();
-    resourceManager_->compressTextures(config_.compressTextures);
 
     bool loadSuccess = false;
 

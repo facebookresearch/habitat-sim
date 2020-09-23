@@ -223,6 +223,7 @@ jobs:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
+                pip install pytest-parallel
               fi
       - run:
           name: Install emscripten
@@ -394,12 +395,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest --cov-report=xml --cov=./
+              pytest --workers 4 --cov-report=xml --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              pytest --workers 4 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
@@ -502,6 +503,16 @@ jobs:
 
   build_conda_binaries:
     <<: *gpu
+    parameters:
+      AIHABITAT_CONDA_CHN:
+        type: string
+        default: "aihabitat"
+      AIHABITAT_CONDA_CHN_PWD_VAR:
+        type: string
+        default: "AIHABITAT_CONDA_PWD"
+      NIGHTLY_FLAG:
+        type: string
+        default: ""
     steps:
       - checkout:
           path: ./habitat-sim
@@ -525,8 +536,8 @@ jobs:
               apt-cache policy docker-ce
               sudo apt-get install -y docker-ce
 
-              docker build -t hsim_condabuild_dcontainer -f Dockerfile . --build-arg AIHABITAT_NIGHTLY_CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD
-              docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py36 && cd /remote/habitat-sim/conda-build && python linux_matrix_builder.py --conda_upload"
+              docker build -t hsim_condabuild_dcontainer -f Dockerfile . --build-arg AIHABITAT_CONDA_CHN_PWD=$<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --build-arg AIHABITAT_CONDA_CHN=<< parameters.AIHABITAT_CONDA_CHN >>
+              docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py36 && cd /remote/habitat-sim/conda-build && python linux_matrix_builder.py --conda_upload << parameters.NIGHTLY_FLAG >>"
 
   update_docs:
     docker:
@@ -598,8 +609,36 @@ workflows:
             branches:
               only: master
       - build_conda_binaries:
+          AIHABITAT_CONDA_CHN: aihabitat-nightly
+          AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
+          NIGHTLY_FLAG: "--nightly"
           requires:
             - install_and_test_ubuntu
           filters:
             branches:
               only: master
+
+  version_conda_release:
+    jobs:
+      - install_and_test_ubuntu:
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              ignore: /.*/
+      - update_docs:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              ignore: /.*/
+      - build_conda_binaries:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              ignore: /.*/

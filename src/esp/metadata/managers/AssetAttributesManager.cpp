@@ -9,7 +9,7 @@
 #include "AttributesManagerBase.h"
 
 namespace esp {
-namespace assets {
+namespace metadata {
 
 using attributes::AbstractPrimitiveAttributes;
 using attributes::CapsulePrimitiveAttributes;
@@ -119,7 +119,8 @@ AssetAttributesManager::createAttributesTemplate(
   if (nullptr == primAssetAttributes) {
     return primAssetAttributes;
   }
-  LOG(INFO) << "Asset attributes (" << primClassName << ") created"
+  LOG(INFO) << "Asset attributes (" << primClassName << " : "
+            << primAssetAttributes->getHandle() << ") created"
             << (registerTemplate ? " and registered." : ".");
 
   return this->postCreateRegister(primAssetAttributes, registerTemplate);
@@ -188,5 +189,5 @@ AssetAttributesManager::loadAttributesFromJSONDoc(
 }  // AssetAttributesManager::loadAttributesFromJSONDoc
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

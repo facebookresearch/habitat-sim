@@ -2,11 +2,11 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MANAGERS_ATTRIBUTEMANAGERBASE_H_
-#define ESP_ASSETS_MANAGERS_ATTRIBUTEMANAGERBASE_H_
+#ifndef ESP_METADATA_MANAGERS_ATTRIBUTEMANAGERBASE_H_
+#define ESP_METADATA_MANAGERS_ATTRIBUTEMANAGERBASE_H_
 
 /** @file
- * @brief Class Template @ref esp::assets::managers::AttributesManager
+ * @brief Class Template @ref esp::metadata::managers::AttributesManager
  */
 
 #include <deque>
@@ -18,8 +18,8 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
-#include "esp/assets/attributes/AttributesBase.h"
-#include "esp/assets/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "esp/io/json.h"
 
@@ -27,12 +27,12 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
-
 class ResourceManager;
+}
 
+namespace metadata {
 namespace managers {
-
-namespace Attrs = esp::assets::attributes;
+namespace Attrs = esp::metadata::attributes;
 /**
  * @brief Template Class defining responsibilities for managing attributes for
  * different types of objects, such as scenes, primitive assets, physical
@@ -49,7 +49,7 @@ class AttributesManager {
 
   typedef std::shared_ptr<T> AttribsPtr;
 
-  AttributesManager(assets::ResourceManager& resourceManager,
+  AttributesManager(esp::assets::ResourceManager& resourceManager,
                     const std::string& attrType)
       : resourceManager_(resourceManager), attrType_(attrType) {}
   virtual ~AttributesManager() = default;
@@ -587,6 +587,14 @@ class AttributesManager {
                                             const io::JsonDocument& jsonDoc);
 
   /**
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  virtual bool isValidPrimitiveAttributes(const std::string& handle) = 0;
+
+  /**
    * @brief Only used by @ref AbstractObjectAttributes derived-attributes. Set
    * the asset type and mesh asset filename from json file. If mesh asset
    * filename has changed in json, but type has not been specified in json,
@@ -598,18 +606,18 @@ class AttributesManager {
    * @param jsonMeshTypeTag The string tag denoting the desired mesh type in the
    * json.
    * @param jsonMeshHandleTag The string for the mesh asset handle.
-   * @param fileName [in/out] On entry this is old mesh file handle, on exit is
-   * new mesh file handle, or empty.
+   * @param assetName [in/out] On entry this is old mesh handle, on exit is
+   * new mesh handle, or empty.
    * @param meshTypeSetter Function pointer to the appropriate mesh type setter
    * in the Attributes object.
    * @return Whether the render asset name was specified in the json and should
-   * be set from fileName variable.
+   * be set from assetName variable.
    */
   bool setJSONAssetHandleAndType(AttribsPtr attributes,
                                  const io::JsonDocument& jsonDoc,
                                  const char* jsonMeshTypeTag,
                                  const char* jsonMeshHandleTag,
-                                 std::string& fileName,
+                                 std::string& assetName,
                                  std::function<void(int)> meshTypeSetter);
 
   //======== Internally accessed functions ========
@@ -632,7 +640,7 @@ class AttributesManager {
   }  // postCreateRegister
 
   /**
-   * @brief Perform file-name-based attributes initialization. This is to
+   * @brief Perform asset-name-based attributes initialization. This is to
    * take the place of the AssetInfo::fromPath functionality, and is only
    * intended to provide default values and other help if certain mistakes
    * are made by the user, such as specifying an asset handle in json but not
@@ -642,13 +650,13 @@ class AttributesManager {
    * @param attributes The AbstractObjectAttributes object to be configured
    * @param setFrame whether the frame should be set or not (only for render
    * assets in scenes)
-   * @param fileName Mesh Handle to check.
+   * @param assetName Mesh Handle to check.
    * @param meshTypeSetter Setter for mesh type.
    */
-  virtual void setDefaultFileNameBasedAttributes(
+  virtual void setDefaultAssetNameBasedAttributes(
       AttribsPtr attributes,
       bool setFrame,
-      const std::string& fileName,
+      const std::string& assetName,
       std::function<void(int)> meshTypeSetter) = 0;
 
   /**
@@ -929,6 +937,11 @@ auto AttributesManager<T>::createObjectAttributesFromJson(
       jsonDoc, "scale",
       std::bind(&Attrs::AbstractObjectAttributes::setScale, attributes, _1));
 
+  // collision asset size
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "collision asset size",
+      std::bind(&Attrs::AbstractObjectAttributes::setCollisionAssetSize,
+                attributes, _1));
   // margin
   io::jsonIntoSetter<double>(
       jsonDoc, "margin",
@@ -971,24 +984,28 @@ auto AttributesManager<T>::createObjectAttributesFromJson(
 
   // 4. parse render and collision mesh filepaths
   std::string rndrFName = "";
+  // current value - also place holder for json read result
   std::string rTmpFName = attributes->getRenderAssetHandle();
+  // is true if mesh name is found in JSON and different than current value
   if (setJSONAssetHandleAndType(
           attributes, jsonDoc, "render mesh type", "render mesh", rTmpFName,
           std::bind(&Attrs::AbstractObjectAttributes::setRenderAssetType,
                     attributes, _1))) {
+    // set asset name to be what was read in json
     rndrFName = rTmpFName;
   }
 
   std::string colFName = "";
+  // current value - also place holder for json read result
   std::string cTmpFName = attributes->getCollisionAssetHandle();
+  // is true if mesh name is found in JSON and different than current value
   if (setJSONAssetHandleAndType(
           attributes, jsonDoc, "collision mesh type", "collision mesh",
           cTmpFName,
           std::bind(&Attrs::AbstractObjectAttributes::setCollisionAssetType,
                     attributes, _1))) {
+    // set asset name to be what was read in json
     colFName = cTmpFName;
-    // TODO eventually remove this, but currently collision mesh must be UNKNOWN
-    attributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
   }
 
   // use non-empty result if either result is empty
@@ -996,8 +1013,21 @@ auto AttributesManager<T>::createObjectAttributesFromJson(
                                                               : rndrFName);
   attributes->setCollisionAssetHandle(colFName.compare("") == 0 ? rndrFName
                                                                 : colFName);
-  attributes->setUseMeshCollision(true);
 
+  // check if primitive collision mesh
+  auto colAssetHandle = attributes->getCollisionAssetHandle();
+  if (this->isValidPrimitiveAttributes(colAssetHandle)) {
+    // value is valid primitive, and value is different than existing value
+    attributes->setCollisionAssetType(
+        static_cast<int>(esp::assets::AssetType::PRIMITIVE));
+    attributes->setUseMeshCollision(false);
+  } else {
+    // TODO eventually remove this, but currently non-prim collision mesh must
+    // be UNKNOWN
+    attributes->setCollisionAssetType(
+        static_cast<int>(esp::assets::AssetType::UNKNOWN));
+    attributes->setUseMeshCollision(true);
+  }
   return attributes;
 }  // AttributesManager<AttribsPtr>::createObjectAttributesFromJson
 
@@ -1007,17 +1037,17 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
     const io::JsonDocument& jsonDoc,
     const char* jsonMeshTypeTag,
     const char* jsonMeshHandleTag,
-    std::string& fileName,
+    std::string& assetName,
     std::function<void(int)> meshTypeSetter) {
   std::string propertiesFileDirectory = attributes->getFileDirectory();
   // save current file name
-  const std::string oldFName(fileName);
-  // clear var to get new value
-  fileName = "";
+  const std::string oldFName(assetName);
+  // clear var to get new value - if returns true use this as new value
+  assetName = "";
   // Map a json string value to its corresponding AssetType if found and cast to
   // int, based on @ref AbstractObjectAttributes::AssetTypeNamesMap mappings.
   // Casts an int of the @ref esp::AssetType enum value if found and understood,
-  // 0 (AssetType::UNKNOWN) if found but not understood, and
+  // 0 (esp::assets::AssetType::UNKNOWN) if found but not understood, and
   //-1 if tag is not found in json.
   int typeVal = -1;
   std::string tmpVal = "";
@@ -1028,32 +1058,41 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
       typeVal = static_cast<int>(
           Attrs::AbstractObjectAttributes::AssetTypeNamesMap.at(tmpVal));
     } else {
-      LOG(WARNING) << "AttributesManager::convertJsonStringToAssetType : "
+      LOG(WARNING) << "AttributesManager::setJSONAssetHandleAndType : "
                       "Value in json @ tag : "
                    << jsonMeshTypeTag << " : `" << tmpVal
                    << "` does not map to a valid "
                       "AbstractObjectAttributes::AssetTypeNamesMap value, so "
                       "defaulting mesh type to AssetType::UNKNOWN.";
-      typeVal = static_cast<int>(AssetType::UNKNOWN);
+      typeVal = static_cast<int>(esp::assets::AssetType::UNKNOWN);
     }
     // value found so override current value, otherwise do not.
     meshTypeSetter(typeVal);
   }  // if type is found in json.  If not typeVal is -1
 
   // Read json for new mesh handle
-  if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshHandleTag, fileName)) {
-    // value has changed
-    fileName = Cr::Utility::Directory::join(propertiesFileDirectory, fileName);
-    if ((typeVal == -1) && (oldFName.compare(fileName) != 0)) {
-      std::string strToFind(jsonMeshTypeTag);
-      // if file name is different, and type val has not been specified, perform
-      // name-specific mesh type config
-      // do not override orientation - should be specified in json.
-      setDefaultFileNameBasedAttributes(attributes, false, fileName,
-                                        meshTypeSetter);
-    }
+  if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshHandleTag, assetName)) {
+    // value is specified in json doc
+    if ((this->isValidPrimitiveAttributes(assetName)) &&
+        (oldFName.compare(assetName) != 0)) {
+      // if mesh name is specified and different than old value,
+      // perform name-specific mesh-type config.
+      setDefaultAssetNameBasedAttributes(attributes, false, assetName,
+                                         meshTypeSetter);
+    } else {
+      // is not valid primitive, check if valid file name
+      assetName =
+          Cr::Utility::Directory::join(propertiesFileDirectory, assetName);
+      if ((typeVal == -1) && (oldFName.compare(assetName) != 0)) {
+        // if file name is different, and type val has not been specified,
+        // perform name-specific mesh type config do not override orientation -
+        // should be specified in json.
+        setDefaultAssetNameBasedAttributes(attributes, false, assetName,
+                                           meshTypeSetter);
+      }
+    }  // value is valid prim and exists, else value is valid file and exists
     return true;
-  }
+  }  // value is present in json
   return false;
 }  // AttributesManager<AttribsPtr>::setAssetHandleAndType
 
@@ -1190,6 +1229,6 @@ AttributesManager<T>::getTemplateHandlesBySubStringPerType(
 }  // AttributesManager::getTemplateHandlesBySubStringPerType
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp
-#endif  // ESP_ASSETS_MANAGERS_ATTRIBUTESMANAGERBASE_H_
+#endif  // ESP_METADATA_MANAGERS_ATTRIBUTESMANAGERBASE_H_

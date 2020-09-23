@@ -8,30 +8,32 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
-#include "esp/assets/managers/AttributesManagerBase.h"
+#include "esp/metadata/managers/AttributesManagerBase.h"
 
-#include "esp/assets/managers/AssetAttributesManager.h"
-#include "esp/assets/managers/ObjectAttributesManager.h"
-#include "esp/assets/managers/PhysicsAttributesManager.h"
-#include "esp/assets/managers/StageAttributesManager.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/StageAttributesManager.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
+namespace Attrs = esp::metadata::attributes;
+using Attrs::AbstractAttributes;
+using Attrs::AbstractObjectAttributes;
+using Attrs::AbstractPrimitiveAttributes;
+using Attrs::CapsulePrimitiveAttributes;
+using Attrs::ConePrimitiveAttributes;
+using Attrs::CubePrimitiveAttributes;
+using Attrs::CylinderPrimitiveAttributes;
+using Attrs::IcospherePrimitiveAttributes;
+using Attrs::ObjectAttributes;
+using Attrs::PhysicsManagerAttributes;
+using Attrs::StageAttributes;
+using Attrs::UVSpherePrimitiveAttributes;
 
 namespace esp {
-namespace assets {
+namespace metadata {
 namespace managers {
-
-using attributes::AbstractPrimitiveAttributes;
-using attributes::CapsulePrimitiveAttributes;
-using attributes::ConePrimitiveAttributes;
-using attributes::CubePrimitiveAttributes;
-using attributes::CylinderPrimitiveAttributes;
-using attributes::IcospherePrimitiveAttributes;
-using attributes::ObjectAttributes;
-using attributes::PhysicsManagerAttributes;
-using attributes::StageAttributes;
-using attributes::UVSpherePrimitiveAttributes;
 
 /**
  * @brief instance class template base classes for attributes managers.
@@ -155,20 +157,20 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
 
 void initAttributesManagersBindings(py::module& m) {
   // ==== PrimObjTypes enum describing types of primitives supported ====
-  py::enum_<assets::PrimObjTypes>(m, "PrimObjTypes")
-      .value("CAPSULE_SOLID", assets::PrimObjTypes::CAPSULE_SOLID)
-      .value("CAPSULE_WF", assets::PrimObjTypes::CAPSULE_WF)
-      .value("CONE_SOLID", assets::PrimObjTypes::CONE_SOLID)
-      .value("CONE_WF", assets::PrimObjTypes::CONE_WF)
-      .value("CUBE_SOLID", assets::PrimObjTypes::CUBE_SOLID)
-      .value("CUBE_WF", assets::PrimObjTypes::CUBE_WF)
-      .value("CYLINDER_SOLID", assets::PrimObjTypes::CYLINDER_SOLID)
-      .value("CYLINDER_WF", assets::PrimObjTypes::CYLINDER_WF)
-      .value("ICOSPHERE_SOLID", assets::PrimObjTypes::ICOSPHERE_SOLID)
-      .value("ICOSPHERE_WF", assets::PrimObjTypes::ICOSPHERE_WF)
-      .value("UVSPHERE_SOLID", assets::PrimObjTypes::UVSPHERE_SOLID)
-      .value("UVSPHERE_WF", assets::PrimObjTypes::UVSPHERE_WF)
-      .value("END_PRIM_OBJ_TYPE", assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
+  py::enum_<metadata::PrimObjTypes>(m, "PrimObjTypes")
+      .value("CAPSULE_SOLID", metadata::PrimObjTypes::CAPSULE_SOLID)
+      .value("CAPSULE_WF", metadata::PrimObjTypes::CAPSULE_WF)
+      .value("CONE_SOLID", metadata::PrimObjTypes::CONE_SOLID)
+      .value("CONE_WF", metadata::PrimObjTypes::CONE_WF)
+      .value("CUBE_SOLID", metadata::PrimObjTypes::CUBE_SOLID)
+      .value("CUBE_WF", metadata::PrimObjTypes::CUBE_WF)
+      .value("CYLINDER_SOLID", metadata::PrimObjTypes::CYLINDER_SOLID)
+      .value("CYLINDER_WF", metadata::PrimObjTypes::CYLINDER_WF)
+      .value("ICOSPHERE_SOLID", metadata::PrimObjTypes::ICOSPHERE_SOLID)
+      .value("ICOSPHERE_WF", metadata::PrimObjTypes::ICOSPHERE_WF)
+      .value("UVSPHERE_SOLID", metadata::PrimObjTypes::UVSPHERE_SOLID)
+      .value("UVSPHERE_WF", metadata::PrimObjTypes::UVSPHERE_WF)
+      .value("END_PRIM_OBJ_TYPE", metadata::PrimObjTypes::END_PRIM_OBJ_TYPES);
 
   // ==== Primitive Asset Attributes Template manager ====
   declareBaseAttributesManager<AbstractPrimitiveAttributes>(m, "BaseAsset");
@@ -317,9 +319,7 @@ void initAttributesManagersBindings(py::module& m) {
              AttributesManager<PhysicsManagerAttributes>,
              PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
 
+}  // initAttributesManagersBindings
 }  // namespace managers
-
-}  // namespace managers
-
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

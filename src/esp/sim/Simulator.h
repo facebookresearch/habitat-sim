@@ -8,14 +8,14 @@
 #include <Corrade/Utility/Assert.h>
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
-#include "esp/assets/managers/AssetAttributesManager.h"
-#include "esp/assets/managers/ObjectAttributesManager.h"
-#include "esp/assets/managers/PhysicsAttributesManager.h"
-#include "esp/assets/managers/StageAttributesManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/StageAttributesManager.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
@@ -39,9 +39,8 @@ class Renderer;
 
 namespace esp {
 namespace sim {
-
-namespace AttrMgrs = esp::assets::managers;
-namespace Attrs = esp::assets::attributes;
+namespace AttrMgrs = esp::metadata::managers;
+namespace Attrs = esp::metadata::attributes;
 
 struct SimulatorConfiguration {
   scene::SceneConfiguration scene;
@@ -60,7 +59,15 @@ struct SimulatorConfiguration {
    * simulation, if a suitable library (i.e. Bullet) has been installed.
    */
   bool enablePhysics = false;
+  /**
+   * @brief Whether or not to load the semantic mesh
+   */
   bool loadSemanticMesh = true;
+  /**
+   * @brief Whether or not to load textures for the meshes. This MUST be true
+   * for RGB rendering
+   */
+  bool requiresTextures = true;
   std::string physicsConfigFile =
       ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH;  // should we instead link a
                                                // PhysicsManagerConfiguration
@@ -785,6 +792,13 @@ class Simulator {
   Magnum::Matrix4 gripOffset;
 
   esp::scene::SceneNode* crossHairNode_ = nullptr;
+
+  /**
+   * @brief Tracks whether or not the simulator was initialized
+   * to load textures.  Because we cache mesh loading, this should
+   * *not* be changed without calling close() first
+   */
+  Corrade::Containers::Optional<bool> requiresTextures_;
 
   ESP_SMART_POINTERS(Simulator)
 };

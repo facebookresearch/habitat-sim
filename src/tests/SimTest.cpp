@@ -25,11 +25,11 @@ using esp::agent::Agent;
 using esp::agent::AgentConfiguration;
 using esp::agent::AgentState;
 using esp::assets::ResourceManager;
-using esp::assets::attributes::AbstractPrimitiveAttributes;
-using esp::assets::attributes::ObjectAttributes;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
+using esp::metadata::attributes::AbstractPrimitiveAttributes;
+using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
 using esp::scene::SceneConfiguration;
 using esp::sensor::Observation;
@@ -99,10 +99,10 @@ struct SimTest : Cr::TestSuite::Tester {
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
-  LightSetup lightSetup1{{Magnum::Vector3{0.0f, 1.5f, -0.2f}, 0xffffff_rgbf,
-                          LightPositionModel::CAMERA}};
-  LightSetup lightSetup2{{Magnum::Vector3{0.0f, 0.5f, 1.0f}, 0xffffff_rgbf,
-                          LightPositionModel::CAMERA}};
+  LightSetup lightSetup1{{Magnum::Vector4{0.0f, 1.5f, -0.2f, 0.0f},
+                          0xffffff_rgbf, LightPositionModel::CAMERA}};
+  LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
+                          0xffffff_rgbf, LightPositionModel::CAMERA}};
 };
 
 SimTest::SimTest() {
@@ -224,6 +224,9 @@ void SimTest::getSceneRGBAObservation() {
 void SimTest::getSceneWithLightingRGBAObservation() {
   setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh, "custom_lighting_1");
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
 }
@@ -237,6 +240,9 @@ void SimTest::getDefaultLightingRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 }
@@ -251,6 +257,9 @@ void SimTest::getCustomLightingRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 }
@@ -265,6 +274,9 @@ void SimTest::updateLightSetupRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -295,6 +307,9 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -310,6 +325,9 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
 }
 
 void SimTest::multipleLightingSetupsRGBAObservation() {
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   auto simulator = getSimulator(planeScene);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
@@ -482,7 +500,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 
   // there should be 1 prim template per default primitive asset template
   int numPrimsExpected =
-      static_cast<int>(esp::assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
+      static_cast<int>(esp::metadata::PrimObjTypes::END_PRIM_OBJ_TYPES);
   // verify the number of primitive templates
   CORRADE_VERIFY(numPrimsExpected == primObjAssetHandles.size());
 
@@ -499,8 +517,8 @@ void SimTest::buildingPrimAssetObjectTemplates() {
       // verify that the attributes contains the handle, and the handle contains
       // the expected class name
       std::string className =
-          esp::assets::managers::AssetAttributesManager::PrimitiveNames3DMap.at(
-              static_cast<esp::assets::PrimObjTypes>(i));
+          esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap
+              .at(static_cast<esp::metadata::PrimObjTypes>(i));
       CORRADE_VERIFY((primAttr->getHandle() == handle) &&
                      (handle.find(className) != std::string::npos));
     }
@@ -540,7 +558,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   {
     // get existing default cylinder handle
     primObjAssetHandles = assetAttribsMgr->getTemplateHandlesByPrimType(
-        esp::assets::PrimObjTypes::CYLINDER_SOLID);
+        esp::metadata::PrimObjTypes::CYLINDER_SOLID);
     // should only be one handle in this vector
     CORRADE_VERIFY(1 == primObjAssetHandles.size());
     // primitive render object uses primitive render asset as handle
@@ -581,7 +599,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // test creation of new object, using edited attributes
     // get existing default cylinder handle
     primObjAssetHandles = assetAttribsMgr->getTemplateHandlesByPrimType(
-        esp::assets::PrimObjTypes::CYLINDER_SOLID);
+        esp::metadata::PrimObjTypes::CYLINDER_SOLID);
     // primitive render object uses primitive render asset as handle
     std::string origCylinderHandle = primObjAssetHandles[0];
     primAttr = assetAttribsMgr->getTemplateCopyByHandle(origCylinderHandle);

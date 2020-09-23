@@ -3,17 +3,17 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <gtest/gtest.h>
-#include "esp/assets/attributes/ObjectAttributes.h"
 #include "esp/core/esp.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "configure.h"
 
 using namespace esp::io;
 
-using esp::assets::attributes::AbstractObjectAttributes;
-using esp::assets::attributes::ObjectAttributes;
+using esp::metadata::attributes::AbstractObjectAttributes;
+using esp::metadata::attributes::ObjectAttributes;
 
 TEST(IOTest, fileExistTest) {
   std::string file = FILE_THAT_EXISTS;

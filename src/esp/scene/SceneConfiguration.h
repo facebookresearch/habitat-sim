@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_SCENE_SCENECONFIGURATION_H_
+#define ESP_SCENE_SCENECONFIGURATION_H_
 
 #include <map>
 #include <string>
@@ -32,3 +33,5 @@ bool operator!=(const SceneConfiguration& a, const SceneConfiguration& b);
 
 }  // namespace scene
 }  // namespace esp
+
+#endif  // ESP_SCENE_SCENECONFIGURATION_H_

@@ -18,6 +18,7 @@
 #include <Magnum/PixelFormat.h>
 
 #include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/magnum.h"
 
 namespace Mn = Magnum;
@@ -26,7 +27,7 @@ namespace esp {
 namespace gfx {
 
 struct Renderer::Impl {
-  Impl() {
+  explicit Impl(Flags flags) : depthShader_{nullptr}, flags_{flags} {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
@@ -67,14 +68,17 @@ struct Renderer::Impl {
     }
 
     sensor.bindRenderTarget(RenderTarget::create_unique(
-        sensor.framebufferSize(), *depthUnprojection, depthShader_.get()));
+        sensor.framebufferSize(), *depthUnprojection, depthShader_.get(),
+        flags_));
   }
 
  private:
-  std::unique_ptr<DepthShader> depthShader_ = nullptr;
+  std::unique_ptr<DepthShader> depthShader_;
+  const Flags flags_;
 };
 
-Renderer::Renderer() : pimpl_(spimpl::make_unique_impl<Impl>()) {}
+Renderer::Renderer(Flags flags)
+    : pimpl_(spimpl::make_unique_impl<Impl>(flags)) {}
 
 void Renderer::draw(RenderCamera& camera,
                     scene::SceneGraph& sceneGraph,

@@ -30,11 +30,10 @@
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
-
 //! core physics simulation namespace
 namespace physics {
 
-namespace Attrs = esp::assets::attributes;
+namespace Attrs = esp::metadata::attributes;
 //! Holds information about one ray hit instance.
 struct RayHitInfo {
   //! The id of the object hit by this ray. Stage hits are -1.

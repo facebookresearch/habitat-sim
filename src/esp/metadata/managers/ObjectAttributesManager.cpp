@@ -15,7 +15,9 @@ using std::placeholders::_1;
 namespace Cr = Corrade;
 
 namespace esp {
-namespace assets {
+
+using assets::AssetType;
+namespace metadata {
 
 using attributes::AbstractObjectAttributes;
 using attributes::ObjectAttributes;
@@ -25,7 +27,7 @@ ObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     bool registerTemplate) {
   ObjectAttributes::ptr attrs;
   std::string msg;
-  if (isValidPrimitiveAttributes(attributesTemplateHandle)) {
+  if (this->isValidPrimitiveAttributes(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing primitive attributes, then
     // this is a primitive-based object we are building
     attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
@@ -74,7 +76,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAttrTemplateHandle,
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
-  if (!isValidPrimitiveAttributes(primAttrTemplateHandle)) {
+  if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
     LOG(ERROR)
         << "ObjectAttributesManager::createPrimBasedAttributesTemplate : No "
            "primitive with handle '"
@@ -172,12 +174,12 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
   // set default collision asset handle
   newAttributes->setCollisionAssetHandle(attributesHandle);
   // set defaults for passed render asset handles
-  setDefaultFileNameBasedAttributes(
+  this->setDefaultAssetNameBasedAttributes(
       newAttributes, true, newAttributes->getRenderAssetHandle(),
       std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
                 _1));
   // set defaults for passed collision asset handles
-  setDefaultFileNameBasedAttributes(
+  this->setDefaultAssetNameBasedAttributes(
       newAttributes, false, newAttributes->getCollisionAssetHandle(),
       std::bind(&AbstractObjectAttributes::setCollisionAssetType, newAttributes,
                 _1));
@@ -187,19 +189,23 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
 
 // Eventually support explicitly configuring desirable defaults/file-name
 // base settings.
-void ObjectAttributesManager::setDefaultFileNameBasedAttributes(
+void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     ObjectAttributes::ptr attributes,
     bool setFrame,
-    const std::string&,
-    std::function<void(int)> meshTypeSetter) {
-  // TODO : support future mesh-name specific type setting?
-  meshTypeSetter(static_cast<int>(AssetType::UNKNOWN));
-
+    const std::string& meshHandle,
+    std::function<void(int)> assetTypeSetter) {
+  if (this->isValidPrimitiveAttributes(meshHandle)) {
+    // value is valid primitive, and value is different than existing value
+    assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
+  } else {
+    // use unknown for object mesh types of non-primitives
+    assetTypeSetter(static_cast<int>(AssetType::UNKNOWN));
+  }
   if (setFrame) {
     attributes->setOrientUp({0, 1, 0});
     attributes->setOrientFront({0, 0, -1});
   }
-}  // SceneAttributesManager::setDefaultFileNameBasedAttributes
+}  // SceneAttributesManager::setDefaultAssetNameBasedAttributes
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
     ObjectAttributes::ptr objectTemplate,
@@ -218,7 +224,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
 
-  if (isValidPrimitiveAttributes(renderAssetHandle)) {
+  if (this->isValidPrimitiveAttributes(renderAssetHandle)) {
     // If renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
@@ -244,7 +250,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     return ID_UNDEFINED;
   }
 
-  if (isValidPrimitiveAttributes(collisionAssetHandle)) {
+  if (this->isValidPrimitiveAttributes(collisionAssetHandle)) {
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
@@ -345,5 +351,5 @@ std::vector<int> ObjectAttributesManager::loadObjectConfigs(
 }  // ObjectAttributesManager::buildObjectConfigPaths
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

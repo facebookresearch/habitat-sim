@@ -152,6 +152,7 @@ venv.bak/
 compile_commands.json
 .vimtags
 .ycm*
+.clangd
 
 .autoenv*
 

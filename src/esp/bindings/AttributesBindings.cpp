@@ -7,30 +7,31 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
-#include "esp/assets/attributes/AttributesBase.h"
-#include "esp/assets/attributes/ObjectAttributes.h"
-#include "esp/assets/attributes/PhysicsManagerAttributes.h"
-#include "esp/assets/attributes/PrimitiveAssetAttributes.h"
-#include "esp/assets/attributes/SceneAttributes.h"
+#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/PhysicsManagerAttributes.h"
+#include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
+#include "esp/metadata/attributes/SceneAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
 
-namespace esp {
-namespace assets {
+namespace Attrs = esp::metadata::attributes;
+using Attrs::AbstractAttributes;
+using Attrs::AbstractObjectAttributes;
+using Attrs::AbstractPrimitiveAttributes;
+using Attrs::CapsulePrimitiveAttributes;
+using Attrs::ConePrimitiveAttributes;
+using Attrs::CubePrimitiveAttributes;
+using Attrs::CylinderPrimitiveAttributes;
+using Attrs::IcospherePrimitiveAttributes;
+using Attrs::ObjectAttributes;
+using Attrs::PhysicsManagerAttributes;
+using Attrs::StageAttributes;
+using Attrs::UVSpherePrimitiveAttributes;
 
-using attributes::AbstractAttributes;
-using attributes::AbstractObjectAttributes;
-using attributes::AbstractPrimitiveAttributes;
-using attributes::CapsulePrimitiveAttributes;
-using attributes::ConePrimitiveAttributes;
-using attributes::CubePrimitiveAttributes;
-using attributes::CylinderPrimitiveAttributes;
-using attributes::IcospherePrimitiveAttributes;
-using attributes::ObjectAttributes;
-using attributes::PhysicsManagerAttributes;
-using attributes::StageAttributes;
-using attributes::UVSpherePrimitiveAttributes;
+namespace esp {
+namespace metadata {
 
 void initAttributesBindings(py::module& m) {
   // ==== AbstractAttributes ====
@@ -60,6 +61,13 @@ void initAttributesBindings(py::module& m) {
           "scale", &AbstractObjectAttributes::getScale,
           &AbstractObjectAttributes::setScale,
           R"(Scale multiplier for constructions built from this template in x,y,z)")
+      .def_property(
+          "collision_asset_size",
+          &AbstractObjectAttributes::getCollisionAssetSize,
+          &AbstractObjectAttributes::setCollisionAssetSize,
+          R"(Size of collsion assets for constructions built from this template in
+          x,y,z.  Default is [1.0,1.0,1.0].  This is used to resize a collision asset
+          to match a render asset if necessary, such as when using a primitive.)")
       .def_property(
           "margin", &AbstractObjectAttributes::getMargin,
           &AbstractObjectAttributes::setMargin,
@@ -390,5 +398,5 @@ void initAttributesBindings(py::module& m) {
 
 }  // initAttributesBindings
 
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

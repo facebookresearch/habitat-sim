@@ -11,7 +11,7 @@ using std::placeholders::_1;
 namespace Cr = Corrade;
 namespace esp {
 
-namespace assets {
+namespace metadata {
 
 using attributes::PhysicsManagerAttributes;
 namespace managers {
@@ -110,5 +110,5 @@ PhysicsAttributesManager::loadAttributesFromJSONDoc(
 }  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

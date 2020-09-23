@@ -29,12 +29,14 @@
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
+#include <Magnum/Trade/PbrMetallicRoughnessMaterialData.h>
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
+#include "esp/gfx/MaterialUtil.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -62,13 +64,18 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
+using metadata::attributes::AbstractObjectAttributes;
+using metadata::attributes::CubePrimitiveAttributes;
+using metadata::attributes::ObjectAttributes;
+using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::StageAttributes;
+using metadata::managers::AssetAttributesManager;
+using metadata::managers::ObjectAttributesManager;
+using metadata::managers::PhysicsAttributesManager;
+using metadata::managers::StageAttributesManager;
+
 namespace assets {
 
-using attributes::AbstractObjectAttributes;
-using attributes::CubePrimitiveAttributes;
-using attributes::ObjectAttributes;
-using attributes::PhysicsManagerAttributes;
-using attributes::StageAttributes;
 // static constexpr arrays require redundant definitions until C++17
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
@@ -89,12 +96,12 @@ ResourceManager::ResourceManager()
 }  // namespace assets
 
 void ResourceManager::buildImportersAndAttributesManagers() {
-  assetAttributesManager_ = managers::AssetAttributesManager::create(*this);
-  objectAttributesManager_ = managers::ObjectAttributesManager::create(*this);
+  assetAttributesManager_ = AssetAttributesManager::create(*this);
+  objectAttributesManager_ = ObjectAttributesManager::create(*this);
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ = managers::PhysicsAttributesManager::create(
-      *this, objectAttributesManager_);
-  stageAttributesManager_ = managers::StageAttributesManager::create(
+  physicsAttributesManager_ =
+      PhysicsAttributesManager::create(*this, objectAttributesManager_);
+  stageAttributesManager_ = StageAttributesManager::create(
       *this, objectAttributesManager_, physicsAttributesManager_);
 
   // instantiate a primitive importer
@@ -129,7 +136,7 @@ void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
     bool isEnabled,
     scene::SceneNode* parent,
-    const PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
+    const Attrs::PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
@@ -991,8 +998,10 @@ bool ResourceManager::loadGeneralMeshData(
 
     // if this is a new file, load it and add it to the dictionary
     LoadedAssetData loadedAssetData{info};
-    loadTextures(*fileImporter_, loadedAssetData);
-    loadMaterials(*fileImporter_, loadedAssetData);
+    if (requiresTextures_) {
+      loadTextures(*fileImporter_, loadedAssetData);
+      loadMaterials(*fileImporter_, loadedAssetData);
+    }
     loadMeshes(*fileImporter_, loadedAssetData);
     auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
     MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
@@ -1147,23 +1156,42 @@ void ResourceManager::loadMaterials(Importer& importer,
     // as long as the materialName includes the full path to the material
     Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
         importer.material(iMaterial);
-    if (!materialData ||
-        !(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
+
+    if (!materialData) {
       LOG(ERROR) << "Cannot load material, skipping";
       continue;
     }
 
-    const auto& phongMaterialData =
-        static_cast<Mn::Trade::PhongMaterialData&>(*materialData);
     std::unique_ptr<gfx::MaterialData> finalMaterial;
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
-    if (loadedAssetData.assetInfo.requiresLighting) {
-      finalMaterial =
-          buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
 
+    if (loadedAssetData.assetInfo.requiresLighting &&
+        materialData->types() &
+            Magnum::Trade::MaterialType::PbrMetallicRoughness) {
+      const Mn::Trade::PbrMetallicRoughnessMaterialData&
+          pbrMetallicRoughnessMaterialData =
+              static_cast<Mn::Trade::PbrMetallicRoughnessMaterialData&>(
+                  *materialData);
+
+      finalMaterial = gfx::buildPhongFromPbrMetallicRoughness(
+          pbrMetallicRoughnessMaterialData, textureBaseIndex, textures_);
     } else {
-      finalMaterial =
-          buildFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
+      ASSERT(materialData);
+      if (!(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
+        LOG(ERROR) << "Cannot load material, skipping";
+        continue;
+      }
+
+      const auto& phongMaterialData =
+          materialData->as<Mn::Trade::PhongMaterialData>();
+      if (loadedAssetData.assetInfo.requiresLighting) {
+        finalMaterial =
+            buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
+
+      } else {
+        finalMaterial =
+            buildFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
+      }
     }
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
@@ -1283,9 +1311,13 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh &&
       meshIDLocal != ID_UNDEFINED) {
     parent.children.back().meshIDLocal = meshIDLocal;
-    parent.children.back().materialIDLocal =
-        static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
-            ->material();
+    if (requiresTextures_) {
+      parent.children.back().materialIDLocal =
+          static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
+              ->material();
+    } else {
+      parent.children.back().materialIDLocal = ID_UNDEFINED;
+    }
   }
 
   // Recursively add children
@@ -1338,12 +1370,6 @@ void ResourceManager::loadTextures(Importer& importer,
       Mn::GL::TextureFormat format;
       if (image->isCompressed()) {
         format = Mn::GL::textureFormat(image->compressedFormat());
-      } else if (compressTextures_ &&
-                 image->format() == Mn::PixelFormat::RGBA8Unorm) {
-        format = Mn::GL::TextureFormat::CompressedRGBAS3tcDxt1;
-      } else if (compressTextures_ &&
-                 image->format() == Mn::PixelFormat::RGB8Unorm) {
-        format = Mn::GL::TextureFormat::CompressedRGBS3tcDxt1;
       } else {
         format = Mn::GL::textureFormat(image->format());
       }

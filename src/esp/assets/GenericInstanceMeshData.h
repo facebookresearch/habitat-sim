@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_ASSETS_GENERICINSTANCEMESHDATA_H_
+#define ESP_ASSETS_GENERICINSTANCEMESHDATA_H_
 
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Buffer.h>
@@ -99,3 +100,5 @@ class GenericInstanceMeshData : public BaseMesh {
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_ASSETS_GENERICINSTANCEMESHDATA_H_
