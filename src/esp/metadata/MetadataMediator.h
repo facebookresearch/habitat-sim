@@ -12,6 +12,7 @@
 #include "esp/core/Configuration.h"
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/DatasetAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
@@ -21,7 +22,7 @@ namespace metadata {
 
 class MetadataMediator {
  public:
-  MetadataMediator() {}
+  MetadataMediator() { defaultDataset_ = "default"; }
   ~MetadataMediator() {}
 
   /**
@@ -60,7 +61,11 @@ class MetadataMediator {
     return stageAttributesManager_;
   }
 
- private:
+ protected:
+  /**
+   * @brief String name of current, default dataset.
+   */
+  std::string defaultDataset_;
   /**
    * @brief Manages all construction and access to asset attributes.
    */

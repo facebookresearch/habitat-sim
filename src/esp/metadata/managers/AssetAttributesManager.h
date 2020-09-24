@@ -87,7 +87,7 @@ class AssetAttributesManager
 
   AssetAttributesManager()
       : AttributesManager<Attrs::AbstractPrimitiveAttributes>::
-            AttributesManager("Primitive Asset") {
+            AttributesManager("Primitive Asset", "prim_config.json") {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
 
