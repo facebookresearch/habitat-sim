@@ -116,7 +116,8 @@ class ManagedContainer {
       LOG(ERROR) << objectType_
                  << "ManagedContainer::createObjectFromFile : "
                     "Failure reading json : "
-                 << filename << ". Aborting.";
+                 << filename << " for type " << this->objectType_
+                 << ". Aborting.";
       return nullptr;
     }
     ManagedPtr attr = this->loadFromJSONDoc(filename, jsonConfig);

@@ -162,7 +162,7 @@ if __name__ == "__main__":
     # [basics]
 
     # load some object templates from configuration files
-    sphere_template_id = obj_templates_mgr.load_object_configs(
+    sphere_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
 
@@ -372,7 +372,7 @@ if __name__ == "__main__":
     # [embodied_agent]
 
     # load the lobot_merged asset
-    locobot_template_id = obj_templates_mgr.load_object_configs(
+    locobot_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
 
@@ -438,7 +438,7 @@ if __name__ == "__main__":
     # [embodied_agent_navmesh]
 
     # load the lobot_merged asset
-    locobot_template_id = obj_templates_mgr.load_object_configs(
+    locobot_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
 

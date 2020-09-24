@@ -65,40 +65,6 @@ class ObjectAttributesManager
       const io::JsonDocument& jsonConfig) override;
 
   /**
-   * @brief Load file-based object templates for all "*.phys_properties.json"
-   * files from the provided file or directory path.
-   *
-   * This will take the passed @ref path string and either treat it as a file
-   * name or a directory, depending on what is found in the filesystem. If @ref
-   * path does not end with ".phys_properties.json", it will append this and
-   * check to see if such a file exists, and load it. It will also check if @ref
-   * path exists as a directory, and if so will perform a shallow search to find
-   * any files ending in "*.phys_properties.json" and load those that are found.
-   *
-   * @param path A global path to a physics property file or directory
-   * containing such files.
-   * @param saveAsDefaults Set the templates loaded as undeleteable default
-   * templates.
-   * @return A list of template indices for loaded valid object configs
-   */
-  std::vector<int> loadObjectConfigs(const std::string& path,
-                                     bool saveAsDefaults = false);
-
-  /**
-   * @brief Load all file-based object templates given string list of object
-   * template file locations.
-   *
-   * This will take the list of file names currently specified in
-   * physicsManagerAttributes and load the referenced object templates.
-   * @param tmpltFilenames list of file names of object templates
-   * @param saveAsDefaults Set these templates as un-deletable from library.
-   * @return vector holding IDs of templates that have been added
-   */
-  std::vector<int> loadAllFileBasedTemplates(
-      const std::vector<std::string>& tmpltFilenames,
-      bool saveAsDefaults);
-
-  /**
    * @brief Check if currently configured primitive asset template library has
    * passed handle.
    * @param handle String name of primitive asset attributes desired
