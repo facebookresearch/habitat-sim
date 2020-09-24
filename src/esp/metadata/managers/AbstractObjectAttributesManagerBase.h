@@ -36,9 +36,8 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
 
   typedef std::shared_ptr<T> AbsObjAttrPtr;
 
-  AbstractObjectAttributesManager(esp::assets::ResourceManager& resourceManager,
-                                  const std::string& attrType)
-      : AttributesManager<T>::AttributesManager(resourceManager, attrType) {}
+  AbstractObjectAttributesManager(const std::string& attrType)
+      : AttributesManager<T>::AttributesManager(attrType) {}
   virtual ~AbstractObjectAttributesManager() = default;
 
  protected:

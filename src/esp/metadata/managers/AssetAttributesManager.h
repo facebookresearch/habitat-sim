@@ -85,9 +85,9 @@ class AssetAttributesManager
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
 
-  AssetAttributesManager(assets::ResourceManager& resourceManager)
+  AssetAttributesManager()
       : AttributesManager<Attrs::AbstractPrimitiveAttributes>::
-            AttributesManager(resourceManager, "Primitive Asset") {
+            AttributesManager("Primitive Asset") {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
 
