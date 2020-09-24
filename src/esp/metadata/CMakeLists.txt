@@ -5,6 +5,8 @@
 set(
   metadata_SOURCES
   attributes/AttributesBase.h
+  attributes/DatasetAttributes.h
+  attributes/DatasetAttributes.cpp
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
   attributes/SceneAttributes.h
@@ -17,6 +19,8 @@ set(
   managers/AbstractObjectAttributesManagerBase.h
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
+  managers/DatasetAttributesManager.h
+  managers/DatasetAttributesManager.cpp
   managers/ObjectAttributesManager.h
   managers/ObjectAttributesManager.cpp
   managers/PhysicsAttributesManager.h

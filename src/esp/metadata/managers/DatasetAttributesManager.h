@@ -19,10 +19,35 @@ class DatasetAttributesManager
  public:
   DatasetAttributesManager(PhysicsAttributesManager::ptr physicsAttributesMgr)
       : AttributesManager<Attrs::DatasetAttributes>::AttributesManager(
-            "Dataset"),
+            "Dataset",
+            "dataset_config.json"),
         physicsAttributesManager_(physicsAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
+
+  /**
+   * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
+   * such as file paths, to make them available for stage attributes defaults.
+   *
+   * @param datasetName the name of the dataset to apply these to.
+   * @param filepaths the map of file paths from the configuration object
+   * @param lightSetup the config-specified light setup
+   * @param frustrumCulling whether or not (semantic) stage should be
+   * partitioned for culling.
+   */
+  void setCurrCfgVals(const std::string& datasetName,
+                      const std::map<std::string, std::string>& filepaths,
+                      const std::string& lightSetup,
+                      bool frustrumCulling) {
+    if (this->getObjectLibHasHandle(datasetName)) {
+      auto dataset = this->objectLibrary_.at(datasetName);
+      dataset->setCurrCfgVals(filepaths, lightSetup, frustrumCulling);
+    } else {
+      LOG(ERROR) << "DatasetAttributesManager::setCurrCfgVals : No "
+                 << objectType_ << " managed object with handle " << datasetName
+                 << "exists. Aborting";
+    }
+  }  // StageAttributesManager::setCurrCfgVals
 
   /**
    * @brief Creates an instance of a dataset template described by passed
@@ -45,7 +70,7 @@ class DatasetAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Parse passed JSON Document specifically for @ref
+   * @brief Parse passed dataset_config JSON Document specifically for @ref
    * esp::metadata::attributes::DatasetAttributes object. It always returns a
    * valid @ref esp::metadata::attributes::DatasetAttributes shared pointer
    * object.
@@ -61,7 +86,7 @@ class DatasetAttributesManager
 
   /**
    * @brief This will set the current physics manager attributes that is
-   * governing the world that this DatasetAttributesManager's scenes will be
+   * governing the world that this DatasetAttributesManager's datasets will be
    * created in.  This is used so that upon creation of new
    * esp::metadata::attributes::DatasetAttributes, PhysicsManagerAttributes
    * defaults can be set in the esp::metadata::attributes::DatasetAttributes
@@ -73,6 +98,9 @@ class DatasetAttributesManager
    */
   void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
     physicsManagerAttributesHandle_ = handle;
+    for (auto& dataset : this->objectLibrary_) {
+      dataset.second->setPhysicsManagerHandle(handle);
+    }
   }
 
  protected:
@@ -111,16 +139,15 @@ class DatasetAttributesManager
    * set properly.  We are doing this since these values can be modified by the
    * user.
    *
-   * @param DatasetAttributesTemplate The attributes template.
-   * @param DatasetAttributesHandle The key for referencing the template in the
+   * @param datasetAttributes The attributes template.
+   * @param datasetAttributesHandle The key for referencing the template in the
    * @ref objectLibrary_.
    * @return The index in the @ref objectLibrary_ of object
    * template.
    */
-
   int registerObjectFinalize(
-      Attrs::DatasetAttributes::ptr DatasetAttributesTemplate,
-      const std::string& DatasetAttributesHandle) override;
+      Attrs::DatasetAttributes::ptr datasetAttributes,
+      const std::string& datasetAttributesHandle) override;
 
   /**
    * @brief This function will assign the appropriately configured function
@@ -142,7 +169,6 @@ class DatasetAttributesManager
     return false;
   }
 
- protected:
   /**
    * @brief Name of currently used physicsManagerAttributes
    */

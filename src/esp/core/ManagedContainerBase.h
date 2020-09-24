@@ -866,7 +866,7 @@ class ManagedContainer {
  public:
   ESP_SMART_POINTERS(ManagedContainer<ManagedPtr>)
 
-};  // namespace managers
+};  // class ManagedContainer
 
 /////////////////////////////
 // Class Template Method Definitions

@@ -22,7 +22,8 @@ class PhysicsAttributesManager
  public:
   PhysicsAttributesManager(ObjectAttributesManager::ptr objectAttributesMgr)
       : AttributesManager<Attrs::PhysicsManagerAttributes>::AttributesManager(
-            "Physics Manager"),
+            "Physics Manager",
+            "phys_scene_config.json"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }

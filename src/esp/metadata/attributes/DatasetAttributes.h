@@ -45,6 +45,35 @@ class DatasetAttributes : public AbstractAttributes {
     return stageAttributesManager_;
   }
 
+  /**
+   * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
+   * such as file paths, to make them available for stage attributes defaults.
+   *
+   * @param filepaths the map of file paths from the configuration object
+   * @param lightSetup the config-specified light setup
+   * @param frustrumCulling whether or not (semantic) stage should be
+   * partitioned for culling.
+   */
+  void setCurrCfgVals(const std::map<std::string, std::string>& filepaths,
+                      const std::string& lightSetup,
+                      bool frustrumCulling) {
+    stageAttributesManager_->setCurrCfgVals(filepaths, lightSetup,
+                                            frustrumCulling);
+  }
+
+  /**
+   * @brief Set the name of the attributes used for the physics manager that
+   * governs this Dataset
+   */
+  void setPhysicsManagerHandle(const std::string& physMgrAttrHandle) {
+    setString("physMgrAttrHandle", physMgrAttrHandle);
+    stageAttributesManager_->setCurrPhysicsManagerAttributesHandle(
+        physMgrAttrHandle);
+  }
+  std::string getPhysicsManagerHandle() const {
+    return getString("physMgrAttrHandle");
+  }
+
  protected:
   /**
    * @brief Reference to AssetAttributesManager to give access to primitive

@@ -12,6 +12,7 @@
 #include "esp/metadata/attributes/AttributesBase.h"
 
 #include "esp/core/ManagedContainerBase.h"
+#include "esp/io/io.h"
 
 namespace Cr = Corrade;
 
@@ -38,8 +39,9 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
 
   typedef std::shared_ptr<T> AttribsPtr;
 
-  AttributesManager(const std::string& attrType)
-      : esp::core::ManagedContainer<T>::ManagedContainer(attrType) {}
+  AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
+      : esp::core::ManagedContainer<T>::ManagedContainer(attrType),
+        JSONTypeExt_(JSONTypeExt) {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -49,6 +51,14 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
    * @return whether handle exists or not in asset attributes library
    */
   virtual bool isValidPrimitiveAttributes(const std::string& handle) = 0;
+
+ protected:
+  // ======== Typedefs and Instance Variables ========
+  /**
+   * @brief The string extension for json files for this manager's attributes
+   * types
+   */
+  const std::string JSONTypeExt_;
 
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)

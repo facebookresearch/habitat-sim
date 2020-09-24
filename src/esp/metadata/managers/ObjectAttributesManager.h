@@ -21,7 +21,7 @@ class ObjectAttributesManager
  public:
   ObjectAttributesManager()
       : AbstractObjectAttributesManager<Attrs::ObjectAttributes>::
-            AbstractObjectAttributesManager("Object") {
+            AbstractObjectAttributesManager("Object", "phys_properties.json") {
     buildCtorFuncPtrMaps();
   }
 
@@ -31,30 +31,6 @@ class ObjectAttributesManager
     // Create default primitive-based object attributess
     createDefaultPrimBasedAttributesTemplates();
   }
-
-  /**
-   * @brief Creates an instance of an object template. The passed string should
-   * be either a file name or a reference to a primitive asset template that
-   * should be used in the construction of the object; any other strings will
-   * result in a new default template being created.
-   *
-   * If a template exists with this handle, this existing template will be
-   * overwritten with the newly created one if registerTemplate is true.
-   *
-   * @param attributesTemplateHandle the origin of the desired template to be
-   * created, either a file name or an existing primitive asset template. If
-   * this is neither a recognized file name nor the handle of an existing
-   * primitive asset, a new default template will be created.
-   * @param registerTemplate whether to add this template to the library.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration. Defaults to true. If
-   * specified as true, then this function returns a copy of the registered
-   * template.
-   * @return a reference to the desired template.
-   */
-  Attrs::ObjectAttributes::ptr createObject(
-      const std::string& attributesTemplateHandle,
-      bool registerTemplate = true) override;
 
   /**
    * @brief Creates an instance of an object template described by passed
@@ -69,10 +45,9 @@ class ObjectAttributesManager
    * subsequent editing will require re-registration. Defaults to true.
    * @return a reference to the desired template, or nullptr if fails.
    */
-
   Attrs::ObjectAttributes::ptr createPrimBasedAttributesTemplate(
       const std::string& primAttrTemplateHandle,
-      bool registerTemplate = true);
+      bool registerTemplate = true) override;
 
   /**
    * @brief Parse passed JSON Document specifically for @ref
