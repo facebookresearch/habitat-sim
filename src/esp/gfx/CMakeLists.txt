@@ -26,6 +26,8 @@ set(
   RenderTarget.h
   ShaderManager.cpp
   ShaderManager.h
+  PBRShader.cpp
+  PBRShader.h
 )
 
 # If ptex support is enabled add relevant source files

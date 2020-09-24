@@ -15,19 +15,40 @@
 namespace esp {
 namespace gfx {
 
-struct MaterialData {};
+struct MaterialData {
+  bool perVertexObjectId = false;
+
+  // construct it using the default constructor. NO initial values, such as
+  // identity matrix
+  Magnum::Matrix3 textureMatrix;
+};
 
 struct PhongMaterialData : public MaterialData {
   Magnum::Float shininess = 80.f;
   Magnum::Color4 ambientColor{0.1};
   Magnum::Color4 diffuseColor{0.7};
   Magnum::Color4 specularColor{0.2};
-  Magnum::Matrix3 textureMatrix;
   Magnum::GL::Texture2D *ambientTexture = nullptr, *diffuseTexture = nullptr,
                         *specularTexture = nullptr, *normalTexture = nullptr;
-  bool perVertexObjectId = false, vertexColored = false;
+  bool vertexColored = false;
 
   ESP_SMART_POINTERS(PhongMaterialData)
+};
+
+struct PBRMaterialData : public MaterialData {
+  // use the value if albedoTexture does not exist
+  Magnum::Color4 baseColor{0.7};
+  // use the value if roughnessTexture does not exist
+  Magnum::Float roughness = 0.9f;
+  // use the value if metallicTexture does not exist
+  Magnum::Float metallic = 0.1f;
+  Magnum::GL::Texture2D* albedoTexture = nullptr;
+  Magnum::GL::Texture2D* normalTexture = nullptr;
+  Magnum::GL::Texture2D* metallicTexture = nullptr;
+  Magnum::GL::Texture2D* roughnessTexture = nullptr;
+  // TODO:
+  // AO texture, emisive texture
+  ESP_SMART_POINTERS(PBRMaterialData)
 };
 
 // TODO: Ptex material data
