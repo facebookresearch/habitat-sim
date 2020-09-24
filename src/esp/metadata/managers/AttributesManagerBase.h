@@ -38,10 +38,8 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
 
   typedef std::shared_ptr<T> AttribsPtr;
 
-  AttributesManager(esp::assets::ResourceManager& resourceManager,
-                    const std::string& attrType)
-      : esp::core::ManagedContainer<T>::ManagedContainer(resourceManager,
-                                                         attrType) {}
+  AttributesManager(const std::string& attrType)
+      : esp::core::ManagedContainer<T>::ManagedContainer(attrType) {}
   virtual ~AttributesManager() = default;
 
   /**

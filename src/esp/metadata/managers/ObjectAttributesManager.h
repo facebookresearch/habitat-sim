@@ -19,9 +19,9 @@ namespace managers {
 class ObjectAttributesManager
     : public AbstractObjectAttributesManager<Attrs::ObjectAttributes> {
  public:
-  ObjectAttributesManager(esp::assets::ResourceManager& resourceManager)
+  ObjectAttributesManager()
       : AbstractObjectAttributesManager<Attrs::ObjectAttributes>::
-            AbstractObjectAttributesManager(resourceManager, "Object") {
+            AbstractObjectAttributesManager("Object") {
     buildCtorFuncPtrMaps();
   }
 

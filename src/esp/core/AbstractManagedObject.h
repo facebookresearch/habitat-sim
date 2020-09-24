@@ -20,15 +20,15 @@ class AbstractManagedObject {
  public:
   virtual ~AbstractManagedObject() = default;
   /**
-   * @brief Get the instancing class of the ManagedObject instantior.  Should
+   * @brief Get the instancing class of the ManagedObject instance.  Should
    * only be set from implementer's constructor. Used as key in constructor
    * function pointer maps in @ref esp::core::ManagedContainer.
    */
   virtual std::string getClassKey() const = 0;
 
   /**
-   * @brief Set this attributes name/origin.  Some attributes derive their own
-   * names based on their state, such as @ref
+   * @brief Set this ManagedObject name/origin.  Some ManagedObject derive their
+   * own names based on their state, such as @ref
    * esp::metadata::attributes::AbstractPrimitiveAttributes;  in such cases this
    * should be overridden with NOP.
    * @param handle the handle to set.
@@ -37,13 +37,13 @@ class AbstractManagedObject {
   virtual std::string getHandle() const = 0;
 
   /**
-   * @brief directory where files used to construct attributes can be found.
+   * @brief directory where files used to construct ManagedObject can be found.
    */
   virtual void setFileDirectory(const std::string& fileDirectory) = 0;
   virtual std::string getFileDirectory() const = 0;
 
   /**
-   *  @brief Unique ID referencing attributes
+   *  @brief Unique ID referencing ManagedObject
    */
   virtual void setID(int ID) = 0;
   virtual int getID() const = 0;
@@ -53,7 +53,7 @@ class AbstractManagedObject {
 
  public:
   ESP_SMART_POINTERS(AbstractManagedObject)
-};  // class AbstractAttributes
+};  // class AbstractManagedObject
 }  // namespace core
 }  // namespace esp
 #endif  // ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
