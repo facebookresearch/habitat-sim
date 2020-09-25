@@ -8,17 +8,17 @@ layout(location = 1) in mediump vec3 vertexNormal;
 #if defined(ALBEDO_TEXTURE) || defined(ROUGHNESS_TEXTURE) || defined(METALLIC_TEXTURE) || defined(NORMAL_TEXTURE)
 layout(location = 2) in mediump vec3 vertexTexCoord;
 #endif
-#if defined(NORMAL_TEXTURE)
-layout(location = 3) in mediump vec3 vertexTengent;
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENTS)
+layout(location = 3) in mediump vec4 vertexTangent;
 #endif
 
 // -------------- output ---------------------
 // position, normal, tangent in camera space
-out vec3 Position;
-out vec3 Normal;
-#ifdef NORMAL_TEXTURE
-out vec3 Tangent;
-// out vec3 tangentLightPosition[MAX_NUM_POINT_LIGHTS];
+out vec3 position;
+out vec3 normal;
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENTS)
+out vec3 tangent;
+out vec3 biTangent;
 #endif
 
 // ------------ uniform ----------------------
@@ -27,5 +27,14 @@ uniform mat3 NormalMatrix;  // inverse transpose of 3x3 modelview matrix
 uniform mat4 MVP;
 
 void main() {
+  position = vec3(ModelViewMatrix * vertexPosition);
+  normal = normalize(NormalMatrix * vertexNormal);
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENTS)
+  tangent = normalize(NormalMatrix * vec3(vertexTangent));
+  // Gram–Schmidt
+  tangent = normalize(tangent - dot(tangent, normal) * normal);
+  biTangent = normalize(cross(normal, tangent) * vertexTangent.w);
+#endif
+
   gl_Position = MVP * vec4(vertexPosition, 1.0);
 }
