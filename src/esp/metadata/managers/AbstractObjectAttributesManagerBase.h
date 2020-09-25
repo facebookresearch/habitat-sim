@@ -19,7 +19,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace metadata {
 namespace managers {
-namespace Attrs = esp::metadata::attributes;
+
 /**
  * @brief Class template defining responsibilities and functionality for
  * managing @ref esp::metadata::attributes::AbstractObjectAttributes constructs.

@@ -27,6 +27,8 @@ set(
   managers/PhysicsAttributesManager.cpp
   managers/StageAttributesManager.h
   managers/StageAttributesManager.cpp
+  MetadataMediator.h
+  MetadataMediator.cpp
 )
 find_package(Magnum REQUIRED Primitives)
 

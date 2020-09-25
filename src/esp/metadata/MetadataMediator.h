@@ -19,10 +19,10 @@
 
 namespace esp {
 namespace metadata {
-
+namespace Attrs = esp::metadata::attributes;
 class MetadataMediator {
  public:
-  MetadataMediator() { defaultDataset_ = "default"; }
+  MetadataMediator();
   ~MetadataMediator() {}
 
   /**
@@ -32,19 +32,38 @@ class MetadataMediator {
   void buildAttributesManagers();
 
   /**
-   * @brief Return manager for construction and access to asset attributes.
+   * @brief Return manager for construction and access to asset attributes for
+   * current dataset.
    */
   const managers::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
-    return assetAttributesManager_;
+    Attrs::DatasetAttributes::ptr datasetAttr = getDefaultDataset();
+    return (nullptr == datasetAttr) ? nullptr
+                                    : datasetAttr->getAssetAttributesManager();
   }
+
   /**
-   * @brief Return manager for construction and access to object attributes.
+   * @brief Return manager for construction and access to object attributes for
+   * current dataset.
    */
   const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
-    return objectAttributesManager_;
+    Attrs::DatasetAttributes::ptr datasetAttr = getDefaultDataset();
+    return (nullptr == datasetAttr) ? nullptr
+                                    : datasetAttr->getObjectAttributesManager();
   }
+
+  /**
+   * @brief Return manager for construction and access to stage attributes for
+   * current dataset.
+   */
+  const managers::StageAttributesManager::ptr getStageAttributesManager()
+      const {
+    Attrs::DatasetAttributes::ptr datasetAttr = getDefaultDataset();
+    return (nullptr == datasetAttr) ? nullptr
+                                    : datasetAttr->getStageAttributesManager();
+  }  // MetadataMediator::getStageAttributesManager
+
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
@@ -53,15 +72,28 @@ class MetadataMediator {
       const {
     return physicsAttributesManager_;
   }
-  /**
-   * @brief Return manager for construction and access to scene attributes.
-   */
-  const managers::StageAttributesManager::ptr getStageAttributesManager()
-      const {
-    return stageAttributesManager_;
-  }
+
+  //==================== Accessors ======================//
 
  protected:
+  /**
+   * @brief Retrieve the current default dataset object.  Currently only for
+   * internal use.
+   */
+  Attrs::DatasetAttributes::ptr getDefaultDataset() const {
+    // do not get copy of dataset attributes until datasetAttributes deep copy
+    // ctor implemented
+    auto datasetAttr =
+        datasetAttributesManager_->getObjectByHandle(defaultDataset_);
+    if (nullptr == datasetAttr) {
+      LOG(ERROR)
+          << "MetadataMediator::getDefaultDataset : Unknown dataset named "
+          << defaultDataset_ << ". Aborting";
+      return nullptr;
+    }
+    return datasetAttr;
+  }  // MetadataMediator::getDefaultDataset
+
   /**
    * @brief String name of current, default dataset.
    */
@@ -69,22 +101,12 @@ class MetadataMediator {
   /**
    * @brief Manages all construction and access to asset attributes.
    */
-  managers::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
-
-  /**
-   * @brief Manages all construction and access to object attributes.
-   */
-  managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  managers::DatasetAttributesManager::ptr datasetAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to physics world attributes.
    */
   managers::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
-
-  /**
-   * @brief Manages all construction and access to scene attributes.
-   */
-  managers::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(MetadataMediator)
