@@ -93,10 +93,8 @@ class ManagedContainer {
   }  // ManagedContainer::createDefault
 
   /**
-   * @brief Creates an instance of a managed object from a JSON file using
-   * passed filename by loading and parsing the loaded JSON and generating a
-   * @ref ManagedPtr object. It returns created instance if successful, and
-   * nullptr if fails.
+   * @brief Creates an instance of a managed object from a file of type U using
+   * passed filename.  Currently U can be @ref esp::io::JsonDocument.
    *
    * @param filename the name of the file describing the object managed object.
    * Assumes it exists and fails if it does not.
@@ -106,23 +104,35 @@ class ManagedContainer {
    * true.
    * @return a reference to the desired managed object, or nullptr if fails.
    */
-
+  template <typename U>
   ManagedPtr createObjectFromFile(const std::string& filename,
                                   bool registerObject = true) {
-    // Load JSON config file
-    io::JsonDocument jsonConfig;
-    bool success = this->verifyLoadJson(filename, jsonConfig);
+    U config;
+    bool success = this->verifyLoadDocument(filename, config);
     if (!success) {
-      LOG(ERROR) << objectType_
-                 << "ManagedContainer::createObjectFromFile : "
-                    "Failure reading json : "
-                 << filename << " for type " << this->objectType_
+      LOG(ERROR) << "ManagedContainer::createObjectFromFile ("
+                 << this->objectType_
+                 << ") : Failure reading document : " << filename
                  << ". Aborting.";
       return nullptr;
     }
-    ManagedPtr attr = this->loadFromJSONDoc(filename, jsonConfig);
+    ManagedPtr attr = this->loadAttributesFromDoc(filename, config);
     return this->postCreateRegister(attr, registerObject);
-  }  // ManagedContainer::createObjectFromFile
+  }
+
+  template <typename U>
+  ManagedPtr loadAttributesFromDoc(const std::string& filename,
+                                   const U& config) {
+    LOG(ERROR)
+        << "ManagedContainer::createObjectFromFile (" << this->objectType_
+        << ") : Failure loading attributes from document of unknown type : "
+        << filename << ". Aborting.";
+  }
+
+  ManagedPtr loadAttributesFromDoc(const std::string& filename,
+                                   const io::JsonDocument& jsonConfig) {
+    return this->loadFromJSONDoc(filename, jsonConfig);
+  }
 
   /**
    * @brief Parse passed JSON Document specifically for @ref ManagedPtr object.
@@ -535,31 +545,52 @@ class ManagedContainer {
   //======== Common JSON import functions ========
 
   /**
-   * @brief Verify passed @ref filename is legal json document, return loaded
+   * @brief Verify passd @p filename is legal document of type T. Returns loaded
+   * document in passed argument if successful. This requires appropriate
+   * specialization for each type name, so if this method is executed it means
+   * no appropriate specialization exists for passed type of document.
+   *
+   * @tparam type of document
+   * @param filename name of potentia document to load
+   * @param resDoc a reference to the document to be parsed.
+   * @return whether document has been loaded successfully or not
+   */
+  template <class U>
+  bool verifyLoadDocument(const std::string& filename,
+                          CORRADE_UNUSED U& resDoc) {
+    // by here always fail
+    LOG(ERROR) << objectType_ << "ManagedContainer::verifyLoadDocument : File "
+               << filename << " failed due to unknown file type.";
+    return false;
+  }  // ManagedContainer::verifyLoadDocument
+  /**
+   * @brief Verify passed @p filename is legal json document, return loaded
    * document or nullptr if fails
    *
    * @param filename name of potential json document to load
    * @param jsonDoc a reference to the json document to be parsed
    * @return whether document has been loaded successfully or not
    */
-  bool verifyLoadJson(const std::string& filename, io::JsonDocument& jsonDoc) {
+  bool verifyLoadDocument(const std::string& filename,
+                          io::JsonDocument& jsonDoc) {
     if (isValidFileName(filename)) {
       try {
         jsonDoc = io::parseJsonFile(filename);
       } catch (...) {
         LOG(ERROR) << objectType_
-                   << "ManagedContainer::verifyLoadJson : Failed to parse "
+                   << "ManagedContainer::verifyLoadDocument : Failed to parse "
                    << filename << " as JSON.";
         return false;
       }
       return true;
     } else {
       // by here always fail
-      LOG(ERROR) << objectType_ << "ManagedContainer::verifyLoadJson : File "
-                 << filename << " does not exist";
+      LOG(ERROR) << objectType_
+                 << "ManagedContainer::verifyLoadDocument : File " << filename
+                 << " does not exist";
       return false;
     }
-  }  // ManagedContainer::verifyLoadJson
+  }  // ManagedContainer::verifyLoadDocument
 
   //======== Internally accessed functions ========
   /**

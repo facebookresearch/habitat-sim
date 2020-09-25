@@ -20,11 +20,13 @@ DatasetAttributes::ptr DatasetAttributesManager::createObject(
   if (this->isValidFileName(datasetHandle)) {
     // check if datasetHandle corresponds to an actual file descriptor
     // this method lives in class template.
-    attrs = this->createObjectFromFile(datasetHandle, registerTemplate);
+    attrs = this->template createObjectFromFile<io::JsonDocument>(
+        datasetHandle, registerTemplate);
     msg = "File (" + datasetHandle + ") Based";
   } else {
     // if name is not file descriptor, return default attributes.
-    attrs = this->createDefaultObject(datasetHandle, registerTemplate);
+    attrs = this->template createObjectFromFile<io::JsonDocument>(
+        datasetHandle, registerTemplate);
     msg = "File (" + datasetHandle + ") not found so new, default";
   }
 
