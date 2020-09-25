@@ -4,21 +4,24 @@
 
 // ------------ input ------------------------
 layout(location = 0) in highp vec4 vertexPosition;
-layout(location = 1) in mediump vec3 vertexNormal;
+layout(location = 1) in highp vec3 vertexNormal;
 #if defined(ALBEDO_TEXTURE) || defined(ROUGHNESS_TEXTURE) || defined(METALLIC_TEXTURE) || defined(NORMAL_TEXTURE)
-layout(location = 2) in mediump vec3 vertexTexCoord;
+layout(location = 2) in mediump vec2 vertexTexCoord;
 #endif
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENTS)
-layout(location = 3) in mediump vec4 vertexTangent;
+layout(location = 3) in highp vec4 vertexTangent;
 #endif
 
 // -------------- output ---------------------
 // position, normal, tangent in camera space
-out vec3 position;
-out vec3 normal;
+out highp vec3 position;
+out highp vec3 normal;
+#if defined(ALBEDO_TEXTURE) || defined(ROUGHNESS_TEXTURE) || defined(METALLIC_TEXTURE) || defined(NORMAL_TEXTURE)
+out mediump vec2 texCoord;
+#endif
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENTS)
-out vec3 tangent;
-out vec3 biTangent;
+out highp vec3 tangent;
+out highp vec3 biTangent;
 #endif
 
 // ------------ uniform ----------------------
@@ -29,6 +32,9 @@ uniform mat4 MVP;
 void main() {
   position = vec3(ModelViewMatrix * vertexPosition);
   normal = normalize(NormalMatrix * vertexNormal);
+#if defined(ALBEDO_TEXTURE) || defined(ROUGHNESS_TEXTURE) || defined(METALLIC_TEXTURE) || defined(NORMAL_TEXTURE)
+  texCoord = vertexTexCoord;
+#endif
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENTS)
   tangent = normalize(NormalMatrix * vec3(vertexTangent));
   // Gram–Schmidt
