@@ -65,7 +65,7 @@ class AttributesManagersTest : public testing::Test {
       const auto& jsonDoc = esp::io::parseJsonString(jsonString);
       // create an empty template
       std::shared_ptr<U> attrTemplate1 =
-          mgr->loadFromJSONDoc("new default template", jsonDoc);
+          mgr->loadAttributesFromDoc("new default template", jsonDoc);
 
       return attrTemplate1;
     } catch (...) {
