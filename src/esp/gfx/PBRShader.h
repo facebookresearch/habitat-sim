@@ -30,6 +30,15 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
   typedef Magnum::GL::Attribute<1, Magnum::Vector3> Normal;
 
   /**
+   * @brief 2D texture coordinates
+   *
+   * Used only if at least one of
+   * @ref Flag::AlbedoTexture, @ref Flag::NormalTexture and
+   * @ref Flag::RoughnessTexture @ref Flag::MetallicTexture is set.
+   */
+  typedef Magnum::GL::Attribute<2, Magnum::Vector2> TextureCoordinates;
+
+  /**
    * @brief Tangent direction with the fourth component indicating the handness.
    *
    * T = Tangent, B = BiTangent, N = Normal
@@ -39,16 +48,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    *
    * Used only if @ref Flag::NormalTexture is set.
    */
-  typedef Magnum::GL::Attribute<2, Magnum::Vector4> Tangent4;
-
-  /**
-   * @brief 2D texture coordinates
-   *
-   * Used only if at least one of
-   * @ref Flag::AlbedoTexture, @ref Flag::NormalTexture and
-   * @ref Flag::RoughnessTexture @ref Flag::MetallicTexture is set.
-   */
-  typedef Magnum::GL::Attribute<3, Magnum::Vector2> TextureCoordinates;
+  typedef Magnum::GL::Attribute<3, Magnum::Vector4> Tangent4;
 
   enum : Magnum::UnsignedInt {
     /**
@@ -83,57 +83,38 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
      * Multiply ambient color with a texture.
      * @see @ref setAmbientColor(), @ref bindAmbientTexture()
      */
-    AmbientTexture = 1 << 0,
+    AlbedoTexture = 1 << 0,
 
     /**
-     * Multiply diffuse color with a texture.
-     * @see @ref setDiffuseColor(), @ref bindDiffuseTexture()
+     * @see @ref setRoughness(), @ref bindRoughnessTexture()
      */
-    DiffuseTexture = 1 << 1,
+    RoughnessTexture = 1 << 1,
 
     /**
-     * Multiply specular color with a texture.
-     * @see @ref setSpecularColor(), @ref bindSpecularTexture()
+     * @see @ref setMetallic(), @ref bindMetallicTexture()
      */
-    SpecularTexture = 1 << 2,
+    MetallicTexture = 1 << 2,
 
     /**
      * Modify normals according to a texture. Requires the
-     * @ref Tangent attribute to be present.
-     * @m_since{2019,10}
+     * @ref Tangent4 attribute to be present.
      */
-    NormalTexture = 1 << 4,
+    NormalTexture = 1 << 3,
 
     /**
-     * Enable alpha masking. If the combined fragment color has an
-     * alpha less than the value specified with @ref setAlphaMask(),
-     * given fragment is discarded.
-     *
-     * This uses the @glsl discard @ce operation which is known to have
-     * considerable performance impact on some platforms. While useful
-     * for cheap alpha masking that doesn't require depth sorting,
-     * with proper depth sorting and blending you'll usually get much
-     * better performance and output quality.
-     */
-    AlphaMask = 1 << 3,
-
-    /**
+     * TODO: Do we need VertexColor?
      * Multiply diffuse color with a vertex color. Requires either
      * the @ref Color3 or @ref Color4 attribute to be present.
-     * @m_since{2019,10}
      */
-    VertexColor = 1 << 5,
 
     /**
-     * Enable object ID output. See @ref Shaders-Phong-object-id
-     * for more information.
+     * Enable object ID output.
      * @requires_gl30 Extension @gl_extension{EXT,gpu_shader4}
      * @requires_gles30 Object ID output requires integer support in
      *      shaders, which is not available in OpenGL ES 2.0 or WebGL
      *      1.0.
-     * @m_since{2019,10}
      */
-    ObjectId = 1 << 7,
+    ObjectId = 1 << 5,
   };
 
   /**
@@ -147,6 +128,21 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    * @param lightCount    Count of light sources
    */
   explicit PBRShader(Flags flags = {}, Magnum::UnsignedInt lightCount = 1);
+
+  /** @brief Copying is not allowed */
+  PBRShader(const PBRShader&) = delete;
+
+  /** @brief Move constructor */
+  PBRShader(PBRShader&&) noexcept = default;
+
+  /** @brief Copying is not allowed */
+  PBRShader& operator=(const PBRShader&) = delete;
+
+  /** @brief Move assignment */
+  PBRShader& operator=(PBRShader&&) noexcept = default;
+
+  /** @brief Flags */
+  Flags flags() const { return flags_; }
 
   // ======== texture binding ========
   /**
@@ -209,9 +205,10 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
   PBRShader& setObjectId(unsigned int objectId);
 
  protected:
-  // it hurts the performance to call glGetUniformLocation() every frame due to
-  // string operations.
-  // therefore, cache the locations in the constructor material uniforms
+  Flags flags_;
+  // it hurts the performance to call glGetUniformLocation() every frame due
+  // to string operations. therefore, cache the locations in the constructor
+  // material uniforms
   int mvpMatrixUniform_ = ID_UNDEFINED;
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
   int roughnessUniform_ = ID_UNDEFINED;  // roughness of a surface
@@ -222,6 +219,8 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
   int normalTextureUniform_ = ID_UNDEFINED;
   int objectIdUniform_ = ID_UNDEFINED;
 };
+
+CORRADE_ENUMSET_OPERATORS(PBRShader::Flags);
 
 }  // namespace gfx
 }  // namespace esp
