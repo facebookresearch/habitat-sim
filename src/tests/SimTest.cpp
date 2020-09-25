@@ -71,6 +71,10 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.sceneLightSetup = sceneLightingKey;
 
     auto sim = Simulator::create_unique(simConfig);
+    auto objAttrMgr = sim->getObjectAttributesManager();
+    objAttrMgr->loadAllConfigsFromPath(
+        Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+
     sim->setLightSetup(lightSetup1, "custom_lighting_1");
     sim->setLightSetup(lightSetup2, "custom_lighting_2");
     return sim;

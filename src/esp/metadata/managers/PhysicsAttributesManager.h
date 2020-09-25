@@ -20,11 +20,10 @@ namespace managers {
 class PhysicsAttributesManager
     : public AttributesManager<Attrs::PhysicsManagerAttributes> {
  public:
-  PhysicsAttributesManager(ObjectAttributesManager::ptr objectAttributesMgr)
+  PhysicsAttributesManager()
       : AttributesManager<Attrs::PhysicsManagerAttributes>::AttributesManager(
             "Physics Manager",
-            "phys_scene_config.json"),
-        objectAttributesMgr_(objectAttributesMgr) {
+            "phys_scene_config.json") {
     buildCtorFuncPtrMaps();
   }
 
@@ -69,13 +68,13 @@ class PhysicsAttributesManager
 
  protected:
   /**
-   * @brief Check if currently configured primitive asset template library has
-   * passed handle.
+   * @brief Physics Manager Attributes has no reason to check this value
    * @param handle String name of primitive asset attributes desired
    * @return whether handle exists or not in asset attributes library
    */
-  bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return objectAttributesMgr_->getObjectLibHasHandle(handle);
+  bool isValidPrimitiveAttributes(
+      CORRADE_UNUSED const std::string& handle) override {
+    return false;
   }
 
   /**
@@ -147,12 +146,6 @@ class PhysicsAttributesManager
   }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars
-
-  /**
-   * @brief Reference to ObjectAttributesManager to give access to setting
-   * object template library using paths specified in PhysicsAttributes json
-   */
-  ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(PhysicsAttributesManager)

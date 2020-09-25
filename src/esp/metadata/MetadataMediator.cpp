@@ -7,7 +7,16 @@
 namespace esp {
 namespace metadata {
 
-void MetadataMediator::buildAttributesManagers() {}
+MetadataMediator::MetadataMediator() {
+  defaultDataset_ = "default";
+  buildAttributesManagers();
+}
+void MetadataMediator::buildAttributesManagers() {
+  physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
+  datasetAttributesManager_ =
+      managers::DatasetAttributesManager::create(physicsAttributesManager_);
+  // create blank default attributes manager
+}
 
 }  // namespace metadata
 }  // namespace esp
