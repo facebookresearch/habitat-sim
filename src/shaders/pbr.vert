@@ -34,6 +34,8 @@ void main() {
   // Gram–Schmidt
   tangent = normalize(tangent - dot(tangent, normal) * normal);
   biTangent = normalize(cross(normal, tangent) * vertexTangent.w);
+  // later in .frag, TBN will transform the normal perturbation
+  // (read from normal map) from tangent space to camera space
 #endif
 
   gl_Position = MVP * vec4(vertexPosition, 1.0);
