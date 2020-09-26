@@ -209,6 +209,8 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
   // material uniforms
+  int modelviewMatrixUniform_ = ID_UNDEFINED;
+  int normalMatrixUniform_ = ID_UNDEFINED;
   int mvpMatrixUniform_ = ID_UNDEFINED;
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
   int roughnessUniform_ = ID_UNDEFINED;  // roughness of a surface

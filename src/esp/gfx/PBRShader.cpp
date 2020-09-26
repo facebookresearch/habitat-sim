@@ -37,7 +37,7 @@ enum TextureBindingPointIndex : uint8_t {
 };
 }  // namespace
 
-PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount) {
+PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount) : flags_(flags) {
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -74,8 +74,13 @@ PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount) {
     frag.addSource("#define NORMAL_TEXTURE\n");
   }
 
-  vert.addSource(rs.get("ptex-default-gl410.vert"));
-  frag.addSource(rs.get("ptex-default-gl410.frag"));
+  if (flags & Flag::ObjectId) {
+    vert.addSource("#define OBJECT_ID\n");
+    frag.addSource("#define OBJECT_ID\n");
+  }
+
+  vert.addSource(rs.get("pbr.vert"));
+  frag.addSource(rs.get("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 
@@ -103,15 +108,17 @@ PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount) {
   }
 
   // cache the uniform locations
-
-  // uniform mat4 ModelViewMatrix;
-  // uniform mat3 NormalMatrix;  // inverse transpose of 3x3 modelview matrix
-
+  modelviewMatrixUniform_ = uniformLocation("ModelViewMatrix");
+  normalMatrixUniform_ = uniformLocation("NormalMatrix");
   mvpMatrixUniform_ = uniformLocation("MVP");
-  objectIdUniform_ = uniformLocation("objectId");
-  baseColorUniform_ = uniformLocation("Material.BaseColor");
-  roughnessUniform_ = uniformLocation("Material.Roughness");
-  metallicUniform_ = uniformLocation("Material.Metallic");
+  if (flags & Flag::ObjectId) {
+    objectIdUniform_ = uniformLocation("objectId");
+  }
+  baseColorUniform_ = uniformLocation("Material.baseColor");
+  roughnessUniform_ = uniformLocation("Material.roughness");
+  metallicUniform_ = uniformLocation("Material.metallic");
+
+  // TODO: Lights
 }
 
 // Note: the texture binding points are explicitly specified above.
@@ -143,7 +150,9 @@ PBRShader& PBRShader::setMVPMatrix(const Mn::Matrix4& matrix) {
 }
 
 PBRShader& PBRShader::setObjectId(unsigned int objectId) {
-  setUniform(objectIdUniform_, objectId);
+  if (flags_ & Flag::ObjectId) {
+    setUniform(objectIdUniform_, objectId);
+  }
   return *this;
 }
 
