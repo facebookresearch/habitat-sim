@@ -107,6 +107,13 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
      * the @ref Color3 or @ref Color4 attribute to be present.
      */
 
+    /*
+     * Precomputed tangent as the vertex attribute
+     * Otherwise, it will be computed in the fragement shader dynamically
+     * see PBR fragement shader code for more details
+     */
+    PrecomputedTangent = 1 << 5,
+
     /**
      * Enable object ID output.
      * @requires_gl30 Extension @gl_extension{EXT,gpu_shader4}
@@ -114,7 +121,11 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
      *      shaders, which is not available in OpenGL ES 2.0 or WebGL
      *      1.0.
      */
-    ObjectId = 1 << 5,
+    ObjectId = 1 << 6,
+
+    /*
+     * TODO: alphaMask
+     */
   };
 
   /**
@@ -206,6 +217,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
 
  protected:
   Flags flags_;
+  Magnum::UnsignedInt lightCount_;
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
   // material uniforms

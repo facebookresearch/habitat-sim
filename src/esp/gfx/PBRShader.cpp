@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Containers/Reference.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Shader.h>
@@ -37,7 +38,8 @@ enum TextureBindingPointIndex : uint8_t {
 };
 }  // namespace
 
-PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount) : flags_(flags) {
+PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount)
+    : flags_(flags), lightCount_(lightCount) {
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -54,33 +56,34 @@ PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount) : flags_(flags) {
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
-  if (flags & Flag::AlbedoTexture) {
-    vert.addSource("#define ALBEDO_TEXTURE\n");
-    frag.addSource("#define ALBEDO_TEXTURE\n");
-  }
+  // Add macros
+  vert.addSource(flags & (Flag::AlbedoTexture | Flag::RoughnessTexture |
+                          Flag::MetallicTexture | Flag::NormalTexture)
+                     ? "#define TEXTURED\n"
+                     : "")
+      .addSource(flags & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
+      .addSource(flags & Flag::PrecomputedTangent
+                     ? "#define PRECOMPUTED_TANGENT\n"
+                     : "")
+      .addSource(rs.get("pbr.vert"));
 
-  if (flags & Flag::RoughnessTexture) {
-    vert.addSource("#define ROUGHNESS_TEXTURE\n");
-    frag.addSource("#define ROUGHNESS_TEXTURE\n");
-  }
-
-  if (flags & Flag::MetallicTexture) {
-    vert.addSource("#define METALLIC_TEXTURE\n");
-    frag.addSource("#define METALLIC_TEXTURE\n");
-  }
-
-  if (flags & Flag::NormalTexture) {
-    vert.addSource("#define NORMAL_TEXTURE\n");
-    frag.addSource("#define NORMAL_TEXTURE\n");
-  }
-
-  if (flags & Flag::ObjectId) {
-    vert.addSource("#define OBJECT_ID\n");
-    frag.addSource("#define OBJECT_ID\n");
-  }
-
-  vert.addSource(rs.get("pbr.vert"));
-  frag.addSource(rs.get("pbr.frag"));
+  frag.addSource(flags & (Flag::AlbedoTexture | Flag::RoughnessTexture |
+                          Flag::MetallicTexture | Flag::NormalTexture)
+                     ? "#define TEXTURED\n"
+                     : "")
+      .addSource(flags & Flag::AlbedoTexture ? "#define ALBEDO_TEXTURE\n" : "")
+      .addSource(flags & Flag::RoughnessTexture ? "#define ROUGHNESS_TEXTURE\n"
+                                                : "")
+      .addSource(flags & Flag::MetallicTexture ? "#define METALLIC_TEXTURE\n"
+                                               : "")
+      .addSource(flags & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
+      .addSource(flags & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
+      .addSource(flags & Flag::PrecomputedTangent
+                     ? "#define PRECOMPUTED_TANGENT\n"
+                     : "")
+      .addSource(Corrade::Utility::formatString("#define LIGHT_COUNT {}\n",
+                                                lightCount))
+      .addSource(rs.get("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 
@@ -119,7 +122,7 @@ PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount) : flags_(flags) {
   metallicUniform_ = uniformLocation("Material.metallic");
 
   // TODO: Lights
-}
+}  // namespace gfx
 
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since

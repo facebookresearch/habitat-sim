@@ -9,10 +9,10 @@
 // position, normal, tangent in camera space
 in highp vec3 position;
 in highp vec3 normal;
-#if defined(ALBEDO_TEXTURE) || defined(ROUGHNESS_TEXTURE) || defined(METALLIC_TEXTURE) || defined(NORMAL_TEXTURE)
+#if defined(TEXTURED)
 in mediump vec2 texCoord;
 #endif
-#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENTS)
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
 in highp vec3 tangent;
 in highp vec3 biTangent;
 #endif
@@ -71,7 +71,7 @@ uniform highp uint objectId;
 vec3 getNormalFromNormalMap() {
   vec3 tangentNormal = texture(normalTexture, texCoord).xyz * 2.0 - 1.0;
 
-#if defined(PRECOMPUTED_TANGENTS)
+#if defined(PRECOMPUTED_TANGENT)
   mat3 TBN = mat3(tangent, biTangent, normal);
 #else
 // TODO: some magic here!
