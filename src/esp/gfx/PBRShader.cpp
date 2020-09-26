@@ -51,6 +51,7 @@ PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount)
 #endif
 
   // this is not the file name, but the group name in the config file
+  // see Shaders.conf in the shaders folder
   const Corrade::Utility::Resource rs{"default-shaders"};
 
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
@@ -171,6 +172,25 @@ PBRShader& PBRShader::setRoughness(float roughness) {
 
 PBRShader& PBRShader::setMetallic(float metallic) {
   setUniform(metallicUniform_, metallic);
+  return *this;
+}
+
+PBRShader& PBRShader::bindTextures(Magnum::GL::Texture2D* albedo,
+                                   Magnum::GL::Texture2D* roughness,
+                                   Magnum::GL::Texture2D* metallic,
+                                   Magnum::GL::Texture2D* normal) {
+  if (albedo) {
+    bindAlbedoTexture(*albedo);
+  }
+  if (roughness) {
+    bindRoughnessTexture(*roughness);
+  }
+  if (metallic) {
+    bindMetallicTexture(*metallic);
+  }
+  if (normal) {
+    bindNormalTexture(*normal);
+  }
   return *this;
 }
 
