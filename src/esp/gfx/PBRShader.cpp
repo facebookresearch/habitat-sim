@@ -25,6 +25,7 @@ static void importShaderResources() {
 }
 
 namespace Mn = Magnum;
+namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
@@ -38,9 +39,9 @@ enum TextureBindingPointIndex : uint8_t {
 };
 }  // namespace
 
-PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount)
+PBRShader::PBRShader(Flags flags, unsigned int lightCount)
     : flags_(flags), lightCount_(lightCount) {
-  if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
+  if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
 
@@ -52,7 +53,7 @@ PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount)
 
   // this is not the file name, but the group name in the config file
   // see Shaders.conf in the shaders folder
-  const Corrade::Utility::Resource rs{"default-shaders"};
+  const Cr::Utility::Resource rs{"default-shaders"};
 
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
@@ -82,8 +83,8 @@ PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount)
       .addSource(flags & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
-      .addSource(Corrade::Utility::formatString("#define LIGHT_COUNT {}\n",
-                                                lightCount))
+      .addSource(
+          Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount))
       .addSource(rs.get("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
@@ -118,12 +119,27 @@ PBRShader::PBRShader(Flags flags, Mn::UnsignedInt lightCount)
   if (flags & Flag::ObjectId) {
     objectIdUniform_ = uniformLocation("objectId");
   }
+
+  // materials
   baseColorUniform_ = uniformLocation("Material.baseColor");
   roughnessUniform_ = uniformLocation("Material.roughness");
   metallicUniform_ = uniformLocation("Material.metallic");
 
-  // TODO: Lights
-}  // namespace gfx
+  // lights
+  if (lightCount_) {
+    lightsUniform_.resize(lightCount_);
+    for (int iLight = 0; iLight < lightCount_; ++iLight) {
+      lightsUniform_[iLight].lightColor = uniformLocation(
+          Cr::Utility::formatString("Light[{}].lightColor", iLight));
+      lightsUniform_[iLight].intensity = uniformLocation(
+          Cr::Utility::formatString("Light[{}].intensity", iLight));
+      lightsUniform_[iLight].range =
+          uniformLocation(Cr::Utility::formatString("Light[{}].range", iLight));
+      lightDirectionsUniform_[iLight] = uniformLocation(
+          Cr::Utility::formatString("LightDirections[{}]", iLight));
+    }
+  }
+}
 
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since
