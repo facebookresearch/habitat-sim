@@ -135,8 +135,6 @@ PBRShader::PBRShader(Flags flags, unsigned int lightCount)
     for (int iLight = 0; iLight < lightCount_; ++iLight) {
       lightsUniform_[iLight].color =
           uniformLocation(Cr::Utility::formatString("Light[{}].color", iLight));
-      lightsUniform_[iLight].intensity = uniformLocation(
-          Cr::Utility::formatString("Light[{}].intensity", iLight));
       lightsUniform_[iLight].range =
           uniformLocation(Cr::Utility::formatString("Light[{}].range", iLight));
       lightDirectionsUniform_[iLight] = uniformLocation(
@@ -197,6 +195,16 @@ PBRShader& PBRShader::setMVPMatrix(const Mn::Matrix4& matrix) {
   return *this;
 }
 
+PBRShader& PBRShader::setNormalMatrix(const Mn::Matrix3x3& matrix) {
+  setUniform(normalMatrixUniform_, matrix);
+  return *this;
+}
+
+PBRShader& PBRShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
+  setUniform(modelviewMatrixUniform_, matrix);
+  return *this;
+}
+
 PBRShader& PBRShader::setObjectId(unsigned int objectId) {
   if (flags_ & Flag::ObjectId) {
     setUniform(objectIdUniform_, objectId);
@@ -225,10 +233,10 @@ PBRShader& PBRShader::setMetallic(float metallic) {
   return *this;
 }
 
-PBRShader& PBRShader::bindTextures(Magnum::GL::Texture2D* albedo,
-                                   Magnum::GL::Texture2D* roughness,
-                                   Magnum::GL::Texture2D* metallic,
-                                   Magnum::GL::Texture2D* normal) {
+PBRShader& PBRShader::bindTextures(Mn::GL::Texture2D* albedo,
+                                   Mn::GL::Texture2D* roughness,
+                                   Mn::GL::Texture2D* metallic,
+                                   Mn::GL::Texture2D* normal) {
   if (albedo) {
     bindAlbedoTexture(*albedo);
   }
@@ -245,23 +253,42 @@ PBRShader& PBRShader::bindTextures(Magnum::GL::Texture2D* albedo,
 }
 
 PBRShader& PBRShader::setLightPosition(unsigned int lightIndex,
-                                       const Magnum::Vector3& pos) {
+                                       const Mn::Vector3& pos) {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PBRShader::setLightPosition: lightIndex" << lightIndex << "is illegal.",
       *this);
 
-  setUniform(lightDirectionsUniform_[lightIndex], Magnum::Vector4{pos, 1.0});
+  setUniform(lightDirectionsUniform_[lightIndex], Mn::Vector4{pos, 1.0});
   return *this;
 }
 
 PBRShader& PBRShader::setLightDirection(unsigned int lightIndex,
-                                        const Magnum::Vector3& dir) {
+                                        const Mn::Vector3& dir) {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PBRShader::setLightDirection: lightIndex" << lightIndex << "is illegal.",
       *this);
-  setUniform(lightDirectionsUniform_[lightIndex], Magnum::Vector4{dir, 0.0});
+  setUniform(lightDirectionsUniform_[lightIndex], Mn::Vector4{dir, 0.0});
+  return *this;
+}
+
+PBRShader& PBRShader::setLightVector(unsigned int lightIndex,
+                                     const Magnum::Vector4& vec) {
+  CORRADE_ASSERT(
+      lightIndex < lightCount_,
+      "PBRShader::setLightVector: lightIndex" << lightIndex << "is illegal.",
+      *this);
+
+  CORRADE_ASSERT(vec.w() == 1 || vec.w() == 0,
+                 "PBRShader::setLightVector"
+                     << vec
+                     << "is expected to have w == 0 for a directional light or "
+                        "w == 1 for a point light",
+                 *this);
+
+  setUniform(lightDirectionsUniform_[lightIndex], vec);
+
   return *this;
 }
 
@@ -275,25 +302,16 @@ PBRShader& PBRShader::setLightRange(unsigned int lightIndex, float range) {
   }
   return *this;
 }
-PBRShader& PBRShader::setLightIntensity(unsigned int lightIndex,
-                                        float intensity) {
-  CORRADE_ASSERT(
-      lightIndex < lightCount_,
-      "PBRShader::setLightIntensity: lightIndex" << lightIndex << "is illegal.",
-      *this);
-  if (lightCount_) {
-    setUniform(lightsUniform_[lightIndex].intensity, intensity);
-  }
-  return *this;
-}
 PBRShader& PBRShader::setLightColor(unsigned int lightIndex,
-                                    const Magnum::Vector3& color) {
+                                    const Mn::Vector3& color,
+                                    float intensity) {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PBRShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
       *this);
   if (lightCount_) {
-    setUniform(lightsUniform_[lightIndex].color, color);
+    Mn::Vector3 finalColor = intensity * color;
+    setUniform(lightsUniform_[lightIndex].color, finalColor);
   }
   return *this;
 }

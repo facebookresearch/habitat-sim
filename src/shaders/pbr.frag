@@ -25,8 +25,9 @@ layout(location = 1) out highp uint fragmentObjectId;
 
 // -------------- lights -------------------
 struct LightData {
+  // WARNING:
+  // In this shader, the light intensity is considered in the lightColor!!
   vec3 lightColor;
-  float intensity;
   float range;
 };
 uniform LightData Light[LIGHT_COUNT];
@@ -225,8 +226,7 @@ void main() {
     attenuation = attenuation * attenuation;
 
     // radiance
-    vec3 lightRadiance =
-        Light[iLight].intensity * Light[iLight].color * attenuation;
+    vec3 lightRadiance = Light[iLight].color * attenuation;
 
     // light source direction: a vector from current position to the light
     vec3 light = normalize(LightDirections[iLight].xyz -

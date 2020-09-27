@@ -155,6 +155,11 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
   /** @brief Move assignment */
   PBRShader& operator=(PBRShader&&) noexcept = default;
 
+  /**
+   * @brief Get number of lights
+   */
+  unsigned int lightCount() { return lightCount_; }
+
   /** @brief Flags */
   Flags flags() const { return flags_; }
 
@@ -190,10 +195,26 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
 
   // ======== set uniforms ===========
   /**
-   *  @brief Set modelview and projection matrix to the uniform on GPU
+   *  @brief Set "modelview and projection" matrix to the uniform on GPU
+   *         MVP = proj * view * model
    *  @return Reference to self (for method chaining)
    */
   PBRShader& setMVPMatrix(const Magnum::Matrix4& matrix);
+
+  /**
+   *  @brief Set modelview matrix to the uniform on GPU
+   *         modelview = view * model
+   *  @return Reference to self (for method chaining)
+   */
+  PBRShader& setTransformationMatrix(const Magnum::Matrix4& matrix);
+
+  /**
+   *  @brief Set normal matrix to the uniform on GPU
+   *         normal = inverse transpose of the up-left 3x3 matrix of the
+   *         modelview matrix
+   *  @return Reference to self (for method chaining)
+   */
+  PBRShader& setNormalMatrix(const Magnum::Matrix3x3& matrix);
 
   // -------- materials ---------------
   /**
@@ -219,6 +240,23 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
   PBRShader& setObjectId(unsigned int objectId);
 
   /**
+   *  @brief Set the position or direction of a specific light See @ref vec for
+   *  details
+   *  @param lightIndex, the index of the light, MUST be smaller than
+   *                     lightCount_
+   *  @param vec, the direction (or position) of the light in *camera* space;
+   *              when vec.w == 0, it means vec.xyz is the light direction;
+   *              when vec.w == 1, it means vec.xyz is the light position;
+   *  @return Reference to self (for method chaining)
+   *  Note:
+   *  If the light was a directional (point) light, it will be overrided as a
+   *  point (directional) light
+   */
+
+  PBRShader& setLightVector(unsigned int lightIndex,
+                            const Magnum::Vector4& vec);
+
+  /**
    *  @brief Set the position of a specific light.
    *  @param lightIndex, the index of the light, MUST be smaller than
    * lightCount_
@@ -226,7 +264,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    *  @return Reference to self (for method chaining)
    *  Note:
    *  If the light was a directional light, it will be overrided as a point
-   * light;
+   *  light;
    */
   PBRShader& setLightPosition(unsigned int lightIndex,
                               const Magnum::Vector3& pos);
@@ -237,7 +275,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    * lightCount_
    *  @param dir, the direction of the light in *camera* space
    *  @return Reference to self (for method chaining)
-   *  Note:
+   *  NOTE:
    *  If the light was a point light, it will be overrided as a direction
    * light;
    */
@@ -254,23 +292,15 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
   PBRShader& setLightRange(unsigned int lightIndex, float range);
 
   /**
-   *  @brief Set the intensity of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
-   * lightCount_
-   *  @param intensity, the intensity of the light
-   *  @return Reference to self (for method chaining)
-   */
-  PBRShader& setLightIntensity(unsigned int lightIndex, float intensity);
-
-  /**
    *  @brief Set the color of a specific light.
    *  @param lightIndex, the index of the light, MUST be smaller than
    * lightCount_
-   *  @param intensity, the color of the light
+   *  @param color, the color of the light
    *  @return Reference to self (for method chaining)
    */
   PBRShader& setLightColor(unsigned int lightIndex,
-                           const Magnum::Vector3& color);
+                           const Magnum::Vector3& color,
+                           float intensity = 1.0);
 
  protected:
   Flags flags_;
@@ -294,7 +324,6 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
 
   struct LightUniformLocations {
     int color = ID_UNDEFINED;
-    int intensity = ID_UNDEFINED;
     int range = ID_UNDEFINED;
   };
   std::vector<LightUniformLocations> lightsUniform_;

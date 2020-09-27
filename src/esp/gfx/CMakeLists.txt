@@ -8,6 +8,8 @@ set(
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
+  PBRDrawable.cpp
+  PBRDrawable.h
   MeshVisualizerDrawable.cpp
   MeshVisualizerDrawable.h
   LightSetup.cpp
