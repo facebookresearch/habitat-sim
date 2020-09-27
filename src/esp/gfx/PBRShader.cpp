@@ -3,6 +3,9 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Containers/Reference.h>
+#include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/Debug.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Context.h>
@@ -128,9 +131,10 @@ PBRShader::PBRShader(Flags flags, unsigned int lightCount)
   // lights
   if (lightCount_) {
     lightsUniform_.resize(lightCount_);
+    lightDirectionsUniform_.resize(lightCount_);
     for (int iLight = 0; iLight < lightCount_; ++iLight) {
-      lightsUniform_[iLight].lightColor = uniformLocation(
-          Cr::Utility::formatString("Light[{}].lightColor", iLight));
+      lightsUniform_[iLight].color =
+          uniformLocation(Cr::Utility::formatString("Light[{}].color", iLight));
       lightsUniform_[iLight].intensity = uniformLocation(
           Cr::Utility::formatString("Light[{}].intensity", iLight));
       lightsUniform_[iLight].range =
@@ -145,22 +149,46 @@ PBRShader::PBRShader(Flags flags, unsigned int lightCount)
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
 PBRShader& PBRShader::bindAlbedoTexture(Mn::GL::Texture2D& texture) {
-  texture.bind(TextureBindingPointIndex::albedo);
+  CORRADE_ASSERT(flags_ & Flag::AlbedoTexture,
+                 "PBRShader::bindAlbedoTexture: the shader was not "
+                 "created with albedo texture enabled",
+                 *this);
+  if (lightCount_) {
+    texture.bind(TextureBindingPointIndex::albedo);
+  }
   return *this;
 }
 
 PBRShader& PBRShader::bindRoughnessTexture(Mn::GL::Texture2D& texture) {
-  texture.bind(TextureBindingPointIndex::roughness);
+  CORRADE_ASSERT(flags_ & Flag::RoughnessTexture,
+                 "PBRShader::bindRoughnessTexture: the shader was not "
+                 "created with roughness texture enabled",
+                 *this);
+  if (lightCount_) {
+    texture.bind(TextureBindingPointIndex::roughness);
+  }
   return *this;
 }
 
 PBRShader& PBRShader::bindMetallicTexture(Mn::GL::Texture2D& texture) {
-  texture.bind(TextureBindingPointIndex::metallic);
+  CORRADE_ASSERT(flags_ & Flag::MetallicTexture,
+                 "PBRShader::bindMetallicTexture: the shader was not "
+                 "created with metallic texture enabled",
+                 *this);
+  if (lightCount_) {
+    texture.bind(TextureBindingPointIndex::metallic);
+  }
   return *this;
 }
 
 PBRShader& PBRShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
-  texture.bind(TextureBindingPointIndex::normal);
+  CORRADE_ASSERT(flags_ & Flag::NormalTexture,
+                 "PBRShader::bindNormalTexture: the shader was not "
+                 "created with normal texture enabled",
+                 *this);
+  if (lightCount_) {
+    texture.bind(TextureBindingPointIndex::normal);
+  }
   return *this;
 }
 
@@ -177,17 +205,23 @@ PBRShader& PBRShader::setObjectId(unsigned int objectId) {
 }
 
 PBRShader& PBRShader::setBaseColor(const Mn::Color4& color) {
-  setUniform(baseColorUniform_, color);
+  if (lightCount_) {
+    setUniform(baseColorUniform_, color);
+  }
   return *this;
 }
 
 PBRShader& PBRShader::setRoughness(float roughness) {
-  setUniform(roughnessUniform_, roughness);
+  if (lightCount_) {
+    setUniform(roughnessUniform_, roughness);
+  }
   return *this;
 }
 
 PBRShader& PBRShader::setMetallic(float metallic) {
-  setUniform(metallicUniform_, metallic);
+  if (lightCount_) {
+    setUniform(metallicUniform_, metallic);
+  }
   return *this;
 }
 
@@ -206,6 +240,60 @@ PBRShader& PBRShader::bindTextures(Magnum::GL::Texture2D* albedo,
   }
   if (normal) {
     bindNormalTexture(*normal);
+  }
+  return *this;
+}
+
+PBRShader& PBRShader::setLightPosition(unsigned int lightIndex,
+                                       const Magnum::Vector3& pos) {
+  CORRADE_ASSERT(
+      lightIndex < lightCount_,
+      "PBRShader::setLightPosition: lightIndex" << lightIndex << "is illegal.",
+      *this);
+
+  setUniform(lightDirectionsUniform_[lightIndex], Magnum::Vector4{pos, 1.0});
+  return *this;
+}
+
+PBRShader& PBRShader::setLightDirection(unsigned int lightIndex,
+                                        const Magnum::Vector3& dir) {
+  CORRADE_ASSERT(
+      lightIndex < lightCount_,
+      "PBRShader::setLightDirection: lightIndex" << lightIndex << "is illegal.",
+      *this);
+  setUniform(lightDirectionsUniform_[lightIndex], Magnum::Vector4{dir, 0.0});
+  return *this;
+}
+
+PBRShader& PBRShader::setLightRange(unsigned int lightIndex, float range) {
+  CORRADE_ASSERT(
+      lightIndex < lightCount_,
+      "PBRShader::setLightRange: lightIndex" << lightIndex << "is illegal.",
+      *this);
+  if (lightCount_) {
+    setUniform(lightsUniform_[lightIndex].range, range);
+  }
+  return *this;
+}
+PBRShader& PBRShader::setLightIntensity(unsigned int lightIndex,
+                                        float intensity) {
+  CORRADE_ASSERT(
+      lightIndex < lightCount_,
+      "PBRShader::setLightIntensity: lightIndex" << lightIndex << "is illegal.",
+      *this);
+  if (lightCount_) {
+    setUniform(lightsUniform_[lightIndex].intensity, intensity);
+  }
+  return *this;
+}
+PBRShader& PBRShader::setLightColor(unsigned int lightIndex,
+                                    const Magnum::Vector3& color) {
+  CORRADE_ASSERT(
+      lightIndex < lightCount_,
+      "PBRShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
+      *this);
+  if (lightCount_) {
+    setUniform(lightsUniform_[lightIndex].color, color);
   }
   return *this;
 }
