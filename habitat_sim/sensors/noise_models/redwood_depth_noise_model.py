@@ -13,15 +13,13 @@ import numpy as np
 from numpy import ndarray
 from torch import Tensor
 
+from habitat_sim._ext.habitat_sim_bindings import SensorType
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.registry import registry
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 if cuda_enabled:
-    from habitat_sim._ext.habitat_sim_bindings import (
-        RedwoodNoiseModelGPUImpl,
-        SensorType,
-    )
+    from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelGPUImpl
 
 torch = None
 
