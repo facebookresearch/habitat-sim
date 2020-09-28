@@ -8,8 +8,9 @@ from torch.utils.data import DataLoader, Dataset
 
 import habitat_sim
 from examples.settings import make_cfg
-from habitat_sim.utils.data.data_extractor import ImageExtractor, TopdownView
+from habitat_sim.utils.data.data_extractor import ImageExtractor
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
+from habitat_sim.utils.data.pose_extractor import TopdownView
 
 
 class TrivialNet(nn.Module):
