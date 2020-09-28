@@ -29,7 +29,9 @@ class MyDataset(Dataset):
         return len(self.extractor)
 
     def __getitem__(self, idx):
-        return self.extractor[idx]
+        sample = self.extractor[idx]
+        sample["label"] = 0
+        return sample
 
 
 def test_topdown_view(make_cfg_settings):
