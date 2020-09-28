@@ -81,7 +81,29 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
     }
   }
   return res;
-}  // ManagedContainer::getObjectHandlesBySubStringPerType
+}  // ManagedContainerBase::getObjectHandlesBySubStringPerType
+
+bool ManagedContainerBase::verifyLoadDocument(const std::string& filename,
+                                              io::JsonDocument& jsonDoc) {
+  if (isValidFileName(filename)) {
+    try {
+      jsonDoc = io::parseJsonFile(filename);
+    } catch (...) {
+      LOG(ERROR)
+          << objectType_
+          << "ManagedContainerBase::verifyLoadDocument : Failed to parse "
+          << filename << " as JSON.";
+      return false;
+    }
+    return true;
+  } else {
+    // by here always fail
+    LOG(ERROR) << objectType_
+               << "ManagedContainerBase::verifyLoadDocument : File " << filename
+               << " does not exist";
+    return false;
+  }
+}  // ManagedContainerBase::verifyLoadDocument
 
 }  // namespace core
 }  // namespace esp

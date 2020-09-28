@@ -156,6 +156,24 @@ class ManagedContainerBase {
 
   // ======== Accessor functions ========
   /**
+   * @brief Get the key in @ref objectLibrary_ for the object managed
+   * object with the given unique ID.
+   *
+   * @param objectID The unique ID of the desired managed object.
+   * @return The key referencing the managed object in @ref
+   * objectLibrary_, or nullptr if does not exist.
+   */
+  std::string getObjectHandleByID(const int objectID) const {
+    if (objectLibKeyByID_.count(objectID) == 0) {
+      LOG(ERROR) << "ManagedContainerBase::getObjectHandleByID : Unknown "
+                 << objectType_ << " managed object ID:" << objectID
+                 << ". Aborting";
+      return nullptr;
+    }
+    return objectLibKeyByID_.at(objectID);
+  }  // ManagedContainer::getObjectHandleByID
+
+  /**
    * @brief Gets the number of object managed objects stored in the @ref
    * objectLibrary_.
    *
@@ -179,8 +197,9 @@ class ManagedContainerBase {
    * @brief Retrieve shared pointer to object held in library
    * @param handle the name of the object held in the smart pointer
    */
-  std::shared_ptr<void> getObjectInternal(const std::string& handle) const {
-    return objectLibrary_.at(handle);
+  template <class U>
+  auto getObjectInternal(const std::string& handle) const {
+    return std::static_pointer_cast<U>(objectLibrary_.at(handle));
   }
 
   /**
@@ -225,26 +244,7 @@ class ManagedContainerBase {
    * @return whether document has been loaded successfully or not
    */
   bool verifyLoadDocument(const std::string& filename,
-                          io::JsonDocument& jsonDoc) {
-    if (isValidFileName(filename)) {
-      try {
-        jsonDoc = io::parseJsonFile(filename);
-      } catch (...) {
-        LOG(ERROR)
-            << objectType_
-            << "ManagedContainerBase::verifyLoadDocument : Failed to parse "
-            << filename << " as JSON.";
-        return false;
-      }
-      return true;
-    } else {
-      // by here always fail
-      LOG(ERROR) << objectType_
-                 << "ManagedContainerBase::verifyLoadDocument : File "
-                 << filename << " does not exist";
-      return false;
-    }
-  }  // ManagedContainerBase::verifyLoadDocument
+                          io::JsonDocument& jsonDoc);
 
   /**
    * @brief This method will perform any necessary updating that is
@@ -276,30 +276,19 @@ class ManagedContainerBase {
   /**
    * @brief Used Internally. Get an unused/available ID to be assigned to an
    * object as it is being added to the library.
-   *
-   * @param objectHandle The string key referencing the managed object in
-   * @ref objectLibrary_. Usually the origin handle.
-   * @param getNext Whether to get the next available ID if not found, or to
-   * throw an assertion. Defaults to false
    * @return The managed object's ID if found. The next available ID if not
    * found and getNext is true. Otherwise ID_UNDEFINED.
    */
-  int getUnusedObjectID(const std::string& objectHandle, bool getNext) {
-    if (!getNext) {
-      LOG(ERROR) << "ManagedContainerBase::getObjectIDByHandleOrNew : No "
-                 << objectType_ << " managed object with handle "
-                 << objectHandle << "exists. Aborting";
-      return ID_UNDEFINED;
-    } else {
-      // return next available managed object ID (from previously deleted
-      // managed object) or managed object library size as next ID to be used
-      if (availableObjectIDs_.size() > 0) {
-        int retVal = availableObjectIDs_.front();
-        availableObjectIDs_.pop_front();
-        return retVal;
-      }
-      return objectLibrary_.size();
+  int getUnusedObjectID() {
+    // return next available managed object ID (from previously deleted
+    // managed object) or managed object library size as next ID to be used
+    if (availableObjectIDs_.size() > 0) {
+      int retVal = availableObjectIDs_.front();
+      availableObjectIDs_.pop_front();
+      return retVal;
     }
+    return objectLibrary_.size();
+
   }  // ManagedContainerBase::getObjectIDByHandle
 
   /**
@@ -358,7 +347,6 @@ class ManagedContainerBase {
    */
   std::map<std::string, std::shared_ptr<void>> objectLibrary_;
 
- protected:
   /** @brief A descriptive name of the managed object being managed by this
    * manager.
    */

@@ -32,7 +32,6 @@ class ManagedContainer : public ManagedContainerBase {
 
   ManagedContainer(const std::string& metadataType)
       : ManagedContainerBase(metadataType) {}
-  virtual ~ManagedContainer() = default;
 
   /**
    * @brief Creates an instance of a managed object described by passed string.
@@ -222,7 +221,7 @@ class ManagedContainer : public ManagedContainerBase {
                                 "ManagedContainer::getObjectByID")) {
       return nullptr;
     }
-    return std::static_pointer_cast<T>(getObjectInternal(objectHandle));
+    return getObjectInternal<T>(objectHandle);
   }  // ManagedContainer::getObjectByID
 
   /**
@@ -241,7 +240,7 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
 
-    return std::static_pointer_cast<T>(getObjectInternal(objectHandle));
+    return getObjectInternal<T>(objectHandle);
   }  // ManagedContainer::getObject
 
   /**
@@ -301,24 +300,6 @@ class ManagedContainer : public ManagedContainerBase {
       bool contains = true);
 
   /**
-   * @brief Get the key in @ref objectLibrary_ for the object managed
-   * object with the given unique ID.
-   *
-   * @param objectID The unique ID of the desired managed object.
-   * @return The key referencing the managed object in @ref
-   * objectLibrary_, or nullptr if does not exist.
-   */
-  std::string getObjectHandleByID(const int objectID) const {
-    if (objectLibKeyByID_.count(objectID) == 0) {
-      LOG(ERROR) << "ManagedContainer::getObjectHandleByID : Unknown "
-                 << objectType_ << " managed object ID:" << objectID
-                 << ". Aborting";
-      return nullptr;
-    }
-    return objectLibKeyByID_.at(objectID);
-  }  // ManagedContainer::getObjectHandleByID
-
-  /**
    * @brief Get the ID of the managed object in @ref objectLibrary_ for
    * the given managed object Handle, if exists.
    *
@@ -348,7 +329,7 @@ class ManagedContainer : public ManagedContainerBase {
                                 "ManagedContainer::getObjectCopyByID")) {
       return nullptr;
     }
-    auto orig = std::static_pointer_cast<T>(getObjectInternal(objectHandle));
+    auto orig = getObjectInternal<T>(objectHandle);
     return this->copyObject(orig);
   }  // ManagedContainer::getObjectCopyByID
 
@@ -365,7 +346,7 @@ class ManagedContainer : public ManagedContainerBase {
                                 "ManagedContainer::getObjectCopyByHandle")) {
       return nullptr;
     }
-    auto orig = std::static_pointer_cast<T>(getObjectInternal(objectHandle));
+    auto orig = getObjectInternal<T>(objectHandle);
     return this->copyObject(orig);
   }  // ManagedContainer::getObjectCopyByHandle
 
@@ -475,10 +456,16 @@ class ManagedContainer : public ManagedContainerBase {
    */
   int getObjectIDByHandleOrNew(const std::string& objectHandle, bool getNext) {
     if (getObjectLibHasHandle(objectHandle)) {
-      return std::static_pointer_cast<T>(getObjectInternal(objectHandle))
-          ->getID();
+      return getObjectInternal<T>(objectHandle)->getID();
     } else {
-      return getUnusedObjectID(objectHandle, getNext);
+      if (!getNext) {
+        LOG(ERROR) << "ManagedContainerBase::getObjectIDByHandleOrNew : No "
+                   << objectType_ << " managed object with handle "
+                   << objectHandle << "exists. Aborting";
+        return ID_UNDEFINED;
+      } else {
+        return getUnusedObjectID();
+      }
     }
   }  // ManagedContainer::getObjectIDByHandle
 
@@ -494,10 +481,10 @@ class ManagedContainer : public ManagedContainerBase {
                                      const std::string& objectHandle) = 0;
 
   /**
-   * @brief Build a shared pointer to a copy of a the passed managed object, of
-   * appropriate managed object type for passed object type.
-   * @tparam U Type of managed object being created - must be a derived class of
-   * ManagedPtr
+   * @brief Build a shared pointer to a copy of a the passed managed object,
+   * of appropriate managed object type for passed object type.
+   * @tparam U Type of managed object being created - must be a derived class
+   * of ManagedPtr
    * @param orig original object of type ManagedPtr being copied
    */
   template <typename U>
@@ -508,7 +495,8 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief This function will build the appropriate function pointer map for
-   * this container's managed object, keyed on the managed object's class type.
+   * this container's managed object, keyed on the managed object's class
+   * type.
    */
   virtual void buildCtorFuncPtrMaps() = 0;
 
@@ -561,9 +549,9 @@ class ManagedContainer : public ManagedContainerBase {
       Map_Of_CopyCtors;
 
   /**
-   * @brief Map of function pointers to instantiate a copy of a managed object.
-   * A managed object is instanced by accessing the approrpiate function
-   * pointer.
+   * @brief Map of function pointers to instantiate a copy of a managed
+   * object. A managed object is instanced by accessing the approrpiate
+   * function pointer.
    */
   Map_Of_CopyCtors copyConstructorMap_;
 
@@ -602,19 +590,19 @@ auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
               << " managed object " << objectHandle << " : Does not exist.";
     return nullptr;
   }
-
-  auto attribsTemplate = getObjectCopyByHandle(objectHandle);
   std::string msg;
   if (this->undeletableObjectNames_.count(objectHandle) > 0) {
     msg = "Required Undeletable Managed Object";
   } else if (this->userLockedObjectNames_.count(objectHandle) > 0) {
-    msg = "User-locked Template.  To delete managed object, unlock it.";
+    msg = "User-locked Object.  To delete managed object, unlock it.";
   }
   if (msg.length() != 0) {
     LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
               << " managed object " << objectHandle << " : " << msg << ".";
     return nullptr;
   }
+
+  ManagedPtr attribsTemplate = getObjectInternal<T>(objectHandle);
   // remove the object and all references to it from the various internal maps
   // holding them.
   deleteObjectInternal(attribsTemplate->getID(), objectHandle);
