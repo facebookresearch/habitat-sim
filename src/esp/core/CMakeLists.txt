@@ -37,6 +37,8 @@ add_library(
   esp.cpp
   esp.h
   logging.h
+  ManagedContainer.h
+  ManagedContainerBase.cpp
   ManagedContainerBase.h
   random.h
   spimpl.h

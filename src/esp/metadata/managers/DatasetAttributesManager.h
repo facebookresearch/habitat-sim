@@ -40,7 +40,8 @@ class DatasetAttributesManager
                       const std::string& lightSetup,
                       bool frustrumCulling) {
     if (this->getObjectLibHasHandle(datasetName)) {
-      auto dataset = this->objectLibrary_.at(datasetName);
+      auto dataset = std::static_pointer_cast<Attrs::DatasetAttributes>(
+          getObjectInternal(datasetName));
       dataset->setCurrCfgVals(filepaths, lightSetup, frustrumCulling);
     } else {
       LOG(ERROR) << "DatasetAttributesManager::setCurrCfgVals : No "
@@ -98,8 +99,10 @@ class DatasetAttributesManager
    */
   void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
     physicsManagerAttributesHandle_ = handle;
-    for (auto& dataset : this->objectLibrary_) {
-      dataset.second->setPhysicsManagerHandle(handle);
+    for (auto& val : this->objectLibrary_) {
+      auto dataset = std::static_pointer_cast<Attrs::DatasetAttributes>(
+          getObjectInternal(val.first));
+      dataset->setPhysicsManagerHandle(handle);
     }
   }
 
