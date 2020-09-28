@@ -10,7 +10,7 @@ from habitat_sim._ext.habitat_sim_bindings import PathFinder, SemanticScene
 from habitat_sim.agent import AgentState
 from habitat_sim.simulator import Configuration, Simulator
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
-from habitat_sim.utils.data.pose_extractor import PoseExtractor
+from habitat_sim.utils.data.pose_extractor import PoseExtractor, TopdownView
 
 
 def make_pose_extractor(name: str) -> PoseExtractor:
@@ -317,15 +317,3 @@ class ImageExtractor:
         agent_cfg.sensor_specifications = sensor_specs
 
         return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-
-class TopdownView(object):
-    def __init__(
-        self,
-        sim: Simulator,
-        height: Union[float, float32],
-        meters_per_pixel: float = 0.1,
-    ) -> None:
-        self.topdown_view = sim.pathfinder.get_topdown_view(
-            meters_per_pixel, height
-        ).astype(np.float64)

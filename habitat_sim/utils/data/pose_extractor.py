@@ -8,7 +8,13 @@ from quaternion import quaternion
 import habitat_sim
 from habitat_sim import registry as registry
 from habitat_sim.utils.common import quat_from_two_vectors
-from habitat_sim.utils.data.data_extractor import TopdownView
+
+
+class TopdownView(object):
+    def __init__(self, sim, height, meters_per_pixel=0.1):
+        self.topdown_view = sim.pathfinder.get_topdown_view(
+            meters_per_pixel, height
+        ).astype(np.float64)
 
 
 class PoseExtractor:
@@ -27,9 +33,7 @@ class PoseExtractor:
 
     def __init__(
         self,
-        topdown_views: List[
-            Tuple["TopdownView", str, Tuple[float32, float32, float32]]
-        ],
+        topdown_views: List[Tuple[TopdownView, str, Tuple[float32, float32, float32]]],
         meters_per_pixel: float = 0.1,
     ) -> None:
         self.tdv_fp_ref_triples = topdown_views
@@ -117,9 +121,7 @@ class PoseExtractor:
 class ClosestPointExtractor(PoseExtractor):
     def __init__(
         self,
-        topdown_views: List[
-            Tuple["TopdownView", str, Tuple[float32, float32, float32]]
-        ],
+        topdown_views: List[Tuple[TopdownView, str, Tuple[float32, float32, float32]]],
         meters_per_pixel: float = 0.1,
     ) -> None:
         super().__init__(topdown_views, meters_per_pixel)
@@ -213,9 +215,7 @@ class ClosestPointExtractor(PoseExtractor):
 class PanoramaExtractor(PoseExtractor):
     def __init__(
         self,
-        topdown_views: List[
-            Tuple["TopdownView", str, Tuple[float32, float32, float32]]
-        ],
+        topdown_views: List[Tuple[TopdownView, str, Tuple[float32, float32, float32]]],
         meters_per_pixel: float = 0.1,
     ) -> None:
         super().__init__(topdown_views, meters_per_pixel)
