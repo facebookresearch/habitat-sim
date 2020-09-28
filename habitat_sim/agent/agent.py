@@ -115,8 +115,8 @@ class Agent(object):
         self,
         scene_node: hsim.SceneNode,
         agent_config: Optional[AgentConfiguration] = None,
-        _sensors: None = None,
-        controls: None = None,
+        _sensors: Optional[SensorSuite] = None,
+        controls: Optional[ObjectControls] = None,
     ) -> None:
         self.agent_config = agent_config if agent_config else AgentConfiguration()
         self._sensors = _sensors if _sensors else SensorSuite()
