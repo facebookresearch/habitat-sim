@@ -11,10 +11,14 @@ https://github.com/facebookresearch/pyrobot
 Please cite PyRobot if you use this noise model
 """
 
+from typing import List, Optional, Tuple, Union
+
 import attr
 import magnum as mn
 import numpy as np
 import scipy.stats
+from attr._make import Attribute
+from numpy import float64, ndarray
 
 from habitat_sim import bindings as hsim
 from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
@@ -36,7 +40,12 @@ class _TruncatedMultivariateGaussian:
             np.count_nonzero(self.cov - np.diag(np.diagonal(self.cov))) == 0
         ), "Only supports diagonal covariance"
 
-    def sample(self, truncation=None):
+    def sample(
+        self,
+        truncation: Optional[
+            Union[List[Optional[Tuple[float64, None]]], List[Tuple[float64, None]]]
+        ] = None,
+    ) -> ndarray:
         if truncation is not None:
             assert len(truncation) == len(self.mean)
 
@@ -77,7 +86,7 @@ class RobotNoiseModel:
     Proportional: ControllerNoiseModel
     Movebase: ControllerNoiseModel
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> ControllerNoiseModel:
         return getattr(self, key)
 
 
@@ -169,13 +178,13 @@ class PyRobotNoisyActuationSpec(ActuationSpec):
     robot: str = attr.ib(default="LoCoBot")
 
     @robot.validator  # noqa: F811
-    def check(self, attribute, value):
+    def check(self, attribute: Attribute, value: str) -> None:
         assert value in pyrobot_noise_models.keys(), f"{value} not a known robot"
 
     controller: str = attr.ib(default="ILQR")
 
     @controller.validator  # noqa: F811
-    def check(self, attribute, value):
+    def check(self, attribute: Attribute, value: str) -> None:
         assert value in [
             "ILQR",
             "Proportional",
@@ -197,7 +206,7 @@ def _noisy_action_impl(
     multiplier: float,
     model: MotionNoiseModel,
     motion_type: str,
-):
+) -> None:
     # Perform the action in the coordinate system of the node
     transform = scene_node.transformation
     move_ax = -transform[_Z_AXIS].xyz
@@ -244,7 +253,7 @@ def _noisy_action_impl(
 class PyrobotNoisyMoveBackward(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
-    ):
+    ) -> None:
         _noisy_action_impl(
             scene_node,
             -actuation_spec.amount,
@@ -261,7 +270,7 @@ class PyrobotNoisyMoveBackward(SceneNodeControl):
 class PyrobotNoisyMoveForward(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
-    ):
+    ) -> None:
         _noisy_action_impl(
             scene_node,
             actuation_spec.amount,
@@ -278,7 +287,7 @@ class PyrobotNoisyMoveForward(SceneNodeControl):
 class PyrobotNoisyTurnLeft(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
-    ):
+    ) -> None:
         _noisy_action_impl(
             scene_node,
             0.0,
@@ -295,7 +304,7 @@ class PyrobotNoisyTurnLeft(SceneNodeControl):
 class PyrobotNoisyTurnRight(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
-    ):
+    ) -> None:
         _noisy_action_impl(
             scene_node,
             0.0,

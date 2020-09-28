@@ -44,7 +44,10 @@ import argparse
 import glob
 import os
 import sqlite3
+from argparse import ArgumentParser, Namespace
 from collections import defaultdict
+from sqlite3 import Connection
+from typing import Any, DefaultDict, List, Union
 
 import attr
 
@@ -68,7 +71,7 @@ class SummaryItem:
     time_inclusive: int = 0
 
 
-def get_sqlite_events(conn):
+def get_sqlite_events(conn: Connection) -> List[Event]:
     """Parse an sqlite database containing an NVTX_EVENTS table and return a
     list of Events."""
     events = []
@@ -90,7 +93,7 @@ def get_sqlite_events(conn):
     return events
 
 
-def create_summary_from_events(events):
+def create_summary_from_events(events: List[Event]) -> DefaultDict[str, SummaryItem]:
     """From a list of events, group by name and create summary items. Returns a
     dictionary of items keyed by name."""
     # sort by start time (ascending). For ties, sort by end time (descending). In this way,
@@ -155,7 +158,7 @@ def create_summary_from_events(events):
     return items
 
 
-def _display_time_ms(time, args, show_sign=False):
+def _display_time_ms(time: int, args: Namespace, show_sign: bool = False) -> str:
     seconds_to_ms = 0.001
     return "{}{:,.0f}".format(
         "+" if time > 0 and show_sign else "",
@@ -163,7 +166,11 @@ def _display_time_ms(time, args, show_sign=False):
     )
 
 
-def print_summaries(summaries, args, labels=None):
+def print_summaries(
+    summaries: Union[List[DefaultDict[str, SummaryItem]], List[DefaultDict[Any, Any]]],
+    args: Namespace,
+    labels: None = None,
+) -> None:
     """Print a dictionary of summaries to stdout. See create_arg_parser for
     formatting options available in the args object. See also
     create_summary_from_events."""
@@ -255,7 +262,7 @@ def get_sqlite_filepaths_from_directory(directory):
     return filepaths
 
 
-def create_arg_parser():
+def create_arg_parser() -> ArgumentParser:
     """For compare_profiles.py script. Includes print formatting options."""
     parser = argparse.ArgumentParser()
     parser.add_argument(

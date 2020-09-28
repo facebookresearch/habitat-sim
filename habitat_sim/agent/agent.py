@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import attr
 import magnum as mn
@@ -12,6 +12,7 @@ import numpy as np
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
+from habitat_sim._ext.habitat_sim_bindings import SceneNode
 from habitat_sim.sensors.sensor_suite import SensorSuite
 from habitat_sim.utils.common import (
     quat_from_coeffs,
@@ -25,14 +26,6 @@ from .controls import ActuationSpec, ObjectControls
 __all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agent"]
 
 
-def _default_action_space():
-    return dict(
-        move_forward=ActionSpec("move_forward", ActuationSpec(amount=0.25)),
-        turn_left=ActionSpec("turn_left", ActuationSpec(amount=10.0)),
-        turn_right=ActionSpec("turn_right", ActuationSpec(amount=10.0)),
-    )
-
-
 @attr.s(auto_attribs=True)
 class ActionSpec(object):
     r"""Defines how a specific action is implemented
@@ -43,6 +36,14 @@ class ActionSpec(object):
     """
     name: str
     actuation: ActuationSpec = None
+
+
+def _default_action_space() -> Dict[str, ActionSpec]:
+    return dict(
+        move_forward=ActionSpec("move_forward", ActuationSpec(amount=0.25)),
+        turn_left=ActionSpec("turn_left", ActuationSpec(amount=10.0)),
+        turn_right=ActionSpec("turn_right", ActuationSpec(amount=10.0)),
+    )
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -113,10 +114,10 @@ class Agent(object):
     def __init__(
         self,
         scene_node: hsim.SceneNode,
-        agent_config=None,
-        _sensors=None,
-        controls=None,
-    ):
+        agent_config: Optional[AgentConfiguration] = None,
+        _sensors: None = None,
+        controls: None = None,
+    ) -> None:
         self.agent_config = agent_config if agent_config else AgentConfiguration()
         self._sensors = _sensors if _sensors else SensorSuite()
         self.controls = controls if controls else ObjectControls()
@@ -127,7 +128,7 @@ class Agent(object):
 
     def reconfigure(
         self, agent_config: AgentConfiguration, reconfigure_sensors: bool = True
-    ):
+    ) -> None:
         r"""Re-create the agent with a new configuration
 
         :param agent_config: New config
@@ -196,7 +197,7 @@ class Agent(object):
         reset_sensors: bool = True,
         infer_sensor_states: bool = True,
         is_initial: bool = False,
-    ):
+    ) -> None:
         r"""Sets the agents state
 
         :param state: The state to set the agent to
@@ -251,7 +252,7 @@ class Agent(object):
             self.initial_state = state
 
     @property
-    def scene_node(self):
+    def scene_node(self) -> SceneNode:
         habitat_sim.errors.assert_obj_valid(self.body)
         return self.body.object
 
@@ -272,5 +273,5 @@ class Agent(object):
             new_state, reset_sensors=True, infer_sensor_states=True, is_initial=False
         )
 
-    def close(self):
+    def close(self) -> None:
         self._sensors = None

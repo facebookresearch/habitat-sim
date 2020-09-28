@@ -16,7 +16,7 @@ from habitat_sim.registry import registry
 EPS = 1e-5
 
 
-def _noop_filter(start: np.array, end: np.array):
+def _noop_filter(start: np.array, end: np.array) -> np.array:
     return end
 
 

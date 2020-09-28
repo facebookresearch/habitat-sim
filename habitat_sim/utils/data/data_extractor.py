@@ -1,11 +1,14 @@
-from typing import List, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from numpy import float32, float64, ndarray
 
 import habitat_sim
 from habitat_sim import bindings as hsim
 from habitat_sim import registry as registry
+from habitat_sim._ext.habitat_sim_bindings import PathFinder, SemanticScene
 from habitat_sim.agent import AgentState
+from habitat_sim.simulator import Configuration, Simulator
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor
 
@@ -64,12 +67,12 @@ class ImageExtractor:
         img_size: tuple = (512, 512),
         output: List[str] = None,
         pose_extractor_name: str = "closest_point_extractor",
-        sim=None,
+        sim: Optional[Simulator] = None,
         shuffle: bool = True,
         split: tuple = (70, 30),
         use_caching: bool = True,
         meters_per_pixel: float = 0.1,
-    ):
+    ) -> None:
         if labels is None:
             labels = [0.0]
         if output is None:
@@ -139,10 +142,10 @@ class ImageExtractor:
         if self.use_caching:
             self.cache = ExtractorLRUCache()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.mode_to_data[self.mode])
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Dict[str, Union[ndarray, float64]]:
         if isinstance(idx, slice):
             start, stop, step = idx.start, idx.stop, idx.step
             if start is None:
@@ -220,7 +223,9 @@ class ImageExtractor:
 
         return tdv_fp_ref
 
-    def _handle_split(self, split, poses):
+    def _handle_split(
+        self, split: Tuple[int, int], poses: ndarray
+    ) -> Tuple[ndarray, ndarray]:
         train, test = split
         num_poses = len(self.poses)
         last_train_idx = int((train / 100) * num_poses)
@@ -228,7 +233,9 @@ class ImageExtractor:
         test_poses = poses[last_train_idx:]
         return train_poses, test_poses
 
-    def _get_pathfinder_reference_point(self, pf):
+    def _get_pathfinder_reference_point(
+        self, pf: PathFinder
+    ) -> Tuple[float32, float32, float32]:
         bound1, bound2 = pf.get_bounds()
         startw = min(bound1[0], bound2[0])
         starth = min(bound1[2], bound2[2])
@@ -237,7 +244,9 @@ class ImageExtractor:
         ]  # Can't think of a better way to get a valid y-axis value
         return (startw, starty, starth)  # width, y, height
 
-    def _generate_label_map(self, scene, verbose=False):
+    def _generate_label_map(
+        self, scene: SemanticScene, verbose: bool = False
+    ) -> Dict[Any, Any]:
         if verbose:
             print(
                 f"House has {len(scene.levels)} levels, {len(scene.regions)} regions and {len(scene.objects)} objects"
@@ -252,7 +261,9 @@ class ImageExtractor:
 
         return instance_id_to_name
 
-    def _config_sim(self, scene_filepath, img_size):
+    def _config_sim(
+        self, scene_filepath: str, img_size: Tuple[int, int]
+    ) -> Configuration:
         settings = {
             "width": img_size[1],  # Spatial resolution of the observations
             "height": img_size[0],
@@ -309,7 +320,12 @@ class ImageExtractor:
 
 
 class TopdownView(object):
-    def __init__(self, sim, height, meters_per_pixel=0.1):
+    def __init__(
+        self,
+        sim: Simulator,
+        height: Union[float, float32],
+        meters_per_pixel: float = 0.1,
+    ) -> None:
         self.topdown_view = sim.pathfinder.get_topdown_view(
             meters_per_pixel, height
         ).astype(np.float64)

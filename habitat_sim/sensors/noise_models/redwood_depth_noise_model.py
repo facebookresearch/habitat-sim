@@ -5,18 +5,23 @@
 # LICENSE file in the root directory of this source tree.
 
 from os import path as osp
+from typing import Union
 
 import attr
 import numba
 import numpy as np
+from numpy import ndarray
+from torch import Tensor
 
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.registry import registry
-from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 if cuda_enabled:
-    from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelGPUImpl
+    from habitat_sim._ext.habitat_sim_bindings import (
+        RedwoodNoiseModelGPUImpl,
+        SensorType,
+    )
 
 torch = None
 
@@ -108,7 +113,7 @@ class RedwoodNoiseModelCPUImpl:
 class RedwoodDepthNoiseModel(SensorNoiseModel):
     noise_multiplier: float = 1.0
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         dist = np.load(
             osp.join(osp.dirname(__file__), "data", "redwood-depth-dist-model.npy")
         )
@@ -124,7 +129,7 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return sensor_type == SensorType.DEPTH
 
-    def simulate(self, gt_depth):
+    def simulate(self, gt_depth: Union[ndarray, Tensor]) -> Union[ndarray, Tensor]:
         global torch
         if cuda_enabled:
             if isinstance(gt_depth, np.ndarray):
@@ -141,6 +146,6 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
         else:
             return self._impl.simulate(gt_depth)
 
-    def apply(self, gt_depth):
+    def apply(self, gt_depth: Union[ndarray, Tensor]) -> Union[ndarray, Tensor]:
         r"""Alias of `simulate()` to conform to base-class and expected API"""
         return self.simulate(gt_depth)
