@@ -6,8 +6,9 @@ from numpy import float32, float64, ndarray
 import habitat_sim
 from habitat_sim import bindings as hsim
 from habitat_sim import registry as registry
-from habitat_sim._ext.habitat_sim_bindings import PathFinder, SemanticScene
 from habitat_sim.agent import AgentState
+from habitat_sim.bindings import PathFinder
+from habitat_sim.scene import SemanticScene
 from habitat_sim.simulator import Configuration, Simulator
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor, TopdownView
@@ -64,12 +65,12 @@ class ImageExtractor:
         self,
         scene_filepath: Union[str, List[str]],
         labels: List[float] = None,
-        img_size: tuple = (512, 512),
+        img_size: Tuple[int, int] = (512, 512),
         output: List[str] = None,
         pose_extractor_name: str = "closest_point_extractor",
         sim: Optional[Simulator] = None,
         shuffle: bool = True,
-        split: tuple = (70, 30),
+        split: Tuple[int, int] = (70, 30),
         use_caching: bool = True,
         meters_per_pixel: float = 0.1,
     ) -> None:

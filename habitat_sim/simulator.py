@@ -11,12 +11,17 @@ from typing import Any, Dict, List, Optional, Union
 import attr
 import magnum as mn
 import numpy as np
-from _magnum import Vector3
+from magnum import Vector3
 from numpy import ndarray
-from torch import Tensor
+
+try:
+    import torch
+    from torch import Tensor
+except ImportError:
+    torch = None
 
 import habitat_sim.errors
-from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
@@ -24,8 +29,6 @@ from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
-
-torch = None
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -251,7 +254,7 @@ class Simulator(SimulatorBackend):
         self._last_state = agent.state
         return agent
 
-    def get_sensor_observations(self) -> Dict[str, Union[ndarray, Tensor]]:
+    def get_sensor_observations(self) -> Dict[str, Union[ndarray, "Tensor"]]:
         for _, sensor in self._sensors.items():
             sensor.draw_observation()
 
@@ -266,7 +269,7 @@ class Simulator(SimulatorBackend):
 
     def step(
         self, action: str, dt: float = 1.0 / 60.0
-    ) -> Dict[str, Union[bool, ndarray, Tensor]]:
+    ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
         self._num_total_frames += 1
         collided = self._default_agent.act(action)
         self._last_state = self._default_agent.get_state()
@@ -335,7 +338,6 @@ class Sensor:
     """
 
     def __init__(self, sim: Simulator, agent: Agent, sensor_id: str) -> None:
-        global torch
         self._sim = sim
         self._agent = agent
 
@@ -348,11 +350,8 @@ class Sensor:
 
         if self._spec.gpu2gpu_transfer:
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
-
-            if torch is None:
-                import torch
-
-            device = torch.device("cuda", self._sim.gpu_device)
+            assert torch is not None
+            device = torch.device("cuda", self._sim.gpu_device)  # type: ignore[attr-defined]
             torch.cuda.set_device(device)
 
             resolution = self._spec.resolution
@@ -451,18 +450,18 @@ class Sensor:
                 self._sensor_object, self._sim.get_active_scene_graph(), render_flags
             )
 
-    def get_observation(self) -> Union[ndarray, Tensor]:
+    def get_observation(self) -> Union[ndarray, "Tensor"]:
 
         tgt = self._sensor_object.render_target
 
         if self._spec.gpu2gpu_transfer:
-            with torch.cuda.device(self._buffer.device):
+            with torch.cuda.device(self._buffer.device):  # type: ignore[attr-defined]
                 if self._spec.sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())
+                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
                 elif self._spec.sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())
+                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
                 else:
-                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
+                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
 
                 obs = self._buffer.flip(0)
         else:

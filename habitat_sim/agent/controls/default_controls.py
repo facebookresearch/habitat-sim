@@ -14,7 +14,7 @@ from habitat_sim.geo import FRONT
 from habitat_sim.registry import registry
 from habitat_sim.scene import SceneNode
 
-__all__ = []
+__all__ = []  # type: ignore
 
 
 _X_AXIS = 0

@@ -4,7 +4,7 @@ import attr
 import numpy as np
 
 from habitat_sim import errors, scene
-from habitat_sim.agent import agent
+from habitat_sim.agent.agent import Agent
 from habitat_sim.agent.controls.controls import ActuationSpec
 from habitat_sim.nav import GreedyFollowerCodes, GreedyGeodesicFollowerImpl, PathFinder
 from habitat_sim.utils.common import quat_to_magnum
@@ -25,19 +25,19 @@ class GreedyGeodesicFollower(object):
     """
 
     pathfinder: PathFinder
-    agent: agent.Agent
+    agent: Agent
     goal_radius: Optional[float]
     action_mapping: Dict[GreedyFollowerCodes, Any]
     impl: GreedyGeodesicFollowerImpl
-    forward_spec: agent.ActuationSpec
-    left_spec: agent.ActuationSpec
-    right_spec: agent.ActuationSpec
+    forward_spec: ActuationSpec
+    left_spec: ActuationSpec
+    right_spec: ActuationSpec
     last_goal: Optional[np.ndarray]
 
     def __init__(
         self,
         pathfinder: PathFinder,
-        agent: agent.Agent,
+        agent: Agent,
         goal_radius: Optional[float] = None,
         *,
         stop_key: Optional[Any] = None,

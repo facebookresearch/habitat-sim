@@ -6,7 +6,7 @@
 
 import collections
 import re
-from typing import Optional, Type
+from typing import Any, DefaultDict, Optional, Type
 
 __all__ = ["registry"]
 
@@ -30,7 +30,7 @@ class _Registry:
 
     - Register a movement function : ``@registry.register_move_fn``
     """
-    _mapping = collections.defaultdict(dict)
+    _mapping: DefaultDict[str, Any] = collections.defaultdict(dict)
 
     @classmethod
     def register_move_fn(

@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import Callable
+
 import attr
 import numpy as np
 import quaternion  # noqa: F401
@@ -28,7 +30,7 @@ class ObjectControls(object):
         handle collisions
     """
 
-    move_filter_fn: float = attr.ib(default=_noop_filter)
+    move_filter_fn: Callable = attr.ib(default=_noop_filter)
 
     @staticmethod
     def is_body_action(action_name: str):

@@ -35,7 +35,7 @@ class ActionSpec(object):
     :property actuation: Arguments that will be passed to the function
     """
     name: str
-    actuation: ActuationSpec = None
+    actuation: Optional[ActuationSpec] = None
 
 
 def _default_action_space() -> Dict[str, ActionSpec]:
@@ -124,7 +124,7 @@ class Agent(object):
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
         self.reconfigure(self.agent_config)
-        self.initial_state = None
+        self.initial_state: Optional[AgentState] = None
 
     def reconfigure(
         self, agent_config: AgentConfiguration, reconfigure_sensors: bool = True

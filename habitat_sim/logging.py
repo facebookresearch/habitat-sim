@@ -62,7 +62,7 @@ class GlogFormatter(logging.Formatter):
             record.lineno,
             format_message(record),
         )
-        record.getMessage = lambda: record_message
+        record.getMessage = lambda: record_message  # type: ignore
         return logging.Formatter.format(self, record)
 
 
