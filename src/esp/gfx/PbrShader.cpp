@@ -11,15 +11,20 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Context.h>
+#include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/Version.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Color.h>
+#include <Magnum/Math/Matrix3.h>
+#include <Magnum/Math/Matrix4.h>
 #include <Magnum/PixelFormat.h>
 
 #include "esp/core/esp.h"
 #include "esp/io/io.h"
+
+#include <sstream>
 
 // This is to import the "resources" at runtime. When the resource is
 // compiled into static library, it must be explicitly initialized via this
@@ -62,8 +67,28 @@ PbrShader::PbrShader(Flags flags, unsigned int lightCount)
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
+  std::stringstream attributeLocationsStream;
+  attributeLocationsStream << Cr::Utility::formatString(
+      "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
+  if (lightCount) {
+    attributeLocationsStream << Cr::Utility::formatString(
+        "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
+  }
+  if (flags & (Flag::NormalTexture | Flag::PrecomputedTangent) && lightCount) {
+    attributeLocationsStream << Cr::Utility::formatString(
+        "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
+  }
+  if (flags & (Flag::BaseColorTexture | Flag::RoughnessTexture |
+               Flag::MetallicTexture | Flag::NoneRoughnessMetallicTexture |
+               Flag::OcclusionRoughnessMetallicTexture)) {
+    attributeLocationsStream
+        << Cr::Utility::formatString("#define ATTRIBUTE_LOCATION_TEXCOORD {}\n",
+                                     TextureCoordinates::Location);
+  }
+
   // Add macros
-  vert.addSource(flags & (Flag::BaseColorTexture | Flag::RoughnessTexture |
+  vert.addSource(attributeLocationsStream.str())
+      .addSource(flags & (Flag::BaseColorTexture | Flag::RoughnessTexture |
                           Flag::MetallicTexture | Flag::NormalTexture)
                      ? "#define TEXTURED\n"
                      : "")
@@ -73,7 +98,8 @@ PbrShader::PbrShader(Flags flags, unsigned int lightCount)
                      : "")
       .addSource(rs.get("pbr.vert"));
 
-  frag.addSource(flags & (Flag::BaseColorTexture | Flag::RoughnessTexture |
+  frag.addSource(attributeLocationsStream.str())
+      .addSource(flags & (Flag::BaseColorTexture | Flag::RoughnessTexture |
                           Flag::MetallicTexture | Flag::NormalTexture |
                           Flag::NoneRoughnessMetallicTexture |
                           Flag::OcclusionRoughnessMetallicTexture)
@@ -112,6 +138,28 @@ PbrShader::PbrShader(Flags flags, unsigned int lightCount)
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
+  // bind attributes
+#ifndef MAGNUM_TARGET_GLES
+  if (!Mn::GL::Context::current()
+           .isExtensionSupported<
+               Mn::GL::Extensions::ARB::explicit_attrib_location>(glVersion))
+#endif
+  {
+    bindAttributeLocation(Position::Location, "vertexPosition");
+    if (lightCount) {
+      bindAttributeLocation(Normal::Location, "vertexNormal");
+    }
+    if (flags & (Flag::NormalTexture | Flag::PrecomputedTangent) &&
+        lightCount) {
+      bindAttributeLocation(Tangent4::Location, "vertexTangent");
+    }
+    if (flags & (Flag::BaseColorTexture | Flag::RoughnessTexture |
+                 Flag::MetallicTexture | Flag::NoneRoughnessMetallicTexture |
+                 Flag::OcclusionRoughnessMetallicTexture)) {
+      bindAttributeLocation(TextureCoordinates::Location, "vertexTexCoord");
+    }
+  }
+
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
   if (flags & Flag::BaseColorTexture) {
@@ -137,6 +185,9 @@ PbrShader::PbrShader(Flags flags, unsigned int lightCount)
   mvpMatrixUniform_ = uniformLocation("MVP");
   if (flags & Flag::ObjectId) {
     objectIdUniform_ = uniformLocation("objectId");
+  }
+  if (flags & Flag::TextureTransformation) {
+    textureMatrixUniform_ = uniformLocation("textureMatrix");
   }
 
   // materials
@@ -211,7 +262,7 @@ PbrShader& PbrShader::setMVPMatrix(const Mn::Matrix4& matrix) {
   return *this;
 }
 
-PbrShader& PbrShader::setNormalMatrix(const Mn::Matrix3x3& matrix) {
+PbrShader& PbrShader::setNormalMatrix(const Mn::Matrix3& matrix) {
   setUniform(normalMatrixUniform_, matrix);
   return *this;
 }
@@ -265,6 +316,15 @@ PbrShader& PbrShader::bindTextures(Mn::GL::Texture2D* BaseColor,
   if (normal) {
     bindNormalTexture(*normal);
   }
+  return *this;
+}
+
+PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
+  CORRADE_ASSERT(flags_ & Flag::TextureTransformation,
+                 "PbrShader::setTextureMatrix(): the shader was not "
+                 "created with texture transformation enabled",
+                 *this);
+  setUniform(textureMatrixUniform_, matrix);
   return *this;
 }
 

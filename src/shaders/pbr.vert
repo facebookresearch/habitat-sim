@@ -3,13 +3,13 @@
 // LICENSE file in the root directory of this source tree.
 
 // ------------ input ------------------------
-layout(location = 0) in highp vec4 vertexPosition;
-layout(location = 1) in highp vec3 vertexNormal;
+layout(location = ATTRIBUTE_LOCATION_POSITION) in highp vec4 vertexPosition;
+layout(location = ATTRIBUTE_LOCATION_NORMAL) in highp vec3 vertexNormal;
 #if defined(TEXTURED)
-layout(location = 2) in mediump vec2 vertexTexCoord;
+layout(location = ATTRIBUTE_LOCATION_TEXCOORD) in mediump vec2 vertexTexCoord;
 #endif
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
-layout(location = 3) in highp vec4 vertexTangent;
+layout(location = ATTRIBUTE_LOCATION_TANGENT4) in highp vec4 vertexTangent;
 #endif
 
 // -------------- output ---------------------
@@ -29,12 +29,26 @@ uniform mat4 ModelViewMatrix;
 uniform mat3 NormalMatrix;  // inverse transpose of 3x3 modelview matrix
 uniform mat4 MVP;
 
+#ifdef TEXTURE_TRANSFORMATION
+uniform mediump mat3 textureMatrix
+#ifndef GL_ES
+    = mat3(1.0)
+#endif
+    ;
+#endif
+
 void main() {
   position = vec3(ModelViewMatrix * vertexPosition);
   normal = normalize(NormalMatrix * vertexNormal);
 #if defined(TEXTURED)
-  texCoord = vertexTexCoord;
-#endif
+  texCoord =
+#if defined(TEXTURE_TRANSFORMATION)
+      (textureMatrix * vec3(vertexTexCoord, 1.0)).xy;
+#else
+      vertexTexCoord;
+#endif  // TEXTURE_TRANSFORMATION
+#endif  // TEXTURED
+
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
   tangent = normalize(NormalMatrix * vec3(vertexTangent));
   // Gram–Schmidt

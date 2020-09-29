@@ -10,6 +10,7 @@
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/Math/Matrix4.h>
+#include <Magnum/Shaders/Generic.h>
 
 #include "esp/core/esp.h"
 
@@ -19,15 +20,16 @@ namespace gfx {
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
  public:
+  // ==== Attribute definitions ====
   /**
    * @brief vertex positions
    */
-  typedef Magnum::GL::Attribute<0, Magnum::Vector3> Position;
+  typedef Magnum::Shaders::Generic3D::Position Position;
 
   /**
    * @brief normal direction
    */
-  typedef Magnum::GL::Attribute<1, Magnum::Vector3> Normal;
+  typedef Magnum::Shaders::Generic3D::Normal Normal;
 
   /**
    * @brief 2D texture coordinates
@@ -36,7 +38,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @ref Flag::BaseColorTexture, @ref Flag::NormalTexture and
    * @ref Flag::RoughnessTexture @ref Flag::MetallicTexture is set.
    */
-  typedef Magnum::GL::Attribute<2, Magnum::Vector2> TextureCoordinates;
+  typedef Magnum::Shaders::Generic3D::TextureCoordinates TextureCoordinates;
 
   /**
    * @brief Tangent direction with the fourth component indicating the handness.
@@ -48,7 +50,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * Used only if @ref Flag::NormalTexture is set.
    */
-  typedef Magnum::GL::Attribute<3, Magnum::Vector4> Tangent4;
+  typedef Magnum::Shaders::Generic3D::Tangent4 Tangent4;
 
   enum : Magnum::UnsignedInt {
     /**
@@ -115,6 +117,21 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     NormalTexture = 1 << 5,
 
     /**
+     * Enable texture coordinate transformation. If this flag is set,
+     * the shader expects that at least one of
+     * @ref Flag::BaseColorTexture, @ref Flag::RoughnessTexture,
+     * @ref Flag::MetallicTexture, @ref Flag::NormalTexture,
+     * @ref Flag::NoneRoughnessMetallicTexture or
+     * @ref Flag::OcclusionRoughnessMetallicTexture is enabled as well.
+     * @see @ref setTextureMatrix()
+     */
+    TextureTransformation = 1 << 6,
+
+    /**
+     * TODO: Do we need instanced object? (instanced texture, istanced id etc.)
+     */
+
+    /**
      * TODO: Do we need VertexColor?
      * Multiply diffuse color with a vertex color. Requires either
      * the @ref Color3 or @ref Color4 attribute to be present.
@@ -125,12 +142,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Otherwise, it will be computed in the fragement shader dynamically
      * see PBR fragement shader code for more details
      */
-    PrecomputedTangent = 1 << 7,
+    PrecomputedTangent = 1 << 10,
 
     /**
      * Enable object ID output.
      */
-    ObjectId = 1 << 8,
+    ObjectId = 1 << 11,
 
     /*
      * TODO: alphaMask
@@ -198,7 +215,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
                           Magnum::GL::Texture2D* roughness,
                           Magnum::GL::Texture2D* metallic,
                           Magnum::GL::Texture2D* normal = nullptr);
-
+  PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
   // ======== set uniforms ===========
   /**
    *  @brief Set "modelview and projection" matrix to the uniform on GPU
@@ -220,7 +237,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *         modelview matrix
    *  @return Reference to self (for method chaining)
    */
-  PbrShader& setNormalMatrix(const Magnum::Matrix3x3& matrix);
+  PbrShader& setNormalMatrix(const Magnum::Matrix3& matrix);
 
   // -------- materials ---------------
   /**
@@ -327,6 +344,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int metallicTextureUniform_ = ID_UNDEFINED;
   int normalTextureUniform_ = ID_UNDEFINED;
   int objectIdUniform_ = ID_UNDEFINED;
+  int textureMatrixUniform_ = ID_UNDEFINED;
 
   struct LightUniformLocations {
     int color = ID_UNDEFINED;
@@ -346,7 +364,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   std::vector<int> lightDirectionsUniform_;
 };
 
-CORRADE_ENUMSET_OPERATORS(PbrShader::Flags);
+CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)
 
 }  // namespace gfx
 }  // namespace esp
