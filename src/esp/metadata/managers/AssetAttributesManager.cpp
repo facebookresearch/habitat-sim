@@ -176,10 +176,15 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::loadFromJSONDoc(
     return this->getObjectCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }
+  this->setValsFromJSONDoc(primAssetAttributes, jsonDoc);
+  return primAssetAttributes;
+}  // AssetAttributesManager::loadFromJSONDoc
 
+void AssetAttributesManager::setValsFromJSONDoc(
+    AttribsPtr attribs,
+    const io::JsonDocument& jsonConfig) {
   // TODO support loading values from JSON docs
 
-  return primAssetAttributes;
 }  // AssetAttributesManager::loadFromJSONDoc
 
 }  // namespace managers

@@ -269,13 +269,10 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   }
 }  // StageAttributesManager::setDefaultAssetNameBasedAttributes
 
-StageAttributes::ptr StageAttributesManager::loadFromJSONDoc(
-    const std::string& templateName,
+void StageAttributesManager::setValsFromJSONDoc(
+    Attrs::StageAttributes::ptr stageAttributes,
     const io::JsonDocument& jsonConfig) {
-  // construct a StageAttributes and populate with any
-  // AbstractObjectAttributes fields found in json.
-  auto stageAttributes =
-      this->createObjectAttributesFromJson(templateName, jsonConfig);
+  this->loadAbstractObjectAttributesFromJson(stageAttributes, jsonConfig);
 
   // directory location where stage files are found
   std::string stageLocFileDir = stageAttributes->getFileDirectory();
@@ -353,9 +350,7 @@ StageAttributes::ptr StageAttributesManager::loadFromJSONDoc(
       objectAttributesMgr_->loadAllConfigsFromPath(absolutePath, true);
     }
   }  // if load rigid object library metadata
-
-  return stageAttributes;
-}  // StageAttributesManager::loadFromJSONDoc
+}  // StageAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata

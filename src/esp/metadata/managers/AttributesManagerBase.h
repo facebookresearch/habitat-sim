@@ -86,6 +86,37 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
    */
   virtual bool isValidPrimitiveAttributes(const std::string& handle) = 0;
 
+  /**
+   * @brief Parse passed JSON Document for @ref
+   * esp::metadata::attributes::AbstractAttributes. It always returns a
+   * valid @ref esp::metadata::attributes::AbstractAttributes shared
+   * pointer.
+   *
+   * @param templateName The desired name for this @ref
+   * esp::metadata::attributes::AbstractAttributes template.
+   * @param jsonConfig json document to parse
+   * @return a reference to the desired template.
+   */
+  virtual AttribsPtr loadFromJSONDoc(
+      const std::string& templateName,
+      const io::JsonDocument& jsonConfig) override {
+    // Construct a ObjectAttributes and populate with any
+    // AbstractObjectAttributes fields found in json.
+    auto attributes = this->initNewObjectInternal(templateName);
+    // set the values for this attributes from the json config.
+    this->setValsFromJSONDoc(attributes, jsonConfig);
+    return attributes;
+  }  // ObjectAttributesManager::loadFromJSONDoc
+
+  /**
+   * @brief Method to take an existing attributes and set its values from passed
+   * json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  virtual void setValsFromJSONDoc(AttribsPtr attribs,
+                                  const io::JsonDocument& jsonConfig) = 0;
+
  protected:
   /**
    * @brief Called intenrally from createObject.  This will create either a file

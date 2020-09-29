@@ -70,19 +70,13 @@ class DatasetAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Parse passed dataset_config JSON Document specifically for @ref
-   * esp::metadata::attributes::DatasetAttributes object. It always returns a
-   * valid @ref esp::metadata::attributes::DatasetAttributes shared pointer
-   * object.
-   *
-   * @param templateName the desired handle of the @ref
-   * esp::metadata::attributes::DatasetAttributes attributes.
+   * @brief Method to take an existing attributes and set its values from passed
+   * json config file.
+   * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
-   * @return a reference to the desired template.
    */
-  Attrs::DatasetAttributes::ptr loadFromJSONDoc(
-      const std::string& templateName,
-      const io::JsonDocument& jsonConfig) override;
+  void setValsFromJSONDoc(Attrs::DatasetAttributes::ptr attribs,
+                          const io::JsonDocument& jsonConfig) override;
 
   /**
    * @brief This will set the current physics manager attributes that is

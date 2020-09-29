@@ -73,13 +73,10 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
-ObjectAttributes::ptr ObjectAttributesManager::loadFromJSONDoc(
-    const std::string& templateName,
+void ObjectAttributesManager::setValsFromJSONDoc(
+    Attrs::ObjectAttributes::ptr objAttributes,
     const io::JsonDocument& jsonConfig) {
-  // Construct a ObjectAttributes and populate with any AbstractObjectAttributes
-  // fields found in json.
-  auto objAttributes =
-      this->createObjectAttributesFromJson(templateName, jsonConfig);
+  this->loadAbstractObjectAttributesFromJson(objAttributes, jsonConfig);
 
   // Populate with object-specific fields found in json, if any are there.
   // object mass
@@ -110,9 +107,7 @@ ObjectAttributes::ptr ObjectAttributesManager::loadFromJSONDoc(
       std::bind(&ObjectAttributes::setCOM, objAttributes, _1));
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
-
-  return objAttributes;
-}  // ObjectAttributesManager::createFileBasedAttributesTemplate
+}  // ObjectAttributesManager::setValsFromJSONDoc
 
 ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     const std::string& attributesHandle) {

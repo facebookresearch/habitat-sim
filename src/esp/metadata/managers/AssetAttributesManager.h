@@ -129,6 +129,15 @@ class AssetAttributesManager
       const io::JsonDocument& jsonConfig) override;
 
   /**
+   * @brief Method to take an existing attributes and set its values from passed
+   * json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  void setValsFromJSONDoc(AttribsPtr attribs,
+                          const io::JsonDocument& jsonConfig) override;
+
+  /**
    * @brief Should only be called internally. Creates an instance of a
    * primtive asset attributes template described by passed enum value. For
    * primitive assets this mapes to the Magnum primitive class name

@@ -37,11 +37,9 @@ DatasetAttributes::ptr DatasetAttributesManager::initNewObjectInternal(
   return datasetAttributes;
 }  // DatasetAttributes::initNewObjectInternal
 
-DatasetAttributes::ptr DatasetAttributesManager::loadFromJSONDoc(
-    const std::string& templateName,
+void DatasetAttributesManager::setValsFromJSONDoc(
+    Attrs::DatasetAttributes::ptr datasetAttributes,
     const io::JsonDocument& jsonConfig) {
-  DatasetAttributes::ptr datasetAttributes =
-      this->initNewObjectInternal(templateName);
   // get dataset managers to handle loading
   auto assetMgrs = datasetAttributes->getAssetAttributesManager();
   auto objectMgrs = datasetAttributes->getObjectAttributesManager();
@@ -49,8 +47,7 @@ DatasetAttributes::ptr DatasetAttributesManager::loadFromJSONDoc(
 
   // TODO add code to read dataset_config json
 
-  return datasetAttributes;
-}  // DatasetAttributesManager::loadFromJSONDoc
+}  // DatasetAttributesManager::setValsFromJSONDoc
 
 int DatasetAttributesManager::registerObjectFinalize(
     Attrs::DatasetAttributes::ptr datasetAttributes,
