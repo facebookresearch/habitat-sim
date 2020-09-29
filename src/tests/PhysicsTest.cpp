@@ -150,6 +150,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       if (i == 1) {
         // when collision meshes are joined, objects should be stable
         ASSERT_EQ(numActiveObjects, 0);
+        ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
       }
 
       for (int o : objectIds) {
@@ -731,6 +732,46 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
   }
 }
 
+TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
+  std::string stageFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/scenes/simple_room.glb");
+
+  initStage(stageFile);
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    auto objectAttributesManager =
+        resourceManager_.getObjectAttributesManager();
+
+    std::string cubeHandle =
+        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
+
+    // add a single cube
+    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
+    std::vector<int> cubeIds;
+    cubeIds.push_back(physicsManager_->addObject(cubeHandle, &drawables));
+    physicsManager_->setTranslation(cubeIds.back(), stackBase);
+
+    // no active contact points at start
+    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+
+    // simulate to let cube fall, stabilize and go to sleep
+    bool didHaveActiveContacts = false;
+    while (physicsManager_->getWorldTime() < 4.0) {
+      physicsManager_->stepPhysics(0.1);
+      if (physicsManager_->getNumActiveContactPoints() > 0) {
+        didHaveActiveContacts = true;
+      }
+    }
+    ASSERT(didHaveActiveContacts);
+
+    // no active contact points at end
+    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+  }
+}
+
 TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
   // test that removing a sleeping support object wakes its collision island
   LOG(INFO) << "Starting physics test: TestRemoveSleepingSupport";
@@ -770,6 +811,9 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
       assert(!physicsManager_->isActive(id));
     }
 
+    // no active contact points
+    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+
     // remove the bottom cube
     physicsManager_->removeObject(cubeIds.front());
     cubeIds.erase(cubeIds.begin());
@@ -778,5 +822,7 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
     for (auto id : cubeIds) {
       assert(physicsManager_->isActive(id));
     }
+
+    ASSERT_GT(physicsManager_->getNumActiveContactPoints(), 0);
   }
 }
