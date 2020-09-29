@@ -17,10 +17,10 @@ from tqdm.auto import tqdm
 from habitat_sim.utils.common import d3_40_colors_rgb
 
 
-def is_notebook():
+def is_notebook() -> bool:
     """This utility function detects if the code is running in a notebook"""
     try:
-        get_ipython = sys.modules["IPython"].get_ipython
+        get_ipython = sys.modules["IPython"].get_ipython  # type: ignore[attr-defined]
         if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             raise ImportError("console")
         if "VSCODE_PID" in os.environ:  # pragma: no cover

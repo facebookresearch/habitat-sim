@@ -125,8 +125,8 @@ class FailedCheckException(AssertionError):
 
 
 def check_failed(message):
-    stack = traceback.extract_stack()
-    stack = stack[0:-2]
+    stack_trace = traceback.extract_stack()
+    stack = stack_trace[0:-2]
     stacktrace_lines = format_stacktrace(stack)
     filename, line_num, _, _ = stack[-1]
 

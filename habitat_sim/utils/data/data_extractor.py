@@ -1,20 +1,16 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Union
 
 import numpy as np
-from numpy import float32, float64, ndarray
 
 import habitat_sim
 from habitat_sim import bindings as hsim
 from habitat_sim import registry as registry
-from habitat_sim.agent import AgentState
-from habitat_sim.bindings import PathFinder
-from habitat_sim.scene import SemanticScene
-from habitat_sim.simulator import Configuration, Simulator
+from habitat_sim.agent.agent import AgentConfiguration, AgentState
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor, TopdownView
 
 
-def make_pose_extractor(name: str) -> PoseExtractor:
+def make_pose_extractor(name: str) -> Callable[..., PoseExtractor]:
     r"""Constructs a pose_extractor using the given name and keyword arguments
 
     :param name: The name of the pose_extractor in the `habitat_sim.registry`
@@ -65,15 +61,15 @@ class ImageExtractor:
         self,
         scene_filepath: Union[str, List[str]],
         labels: List[float] = None,
-        img_size: Tuple[int, int] = (512, 512),
+        img_size: tuple = (512, 512),
         output: List[str] = None,
         pose_extractor_name: str = "closest_point_extractor",
-        sim: Optional[Simulator] = None,
+        sim=None,
         shuffle: bool = True,
-        split: Tuple[int, int] = (70, 30),
+        split: tuple = (70, 30),
         use_caching: bool = True,
         meters_per_pixel: float = 0.1,
-    ) -> None:
+    ):
         if labels is None:
             labels = [0.0]
         if output is None:
@@ -83,7 +79,7 @@ class ImageExtractor:
 
         self.scene_filepaths = None
         self.cur_fp = None
-        if type(scene_filepath) == list:
+        if isinstance(scene_filepath, list):
             self.scene_filepaths = scene_filepath
         else:
             self.scene_filepaths = [scene_filepath]
@@ -143,10 +139,10 @@ class ImageExtractor:
         if self.use_caching:
             self.cache = ExtractorLRUCache()
 
-    def __len__(self) -> int:
+    def __len__(self):
         return len(self.mode_to_data[self.mode])
 
-    def __getitem__(self, idx: int) -> Dict[str, Union[ndarray, float64]]:
+    def __getitem__(self, idx):
         if isinstance(idx, slice):
             start, stop, step = idx.start, idx.stop, idx.step
             if start is None:
@@ -224,9 +220,7 @@ class ImageExtractor:
 
         return tdv_fp_ref
 
-    def _handle_split(
-        self, split: Tuple[int, int], poses: ndarray
-    ) -> Tuple[ndarray, ndarray]:
+    def _handle_split(self, split, poses):
         train, test = split
         num_poses = len(self.poses)
         last_train_idx = int((train / 100) * num_poses)
@@ -234,9 +228,7 @@ class ImageExtractor:
         test_poses = poses[last_train_idx:]
         return train_poses, test_poses
 
-    def _get_pathfinder_reference_point(
-        self, pf: PathFinder
-    ) -> Tuple[float32, float32, float32]:
+    def _get_pathfinder_reference_point(self, pf):
         bound1, bound2 = pf.get_bounds()
         startw = min(bound1[0], bound2[0])
         starth = min(bound1[2], bound2[2])
@@ -245,9 +237,7 @@ class ImageExtractor:
         ]  # Can't think of a better way to get a valid y-axis value
         return (startw, starty, starth)  # width, y, height
 
-    def _generate_label_map(
-        self, scene: SemanticScene, verbose: bool = False
-    ) -> Dict[Any, Any]:
+    def _generate_label_map(self, scene, verbose=False):
         if verbose:
             print(
                 f"House has {len(scene.levels)} levels, {len(scene.regions)} regions and {len(scene.objects)} objects"
@@ -262,9 +252,7 @@ class ImageExtractor:
 
         return instance_id_to_name
 
-    def _config_sim(
-        self, scene_filepath: str, img_size: Tuple[int, int]
-    ) -> Configuration:
+    def _config_sim(self, scene_filepath, img_size):
         settings = {
             "width": img_size[1],  # Spatial resolution of the observations
             "height": img_size[0],
@@ -314,7 +302,7 @@ class ImageExtractor:
                 sensor_specs.append(sensor_spec)
 
         # create agent specifications
-        agent_cfg = habitat_sim.agent.AgentConfiguration()
+        agent_cfg = AgentConfiguration()
         agent_cfg.sensor_specifications = sensor_specs
 
         return habitat_sim.Configuration(sim_cfg, [agent_cfg])
