@@ -98,10 +98,9 @@ class BulletBase {
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
   /** @brief Static data: All components of a @ref RigidObjectType::SCENE are
-   * stored here. See @ref btCollisionObject.  Also, all objects set to STATIC
-   * are stored here.
+   * stored here. Also, all objects set to STATIC are stored here.
    */
-  std::vector<std::unique_ptr<btCollisionObject>> bStaticCollisionObjects_;
+  std::vector<std::unique_ptr<btRigidBody>> bStaticCollisionObjects_;
 
   //! keep a map of collision objects to object ids for quick lookups from
   //! Bullet collision checking.

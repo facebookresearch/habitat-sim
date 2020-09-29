@@ -52,7 +52,7 @@ BulletRigidObject::~BulletRigidObject() {
   } else if (objectMotionType_ == MotionType::STATIC) {
     // remove collision objects from the world
     for (auto& co : bStaticCollisionObjects_) {
-      bWorld_->removeCollisionObject(co.get());
+      bWorld_->removeRigidBody(co.get());
       collisionObjToObjIds_->erase(co.get());
     }
   }
@@ -287,7 +287,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
 
   // remove the existing object from the world to change its type
   if (objectMotionType_ == MotionType::STATIC) {
-    bWorld_->removeCollisionObject(bStaticCollisionObjects_.back().get());
+    bWorld_->removeRigidBody(bStaticCollisionObjects_.back().get());
     collisionObjToObjIds_->erase(bStaticCollisionObjects_.back().get());
     bStaticCollisionObjects_.clear();
   } else {
@@ -307,13 +307,16 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
   } else if (mt == MotionType::STATIC) {
     objectMotionType_ = MotionType::STATIC;
 
-    // create a static collision object at the current transform
-    std::unique_ptr<btCollisionObject> staticCollisionObject =
-        std::make_unique<btCollisionObject>();
-    staticCollisionObject->setCollisionShape(bObjectShape_.get());
-    staticCollisionObject->setWorldTransform(
-        bObjectRigidBody_->getWorldTransform());
-    bWorld_->addCollisionObject(
+    // mass == 0 to indicate static. See isStaticObject assert below. See also
+    // examples/MultiThreadedDemo/CommonRigidBodyMTBase.h
+    btVector3 localInertia(0, 0, 0);
+    btRigidBody::btRigidBodyConstructionInfo cInfo(
+        /*mass*/ 0.0, nullptr, bObjectShape_.get(), localInertia);
+    cInfo.m_startWorldTransform = bObjectRigidBody_->getWorldTransform();
+    std::unique_ptr<btRigidBody> staticCollisionObject =
+        std::make_unique<btRigidBody>(cInfo);
+    ASSERT(staticCollisionObject->isStaticObject());
+    bWorld_->addRigidBody(
         staticCollisionObject.get(),
         2,       // collisionFilterGroup (2 == StaticFilter)
         1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
