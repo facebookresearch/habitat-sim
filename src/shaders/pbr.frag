@@ -75,7 +75,17 @@ vec3 getNormalFromNormalMap() {
 #if defined(PRECOMPUTED_TANGENT)
   mat3 TBN = mat3(tangent, biTangent, normal);
 #else
-// TODO: some magic here!
+  // Normal Mapping Without Precomputed Tangents
+  // See here: http://www.thetenthplanet.de/archives/1180
+  vec3 q1 = dFdx(position);
+  vec3 q2 = dFdy(position);
+  vec2 st1 = dFdx(texCoord);
+  vec2 st2 = dFdy(texCoord);
+
+  vec3 N = normalize(normal);
+  vec3 T = normalize(q1 * st2.t - q2 * st1.t);
+  vec3 B = -normalize(cross(N, T));
+  mat3 TBN = mat3(T, B, N);
 #endif
 
   return normalize(TBN * tangentNormal);

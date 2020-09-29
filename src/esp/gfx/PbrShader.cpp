@@ -2,6 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "PbrShader.h"
+
 #include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Debug.h>
@@ -16,7 +18,6 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/PixelFormat.h>
 
-#include "PbrShader.h"
 #include "esp/core/esp.h"
 #include "esp/io/io.h"
 

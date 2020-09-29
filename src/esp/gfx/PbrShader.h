@@ -5,14 +5,11 @@
 #ifndef ESP_GFX_PBRSHADER_H_
 #define ESP_GFX_PBRSHADER_H_
 
-#include <memory>
-#include <unordered_set>
 #include <vector>
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/Math/Matrix4.h>
-#include <Magnum/Trade/LightData.h>
 
 #include "esp/core/esp.h"
 
@@ -61,19 +58,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      */
     ColorOutput = 0,
 
-#ifndef MAGNUM_TARGET_GLES2
     /**
      * Object ID shader output. @ref shaders-generic "Generic output",
      * present only if @ref Flag::ObjectId is set. Expects a
      * single-component unsigned integral attachment. Writes the value
      * set in @ref setObjectId() there.
-     * @requires_gl30 Extension @gl_extension{EXT,texture_integer}
-     * @requires_gles30 Object ID output requires integer support in
-     *      shaders, which is not available in OpenGL ES 2.0 or WebGL
-     *      1.0.
      */
     ObjectIdOutput = 1,
-#endif
   };
 
   /**
@@ -173,7 +164,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   /**
    * @brief Get number of lights
    */
-  unsigned int lightCount() { return lightCount_; }
+  unsigned int lightCount() const { return lightCount_; }
 
   /** @brief Flags */
   Flags flags() const { return flags_; }

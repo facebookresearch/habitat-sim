@@ -48,10 +48,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
               : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
       .setTransformationMatrix(transformationMatrix)  // modelview matrix
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix)
-      // because we actually do not have scaling, only rotation, so that
-      // mv = inv(mv^T) where mv stands for the up-left 3x3 part of the
-      // modelview matrix
-      .setNormalMatrix(transformationMatrix.rotationScaling())
+      .setNormalMatrix(transformationMatrix.normalMatrix())
       .bindTextures(
           materialData_->baseColorTexture, materialData_->roughnessTexture,
           materialData_->metallicTexture, materialData_->normalTexture)
@@ -115,7 +112,7 @@ PbrDrawable& PbrDrawable::updateShader() {
 
 // update every light's color, intensity, range etc.
 PbrDrawable& PbrDrawable::updateShaderLightParameters() {
-  constexpr float dummyRange = 10000.0;
+  constexpr float dummyRange = Mn::Constants::inf();
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
     // Note: the light color already includes the intensity
     (*shader_).setLightColor(iLight, (*lightSetup_)[iLight].color, dummyRange);
