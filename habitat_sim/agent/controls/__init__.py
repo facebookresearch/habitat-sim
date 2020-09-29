@@ -7,8 +7,8 @@
 from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
 from habitat_sim.agent.controls.default_controls import *  # noqa: F401,F403
 from habitat_sim.agent.controls.object_controls import ObjectControls
-from habitat_sim.agent.controls.pyrobot_noisy_controls import (
-    PyRobotNoisyActuationSpec,  # type: ignore
+from habitat_sim.agent.controls.pyrobot_noisy_controls import (  # type: ignore[attr-defined]
+    PyRobotNoisyActuationSpec,
 )
 
 __all__ = [

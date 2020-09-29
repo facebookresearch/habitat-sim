@@ -6,7 +6,9 @@ from numpy import float64, ndarray
 
 class ExtractorLRUCache:
     def __init__(self, capacity: int = 1000) -> None:
-        self._order = collections.OrderedDict()
+        self._order: collections.OrderedDict[
+            int, Tuple[int, str]
+        ] = collections.OrderedDict()
         self.capacity = capacity
         self.size = 0
 
@@ -25,7 +27,7 @@ class ExtractorLRUCache:
     def __str__(self):
         return self._order.__str__()
 
-    def remove(self, key):
+    def remove(self, key: int):
         if self.__contains__(key):
             self._order.pop(key)
             self.size = max(0, self.size - 1)
@@ -36,13 +38,13 @@ class ExtractorLRUCache:
         sample: Union[str, Dict[str, Union[ndarray, float64]]],
     ) -> None:
         if key in self._order:
-            self._order.pop(key)
+            self._order.pop(key)  # type: ignore
 
         if self.size >= self.capacity:
             self.remove_from_back()
 
         value = (key, sample)
-        self._order[key] = value
+        self._order[key] = value  # type: ignore
         self.size += 1
 
     def remove_from_back(self) -> None:

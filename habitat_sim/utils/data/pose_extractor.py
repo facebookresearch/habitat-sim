@@ -54,7 +54,7 @@ class PoseExtractor:
 
         return np.array(poses)
 
-    def extract_poses(self, view: np.ndarray, fp: str) -> List[tuple]:
+    def extract_poses(self, view: np.ndarray, fp: str) -> List[Tuple]:
         r"""Extracts poses according to a programatic rule.
 
         :property view: 2D numpy array representing the topdown view of the scene.

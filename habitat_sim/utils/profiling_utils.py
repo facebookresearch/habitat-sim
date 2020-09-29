@@ -73,6 +73,5 @@ class RangeContext(ContextDecorator):
         range_push(self._msg)
         return self
 
-    def __exit__(self, *exc) -> bool:
+    def __exit__(self, *exc) -> None:
         range_pop()
-        return False

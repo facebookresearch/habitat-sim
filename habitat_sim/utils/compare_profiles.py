@@ -47,7 +47,7 @@ import sqlite3
 from argparse import ArgumentParser, Namespace
 from collections import defaultdict
 from sqlite3 import Connection
-from typing import Any, DefaultDict, List, Union
+from typing import Any, DefaultDict, Dict, List, Set, Union
 
 import attr
 
@@ -74,7 +74,7 @@ class SummaryItem:
 def get_sqlite_events(conn: Connection) -> List[Event]:
     """Parse an sqlite database containing an NVTX_EVENTS table and return a
     list of Events."""
-    events = []
+    events: List[Event] = []
 
     # check if table exists
     cursor = conn.execute(
@@ -102,7 +102,7 @@ def create_summary_from_events(events: List[Event]) -> DefaultDict[str, SummaryI
     events.sort(reverse=True, key=lambda event: event.end)
     events.sort(reverse=False, key=lambda event: event.start)
 
-    items = defaultdict(lambda: SummaryItem())
+    items: DefaultDict[str, SummaryItem] = defaultdict(lambda: SummaryItem())
 
     for i, event in enumerate(events):
 
@@ -117,7 +117,7 @@ def create_summary_from_events(events: List[Event]) -> DefaultDict[str, SummaryI
         #  "exclusive duration" is time during which we aren't inside any
         #  overlapping, same-thread event ("child event").
         recent_exclusive_start_time = event.start
-        child_end_times = set()
+        child_end_times: Set[int] = set()
         for j in range(i + 1, len(events) + 1):  # note one extra iteration
 
             other_event = None if j == len(events) else events[j]
@@ -181,7 +181,7 @@ def print_summaries(
         print("no summaries to print")
         return
 
-    all_names_with_times = {}
+    all_names_with_times: Dict[str, int] = {}
     max_name_len = 0
     for summary in summaries:
         for name in summary:

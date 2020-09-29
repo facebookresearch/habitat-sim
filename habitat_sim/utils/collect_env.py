@@ -26,8 +26,8 @@ def run_command(command: str) -> str:
     output, error = p.communicate()
 
     encoded = locale.getpreferredencoding()
-    output = output.decode(encoded)
-    return output.strip()
+    out = str(output.decode(encoded).encode("ascii"))
+    return out.strip()
 
 
 def get_gcc_version() -> str:
