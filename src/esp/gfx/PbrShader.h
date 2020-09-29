@@ -20,7 +20,7 @@ namespace esp {
 
 namespace gfx {
 
-class PBRShader : public Magnum::GL::AbstractShaderProgram {
+class PbrShader : public Magnum::GL::AbstractShaderProgram {
  public:
   /**
    * @brief vertex positions
@@ -36,7 +36,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    * @brief 2D texture coordinates
    *
    * Used only if at least one of
-   * @ref Flag::AlbedoTexture, @ref Flag::NormalTexture and
+   * @ref Flag::BaseColorTexture, @ref Flag::NormalTexture and
    * @ref Flag::RoughnessTexture @ref Flag::MetallicTexture is set.
    */
   typedef Magnum::GL::Attribute<2, Magnum::Vector2> TextureCoordinates;
@@ -83,26 +83,45 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    */
   enum class Flag : Magnum::UnsignedShort {
     /**
-     * Multiply ambient color with a texture.
-     * @see @ref setAmbientColor(), @ref bindAmbientTexture()
+     * Multiply base color with the baseColor texture.
+     * @see @ref setBaseColor(), @ref bindBaseColorTexture()
      */
-    AlbedoTexture = 1 << 0,
+    BaseColorTexture = 1 << 0,
 
     /**
+     * Multiply roughness with the roughness texture.
+     * This flag term means the roughness texture is independent, and
+     * "roughness" is stored in the R channel of it.
      * @see @ref setRoughness(), @ref bindRoughnessTexture()
      */
     RoughnessTexture = 1 << 1,
 
     /**
+     * Multiply metallic with the metallic texture.
+     * This flag term means the metallic texture is independent, and "metalness"
+     * is stored in the R channel of it.
      * @see @ref setMetallic(), @ref bindMetallicTexture()
      */
     MetallicTexture = 1 << 2,
+
+    /*
+     * Roughness and Metalness are packed together in one texture, with
+     * Roughness taking G channel and metalness occupying B channel.
+     * R and Alpha channels are not used
+     */
+    NoneRoughnessMetallicTexture = 1 << 3,
+    /*
+     * Occlusion, Roughness and Metalness are packed together in one texture,
+     * with Occlusion in R channel, Roughness in G channel and metalness in B
+     * channel. Alpha channels is not used
+     */
+    OcclusionRoughnessMetallicTexture = 1 << 4,
 
     /**
      * Modify normals according to a texture. Requires the
      * @ref Tangent4 attribute to be present.
      */
-    NormalTexture = 1 << 3,
+    NormalTexture = 1 << 5,
 
     /**
      * TODO: Do we need VertexColor?
@@ -115,16 +134,12 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
      * Otherwise, it will be computed in the fragement shader dynamically
      * see PBR fragement shader code for more details
      */
-    PrecomputedTangent = 1 << 5,
+    PrecomputedTangent = 1 << 7,
 
     /**
      * Enable object ID output.
-     * @requires_gl30 Extension @gl_extension{EXT,gpu_shader4}
-     * @requires_gles30 Object ID output requires integer support in
-     *      shaders, which is not available in OpenGL ES 2.0 or WebGL
-     *      1.0.
      */
-    ObjectId = 1 << 6,
+    ObjectId = 1 << 8,
 
     /*
      * TODO: alphaMask
@@ -141,19 +156,19 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    * @param flags         Flags
    * @param lightCount    Count of light sources
    */
-  explicit PBRShader(Flags flags = {}, unsigned int lightCount = 1);
+  explicit PbrShader(Flags flags = {}, unsigned int lightCount = 1);
 
   /** @brief Copying is not allowed */
-  PBRShader(const PBRShader&) = delete;
+  PbrShader(const PbrShader&) = delete;
 
   /** @brief Move constructor */
-  PBRShader(PBRShader&&) noexcept = default;
+  PbrShader(PbrShader&&) noexcept = default;
 
   /** @brief Copying is not allowed */
-  PBRShader& operator=(const PBRShader&) = delete;
+  PbrShader& operator=(const PbrShader&) = delete;
 
   /** @brief Move assignment */
-  PBRShader& operator=(PBRShader&&) noexcept = default;
+  PbrShader& operator=(PbrShader&&) noexcept = default;
 
   /**
    * @brief Get number of lights
@@ -165,30 +180,30 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
 
   // ======== texture binding ========
   /**
-   * @brief Bind the albedo texture
+   * @brief Bind the BaseColor texture
    * @return Reference to self (for method chaining)
    */
-  PBRShader& bindAlbedoTexture(Magnum::GL::Texture2D& texture);
+  PbrShader& bindBaseColorTexture(Magnum::GL::Texture2D& texture);
   /**
    * @brief Bind the roughness texture
    * @return Reference to self (for method chaining)
    */
-  PBRShader& bindRoughnessTexture(Magnum::GL::Texture2D& texture);
+  PbrShader& bindRoughnessTexture(Magnum::GL::Texture2D& texture);
   /**
    * @brief Bind the metallic texture
    * @return Reference to self (for method chaining)
    */
-  PBRShader& bindMetallicTexture(Magnum::GL::Texture2D& texture);
+  PbrShader& bindMetallicTexture(Magnum::GL::Texture2D& texture);
   /**
    * @brief Bind the normal texture
    * @return Reference to self (for method chaining)
    */
-  PBRShader& bindNormalTexture(Magnum::GL::Texture2D& texture);
+  PbrShader& bindNormalTexture(Magnum::GL::Texture2D& texture);
   /**
-   * @brief Bind the albedo, roughness, metallic, normal textures
+   * @brief Bind the BaseColor, roughness, metallic, normal textures
    * @return Reference to self (for method chaining)
    */
-  PBRShader& bindTextures(Magnum::GL::Texture2D* albedo,
+  PbrShader& bindTextures(Magnum::GL::Texture2D* BaseColor,
                           Magnum::GL::Texture2D* roughness,
                           Magnum::GL::Texture2D* metallic,
                           Magnum::GL::Texture2D* normal = nullptr);
@@ -199,14 +214,14 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    *         MVP = proj * view * model
    *  @return Reference to self (for method chaining)
    */
-  PBRShader& setMVPMatrix(const Magnum::Matrix4& matrix);
+  PbrShader& setMVPMatrix(const Magnum::Matrix4& matrix);
 
   /**
    *  @brief Set modelview matrix to the uniform on GPU
    *         modelview = view * model
    *  @return Reference to self (for method chaining)
    */
-  PBRShader& setTransformationMatrix(const Magnum::Matrix4& matrix);
+  PbrShader& setTransformationMatrix(const Magnum::Matrix4& matrix);
 
   /**
    *  @brief Set normal matrix to the uniform on GPU
@@ -214,30 +229,30 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    *         modelview matrix
    *  @return Reference to self (for method chaining)
    */
-  PBRShader& setNormalMatrix(const Magnum::Matrix3x3& matrix);
+  PbrShader& setNormalMatrix(const Magnum::Matrix3x3& matrix);
 
   // -------- materials ---------------
   /**
    *  @brief Set base color to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  PBRShader& setBaseColor(const Magnum::Color4& color);
+  PbrShader& setBaseColor(const Magnum::Color4& color);
   /**
    *  @brief Set roughness to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  PBRShader& setRoughness(float roughness);
+  PbrShader& setRoughness(float roughness);
   /**
    *  @brief Set metallic to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  PBRShader& setMetallic(float metallic);
+  PbrShader& setMetallic(float metallic);
 
   /**
    *  @brief Set object id to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  PBRShader& setObjectId(unsigned int objectId);
+  PbrShader& setObjectId(unsigned int objectId);
 
   /**
    *  @brief Set the position or direction of a specific light See @ref vec for
@@ -253,7 +268,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    *  point (directional) light
    */
 
-  PBRShader& setLightVector(unsigned int lightIndex,
+  PbrShader& setLightVector(unsigned int lightIndex,
                             const Magnum::Vector4& vec);
 
   /**
@@ -266,7 +281,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    *  If the light was a directional light, it will be overrided as a point
    *  light;
    */
-  PBRShader& setLightPosition(unsigned int lightIndex,
+  PbrShader& setLightPosition(unsigned int lightIndex,
                               const Magnum::Vector3& pos);
 
   /**
@@ -279,7 +294,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    *  If the light was a point light, it will be overrided as a direction
    * light;
    */
-  PBRShader& setLightDirection(unsigned int lightIndex,
+  PbrShader& setLightDirection(unsigned int lightIndex,
                                const Magnum::Vector3& dir);
 
   /**
@@ -289,7 +304,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    *  @param range, the range of the light
    *  @return Reference to self (for method chaining)
    */
-  PBRShader& setLightRange(unsigned int lightIndex, float range);
+  PbrShader& setLightRange(unsigned int lightIndex, float range);
 
   /**
    *  @brief Set the color of a specific light.
@@ -298,7 +313,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
    *  @param color, the color of the light
    *  @return Reference to self (for method chaining)
    */
-  PBRShader& setLightColor(unsigned int lightIndex,
+  PbrShader& setLightColor(unsigned int lightIndex,
                            const Magnum::Vector3& color,
                            float intensity = 1.0);
 
@@ -316,7 +331,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
   int roughnessUniform_ = ID_UNDEFINED;  // roughness of a surface
   int metallicUniform_ = ID_UNDEFINED;
-  int albedoTextureUniform_ = ID_UNDEFINED;
+  int baseColorTextureUniform_ = ID_UNDEFINED;
   int roughnessTextureUniform_ = ID_UNDEFINED;
   int metallicTextureUniform_ = ID_UNDEFINED;
   int normalTextureUniform_ = ID_UNDEFINED;
@@ -340,7 +355,7 @@ class PBRShader : public Magnum::GL::AbstractShaderProgram {
   std::vector<int> lightDirectionsUniform_;
 };
 
-CORRADE_ENUMSET_OPERATORS(PBRShader::Flags);
+CORRADE_ENUMSET_OPERATORS(PbrShader::Flags);
 
 }  // namespace gfx
 }  // namespace esp

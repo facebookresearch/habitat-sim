@@ -6,20 +6,20 @@
 #define ESP_GFX_PBRDRAWABLE_H_
 
 #include "esp/gfx/Drawable.h"
-#include "esp/gfx/PBRShader.h"
+#include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
 
 namespace esp {
 namespace gfx {
 
-class PBRDrawable : public Drawable {
+class PbrDrawable : public Drawable {
  public:
   /**
-   * @brief Constructor, to create a PBRDrawable for the given object using
+   * @brief Constructor, to create a PbrDrawable for the given object using
    * shader and mesh. Adds drawable to given group and uses provided texture,
    * and color for textured buffer and color shader output respectively
    */
-  explicit PBRDrawable(scene::SceneNode& node,
+  explicit PbrDrawable(scene::SceneNode& node,
                        Magnum::GL::Mesh& mesh,
                        ShaderManager& shaderManager,
                        const Magnum::ResourceKey& lightSetupKey,
@@ -51,13 +51,13 @@ class PBRDrawable : public Drawable {
    *         light setup
    *  @return Reference to self (for method chaining)
    */
-  PBRDrawable& updateShader();
+  PbrDrawable& updateShader();
 
   /**
    *  @brief Update every light's color, intensity, range etc.
    *  @return Reference to self (for method chaining)
    */
-  PBRDrawable& updateShaderLightParameters();
+  PbrDrawable& updateShaderLightParameters();
 
   /**
    *  @brief Update light direction (or position) in *camera* space to the
@@ -67,7 +67,7 @@ class PBRDrawable : public Drawable {
    *  @param camera, the camera, which views and renders the world
    *  @return Reference to self (for method chaining)
    */
-  PBRDrawable& updateShaderLightDirectionParameters(
+  PbrDrawable& updateShaderLightDirectionParameters(
       const Magnum::Matrix4& transformationMatrix,
       Magnum::SceneGraph::Camera3D& camera);
 
@@ -77,11 +77,11 @@ class PBRDrawable : public Drawable {
    * @param flags, flags that defines the shader features
    */
   Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
-                                   PBRShader::Flags flags) const;
+                                   PbrShader::Flags flags) const;
 
   // shader parameters
   ShaderManager& shaderManager_;
-  Magnum::Resource<Magnum::GL::AbstractShaderProgram, PBRShader> shader_;
+  Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
   Magnum::Resource<MaterialData, PBRMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
 };

@@ -8,8 +8,8 @@ set(
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
-  PBRDrawable.cpp
-  PBRDrawable.h
+  PbrDrawable.cpp
+  PbrDrawable.h
   MeshVisualizerDrawable.cpp
   MeshVisualizerDrawable.h
   LightSetup.cpp
@@ -28,8 +28,8 @@ set(
   RenderTarget.h
   ShaderManager.cpp
   ShaderManager.h
-  PBRShader.cpp
-  PBRShader.h
+  PbrShader.cpp
+  PbrShader.h
 )
 
 # If ptex support is enabled add relevant source files

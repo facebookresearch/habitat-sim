@@ -16,7 +16,7 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/PixelFormat.h>
 
-#include "PBRShader.h"
+#include "PbrShader.h"
 #include "esp/core/esp.h"
 #include "esp/io/io.h"
 
@@ -35,14 +35,14 @@ namespace gfx {
 
 namespace {
 enum TextureBindingPointIndex : uint8_t {
-  albedo = 0,
-  roughness = 1,
-  metallic = 2,
-  normal = 3,
+  BaseColor = 0,
+  Roughness = 1,
+  Metallic = 2,
+  Normal = 3,
 };
 }  // namespace
 
-PBRShader::PBRShader(Flags flags, unsigned int lightCount)
+PbrShader::PbrShader(Flags flags, unsigned int lightCount)
     : flags_(flags), lightCount_(lightCount) {
   if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
@@ -62,7 +62,7 @@ PBRShader::PBRShader(Flags flags, unsigned int lightCount)
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
   // Add macros
-  vert.addSource(flags & (Flag::AlbedoTexture | Flag::RoughnessTexture |
+  vert.addSource(flags & (Flag::BaseColorTexture | Flag::RoughnessTexture |
                           Flag::MetallicTexture | Flag::NormalTexture)
                      ? "#define TEXTURED\n"
                      : "")
@@ -72,15 +72,30 @@ PBRShader::PBRShader(Flags flags, unsigned int lightCount)
                      : "")
       .addSource(rs.get("pbr.vert"));
 
-  frag.addSource(flags & (Flag::AlbedoTexture | Flag::RoughnessTexture |
-                          Flag::MetallicTexture | Flag::NormalTexture)
+  frag.addSource(flags & (Flag::BaseColorTexture | Flag::RoughnessTexture |
+                          Flag::MetallicTexture | Flag::NormalTexture |
+                          Flag::NoneRoughnessMetallicTexture |
+                          Flag::OcclusionRoughnessMetallicTexture)
                      ? "#define TEXTURED\n"
                      : "")
-      .addSource(flags & Flag::AlbedoTexture ? "#define ALBEDO_TEXTURE\n" : "")
-      .addSource(flags & Flag::RoughnessTexture ? "#define ROUGHNESS_TEXTURE\n"
+      .addSource(flags & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
                                                 : "")
-      .addSource(flags & Flag::MetallicTexture ? "#define METALLIC_TEXTURE\n"
-                                               : "")
+      .addSource(((flags & Flag::RoughnessTexture) &&
+                  !(flags & Flag::NoneRoughnessMetallicTexture) &&
+                  !(flags & Flag::OcclusionRoughnessMetallicTexture))
+                     ? "#define ROUGHNESS_TEXTURE\n"
+                     : "")
+      .addSource(((flags & Flag::MetallicTexture) &&
+                  !(flags & Flag::NoneRoughnessMetallicTexture) &&
+                  !(flags & Flag::OcclusionRoughnessMetallicTexture))
+                     ? "#define METALLIC_TEXTURE\n"
+                     : "")
+      .addSource(flags & Flag::NoneRoughnessMetallicTexture
+                     ? "#define NON_ROUGHNESS_METALLIC_TEXTURE\n"
+                     : "")
+      .addSource(flags & Flag::OcclusionRoughnessMetallicTexture
+                     ? "#define OCCLUSION_ROUGHNESS_METALLIC_TEXTURE\n"
+                     : "")
       .addSource(flags & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
       .addSource(flags & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
       .addSource(flags & Flag::PrecomputedTangent
@@ -98,21 +113,21 @@ PBRShader::PBRShader(Flags flags, unsigned int lightCount)
 
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
-  if (flags & Flag::AlbedoTexture) {
-    setUniform(uniformLocation("albedoTexture"),
-               TextureBindingPointIndex::albedo);
+  if (flags & Flag::BaseColorTexture) {
+    setUniform(uniformLocation("baseColorTexture"),
+               TextureBindingPointIndex::BaseColor);
   }
   if (flags & Flag::RoughnessTexture) {
     setUniform(uniformLocation("RoughnessTexture"),
-               TextureBindingPointIndex::roughness);
+               TextureBindingPointIndex::Roughness);
   }
   if (flags & Flag::MetallicTexture) {
     setUniform(uniformLocation("MetallicTexture"),
-               TextureBindingPointIndex::metallic);
+               TextureBindingPointIndex::Metallic);
   }
   if (flags & Flag::NormalTexture) {
     setUniform(uniformLocation("NormalTexture"),
-               TextureBindingPointIndex::normal);
+               TextureBindingPointIndex::Normal);
   }
 
   // cache the uniform locations
@@ -146,99 +161,99 @@ PBRShader::PBRShader(Flags flags, unsigned int lightCount)
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
-PBRShader& PBRShader::bindAlbedoTexture(Mn::GL::Texture2D& texture) {
-  CORRADE_ASSERT(flags_ & Flag::AlbedoTexture,
-                 "PBRShader::bindAlbedoTexture: the shader was not "
-                 "created with albedo texture enabled",
+PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ & Flag::BaseColorTexture,
+                 "PbrShader::bindBaseColorTexture: the shader was not "
+                 "created with BaseColor texture enabled",
                  *this);
   if (lightCount_) {
-    texture.bind(TextureBindingPointIndex::albedo);
+    texture.bind(TextureBindingPointIndex::BaseColor);
   }
   return *this;
 }
 
-PBRShader& PBRShader::bindRoughnessTexture(Mn::GL::Texture2D& texture) {
+PbrShader& PbrShader::bindRoughnessTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(flags_ & Flag::RoughnessTexture,
-                 "PBRShader::bindRoughnessTexture: the shader was not "
+                 "PbrShader::bindRoughnessTexture: the shader was not "
                  "created with roughness texture enabled",
                  *this);
   if (lightCount_) {
-    texture.bind(TextureBindingPointIndex::roughness);
+    texture.bind(TextureBindingPointIndex::Roughness);
   }
   return *this;
 }
 
-PBRShader& PBRShader::bindMetallicTexture(Mn::GL::Texture2D& texture) {
+PbrShader& PbrShader::bindMetallicTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(flags_ & Flag::MetallicTexture,
-                 "PBRShader::bindMetallicTexture: the shader was not "
+                 "PbrShader::bindMetallicTexture: the shader was not "
                  "created with metallic texture enabled",
                  *this);
   if (lightCount_) {
-    texture.bind(TextureBindingPointIndex::metallic);
+    texture.bind(TextureBindingPointIndex::Metallic);
   }
   return *this;
 }
 
-PBRShader& PBRShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
+PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(flags_ & Flag::NormalTexture,
-                 "PBRShader::bindNormalTexture: the shader was not "
+                 "PbrShader::bindNormalTexture: the shader was not "
                  "created with normal texture enabled",
                  *this);
   if (lightCount_) {
-    texture.bind(TextureBindingPointIndex::normal);
+    texture.bind(TextureBindingPointIndex::Normal);
   }
   return *this;
 }
 
-PBRShader& PBRShader::setMVPMatrix(const Mn::Matrix4& matrix) {
+PbrShader& PbrShader::setMVPMatrix(const Mn::Matrix4& matrix) {
   setUniform(mvpMatrixUniform_, matrix);
   return *this;
 }
 
-PBRShader& PBRShader::setNormalMatrix(const Mn::Matrix3x3& matrix) {
+PbrShader& PbrShader::setNormalMatrix(const Mn::Matrix3x3& matrix) {
   setUniform(normalMatrixUniform_, matrix);
   return *this;
 }
 
-PBRShader& PBRShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
+PbrShader& PbrShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
   setUniform(modelviewMatrixUniform_, matrix);
   return *this;
 }
 
-PBRShader& PBRShader::setObjectId(unsigned int objectId) {
+PbrShader& PbrShader::setObjectId(unsigned int objectId) {
   if (flags_ & Flag::ObjectId) {
     setUniform(objectIdUniform_, objectId);
   }
   return *this;
 }
 
-PBRShader& PBRShader::setBaseColor(const Mn::Color4& color) {
+PbrShader& PbrShader::setBaseColor(const Mn::Color4& color) {
   if (lightCount_) {
     setUniform(baseColorUniform_, color);
   }
   return *this;
 }
 
-PBRShader& PBRShader::setRoughness(float roughness) {
+PbrShader& PbrShader::setRoughness(float roughness) {
   if (lightCount_) {
     setUniform(roughnessUniform_, roughness);
   }
   return *this;
 }
 
-PBRShader& PBRShader::setMetallic(float metallic) {
+PbrShader& PbrShader::setMetallic(float metallic) {
   if (lightCount_) {
     setUniform(metallicUniform_, metallic);
   }
   return *this;
 }
 
-PBRShader& PBRShader::bindTextures(Mn::GL::Texture2D* albedo,
+PbrShader& PbrShader::bindTextures(Mn::GL::Texture2D* BaseColor,
                                    Mn::GL::Texture2D* roughness,
                                    Mn::GL::Texture2D* metallic,
                                    Mn::GL::Texture2D* normal) {
-  if (albedo) {
-    bindAlbedoTexture(*albedo);
+  if (BaseColor) {
+    bindBaseColorTexture(*BaseColor);
   }
   if (roughness) {
     bindRoughnessTexture(*roughness);
@@ -252,36 +267,36 @@ PBRShader& PBRShader::bindTextures(Mn::GL::Texture2D* albedo,
   return *this;
 }
 
-PBRShader& PBRShader::setLightPosition(unsigned int lightIndex,
+PbrShader& PbrShader::setLightPosition(unsigned int lightIndex,
                                        const Mn::Vector3& pos) {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
-      "PBRShader::setLightPosition: lightIndex" << lightIndex << "is illegal.",
+      "PbrShader::setLightPosition: lightIndex" << lightIndex << "is illegal.",
       *this);
 
   setUniform(lightDirectionsUniform_[lightIndex], Mn::Vector4{pos, 1.0});
   return *this;
 }
 
-PBRShader& PBRShader::setLightDirection(unsigned int lightIndex,
+PbrShader& PbrShader::setLightDirection(unsigned int lightIndex,
                                         const Mn::Vector3& dir) {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
-      "PBRShader::setLightDirection: lightIndex" << lightIndex << "is illegal.",
+      "PbrShader::setLightDirection: lightIndex" << lightIndex << "is illegal.",
       *this);
   setUniform(lightDirectionsUniform_[lightIndex], Mn::Vector4{dir, 0.0});
   return *this;
 }
 
-PBRShader& PBRShader::setLightVector(unsigned int lightIndex,
+PbrShader& PbrShader::setLightVector(unsigned int lightIndex,
                                      const Magnum::Vector4& vec) {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
-      "PBRShader::setLightVector: lightIndex" << lightIndex << "is illegal.",
+      "PbrShader::setLightVector: lightIndex" << lightIndex << "is illegal.",
       *this);
 
   CORRADE_ASSERT(vec.w() == 1 || vec.w() == 0,
-                 "PBRShader::setLightVector"
+                 "PbrShader::setLightVector"
                      << vec
                      << "is expected to have w == 0 for a directional light or "
                         "w == 1 for a point light",
@@ -292,22 +307,22 @@ PBRShader& PBRShader::setLightVector(unsigned int lightIndex,
   return *this;
 }
 
-PBRShader& PBRShader::setLightRange(unsigned int lightIndex, float range) {
+PbrShader& PbrShader::setLightRange(unsigned int lightIndex, float range) {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
-      "PBRShader::setLightRange: lightIndex" << lightIndex << "is illegal.",
+      "PbrShader::setLightRange: lightIndex" << lightIndex << "is illegal.",
       *this);
   if (lightCount_) {
     setUniform(lightsUniform_[lightIndex].range, range);
   }
   return *this;
 }
-PBRShader& PBRShader::setLightColor(unsigned int lightIndex,
+PbrShader& PbrShader::setLightColor(unsigned int lightIndex,
                                     const Mn::Vector3& color,
                                     float intensity) {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
-      "PBRShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
+      "PbrShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
       *this);
   if (lightCount_) {
     Mn::Vector3 finalColor = intensity * color;

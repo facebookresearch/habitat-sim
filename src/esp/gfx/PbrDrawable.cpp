@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "PBRDrawable.h"
+#include "PbrDrawable.h"
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
@@ -12,7 +12,7 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
-PBRDrawable::PBRDrawable(scene::SceneNode& node,
+PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          Mn::GL::Mesh& mesh,
                          ShaderManager& shaderManager,
                          const Mn::ResourceKey& lightSetupKey,
@@ -26,12 +26,12 @@ PBRDrawable::PBRDrawable(scene::SceneNode& node,
   updateShader().updateShaderLightParameters();
 }
 
-void PBRDrawable::setLightSetup(const Mn::ResourceKey& lightSetup) {
+void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetup) {
   lightSetup_ = shaderManager_.get<LightSetup>(lightSetup);
   updateShader().updateShaderLightParameters();
 }
 
-void PBRDrawable::draw(const Mn::Matrix4& transformationMatrix,
+void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
                        Mn::SceneGraph::Camera3D& camera) {
   // no need to call updateShaderLightParameters() in the draw loop,
   // only need to update the position or direction of the lights
@@ -48,12 +48,12 @@ void PBRDrawable::draw(const Mn::Matrix4& transformationMatrix,
               : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
       .setTransformationMatrix(transformationMatrix)  // modelview matrix
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix)
-      // because we actually do not have scaling, only rotation, so that the
-      // modelview matrix mv = inv(mv^T) where mv stands for the up-left 3x3
-      // part of the modelview matrix
+      // because we actually do not have scaling, only rotation, so that
+      // mv = inv(mv^T) where mv stands for the up-left 3x3 part of the
+      // modelview matrix
       .setNormalMatrix(transformationMatrix.rotationScaling())
       .bindTextures(
-          materialData_->albedoTexture, materialData_->roughnessTexture,
+          materialData_->baseColorTexture, materialData_->roughnessTexture,
           materialData_->metallicTexture, materialData_->normalTexture)
       .setBaseColor(materialData_->baseColor)
       .setRoughness(materialData_->roughness)
@@ -66,27 +66,27 @@ void PBRDrawable::draw(const Mn::Matrix4& transformationMatrix,
   shader_->draw(mesh_);
 }
 
-Mn::ResourceKey PBRDrawable::getShaderKey(Mn::UnsignedInt lightCount,
-                                          PBRShader::Flags flags) const {
+Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
+                                          PbrShader::Flags flags) const {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<PBRShader::Flags::UnderlyingType>(flags));
+      static_cast<PbrShader::Flags::UnderlyingType>(flags));
 }
 
-PBRDrawable& PBRDrawable::updateShader() {
-  PBRShader::Flags flags = PBRShader::Flag::ObjectId;
+PbrDrawable& PbrDrawable::updateShader() {
+  PbrShader::Flags flags = PbrShader::Flag::ObjectId;
 
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
     // TODO: may be supported in the future
   }
-  if (materialData_->albedoTexture)
-    flags |= PBRShader::Flag::AlbedoTexture;
+  if (materialData_->baseColorTexture)
+    flags |= PbrShader::Flag::BaseColorTexture;
   if (materialData_->roughnessTexture)
-    flags |= PBRShader::Flag::RoughnessTexture;
+    flags |= PbrShader::Flag::RoughnessTexture;
   if (materialData_->metallicTexture)
-    flags |= PBRShader::Flag::MetallicTexture;
+    flags |= PbrShader::Flag::MetallicTexture;
   if (materialData_->normalTexture)
-    flags |= PBRShader::Flag::NormalTexture;
+    flags |= PbrShader::Flag::NormalTexture;
   if (materialData_->perVertexObjectId) {
     // TODO: may be supported in the future
   }
@@ -96,13 +96,13 @@ PBRDrawable& PBRDrawable::updateShader() {
       shader_->flags() != flags) {
     // if the number of lights or flags have changed, we need to fetch a
     // compatible shader
-    shader_ = shaderManager_.get<Mn::GL::AbstractShaderProgram, PBRShader>(
+    shader_ = shaderManager_.get<Mn::GL::AbstractShaderProgram, PbrShader>(
         getShaderKey(lightCount, flags));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader_.key(), new PBRShader{flags, lightCount},
+          shader_.key(), new PbrShader{flags, lightCount},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
@@ -114,7 +114,7 @@ PBRDrawable& PBRDrawable::updateShader() {
 }
 
 // update every light's color, intensity, range etc.
-PBRDrawable& PBRDrawable::updateShaderLightParameters() {
+PbrDrawable& PbrDrawable::updateShaderLightParameters() {
   constexpr float dummyRange = 10000.0;
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
     // Note: the light color already includes the intensity
@@ -124,7 +124,7 @@ PBRDrawable& PBRDrawable::updateShaderLightParameters() {
 }
 
 // update light direction (or position) in *camera* space to the shader
-PBRDrawable& PBRDrawable::updateShaderLightDirectionParameters(
+PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     const Magnum::Matrix4& transformationMatrix,
     Magnum::SceneGraph::Camera3D& camera) {
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();

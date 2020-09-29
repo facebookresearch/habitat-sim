@@ -36,13 +36,10 @@ struct PhongMaterialData : public MaterialData {
 };
 
 struct PBRMaterialData : public MaterialData {
-  // use the value if albedoTexture does not exist
   Magnum::Color4 baseColor{0.7};
-  // use the value if roughnessTexture does not exist
   Magnum::Float roughness = 0.9f;
-  // use the value if metallicTexture does not exist
   Magnum::Float metallic = 0.1f;
-  Magnum::GL::Texture2D* albedoTexture = nullptr;
+  Magnum::GL::Texture2D* baseColorTexture = nullptr;
   Magnum::GL::Texture2D* normalTexture = nullptr;
   Magnum::GL::Texture2D* metallicTexture = nullptr;
   Magnum::GL::Texture2D* roughnessTexture = nullptr;

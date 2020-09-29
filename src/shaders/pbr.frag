@@ -40,8 +40,8 @@ uniform vec4 LightDirections[LIGHT_COUNT];
 
 // -------------- material, textures ------------------
 struct MaterialData {
-  vec4 baseColor;   // diffuse color, if albedoTexture exists,
-                    // use the albedoTexture
+  vec4 baseColor;   // diffuse color, if baseTexture exists,
+                    // use the baseTexture
   float roughness;  // roughness of a surface, if roughness texture exists,
                     // use the roughnessTexture
   float metallic;   // metalness of a surface, if metallic texture exists,
@@ -49,8 +49,8 @@ struct MaterialData {
 };
 uniform MaterialData Material;
 
-#if defined(ALBEDO_TEXTURE)
-uniform sampler2D albedoTexture;
+#if defined(BASECOLOR_TEXTURE)
+uniform sampler2D baseTexture;
 #endif
 #if defined(ROUGHNESS_TEXTURE)
 uniform sampler2D roughnessTexture;
@@ -135,7 +135,7 @@ vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 half) {
   return F0 + (1.0 - F0) * pow(1.0 - v_dot_h, 5.0);
 }
 
-// albedoColor: diffuse color from albedoTexture
+// baseColor: diffuse color from baseTexture
 //              or from baseColor in the material;
 // metallic: metalness of the surface, from metallicTexture
 //           or from metallic in the material;
@@ -146,7 +146,7 @@ vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 half) {
 // view: camera direction, aka light outgoing direction
 // lightRadiance: the radiance of the light,
 //                which equals to intensity * attenuation
-vec3 microfacetModel(vec3 albedoColor,
+vec3 microfacetModel(vec3 baseColor,
                      float metallic,
                      float roughness,
                      vec3 normal,
@@ -156,7 +156,7 @@ vec3 microfacetModel(vec3 albedoColor,
   vec3 half = normalize(l + v);
   // compute F0, specular reflectance at normal incidence
   // for nonmetal, using constant 0.04
-  vec3 F0 = mix(vec3(0.04), albedoColor, metallic);
+  vec3 F0 = mix(vec3(0.04), baseColor, metallic);
   vec3 Fresnel = fresnelSchlick(F0, view, half);
 
   // Diffuse BRDF
@@ -165,7 +165,7 @@ vec3 microfacetModel(vec3 albedoColor,
   // Also: result does not need to be scaled by 1/PI
   // See details:
   // https://seblagarde.wordpress.com/2012/01/08/pi-or-not-to-pi-in-game-lighting-equation/
-  vec3 diffuse = mix(vec3(1.0) - Fresnel, vec3(0.0), metallic) * albedoColor;
+  vec3 diffuse = mix(vec3(1.0) - Fresnel, vec3(0.0), metallic) * baseColor;
 
   // Specular BDDF
   float temp =
@@ -179,21 +179,25 @@ vec3 microfacetModel(vec3 albedoColor,
 }
 
 void main() {
-#if defined(ALBEDO_TEXTURE)
-  vec4 albedoColor = texture(albedoTexture, texCoord);
-#else
-  vec4 albedoColor = Material.baseColor;
+  vec4 baseColor = Material.baseColor;
+#if defined(BASECOLOR_TEXTURE)
+  baseColor *= texture(baseTexture, texCoord);
 #endif
-#if defined(METALLIC_TEXTURE)
-  float metallic = texture(metallicTexture, texCoord).r;
-#else
-  float metallic = Material.metallic;
-#endif
-#if defined(ROUGHNESS_TEXTURE)
-  float roughness = texture(roughnessTexture, texCoord).r;
-#else
+
   float roughness = Material.roughness;
+#if defined(ROUGHNESS_TEXTURE)
+  roughness *= texture(roughnessTexture, texCoord).r;
+#elif defined(NON_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+  roughness *= texture(roughnessTexture, texCoord).g;
 #endif
+
+  float metallic = Material.metallic;
+#if defined(METALLIC_TEXTURE)
+  metallic *= texture(metallicTexture, texCoord).r;
+#elif defined(NON_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+  metallic *= texture(metallicTexture, texCoord).b;
+#endif
+
 #if defined(NORMAL_TEXTURE)
   // normal is now in the camera space
   vec3 n = getNormalFromNormalMap();
@@ -232,9 +236,9 @@ void main() {
     vec3 light = normalize(LightDirections[iLight].xyz -
                            position * LightDirections[iLight].w);
 
-    finalColor += microfacetModel(albedoColor.rgb, roughness, n, light, view,
+    finalColor += microfacetModel(baseColor.rgb, roughness, n, light, view,
                                   lightRadiance);
-    finalAlpha += albedoColor.w;
+    finalAlpha += baseColor.w;
   }  // for lights
 
   // TODO: use ALPHA_MASK to discard fragments
