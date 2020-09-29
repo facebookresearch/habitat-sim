@@ -56,7 +56,7 @@ class ObjectAttributesManager
    * @param jsonConfig json document to parse
    */
   void setValsFromJSONDoc(Attrs::ObjectAttributes::ptr attribs,
-                          const io::JsonDocument& jsonConfig) override;
+                          const io::JsonGenericValue& jsonConfig) override;
 
   /**
    * @brief Check if currently configured primitive asset template library has

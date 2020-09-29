@@ -145,7 +145,7 @@ int AssetAttributesManager::registerObjectFinalize(
 
 AbstractPrimitiveAttributes::ptr AssetAttributesManager::loadFromJSONDoc(
     const std::string& filename,
-    const io::JsonDocument& jsonDoc) {
+    const io::JsonGenericValue& jsonDoc) {
   // find type of attributes - file name should contain handle
   const std::string primAttrHandle =
       Cr::Utility::Directory::splitExtension(
@@ -182,7 +182,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::loadFromJSONDoc(
 
 void AssetAttributesManager::setValsFromJSONDoc(
     AttribsPtr attribs,
-    const io::JsonDocument& jsonConfig) {
+    const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs
 
 }  // AssetAttributesManager::loadFromJSONDoc

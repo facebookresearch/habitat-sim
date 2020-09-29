@@ -98,7 +98,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
    */
   AbsObjAttrPtr loadAbstractObjectAttributesFromJson(
       AbsObjAttrPtr attributes,
-      const io::JsonDocument& jsonDoc);
+      const io::JsonGenericValue& jsonDoc);
 
   //======== Internally accessed functions ========
   /**
@@ -122,7 +122,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
    * be set from assetName variable.
    */
   bool setJSONAssetHandleAndType(AbsObjAttrPtr attributes,
-                                 const io::JsonDocument& jsonDoc,
+                                 const io::JsonGenericValue& jsonDoc,
                                  const char* jsonMeshTypeTag,
                                  const char* jsonMeshHandleTag,
                                  std::string& assetName,
@@ -186,7 +186,7 @@ auto AbstractObjectAttributesManager<T>::createObject(
 template <class T>
 auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
     AbsObjAttrPtr attributes,
-    const io::JsonDocument& jsonDoc) -> AbsObjAttrPtr {
+    const io::JsonGenericValue& jsonDoc) -> AbsObjAttrPtr {
   using std::placeholders::_1;
 
   // scale
@@ -249,7 +249,9 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
     // set asset name to be what was read in json
     colFName = cTmpFName;
   }
-
+  LOG(INFO) << "AbstractObjectAttributesManager<" << this->objectType_
+            << "::ptr>::createObjectAttributesFromJson : RndrMesh : "
+            << rndrFName << " | ColMesh : " << colFName;
   // use non-empty result if either result is empty
   attributes->setRenderAssetHandle(rndrFName.compare("") == 0 ? colFName
                                                               : rndrFName);
@@ -276,7 +278,7 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
 template <class T>
 bool AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,
-    const io::JsonDocument& jsonDoc,
+    const io::JsonGenericValue& jsonDoc,
     const char* jsonMeshTypeTag,
     const char* jsonMeshHandleTag,
     std::string& assetName,

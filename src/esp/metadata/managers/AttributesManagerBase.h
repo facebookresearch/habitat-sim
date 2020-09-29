@@ -99,7 +99,7 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
    */
   virtual AttribsPtr loadFromJSONDoc(
       const std::string& templateName,
-      const io::JsonDocument& jsonConfig) override {
+      const io::JsonGenericValue& jsonConfig) override {
     // Construct a ObjectAttributes and populate with any
     // AbstractObjectAttributes fields found in json.
     auto attributes = this->initNewObjectInternal(templateName);
@@ -115,7 +115,7 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
    * @param jsonConfig json document to parse
    */
   virtual void setValsFromJSONDoc(AttribsPtr attribs,
-                                  const io::JsonDocument& jsonConfig) = 0;
+                                  const io::JsonGenericValue& jsonConfig) = 0;
 
  protected:
   /**
@@ -154,10 +154,9 @@ std::vector<int> AttributesManager<T>::loadAllFileBasedTemplates(
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
   for (int i = 0; i < paths.size(); ++i) {
     auto attributesFilename = paths[i];
-    LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Load "
-              << this->objectType_ << " template: " << attributesFilename;
-    auto tmplt = this->template createObjectFromFile<io::JsonDocument>(
-        attributesFilename, true);
+    LOG(WARNING) << "AttributesManager::loadAllFileBasedTemplates : Load "
+                 << this->objectType_ << " template: " << attributesFilename;
+    auto tmplt = this->createObjectFromJSONFile(attributesFilename, true);
 
     // save handles in list of defaults, so they are not removed, if desired.
     if (saveAsDefaults) {
@@ -176,6 +175,11 @@ template <class T>
 std::vector<int> AttributesManager<T>::loadAllConfigsFromPath(
     const std::string& path,
     bool saveAsDefaults) {
+  std::string dispMsg1(
+      "AttributesManager::loadAllConfigsFromPath : Starting with Path : >" +
+      path + "<");
+  LOG(WARNING) << dispMsg1;
+
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
   namespace Directory = Cr::Utility::Directory;
@@ -208,6 +212,12 @@ std::vector<int> AttributesManager<T>::loadAllConfigsFromPath(
       }
     }
   }
+  for (const auto& newpath : paths) {
+    std::string dispMsg2(
+        "AttributesManager::loadAllConfigsFromPath : Path :  >" + newpath +
+        "<");
+    LOG(WARNING) << dispMsg2;
+  }
   // build templates from aggregated paths
   templateIndices = this->loadAllFileBasedTemplates(paths, saveAsDefaults);
 
@@ -234,8 +244,7 @@ auto AttributesManager<T>::createFromJsonOrDefaultInternal(
     // check if stageAttributesHandle corresponds to an actual, existing
     // json stage file descriptor.
     // this method lives in class template.
-    attrs = this->template createObjectFromFile<io::JsonDocument>(
-        jsonAttrFileName, registerObj);
+    attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
     msg = "JSON File (" + jsonAttrFileName + ") Based";
   } else {
     // if name is not json file descriptor but still appropriate file, or if

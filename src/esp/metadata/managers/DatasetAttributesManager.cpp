@@ -43,15 +43,41 @@ DatasetAttributes::ptr DatasetAttributesManager::initNewObjectInternal(
 
 void DatasetAttributesManager::setValsFromJSONDoc(
     Attrs::DatasetAttributes::ptr datasetAttributes,
-    const io::JsonDocument& jsonConfig) {
+    const io::JsonGenericValue& jsonConfig) {
   // get dataset managers to handle loading
-  auto assetMgrs = datasetAttributes->getAssetAttributesManager();
-  auto objectMgrs = datasetAttributes->getObjectAttributesManager();
-  auto stageMgrs = datasetAttributes->getStageAttributesManager();
+  // auto assetMgrs = datasetAttributes->getAssetAttributesManager();
+  const ObjectAttributesManager::ptr objectMgrs =
+      datasetAttributes->getObjectAttributesManager();
+  const StageAttributesManager::ptr stageMgrs =
+      datasetAttributes->getStageAttributesManager();
 
-  // TODO add code to read dataset_config json
+  // process stages
+  readDatasetJSONCell("stages", jsonConfig,
+                      datasetAttributes->getStageAttributesManager());
+  // process objects
+  readDatasetJSONCell("objects", jsonConfig,
+                      datasetAttributes->getObjectAttributesManager());
 
 }  // DatasetAttributesManager::setValsFromJSONDoc
+
+// using type deduction
+template <typename U>
+void DatasetAttributesManager::readDatasetJSONCell(
+    const char* tag,
+    const io::JsonGenericValue& jsonConfig,
+    const U& attrMgr) {
+  if (jsonConfig.HasMember(tag)) {
+    if (!jsonConfig[tag].IsObject()) {
+      LOG(WARNING) << "DatasetAttributesManager::setValsFromJSONDoc : "
+                      "\"Stages\" cell in JSON config not appropriately "
+                      "configured. Skipping.";
+      return;
+    } else {
+      const io::JsonGenericValue& jsonCell = jsonConfig[tag];
+      // process JSON here
+    }
+  }  // if has tag else
+}  // DatasetAttributesManager::readDatasetJSONCell
 
 int DatasetAttributesManager::registerObjectFinalize(
     Attrs::DatasetAttributes::ptr datasetAttributes,

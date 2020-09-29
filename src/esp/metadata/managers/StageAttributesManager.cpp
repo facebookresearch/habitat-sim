@@ -271,7 +271,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
 
 void StageAttributesManager::setValsFromJSONDoc(
     Attrs::StageAttributes::ptr stageAttributes,
-    const io::JsonDocument& jsonConfig) {
+    const io::JsonGenericValue& jsonConfig) {
   this->loadAbstractObjectAttributesFromJson(stageAttributes, jsonConfig);
 
   // directory location where stage files are found

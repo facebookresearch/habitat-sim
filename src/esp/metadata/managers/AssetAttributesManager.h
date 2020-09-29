@@ -126,7 +126,7 @@ class AssetAttributesManager
    */
   Attrs::AbstractPrimitiveAttributes::ptr loadFromJSONDoc(
       const std::string& filename,
-      const io::JsonDocument& jsonConfig) override;
+      const io::JsonGenericValue& jsonConfig) override;
 
   /**
    * @brief Method to take an existing attributes and set its values from passed
@@ -135,7 +135,7 @@ class AssetAttributesManager
    * @param jsonConfig json document to parse
    */
   void setValsFromJSONDoc(AttribsPtr attribs,
-                          const io::JsonDocument& jsonConfig) override;
+                          const io::JsonGenericValue& jsonConfig) override;
 
   /**
    * @brief Should only be called internally. Creates an instance of a

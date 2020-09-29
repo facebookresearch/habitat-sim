@@ -32,7 +32,7 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
 
 void PhysicsAttributesManager::setValsFromJSONDoc(
     Attrs::PhysicsManagerAttributes::ptr physicsManagerAttributes,
-    const io::JsonDocument&
+    const io::JsonGenericValue&
         jsonConfig) {  // load the simulator preference - default is "none"
                        // simulator, set in
   // attributes ctor.

@@ -62,7 +62,9 @@ class AttributesManagersTest : public testing::Test {
     const std::string& jsonString = U::JSONConfigTestString;
     // create JSON document
     try {
-      const auto& jsonDoc = esp::io::parseJsonString(jsonString);
+      esp::io::JsonDocument tmp = esp::io::parseJsonString(jsonString);
+      // io::JsonGenericValue :
+      const esp::io::JsonGenericValue jsonDoc = tmp.GetObject();
       // create an empty template
       std::shared_ptr<U> attrTemplate1 =
           mgr->loadAttributesFromDoc("new default template", jsonDoc);

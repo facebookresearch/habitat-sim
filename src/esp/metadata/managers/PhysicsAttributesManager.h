@@ -58,7 +58,7 @@ class PhysicsAttributesManager
    * @param jsonConfig json document to parse
    */
   void setValsFromJSONDoc(Attrs::PhysicsManagerAttributes::ptr attribs,
-                          const io::JsonDocument& jsonConfig) override;
+                          const io::JsonGenericValue& jsonConfig) override;
 
  protected:
   /**

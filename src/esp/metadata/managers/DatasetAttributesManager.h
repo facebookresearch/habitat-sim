@@ -77,7 +77,7 @@ class DatasetAttributesManager
    * @param jsonConfig json document to parse
    */
   void setValsFromJSONDoc(Attrs::DatasetAttributes::ptr attribs,
-                          const io::JsonDocument& jsonConfig) override;
+                          const io::JsonGenericValue& jsonConfig) override;
 
   /**
    * @brief This will set the current physics manager attributes that is
@@ -101,6 +101,18 @@ class DatasetAttributesManager
   }  // DatasetAttributesManager::setCurrPhysicsManagerAttributesHandle
 
  protected:
+  /**
+   * @brief Handle reading a JSON sub-cell with in the dataset_config.JSON file,
+   * using the passed attributesManager for the dataset being processed.
+   * @tparam the type of the attributes manager.
+   * @param jsonCell The sub cell in the json document being processed.
+   * @param attrMgr The dataset's attributes manager.
+   */
+  template <typename U>
+  void readDatasetJSONCell(const char* tag,
+                           const io::JsonGenericValue& jsonConfig,
+                           const U& attrMgr);
+
   /**
    * @brief Used Internally.  Create and configure newly-created dataset
    * attributes with any default values, before any specific values are set.

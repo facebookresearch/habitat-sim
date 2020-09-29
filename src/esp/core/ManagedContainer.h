@@ -79,8 +79,7 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::createDefault
 
   /**
-   * @brief Creates an instance of a managed object from a file of type U using
-   * passed filename.  Currently U can be @ref esp::io::JsonDocument.
+   * @brief Creates an instance of a managed object from a JSON file.
    *
    * @param filename the name of the file describing the object managed object.
    * Assumes it exists and fails if it does not.
@@ -90,11 +89,10 @@ class ManagedContainer : public ManagedContainerBase {
    * true.
    * @return a reference to the desired managed object, or nullptr if fails.
    */
-  template <typename U>
-  ManagedPtr createObjectFromFile(const std::string& filename,
-                                  bool registerObject = true) {
-    U config;
-    bool success = this->verifyLoadDocument(filename, config);
+  ManagedPtr createObjectFromJSONFile(const std::string& filename,
+                                      bool registerObject = true) {
+    io::JsonDocument docConfig;
+    bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
       LOG(ERROR) << "ManagedContainer::createObjectFromFile ("
                  << this->objectType_
@@ -102,9 +100,11 @@ class ManagedContainer : public ManagedContainerBase {
                  << ". Aborting.";
       return nullptr;
     }
+    // convert doc to const value
+    const io::JsonGenericValue config = docConfig.GetObject();
     ManagedPtr attr = this->loadAttributesFromDoc(filename, config);
     return this->postCreateRegister(attr, registerObject);
-  }
+  }  // ManagedContainer::createObjectFromJSONFile
 
   /**
    * @brief Method to load a Managed Object's data from a file.  If the file
@@ -131,7 +131,7 @@ class ManagedContainer : public ManagedContainerBase {
    * @return a shared pointer of the created Managed Object
    */
   ManagedPtr loadAttributesFromDoc(const std::string& filename,
-                                   const io::JsonDocument& jsonConfig) {
+                                   const io::JsonGenericValue& jsonConfig) {
     return this->loadFromJSONDoc(filename, jsonConfig);
   }
 
@@ -143,8 +143,9 @@ class ManagedContainer : public ManagedContainerBase {
    * @param jsonConfig json document to parse - assumed to be legal JSON doc.
    * @return a reference to the desired managed object.
    */
-  virtual ManagedPtr loadFromJSONDoc(const std::string& filename,
-                                     const io::JsonDocument& jsonConfig) = 0;
+  virtual ManagedPtr loadFromJSONDoc(
+      const std::string& filename,
+      const io::JsonGenericValue& jsonConfig) = 0;
 
   /**
    * @brief Add a copy of @ref esp::core::AbstractManagedObject to the @ref
@@ -629,7 +630,7 @@ auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
   if (this->undeletableObjectNames_.count(objectHandle) > 0) {
     msg = "Required Undeletable Managed Object";
   } else if (this->userLockedObjectNames_.count(objectHandle) > 0) {
-    msg = "User-locked Object.  To delete managed object, unlock it.";
+    msg = "User-locked Object.  To delete managed object, unlock it";
   }
   if (msg.length() != 0) {
     LOG(INFO) << sourceStr << " : Unable to remove " << objectType_

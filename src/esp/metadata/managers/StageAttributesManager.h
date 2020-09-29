@@ -82,7 +82,7 @@ class StageAttributesManager
    * @param jsonConfig json document to parse
    */
   void setValsFromJSONDoc(Attrs::StageAttributes::ptr attribs,
-                          const io::JsonDocument& jsonConfig) override;
+                          const io::JsonGenericValue& jsonConfig) override;
 
  protected:
   /**
