@@ -53,6 +53,7 @@ repos:
     rev: 'v0.782'
     hooks:
     -   id: mypy
+        pass_filenames: false
 
 -   repo: https://github.com/kynan/nbstripout
     rev: master
