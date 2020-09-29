@@ -83,23 +83,6 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
       bool registerTemplate = true) = 0;
 
  protected:
-  //======== AbstractObjectAttributes common create functions ========
-
-  /**
-   * @brief Called intenrally from createObject.  This will create either a file
-   * based AbstractAttributes or a default one based on whether the passet file
-   * name exists and has appropriate string tag for @ref
-   * esp::metadata::attributes::AbstractAttributes.
-   *
-   * @param filename the file holding the configuration of the object
-   * @param msg reference to progress message
-   * @param registerObj whether the new object should be registered in library
-   * @return the create @ref esp::metadata::attributes::AbstractAttributes.
-   */
-  AbsObjAttrPtr createFromJsonOrDefaultInternal(const std::string& filename,
-                                                std::string& msg,
-                                                bool registerObj);
-
   //======== Common JSON import functions ========
 
   /**
@@ -200,40 +183,6 @@ auto AbstractObjectAttributesManager<T>::createObject(
   return attrs;
 
 }  // AbstractObjectAttributesManager<T>::createObject
-
-template <class T>
-auto AbstractObjectAttributesManager<T>::createFromJsonOrDefaultInternal(
-    const std::string& filename,
-    std::string& msg,
-    bool registerObj) -> AbsObjAttrPtr {
-  AbsObjAttrPtr attrs;
-  std::string strHandle = Cr::Utility::String::lowercase(filename);
-  std::string jsonAttrFileName =
-      (strHandle.find(Cr::Utility::String::lowercase(this->JSONTypeExt_)) !=
-       std::string::npos)
-          ? std::string(filename)
-          : io::changeExtension(filename, this->JSONTypeExt_);
-  bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
-  if (jsonFileExists) {
-    // check if stageAttributesHandle corresponds to an actual, existing
-    // json stage file descriptor.
-    // this method lives in class template.
-    attrs = this->template createObjectFromFile<io::JsonDocument>(
-        jsonAttrFileName, registerObj);
-    msg = "JSON File (" + jsonAttrFileName + ") Based";
-  } else {
-    // if name is not json file descriptor but still appropriate file, or if
-    // is not a file or known prim
-    attrs = this->createDefaultObject(filename, registerObj);
-    bool fileExists = (this->isValidFileName(filename));
-    if (fileExists) {
-      msg = "File (" + filename + ") Based";
-    } else {
-      msg = "New default (" + filename + ")";
-    }
-  }
-  return attrs;
-}  // AttributesManager<T>::createFromJsonFileOrDefaultInternal
 
 template <class T>
 auto AbstractObjectAttributesManager<T>::createObjectAttributesFromJson(

@@ -15,20 +15,9 @@ namespace managers {
 DatasetAttributes::ptr DatasetAttributesManager::createObject(
     const std::string& datasetHandle,
     bool registerTemplate) {
-  DatasetAttributes::ptr attrs;
   std::string msg;
-  if (this->isValidFileName(datasetHandle)) {
-    // check if datasetHandle corresponds to an actual file descriptor
-    // this method lives in class template.
-    attrs = this->template createObjectFromFile<io::JsonDocument>(
-        datasetHandle, registerTemplate);
-    msg = "File (" + datasetHandle + ") Based";
-  } else {
-    // if name is not file descriptor, return default attributes.
-    attrs = this->template createObjectFromFile<io::JsonDocument>(
-        datasetHandle, registerTemplate);
-    msg = "File (" + datasetHandle + ") not found so new, default";
-  }
+  DatasetAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
+      datasetHandle, msg, registerTemplate);
 
   if (nullptr != attrs) {
     LOG(INFO) << msg << " dataset attributes created"
