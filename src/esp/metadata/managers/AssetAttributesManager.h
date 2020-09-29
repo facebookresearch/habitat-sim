@@ -366,7 +366,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultUVSphereTemplate
 
   /**
-   * @brief Return the specified UVSphere template.
+   * @brief Return the spedified UVSphere template.
    * @param templateHndle The handle of the desired UVSphere template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle

@@ -28,13 +28,17 @@ DatasetAttributes::ptr DatasetAttributesManager::createObject(
 
 DatasetAttributes::ptr DatasetAttributesManager::initNewObjectInternal(
     const std::string& datasetFilename) {
-  auto datasetAttributes =
-      DatasetAttributes::create(datasetFilename, physicsAttributesManager_);
+  DatasetAttributes::ptr newAttributes = this->constructFromDefault();
+  if (nullptr == newAttributes) {
+    newAttributes =
+        DatasetAttributes::create(datasetFilename, physicsAttributesManager_);
+  }
+
   // set the handle of the physics manager that is used for this newly-made
   // dataset
-  datasetAttributes->setPhysicsManagerHandle(physicsManagerAttributesHandle_);
+  newAttributes->setPhysicsManagerHandle(physicsManagerAttributesHandle_);
   // any internal default configuration here
-  return datasetAttributes;
+  return newAttributes;
 }  // DatasetAttributes::initNewObjectInternal
 
 void DatasetAttributesManager::setValsFromJSONDoc(

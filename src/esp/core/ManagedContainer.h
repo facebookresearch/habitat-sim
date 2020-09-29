@@ -363,6 +363,7 @@ class ManagedContainer : public ManagedContainerBase {
    */
   template <class U>
   std::shared_ptr<U> getObjectCopyByID(int managedObjectID) {
+    // call non-template version
     std::string objectHandle = getObjectHandleByID(managedObjectID);
     auto res = getObjectCopyByID(managedObjectID);
     if (nullptr == res) {
@@ -381,12 +382,28 @@ class ManagedContainer : public ManagedContainerBase {
    */
   template <class U>
   std::shared_ptr<U> getObjectCopyByHandle(const std::string& objectHandle) {
+    // call non-template version
     auto res = getObjectCopyByHandle(objectHandle);
     if (nullptr == res) {
       return nullptr;
     }
     return std::dynamic_pointer_cast<U>(res);
   }  // ManagedContainer::getObjectCopyByHandle
+
+  /**
+   * @brief Set the object to provide default values upon construction of @ref
+   * esp::core::AbstractManagedObject.  Override if object should not have
+   * defaults
+   * @param _defaultObj the object to use for defaults;
+   */
+  virtual void setDefaultObject(ManagedPtr& _defaultObj) {
+    defaultObj_ = _defaultObj;
+  }
+
+  /**
+   * @brief Clear any default objects used for construction.
+   */
+  void clearDefaultObject() { defaultObj_ = nullptr; }
 
  protected:
   //======== Internally accessed functions ========
@@ -512,6 +529,18 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::copyObject
 
   /**
+   * @brief Create a new object as a copy of @ref defaultObject_  if it exists,
+   * otherwise return nullptr.
+   * @return New object or nullptr
+   */
+  ManagedPtr constructFromDefault() {
+    if (defaultObj_ == nullptr) {
+      return nullptr;
+    }
+    return this->copyObject(defaultObj_);
+  }  // ManagedContainer::constructFromDefault
+
+  /**
    * @brief add passed managed object to library, setting managedObjectID
    * appropriately. Called internally by registerObject.
    *
@@ -554,6 +583,12 @@ class ManagedContainer : public ManagedContainerBase {
    * function pointer.
    */
   Map_Of_CopyCtors copyConstructorMap_;
+
+  /**
+   * @brief An object to provide default values, to be used upon
+   * AbstractManagedObject construction
+   */
+  ManagedPtr defaultObj_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(ManagedContainer<T>)
