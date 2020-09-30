@@ -369,7 +369,6 @@ PbrShader& PbrShader::setLightVectors(
 PbrShader& PbrShader::setLightVectors(
     std::initializer_list<Mn::Vector4> vectors) {
   return setLightVectors(Cr::Containers::arrayView(vectors));
-  return *this;
 }
 
 PbrShader& PbrShader::setLightPosition(unsigned int lightIndex,

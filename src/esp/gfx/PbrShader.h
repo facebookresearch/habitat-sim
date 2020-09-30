@@ -229,7 +229,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& bindNormalTexture(Magnum::GL::Texture2D* texture);
   /**
-   * @brief Bind the BaseColor, roughness, metallic, normal textures
+   * @brief Bind the BaseColor, roughness, metallic, noneRoughnessMetallic,
+   * occlusionRoughnessMetallic normal textures
+   * NOTE:
+   * can pass nullptr to any input argument
    * @return Reference to self (for method chaining)
    */
   PbrShader& bindTextures(Magnum::GL::Texture2D* baseColor,
@@ -237,7 +240,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
                           Magnum::GL::Texture2D* metallic,
                           Magnum::GL::Texture2D* noneRoughnessMetallic,
                           Magnum::GL::Texture2D* occlusionRoughnessMetallic,
-                          Magnum::GL::Texture2D* normal = nullptr);
+                          Magnum::GL::Texture2D* normal);
 
   /**
    * @brief Bind the noneRoughnessMetallicTexture or
