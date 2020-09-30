@@ -43,6 +43,8 @@ struct PBRMaterialData : public MaterialData {
   Magnum::GL::Texture2D* normalTexture = nullptr;
   Magnum::GL::Texture2D* metallicTexture = nullptr;
   Magnum::GL::Texture2D* roughnessTexture = nullptr;
+  Magnum::GL::Texture2D* noneRoughnessMetallicTexture = nullptr;
+  Magnum::GL::Texture2D* occlusionRoughnessMetallicTexture = nullptr;
   // TODO:
   // AO texture, emisive texture
   ESP_SMART_POINTERS(PBRMaterialData)

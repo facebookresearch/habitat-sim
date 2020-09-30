@@ -49,9 +49,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setTransformationMatrix(transformationMatrix)  // modelview matrix
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix)
       .setNormalMatrix(transformationMatrix.normalMatrix())
-      .bindTextures(
-          materialData_->baseColorTexture, materialData_->roughnessTexture,
-          materialData_->metallicTexture, materialData_->normalTexture)
+      .bindTextures(materialData_->baseColorTexture,
+                    materialData_->roughnessTexture,
+                    materialData_->metallicTexture,
+                    materialData_->noneRoughnessMetallicTexture,
+                    materialData_->occlusionRoughnessMetallicTexture,
+                    materialData_->normalTexture)
       .setBaseColor(materialData_->baseColor)
       .setRoughness(materialData_->roughness)
       .setMetallic(materialData_->metallic);
@@ -76,8 +79,25 @@ PbrDrawable& PbrDrawable::updateShader() {
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
     flags |= PbrShader::Flag::TextureTransformation;
   }
-  if (materialData_->baseColorTexture)
+
+  if (materialData_->baseColorTexture) {
     flags |= PbrShader::Flag::BaseColorTexture;
+  }
+
+  // NOTE:
+  // The priority of different kind of textures is as follows (priority
+  // means if two textures with different priorities exist at the same time,
+  // shader will adopt the texture with the higher priority, and ignore the
+  // other one.)
+  // 0 (highest): OcclusionRoughnessMetallicTexture
+  // 1          : NoneRoughnessMetallicTexture
+  // 2          : RoughnessTexture, MetallicTextur
+  if (materialData_->occlusionRoughnessMetallicTexture) {
+    flags |= PbrShader::Flag::OcclusionRoughnessMetallicTexture;
+  }
+  if (materialData_->noneRoughnessMetallicTexture) {
+    flags |= PbrShader::Flag::NoneRoughnessMetallicTexture;
+  }
   if (materialData_->roughnessTexture)
     flags |= PbrShader::Flag::RoughnessTexture;
   if (materialData_->metallicTexture)
@@ -87,6 +107,9 @@ PbrDrawable& PbrDrawable::updateShader() {
   if (materialData_->perVertexObjectId) {
     // TODO: may be supported in the future
   }
+
+  // correct the flags if necessary
+  flags = PbrShader::generateCorrectFlags(flags);
 
   unsigned int lightCount = lightSetup_->size();
   if (!shader_ || shader_->lightCount() != lightCount ||
@@ -123,7 +146,6 @@ PbrDrawable& PbrDrawable::updateShaderLightParameters() {
 
   shader_->setLightRanges(ranges);
   shader_->setLightColors(colors);
-
   return *this;
 }
 
