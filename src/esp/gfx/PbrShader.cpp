@@ -102,21 +102,18 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
-  if (flags_ &
-      (Flag::BaseColorTexture | Flag::RoughnessTexture | Flag::MetallicTexture |
-       Flag::NormalTexture | Flag::NoneRoughnessMetallicTexture |
-       Flag::OcclusionRoughnessMetallicTexture)) {
-    attributeLocationsStream
-        << Cr::Utility::formatString("#define ATTRIBUTE_LOCATION_TEXCOORD {}\n",
-                                     TextureCoordinates::Location);
-  }
-
   auto isTextured = [&]() {
     return (flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
                       Flag::MetallicTexture | Flag::NormalTexture |
                       Flag::NoneRoughnessMetallicTexture |
                       Flag::OcclusionRoughnessMetallicTexture));
   };
+  if (isTextured()) {
+    attributeLocationsStream
+        << Cr::Utility::formatString("#define ATTRIBUTE_LOCATION_TEXCOORD {}\n",
+                                     TextureCoordinates::Location);
+  }
+
   // Add macros
   vert.addSource(attributeLocationsStream.str())
       .addSource(isTextured() ? "#define TEXTURED\n" : "")
@@ -173,9 +170,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
         lightCount) {
       bindAttributeLocation(Tangent4::Location, "vertexTangent");
     }
-    if (flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
-                  Flag::MetallicTexture | Flag::NoneRoughnessMetallicTexture |
-                  Flag::OcclusionRoughnessMetallicTexture)) {
+    if (isTextured()) {
       bindAttributeLocation(TextureCoordinates::Location, "vertexTexCoord");
     }
   }
