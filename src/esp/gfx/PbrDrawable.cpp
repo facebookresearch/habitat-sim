@@ -82,15 +82,6 @@ PbrDrawable& PbrDrawable::updateShader() {
   if (materialData_->baseColorTexture) {
     flags |= PbrShader::Flag::BaseColorTexture;
   }
-
-  // NOTE:
-  // The priority of different kind of textures is as follows (priority
-  // means if two textures with different priorities exist at the same time,
-  // shader will adopt the texture with the higher priority, and ignore the
-  // other one.)
-  // 0 (highest): OcclusionRoughnessMetallicTexture
-  // 1          : NoneRoughnessMetallicTexture
-  // 2          : RoughnessTexture, MetallicTextur
   if (materialData_->occlusionRoughnessMetallicTexture) {
     flags |= PbrShader::Flag::OcclusionRoughnessMetallicTexture;
   }
