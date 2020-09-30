@@ -102,20 +102,24 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
-  if (flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
-                Flag::MetallicTexture | Flag::NoneRoughnessMetallicTexture |
-                Flag::OcclusionRoughnessMetallicTexture)) {
+  if (flags_ &
+      (Flag::BaseColorTexture | Flag::RoughnessTexture | Flag::MetallicTexture |
+       Flag::NormalTexture | Flag::NoneRoughnessMetallicTexture |
+       Flag::OcclusionRoughnessMetallicTexture)) {
     attributeLocationsStream
         << Cr::Utility::formatString("#define ATTRIBUTE_LOCATION_TEXCOORD {}\n",
                                      TextureCoordinates::Location);
   }
 
+  auto isTextured = [&]() {
+    return (flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
+                      Flag::MetallicTexture | Flag::NormalTexture |
+                      Flag::NoneRoughnessMetallicTexture |
+                      Flag::OcclusionRoughnessMetallicTexture));
+  };
   // Add macros
   vert.addSource(attributeLocationsStream.str())
-      .addSource(flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
-                           Flag::MetallicTexture | Flag::NormalTexture)
-                     ? "#define TEXTURED\n"
-                     : "")
+      .addSource(isTextured() ? "#define TEXTURED\n" : "")
       .addSource(flags_ & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
       .addSource(flags_ & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
@@ -123,12 +127,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(rs.get("pbr.vert"));
 
   frag.addSource(attributeLocationsStream.str())
-      .addSource(flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
-                           Flag::MetallicTexture | Flag::NormalTexture |
-                           Flag::NoneRoughnessMetallicTexture |
-                           Flag::OcclusionRoughnessMetallicTexture)
-                     ? "#define TEXTURED\n"
-                     : "")
+      .addSource(isTextured() ? "#define TEXTURED\n" : "")
       .addSource(flags_ & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
                                                  : "")
       .addSource(flags_ & Flag::RoughnessTexture ? "#define ROUGHNESS_TEXTURE\n"
