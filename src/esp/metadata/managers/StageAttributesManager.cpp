@@ -335,10 +335,10 @@ void StageAttributesManager::setValsFromJSONDoc(
       jsonConfig["rigid object paths"].IsArray()) {
     std::string configDirectory = stageAttributes->getFileDirectory();
     const auto& paths = jsonConfig["rigid object paths"];
-    for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
+    for (rapidjson::SizeType i = 0; i < paths.Size(); ++i) {
       if (!paths[i].IsString()) {
         LOG(ERROR)
-            << "StageAttributesManager::loadFromJSONDoc "
+            << "StageAttributesManager::setValsFromJSONDoc "
                ":Invalid value in stage config 'rigid object paths'- array "
             << i;
         continue;

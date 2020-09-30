@@ -124,7 +124,7 @@ class AssetAttributesManager
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  Attrs::AbstractPrimitiveAttributes::ptr loadFromJSONDoc(
+  Attrs::AbstractPrimitiveAttributes::ptr buildObjectFromJSONDoc(
       const std::string& filename,
       const io::JsonGenericValue& jsonConfig) override;
 

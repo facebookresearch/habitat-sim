@@ -143,7 +143,7 @@ int AssetAttributesManager::registerObjectFinalize(
   return primTemplateID;
 }  // AssetAttributesManager::registerObjectFinalize
 
-AbstractPrimitiveAttributes::ptr AssetAttributesManager::loadFromJSONDoc(
+AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
     const std::string& filename,
     const io::JsonGenericValue& jsonDoc) {
   // find type of attributes - file name should contain handle
@@ -157,7 +157,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::loadFromJSONDoc(
   // if not legal primitive asset attributes file name, have message and return
   // default sphere attributes.
   if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
-    LOG(ERROR) << "AssetAttributesManager::loadFromJSONDoc :Unknown "
+    LOG(ERROR) << "AssetAttributesManager::buildObjectFromJSONDoc :Unknown "
                   "primitive class type : "
                << primClassName
                << " so returning default attributes for solid uvSphere.";
@@ -169,7 +169,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::loadFromJSONDoc(
   auto primAssetAttributes = this->initNewObjectInternal(primClassName);
   if (nullptr == primAssetAttributes) {
     LOG(ERROR)
-        << "AssetAttributesManager::loadFromJSONDoc : unable to "
+        << "AssetAttributesManager::buildObjectFromJSONDoc : unable to "
            "create default primitive asset attributes from primClassName "
         << primClassName
         << " so returning default attributes for solid uvSphere.";
@@ -178,14 +178,14 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::loadFromJSONDoc(
   }
   this->setValsFromJSONDoc(primAssetAttributes, jsonDoc);
   return primAssetAttributes;
-}  // AssetAttributesManager::loadFromJSONDoc
+}  // AssetAttributesManager::buildObjectFromJSONDoc
 
 void AssetAttributesManager::setValsFromJSONDoc(
     AttribsPtr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs
 
-}  // AssetAttributesManager::loadFromJSONDoc
+}  // AssetAttributesManager::buildObjectFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata

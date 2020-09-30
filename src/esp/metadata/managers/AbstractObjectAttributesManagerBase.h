@@ -249,9 +249,6 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
     // set asset name to be what was read in json
     colFName = cTmpFName;
   }
-  LOG(INFO) << "AbstractObjectAttributesManager<" << this->objectType_
-            << "::ptr>::createObjectAttributesFromJson : RndrMesh : "
-            << rndrFName << " | ColMesh : " << colFName;
   // use non-empty result if either result is empty
   attributes->setRenderAssetHandle(rndrFName.compare("") == 0 ? colFName
                                                               : rndrFName);

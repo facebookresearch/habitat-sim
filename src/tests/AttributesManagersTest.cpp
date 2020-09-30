@@ -67,7 +67,7 @@ class AttributesManagersTest : public testing::Test {
       const esp::io::JsonGenericValue jsonDoc = tmp.GetObject();
       // create an empty template
       std::shared_ptr<U> attrTemplate1 =
-          mgr->loadAttributesFromDoc("new default template", jsonDoc);
+          mgr->buildManagedObjectFromDoc("new default template", jsonDoc);
 
       return attrTemplate1;
     } catch (...) {

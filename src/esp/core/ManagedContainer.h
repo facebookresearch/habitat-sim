@@ -102,7 +102,7 @@ class ManagedContainer : public ManagedContainerBase {
     }
     // convert doc to const value
     const io::JsonGenericValue config = docConfig.GetObject();
-    ManagedPtr attr = this->loadAttributesFromDoc(filename, config);
+    ManagedPtr attr = this->buildManagedObjectFromDoc(filename, config);
     return this->postCreateRegister(attr, registerObject);
   }  // ManagedContainer::createObjectFromJSONFile
 
@@ -116,10 +116,10 @@ class ManagedContainer : public ManagedContainerBase {
    * @return a shared pointer of the created Managed Object
    */
   template <typename U>
-  ManagedPtr loadAttributesFromDoc(const std::string& filename,
-                                   const U& config) {
+  ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
+                                       const U& config) {
     LOG(ERROR)
-        << "ManagedContainer::createObjectFromFile (" << this->objectType_
+        << "ManagedContainer::buildManagedObjectFromDoc (" << this->objectType_
         << ") : Failure loading attributes from document of unknown type : "
         << filename << ". Aborting.";
   }
@@ -130,9 +130,9 @@ class ManagedContainer : public ManagedContainerBase {
    * @param config JSON document to read for data
    * @return a shared pointer of the created Managed Object
    */
-  ManagedPtr loadAttributesFromDoc(const std::string& filename,
-                                   const io::JsonGenericValue& jsonConfig) {
-    return this->loadFromJSONDoc(filename, jsonConfig);
+  ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
+                                       const io::JsonGenericValue& jsonConfig) {
+    return this->buildObjectFromJSONDoc(filename, jsonConfig);
   }
 
   /**
@@ -143,7 +143,7 @@ class ManagedContainer : public ManagedContainerBase {
    * @param jsonConfig json document to parse - assumed to be legal JSON doc.
    * @return a reference to the desired managed object.
    */
-  virtual ManagedPtr loadFromJSONDoc(
+  virtual ManagedPtr buildObjectFromJSONDoc(
       const std::string& filename,
       const io::JsonGenericValue& jsonConfig) = 0;
 
