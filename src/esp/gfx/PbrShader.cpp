@@ -216,7 +216,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     lightColorsUniform_ = uniformLocation("LightColors");
     lightDirectionsUniform_ = uniformLocation("LightDirections");
 
-    if (flags_ & Flag::NormalTexture) {
+    if (flags_ & Flag::NormalTexture && flags_ & Flag::NormalTextureScale) {
       normalTextureScaleUniform_ = uniformLocation("normalTextureScale");
     }
   }
@@ -338,6 +338,7 @@ PbrShader& PbrShader::bindTextures(
       .bindCombinedTexture(noneRoughnessMetallic)
       // NO Worries to call to "bind combined texture" twice,
       // ONLY ONE texture will be bound.
+      // see generateCorrectFlags() for details
       .bindCombinedTexture(occlusionRoughnessMetallic)
       .bindNormalTexture(normal);
 
