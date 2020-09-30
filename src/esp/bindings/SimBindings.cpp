@@ -15,6 +15,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
+#include "esp/sim/SimulatorConfiguration.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
