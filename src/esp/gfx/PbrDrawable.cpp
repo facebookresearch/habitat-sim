@@ -58,7 +58,6 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setBaseColor(materialData_->baseColor)
       .setRoughness(materialData_->roughness)
       .setMetallic(materialData_->metallic);
-
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
     shader_->setTextureMatrix(materialData_->textureMatrix);
   }
