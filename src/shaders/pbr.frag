@@ -24,13 +24,9 @@ layout(location = 1) out highp uint fragmentObjectId;
 #endif
 
 // -------------- lights -------------------
-struct LightData {
-  // WARNING:
-  // In this shader, the light intensity is considered in the lightColor!!
-  vec3 lightColor;
-  float range;
-};
-uniform LightData Light[LIGHT_COUNT];
+// NOTE: In this shader, the light intensity is considered in the lightColor!!
+uniform vec3 LightColors[LIGHT_COUNT];
+uniform float LightRanges[LIGHT_COUNT];
 
 // if .w == 0, it means it is a dirctional light, .xyz is the direction;
 // if .w == 1, it means it is a point light, .xyz is the light position;
@@ -67,10 +63,24 @@ uniform sampler2D normalTexture;
 uniform highp uint objectId;
 #endif
 
+#if defined(NORMAL_TEXTURE) && defined(NORMAL_TEXTURE_SCALE)
+uniform mediump float normalTextureScale
+#ifndef GL_ES
+    = 1.0
+#endif
+    ;
+#endif
+
 // -------------- shader ------------------
 #if defined(NORMAL_TEXTURE)
 vec3 getNormalFromNormalMap() {
-  vec3 tangentNormal = texture(normalTexture, texCoord).xyz * 2.0 - 1.0;
+  vec3 tangentNormal =
+#if defined(NORMAL_TEXTURE_SCALE)
+      normalize((texture(normalTexture, texCoord).xyz * 2.0 - 1.0) *
+                vec3(normalTextureScale, normalTextureScale, 1.0));
+#else
+      texture(normalTexture, texCoord).xyz * 2.0 - 1.0;
+#endif
 
 #if defined(PRECOMPUTED_TANGENT)
   mat3 TBN = mat3(tangent, biTangent, normal);
@@ -197,14 +207,16 @@ void main() {
   float roughness = Material.roughness;
 #if defined(ROUGHNESS_TEXTURE)
   roughness *= texture(roughnessTexture, texCoord).r;
-#elif defined(NON_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+#elif defined(NON_ROUGHNESS_METALLIC_TEXTURE) || \
+    defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
   roughness *= texture(roughnessTexture, texCoord).g;
 #endif
 
   float metallic = Material.metallic;
 #if defined(METALLIC_TEXTURE)
   metallic *= texture(metallicTexture, texCoord).r;
-#elif defined(NON_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+#elif defined(NON_ROUGHNESS_METALLIC_TEXTURE) || \
+    defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
   metallic *= texture(metallicTexture, texCoord).b;
 #endif
 
@@ -234,13 +246,13 @@ void main() {
     // avoid a NaN when dist is 0 as well (which is the case for
     // directional lights).
     highp float attenuation =
-        clamp(1.0 - pow(dist / max(Light[iLight].range, 0.0001), 4.0), 0.0,
+        clamp(1.0 - pow(dist / max(LightRanges[iLight], 0.0001), 4.0), 0.0,
               1.0) /
         (1.0 + dist);
     attenuation = attenuation * attenuation;
 
     // radiance
-    vec3 lightRadiance = Light[iLight].color * attenuation;
+    vec3 lightRadiance = LightColors[iLight] * attenuation;
 
     // light source direction: a vector from current position to the light
     vec3 light = normalize(LightDirections[iLight].xyz -

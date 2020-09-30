@@ -57,7 +57,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setMetallic(materialData_->metallic);
 
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
-    // TODO
+    shader_->setTextureMatrix(materialData_->textureMatrix);
   }
 
   shader_->draw(mesh_);
@@ -74,7 +74,7 @@ PbrDrawable& PbrDrawable::updateShader() {
   PbrShader::Flags flags = PbrShader::Flag::ObjectId;
 
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
-    // TODO: may be supported in the future
+    flags |= PbrShader::Flag::TextureTransformation;
   }
   if (materialData_->baseColorTexture)
     flags |= PbrShader::Flag::BaseColorTexture;
@@ -113,10 +113,17 @@ PbrDrawable& PbrDrawable::updateShader() {
 // update every light's color, intensity, range etc.
 PbrDrawable& PbrDrawable::updateShaderLightParameters() {
   constexpr float dummyRange = Mn::Constants::inf();
+  std::vector<float> ranges;
+  std::vector<Mn::Color3> colors;
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
-    // Note: the light color already includes the intensity
-    (*shader_).setLightColor(iLight, (*lightSetup_)[iLight].color, dummyRange);
+    ranges.push_back(dummyRange);
+    // Note: the light color MUST take the intensity into account
+    colors.emplace_back((*lightSetup_)[iLight].color);
   }
+
+  shader_->setLightRanges(ranges);
+  shader_->setLightColors(colors);
+
   return *this;
 }
 
@@ -124,13 +131,18 @@ PbrDrawable& PbrDrawable::updateShaderLightParameters() {
 PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     const Magnum::Matrix4& transformationMatrix,
     Magnum::SceneGraph::Camera3D& camera) {
+  std::vector<Mn::Vector4> lightPositions;
+  lightPositions.reserve(lightSetup_->size());
+
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
     const auto& lightInfo = (*lightSetup_)[iLight];
-    (*shader_).setLightVector(
-        iLight, Mn::Vector4(getLightPositionRelativeToCamera(
-                    lightInfo, transformationMatrix, cameraMatrix)));
+    lightPositions.emplace_back(Mn::Vector4(getLightPositionRelativeToCamera(
+        lightInfo, transformationMatrix, cameraMatrix)));
   }
+
+  shader_->setLightVectors(lightPositions);
+
   return *this;
 }
 

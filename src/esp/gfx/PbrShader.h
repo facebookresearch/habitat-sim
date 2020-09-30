@@ -5,8 +5,10 @@
 #ifndef ESP_GFX_PBRSHADER_H_
 #define ESP_GFX_PBRSHADER_H_
 
+#include <initializer_list>
 #include <vector>
 
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/Math/Matrix4.h>
@@ -117,6 +119,14 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     NormalTexture = 1 << 5,
 
     /**
+     * Enable normal texture scale
+     * the shader expects that
+     * @ref Flag::NormalTexture is enabled as well.
+     * @see @ref setNormalTextureScale
+     */
+    NormalTextureScale = 1 << 6,
+
+    /**
      * Enable texture coordinate transformation. If this flag is set,
      * the shader expects that at least one of
      * @ref Flag::BaseColorTexture, @ref Flag::RoughnessTexture,
@@ -125,7 +135,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * @ref Flag::OcclusionRoughnessMetallicTexture is enabled as well.
      * @see @ref setTextureMatrix()
      */
-    TextureTransformation = 1 << 6,
+    TextureTransformation = 1 << 7,
 
     /**
      * TODO: Do we need instanced object? (instanced texture, istanced id etc.)
@@ -263,6 +273,23 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setObjectId(unsigned int objectId);
 
   /**
+   * @brief Set light positions or directions
+   * @param vectors, an array of the light vectors
+   * @return Reference to self (for method chaining)
+   *
+   * when vec.w == 0, it means vec.xyz is the light direction;
+   * when vec.w == 1, it means vec.xyz is the light position;
+   * vec is an element in the "vectors" array
+   */
+  PbrShader& setLightVectors(
+      Corrade::Containers::ArrayView<const Magnum::Vector4> vectors);
+
+  /**
+   * @overload
+   */
+  PbrShader& setLightVectors(std::initializer_list<Magnum::Vector4> vectors);
+
+  /**
    *  @brief Set the position or direction of a specific light See @ref vec for
    *  details
    *  @param lightIndex, the index of the light, MUST be smaller than
@@ -275,7 +302,6 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  If the light was a directional (point) light, it will be overrided as a
    *  point (directional) light
    */
-
   PbrShader& setLightVector(unsigned int lightIndex,
                             const Magnum::Vector4& vec);
 
@@ -319,11 +345,40 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @param lightIndex, the index of the light, MUST be smaller than
    * lightCount_
    *  @param color, the color of the light
+   *  @param intensity, the intensity of the light
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightColor(unsigned int lightIndex,
                            const Magnum::Vector3& color,
                            float intensity = 1.0);
+
+  /**
+   *  @brief Set the colors of the lights
+   *  @param color, the colors of the lights
+   *  NOTE: the intensity MUST be included in the color
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setLightColors(
+      Corrade::Containers::ArrayView<const Magnum::Color3> colors);
+
+  /**
+   * @overload
+   */
+  PbrShader& setLightColors(std::initializer_list<Magnum::Color3> colors);
+
+  /**
+   *  @brief Set the ranges of the lights
+   *  @param ranges, the ranges of the lights
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setLightRanges(Corrade::Containers::ArrayView<const float> ranges);
+
+  /**
+   * @overload
+   */
+  PbrShader& setLightRanges(std::initializer_list<float> ranges);
+
+  PbrShader& setNormalTextureScale(float scale);
 
  protected:
   Flags flags_;
@@ -345,23 +400,14 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int normalTextureUniform_ = ID_UNDEFINED;
   int objectIdUniform_ = ID_UNDEFINED;
   int textureMatrixUniform_ = ID_UNDEFINED;
+  int normalTextureScaleUniform_ = ID_UNDEFINED;
 
-  struct LightUniformLocations {
-    int color = ID_UNDEFINED;
-    int range = ID_UNDEFINED;
-  };
-  std::vector<LightUniformLocations> lightsUniform_;
-
-  // Light direction is not in the LightUniformLocations
-  // simply because the light direction might be used in both .vert and .frag
-  // but the other info is only used in .frag;
-  // And MOST importantly, the lightDirection (in camera space) depends on
-  // camera matrix so it changes all the time, but the other info does not.
-  // NOTE:
-  // In fragement shader, the "LightDirection" is a vec4.
+  int lightColorsUniform_ = ID_UNDEFINED;
+  int lightRangesUniform_ = ID_UNDEFINED;
+  // In the fragement shader, the "LightDirection" is a vec4.
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
-  std::vector<int> lightDirectionsUniform_;
+  int lightDirectionsUniform_ = ID_UNDEFINED;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)

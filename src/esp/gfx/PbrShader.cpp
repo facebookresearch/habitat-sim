@@ -124,6 +124,9 @@ PbrShader::PbrShader(Flags flags, unsigned int lightCount)
                      ? "#define OCCLUSION_ROUGHNESS_METALLIC_TEXTURE\n"
                      : "")
       .addSource(flags & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
+      .addSource(flags & Flag::NormalTextureScale
+                     ? "#define NORMAL_TEXTURE_SCALE\n"
+                     : "")
       .addSource(flags & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
       .addSource(flags & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
@@ -197,15 +200,12 @@ PbrShader::PbrShader(Flags flags, unsigned int lightCount)
 
   // lights
   if (lightCount_) {
-    lightsUniform_.resize(lightCount_);
-    lightDirectionsUniform_.resize(lightCount_);
-    for (int iLight = 0; iLight < lightCount_; ++iLight) {
-      lightsUniform_[iLight].color =
-          uniformLocation(Cr::Utility::formatString("Light[{}].color", iLight));
-      lightsUniform_[iLight].range =
-          uniformLocation(Cr::Utility::formatString("Light[{}].range", iLight));
-      lightDirectionsUniform_[iLight] = uniformLocation(
-          Cr::Utility::formatString("LightDirections[{}]", iLight));
+    lightRangesUniform_ = uniformLocation("LightRanges");
+    lightColorsUniform_ = uniformLocation("LightColors");
+    lightDirectionsUniform_ = uniformLocation("LightDirections");
+
+    if (flags & Flag::NormalTexture) {
+      normalTextureScaleUniform_ = uniformLocation("normalTextureScale");
     }
   }
 }
@@ -328,6 +328,24 @@ PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
   return *this;
 }
 
+PbrShader& PbrShader::setLightVectors(
+    Cr::Containers::ArrayView<const Mn::Vector4> vectors) {
+  CORRADE_ASSERT(lightCount_ == vectors.size(),
+                 "PbrShader::setLightVectors(): expected"
+                     << lightCount_ << "items but got" << vectors.size(),
+                 *this);
+  if (lightCount_) {
+    setUniform(lightDirectionsUniform_, vectors);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setLightVectors(
+    std::initializer_list<Mn::Vector4> vectors) {
+  return setLightVectors(Cr::Containers::arrayView(vectors));
+  return *this;
+}
+
 PbrShader& PbrShader::setLightPosition(unsigned int lightIndex,
                                        const Mn::Vector3& pos) {
   CORRADE_ASSERT(
@@ -335,7 +353,7 @@ PbrShader& PbrShader::setLightPosition(unsigned int lightIndex,
       "PbrShader::setLightPosition: lightIndex" << lightIndex << "is illegal.",
       *this);
 
-  setUniform(lightDirectionsUniform_[lightIndex], Mn::Vector4{pos, 1.0});
+  setUniform(lightDirectionsUniform_ + lightIndex, Mn::Vector4{pos, 1.0});
   return *this;
 }
 
@@ -345,12 +363,12 @@ PbrShader& PbrShader::setLightDirection(unsigned int lightIndex,
       lightIndex < lightCount_,
       "PbrShader::setLightDirection: lightIndex" << lightIndex << "is illegal.",
       *this);
-  setUniform(lightDirectionsUniform_[lightIndex], Mn::Vector4{dir, 0.0});
+  setUniform(lightDirectionsUniform_ + lightIndex, Mn::Vector4{dir, 0.0});
   return *this;
 }
 
 PbrShader& PbrShader::setLightVector(unsigned int lightIndex,
-                                     const Magnum::Vector4& vec) {
+                                     const Mn::Vector4& vec) {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightVector: lightIndex" << lightIndex << "is illegal.",
@@ -363,7 +381,7 @@ PbrShader& PbrShader::setLightVector(unsigned int lightIndex,
                         "w == 1 for a point light",
                  *this);
 
-  setUniform(lightDirectionsUniform_[lightIndex], vec);
+  setUniform(lightDirectionsUniform_ + lightIndex, vec);
 
   return *this;
 }
@@ -374,7 +392,7 @@ PbrShader& PbrShader::setLightRange(unsigned int lightIndex, float range) {
       "PbrShader::setLightRange: lightIndex" << lightIndex << "is illegal.",
       *this);
   if (lightCount_) {
-    setUniform(lightsUniform_[lightIndex].range, range);
+    setUniform(lightRangesUniform_ + lightIndex, range);
   }
   return *this;
 }
@@ -387,9 +405,54 @@ PbrShader& PbrShader::setLightColor(unsigned int lightIndex,
       *this);
   if (lightCount_) {
     Mn::Vector3 finalColor = intensity * color;
-    setUniform(lightsUniform_[lightIndex].color, finalColor);
+    setUniform(lightColorsUniform_ + lightIndex, finalColor);
   }
   return *this;
+}
+
+PbrShader& PbrShader::setLightColors(
+    Cr::Containers::ArrayView<const Mn::Color3> colors) {
+  CORRADE_ASSERT(lightCount_ == colors.size(),
+                 "PbrShader::setLightColors(): expected"
+                     << lightCount_ << "items but got" << colors.size(),
+                 *this);
+
+  if (lightCount_) {
+    setUniform(lightColorsUniform_, colors);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setLightColors(std::initializer_list<Mn::Color3> colors) {
+  return setLightColors(Cr::Containers::arrayView(colors));
+}
+
+PbrShader& PbrShader::setNormalTextureScale(float scale) {
+  CORRADE_ASSERT(flags_ & Flag::NormalTexture,
+                 "PbrShader::setNormalTextureScale(): the shader was not "
+                 "created with normal texture enabled",
+                 *this);
+  if (lightCount_ && flags_ & Flag::NormalTextureScale) {
+    setUniform(normalTextureScaleUniform_, scale);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setLightRanges(
+    Corrade::Containers::ArrayView<const float> ranges) {
+  CORRADE_ASSERT(lightCount_ == ranges.size(),
+                 "PbrShader::setLightRanges(): expected"
+                     << lightCount_ << "items but got" << ranges.size(),
+                 *this);
+
+  if (lightCount_) {
+    setUniform(lightRangesUniform_, ranges);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setLightRanges(std::initializer_list<float> ranges) {
+  return setLightRanges(Cr::Containers::arrayView(ranges));
 }
 
 }  // namespace gfx
