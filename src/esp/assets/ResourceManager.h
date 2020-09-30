@@ -36,11 +36,8 @@
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/attributes/AttributesBase.h"
-#include "esp/metadata/managers/AssetAttributesManager.h"
-#include "esp/metadata/managers/ObjectAttributesManager.h"
-#include "esp/metadata/managers/PhysicsAttributesManager.h"
-#include "esp/metadata/managers/StageAttributesManager.h"
 
 // forward declarations
 namespace Magnum {
@@ -113,16 +110,16 @@ class ResourceManager {
       "per_vertex_object_id";
 
   /** @brief Constructor */
-  explicit ResourceManager();
+  explicit ResourceManager(metadata::MetadataMediator::ptr& _metadataMediator);
 
   /** @brief Destructor */
   ~ResourceManager() {}
 
   /**
-   * @brief This function will build the various @ref Importers and @ref
-   * esp::metadata::managers::AttributesManager s used by the system.
+   * @brief This function will build the various @ref Importers used by the
+   * system.
    */
-  void buildImportersAndAttributesManagers();
+  void buildImporters();
 
   /**
    * @brief Build default primitive attribute files and synthesize an object of
@@ -220,14 +217,14 @@ class ResourceManager {
    */
   const AttrMgrs::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
-    return assetAttributesManager_;
+    return metadataMediator_->getAssetAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to object attributes.
    */
   const AttrMgrs::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
-    return objectAttributesManager_;
+    return metadataMediator_->getObjectAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to physics world
@@ -235,14 +232,14 @@ class ResourceManager {
    */
   const AttrMgrs::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
       const {
-    return physicsAttributesManager_;
+    return metadataMediator_->getPhysicsAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
   const AttrMgrs::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    return stageAttributesManager_;
+    return metadataMediator_->getStageAttributesManager();
   }
 
   /**
@@ -337,7 +334,8 @@ class ResourceManager {
                                 DEFAULT_LIGHTING_KEY}) {
     if (objTemplateLibID != ID_UNDEFINED) {
       const std::string& objTemplateHandleName =
-          objectAttributesManager_->getObjectHandleByID(objTemplateLibID);
+          metadataMediator_->getObjectAttributesManager()->getObjectHandleByID(
+              objTemplateLibID);
 
       addObjectToDrawables(objTemplateHandleName, parent, drawables,
                            visNodeCache, lightSetup);
@@ -860,7 +858,12 @@ class ResourceManager {
    */
   gfx::ShaderManager shaderManager_;
 
-  // ======== File and primitive importers ========
+  // ======== Metadata, File and primitive importers ========
+  /**
+   * @brief A reference to the MetadataMediator managing all the metadata
+   * currently in use.
+   */
+  metadata::MetadataMediator::ptr metadataMediator_ = nullptr;
   /**
    * @brief Plugin Manager used to instantiate importers which in turn are used
    * to load asset data
@@ -880,26 +883,6 @@ class ResourceManager {
   Corrade::Containers::Pointer<Importer> fileImporter_;
 
   // ======== Physical parameter data ========
-
-  /**
-   * @brief Manages all construction and access to asset attributes.
-   */
-  AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
-
-  /**
-   * @brief Manages all construction and access to object attributes.
-   */
-  AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
-
-  /**
-   * @brief Manages all construction and access to physics world attributes.
-   */
-  AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
-
-  /**
-   * @brief Manages all construction and access to scene attributes.
-   */
-  AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
   //! tracks primitive mesh ids
   int nextPrimitiveMeshId = 0;
