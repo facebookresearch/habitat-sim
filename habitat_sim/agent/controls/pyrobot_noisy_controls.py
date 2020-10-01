@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# type: ignore[override]
 r"""
 Parameters contributed from PyRobot
 https://pyrobot.org/
@@ -180,13 +179,13 @@ class PyRobotNoisyActuationSpec(ActuationSpec):
     robot: str = attr.ib(default="LoCoBot")
 
     @robot.validator  # noqa: F811
-    def check(self, attribute: Attribute, value: str) -> None:
+    def check_robot(self, attribute: Attribute, value: str) -> None:
         assert value in pyrobot_noise_models.keys(), f"{value} not a known robot"
 
     controller: str = attr.ib(default="ILQR")
 
     @controller.validator  # noqa: F811
-    def check(self, attribute: Attribute, value: str) -> None:
+    def check_controller(self, attribute: Attribute, value: str) -> None:
         assert value in [
             "ILQR",
             "Proportional",
@@ -254,8 +253,9 @@ def _noisy_action_impl(
 @registry.register_move_fn(body_action=True)
 class PyrobotNoisyMoveBackward(SceneNodeControl):
     def __call__(
-        self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
+        self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec
     ) -> None:
+        assert isinstance(actuation_spec, PyRobotNoisyActuationSpec)
         _noisy_action_impl(
             scene_node,
             -actuation_spec.amount,
@@ -271,8 +271,9 @@ class PyrobotNoisyMoveBackward(SceneNodeControl):
 @registry.register_move_fn(body_action=True)
 class PyrobotNoisyMoveForward(SceneNodeControl):
     def __call__(
-        self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
+        self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec
     ) -> None:
+        assert isinstance(actuation_spec, PyRobotNoisyActuationSpec)
         _noisy_action_impl(
             scene_node,
             actuation_spec.amount,
@@ -288,8 +289,9 @@ class PyrobotNoisyMoveForward(SceneNodeControl):
 @registry.register_move_fn(body_action=True)
 class PyrobotNoisyTurnLeft(SceneNodeControl):
     def __call__(
-        self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
+        self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec
     ) -> None:
+        assert isinstance(actuation_spec, PyRobotNoisyActuationSpec)
         _noisy_action_impl(
             scene_node,
             0.0,
@@ -305,8 +307,9 @@ class PyrobotNoisyTurnLeft(SceneNodeControl):
 @registry.register_move_fn(body_action=True)
 class PyrobotNoisyTurnRight(SceneNodeControl):
     def __call__(
-        self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
+        self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec
     ) -> None:
+        assert isinstance(actuation_spec, PyRobotNoisyActuationSpec)
         _noisy_action_impl(
             scene_node,
             0.0,

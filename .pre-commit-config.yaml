@@ -37,7 +37,7 @@ repos:
     rev: master
     hooks:
     -   id: autoflake
-        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place', '-c']
+        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
         exclude: docs/
 
 -   repo: https://gitlab.com/pycqa/flake8
@@ -54,6 +54,12 @@ repos:
     hooks:
     -   id: mypy
         pass_filenames: false
+
+-   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: 'v1.5.0'
+    hooks:
+    -   id: pretty-format-ini
+        args: [--autofix]
 
 -   repo: https://github.com/kynan/nbstripout
     rev: master
