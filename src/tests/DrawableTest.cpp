@@ -30,6 +30,7 @@ namespace {
 
 class ResourceManagerExtended : public ResourceManager {
  public:
+  explicit ResourceManagerExtended() : ResourceManager() {}
   esp::gfx::ShaderManager& getShaderManager() { return shaderManager_; }
 };
 
@@ -42,7 +43,7 @@ struct DrawableTest : Cr::TestSuite::Tester {
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
   // must declare these in this order due to avoid deallocation errors
-  ResourceManagerExtended resourceManager_;
+  std::unique_ptr<ResourceManagerExtended> resourceManager_ = nullptr;
   SceneManager sceneManager_;
   // must create a GL context which will be used in the resource manager
   int sceneID_ = -1;
@@ -50,10 +51,11 @@ struct DrawableTest : Cr::TestSuite::Tester {
 };
 
 DrawableTest::DrawableTest() {
+  resourceManager_ = std::make_unique<ResourceManagerExtended>();
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
   // flang-format on
-  auto stageAttributesMgr = resourceManager_.getStageAttributesManager();
+  auto stageAttributesMgr = resourceManager_->getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
@@ -63,8 +65,8 @@ DrawableTest::DrawableTest() {
   drawableGroup_ = &sceneGraph.getDrawables();
 
   std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-  bool result = resourceManager_.loadStage(stageAttributes, nullptr,
-                                           &sceneManager_, tempIDs, false);
+  bool result = resourceManager_->loadStage(stageAttributes, nullptr,
+                                            &sceneManager_, tempIDs, false);
 }
 
 void DrawableTest::addRemoveDrawables() {
@@ -80,7 +82,7 @@ void DrawableTest::addRemoveDrawables() {
 
   // add a toy box here!
   node.addFeature<esp::gfx::GenericDrawable>(
-      box, resourceManager_.getShaderManager(),
+      box, resourceManager_->getShaderManager(),
       esp::assets::ResourceManager::NO_LIGHT_KEY,
       esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       drawableGroup_);
@@ -92,7 +94,7 @@ void DrawableTest::addRemoveDrawables() {
   esp::gfx::GenericDrawable* dr = new esp::gfx::GenericDrawable{
       node,
       box,
-      resourceManager_.getShaderManager(),
+      resourceManager_->getShaderManager(),
       esp::assets::ResourceManager::NO_LIGHT_KEY,
       esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       drawableGroup_};
@@ -107,7 +109,7 @@ void DrawableTest::addRemoveDrawables() {
   dr = new esp::gfx::GenericDrawable{
       node,
       box,
-      resourceManager_.getShaderManager(),
+      resourceManager_->getShaderManager(),
       esp::assets::ResourceManager::NO_LIGHT_KEY,
       esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       nullptr};
@@ -133,7 +135,7 @@ void DrawableTest::addRemoveDrawables() {
   dr = new esp::gfx::GenericDrawable{
       node,
       box,
-      resourceManager_.getShaderManager(),
+      resourceManager_->getShaderManager(),
       esp::assets::ResourceManager::NO_LIGHT_KEY,
       esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       nullptr};
