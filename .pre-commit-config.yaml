@@ -24,7 +24,7 @@ repos:
         args: ['--fix=lf']
 
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.4.2
+    rev: 5.5.4
     hooks:
     -   id: isort
         exclude: docs/
@@ -37,7 +37,7 @@ repos:
       exclude: ^examples/tutorials/(nb_python|colabs)
 
 -   repo: https://github.com/myint/autoflake
-    rev: master
+    rev: v1.4
     hooks:
     -   id: autoflake
         args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
@@ -68,7 +68,7 @@ repos:
         args: [--autofix]
 
 -   repo: https://github.com/kynan/nbstripout
-    rev: master
+    rev: 0.3.9
     hooks:
     -   id: nbstripout
         files: '.ipynb'
@@ -105,7 +105,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v6.4.0
+    rev: v7.10.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
