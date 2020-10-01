@@ -535,6 +535,21 @@ class ManagedContainer {
     return res;
   }  // ManagedContainer::getUserLockedObjectHandles
 
+  /**
+   * @brief Set the object to provide default values upon construction of @ref
+   * esp::core::AbstractManagedObject.  Override if object should not have
+   * defaults
+   * @param _defaultObj the object to use for defaults;
+   */
+  virtual void setDefaultObject(ManagedPtr& _defaultObj) {
+    defaultObj_ = _defaultObj;
+  }
+
+  /**
+   * @brief Clear any default objects used for construction.
+   */
+  void clearDefaultObject() { defaultObj_ = nullptr; }
+
  protected:
   //======== Common JSON import functions ========
 
@@ -726,6 +741,18 @@ class ManagedContainer {
   }  // ManagedContainer::copyObject
 
   /**
+   * @brief Create a new object as a copy of @ref defaultObject_  if it exists,
+   * otherwise return nullptr.
+   * @return New object or nullptr
+   */
+  ManagedPtr constructFromDefault() {
+    if (defaultObj_ == nullptr) {
+      return nullptr;
+    }
+    return this->copyObject(defaultObj_);
+  }  // ManagedContainer::constructFromDefault
+
+  /**
    * @brief add passed managed object to library, setting managedObjectID
    * appropriately. Called internally by registerObject.
    *
@@ -838,6 +865,12 @@ class ManagedContainer {
    * unlocks them.
    */
   std::set<std::string> userLockedObjectNames_;
+
+  /**
+   * @brief An object to provide default values, to be used upon
+   * AbstractManagedObject construction
+   */
+  ManagedPtr defaultObj_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(ManagedContainer<ManagedPtr>)

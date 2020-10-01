@@ -357,8 +357,8 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultUVSphereTemplate
 
   /**
-   * @brief Return the spedified cube template.
-   * @param templateHndle The handle of the desired cube template. Verifies
+   * @brief Return the spedified UVSphere template.
+   * @param templateHndle The handle of the desired UVSphere template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
    * incorrectly specified.
@@ -371,6 +371,20 @@ class AssetAttributesManager
     return this->getObjectCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getUVSphereTemplate
+
+  /**
+   * @brief Set the object to provide default values upon construction of @ref
+   * esp::core::AbstractManagedObject.  Override if object should not have
+   * defaults.  Currently not supported for AbstractPrimitiveAttributes.
+   * @param _defaultObj the object to use for defaults;
+   */
+  void setDefaultObject(CORRADE_UNUSED Attrs::AbstractPrimitiveAttributes::ptr&
+                            _defaultObj) override {
+    LOG(WARNING) << "AssetAttributesManager::setDefaultObject : Overriding "
+                    "defualt objects for PrimitiveAssetAttributes not "
+                    "currently supported.  Aborting.";
+    this->defaultObj_ = nullptr;
+  }  // AssetAttributesManager::setDefaultObject
 
  protected:
   /**
@@ -444,6 +458,7 @@ class AssetAttributesManager
                  << primClassName << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
+    // these attributes ignore any default setttings.
     auto newAttributes = (*this.*primTypeConstructorMap_[primClassName])();
     return newAttributes;
   }

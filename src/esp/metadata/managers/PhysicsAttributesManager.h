@@ -88,7 +88,11 @@ class PhysicsAttributesManager
    */
   Attrs::PhysicsManagerAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override {
-    auto newAttributes = Attrs::PhysicsManagerAttributes::create(handleName);
+    Attrs::PhysicsManagerAttributes::ptr newAttributes =
+        this->constructFromDefault();
+    if (nullptr == newAttributes) {
+      newAttributes = Attrs::PhysicsManagerAttributes::create(handleName);
+    }
     this->setFileDirectoryFromHandle(newAttributes);
     return newAttributes;
   }
