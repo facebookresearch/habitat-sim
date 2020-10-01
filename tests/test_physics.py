@@ -42,7 +42,7 @@ def test_kinematics():
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         obj_mgr = sim.get_object_template_manager()
-
+        obj_mgr.load_configs("data/objects/", True)
         assert obj_mgr.get_num_templates() > 0
 
         # test adding an object to the world
@@ -155,6 +155,7 @@ def test_dynamics():
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         obj_mgr = sim.get_object_template_manager()
+        obj_mgr.load_configs("data/objects/", True)
         # make the simulation deterministic (C++ seed is set in reconfigure)
         np.random.seed(cfg_settings["seed"])
         assert obj_mgr.get_num_templates() > 0
@@ -278,7 +279,7 @@ def test_velocity_control():
         obj_mgr = sim.get_object_template_manager()
 
         template_path = osp.abspath("data/test_assets/objects/nested_box")
-        template_ids = obj_mgr.load_object_configs(template_path)
+        template_ids = obj_mgr.load_configs(template_path)
         object_template = obj_mgr.get_template_by_ID(template_ids[0])
         object_template.linear_damping = 0.0
         object_template.angular_damping = 0.0
