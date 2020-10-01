@@ -1,4 +1,4 @@
 {
-    "render mesh": "chair.glb",
-    "mass": 9
+  "mass": 9,
+  "render mesh": "chair.glb"
 }
