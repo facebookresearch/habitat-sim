@@ -9,6 +9,7 @@
 
 #include "esp/core/AbstractManagedObject.h"
 #include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/LightAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
@@ -26,6 +27,7 @@ using Attrs::ConePrimitiveAttributes;
 using Attrs::CubePrimitiveAttributes;
 using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
+using Attrs::LightAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
@@ -246,6 +248,21 @@ void initAttributesBindings(py::module& m) {
           "frustrum_culling", &StageAttributes::getFrustrumCulling,
           &StageAttributes::setFrustrumCulling,
           R"(Whether frustrum culling should be enabled for constructions built by this template.)");
+  // ==== LightAttributes ====
+  py::class_<LightAttributes, AbstractAttributes, LightAttributes::ptr>(
+      m, "LightAttributes")
+      .def(py::init(&LightAttributes::create<>))
+      .def(py::init(&LightAttributes::create<const std::string&>))
+      .def_property(
+          "position", &LightAttributes::getPosition,
+          &LightAttributes::setPosition,
+          R"(The 3-vector representation of the desired position/direction of the light in the scene.)")
+      .def_property(
+          "color", &LightAttributes::getColor, &LightAttributes::setColor,
+          R"(The 3-vector representation of the desired color of the light.)")
+      .def_property("color_scale", &LightAttributes::getColorScale,
+                    &LightAttributes::setColorScale,
+                    R"(The color scale to use for the light.)");
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,

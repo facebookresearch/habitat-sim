@@ -43,7 +43,7 @@ class AttributesManagersTest : public testing::Test {
  protected:
   void SetUp() override {
     auto MM = MetadataMediator::create();
-    // get attributes managers
+    // get attributes managers for default dataset
     assetAttributesManager_ = MM->getAssetAttributesManager();
     objectAttributesManager_ = MM->getObjectAttributesManager();
     physicsAttributesManager_ = MM->getPhysicsAttributesManager();

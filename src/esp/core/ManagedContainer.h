@@ -532,13 +532,18 @@ class ManagedContainer : public ManagedContainerBase {
   /**
    * @brief Create a new object as a copy of @ref defaultObject_  if it exists,
    * otherwise return nullptr.
+   * @param newHandle the name for the copy of the default.
    * @return New object or nullptr
    */
-  ManagedPtr constructFromDefault() {
+  ManagedPtr constructFromDefault(const std::string& newHandle) {
     if (defaultObj_ == nullptr) {
       return nullptr;
     }
-    return this->copyObject(defaultObj_);
+    ManagedPtr res = this->copyObject(defaultObj_);
+    if (nullptr != res) {
+      res->setHandle(newHandle);
+    }
+    return res;
   }  // ManagedContainer::constructFromDefault
 
   /**

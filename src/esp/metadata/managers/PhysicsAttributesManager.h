@@ -80,13 +80,14 @@ class PhysicsAttributesManager
   Attrs::PhysicsManagerAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override {
     Attrs::PhysicsManagerAttributes::ptr newAttributes =
-        this->constructFromDefault();
+        this->constructFromDefault(handleName);
     if (nullptr == newAttributes) {
       newAttributes = Attrs::PhysicsManagerAttributes::create(handleName);
     }
     this->setFileDirectoryFromHandle(newAttributes);
     return newAttributes;
-  }
+  }  // PhysicsAttributesManager::initNewObjectInternal
+
   /**
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
@@ -120,7 +121,7 @@ class PhysicsAttributesManager
     int physicsTemplateID = this->addObjectToLibrary(physicsAttributesTemplate,
                                                      physicsAttributesHandle);
     return physicsTemplateID;
-  }  // PhysicsAttributesManager::registerAttributesTemplate
+  }  // PhysicsAttributesManager::registerObjectFinalize
 
   /**
    * @brief Any physics-attributes-specific resetting that needs to happen on

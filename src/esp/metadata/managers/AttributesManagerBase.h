@@ -117,7 +117,7 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
     // set the values for this attributes from the json config.
     this->setValsFromJSONDoc(attributes, jsonConfig);
     return attributes;
-  }  // ObjectAttributesManager::buildObjectFromJSONDoc
+  }  // AttributesManager<T>::buildObjectFromJSONDoc
 
   /**
    * @brief Method to take an existing attributes and set its values from passed
@@ -189,10 +189,8 @@ std::vector<int> AttributesManager<T>::loadAllConfigsFromPath(
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
   namespace Directory = Cr::Utility::Directory;
-  std::string attributesFilepath = path;
-  if (!Cr::Utility::String::endsWith(attributesFilepath, this->JSONTypeExt_)) {
-    attributesFilepath = path + "." + this->JSONTypeExt_;
-  }
+  std::string attributesFilepath =
+      this->convertFilenameToJSON(path, this->JSONTypeExt_);
   const bool dirExists = Directory::isDirectory(path);
   const bool fileExists = Directory::exists(attributesFilepath);
 
@@ -253,12 +251,8 @@ auto AttributesManager<T>::createFromJsonOrDefaultInternal(
     std::string& msg,
     bool registerObj) -> AttribsPtr {
   AttribsPtr attrs;
-  std::string strHandle = Cr::Utility::String::lowercase(filename);
   std::string jsonAttrFileName =
-      (strHandle.find(Cr::Utility::String::lowercase(this->JSONTypeExt_)) !=
-       std::string::npos)
-          ? std::string(filename)
-          : io::changeExtension(filename, this->JSONTypeExt_);
+      this->convertFilenameToJSON(filename, this->JSONTypeExt_);
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
   if (jsonFileExists) {
     // check if stageAttributesHandle corresponds to an actual, existing
