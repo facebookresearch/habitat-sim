@@ -16,9 +16,6 @@ repos:
     -   id: check-executables-have-shebangs
     -   id: check-merge-conflict
     -   id: check-toml
-    -   id: pretty-format-json
-        args: ['--autofix']
-        files: '^data/'
     -   id: debug-statements
     -   id: mixed-line-ending
         args: ['--fix=lf']
@@ -57,16 +54,6 @@ repos:
     hooks:
     -   id: mypy
         pass_filenames: false
-
-#Re-enable after v1.5.1 Bug destroys comments
-#-   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-#    rev: 'v1.5.0'
-#    hooks:
-#    -   id: pretty-format-ini
-#        args: [--autofix]
-#        files: '(.ini$|^setup.cfg)'
-#    -   id: pretty-format-toml
-#       args: [--autofix]
 
 -   repo: https://github.com/kynan/nbstripout
     rev: 0.3.9
