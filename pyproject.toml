@@ -1,25 +1,6 @@
 [tool.isort]
-skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
-profile = 'black'
+skip_glob = [ "*/deps/*", "*/build/*", "*/obselete/*",]
+profile = "black"
 
 [tool.black]
-exclude = '''
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | ^examples/tutorials/colabs
-    | ^examples/tutorials/nb_python
-    | build
-    | dist
-    | obselete
-    | deps
-  )/
-)
-'''
+exclude = "(\n  /(\n      \\.eggs         # exclude a few common directories in the\n    | \\.git          # root of the project\n    | \\.hg\n    | \\.mypy_cache\n    | \\.tox\n    | \\.venv\n    | _build\n    | buck-out\n    | ^examples/tutorials/colabs\n    | ^examples/tutorials/nb_python\n    | build\n    | dist\n    | obselete\n    | deps\n  )/\n)\n"
