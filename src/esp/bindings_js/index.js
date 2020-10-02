@@ -7,7 +7,7 @@
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
-import { defaultScene } from "./modules/defaults";
+import { defaultScene, dataHome, fileBasedObjects } from "./modules/defaults";
 import "./bindings.css";
 import {
   checkWebAssemblySupport,
@@ -26,6 +26,50 @@ function preload(url) {
   return file;
 }
 
+function preloadPhysConfig(url) {
+  let emDataHome = "/data";
+  FS.mkdir(emDataHome);
+
+  let file = url;
+  if (url.indexOf("http") === 0) {
+    const splits = url.split("/");
+    file = splits[splits.length - 1];
+  }
+  FS.createPreloadedFile(emDataHome, file, dataHome.concat(url), true, false);
+
+  let emObjHome = emDataHome.concat("/objects");
+  FS.mkdir(emObjHome);
+
+  // TODO Need to loop through the objects directory on the server (`phys/objects/*`) and put all of the glbs onto the client
+  var objects = fileBasedObjects["objects"];
+  for (let objectIdx in objects) {
+    let physicsProperties = objects[objectIdx]["physicsProperties"];
+    let physicsPropertyName = physicsProperties.split("/")[
+      physicsProperties.split("/").length - 1
+    ];
+    let renderMesh = objects[objectIdx]["renderMesh"];
+    let renderMeshName = renderMesh.split("/")[
+      renderMesh.split("/").length - 1
+    ];
+
+    FS.createPreloadedFile(
+      emObjHome,
+      renderMeshName,
+      dataHome.concat(renderMesh),
+      true,
+      false
+    );
+    FS.createPreloadedFile(
+      emObjHome,
+      physicsPropertyName,
+      dataHome.concat(physicsProperties),
+      true,
+      false
+    );
+  }
+  return emDataHome.concat("/".concat(file));
+}
+
 Module.preRun.push(() => {
   let config = {};
   config.scene = defaultScene;
@@ -33,6 +77,11 @@ Module.preRun.push(() => {
   window.config = config;
   const scene = config.scene;
   Module.scene = preload(scene);
+
+  const physicsConfigFile = window.config.defaultPhysConfig;
+  Module.physicsConfigFile = preloadPhysConfig(physicsConfigFile);
+
+  Module.enablePhysics = window.config.enablePhysics === "true";
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
 
   preload(fileNoExtension + ".navmesh");
@@ -61,6 +110,7 @@ Module.onRuntimeInitialized = () => {
   }
 
   demo.display();
+  window.demo = demo;
 };
 
 function checkSupport() {

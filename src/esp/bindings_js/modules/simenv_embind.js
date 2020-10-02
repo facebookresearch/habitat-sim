@@ -63,6 +63,16 @@ class SimEnv {
   }
 
   /**
+   * Adds an instance of the specified object mesh to the environment.
+   * @param {string} objectLibHandle - object's template config/origin handle
+   * @returns {number} object ID or -1 if object was unable to be added
+   */
+  addObjectByHandle(objectLibHandle) {
+    // using default values for rest of the params
+    return this.sim.addObjectByHandle(objectLibHandle, null, "", 0);
+  }
+
+  /**
    * Get the observation space for a given sensorId.
    * @param {number} sensorId - id of sensor
    * @returns {ObservationSpace} observation space of sensor
@@ -104,6 +114,71 @@ class SimEnv {
    */
   getSemanticScene() {
     return this.sim.getSemanticScene();
+  }
+
+  /**
+   * Get the motion type of an object.
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   * @returns {MotionType} object MotionType or ERROR_MOTIONTYPE if query failed
+   */
+  getObjectMotionType(objectID, sceneID) {
+    return this.sim.getObjectMotionType(objectID, sceneID);
+  }
+
+  /**
+   * Set the motion type of an object.
+   * * @param {MotionType} motionType - desired motion type of the object
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   * @returns {bool} object MotionType or ERROR_MOTIONTYPE if query failed
+   */
+  setObjectMotionType(motionType, objectID, sceneID) {
+    return this.sim.setObjectMotionType(motionType, objectID, sceneID);
+  }
+
+  /**
+   * Get the IDs of the physics objects instanced in a physical scene.
+   * @param {number} sceneID - scene id
+   * @returns {Array} list of existing object Ids in the scene
+   */
+  getExistingObjectIDs(sceneId = 0) {
+    return this.sim.getExistingObjectIDs(sceneId);
+  }
+
+  /**
+   * Get the current 3D position of an object.
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   * @returns {Magnum::Vector3} 3D position of the object
+   */
+  getTranslation(objectID, sceneID) {
+    return this.sim.getTranslation(objectID, sceneID);
+  }
+
+  /**
+   * Set the 3D position of an object kinematically.
+   * @param {Magnum::Vector3} translation - 3D position of the object
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   */
+  setTranslation(translation, objectID, sceneID) {
+    this.sim.setTranslation(translation, objectID, sceneID);
+  }
+
+  /**
+   * @param {double} dt - step the physical world forward in time by a desired duration.
+   * @returns {double} world time after step
+   */
+  stepWorld(dt = 1.0 / 60.0) {
+    return this.sim.stepWorld(dt);
+  }
+
+  /**
+   * @returns {double} world time
+   */
+  getWorldTime() {
+    return this.sim.getWorldTime();
   }
 
   getAgentState() {
@@ -191,6 +266,15 @@ class SimEnv {
       converted[key] = value;
     }
     return converted;
+  }
+
+  convertVec3fToVector3(position) {
+    let vector3Position = new Module.Vector3(
+      position[0],
+      position[1],
+      position[2]
+    );
+    return vector3Position;
   }
 }
 

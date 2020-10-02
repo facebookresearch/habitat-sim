@@ -96,6 +96,22 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
 
+  em::class_<Magnum::Vector3>("Vector3")
+      .constructor<Magnum::Vector3>()
+      .constructor<float, float, float>()
+      .function("x", em::select_overload<float&()>(&Magnum::Vector3::x))
+      .function("y", em::select_overload<float&()>(&Magnum::Vector3::y))
+      .function("z", em::select_overload<float&()>(&Magnum::Vector3::z))
+      .class_function("xAxis", &Magnum::Vector3::xAxis)
+      .class_function("yAxis", &Magnum::Vector3::yAxis)
+      .class_function("zAxis", &Magnum::Vector3::zAxis)
+      .function(
+          "toString", em::optional_override([](const Magnum::Vector3& self) {
+            std::ostringstream out;
+            Magnum::Debug{&out, Magnum::Debug::Flag::NoNewlineAtTheEnd} << self;
+            return out.str();
+          }));
+
   em::class_<AgentConfiguration>("AgentConfiguration")
       .smart_ptr_constructor("AgentConfiguration",
                              &AgentConfiguration::create<>)
@@ -237,5 +253,14 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("addAgentToNode",
                 em::select_overload<Agent::ptr(const AgentConfiguration&,
                                                scene::SceneNode&)>(
-                    &Simulator::addAgent));
+                    &Simulator::addAgent))
+      .function("addObjectByHandle", &Simulator::addObjectByHandle,
+                em::allow_raw_pointers())
+      .function("setTranslation", &Simulator::setTranslation)
+      .function("getTranslation", &Simulator::getTranslation)
+      .function("setObjectMotionType", &Simulator::setObjectMotionType)
+      .function("getObjectMotionType", &Simulator::getObjectMotionType)
+      .function("stepWorld", &Simulator::stepWorld)
+      .function("getWorldTime", &Simulator::getWorldTime);
+  ;
 }

@@ -35,3 +35,32 @@ export const defaultScene =
     : "skokloster-castle.glb";
 
 export const infoSemanticFileName = "info_semantic.json";
+
+export const dataHome = "data/";
+
+export const fileBasedObjects = {
+  objects: [
+    {
+      object: "sphere",
+      objectIcon: "/data/test_assets/objects/sphere.png",
+      objectHandle: "/data/objects/sphere.phys_properties.json",
+      physicsProperties: "test_assets/objects/sphere.phys_properties.json",
+      renderMesh: "test_assets/objects/sphere.glb"
+    },
+    {
+      object: "mini_soccer_ball",
+      objectIcon: "/data/test_assets/objects/mini_soccer_ball.png",
+      objectHandle: "/data/objects/mini_soccer_ball.phys_properties.json",
+      physicsProperties:
+        "test_assets/objects/mini_soccer_ball.phys_properties.json",
+      renderMesh: "test_assets/objects/mini_soccer_ball.glb"
+    },
+    {
+      object: "chair",
+      objectIcon: "/data/test_assets/objects/chair.png",
+      objectHandle: "/data/objects/chair.phys_properties.json",
+      physicsProperties: "test_assets/objects/chair.phys_properties.json",
+      renderMesh: "test_assets/objects/chair.glb"
+    }
+  ]
+};
