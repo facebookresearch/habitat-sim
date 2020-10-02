@@ -58,7 +58,7 @@ uniform sampler2D metallicTexture;
 uniform sampler2D normalTexture;
 #endif
 
-#if defined(NON_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
 uniform sampler2D combinedTexture;
 #endif
 
@@ -209,14 +209,14 @@ void main() {
 #endif
 
   float roughness = Material.roughness;
-#if defined(NON_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
   roughness *= texture(combinedTexture, texCoord).g;
 #elif defined(ROUGHNESS_TEXTURE)
   roughness *= texture(roughnessTexture, texCoord).r;
 #endif
 
   float metallic = Material.metallic;
-#if defined(NON_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
   metallic *= texture(combinedTexture, texCoord).b;
 #elif defined(METALLIC_TEXTURE)
   metallic *= texture(metallicTexture, texCoord).r;

@@ -22,7 +22,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PBRMaterialData>(materialDataKey)} {
+          shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)} {
   updateShader().updateShaderLightParameters();
 }
 
@@ -67,9 +67,9 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
 Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
                                           PbrShader::Flags flags) const {
-  return Corrade::Utility::formatString(
-      SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<PbrShader::Flags::UnderlyingType>(flags));
+  SHADER_KEY_TEMPLATE, lightCount,
+      static_cast<PbrShader::Flags::UnderlyingType>(
+          PbrShader::generateCorrectFlags(flags));
 }
 
 PbrDrawable& PbrDrawable::updateShader() {
@@ -78,7 +78,6 @@ PbrDrawable& PbrDrawable::updateShader() {
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
     flags |= PbrShader::Flag::TextureTransformation;
   }
-
   if (materialData_->baseColorTexture) {
     flags |= PbrShader::Flag::BaseColorTexture;
   }
@@ -97,9 +96,6 @@ PbrDrawable& PbrDrawable::updateShader() {
   if (materialData_->perVertexObjectId) {
     // TODO: may be supported in the future
   }
-
-  // correct the flags if necessary
-  flags = PbrShader::generateCorrectFlags(flags);
 
   unsigned int lightCount = lightSetup_->size();
   if (!shader_ || shader_->lightCount() != lightCount ||
@@ -128,6 +124,7 @@ PbrDrawable& PbrDrawable::updateShaderLightParameters() {
   constexpr float dummyRange = Mn::Constants::inf();
   std::vector<float> ranges;
   std::vector<Mn::Color3> colors;
+  colors.reserve(lightSetup_->size());
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
     ranges.push_back(dummyRange);
     // Note: the light color MUST take the intensity into account

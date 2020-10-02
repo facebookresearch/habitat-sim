@@ -37,6 +37,7 @@
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
+#include "esp/gfx/PbrDrawable.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -82,10 +83,11 @@ constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::WHITE_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
-ResourceManager::ResourceManager()
-    :
+ResourceManager::ResourceManager(Flags flags)
+    : flags_(flags)
 #ifdef MAGNUM_BUILD_STATIC
       // avoid using plugins that might depend on different library versions
+      ,
       importerManager_("nonexistent")
 #endif
 {
@@ -93,7 +95,7 @@ ResourceManager::ResourceManager()
   initDefaultLightSetups();
   initDefaultMaterials();
   buildImportersAndAttributesManagers();
-}  // namespace assets
+}
 
 void ResourceManager::buildImportersAndAttributesManagers() {
   assetAttributesManager_ = AssetAttributesManager::create(*this);
@@ -1168,13 +1170,16 @@ void ResourceManager::loadMaterials(Importer& importer,
     if (loadedAssetData.assetInfo.requiresLighting &&
         materialData->types() &
             Magnum::Trade::MaterialType::PbrMetallicRoughness) {
-      const Mn::Trade::PbrMetallicRoughnessMaterialData&
-          pbrMetallicRoughnessMaterialData =
-              static_cast<Mn::Trade::PbrMetallicRoughnessMaterialData&>(
-                  *materialData);
+      const auto& pbrMaterialData =
+          materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
 
-      finalMaterial = gfx::buildPhongFromPbrMetallicRoughness(
-          pbrMetallicRoughnessMaterialData, textureBaseIndex, textures_);
+      if (flags_ & Flag::buildPhongFromPbr) {
+        finalMaterial = gfx::buildPhongFromPbrMetallicRoughness(
+            pbrMaterialData, textureBaseIndex, textures_);
+      } else {
+        finalMaterial =
+            buildPbrShadedMaterialData(pbrMaterialData, textureBaseIndex);
+      }
     } else {
       ASSERT(materialData);
       if (!(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
@@ -1263,6 +1268,61 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
     finalMaterial->normalTexture =
         textures_[textureBaseIndex + material.normalTexture()].get();
+  }
+  return finalMaterial;
+}
+
+gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
+    const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+    int textureBaseIndex) {
+  // NOLINTNEXTLINE(google-build-using-namespace)
+  using namespace Mn::Math::Literals;
+
+  auto finalMaterial = gfx::PbrMaterialData::create_unique();
+
+  finalMaterial->baseColor = material.baseColor();
+  finalMaterial->metallic = material.metalness();
+  finalMaterial->roughness = material.roughness();
+
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
+    finalMaterial->baseColorTexture =
+        textures_[textureBaseIndex + material.baseColorTexture()].get();
+  }
+
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
+    finalMaterial->normalTexture =
+        textures_[textureBaseIndex + material.normalTexture()].get();
+  }
+
+  // CAREFUL:
+  // certain texture will be stored "multiple times" in the `finalMaterial`;
+  // (e.g., roughnessTexture will be stored in noneRoughnessMetallicTexture,
+  // roughnessTexture, metallicTexture)
+  // But it is OK! Such duplication (or "conflicts") will be handled in the
+  // PbrShader (see PbrMaterialData for more details)
+
+  if (material.hasOcclusionRoughnessMetallicTexture()) {
+    // occlusionTexture, roughnessTexture, metalnessTexture are pointing to the
+    // same texture ID, so just occlusionTexture
+    finalMaterial->occlusionRoughnessMetallicTexture =
+        textures_[textureBaseIndex + material.occlusionTexture()].get();
+  }
+
+  if (material.hasNoneRoughnessMetallicTexture()) {
+    // roughnessTexture, metalnessTexture are pointing to the
+    // same texture ID, so just roughnessTexture
+    finalMaterial->noneRoughnessMetallicTexture =
+        textures_[textureBaseIndex + material.roughnessTexture()].get();
+  }
+
+  if (material.hasRoughnessTexture()) {
+    finalMaterial->occlusionRoughnessMetallicTexture =
+        textures_[textureBaseIndex + material.roughnessTexture()].get();
+  }
+
+  if (material.hasMetalnessTexture()) {
+    finalMaterial->metallicTexture =
+        textures_[textureBaseIndex + material.metalnessTexture()].get();
   }
   return finalMaterial;
 }
@@ -1568,7 +1628,7 @@ void ResourceManager::addComponent(
           std::to_string(metaData.materialIndex.first + materialIDLocal);
     }
 
-    createGenericDrawable(mesh, node, lightSetup, materialKey, drawables);
+    createDrawable(mesh, node, lightSetup, materialKey, drawables);
 
     // compute the bounding box for the mesh we are adding
     if (computeAbsoluteAABBs) {
@@ -1589,8 +1649,8 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
   CHECK(primitive_meshes_.count(primitiveID));
-  createGenericDrawable(*primitive_meshes_.at(primitiveID), node, NO_LIGHT_KEY,
-                        WHITE_MATERIAL_KEY, drawables);
+  createDrawable(*primitive_meshes_.at(primitiveID), node, NO_LIGHT_KEY,
+                 WHITE_MATERIAL_KEY, drawables);
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
@@ -1598,14 +1658,24 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primitiveID);
 }
 
-void ResourceManager::createGenericDrawable(
-    Mn::GL::Mesh& mesh,
-    scene::SceneNode& node,
-    const Mn::ResourceKey& lightSetup,
-    const Mn::ResourceKey& material,
-    DrawableGroup* group /* = nullptr */) {
-  node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
+void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
+                                     scene::SceneNode& node,
+                                     const Mn::ResourceKey& lightSetup,
+                                     const Mn::ResourceKey& material,
+                                     DrawableGroup* group /* = nullptr */) {
+  const auto& materialDataType =
+      shaderManager_.get<gfx::MaterialData>(material)->type;
+  switch (materialDataType) {
+    case gfx::MaterialDataType::PHONG:
+      node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
+                                            material, group);
+    case gfx::MaterialDataType::PBR:
+      node.addFeature<gfx::PbrDrawable>(mesh, shaderManager_, lightSetup,
                                         material, group);
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
 }
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,

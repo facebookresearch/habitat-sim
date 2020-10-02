@@ -132,7 +132,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ & Flag::MetallicTexture ? "#define METALLIC_TEXTURE\n"
                                                 : "")
       .addSource(flags_ & Flag::NoneRoughnessMetallicTexture
-                     ? "#define NON_ROUGHNESS_METALLIC_TEXTURE\n"
+                     ? "#define NONE_ROUGHNESS_METALLIC_TEXTURE\n"
                      : "")
       .addSource(flags_ & Flag::OcclusionRoughnessMetallicTexture
                      ? "#define OCCLUSION_ROUGHNESS_METALLIC_TEXTURE\n"

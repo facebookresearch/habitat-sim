@@ -82,7 +82,7 @@ class PbrDrawable : public Drawable {
   // shader parameters
   ShaderManager& shaderManager_;
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
-  Magnum::Resource<MaterialData, PBRMaterialData> materialData_;
+  Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
 };
 

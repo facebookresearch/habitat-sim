@@ -60,7 +60,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * present always. Expects three- or four-component floating-point
      * or normalized buffer attachment.
      */
-    ColorOutput = 0,
+    ColorOutput = Magnum::Shaders::Generic3D::ColorOutput,
 
     /**
      * Object ID shader output. @ref shaders-generic "Generic output",
@@ -68,7 +68,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * single-component unsigned integral attachment. Writes the value
      * set in @ref setObjectId() there.
      */
-    ObjectIdOutput = 1,
+    ObjectIdOutput = Magnum::Shaders::Generic3D::ObjectIdOutput,
   };
 
   /**
