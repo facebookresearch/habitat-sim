@@ -94,10 +94,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   std::stringstream attributeLocationsStream;
   attributeLocationsStream << Cr::Utility::formatString(
       "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
-  if (lightCount) {
-    attributeLocationsStream << Cr::Utility::formatString(
-        "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
-  }
+  attributeLocationsStream << Cr::Utility::formatString(
+      "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
   if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent) && lightCount) {
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
