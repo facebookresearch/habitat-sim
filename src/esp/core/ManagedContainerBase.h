@@ -25,10 +25,6 @@
 namespace Cr = Corrade;
 
 namespace esp {
-namespace assets {
-class ResourceManager;
-}
-
 namespace core {
 
 /**
@@ -47,9 +43,8 @@ class ManagedContainer {
 
   typedef std::shared_ptr<T> ManagedPtr;
 
-  ManagedContainer(esp::assets::ResourceManager& resourceManager,
-                   const std::string& metadataType)
-      : resourceManager_(resourceManager), objectType_(metadataType) {}
+  ManagedContainer(const std::string& metadataType)
+      : objectType_(metadataType) {}
   virtual ~ManagedContainer() = default;
 
   /**
@@ -825,10 +820,6 @@ class ManagedContainer {
    * pointer.
    */
   Map_Of_CopyCtors copyConstructorMap_;
-
-  /** @brief A reference to a @ref esp::assets::ResourceManager
-   */
-  assets::ResourceManager& resourceManager_;
 
   /** @brief A descriptive name of the managed object being managed by this
    * manager.

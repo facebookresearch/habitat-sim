@@ -16,15 +16,12 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace metadata {
-
 namespace managers {
 class PhysicsAttributesManager
     : public AttributesManager<Attrs::PhysicsManagerAttributes> {
  public:
-  PhysicsAttributesManager(esp::assets::ResourceManager& resourceManager,
-                           ObjectAttributesManager::ptr objectAttributesMgr)
+  PhysicsAttributesManager(ObjectAttributesManager::ptr objectAttributesMgr)
       : AttributesManager<Attrs::PhysicsManagerAttributes>::AttributesManager(
-            resourceManager,
             "Physics Manager"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();

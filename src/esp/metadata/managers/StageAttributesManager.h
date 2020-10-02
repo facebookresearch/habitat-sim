@@ -13,15 +13,13 @@
 namespace esp {
 namespace assets {
 enum class AssetType;
-}
+}  // namespace assets
 namespace metadata {
-
 namespace managers {
 class StageAttributesManager
     : public AbstractObjectAttributesManager<Attrs::StageAttributes> {
  public:
   StageAttributesManager(
-      esp::assets::ResourceManager& resourceManager,
       ObjectAttributesManager::ptr objectAttributesMgr,
       PhysicsAttributesManager::ptr physicsAttributesManager);
 

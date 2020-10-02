@@ -5,9 +5,8 @@
 #ifndef ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 #define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 
-#include "esp/core/Configuration.h"
-
 #include "esp/core/AbstractManagedObject.h"
+#include "esp/core/Configuration.h"
 
 namespace esp {
 namespace metadata {
