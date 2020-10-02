@@ -125,10 +125,10 @@ def main(show_imgs=True, save_imgs=False):
     obj_templates_mgr = sim.get_object_template_manager()
 
     # load some object templates from configuration files
-    sphere_template_id = obj_templates_mgr.load_object_configs(
+    sphere_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
-    chair_template_id = obj_templates_mgr.load_object_configs(
+    chair_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "test_assets/objects/chair"))
     )[0]
 

@@ -47,7 +47,7 @@ esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
  * @return whether successful or not
  */
 template <typename T>
-bool jsonIntoVal(CORRADE_UNUSED const JsonDocument& d,
+bool jsonIntoVal(CORRADE_UNUSED const JsonGenericValue& d,
                  const char* tag,
                  CORRADE_UNUSED T& val) {
   LOG(ERROR) << "Unsupported typename specified for JSON tag " << tag
@@ -67,7 +67,9 @@ bool jsonIntoVal(CORRADE_UNUSED const JsonDocument& d,
  * @return whether successful or not
  */
 template <>
-inline bool jsonIntoVal(const JsonDocument& d, const char* tag, float& val) {
+inline bool jsonIntoVal(const JsonGenericValue& d,
+                        const char* tag,
+                        float& val) {
   if (d.HasMember(tag)) {
     if (d[tag].IsNumber()) {
       val = d[tag].GetFloat();
@@ -91,7 +93,9 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, float& val) {
  */
 
 template <>
-inline bool jsonIntoVal(const JsonDocument& d, const char* tag, double& val) {
+inline bool jsonIntoVal(const JsonGenericValue& d,
+                        const char* tag,
+                        double& val) {
   if (d.HasMember(tag)) {
     if (d[tag].IsNumber()) {
       val = d[tag].GetDouble();
@@ -115,7 +119,7 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, double& val) {
  */
 
 template <>
-inline bool jsonIntoVal(const JsonDocument& d, const char* tag, int& val) {
+inline bool jsonIntoVal(const JsonGenericValue& d, const char* tag, int& val) {
   if (d.HasMember(tag)) {
     if (d[tag].IsNumber()) {
       val = d[tag].GetInt();
@@ -139,7 +143,7 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, int& val) {
  */
 
 template <>
-inline bool jsonIntoVal(const JsonDocument& d, const char* tag, bool& val) {
+inline bool jsonIntoVal(const JsonGenericValue& d, const char* tag, bool& val) {
   if (d.HasMember(tag)) {
     if (d[tag].IsBool()) {
       val = d[tag].GetBool();
@@ -163,7 +167,7 @@ inline bool jsonIntoVal(const JsonDocument& d, const char* tag, bool& val) {
  */
 
 template <>
-inline bool jsonIntoVal(const JsonDocument& d,
+inline bool jsonIntoVal(const JsonGenericValue& d,
                         const char* tag,
                         std::string& val) {
   if (d.HasMember(tag)) {
@@ -189,7 +193,7 @@ inline bool jsonIntoVal(const JsonDocument& d,
  */
 
 template <>
-inline bool jsonIntoVal(const JsonDocument& d,
+inline bool jsonIntoVal(const JsonGenericValue& d,
                         const char* tag,
                         Magnum::Vector3& val) {
   if (d.HasMember(tag) && d[tag].IsArray() && d[tag].Size() == 3) {
@@ -222,7 +226,7 @@ inline bool jsonIntoVal(const JsonDocument& d,
  * @return whether successful or not
  */
 template <typename T>
-bool jsonIntoSetter(const JsonDocument& d,
+bool jsonIntoSetter(const JsonGenericValue& d,
                     const char* tag,
                     std::function<void(T)> setter) {
   T val;
@@ -249,7 +253,7 @@ bool jsonIntoSetter(const JsonDocument& d,
  * @return whether successful or not
  */
 template <typename T>
-bool jsonIntoConstSetter(const JsonDocument& d,
+bool jsonIntoConstSetter(const JsonGenericValue& d,
                          const char* tag,
                          std::function<void(const T)> setter) {
   T val;

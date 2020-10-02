@@ -96,13 +96,13 @@ ResourceManager::ResourceManager()
 }  // namespace assets
 
 void ResourceManager::buildImportersAndAttributesManagers() {
-  assetAttributesManager_ = AssetAttributesManager::create(*this);
-  objectAttributesManager_ = ObjectAttributesManager::create(*this);
+  assetAttributesManager_ = AssetAttributesManager::create();
+  objectAttributesManager_ = ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   physicsAttributesManager_ =
-      PhysicsAttributesManager::create(*this, objectAttributesManager_);
+      PhysicsAttributesManager::create(objectAttributesManager_);
   stageAttributesManager_ = StageAttributesManager::create(
-      *this, objectAttributesManager_, physicsAttributesManager_);
+      objectAttributesManager_, physicsAttributesManager_);
 
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
