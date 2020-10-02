@@ -194,7 +194,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultCapsuleTemplate
 
   /**
-   * @brief Return the spedified capsule template.
+   * @brief Return the specified capsule template.
    * @param templateHndle The handle of the desired capsule template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -226,7 +226,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultConeTemplate
 
   /**
-   * @brief Return the spedified cone template, either solid or wireframe.
+   * @brief Return the specified cone template, either solid or wireframe.
    * @param templateHndle The handle of the desired cone template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -258,7 +258,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultCubeTemplate
 
   /**
-   * @brief Return the spedified cube template.
+   * @brief Return the specified cube template.
    * @param templateHndle The handle of the desired cube template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -291,7 +291,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultCylinderTemplate
 
   /**
-   * @brief Return the spedified cylinder template.
+   * @brief Return the specified cylinder template.
    * @param templateHndle The handle of the desired cylinder template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -324,7 +324,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultIcosphereTemplate
 
   /**
-   * @brief Return the spedified icosphere template.
+   * @brief Return the specified icosphere template.
    * @param templateHndle The handle of the desired icosphere template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -357,7 +357,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultUVSphereTemplate
 
   /**
-   * @brief Return the spedified UVSphere template.
+   * @brief Return the specified UVSphere template.
    * @param templateHndle The handle of the desired UVSphere template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
