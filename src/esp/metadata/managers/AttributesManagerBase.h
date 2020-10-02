@@ -49,7 +49,7 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
    * locations.
    *
    * This will take the list of file names specified and load the referenced
-   * templates.
+   * templates.  It is assumed these files are JSON files currently.
    * @param tmpltFilenames list of file names of templates
    * @param saveAsDefaults Set these templates as un-deletable from library.
    * @return vector holding IDs of templates that have been added
@@ -59,7 +59,7 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
       bool saveAsDefaults);
 
   /**
-   * @brief Load file-based object templates for all @ref JSONTypeExt_
+   * @brief Load file-based templates for all @ref JSONTypeExt_
    * files from the provided file or directory path.
    *
    * This will take the passed @p path string and either treat it as a file
@@ -69,11 +69,11 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
    * exists as a directory, and if so will perform a shallow search to find any
    * files ending in @ref JSONTypeExt_ and load those that are found.
    *
-   * @param path A global path to configuration files or a directory
-   * containing such files.
+   * @param path A global path to configuration files or a directory containing
+   * such files.
    * @param saveAsDefaults Set the templates loaded as undeleteable default
    * templates.
-   * @return A list of template indices for loaded valid object configs
+   * @return A list of template indices for loaded valid configs
    */
   std::vector<int> loadAllConfigsFromPath(const std::string& path,
                                           bool saveAsDefaults = false);
@@ -87,6 +87,21 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
   virtual bool isValidPrimitiveAttributes(const std::string& handle) = 0;
 
  protected:
+  /**
+   * @brief Called intenrally from createObject.  This will create either a file
+   * based AbstractAttributes or a default one based on whether the passed file
+   * name exists and has appropriate string tag/extension for @ref
+   * esp::metadata::attributes::AbstractAttributes.
+   *
+   * @param filename the file holding the configuration of the object
+   * @param msg reference to progress message
+   * @param registerObj whether the new object should be registered in library
+   * @return the create @ref esp::metadata::attributes::AbstractAttributes.
+   */
+  AttribsPtr createFromJsonOrDefaultInternal(const std::string& filename,
+                                             std::string& msg,
+                                             bool registerObj);
+
   // ======== Typedefs and Instance Variables ========
   /**
    * @brief The string extension for json files for this manager's attributes
@@ -167,6 +182,44 @@ std::vector<int> AttributesManager<T>::loadAllConfigsFromPath(
 
   return templateIndices;
 }  // AttributesManager<T>::loadAllConfigsFromPath
+
+/////////////////////////////
+// Class Template Method Definitions
+
+template <class T>
+auto AttributesManager<T>::createFromJsonOrDefaultInternal(
+    const std::string& filename,
+    std::string& msg,
+    bool registerObj) -> AttribsPtr {
+  AttribsPtr attrs;
+  std::string strHandle = Cr::Utility::String::lowercase(filename);
+  std::string jsonAttrFileName =
+      (strHandle.find(Cr::Utility::String::lowercase(this->JSONTypeExt_)) !=
+       std::string::npos)
+          ? std::string(filename)
+          : io::changeExtension(filename, this->JSONTypeExt_);
+  bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+  if (jsonFileExists) {
+    // check if stageAttributesHandle corresponds to an actual, existing
+    // json stage file descriptor.
+    // this method lives in class template.
+    attrs = this->template createObjectFromFile<io::JsonDocument>(
+        jsonAttrFileName, registerObj);
+    msg = "JSON File (" + jsonAttrFileName + ") Based";
+  } else {
+    // if name is not json file descriptor but still appropriate file, or if
+    // is not a file .  Currently non-JSON files are treated as new, default
+    // attributes.
+    attrs = this->createDefaultObject(filename, registerObj);
+    bool fileExists = (this->isValidFileName(filename));
+    if (fileExists) {
+      msg = "File (" + filename + ") not parsed, so new default";
+    } else {
+      msg = "New default (" + filename + ")";
+    }
+  }
+  return attrs;
+}  // AttributesManager<T>::createFromJsonFileOrDefaultInternal
 
 }  // namespace managers
 }  // namespace metadata

@@ -19,19 +19,9 @@ namespace managers {
 PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
     const std::string& physicsFilename,
     bool registerTemplate) {
-  PhysicsManagerAttributes::ptr attrs;
   std::string msg;
-  if (this->isValidFileName(physicsFilename)) {
-    // check if physicsFilename corresponds to an actual file descriptor
-    // this method lives in class template.
-    attrs = this->template createObjectFromFile<io::JsonDocument>(
-        physicsFilename, registerTemplate);
-    msg = "File (" + physicsFilename + ") Based";
-  } else {
-    // if name is not file descriptor, return default attributes.
-    attrs = this->createDefaultObject(physicsFilename, registerTemplate);
-    msg = "File (" + physicsFilename + ") not found so new, default";
-  }
+  PhysicsManagerAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
+      physicsFilename, msg, registerTemplate);
 
   if (nullptr != attrs) {
     LOG(INFO) << msg << " physics manager attributes created"
