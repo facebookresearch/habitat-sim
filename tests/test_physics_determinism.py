@@ -131,7 +131,3 @@ def test_physics_determinism():
                         object_states[idx]["translation"]
                         == ground_truth_object_states[idx]["translation"]
                     )
-
-
-if __name__ == "__main__":
-    test_physics_determinism()
