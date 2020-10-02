@@ -19,7 +19,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace metadata {
 namespace managers {
-namespace Attrs = esp::metadata::attributes;
+
 /**
  * @brief Class template defining responsibilities and functionality for
  * managing @ref esp::metadata::attributes::AbstractObjectAttributes constructs.
@@ -218,7 +218,8 @@ auto AbstractObjectAttributesManager<T>::createFromJsonOrDefaultInternal(
     // check if stageAttributesHandle corresponds to an actual, existing
     // json stage file descriptor.
     // this method lives in class template.
-    attrs = this->createObjectFromFile(jsonAttrFileName, registerObj);
+    attrs = this->template createObjectFromFile<io::JsonDocument>(
+        jsonAttrFileName, registerObj);
     msg = "JSON File (" + jsonAttrFileName + ") Based";
   } else {
     // if name is not json file descriptor but still appropriate file, or if
@@ -244,53 +245,41 @@ auto AbstractObjectAttributesManager<T>::createObjectAttributesFromJson(
 
   // scale
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonDoc, "scale",
-      std::bind(&Attrs::AbstractObjectAttributes::setScale, attributes, _1));
+      jsonDoc, "scale", std::bind(&T::setScale, attributes, _1));
 
   // collision asset size
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "collision asset size",
-      std::bind(&Attrs::AbstractObjectAttributes::setCollisionAssetSize,
-                attributes, _1));
+      std::bind(&T::setCollisionAssetSize, attributes, _1));
   // margin
-  io::jsonIntoSetter<double>(
-      jsonDoc, "margin",
-      std::bind(&Attrs::AbstractObjectAttributes::setMargin, attributes, _1));
+  io::jsonIntoSetter<double>(jsonDoc, "margin",
+                             std::bind(&T::setMargin, attributes, _1));
 
   // load the friction coefficient
   io::jsonIntoSetter<double>(
       jsonDoc, "friction coefficient",
-      std::bind(&Attrs::AbstractObjectAttributes::setFrictionCoefficient,
-                attributes, _1));
+      std::bind(&T::setFrictionCoefficient, attributes, _1));
 
   // load the restitution coefficient
   io::jsonIntoSetter<double>(
       jsonDoc, "restitution coefficient",
-      std::bind(&Attrs::AbstractObjectAttributes::setRestitutionCoefficient,
-                attributes, _1));
+      std::bind(&T::setRestitutionCoefficient, attributes, _1));
 
   // if object will be flat or phong shaded
-  io::jsonIntoSetter<bool>(
-      jsonDoc, "requires lighting",
-      std::bind(&Attrs::AbstractObjectAttributes::setRequiresLighting,
-                attributes, _1));
+  io::jsonIntoSetter<bool>(jsonDoc, "requires lighting",
+                           std::bind(&T::setRequiresLighting, attributes, _1));
 
   // units to meters
-  io::jsonIntoSetter<double>(
-      jsonDoc, "units to meters",
-      std::bind(&Attrs::AbstractObjectAttributes::setUnitsToMeters, attributes,
-                _1));
+  io::jsonIntoSetter<double>(jsonDoc, "units to meters",
+                             std::bind(&T::setUnitsToMeters, attributes, _1));
 
   // load object/scene specific up orientation
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonDoc, "up",
-      std::bind(&Attrs::AbstractObjectAttributes::setOrientUp, attributes, _1));
+      jsonDoc, "up", std::bind(&T::setOrientUp, attributes, _1));
 
   // load object/scene specific front orientation
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonDoc, "front",
-      std::bind(&Attrs::AbstractObjectAttributes::setOrientFront, attributes,
-                _1));
+      jsonDoc, "front", std::bind(&T::setOrientFront, attributes, _1));
 
   // 4. parse render and collision mesh filepaths
   std::string rndrFName = "";
@@ -299,8 +288,7 @@ auto AbstractObjectAttributesManager<T>::createObjectAttributesFromJson(
   // is true if mesh name is found in JSON and different than current value
   if (setJSONAssetHandleAndType(
           attributes, jsonDoc, "render mesh type", "render mesh", rTmpFName,
-          std::bind(&Attrs::AbstractObjectAttributes::setRenderAssetType,
-                    attributes, _1))) {
+          std::bind(&T::setRenderAssetType, attributes, _1))) {
     // set asset name to be what was read in json
     rndrFName = rTmpFName;
   }
@@ -311,9 +299,7 @@ auto AbstractObjectAttributesManager<T>::createObjectAttributesFromJson(
   // is true if mesh name is found in JSON and different than current value
   if (setJSONAssetHandleAndType(
           attributes, jsonDoc, "collision mesh type", "collision mesh",
-          cTmpFName,
-          std::bind(&Attrs::AbstractObjectAttributes::setCollisionAssetType,
-                    attributes, _1))) {
+          cTmpFName, std::bind(&T::setCollisionAssetType, attributes, _1))) {
     // set asset name to be what was read in json
     colFName = cTmpFName;
   }
@@ -364,9 +350,8 @@ bool AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
   if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (Attrs::AbstractObjectAttributes::AssetTypeNamesMap.count(tmpVal)) {
-      typeVal = static_cast<int>(
-          Attrs::AbstractObjectAttributes::AssetTypeNamesMap.at(tmpVal));
+    if (T::AssetTypeNamesMap.count(tmpVal)) {
+      typeVal = static_cast<int>(T::AssetTypeNamesMap.at(tmpVal));
     } else {
       LOG(WARNING)
           << "AbstractObjectAttributesManager::setJSONAssetHandleAndType : "

@@ -24,7 +24,8 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
   if (this->isValidFileName(physicsFilename)) {
     // check if physicsFilename corresponds to an actual file descriptor
     // this method lives in class template.
-    attrs = this->createObjectFromFile(physicsFilename, registerTemplate);
+    attrs = this->template createObjectFromFile<io::JsonDocument>(
+        physicsFilename, registerTemplate);
     msg = "File (" + physicsFilename + ") Based";
   } else {
     // if name is not file descriptor, return default attributes.

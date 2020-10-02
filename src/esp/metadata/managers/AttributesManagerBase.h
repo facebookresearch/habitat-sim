@@ -110,7 +110,8 @@ std::vector<int> AttributesManager<T>::loadAllFileBasedTemplates(
     auto attributesFilename = paths[i];
     LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Load "
               << this->objectType_ << " template: " << attributesFilename;
-    auto tmplt = this->createObjectFromFile(attributesFilename, true);
+    auto tmplt = this->template createObjectFromFile<io::JsonDocument>(
+        attributesFilename, true);
 
     // save handles in list of defaults, so they are not removed, if desired.
     if (saveAsDefaults) {
