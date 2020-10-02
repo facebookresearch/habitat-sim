@@ -74,26 +74,26 @@ Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
 }
 
 PbrDrawable& PbrDrawable::updateShader() {
-  PbrShader::Flags flags = PbrShader::Flag::ObjectId;
+  PbrShader::Flags flags = PbrShader::Flag::OBJECT_ID;
 
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
-    flags |= PbrShader::Flag::TextureTransformation;
+    flags |= PbrShader::Flag::TEXTURE_TRANSFORMATION;
   }
   if (materialData_->baseColorTexture) {
-    flags |= PbrShader::Flag::BaseColorTexture;
+    flags |= PbrShader::Flag::BASE_COLOR_TEXTURE;
   }
   if (materialData_->occlusionRoughnessMetallicTexture) {
-    flags |= PbrShader::Flag::OcclusionRoughnessMetallicTexture;
+    flags |= PbrShader::Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE;
   }
   if (materialData_->noneRoughnessMetallicTexture) {
-    flags |= PbrShader::Flag::NoneRoughnessMetallicTexture;
+    flags |= PbrShader::Flag::NONE_ROUGHNESS_METALLIC_TEXTURE;
   }
   if (materialData_->roughnessTexture)
-    flags |= PbrShader::Flag::RoughnessTexture;
+    flags |= PbrShader::Flag::ROUGHNESS_TEXTURE;
   if (materialData_->metallicTexture)
-    flags |= PbrShader::Flag::MetallicTexture;
+    flags |= PbrShader::Flag::METALLIC_TEXTURE;
   if (materialData_->normalTexture)
-    flags |= PbrShader::Flag::NormalTexture;
+    flags |= PbrShader::Flag::NORMAL_TEXTURE;
   if (materialData_->perVertexObjectId) {
     // TODO: may be supported in the future
   }

@@ -122,7 +122,7 @@ class ResourceManager {
     /**
      * build phong material from PBR material
      */
-    buildPhongFromPbr = 1 << 0,
+    BUILD_PHONG_FROM_PBR = 1 << 0,
   };
 
   /**
@@ -953,6 +953,8 @@ class ResourceManager {
    */
   bool requiresTextures_ = true;
 };
+
+CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
 
 }  // namespace assets
 }  // namespace esp

@@ -1173,7 +1173,7 @@ void ResourceManager::loadMaterials(Importer& importer,
       const auto& pbrMaterialData =
           materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
 
-      if (flags_ & Flag::buildPhongFromPbr) {
+      if (flags_ & Flag::BUILD_PHONG_FROM_PBR) {
         finalMaterial = gfx::buildPhongFromPbrMetallicRoughness(
             pbrMaterialData, textureBaseIndex, textures_);
       } else {
@@ -1283,6 +1283,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   finalMaterial->baseColor = material.baseColor();
   finalMaterial->metallic = material.metalness();
   finalMaterial->roughness = material.roughness();
+  finalMaterial->normalTextureScale = material.normalTextureScale();
 
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
     finalMaterial->baseColorTexture =
@@ -1669,9 +1670,11 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
     case gfx::MaterialDataType::PHONG:
       node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
                                             material, group);
+      break;
     case gfx::MaterialDataType::PBR:
       node.addFeature<gfx::PbrDrawable>(mesh, shaderManager_, lightSetup,
                                         material, group);
+      break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;

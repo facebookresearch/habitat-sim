@@ -52,9 +52,11 @@ struct PhongMaterialData : public MaterialData {
 
 struct PbrMaterialData : public MaterialData {
   PbrMaterialData() : MaterialData(MaterialDataType::PBR){};
+
   Magnum::Color4 baseColor{0.7};
   Magnum::Float roughness = 0.9f;
   Magnum::Float metallic = 0.1f;
+  Magnum::Float normalTextureScale = 1.0f;
   Magnum::GL::Texture2D* baseColorTexture = nullptr;
   Magnum::GL::Texture2D* normalTexture = nullptr;
 
