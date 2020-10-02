@@ -1,11 +1,20 @@
 import collections
-from typing import List
+from typing import List, Tuple, Union
 
 import numpy as np
+from numpy import bool_, float32, float64, ndarray
+from quaternion import quaternion
 
 import habitat_sim
 from habitat_sim import registry as registry
 from habitat_sim.utils.common import quat_from_two_vectors
+
+
+class TopdownView(object):
+    def __init__(self, sim, height, meters_per_pixel=0.1):
+        self.topdown_view = sim.pathfinder.get_topdown_view(
+            meters_per_pixel, height
+        ).astype(np.float64)
 
 
 class PoseExtractor:
@@ -22,7 +31,11 @@ class PoseExtractor:
     :property labels: List of class labels to extract images of.
     """
 
-    def __init__(self, topdown_views, meters_per_pixel=0.1):
+    def __init__(
+        self,
+        topdown_views: List[Tuple[TopdownView, str, Tuple[float32, float32, float32]]],
+        meters_per_pixel: float = 0.1,
+    ) -> None:
         self.tdv_fp_ref_triples = topdown_views
         self.meters_per_pixel = meters_per_pixel
         self.labels = [0.0]
@@ -41,7 +54,9 @@ class PoseExtractor:
 
         return np.array(poses)
 
-    def extract_poses(self, view: np.ndarray, fp: str) -> List[tuple]:
+    def extract_poses(
+        self, view: np.ndarray, fp: str
+    ) -> List[Tuple[Tuple[int, int], Tuple[int, int], str]]:
         r"""Extracts poses according to a programatic rule.
 
         :property view: 2D numpy array representing the topdown view of the scene.
@@ -49,10 +64,12 @@ class PoseExtractor:
         """
         raise NotImplementedError
 
-    def _valid_point(self, row, col, view):
+    def _valid_point(self, row: int, col: int, view: ndarray) -> bool_:
         return view[row][col] == 1.0
 
-    def _is_point_of_interest(self, point, labels, view):
+    def _is_point_of_interest(
+        self, point: Tuple[int, int], labels: List[float], view: ndarray
+    ) -> Tuple[bool, float64]:
         r, c = point
         is_interesting = False
         if view[r][c] in labels:
@@ -60,11 +77,15 @@ class PoseExtractor:
 
         return is_interesting, view[r][c]
 
-    def _compute_quat(self, cam_normal):
+    def _compute_quat(self, cam_normal: ndarray) -> quaternion:
         """Rotations start from -z axis"""
         return quat_from_two_vectors(habitat_sim.geo.FRONT, cam_normal)
 
-    def _convert_to_scene_coordinate_system(self, poses, ref_point):
+    def _convert_to_scene_coordinate_system(
+        self,
+        poses: List[Tuple[Tuple[int, int], Tuple[int, int], str]],
+        ref_point: Tuple[float32, float32, float32],
+    ) -> List[Tuple[ndarray, quaternion, str]]:
         # Convert from topdown map coordinate system to that of the scene
         startw, starty, starth = ref_point
         for i, pose in enumerate(poses):
@@ -94,10 +115,16 @@ class PoseExtractor:
 
 @registry.register_pose_extractor(name="closest_point_extractor")
 class ClosestPointExtractor(PoseExtractor):
-    def __init__(self, topdown_views, meters_per_pixel=0.1):
+    def __init__(
+        self,
+        topdown_views: List[Tuple[TopdownView, str, Tuple[float32, float32, float32]]],
+        meters_per_pixel: float = 0.1,
+    ) -> None:
         super().__init__(topdown_views, meters_per_pixel)
 
-    def extract_poses(self, view, fp):
+    def extract_poses(
+        self, view: ndarray, fp: str
+    ) -> List[Tuple[Tuple[int, int], Tuple[int, int], str]]:
         # Determine the physical spacing between each camera position
         height, width = view.shape
         dist = min(height, width) // 10  # We can modify this to be user-defined later
@@ -128,7 +155,9 @@ class ClosestPointExtractor(PoseExtractor):
         # Returns poses in the coordinate system of the topdown view
         return poses
 
-    def _bfs(self, point, labels, view, dist):
+    def _bfs(
+        self, point: Tuple[int, int], labels: List[float], view: ndarray, dist: int
+    ) -> Union[Tuple[Tuple[int, int], float64], Tuple[None, None]]:
         step = 3  # making this larger really speeds up BFS
 
         def get_neighbors(p):
@@ -180,10 +209,16 @@ class ClosestPointExtractor(PoseExtractor):
 
 @registry.register_pose_extractor(name="panorama_extractor")
 class PanoramaExtractor(PoseExtractor):
-    def __init__(self, topdown_views, meters_per_pixel=0.1):
+    def __init__(
+        self,
+        topdown_views: List[Tuple[TopdownView, str, Tuple[float32, float32, float32]]],
+        meters_per_pixel: float = 0.1,
+    ) -> None:
         super().__init__(topdown_views, meters_per_pixel)
 
-    def extract_poses(self, view, fp):
+    def extract_poses(
+        self, view: ndarray, fp: str
+    ) -> List[Tuple[Tuple[int, int], Tuple[int, int], str]]:
         # Determine the physical spacing between each camera position
         height, width = view.shape
         dist = min(height, width) // 10  # We can modify this to be user-defined later
@@ -211,7 +246,9 @@ class PanoramaExtractor(PoseExtractor):
         # Returns poses in the coordinate system of the topdown view
         return poses
 
-    def _panorama_extraction(self, point, view, dist):
+    def _panorama_extraction(
+        self, point: Tuple[int, int], view: ndarray, dist: int
+    ) -> List[Tuple[Tuple[int, int], float]]:
         in_bounds_of_topdown_view = lambda row, col: 0 <= row < len(
             view
         ) and 0 <= col < len(view[0])

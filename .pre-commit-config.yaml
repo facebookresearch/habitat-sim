@@ -1,4 +1,4 @@
-exclude: 'build|data/datasets|data/scene_datasets|data/objects|src/deps|src/obsolete'
+exclude: 'build|data/datasets|data/scene_datasets|src/deps|src/obsolete'
 
 default_language_version:
     python: python3
@@ -21,7 +21,7 @@ repos:
         args: ['--fix=lf']
 
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.4.2
+    rev: 5.5.4
     hooks:
     -   id: isort
         exclude: docs/
@@ -34,10 +34,10 @@ repos:
       exclude: ^examples/tutorials/(nb_python|colabs)
 
 -   repo: https://github.com/myint/autoflake
-    rev: master
+    rev: v1.4
     hooks:
     -   id: autoflake
-        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place', '-c']
+        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
         exclude: docs/
 
 -   repo: https://gitlab.com/pycqa/flake8
@@ -49,11 +49,17 @@ repos:
         - flake8-bugbear
         - flake8-comprehensions
 
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v0.782'
+    hooks:
+    -   id: mypy
+        pass_filenames: false
+
 -   repo: https://github.com/kynan/nbstripout
-    rev: master
+    rev: 0.3.9
     hooks:
     -   id: nbstripout
-        files: ".ipynb"
+        files: '.ipynb'
 
 -   repo: local
     hooks:
@@ -87,7 +93,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v6.4.0
+    rev: v7.10.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]

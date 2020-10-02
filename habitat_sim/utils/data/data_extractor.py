@@ -1,16 +1,16 @@
-from typing import List, Union
+from typing import Callable, List, Union
 
 import numpy as np
 
 import habitat_sim
 from habitat_sim import bindings as hsim
 from habitat_sim import registry as registry
-from habitat_sim.agent import AgentState
+from habitat_sim.agent.agent import AgentConfiguration, AgentState
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
-from habitat_sim.utils.data.pose_extractor import PoseExtractor
+from habitat_sim.utils.data.pose_extractor import PoseExtractor, TopdownView
 
 
-def make_pose_extractor(name: str) -> PoseExtractor:
+def make_pose_extractor(name: str) -> Callable[..., PoseExtractor]:
     r"""Constructs a pose_extractor using the given name and keyword arguments
 
     :param name: The name of the pose_extractor in the `habitat_sim.registry`
@@ -79,7 +79,7 @@ class ImageExtractor:
 
         self.scene_filepaths = None
         self.cur_fp = None
-        if type(scene_filepath) == list:
+        if isinstance(scene_filepath, list):
             self.scene_filepaths = scene_filepath
         else:
             self.scene_filepaths = [scene_filepath]
@@ -302,14 +302,7 @@ class ImageExtractor:
                 sensor_specs.append(sensor_spec)
 
         # create agent specifications
-        agent_cfg = habitat_sim.agent.AgentConfiguration()
+        agent_cfg = AgentConfiguration()
         agent_cfg.sensor_specifications = sensor_specs
 
         return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-
-class TopdownView(object):
-    def __init__(self, sim, height, meters_per_pixel=0.1):
-        self.topdown_view = sim.pathfinder.get_topdown_view(
-            meters_per_pixel, height
-        ).astype(np.float64)

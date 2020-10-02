@@ -7,13 +7,14 @@
 
 import attr
 import numpy as np
+from numpy import ndarray
 
 from habitat_sim.registry import registry
 from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 
-def _simulate(image, s_vs_p, amount):
+def _simulate(image: ndarray, s_vs_p: float, amount: float) -> ndarray:
     noisy_rgb = np.copy(image)
     # Salt
     num_salt = np.ceil(amount * image.size * s_vs_p)
@@ -33,7 +34,7 @@ class SaltAndPepperNoiseModelCPUImpl:
     s_vs_p: float
     amount: float
 
-    def simulate(self, image):
+    def simulate(self, image: ndarray) -> ndarray:
         return _simulate(image, self.s_vs_p, self.amount)
 
 
@@ -43,7 +44,7 @@ class SaltAndPepperNoiseModel(SensorNoiseModel):
     s_vs_p: float = 0.5
     amount: float = 0.05
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         self._impl = SaltAndPepperNoiseModelCPUImpl(self.s_vs_p, self.amount)
 
     @staticmethod

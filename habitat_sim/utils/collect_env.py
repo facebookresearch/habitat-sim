@@ -19,30 +19,30 @@ import subprocess
 import sys
 
 
-def run_command(command: str):
+def run_command(command: str) -> str:
     p = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     output, error = p.communicate()
 
     encoded = locale.getpreferredencoding()
-    output = output.decode(encoded)
-    return output.strip()
+    out = str(output.decode(encoded).encode("ascii"))
+    return out.strip()
 
 
-def get_gcc_version():
+def get_gcc_version() -> str:
     return run_command("gcc --version | head -n 1")
 
 
-def get_cmake_version():
+def get_cmake_version() -> str:
     return run_command("cmake --version | head -n 1")
 
 
-def get_nvidia_smi():
+def get_nvidia_smi() -> str:
     return run_command("nvidia-smi | sed '/^ *$/,$ d'")
 
 
-def get_pip_packages():
+def get_pip_packages() -> str:
     return run_command(
         'bash -c "join -t= <(pip3 list --format=freeze | '
         "sort) <(awk -F== '{ print $1 }' requirements.txt | "
@@ -50,7 +50,7 @@ def get_pip_packages():
     )
 
 
-def get_conda_packages():
+def get_conda_packages() -> str:
     conda = os.environ.get("CONDA_EXE", "conda")
     return run_command(
         # f"join -t' ' <({conda} list | "
@@ -62,7 +62,7 @@ def get_conda_packages():
     )
 
 
-def main():
+def main() -> None:
     print(
         f"ENVIRONMENT INFO:\n"
         f"Platform: {platform.platform()}\n"

@@ -44,7 +44,7 @@ if enable_profiling:
     from torch.cuda import nvtx
 
 
-def range_push(msg: str):
+def range_push(msg: str) -> None:
     r"""Annotates the start of a range for profiling. Requires HABITAT_PROFILING
     environment variable to be set, otherwise the function is a no-op. Pushes a
     range onto a stack of nested ranges. Every range_push should have a
@@ -55,7 +55,7 @@ def range_push(msg: str):
         nvtx.range_push(msg)
 
 
-def range_pop():
+def range_pop() -> None:
     r"""Annotates the end of a range for profiling. See also range_push."""
     if enable_profiling:
         nvtx.range_pop()
@@ -66,13 +66,12 @@ class RangeContext(ContextDecorator):
     statement. See also range_push.
     """
 
-    def __init__(self, msg: str):
+    def __init__(self, msg: str) -> None:
         self._msg = msg
 
-    def __enter__(self):
+    def __enter__(self) -> "RangeContext":
         range_push(self._msg)
         return self
 
-    def __exit__(self, *exc):
+    def __exit__(self, *exc) -> None:
         range_pop()
-        return False
