@@ -239,68 +239,6 @@ int ObjectAttributesManager::registerObjectFinalize(
   return objectTemplateID;
 }  // ObjectAttributesManager::registerObjectFinalize
 
-std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
-    const std::vector<std::string>& tmpltFilenames,
-    bool saveAsDefaults) {
-  std::vector<int> resIDs(tmpltFilenames.size(), ID_UNDEFINED);
-  for (int i = 0; i < tmpltFilenames.size(); ++i) {
-    auto objPhysPropertiesFilename = tmpltFilenames[i];
-    LOG(INFO) << "Loading file-based object template: "
-              << objPhysPropertiesFilename;
-    auto tmplt = this->createObjectFromFile(objPhysPropertiesFilename, true);
-
-    // save handles in list of defaults, so they are not removed, if desired.
-    if (saveAsDefaults) {
-      std::string tmpltHandle = tmplt->getHandle();
-      this->undeletableObjectNames_.insert(tmpltHandle);
-    }
-    resIDs[i] = tmplt->getID();
-  }
-  LOG(INFO) << "Loaded file-based object templates: "
-            << std::to_string(physicsFileObjTmpltLibByID_.size());
-  return resIDs;
-}  // ObjectAttributesManager::loadAllObjectTemplates
-
-std::vector<int> ObjectAttributesManager::loadObjectConfigs(
-    const std::string& path,
-    bool saveAsDefaults) {
-  std::vector<std::string> paths;
-  std::vector<int> templateIndices;
-  namespace Directory = Cr::Utility::Directory;
-  std::string objPhysPropertiesFilename = path;
-  if (!Cr::Utility::String::endsWith(objPhysPropertiesFilename,
-                                     ".phys_properties.json")) {
-    objPhysPropertiesFilename = path + ".phys_properties.json";
-  }
-  const bool dirExists = Directory::isDirectory(path);
-  const bool fileExists = Directory::exists(objPhysPropertiesFilename);
-
-  if (!dirExists && !fileExists) {
-    LOG(WARNING) << "Cannot find " << path << " or "
-                 << objPhysPropertiesFilename << ". Aborting parse.";
-    return templateIndices;
-  }
-
-  if (fileExists) {
-    paths.push_back(objPhysPropertiesFilename);
-  }
-
-  if (dirExists) {
-    LOG(INFO) << "Parsing object library directory: " + path;
-    for (auto& file : Directory::list(path, Directory::Flag::SortAscending)) {
-      std::string absoluteSubfilePath = Directory::join(path, file);
-      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                        ".phys_properties.json")) {
-        paths.push_back(absoluteSubfilePath);
-      }
-    }
-  }
-  // build templates from aggregated paths
-  templateIndices = loadAllFileBasedTemplates(paths, saveAsDefaults);
-
-  return templateIndices;
-}  // ObjectAttributesManager::buildObjectConfigPaths
-
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp

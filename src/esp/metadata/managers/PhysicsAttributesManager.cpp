@@ -98,7 +98,7 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::loadFromJSONDoc(
       std::string absolutePath =
           Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
       // load all object templates available as configs in absolutePath
-      objectAttributesMgr_->loadObjectConfigs(absolutePath, true);
+      objectAttributesMgr_->loadAllConfigsFromPath(absolutePath, true);
     }
   }  // if load rigid object library metadata
 

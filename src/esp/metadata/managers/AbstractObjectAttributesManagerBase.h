@@ -118,6 +118,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
   AbsObjAttrPtr createObjectAttributesFromJson(const std::string& filename,
                                                const io::JsonDocument& jsonDoc);
 
+  //======== Internally accessed functions ========
   /**
    * @brief Only used by @ref
    * esp::metadata::attributes::AbstractObjectAttributes derived-attributes. Set
@@ -145,8 +146,6 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
                                  std::string& assetName,
                                  std::function<void(int)> meshTypeSetter);
 
-  //======== Internally accessed functions ========
-
   /**
    * @brief Perform asset-name-based attributes initialization. This is to
    * take the place of the AssetInfo::fromPath functionality, and is only
@@ -172,7 +171,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributesManager<AbsObjAttrPtr>)
 
-};  // namespace managers
+};  // class AbstractObjectAttributesManager<T>
 
 /////////////////////////////
 // Class Template Method Definitions
@@ -210,7 +209,8 @@ auto AbstractObjectAttributesManager<T>::createFromJsonOrDefaultInternal(
   AbsObjAttrPtr attrs;
   std::string strHandle = Cr::Utility::String::lowercase(filename);
   std::string jsonAttrFileName =
-      (strHandle.find(this->JSONTypeExt_) != std::string::npos)
+      (strHandle.find(Cr::Utility::String::lowercase(this->JSONTypeExt_)) !=
+       std::string::npos)
           ? std::string(filename)
           : io::changeExtension(filename, this->JSONTypeExt_);
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
