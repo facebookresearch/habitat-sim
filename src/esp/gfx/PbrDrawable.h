@@ -89,4 +89,4 @@ class PbrDrawable : public Drawable {
 }  // namespace gfx
 }  // namespace esp
 
-#endif  // ESP_GFX_PBRDRAWAPBR
+#endif  // ESP_GFX_PBRDRAWABLE_H_
