@@ -204,8 +204,10 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     const std::string& stageFilename) {
   // TODO if default template exists from some source, create this template as a
   // copy
-  auto newAttributes = StageAttributes::create(stageFilename);
-
+  StageAttributes::ptr newAttributes = this->constructFromDefault();
+  if (nullptr == newAttributes) {
+    newAttributes = StageAttributes::create(stageFilename);
+  }
   // attempt to set source directory if exists
   this->setFileDirectoryFromHandle(newAttributes);
 

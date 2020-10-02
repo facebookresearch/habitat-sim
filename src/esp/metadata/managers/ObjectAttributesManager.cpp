@@ -163,10 +163,10 @@ ObjectAttributes::ptr ObjectAttributesManager::loadFromJSONDoc(
 
 ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     const std::string& attributesHandle) {
-  // TODO if default template exists from some source, create this template as a
-  // copy
-  auto newAttributes = ObjectAttributes::create(attributesHandle);
-
+  ObjectAttributes::ptr newAttributes = this->constructFromDefault();
+  if (nullptr == newAttributes) {
+    newAttributes = ObjectAttributes::create(attributesHandle);
+  }
   this->setFileDirectoryFromHandle(newAttributes);
   // set default render asset handle
   newAttributes->setRenderAssetHandle(attributesHandle);
