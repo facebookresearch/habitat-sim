@@ -79,8 +79,7 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::createDefault
 
   /**
-   * @brief Creates an instance of a managed object from a file of type U using
-   * passed filename.  Currently U can be @ref esp::io::JsonDocument.
+   * @brief Creates an instance of a managed object from a JSON file.
    *
    * @param filename the name of the file describing the object managed object.
    * Assumes it exists and fails if it does not.
@@ -90,11 +89,10 @@ class ManagedContainer : public ManagedContainerBase {
    * true.
    * @return a reference to the desired managed object, or nullptr if fails.
    */
-  template <typename U>
-  ManagedPtr createObjectFromFile(const std::string& filename,
-                                  bool registerObject = true) {
-    U config;
-    bool success = this->verifyLoadDocument(filename, config);
+  ManagedPtr createObjectFromJSONFile(const std::string& filename,
+                                      bool registerObject = true) {
+    io::JsonDocument docConfig;
+    bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
       LOG(ERROR) << "ManagedContainer::createObjectFromFile ("
                  << this->objectType_
@@ -102,9 +100,11 @@ class ManagedContainer : public ManagedContainerBase {
                  << ". Aborting.";
       return nullptr;
     }
-    ManagedPtr attr = this->loadAttributesFromDoc(filename, config);
+    // convert doc to const value
+    const io::JsonGenericValue config = docConfig.GetObject();
+    ManagedPtr attr = this->buildManagedObjectFromDoc(filename, config);
     return this->postCreateRegister(attr, registerObject);
-  }
+  }  // ManagedContainer::createObjectFromJSONFile
 
   /**
    * @brief Method to load a Managed Object's data from a file.  If the file
@@ -116,10 +116,10 @@ class ManagedContainer : public ManagedContainerBase {
    * @return a shared pointer of the created Managed Object
    */
   template <typename U>
-  ManagedPtr loadAttributesFromDoc(const std::string& filename,
-                                   const U& config) {
+  ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
+                                       const U& config) {
     LOG(ERROR)
-        << "ManagedContainer::createObjectFromFile (" << this->objectType_
+        << "ManagedContainer::buildManagedObjectFromDoc (" << this->objectType_
         << ") : Failure loading attributes from document of unknown type : "
         << filename << ". Aborting.";
   }
@@ -130,9 +130,9 @@ class ManagedContainer : public ManagedContainerBase {
    * @param config JSON document to read for data
    * @return a shared pointer of the created Managed Object
    */
-  ManagedPtr loadAttributesFromDoc(const std::string& filename,
-                                   const io::JsonDocument& jsonConfig) {
-    return this->loadFromJSONDoc(filename, jsonConfig);
+  ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
+                                       const io::JsonGenericValue& jsonConfig) {
+    return this->buildObjectFromJSONDoc(filename, jsonConfig);
   }
 
   /**
@@ -143,8 +143,9 @@ class ManagedContainer : public ManagedContainerBase {
    * @param jsonConfig json document to parse - assumed to be legal JSON doc.
    * @return a reference to the desired managed object.
    */
-  virtual ManagedPtr loadFromJSONDoc(const std::string& filename,
-                                     const io::JsonDocument& jsonConfig) = 0;
+  virtual ManagedPtr buildObjectFromJSONDoc(
+      const std::string& filename,
+      const io::JsonGenericValue& jsonConfig) = 0;
 
   /**
    * @brief Add a copy of @ref esp::core::AbstractManagedObject to the @ref
@@ -363,6 +364,7 @@ class ManagedContainer : public ManagedContainerBase {
    */
   template <class U>
   std::shared_ptr<U> getObjectCopyByID(int managedObjectID) {
+    // call non-template version
     std::string objectHandle = getObjectHandleByID(managedObjectID);
     auto res = getObjectCopyByID(managedObjectID);
     if (nullptr == res) {
@@ -381,12 +383,28 @@ class ManagedContainer : public ManagedContainerBase {
    */
   template <class U>
   std::shared_ptr<U> getObjectCopyByHandle(const std::string& objectHandle) {
+    // call non-template version
     auto res = getObjectCopyByHandle(objectHandle);
     if (nullptr == res) {
       return nullptr;
     }
     return std::dynamic_pointer_cast<U>(res);
   }  // ManagedContainer::getObjectCopyByHandle
+
+  /**
+   * @brief Set the object to provide default values upon construction of @ref
+   * esp::core::AbstractManagedObject.  Override if object should not have
+   * defaults
+   * @param _defaultObj the object to use for defaults;
+   */
+  virtual void setDefaultObject(ManagedPtr& _defaultObj) {
+    defaultObj_ = _defaultObj;
+  }
+
+  /**
+   * @brief Clear any default objects used for construction.
+   */
+  void clearDefaultObject() { defaultObj_ = nullptr; }
 
  protected:
   //======== Internally accessed functions ========
@@ -512,6 +530,18 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::copyObject
 
   /**
+   * @brief Create a new object as a copy of @ref defaultObject_  if it exists,
+   * otherwise return nullptr.
+   * @return New object or nullptr
+   */
+  ManagedPtr constructFromDefault() {
+    if (defaultObj_ == nullptr) {
+      return nullptr;
+    }
+    return this->copyObject(defaultObj_);
+  }  // ManagedContainer::constructFromDefault
+
+  /**
    * @brief add passed managed object to library, setting managedObjectID
    * appropriately. Called internally by registerObject.
    *
@@ -555,6 +585,12 @@ class ManagedContainer : public ManagedContainerBase {
    */
   Map_Of_CopyCtors copyConstructorMap_;
 
+  /**
+   * @brief An object to provide default values, to be used upon
+   * AbstractManagedObject construction
+   */
+  ManagedPtr defaultObj_ = nullptr;
+
  public:
   ESP_SMART_POINTERS(ManagedContainer<T>)
 
@@ -594,7 +630,7 @@ auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
   if (this->undeletableObjectNames_.count(objectHandle) > 0) {
     msg = "Required Undeletable Managed Object";
   } else if (this->userLockedObjectNames_.count(objectHandle) > 0) {
-    msg = "User-locked Object.  To delete managed object, unlock it.";
+    msg = "User-locked Object.  To delete managed object, unlock it";
   }
   if (msg.length() != 0) {
     LOG(INFO) << sourceStr << " : Unable to remove " << objectType_

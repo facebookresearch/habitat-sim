@@ -86,20 +86,19 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
   //======== Common JSON import functions ========
 
   /**
-   * @brief Create either an object or a stage attributes from a json config.
-   * Since both object attributes and stage attributes inherit from @ref
-   * esp::metadata::attributes::AbstractObjectAttributes, the functionality to
-   * populate these fields from json can be shared.  Also will will populate
-   * render mesh and collision mesh handles in object and stage attributes with
-   * value(s) specified in json.  If one is blank will use other for both.
+   * @brief Populate an existing @ref
+   * metadata::attributes::AbstractObjectAttributes from a JSON config.  Also
+   * will populate render mesh and collision mesh handles with value(s)
+   * specified in JSON.  If one is blank will use other for both.
    *
-   * @param filename name of json descriptor file
-   * @param jsonDoc json document to parse
+   * @param attributes the attributes to populate with
+   * @param jsonDoc JSON document to parse
    * @return an appropriately cast attributes pointer with base class fields
    * filled in.
    */
-  AbsObjAttrPtr createObjectAttributesFromJson(const std::string& filename,
-                                               const io::JsonDocument& jsonDoc);
+  AbsObjAttrPtr loadAbstractObjectAttributesFromJson(
+      AbsObjAttrPtr attributes,
+      const io::JsonGenericValue& jsonDoc);
 
   //======== Internally accessed functions ========
   /**
@@ -123,7 +122,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
    * be set from assetName variable.
    */
   bool setJSONAssetHandleAndType(AbsObjAttrPtr attributes,
-                                 const io::JsonDocument& jsonDoc,
+                                 const io::JsonGenericValue& jsonDoc,
                                  const char* jsonMeshTypeTag,
                                  const char* jsonMeshHandleTag,
                                  std::string& assetName,
@@ -185,11 +184,9 @@ auto AbstractObjectAttributesManager<T>::createObject(
 }  // AbstractObjectAttributesManager<T>::createObject
 
 template <class T>
-auto AbstractObjectAttributesManager<T>::createObjectAttributesFromJson(
-    const std::string& configFilename,
-    const io::JsonDocument& jsonDoc) -> AbsObjAttrPtr {
-  AbsObjAttrPtr attributes = this->initNewObjectInternal(configFilename);
-
+auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
+    AbsObjAttrPtr attributes,
+    const io::JsonGenericValue& jsonDoc) -> AbsObjAttrPtr {
   using std::placeholders::_1;
 
   // scale
@@ -252,7 +249,6 @@ auto AbstractObjectAttributesManager<T>::createObjectAttributesFromJson(
     // set asset name to be what was read in json
     colFName = cTmpFName;
   }
-
   // use non-empty result if either result is empty
   attributes->setRenderAssetHandle(rndrFName.compare("") == 0 ? colFName
                                                               : rndrFName);
@@ -279,7 +275,7 @@ auto AbstractObjectAttributesManager<T>::createObjectAttributesFromJson(
 template <class T>
 bool AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,
-    const io::JsonDocument& jsonDoc,
+    const io::JsonGenericValue& jsonDoc,
     const char* jsonMeshTypeTag,
     const char* jsonMeshHandleTag,
     std::string& assetName,

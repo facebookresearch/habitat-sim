@@ -117,7 +117,10 @@ TEST(IOTest, JsonTest) {
       "{\"render mesh\": \"banana.glb\",\"join collision "
       "meshes\":false,\"mass\": 0.066,\"scale\": [2.0,2.0,2]}";
 
-  const auto& jsonDoc = esp::io::parseJsonString(attr_str);
+  // io::JsonGenericValue :
+  esp::io::JsonDocument tmpJSON = esp::io::parseJsonString(attr_str);
+  // io::JsonGenericValue :
+  const esp::io::JsonGenericValue jsonDoc = tmpJSON.GetObject();
 
   // for function ptr placeholder
   using std::placeholders::_1;

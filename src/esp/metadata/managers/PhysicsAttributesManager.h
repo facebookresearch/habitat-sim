@@ -53,19 +53,13 @@ class PhysicsAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Parse passed JSON Document specifically for @ref
-   * esp::metadata::attributes::PhysicsManagerAttributes object. It always
-   * returns a valid @ref
-   * esp::metadata::attributes::PhysicsManagerAttributes shared_ptr object.
-   *
-   * @param templateName the desired handle of the @ref
-   * esp::metadata::attributes::PhysicsManagerAttributes.
+   * @brief Method to take an existing attributes and set its values from passed
+   * json config file.
+   * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
-   * @return a reference to the desired template.
    */
-  Attrs::PhysicsManagerAttributes::ptr loadFromJSONDoc(
-      const std::string& templateName,
-      const io::JsonDocument& jsonConfig) override;
+  void setValsFromJSONDoc(Attrs::PhysicsManagerAttributes::ptr attribs,
+                          const io::JsonGenericValue& jsonConfig) override;
 
  protected:
   /**

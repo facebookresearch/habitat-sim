@@ -269,13 +269,10 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   }
 }  // StageAttributesManager::setDefaultAssetNameBasedAttributes
 
-StageAttributes::ptr StageAttributesManager::loadFromJSONDoc(
-    const std::string& templateName,
-    const io::JsonDocument& jsonConfig) {
-  // construct a StageAttributes and populate with any
-  // AbstractObjectAttributes fields found in json.
-  auto stageAttributes =
-      this->createObjectAttributesFromJson(templateName, jsonConfig);
+void StageAttributesManager::setValsFromJSONDoc(
+    Attrs::StageAttributes::ptr stageAttributes,
+    const io::JsonGenericValue& jsonConfig) {
+  this->loadAbstractObjectAttributesFromJson(stageAttributes, jsonConfig);
 
   // directory location where stage files are found
   std::string stageLocFileDir = stageAttributes->getFileDirectory();
@@ -338,10 +335,10 @@ StageAttributes::ptr StageAttributesManager::loadFromJSONDoc(
       jsonConfig["rigid object paths"].IsArray()) {
     std::string configDirectory = stageAttributes->getFileDirectory();
     const auto& paths = jsonConfig["rigid object paths"];
-    for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
+    for (rapidjson::SizeType i = 0; i < paths.Size(); ++i) {
       if (!paths[i].IsString()) {
         LOG(ERROR)
-            << "StageAttributesManager::loadFromJSONDoc "
+            << "StageAttributesManager::setValsFromJSONDoc "
                ":Invalid value in stage config 'rigid object paths'- array "
             << i;
         continue;
@@ -353,9 +350,7 @@ StageAttributes::ptr StageAttributesManager::loadFromJSONDoc(
       objectAttributesMgr_->loadAllConfigsFromPath(absolutePath, true);
     }
   }  // if load rigid object library metadata
-
-  return stageAttributes;
-}  // StageAttributesManager::loadFromJSONDoc
+}  // StageAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata

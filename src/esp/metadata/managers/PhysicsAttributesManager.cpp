@@ -30,14 +30,11 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
   return attrs;
 }  // PhysicsAttributesManager::createObject
 
-PhysicsManagerAttributes::ptr PhysicsAttributesManager::loadFromJSONDoc(
-    const std::string& templateName,
-    const io::JsonDocument& jsonConfig) {
-  // Attributes descriptor for physics world
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      initNewObjectInternal(templateName);
-
-  // load the simulator preference - default is "none" simulator, set in
+void PhysicsAttributesManager::setValsFromJSONDoc(
+    Attrs::PhysicsManagerAttributes::ptr physicsManagerAttributes,
+    const io::JsonGenericValue&
+        jsonConfig) {  // load the simulator preference - default is "none"
+                       // simulator, set in
   // attributes ctor.
   io::jsonIntoSetter<std::string>(
       jsonConfig, "physics simulator",
@@ -93,7 +90,6 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::loadFromJSONDoc(
     }
   }  // if load rigid object library metadata
 
-  return physicsManagerAttributes;
 }  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers

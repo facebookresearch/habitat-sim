@@ -50,19 +50,13 @@ class ObjectAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Parse passed JSON Document specifically for @ref
-   * esp::metadata::attributes::ObjectAttributes object. It always returns a
-   * valid @ref esp::metadata::attributes::ObjectAttributes shared
-   * pointer.
-   *
-   * @param templateName The desired name for this @ref
-   * esp::metadata::attributes::ObjectAttributes template.
+   * @brief Method to take an existing attributes and set its values from passed
+   * json config file.
+   * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
-   * @return a reference to the desired template.
    */
-  Attrs::ObjectAttributes::ptr loadFromJSONDoc(
-      const std::string& templateName,
-      const io::JsonDocument& jsonConfig) override;
+  void setValsFromJSONDoc(Attrs::ObjectAttributes::ptr attribs,
+                          const io::JsonGenericValue& jsonConfig) override;
 
   /**
    * @brief Check if currently configured primitive asset template library has

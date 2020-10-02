@@ -79,12 +79,54 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
                                           bool saveAsDefaults = false);
 
   /**
+   * @brief This builds a list of paths to this type of attributes's file from a
+   * JSON element.  It then will load all the configs it finds at each path.
+   * @param configDir The directory to use as a root to search in - may be
+   * different than the config already listed in this manager.
+   * @param jsonPaths The json array element
+   */
+
+  void buildCfgPathsFromJSONAndLoad(const std::string& configDir,
+                                    const io::JsonGenericValue& jsonPaths);
+
+  /**
    * @brief Check if currently configured primitive asset template library has
    * passed handle.
    * @param handle String name of primitive asset attributes desired
    * @return whether handle exists or not in asset attributes library
    */
   virtual bool isValidPrimitiveAttributes(const std::string& handle) = 0;
+
+  /**
+   * @brief Parse passed JSON Document for @ref
+   * esp::metadata::attributes::AbstractAttributes. It always returns a
+   * valid @ref esp::metadata::attributes::AbstractAttributes shared
+   * pointer.
+   *
+   * @param templateName The desired name for this @ref
+   * esp::metadata::attributes::AbstractAttributes template.
+   * @param jsonConfig json document to parse
+   * @return a reference to the desired template.
+   */
+  virtual AttribsPtr buildObjectFromJSONDoc(
+      const std::string& templateName,
+      const io::JsonGenericValue& jsonConfig) override {
+    // Construct a ObjectAttributes and populate with any
+    // AbstractObjectAttributes fields found in json.
+    auto attributes = this->initNewObjectInternal(templateName);
+    // set the values for this attributes from the json config.
+    this->setValsFromJSONDoc(attributes, jsonConfig);
+    return attributes;
+  }  // ObjectAttributesManager::buildObjectFromJSONDoc
+
+  /**
+   * @brief Method to take an existing attributes and set its values from passed
+   * json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  virtual void setValsFromJSONDoc(AttribsPtr attribs,
+                                  const io::JsonGenericValue& jsonConfig) = 0;
 
  protected:
   /**
@@ -125,8 +167,7 @@ std::vector<int> AttributesManager<T>::loadAllFileBasedTemplates(
     auto attributesFilename = paths[i];
     LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Load "
               << this->objectType_ << " template: " << attributesFilename;
-    auto tmplt = this->template createObjectFromFile<io::JsonDocument>(
-        attributesFilename, true);
+    auto tmplt = this->createObjectFromJSONFile(attributesFilename, true);
 
     // save handles in list of defaults, so they are not removed, if desired.
     if (saveAsDefaults) {
@@ -183,8 +224,28 @@ std::vector<int> AttributesManager<T>::loadAllConfigsFromPath(
   return templateIndices;
 }  // AttributesManager<T>::loadAllConfigsFromPath
 
-/////////////////////////////
-// Class Template Method Definitions
+template <class T>
+void AttributesManager<T>::buildCfgPathsFromJSONAndLoad(
+    const std::string& configDir,
+    const io::JsonGenericValue& jsonPaths) {
+  for (rapidjson::SizeType i = 0; i < jsonPaths.Size(); ++i) {
+    if (!jsonPaths[i].IsString()) {
+      LOG(ERROR)
+          << "AttributesManager::buildCfgPathsFromJSONAndLoad : Invalid path "
+             "value in configuration array element @ idx "
+          << i << ". Skipping.";
+      continue;
+    }
+    std::string absolutePath =
+        Cr::Utility::Directory::join(configDir, jsonPaths[i].GetString());
+    // load all object templates available as configs in absolutePath
+    this->loadAllConfigsFromPath(absolutePath, true);
+  }
+  LOG(INFO) << "AttributesManager::buildCfgPathsFromJSONAndLoad : "
+            << std::to_string(jsonPaths.Size())
+            << " paths specified in JSON doc for " << this->objectType_
+            << " templates.";
+}  // AttributesManager<T>::buildCfgPathsFromJSONAndLoad
 
 template <class T>
 auto AttributesManager<T>::createFromJsonOrDefaultInternal(
@@ -203,8 +264,7 @@ auto AttributesManager<T>::createFromJsonOrDefaultInternal(
     // check if stageAttributesHandle corresponds to an actual, existing
     // json stage file descriptor.
     // this method lives in class template.
-    attrs = this->template createObjectFromFile<io::JsonDocument>(
-        jsonAttrFileName, registerObj);
+    attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
     msg = "JSON File (" + jsonAttrFileName + ") Based";
   } else {
     // if name is not json file descriptor but still appropriate file, or if
