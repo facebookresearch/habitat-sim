@@ -24,63 +24,13 @@ namespace managers {
 StageAttributesManager::StageAttributesManager(
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
-    : AbstractObjectAttributesManager<
-          StageAttributes>::AbstractObjectAttributesManager("Stage"),
+    : AbstractObjectAttributesManager<StageAttributes>::
+          AbstractObjectAttributesManager("Stage", "stage_config.json"),
       objectAttributesMgr_(objectAttributesMgr),
       physicsAttributesManager_(physicsAttributesManager),
       cfgLightSetup_(assets::ResourceManager::NO_LIGHT_KEY) {
   buildCtorFuncPtrMaps();
 }  // StageAttributesManager ctor
-
-StageAttributes::ptr StageAttributesManager::createObject(
-    const std::string& attributesTemplateHandle,
-    bool registerTemplate) {
-  StageAttributes::ptr attrs;
-  std::string msg;
-  if (this->isValidPrimitiveAttributes(attributesTemplateHandle)) {
-    // if attributesTemplateHandle == some existing primitive attributes, then
-    // this is a primitive-based stage (i.e. a plane) we are building
-    attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
-                                              registerTemplate);
-    msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
-
-  } else {
-    std::string JSONTypeExt("stage_config.json");
-    std::string strHandle =
-        Cr::Utility::String::lowercase(attributesTemplateHandle);
-    std::string jsonAttrFileName =
-        (strHandle.find(JSONTypeExt) != std::string::npos)
-            ? std::string(attributesTemplateHandle)
-            : io::changeExtension(attributesTemplateHandle, JSONTypeExt);
-    bool fileExists = (this->isValidFileName(attributesTemplateHandle));
-    bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
-    if (jsonFileExists) {
-      // check if stageAttributesHandle corresponds to an actual, existing
-      // json stage file descriptor.
-      // this method lives in class template.
-      attrs = this->createObjectFromFile(jsonAttrFileName, registerTemplate);
-      msg = "JSON File (" + jsonAttrFileName + ") Based";
-    } else {
-      // if name is not json file descriptor but still appropriate file, or if
-      // is not a file or known prim
-      attrs =
-          this->createDefaultObject(attributesTemplateHandle, registerTemplate);
-
-      if (fileExists) {
-        msg = "File (" + attributesTemplateHandle + ") Based";
-
-      } else {
-        msg = "New default (" + attributesTemplateHandle + ")";
-      }
-    }
-  }  // if is prim else
-  if (nullptr != attrs) {
-    LOG(INFO) << msg << " stage attributes created"
-              << (registerTemplate ? " and registered." : ".");
-  }
-  return attrs;
-
-}  // StageAttributesManager::createObject
 
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,

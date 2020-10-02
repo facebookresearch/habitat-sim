@@ -36,11 +36,70 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
 
   typedef std::shared_ptr<T> AbsObjAttrPtr;
 
-  AbstractObjectAttributesManager(const std::string& attrType)
-      : AttributesManager<T>::AttributesManager(attrType) {}
+  AbstractObjectAttributesManager(const std::string& attrType,
+                                  const std::string& JSONTypeExt)
+      : AttributesManager<T>::AttributesManager(attrType, JSONTypeExt) {}
   virtual ~AbstractObjectAttributesManager() = default;
 
+  /**
+   * @brief Creates an instance of an object or stage template. The passed
+   * string should be either a file name or a reference to a primitive asset
+   * template that should be used in the construction of the object or stage;
+   * any other strings will result in a new default template being created.
+   *
+   * If a template exists with this handle, this existing template will be
+   * overwritten with the newly created one if registerTemplate is true.
+   *
+   * @param attributesTemplateHandle the origin of the desired template to be
+   * created, either a file name or an existing primitive asset template. If
+   * this is neither a recognized file name nor the handle of an existing
+   * primitive asset, a new default template will be created.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
+   * @return a reference to the desired template.
+   */
+  AbsObjAttrPtr createObject(const std::string& attributesTemplateHandle,
+                             bool registerTemplate = true) override;
+
+  /**
+   * @brief Creates an instance of an object or stage template described by
+   * passed string, which should be a reference to an existing primitive asset
+   * template to be used in the construction of the object or stage (as render
+   * and collision mesh). It returns existing instance if there is one, and
+   * nullptr if fails.
+   *
+   * @param primAttrTemplateHandle The handle to an existing primitive asset
+   * template. Fails if does not exist.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true.
+   * @return a reference to the desired stage template, or nullptr if fails.
+   */
+  virtual AbsObjAttrPtr createPrimBasedAttributesTemplate(
+      const std::string& primAttrTemplateHandle,
+      bool registerTemplate = true) = 0;
+
  protected:
+  //======== AbstractObjectAttributes common create functions ========
+
+  /**
+   * @brief Called intenrally from createObject.  This will create either a file
+   * based AbstractAttributes or a default one based on whether the passet file
+   * name exists and has appropriate string tag for @ref
+   * esp::metadata::attributes::AbstractAttributes.
+   *
+   * @param filename the file holding the configuration of the object
+   * @param msg reference to progress message
+   * @param registerObj whether the new object should be registered in library
+   * @return the create @ref esp::metadata::attributes::AbstractAttributes.
+   */
+  AbsObjAttrPtr createFromJsonOrDefaultInternal(const std::string& filename,
+                                                std::string& msg,
+                                                bool registerObj);
+
   //======== Common JSON import functions ========
 
   /**
@@ -117,6 +176,63 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
 
 /////////////////////////////
 // Class Template Method Definitions
+
+template <class T>
+auto AbstractObjectAttributesManager<T>::createObject(
+    const std::string& attributesTemplateHandle,
+    bool registerTemplate) -> AbsObjAttrPtr {
+  AbsObjAttrPtr attrs;
+  std::string msg;
+  if (this->isValidPrimitiveAttributes(attributesTemplateHandle)) {
+    // if attributesTemplateHandle == some existing primitive attributes, then
+    // this is a primitive-based object we are building
+    attrs = this->createPrimBasedAttributesTemplate(attributesTemplateHandle,
+                                                    registerTemplate);
+    msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
+  } else {
+    attrs = this->createFromJsonOrDefaultInternal(attributesTemplateHandle, msg,
+                                                  registerTemplate);
+
+  }  // if this is prim else
+  if (nullptr != attrs) {
+    LOG(INFO) << msg << " " << this->objectType_ << " attributes created"
+              << (registerTemplate ? " and registered." : ".");
+  }
+  return attrs;
+
+}  // AbstractObjectAttributesManager<T>::createObject
+
+template <class T>
+auto AbstractObjectAttributesManager<T>::createFromJsonOrDefaultInternal(
+    const std::string& filename,
+    std::string& msg,
+    bool registerObj) -> AbsObjAttrPtr {
+  AbsObjAttrPtr attrs;
+  std::string strHandle = Cr::Utility::String::lowercase(filename);
+  std::string jsonAttrFileName =
+      (strHandle.find(this->JSONTypeExt_) != std::string::npos)
+          ? std::string(filename)
+          : io::changeExtension(filename, this->JSONTypeExt_);
+  bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+  if (jsonFileExists) {
+    // check if stageAttributesHandle corresponds to an actual, existing
+    // json stage file descriptor.
+    // this method lives in class template.
+    attrs = this->createObjectFromFile(jsonAttrFileName, registerObj);
+    msg = "JSON File (" + jsonAttrFileName + ") Based";
+  } else {
+    // if name is not json file descriptor but still appropriate file, or if
+    // is not a file or known prim
+    attrs = this->createDefaultObject(filename, registerObj);
+    bool fileExists = (this->isValidFileName(filename));
+    if (fileExists) {
+      msg = "File (" + filename + ") Based";
+    } else {
+      msg = "New default (" + filename + ")";
+    }
+  }
+  return attrs;
+}  // AttributesManager<T>::createFromJsonFileOrDefaultInternal
 
 template <class T>
 auto AbstractObjectAttributesManager<T>::createObjectAttributesFromJson(

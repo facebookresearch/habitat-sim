@@ -60,26 +60,6 @@ class StageAttributesManager
 
   /**
    * @brief Creates an instance of a stage template described by passed
-   * string. For stage templates, this a file name.
-   *
-   * If a template exists with this handle, this existing template will be
-   * overwritten with the newly created one if registerTemplate is true.
-   *
-   * @param attributesTemplateHandle the origin of the desired stage template to
-   * be created.
-   * @param registerTemplate whether to add this template to the library.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration. Defaults to true. If
-   * specified as true, then this function returns a copy of the registered
-   * template.
-   * @return a reference to the desired template.
-   */
-  Attrs::StageAttributes::ptr createObject(
-      const std::string& attributesTemplateHandle,
-      bool registerTemplate = true) override;
-
-  /**
-   * @brief Creates an instance of a stage template described by passed
    * string, which should be a reference to an existing primitive asset template
    * to be used in the construction of the stage (as render and collision
    * mesh). It returns existing instance if there is one, and nullptr if fails.
@@ -93,7 +73,7 @@ class StageAttributesManager
    */
   Attrs::StageAttributes::ptr createPrimBasedAttributesTemplate(
       const std::string& primAttrTemplateHandle,
-      bool registerTemplate = true);
+      bool registerTemplate = true) override;
 
   /**
    * @brief Parse passed JSON Document specifically for @ref
