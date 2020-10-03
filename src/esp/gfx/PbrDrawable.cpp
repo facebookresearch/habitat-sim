@@ -98,6 +98,8 @@ PbrDrawable& PbrDrawable::updateShader() {
     // TODO: may be supported in the future
   }
 
+  flags = PbrShader::generateCorrectFlags(flags);
+
   unsigned int lightCount = lightSetup_->size();
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags) {

@@ -58,5 +58,5 @@ void main() {
   // (read from normal map) from tangent space to camera space
 #endif
 
-  gl_Position = MVP * vec4(vertexPosition, 1.0);
+  gl_Position = MVP * vertexPosition;
 }

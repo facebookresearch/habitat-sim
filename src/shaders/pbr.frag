@@ -36,8 +36,8 @@ uniform vec4 LightDirections[LIGHT_COUNT];
 
 // -------------- material, textures ------------------
 struct MaterialData {
-  vec4 baseColor;   // diffuse color, if baseTexture exists,
-                    // use the baseTexture
+  vec4 baseColor;   // diffuse color, if baseColorTexture exists,
+                    // use the baseColorTexture
   float roughness;  // roughness of a surface, if roughness texture exists,
                     // use the roughnessTexture
   float metallic;   // metalness of a surface, if metallic texture exists,
@@ -46,7 +46,7 @@ struct MaterialData {
 uniform MaterialData Material;
 
 #if defined(BASECOLOR_TEXTURE)
-uniform sampler2D baseTexture;
+uniform sampler2D baseColorTexture;
 #endif
 #if defined(ROUGHNESS_TEXTURE)
 uniform sampler2D roughnessTexture;
@@ -58,7 +58,8 @@ uniform sampler2D metallicTexture;
 uniform sampler2D normalTexture;
 #endif
 
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || \
+    defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
 uniform sampler2D combinedTexture;
 #endif
 
@@ -104,6 +105,7 @@ vec3 getNormalFromNormalMap() {
 
   return normalize(TBN * tangentNormal);
 }
+#endif
 
 const float PI = 3.14159265359;
 const float Epsilon = 0.0001;
@@ -159,7 +161,7 @@ vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 half) {
   return F0 + (1.0 - F0) * pow(1.0 - v_dot_h, 5.0);
 }
 
-// baseColor: diffuse color from baseTexture
+// baseColor: diffuse color from baseColorTexture
 //              or from baseColor in the material;
 // metallic: metalness of the surface, from metallicTexture
 //           or from metallic in the material;
@@ -177,7 +179,7 @@ vec3 microfacetModel(vec3 baseColor,
                      vec3 light,
                      vec3 view,
                      vec3 lightRadiance) {
-  vec3 half = normalize(l + v);
+  vec3 half = normalize(light + view);
   // compute F0, specular reflectance at normal incidence
   // for nonmetal, using constant 0.04
   vec3 F0 = mix(vec3(0.04), baseColor, metallic);
@@ -205,18 +207,20 @@ vec3 microfacetModel(vec3 baseColor,
 void main() {
   vec4 baseColor = Material.baseColor;
 #if defined(BASECOLOR_TEXTURE)
-  baseColor *= texture(baseTexture, texCoord);
+  baseColor *= texture(baseColorTexture, texCoord);
 #endif
 
   float roughness = Material.roughness;
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || \
+    defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
   roughness *= texture(combinedTexture, texCoord).g;
 #elif defined(ROUGHNESS_TEXTURE)
   roughness *= texture(roughnessTexture, texCoord).r;
 #endif
 
   float metallic = Material.metallic;
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || \
+    defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
   metallic *= texture(combinedTexture, texCoord).b;
 #elif defined(METALLIC_TEXTURE)
   metallic *= texture(metallicTexture, texCoord).r;
@@ -260,8 +264,8 @@ void main() {
     vec3 light = normalize(LightDirections[iLight].xyz -
                            position * LightDirections[iLight].w);
 
-    finalColor += microfacetModel(baseColor.rgb, roughness, n, light, view,
-                                  lightRadiance);
+    finalColor += microfacetModel(baseColor.rgb, metallic, roughness, n, light,
+                                  view, lightRadiance);
     finalAlpha += baseColor.w;
   }  // for lights
 

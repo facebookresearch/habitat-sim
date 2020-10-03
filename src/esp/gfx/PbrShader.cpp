@@ -228,56 +228,37 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
 PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D* texture) {
-  CORRADE_ASSERT(flags_ & Flag::BASE_COLOR_TEXTURE,
-                 "PbrShader::bindBaseColorTexture: the shader was not "
-                 "created with BaseColor texture enabled",
-                 *this);
-  if (lightCount_ && texture) {
+  if ((flags_ & Flag::BASE_COLOR_TEXTURE) && lightCount_ && texture) {
     texture->bind(TextureUnit::BaseColor);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindRoughnessTexture(Mn::GL::Texture2D* texture) {
-  CORRADE_ASSERT(flags_ & Flag::ROUGHNESS_TEXTURE,
-                 "PbrShader::bindRoughnessTexture: the shader was not "
-                 "created with roughness texture enabled",
-                 *this);
-  if (lightCount_ && texture) {
+  if ((flags_ & Flag::ROUGHNESS_TEXTURE) && lightCount_ && texture) {
     texture->bind(TextureUnit::Roughness);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindMetallicTexture(Mn::GL::Texture2D* texture) {
-  CORRADE_ASSERT(flags_ & Flag::METALLIC_TEXTURE,
-                 "PbrShader::bindMetallicTexture: the shader was not "
-                 "created with metallic texture enabled",
-                 *this);
-  if (lightCount_ && texture) {
+  if ((flags_ & Flag::METALLIC_TEXTURE) && lightCount_ && texture) {
     texture->bind(TextureUnit::Metallic);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D* texture) {
-  CORRADE_ASSERT(flags_ & Flag::NORMAL_TEXTURE,
-                 "PbrShader::bindNormalTexture: the shader was not "
-                 "created with normal texture enabled",
-                 *this);
-  if (lightCount_ && texture) {
+  if ((flags_ & Flag::NORMAL_TEXTURE) && lightCount_ && texture) {
     texture->bind(TextureUnit::Normal);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindCombinedTexture(Magnum::GL::Texture2D* texture) {
-  CORRADE_ASSERT((flags_ & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE) ||
-                     (flags_ & Flag::NONE_ROUGHNESS_METALLIC_TEXTURE),
-                 "PbrShader::bindCombinedTexture: the shader was not "
-                 "created with combined texture enabled",
-                 *this);
-  if (lightCount_ && texture) {
+  if (((flags_ & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE) ||
+       (flags_ & Flag::NONE_ROUGHNESS_METALLIC_TEXTURE)) &&
+      lightCount_ && texture) {
     texture->bind(TextureUnit::Combined);
   }
   return *this;
