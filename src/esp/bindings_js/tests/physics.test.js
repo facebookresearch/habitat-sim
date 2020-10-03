@@ -117,6 +117,8 @@ test("simulator physics determinism", async () => {
     return Promise.resolve(timeline);
   });
 
+  closeBrowserAndServer(browser, server);
+
   let testResultLength = results.length;
   let groundTruthFileLength = groundTruthStates.length;
 
@@ -139,6 +141,4 @@ test("simulator physics determinism", async () => {
       );
     }
   }
-
-  closeBrowserAndServer(browser, server);
 });

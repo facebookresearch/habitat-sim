@@ -51,6 +51,7 @@ std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
+  em::register_vector<int>("VectorInt");
   em::register_vector<std::string>("VectorString");
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
@@ -187,7 +188,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
-      .property("compressTextures", &SimulatorConfiguration::compressTextures);
+      .property("compressTextures", &SimulatorConfiguration::compressTextures)
+      .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
+      .property("physicsConfigFile",
+                &SimulatorConfiguration::physicsConfigFile);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
@@ -273,6 +277,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setObjectMotionType", &Simulator::setObjectMotionType)
       .function("getObjectMotionType", &Simulator::getObjectMotionType)
       .function("stepWorld", &Simulator::stepWorld)
-      .function("getWorldTime", &Simulator::getWorldTime);
+      .function("getWorldTime", &Simulator::getWorldTime)
+      .function("getExistingObjectIDs", &Simulator::getExistingObjectIDs);
   ;
 }

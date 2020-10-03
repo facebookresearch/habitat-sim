@@ -40,7 +40,7 @@ function preloadPhysConfig(url) {
   let emObjHome = emDataHome.concat("/objects");
   FS.mkdir(emObjHome);
 
-  // TODO Need to loop through the objects directory on the server (`phys/objects/*`) and put all of the glbs onto the client
+  // TODO Need to loop through the objects directory on the server (`test_assets/objects/*`) and put all of the glbs onto the client
   var objects = fileBasedObjects["objects"];
   for (let objectIdx in objects) {
     let physicsProperties = objects[objectIdx]["physicsProperties"];
