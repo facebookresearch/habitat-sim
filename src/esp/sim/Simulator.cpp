@@ -209,7 +209,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
 
     const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
-    resourceManager_->setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
+    resourceManager_->setLightSetup(
+        gfx::getLightsAtBoxCorners(sceneBB, Magnum::Color3{300.0f}));
 
     // set activeSemanticSceneID_ values and push onto sceneID vector if
     // appropriate - tempIDs[1] will either be old activeSemanticSceneID_ (if
@@ -280,7 +281,8 @@ void Simulator::reset() {
   }
   const Magnum::Range3D& sceneBB =
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
-  resourceManager_->setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
+  resourceManager_->setLightSetup(
+      gfx::getLightsAtBoxCorners(sceneBB, Magnum::Color3{300.0f}));
 }  // Simulator::reset()
 
 void Simulator::seed(uint32_t newSeed) {
