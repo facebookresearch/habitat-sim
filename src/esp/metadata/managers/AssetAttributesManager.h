@@ -85,9 +85,9 @@ class AssetAttributesManager
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
 
-  AssetAttributesManager(assets::ResourceManager& resourceManager)
+  AssetAttributesManager()
       : AttributesManager<Attrs::AbstractPrimitiveAttributes>::
-            AttributesManager(resourceManager, "Primitive Asset") {
+            AttributesManager("Primitive Asset", "prim_config.json") {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
 
@@ -124,9 +124,18 @@ class AssetAttributesManager
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  Attrs::AbstractPrimitiveAttributes::ptr loadFromJSONDoc(
+  Attrs::AbstractPrimitiveAttributes::ptr buildObjectFromJSONDoc(
       const std::string& filename,
-      const io::JsonDocument& jsonConfig) override;
+      const io::JsonGenericValue& jsonConfig) override;
+
+  /**
+   * @brief Method to take an existing attributes and set its values from passed
+   * json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  void setValsFromJSONDoc(AttribsPtr attribs,
+                          const io::JsonGenericValue& jsonConfig) override;
 
   /**
    * @brief Should only be called internally. Creates an instance of a
@@ -194,7 +203,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultCapsuleTemplate
 
   /**
-   * @brief Return the spedified capsule template.
+   * @brief Return the specified capsule template.
    * @param templateHndle The handle of the desired capsule template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -226,7 +235,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultConeTemplate
 
   /**
-   * @brief Return the spedified cone template, either solid or wireframe.
+   * @brief Return the specified cone template, either solid or wireframe.
    * @param templateHndle The handle of the desired cone template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -258,7 +267,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultCubeTemplate
 
   /**
-   * @brief Return the spedified cube template.
+   * @brief Return the specified cube template.
    * @param templateHndle The handle of the desired cube template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -291,7 +300,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultCylinderTemplate
 
   /**
-   * @brief Return the spedified cylinder template.
+   * @brief Return the specified cylinder template.
    * @param templateHndle The handle of the desired cylinder template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -324,7 +333,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultIcosphereTemplate
 
   /**
-   * @brief Return the spedified icosphere template.
+   * @brief Return the specified icosphere template.
    * @param templateHndle The handle of the desired icosphere template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
@@ -357,8 +366,8 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getDefaultUVSphereTemplate
 
   /**
-   * @brief Return the spedified cube template.
-   * @param templateHndle The handle of the desired cube template. Verifies
+   * @brief Return the specified UVSphere template.
+   * @param templateHndle The handle of the desired UVSphere template. Verifies
    * that handle is to specified template type
    * @return appropriately cast template, or nullptr if template handle
    * incorrectly specified.
@@ -371,6 +380,20 @@ class AssetAttributesManager
     return this->getObjectCopyByHandle<Attrs::UVSpherePrimitiveAttributes>(
         templateHndle);
   }  // AssetAttributeManager::getUVSphereTemplate
+
+  /**
+   * @brief Set the object to provide default values upon construction of @ref
+   * esp::core::AbstractManagedObject.  Override if object should not have
+   * defaults.  Currently not supported for AbstractPrimitiveAttributes.
+   * @param _defaultObj the object to use for defaults;
+   */
+  void setDefaultObject(CORRADE_UNUSED Attrs::AbstractPrimitiveAttributes::ptr&
+                            _defaultObj) override {
+    LOG(WARNING) << "AssetAttributesManager::setDefaultObject : Overriding "
+                    "defualt objects for PrimitiveAssetAttributes not "
+                    "currently supported.  Aborting.";
+    this->defaultObj_ = nullptr;
+  }  // AssetAttributesManager::setDefaultObject
 
  protected:
   /**
@@ -444,6 +467,7 @@ class AssetAttributesManager
                  << primClassName << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
+    // these attributes ignore any default setttings.
     auto newAttributes = (*this.*primTypeConstructorMap_[primClassName])();
     return newAttributes;
   }

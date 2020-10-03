@@ -71,6 +71,10 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.sceneLightSetup = sceneLightingKey;
 
     auto sim = Simulator::create_unique(simConfig);
+    auto objAttrMgr = sim->getObjectAttributesManager();
+    objAttrMgr->loadAllConfigsFromPath(
+        Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+
     sim->setLightSetup(lightSetup1, "custom_lighting_1");
     sim->setLightSetup(lightSetup2, "custom_lighting_2");
     return sim;
@@ -215,13 +219,18 @@ void SimTest::checkPinholeCameraRGBAObservation(
 }
 
 void SimTest::getSceneRGBAObservation() {
+  Corrade::Utility::Debug() << "Starting Test : getSceneRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
+  Corrade::Utility::Debug() << "About to build simulator";
   auto simulator = getSimulator(vangogh);
+  Corrade::Utility::Debug() << "Built simulator";
   checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
                                     maxThreshold, 0.75f);
 }
 
 void SimTest::getSceneWithLightingRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : getSceneWithLightingRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh, "custom_lighting_1");
   CORRADE_SKIP(
@@ -232,6 +241,8 @@ void SimTest::getSceneWithLightingRGBAObservation() {
 }
 
 void SimTest::getDefaultLightingRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : getDefaultLightingRGBAObservation ";
   auto simulator = getSimulator(vangogh);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
@@ -248,6 +259,8 @@ void SimTest::getDefaultLightingRGBAObservation() {
 }
 
 void SimTest::getCustomLightingRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : getCustomLightingRGBAObservation ";
   auto simulator = getSimulator(vangogh);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
@@ -265,6 +278,8 @@ void SimTest::getCustomLightingRGBAObservation() {
 }
 
 void SimTest::updateLightSetupRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : updateLightSetupRGBAObservation ";
   auto simulator = getSimulator(vangogh);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
@@ -300,6 +315,8 @@ void SimTest::updateLightSetupRGBAObservation() {
 }
 
 void SimTest::updateObjectLightSetupRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : updateObjectLightSetupRGBAObservation ";
   auto simulator = getSimulator(vangogh);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
@@ -325,6 +342,8 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
 }
 
 void SimTest::multipleLightingSetupsRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : multipleLightingSetupsRGBAObservation ";
   CORRADE_SKIP(
       "We are iterating on lighting as of Sep 2020, so the expected behavior "
       "isn't finalized.");
@@ -358,6 +377,8 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
 }
 
 void SimTest::recomputeNavmeshWithStaticObjects() {
+  Corrade::Utility::Debug()
+      << "Starting Test : recomputeNavmeshWithStaticObjects ";
   auto simulator = getSimulator(skokloster);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
@@ -420,12 +441,13 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 }
 
 void SimTest::loadingObjectTemplates() {
+  Corrade::Utility::Debug() << "Starting Test : loadingObjectTemplates ";
   auto simulator = getSimulator(planeScene);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
   // test directory of templates
-  std::vector<int> templateIndices = objectAttribsMgr->loadObjectConfigs(
+  std::vector<int> templateIndices = objectAttribsMgr->loadAllConfigsFromPath(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
   for (auto index : templateIndices) {
@@ -433,7 +455,7 @@ void SimTest::loadingObjectTemplates() {
   }
 
   // reload again and ensure that old loaded indices are returned
-  std::vector<int> templateIndices2 = objectAttribsMgr->loadObjectConfigs(
+  std::vector<int> templateIndices2 = objectAttribsMgr->loadAllConfigsFromPath(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(templateIndices2 == templateIndices);
 

@@ -7,6 +7,7 @@ import logging
 import os
 import time
 import traceback
+from logging import LogRecord
 
 logger = logging.getLogger(__file__)
 handler = logging.StreamHandler()
@@ -21,7 +22,7 @@ _log_level_mapping = {
 logger.setLevel(_log_level_mapping[int(os.environ.get("GLOG_minloglevel", 0))])
 
 
-def format_message(record):
+def format_message(record: LogRecord) -> str:
     try:
         record_message = "%s" % (record.msg % record.args)
     except TypeError:
@@ -41,7 +42,7 @@ class GlogFormatter(logging.Formatter):
     def __init__(self):
         logging.Formatter.__init__(self)
 
-    def format(self, record):
+    def format(self, record: LogRecord) -> str:
         try:
             level = GlogFormatter.LEVEL_MAP[record.levelno]
         except KeyError:
@@ -61,7 +62,7 @@ class GlogFormatter(logging.Formatter):
             record.lineno,
             format_message(record),
         )
-        record.getMessage = lambda: record_message
+        record.getMessage = lambda: record_message  # type: ignore
         return logging.Formatter.format(self, record)
 
 
@@ -124,8 +125,8 @@ class FailedCheckException(AssertionError):
 
 
 def check_failed(message):
-    stack = traceback.extract_stack()
-    stack = stack[0:-2]
+    stack_trace = traceback.extract_stack()
+    stack = stack_trace[0:-2]
     stacktrace_lines = format_stacktrace(stack)
     filename, line_num, _, _ = stack[-1]
 

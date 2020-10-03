@@ -12,16 +12,14 @@
 #include "esp/core/random.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
-#include "esp/metadata/managers/AssetAttributesManager.h"
-#include "esp/metadata/managers/ObjectAttributesManager.h"
-#include "esp/metadata/managers/PhysicsAttributesManager.h"
-#include "esp/metadata/managers/StageAttributesManager.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+
+#include "SimulatorConfiguration.h"
 
 namespace esp {
 namespace nav {
@@ -41,46 +39,6 @@ namespace esp {
 namespace sim {
 namespace AttrMgrs = esp::metadata::managers;
 namespace Attrs = esp::metadata::attributes;
-
-struct SimulatorConfiguration {
-  scene::SceneConfiguration scene;
-  int defaultAgentId = 0;
-  int gpuDeviceId = 0;
-  unsigned int randomSeed = 0;
-  std::string defaultCameraUuid = "rgba_camera";
-  bool compressTextures = false;
-  bool createRenderer = true;
-  // Whether or not the agent can slide on collisions
-  bool allowSliding = true;
-  // enable or disable the frustum culling
-  bool frustumCulling = true;
-  /**
-   * @brief This flags specifies whether or not dynamics is supported by the
-   * simulation, if a suitable library (i.e. Bullet) has been installed.
-   */
-  bool enablePhysics = false;
-  /**
-   * @brief Whether or not to load the semantic mesh
-   */
-  bool loadSemanticMesh = true;
-  /**
-   * @brief Whether or not to load textures for the meshes. This MUST be true
-   * for RGB rendering
-   */
-  bool requiresTextures = true;
-  std::string physicsConfigFile =
-      ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH;  // should we instead link a
-                                               // PhysicsManagerConfiguration
-                                               // object here?
-  /** @brief Light setup key for scene */
-  std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
-
-  ESP_SMART_POINTERS(SimulatorConfiguration)
-};
-bool operator==(const SimulatorConfiguration& a,
-                const SimulatorConfiguration& b);
-bool operator!=(const SimulatorConfiguration& a,
-                const SimulatorConfiguration& b);
 
 class Simulator {
  public:
@@ -718,6 +676,10 @@ class Simulator {
    * python random or numpy.random modules.
    */
   core::Random::ptr random() { return random_; }
+
+  int getNumActiveContactPoints() {
+    return physicsManager_->getNumActiveContactPoints();
+  }
 
  protected:
   Simulator(){};

@@ -48,6 +48,10 @@ template <class T>
 void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
   using MgrClass = AttributesManager<T>;
   using AttribsPtr = std::shared_ptr<T>;
+  // Most, but not all, of these methods are from ManagedContainer class
+  // template.  However, we use AttributesManager as the base class because we
+  // wish to have appropriate (attributes-related) argument nomenclature and
+  // documentation.
   std::string pyclass_name = classStrPrefix + std::string("AttributesManager");
   py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str())
       .def(
@@ -67,6 +71,12 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
           R"(Returns a list of template handles that either contain or explicitly do not
             contain the passed search_str, based on the value of boolean contains.)",
           "search_str"_a = "", "contains"_a = true)
+      .def("load_configs", &MgrClass::loadAllConfigsFromPath,
+           R"(Build templates for all JSON files with appropriate extension
+            that exist in the provided file or directory path. If save_as_defaults
+            is true, then these templates will be unable to be deleted)"
+           "path"_a,
+           "save_as_defaults"_a = false)
       .def("create_template",
            static_cast<AttribsPtr (MgrClass::*)(const std::string&, bool)>(
                &MgrClass::createObject),
@@ -261,13 +271,14 @@ void initAttributesManagersBindings(py::module& m) {
              ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
 
       // ObjectAttributesManager-specific bindings
-      .def(
-          "load_object_configs", &ObjectAttributesManager::loadObjectConfigs,
-          R"(Build templates for all files with ".phys_properties.json" extension
+      .def("load_object_configs",
+           &ObjectAttributesManager::loadAllConfigsFromPath,
+           R"(DEPRECATED : use "load_configs" instead.
+            Build templates for all files with ".phys_properties.json" extension
             that exist in the provided file or directory path. If save_as_defaults
             is true, then these templates will be unable to be deleted)"
-          "path"_a,
-          "save_as_defaults"_a = false)
+           "path"_a,
+           "save_as_defaults"_a = false)
 
       // manage file-based templates access
       .def(

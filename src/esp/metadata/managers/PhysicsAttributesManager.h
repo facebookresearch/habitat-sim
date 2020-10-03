@@ -16,16 +16,14 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace metadata {
-
 namespace managers {
 class PhysicsAttributesManager
     : public AttributesManager<Attrs::PhysicsManagerAttributes> {
  public:
-  PhysicsAttributesManager(esp::assets::ResourceManager& resourceManager,
-                           ObjectAttributesManager::ptr objectAttributesMgr)
+  PhysicsAttributesManager(ObjectAttributesManager::ptr objectAttributesMgr)
       : AttributesManager<Attrs::PhysicsManagerAttributes>::AttributesManager(
-            resourceManager,
-            "Physics Manager"),
+            "Physics Manager",
+            "phys_scene_config.json"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
@@ -55,19 +53,13 @@ class PhysicsAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Parse passed JSON Document specifically for @ref
-   * esp::metadata::attributes::PhysicsManagerAttributes object. It always
-   * returns a valid @ref
-   * esp::metadata::attributes::PhysicsManagerAttributes shared_ptr object.
-   *
-   * @param templateName the desired handle of the @ref
-   * esp::metadata::attributes::PhysicsManagerAttributes.
+   * @brief Method to take an existing attributes and set its values from passed
+   * json config file.
+   * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
-   * @return a reference to the desired template.
    */
-  Attrs::PhysicsManagerAttributes::ptr loadFromJSONDoc(
-      const std::string& templateName,
-      const io::JsonDocument& jsonConfig) override;
+  void setValsFromJSONDoc(Attrs::PhysicsManagerAttributes::ptr attribs,
+                          const io::JsonGenericValue& jsonConfig) override;
 
  protected:
   /**
@@ -88,7 +80,11 @@ class PhysicsAttributesManager
    */
   Attrs::PhysicsManagerAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override {
-    auto newAttributes = Attrs::PhysicsManagerAttributes::create(handleName);
+    Attrs::PhysicsManagerAttributes::ptr newAttributes =
+        this->constructFromDefault();
+    if (nullptr == newAttributes) {
+      newAttributes = Attrs::PhysicsManagerAttributes::create(handleName);
+    }
     this->setFileDirectoryFromHandle(newAttributes);
     return newAttributes;
   }

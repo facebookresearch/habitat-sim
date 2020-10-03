@@ -6,14 +6,22 @@
 
 import time
 from os import path as osp
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import attr
 import magnum as mn
 import numpy as np
+from magnum import Vector3
+from numpy import ndarray
+
+try:
+    import torch
+    from torch import Tensor
+except ImportError:
+    torch = None
 
 import habitat_sim.errors
-from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
@@ -21,8 +29,6 @@ from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
-
-torch = None
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -62,7 +68,7 @@ class Simulator(SimulatorBackend):
     )  # track the compute time of each step
 
     @staticmethod
-    def _sanitize_config(config: Configuration):
+    def _sanitize_config(config: Configuration) -> None:
         if not len(config.agents) > 0:
             raise RuntimeError(
                 "Config has not agents specified.  Must specify at least 1 agent"
@@ -95,11 +101,11 @@ class Simulator(SimulatorBackend):
             )
         )
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 
-    def close(self):
+    def close(self) -> None:
         for sensor in self._sensors.values():
             sensor.close()
             del sensor
@@ -119,24 +125,24 @@ class Simulator(SimulatorBackend):
 
         super().close()
 
-    def __enter__(self):
+    def __enter__(self) -> "Simulator":
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: None, exc_val: None, exc_tb: None) -> None:
         self.close()
 
-    def seed(self, new_seed):
+    def seed(self, new_seed: int) -> None:
         super().seed(new_seed)
         self.pathfinder.seed(new_seed)
 
-    def reset(self):
+    def reset(self) -> Dict[str, ndarray]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
 
         return self.get_sensor_observations()
 
-    def reset_agent(self, agent_id):
+    def reset_agent(self, agent_id: int) -> None:
         agent = self.get_agent(agent_id)
         initial_agent_state = agent.initial_state
         if initial_agent_state is None:
@@ -144,20 +150,20 @@ class Simulator(SimulatorBackend):
 
         self.initialize_agent(agent_id, initial_agent_state)
 
-    def _config_backend(self, config: Configuration):
+    def _config_backend(self, config: Configuration) -> None:
         if not self._initialized:
             super().__init__(config.sim_cfg)
             self._initialized = True
         else:
             super().reconfigure(config.sim_cfg)
 
-    def _config_agents(self, config: Configuration):
+    def _config_agents(self, config: Configuration) -> None:
         self.agents = [
             Agent(self.get_active_scene_graph().get_root_node().create_child(), cfg)
             for cfg in config.agents
         ]
 
-    def _config_pathfinder(self, config: Configuration):
+    def _config_pathfinder(self, config: Configuration) -> None:
         if "navmesh" in config.sim_cfg.scene.filepaths:
             navmesh_filenname = config.sim_cfg.scene.filepaths["navmesh"]
         else:
@@ -201,7 +207,7 @@ class Simulator(SimulatorBackend):
 
         self.pathfinder.seed(config.sim_cfg.random_seed)
 
-    def reconfigure(self, config: Configuration):
+    def reconfigure(self, config: Configuration) -> None:
         self._sanitize_config(config)
 
         if self.config != config:
@@ -229,10 +235,12 @@ class Simulator(SimulatorBackend):
         for i in range(len(self.agents)):
             self.initialize_agent(i)
 
-    def get_agent(self, agent_id):
+    def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
 
-    def initialize_agent(self, agent_id, initial_state=None):
+    def initialize_agent(
+        self, agent_id: int, initial_state: Optional[AgentState] = None
+    ) -> Agent:
         agent = self.get_agent(agent_id=agent_id)
         if initial_state is None:
             initial_state = AgentState()
@@ -246,7 +254,7 @@ class Simulator(SimulatorBackend):
         self._last_state = agent.state
         return agent
 
-    def get_sensor_observations(self):
+    def get_sensor_observations(self) -> Dict[str, Union[ndarray, "Tensor"]]:
         for _, sensor in self._sensors.items():
             sensor.draw_observation()
 
@@ -259,7 +267,9 @@ class Simulator(SimulatorBackend):
     def last_state(self):
         return self._last_state
 
-    def step(self, action, dt=1.0 / 60.0):
+    def step(
+        self, action: str, dt: float = 1.0 / 60.0
+    ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
         self._num_total_frames += 1
         collided = self._default_agent.act(action)
         self._last_state = self._default_agent.get_state()
@@ -299,7 +309,7 @@ class Simulator(SimulatorBackend):
             thrashing_threshold=thrashing_threshold,
         )
 
-    def step_filter(self, start_pos, end_pos):
+    def step_filter(self, start_pos: Vector3, end_pos: Vector3) -> Vector3:
         r"""Computes a valid navigable end point given a target translation on the NavMesh.
         Uses the configured sliding flag.
 
@@ -314,10 +324,10 @@ class Simulator(SimulatorBackend):
 
         return end_pos
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close()
 
-    def step_physics(self, dt, scene_id=0):
+    def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
 
 
@@ -327,8 +337,7 @@ class Sensor:
     TODO(MS) define entire Sensor class in python, reducing complexity
     """
 
-    def __init__(self, sim, agent, sensor_id):
-        global torch
+    def __init__(self, sim: Simulator, agent: Agent, sensor_id: str) -> None:
         self._sim = sim
         self._agent = agent
 
@@ -341,11 +350,8 @@ class Sensor:
 
         if self._spec.gpu2gpu_transfer:
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
-
-            if torch is None:
-                import torch
-
-            device = torch.device("cuda", self._sim.gpu_device)
+            assert torch is not None
+            device = torch.device("cuda", self._sim.gpu_device)  # type: ignore[attr-defined]
             torch.cuda.set_device(device)
 
             resolution = self._spec.resolution
@@ -393,7 +399,7 @@ class Sensor:
             self._spec.noise_model, self._spec.uuid
         )
 
-    def draw_observation(self):
+    def draw_observation(self) -> None:
         # sanity check:
 
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
@@ -444,18 +450,18 @@ class Sensor:
                 self._sensor_object, self._sim.get_active_scene_graph(), render_flags
             )
 
-    def get_observation(self):
+    def get_observation(self) -> Union[ndarray, "Tensor"]:
 
         tgt = self._sensor_object.render_target
 
         if self._spec.gpu2gpu_transfer:
-            with torch.cuda.device(self._buffer.device):
+            with torch.cuda.device(self._buffer.device):  # type: ignore[attr-defined]
                 if self._spec.sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())
+                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
                 elif self._spec.sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())
+                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
                 else:
-                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
+                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
 
                 obs = self._buffer.flip(0)
         else:
@@ -482,7 +488,7 @@ class Sensor:
 
         return self._noise_model(obs)
 
-    def close(self):
+    def close(self) -> None:
         self._sim = None
         self._agent = None
         self._sensor_object = None

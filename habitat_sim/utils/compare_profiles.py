@@ -44,7 +44,10 @@ import argparse
 import glob
 import os
 import sqlite3
+from argparse import ArgumentParser, Namespace
 from collections import defaultdict
+from sqlite3 import Connection
+from typing import Any, DefaultDict, Dict, List, Set, Union
 
 import attr
 
@@ -68,10 +71,10 @@ class SummaryItem:
     time_inclusive: int = 0
 
 
-def get_sqlite_events(conn):
+def get_sqlite_events(conn: Connection) -> List[Event]:
     """Parse an sqlite database containing an NVTX_EVENTS table and return a
     list of Events."""
-    events = []
+    events: List[Event] = []
 
     # check if table exists
     cursor = conn.execute(
@@ -90,7 +93,7 @@ def get_sqlite_events(conn):
     return events
 
 
-def create_summary_from_events(events):
+def create_summary_from_events(events: List[Event]) -> DefaultDict[str, SummaryItem]:
     """From a list of events, group by name and create summary items. Returns a
     dictionary of items keyed by name."""
     # sort by start time (ascending). For ties, sort by end time (descending). In this way,
@@ -99,7 +102,7 @@ def create_summary_from_events(events):
     events.sort(reverse=True, key=lambda event: event.end)
     events.sort(reverse=False, key=lambda event: event.start)
 
-    items = defaultdict(lambda: SummaryItem())
+    items: DefaultDict[str, SummaryItem] = defaultdict(lambda: SummaryItem())
 
     for i, event in enumerate(events):
 
@@ -114,7 +117,7 @@ def create_summary_from_events(events):
         #  "exclusive duration" is time during which we aren't inside any
         #  overlapping, same-thread event ("child event").
         recent_exclusive_start_time = event.start
-        child_end_times = set()
+        child_end_times: Set[int] = set()
         for j in range(i + 1, len(events) + 1):  # note one extra iteration
 
             other_event = None if j == len(events) else events[j]
@@ -155,7 +158,7 @@ def create_summary_from_events(events):
     return items
 
 
-def _display_time_ms(time, args, show_sign=False):
+def _display_time_ms(time: int, args: Namespace, show_sign: bool = False) -> str:
     seconds_to_ms = 0.001
     return "{}{:,.0f}".format(
         "+" if time > 0 and show_sign else "",
@@ -163,7 +166,11 @@ def _display_time_ms(time, args, show_sign=False):
     )
 
 
-def print_summaries(summaries, args, labels=None):
+def print_summaries(
+    summaries: Union[List[DefaultDict[str, SummaryItem]], List[DefaultDict[Any, Any]]],
+    args: Namespace,
+    labels: None = None,
+) -> None:
     """Print a dictionary of summaries to stdout. See create_arg_parser for
     formatting options available in the args object. See also
     create_summary_from_events."""
@@ -174,7 +181,7 @@ def print_summaries(summaries, args, labels=None):
         print("no summaries to print")
         return
 
-    all_names_with_times = {}
+    all_names_with_times: Dict[str, int] = {}
     max_name_len = 0
     for summary in summaries:
         for name in summary:
@@ -255,7 +262,7 @@ def get_sqlite_filepaths_from_directory(directory):
     return filepaths
 
 
-def create_arg_parser():
+def create_arg_parser() -> ArgumentParser:
     """For compare_profiles.py script. Includes print formatting options."""
     parser = argparse.ArgumentParser()
     parser.add_argument(

@@ -22,67 +22,15 @@ using attributes::StageAttributes;
 namespace managers {
 
 StageAttributesManager::StageAttributesManager(
-    assets::ResourceManager& resourceManager,
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
-    : AbstractObjectAttributesManager<
-          StageAttributes>::AbstractObjectAttributesManager(resourceManager,
-                                                            "Stage"),
+    : AbstractObjectAttributesManager<StageAttributes>::
+          AbstractObjectAttributesManager("Stage", "stage_config.json"),
       objectAttributesMgr_(objectAttributesMgr),
       physicsAttributesManager_(physicsAttributesManager),
       cfgLightSetup_(assets::ResourceManager::NO_LIGHT_KEY) {
   buildCtorFuncPtrMaps();
 }  // StageAttributesManager ctor
-
-StageAttributes::ptr StageAttributesManager::createObject(
-    const std::string& attributesTemplateHandle,
-    bool registerTemplate) {
-  StageAttributes::ptr attrs;
-  std::string msg;
-  if (this->isValidPrimitiveAttributes(attributesTemplateHandle)) {
-    // if attributesTemplateHandle == some existing primitive attributes, then
-    // this is a primitive-based stage (i.e. a plane) we are building
-    attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
-                                              registerTemplate);
-    msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
-
-  } else {
-    std::string JSONTypeExt("stage_config.json");
-    std::string strHandle =
-        Cr::Utility::String::lowercase(attributesTemplateHandle);
-    std::string jsonAttrFileName =
-        (strHandle.find(JSONTypeExt) != std::string::npos)
-            ? std::string(attributesTemplateHandle)
-            : io::changeExtension(attributesTemplateHandle, JSONTypeExt);
-    bool fileExists = (this->isValidFileName(attributesTemplateHandle));
-    bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
-    if (jsonFileExists) {
-      // check if stageAttributesHandle corresponds to an actual, existing
-      // json stage file descriptor.
-      // this method lives in class template.
-      attrs = this->createObjectFromFile(jsonAttrFileName, registerTemplate);
-      msg = "JSON File (" + jsonAttrFileName + ") Based";
-    } else {
-      // if name is not json file descriptor but still appropriate file, or if
-      // is not a file or known prim
-      attrs =
-          this->createDefaultObject(attributesTemplateHandle, registerTemplate);
-
-      if (fileExists) {
-        msg = "File (" + attributesTemplateHandle + ") Based";
-
-      } else {
-        msg = "New default (" + attributesTemplateHandle + ")";
-      }
-    }
-  }  // if is prim else
-  if (nullptr != attrs) {
-    LOG(INFO) << msg << " stage attributes created"
-              << (registerTemplate ? " and registered." : ".");
-  }
-  return attrs;
-
-}  // StageAttributesManager::createObject
 
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
@@ -204,8 +152,10 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     const std::string& stageFilename) {
   // TODO if default template exists from some source, create this template as a
   // copy
-  auto newAttributes = StageAttributes::create(stageFilename);
-
+  StageAttributes::ptr newAttributes = this->constructFromDefault();
+  if (nullptr == newAttributes) {
+    newAttributes = StageAttributes::create(stageFilename);
+  }
   // attempt to set source directory if exists
   this->setFileDirectoryFromHandle(newAttributes);
 
@@ -319,13 +269,10 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   }
 }  // StageAttributesManager::setDefaultAssetNameBasedAttributes
 
-StageAttributes::ptr StageAttributesManager::loadFromJSONDoc(
-    const std::string& templateName,
-    const io::JsonDocument& jsonConfig) {
-  // construct a StageAttributes and populate with any
-  // AbstractObjectAttributes fields found in json.
-  auto stageAttributes =
-      this->createObjectAttributesFromJson(templateName, jsonConfig);
+void StageAttributesManager::setValsFromJSONDoc(
+    Attrs::StageAttributes::ptr stageAttributes,
+    const io::JsonGenericValue& jsonConfig) {
+  this->loadAbstractObjectAttributesFromJson(stageAttributes, jsonConfig);
 
   // directory location where stage files are found
   std::string stageLocFileDir = stageAttributes->getFileDirectory();
@@ -388,10 +335,10 @@ StageAttributes::ptr StageAttributesManager::loadFromJSONDoc(
       jsonConfig["rigid object paths"].IsArray()) {
     std::string configDirectory = stageAttributes->getFileDirectory();
     const auto& paths = jsonConfig["rigid object paths"];
-    for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
+    for (rapidjson::SizeType i = 0; i < paths.Size(); ++i) {
       if (!paths[i].IsString()) {
         LOG(ERROR)
-            << "StageAttributesManager::loadFromJSONDoc "
+            << "StageAttributesManager::setValsFromJSONDoc "
                ":Invalid value in stage config 'rigid object paths'- array "
             << i;
         continue;
@@ -400,12 +347,10 @@ StageAttributes::ptr StageAttributesManager::loadFromJSONDoc(
       std::string absolutePath =
           Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
       // load all object templates available as configs in absolutePath
-      objectAttributesMgr_->loadObjectConfigs(absolutePath, true);
+      objectAttributesMgr_->loadAllConfigsFromPath(absolutePath, true);
     }
   }  // if load rigid object library metadata
-
-  return stageAttributes;
-}  // StageAttributesManager::loadFromJSONDoc
+}  // StageAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata

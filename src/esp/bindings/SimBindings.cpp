@@ -15,6 +15,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
+#include "esp/sim/SimulatorConfiguration.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -250,7 +251,13 @@ void initSimBindings(py::module& m) {
       .def(
           "set_object_light_setup", &Simulator::setObjectLightSetup,
           "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0,
-          R"(Modify the LightSetup used to the render all components of an object by setting the LightSetup key referenced by all Drawables attached to the object's visual SceneNodes.)");
+          R"(Modify the LightSetup used to the render all components of an object by setting the LightSetup key referenced by all Drawables attached to the object's visual SceneNodes.)")
+
+      .def(
+          "get_num_active_contact_points",
+          &Simulator::getNumActiveContactPoints,
+          R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count can be used as a metric for the complexity/cost of collision-handling in the current scene.)");
+  ;
 }
 
 }  // namespace sim

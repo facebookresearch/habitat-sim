@@ -14,7 +14,7 @@ from habitat_sim.geo import FRONT
 from habitat_sim.registry import registry
 from habitat_sim.scene import SceneNode
 
-__all__ = []
+__all__ = []  # type: ignore
 
 
 _X_AXIS = 0
@@ -28,14 +28,14 @@ _rotate_local_fns = [
 ]
 
 
-def _move_along(scene_node: SceneNode, distance: float, axis: int):
+def _move_along(scene_node: SceneNode, distance: float, axis: int) -> None:
     ax = scene_node.transformation[axis].xyz
     scene_node.translate_local(ax * distance)
 
 
 def _rotate_local(
     scene_node: SceneNode, theta: float, axis: int, constraint: Optional[float] = None
-):
+) -> None:
     if constraint is not None:
         rotation = scene_node.rotation
 
@@ -69,43 +69,43 @@ def _rotate_local(
 
 @registry.register_move_fn(body_action=True)
 class MoveBackward(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _move_along(scene_node, actuation_spec.amount, _Z_AXIS)
 
 
 @registry.register_move_fn(body_action=True)
 class MoveForward(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _move_along(scene_node, -actuation_spec.amount, _Z_AXIS)
 
 
 @registry.register_move_fn(body_action=True)
 class MoveRight(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _move_along(scene_node, actuation_spec.amount, _X_AXIS)
 
 
 @registry.register_move_fn(body_action=True)
 class MoveLeft(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _move_along(scene_node, -actuation_spec.amount, _X_AXIS)
 
 
 @registry.register_move_fn(body_action=False)
 class MoveUp(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _move_along(scene_node, actuation_spec.amount, _Y_AXIS)
 
 
 @registry.register_move_fn(body_action=False)
 class MoveDown(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _move_along(scene_node, -actuation_spec.amount, _Y_AXIS)
 
 
 @registry.register_move_fn(body_action=False)
 class LookLeft(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _rotate_local(
             scene_node, actuation_spec.amount, _Y_AXIS, actuation_spec.constraint
         )
@@ -113,7 +113,7 @@ class LookLeft(SceneNodeControl):
 
 @registry.register_move_fn(body_action=False)
 class LookRight(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _rotate_local(
             scene_node, -actuation_spec.amount, _Y_AXIS, actuation_spec.constraint
         )
@@ -125,7 +125,7 @@ registry.register_move_fn(LookRight, name="turn_right", body_action=True)
 
 @registry.register_move_fn(body_action=False)
 class LookUp(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _rotate_local(
             scene_node, actuation_spec.amount, _X_AXIS, actuation_spec.constraint
         )
@@ -133,7 +133,7 @@ class LookUp(SceneNodeControl):
 
 @registry.register_move_fn(body_action=False)
 class LookDown(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _rotate_local(
             scene_node, -actuation_spec.amount, _X_AXIS, actuation_spec.constraint
         )
@@ -141,7 +141,7 @@ class LookDown(SceneNodeControl):
 
 @registry.register_move_fn(body_action=False)
 class RotateSensorClockwise(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _rotate_local(
             scene_node, actuation_spec.amount, _Z_AXIS, actuation_spec.constraint
         )
@@ -149,7 +149,7 @@ class RotateSensorClockwise(SceneNodeControl):
 
 @registry.register_move_fn(body_action=False)
 class RotateSensorAntiClockwise(SceneNodeControl):
-    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec) -> None:
         _rotate_local(
             scene_node, -actuation_spec.amount, _Z_AXIS, actuation_spec.constraint
         )
