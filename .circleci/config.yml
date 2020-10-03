@@ -358,7 +358,7 @@ jobs:
               . activate habitat
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
               nvm use v11.9.0
-              ./build_js.sh
+              ./build_js.sh --bullet
               # TODO: Later fix this in the cmake build step
               cp -v build_js/Release/bin/hsim_bindings.* build_js/esp/bindings_js/
       - run:

@@ -14,6 +14,7 @@ using namespace esp::agent;
 using namespace esp::core;
 using namespace esp::geo;
 using namespace esp::gfx;
+using namespace esp::physics;
 using namespace esp::nav;
 using namespace esp::scene;
 using namespace esp::sensor;
@@ -231,6 +232,17 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .smart_ptr<SemanticScene::ptr>("SemanticScene::ptr")
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
+
+  em::class_<SceneNode>("SceneNode")
+      .property("id", &SceneNode::getId, &SceneNode::setId)
+      .property("semanticId", &SceneNode::getSemanticId,
+                &SceneNode::setSemanticId);
+
+  em::enum_<MotionType>("MotionType")
+      .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
+      .value("STATIC", MotionType::STATIC)
+      .value("KINEMATIC", MotionType::KINEMATIC)
+      .value("DYNAMIC", MotionType::DYNAMIC);
 
   em::class_<Simulator>("Simulator")
       .smart_ptr_constructor("Simulator",

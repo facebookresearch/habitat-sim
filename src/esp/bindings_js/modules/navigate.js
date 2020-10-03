@@ -72,7 +72,8 @@ class NavigateTask {
       { name: "turnLeft", key: "a" },
       { name: "turnRight", key: "d" },
       { name: "lookUp", key: "ArrowUp" },
-      { name: "lookDown", key: "ArrowDown" }
+      { name: "lookDown", key: "ArrowDown" },
+      { name: "runPhysicsTest", key: "p" }
     ];
   }
 
@@ -216,8 +217,12 @@ class NavigateTask {
   }
 
   handleAction(action) {
-    this.sim.step(action);
-    this.setStatus(action);
+    if (action == "runPhysicsTest") {
+      this.sim.runPhysicsTest();
+    } else {
+      this.sim.step(action);
+      this.setStatus(action);
+    }
     this.render();
   }
 
