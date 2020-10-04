@@ -1283,7 +1283,6 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   finalMaterial->baseColor = material.baseColor();
   finalMaterial->metallic = material.metalness();
   finalMaterial->roughness = material.roughness();
-  finalMaterial->normalTextureScale = material.normalTextureScale();
 
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
     finalMaterial->baseColorTexture =
@@ -1291,6 +1290,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   }
 
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
+    finalMaterial->normalTextureScale = material.normalTextureScale();
     finalMaterial->normalTexture =
         textures_[textureBaseIndex + material.normalTexture()].get();
   }
