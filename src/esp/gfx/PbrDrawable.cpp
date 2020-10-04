@@ -97,6 +97,13 @@ PbrDrawable& PbrDrawable::updateShader() {
   if (materialData_->normalTexture) {
     flags |= PbrShader::Flag::NORMAL_TEXTURE;
     flags |= PbrShader::Flag::PRECOMPUTED_TANGENT;
+    if (materialData_->normalTextureScale != 1.0f) {
+      flags |= PbrShader::Flag::NORMAL_TEXTURE_SCALE;
+      CORRADE_ASSERT(materialData_->normalTextureScale > 0.0f,
+                     "PbrDrawable::updateShader(): the normal texture scale "
+                     "cannot be negative.",
+                     *this);
+    }
   }
   if (materialData_->perVertexObjectId) {
     // TODO: may be supported in the future
