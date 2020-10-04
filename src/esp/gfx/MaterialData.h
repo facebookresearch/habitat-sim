@@ -59,7 +59,7 @@ struct PbrMaterialData : public MaterialData {
   Magnum::Color4 baseColor{0.7f};
   Magnum::Float roughness = 0.9f;
   Magnum::Float metallic = 0.1f;
-  Magnum::Color3 emissiveColor{1.0};
+  Magnum::Color3 emissiveColor{0.0f};
   Magnum::Float normalTextureScale = 1.0f;
 
   Magnum::GL::Texture2D* baseColorTexture = nullptr;
