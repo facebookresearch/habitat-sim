@@ -144,7 +144,9 @@ bool BulletRigidObject::initialization_LibSpecific(
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
 
   //! Add to world
-  bWorld_->addRigidBody(bObjectRigidBody_.get());
+  bWorld_->addRigidBody(bObjectRigidBody_.get(),
+                        btBroadphaseProxy::DefaultFilter,
+                        btBroadphaseProxy::AllFilter);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
   //! Sync render pose with physics
   syncPose();
@@ -270,7 +272,9 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
         bObjectRigidBody_->getCollisionFlags() &
         ~btCollisionObject::CF_STATIC_OBJECT);
     objectMotionType_ = MotionType::KINEMATIC;
-    bWorld_->addRigidBody(bObjectRigidBody_.get());
+    bWorld_->addRigidBody(bObjectRigidBody_.get(),
+                          btBroadphaseProxy::KinematicFilter,
+                          btBroadphaseProxy::DefaultFilter);
     return true;
   } else if (mt == MotionType::STATIC) {
     bObjectRigidBody_->setCollisionFlags(
@@ -290,10 +294,9 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
     std::unique_ptr<btRigidBody> staticCollisionObject =
         std::make_unique<btRigidBody>(cInfo);
     ASSERT(staticCollisionObject->isStaticObject());
-    bWorld_->addRigidBody(
-        staticCollisionObject.get(),
-        2,       // collisionFilterGroup (2 == StaticFilter)
-        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+    bWorld_->addRigidBody(staticCollisionObject.get(),
+                          btBroadphaseProxy::StaticFilter,
+                          btBroadphaseProxy::DefaultFilter);
     collisionObjToObjIds_->emplace(staticCollisionObject.get(), objectId_);
     bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
     return true;
@@ -305,7 +308,9 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
         bObjectRigidBody_->getCollisionFlags() &
         ~btCollisionObject::CF_KINEMATIC_OBJECT);
     objectMotionType_ = MotionType::DYNAMIC;
-    bWorld_->addRigidBody(bObjectRigidBody_.get());
+    bWorld_->addRigidBody(bObjectRigidBody_.get(),
+                          btBroadphaseProxy::DefaultFilter,
+                          btBroadphaseProxy::AllFilter);
     setActive();
     return true;
   } else if (mt == MotionType::RENDER_ONLY) {

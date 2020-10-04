@@ -45,7 +45,8 @@ bool BulletRigidStage::initialization_LibSpecific(
     object->setFriction(initializationAttributes_->getFrictionCoefficient());
     object->setRestitution(
         initializationAttributes_->getRestitutionCoefficient());
-    bWorld_->addRigidBody(object.get());
+    bWorld_->addRigidBody(object.get(), btBroadphaseProxy::StaticFilter,
+                          btBroadphaseProxy::DefaultFilter);
     collisionObjToObjIds_->emplace(object.get(), objectId_);
   }
 
