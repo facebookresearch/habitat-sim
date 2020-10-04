@@ -122,8 +122,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     OCCLUSION_ROUGHNESS_METALLIC_TEXTURE = 1 << 4,
 
     /**
-     * Modify normals according to a texture. Requires the
-     * @ref Tangent4 attribute to be present.
+     * Modify normals according to a texture.
      */
     NORMAL_TEXTURE = 1 << 5,
 
@@ -160,6 +159,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Precomputed tangent as the vertex attribute
      * Otherwise, it will be computed in the fragement shader dynamically
      * see PBR fragement shader code for more details
+     * Requires the @ref Tangent4 attribute to be present.
      */
     PRECOMPUTED_TANGENT = 1 << 10,
 

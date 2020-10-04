@@ -123,7 +123,14 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       .addSource(rs.get("pbr.vert"));
 
+  std::stringstream outputAttributeLocationsStream;
+  outputAttributeLocationsStream << Cr::Utility::formatString(
+      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
+  outputAttributeLocationsStream << Cr::Utility::formatString(
+      "#define OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID {}\n", ObjectIdOutput);
+
   frag.addSource(attributeLocationsStream.str())
+      .addSource(outputAttributeLocationsStream.str())
       .addSource(isTextured() ? "#define TEXTURED\n" : "")
       .addSource(flags_ & Flag::BASE_COLOR_TEXTURE
                      ? "#define BASECOLOR_TEXTURE\n"
@@ -174,6 +181,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     }
     if (isTextured()) {
       bindAttributeLocation(TextureCoordinates::Location, "vertexTexCoord");
+    }
+
+    if (flags_ & Flag::OBJECT_ID) {
+      bindFragmentDataLocation(ColorOutput, "fragmentColor");
+      bindFragmentDataLocation(ObjectIdOutput, "fragmentObjectId");
     }
   }
 

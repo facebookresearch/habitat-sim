@@ -18,9 +18,10 @@ in highp vec3 biTangent;
 #endif
 
 // -------------- output -------------------
-layout(location = 0) out vec4 fragmentColor;
+layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out vec4 fragmentColor;
 #if defined(OBJECT_ID)
-layout(location = 1) out highp uint fragmentObjectId;
+layout(location = OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID) out highp uint
+    fragmentObjectId;
 #endif
 
 // -------------- lights -------------------

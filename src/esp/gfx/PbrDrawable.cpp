@@ -88,12 +88,16 @@ PbrDrawable& PbrDrawable::updateShader() {
   if (materialData_->noneRoughnessMetallicTexture) {
     flags |= PbrShader::Flag::NONE_ROUGHNESS_METALLIC_TEXTURE;
   }
-  if (materialData_->roughnessTexture)
+  if (materialData_->roughnessTexture) {
     flags |= PbrShader::Flag::ROUGHNESS_TEXTURE;
-  if (materialData_->metallicTexture)
+  }
+  if (materialData_->metallicTexture) {
     flags |= PbrShader::Flag::METALLIC_TEXTURE;
-  if (materialData_->normalTexture)
+  }
+  if (materialData_->normalTexture) {
     flags |= PbrShader::Flag::NORMAL_TEXTURE;
+    flags |= PbrShader::Flag::PRECOMPUTED_TANGENT;
+  }
   if (materialData_->perVertexObjectId) {
     // TODO: may be supported in the future
   }
