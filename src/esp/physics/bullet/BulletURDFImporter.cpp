@@ -570,33 +570,6 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       bool isDynamic =
           (mbLinkIndex < 0 && cache.m_bulletMultiBody->hasFixedBase()) ? false
                                                                        : true;
-      int collisionFilterGroup = isDynamic
-                                     ? int(btBroadphaseProxy::DefaultFilter)
-                                     : int(btBroadphaseProxy::StaticFilter);
-      int collisionFilterMask = isDynamic
-                                    ? int(btBroadphaseProxy::AllFilter)
-                                    : int(btBroadphaseProxy::AllFilter ^
-                                          btBroadphaseProxy::StaticFilter);
-
-      int colGroup = 0, colMask = 0;
-      int collisionFlags =
-          getCollisionGroupAndMask(urdfLinkIndex, colGroup, colMask);
-
-      if (collisionFlags & io::URDF_HAS_COLLISION_GROUP) {
-        collisionFilterGroup = colGroup;
-      }
-      if (collisionFlags & io::URDF_HAS_COLLISION_MASK) {
-        collisionFilterMask = colMask;
-      }
-
-      Corrade::Utility::Debug()
-          << "addCollisionObject: " << collisionFilterGroup << " , "
-          << collisionFilterMask;
-      world1->addCollisionObject(col, collisionFilterGroup,
-                                 collisionFilterMask);
-      // world1->addCollisionObject(col, 2, 1+2);
-      // TODO: fix this collision issue
-
       io::URDFLinkContactInfo contactInfo;
       getLinkContactInfo(urdfLinkIndex, contactInfo);
 
@@ -622,6 +595,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
           if (allJointsFixed) {
             col->setCollisionFlags(col->getCollisionFlags() |
                                    btCollisionObject::CF_STATIC_OBJECT);
+            isDynamic = false;
           }
         }
         cache.m_bulletMultiBody->getLink(mbLinkIndex).m_collider = col;
@@ -642,11 +616,38 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
             // col->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
             col->setCollisionFlags(col->getCollisionFlags() |
                                    btCollisionObject::CF_STATIC_OBJECT);
+            isDynamic = false;
           }
         }
 
         cache.m_bulletMultiBody->setBaseCollider(col);
       }
+
+      int collisionFilterGroup = isDynamic
+                                     ? int(btBroadphaseProxy::DefaultFilter)
+                                     : int(btBroadphaseProxy::StaticFilter);
+      int collisionFilterMask = isDynamic
+                                    ? int(btBroadphaseProxy::AllFilter)
+                                    : int(btBroadphaseProxy::DefaultFilter);
+
+      int colGroup = 0, colMask = 0;
+      int collisionFlags =
+          getCollisionGroupAndMask(urdfLinkIndex, colGroup, colMask);
+
+      if (collisionFlags & io::URDF_HAS_COLLISION_GROUP) {
+        collisionFilterGroup = colGroup;
+      }
+      if (collisionFlags & io::URDF_HAS_COLLISION_MASK) {
+        collisionFilterMask = colMask;
+      }
+
+      // Corrade::Utility::Debug()
+      //    << "addCollisionObject: " << collisionFilterGroup << " , "
+      //    << collisionFilterMask;
+      world1->addCollisionObject(col, collisionFilterGroup,
+                                 collisionFilterMask);
+      // world1->addCollisionObject(col, 2, 1+2);
+      // TODO: fix this collision issue
     }
   }
 
