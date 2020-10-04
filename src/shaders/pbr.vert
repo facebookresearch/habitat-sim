@@ -6,7 +6,7 @@
 layout(location = ATTRIBUTE_LOCATION_POSITION) in highp vec4 vertexPosition;
 layout(location = ATTRIBUTE_LOCATION_NORMAL) in highp vec3 vertexNormal;
 #if defined(TEXTURED)
-layout(location = ATTRIBUTE_LOCATION_TEXCOORD) in mediump vec2 vertexTexCoord;
+layout(location = ATTRIBUTE_LOCATION_TEXCOORD) in highp vec2 vertexTexCoord;
 #endif
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
 layout(location = ATTRIBUTE_LOCATION_TANGENT4) in highp vec4 vertexTangent;
@@ -17,7 +17,7 @@ layout(location = ATTRIBUTE_LOCATION_TANGENT4) in highp vec4 vertexTangent;
 out highp vec3 position;
 out highp vec3 normal;
 #if defined(TEXTURED)
-out mediump vec2 texCoord;
+out highp vec2 texCoord;
 #endif
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
 out highp vec3 tangent;
@@ -25,12 +25,12 @@ out highp vec3 biTangent;
 #endif
 
 // ------------ uniform ----------------------
-uniform mat4 ModelViewMatrix;
-uniform mat3 NormalMatrix;  // inverse transpose of 3x3 modelview matrix
+uniform highp mat4 ModelViewMatrix;
+uniform highp mat3 NormalMatrix;  // inverse transpose of 3x3 modelview matrix
 uniform mat4 MVP;
 
 #ifdef TEXTURE_TRANSFORMATION
-uniform mediump mat3 textureMatrix
+uniform highp mat3 textureMatrix
 #ifndef GL_ES
     = mat3(1.0)
 #endif
