@@ -81,7 +81,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 #ifdef MAGNUM_TARGET_WEBGL
   Mn::GL::Version glVersion = Mn::GL::Version::GLES300;
 #else
-  Mn::GL::Version glVersion = Mn::GL::Version::GL330;
+  Mn::GL::Version glVersion = Mn::GL::Version::GL410;
 #endif
 
   // this is not the file name, but the group name in the config file
