@@ -24,6 +24,7 @@ layout(location = OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID) out highp uint
     fragmentObjectId;
 #endif
 
+#if (LIGHT_COUNT > 0)
 // -------------- lights -------------------
 // NOTE: In this shader, the light intensity is considered in the lightColor!!
 uniform vec3 LightColors[LIGHT_COUNT];
@@ -34,6 +35,7 @@ uniform float LightRanges[LIGHT_COUNT];
 // it is NOT put in the Light Structure, simply because we may modify the code
 // so it is computed in the vertex shader.
 uniform vec4 LightDirections[LIGHT_COUNT];
+#endif
 
 // -------------- material, textures ------------------
 struct MaterialData {
@@ -206,6 +208,7 @@ vec3 microfacetModel(vec3 baseColor,
 }
 
 void main() {
+#if (LIGHT_COUNT > 0)
   vec4 baseColor = Material.baseColor;
 #if defined(BASECOLOR_TEXTURE)
   baseColor *= texture(baseColorTexture, texCoord);
@@ -272,6 +275,9 @@ void main() {
 
   // TODO: use ALPHA_MASK to discard fragments
   fragmentColor = vec4(finalColor, finalAlpha / float(LIGHT_COUNT));
+#else
+fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
+#endif  // if LIGHT_COUNT > 0
 
 #if defined(OBJECT_ID)
   fragmentObjectId = objectId;
