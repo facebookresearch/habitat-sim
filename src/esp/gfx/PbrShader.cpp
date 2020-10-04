@@ -182,11 +182,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     if (isTextured()) {
       bindAttributeLocation(TextureCoordinates::Location, "vertexTexCoord");
     }
-
-    if (flags_ & Flag::OBJECT_ID) {
-      bindFragmentDataLocation(ColorOutput, "fragmentColor");
-      bindFragmentDataLocation(ObjectIdOutput, "fragmentObjectId");
-    }
   }
 
   // set texture binding points in the shader;
