@@ -1269,6 +1269,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     finalMaterial->normalTexture =
         textures_[textureBaseIndex + material.normalTexture()].get();
   }
+
   return finalMaterial;
 }
 
@@ -1280,28 +1281,74 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
 
   auto finalMaterial = gfx::PbrMaterialData::create_unique();
 
-  finalMaterial->baseColor = material.baseColor();
-  finalMaterial->metallic = material.metalness();
-  finalMaterial->roughness = material.roughness();
-
+  // base color (albedo)
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColor)) {
+    finalMaterial->baseColor = material.baseColor();
+  }
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
     finalMaterial->baseColorTexture =
         textures_[textureBaseIndex + material.baseColorTexture()].get();
+    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColor)) {
+      finalMaterial->baseColor = Mn::Vector4{1.0f};
+    }
+  }
+
+  // normal map
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTextureScale)) {
+    finalMaterial->normalTextureScale = material.normalTextureScale();
   }
 
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
-    finalMaterial->normalTextureScale = material.normalTextureScale();
     finalMaterial->normalTexture =
         textures_[textureBaseIndex + material.normalTexture()].get();
+    // if normal texture scale is not presented, use the default value in the
+    // finalMaterial
+  }
+
+  // emission
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveColor)) {
+    finalMaterial->emissiveColor = material.emissiveColor();
+  }
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveTexture)) {
+    finalMaterial->emissiveTexture =
+        textures_[textureBaseIndex + material.emissiveTexture()].get();
+    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveColor)) {
+      finalMaterial->emissiveColor = Mn::Vector3{1.0f};
+    }
   }
 
   // CAREFUL:
   // certain texture will be stored "multiple times" in the `finalMaterial`;
   // (e.g., roughnessTexture will be stored in noneRoughnessMetallicTexture,
   // roughnessTexture, metallicTexture)
-  // But it is OK! Such duplication (or "conflicts") will be handled in the
-  // PbrShader (see PbrMaterialData for more details)
+  // It is OK! No worries! Such duplication (or "conflicts") will be handled in
+  // the PbrShader (see PbrMaterialData for more details)
 
+  // roughness
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::Roughness)) {
+    finalMaterial->roughness = material.roughness();
+  }
+  if (material.hasRoughnessTexture()) {
+    finalMaterial->occlusionRoughnessMetallicTexture =
+        textures_[textureBaseIndex + material.roughnessTexture()].get();
+    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Roughness)) {
+      finalMaterial->roughness = 1.0f;
+    }
+  }
+
+  // metalness
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
+    finalMaterial->metallic = material.metalness();
+  }
+  if (material.hasMetalnessTexture()) {
+    finalMaterial->metallicTexture =
+        textures_[textureBaseIndex + material.metalnessTexture()].get();
+    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
+      finalMaterial->metallic = 1.0f;
+    }
+  }
+
+  // packed textures
   if (material.hasOcclusionRoughnessMetallicTexture()) {
     // occlusionTexture, roughnessTexture, metalnessTexture are pointing to the
     // same texture ID, so just occlusionTexture
@@ -1316,15 +1363,6 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
         textures_[textureBaseIndex + material.roughnessTexture()].get();
   }
 
-  if (material.hasRoughnessTexture()) {
-    finalMaterial->occlusionRoughnessMetallicTexture =
-        textures_[textureBaseIndex + material.roughnessTexture()].get();
-  }
-
-  if (material.hasMetalnessTexture()) {
-    finalMaterial->metallicTexture =
-        textures_[textureBaseIndex + material.metalnessTexture()].get();
-  }
   return finalMaterial;
 }
 

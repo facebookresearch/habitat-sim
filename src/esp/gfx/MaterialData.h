@@ -53,12 +53,18 @@ struct PhongMaterialData : public MaterialData {
 struct PbrMaterialData : public MaterialData {
   PbrMaterialData() : MaterialData(MaterialDataType::PBR){};
 
-  Magnum::Color4 baseColor{0.7};
+  // material with default magic values:
+  // when both the material property and the texture (e.g., roughness and
+  // roughness texture) are NOT presented, use these default magic values;
+  Magnum::Color4 baseColor{0.7f};
   Magnum::Float roughness = 0.9f;
   Magnum::Float metallic = 0.1f;
+  Magnum::Color3 emissiveColor{1.0};
   Magnum::Float normalTextureScale = 1.0f;
+
   Magnum::GL::Texture2D* baseColorTexture = nullptr;
   Magnum::GL::Texture2D* normalTexture = nullptr;
+  Magnum::GL::Texture2D* emissiveTexture = nullptr;
 
   // Question:
   // What if e.g., both metallicTexture and nonRoughnessMEtallicTexture exist?

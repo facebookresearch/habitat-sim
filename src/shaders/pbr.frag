@@ -39,12 +39,14 @@ uniform vec4 LightDirections[LIGHT_COUNT];
 
 // -------------- material, textures ------------------
 struct MaterialData {
-  vec4 baseColor;   // diffuse color, if baseColorTexture exists,
-                    // use the baseColorTexture
-  float roughness;  // roughness of a surface, if roughness texture exists,
-                    // use the roughnessTexture
-  float metallic;   // metalness of a surface, if metallic texture exists,
-                    // use the metallicTexture
+  vec4 baseColor;     // diffuse color, if baseColorTexture exists,
+                      // multiply it with the baseColorTexture
+  float roughness;    // roughness of a surface, if roughness texture exists,
+                      // multiply it with the roughnessTexture
+  float metallic;     // metalness of a surface, if metallic texture exists,
+                      // multiply it the metallicTexture
+  vec3 emissiveColor; // emissiveColor, if emissive texture exists,
+                      // multiply it the emissiveTexture
 };
 uniform MaterialData Material;
 
@@ -61,9 +63,12 @@ uniform sampler2D metallicTexture;
 uniform sampler2D normalTexture;
 #endif
 
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || \
-    defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-uniform sampler2D combinedTexture;
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+uniform sampler2D packedTexture;
+#endif
+
+#if defined(EMISSIVE_TEXTURE)
+uniform sampler2D emissiveTexture;
 #endif
 
 // -------------- uniforms ----------------
@@ -208,6 +213,12 @@ vec3 microfacetModel(vec3 baseColor,
 }
 
 void main() {
+  vec3 emissiveColor = Material.emissiveColor;
+#if defined(EMISSIVE_TEXTURE)
+  emissiveColor *= texture(emissiveTexture, texCoord).rgb;
+#endif
+  fragmentColor = vec4(emissiveColor, 0.0);
+
 #if (LIGHT_COUNT > 0)
   vec4 baseColor = Material.baseColor;
 #if defined(BASECOLOR_TEXTURE)
@@ -215,17 +226,15 @@ void main() {
 #endif
 
   float roughness = Material.roughness;
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || \
-    defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-  roughness *= texture(combinedTexture, texCoord).g;
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+  roughness *= texture(packedTexture, texCoord).g;
 #elif defined(ROUGHNESS_TEXTURE)
   roughness *= texture(roughnessTexture, texCoord).r;
 #endif
 
   float metallic = Material.metallic;
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || \
-    defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-  metallic *= texture(combinedTexture, texCoord).b;
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
+  metallic *= texture(packedTexture, texCoord).b;
 #elif defined(METALLIC_TEXTURE)
   metallic *= texture(metallicTexture, texCoord).r;
 #endif
@@ -274,9 +283,7 @@ void main() {
   }  // for lights
 
   // TODO: use ALPHA_MASK to discard fragments
-  fragmentColor = vec4(finalColor, finalAlpha / float(LIGHT_COUNT));
-#else
-fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
+  fragmentColor += vec4(finalColor, finalAlpha / float(LIGHT_COUNT));
 #endif  // if LIGHT_COUNT > 0
 
 #if defined(OBJECT_ID)

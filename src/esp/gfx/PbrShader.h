@@ -137,13 +137,19 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     /**
      * Enable texture coordinate transformation. If this flag is set,
      * the shader expects that at least one of
-     * @ref Flag::BaseColorTexture, @ref Flag::RoughnessTexture,
+     * @ref Flag::BASE_COLOR_TEXTURE, @ref Flag::RoughnessTexture,
      * @ref Flag::METALLIC_TEXTURE, @ref Flag::NormalTexture,
+     * @ref Flag::EMISSIVE_TEXTURE
      * @ref Flag::NONE_ROUGHNESS_METALLIC_TEXTURE or
      * @ref Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE is enabled as well.
      * @see @ref setTextureMatrix()
      */
     TEXTURE_TRANSFORMATION = 1 << 7,
+
+    /**
+     * emissive texture
+     */
+    EMISSIVE_TEXTURE = 1 << 8,
 
     /**
      * TODO: Do we need instanced object? (instanced texture, istanced id etc.)
@@ -228,26 +234,25 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @return Reference to self (for method chaining)
    */
   PbrShader& bindNormalTexture(Magnum::GL::Texture2D* texture);
-  /**
-   * @brief Bind the BaseColor, roughness, metallic, noneRoughnessMetallic,
-   * occlusionRoughnessMetallic normal textures
-   * NOTE:
-   * can pass nullptr to any input argument
-   * @return Reference to self (for method chaining)
-   */
-  PbrShader& bindTextures(Magnum::GL::Texture2D* baseColor,
-                          Magnum::GL::Texture2D* roughness,
-                          Magnum::GL::Texture2D* metallic,
-                          Magnum::GL::Texture2D* noneRoughnessMetallic,
-                          Magnum::GL::Texture2D* occlusionRoughnessMetallic,
-                          Magnum::GL::Texture2D* normal);
 
   /**
-   * @brief Bind the noneRoughnessMetallicTexture or
-   * occlusionRoughnessMetallicTexture
+   * @brief Bind the noneRoughnessMetallicTexture
    * @return Reference to self (for method chaining)
    */
-  PbrShader& bindCombinedTexture(Magnum::GL::Texture2D* texture);
+  PbrShader& bindNoneRoughnessMetallicTexture(Magnum::GL::Texture2D* texture);
+
+  /**
+   * @brief Bind the occlusionRoughnessMetallicTexture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindOcclusionRoughnessMetallicTexture(
+      Magnum::GL::Texture2D* texture);
+
+  /**
+   * @brief Bind the emissive texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindEmissiveTexture(Magnum::GL::Texture2D* texture);
 
   PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
   // ======== set uniforms ===========
@@ -279,6 +284,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setBaseColor(const Magnum::Color4& color);
+  /**
+   *  @brief Set emissive color to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setEmissiveColor(const Magnum::Color3& color);
   /**
    *  @brief Set roughness to the uniform on GPU
    *  @return Reference to self (for method chaining)
@@ -418,6 +428,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
   int roughnessUniform_ = ID_UNDEFINED;  // roughness of a surface
   int metallicUniform_ = ID_UNDEFINED;
+  int emissiveColorUniform_ = ID_UNDEFINED;
   int baseColorTextureUniform_ = ID_UNDEFINED;
   int roughnessTextureUniform_ = ID_UNDEFINED;
   int metallicTextureUniform_ = ID_UNDEFINED;

@@ -41,12 +41,13 @@ namespace gfx {
 
 namespace {
 enum TextureUnit : uint8_t {
-  BaseColor = 0,
-  Roughness = 1,
-  Metallic = 2,
-  Normal = 3,
+  BASE_COLOR = 0,
+  ROUGHNESS = 1,
+  METALLIC = 2,
+  NORMAL = 3,
   // NoneRoughnessMetallic or OcclusionRoughnessMetallic texture
-  Combined = 4,
+  PACKED = 4,
+  EMISSIVE = 5,
 };
 }  // namespace
 
@@ -102,10 +103,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
   auto isTextured = [&]() {
-    return (flags_ & (Flag::BASE_COLOR_TEXTURE | Flag::ROUGHNESS_TEXTURE |
-                      Flag::METALLIC_TEXTURE | Flag::NORMAL_TEXTURE |
-                      Flag::NONE_ROUGHNESS_METALLIC_TEXTURE |
-                      Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE));
+    return (flags_ &
+            (Flag::BASE_COLOR_TEXTURE | Flag::ROUGHNESS_TEXTURE |
+             Flag::METALLIC_TEXTURE | Flag::NORMAL_TEXTURE |
+             Flag::EMISSIVE_TEXTURE | Flag::NONE_ROUGHNESS_METALLIC_TEXTURE |
+             Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE));
   };
   if (isTextured()) {
     attributeLocationsStream
@@ -135,6 +137,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ & Flag::BASE_COLOR_TEXTURE
                      ? "#define BASECOLOR_TEXTURE\n"
                      : "")
+      .addSource(flags_ & Flag::EMISSIVE_TEXTURE ? "#define EMISSIVE_TEXTURE\n"
+                                                 : "")
       .addSource(
           flags_ & Flag::ROUGHNESS_TEXTURE ? "#define ROUGHNESS_TEXTURE\n" : "")
       .addSource(flags_ & Flag::METALLIC_TEXTURE ? "#define METALLIC_TEXTURE\n"
@@ -187,20 +191,24 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
   if (flags_ & Flag::BASE_COLOR_TEXTURE) {
-    setUniform(uniformLocation("baseColorTexture"), TextureUnit::BaseColor);
+    setUniform(uniformLocation("baseColorTexture"), TextureUnit::BASE_COLOR);
   }
   if (flags_ & Flag::ROUGHNESS_TEXTURE) {
-    setUniform(uniformLocation("roughnessTexture"), TextureUnit::Roughness);
+    setUniform(uniformLocation("roughnessTexture"), TextureUnit::ROUGHNESS);
   }
   if (flags_ & Flag::METALLIC_TEXTURE) {
-    setUniform(uniformLocation("metallicTexture"), TextureUnit::Metallic);
+    setUniform(uniformLocation("metallicTexture"), TextureUnit::METALLIC);
   }
   if (flags_ & Flag::NORMAL_TEXTURE) {
-    setUniform(uniformLocation("normalTexture"), TextureUnit::Normal);
+    setUniform(uniformLocation("normalTexture"), TextureUnit::NORMAL);
+  }
+  // emissive texture does NOT need the light!
+  if (flags_ & Flag::EMISSIVE_TEXTURE) {
+    setUniform(uniformLocation("emissiveTexture"), TextureUnit::EMISSIVE);
   }
   if ((flags_ & Flag::NONE_ROUGHNESS_METALLIC_TEXTURE) ||
-      flags_ & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE) {
-    setUniform(uniformLocation("combinedTexture"), TextureUnit::Combined);
+      (flags_ & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)) {
+    setUniform(uniformLocation("packedTexture"), TextureUnit::PACKED);
   }
 
   // cache the uniform locations
@@ -218,6 +226,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   baseColorUniform_ = uniformLocation("Material.baseColor");
   roughnessUniform_ = uniformLocation("Material.roughness");
   metallicUniform_ = uniformLocation("Material.metallic");
+  emissiveColorUniform_ = uniformLocation("Material.emissiveColor");
 
   // lights
   if (lightCount_) {
@@ -236,37 +245,53 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
 PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D* texture) {
   if ((flags_ & Flag::BASE_COLOR_TEXTURE) && lightCount_ && texture) {
-    texture->bind(TextureUnit::BaseColor);
+    texture->bind(TextureUnit::BASE_COLOR);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindRoughnessTexture(Mn::GL::Texture2D* texture) {
   if ((flags_ & Flag::ROUGHNESS_TEXTURE) && lightCount_ && texture) {
-    texture->bind(TextureUnit::Roughness);
+    texture->bind(TextureUnit::ROUGHNESS);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindMetallicTexture(Mn::GL::Texture2D* texture) {
   if ((flags_ & Flag::METALLIC_TEXTURE) && lightCount_ && texture) {
-    texture->bind(TextureUnit::Metallic);
+    texture->bind(TextureUnit::METALLIC);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D* texture) {
   if ((flags_ & Flag::NORMAL_TEXTURE) && lightCount_ && texture) {
-    texture->bind(TextureUnit::Normal);
+    texture->bind(TextureUnit::NORMAL);
   }
   return *this;
 }
 
-PbrShader& PbrShader::bindCombinedTexture(Magnum::GL::Texture2D* texture) {
-  if (((flags_ & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE) ||
-       (flags_ & Flag::NONE_ROUGHNESS_METALLIC_TEXTURE)) &&
-      lightCount_ && texture) {
-    texture->bind(TextureUnit::Combined);
+PbrShader& PbrShader::bindNoneRoughnessMetallicTexture(
+    Magnum::GL::Texture2D* texture) {
+  if ((flags_ & Flag::NONE_ROUGHNESS_METALLIC_TEXTURE) && lightCount_ &&
+      texture) {
+    texture->bind(TextureUnit::PACKED);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::bindOcclusionRoughnessMetallicTexture(
+    Magnum::GL::Texture2D* texture) {
+  if ((flags_ & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE) && lightCount_ &&
+      texture) {
+    texture->bind(TextureUnit::PACKED);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D* texture) {
+  if ((flags_ & Flag::EMISSIVE_TEXTURE) && lightCount_ && texture) {
+    texture->bind(TextureUnit::EMISSIVE);
   }
   return *this;
 }
@@ -300,6 +325,11 @@ PbrShader& PbrShader::setBaseColor(const Mn::Color4& color) {
   return *this;
 }
 
+PbrShader& PbrShader::setEmissiveColor(const Magnum::Color3& color) {
+  setUniform(emissiveColorUniform_, color);
+  return *this;
+}
+
 PbrShader& PbrShader::setRoughness(float roughness) {
   if (lightCount_) {
     setUniform(roughnessUniform_, roughness);
@@ -311,27 +341,6 @@ PbrShader& PbrShader::setMetallic(float metallic) {
   if (lightCount_) {
     setUniform(metallicUniform_, metallic);
   }
-  return *this;
-}
-
-PbrShader& PbrShader::bindTextures(
-    Mn::GL::Texture2D* baseColor,
-    Mn::GL::Texture2D* roughness,
-    Mn::GL::Texture2D* metallic,
-    Mn::GL::Texture2D* noneRoughnessMetallic,
-    Mn::GL::Texture2D* occlusionRoughnessMetallic,
-    Mn::GL::Texture2D* normal) {
-  (*this)
-      .bindBaseColorTexture(baseColor)
-      .bindRoughnessTexture(roughness)
-      .bindMetallicTexture(metallic)
-      .bindCombinedTexture(noneRoughnessMetallic)
-      // NO Worries to call to "bind combined texture" twice,
-      // ONLY ONE texture will be bound.
-      // see generateCorrectFlags() for details
-      .bindCombinedTexture(occlusionRoughnessMetallic)
-      .bindNormalTexture(normal);
-
   return *this;
 }
 

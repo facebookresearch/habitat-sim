@@ -49,15 +49,19 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setTransformationMatrix(transformationMatrix)  // modelview matrix
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix)
       .setNormalMatrix(transformationMatrix.normalMatrix())
-      .bindTextures(materialData_->baseColorTexture,
-                    materialData_->roughnessTexture,
-                    materialData_->metallicTexture,
-                    materialData_->noneRoughnessMetallicTexture,
-                    materialData_->occlusionRoughnessMetallicTexture,
-                    materialData_->normalTexture)
+      .bindBaseColorTexture(materialData_->baseColorTexture)
+      .bindRoughnessTexture(materialData_->roughnessTexture)
+      .bindMetallicTexture(materialData_->metallicTexture)
+      .bindNoneRoughnessMetallicTexture(
+          materialData_->noneRoughnessMetallicTexture)
+      .bindOcclusionRoughnessMetallicTexture(
+          materialData_->occlusionRoughnessMetallicTexture)
+      .bindNormalTexture(materialData_->normalTexture)
+      .bindEmissiveTexture(materialData_->emissiveTexture)
       .setBaseColor(materialData_->baseColor)
       .setRoughness(materialData_->roughness)
-      .setMetallic(materialData_->metallic);
+      .setMetallic(materialData_->metallic)
+      .setEmissiveColor(materialData_->emissiveColor);
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
     shader_->setTextureMatrix(materialData_->textureMatrix);
   }
@@ -104,6 +108,9 @@ PbrDrawable& PbrDrawable::updateShader() {
                      "cannot be negative.",
                      *this);
     }
+  }
+  if (materialData_->emissiveTexture) {
+    flags |= PbrShader::Flag::EMISSIVE_TEXTURE;
   }
   if (materialData_->perVertexObjectId) {
     // TODO: may be supported in the future
