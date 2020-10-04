@@ -123,6 +123,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ & Flag::PRECOMPUTED_TANGENT
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
+      .addSource(flags_ & Flag::TEXTURE_TRANSFORMATION
+                     ? "#define TEXTURE_TRANSFORMATION\n"
+                     : "")
       .addSource(rs.get("pbr.vert"));
 
   std::stringstream outputAttributeLocationsStream;

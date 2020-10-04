@@ -1281,6 +1281,9 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
 
   auto finalMaterial = gfx::PbrMaterialData::create_unique();
 
+  // texture transform, if there's none the matrix is an identity
+  finalMaterial->textureMatrix = material.commonTextureMatrix();
+
   // base color (albedo)
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColor)) {
     finalMaterial->baseColor = material.baseColor();
