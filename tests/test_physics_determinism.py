@@ -127,7 +127,8 @@ def test_physics_determinism():
                         object_states[idx]["object_id"]
                         == ground_truth_object_states[idx]["object_id"]
                     )
-                    assert (
-                        object_states[idx]["translation"]
-                        == ground_truth_object_states[idx]["translation"]
-                    )
+                    assert np.isclose(
+                        object_states[idx]["translation"],
+                        ground_truth_object_states[idx]["translation"],
+                        atol=1e-5,
+                    ).all()
