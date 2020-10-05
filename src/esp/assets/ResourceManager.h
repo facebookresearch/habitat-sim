@@ -853,8 +853,8 @@ class ResourceManager {
    */
   void createDrawable(Mn::GL::Mesh& mesh,
                       scene::SceneNode& node,
-                      const Mn::ResourceKey& lightSetup,
-                      const Mn::ResourceKey& material,
+                      const Mn::ResourceKey& lightSetupKey,
+                      const Mn::ResourceKey& materialKey,
                       DrawableGroup* group = nullptr);
 
   Flags flags_;

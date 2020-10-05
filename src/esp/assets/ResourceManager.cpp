@@ -1702,19 +1702,19 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
 
 void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
                                      scene::SceneNode& node,
-                                     const Mn::ResourceKey& lightSetup,
-                                     const Mn::ResourceKey& material,
+                                     const Mn::ResourceKey& lightSetupKey,
+                                     const Mn::ResourceKey& materialKey,
                                      DrawableGroup* group /* = nullptr */) {
   const auto& materialDataType =
-      shaderManager_.get<gfx::MaterialData>(material)->type;
+      shaderManager_.get<gfx::MaterialData>(materialKey)->type;
   switch (materialDataType) {
     case gfx::MaterialDataType::PHONG:
-      node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
-                                            material, group);
+      node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetupKey,
+                                            materialKey, group);
       break;
     case gfx::MaterialDataType::PBR:
-      node.addFeature<gfx::PbrDrawable>(mesh, shaderManager_, lightSetup,
-                                        material, group);
+      node.addFeature<gfx::PbrDrawable>(mesh, shaderManager_, lightSetupKey,
+                                        materialKey, group);
       break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
