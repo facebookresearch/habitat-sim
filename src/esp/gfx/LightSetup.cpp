@@ -54,6 +54,11 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
                     {{box.backBottomRight(), w}, lightColor}};
 }
 
+LightSetup getDefaultLights() {
+  return LightSetup{{{1.0, 1.0, 0.0, 0.0}, {0.75, 0.75, 0.75}},
+                    {{-0.5, 0.0, 1.0, 0.0}, {0.4, 0.4, 0.4}}};
+}
+
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
   if (lightSetup.size() == 0) {
     // We assume an empty light setup means the user wants "flat" shading,

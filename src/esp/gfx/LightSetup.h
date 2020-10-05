@@ -63,6 +63,12 @@ LightSetup getLightsAtBoxCorners(
     const Magnum::Color3& lightColor = Magnum::Color3{10.0f});
 
 /**
+ * @brief Get a @ref LightSetup with some directional lights approximating
+ * daylight
+ */
+LightSetup getDefaultLights();
+
+/**
  * @brief Get get a single, combined ambient light color for use with the Phong
  * lighting model.
  */
