@@ -239,13 +239,17 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
             btVector3(transformFromLocalToWorld.transformPoint(v)), false);
       }
     } else {
-      bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
-          static_cast<const btScalar*>(mesh.positions.data()->data()),
-          mesh.positions.size(), sizeof(Magnum::Vector3)));
+      bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>());
+      // transform points into world space, including any scale/shear in
+      // transformFromLocalToWorld.
+      for (auto& v : mesh.positions) {
+        bObjectConvexShapes_.back()->addPoint(
+            btVector3(transformFromLocalToWorld.transformPoint(v)), false);
+      }
       bObjectConvexShapes_.back()->setMargin(0.0);
       bObjectConvexShapes_.back()->recalcLocalAabb();
       //! Add to compound shape stucture
-      bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
+      bObjectShape_->addChildShape(btTransform::getIdentity(),
                                    bObjectConvexShapes_.back().get());
     }
   }
