@@ -66,24 +66,13 @@ void DatasetAttributesManager::setValsFromJSONDoc(
   //                     dsAttribs->getSceneInstanceManager());
 
   // process navmesh instances
-  if (jsonConfig.HasMember("navmesh instances")) {
-    if (!jsonConfig["navmesh instances"].IsObject()) {
-      dispCellConfigError("navmesh instances");
-    } else {
-      const auto& jCell = jsonConfig["navmesh instances"];
-      // implement handling navmesh instances TODO
-    }
-  }
+  io::jsonIntoVal<std::map<std::string, std::string>>(
+      jsonConfig, "navmesh instances", dsAttribs->editNavmeshMap());
 
   // process semantic scene descriptor instances
-  if (jsonConfig.HasMember("semantic scene descriptor instances")) {
-    if (!jsonConfig["semantic scene descriptor instances"].IsObject()) {
-      dispCellConfigError("semantic scene descriptor instances");
-    } else {
-      const auto& jCell = jsonConfig["semantic scene descriptor instances"];
-      // implement handling semantic scene descriptor instances TODO
-    }
-  }
+  io::jsonIntoVal<std::map<std::string, std::string>>(
+      jsonConfig, "semantic scene descriptor instances",
+      dsAttribs->editSemanticSceneDescrMap());
 
 }  // DatasetAttributesManager::setValsFromJSONDoc
 
@@ -183,7 +172,7 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
   bool newNameSpecified = false;
   std::string originalFile = "";
   std::string newTemplateHandle = "";
-  // try to find original attributes file name
+  // try to find original file name for attributes
   if (io::jsonIntoVal<std::string>(jCell, "original file", originalFile)) {
     originalFile = Cr::Utility::Directory::join(dsDir, originalFile);
     if (!this->isValidFileName(originalFile)) {
@@ -196,7 +185,7 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
     validCell = true;
     origFileNameSpecified = true;
   }
-  // try to find new attributes template name
+  // try to find new template name for attributes
   if (io::jsonIntoVal<std::string>(jCell, "template handle",
                                    newTemplateHandle)) {
     validCell = true;

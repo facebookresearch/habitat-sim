@@ -68,6 +68,19 @@ class DatasetAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Return the map for navmesh file locations for building/modification
+   */
+  std::map<std::string, std::string>& editNavmeshMap() { return navmeshMap_; }
+
+  /**
+   * @brief Return the map for semantic scene descriptor file locations for
+   * building/modification
+   */
+  std::map<std::string, std::string>& editSemanticSceneDescrMap() {
+    return semanticSceneDescrMap_;
+  }
+
+  /**
    * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
    * such as file paths, to make them available for stage attributes defaults.
    *

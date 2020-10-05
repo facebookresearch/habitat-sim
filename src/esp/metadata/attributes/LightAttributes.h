@@ -21,13 +21,6 @@ class LightAttributes : public AbstractAttributes {
    */
   static const std::string JSONConfigTestString;
 
-  /**
-   * @brief Constant static map to provide mappings from string tags to types of
-   * lights.  This will be used to map values set in json to types.  Keys (json
-   * values) must be lowercase.
-   */
-  // static const std::map<std::string, (put enum here)> LightTypeNamesMap;
-
   LightAttributes(const std::string& handle = "");
 
   /**
