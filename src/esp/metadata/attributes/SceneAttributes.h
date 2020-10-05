@@ -27,7 +27,6 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   void setTranslation(const Magnum::Vector3& translation) {
     setVec3("translation", translation);
   }
-
   /**
    * @brief Get the translation from the origin of the described
    * stage/object instance.
@@ -55,9 +54,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Get the motion type for the object.  Ignored for stage instances.
    */
-  std::string getMotionType(const std::string& motionType) const {
-    return getString("motionType");
-  }
+  std::string getMotionType() const { return getString("motionType"); }
 
  public:
   ESP_SMART_POINTERS(SceneObjectInstanceAttributes)

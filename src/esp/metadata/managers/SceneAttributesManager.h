@@ -53,6 +53,18 @@ class SceneAttributesManager
 
  protected:
   /**
+   * @brief Used Internally.  Create a @ref
+   * esp::metadata::attributes::SceneObjectInstanceAttributes object from the
+   * passed JSON doc.
+   * @param jCell JSON object containing the description of the stage or object
+   * instance.
+   * @return the constructed @ref
+   * esp::metadata::attributes::SceneObjectInstanceAttributes object
+   */
+  Attrs::SceneObjectInstanceAttributes::ptr createInstanceAttributesFromJSON(
+      const io::JsonGenericValue& jCell);
+
+  /**
    * @brief Used Internally.  Create and configure newly-created scene instance
    * attributes with any default values, before any specific values are set.
    *

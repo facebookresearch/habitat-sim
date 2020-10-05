@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Quaternion.h>
 #include <Magnum/Math/Vector3.h>
 
 namespace esp {
@@ -204,7 +205,7 @@ inline bool jsonIntoVal(const JsonGenericValue& d,
       if (d[tag][i].IsNumber()) {
         val[i] = d[tag][i].GetDouble();
       } else {
-        LOG(ERROR) << " Invalid numeric value specified in JSON config at "
+        LOG(ERROR) << " Invalid numeric value specified in JSON Vec3 config at "
                    << tag << " index :" << i;
         return false;
       }
@@ -213,6 +214,43 @@ inline bool jsonIntoVal(const JsonGenericValue& d,
   }
   return false;
 }  // jsonIntoVal<Magnum::Vector3>
+
+/**
+ * @brief Specialization to handle Magnum::Quaternion values.  Check passed json
+ * doc for existence of passed @p tag as Magnum::Quaternion. If present,
+ * populate passed @p val with value. Returns whether tag is found and
+ * successfully populated, or not. Logs an error if tag is found but is
+ * inappropriate type.
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool jsonIntoVal(const JsonGenericValue& d,
+                        const char* tag,
+                        Magnum::Quaternion& val) {
+  if (d.HasMember(tag) && d[tag].IsArray() && d[tag].Size() == 4) {
+    for (rapidjson::SizeType i = 0; i < 4; ++i) {
+      if (d[tag][i].IsNumber()) {
+        if (i == 0) {
+          val.scalar() = d[tag][0].GetFloat();
+        } else {
+          val.vector()[i - 1] = d[tag][i].GetFloat();
+        }
+      } else {
+        LOG(ERROR)
+            << " Invalid numeric value specified in JSON Quaternion config at "
+            << tag << " index :" << i;
+        return false;
+      }
+    }  // build array
+    return true;
+  }
+  return false;
+}  // jsonIntoVal<Magnum::Quaternion>
 
 /**
  * @brief Specialization to handle reading a JSON object into an
