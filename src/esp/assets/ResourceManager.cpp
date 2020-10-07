@@ -82,8 +82,9 @@ constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::WHITE_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
-ResourceManager::ResourceManager()
-    :
+ResourceManager::ResourceManager(
+    metadata::MetadataMediator::ptr& _metadataMediator)
+    : metadataMediator_(_metadataMediator),
 #ifdef MAGNUM_BUILD_STATIC
       // avoid using plugins that might depend on different library versions
       importerManager_("nonexistent")
@@ -92,17 +93,10 @@ ResourceManager::ResourceManager()
 
   initDefaultLightSetups();
   initDefaultMaterials();
-  buildImportersAndAttributesManagers();
+  buildImporters();
 }  // namespace assets
 
-void ResourceManager::buildImportersAndAttributesManagers() {
-  assetAttributesManager_ = AssetAttributesManager::create();
-  objectAttributesManager_ = ObjectAttributesManager::create();
-  objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ = PhysicsAttributesManager::create();
-  stageAttributesManager_ = StageAttributesManager::create(
-      objectAttributesManager_, physicsAttributesManager_);
-
+void ResourceManager::buildImporters() {
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       primitiveImporter_ =
@@ -113,7 +107,7 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
-}  // buildImportersAndAttributesManagers
+}  // buildImporters
 
 void ResourceManager::initDefaultPrimAttributes() {
   // by this point, we should have a GL::Context so load the bb primitive.
@@ -121,7 +115,7 @@ void ResourceManager::initDefaultPrimAttributes() {
   // wireframe cube no differently than other primivite-based rendered
   // objects)
   auto cubeMeshName =
-      assetAttributesManager_
+      getAssetAttributesManager()
           ->getObjectCopyByHandle<CubePrimitiveAttributes>("cubeWireframe")
           ->getPrimObjClassName();
 
@@ -674,7 +668,7 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
   auto primTemplate =
-      assetAttributesManager_->getObjectByHandle(primTemplateHandle);
+      getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetHandle = primTemplate->getHandle();
@@ -1434,7 +1428,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
     const std::string& objectTemplateHandle) {
   // Meta data
   ObjectAttributes::ptr ObjectAttributes =
-      objectAttributesManager_->getObjectByHandle(objectTemplateHandle);
+      getObjectAttributesManager()->getObjectByHandle(objectTemplateHandle);
 
   // if attributes are "dirty" (important values have changed since last
   // registered) then re-register.  Should never return ID_UNDEFINED - this
@@ -1445,7 +1439,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // attributes for objects requires object rebuilding.
   if (ObjectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
-        (ID_UNDEFINED != objectAttributesManager_->registerObject(
+        (ID_UNDEFINED != getObjectAttributesManager()->registerObject(
                              ObjectAttributes, objectTemplateHandle)),
         "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
@@ -1463,7 +1457,8 @@ bool ResourceManager::instantiateAssetsOnDemand(
   if (resourceDict_.count(renderAssetHandle) == 0) {
     if (ObjectAttributes->getRenderAssetIsPrimitive()) {
       // needs to have a primitive asset attributes with same name
-      if (!assetAttributesManager_->getObjectLibHasHandle(renderAssetHandle)) {
+      if (!getAssetAttributesManager()->getObjectLibHasHandle(
+              renderAssetHandle)) {
         // this is bad, means no render primitive template exists with
         // expected name.  should never happen
         LOG(ERROR) << "No primitive asset attributes exists with name :"
@@ -1530,7 +1525,7 @@ void ResourceManager::addObjectToDrawables(
 
     // Meta data
     ObjectAttributes::ptr ObjectAttributes =
-        objectAttributesManager_->getObjectByHandle(objTemplateHandle);
+        getObjectAttributesManager()->getObjectByHandle(objTemplateHandle);
 
     const std::string& renderObjectName =
         ObjectAttributes->getRenderAssetHandle();

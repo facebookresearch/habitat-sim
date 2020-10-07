@@ -21,6 +21,7 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 using esp::assets::ResourceManager;
+using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
 namespace Test {
@@ -30,7 +31,9 @@ namespace {
 
 class ResourceManagerExtended : public ResourceManager {
  public:
-  explicit ResourceManagerExtended() : ResourceManager() {}
+  explicit ResourceManagerExtended(
+      esp::metadata::MetadataMediator::ptr& _metadataMediator)
+      : ResourceManager(_metadataMediator) {}
   esp::gfx::ShaderManager& getShaderManager() { return shaderManager_; }
 };
 
@@ -51,7 +54,8 @@ struct DrawableTest : Cr::TestSuite::Tester {
 };
 
 DrawableTest::DrawableTest() {
-  resourceManager_ = std::make_unique<ResourceManagerExtended>();
+  auto MM = MetadataMediator::create();
+  resourceManager_ = std::make_unique<ResourceManagerExtended>(MM);
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
   // flang-format on

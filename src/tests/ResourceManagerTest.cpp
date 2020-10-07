@@ -20,6 +20,7 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 using esp::assets::ResourceManager;
+using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
 TEST(ResourceManagerTest, createJoinedCollisionMesh) {
@@ -29,7 +30,8 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
   // must declare these in this order due to avoid deallocation errors
-  ResourceManager resourceManager;
+  auto MM = MetadataMediator::create();
+  ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   auto stageAttributesMgr = resourceManager.getStageAttributesManager();
   std::string boxFile =
