@@ -258,7 +258,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
     bWorld_->removeCollisionObject(bStaticCollisionObjects_.back().get());
     collisionObjToObjIds_->erase(bStaticCollisionObjects_.back().get());
     bStaticCollisionObjects_.clear();
-  } else {
+  } else if (objectMotionType_ != MotionType::RENDER_ONLY) {
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
   }
 
@@ -304,6 +304,9 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
     objectMotionType_ = MotionType::DYNAMIC;
     bWorld_->addRigidBody(bObjectRigidBody_.get());
     setActive();
+    return true;
+  } else if (mt == MotionType::RENDER_ONLY) {
+    // don't add any collidable back to the world.
     return true;
   }
 
