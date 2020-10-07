@@ -15,20 +15,9 @@ namespace managers {
 DatasetAttributes::ptr DatasetAttributesManager::createObject(
     const std::string& datasetHandle,
     bool registerTemplate) {
-  DatasetAttributes::ptr attrs;
   std::string msg;
-  if (this->isValidFileName(datasetHandle)) {
-    // check if datasetHandle corresponds to an actual file descriptor
-    // this method lives in class template.
-    attrs = this->template createObjectFromFile<io::JsonDocument>(
-        datasetHandle, registerTemplate);
-    msg = "File (" + datasetHandle + ") Based";
-  } else {
-    // if name is not file descriptor, return default attributes.
-    attrs = this->template createObjectFromFile<io::JsonDocument>(
-        datasetHandle, registerTemplate);
-    msg = "File (" + datasetHandle + ") not found so new, default";
-  }
+  DatasetAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
+      datasetHandle, msg, registerTemplate);
 
   if (nullptr != attrs) {
     LOG(INFO) << msg << " dataset attributes created"
@@ -39,29 +28,56 @@ DatasetAttributes::ptr DatasetAttributesManager::createObject(
 
 DatasetAttributes::ptr DatasetAttributesManager::initNewObjectInternal(
     const std::string& datasetFilename) {
-  auto datasetAttributes =
-      DatasetAttributes::create(datasetFilename, physicsAttributesManager_);
+  DatasetAttributes::ptr newAttributes = this->constructFromDefault();
+  if (nullptr == newAttributes) {
+    newAttributes =
+        DatasetAttributes::create(datasetFilename, physicsAttributesManager_);
+  }
+
   // set the handle of the physics manager that is used for this newly-made
   // dataset
-  datasetAttributes->setPhysicsManagerHandle(physicsManagerAttributesHandle_);
+  newAttributes->setPhysicsManagerHandle(physicsManagerAttributesHandle_);
   // any internal default configuration here
-  return datasetAttributes;
+  return newAttributes;
 }  // DatasetAttributes::initNewObjectInternal
 
-DatasetAttributes::ptr DatasetAttributesManager::loadFromJSONDoc(
-    const std::string& templateName,
-    const io::JsonDocument& jsonConfig) {
-  DatasetAttributes::ptr datasetAttributes =
-      this->initNewObjectInternal(templateName);
+void DatasetAttributesManager::setValsFromJSONDoc(
+    attributes::DatasetAttributes::ptr datasetAttributes,
+    const io::JsonGenericValue& jsonConfig) {
   // get dataset managers to handle loading
-  auto assetMgrs = datasetAttributes->getAssetAttributesManager();
-  auto objectMgrs = datasetAttributes->getObjectAttributesManager();
-  auto stageMgrs = datasetAttributes->getStageAttributesManager();
+  // auto assetMgrs = datasetAttributes->getAssetAttributesManager();
+  const ObjectAttributesManager::ptr objectMgrs =
+      datasetAttributes->getObjectAttributesManager();
+  const StageAttributesManager::ptr stageMgrs =
+      datasetAttributes->getStageAttributesManager();
 
-  // TODO add code to read dataset_config json
+  // process stages
+  readDatasetJSONCell("stages", jsonConfig,
+                      datasetAttributes->getStageAttributesManager());
+  // process objects
+  readDatasetJSONCell("objects", jsonConfig,
+                      datasetAttributes->getObjectAttributesManager());
 
-  return datasetAttributes;
-}  // DatasetAttributesManager::loadFromJSONDoc
+}  // DatasetAttributesManager::setValsFromJSONDoc
+
+// using type deduction
+template <typename U>
+void DatasetAttributesManager::readDatasetJSONCell(
+    const char* tag,
+    const io::JsonGenericValue& jsonConfig,
+    const U& attrMgr) {
+  if (jsonConfig.HasMember(tag)) {
+    if (!jsonConfig[tag].IsObject()) {
+      LOG(WARNING) << "DatasetAttributesManager::setValsFromJSONDoc : "
+                      "\"Stages\" cell in JSON config not appropriately "
+                      "configured. Skipping.";
+      return;
+    } else {
+      const io::JsonGenericValue& jsonCell = jsonConfig[tag];
+      // process JSON here
+    }
+  }  // if has tag else
+}  // DatasetAttributesManager::readDatasetJSONCell
 
 int DatasetAttributesManager::registerObjectFinalize(
     attributes::DatasetAttributes::ptr datasetAttributes,

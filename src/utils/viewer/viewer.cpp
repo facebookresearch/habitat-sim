@@ -297,6 +297,8 @@ Viewer::Viewer(const Arguments& arguments)
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
   objectAttrManager_ = simulator_->getObjectAttributesManager();
+  objectAttrManager_->loadAllConfigsFromPath(Cr::Utility::Directory::join(
+      Corrade::Utility::Directory::current(), "./data/objects"));
   assetAttrManager_ = simulator_->getAssetAttributesManager();
   stageAttrManager_ = simulator_->getStageAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();

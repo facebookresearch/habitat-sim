@@ -6,8 +6,64 @@
 
 namespace esp {
 namespace metadata {
+void MetadataMediator::buildAttributesManagers() {
+  physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
+  datasetAttributesManager_ =
+      managers::DatasetAttributesManager::create(physicsAttributesManager_);
+  // create blank default attributes manager
+  createDataset(defaultDataset_);
+}  // MetadataMediator::buildAttributesManagers
 
-void MetadataMediator::buildAttributesManagers() {}
+bool MetadataMediator::createDataset(const std::string& datasetName,
+                                     bool overwrite) {
+  // see if exists
+  bool exists = datasetAttributesManager_->getObjectLibHasHandle(datasetName);
+  if (exists) {
+    // check if not overwrite and exists already
+    if (!overwrite) {
+      LOG(WARNING) << "MetadataMediator::setCurrentDataset : Dataset "
+                   << datasetName
+                   << " already exists.  To reload and overwrite existing "
+                      "data, set overwrite to true. Aborting.";
+      return false;
+    }
+    // overwrite specified, make sure not locked
+    datasetAttributesManager_->setLock(datasetName, false);
+  }
+  // by here dataset either does not exist or exists but is unlocked.
+  auto datasetAttribs =
+      datasetAttributesManager_->createObject(datasetName, true);
+  if (nullptr == datasetAttribs) {
+    // not created, do not set name
+    LOG(WARNING) << "MetadataMediator::createDataset : Unknown dataset "
+                 << datasetName
+                 << " does not exist and is not able to be created.  Aborting.";
+    return false;
+  }
+  // if not null then successfully created
+  LOG(INFO) << "MetadataMediator::createDataset : Dataset " << datasetName
+            << " successfully created.";
+  return true;
+}  // MetadataMediator::createDataset
+
+bool MetadataMediator::setCurrentDataset(const std::string& datasetName) {
+  // first check if dataset exists, if so then set default
+  if (datasetAttributesManager_->getObjectLibHasHandle(datasetName)) {
+    defaultDataset_ = datasetName;
+    LOG(INFO)
+        << "MetadataMediator::setCurrentDataset : Default dataset changed to "
+        << datasetName << " successfully.";
+    return true;
+  }
+  // if does not exist, create it
+  bool success = createDataset(defaultDataset_);
+  // if successfully created, set default name to access dataset attributes in
+  // datasetAttributesManager
+  if (success) {
+    defaultDataset_ = datasetName;
+  }
+  return success;
+}  // namespace metadata
 
 }  // namespace metadata
 }  // namespace esp

@@ -12,6 +12,7 @@
 #include "esp/core/random.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
@@ -677,6 +678,13 @@ class Simulator {
     return physicsManager_->getNumActiveContactPoints();
   }
 
+  /**
+   * @brief Set this simulator's MetadataMediator
+   */
+  void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
+    metadataMediator_ = _metadataMediator;
+  }
+
  protected:
   Simulator(){};
 
@@ -701,6 +709,8 @@ class Simulator {
   // during the deconstruction
   std::unique_ptr<assets::ResourceManager> resourceManager_ = nullptr;
 
+  // Owns and manages the metadata/attributes managers
+  metadata::MetadataMediator::ptr metadataMediator_ = nullptr;
   scene::SceneManager::uptr sceneManager_ = nullptr;
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
