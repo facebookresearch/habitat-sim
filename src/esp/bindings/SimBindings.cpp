@@ -90,6 +90,10 @@ void initSimBindings(py::module& m) {
           pybind11::return_value_policy::reference,
           R"(Get the Simulator's AssetAttributesManager instance for configuring primitive asset templates.)")
       .def(
+          "get_lights_template_manager", &Simulator::getAssetAttributesManager,
+          pybind11::return_value_policy::reference,
+          R"(Get the Simulator's LightAttributesManager instance for configuring light templates and layouts.)")
+      .def(
           "get_object_template_manager", &Simulator::getObjectAttributesManager,
           pybind11::return_value_policy::reference,
           R"(Get the Simulator's ObjectAttributesManager instance for configuring object templates.)")

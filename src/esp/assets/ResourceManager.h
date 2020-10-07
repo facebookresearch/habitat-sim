@@ -220,6 +220,14 @@ class ResourceManager {
     return metadataMediator_->getAssetAttributesManager();
   }
   /**
+   * @brief Return manager for construction and access to asset attributes.
+   */
+  const metadata::managers::LightAttributesManager::ptr getLightAttributesManager()
+      const {
+    return metadataMediator_->getLightAttributesManager();
+  }
+
+  /**
    * @brief Return manager for construction and access to object attributes.
    */
   const metadata::managers::ObjectAttributesManager::ptr
@@ -240,6 +248,14 @@ class ResourceManager {
   const metadata::managers::StageAttributesManager::ptr
   getStageAttributesManager() const {
     return metadataMediator_->getStageAttributesManager();
+  }
+
+  /**
+   * @brief Set the current metadata mediator.
+   * @param _MM the current metadata mediator.
+   */
+  void setMetadataMediator(metadata::MetadataMediator::ptr _MM) {
+    metadataMediator_ = _MM;
   }
 
   /**

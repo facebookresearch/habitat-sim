@@ -13,10 +13,10 @@ namespace metadata {
 
 namespace managers {
 class SceneAttributesManager
-    : public AttributesManager<Attrs::SceneAttributes> {
+    : public AttributesManager<metadata::attributes::SceneAttributes> {
  public:
   SceneAttributesManager()
-      : AttributesManager<Attrs::SceneAttributes>::AttributesManager(
+      : AttributesManager<metadata::attributes::SceneAttributes>::AttributesManager(
             "Scene Instance",
             "scene_instance.json") {
     buildCtorFuncPtrMaps();
@@ -38,7 +38,7 @@ class SceneAttributesManager
    * template.
    * @return a reference to the newly-created template.
    */
-  Attrs::SceneAttributes::ptr createObject(
+  metadata::attributes::SceneAttributes::ptr createObject(
       const std::string& sceneInstanceHandle,
       bool registerTemplate = true) override;
 
@@ -48,7 +48,7 @@ class SceneAttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void setValsFromJSONDoc(Attrs::SceneAttributes::ptr attribs,
+  void setValsFromJSONDoc(metadata::attributes::SceneAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
  protected:
@@ -61,7 +61,7 @@ class SceneAttributesManager
    * @return the constructed @ref
    * esp::metadata::attributes::SceneObjectInstanceAttributes object
    */
-  Attrs::SceneObjectInstanceAttributes::ptr createInstanceAttributesFromJSON(
+  metadata::attributes::SceneObjectInstanceAttributes::ptr createInstanceAttributesFromJSON(
       const io::JsonGenericValue& jCell);
 
   /**
@@ -71,7 +71,7 @@ class SceneAttributesManager
    * @param sceneInstanceHandle handle name to be assigned to scene instance
    * attributes
    */
-  Attrs::SceneAttributes::ptr initNewObjectInternal(
+  metadata::attributes::SceneAttributes::ptr initNewObjectInternal(
       const std::string& sceneInstanceHandle) override;
 
   /**
@@ -105,7 +105,7 @@ class SceneAttributesManager
    * @ref objectLibrary_.
    * @return The index in the @ref objectLibrary_ of the registered template.
    */
-  int registerObjectFinalize(Attrs::SceneAttributes::ptr sceneAttributes,
+  int registerObjectFinalize(metadata::attributes::SceneAttributes::ptr sceneAttributes,
                              const std::string& sceneAttributesHandle) override;
 
   /**
@@ -115,7 +115,7 @@ class SceneAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["SceneAttributes"] =
-        &SceneAttributesManager::createObjectCopy<Attrs::SceneAttributes>;
+        &SceneAttributesManager::createObjectCopy<metadata::attributes::SceneAttributes>;
   }  // SceneAttributesManager::buildCtorFuncPtrMaps
 
   /**

@@ -20,7 +20,6 @@
 
 namespace esp {
 namespace metadata {
-namespace Attrs = esp::metadata::attributes;
 class MetadataMediator {
  public:
   MetadataMediator(const std::string& _defaultDataset = "default")
@@ -70,9 +69,9 @@ class MetadataMediator {
    */
   const managers::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    metadata::attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
-                                    : datasetAttr->getAssetAttributesManager();
+                                    : datasetAttr->getAssetAttributesManager(); 
   }
 
   /**
@@ -81,7 +80,7 @@ class MetadataMediator {
    */
   const managers::LightAttributesManager::ptr getLightAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    metadata::attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getLightAttributesManager();
   }
@@ -92,7 +91,7 @@ class MetadataMediator {
    */
   const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    metadata::attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getObjectAttributesManager();
   }
@@ -103,7 +102,7 @@ class MetadataMediator {
    */
   const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    metadata::attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getStageAttributesManager();
   }  // MetadataMediator::getStageAttributesManager
@@ -124,7 +123,7 @@ class MetadataMediator {
    * @brief Retrieve the current default dataset object.  Currently only for
    * internal use.
    */
-  Attrs::DatasetAttributes::ptr getActiveDSAttribs() const {
+  metadata::attributes::DatasetAttributes::ptr getActiveDSAttribs() const {
     // do not get copy of dataset attributes until datasetAttributes deep copy
     // ctor implemented
     auto datasetAttr =

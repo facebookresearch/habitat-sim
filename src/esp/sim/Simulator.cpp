@@ -79,6 +79,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   if (!resourceManager_) {
     resourceManager_ =
         std::make_unique<assets::ResourceManager>(metadataMediator_);
+  } else {
+    resourceManager_->setMetadataMediator(metadataMediator_);
   }
 
   if (!sceneManager_) {

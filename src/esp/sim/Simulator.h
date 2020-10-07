@@ -86,18 +86,29 @@ class Simulator {
   // TODO: support multi-scene physics (default sceneID=0 currently).
 
   /**
-   * @brief Return manager for construction and access to asset attributes.
+   * @brief Return manager for construction and access to asset attributes for
+   * the current dataset.
    */
   const metadata::managers::AssetAttributesManager::ptr
   getAssetAttributesManager() const {
-    return resourceManager_->getAssetAttributesManager();
+    return metadataMediator_->getAssetAttributesManager();
   }
   /**
-   * @brief Return manager for construction and access to object attributes.
+   * @brief Return manager for construction and access to light attributes and
+   * layouts for the current dataset.
+   */
+  const metadata::managers::LightAttributesManager::ptr
+  getLightAttributesManager() const {
+    return metadataMediator_->getLightAttributesManager();
+  }
+
+  /**
+   * @brief Return manager for construction and access to object attributes and
+   * layouts for the current dataset.
    */
   const metadata::managers::ObjectAttributesManager::ptr
   getObjectAttributesManager() const {
-    return resourceManager_->getObjectAttributesManager();
+    return metadataMediator_->getObjectAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to physics world
@@ -105,14 +116,22 @@ class Simulator {
    */
   const metadata::managers::PhysicsAttributesManager::ptr
   getPhysicsAttributesManager() const {
-    return resourceManager_->getPhysicsAttributesManager();
+    return metadataMediator_->getPhysicsAttributesManager();
   }
   /**
-   * @brief Return manager for construction and access to scene attributes.
+   * @brief Return manager for construction and access to scene attributes for
+   * the current dataset.
    */
   const metadata::managers::StageAttributesManager::ptr
   getStageAttributesManager() const {
-    return resourceManager_->getStageAttributesManager();
+    return metadataMediator_->getStageAttributesManager();
+  }
+
+  /**
+   * @brief Get current active dataset name from @ref metadataMediator_.
+   */
+  std::string getCurrentDatasetName() {
+    return metadataMediator_->getActiveDatasetName();
   }
 
   /** @brief Return the library implementation type for the simulator currently
