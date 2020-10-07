@@ -53,6 +53,7 @@ class AttributesManagersTest : public testing::Test {
     lightAttributesManager_ = MM->getLightAttributesManager();
     objectAttributesManager_ = MM->getObjectAttributesManager();
     physicsAttributesManager_ = MM->getPhysicsAttributesManager();
+    sceneAttributesManager_ = MM->getSceneAttributesManager();
     stageAttributesManager_ = MM->getStageAttributesManager();
   };
 
@@ -403,6 +404,7 @@ class AttributesManagersTest : public testing::Test {
   AttrMgrs::LightAttributesManager::ptr lightAttributesManager_ = nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+  AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 };  // class AttributesManagersTest
 
@@ -505,6 +507,39 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
         "nav mesh":"testJSONNavMeshAsset.glb",
         "house filename":"testJSONHouseFileName.glb"
       })";
+
+  auto sceneAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::SceneAttributesManager,
+                                        Attrs::SceneAttributes>(
+          sceneAttributesManager_);
+
+  // verify exists
+  ASSERT_NE(nullptr, sceneAttr);
+
+  // match values set in test JSON
+  // TODO : get these values programmatically?
+  ASSERT_EQ(sceneAttr->getLightingHandle(), "test_lighting_configuration");
+  ASSERT_EQ(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
+  ASSERT_EQ(sceneAttr->getSemanticSceneHandle(),
+            "test_semantic_descriptor_path1");
+  // verify stage populated properly
+  auto stageInstance = sceneAttr->getStageInstance();
+  ASSERT_EQ(stageInstance->getHandle(), "test_stage_template");
+  ASSERT_EQ(stageInstance->getTranslation(), Magnum::Vector3(1, 2, 3));
+  // verify objects
+  auto objectInstanceList = sceneAttr->getObjectInstances();
+  ASSERT_EQ(objectInstanceList.size(), 2);
+  auto objInstance = objectInstanceList[0];
+  ASSERT_EQ(objInstance->getHandle(), "test_object_template0");
+  ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, 1, 2));
+  ASSERT_EQ(objInstance->getMotionType(),
+            static_cast<int>(esp::physics::MotionType::KINEMATIC));
+
+  objInstance = objectInstanceList[1];
+  ASSERT_EQ(objInstance->getHandle(), "test_object_template1");
+  ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, -1, -2));
+  ASSERT_EQ(objInstance->getMotionType(),
+            static_cast<int>(esp::physics::MotionType::DYNAMIC));
 
   auto stageAttr =
       testBuildAttributesFromJSONString<AttrMgrs::StageAttributesManager,

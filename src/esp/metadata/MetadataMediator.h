@@ -97,6 +97,17 @@ class MetadataMediator {
   }
 
   /**
+   * @brief Return manager for construction and access to scene instance
+   * attributes for current dataset.
+   */
+  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
+      const {
+    attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    return (nullptr == datasetAttr) ? nullptr
+                                    : datasetAttr->getSceneAttributesManager();
+  }  // MetadataMediator::getStageAttributesManager
+
+  /**
    * @brief Return manager for construction and access to stage attributes for
    * current dataset.
    */

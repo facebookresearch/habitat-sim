@@ -57,12 +57,12 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Set the motion type for the object.  Ignored for stage instances.
    */
-  void setMotionType(int motionType) { setInt("motiontype", motionType); }
+  void setMotionType(int motionType) { setInt("motion_type", motionType); }
 
   /**
    * @brief Get the motion type for the object.  Ignored for stage instances.
    */
-  int getMotionType() const { return getInt("motiontype"); }
+  int getMotionType() const { return getInt("motion_type"); }
 
  public:
   ESP_SMART_POINTERS(SceneObjectInstanceAttributes)
@@ -84,35 +84,37 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Set the name of the template that describes the scene's stage
    */
   void setLightingHandle(const std::string& lightingHandle) {
-    setString("lightingHandle", lightingHandle);
+    setString("default_lighting", lightingHandle);
   }
   /**
    * @brief Get the name of the template that describes the scene's stage
    */
-  std::string getLightingHandle() const { return getString("lightingHandle"); }
+  std::string getLightingHandle() const {
+    return getString("default_lighting");
+  }
 
   /**
    * @brief Set the name of the navmesh for the scene
    */
   void setNavmeshHandle(const std::string& navmeshHandle) {
-    setString("navmeshHandle", navmeshHandle);
+    setString("navmesh_instance", navmeshHandle);
   }
   /**
    * @brief Get the name of the navmesh for the scene
    */
-  std::string getNavmeshHandle() const { return getString("navmeshHandle"); }
+  std::string getNavmeshHandle() const { return getString("navmesh_instance"); }
 
   /**
    * @brief Set the name of the semantic scene descriptor
    */
   void setSemanticSceneHandle(const std::string& semanticSceneDesc) {
-    setString("semanticSceneDesc", semanticSceneDesc);
+    setString("semantic_scene_instance", semanticSceneDesc);
   }
   /**
    * @brief Get the name of the semantic scene descriptor
    */
   std::string getSemanticSceneHandle() const {
-    return getString("semanticSceneDesc");
+    return getString("semantic_scene_instance");
   }
 
   /**

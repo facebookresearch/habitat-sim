@@ -51,19 +51,19 @@ void SceneAttributesManager::setValsFromJSONDoc(
     const io::JsonGenericValue& jsonConfig) {
   const std::string attribsName = attribs->getHandle();
   // Check for stage instance existance
-  if ((jsonConfig.HasMember("stage instance")) &&
-      (jsonConfig["stage instance"].IsObject())) {
+  if ((jsonConfig.HasMember("stage_instance")) &&
+      (jsonConfig["stage_instance"].IsObject())) {
     attribs->setStageInstance(
-        createInstanceAttributesFromJSON(jsonConfig["stage instance"]));
+        createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
   } else {
     LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No Stage "
                     "specified for scene "
                  << attribsName << ", or specification error.";
   }
   // Check for object instances existance
-  if ((jsonConfig.HasMember("object instances")) &&
-      (jsonConfig["object instances"].IsArray())) {
-    const auto& objectArray = jsonConfig["object instances"];
+  if ((jsonConfig.HasMember("object_instances")) &&
+      (jsonConfig["object_instances"].IsArray())) {
+    const auto& objectArray = jsonConfig["object_instances"];
     for (rapidjson::SizeType i = 0; i < objectArray.Size(); i++) {
       const auto& objCell = objectArray[i];
       if (objCell.IsObject()) {
@@ -80,36 +80,37 @@ void SceneAttributesManager::setValsFromJSONDoc(
                  << attribsName << ", or specification error.";
   }
   std::string dfltLighting = "";
-  if (io::jsonIntoVal<std::string>(jsonConfig, "default lighting",
+  if (io::jsonIntoVal<std::string>(jsonConfig, "default_lighting",
                                    dfltLighting)) {
     // if "default lighting" is specified in scene json set value.
     attribs->setLightingHandle(dfltLighting);
   } else {
     LOG(WARNING)
-        << "SceneAttributesManager::setValsFromJSONDoc : No default lighting "
+        << "SceneAttributesManager::setValsFromJSONDoc : No default_lighting "
            "specified for scene "
         << attribsName << ".";
   }
 
   std::string navmeshName = "";
-  if (io::jsonIntoVal<std::string>(jsonConfig, "navmesh instance",
+  if (io::jsonIntoVal<std::string>(jsonConfig, "navmesh_instance",
                                    navmeshName)) {
-    // if "navmesh instance" is specified in scene json set value.
+    // if "navmesh_instance" is specified in scene json set value.
     attribs->setNavmeshHandle(navmeshName);
   } else {
-    LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No navmesh "
-                    "specified for scene "
-                 << attribsName << ".";
+    LOG(WARNING)
+        << "SceneAttributesManager::setValsFromJSONDoc : No navmesh_instance "
+           "specified for scene "
+        << attribsName << ".";
   }
 
   std::string semanticDesc = "";
-  if (io::jsonIntoVal<std::string>(jsonConfig, "semantic scene instance",
+  if (io::jsonIntoVal<std::string>(jsonConfig, "semantic_scene_instance",
                                    semanticDesc)) {
     // if "semantic scene instance" is specified in scene json set value.
     attribs->setSemanticSceneHandle(semanticDesc);
   } else {
-    LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No Semantic "
-                    "Scene Description specified for scene "
+    LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No "
+                    "semantic_scene_instance specified for scene "
                  << attribsName << ".";
   }
 }  // SceneAttributesManager::setValsFromJSONDoc
@@ -121,28 +122,28 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
       SceneObjectInstanceAttributes::create("");
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
-      jCell, "template handle",
+      jCell, "template_name",
       std::bind(&SceneObjectInstanceAttributes::setHandle, instanceAttrs, _1));
 
   // motion type of object.  Ignored for stage.  TODO : veify is valid motion
   // type using standard mechanism of static map comparison.
 
-  int motionTypeVal = -1;
+  int motionTypeVal = motionTypeVal =
+      static_cast<int>(physics::MotionType::UNDEFINED);
   std::string tmpVal = "";
-  if (io::jsonIntoVal<std::string>(jCell, "motiontype", tmpVal)) {
+  if (io::jsonIntoVal<std::string>(jCell, "motion_type", tmpVal)) {
     // motion type tag was found, perform check - first convert to lowercase
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (SceneObjectInstanceAttributes::MotionTypeNamesMap.count(tmpVal)) {
+    if (SceneObjectInstanceAttributes::MotionTypeNamesMap.count(strToLookFor)) {
       motionTypeVal = static_cast<int>(
-          SceneObjectInstanceAttributes::MotionTypeNamesMap.at(tmpVal));
+          SceneObjectInstanceAttributes::MotionTypeNamesMap.at(strToLookFor));
     } else {
       LOG(WARNING)
           << "SceneAttributesManager::createInstanceAttributesFromJSON : "
-             "motiontype value in json  : `"
-          << tmpVal
+             "motion_type value in json  : `"
+          << tmpVal << "|" << strToLookFor
           << "` does not map to a valid physics::MotionType value, so "
              "defaulting motion type to MotionType::UNDEFINED.";
-      motionTypeVal = static_cast<int>(physics::MotionType::UNDEFINED);
     }
   }
   instanceAttrs->setMotionType(motionTypeVal);
