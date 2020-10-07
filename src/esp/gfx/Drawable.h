@@ -5,6 +5,8 @@
 #ifndef ESP_GFX_DRAWABLE_H_
 #define ESP_GFX_DRAWABLE_H_
 
+#include <Corrade/Containers/EnumSet.h>
+
 #include "esp/core/esp.h"
 #include "magnum.h"
 
@@ -24,6 +26,24 @@ class DrawableGroup;
  */
 class Drawable : public Magnum::SceneGraph::Drawable3D {
  public:
+  /** @brief Flag
+   * It will not be used directly in the base class "Drawable" but
+   * it will be used in a couple of sub-classes
+   */
+  enum class Flag {
+    /**
+     * indicates the mesh data has tangent attribute
+     */
+    HasTangent = 1 << 0,
+
+    /**
+     * indicates the mesh data has separate bi-tangent attribute
+     */
+    HasBitangent = 1 << 1
+  };
+  /** @brief Flags */
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+
   /**
    * @brief Constructor
    *

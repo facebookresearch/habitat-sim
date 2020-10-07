@@ -20,6 +20,7 @@ class GenericDrawable : public Drawable {
   //! color for textured buffer and color shader output respectively
   explicit GenericDrawable(scene::SceneNode& node,
                            Magnum::GL::Mesh& mesh,
+                           Drawable::Flags& meshAttributeFlags,
                            ShaderManager& shaderManager,
                            const Magnum::ResourceKey& lightSetup,
                            const Magnum::ResourceKey& materialData,
@@ -49,6 +50,8 @@ class GenericDrawable : public Drawable {
       shader_;
   Magnum::Resource<MaterialData, PhongMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
+
+  Magnum::Shaders::Phong::Flags flags_;
 };
 
 }  // namespace gfx
