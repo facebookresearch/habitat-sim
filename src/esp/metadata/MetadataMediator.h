@@ -69,7 +69,7 @@ class MetadataMediator {
    */
   const managers::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
-    metadata::attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getAssetAttributesManager(); 
   }
@@ -80,7 +80,7 @@ class MetadataMediator {
    */
   const managers::LightAttributesManager::ptr getLightAttributesManager()
       const {
-    metadata::attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getLightAttributesManager();
   }
@@ -91,7 +91,7 @@ class MetadataMediator {
    */
   const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
-    metadata::attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getObjectAttributesManager();
   }
@@ -102,7 +102,7 @@ class MetadataMediator {
    */
   const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    metadata::attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getStageAttributesManager();
   }  // MetadataMediator::getStageAttributesManager
@@ -123,7 +123,7 @@ class MetadataMediator {
    * @brief Retrieve the current default dataset object.  Currently only for
    * internal use.
    */
-  metadata::attributes::DatasetAttributes::ptr getActiveDSAttribs() const {
+  attributes::DatasetAttributes::ptr getActiveDSAttribs() const {
     // do not get copy of dataset attributes until datasetAttributes deep copy
     // ctor implemented
     auto datasetAttr =

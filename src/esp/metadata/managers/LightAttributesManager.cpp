@@ -43,16 +43,18 @@ LightAttributes::ptr LightAttributesManager::createObject(
 }  // PhysicsAttributesManager::createObject
 
 LightAttributes::ptr LightAttributesManager::buildObjectFromJSONDoc(
-    const std::string& layoutName,
+    const std::string& layoutNameAndPath,
     const io::JsonGenericValue& jsonConfig) {
   // this will parse jsonConfig for the description of each light, and build an
   // attributes for each.
   // set file directory here, based on layout name
-  auto loc = layoutName.find_last_of("/");
-  std::string dirname = "";
-  if (loc != std::string::npos) {
-    dirname = layoutName.substr(0, loc);
-  }
+  std::string dirname = Cr::Utility::Directory::path(layoutNameAndPath);
+  std::string filenameExt = Cr::Utility::Directory::filename(layoutNameAndPath);
+  // remove ".lighting_config.json" from name
+  std::string layoutName =
+      Cr::Utility::Directory::splitExtension(
+          Cr::Utility::Directory::splitExtension(filenameExt).first)
+          .first;
   LightAttributes::ptr lightAttribs = nullptr;
   if (jsonConfig.HasMember("lights") && jsonConfig["lights"].IsObject()) {
     const auto& lightCell = jsonConfig["lights"];
@@ -62,13 +64,15 @@ LightAttributes::ptr LightAttributesManager::buildObjectFromJSONDoc(
       // create attributes and set its name to be the tag in the JSON for the
       // individual light
       const std::string key = it->name.GetString();
-      lightAttribs = this->initNewObjectInternal(key);
+      const auto& obj = it->value;
+      // TODO construct name using file name prepended to key
+      lightAttribs = this->initNewObjectInternal(layoutName + "_" + key);
       // set file directory here, based on layout name
       if (dirname != "") {
         lightAttribs->setFileDirectory(dirname);
       }
       // set attributes values from JSON doc
-      this->setValsFromJSONDoc(lightAttribs, lightCell);
+      this->setValsFromJSONDoc(lightAttribs, obj);
       // register
       this->postCreateRegister(lightAttribs, true);
       // add ref to object in appropriate layout

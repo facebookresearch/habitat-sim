@@ -12,7 +12,6 @@
 
 namespace esp {
 namespace metadata {
-
 namespace managers {
 class DatasetAttributesManager
     : public AttributesManager<attributes::DatasetAttributes> {
