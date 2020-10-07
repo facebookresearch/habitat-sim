@@ -48,8 +48,8 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
         flags_ |= Mn::Shaders::Phong::Flag::Bitangent;
       }
     } else {
-      LOG(ERROR) << "Mesh does not have tangents and Magnum cannot generate "
-                    "them yet, ignoring a normal map";
+      LOG(WARNING) << "Mesh does not have tangents and Magnum cannot generate "
+                      "them yet, ignoring a normal map";
     }
   }
   if (materialData_->perVertexObjectId) {

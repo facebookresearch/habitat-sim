@@ -1090,9 +1090,15 @@ bool ResourceManager::loadGeneralMeshData(
      // TODO: cache visual nodes added by this process
   std::vector<scene::SceneNode*> visNodeCache;
   std::vector<StaticDrawableInfo> staticDrawableInfo;
-  addComponent(meshMetaData, newNode, lightSetupKey, drawables,
-               meshMetaData.root, visNodeCache, computeAbsoluteAABBs,
-               staticDrawableInfo);
+
+  addComponent(meshMetaData,       // mesh metadata
+               newNode,            // parent scene node
+               lightSetupKey,      // lightSetup key
+               drawables,          // drawble group
+               meshMetaData.root,  // mesh transform node
+               visNodeCache,       // a vector of scene nodes, the visNodeCache
+               computeAbsoluteAABBs,  // compute absolute aabbs
+               staticDrawableInfo);   // a vector of static drawable info
   if (computeAbsoluteAABBs) {
     // now compute aabbs by constructed staticDrawableInfo
     computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
@@ -1541,10 +1547,14 @@ void ResourceManager::addObjectToDrawables(
     // ignored for objects since computeAbsoluteAABBs is always set to false
     // after scene is loaded.
     std::vector<StaticDrawableInfo> staticDrawableInfo;
-
-    addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetupKey,
-                 drawables, loadedAssetData.meshMetaData.root, visNodeCache,
-                 false, staticDrawableInfo);
+    addComponent(loadedAssetData.meshMetaData,       // mesh metadata
+                 scalingNode,                        // parent scene node
+                 lightSetupKey,                      // lightSetup key
+                 drawables,                          // drawable group
+                 loadedAssetData.meshMetaData.root,  // mesh transform node
+                 visNodeCache,  // a vector of scene nodes, the visNodeCache
+                 false,         // compute absolute AABBs
+                 staticDrawableInfo);  // a vector of static drawable info
 
     // set the node type for all cached visual nodes
     for (auto node : visNodeCache) {
@@ -1611,8 +1621,14 @@ void ResourceManager::addComponent(
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, lightSetupKey, drawables, child, visNodeCache,
-                 computeAbsoluteAABBs, staticDrawableInfo);
+    addComponent(metaData,       // mesh metadata
+                 node,           // parent scene node
+                 lightSetupKey,  // lightSetup key
+                 drawables,      // drawable group
+                 child,          // mesh transform node
+                 visNodeCache,   // a vector of scene nodes, the visNodeCache
+                 computeAbsoluteAABBs,  // compute absolute aabbs
+                 staticDrawableInfo);   // a vector of static drawable info
   }
 }  // addComponent
 
