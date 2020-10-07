@@ -38,7 +38,7 @@ class _Registry:
         controller: Optional[Type] = None,
         *,
         name: Optional[str] = None,
-        body_action: bool = None,
+        body_action: Optional[bool] = None,
     ):
         r"""Registers a new control with Habitat-Sim. Registered controls can
         then be retrieved via `get_move_fn()`
@@ -70,8 +70,8 @@ class _Registry:
             cls._mapping["move_fn"][
                 _camel_to_snake(controller.__name__) if name is None else name
             ] = controller(
-                body_action
-            )  # type : ignore
+                body_action  # type: ignore
+            )
 
             return controller
 
