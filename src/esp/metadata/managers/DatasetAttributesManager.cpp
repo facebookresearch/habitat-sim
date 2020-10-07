@@ -46,20 +46,22 @@ DatasetAttributes::ptr DatasetAttributesManager::initNewObjectInternal(
 void DatasetAttributesManager::setValsFromJSONDoc(
     attributes::DatasetAttributes::ptr dsAttribs,
     const io::JsonGenericValue& jsonConfig) {
+  // dataset root directory to build paths from
+  std::string dsDir = dsAttribs->getFileDirectory();
   // process stages
-  readDatasetJSONCell(dsAttribs, "stages", jsonConfig,
+  readDatasetJSONCell(dsDir, "stages", jsonConfig,
                       dsAttribs->getStageAttributesManager());
 
   // process objects
-  readDatasetJSONCell(dsAttribs, "objects", jsonConfig,
+  readDatasetJSONCell(dsDir, "objects", jsonConfig,
                       dsAttribs->getObjectAttributesManager());
 
   // process light setups - implement handling light setups TODO
-  // readDatasetJSONCell(dsAttribs,"light setups", jsonConfig,
+  // readDatasetJSONCell(dsDir,"light setups", jsonConfig,
   //                     dsAttribs->getLightsAttributesManager());
 
   // process scene instances - implement handling scene instances TODO
-  // readDatasetJSONCell(dsAttribs,"scene instances", jsonConfig,
+  // readDatasetJSONCell(dsDir,"scene instances", jsonConfig,
   //                     dsAttribs->getSceneInstanceManager());
 
   // process navmesh instances
@@ -87,7 +89,7 @@ void DatasetAttributesManager::setValsFromJSONDoc(
 // using type deduction
 template <typename U>
 void DatasetAttributesManager::readDatasetJSONCell(
-    attributes::DatasetAttributes::ptr dsAttribs,
+    const std::string& dsDir,
     const char* tag,
     const io::JsonGenericValue& jsonConfig,
     const U& attrMgr) {
@@ -133,9 +135,8 @@ void DatasetAttributesManager::readDatasetJSONCell(
                        << ".paths\" cell in JSON config unable to be parsed as "
                           "an array to determine search paths so skipping.";
         } else {
-          std::string configDirectory = dsAttribs->getFileDirectory();
-          const auto& paths = jsonConfig["paths"];
-          attrMgr->buildCfgPathsFromJSONAndLoad(configDirectory, paths);
+          const auto& paths = jCell["paths"];
+          attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
         }  // if is array
       }    // if has paths cell
       // 3. "configs" : an array of json cells defining customizations to
@@ -146,13 +147,116 @@ void DatasetAttributesManager::readDatasetJSONCell(
                        << tag
                        << ".configs\" cell in JSON config unable to be parsed "
                           "as an array to determine search paths so skipping.";
-
         } else {
-        }
-      }  // if has configs cell
-    }
-  }
+          const auto& configsAra = jCell["configs"];
+          for (rapidjson::SizeType i = 0; i < configsAra.Size(); i++) {
+            const auto& configCell = configsAra[i];
+            readDatasetConfigsJSONCell(dsDir, tag, configCell, attrMgr);
+          }  // for each cell in configs array
+        }    // if is array
+      }      // if has configs cell
+    }        // if cell is an object
+  }          // if cell exists
 }  // DatasetAttributesManager::readDatasetJSONCell
+
+template <typename U>
+void DatasetAttributesManager::readDatasetConfigsJSONCell(
+    const std::string& dsDir,
+    const char* tag,
+    const io::JsonGenericValue& jCell,
+    const U& attrMgr) {
+  // every cell within configs array must have an attributes tag
+  if ((!jCell.HasMember("attributes")) || (!jCell["attributes"].IsObject())) {
+    LOG(WARNING)
+        << "DatasetAttributesManager::readDatasetConfigsJSONCell : \"" << tag
+        << ".configs\" cell element in JSON config lacks required data to "
+           "construct configuration override (an attributes tag and data "
+           "describing the overrides is not found), so skipping.";
+    return;
+  }  // attributes must be specified.
+
+  // every cell within configs array will have at least one of ("original
+  // file","template handle")
+  bool validCell = false;
+  bool origFileNameSpecified = false;
+  bool newNameSpecified = false;
+  std::string originalFile = "";
+  std::string newTemplateHandle = "";
+  // try to find original attributes file name
+  if (io::jsonIntoVal<std::string>(jCell, "original file", originalFile)) {
+    originalFile = Cr::Utility::Directory::join(dsDir, originalFile);
+    if (!this->isValidFileName(originalFile)) {
+      LOG(WARNING)
+          << "DatasetAttributesManager::readDatasetConfigsJSONCell : \"" << tag
+          << ".configs\" cell element in JSON config specified source file : "
+          << originalFile << " which cannot be found, so skipping.";
+      return;
+    }
+    validCell = true;
+    origFileNameSpecified = true;
+  }
+  // try to find new attributes template name
+  if (io::jsonIntoVal<std::string>(jCell, "template handle",
+                                   newTemplateHandle)) {
+    validCell = true;
+    newNameSpecified = true;
+  }
+  // if neither handle is specified, cell will fail
+  if (!validCell) {
+    LOG(WARNING)
+        << "DatasetAttributesManager::readDatasetConfigsJSONCell : \"" << tag
+        << ".configs\" cell element in JSON config lacks required data to "
+           "construct configuration override (either an original file or a "
+           "template handle must be provided) so skipping.";
+    return;
+  }
+  // set registration handle
+  std::string regHandle = (newNameSpecified ? newTemplateHandle : originalFile);
+
+  // if has original file but no template handle, will retrieve/load template
+  // with given name, modify it, and save it with original name.  If template
+  // handle is given it will save it with this handle instead.  If no original
+  // file is given, will create new default template and save it with template
+  // handle.
+
+  // create attributes using original file name if specified, otherwise, create
+  // from default and set new template handle upon registration.
+  if (origFileNameSpecified) {
+    // get object if exists, else create object.  By here originalFile is known
+    // to be legitimate directory
+    auto oldAttr = attrMgr->getObjectCopyByHandle(originalFile);
+    if (nullptr == oldAttr) {
+      oldAttr = attrMgr->createObject(originalFile);
+      if (nullptr == oldAttr) {
+        LOG(WARNING)
+            << "DatasetAttributesManager::readDatasetConfigsJSONCell : \""
+            << tag << ".configs\" cell element's original file ("
+            << originalFile
+            << ") failed to successfully create a base attributes to modify, "
+               "so skipping.";
+        return;
+      }
+      // old object is available now. Modify it using json tag data
+      attrMgr->setValsFromJSONDoc(oldAttr, jCell["attributes"]);
+      // register object
+      attrMgr->registerObject(oldAttr, regHandle);
+    } else {
+      // load attributes as default from file, do not register
+      auto attr = attrMgr->buildObjectFromJSONDoc(newTemplateHandle,
+                                                  jCell["attributes"]);
+      if (nullptr == attr) {
+        LOG(WARNING)
+            << "DatasetAttributesManager::readDatasetConfigsJSONCell : \""
+            << tag
+            << ".configs\" cell element failed to successfully create an "
+               "attributes, so skipping.";
+        return;
+      }
+      // register new object
+      attrMgr->registerObject(attr, regHandle);
+    }
+  }  // if original filename was specified
+}  // DatasetAttributesManager::readDatasetConfigsJSONCell
 
 int DatasetAttributesManager::registerObjectFinalize(
     attributes::DatasetAttributes::ptr datasetAttributes,
