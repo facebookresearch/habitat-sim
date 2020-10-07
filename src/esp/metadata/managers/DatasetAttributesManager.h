@@ -102,16 +102,33 @@ class DatasetAttributesManager
 
  protected:
   /**
-   * @brief Handle reading a JSON sub-cell with in the dataset_config.JSON file,
+   * @brief Verify a particular subcell exists within the dataset_config.JSON
+   * file, and if so, handle reading the possible JSON sub-cells it might hold.
    * using the passed attributesManager for the dataset being processed.
    * @tparam the type of the attributes manager.
-   * @param jsonCell The sub cell in the json document being processed.
-   * @param attrMgr The dataset's attributes manager.
+   * @param dsAttribs The dataset attributes being built.
+   * @param tag The name of the JSON cell being processed - corresponds to what
+   * type of data is being loaded from dataset configuration (i.e. stages,
+   * objects, etc)
+   * @param jsonConfig The sub cell in the json document being processed.
+   * @param attrMgr The dataset's attributes manager for @p tag 's data.
    */
   template <typename U>
-  void readDatasetJSONCell(const char* tag,
+  void readDatasetJSONCell(attributes::DatasetAttributes::ptr dsAttribs,
+                           const char* tag,
                            const io::JsonGenericValue& jsonConfig,
                            const U& attrMgr);
+
+  /**
+   * @brief Internally used warning message if a cell in the dataset
+   * configuration is present but improperly configred.
+   * @param tag the name of the cell
+   */
+  void dispCellConfigError(const std::string& tag) {
+    LOG(WARNING)
+        << "DatasetAttributesManager::readDatasetJSONCell : \"" << tag
+        << "\" cell in JSON config not appropriately configured. Skipping.";
+  }
 
   /**
    * @brief Used Internally.  Create and configure newly-created dataset
