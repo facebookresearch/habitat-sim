@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
@@ -19,7 +19,7 @@ namespace Cr = Corrade;
 namespace AttrMgrs = esp::metadata::managers;
 namespace Attrs = esp::metadata::attributes;
 
-using esp::assets::ResourceManager;
+using esp::metadata::MetadataMediator;
 using esp::metadata::PrimObjTypes;
 
 using AttrMgrs::AttributesManager;
@@ -42,11 +42,12 @@ const std::string physicsConfigFile =
 class AttributesManagersTest : public testing::Test {
  protected:
   void SetUp() override {
+    auto MM = MetadataMediator::create();
     // get attributes managers
-    assetAttributesManager_ = resourceManager_.getAssetAttributesManager();
-    objectAttributesManager_ = resourceManager_.getObjectAttributesManager();
-    physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
-    stageAttributesManager_ = resourceManager_.getStageAttributesManager();
+    assetAttributesManager_ = MM->getAssetAttributesManager();
+    objectAttributesManager_ = MM->getObjectAttributesManager();
+    physicsAttributesManager_ = MM->getPhysicsAttributesManager();
+    stageAttributesManager_ = MM->getStageAttributesManager();
   };
 
   /**
@@ -355,8 +356,6 @@ class AttributesManagersTest : public testing::Test {
     ASSERT_EQ(orignNumTemplates, assetAttributesManager_->getNumObjects());
 
   }  // AttributesManagersTest::testAssetAttributesModRegRemove
-
-  ResourceManager resourceManager_;
 
   AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;

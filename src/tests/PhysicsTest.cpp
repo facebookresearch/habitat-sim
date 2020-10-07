@@ -24,6 +24,7 @@ namespace AttrMgrs = esp::metadata::managers;
 using AttrMgrs::ObjectAttributesManager;
 using AttrMgrs::PhysicsAttributesManager;
 using esp::assets::ResourceManager;
+using esp::metadata::MetadataMediator;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::physics::PhysicsManager;
 using esp::scene::SceneManager;
@@ -36,7 +37,8 @@ const std::string physicsConfigFile =
 class PhysicsManagerTest : public testing::Test {
  protected:
   void SetUp() override {
-    resourceManager_ = std::make_unique<ResourceManager>();
+    auto MM = MetadataMediator::create();
+    resourceManager_ = std::make_unique<ResourceManager>(MM);
     context_ = esp::gfx::WindowlessContext::create_unique(0);
 
     sceneID_ = sceneManager_.initSceneGraph();
