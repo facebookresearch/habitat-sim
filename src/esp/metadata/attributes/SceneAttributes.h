@@ -8,6 +8,9 @@
 #include "AttributesBase.h"
 
 namespace esp {
+namespace physics {
+enum class MotionType;
+}
 namespace metadata {
 namespace attributes {
 
@@ -18,6 +21,13 @@ namespace attributes {
  */
 class SceneObjectInstanceAttributes : public AbstractAttributes {
  public:
+  /**
+   * @brief Constant static map to provide mappings from string tags to @ref
+   * esp::assets::AssetType values.  This will be used to map values set in json
+   * for mesh type to @ref esp::assets::AssetType.  Keys must be lowercase.
+   */
+  static const std::map<std::string, esp::physics::MotionType>
+      MotionTypeNamesMap;
   SceneObjectInstanceAttributes(const std::string& handle);
 
   /**
@@ -47,14 +57,12 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Set the motion type for the object.  Ignored for stage instances.
    */
-  void setMotionType(const std::string& motionType) {
-    setString("motionType", motionType);
-  }
+  void setMotionType(int motionType) { setInt("motiontype", motionType); }
 
   /**
    * @brief Get the motion type for the object.  Ignored for stage instances.
    */
-  std::string getMotionType() const { return getString("motionType"); }
+  int getMotionType() const { return getInt("motiontype"); }
 
  public:
   ESP_SMART_POINTERS(SceneObjectInstanceAttributes)

@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneAttributesManager.h"
+#include "esp/physics/RigidBase.h"
 
 #include "esp/io/io.h"
 #include "esp/io/json.h"
@@ -14,6 +15,7 @@ namespace metadata {
 
 using attributes::SceneAttributes;
 using attributes::SceneObjectInstanceAttributes;
+
 namespace managers {
 
 SceneAttributes::ptr SceneAttributesManager::createObject(
@@ -124,10 +126,26 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
 
   // motion type of object.  Ignored for stage.  TODO : veify is valid motion
   // type using standard mechanism of static map comparison.
-  io::jsonIntoConstSetter<std::string>(
-      jCell, "motiontype",
-      std::bind(&SceneObjectInstanceAttributes::setMotionType, instanceAttrs,
-                _1));
+
+  int motionTypeVal = -1;
+  std::string tmpVal = "";
+  if (io::jsonIntoVal<std::string>(jCell, "motiontype", tmpVal)) {
+    // motion type tag was found, perform check - first convert to lowercase
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
+    if (SceneObjectInstanceAttributes::MotionTypeNamesMap.count(tmpVal)) {
+      motionTypeVal = static_cast<int>(
+          SceneObjectInstanceAttributes::MotionTypeNamesMap.at(tmpVal));
+    } else {
+      LOG(WARNING)
+          << "SceneAttributesManager::createInstanceAttributesFromJSON : "
+             "motiontype value in json  : `"
+          << tmpVal
+          << "` does not map to a valid physics::MotionType value, so "
+             "defaulting motion type to MotionType::UNDEFINED.";
+      motionTypeVal = static_cast<int>(physics::MotionType::UNDEFINED);
+    }
+  }
+  instanceAttrs->setMotionType(motionTypeVal);
 
   // translation from origin
   io::jsonIntoConstSetter<Magnum::Vector3>(
