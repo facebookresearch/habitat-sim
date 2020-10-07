@@ -47,7 +47,7 @@ import sqlite3
 from argparse import ArgumentParser, Namespace
 from collections import defaultdict
 from sqlite3 import Connection
-from typing import Any, DefaultDict, Dict, List, Set, Union
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Union
 
 import attr
 
@@ -169,7 +169,7 @@ def _display_time_ms(time: int, args: Namespace, show_sign: bool = False) -> str
 def print_summaries(
     summaries: Union[List[DefaultDict[str, SummaryItem]], List[DefaultDict[Any, Any]]],
     args: Namespace,
-    labels: None = None,
+    labels: Optional[List[str]] = None,
 ) -> None:
     """Print a dictionary of summaries to stdout. See create_arg_parser for
     formatting options available in the args object. See also

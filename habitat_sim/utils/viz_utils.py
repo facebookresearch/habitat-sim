@@ -95,7 +95,7 @@ def display_video(video_file: str, height: int = 400):
         )
     else:
         if sys.platform == "win32":
-            os.startfile(video_file)
+            os.startfile(video_file)  # type: ignore
         else:
             opener = "open" if sys.platform == "darwin" else "xdg-open"
             subprocess.call([opener, video_file])
