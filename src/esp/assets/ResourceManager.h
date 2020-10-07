@@ -220,10 +220,11 @@ class ResourceManager {
     return metadataMediator_->getAssetAttributesManager();
   }
   /**
-   * @brief Return manager for construction and access to asset attributes.
+   * @brief Return manager for construction and access to light and lighting
+   * layout attributes.
    */
-  const metadata::managers::LightAttributesManager::ptr getLightAttributesManager()
-      const {
+  const metadata::managers::LightAttributesManager::ptr
+  getLightAttributesManager() const {
     return metadataMediator_->getLightAttributesManager();
   }
 
@@ -251,8 +252,9 @@ class ResourceManager {
   }
 
   /**
-   * @brief Set the current metadata mediator.
-   * @param _MM the current metadata mediator.
+   * @brief Set a reference to the current @ref metadataMediator_.  Perform any
+   * initialization that may be required when @ref metadataMediator_ is changed.
+   * @param _MM a reference to the new @ref metadataMediator_.
    */
   void setMetadataMediator(metadata::MetadataMediator::ptr _MM) {
     metadataMediator_ = _MM;

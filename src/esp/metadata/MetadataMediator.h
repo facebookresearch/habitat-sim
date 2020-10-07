@@ -71,7 +71,7 @@ class MetadataMediator {
       const {
     attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
-                                    : datasetAttr->getAssetAttributesManager(); 
+                                    : datasetAttr->getAssetAttributesManager();
   }
 
   /**

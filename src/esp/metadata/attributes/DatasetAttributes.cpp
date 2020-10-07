@@ -16,10 +16,10 @@ DatasetAttributes::DatasetAttributes(
   lightAttributesManager_ = managers::LightAttributesManager::create();
   objectAttributesManager_ = managers::ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
+  sceneAttributesManager_ = managers::SceneAttributesManager::create();
   stageAttributesManager_ = managers::StageAttributesManager::create(
       objectAttributesManager_, physAttrMgr);
 
-  sceneAttributesManager_ = managers::SceneAttributesManager::create();
 }  // ctor
 
 }  // namespace attributes
