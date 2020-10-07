@@ -18,6 +18,9 @@
 
 #include "configure.h"
 
+#include <fstream>
+#include <iomanip>
+
 namespace Cr = Corrade;
 
 namespace AttrMgrs = esp::metadata::managers;
@@ -70,6 +73,15 @@ class PhysicsManagerTest : public testing::Test {
     bool result = resourceManager_->loadStage(stageAttributes, physicsManager_,
                                               &sceneManager_, tempIDs, false);
   }
+
+  std::vector<int> addTestStack(uint64_t seed,
+                                int numObjects,
+                                const std::string& primName,
+                                const Mn::Vector3& stackBase,
+                                esp::gfx::DrawableGroup* drawables);
+
+  void appendObjectStates(const std::vector<int>& objectIds,
+                          const std::string& filepath);
 
   // must declare these in this order due to avoid deallocation errors
   esp::gfx::WindowlessContext::uptr context_;
@@ -826,4 +838,126 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
 
     ASSERT_GT(physicsManager_->getNumActiveContactPoints(), 0);
   }
+}
+
+// tiny, portable pseudo-random number generator
+class splitmix {
+ public:
+  splitmix(uint64_t seed) : m_seed(seed) {}
+  uint32_t operator()() {
+    uint64_t z = (m_seed += UINT64_C(0x9E3779B97F4A7C15));
+    z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
+    z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
+    return uint32_t((z ^ (z >> 31)) >> 31);
+  }
+
+ private:
+  uint64_t m_seed;
+};
+
+std::vector<int> PhysicsManagerTest::addTestStack(
+    uint64_t seed,
+    int numObjects,
+    const std::string& primName,
+    const Mn::Vector3& stackBase,
+    esp::gfx::DrawableGroup* drawables) {
+  auto objectAttributesManager =
+      // simulator_->getObjectAttributesManager();
+      resourceManager_->getObjectAttributesManager();
+  const auto& handles =
+      objectAttributesManager->getObjectHandlesBySubstring(primName);
+  ASSERT(!handles.empty());
+  std::string primHandle = handles[0];
+
+  std::vector<int> objectIds;
+  constexpr float ySpacing = 0.25;
+  constexpr float xyOffset = 0.1;
+
+  // Use pseudo-random number generator to generate variations in initial state.
+  // To be clear, in our determinism experiments, we'll never compare results
+  // from different variations; we're only interested in repeatability given
+  // the exact same initial conditions.
+  splitmix generator(seed);
+  auto getRandomOffset = [&](float min, float max) {
+    float fraction = double(generator()) / double(UINT32_MAX);
+    return min + (max - min) * fraction;
+  };
+
+  for (int i = 0; i < numObjects; i++) {
+    float zOffset = getRandomOffset(-xyOffset, xyOffset);
+    float xOffset = getRandomOffset(-xyOffset, xyOffset);
+    objectIds.push_back(physicsManager_->addObject(primHandle, drawables));
+    physicsManager_->setTranslation(
+        objectIds.back(),
+        Mn::Vector3(xOffset, (i + 1) * ySpacing, zOffset) + stackBase);
+  }
+
+  return objectIds;
+}
+
+// This isn't a unit test. It's just a small standalone program that produces
+// some text output. Regardless, the unit-test framework is convenient.
+TEST_F(PhysicsManagerTest, TestDeterminismStacking) {
+  std::string stageFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initStage(stageFile);
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    auto objectAttributesManager =
+        resourceManager_->getObjectAttributesManager();
+    const std::array<std::string, 4> primNames = {"cubeSolid", "banana",
+                                                  "coneSolid", "uvSphereSolid"};
+    const int numReps = 3;
+    for (int j = 0; j < numReps; j++) {
+      uint64_t seed = 0;
+      for (const auto& primName : primNames) {
+        constexpr int numVariations = 40;
+        for (int k = 0; k < numVariations; k++) {
+          constexpr int numObjects = 20;
+          Mn::Vector3 stackBase(0, 0, 0);
+          std::vector<int> objectIds =
+              addTestStack(seed++, numObjects, primName, stackBase, &drawables);
+
+          // this baseName needs to be updated to represent whatever you're
+          // building
+          std::string baseName = "Fedora_run3_bulletpackagerelease_" +
+                                 primName + "_rep" + std::to_string(j) + ".csv";
+          std::string filepath = "test_output/start_" + baseName;
+          appendObjectStates(objectIds, filepath);
+
+          physicsManager_->stepPhysics(10.0);
+
+          filepath = "test_output/end_" + baseName;
+          appendObjectStates(objectIds, filepath);
+
+          for (int id : objectIds) {
+            physicsManager_->removeObject(id);
+          }
+        }
+      }
+    }
+  }
+}
+
+void PhysicsManagerTest::appendObjectStates(const std::vector<int>& objectIds,
+                                            const std::string& filepath) {
+  std::ofstream file;
+  file.open(filepath, std::ios::out | std::ios::app);
+  ASSERT(!file.fail());
+
+  for (int id : objectIds) {
+    Magnum::Vector3 trans = physicsManager_->getTranslation(id);
+    Magnum::Quaternion rot = physicsManager_->getRotation(id);
+
+    file << std::fixed << std::setprecision(8) << trans.x() << ", " << trans.y()
+         << ", " << trans.z() << ", " << rot.vector().x() << ", "
+         << rot.vector().y() << ", " << rot.vector().z() << ", " << rot.scalar()
+         << ", ";
+  }
+
+  file << std::endl;
 }
