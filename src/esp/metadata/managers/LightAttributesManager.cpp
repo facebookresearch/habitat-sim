@@ -159,7 +159,19 @@ int LightAttributesManager::registerObjectFinalize(
 
 void LightAttributesManager::updateObjectHandleLists(
     int templateID,
-    const std::string& templateHandle) {
+    const std::string& lightHandle) {
+  // lightHandle has been removed already from templateLibrary. Needs to be
+  // removed from all layouts.  Note : empty layouts will remain.
+  if (this->layoutsBelongedTo_.count(lightHandle) != 0) {
+    // if there are layouts the lightHandle attributes belonged to, get them
+    const auto& tmpList = this->layoutsBelongedTo_.at(lightHandle);
+    // remove references to this lightHandle from these layouts
+    for (auto layoutName : tmpList) {
+      this->removeLightFromLayout(lightHandle, layoutName);
+    }
+    // remove set of layouts that lightHandle attributes belonged to
+    this->layoutsBelongedTo_.erase(lightHandle);
+  }
 }  // LightAttributesManager::updateObjectHandleLists
 
 }  // namespace managers

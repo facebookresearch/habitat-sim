@@ -68,12 +68,50 @@ class LightAttributesManager
                    << " not found in light attributes library.  Aborting.";
       return false;
     }
-    // add ref to layout to this attribs' layouts
+    // add ref to layout to this attribs' layouts.  Creates lightset if none
+    // exists.
     layoutsBelongedTo_[attribsHandle].emplace(layoutName);
-    // add ref to attribs to layouts' attribs
+    // add ref to attribs to layouts' attribs - creates layout if none exists.
     lightingLayoutsByName_[layoutName].emplace(attribsHandle);
     return true;
   }  // LightAttributesManager::addLightToLayout
+
+  /**
+   * @brief Returns a list of all lightAttributes belonging to a certain layout
+   * @param layoutName name of layout to query for.
+   * @return list of light attributes belonging to @p layoutName
+   */
+  std::vector<std::string> getLightHandlesInLayout(
+      const std::string& layoutName) {
+    std::vector<std::string> res;
+    if (this->lightingLayoutsByName_.count(layoutName) == 0) {
+      LOG(WARNING) << "LightAttributesManager::getLightHandlesInLayout : "
+                   << layoutName << " not found in layout library.";
+    } else {
+      const auto& tmpList = this->lightingLayoutsByName_.at(layoutName);
+      std::copy(tmpList.begin(), tmpList.end(), std::back_inserter(res));
+    }
+    return res;
+  }  // LightAttributesManager::getLightHandlesInLayout
+
+  /**
+   * @brief Returns a list of handles of all layouts containing the passed
+   * lightAttributes handle.
+   * @param lightHandle name of layout to query for.
+   * @return list of light attributes belonging to @p layoutName
+   */
+  std::vector<std::string> getLayoutsWithLightAttributes(
+      const std::string& lightHandle) {
+    std::vector<std::string> res;
+    if (this->layoutsBelongedTo_.count(lightHandle) == 0) {
+      LOG(WARNING) << "LightAttributesManager::getLayoutsWithLightAttributes : "
+                   << lightHandle << " not found in lightAttributes library.";
+    } else {
+      const auto& tmpList = this->layoutsBelongedTo_.at(lightHandle);
+      std::copy(tmpList.begin(), tmpList.end(), std::back_inserter(res));
+    }
+    return res;
+  }  // LightAttributesManager::getLightHandlesInLayout
 
   /**
    * @brief Parse passed JSON Document for @ref
@@ -89,17 +127,62 @@ class LightAttributesManager
       const std::string& layoutName,
       const io::JsonGenericValue& jsonConfig) override;
 
- protected:
   /**
-   * @brief Light Attributes has no reason to check this value
-   * @param handle String name of primitive asset attributes desired
-   * @return whether handle exists or not in asset attributes library
+   * @brief Returns the number of defined lighting layouts.
+   * @return Number of entries in layout library.
    */
-  bool isValidPrimitiveAttributes(
-      CORRADE_UNUSED const std::string& handle) override {
-    return false;
+  int getNumLightingLayouts() { return this->lightingLayoutsByName_.size(); }
+
+  /**
+   * @brief Get a list of all lighting layout handles whose handles contain
+   * subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing file-based object
+   * templates
+   * @param contains whether to search for keys containing, or not containing,
+   * subStr
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getLayoutHandlesBySubstring(
+      const std::string& subStr = "",
+      bool contains = true) const {
+    return this->getObjectHandlesBySubStringPerType(lightingLayoutsByName_,
+                                                    subStr, contains);
   }
 
+  /**
+   * @brief Remove passed @p layoutName.  All lightAttributes belonging to this
+   * layout will remain but will not reference it anymore.
+   * @param layoutName the layout to prune.
+   */
+  void removeLayoutFromAllLights(const std::string& layoutName) {
+    if (this->lightingLayoutsByName_.count(layoutName) == 0) {
+      LOG(WARNING) << "LightAttributesManager::removeLayout : " << layoutName
+                   << " not found in layout library. Nothing to remove.";
+    } else {
+      const auto& tmpLightSet = this->lightingLayoutsByName_.at(layoutName);
+      for (auto lightHandle : tmpLightSet) {
+        this->removeLayoutFromLight(layoutName, lightHandle);
+      }
+      // remove entire layout
+      this->lightingLayoutsByName_.erase(layoutName);
+    }
+  }  // LightAttributesManager::removeLayoutFromAllLights
+
+  /**
+   * @brief Remove passed @p lightAttributes handle from specified @p
+   * layoutName, and remove the layout from passed  @p lightAttributes
+   * collection.
+   * @param lightAttributes the attributes to remove from the layout
+   * @param layoutName the layout to prune.
+   */
+  void removeLightFromPassedLayout(const std::string& lightAttributes,
+                                   const std::string& layoutName) {
+    this->removeLightFromLayout(lightAttributes, layoutName);
+    this->removeLayoutFromLight(layoutName, lightAttributes);
+  }  // LightAttributesManager::removeLayout
+
+ protected:
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
@@ -122,12 +205,44 @@ class LightAttributesManager
                                const std::string& templateHandle) override;
 
   /**
+   * @brief Used internally.  Assumes @p lightAttributes exists in passed
+   * layout.
+   * Remove passed @p lightAttributes handle from specified @p
+   * layoutName.  Does not remove layout from lightAttributes' collection.
+   * @param lightAttributes the attributes to remove from the layout
+   * @param layoutName the layout to prune.
+   */
+  void removeLightFromLayout(const std::string& lightAttributes,
+                             const std::string& layoutName) {
+    if (this->lightingLayoutsByName_.count(layoutName) != 0) {
+      this->lightingLayoutsByName_.at(layoutName).erase(lightAttributes);
+    }
+  }  // LightAttributesManager::removeLayout
+
+  /**
+   * @brief Used internally.  Assumes @p layoutName exists in passed
+   * lightAttributes' collection.
+   *
+   * Remove passed @p layoutName handle from specified @p
+   * lightAttributes collection.  Does not remove lightAttributes from layout.
+   * @param layoutName the layout to remove from the passed lightAttributes
+   * @param lightAttributes the attributes to prune
+   * collection.
+   */
+  void removeLayoutFromLight(const std::string& layoutName,
+                             const std::string& lightAttributes) {
+    if (this->layoutsBelongedTo_.count(lightAttributes) != 0) {
+      this->layoutsBelongedTo_.at(lightAttributes).erase(layoutName);
+    }
+  }  // LightAttributesManager::removeLayout
+
+  /**
    * @brief Add a copy of the @ref
    * esp::metadata::attributes::LightAttributes shared_ptr object to
    * the @ref objectLibrary_.
    *
    * @param lightAttributesTemplate The attributes template.
-   * @param physicsAttributesHandle The key for referencing the template in the
+   * @param lightAttributesHandle The key for referencing the template in the
    * @ref objectLibrary_.
    * @return The index in the @ref objectLibrary_ of object
    * template.
@@ -137,7 +252,7 @@ class LightAttributesManager
       const std::string& lightAttributesHandle) override;
 
   /**
-   * @brief Any physics-attributes-specific resetting that needs to happen on
+   * @brief Any lights-attributes-specific resetting that needs to happen on
    * reset.
    */
   void resetFinalize() override {}
@@ -145,16 +260,25 @@ class LightAttributesManager
   /**
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
+   * AttributesManager<LightAttributes::ptr>
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["LightAttributes"] =
         &LightAttributesManager::createObjectCopy<attributes::LightAttributes>;
   }  // LightAttributesManager::buildCtorFuncPtrMaps
 
+  /**
+   * @brief Light Attributes has no reason to check this value
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  bool isValidPrimitiveAttributes(
+      CORRADE_UNUSED const std::string& handle) override {
+    return false;
+  }
+
   // instance vars
 
- protected:
   /**
    * @brief Maps layout names to a set of handles of light attributes forming
    * the layout.

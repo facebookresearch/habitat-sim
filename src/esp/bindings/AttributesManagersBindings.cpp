@@ -8,10 +8,12 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
+#include "esp/metadata/attributes/LightAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
+#include "esp/metadata/managers/LightAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
@@ -27,6 +29,7 @@ using Attrs::ConePrimitiveAttributes;
 using Attrs::CubePrimitiveAttributes;
 using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
+using Attrs::LightAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
@@ -265,7 +268,42 @@ void initAttributesManagersBindings(py::module& m) {
              NULL if none exists.)",
            "handle"_a);
 
-  // ==== Physical Object Attributes Template manager ====
+  // ==== Light Attributes Template manager ====
+  declareBaseAttributesManager<LightAttributes>(m, "BaseLight");
+  py::class_<LightAttributesManager, AttributesManager<LightAttributes>,
+             LightAttributesManager::ptr>(m, "LightAttributesManager")
+      .def("add_light_to_layout", &LightAttributesManager::addLightToLayout,
+           R"(Adds passed light attributes handle to passed layout.  Returns
+             if successful.)",
+           "lighthandle"_a, "layout_name"_a)
+      .def("get_lights_in_layout",
+           &LightAttributesManager::getLightHandlesInLayout,
+           R"(Returns list of all light attributes handles in passed lighting
+             layout.)",
+           "layout_name"_a)
+      .def("get_layouts_with_light",
+           &LightAttributesManager::getLayoutsWithLightAttributes,
+           R"(Returns list of all layouts containing the passed light attributes
+             handle.)",
+           "lighthandle"_a)
+      .def("get_num_layouts", &LightAttributesManager::getNumLightingLayouts,
+           R"(Returns the number of existing lighting layouts in the library.)")
+      .def("get_layout_handles",
+           static_cast<std::vector<std::string> (LightAttributesManager::*)(
+               const std::string&, bool) const>(
+               &LightAttributesManager::getLayoutHandlesBySubstring),
+           R"(Returns a list of existing layout handles that either contain or
+             explicitly do not contain the passed search_str, based on the value of
+             contains.)",
+           "search_str"_a = "", "contains"_a = true)
+      .def("remove_layout", &LightAttributesManager::removeLayoutFromAllLights,
+           R"(Removes passed layout from layout library.)", "layout_name"_a)
+      .def("remove_light_from_layout",
+           &LightAttributesManager::removeLightFromPassedLayout,
+           R"(Removes passed light attributes from passed layout.)",
+           "lighthandle"_a, "layout_name"_a);
+
+  // ==== Object Attributes Template manager ====
   declareBaseAttributesManager<ObjectAttributes>(m, "BaseObject");
   py::class_<ObjectAttributesManager, AttributesManager<ObjectAttributes>,
              ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
