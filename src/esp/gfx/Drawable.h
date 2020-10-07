@@ -106,6 +106,8 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   Magnum::GL::Mesh& mesh_;
 };
 
+CORRADE_ENUMSET_OPERATORS(Drawable::Flags)
+
 }  // namespace gfx
 }  // namespace esp
 
