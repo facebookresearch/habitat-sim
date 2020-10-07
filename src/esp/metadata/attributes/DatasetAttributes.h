@@ -15,6 +15,7 @@
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/LightAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/SceneAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 namespace esp {
@@ -31,6 +32,7 @@ class DatasetAttributes : public AbstractAttributes {
       const {
     return assetAttributesManager_;
   }
+
   /**
    * @brief Return manager for construction and access to object attributes.
    */
@@ -38,6 +40,7 @@ class DatasetAttributes : public AbstractAttributes {
       const {
     return objectAttributesManager_;
   }
+
   /**
    * @brief Return manager for construction and access to light attributes.
    */
@@ -45,8 +48,17 @@ class DatasetAttributes : public AbstractAttributes {
       const {
     return lightAttributesManager_;
   }
+
   /**
    * @brief Return manager for construction and access to scene attributes.
+   */
+  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
+      const {
+    return sceneAttributesManager_;
+  }
+
+  /**
+   * @brief Return manager for construction and access to stage attributes.
    */
   const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
@@ -127,8 +139,15 @@ class DatasetAttributes : public AbstractAttributes {
    * dataset.
    */
   managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+
   /**
-   * @brief Manages all construction and access to scene attributes from this
+   * @brief Manages all construction and access to scene instance attributes
+   * from this dataset.
+   */
+  managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+
+  /**
+   * @brief Manages all construction and access to stage attributes from this
    * dataset.
    */
   managers::StageAttributesManager::ptr stageAttributesManager_ = nullptr;

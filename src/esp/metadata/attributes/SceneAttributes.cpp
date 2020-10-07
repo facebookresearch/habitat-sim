@@ -6,6 +6,14 @@
 
 namespace esp {
 namespace metadata {
-namespace attributes {}  // namespace attributes
+namespace attributes {
+
+SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
+    const std::string& handle)
+    : AbstractAttributes("SceneObjectInstanceAttributes", handle) {}
+SceneAttributes::SceneAttributes(const std::string& handle)
+    : AbstractAttributes("SceneAttributes", handle) {}
+
+}  // namespace attributes
 }  // namespace metadata
 }  // namespace esp

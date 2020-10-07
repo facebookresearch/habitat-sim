@@ -11,12 +11,12 @@ set(
   attributes/LightAttributes.cpp
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
-  attributes/SceneAttributes.h
-  attributes/SceneAttributes.cpp
   attributes/PhysicsManagerAttributes.h
   attributes/PhysicsManagerAttributes.cpp
   attributes/PrimitiveAssetAttributes.h
   attributes/PrimitiveAssetAttributes.cpp
+  attributes/SceneAttributes.h
+  attributes/SceneAttributes.cpp
   managers/AttributesManagerBase.h
   managers/AbstractObjectAttributesManagerBase.h
   managers/AssetAttributesManager.h
@@ -31,6 +31,8 @@ set(
   managers/PhysicsAttributesManager.cpp
   managers/StageAttributesManager.h
   managers/StageAttributesManager.cpp
+  managers/SceneAttributesManager.h
+  managers/SceneAttributesManager.cpp
   MetadataMediator.h
   MetadataMediator.cpp
 )

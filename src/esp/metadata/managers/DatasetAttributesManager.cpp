@@ -62,8 +62,8 @@ void DatasetAttributesManager::setValsFromJSONDoc(
                       dsAttribs->getLightAttributesManager());
 
   // process scene instances - implement handling scene instances TODO
-  // readDatasetJSONCell(dsDir,"scene instances", jsonConfig,
-  //                     dsAttribs->getSceneInstanceManager());
+  readDatasetJSONCell(dsDir, "scene instances", jsonConfig,
+                      dsAttribs->getSceneAttributesManager());
 
   // process navmesh instances
   io::jsonIntoVal<std::map<std::string, std::string>>(

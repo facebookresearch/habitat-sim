@@ -38,6 +38,10 @@ class Configuration {
     return set(key, value);
   }
 
+  bool setQuat(const std::string& key, const Magnum::Quaternion& value) {
+    return set(key, value);
+  }
+
   template <typename T>
   T get(const std::string& key) const {
     return cfg.value<T>(key);
@@ -51,6 +55,9 @@ class Configuration {
   }
   Magnum::Vector3 getVec3(const std::string& key) const {
     return get<Magnum::Vector3>(key);
+  }
+  Magnum::Quaternion getQuat(const std::string& key) const {
+    return get<Magnum::Quaternion>(key);
   }
 
   /**@brief Add a string to a group and return the resulting group size. */

@@ -64,7 +64,7 @@ class DatasetAttributesManager
    * subsequent editing will require re-registration. Defaults to true. If
    * specified as true, then this function returns a copy of the registered
    * template.
-   * @return a reference to the desired template.
+   * @return a reference to the newly-created template.
    */
   attributes::DatasetAttributes::ptr createObject(
       const std::string& attributesTemplateHandle,
@@ -186,8 +186,7 @@ class DatasetAttributesManager
    * @param datasetAttributes The attributes template.
    * @param datasetAttributesHandle The key for referencing the template in the
    * @ref objectLibrary_.
-   * @return The index in the @ref objectLibrary_ of object
-   * template.
+   * @return The index in the @ref objectLibrary_ of the registered template.
    */
   int registerObjectFinalize(
       attributes::DatasetAttributes::ptr datasetAttributes,
@@ -202,7 +201,7 @@ class DatasetAttributesManager
     this->copyConstructorMap_["DatasetAttributes"] =
         &DatasetAttributesManager::createObjectCopy<
             attributes::DatasetAttributes>;
-  }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
+  }  // DatasetAttributesManager::buildCtorFuncPtrMaps
 
   /**
    * @brief This function is meaningless for this manager's ManagedObjects.

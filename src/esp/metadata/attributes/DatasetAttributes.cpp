@@ -17,6 +17,7 @@ DatasetAttributes::DatasetAttributes(
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   stageAttributesManager_ = managers::StageAttributesManager::create(
       objectAttributesManager_, physAttrMgr);
+  sceneAttributesManager_ = managers::SceneAttributesManager::create();
 }  // ctor
 
 }  // namespace attributes
