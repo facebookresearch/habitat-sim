@@ -38,8 +38,10 @@ class RigidStage : public RigidBase {
    * @return A copy of the @ref esp::metadata::attributes::StageAttributes
    * template used to create this stage object.
    */
-  std::shared_ptr<Attrs::StageAttributes> getInitializationAttributes() const {
-    return RigidBase::getInitializationAttributes<Attrs::StageAttributes>();
+  std::shared_ptr<metadata::attributes::StageAttributes>
+  getInitializationAttributes() const {
+    return RigidBase::getInitializationAttributes<
+        metadata::attributes::StageAttributes>();
   };
   /**
    * @brief Finalize the creation of this @ref RigidStage

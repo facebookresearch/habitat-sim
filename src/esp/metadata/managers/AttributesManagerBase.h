@@ -22,7 +22,7 @@ class ManagedContainerBase;
 }
 namespace metadata {
 namespace managers {
-namespace Attrs = esp::metadata::attributes;
+
 /**
  * @brief Class template defining responsibilities and functionality for
  * managing @ref esp::metadata::attributes::AbstractAttributes constructs.
@@ -33,7 +33,7 @@ namespace Attrs = esp::metadata::attributes;
 template <class T>
 class AttributesManager : public esp::core::ManagedContainer<T> {
  public:
-  static_assert(std::is_base_of<Attrs::AbstractAttributes, T>::value,
+  static_assert(std::is_base_of<attributes::AbstractAttributes, T>::value,
                 "AttributesManager :: Managed object type must be derived from "
                 "AbstractAttributes");
 

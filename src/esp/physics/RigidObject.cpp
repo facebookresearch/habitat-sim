@@ -30,8 +30,8 @@ bool RigidObject::finalizeObject() {
   node().computeCumulativeBB();
 
   // cast initialization attributes
-  Attrs::ObjectAttributes::cptr ObjectAttributes =
-      std::dynamic_pointer_cast<const Attrs::ObjectAttributes>(
+  metadata::attributes::ObjectAttributes::cptr ObjectAttributes =
+      std::dynamic_pointer_cast<const metadata::attributes::ObjectAttributes>(
           initializationAttributes_);
 
   if (!ObjectAttributes->getComputeCOMFromShape()) {
