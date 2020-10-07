@@ -19,32 +19,83 @@
 
 namespace esp {
 namespace metadata {
-
+namespace Attrs = esp::metadata::attributes;
 class MetadataMediator {
  public:
-  MetadataMediator() { defaultDataset_ = "default"; }
+  MetadataMediator(const std::string& _defaultDataset = "default")
+      : defaultDataset_(_defaultDataset) {
+    buildAttributesManagers();
+  }  // namespace metadata
   ~MetadataMediator() {}
 
   /**
-   * @brief This function will build the various @ref
-   * esp::metadata::managers::AttributesManager s this mediator will manage.
+   * @brief This function will build the @ref managers::PhysicsAttributesManager
+   * and @ref managers::DatasetAttributeManager this mediator will manage.
+   *
+   * This will also attempt to build templates for the default physics manager
+   * and dataset.
    */
   void buildAttributesManagers();
 
   /**
-   * @brief Return manager for construction and access to asset attributes.
+   * @brief Creates a dataset attributes using @p datasetName, and registers it.
+   * NOTE If an existing dataset attributes exists with this handle, then this
+   * will exit with a message unless @p overwrite is true.
+   * @param datasetName The name of the dataset to load or create.
+   * @param overwrite Whether to overwrite an existing dataset or not
+   * @return Whether successfully created a new dataset or not.
+   */
+  bool createDataset(const std::string& datasetName, bool overwrite = true);
+
+  /**
+   * @brief Sets default dataset attributes, if it exists already.  If it does
+   * not exist, it will attempt to load a dataset_config.json with the given
+   * name.  If none exists it will create an "empty" dataset attributes and give
+   * it the passed name.
+   * @param datasetName the name of the existing dataset to use as default, or a
+   * json file describing the desired dataset attributes, or some handle to use
+   * for an empty dataset.
+   * @return whether successful or not
+   */
+  bool setCurrentDataset(const std::string& datasetName);
+  /**
+   * @brief Returns the name of the current default dataset
+   */
+  std::string getCurrentDataset() const { return defaultDataset_; }
+
+  /**
+   * @brief Return manager for construction and access to asset attributes for
+   * current dataset.
    */
   const managers::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
-    return assetAttributesManager_;
+    Attrs::DatasetAttributes::ptr datasetAttr = getDefaultDSAttribs();
+    return (nullptr == datasetAttr) ? nullptr
+                                    : datasetAttr->getAssetAttributesManager();
   }
+
   /**
-   * @brief Return manager for construction and access to object attributes.
+   * @brief Return manager for construction and access to object attributes for
+   * current dataset.
    */
   const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
-    return objectAttributesManager_;
+    Attrs::DatasetAttributes::ptr datasetAttr = getDefaultDSAttribs();
+    return (nullptr == datasetAttr) ? nullptr
+                                    : datasetAttr->getObjectAttributesManager();
   }
+
+  /**
+   * @brief Return manager for construction and access to stage attributes for
+   * current dataset.
+   */
+  const managers::StageAttributesManager::ptr getStageAttributesManager()
+      const {
+    Attrs::DatasetAttributes::ptr datasetAttr = getDefaultDSAttribs();
+    return (nullptr == datasetAttr) ? nullptr
+                                    : datasetAttr->getStageAttributesManager();
+  }  // MetadataMediator::getStageAttributesManager
+
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
@@ -53,15 +104,28 @@ class MetadataMediator {
       const {
     return physicsAttributesManager_;
   }
-  /**
-   * @brief Return manager for construction and access to scene attributes.
-   */
-  const managers::StageAttributesManager::ptr getStageAttributesManager()
-      const {
-    return stageAttributesManager_;
-  }
+
+  //==================== Accessors ======================//
 
  protected:
+  /**
+   * @brief Retrieve the current default dataset object.  Currently only for
+   * internal use.
+   */
+  Attrs::DatasetAttributes::ptr getDefaultDSAttribs() const {
+    // do not get copy of dataset attributes until datasetAttributes deep copy
+    // ctor implemented
+    auto datasetAttr =
+        datasetAttributesManager_->getObjectByHandle(defaultDataset_);
+    if (nullptr == datasetAttr) {
+      LOG(ERROR)
+          << "MetadataMediator::getDefaultDSAttribs : Unknown dataset named "
+          << defaultDataset_ << ". Aborting";
+      return nullptr;
+    }
+    return datasetAttr;
+  }  // MetadataMediator::getDefaultDSAttribs
+
   /**
    * @brief String name of current, default dataset.
    */
@@ -69,22 +133,12 @@ class MetadataMediator {
   /**
    * @brief Manages all construction and access to asset attributes.
    */
-  managers::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
-
-  /**
-   * @brief Manages all construction and access to object attributes.
-   */
-  managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  managers::DatasetAttributesManager::ptr datasetAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to physics world attributes.
    */
   managers::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
-
-  /**
-   * @brief Manages all construction and access to scene attributes.
-   */
-  managers::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(MetadataMediator)

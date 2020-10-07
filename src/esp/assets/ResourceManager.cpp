@@ -99,8 +99,7 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   assetAttributesManager_ = AssetAttributesManager::create();
   objectAttributesManager_ = ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ =
-      PhysicsAttributesManager::create(objectAttributesManager_);
+  physicsAttributesManager_ = PhysicsAttributesManager::create();
   stageAttributesManager_ = StageAttributesManager::create(
       objectAttributesManager_, physicsAttributesManager_);
 
