@@ -74,7 +74,7 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
 void ObjectAttributesManager::setValsFromJSONDoc(
-    Attrs::ObjectAttributes::ptr objAttributes,
+    attributes::ObjectAttributes::ptr objAttributes,
     const io::JsonGenericValue& jsonConfig) {
   this->loadAbstractObjectAttributesFromJson(objAttributes, jsonConfig);
 

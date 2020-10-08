@@ -33,7 +33,6 @@ namespace esp {
 //! core physics simulation namespace
 namespace physics {
 
-namespace Attrs = esp::metadata::attributes;
 //! Holds information about one ray hit instance.
 struct RayHitInfo {
   //! The id of the object hit by this ray. Stage hits are -1.
@@ -124,7 +123,8 @@ class PhysicsManager {
    */
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const Attrs::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
+      const metadata::attributes::PhysicsManagerAttributes::cptr
+          _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
         physicsManagerAttributes_(_physicsManagerAttributes){};
 
@@ -866,7 +866,7 @@ class PhysicsManager {
    *
    * @return The initialization settings of the specified object instance.
    */
-  Attrs::ObjectAttributes::ptr getObjectInitAttributes(
+  metadata::attributes::ObjectAttributes::ptr getObjectInitAttributes(
       const int physObjectID) const {
     assertIDValidity(physObjectID);
     return existingObjects_.at(physObjectID)->getInitializationAttributes();
@@ -878,7 +878,7 @@ class PhysicsManager {
    * @return The initialization settings of the stage or nullptr if the stage is
    * not initialized.
    */
-  Attrs::StageAttributes::ptr getStageInitAttributes() const {
+  metadata::attributes::StageAttributes::ptr getStageInitAttributes() const {
     return staticStageObject_->getInitializationAttributes();
   }
 
@@ -887,8 +887,9 @@ class PhysicsManager {
    *
    * @return The initialization settings for this physics manager
    */
-  Attrs::PhysicsManagerAttributes::ptr getInitializationAttributes() const {
-    return Attrs::PhysicsManagerAttributes::create(
+  metadata::attributes::PhysicsManagerAttributes::ptr
+  getInitializationAttributes() const {
+    return metadata::attributes::PhysicsManagerAttributes::create(
         *physicsManagerAttributes_.get());
   }
 
@@ -987,7 +988,8 @@ class PhysicsManager {
   /** @brief A pointer to the @ref
    * esp::metadata::attributes::PhysicsManagerAttributes describing
    * this physics manager */
-  const Attrs::PhysicsManagerAttributes::cptr physicsManagerAttributes_;
+  const metadata::attributes::PhysicsManagerAttributes::cptr
+      physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
