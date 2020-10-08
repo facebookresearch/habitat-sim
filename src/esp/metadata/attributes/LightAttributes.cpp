@@ -7,23 +7,6 @@ namespace esp {
 namespace metadata {
 namespace attributes {
 
-const std::string LightAttributes::JSONConfigTestString =
-    R"({
-  "lights":{
-      "test":{
-        "position": [2.5,0.1,3.8],
-        "direction": [1.0,-1.0,1.0],
-        "intensity": -0.1,
-        "color": [2,1,-1],
-        "type": "spot",
-        "spot": {
-          "innerConeAngle": -0.75,
-          "outerConeAngle": -1.57
-        }
-      }
-    }
-  })";
-
 LightAttributes::LightAttributes(const std::string& handle)
     : AbstractAttributes("LightAttributes", handle) {
   setPosition({0.0, 0.0, 0.0});

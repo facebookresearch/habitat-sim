@@ -90,25 +90,25 @@ void initSimBindings(py::module& m) {
       /* --- Template Manager accessors --- */
       .def("get_asset_template_manager", &Simulator::getAssetAttributesManager,
            pybind11::return_value_policy::reference,
-           R"(Get the current dataset's AssetAttributesManager instance 
+           R"(Get the current dataset's AssetAttributesManager instance
             for configuring primitive asset templates.)")
       .def("get_lights_template_manager", &Simulator::getLightAttributesManager,
            pybind11::return_value_policy::reference,
-           R"(Get the current dataset's LightAttributesManager instance 
+           R"(Get the current dataset's LightAttributesManager instance
             for configuring light templates and layouts.)")
       .def("get_object_template_manager",
            &Simulator::getObjectAttributesManager,
            pybind11::return_value_policy::reference,
-           R"(Get the current dataset's ObjectAttributesManager instance 
+           R"(Get the current dataset's ObjectAttributesManager instance
             for configuring object templates.)")
       .def("get_physics_template_manager",
            &Simulator::getPhysicsAttributesManager,
            pybind11::return_value_policy::reference,
-           R"(Get the current dataset's PhysicsAttributesManager instance 
+           R"(Get the current dataset's PhysicsAttributesManager instance
             for configuring PhysicsManager templates.)")
       .def("get_stage_template_manager", &Simulator::getStageAttributesManager,
            pybind11::return_value_policy::reference,
-           R"(Get the current dataset's StageAttributesManager instance 
+           R"(Get the current dataset's StageAttributesManager instance
             for configuring simulation stage templates.)")
       .def(
           "get_physics_simulation_library",

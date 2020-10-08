@@ -481,37 +481,44 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
 }  // AttributesManagers_LightJSONLoadTest
 
 /**
- * @brief This test will verify that the Stage attributes' managers' JSON
- * loading process is working as expected.
+ * @brief This test will verify that the Scene Instance attributes' managers'
+ * JSON loading process is working as expected.
  */
-TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_StageJSONLoadTest";
-
+TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
+  LOG(INFO)
+      << "Starting "
+         "AttributesManagersTest::AttributesManagers_SceneInstanceJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString =
       R"({
-        "scale":[2,3,4],
-        "margin": 0.9,
-        "friction coefficient": 0.321,
-        "restitution coefficient": 0.456,
-        "requires lighting": false,
-        "units to meters": 1.1,
-        "up":[2.1,0,0],
-        "front":[0,2.1,0],
-        "render mesh": "testJSONRenderAsset.glb",
-        "collision mesh": "testJSONCollisionAsset.glb",
-        "gravity": [9,8,7],
-        "origin":[1,2,3],
-        "semantic mesh":"testJSONSemanticAsset.glb",
-        "nav mesh":"testJSONNavMeshAsset.glb",
-        "house filename":"testJSONHouseFileName.glb"
-      })";
+      "stage_instance":{
+          "template_name": "test_stage_template",
+          "translation": [1,2,3],
+          "rotation": [0.1, 0.2, 0.3, 0.4]
+      },
+      "object_instances": [
+          {
+              "template_name": "test_object_template0",
+              "translation": [0,1,2],
+              "rotation": [0.2, 0.3, 0.4, 0.5],
+              "motion_type": "KINEMATIC"
+          },
+          {
+              "template_name": "test_object_template1",
+              "translation": [0,-1,-2],
+              "rotation": [0.5, 0.6, 0.7, 0.8],
+              "motion_type": "DYNAMIC"
+          }
+      ],
+      "default_lighting":  "test_lighting_configuration",
+      "navmesh_instance": "test_navmesh_path1",
+      "semantic_scene_instance": "test_semantic_descriptor_path1"
+     })";
 
   auto sceneAttr =
       testBuildAttributesFromJSONString<AttrMgrs::SceneAttributesManager,
                                         Attrs::SceneAttributes>(
-          sceneAttributesManager_);
+          sceneAttributesManager_, jsonString);
 
   // verify exists
   ASSERT_NE(nullptr, sceneAttr);
@@ -540,6 +547,36 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
   ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, -1, -2));
   ASSERT_EQ(objInstance->getMotionType(),
             static_cast<int>(esp::physics::MotionType::DYNAMIC));
+
+}  // AttributesManagers_SceneInstanceJSONLoadTest
+
+/**
+ * @brief This test will verify that the Stage attributes' managers' JSON
+ * loading process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_StageJSONLoadTest";
+
+  // build JSON sample config
+  const std::string& jsonString =
+      R"({
+        "scale":[2,3,4],
+        "margin": 0.9,
+        "friction coefficient": 0.321,
+        "restitution coefficient": 0.456,
+        "requires lighting": false,
+        "units to meters": 1.1,
+        "up":[2.1,0,0],
+        "front":[0,2.1,0],
+        "render mesh": "testJSONRenderAsset.glb",
+        "collision mesh": "testJSONCollisionAsset.glb",
+        "gravity": [9,8,7],
+        "origin":[1,2,3],
+        "semantic mesh":"testJSONSemanticAsset.glb",
+        "nav mesh":"testJSONNavMeshAsset.glb",
+        "house filename":"testJSONHouseFileName.glb"
+      })";
 
   auto stageAttr =
       testBuildAttributesFromJSONString<AttrMgrs::StageAttributesManager,

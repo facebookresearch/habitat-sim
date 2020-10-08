@@ -70,14 +70,6 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
 
 class SceneAttributes : public AbstractAttributes {
  public:
-  /**
-   * @brief This defines an example json descriptor for @ref SceneAttributes.
-   * Has values that are different than defaults so this can be used to test
-   * json loading. These values may be set to be purposefully weird/invalid
-   * values, for testing purposes, and so should not be used for an actual
-   * scene.
-   */
-  static const std::string JSONConfigTestString;
   SceneAttributes(const std::string& handle);
 
   /**

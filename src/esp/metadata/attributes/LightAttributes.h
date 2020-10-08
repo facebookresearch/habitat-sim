@@ -13,14 +13,6 @@ namespace attributes {
 
 class LightAttributes : public AbstractAttributes {
  public:
-  /**
-   * @brief This defines an example json descriptor for @ref LightAttributes.
-   * Has values that are different than defaults so this can be used to test
-   * json loading. These values are set to be purposefully weird/invalid, for
-   * testing purposes, and so should not be used for an actual light.
-   */
-  static const std::string JSONConfigTestString;
-
   LightAttributes(const std::string& handle = "");
 
   /**
