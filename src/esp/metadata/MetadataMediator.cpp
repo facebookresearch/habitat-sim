@@ -49,10 +49,10 @@ bool MetadataMediator::createDataset(const std::string& datasetName,
 bool MetadataMediator::setActiveDatasetName(const std::string& datasetName) {
   // first check if dataset exists, if so then set default
   if (datasetAttributesManager_->getObjectLibHasHandle(datasetName)) {
+    LOG(INFO) << "MetadataMediator::setActiveDatasetName : Old active dataset "
+              << activeDataset_ << " changed to " << datasetName
+              << " successfully.";
     activeDataset_ = datasetName;
-    LOG(INFO) << "MetadataMediator::setActiveDatasetName : Default dataset "
-                 "changed to "
-              << datasetName << " successfully.";
     return true;
   }
   // if does not exist, attempt to create it
