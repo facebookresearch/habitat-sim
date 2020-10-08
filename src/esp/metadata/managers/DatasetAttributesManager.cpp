@@ -58,20 +58,20 @@ void DatasetAttributesManager::setValsFromJSONDoc(
                       dsAttribs->getObjectAttributesManager());
 
   // process light setups - implement handling light setups
-  readDatasetJSONCell(dsDir, "light setups", jsonConfig,
+  readDatasetJSONCell(dsDir, "light_setups", jsonConfig,
                       dsAttribs->getLightAttributesManager());
 
   // process scene instances - implement handling scene instances TODO
-  readDatasetJSONCell(dsDir, "scene instances", jsonConfig,
+  readDatasetJSONCell(dsDir, "scene_instances", jsonConfig,
                       dsAttribs->getSceneAttributesManager());
 
   // process navmesh instances
   io::jsonIntoVal<std::map<std::string, std::string>>(
-      jsonConfig, "navmesh instances", dsAttribs->editNavmeshMap());
+      jsonConfig, "navmesh_instances", dsAttribs->editNavmeshMap());
 
   // process semantic scene descriptor instances
   io::jsonIntoVal<std::map<std::string, std::string>>(
-      jsonConfig, "semantic scene descriptor instances",
+      jsonConfig, "semantic_scene_descriptor_instances",
       dsAttribs->editSemanticSceneDescrMap());
 
 }  // DatasetAttributesManager::setValsFromJSONDoc
@@ -89,10 +89,10 @@ void DatasetAttributesManager::readDatasetJSONCell(
     } else {
       const auto& jCell = jsonConfig[tag];
       // process JSON jCell here - this cell potentially holds :
-      // 1. "default attributes" : a single attributes default of the specified
+      // 1. "default_attributes" : a single attributes default of the specified
       // type.
-      if (jCell.HasMember("default attributes")) {
-        if (!jCell["default attributes"].IsObject()) {
+      if (jCell.HasMember("default_attributes")) {
+        if (!jCell["default_attributes"].IsObject()) {
           LOG(WARNING) << "DatasetAttributesManager::readDatasetJSONCell : \""
                        << tag
                        << ".default attributes\" cell in JSON config unable to "
@@ -100,7 +100,7 @@ void DatasetAttributesManager::readDatasetJSONCell(
         } else {
           // load attributes as default from file, do not register
           auto attr = attrMgr->buildObjectFromJSONDoc(
-              "default attributes", jCell["default attributes"]);
+              "default_attributes", jCell["default_attributes"]);
           if (nullptr == attr) {
             LOG(WARNING) << "DatasetAttributesManager::readDatasetJSONCell : \""
                          << tag
@@ -173,7 +173,7 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
   std::string originalFile = "";
   std::string newTemplateHandle = "";
   // try to find original file name for attributes
-  if (io::jsonIntoVal<std::string>(jCell, "original file", originalFile)) {
+  if (io::jsonIntoVal<std::string>(jCell, "original_file", originalFile)) {
     originalFile = Cr::Utility::Directory::join(dsDir, originalFile);
     if (!this->isValidFileName(originalFile)) {
       LOG(WARNING)
@@ -186,7 +186,7 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
     origFileNameSpecified = true;
   }
   // try to find new template name for attributes
-  if (io::jsonIntoVal<std::string>(jCell, "template handle",
+  if (io::jsonIntoVal<std::string>(jCell, "template_handle",
                                    newTemplateHandle)) {
     validCell = true;
     newNameSpecified = true;
