@@ -6,7 +6,7 @@
 
 import math
 from io import BytesIO
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -15,7 +15,7 @@ import numpy as np
 import quaternion
 
 
-def quat_from_coeffs(coeffs: np.ndarray) -> np.quaternion:
+def quat_from_coeffs(coeffs: Sequence[float]) -> np.quaternion:
     r"""Creates a quaternion from the coeffs returned by the simulator backend
 
     :param coeffs: Coefficients of a quaternion in :py:`[b, c, d, a]` format,
