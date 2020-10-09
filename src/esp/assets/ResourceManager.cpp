@@ -1605,10 +1605,10 @@ void ResourceManager::createGenericDrawable(
     Mn::GL::Mesh& mesh,
     scene::SceneNode& node,
     const Mn::ResourceKey& lightSetupKey,
-    const Mn::ResourceKey& material,
+    const Mn::ResourceKey& materialKey,
     DrawableGroup* group /* = nullptr */) {
   node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetupKey,
-                                        material, group);
+                                        materialKey, group);
 }
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,

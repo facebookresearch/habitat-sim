@@ -809,7 +809,7 @@ class ResourceManager {
    * attached.
    * @param lightSetupKey The @ref LightSetup key that will be used
    * for the drawable.
-   * @param material The @ref MaterialData key that will be used
+   * @param materialKey The @ref MaterialData key that will be used
    * for the drawable.
    * @param meshID Optional, the index of this mesh component stored in
    * meshes_
@@ -822,7 +822,7 @@ class ResourceManager {
   void createGenericDrawable(Mn::GL::Mesh& mesh,
                              scene::SceneNode& node,
                              const Mn::ResourceKey& lightSetupKey,
-                             const Mn::ResourceKey& material,
+                             const Mn::ResourceKey& materialKey,
                              DrawableGroup* group = nullptr);
 
   // ======== General geometry data ========
