@@ -41,13 +41,13 @@ namespace gfx {
 
 namespace {
 enum TextureUnit : uint8_t {
-  BASE_COLOR = 0,
-  ROUGHNESS = 1,
-  METALLIC = 2,
-  NORMAL = 3,
+  BaseColor = 0,
+  Roughness = 1,
+  Metallic = 2,
+  Normal = 3,
   // NoneRoughnessMetallic or OcclusionRoughnessMetallic texture
-  PACKED = 4,
-  EMISSIVE = 5,
+  Packed = 4,
+  Emissive = 5,
 };
 }  // namespace
 
@@ -61,13 +61,13 @@ PbrShader::Flags PbrShader::generateCorrectFlags(Flags originalFlags) {
   // 0 (highest): OcclusionRoughnessMetallicTexture
   // 1          : NoneRoughnessMetallicTexture
   // 2          : RoughnessTexture, MetallicTexture
-  if (result & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE) {
-    result &= ~Flag::NONE_ROUGHNESS_METALLIC_TEXTURE;
-    result &= ~Flag::ROUGHNESS_TEXTURE;
-    result &= ~Flag::METALLIC_TEXTURE;
-  } else if (result & Flag::NONE_ROUGHNESS_METALLIC_TEXTURE) {
-    result &= ~Flag::ROUGHNESS_TEXTURE;
-    result &= ~Flag::METALLIC_TEXTURE;
+  if (result & Flag::OcclusionRoughnessMetallicTexture) {
+    result &= ~Flag::NoneRoughnessMetallicTexture;
+    result &= ~Flag::RoughnessTexture;
+    result &= ~Flag::MetallicTexture;
+  } else if (result & Flag::NoneRoughnessMetallicTexture) {
+    result &= ~Flag::RoughnessTexture;
+    result &= ~Flag::MetallicTexture;
   }
 
   return result;
@@ -97,17 +97,16 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
   attributeLocationsStream << Cr::Utility::formatString(
       "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
-  if (flags_ & (Flag::NORMAL_TEXTURE | Flag::PRECOMPUTED_TANGENT) &&
-      lightCount) {
+  if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent) && lightCount) {
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
   auto isTextured = [&]() {
     return (flags_ &
-            (Flag::BASE_COLOR_TEXTURE | Flag::ROUGHNESS_TEXTURE |
-             Flag::METALLIC_TEXTURE | Flag::NORMAL_TEXTURE |
-             Flag::EMISSIVE_TEXTURE | Flag::NONE_ROUGHNESS_METALLIC_TEXTURE |
-             Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE));
+            (Flag::BaseColorTexture | Flag::RoughnessTexture |
+             Flag::MetallicTexture | Flag::NormalTexture |
+             Flag::EmissiveTexture | Flag::NoneRoughnessMetallicTexture |
+             Flag::OcclusionRoughnessMetallicTexture));
   };
   if (isTextured()) {
     attributeLocationsStream
@@ -118,12 +117,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   // Add macros
   vert.addSource(attributeLocationsStream.str())
       .addSource(isTextured() ? "#define TEXTURED\n" : "")
-      .addSource(flags_ & Flag::NORMAL_TEXTURE ? "#define NORMAL_TEXTURE\n"
-                                               : "")
-      .addSource(flags_ & Flag::PRECOMPUTED_TANGENT
+      .addSource(flags_ & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
+      .addSource(flags_ & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
-      .addSource(flags_ & Flag::TEXTURE_TRANSFORMATION
+      .addSource(flags_ & Flag::TextureTransformation
                      ? "#define TEXTURE_TRANSFORMATION\n"
                      : "")
       .addSource(rs.get("pbr.vert"));
@@ -137,28 +135,26 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   frag.addSource(attributeLocationsStream.str())
       .addSource(outputAttributeLocationsStream.str())
       .addSource(isTextured() ? "#define TEXTURED\n" : "")
-      .addSource(flags_ & Flag::BASE_COLOR_TEXTURE
-                     ? "#define BASECOLOR_TEXTURE\n"
-                     : "")
-      .addSource(flags_ & Flag::EMISSIVE_TEXTURE ? "#define EMISSIVE_TEXTURE\n"
+      .addSource(flags_ & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
                                                  : "")
-      .addSource(
-          flags_ & Flag::ROUGHNESS_TEXTURE ? "#define ROUGHNESS_TEXTURE\n" : "")
-      .addSource(flags_ & Flag::METALLIC_TEXTURE ? "#define METALLIC_TEXTURE\n"
+      .addSource(flags_ & Flag::EmissiveTexture ? "#define EMISSIVE_TEXTURE\n"
+                                                : "")
+      .addSource(flags_ & Flag::RoughnessTexture ? "#define ROUGHNESS_TEXTURE\n"
                                                  : "")
-      .addSource(flags_ & Flag::NONE_ROUGHNESS_METALLIC_TEXTURE
+      .addSource(flags_ & Flag::MetallicTexture ? "#define METALLIC_TEXTURE\n"
+                                                : "")
+      .addSource(flags_ & Flag::NoneRoughnessMetallicTexture
                      ? "#define NONE_ROUGHNESS_METALLIC_TEXTURE\n"
                      : "")
-      .addSource(flags_ & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE
+      .addSource(flags_ & Flag::OcclusionRoughnessMetallicTexture
                      ? "#define OCCLUSION_ROUGHNESS_METALLIC_TEXTURE\n"
                      : "")
-      .addSource(flags_ & Flag::NORMAL_TEXTURE ? "#define NORMAL_TEXTURE\n"
-                                               : "")
-      .addSource(flags_ & Flag::NORMAL_TEXTURE_SCALE
+      .addSource(flags_ & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
+      .addSource(flags_ & Flag::NormalTextureScale
                      ? "#define NORMAL_TEXTURE_SCALE\n"
                      : "")
-      .addSource(flags_ & Flag::OBJECT_ID ? "#define OBJECT_ID\n" : "")
-      .addSource(flags_ & Flag::PRECOMPUTED_TANGENT
+      .addSource(flags_ & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
+      .addSource(flags_ & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
       .addSource(
@@ -182,7 +178,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     if (lightCount) {
       bindAttributeLocation(Normal::Location, "vertexNormal");
     }
-    if (flags_ & (Flag::NORMAL_TEXTURE | Flag::PRECOMPUTED_TANGENT) &&
+    if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent) &&
         lightCount) {
       bindAttributeLocation(Tangent4::Location, "vertexTangent");
     }
@@ -193,35 +189,35 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
-  if (flags_ & Flag::BASE_COLOR_TEXTURE) {
-    setUniform(uniformLocation("baseColorTexture"), TextureUnit::BASE_COLOR);
+  if (flags_ & Flag::BaseColorTexture) {
+    setUniform(uniformLocation("baseColorTexture"), TextureUnit::BaseColor);
   }
-  if (flags_ & Flag::ROUGHNESS_TEXTURE) {
-    setUniform(uniformLocation("roughnessTexture"), TextureUnit::ROUGHNESS);
+  if (flags_ & Flag::RoughnessTexture) {
+    setUniform(uniformLocation("roughnessTexture"), TextureUnit::Roughness);
   }
-  if (flags_ & Flag::METALLIC_TEXTURE) {
-    setUniform(uniformLocation("metallicTexture"), TextureUnit::METALLIC);
+  if (flags_ & Flag::MetallicTexture) {
+    setUniform(uniformLocation("metallicTexture"), TextureUnit::Metallic);
   }
-  if (flags_ & Flag::NORMAL_TEXTURE) {
-    setUniform(uniformLocation("normalTexture"), TextureUnit::NORMAL);
+  if (flags_ & Flag::NormalTexture) {
+    setUniform(uniformLocation("normalTexture"), TextureUnit::Normal);
   }
   // emissive texture does NOT need the light!
-  if (flags_ & Flag::EMISSIVE_TEXTURE) {
-    setUniform(uniformLocation("emissiveTexture"), TextureUnit::EMISSIVE);
+  if (flags_ & Flag::EmissiveTexture) {
+    setUniform(uniformLocation("emissiveTexture"), TextureUnit::Emissive);
   }
-  if ((flags_ & Flag::NONE_ROUGHNESS_METALLIC_TEXTURE) ||
-      (flags_ & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)) {
-    setUniform(uniformLocation("packedTexture"), TextureUnit::PACKED);
+  if ((flags_ & Flag::NoneRoughnessMetallicTexture) ||
+      (flags_ & Flag::OcclusionRoughnessMetallicTexture)) {
+    setUniform(uniformLocation("packedTexture"), TextureUnit::Packed);
   }
 
   // cache the uniform locations
   modelviewMatrixUniform_ = uniformLocation("ModelViewMatrix");
   normalMatrixUniform_ = uniformLocation("NormalMatrix");
   mvpMatrixUniform_ = uniformLocation("MVP");
-  if (flags_ & Flag::OBJECT_ID) {
+  if (flags_ & Flag::ObjectId) {
     objectIdUniform_ = uniformLocation("objectId");
   }
-  if (flags_ & Flag::TEXTURE_TRANSFORMATION) {
+  if (flags_ & Flag::TextureTransformation) {
     textureMatrixUniform_ = uniformLocation("textureMatrix");
   }
 
@@ -237,7 +233,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     lightColorsUniform_ = uniformLocation("LightColors");
     lightDirectionsUniform_ = uniformLocation("LightDirections");
 
-    if (flags_ & Flag::NORMAL_TEXTURE && flags_ & Flag::NORMAL_TEXTURE_SCALE) {
+    if (flags_ & Flag::NormalTexture && flags_ & Flag::NormalTextureScale) {
       normalTextureScaleUniform_ = uniformLocation("normalTextureScale");
     }
   }
@@ -247,54 +243,53 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
 PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D* texture) {
-  if ((flags_ & Flag::BASE_COLOR_TEXTURE) && lightCount_ && texture) {
-    texture->bind(TextureUnit::BASE_COLOR);
+  if ((flags_ & Flag::BaseColorTexture) && lightCount_ && texture) {
+    texture->bind(TextureUnit::BaseColor);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindRoughnessTexture(Mn::GL::Texture2D* texture) {
-  if ((flags_ & Flag::ROUGHNESS_TEXTURE) && lightCount_ && texture) {
-    texture->bind(TextureUnit::ROUGHNESS);
+  if ((flags_ & Flag::RoughnessTexture) && lightCount_ && texture) {
+    texture->bind(TextureUnit::Roughness);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindMetallicTexture(Mn::GL::Texture2D* texture) {
-  if ((flags_ & Flag::METALLIC_TEXTURE) && lightCount_ && texture) {
-    texture->bind(TextureUnit::METALLIC);
+  if ((flags_ & Flag::MetallicTexture) && lightCount_ && texture) {
+    texture->bind(TextureUnit::Metallic);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D* texture) {
-  if ((flags_ & Flag::NORMAL_TEXTURE) && lightCount_ && texture) {
-    texture->bind(TextureUnit::NORMAL);
+  if ((flags_ & Flag::NormalTexture) && lightCount_ && texture) {
+    texture->bind(TextureUnit::Normal);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindNoneRoughnessMetallicTexture(
     Magnum::GL::Texture2D* texture) {
-  if ((flags_ & Flag::NONE_ROUGHNESS_METALLIC_TEXTURE) && lightCount_ &&
-      texture) {
-    texture->bind(TextureUnit::PACKED);
+  if ((flags_ & Flag::NoneRoughnessMetallicTexture) && lightCount_ && texture) {
+    texture->bind(TextureUnit::Packed);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindOcclusionRoughnessMetallicTexture(
     Magnum::GL::Texture2D* texture) {
-  if ((flags_ & Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE) && lightCount_ &&
+  if ((flags_ & Flag::OcclusionRoughnessMetallicTexture) && lightCount_ &&
       texture) {
-    texture->bind(TextureUnit::PACKED);
+    texture->bind(TextureUnit::Packed);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D* texture) {
-  if ((flags_ & Flag::EMISSIVE_TEXTURE) && lightCount_ && texture) {
-    texture->bind(TextureUnit::EMISSIVE);
+  if ((flags_ & Flag::EmissiveTexture) && lightCount_ && texture) {
+    texture->bind(TextureUnit::Emissive);
   }
   return *this;
 }
@@ -315,7 +310,7 @@ PbrShader& PbrShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
 }
 
 PbrShader& PbrShader::setObjectId(unsigned int objectId) {
-  if (flags_ & Flag::OBJECT_ID) {
+  if (flags_ & Flag::ObjectId) {
     setUniform(objectIdUniform_, objectId);
   }
   return *this;
@@ -348,7 +343,7 @@ PbrShader& PbrShader::setMetallic(float metallic) {
 }
 
 PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
-  CORRADE_ASSERT(flags_ & Flag::TEXTURE_TRANSFORMATION,
+  CORRADE_ASSERT(flags_ & Flag::TextureTransformation,
                  "PbrShader::setTextureMatrix(): the shader was not "
                  "created with texture transformation enabled",
                  *this);
@@ -455,11 +450,11 @@ PbrShader& PbrShader::setLightColors(std::initializer_list<Mn::Color3> colors) {
 }
 
 PbrShader& PbrShader::setNormalTextureScale(float scale) {
-  CORRADE_ASSERT(flags_ & Flag::NORMAL_TEXTURE,
+  CORRADE_ASSERT(flags_ & Flag::NormalTexture,
                  "PbrShader::setNormalTextureScale(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  if (lightCount_ && flags_ & Flag::NORMAL_TEXTURE_SCALE) {
+  if (lightCount_ && flags_ & Flag::NormalTextureScale) {
     setUniform(normalTextureScaleUniform_, scale);
   }
   return *this;

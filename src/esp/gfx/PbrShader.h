@@ -38,7 +38,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * Used only if at least one of
    * @ref Flag::BaseColorTexture, @ref Flag::NormalTexture and
-   * @ref Flag::RoughnessTexture @ref Flag::METALLIC_TEXTURE is set.
+   * @ref Flag::RoughnessTexture @ref Flag::MetallicTexture is set.
    */
   typedef Magnum::Shaders::Generic3D::TextureCoordinates TextureCoordinates;
 
@@ -81,7 +81,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Multiply base color with the baseColor texture.
      * @see @ref setBaseColor(), @ref bindBaseColorTexture()
      */
-    BASE_COLOR_TEXTURE = 1 << 0,
+    BaseColorTexture = 1 << 0,
 
     /**
      * Multiply roughness with the roughness texture.
@@ -92,7 +92,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * presented, this texture will be ignored.
      * @see @ref setRoughness(), @ref bindRoughnessTexture()
      */
-    ROUGHNESS_TEXTURE = 1 << 1,
+    RoughnessTexture = 1 << 1,
 
     /**
      * Multiply metallic with the metallic texture.
@@ -103,7 +103,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * presented, this texture will be ignored.
      * @see @ref setMetallic(), @ref bindMetallicTexture()
      */
-    METALLIC_TEXTURE = 1 << 2,
+    MetallicTexture = 1 << 2,
 
     /*
      * Roughness and Metalness are packed together in one texture, with
@@ -113,18 +113,18 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * if OcclusionRoughnessMetallicTexture is presented, this texture will be
      * ignored.
      */
-    NONE_ROUGHNESS_METALLIC_TEXTURE = 1 << 3,
+    NoneRoughnessMetallicTexture = 1 << 3,
     /*
      * Occlusion, Roughness and Metalness are packed together in one texture,
      * with Occlusion in R channel, Roughness in G channel and metalness in B
      * channel. Alpha channels is not used
      */
-    OCCLUSION_ROUGHNESS_METALLIC_TEXTURE = 1 << 4,
+    OcclusionRoughnessMetallicTexture = 1 << 4,
 
     /**
      * Modify normals according to a texture.
      */
-    NORMAL_TEXTURE = 1 << 5,
+    NormalTexture = 1 << 5,
 
     /**
      * Enable normal texture scale
@@ -132,24 +132,24 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * @ref Flag::NormalTexture is enabled as well.
      * @see @ref setNormalTextureScale
      */
-    NORMAL_TEXTURE_SCALE = 1 << 6,
+    NormalTextureScale = 1 << 6,
 
     /**
      * Enable texture coordinate transformation. If this flag is set,
      * the shader expects that at least one of
-     * @ref Flag::BASE_COLOR_TEXTURE, @ref Flag::RoughnessTexture,
-     * @ref Flag::METALLIC_TEXTURE, @ref Flag::NormalTexture,
-     * @ref Flag::EMISSIVE_TEXTURE
-     * @ref Flag::NONE_ROUGHNESS_METALLIC_TEXTURE or
-     * @ref Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE is enabled as well.
+     * @ref Flag::BaseColorTexture, @ref Flag::RoughnessTexture,
+     * @ref Flag::MetallicTexture, @ref Flag::NormalTexture,
+     * @ref Flag::EmissiveTexture
+     * @ref Flag::NoneRoughnessMetallicTexture or
+     * @ref Flag::OcclusionRoughnessMetallicTexture is enabled as well.
      * @see @ref setTextureMatrix()
      */
-    TEXTURE_TRANSFORMATION = 1 << 7,
+    TextureTransformation = 1 << 7,
 
     /**
      * emissive texture
      */
-    EMISSIVE_TEXTURE = 1 << 8,
+    EmissiveTexture = 1 << 8,
 
     /**
      * TODO: Do we need instanced object? (instanced texture, istanced id etc.)
@@ -167,12 +167,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * see PBR fragement shader code for more details
      * Requires the @ref Tangent4 attribute to be present.
      */
-    PRECOMPUTED_TANGENT = 1 << 10,
+    PrecomputedTangent = 1 << 10,
 
     /**
      * Enable object ID output.
      */
-    OBJECT_ID = 1 << 11,
+    ObjectId = 1 << 11,
 
     /*
      * TODO: alphaMask
