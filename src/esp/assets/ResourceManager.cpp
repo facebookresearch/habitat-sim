@@ -892,7 +892,7 @@ bool ResourceManager::loadInstanceMeshData(
       }
       if (meshes_[iMesh]->getMeshData()->hasAttribute(
               Mn::Trade::MeshAttribute::Bitangent)) {
-        meshAttributeFlags |= gfx::Drawable::Flag::HasBitangent;
+        meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
       }
 
       createGenericDrawable(
@@ -1603,7 +1603,7 @@ void ResourceManager::addComponent(
     }
     if (meshes_[meshID]->getMeshData()->hasAttribute(
             Mn::Trade::MeshAttribute::Bitangent)) {
-      meshAttributeFlags |= gfx::Drawable::Flag::HasBitangent;
+      meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
     }
     createGenericDrawable(mesh,                // render mesh
                           meshAttributeFlags,  // mesh attribute flags

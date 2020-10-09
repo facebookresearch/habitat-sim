@@ -39,7 +39,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
     /**
      * indicates the mesh data has separate bi-tangent attribute
      */
-    HasBitangent = 1 << 1
+    HasSeparateBitangent = 1 << 1
   };
   /** @brief Flags */
   typedef Corrade::Containers::EnumSet<Flag> Flags;

@@ -44,7 +44,7 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
   if (materialData_->normalTexture) {
     if (meshAttributeFlags & Drawable::Flag::HasTangent) {
       flags_ |= Mn::Shaders::Phong::Flag::NormalTexture;
-      if (meshAttributeFlags & Drawable::Flag::HasBitangent) {
+      if (meshAttributeFlags & Drawable::Flag::HasSeparateBitangent) {
         flags_ |= Mn::Shaders::Phong::Flag::Bitangent;
       }
     } else {
