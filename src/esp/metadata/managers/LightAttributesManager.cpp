@@ -66,7 +66,7 @@ LightAttributes::ptr LightAttributesManager::buildObjectFromJSONDoc(
       const std::string key = it->name.GetString();
       const auto& obj = it->value;
       // TODO construct name using file name prepended to key
-      lightAttribs = this->initNewObjectInternal(layoutName + "_" + key);
+      lightAttribs = this->initNewObjectInternal(layoutName + "_" + key, true);
       // set file directory here, based on layout name
       if (dirname != "") {
         lightAttribs->setFileDirectory(dirname);
@@ -139,7 +139,8 @@ void LightAttributesManager::setValsFromJSONDoc(
 }  // LightAttributesManager::setValsFromJSONDoc
 
 LightAttributes::ptr LightAttributesManager::initNewObjectInternal(
-    const std::string& handleName) {
+    const std::string& handleName,
+    bool builtFromConfig) {
   attributes::LightAttributes::ptr newAttributes =
       this->constructFromDefault(handleName);
   // if no default then create new.

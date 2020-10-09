@@ -127,6 +127,32 @@ class MetadataMediator {
     return physicsAttributesManager_;
   }
 
+  /**
+   * @brief Return copy of map of current active dataset's navmeshes.
+   */
+  const std::map<std::string, std::string> getActiveNavmeshMap() const {
+    attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+
+    if (nullptr == datasetAttr) {
+      return std::map<std::string, std::string>();
+    }
+    return std::map<std::string, std::string>(datasetAttr->getNavmeshMap());
+  }
+
+  /**
+   * @brief Return copy of map of current active dataset's navmeshes.
+   */
+  const std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap()
+      const {
+    attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+
+    if (nullptr == datasetAttr) {
+      return std::map<std::string, std::string>();
+    }
+    return std::map<std::string, std::string>(
+        datasetAttr->getSemanticSceneDescrMap());
+  }
+
   //==================== Accessors ======================//
 
  protected:

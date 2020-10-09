@@ -187,10 +187,16 @@ class LightAttributesManager
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
    *
-   * @param handleName handle name to be assigned to attributes
+   * @param handleName handle name to be assigned to attributes\
+   * @param builtFromConfig whether this LightAttributes is being built from a
+   * config file, or from some other source (i.e. handleName contains config
+   * file name)
+   * @return Newly created but unregistered LightAttributes pointer, with only
+   * default values set.
    */
   attributes::LightAttributes::ptr initNewObjectInternal(
-      const std::string& handleName) override;
+      const std::string& handleName,
+      bool builtFromConfig) override;
 
   /**
    * @brief This method will perform any necessary updating that is

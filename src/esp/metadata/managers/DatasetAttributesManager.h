@@ -111,30 +111,37 @@ class DatasetAttributesManager
    * objects, etc)
    * @param jsonConfig The sub cell in the json document being processed.
    * @param attrMgr The dataset's attributes manager for @p tag 's data.
+   * @param reqAssetSrcDir Whether the type of configs being read require newly
+   * created attributes to be supplied with a source directory. (Currently these
+   * are limited to object and stage attributes).
    */
   template <typename U>
   void readDatasetJSONCell(const std::string& dsDir,
                            const char* tag,
                            const io::JsonGenericValue& jsonConfig,
-                           const U& attrMgr);
+                           const U& attrMgr,
+                           bool reqAssetSrcDir);
 
   /**
    * @brief This will parse an individual element in a "configs" cell array in
    * the dataset_config.JSON file.
    * @tparam the type of the attributes manager.
-   * @param dsDir The root directory of the dataset attributes being built.
    * @param tag The name of the JSON cell being processed - corresponds to what
    * type of data is being loaded from dataset configuration (i.e. stages,
    * objects, etc)
    * @param jCell The sub cell within the "configs" array in the json
    * document being processed.
    * @param attrMgr The dataset's attributes manager for @p tag 's data.
+   * @param reqAssetSrcDir Whether the type of configs being read require newly
+   * created attributes to be supplied with a source directory. (Currently these
+   * are limited to object and stage attributes).
    */
   template <typename U>
   void readDatasetConfigsJSONCell(const std::string& dsDir,
                                   const char* tag,
                                   const io::JsonGenericValue& jCell,
-                                  const U& attrMgr);
+                                  const U& attrMgr,
+                                  bool reqAssetSrcDir);
 
   /**
    * @brief Internally used warning message if a cell in the dataset
@@ -152,9 +159,15 @@ class DatasetAttributesManager
    * attributes with any default values, before any specific values are set.
    *
    * @param handleName handle name to be assigned to dataset attributes
+   * @param builtFromConfig Whether this datasetAttributes is being built from a
+   * config file (i.e. handleName is the name of a configuration file) or from
+   * some other source.
+   * @return Newly created but unregistered DatasetAttributes pointer, with only
+   * default values set.
    */
   attributes::DatasetAttributes::ptr initNewObjectInternal(
-      const std::string& handleName) override;
+      const std::string& handleName,
+      bool builtFromConfig) override;
 
   /**
    * @brief This method will perform any necessary updating that is

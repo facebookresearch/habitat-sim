@@ -39,10 +39,9 @@ using Attrs::SceneAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
-const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "../test_assets/testing.physics_config.json");
+    Cr::Utility::Directory::join(DATA_DIR,
+                                 "test_assets/testing.physics_config.json");
 
 class AttributesManagersTest : public testing::Test {
  protected:
@@ -692,7 +691,7 @@ TEST_F(AttributesManagersTest, PhysicsAttributesManagersCreate) {
  */
 TEST_F(AttributesManagersTest, StageAttributesManagersCreate) {
   std::string stageConfigFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/scenes/simple_room.glb");
+      DATA_DIR, "test_assets/scenes/simple_room.glb");
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "StageAttributesManager @ "
@@ -717,7 +716,7 @@ TEST_F(AttributesManagersTest, StageAttributesManagersCreate) {
  */
 TEST_F(AttributesManagersTest, ObjectAttributesManagersCreate) {
   std::string objectConfigFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/chair.object_config.json");
+      DATA_DIR, "test_assets/objects/chair.object_config.json");
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "ObjectAttributesManager @ "
@@ -760,7 +759,7 @@ TEST_F(AttributesManagersTest, LightAttributesManagerTest) {
                "AttributesManagersTest::LightAttributesManagerTest";
 
   std::string lightConfigFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/lights/test_lights.lighting_config.json");
+      DATA_DIR, "test_assets/lights/test_lights.lighting_config.json");
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "LightAttributesManager @ "

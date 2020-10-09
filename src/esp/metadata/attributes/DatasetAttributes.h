@@ -80,13 +80,16 @@ class DatasetAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Return the map for navmesh file locations for building/modification
+   * @brief Only DatasetAttributesManager should directly edit navemesh and
+   * semantic scene descriptor maps. Return the map for navmesh file locations
+   * for building/modification
    */
   std::map<std::string, std::string>& editNavmeshMap() { return navmeshMap_; }
 
   /**
-   * @brief Return the map for semantic scene descriptor file locations for
-   * building/modification
+   * @brief Only DatasetAttributesManager should directly edit navemesh and
+   * semantic scene descriptor maps. Return the map for semantic scene
+   * descriptor file locations for building/modification
    */
   std::map<std::string, std::string>& editSemanticSceneDescrMap() {
     return semanticSceneDescrMap_;

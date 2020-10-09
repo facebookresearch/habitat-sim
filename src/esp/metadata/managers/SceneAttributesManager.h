@@ -70,9 +70,14 @@ class SceneAttributesManager
    *
    * @param sceneInstanceHandle handle name to be assigned to scene instance
    * attributes
+   * @param builtFromConfig Whether this scene is being constructed from a
+   * config file or from some other source.
+   * @return Newly created but unregistered SceneAttributes pointer, with only
+   * default values set.
    */
   attributes::SceneAttributes::ptr initNewObjectInternal(
-      const std::string& sceneInstanceHandle) override;
+      const std::string& sceneInstanceHandle,
+      bool builtFromConfig) override;
 
   /**
    * @brief This method will perform any necessary updating that is

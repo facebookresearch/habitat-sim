@@ -33,7 +33,8 @@ SceneAttributes::ptr SceneAttributesManager::createObject(
 }  // SceneAttributesManager::createObject
 
 SceneAttributes::ptr SceneAttributesManager::initNewObjectInternal(
-    const std::string& sceneInstanceHandle) {
+    const std::string& sceneInstanceHandle,
+    bool builtFromConfig) {
   SceneAttributes::ptr newAttributes =
       this->constructFromDefault(sceneInstanceHandle);
   if (nullptr == newAttributes) {
