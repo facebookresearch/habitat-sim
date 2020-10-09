@@ -18,6 +18,7 @@
 #include "esp/io/io.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
+#include "esp/physics/bullet/BulletDebugManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"

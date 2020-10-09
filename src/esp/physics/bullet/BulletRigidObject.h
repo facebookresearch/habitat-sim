@@ -431,6 +431,8 @@ class BulletRigidObject : public BulletBase,
    * updates. See @ref btRigidBody::setWorldTransform. */
   void syncPose() override;
 
+  std::string getBulletDebugName();
+
  private:
   // === Physical object ===
   //! If true, the object's bounding box will be used for collision once
