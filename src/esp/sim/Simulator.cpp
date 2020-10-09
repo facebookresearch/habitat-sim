@@ -30,8 +30,8 @@ namespace Cr = Corrade;
 namespace esp {
 namespace sim {
 
-using Attrs::PhysicsManagerAttributes;
-using Attrs::StageAttributes;
+using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::StageAttributes;
 
 Simulator::Simulator(const SimulatorConfiguration& cfg)
     : random_{core::Random::create(cfg.randomSeed)},
@@ -333,17 +333,17 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
   return ID_UNDEFINED;
 }
 
-const Attrs::ObjectAttributes::cptr Simulator::getObjectInitializationTemplate(
-    const int objectId,
-    const int sceneID) const {
+const metadata::attributes::ObjectAttributes::cptr
+Simulator::getObjectInitializationTemplate(const int objectId,
+                                           const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectInitAttributes(objectId);
   }
   return nullptr;
 }
 
-const Attrs::StageAttributes::cptr Simulator::getStageInitializationTemplate(
-    const int sceneID) const {
+const metadata::attributes::StageAttributes::cptr
+Simulator::getStageInitializationTemplate(const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getStageInitAttributes();
   }
@@ -628,8 +628,9 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
             Eigen::Transform<float, 3, Eigen::Affine> >(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
-        const Attrs::ObjectAttributes::cptr initializationTemplate =
-            physicsManager_->getObjectInitAttributes(objectID);
+        const metadata::attributes::ObjectAttributes::cptr
+            initializationTemplate =
+                physicsManager_->getObjectInitAttributes(objectID);
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
             initializationTemplate->getScale()));
         std::string meshHandle =

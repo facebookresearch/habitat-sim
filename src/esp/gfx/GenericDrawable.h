@@ -41,9 +41,6 @@ class GenericDrawable : public Drawable {
   Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
                                    Magnum::Shaders::Phong::Flags flags) const;
 
-  Magnum::GL::Texture2D* texture_;
-  Magnum::Color4 color_;
-
   // shader parameters
   ShaderManager& shaderManager_;
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::Phong>

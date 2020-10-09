@@ -54,9 +54,6 @@ class PhongMaterialData;
 
 namespace Mn = Magnum;
 
-namespace Attrs = esp::metadata::attributes;
-namespace AttrMgrs = esp::metadata::managers;
-
 namespace esp {
 namespace gfx {
 class Drawable;
@@ -148,7 +145,8 @@ class ResourceManager {
       std::shared_ptr<physics::PhysicsManager>& physicsManager,
       bool isEnabled,
       scene::SceneNode* parent,
-      const Attrs::PhysicsManagerAttributes::ptr& physicsManagerAttributes);
+      const metadata::attributes::PhysicsManagerAttributes::ptr&
+          physicsManagerAttributes);
 
   /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
@@ -168,11 +166,12 @@ class ResourceManager {
    * @ref SimulatorConfiguration
    * @return Whether or not the scene load succeeded.
    */
-  bool loadStage(const Attrs::StageAttributes::ptr& sceneAttributes,
-                 std::shared_ptr<physics::PhysicsManager> _physicsManager,
-                 esp::scene::SceneManager* sceneManagerPtr,
-                 std::vector<int>& activeSceneIDs,
-                 bool createSemanticMesh);
+  bool loadStage(
+      const metadata::attributes::StageAttributes::ptr& sceneAttributes,
+      std::shared_ptr<physics::PhysicsManager> _physicsManager,
+      esp::scene::SceneManager* sceneManagerPtr,
+      std::vector<int>& activeSceneIDs,
+      bool createSemanticMesh);
 
   /**
    * @brief Construct scene collision mesh group based on name and type of
@@ -219,30 +218,30 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const AttrMgrs::AssetAttributesManager::ptr getAssetAttributesManager()
-      const {
+  const metadata::managers::AssetAttributesManager::ptr
+  getAssetAttributesManager() const {
     return assetAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const AttrMgrs::ObjectAttributesManager::ptr getObjectAttributesManager()
-      const {
+  const metadata::managers::ObjectAttributesManager::ptr
+  getObjectAttributesManager() const {
     return objectAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const AttrMgrs::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
-      const {
+  const metadata::managers::PhysicsAttributesManager::ptr
+  getPhysicsAttributesManager() const {
     return physicsAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const AttrMgrs::StageAttributesManager::ptr getStageAttributesManager()
-      const {
+  const metadata::managers::StageAttributesManager::ptr
+  getStageAttributesManager() const {
     return stageAttributesManager_;
   }
 
@@ -421,7 +420,7 @@ class ResourceManager {
    * @return the coordinate frame of the assets the passed attributes describes.
    */
   esp::geo::CoordinateFrame buildFrameFromAttributes(
-      const Attrs::AbstractObjectAttributes::ptr& attribs,
+      const metadata::attributes::AbstractObjectAttributes::ptr& attribs,
       const Magnum::Vector3& origin);
 
   /**
@@ -654,7 +653,7 @@ class ResourceManager {
    * created
    */
   std::map<std::string, AssetInfo> createStageAssetInfosFromAttributes(
-      const Attrs::StageAttributes::ptr& stageAttributes,
+      const metadata::attributes::StageAttributes::ptr& stageAttributes,
       bool createCollisionInfo,
       bool createSemanticInfo);
 
@@ -887,22 +886,26 @@ class ResourceManager {
   /**
    * @brief Manages all construction and access to asset attributes.
    */
-  AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
+  metadata::managers::AssetAttributesManager::ptr assetAttributesManager_ =
+      nullptr;
 
   /**
    * @brief Manages all construction and access to object attributes.
    */
-  AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  metadata::managers::ObjectAttributesManager::ptr objectAttributesManager_ =
+      nullptr;
 
   /**
    * @brief Manages all construction and access to physics world attributes.
    */
-  AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+  metadata::managers::PhysicsAttributesManager::ptr physicsAttributesManager_ =
+      nullptr;
 
   /**
    * @brief Manages all construction and access to scene attributes.
    */
-  AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
+  metadata::managers::StageAttributesManager::ptr stageAttributesManager_ =
+      nullptr;
 
   //! tracks primitive mesh ids
   int nextPrimitiveMeshId = 0;

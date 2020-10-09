@@ -37,9 +37,6 @@ class Renderer;
 
 namespace esp {
 namespace sim {
-namespace AttrMgrs = esp::metadata::managers;
-namespace Attrs = esp::metadata::attributes;
-
 class Simulator {
  public:
   explicit Simulator(const SimulatorConfiguration& cfg);
@@ -90,30 +87,30 @@ class Simulator {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const AttrMgrs::AssetAttributesManager::ptr getAssetAttributesManager()
-      const {
+  const metadata::managers::AssetAttributesManager::ptr
+  getAssetAttributesManager() const {
     return resourceManager_->getAssetAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const AttrMgrs::ObjectAttributesManager::ptr getObjectAttributesManager()
-      const {
+  const metadata::managers::ObjectAttributesManager::ptr
+  getObjectAttributesManager() const {
     return resourceManager_->getObjectAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const AttrMgrs::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
-      const {
+  const metadata::managers::PhysicsAttributesManager::ptr
+  getPhysicsAttributesManager() const {
     return resourceManager_->getPhysicsAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const AttrMgrs::StageAttributesManager::ptr getStageAttributesManager()
-      const {
+  const metadata::managers::StageAttributesManager::ptr
+  getStageAttributesManager() const {
     return resourceManager_->getStageAttributesManager();
   }
 
@@ -187,17 +184,16 @@ class Simulator {
    * Use this to query the object's properties when it was initialized.  Object
    * pointed at by pointer is const, and can not be modified.
    */
-  const Attrs::ObjectAttributes::cptr getObjectInitializationTemplate(
-      int objectId,
-      int sceneID = 0) const;
+  const metadata::attributes::ObjectAttributes::cptr
+  getObjectInitializationTemplate(int objectId, int sceneID = 0) const;
 
   /**
    * @brief Get a copy of a stage's template when the stage was instanced.
    *
    * Use this to query the stage's properties when it was initialized.
    */
-  const Attrs::StageAttributes::cptr getStageInitializationTemplate(
-      int sceneID = 0) const;
+  const metadata::attributes::StageAttributes::cptr
+  getStageInitializationTemplate(int sceneID = 0) const;
 
   /**
    * @brief Remove an instanced object by ID. See @ref

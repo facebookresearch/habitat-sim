@@ -136,7 +136,8 @@ void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
     bool isEnabled,
     scene::SceneNode* parent,
-    const Attrs::PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
+    const metadata::attributes::PhysicsManagerAttributes::ptr&
+        physicsManagerAttributes) {
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {

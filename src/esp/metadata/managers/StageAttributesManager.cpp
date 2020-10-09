@@ -270,7 +270,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
 }  // StageAttributesManager::setDefaultAssetNameBasedAttributes
 
 void StageAttributesManager::setValsFromJSONDoc(
-    Attrs::StageAttributes::ptr stageAttributes,
+    attributes::StageAttributes::ptr stageAttributes,
     const io::JsonGenericValue& jsonConfig) {
   this->loadAbstractObjectAttributesFromJson(stageAttributes, jsonConfig);
 
