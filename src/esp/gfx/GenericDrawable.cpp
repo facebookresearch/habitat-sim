@@ -49,7 +49,8 @@ void GenericDrawable::updateShaderLightingParameters(
   lightColors.reserve(lightSetup_->size());
   std::vector<Mn::Color3> lightSpecularColors;
   lightSpecularColors.reserve(lightSetup_->size());
-  constexpr float dummyRange = 10000;
+  constexpr float dummyRange = Mn::Constants::inf();
+  ;
   std::vector<float> lightRanges(lightSetup_->size(), dummyRange);
   const Mn::Color4 ambientLightColor = getAmbientLightColor(*lightSetup_);
 
@@ -95,7 +96,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
               : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(transformationMatrix.rotationScaling());
+      .setNormalMatrix(transformationMatrix.normalMatrix());
 
   if (materialData_->textureMatrix != Mn::Matrix3{})
     shader_->setTextureMatrix(materialData_->textureMatrix);
