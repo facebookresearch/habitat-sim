@@ -183,3 +183,5 @@ yarn-debug.log*
 yarn-error.log*
 .npm/
 coverage_js/
+
+data/replicaCAD_dataset_v1_3/
