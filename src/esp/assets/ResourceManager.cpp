@@ -1100,6 +1100,7 @@ bool ResourceManager::loadGeneralMeshData(
                visNodeCache,       // a vector of scene nodes, the visNodeCache
                computeAbsoluteAABBs,  // compute absolute aabbs
                staticDrawableInfo);   // a vector of static drawable info
+
   if (computeAbsoluteAABBs) {
     // now compute aabbs by constructed staticDrawableInfo
     computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
@@ -1548,6 +1549,7 @@ void ResourceManager::addObjectToDrawables(
     // ignored for objects since computeAbsoluteAABBs is always set to false
     // after scene is loaded.
     std::vector<StaticDrawableInfo> staticDrawableInfo;
+
     addComponent(loadedAssetData.meshMetaData,       // mesh metadata
                  scalingNode,                        // parent scene node
                  lightSetupKey,                      // lightSetup key
