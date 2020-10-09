@@ -1660,9 +1660,13 @@ void ResourceManager::createGenericDrawable(
     const Mn::ResourceKey& lightSetupKey,
     const Mn::ResourceKey& materialKey,
     DrawableGroup* group /* = nullptr */) {
-  node.addFeature<gfx::GenericDrawable>(mesh, meshAttributeFlags,
-                                        shaderManager_, lightSetupKey,
-                                        materialKey, group);
+  node.addFeature<gfx::GenericDrawable>(
+      mesh,                // render mesh
+      meshAttributeFlags,  // mesh attribute flags
+      shaderManager_,      // shader manager
+      lightSetupKey,       // kightSetup key
+      materialKey,         // material key
+      group);              // drawable group
 }
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
