@@ -30,7 +30,7 @@ namespace managers {
 template <class T>
 class AbstractObjectAttributesManager : public AttributesManager<T> {
  public:
-  static_assert(std::is_base_of<Attrs::AbstractObjectAttributes, T>::value,
+  static_assert(std::is_base_of<attributes::AbstractObjectAttributes, T>::value,
                 "AbstractObjectAttributesManager :: Managed object type must "
                 "be derived from AbstractObjectAttributes");
 

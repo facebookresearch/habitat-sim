@@ -4,14 +4,42 @@
 
 #include "esp/io/json.h"
 
+#include <Corrade/Utility/String.h>
 #include <rapidjson/filereadstream.h>
+#include <rapidjson/filewritestream.h>
+#include <rapidjson/prettywriter.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
 #include "esp/core/esp.h"
 
+namespace Cr = Corrade;
+
 namespace esp {
 namespace io {
+
+bool writeJsonToFile(const JsonDocument& document,
+                     const std::string& filepath) {
+  assert(!filepath.empty());
+  std::string outFilePath = filepath;
+  if (!Cr::Utility::String::endsWith(outFilePath, ".json")) {
+    outFilePath += ".json";
+  }
+
+  auto f = fopen(outFilePath.c_str(), "w");
+  if (!f) {
+    return false;
+  }
+
+  char writeBuffer[65536];
+  rapidjson::FileWriteStream os(f, writeBuffer, sizeof(writeBuffer));
+
+  rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(os);
+  bool writeSuccess = document.Accept(writer);
+  fclose(f);
+
+  return writeSuccess;
+}
 
 JsonDocument parseJsonFile(const std::string& file) {
   FILE* pFile = fopen(file.c_str(), "rb");

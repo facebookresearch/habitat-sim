@@ -17,7 +17,7 @@ enum class AssetType;
 namespace metadata {
 namespace managers {
 class StageAttributesManager
-    : public AbstractObjectAttributesManager<Attrs::StageAttributes> {
+    : public AbstractObjectAttributesManager<attributes::StageAttributes> {
  public:
   StageAttributesManager(
       ObjectAttributesManager::ptr objectAttributesMgr,
@@ -71,7 +71,7 @@ class StageAttributesManager
    * subsequent editing will require re-registration. Defaults to true.
    * @return a reference to the desired stage template, or nullptr if fails.
    */
-  Attrs::StageAttributes::ptr createPrimBasedAttributesTemplate(
+  attributes::StageAttributes::ptr createPrimBasedAttributesTemplate(
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true) override;
 
@@ -81,7 +81,7 @@ class StageAttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void setValsFromJSONDoc(Attrs::StageAttributes::ptr attribs,
+  void setValsFromJSONDoc(attributes::StageAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
  protected:
@@ -109,7 +109,7 @@ class StageAttributesManager
    * @param assetTypeSetter Setter for mesh type.
    */
   void setDefaultAssetNameBasedAttributes(
-      Attrs::StageAttributes::ptr attributes,
+      attributes::StageAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
       std::function<void(int)> assetTypeSetter) override;
@@ -119,7 +119,7 @@ class StageAttributesManager
    *
    * @param handleName handle name to be assigned to attributes
    */
-  Attrs::StageAttributes::ptr initNewObjectInternal(
+  attributes::StageAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override;
 
   /**
@@ -149,7 +149,7 @@ class StageAttributesManager
    */
 
   int registerObjectFinalize(
-      Attrs::StageAttributes::ptr StageAttributesTemplate,
+      attributes::StageAttributes::ptr StageAttributesTemplate,
       const std::string& StageAttributesHandle) override;
 
   /**
@@ -165,7 +165,7 @@ class StageAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["StageAttributes"] =
-        &StageAttributesManager::createObjectCopy<Attrs::StageAttributes>;
+        &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
   }  // StageAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars

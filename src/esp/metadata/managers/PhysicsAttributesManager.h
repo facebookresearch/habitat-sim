@@ -18,12 +18,11 @@ namespace esp {
 namespace metadata {
 namespace managers {
 class PhysicsAttributesManager
-    : public AttributesManager<Attrs::PhysicsManagerAttributes> {
+    : public AttributesManager<attributes::PhysicsManagerAttributes> {
  public:
   PhysicsAttributesManager(ObjectAttributesManager::ptr objectAttributesMgr)
-      : AttributesManager<Attrs::PhysicsManagerAttributes>::AttributesManager(
-            "Physics Manager",
-            "phys_scene_config.json"),
+      : AttributesManager<attributes::PhysicsManagerAttributes>::
+            AttributesManager("Physics Manager", "phys_scene_config.json"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
@@ -47,7 +46,7 @@ class PhysicsAttributesManager
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file.
    */
-  Attrs::PhysicsManagerAttributes::ptr createObject(
+  attributes::PhysicsManagerAttributes::ptr createObject(
       const std::string& physicsFilename =
           ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH,
       bool registerTemplate = true) override;
@@ -58,7 +57,7 @@ class PhysicsAttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void setValsFromJSONDoc(Attrs::PhysicsManagerAttributes::ptr attribs,
+  void setValsFromJSONDoc(attributes::PhysicsManagerAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
  protected:
@@ -78,12 +77,12 @@ class PhysicsAttributesManager
    *
    * @param handleName handle name to be assigned to attributes
    */
-  Attrs::PhysicsManagerAttributes::ptr initNewObjectInternal(
+  attributes::PhysicsManagerAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override {
-    Attrs::PhysicsManagerAttributes::ptr newAttributes =
+    attributes::PhysicsManagerAttributes::ptr newAttributes =
         this->constructFromDefault();
     if (nullptr == newAttributes) {
-      newAttributes = Attrs::PhysicsManagerAttributes::create(handleName);
+      newAttributes = attributes::PhysicsManagerAttributes::create(handleName);
     }
     this->setFileDirectoryFromHandle(newAttributes);
     return newAttributes;
@@ -113,7 +112,7 @@ class PhysicsAttributesManager
    * template.
    */
   int registerObjectFinalize(
-      Attrs::PhysicsManagerAttributes::ptr physicsAttributesTemplate,
+      attributes::PhysicsManagerAttributes::ptr physicsAttributesTemplate,
       const std::string& physicsAttributesHandle) override {
     // adds template to library, and returns either the ID of the existing
     // template referenced by physicsAttributesHandle, or the next available ID
@@ -137,7 +136,7 @@ class PhysicsAttributesManager
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
         &PhysicsAttributesManager::createObjectCopy<
-            Attrs::PhysicsManagerAttributes>;
+            attributes::PhysicsManagerAttributes>;
   }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars

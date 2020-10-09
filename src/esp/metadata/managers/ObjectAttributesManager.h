@@ -17,10 +17,10 @@ namespace managers {
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
-    : public AbstractObjectAttributesManager<Attrs::ObjectAttributes> {
+    : public AbstractObjectAttributesManager<attributes::ObjectAttributes> {
  public:
   ObjectAttributesManager()
-      : AbstractObjectAttributesManager<Attrs::ObjectAttributes>::
+      : AbstractObjectAttributesManager<attributes::ObjectAttributes>::
             AbstractObjectAttributesManager("Object", "phys_properties.json") {
     buildCtorFuncPtrMaps();
   }
@@ -45,7 +45,7 @@ class ObjectAttributesManager
    * subsequent editing will require re-registration. Defaults to true.
    * @return a reference to the desired template, or nullptr if fails.
    */
-  Attrs::ObjectAttributes::ptr createPrimBasedAttributesTemplate(
+  attributes::ObjectAttributes::ptr createPrimBasedAttributesTemplate(
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true) override;
 
@@ -55,7 +55,7 @@ class ObjectAttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void setValsFromJSONDoc(Attrs::ObjectAttributes::ptr attribs,
+  void setValsFromJSONDoc(attributes::ObjectAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
   /**
@@ -174,7 +174,7 @@ class ObjectAttributesManager
    * @param assetTypeSetter Setter for mesh type.
    */
   void setDefaultAssetNameBasedAttributes(
-      Attrs::ObjectAttributes::ptr attributes,
+      attributes::ObjectAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
       std::function<void(int)> assetTypeSetter) override;
@@ -185,7 +185,7 @@ class ObjectAttributesManager
    *
    * @param handleName handle name to be assigned to attributes
    */
-  Attrs::ObjectAttributes::ptr initNewObjectInternal(
+  attributes::ObjectAttributes::ptr initNewObjectInternal(
       const std::string& handleName) override;
 
   /**
@@ -217,7 +217,7 @@ class ObjectAttributesManager
    * template.
    */
   int registerObjectFinalize(
-      Attrs::ObjectAttributes::ptr attributesTemplate,
+      attributes::ObjectAttributes::ptr attributesTemplate,
       const std::string& attributesTemplateHandle) override;
 
   /**
@@ -236,7 +236,8 @@ class ObjectAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["ObjectAttributes"] =
-        &ObjectAttributesManager::createObjectCopy<Attrs::ObjectAttributes>;
+        &ObjectAttributesManager::createObjectCopy<
+            attributes::ObjectAttributes>;
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
 
   // ======== Typedefs and Instance Variables ========
