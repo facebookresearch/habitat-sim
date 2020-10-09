@@ -12,7 +12,7 @@ https://github.com/facebookresearch/pyrobot
 Please cite PyRobot if you use this noise model
 """
 
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union, cast
 
 import attr
 import magnum as mn
@@ -28,8 +28,8 @@ from habitat_sim.registry import registry
 
 @attr.s(auto_attribs=True)
 class _TruncatedMultivariateGaussian:
-    mean: np.array
-    cov: np.array
+    mean: Union[np.ndarray, Sequence[float]]
+    cov: Union[np.ndarray, Sequence[float]]
 
     def __attrs_post_init__(self):
         self.mean = np.array(self.mean)
@@ -52,7 +52,7 @@ class _TruncatedMultivariateGaussian:
 
         sample = np.zeros_like(self.mean)
         for i in range(len(self.mean)):
-            stdev = np.sqrt(self.cov[i, i])
+            stdev = np.sqrt(cast(np.ndarray, self.cov)[i, i])
             mean = self.mean[i]
             # Always truncate to 3 standard deviations
             a, b = -3, 3
