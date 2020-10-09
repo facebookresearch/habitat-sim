@@ -427,7 +427,8 @@ bool ResourceManager::loadStageInternal(
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs /*  = false */,
     bool splitSemanticMesh /* = true */,
-    const Mn::ResourceKey& lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
+    const Mn::ResourceKey&
+        lightSetupKey /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
   // scene mesh loading
   const std::string& filename = info.filepath;
   bool meshSuccess = true;
@@ -447,11 +448,11 @@ bool ResourceManager::loadStageInternal(
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else if (info.type == AssetType::MP3D_MESH) {
         meshSuccess = loadGeneralMeshData(info, parent, drawables,
-                                          computeAbsoluteAABBs, lightSetup);
+                                          computeAbsoluteAABBs, lightSetupKey);
       } else {
         // Unknown type, just load general mesh data
         meshSuccess = loadGeneralMeshData(info, parent, drawables,
-                                          computeAbsoluteAABBs, lightSetup);
+                                          computeAbsoluteAABBs, lightSetupKey);
       }
     }
   } else {
@@ -906,7 +907,7 @@ bool ResourceManager::loadGeneralMeshData(
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs, /* = false */
-    const Mn::ResourceKey& lightSetup) {
+    const Mn::ResourceKey& lightSetupKey) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
@@ -1052,7 +1053,7 @@ bool ResourceManager::loadGeneralMeshData(
 
   //! Do instantiate object
   const LoadedAssetData& loadedAssetData = resourceDict_[filename];
-  if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
+  if (!isLightSetupCompatible(loadedAssetData, lightSetupKey)) {
     LOG(WARNING) << "Loading scene with incompatible light setup, "
                     "scene will not be correctly lit. If the scene requires "
                     "lighting please enable AssetInfo::requiresLighting.";
@@ -1075,8 +1076,9 @@ bool ResourceManager::loadGeneralMeshData(
      // TODO: cache visual nodes added by this process
   std::vector<scene::SceneNode*> visNodeCache;
   std::vector<StaticDrawableInfo> staticDrawableInfo;
-  addComponent(meshMetaData, newNode, lightSetup, drawables, meshMetaData.root,
-               visNodeCache, computeAbsoluteAABBs, staticDrawableInfo);
+  addComponent(meshMetaData, newNode, lightSetupKey, drawables,
+               meshMetaData.root, visNodeCache, computeAbsoluteAABBs,
+               staticDrawableInfo);
   if (computeAbsoluteAABBs) {
     // now compute aabbs by constructed staticDrawableInfo
     computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
@@ -1497,7 +1499,7 @@ void ResourceManager::addObjectToDrawables(
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>& visNodeCache,
-    const Mn::ResourceKey& lightSetup) {
+    const Mn::ResourceKey& lightSetupKey) {
   if (parent != nullptr and drawables != nullptr) {
     //! Add mesh to rendering stack
 
@@ -1509,7 +1511,7 @@ void ResourceManager::addObjectToDrawables(
         ObjectAttributes->getRenderAssetHandle();
 
     const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
-    if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
+    if (!isLightSetupCompatible(loadedAssetData, lightSetupKey)) {
       LOG(WARNING) << "Instantiating object with incompatible light setup, "
                       "object will not be correctly lit. If you need lighting "
                       "please ensure 'requires lighting' is enabled in object "
@@ -1526,7 +1528,7 @@ void ResourceManager::addObjectToDrawables(
     // after scene is loaded.
     std::vector<StaticDrawableInfo> staticDrawableInfo;
 
-    addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
+    addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetupKey,
                  drawables, loadedAssetData.meshMetaData.root, visNodeCache,
                  false, staticDrawableInfo);
 
@@ -1541,7 +1543,7 @@ void ResourceManager::addObjectToDrawables(
 void ResourceManager::addComponent(
     const MeshMetaData& metaData,
     scene::SceneNode& parent,
-    const Mn::ResourceKey& lightSetup,
+    const Mn::ResourceKey& lightSetupKey,
     DrawableGroup* drawables,
     const MeshTransformNode& meshTransformNode,
     std::vector<scene::SceneNode*>& visNodeCache,
@@ -1569,7 +1571,7 @@ void ResourceManager::addComponent(
           std::to_string(metaData.materialIndex.first + materialIDLocal);
     }
 
-    createGenericDrawable(mesh, node, lightSetup, materialKey, drawables);
+    createGenericDrawable(mesh, node, lightSetupKey, materialKey, drawables);
 
     // compute the bounding box for the mesh we are adding
     if (computeAbsoluteAABBs) {
@@ -1581,7 +1583,7 @@ void ResourceManager::addComponent(
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, lightSetup, drawables, child, visNodeCache,
+    addComponent(metaData, node, lightSetupKey, drawables, child, visNodeCache,
                  computeAbsoluteAABBs, staticDrawableInfo);
   }
 }  // addComponent
@@ -1602,10 +1604,10 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
 void ResourceManager::createGenericDrawable(
     Mn::GL::Mesh& mesh,
     scene::SceneNode& node,
-    const Mn::ResourceKey& lightSetup,
+    const Mn::ResourceKey& lightSetupKey,
     const Mn::ResourceKey& material,
     DrawableGroup* group /* = nullptr */) {
-  node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
+  node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetupKey,
                                         material, group);
 }
 
@@ -1718,10 +1720,10 @@ void ResourceManager::initDefaultMaterials() {
 
 bool ResourceManager::isLightSetupCompatible(
     const LoadedAssetData& loadedAssetData,
-    const Magnum::ResourceKey& lightSetup) const {
+    const Magnum::ResourceKey& lightSetupKey) const {
   // if light setup has lights in it, but asset was loaded in as flat shaded,
   // there may be an error when rendering.
-  return lightSetup == Mn::ResourceKey{NO_LIGHT_KEY} ||
+  return lightSetupKey == Mn::ResourceKey{NO_LIGHT_KEY} ||
          loadedAssetData.assetInfo.requiresLighting;
 }
 

@@ -323,7 +323,7 @@ class ResourceManager {
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
    * gfx::Drawable will be rendered.
-   * @param lightSetup The @ref LightSetup key that will be used
+   * @param lightSetupKey The @ref LightSetup key that will be used
    * for the added component.
    * @param[out] visNodeCache Cache for pointers to all nodes created as the
    * result of this process.
@@ -332,14 +332,14 @@ class ResourceManager {
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
                             std::vector<scene::SceneNode*>& visNodeCache,
-                            const Mn::ResourceKey& lightSetup = Mn::ResourceKey{
-                                DEFAULT_LIGHTING_KEY}) {
+                            const Mn::ResourceKey& lightSetupKey =
+                                Mn::ResourceKey{DEFAULT_LIGHTING_KEY}) {
     if (objTemplateLibID != ID_UNDEFINED) {
       const std::string& objTemplateHandleName =
           objectAttributesManager_->getObjectHandleByID(objTemplateLibID);
 
       addObjectToDrawables(objTemplateHandleName, parent, drawables,
-                           visNodeCache, lightSetup);
+                           visNodeCache, lightSetupKey);
     }  // else objTemplateID does not exist - shouldn't happen
   }    // addObjectToDrawables
 
@@ -359,7 +359,7 @@ class ResourceManager {
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
    * gfx::Drawable will be rendered.
-   * @param lightSetup The @ref LightSetup key that will be used
+   * @param lightSetupKey The @ref LightSetup key that will be used
    * for the added component.
    * @param[out] visNodeCache Cache for pointers to all nodes created as the
    * result of this process.
@@ -368,8 +368,8 @@ class ResourceManager {
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
                             std::vector<scene::SceneNode*>& visNodeCache,
-                            const Mn::ResourceKey& lightSetup = Mn::ResourceKey{
-                                DEFAULT_LIGHTING_KEY});
+                            const Mn::ResourceKey& lightSetupKey =
+                                Mn::ResourceKey{DEFAULT_LIGHTING_KEY});
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
@@ -495,7 +495,7 @@ class ResourceManager {
    * the meshes, textures, materials, and component heirarchy of the asset.
    * @param parent The @ref scene::SceneNode of which the component will be a
    * child.
-   * @param lightSetup The @ref LightSetup key that will be used
+   * @param lightSetupKey The @ref LightSetup key that will be used
    * for the added component.
    * @param drawables The @ref DrawableGroup with which the component will be
    * rendered.
@@ -508,7 +508,7 @@ class ResourceManager {
    */
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
-                    const Mn::ResourceKey& lightSetup,
+                    const Mn::ResourceKey& lightSetupKey,
                     DrawableGroup* drawables,
                     const MeshTransformNode& meshTransformNode,
                     std::vector<scene::SceneNode*>& visNodeCache,
@@ -618,7 +618,7 @@ class ResourceManager {
    * computed
    * @param splitSemanticMesh Split the semantic mesh by objectID, used for A/B
    * testing
-   * @param lightSetup The @ref LightSetup key that will be used
+   * @param lightSetupKey The @ref LightSetup key that will be used
    * for the loaded asset.
    */
   bool loadStageInternal(const AssetInfo& info,
@@ -626,7 +626,7 @@ class ResourceManager {
                          DrawableGroup* drawables = nullptr,
                          bool computeAbsoluteAABBs = false,
                          bool splitSemanticMesh = true,
-                         const Mn::ResourceKey& lightSetup = Mn::ResourceKey{
+                         const Mn::ResourceKey& lightSetupKey = Mn::ResourceKey{
                              NO_LIGHT_KEY});
 
   /**
@@ -703,15 +703,15 @@ class ResourceManager {
    * rendered.
    * @param computeAbsoluteAABBs Whether absolute bounding boxes should be
    * computed
-   * @param lightSetup The @ref LightSetup key that will be used
+   * @param lightSetupKey The @ref LightSetup key that will be used
    * for the loaded asset.
    */
-  bool loadGeneralMeshData(const AssetInfo& info,
-                           scene::SceneNode* parent = nullptr,
-                           DrawableGroup* drawables = nullptr,
-                           bool computeAbsoluteAABBs = false,
-                           const Mn::ResourceKey& lightSetup = Mn::ResourceKey{
-                               NO_LIGHT_KEY});
+  bool loadGeneralMeshData(
+      const AssetInfo& info,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      bool computeAbsoluteAABBs = false,
+      const Mn::ResourceKey& lightSetupKey = Mn::ResourceKey{NO_LIGHT_KEY});
 
   /**
    * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:
@@ -741,7 +741,7 @@ class ResourceManager {
    * @brief Checks if light setup is compatible with loaded asset
    */
   bool isLightSetupCompatible(const LoadedAssetData& loadedAssetData,
-                              const Mn::ResourceKey& lightSetup) const;
+                              const Mn::ResourceKey& lightSetupKey) const;
 
   // ======== Geometry helper functions, data structures ========
 
@@ -807,7 +807,7 @@ class ResourceManager {
    * @param mesh The render mesh.
    * @param node The @ref scene::SceneNode to which the drawable will be
    * attached.
-   * @param lightSetup The @ref LightSetup key that will be used
+   * @param lightSetupKey The @ref LightSetup key that will be used
    * for the drawable.
    * @param material The @ref MaterialData key that will be used
    * for the drawable.
@@ -821,7 +821,7 @@ class ResourceManager {
    */
   void createGenericDrawable(Mn::GL::Mesh& mesh,
                              scene::SceneNode& node,
-                             const Mn::ResourceKey& lightSetup,
+                             const Mn::ResourceKey& lightSetupKey,
                              const Mn::ResourceKey& material,
                              DrawableGroup* group = nullptr);
 
