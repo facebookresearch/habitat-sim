@@ -27,6 +27,22 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
       lightSetup_{shaderManager.get<LightSetup>(lightSetup)},
       materialData_{
           shaderManager.get<MaterialData, PhongMaterialData>(materialData)} {
+  flags_ = Mn::Shaders::Phong::Flag::ObjectId;
+
+  if (materialData_->textureMatrix != Mn::Matrix3{})
+    flags_ |= Mn::Shaders::Phong::Flag::TextureTransformation;
+  if (materialData_->ambientTexture)
+    flags_ |= Mn::Shaders::Phong::Flag::AmbientTexture;
+  if (materialData_->diffuseTexture)
+    flags_ |= Mn::Shaders::Phong::Flag::DiffuseTexture;
+  if (materialData_->specularTexture)
+    flags_ |= Mn::Shaders::Phong::Flag::SpecularTexture;
+  if (materialData_->normalTexture)
+    flags_ |= Mn::Shaders::Phong::Flag::NormalTexture;
+  if (materialData_->perVertexObjectId)
+    flags_ |= Mn::Shaders::Phong::Flag::InstancedObjectId;
+  if (materialData_->vertexColored)
+    flags_ |= Mn::Shaders::Phong::Flag::VertexColor;
   // update the shader early here to to avoid doing it during the render loop
   updateShader();
 }
@@ -115,40 +131,24 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
 void GenericDrawable::updateShader() {
   Mn::UnsignedInt lightCount = lightSetup_->size();
-  Mn::Shaders::Phong::Flags flags = Mn::Shaders::Phong::Flag::ObjectId;
-
-  if (materialData_->textureMatrix != Mn::Matrix3{})
-    flags |= Mn::Shaders::Phong::Flag::TextureTransformation;
-  if (materialData_->ambientTexture)
-    flags |= Mn::Shaders::Phong::Flag::AmbientTexture;
-  if (materialData_->diffuseTexture)
-    flags |= Mn::Shaders::Phong::Flag::DiffuseTexture;
-  if (materialData_->specularTexture)
-    flags |= Mn::Shaders::Phong::Flag::SpecularTexture;
-  if (materialData_->normalTexture)
-    flags |= Mn::Shaders::Phong::Flag::NormalTexture;
-  if (materialData_->perVertexObjectId)
-    flags |= Mn::Shaders::Phong::Flag::InstancedObjectId;
-  if (materialData_->vertexColored)
-    flags |= Mn::Shaders::Phong::Flag::VertexColor;
 
   if (!shader_ || shader_->lightCount() != lightCount ||
-      shader_->flags() != flags) {
+      shader_->flags() != flags_) {
     // if the number of lights or flags have changed, we need to fetch a
     // compatible shader
     shader_ =
         shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::Phong>(
-            getShaderKey(lightCount, flags));
+            getShaderKey(lightCount, flags_));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader_.key(), new Mn::Shaders::Phong{flags, lightCount},
+          shader_.key(), new Mn::Shaders::Phong{flags_, lightCount},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
     CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
-                            shader_->flags() == flags);
+                            shader_->flags() == flags_);
   }
 }
 

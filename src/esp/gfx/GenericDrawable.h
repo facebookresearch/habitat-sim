@@ -41,6 +41,7 @@ class GenericDrawable : public Drawable {
                                    Magnum::Shaders::Phong::Flags flags) const;
 
   // shader parameters
+  Mn::Shaders::Phong::Flags flags_;
   ShaderManager& shaderManager_;
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::Phong>
       shader_;
