@@ -1599,13 +1599,15 @@ void ResourceManager::addComponent(
 
     gfx::Drawable::Flags meshAttributeFlags{};
     const auto& meshData = meshes_[meshID]->getMeshData();
-    if (meshData != Cr::Containers::NullOpt &&
-        meshData->hasAttribute(Mn::Trade::MeshAttribute::Tangent)) {
-      meshAttributeFlags |= gfx::Drawable::Flag::HasTangent;
-    }
-    if (meshData != Cr::Containers::NullOpt &&
-        meshData->hasAttribute(Mn::Trade::MeshAttribute::Bitangent)) {
-      meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
+    if (meshData != Cr::Containers::NullOpt) {
+      if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Tangent)) {
+        meshAttributeFlags |= gfx::Drawable::Flag::HasTangent;
+
+        // if it has tangent, then check if it has bitangent
+        if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Bitangent)) {
+          meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
+        }
+      }
     }
     createGenericDrawable(mesh,                // render mesh
                           meshAttributeFlags,  // mesh attribute flags
