@@ -22,11 +22,11 @@ class GenericDrawable : public Drawable {
                            Magnum::GL::Mesh& mesh,
                            Drawable::Flags& meshAttributeFlags,
                            ShaderManager& shaderManager,
-                           const Magnum::ResourceKey& lightSetup,
-                           const Magnum::ResourceKey& materialData,
+                           const Magnum::ResourceKey& lightSetupKey,
+                           const Magnum::ResourceKey& materialDataKey,
                            DrawableGroup* group = nullptr);
 
-  void setLightSetup(const Magnum::ResourceKey& lightSetup) override;
+  void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
   static constexpr const char* SHADER_KEY_TEMPLATE = "Phong-lights={}-flags={}";
 
  protected:

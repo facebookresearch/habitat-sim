@@ -885,16 +885,15 @@ bool ResourceManager::loadInstanceMeshData(
     for (uint32_t iMesh = start; iMesh <= end; ++iMesh) {
       scene::SceneNode& node = parent->createChild();
 
+      // Instance mesh does NOT have normal texture, so do not bother to
+      // query if the mesh data contain tangent or bitangent.
       gfx::Drawable::Flags meshAttributeFlags{};
-      if (meshes_[iMesh]->getMeshData()->hasAttribute(
-              Mn::Trade::MeshAttribute::Tangent)) {
-        meshAttributeFlags |= gfx::Drawable::Flag::HasTangent;
-      }
-      if (meshes_[iMesh]->getMeshData()->hasAttribute(
-              Mn::Trade::MeshAttribute::Bitangent)) {
-        meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
-      }
-
+      // WARNING:
+      // This is to initiate drawables for instance mesh, and the instance mesh
+      // data is NOT stored in the meshData_ in the BaseMesh.
+      // That means One CANNOT query the data like e.g.,
+      // meshes_[iMesh]->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
+      // It will SEGFAULT!
       createGenericDrawable(
           *(meshes_[iMesh]->getMagnumGLMesh()),  // render mesh
           meshAttributeFlags,                    // mesh attribute flags
@@ -1599,12 +1598,13 @@ void ResourceManager::addComponent(
     }
 
     gfx::Drawable::Flags meshAttributeFlags{};
-    if (meshes_[meshID]->getMeshData()->hasAttribute(
-            Mn::Trade::MeshAttribute::Tangent)) {
+    const auto& meshData = meshes_[meshID]->getMeshData();
+    if (meshData != Cr::Containers::NullOpt &&
+        meshData->hasAttribute(Mn::Trade::MeshAttribute::Tangent)) {
       meshAttributeFlags |= gfx::Drawable::Flag::HasTangent;
     }
-    if (meshes_[meshID]->getMeshData()->hasAttribute(
-            Mn::Trade::MeshAttribute::Bitangent)) {
+    if (meshData != Cr::Containers::NullOpt &&
+        meshData->hasAttribute(Mn::Trade::MeshAttribute::Bitangent)) {
       meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
     }
     createGenericDrawable(mesh,                // render mesh
@@ -1639,6 +1639,10 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
   CHECK(primitive_meshes_.count(primitiveID));
+  // TODO:
+  // currently we assume the primitives does not have normal texture
+  // so do not need to worry about the tangent or bitangent.
+  // it might be changed in the future.
   gfx::Drawable::Flags meshAttributeFlags{};
   createGenericDrawable(*primitive_meshes_.at(primitiveID),  // render mesh
                         meshAttributeFlags,  // meshAttributeFlags

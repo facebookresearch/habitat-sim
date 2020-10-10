@@ -20,14 +20,14 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  Mn::GL::Mesh& mesh,
                                  Drawable::Flags& meshAttributeFlags,
                                  ShaderManager& shaderManager,
-                                 const Mn::ResourceKey& lightSetup,
-                                 const Mn::ResourceKey& materialData,
+                                 const Mn::ResourceKey& lightSetupKey,
+                                 const Mn::ResourceKey& materialDataKey,
                                  DrawableGroup* group /* = nullptr */)
     : Drawable{node, mesh, group},
       shaderManager_{shaderManager},
-      lightSetup_{shaderManager.get<LightSetup>(lightSetup)},
+      lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PhongMaterialData>(materialData)} {
+          shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)} {
   flags_ = Mn::Shaders::Phong::Flag::ObjectId;
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
     flags_ |= Mn::Shaders::Phong::Flag::TextureTransformation;
