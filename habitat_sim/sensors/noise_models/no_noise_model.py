@@ -6,6 +6,7 @@
 
 from typing import Union
 
+import attr
 import numpy as np
 from numpy import ndarray
 from torch import Tensor
@@ -21,6 +22,7 @@ except ImportError:
 
 
 @registry.register_noise_model(name="None")
+@attr.s(auto_attribs=True)
 class NoSensorNoiseModel(SensorNoiseModel):
     @staticmethod
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:

@@ -134,17 +134,17 @@ def check_failed(message):
         raise FailedCheckException(message)
     except FailedCheckException:
         log_record = logger.makeRecord(
-            "CRITICAL", 50, filename, line_num, message, None, None
+            "CRITICAL", 50, filename, line_num, message, None, None  # type: ignore
         )
         handler.handle(log_record)
 
         log_record = logger.makeRecord(
-            "DEBUG", 10, filename, line_num, "Check failed here:", None, None
+            "DEBUG", 10, filename, line_num, "Check failed here:", None, None  # type: ignore
         )
         handler.handle(log_record)
         for line in stacktrace_lines:
             log_record = logger.makeRecord(
-                "DEBUG", 10, filename, line_num, line, None, None
+                "DEBUG", 10, filename, line_num, line, None, None  # type: ignore
             )
             handler.handle(log_record)
         raise
