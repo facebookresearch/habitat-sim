@@ -23,6 +23,9 @@ namespace io {
 typedef rapidjson::Document JsonDocument;
 typedef rapidjson::GenericValue<rapidjson::UTF8<> > JsonGenericValue;
 
+//! Write a JsonDocument to file
+bool writeJsonToFile(const JsonDocument& document, const std::string& file);
+
 //! Parse JSON file and return as JsonDocument object
 JsonDocument parseJsonFile(const std::string& file);
 

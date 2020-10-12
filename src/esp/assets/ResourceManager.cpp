@@ -138,7 +138,8 @@ void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
     bool isEnabled,
     scene::SceneNode* parent,
-    const Attrs::PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
+    const metadata::attributes::PhysicsManagerAttributes::ptr&
+        physicsManagerAttributes) {
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
@@ -428,7 +429,8 @@ bool ResourceManager::loadStageInternal(
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs /*  = false */,
     bool splitSemanticMesh /* = true */,
-    const Mn::ResourceKey& lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
+    const Mn::ResourceKey&
+        lightSetupKey /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
   // scene mesh loading
   const std::string& filename = info.filepath;
   bool meshSuccess = true;
@@ -448,11 +450,11 @@ bool ResourceManager::loadStageInternal(
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else if (info.type == AssetType::MP3D_MESH) {
         meshSuccess = loadGeneralMeshData(info, parent, drawables,
-                                          computeAbsoluteAABBs, lightSetup);
+                                          computeAbsoluteAABBs, lightSetupKey);
       } else {
         // Unknown type, just load general mesh data
         meshSuccess = loadGeneralMeshData(info, parent, drawables,
-                                          computeAbsoluteAABBs, lightSetup);
+                                          computeAbsoluteAABBs, lightSetupKey);
       }
     }
   } else {
@@ -884,9 +886,22 @@ bool ResourceManager::loadInstanceMeshData(
 
     for (uint32_t iMesh = start; iMesh <= end; ++iMesh) {
       scene::SceneNode& node = parent->createChild();
-      node.addFeature<gfx::GenericDrawable>(
-          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, NO_LIGHT_KEY,
-          PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
+
+      // Instance mesh does NOT have normal texture, so do not bother to
+      // query if the mesh data contain tangent or bitangent.
+      gfx::Drawable::Flags meshAttributeFlags{};
+      // WARNING:
+      // This is to initiate drawables for instance mesh, and the instance mesh
+      // data is NOT stored in the meshData_ in the BaseMesh.
+      // That means One CANNOT query the data like e.g.,
+      // meshes_[iMesh]->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
+      // It will SEGFAULT!
+      createDrawable(*(meshes_[iMesh]->getMagnumGLMesh()),  // render mesh
+                     meshAttributeFlags,                 // mesh attribute flags
+                     node,                               // scene node
+                     NO_LIGHT_KEY,                       // lightSetup key
+                     PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
+                     drawables);                         // drawable group
 
       if (computeAbsoluteAABBs) {
         staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
@@ -907,7 +922,7 @@ bool ResourceManager::loadGeneralMeshData(
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs, /* = false */
-    const Mn::ResourceKey& lightSetup) {
+    const Mn::ResourceKey& lightSetupKey) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
@@ -1053,7 +1068,7 @@ bool ResourceManager::loadGeneralMeshData(
 
   //! Do instantiate object
   const LoadedAssetData& loadedAssetData = resourceDict_[filename];
-  if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
+  if (!isLightSetupCompatible(loadedAssetData, lightSetupKey)) {
     LOG(WARNING) << "Loading scene with incompatible light setup, "
                     "scene will not be correctly lit. If the scene requires "
                     "lighting please enable AssetInfo::requiresLighting.";
@@ -1076,8 +1091,16 @@ bool ResourceManager::loadGeneralMeshData(
      // TODO: cache visual nodes added by this process
   std::vector<scene::SceneNode*> visNodeCache;
   std::vector<StaticDrawableInfo> staticDrawableInfo;
-  addComponent(meshMetaData, newNode, lightSetup, drawables, meshMetaData.root,
-               visNodeCache, computeAbsoluteAABBs, staticDrawableInfo);
+
+  addComponent(meshMetaData,       // mesh metadata
+               newNode,            // parent scene node
+               lightSetupKey,      // lightSetup key
+               drawables,          // drawble group
+               meshMetaData.root,  // mesh transform node
+               visNodeCache,       // a vector of scene nodes, the visNodeCache
+               computeAbsoluteAABBs,  // compute absolute aabbs
+               staticDrawableInfo);   // a vector of static drawable info
+
   if (computeAbsoluteAABBs) {
     // now compute aabbs by constructed staticDrawableInfo
     computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
@@ -1598,7 +1621,7 @@ void ResourceManager::addObjectToDrawables(
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>& visNodeCache,
-    const Mn::ResourceKey& lightSetup) {
+    const Mn::ResourceKey& lightSetupKey) {
   if (parent != nullptr and drawables != nullptr) {
     //! Add mesh to rendering stack
 
@@ -1610,7 +1633,7 @@ void ResourceManager::addObjectToDrawables(
         ObjectAttributes->getRenderAssetHandle();
 
     const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
-    if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
+    if (!isLightSetupCompatible(loadedAssetData, lightSetupKey)) {
       LOG(WARNING) << "Instantiating object with incompatible light setup, "
                       "object will not be correctly lit. If you need lighting "
                       "please ensure 'requires lighting' is enabled in object "
@@ -1627,9 +1650,14 @@ void ResourceManager::addObjectToDrawables(
     // after scene is loaded.
     std::vector<StaticDrawableInfo> staticDrawableInfo;
 
-    addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
-                 drawables, loadedAssetData.meshMetaData.root, visNodeCache,
-                 false, staticDrawableInfo);
+    addComponent(loadedAssetData.meshMetaData,       // mesh metadata
+                 scalingNode,                        // parent scene node
+                 lightSetupKey,                      // lightSetup key
+                 drawables,                          // drawable group
+                 loadedAssetData.meshMetaData.root,  // mesh transform node
+                 visNodeCache,  // a vector of scene nodes, the visNodeCache
+                 false,         // compute absolute AABBs
+                 staticDrawableInfo);  // a vector of static drawable info
 
     // set the node type for all cached visual nodes
     for (auto node : visNodeCache) {
@@ -1642,7 +1670,7 @@ void ResourceManager::addObjectToDrawables(
 void ResourceManager::addComponent(
     const MeshMetaData& metaData,
     scene::SceneNode& parent,
-    const Mn::ResourceKey& lightSetup,
+    const Mn::ResourceKey& lightSetupKey,
     DrawableGroup* drawables,
     const MeshTransformNode& meshTransformNode,
     std::vector<scene::SceneNode*>& visNodeCache,
@@ -1670,7 +1698,24 @@ void ResourceManager::addComponent(
           std::to_string(metaData.materialIndex.first + materialIDLocal);
     }
 
-    createDrawable(mesh, node, lightSetup, materialKey, drawables);
+    gfx::Drawable::Flags meshAttributeFlags{};
+    const auto& meshData = meshes_[meshID]->getMeshData();
+    if (meshData != Cr::Containers::NullOpt) {
+      if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Tangent)) {
+        meshAttributeFlags |= gfx::Drawable::Flag::HasTangent;
+
+        // if it has tangent, then check if it has bitangent
+        if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Bitangent)) {
+          meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
+        }
+      }
+    }
+    createDrawable(mesh,                // render mesh
+                   meshAttributeFlags,  // mesh attribute flags
+                   node,                // scene node
+                   lightSetupKey,       // lightSetup Key
+                   materialKey,         // material key
+                   drawables);          // drawable group
 
     // compute the bounding box for the mesh we are adding
     if (computeAbsoluteAABBs) {
@@ -1682,8 +1727,14 @@ void ResourceManager::addComponent(
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, lightSetup, drawables, child, visNodeCache,
-                 computeAbsoluteAABBs, staticDrawableInfo);
+    addComponent(metaData,       // mesh metadata
+                 node,           // parent scene node
+                 lightSetupKey,  // lightSetup key
+                 drawables,      // drawable group
+                 child,          // mesh transform node
+                 visNodeCache,   // a vector of scene nodes, the visNodeCache
+                 computeAbsoluteAABBs,  // compute absolute aabbs
+                 staticDrawableInfo);   // a vector of static drawable info
   }
 }  // addComponent
 
@@ -1691,8 +1742,17 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
   CHECK(primitive_meshes_.count(primitiveID));
-  createDrawable(*primitive_meshes_.at(primitiveID), node, NO_LIGHT_KEY,
-                 WHITE_MATERIAL_KEY, drawables);
+  // TODO:
+  // currently we assume the primitives does not have normal texture
+  // so do not need to worry about the tangent or bitangent.
+  // it might be changed in the future.
+  gfx::Drawable::Flags meshAttributeFlags{};
+  createDrawable(*primitive_meshes_.at(primitiveID),  // render mesh
+                 meshAttributeFlags,                  // meshAttributeFlags
+                 node,                                // scene node
+                 NO_LIGHT_KEY,                        // lightSetup key
+                 WHITE_MATERIAL_KEY,                  // material key
+                 drawables);                          // drawable group
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
@@ -1701,6 +1761,7 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
 }
 
 void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
+                                     gfx::Drawable::Flags& meshAttributeFlags,
                                      scene::SceneNode& node,
                                      const Mn::ResourceKey& lightSetupKey,
                                      const Mn::ResourceKey& materialKey,
@@ -1709,18 +1770,25 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
       shaderManager_.get<gfx::MaterialData>(materialKey)->type;
   switch (materialDataType) {
     case gfx::MaterialDataType::PHONG:
-      node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetupKey,
-                                            materialKey, group);
+      node.addFeature<gfx::GenericDrawable>(
+          mesh,                // render mesh
+          meshAttributeFlags,  // mesh attribute flags
+          shaderManager_,      // shader manager
+          lightSetupKey,       // kightSetup key
+          materialKey,         // material key
+          group);              // drawable group
       break;
     case gfx::MaterialDataType::PBR:
-      node.addFeature<gfx::PbrDrawable>(mesh, shaderManager_, lightSetupKey,
-                                        materialKey, group);
+      node.addFeature<gfx::PbrDrawable>(
+          mesh,
+          meshAttributeFlags,  // mesh attribute flags
+          shaderManager_, lightSetupKey, materialKey, group);
       break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
   }
-}
+}  // namespace assets
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
@@ -1831,10 +1899,10 @@ void ResourceManager::initDefaultMaterials() {
 
 bool ResourceManager::isLightSetupCompatible(
     const LoadedAssetData& loadedAssetData,
-    const Magnum::ResourceKey& lightSetup) const {
+    const Magnum::ResourceKey& lightSetupKey) const {
   // if light setup has lights in it, but asset was loaded in as flat shaded,
   // there may be an error when rendering.
-  return lightSetup == Mn::ResourceKey{NO_LIGHT_KEY} ||
+  return lightSetupKey == Mn::ResourceKey{NO_LIGHT_KEY} ||
          loadedAssetData.assetInfo.requiresLighting;
 }
 

@@ -21,6 +21,7 @@ class PbrDrawable : public Drawable {
    */
   explicit PbrDrawable(scene::SceneNode& node,
                        Magnum::GL::Mesh& mesh,
+                       gfx::Drawable::Flags& meshAttributeFlags,
                        ShaderManager& shaderManager,
                        const Magnum::ResourceKey& lightSetupKey,
                        const Magnum::ResourceKey& materialDataKey,
@@ -80,6 +81,7 @@ class PbrDrawable : public Drawable {
                                    PbrShader::Flags flags) const;
 
   // shader parameters
+  PbrShader::Flags flags_;
   ShaderManager& shaderManager_;
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;

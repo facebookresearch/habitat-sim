@@ -107,8 +107,18 @@ bool SemanticScene::loadMp3dHouse(
   };
 
   auto getBBox = [&](const std::vector<std::string>& tokens, int offset) {
-    return box3f(getVec3f(tokens, offset),
-                 getVec3f(tokens, offset + 3).array().abs().matrix());
+    // Get the bounding box without rotating as rotating min/max is odd
+    box3f sceneBox{getVec3f(tokens, offset, /*applyRotation=*/false),
+                   getVec3f(tokens, offset + 3, /*applyRotation=*/false)};
+    if (!hasWorldRotation)
+      return sceneBox;
+
+    // Apply the rotation to center/sizes
+    auto worldCenter = rotation * sceneBox.center();
+    auto worldHalfSizes =
+        (rotation * sceneBox.sizes()).array().abs().matrix() / 2.0f;
+    // Then remake the box with min/max computed from rotated center/size
+    return box3f{worldCenter - worldHalfSizes, worldCenter + worldHalfSizes};
   };
 
   auto getOBB = [&](const std::vector<std::string>& tokens, int offset) {

@@ -14,6 +14,7 @@ namespace gfx {
 
 PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          Mn::GL::Mesh& mesh,
+                         gfx::Drawable::Flags& meshAttributeFlags,
                          ShaderManager& shaderManager,
                          const Mn::ResourceKey& lightSetupKey,
                          const Mn::ResourceKey& materialDataKey,
@@ -23,6 +24,47 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
           shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)} {
+  flags_ = PbrShader::Flag::OBJECT_ID;
+
+  if (materialData_->textureMatrix != Mn::Matrix3{}) {
+    flags_ |= PbrShader::Flag::TEXTURE_TRANSFORMATION;
+  }
+  if (materialData_->baseColorTexture) {
+    flags_ |= PbrShader::Flag::BASE_COLOR_TEXTURE;
+  }
+  if (materialData_->occlusionRoughnessMetallicTexture) {
+    flags_ |= PbrShader::Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE;
+  }
+  if (materialData_->noneRoughnessMetallicTexture) {
+    flags_ |= PbrShader::Flag::NONE_ROUGHNESS_METALLIC_TEXTURE;
+  }
+  if (materialData_->roughnessTexture) {
+    flags_ |= PbrShader::Flag::ROUGHNESS_TEXTURE;
+  }
+  if (materialData_->metallicTexture) {
+    flags_ |= PbrShader::Flag::METALLIC_TEXTURE;
+  }
+  if (materialData_->normalTexture) {
+    flags_ |= PbrShader::Flag::NORMAL_TEXTURE;
+    if (meshAttributeFlags & gfx::Drawable::Flag::HasTangent) {
+      flags_ |= PbrShader::Flag::PRECOMPUTED_TANGENT;
+    }
+    if (materialData_->normalTextureScale != 1.0f) {
+      flags_ |= PbrShader::Flag::NORMAL_TEXTURE_SCALE;
+      CORRADE_ASSERT(materialData_->normalTextureScale > 0.0f,
+                     "PbrDrawable::PbrDrawable(): the normal texture scale "
+                     "cannot be negative.", );
+    }
+  }
+  if (materialData_->emissiveTexture) {
+    flags_ |= PbrShader::Flag::EMISSIVE_TEXTURE;
+  }
+  if (materialData_->perVertexObjectId) {
+    // TODO: may be supported in the future
+  }
+
+  flags_ = PbrShader::generateCorrectFlags(flags_);
+
   updateShader().updateShaderLightParameters();
 }
 
@@ -78,63 +120,23 @@ Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
 }
 
 PbrDrawable& PbrDrawable::updateShader() {
-  PbrShader::Flags flags = PbrShader::Flag::OBJECT_ID;
-
-  if (materialData_->textureMatrix != Mn::Matrix3{}) {
-    flags |= PbrShader::Flag::TEXTURE_TRANSFORMATION;
-  }
-  if (materialData_->baseColorTexture) {
-    flags |= PbrShader::Flag::BASE_COLOR_TEXTURE;
-  }
-  if (materialData_->occlusionRoughnessMetallicTexture) {
-    flags |= PbrShader::Flag::OCCLUSION_ROUGHNESS_METALLIC_TEXTURE;
-  }
-  if (materialData_->noneRoughnessMetallicTexture) {
-    flags |= PbrShader::Flag::NONE_ROUGHNESS_METALLIC_TEXTURE;
-  }
-  if (materialData_->roughnessTexture) {
-    flags |= PbrShader::Flag::ROUGHNESS_TEXTURE;
-  }
-  if (materialData_->metallicTexture) {
-    flags |= PbrShader::Flag::METALLIC_TEXTURE;
-  }
-  if (materialData_->normalTexture) {
-    flags |= PbrShader::Flag::NORMAL_TEXTURE;
-    flags |= PbrShader::Flag::PRECOMPUTED_TANGENT;
-    if (materialData_->normalTextureScale != 1.0f) {
-      flags |= PbrShader::Flag::NORMAL_TEXTURE_SCALE;
-      CORRADE_ASSERT(materialData_->normalTextureScale > 0.0f,
-                     "PbrDrawable::updateShader(): the normal texture scale "
-                     "cannot be negative.",
-                     *this);
-    }
-  }
-  if (materialData_->emissiveTexture) {
-    flags |= PbrShader::Flag::EMISSIVE_TEXTURE;
-  }
-  if (materialData_->perVertexObjectId) {
-    // TODO: may be supported in the future
-  }
-
-  flags = PbrShader::generateCorrectFlags(flags);
-
   unsigned int lightCount = lightSetup_->size();
   if (!shader_ || shader_->lightCount() != lightCount ||
-      shader_->flags() != flags) {
+      shader_->flags() != flags_) {
     // if the number of lights or flags have changed, we need to fetch a
     // compatible shader
     shader_ = shaderManager_.get<Mn::GL::AbstractShaderProgram, PbrShader>(
-        getShaderKey(lightCount, flags));
+        getShaderKey(lightCount, flags_));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader_.key(), new PbrShader{flags, lightCount},
+          shader_.key(), new PbrShader{flags_, lightCount},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
     CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
-                            shader_->flags() == flags);
+                            shader_->flags() == flags_);
   }
 
   return *this;

@@ -39,14 +39,14 @@ uniform vec4 LightDirections[LIGHT_COUNT];
 
 // -------------- material, textures ------------------
 struct MaterialData {
-  vec4 baseColor;     // diffuse color, if baseColorTexture exists,
-                      // multiply it with the baseColorTexture
-  float roughness;    // roughness of a surface, if roughness texture exists,
-                      // multiply it with the roughnessTexture
-  float metallic;     // metalness of a surface, if metallic texture exists,
-                      // multiply it the metallicTexture
-  vec3 emissiveColor; // emissiveColor, if emissive texture exists,
-                      // multiply it the emissiveTexture
+  vec4 baseColor;      // diffuse color, if baseColorTexture exists,
+                       // multiply it with the baseColorTexture
+  float roughness;     // roughness of a surface, if roughness texture exists,
+                       // multiply it with the roughnessTexture
+  float metallic;      // metalness of a surface, if metallic texture exists,
+                       // multiply it the metallicTexture
+  vec3 emissiveColor;  // emissiveColor, if emissive texture exists,
+                       // multiply it the emissiveTexture
 };
 uniform MaterialData Material;
 
@@ -264,11 +264,9 @@ void main() {
     // If range is 0 for whatever reason, clamp it to a small value to
     // avoid a NaN when dist is 0 as well (which is the case for
     // directional lights).
-    highp float attenuation =
-        clamp(1.0 - pow(dist / max(LightRanges[iLight], 0.0001), 4.0), 0.0,
-              1.0) /
-        (1.0 + dist);
-    attenuation = attenuation * attenuation;
+    highp float attenuation = clamp(
+        1.0 - pow(dist / max(LightRanges[iLight], 0.0001), 4.0), 0.0, 1.0);
+    attenuation = attenuation * attenuation / (1.0 + dist);
 
     // radiance
     vec3 lightRadiance = LightColors[iLight] * attenuation;

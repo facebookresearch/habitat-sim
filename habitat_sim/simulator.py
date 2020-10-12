@@ -128,7 +128,7 @@ class Simulator(SimulatorBackend):
     def __enter__(self) -> "Simulator":
         return self
 
-    def __exit__(self, exc_type: None, exc_val: None, exc_tb: None) -> None:
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
     def seed(self, new_seed: int) -> None:
