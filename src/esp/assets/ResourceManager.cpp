@@ -884,9 +884,23 @@ bool ResourceManager::loadInstanceMeshData(
 
     for (uint32_t iMesh = start; iMesh <= end; ++iMesh) {
       scene::SceneNode& node = parent->createChild();
-      node.addFeature<gfx::GenericDrawable>(
-          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, NO_LIGHT_KEY,
-          PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
+
+      // Instance mesh does NOT have normal texture, so do not bother to
+      // query if the mesh data contain tangent or bitangent.
+      gfx::Drawable::Flags meshAttributeFlags{};
+      // WARNING:
+      // This is to initiate drawables for instance mesh, and the instance mesh
+      // data is NOT stored in the meshData_ in the BaseMesh.
+      // That means One CANNOT query the data like e.g.,
+      // meshes_[iMesh]->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
+      // It will SEGFAULT!
+      createGenericDrawable(
+          *(meshes_[iMesh]->getMagnumGLMesh()),  // render mesh
+          meshAttributeFlags,                    // mesh attribute flags
+          node,                                  // scene node
+          NO_LIGHT_KEY,                          // lightSetup key
+          PER_VERTEX_OBJECT_ID_MATERIAL_KEY,     // material key
+          drawables);                            // drawable group
 
       if (computeAbsoluteAABBs) {
         staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
@@ -1583,7 +1597,24 @@ void ResourceManager::addComponent(
           std::to_string(metaData.materialIndex.first + materialIDLocal);
     }
 
-    createGenericDrawable(mesh, node, lightSetupKey, materialKey, drawables);
+    gfx::Drawable::Flags meshAttributeFlags{};
+    const auto& meshData = meshes_[meshID]->getMeshData();
+    if (meshData != Cr::Containers::NullOpt) {
+      if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Tangent)) {
+        meshAttributeFlags |= gfx::Drawable::Flag::HasTangent;
+
+        // if it has tangent, then check if it has bitangent
+        if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Bitangent)) {
+          meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
+        }
+      }
+    }
+    createGenericDrawable(mesh,                // render mesh
+                          meshAttributeFlags,  // mesh attribute flags
+                          node,                // scene node
+                          lightSetupKey,       // lightSetup Key
+                          materialKey,         // material key
+                          drawables);          // drawable group
 
     // compute the bounding box for the mesh we are adding
     if (computeAbsoluteAABBs) {
@@ -1610,8 +1641,17 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
   CHECK(primitive_meshes_.count(primitiveID));
-  createGenericDrawable(*primitive_meshes_.at(primitiveID), node, NO_LIGHT_KEY,
-                        WHITE_MATERIAL_KEY, drawables);
+  // TODO:
+  // currently we assume the primitives does not have normal texture
+  // so do not need to worry about the tangent or bitangent.
+  // it might be changed in the future.
+  gfx::Drawable::Flags meshAttributeFlags{};
+  createGenericDrawable(*primitive_meshes_.at(primitiveID),  // render mesh
+                        meshAttributeFlags,  // meshAttributeFlags
+                        node,                // scene node
+                        NO_LIGHT_KEY,        // lightSetup key
+                        WHITE_MATERIAL_KEY,  // material key
+                        drawables);          // drawable group
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
@@ -1621,12 +1661,18 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
 
 void ResourceManager::createGenericDrawable(
     Mn::GL::Mesh& mesh,
+    gfx::Drawable::Flags& meshAttributeFlags,
     scene::SceneNode& node,
     const Mn::ResourceKey& lightSetupKey,
-    const Mn::ResourceKey& material,
+    const Mn::ResourceKey& materialKey,
     DrawableGroup* group /* = nullptr */) {
-  node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetupKey,
-                                        material, group);
+  node.addFeature<gfx::GenericDrawable>(
+      mesh,                // render mesh
+      meshAttributeFlags,  // mesh attribute flags
+      shaderManager_,      // shader manager
+      lightSetupKey,       // kightSetup key
+      materialKey,         // material key
+      group);              // drawable group
 }
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,

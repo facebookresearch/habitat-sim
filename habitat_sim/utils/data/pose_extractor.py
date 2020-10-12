@@ -85,7 +85,7 @@ class PoseExtractor:
         self,
         poses: List[Tuple[Tuple[int, int], Tuple[int, int], str]],
         ref_point: Tuple[float32, float32, float32],
-    ) -> List[Tuple[ndarray, quaternion, str]]:
+    ) -> List[Tuple[Union[np.ndarray, Tuple[int, int]], quaternion, str]]:
         # Convert from topdown map coordinate system to that of the scene
         startw, starty, starth = ref_point
         for i, pose in enumerate(poses):

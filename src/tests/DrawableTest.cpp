@@ -80,9 +80,11 @@ void DrawableTest::addRemoveDrawables() {
 
   esp::scene::SceneNode& node = sceneRootNode.createChild();
 
+  esp::gfx::Drawable::Flags meshAttributeFlags{};
+
   // add a toy box here!
   node.addFeature<esp::gfx::GenericDrawable>(
-      box, resourceManager_->getShaderManager(),
+      box, meshAttributeFlags, resourceManager_->getShaderManager(),
       esp::assets::ResourceManager::NO_LIGHT_KEY,
       esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       drawableGroup_);
@@ -94,6 +96,7 @@ void DrawableTest::addRemoveDrawables() {
   esp::gfx::GenericDrawable* dr = new esp::gfx::GenericDrawable{
       node,
       box,
+      meshAttributeFlags,
       resourceManager_->getShaderManager(),
       esp::assets::ResourceManager::NO_LIGHT_KEY,
       esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
@@ -109,6 +112,7 @@ void DrawableTest::addRemoveDrawables() {
   dr = new esp::gfx::GenericDrawable{
       node,
       box,
+      meshAttributeFlags,
       resourceManager_->getShaderManager(),
       esp::assets::ResourceManager::NO_LIGHT_KEY,
       esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
@@ -135,6 +139,7 @@ void DrawableTest::addRemoveDrawables() {
   dr = new esp::gfx::GenericDrawable{
       node,
       box,
+      meshAttributeFlags,
       resourceManager_->getShaderManager(),
       esp::assets::ResourceManager::NO_LIGHT_KEY,
       esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
