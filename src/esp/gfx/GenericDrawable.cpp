@@ -16,6 +16,8 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
+bool g_disableColorTextures = false;
+
 GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  Mn::GL::Mesh& mesh,
                                  Drawable::Flags& meshAttributeFlags,
@@ -27,24 +29,35 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)} {
+          shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)},
+      meshAttributeFlags_{meshAttributeFlags} {
+  updateFlags();
+
+  // update the shader early here to to avoid doing it during the render loop
+  updateShader();
+}
+
+void GenericDrawable::updateFlags() {
   flags_ = Mn::Shaders::Phong::Flag::ObjectId;
-  if (materialData_->textureMatrix != Mn::Matrix3{}) {
-    flags_ |= Mn::Shaders::Phong::Flag::TextureTransformation;
-  }
-  if (materialData_->ambientTexture) {
-    flags_ |= Mn::Shaders::Phong::Flag::AmbientTexture;
-  }
-  if (materialData_->diffuseTexture) {
-    flags_ |= Mn::Shaders::Phong::Flag::DiffuseTexture;
-  }
-  if (materialData_->specularTexture) {
-    flags_ |= Mn::Shaders::Phong::Flag::SpecularTexture;
+
+  if (!g_disableColorTextures) {
+    if (materialData_->textureMatrix != Mn::Matrix3{}) {
+      flags_ |= Mn::Shaders::Phong::Flag::TextureTransformation;
+    }
+    if (materialData_->ambientTexture) {
+      flags_ |= Mn::Shaders::Phong::Flag::AmbientTexture;
+    }
+    if (materialData_->diffuseTexture) {
+      flags_ |= Mn::Shaders::Phong::Flag::DiffuseTexture;
+    }
+    if (materialData_->specularTexture) {
+      flags_ |= Mn::Shaders::Phong::Flag::SpecularTexture;
+    }
   }
   if (materialData_->normalTexture) {
-    if (meshAttributeFlags & Drawable::Flag::HasTangent) {
+    if (meshAttributeFlags_ & Drawable::Flag::HasTangent) {
       flags_ |= Mn::Shaders::Phong::Flag::NormalTexture;
-      if (meshAttributeFlags & Drawable::Flag::HasSeparateBitangent) {
+      if (meshAttributeFlags_ & Drawable::Flag::HasSeparateBitangent) {
         flags_ |= Mn::Shaders::Phong::Flag::Bitangent;
       }
     } else {
@@ -58,9 +71,6 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
   if (materialData_->vertexColored) {
     flags_ |= Mn::Shaders::Phong::Flag::VertexColor;
   }
-
-  // update the shader early here to to avoid doing it during the render loop
-  updateShader();
 }
 
 void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
@@ -130,15 +140,17 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.normalMatrix());
 
-  if (materialData_->textureMatrix != Mn::Matrix3{})
-    shader_->setTextureMatrix(materialData_->textureMatrix);
+  if (!g_disableColorTextures) {
+    if (materialData_->textureMatrix != Mn::Matrix3{})
+      shader_->setTextureMatrix(materialData_->textureMatrix);
 
-  if (materialData_->ambientTexture)
-    shader_->bindAmbientTexture(*(materialData_->ambientTexture));
-  if (materialData_->diffuseTexture)
-    shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
-  if (materialData_->specularTexture)
-    shader_->bindSpecularTexture(*(materialData_->specularTexture));
+    if (materialData_->ambientTexture)
+      shader_->bindAmbientTexture(*(materialData_->ambientTexture));
+    if (materialData_->diffuseTexture)
+      shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
+    if (materialData_->specularTexture)
+      shader_->bindSpecularTexture(*(materialData_->specularTexture));
+  }
   if (materialData_->normalTexture)
     shader_->bindNormalTexture(*(materialData_->normalTexture));
 
@@ -147,6 +159,8 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
 void GenericDrawable::updateShader() {
   Mn::UnsignedInt lightCount = lightSetup_->size();
+
+  updateFlags();
 
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {

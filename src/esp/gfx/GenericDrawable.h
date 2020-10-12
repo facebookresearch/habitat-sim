@@ -33,6 +33,7 @@ class GenericDrawable : public Drawable {
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) override;
 
+  void updateFlags();
   void updateShader();
   void updateShaderLightingParameters(
       const Magnum::Matrix4& transformationMatrix,
@@ -49,7 +50,10 @@ class GenericDrawable : public Drawable {
   Magnum::Resource<LightSetup> lightSetup_;
 
   Magnum::Shaders::Phong::Flags flags_;
+  Drawable::Flags meshAttributeFlags_;
 };
+
+extern bool g_disableColorTextures;
 
 }  // namespace gfx
 }  // namespace esp

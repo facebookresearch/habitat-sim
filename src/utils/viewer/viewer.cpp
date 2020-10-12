@@ -43,6 +43,7 @@
 #include "esp/core/Utility.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/GenericDrawable.h"
 #include "esp/io/io.h"
 
 #include "esp/scene/SceneConfiguration.h"
@@ -156,6 +157,8 @@ Key Commands:
   //! Print viewer help text to terminal output.
   void printHelpText() { Mn::Debug{} << helpText; };
 
+  void toggleLighting();
+
   // single inline for logging agent state msgs, so can be easily modified
   inline void logAgentStateMsg(bool showPos, bool showOrient) {
     std::stringstream strDat("");
@@ -212,6 +215,39 @@ Key Commands:
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
 };
+
+void Viewer::toggleLighting() {
+  static int counter = 0;
+  counter = (counter + 1) % 6;
+
+  std::vector<esp::gfx::LightInfo> lightSetup;
+
+  if (counter == 0) {
+    lightSetup = esp::gfx::getDefaultLights();
+  } else if (counter >= 1 && counter <= 1 + 5) {
+    int index = counter - 1;
+
+    Magnum::Vector4 vectors[] = {
+        {-1.0, 0.0, 0.0, 0.0},
+        //{-1.0, 1.0, 0.0, 0.0},
+        {0.0, 1.0, 0.0, 0.0},
+        //{ 1.0, 1.0, 0.0, 0.0},
+        {1.0, 0.0, 0.0, 0.0},
+        //{ 1.0,-1.0, 0.0, 0.0},
+        {0.0, -1.0, 0.0, 0.0},
+        //{-1.0,-1.0, 0.0, 0.0},
+        {0.0, 0.0, 1.0, 0.0},
+    };
+
+    esp::gfx::LightInfo info{.vector{vectors[index]},
+                             .color{1.0, 1.0, 1.0},
+                             .model{esp::gfx::LightPositionModel::CAMERA}};
+
+    lightSetup = {info};
+  }
+
+  simulator_->setLightSetup(lightSetup);
+}
 
 Viewer::Viewer(const Arguments& arguments)
     : Mn::Platform::Application{
@@ -814,6 +850,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::H:
       printHelpText();
+      break;
+    case KeyEvent::Key::L:
+      toggleLighting();
+      break;
+    case KeyEvent::Key::Semicolon:
+      esp::gfx::g_disableColorTextures = !esp::gfx::g_disableColorTextures;
       break;
     default:
       break;
