@@ -29,6 +29,7 @@
 #include "GenericMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
+#include "esp/gfx/Drawable.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
@@ -805,6 +806,7 @@ class ResourceManager {
    * the
    * @ref gfx::Drawable.
    * @param mesh The render mesh.
+   * @param meshAttributeFlags flags for the attributes of the render mesh
    * @param node The @ref scene::SceneNode to which the drawable will be
    * attached.
    * @param lightSetupKey The @ref LightSetup key that will be used
@@ -820,6 +822,7 @@ class ResourceManager {
    * white.
    */
   void createGenericDrawable(Mn::GL::Mesh& mesh,
+                             gfx::Drawable::Flags& meshAttributeFlags,
                              scene::SceneNode& node,
                              const Mn::ResourceKey& lightSetupKey,
                              const Mn::ResourceKey& materialKey,
