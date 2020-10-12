@@ -266,9 +266,8 @@ void main() {
     // directional lights).
     highp float attenuation =
         clamp(1.0 - pow(dist / max(LightRanges[iLight], 0.0001), 4.0), 0.0,
-              1.0) /
-        (1.0 + dist);
-    attenuation = attenuation * attenuation;
+              1.0);
+    attenuation = attenuation * attenuation / (1.0 + dist * dist);
 
     // radiance
     vec3 lightRadiance = LightColors[iLight] * attenuation;
