@@ -14,6 +14,8 @@ repos:
     -   id: check-case-conflict
     -   id: check-docstring-first
     -   id: check-executables-have-shebangs
+    -   id: check-json
+        exclude: ^(.eslintrc.json|tsconfig.json)
     -   id: check-merge-conflict
     -   id: check-toml
     -   id: debug-statements
