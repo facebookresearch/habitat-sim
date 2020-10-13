@@ -13,7 +13,7 @@
 #include "AttributesBase.h"
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
-#include "esp/metadata/managers/LightAttributesManager.h"
+#include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/SceneAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
@@ -44,9 +44,9 @@ class DatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to light attributes.
    */
-  const managers::LightAttributesManager::ptr getLightAttributesManager()
-      const {
-    return lightAttributesManager_;
+  const managers::LightLayoutAttributesManager::ptr
+  getLightLayoutAttributesManager() const {
+    return lightLayoutAttributesManager_;
   }
 
   /**
@@ -135,7 +135,8 @@ class DatasetAttributes : public AbstractAttributes {
    * @brief Manages all construction and access to light attributes from this
    * dataset.
    */
-  managers::LightAttributesManager::ptr lightAttributesManager_ = nullptr;
+  managers::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
+      nullptr;
 
   /**
    * @brief Manages all construction and access to object attributes from this

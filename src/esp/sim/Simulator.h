@@ -97,9 +97,9 @@ class Simulator {
    * @brief Return manager for construction and access to light attributes and
    * layouts for the current dataset.
    */
-  const metadata::managers::LightAttributesManager::ptr
-  getLightAttributesManager() const {
-    return metadataMediator_->getLightAttributesManager();
+  const metadata::managers::LightLayoutAttributesManager::ptr
+  getLightLayoutAttributesManager() const {
+    return metadataMediator_->getLightLayoutAttributesManager();
   }
 
   /**

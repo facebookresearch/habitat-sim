@@ -49,7 +49,7 @@ class AttributesManagersTest : public testing::Test {
     auto MM = MetadataMediator::create();
     // get attributes managers for default dataset
     assetAttributesManager_ = MM->getAssetAttributesManager();
-    lightAttributesManager_ = MM->getLightAttributesManager();
+    lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
     objectAttributesManager_ = MM->getObjectAttributesManager();
     physicsAttributesManager_ = MM->getPhysicsAttributesManager();
     sceneAttributesManager_ = MM->getSceneAttributesManager();
@@ -74,7 +74,7 @@ class AttributesManagersTest : public testing::Test {
       const esp::io::JsonGenericValue jsonDoc = tmp.GetObject();
       // create an empty template
       std::shared_ptr<U> attrTemplate1 =
-          mgr->buildManagedObjectFromDoc("new default template", jsonDoc);
+          mgr->buildManagedObjectFromDoc("new_template_from_json", jsonDoc);
 
       return attrTemplate1;
     } catch (...) {
@@ -177,8 +177,9 @@ class AttributesManagersTest : public testing::Test {
    * @param handle the handle of the desired attributes template to work with
    */
 
-  void testCreateAndRemoveLights(AttrMgrs::LightAttributesManager::ptr mgr,
-                                 const std::string& handle) {
+  void testCreateAndRemoveLights(
+      AttrMgrs::LightLayoutAttributesManager::ptr mgr,
+      const std::string& handle) {
     // meaningless key to modify attributes for verifcation of behavior
     std::string keyStr = "tempKey";
     // get starting number of templates
@@ -400,7 +401,8 @@ class AttributesManagersTest : public testing::Test {
   }  // AttributesManagersTest::testAssetAttributesModRegRemove
 
   AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
-  AttrMgrs::LightAttributesManager::ptr lightAttributesManager_ = nullptr;
+  AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
+      nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
   AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
@@ -461,11 +463,15 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
     }
   })";
 
-  auto lightAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::LightAttributesManager,
-                                        Attrs::LightAttributes>(
-          lightAttributesManager_, jsonString);
+  auto lightLayoutAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::LightLayoutAttributesManager,
+                                        Attrs::LightLayoutAttributes>(
+          lightLayoutAttributesManager_, jsonString);
   // verify exists
+  ASSERT_NE(nullptr, lightLayoutAttr);
+
+  auto lightAttr = lightLayoutAttr->getLightInstance("test");
+  // verify that lightAttr exists
   ASSERT_NE(nullptr, lightAttr);
 
   // match values set in test JSON
@@ -754,20 +760,20 @@ TEST_F(AttributesManagersTest, ObjectAttributesManagersCreate) {
   ASSERT_EQ(origNumPrimBased, newNumPrimBased3);
 }  // AttributesManagersTest::ObjectAttributesManagersCreate test
 
-TEST_F(AttributesManagersTest, LightAttributesManagerTest) {
+TEST_F(AttributesManagersTest, LightLayoutAttributesManagerTest) {
   LOG(INFO) << "Starting "
-               "AttributesManagersTest::LightAttributesManagerTest";
+               "AttributesManagersTest::LightLayoutAttributesManagerTest";
 
   std::string lightConfigFile = Cr::Utility::Directory::join(
       DATA_DIR, "test_assets/lights/test_lights.lighting_config.json");
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
-               "LightAttributesManager @ "
+               "LightLayoutAttributesManager @ "
             << lightConfigFile;
   // light attributes manager attributes verifcation
-  testCreateAndRemoveLights(lightAttributesManager_, lightConfigFile);
+  testCreateAndRemoveLights(lightLayoutAttributesManager_, lightConfigFile);
 
-}  // AttributesManagersTest::LightAttributesManagerTest
+}  // AttributesManagersTest::LightLayoutAttributesManagerTest
 
 /**
  * @brief test primitive asset attributes functionality in attirbutes managers.

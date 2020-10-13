@@ -60,7 +60,7 @@ void DatasetAttributesManager::setValsFromJSONDoc(
 
   // process light setups - implement handling light setups
   readDatasetJSONCell(dsDir, "light_setups", jsonConfig,
-                      dsAttribs->getLightAttributesManager(), false);
+                      dsAttribs->getLightLayoutAttributesManager(), false);
 
   // process scene instances - implement handling scene instances TODO
   readDatasetJSONCell(dsDir, "scene_instances", jsonConfig,
@@ -245,8 +245,8 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
       LOG(WARNING) << "DatasetAttributesManager::readDatasetConfigsJSONCell : "
                    << attrMgr->getObjectType()
                    << " : Attempting to make a copy of " << origObjHandle
-                   << " failing so creating a new object.";
-      attr = attrMgr->createObject(origObjHandle);
+                   << " failing so creating and registering a new object.";
+      attr = attrMgr->createObject(origObjHandle, true);
       if (nullptr == attr) {
         LOG(WARNING)
             << "DatasetAttributesManager::readDatasetConfigsJSONCell : \""
@@ -257,7 +257,8 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
         return;
       }
     }  // create copy/new object using old object file name
-
+    // set copied object's handle based on registration handle
+    attr->setHandle(regHandle);
     // object is available now. Modify it using json tag data
     attrMgr->setValsFromJSONDoc(attr, jCell["attributes"]);
     // register object

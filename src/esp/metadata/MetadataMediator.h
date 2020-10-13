@@ -13,7 +13,7 @@
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/DatasetAttributesManager.h"
-#include "esp/metadata/managers/LightAttributesManager.h"
+#include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
@@ -78,11 +78,12 @@ class MetadataMediator {
    * @brief Return manager for construction and access to object attributes for
    * current dataset.
    */
-  const managers::LightAttributesManager::ptr getLightAttributesManager()
-      const {
+  const managers::LightLayoutAttributesManager::ptr
+  getLightLayoutAttributesManager() const {
     attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    return (nullptr == datasetAttr) ? nullptr
-                                    : datasetAttr->getLightAttributesManager();
+    return (nullptr == datasetAttr)
+               ? nullptr
+               : datasetAttr->getLightLayoutAttributesManager();
   }
 
   /**

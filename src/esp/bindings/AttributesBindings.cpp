@@ -9,7 +9,7 @@
 
 #include "esp/core/AbstractManagedObject.h"
 #include "esp/metadata/attributes/AttributesBase.h"
-#include "esp/metadata/attributes/LightAttributes.h"
+#include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
@@ -27,7 +27,8 @@ using Attrs::ConePrimitiveAttributes;
 using Attrs::CubePrimitiveAttributes;
 using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
-using Attrs::LightAttributes;
+using Attrs::LightInstanceAttributes;
+using Attrs::LightLayoutAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
@@ -249,37 +250,41 @@ void initAttributesBindings(py::module& m) {
           &StageAttributes::setFrustrumCulling,
           R"(Whether frustrum culling should be enabled for constructions built by this template.)");
 
-  // ==== LightAttributes ====
-  py::class_<LightAttributes, AbstractAttributes, LightAttributes::ptr>(
-      m, "LightAttributes")
-      .def(py::init(&LightAttributes::create<>))
-      .def(py::init(&LightAttributes::create<const std::string&>))
+  // ==== LightInstanceAttributes ====
+  py::class_<LightInstanceAttributes, AbstractAttributes,
+             LightInstanceAttributes::ptr>(m, "LightInstanceAttributes")
+      .def(py::init(&LightInstanceAttributes::create<>))
+      .def(py::init(&LightInstanceAttributes::create<const std::string&>))
       .def_property(
-          "position", &LightAttributes::getPosition,
-          &LightAttributes::setPosition,
+          "position", &LightInstanceAttributes::getPosition,
+          &LightInstanceAttributes::setPosition,
           R"(The 3-vector representation of the desired position of the light in the scene.)")
       .def_property(
-          "direction", &LightAttributes::getDirection,
-          &LightAttributes::setDirection,
+          "direction", &LightInstanceAttributes::getDirection,
+          &LightInstanceAttributes::setDirection,
           R"(The 3-vector representation of the desired direction of the light in the scene.)")
       .def_property(
-          "color", &LightAttributes::getColor, &LightAttributes::setColor,
+          "color", &LightInstanceAttributes::getColor,
+          &LightInstanceAttributes::setColor,
           R"(The 3-vector representation of the desired color of the light.)")
-      .def_property("intensity", &LightAttributes::getIntensity,
-                    &LightAttributes::setIntensity,
+      .def_property("intensity", &LightInstanceAttributes::getIntensity,
+                    &LightInstanceAttributes::setIntensity,
                     R"(The intensity to use for the light.)")
-      .def_property("type", &LightAttributes::getType,
-                    &LightAttributes::setType, R"(The type of the light.)")
+      .def_property("type", &LightInstanceAttributes::getType,
+                    &LightInstanceAttributes::setType,
+                    R"(The type of the light.)")
       .def_property(
-          "spot_inner_cone_angle", &LightAttributes::getInnerConeAngle,
-          &LightAttributes::setInnerConeAngle,
+          "spot_inner_cone_angle", &LightInstanceAttributes::getInnerConeAngle,
+          &LightInstanceAttributes::setInnerConeAngle,
           R"(The inner cone angle to use for the dispersion of spot lights.
                     Ignored for other types of lights.)")
       .def_property(
-          "spot_outer_cone_angle", &LightAttributes::getOuterConeAngle,
-          &LightAttributes::setOuterConeAngle,
+          "spot_outer_cone_angle", &LightInstanceAttributes::getOuterConeAngle,
+          &LightInstanceAttributes::setOuterConeAngle,
           R"(The outter cone angle to use for the dispersion of spot lights.
                     Ignored for other types of lights.)");
+
+  // TODO : LightLayoutAttributes
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,

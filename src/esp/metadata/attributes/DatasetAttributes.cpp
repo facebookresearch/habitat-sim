@@ -13,7 +13,8 @@ DatasetAttributes::DatasetAttributes(
     const managers::PhysicsAttributesManager::ptr physAttrMgr)
     : AbstractAttributes("DatasetAttributes", datasetName) {
   assetAttributesManager_ = managers::AssetAttributesManager::create();
-  lightAttributesManager_ = managers::LightAttributesManager::create();
+  lightLayoutAttributesManager_ =
+      managers::LightLayoutAttributesManager::create();
   objectAttributesManager_ = managers::ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   sceneAttributesManager_ = managers::SceneAttributesManager::create();

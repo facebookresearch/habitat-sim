@@ -41,112 +41,6 @@ const std::string datasetConfigFile = Cr::Utility::Directory::join(
 class MetadataMediatorTest : public testing::Test {
  protected:
   void SetUp() override { MM = MetadataMediator::create(datasetConfigFile); };
-
-  const std::string dataset_json = R"(
-{
-    "stages": {
-        "default_attributes": {
-            "origin":[1.0,2.0,3.0]
-        },
-        "paths": ["stages"],
-        "configs" : [
-        {
-            "original_file": "dataset_test_stage.stage_config.json",
-            "template_handle": "modified_test_stage",
-            "attributes": {
-				"scale":[1,1,1],
-				"gravity":[0,-9.8,0],
-				"margin":0.041,
-				"friction_coefficient": 0.4,
-				"restitution_coefficient": 0.5,
-				"units_to_meters":1.0
-             }
-        },
-        {
-            "template_handle": "new_test_stage",
-            "asset_source_dir": "stages",
-            "attributes": {
-				"render_asset": "dataset_test_stage.glb",
-				"up":[0,-1,0],
-				"scale":[2,2,2],
-				"gravity":[0,9.8,0],
-				"friction_coefficient": 0.35,
-				"restitution_coefficient": 0.25,
-				"units_to_meters":2.0,
-				"requires_lighting":false
-            }
-        }
-        ]
-    },
-    "objects":{
-        "default_attributes": {
-			"mass" : 10.0,
-			"inertia": [3,2,1]
-        },
-        "paths": ["objects"],
-        "configs" : [
-        {
-            "original_file": "dataset_test_object1.object_config.json",
-            "template_handle": "modified_test_object1_1_slick_heavy",
-            "attributes": {
-				"friction_coefficient": 0.2,
-				"mass": 3.5
-            }
-        },
-		{
-            "template_handle": "new_test_object3",
-            "asset_source_dir": "objects",
-            "attributes": {
-				"render_asset": "dataset_test_object3.glb",
-				"friction_coefficient": 0.1,
-				"mass": 1.1
-            }
-        }
-
-        ]
-    },
-    "light_setups":{
-        "default_attributes": {
-        },
-        "paths": ["lights"],
-        "configs" : [
-        {
-            "original_file":"dataset_test_lights.lighting_config.json",
-            "template_handle": "modified_test_lights",
-            "attributes": {
-  			    "lights":{
-					"0": { "position": [1.5,0.1,1.5], "intensity": 2.4, "color": [0.5,1,0.95], "type": "point"},
-					"1": { "position": [2.5,-0.1,2.5], "intensity": 2.1, "color": [0.5,1,0.95], "type": "point"},
-					"11": { "position": [3.5,-0.7,-3.5], "intensity": -0.5, "color": [1,0.5,1], "type": "point"}
-				}
-           }
-        },
-        {
-            "template_handle": "new_test_lights_0",
-            "attributes": {
-  			    "lights":{
-					"3": { "position": [11.5,10.1,11.5], "intensity": 1.4, "color": [0.5,1,0.95], "type": "point"},
-					"4": { "position": [12.5,-10.1,12.5], "intensity": 1.1, "color": [0.5,1,0.95], "type": "point"},
-					"5": { "position": [13.5,-10.7,-13.5], "intensity": -1.5, "color": [1,0.5,1], "type": "point"}
-				}
-            }
-        }
-        ]
-    },
-	"scene_instances":{
-		"paths":["scenes"]
-	},
-    "navmesh_instances":{
-        "navmesh_path1":"test_navmesh_path1",
-        "navmesh_path2":"test_navmesh_path2"
-    },
-    "semantic_scene_descriptor_instances": {
-        "semantic_descriptor_path1":"test_semantic_descriptor_path1",
-        "semantic_descriptor_path2":"test_semantic_descriptor_path2"
-    }
-}
-)";
-
   void testLoadStages() {
     const auto stageAttributesMgr = MM->getStageAttributesManager();
     int numHandles = stageAttributesMgr->getNumObjects();
@@ -298,8 +192,48 @@ class MetadataMediatorTest : public testing::Test {
   }  // testLoadObjects
 
   void testLoadLights() {
-    const auto lightsAttributesMgr = MM->getLightAttributesManager();
-    // get # of loaded light attributes.
+    const auto lightsLayoutAttributesMgr =
+        MM->getLightLayoutAttributesManager();
+    // get # of loaded light layout attributes.
+    int numHandles = lightsLayoutAttributesMgr->getNumObjects();
+    // Should be 3 : file based, copy and new
+    ASSERT_EQ(numHandles, 3);
+    // get list of matching handles for base light config - should always only
+    // be 1
+    auto attrHandles = lightsLayoutAttributesMgr->getObjectHandlesBySubstring(
+        "dataset_test_lights.lighting_config.json", true);
+    ASSERT_EQ(attrHandles.size(), 1);
+    // get copy of attributes
+    auto attr =
+        lightsLayoutAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+    // verify existence
+    ASSERT_NE(nullptr, attr);
+    // verify the number of lights within the lighting layout
+    ASSERT_EQ(12, attr->getNumLightInstances());
+
+    // get list of matching handles for modified light config - should always
+    // only be 1
+    attrHandles = lightsLayoutAttributesMgr->getObjectHandlesBySubstring(
+        "modified_test_lights", true);
+    ASSERT_EQ(attrHandles.size(), 1);
+    // get copy of attributes
+    attr = lightsLayoutAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+    // verify existence
+    ASSERT_NE(nullptr, attr);
+    // verify the number of lights within the lighting layout
+    ASSERT_EQ(12, attr->getNumLightInstances());
+
+    // get list of matching handles for new light config - should always only be
+    // 1
+    attrHandles = lightsLayoutAttributesMgr->getObjectHandlesBySubstring(
+        "new_test_lights_0", true);
+    ASSERT_EQ(attrHandles.size(), 1);
+    // get copy of attributes
+    attr = lightsLayoutAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+    // verify existence
+    ASSERT_NE(nullptr, attr);
+    // verify the number of lights within the lighting layout
+    ASSERT_EQ(3, attr->getNumLightInstances());
 
   }  // testLoadLights
 
