@@ -1,4 +1,4 @@
-exclude: 'build|data/datasets|data/scene_datasets|src/deps|src/obsolete'
+exclude: 'build|data/datasets|data/scene_datasets|node_modules/|src/deps|src/obsolete'
 
 default_language_version:
     python: python3
@@ -14,8 +14,12 @@ repos:
     -   id: check-case-conflict
     -   id: check-docstring-first
     -   id: check-executables-have-shebangs
+    -   id: check-json
+        # The JSONs below support comments (against spec)
+        exclude: ^(.eslintrc.json|tsconfig.json)
     -   id: check-merge-conflict
     -   id: check-toml
+    -   id: check-yaml
     -   id: debug-statements
     -   id: mixed-line-ending
         args: ['--fix=lf']
