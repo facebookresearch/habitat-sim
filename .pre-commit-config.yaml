@@ -15,6 +15,7 @@ repos:
     -   id: check-docstring-first
     -   id: check-executables-have-shebangs
     -   id: check-json
+        # The JSONS below support comments (against spec)
         exclude: ^(.eslintrc.json|tsconfig.json)
     -   id: check-merge-conflict
     -   id: check-toml
