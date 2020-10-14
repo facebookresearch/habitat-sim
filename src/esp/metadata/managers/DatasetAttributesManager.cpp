@@ -52,19 +52,19 @@ void DatasetAttributesManager::setValsFromJSONDoc(
   std::string dsDir = dsAttribs->getFileDirectory();
   // process stages
   readDatasetJSONCell(dsDir, "stages", jsonConfig,
-                      dsAttribs->getStageAttributesManager(), true);
+                      dsAttribs->getStageAttributesManager());
 
   // process objects
   readDatasetJSONCell(dsDir, "objects", jsonConfig,
-                      dsAttribs->getObjectAttributesManager(), true);
+                      dsAttribs->getObjectAttributesManager());
 
   // process light setups - implement handling light setups
   readDatasetJSONCell(dsDir, "light_setups", jsonConfig,
-                      dsAttribs->getLightLayoutAttributesManager(), false);
+                      dsAttribs->getLightLayoutAttributesManager());
 
   // process scene instances - implement handling scene instances TODO
   readDatasetJSONCell(dsDir, "scene_instances", jsonConfig,
-                      dsAttribs->getSceneAttributesManager(), false);
+                      dsAttribs->getSceneAttributesManager());
 
   // process navmesh instances
   io::jsonIntoVal<std::map<std::string, std::string>>(
@@ -83,8 +83,7 @@ void DatasetAttributesManager::readDatasetJSONCell(
     const std::string& dsDir,
     const char* tag,
     const io::JsonGenericValue& jsonConfig,
-    const U& attrMgr,
-    bool reqAssetSrcDir) {
+    const U& attrMgr) {
   if (jsonConfig.HasMember(tag)) {
     if (!jsonConfig[tag].IsObject()) {
       dispCellConfigError(tag);
@@ -143,8 +142,7 @@ void DatasetAttributesManager::readDatasetJSONCell(
           const auto& configsAra = jCell["configs"];
           for (rapidjson::SizeType i = 0; i < configsAra.Size(); i++) {
             const auto& configCell = configsAra[i];
-            readDatasetConfigsJSONCell(dsDir, tag, configCell, attrMgr,
-                                       reqAssetSrcDir);
+            readDatasetConfigsJSONCell(dsDir, tag, configCell, attrMgr);
           }  // for each cell in configs array
         }    // if is array
       }      // if has configs cell
@@ -157,8 +155,7 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
     const std::string& dsDir,
     const char* tag,
     const io::JsonGenericValue& jCell,
-    const U& attrMgr,
-    bool reqAssetSrcDir) {
+    const U& attrMgr) {
   // every cell within configs array must have an attributes tag
   if ((!jCell.HasMember("attributes")) || (!jCell["attributes"].IsObject())) {
     LOG(WARNING)
@@ -174,8 +171,7 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
   bool validCell = false;
   bool origFileNameSpecified = false;
   bool newNameSpecified = false;
-  // if this is not required then treat as true
-  bool newAssetSourceDirSpecified = !reqAssetSrcDir;
+
   std::string originalFile = "";
   std::string origObjHandle = "";
   std::string newTemplateHandle = "";
@@ -196,14 +192,6 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
     validCell = true;
     origFileNameSpecified = true;
   }
-  // if source dir is specified for assets - this applies to new object or stage
-  // attributes that may be constructed in config with unqualified file names
-  // for render/collision assets.
-  if (io::jsonIntoVal<std::string>(jCell, "asset_source_dir",
-                                   newTemplateSrcDir)) {
-    newTemplateSrcDir = Cr::Utility::Directory::join(dsDir, newTemplateSrcDir);
-    newAssetSourceDirSpecified = true;
-  }
 
   // try to find new template name for attributes
   if (io::jsonIntoVal<std::string>(jCell, "template_handle",
@@ -211,7 +199,7 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
     // if a new template handle has been specified, then this is a valid
     // configuration cell only if either an original to copy from or a source
     // directory for this template's new assets is specified.
-    validCell = origFileNameSpecified || newAssetSourceDirSpecified;
+    validCell = true;
     newNameSpecified = true;
   }
   // if neither handle is specified, cell will fail
@@ -220,9 +208,7 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
         << "DatasetAttributesManager::readDatasetConfigsJSONCell : \"" << tag
         << ".configs\" cell element in JSON config lacks required data to "
            "construct configuration override (either an original_file or a "
-           "template_handle"
-        << ((reqAssetSrcDir) ? " and asset_source_dir" : "")
-        << " must be provided) so skipping.";
+           "template_handle must be provided) so skipping.";
     return;
   }
   // set registration handle
@@ -274,11 +260,10 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
              "attributes, so skipping.";
       return;
     }
-    // set attributes' setFileDirectory : reqAssetSrcDir is true and
-    // newAssetSourceDirSpecified is also true.
-    if (newAssetSourceDirSpecified) {
-      attr->setFileDirectory(newTemplateSrcDir);
-    }
+    // set attributes' setFileDirectory :  use dataset directory, since all
+    // assets will be named relative to this.
+    attr->setFileDirectory(dsDir);
+
     // object is available now. Modify it using json tag data
     attrMgr->setValsFromJSONDoc(attr, jCell["attributes"]);
     // register object

@@ -111,16 +111,12 @@ class DatasetAttributesManager
    * objects, etc)
    * @param jsonConfig The sub cell in the json document being processed.
    * @param attrMgr The dataset's attributes manager for @p tag 's data.
-   * @param reqAssetSrcDir Whether the type of configs being read require newly
-   * created attributes to be supplied with a source directory. (Currently these
-   * are limited to object and stage attributes).
    */
   template <typename U>
   void readDatasetJSONCell(const std::string& dsDir,
                            const char* tag,
                            const io::JsonGenericValue& jsonConfig,
-                           const U& attrMgr,
-                           bool reqAssetSrcDir);
+                           const U& attrMgr);
 
   /**
    * @brief This will parse an individual element in a "configs" cell array in
@@ -132,16 +128,12 @@ class DatasetAttributesManager
    * @param jCell The sub cell within the "configs" array in the json
    * document being processed.
    * @param attrMgr The dataset's attributes manager for @p tag 's data.
-   * @param reqAssetSrcDir Whether the type of configs being read require newly
-   * created attributes to be supplied with a source directory. (Currently these
-   * are limited to object and stage attributes).
    */
   template <typename U>
   void readDatasetConfigsJSONCell(const std::string& dsDir,
                                   const char* tag,
                                   const io::JsonGenericValue& jCell,
-                                  const U& attrMgr,
-                                  bool reqAssetSrcDir);
+                                  const U& attrMgr);
 
   /**
    * @brief Internally used warning message if a cell in the dataset
