@@ -229,6 +229,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
         bObjectConvexShapes_.back()->addPoint(
             btVector3(transformFromLocalToWorld.transformPoint(v)), false);
       }
+
     } else {
       bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>());
       // transform points into world space, including any scale/shear in
@@ -334,7 +335,8 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
 
   //! Bullet rigid body setup
-  auto motionState = (mt == MotionType::STATIC) ? nullptr : &(this->btMotionState());
+  auto motionState =
+      (mt == MotionType::STATIC) ? nullptr : &(this->btMotionState());
 
   btRigidBody::btRigidBodyConstructionInfo info =
       btRigidBody::btRigidBodyConstructionInfo(mass, motionState,
