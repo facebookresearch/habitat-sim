@@ -46,7 +46,7 @@ BulletRigidObject::~BulletRigidObject() {
   } else if (objectMotionType_ == MotionType::STATIC) {
     // remove collision objects from the world
     for (auto& co : bStaticCollisionObjects_) {
-      bWorld_->removeCollisionObject(co.get());
+      bWorld_->removeRigidBody(co.get());
       collisionObjToObjIds_->erase(co.get());
     }
   }
@@ -144,7 +144,9 @@ bool BulletRigidObject::initialization_LibSpecific(
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
 
   //! Add to world
-  bWorld_->addRigidBody(bObjectRigidBody_.get());
+  bWorld_->addRigidBody(bObjectRigidBody_.get(),
+                        btBroadphaseProxy::DefaultFilter,
+                        btBroadphaseProxy::AllFilter);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
   //! Sync render pose with physics
   syncPose();
@@ -255,7 +257,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
 
   // remove the existing object from the world to change its type
   if (objectMotionType_ == MotionType::STATIC) {
-    bWorld_->removeCollisionObject(bStaticCollisionObjects_.back().get());
+    bWorld_->removeRigidBody(bStaticCollisionObjects_.back().get());
     collisionObjToObjIds_->erase(bStaticCollisionObjects_.back().get());
     bStaticCollisionObjects_.clear();
   } else if (objectMotionType_ != MotionType::RENDER_ONLY) {
@@ -270,7 +272,9 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
         bObjectRigidBody_->getCollisionFlags() &
         ~btCollisionObject::CF_STATIC_OBJECT);
     objectMotionType_ = MotionType::KINEMATIC;
-    bWorld_->addRigidBody(bObjectRigidBody_.get());
+    bWorld_->addRigidBody(bObjectRigidBody_.get(),
+                          btBroadphaseProxy::KinematicFilter,
+                          btBroadphaseProxy::DefaultFilter);
     return true;
   } else if (mt == MotionType::STATIC) {
     bObjectRigidBody_->setCollisionFlags(
@@ -281,16 +285,18 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
         ~btCollisionObject::CF_KINEMATIC_OBJECT);
     objectMotionType_ = MotionType::STATIC;
 
-    // create a static collision object at the current transform
-    std::unique_ptr<btCollisionObject> staticCollisionObject =
-        std::make_unique<btCollisionObject>();
-    staticCollisionObject->setCollisionShape(bObjectShape_.get());
-    staticCollisionObject->setWorldTransform(
-        bObjectRigidBody_->getWorldTransform());
-    bWorld_->addCollisionObject(
-        staticCollisionObject.get(),
-        2,       // collisionFilterGroup (2 == StaticFilter)
-        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+    // mass == 0 to indicate static. See isStaticObject assert below. See also
+    // examples/MultiThreadedDemo/CommonRigidBodyMTBase.h
+    btVector3 localInertia(0, 0, 0);
+    btRigidBody::btRigidBodyConstructionInfo cInfo(
+        /*mass*/ 0.0, nullptr, bObjectShape_.get(), localInertia);
+    cInfo.m_startWorldTransform = bObjectRigidBody_->getWorldTransform();
+    std::unique_ptr<btRigidBody> staticCollisionObject =
+        std::make_unique<btRigidBody>(cInfo);
+    ASSERT(staticCollisionObject->isStaticObject());
+    bWorld_->addRigidBody(staticCollisionObject.get(),
+                          btBroadphaseProxy::StaticFilter,
+                          btBroadphaseProxy::DefaultFilter);
     collisionObjToObjIds_->emplace(staticCollisionObject.get(), objectId_);
     bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
     return true;
@@ -302,7 +308,9 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
         bObjectRigidBody_->getCollisionFlags() &
         ~btCollisionObject::CF_KINEMATIC_OBJECT);
     objectMotionType_ = MotionType::DYNAMIC;
-    bWorld_->addRigidBody(bObjectRigidBody_.get());
+    bWorld_->addRigidBody(bObjectRigidBody_.get(),
+                          btBroadphaseProxy::DefaultFilter,
+                          btBroadphaseProxy::AllFilter);
     setActive();
     return true;
   } else if (mt == MotionType::RENDER_ONLY) {

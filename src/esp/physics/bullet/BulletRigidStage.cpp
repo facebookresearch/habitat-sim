@@ -25,7 +25,7 @@ BulletRigidStage::BulletRigidStage(
 BulletRigidStage::~BulletRigidStage() {
   // remove collision objects from the world
   for (auto& co : bStaticCollisionObjects_) {
-    bWorld_->removeCollisionObject(co.get());
+    bWorld_->removeRigidBody(co.get());
     collisionObjToObjIds_->erase(co.get());
   }
 }
@@ -45,7 +45,8 @@ bool BulletRigidStage::initialization_LibSpecific(
     object->setFriction(initializationAttributes_->getFrictionCoefficient());
     object->setRestitution(
         initializationAttributes_->getRestitutionCoefficient());
-    bWorld_->addCollisionObject(object.get());
+    bWorld_->addRigidBody(object.get(), btBroadphaseProxy::StaticFilter,
+                          btBroadphaseProxy::DefaultFilter);
     collisionObjToObjIds_->emplace(object.get(), objectId_);
   }
 
@@ -97,14 +98,17 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
 
     // re-build the bvh after setting margin
     meshShape->buildOptimizedBvh();
-    std::unique_ptr<btCollisionObject> sceneCollisionObject =
-        std::make_unique<btCollisionObject>();
-    sceneCollisionObject->setCollisionShape(meshShape.get());
-    // rotation|translation are properties of the object
-    sceneCollisionObject->setWorldTransform(
+    // mass == 0 to indicate static. See isStaticObject assert below. See also
+    // examples/MultiThreadedDemo/CommonRigidBodyMTBase.h
+    btVector3 localInertia(0, 0, 0);
+    btRigidBody::btRigidBodyConstructionInfo cInfo(
+        /*mass*/ 0.0, nullptr, meshShape.get(), localInertia);
+    cInfo.m_startWorldTransform =
         btTransform{btMatrix3x3{transformFromLocalToWorld.rotation()},
-                    btVector3{transformFromLocalToWorld.translation()}});
-
+                    btVector3{transformFromLocalToWorld.translation()}};
+    std::unique_ptr<btRigidBody> sceneCollisionObject =
+        std::make_unique<btRigidBody>(cInfo);
+    ASSERT(sceneCollisionObject->isStaticObject());
     bStageArrays_.emplace_back(std::move(indexedVertexArray));
     bStageShapes_.emplace_back(std::move(meshShape));
     bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
