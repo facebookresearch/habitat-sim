@@ -27,7 +27,7 @@ out highp vec3 biTangent;
 // ------------ uniform ----------------------
 uniform highp mat4 ModelViewMatrix;
 uniform highp mat3 NormalMatrix;  // inverse transpose of 3x3 modelview matrix
-uniform mat4 MVP;
+uniform highp mat4 ProjectionMatrix;
 
 #ifdef TEXTURE_TRANSFORMATION
 uniform highp mat3 TextureMatrix
@@ -38,7 +38,8 @@ uniform highp mat3 TextureMatrix
 #endif
 
 void main() {
-  position = vec3(ModelViewMatrix * vertexPosition);
+  vertexPositionInCamera = ModelViewMatrix * vertexPosition;
+  position = vertexPositionInCamera.xyz;
   normal = normalize(NormalMatrix * vertexNormal);
 #if defined(TEXTURED)
   texCoord =
@@ -58,5 +59,5 @@ void main() {
   // (read from normal map) from tangent space to camera space
 #endif
 
-  gl_Position = MVP * vertexPosition;
+  gl_Position = ProjectionMatrix * vertexPositionInCamera;
 }

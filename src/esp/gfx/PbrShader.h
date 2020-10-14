@@ -255,11 +255,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
   // ======== set uniforms ===========
   /**
-   *  @brief Set "modelview and projection" matrix to the uniform on GPU
-   *         MVP = proj * view * model
+   *  @brief Set "projection" matrix to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  PbrShader& setMVPMatrix(const Magnum::Matrix4& matrix);
+  PbrShader& setProjectionMatrix(const Magnum::Matrix4& matrix);
 
   /**
    *  @brief Set modelview matrix to the uniform on GPU
@@ -422,7 +421,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // material uniforms
   int modelviewMatrixUniform_ = ID_UNDEFINED;
   int normalMatrixUniform_ = ID_UNDEFINED;
-  int mvpMatrixUniform_ = ID_UNDEFINED;
+  int projMatrixUniform_ = ID_UNDEFINED;
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
   int roughnessUniform_ = ID_UNDEFINED;  // roughness of a surface
   int metallicUniform_ = ID_UNDEFINED;

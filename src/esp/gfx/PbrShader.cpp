@@ -214,7 +214,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   // cache the uniform locations
   modelviewMatrixUniform_ = uniformLocation("ModelViewMatrix");
   normalMatrixUniform_ = uniformLocation("NormalMatrix");
-  mvpMatrixUniform_ = uniformLocation("MVP");
+  projMatrixUniform_ = uniformLocation("ProjectionMatrix");
   if (flags_ & Flag::ObjectId) {
     objectIdUniform_ = uniformLocation("ObjectId");
   }
@@ -315,8 +315,8 @@ PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::setMVPMatrix(const Mn::Matrix4& matrix) {
-  setUniform(mvpMatrixUniform_, matrix);
+PbrShader& PbrShader::setProjectionMatrix(const Mn::Matrix4& matrix) {
+  setUniform(projMatrixUniform_, matrix);
   return *this;
 }
 
