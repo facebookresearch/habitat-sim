@@ -112,7 +112,7 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     ASSERT(sceneCollisionObject->isStaticObject());
     BulletDebugManager::get().mapCollisionObjectTo(
         sceneCollisionObject.get(),
-        getBulletDebugName(bStaticCollisionObjects_.size()));
+        getCollisionDebugName(bStaticCollisionObjects_.size()));
     bStageArrays_.emplace_back(std::move(indexedVertexArray));
     bStageShapes_.emplace_back(std::move(meshShape));
     bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
@@ -175,7 +175,7 @@ const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   return combinedAABB;
 }  // getCollisionShapeAabb
 
-std::string BulletRigidStage::getBulletDebugName(int subpartId) {
+std::string BulletRigidStage::getCollisionDebugName(int subpartId) {
   return "Stage, " + initializationAttributes_->getHandle() + ", subpart " +
          std::to_string(subpartId);
 }

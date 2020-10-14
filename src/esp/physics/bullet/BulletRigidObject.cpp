@@ -150,7 +150,7 @@ bool BulletRigidObject::initialization_LibSpecific(
                         btBroadphaseProxy::AllFilter);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
   BulletDebugManager::get().mapCollisionObjectTo(bObjectRigidBody_.get(),
-                                                 getBulletDebugName());
+                                                 getCollisionDebugName());
 
   //! Sync render pose with physics
   syncPose();
@@ -303,7 +303,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
                           btBroadphaseProxy::DefaultFilter);
     collisionObjToObjIds_->emplace(staticCollisionObject.get(), objectId_);
     BulletDebugManager::get().mapCollisionObjectTo(staticCollisionObject.get(),
-                                                   getBulletDebugName());
+                                                   getCollisionDebugName());
     bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
     return true;
   } else if (mt == MotionType::DYNAMIC) {
@@ -350,7 +350,7 @@ void BulletRigidObject::syncPose() {
       btTransform(node().transformationMatrix()));
 }  // syncPose
 
-std::string BulletRigidObject::getBulletDebugName() {
+std::string BulletRigidObject::getCollisionDebugName() {
   return "RigidObject, " + initializationAttributes_->getHandle() + ", id " +
          std::to_string(objectId_);
 }

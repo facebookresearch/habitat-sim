@@ -56,7 +56,7 @@ class BulletRigidStage : public BulletBase, public RigidStage {
       const std::vector<assets::CollisionMeshData>& meshGroup,
       const assets::MeshTransformNode& node);
 
-  std::string getBulletDebugName(int subpartId);
+  std::string getCollisionDebugName(int subpartId);
 
  public:
   /**
