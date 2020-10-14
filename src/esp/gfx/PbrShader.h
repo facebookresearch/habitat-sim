@@ -6,12 +6,10 @@
 #define ESP_GFX_PBRSHADER_H_
 
 #include <initializer_list>
-#include <vector>
 
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
-#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Shaders/Generic.h>
 
 #include "esp/core/esp.h"
@@ -218,41 +216,41 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @brief Bind the BaseColor texture
    * @return Reference to self (for method chaining)
    */
-  PbrShader& bindBaseColorTexture(Magnum::GL::Texture2D* texture);
+  PbrShader& bindBaseColorTexture(Magnum::GL::Texture2D& texture);
   /**
    * @brief Bind the roughness texture
    * @return Reference to self (for method chaining)
    */
-  PbrShader& bindRoughnessTexture(Magnum::GL::Texture2D* texture);
+  PbrShader& bindRoughnessTexture(Magnum::GL::Texture2D& texture);
   /**
    * @brief Bind the metallic texture
    * @return Reference to self (for method chaining)
    */
-  PbrShader& bindMetallicTexture(Magnum::GL::Texture2D* texture);
+  PbrShader& bindMetallicTexture(Magnum::GL::Texture2D& texture);
   /**
    * @brief Bind the normal texture
    * @return Reference to self (for method chaining)
    */
-  PbrShader& bindNormalTexture(Magnum::GL::Texture2D* texture);
+  PbrShader& bindNormalTexture(Magnum::GL::Texture2D& texture);
 
   /**
    * @brief Bind the noneRoughnessMetallicTexture
    * @return Reference to self (for method chaining)
    */
-  PbrShader& bindNoneRoughnessMetallicTexture(Magnum::GL::Texture2D* texture);
+  PbrShader& bindNoneRoughnessMetallicTexture(Magnum::GL::Texture2D& texture);
 
   /**
    * @brief Bind the occlusionRoughnessMetallicTexture
    * @return Reference to self (for method chaining)
    */
   PbrShader& bindOcclusionRoughnessMetallicTexture(
-      Magnum::GL::Texture2D* texture);
+      Magnum::GL::Texture2D& texture);
 
   /**
    * @brief Bind the emissive texture
    * @return Reference to self (for method chaining)
    */
-  PbrShader& bindEmissiveTexture(Magnum::GL::Texture2D* texture);
+  PbrShader& bindEmissiveTexture(Magnum::GL::Texture2D& texture);
 
   PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
   // ======== set uniforms ===========
@@ -276,7 +274,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *         modelview matrix
    *  @return Reference to self (for method chaining)
    */
-  PbrShader& setNormalMatrix(const Magnum::Matrix3& matrix);
+  PbrShader& setNormalMatrix(const Magnum::Matrix3x3& matrix);
 
   // -------- materials ---------------
   /**

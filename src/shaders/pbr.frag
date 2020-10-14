@@ -39,45 +39,45 @@ uniform vec4 LightDirections[LIGHT_COUNT];
 
 // -------------- material, textures ------------------
 struct MaterialData {
-  vec4 baseColor;     // diffuse color, if baseColorTexture exists,
-                      // multiply it with the baseColorTexture
+  vec4 baseColor;     // diffuse color, if BaseColorTexture exists,
+                      // multiply it with the BaseColorTexture
   float roughness;    // roughness of a surface, if roughness texture exists,
-                      // multiply it with the roughnessTexture
+                      // multiply it with the RoughnessTexture
   float metallic;     // metalness of a surface, if metallic texture exists,
-                      // multiply it the metallicTexture
+                      // multiply it the MetallicTexture
   vec3 emissiveColor; // emissiveColor, if emissive texture exists,
-                      // multiply it the emissiveTexture
+                      // multiply it the EmissiveTexture
 };
 uniform MaterialData Material;
 
 #if defined(BASECOLOR_TEXTURE)
-uniform sampler2D baseColorTexture;
+uniform sampler2D BaseColorTexture;
 #endif
 #if defined(ROUGHNESS_TEXTURE)
-uniform sampler2D roughnessTexture;
+uniform sampler2D RoughnessTexture;
 #endif
 #if defined(METALLIC_TEXTURE)
-uniform sampler2D metallicTexture;
+uniform sampler2D MetallicTexture;
 #endif
 #if defined(NORMAL_TEXTURE)
-uniform sampler2D normalTexture;
+uniform sampler2D NormalTexture;
 #endif
 
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-uniform sampler2D packedTexture;
+uniform sampler2D PackedTexture;
 #endif
 
 #if defined(EMISSIVE_TEXTURE)
-uniform sampler2D emissiveTexture;
+uniform sampler2D EmissiveTexture;
 #endif
 
 // -------------- uniforms ----------------
 #if defined(OBJECT_ID)
-uniform highp uint objectId;
+uniform highp uint ObjectId;
 #endif
 
 #if defined(NORMAL_TEXTURE) && defined(NORMAL_TEXTURE_SCALE)
-uniform mediump float normalTextureScale
+uniform mediump float NormalTextureScale
 #ifndef GL_ES
     = 1.0
 #endif
@@ -89,26 +89,16 @@ uniform mediump float normalTextureScale
 vec3 getNormalFromNormalMap() {
   vec3 tangentNormal =
 #if defined(NORMAL_TEXTURE_SCALE)
-      normalize((texture(normalTexture, texCoord).xyz * 2.0 - 1.0) *
-                vec3(normalTextureScale, normalTextureScale, 1.0));
+      normalize((texture(NormalTexture, texCoord).xyz * 2.0 - 1.0) *
+                vec3(NormalTextureScale, NormalTextureScale, 1.0));
 #else
-      texture(normalTexture, texCoord).xyz * 2.0 - 1.0;
+      texture(NormalTexture, texCoord).xyz * 2.0 - 1.0;
 #endif
 
 #if defined(PRECOMPUTED_TANGENT)
   mat3 TBN = mat3(tangent, biTangent, normal);
 #else
-  // Normal Mapping Without Precomputed Tangents
-  // See here: http://www.thetenthplanet.de/archives/1180
-  vec3 q1 = dFdx(position);
-  vec3 q2 = dFdy(position);
-  vec2 st1 = dFdx(texCoord);
-  vec2 st2 = dFdy(texCoord);
-
-  vec3 N = normalize(normal);
-  vec3 T = normalize(q1 * st2.t - q2 * st1.t);
-  vec3 B = -normalize(cross(N, T));
-  mat3 TBN = mat3(T, B, N);
+#error Normal mapping requires precomputed tangents.
 #endif
 
   return normalize(TBN * tangentNormal);
@@ -169,11 +159,11 @@ vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 half) {
   return F0 + (1.0 - F0) * pow(1.0 - v_dot_h, 5.0);
 }
 
-// baseColor: diffuse color from baseColorTexture
+// baseColor: diffuse color from BaseColorTexture
 //              or from baseColor in the material;
-// metallic: metalness of the surface, from metallicTexture
+// metallic: metalness of the surface, from MetallicTexture
 //           or from metallic in the material;
-// roughness: roughness of the surface, from roughnessTexture
+// roughness: roughness of the surface, from RoughnessTexture
 //            or from roughness in the material;
 // normal: normal direction
 // light: light source direction
@@ -215,28 +205,28 @@ vec3 microfacetModel(vec3 baseColor,
 void main() {
   vec3 emissiveColor = Material.emissiveColor;
 #if defined(EMISSIVE_TEXTURE)
-  emissiveColor *= texture(emissiveTexture, texCoord).rgb;
+  emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
 #endif
   fragmentColor = vec4(emissiveColor, 0.0);
 
 #if (LIGHT_COUNT > 0)
   vec4 baseColor = Material.baseColor;
 #if defined(BASECOLOR_TEXTURE)
-  baseColor *= texture(baseColorTexture, texCoord);
+  baseColor *= texture(BaseColorTexture, texCoord);
 #endif
 
   float roughness = Material.roughness;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-  roughness *= texture(packedTexture, texCoord).g;
+  roughness *= texture(PackedTexture, texCoord).g;
 #elif defined(ROUGHNESS_TEXTURE)
-  roughness *= texture(roughnessTexture, texCoord).r;
+  roughness *= texture(RoughnessTexture, texCoord).r;
 #endif
 
   float metallic = Material.metallic;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-  metallic *= texture(packedTexture, texCoord).b;
+  metallic *= texture(PackedTexture, texCoord).b;
 #elif defined(METALLIC_TEXTURE)
-  metallic *= texture(metallicTexture, texCoord).r;
+  metallic *= texture(MetallicTexture, texCoord).r;
 #endif
 
 #if defined(NORMAL_TEXTURE)
@@ -251,7 +241,6 @@ void main() {
   vec3 view = normalize(-position);
 
   vec3 finalColor = vec3(0.0);
-  highp float finalAlpha = 0.0;
   // compute contribution of each light using the microfacet model
   // the following part of the code is inspired by the Phong.frag in Magnum
   // library (https://magnum.graphics/)
@@ -278,14 +267,13 @@ void main() {
 
     finalColor += microfacetModel(baseColor.rgb, metallic, roughness, n, light,
                                   view, lightRadiance);
-    finalAlpha += baseColor.w;
   }  // for lights
 
   // TODO: use ALPHA_MASK to discard fragments
-  fragmentColor += vec4(finalColor, finalAlpha / float(LIGHT_COUNT));
+  fragmentColor += vec4(finalColor, baseColor.a);
 #endif  // if LIGHT_COUNT > 0
 
 #if defined(OBJECT_ID)
-  fragmentObjectId = objectId;
+  fragmentObjectId = ObjectId;
 #endif
 }

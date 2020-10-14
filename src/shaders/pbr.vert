@@ -30,7 +30,7 @@ uniform highp mat3 NormalMatrix;  // inverse transpose of 3x3 modelview matrix
 uniform mat4 MVP;
 
 #ifdef TEXTURE_TRANSFORMATION
-uniform highp mat3 textureMatrix
+uniform highp mat3 TextureMatrix
 #ifndef GL_ES
     = mat3(1.0)
 #endif
@@ -43,7 +43,7 @@ void main() {
 #if defined(TEXTURED)
   texCoord =
 #if defined(TEXTURE_TRANSFORMATION)
-      (textureMatrix * vec3(vertexTexCoord, 1.0)).xy;
+      (TextureMatrix * vec3(vertexTexCoord, 1.0)).xy;
 #else
       vertexTexCoord;
 #endif  // TEXTURE_TRANSFORMATION
