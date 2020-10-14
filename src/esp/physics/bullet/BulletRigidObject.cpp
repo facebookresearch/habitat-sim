@@ -237,8 +237,8 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
         bObjectConvexShapes_.back()->addPoint(
             btVector3(transformFromLocalToWorld.transformPoint(v)), false);
       }
-      bObjectConvexShapes_.back()->optimizeConvexHull();
-      bObjectConvexShapes_.back()->initializePolyhedralFeatures();
+      // bObjectConvexShapes_.back()->optimizeConvexHull();
+      // bObjectConvexShapes_.back()->initializePolyhedralFeatures();
       // Remove local convex margin in favor of margin on the containing
       // compound
       bObjectConvexShapes_.back()->setMargin(0.0);
