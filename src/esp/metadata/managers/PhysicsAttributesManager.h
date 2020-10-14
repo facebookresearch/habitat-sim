@@ -82,7 +82,7 @@ class PhysicsAttributesManager
    */
   attributes::PhysicsManagerAttributes::ptr initNewObjectInternal(
       const std::string& handleName,
-      bool builtFromConfig) override {
+      CORRADE_UNUSED bool builtFromConfig) override {
     attributes::PhysicsManagerAttributes::ptr newAttributes =
         this->constructFromDefault(handleName);
     if (nullptr == newAttributes) {

@@ -87,8 +87,9 @@ class LightLayoutAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateObjectHandleLists(int templateID,
-                               const std::string& templateHandle) override {}
+  void updateObjectHandleLists(
+      CORRADE_UNUSED int templateID,
+      CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
    * @brief Add a copy of the @ref
