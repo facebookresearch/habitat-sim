@@ -373,7 +373,7 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectMotionType(objectID);
   }
-  return esp::physics::MotionType::ERROR_MOTIONTYPE;
+  return esp::physics::MotionType::UNDEFINED;
 }
 
 bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,

@@ -40,9 +40,10 @@ it.
 */
 enum class MotionType {
   /**
-   * Refers to an error (such as a query to non-existing object).
+   * Refers to an error (such as a query to non-existing object) or an
+   * unknown/unspecified value.
    */
-  ERROR_MOTIONTYPE,
+  UNDEFINED = -1,
 
   /**
    * The object is not expected to move and should not allow kinematic updates.
