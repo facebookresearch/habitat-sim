@@ -226,7 +226,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * query.
    * @return The @ref esp::physics::MotionType of the object or @ref
-   * esp::physics::MotionType::ERROR_MOTIONTYPE if query failed.
+   * esp::physics::MotionType::UNDEFINED if query failed.
    */
   esp::physics::MotionType getObjectMotionType(int objectID, int sceneID = 0);
 
