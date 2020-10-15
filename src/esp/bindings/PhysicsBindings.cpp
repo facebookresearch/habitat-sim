@@ -17,7 +17,7 @@ void initPhysicsBindings(py::module& m) {
 
   // ==== enum object MotionType ====
   py::enum_<MotionType>(m, "MotionType")
-      .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
+      .value("UNDEFINED", MotionType::UNDEFINED)
       .value("STATIC", MotionType::STATIC)
       .value("KINEMATIC", MotionType::KINEMATIC)
       .value("DYNAMIC", MotionType::DYNAMIC);

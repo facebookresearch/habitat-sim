@@ -281,7 +281,7 @@ void BulletRigidObject::setCollisionFromBB() {
 }  // setCollisionFromBB
 
 bool BulletRigidObject::setMotionType(MotionType mt) {
-  if (mt == MotionType::ERROR_MOTIONTYPE) {
+  if (mt == MotionType::UNDEFINED) {
     return false;
   }
   if (mt == objectMotionType_) {
