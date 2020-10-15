@@ -16,8 +16,8 @@ namespace attributes {
 /**
  * @brief base attributes object holding attributes shared by all
  * @ref esp::metadata::attributes::ObjectAttributes and @ref
- * esp::metadata::attributes::StageAttributes objects; Should be treated as if
- * is abstract - should never be instanced directly
+ * esp::metadata::attributes::StageAttributes objects; Should be treated as
+ * abstract - should never be instanced directly
  */
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
@@ -171,8 +171,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
 };  // class AbstractObjectAttributes
 
 /**
- * @brief Specific Attributes instance which is constructed with a base set of
- * object required attributes
+ * @brief Specific Attributes instance describing an object, constructed with a
+ * default set of object-specific required attributes
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
@@ -250,7 +250,10 @@ class ObjectAttributes : public AbstractObjectAttributes {
 ///////////////////////////////////////
 // stage attributes
 
-//! attributes for a single stage
+/**
+ * @brief Specific Attributes instance describing a stage, constructed with a
+ * default set of stage-specific required attributes
+ */
 class StageAttributes : public AbstractObjectAttributes {
  public:
   StageAttributes(const std::string& handle = "");

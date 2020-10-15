@@ -11,7 +11,7 @@ void MetadataMediator::buildAttributesManagers() {
   datasetAttributesManager_ =
       managers::DatasetAttributesManager::create(physicsAttributesManager_);
   // create blank default attributes manager
-  createDataset(defaultDataset_);
+  createDataset(activeDataset_);
 }  // MetadataMediator::buildAttributesManagers
 
 bool MetadataMediator::createDataset(const std::string& datasetName,
@@ -21,7 +21,7 @@ bool MetadataMediator::createDataset(const std::string& datasetName,
   if (exists) {
     // check if not overwrite and exists already
     if (!overwrite) {
-      LOG(WARNING) << "MetadataMediator::setCurrentDataset : Dataset "
+      LOG(WARNING) << "MetadataMediator::setActiveDataset : Dataset "
                    << datasetName
                    << " already exists.  To reload and overwrite existing "
                       "data, set overwrite to true. Aborting.";
@@ -46,21 +46,21 @@ bool MetadataMediator::createDataset(const std::string& datasetName,
   return true;
 }  // MetadataMediator::createDataset
 
-bool MetadataMediator::setCurrentDataset(const std::string& datasetName) {
+bool MetadataMediator::setActiveDatasetName(const std::string& datasetName) {
   // first check if dataset exists, if so then set default
   if (datasetAttributesManager_->getObjectLibHasHandle(datasetName)) {
-    defaultDataset_ = datasetName;
-    LOG(INFO)
-        << "MetadataMediator::setCurrentDataset : Default dataset changed to "
-        << datasetName << " successfully.";
+    activeDataset_ = datasetName;
+    LOG(INFO) << "MetadataMediator::setActiveDatasetName : Default dataset "
+                 "changed to "
+              << datasetName << " successfully.";
     return true;
   }
   // if does not exist, create it
-  bool success = createDataset(defaultDataset_);
+  bool success = createDataset(activeDataset_);
   // if successfully created, set default name to access dataset attributes in
   // datasetAttributesManager
   if (success) {
-    defaultDataset_ = datasetName;
+    activeDataset_ = datasetName;
   }
   return success;
 }  // namespace metadata

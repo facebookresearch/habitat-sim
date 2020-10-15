@@ -46,6 +46,33 @@ class DatasetAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Return the map for navmesh file locations
+   */
+  const std::map<std::string, std::string>& getNavmeshMap() const {
+    return navmeshMap_;
+  }
+
+  /**
+   * @brief Return the map for semantic scene descriptor file locations
+   */
+  const std::map<std::string, std::string>& getSemanticSceneDescrMap() const {
+    return semanticSceneDescrMap_;
+  }
+
+  /**
+   * @brief Return the map for navmesh file locations for building/modification
+   */
+  std::map<std::string, std::string>& editNavmeshMap() { return navmeshMap_; }
+
+  /**
+   * @brief Return the map for semantic scene descriptor file locations for
+   * building/modification
+   */
+  std::map<std::string, std::string>& editSemanticSceneDescrMap() {
+    return semanticSceneDescrMap_;
+  }
+
+  /**
    * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
    * such as file paths, to make them available for stage attributes defaults.
    *
@@ -90,6 +117,15 @@ class DatasetAttributes : public AbstractAttributes {
    * dataset.
    */
   managers::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
+  /**
+   * @brief Maps names specified in dataset_config file to paths for navmeshes.
+   */
+  std::map<std::string, std::string> navmeshMap_;
+  /**
+   * @brief Maps names specified in dataset_config file to paths for semantic
+   * scene descriptor files
+   */
+  std::map<std::string, std::string> semanticSceneDescrMap_;
 
  public:
   ESP_SMART_POINTERS(DatasetAttributes)
