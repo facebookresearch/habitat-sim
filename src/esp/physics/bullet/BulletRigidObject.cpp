@@ -46,16 +46,9 @@ BulletRigidObject::~BulletRigidObject() {
     activateCollisionIsland();
   }
 
-  if (objectMotionType_ != MotionType::STATIC) {
-    // remove rigid body from the world
-    bWorld_->removeRigidBody(bObjectRigidBody_.get());
-  } else if (objectMotionType_ == MotionType::STATIC) {
-    // remove collision objects from the world
-    for (auto& co : bStaticCollisionObjects_) {
-      bWorld_->removeRigidBody(co.get());
-      collisionObjToObjIds_->erase(co.get());
-    }
-  }
+  // remove rigid body from the world
+  bWorld_->removeRigidBody(bObjectRigidBody_.get());
+
   collisionObjToObjIds_->erase(bObjectRigidBody_.get());
 
 }  //~BulletRigidObject
@@ -127,12 +120,10 @@ bool BulletRigidObject::initialization_LibSpecific(
   bObjectShape_->setMargin(margin);
 
   bObjectShape_->setLocalScaling(btVector3{tmpAttr->getScale()});
-
+  bObjectShape_->recalculateLocalAabb();
   // create the bObjectRigidBody_
-  constructRigidBody(false);
+  constructAndAddRigidBody(objectMotionType_);
 
-  //! Add to world
-  bWorld_->addRigidBody(bObjectRigidBody_.get());
   return true;
 }  // initialization_LibSpecific
 
@@ -238,6 +229,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
         bObjectConvexShapes_.back()->addPoint(
             btVector3(transformFromLocalToWorld.transformPoint(v)), false);
       }
+
     } else {
       bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>());
       // transform points into world space, including any scale/shear in
@@ -246,6 +238,10 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
         bObjectConvexShapes_.back()->addPoint(
             btVector3(transformFromLocalToWorld.transformPoint(v)), false);
       }
+      // bObjectConvexShapes_.back()->optimizeConvexHull();
+      // bObjectConvexShapes_.back()->initializePolyhedralFeatures();
+      // Remove local convex margin in favor of margin on the containing
+      // compound
       bObjectConvexShapes_.back()->setMargin(0.0);
       bObjectConvexShapes_.back()->recalcLocalAabb();
       //! Add to compound shape stucture
@@ -285,61 +281,18 @@ void BulletRigidObject::setCollisionFromBB() {
 }  // setCollisionFromBB
 
 bool BulletRigidObject::setMotionType(MotionType mt) {
+  if (mt == MotionType::ERROR_MOTIONTYPE) {
+    return false;
+  }
   if (mt == objectMotionType_) {
     return true;  // no work
   }
 
   // remove the existing object from the world to change its type
-  if (objectMotionType_ == MotionType::STATIC) {
-    bWorld_->removeRigidBody(bStaticCollisionObjects_.back().get());
-    collisionObjToObjIds_->erase(bStaticCollisionObjects_.back().get());
-    bStaticCollisionObjects_.clear();
-  } else {
-    bWorld_->removeRigidBody(bObjectRigidBody_.get());
-  }
-
-  if (mt == MotionType::KINEMATIC) {
-    if (!(bObjectRigidBody_->getCollisionFlags() &
-          btCollisionObject::CF_KINEMATIC_OBJECT)) {
-      // we need to construct a new rigidBody configured for kinematics
-      constructRigidBody(true);
-    }
-    objectMotionType_ = MotionType::KINEMATIC;
-    bWorld_->addRigidBody(bObjectRigidBody_.get());
-    setActive();
-    return true;
-  } else if (mt == MotionType::STATIC) {
-    objectMotionType_ = MotionType::STATIC;
-
-    // mass == 0 to indicate static. See isStaticObject assert below. See also
-    // examples/MultiThreadedDemo/CommonRigidBodyMTBase.h
-    btVector3 localInertia(0, 0, 0);
-    btRigidBody::btRigidBodyConstructionInfo cInfo(
-        /*mass*/ 0.0, nullptr, bObjectShape_.get(), localInertia);
-    cInfo.m_startWorldTransform = bObjectRigidBody_->getWorldTransform();
-    std::unique_ptr<btRigidBody> staticCollisionObject =
-        std::make_unique<btRigidBody>(cInfo);
-    ASSERT(staticCollisionObject->isStaticObject());
-    bWorld_->addRigidBody(
-        staticCollisionObject.get(),
-        2,       // collisionFilterGroup (2 == StaticFilter)
-        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
-    collisionObjToObjIds_->emplace(staticCollisionObject.get(), objectId_);
-    bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
-    return true;
-  } else if (mt == MotionType::DYNAMIC) {
-    if (bObjectRigidBody_->getCollisionFlags() &
-        btCollisionObject::CF_KINEMATIC_OBJECT) {
-      // we need to construct a new rigidBody configured for dynamics
-      constructRigidBody(false);
-    }
-    objectMotionType_ = MotionType::DYNAMIC;
-    bWorld_->addRigidBody(bObjectRigidBody_.get());
-    setActive();
-    return true;
-  }
-
-  return false;
+  bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  constructAndAddRigidBody(mt);
+  objectMotionType_ = mt;
+  return true;
 }  // setMotionType
 
 void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
@@ -365,13 +318,13 @@ void BulletRigidObject::syncPose() {
       btTransform(node().transformationMatrix()));
 }  // syncPose
 
-void BulletRigidObject::constructRigidBody(bool kinematic) {
+void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   // get this object's creation template, appropriately cast
   auto tmpAttr = getInitializationAttributes();
 
   double mass = 0;
   btVector3 bInertia = {0, 0, 0};
-  if (!kinematic) {
+  if (mt == MotionType::DYNAMIC) {
     mass = tmpAttr->getMass();
     bInertia = btVector3(tmpAttr->getInertia());
     if (bInertia == btVector3{0, 0, 0}) {
@@ -382,14 +335,20 @@ void BulletRigidObject::constructRigidBody(bool kinematic) {
   }
 
   //! Bullet rigid body setup
+  auto motionState =
+      (mt == MotionType::STATIC) ? nullptr : &(this->btMotionState());
+
   btRigidBody::btRigidBodyConstructionInfo info =
-      btRigidBody::btRigidBodyConstructionInfo(mass, &(btMotionState()),
+      btRigidBody::btRigidBodyConstructionInfo(mass, motionState,
                                                bObjectShape_.get(), bInertia);
 
   info.m_friction = tmpAttr->getFrictionCoefficient();
   info.m_restitution = tmpAttr->getRestitutionCoefficient();
   info.m_linearDamping = tmpAttr->getLinearDamping();
   info.m_angularDamping = tmpAttr->getAngularDamping();
+  if (bObjectRigidBody_ != nullptr) {
+    info.m_startWorldTransform = bObjectRigidBody_->getWorldTransform();
+  }
 
   //! Create rigid body
   if (collisionObjToObjIds_->count(bObjectRigidBody_.get())) {
@@ -398,22 +357,30 @@ void BulletRigidObject::constructRigidBody(bool kinematic) {
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
 
-  // set the
-  if (kinematic) {
+  if (mt == MotionType::KINEMATIC) {
     bObjectRigidBody_->setCollisionFlags(
         bObjectRigidBody_->getCollisionFlags() |
         btCollisionObject::CF_KINEMATIC_OBJECT);
+    ASSERT(bObjectRigidBody_->isKinematicObject());
   }
-  syncPose();
+
+  // add the object to the world
+  if (mt == MotionType::STATIC) {
+    ASSERT(bObjectRigidBody_->isStaticObject());
+    bWorld_->addRigidBody(
+        bObjectRigidBody_.get(),
+        2,       // collisionFilterGroup (2 == StaticFilter)
+        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+  } else {
+    bWorld_->addRigidBody(bObjectRigidBody_.get());
+    setActive();
+  }
 }
 
 void BulletRigidObject::activateCollisionIsland() {
   // activate nearby objects in the simulation island as computed on the
   // previous collision detection pass
   btCollisionObject* thisColObj = bObjectRigidBody_.get();
-  if (getMotionType() == MotionType::STATIC) {
-    thisColObj = bStaticCollisionObjects_.back().get();
-  }
   auto& colObjs = bWorld_->getCollisionWorld()->getCollisionObjectArray();
   for (auto objIx = 0; objIx < colObjs.size(); ++objIx) {
     if (colObjs[objIx]->getIslandTag() == thisColObj->getIslandTag()) {

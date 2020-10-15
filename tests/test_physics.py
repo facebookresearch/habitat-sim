@@ -246,9 +246,9 @@ def test_dynamics():
             test_lin_vel = np.array([1.0, 0.0, 0.0])
             test_ang_vel = np.array([0.0, 1.0, 0.0])
 
-            # no velocity setting for KINEMATIC objects
+            # velocity setting for KINEMATIC objects won't be simulated, but will be recorded for bullet internal usage.
             sim.set_linear_velocity(test_lin_vel, object2_id)
-            assert sim.get_linear_velocity(object2_id) == np.array([0.0, 0.0, 0.0])
+            assert sim.get_linear_velocity(object2_id) == test_lin_vel
 
             sim.set_object_motion_type(
                 habitat_sim.physics.MotionType.DYNAMIC, object2_id
