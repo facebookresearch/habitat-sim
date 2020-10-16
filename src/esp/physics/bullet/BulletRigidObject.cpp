@@ -11,6 +11,7 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletDebugManager.h"
 #include "BulletRigidObject.h"
 
 //!  A Few considerations in construction
@@ -148,6 +149,9 @@ bool BulletRigidObject::initialization_LibSpecific(
                         btBroadphaseProxy::DefaultFilter,
                         btBroadphaseProxy::AllFilter);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
+  BulletDebugManager::get().mapCollisionObjectTo(bObjectRigidBody_.get(),
+                                                 getCollisionDebugName());
+
   //! Sync render pose with physics
   syncPose();
   return true;
@@ -298,6 +302,8 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
                           btBroadphaseProxy::StaticFilter,
                           btBroadphaseProxy::DefaultFilter);
     collisionObjToObjIds_->emplace(staticCollisionObject.get(), objectId_);
+    BulletDebugManager::get().mapCollisionObjectTo(staticCollisionObject.get(),
+                                                   getCollisionDebugName());
     bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
     return true;
   } else if (mt == MotionType::DYNAMIC) {
@@ -343,6 +349,11 @@ void BulletRigidObject::syncPose() {
   bObjectRigidBody_->setWorldTransform(
       btTransform(node().transformationMatrix()));
 }  // syncPose
+
+std::string BulletRigidObject::getCollisionDebugName() {
+  return "RigidObject, " + initializationAttributes_->getHandle() + ", id " +
+         std::to_string(objectId_);
+}
 
 void BulletRigidObject::setCOM(const Magnum::Vector3&) {
   // Current not supported

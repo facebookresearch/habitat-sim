@@ -56,6 +56,8 @@ class BulletRigidStage : public BulletBase, public RigidStage {
       const std::vector<assets::CollisionMeshData>& meshGroup,
       const assets::MeshTransformNode& node);
 
+  std::string getCollisionDebugName(int subpartId);
+
  public:
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
