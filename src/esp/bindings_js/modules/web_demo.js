@@ -27,11 +27,15 @@ class WebDemo {
     this.sceneConfig.id = Module.scene;
     this.config = new Module.SimulatorConfiguration();
     this.config.scene = this.sceneConfig;
+    this.config.enablePhysics = Module.enablePhysics;
+    this.config.physicsConfigFile = Module.physicsConfigFile;
+
     this.simenv = new SimEnv(this.config, episode, 0);
 
     agentConfig = this.updateAgentConfigWithSensors({ ...agentConfig });
 
     this.simenv.addAgent(agentConfig);
+    this.simenv.initOrUpdateCrossHairNode(this.simenv.resolution);
 
     if (initializeTopDown) {
       this.topdown = new TopDownMap(

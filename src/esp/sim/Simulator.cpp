@@ -10,6 +10,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
+
 #include <Magnum/GL/Context.h>
 
 #include "esp/core/esp.h"
@@ -763,6 +764,16 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
   return agents_[agentId];
 }
 
+Magnum::Matrix4 Simulator::getAgentTransformation(int agentId) {
+  auto agentBodyNode = &getAgent(0)->node();
+  return agentBodyNode->transformation();
+}
+
+Magnum::Vector3 Simulator::getAgentAbsoluteTranslation(int agentId) {
+  auto agentBodyNode = &getAgent(0)->node();
+  return agentBodyNode->absoluteTranslation();
+}
+
 nav::PathFinder::ptr Simulator::getPathFinder() {
   return pathfinder_;
 }
@@ -887,6 +898,67 @@ void Simulator::setObjectLightSetup(const int objectID,
   if (sceneHasPhysics(sceneID)) {
     gfx::setLightSetupForSubTree(physicsManager_->getObjectSceneNode(objectID),
                                  lightSetupKey);
+  }
+}
+
+int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
+                                               Magnum::Vector3 point,
+                                               Magnum::Vector3 refPoint,
+                                               const Magnum::Vector2i& viewSize,
+                                               float distance) {
+  int nearestObjId = ID_UNDEFINED;
+  scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+  gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
+
+  const esp::geo::Ray ray{renderCamera_.node().absoluteTranslation(), point};
+  physics::RaycastResults results = castRay(ray);
+  Magnum::Vector3 hitPoint;
+
+  for (int rayIdx = 0; rayIdx < results.hits.size(); rayIdx++) {
+    if (results.hits[rayIdx].objectId != -1) {
+      nearestObjId = results.hits[rayIdx].objectId;
+      hitPoint = results.hits[rayIdx].point;
+    }
+  }
+
+  if ((hitPoint - refPoint).length() > distance) {
+    return -1;
+  }
+
+  return nearestObjId;
+}
+
+esp::geo::Ray Simulator::unproject(const Magnum::Vector2i& position) {
+  scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+  gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
+
+  return renderCamera_.unproject(position);
+}
+
+void Simulator::initOrUpdateCrossHairNode(Magnum::Vector2i crossHairPosition) {
+  scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+  gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
+
+  if (crossHairNode_ == nullptr) {
+    crossHairNode_ = &sceneGraph.getRootNode().createChild();
+    resourceManager_->addPrimitiveToDrawables(0, *crossHairNode_,
+                                              &sceneGraph.getDrawables());
+    crossHairNode_->setScaling({0.03, 0.03, 0.03});
+  }
+
+  esp::geo::Ray ray = unproject(crossHairPosition);
+  Magnum::Vector3 point = ray.direction;
+  crossHairNode_->setTranslation(renderCamera_.node().absoluteTranslation() +
+                                 point * 1.0);
+}
+
+void Simulator::syncGrippedObject(int grippedObjectId) {
+  if (grippedObjectId != -1) {
+    auto agentBodyNode_ = &getAgent(0)->node();
+    Magnum::Matrix4 agentT =
+        agentBodyNode_->MagnumObject::transformationMatrix();
+    physicsManager_->setTranslation(
+        grippedObjectId, agentT.transformPoint(Magnum::Vector3{0.0, 0.0, 0.0}));
   }
 }
 

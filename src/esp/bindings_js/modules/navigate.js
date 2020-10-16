@@ -72,7 +72,11 @@ class NavigateTask {
       { name: "turnLeft", key: "a" },
       { name: "turnRight", key: "d" },
       { name: "lookUp", key: "ArrowUp" },
-      { name: "lookDown", key: "ArrowDown" }
+      { name: "lookDown", key: "ArrowDown" },
+      { name: "addPrimitiveObject", key: "8" },
+      { name: "addTemplateObject", key: "o" },
+      { name: "removeLastObject", key: "9" },
+      { name: "grabReleaseObject", key: "h" }
     ];
   }
 
@@ -211,12 +215,27 @@ class NavigateTask {
 
   render(options = { renderTopDown: true }) {
     this.renderImage();
+
+    this.sim.initOrUpdateCrossHairNode(this.sim.getCrosshairPosition());
+    this.sim.syncObjects();
+
+    this.renderImage();
     this.renderSemanticImage();
     this.renderTopDown(options);
   }
 
   handleAction(action) {
-    this.sim.step(action);
+    if (action === "addPrimitiveObject") {
+      this.sim.addPrimitiveObject();
+    } else if (action === "addTemplateObject") {
+      this.sim.addTemplateObject();
+    } else if (action === "removeLastObject") {
+      this.sim.removeLastObject();
+    } else if (action == "grabReleaseObject") {
+      this.sim.grabReleaseObject();
+    } else {
+      this.sim.step(action);
+    }
     this.setStatus(action);
     this.render();
   }

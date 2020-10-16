@@ -35,3 +35,30 @@ export const defaultScene =
     : "skokloster-castle.glb";
 
 export const infoSemanticFileName = "info_semantic.json";
+
+export const dataHome = "data/";
+export const defaulPhysicsConfig = "default.phys_scene_config.json";
+export const primitiveObjectHandles = [
+  "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true"
+];
+export const fileBasedObjectHandles = [
+  "/data/objects/sphere.phys_properties.json",
+  "/data/objects/chair.phys_properties.json"
+];
+
+export const fileBasedObjects = {
+  objects: [
+    {
+      objectName: "sphere.glb",
+      objectHandle: "sphere.phys_properties.json",
+      physicsProperties: "test_assets/objects/sphere.phys_properties.json",
+      renderMesh: "test_assets/objects/sphere.glb"
+    },
+    {
+      objectName: "chair.glb",
+      objectHandle: "chair.phys_properties.json",
+      physicsProperties: "test_assets/objects/chair.phys_properties.json",
+      renderMesh: "test_assets/objects/chair.glb"
+    }
+  ]
+};

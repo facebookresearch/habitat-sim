@@ -665,6 +665,22 @@ class Simulator {
                            const std::string& lightSetupKey,
                            int sceneID = 0);
 
+  int findNearestObjectUnderCrosshair(int refObjectID,
+                                      Magnum::Vector3 point,
+                                      Magnum::Vector3 refPoint,
+                                      const Magnum::Vector2i& viewSize,
+                                      float distance = 1.0);
+
+  esp::geo::Ray unproject(const Magnum::Vector2i& position);
+
+  void initOrUpdateCrossHairNode(Magnum::Vector2i crossHairPosition);
+
+  void syncGrippedObject(int grippedObjectId);
+
+  Magnum::Matrix4 getAgentTransformation(int agentId);
+
+  Magnum::Vector3 getAgentAbsoluteTranslation(int agentId);
+
   /**
    * @brief Getter for PRNG.
    *
@@ -729,6 +745,11 @@ class Simulator {
   //! NavMesh visualization variables
   int navMeshVisPrimID_ = esp::ID_UNDEFINED;
   esp::scene::SceneNode* navMeshVisNode_ = nullptr;
+
+  int grippedObjectId = -1;
+  Magnum::Matrix4 gripOffset;
+
+  esp::scene::SceneNode* crossHairNode_ = nullptr;
 
   /**
    * @brief Tracks whether or not the simulator was initialized

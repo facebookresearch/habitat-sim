@@ -101,3 +101,7 @@ export function buildConfigFromURLParameters(config = {}) {
   }
   return config;
 }
+
+export function getRandomInt(max = 5) {
+  return Math.floor(Math.random() * max);
+}

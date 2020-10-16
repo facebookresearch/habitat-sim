@@ -6,15 +6,18 @@
 
 namespace em = emscripten;
 
+#include "esp/gfx/magnum.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
 
 using namespace esp;
 using namespace esp::agent;
+using namespace esp::assets;
 using namespace esp::core;
 using namespace esp::geo;
 using namespace esp::gfx;
 using namespace esp::nav;
+using namespace esp::physics;
 using namespace esp::scene;
 using namespace esp::sensor;
 using namespace esp::sim;
@@ -50,6 +53,7 @@ std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
+  em::register_vector<int>("VectorInt");
   em::register_vector<std::string>("VectorString");
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
@@ -92,9 +96,48 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .element(em::index<2>())
       .element(em::index<3>());
 
+  em::value_array<Magnum::Vector2i>("Vector2i")
+      .element(em::index<0>())
+      .element(em::index<1>());
+
+  em::class_<Magnum::Matrix4>("Matrix4")
+      .constructor<Magnum::Matrix4>()
+      .function("inverted", &Magnum::Matrix4::inverted)
+      .function("mul",
+                em::optional_override(
+                    [](const Magnum::Matrix4& self, const Magnum::Matrix4 rhs) {
+                      return new Magnum::Matrix4(self * rhs);
+                    }),
+                em::allow_raw_pointers())
+      .function(
+          "toString", em::optional_override([](const Magnum::Matrix4& self) {
+            std::ostringstream out;
+            Magnum::Debug{&out, Magnum::Debug::Flag::NoNewlineAtTheEnd} << self;
+            return out.str();
+          }));
+
+  em::class_<Magnum::Vector3>("Vector3")
+      .constructor<Magnum::Vector3>()
+      .constructor<float, float, float>()
+      .function("x", em::select_overload<float&()>(&Magnum::Vector3::x))
+      .function("y", em::select_overload<float&()>(&Magnum::Vector3::y))
+      .function("z", em::select_overload<float&()>(&Magnum::Vector3::z))
+      .class_function("xAxis", &Magnum::Vector3::xAxis)
+      .class_function("yAxis", &Magnum::Vector3::yAxis)
+      .class_function("zAxis", &Magnum::Vector3::zAxis);
+
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
+
+  em::value_object<esp::geo::Ray>("Ray")
+      .field("origin", &esp::geo::Ray::origin)
+      .field("direction", &esp::geo::Ray::direction);
+
+  em::class_<NavMeshSettings>("NavMeshSettings")
+      .smart_ptr_constructor("NavMeshSettings", &NavMeshSettings::create<>)
+      .property("agentRadius", &NavMeshSettings::agentRadius)
+      .function("setDefaults", &NavMeshSettings::setDefaults);
 
   em::class_<AgentConfiguration>("AgentConfiguration")
       .smart_ptr_constructor("AgentConfiguration",
@@ -118,10 +161,19 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("name", &ActionSpec::name)
       .property("actuation", &ActionSpec::actuation);
 
+  em::class_<ShortestPath>("ShortestPath")
+      .smart_ptr_constructor("ShortestPath", &ShortestPath::create<>)
+      .property("requestedStart", &ShortestPath::requestedStart)
+      .property("requestedEnd", &ShortestPath::requestedEnd)
+      .property("points", &ShortestPath::points)
+      .property("geodesicDistance", &ShortestPath::geodesicDistance);
+
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
       .property("bounds", &PathFinder::bounds)
-      .function("isNavigable", &PathFinder::isNavigable);
+      .function("isNavigable", &PathFinder::isNavigable)
+      .function("getRandomNavigablePoint",
+                &PathFinder::getRandomNavigablePoint);
 
   em::class_<SensorSuite>("SensorSuite")
       .smart_ptr_constructor("SensorSuite", &SensorSuite::create<>)
@@ -170,7 +222,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
-      .property("compressTextures", &SimulatorConfiguration::compressTextures);
+      .property("compressTextures", &SimulatorConfiguration::compressTextures)
+      .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
+      .property("physicsConfigFile",
+                &SimulatorConfiguration::physicsConfigFile);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
@@ -216,6 +271,16 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
 
+  em::class_<SceneNode>("SceneNode")
+      .function("getId", &SceneNode::getId)
+      .function("getSemanticId", &SceneNode::getSemanticId);
+
+  em::enum_<MotionType>("MotionType")
+      .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
+      .value("STATIC", MotionType::STATIC)
+      .value("KINEMATIC", MotionType::KINEMATIC)
+      .value("DYNAMIC", MotionType::DYNAMIC);
+
   em::class_<Simulator>("Simulator")
       .smart_ptr_constructor("Simulator",
                              &Simulator::create<const SimulatorConfiguration&>)
@@ -237,5 +302,32 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("addAgentToNode",
                 em::select_overload<Agent::ptr(const AgentConfiguration&,
                                                scene::SceneNode&)>(
-                    &Simulator::addAgent));
+                    &Simulator::addAgent))
+      .function("getExistingObjectIDs", &Simulator::getExistingObjectIDs)
+      .function("setObjectMotionType", &Simulator::setObjectMotionType)
+      .function("getObjectMotionType", &Simulator::getObjectMotionType)
+      .function("addObject", &Simulator::addObject, em::allow_raw_pointers())
+      .function("addObjectByHandle", &Simulator::addObjectByHandle,
+                em::allow_raw_pointers())
+      .function("removeObject", &Simulator::removeObject)
+      .function("setTransformation", &Simulator::setTransformation)
+      .function("getTransformation", &Simulator::getTransformation)
+      .function("setTranslation", &Simulator::setTranslation)
+      .function("getTranslation", &Simulator::getTranslation)
+      .function("setRotation", &Simulator::setRotation)
+      .function("getRotation", &Simulator::getRotation)
+      .function("setObjectLightSetup", &Simulator::setObjectLightSetup)
+      .function("getLightSetup", &Simulator::getLightSetup)
+      .function("setLightSetup", &Simulator::setLightSetup)
+      .function("stepWorld", &Simulator::stepWorld)
+      .function("syncGrippedObject", &Simulator::syncGrippedObject)
+      .function("initOrUpdateCrossHairNode",
+                &Simulator::initOrUpdateCrossHairNode)
+      .function("recomputeNavMesh", &Simulator::recomputeNavMesh)
+      .function("findNearestObjectUnderCrosshair",
+                &Simulator::findNearestObjectUnderCrosshair)
+      .function("unproject", &Simulator::unproject)
+      .function("getAgentTransformation", &Simulator::getAgentTransformation)
+      .function("getAgentAbsoluteTranslation",
+                &Simulator::getAgentAbsoluteTranslation);
 }

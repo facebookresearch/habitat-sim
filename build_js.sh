@@ -28,12 +28,12 @@ popd
 mkdir -p build_js
 cd build_js
 
-
 EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
 
 if ${BULLET}; 
     then EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS} -s USE_BULLET=1"
 fi
+
 cmake ../src \
     -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/RelWithDebInfo/bin/corrade-rc \
     -DBUILD_GUI_VIEWERS=ON \
@@ -62,3 +62,9 @@ echo "Then open in browser:"
 echo "http://0.0.0.0:8000/build_js/utils/viewer/viewer.html?scene=skokloster-castle.glb"
 echo "Or:"
 echo "http://0.0.0.0:8000/build_js/esp/bindings_js/bindings.html?scene=skokloster-castle.glb"
+if ${BULLET}; then
+    echo "To enable physics use:"
+    echo "http://0.0.0.0:8000/build_js/utils/viewer/viewer.html?scene=skokloster-castle.glb&enablePhysics=true"
+    echo "Or:"
+    echo "http://0.0.0.0:8000/build_js/esp/bindings_js/bindings.html?scene=skokloster-castle.glb&enablePhysics=true"
+fi
