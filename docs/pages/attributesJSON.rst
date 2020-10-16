@@ -17,11 +17,11 @@ Attributes templates provide a mechanism by which the various constructions in H
 =============================
 Physics Manager Attributes templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be formatted as follows:
 
- 	<worldname>.phys_scene_config.json
+ 	<worldname>.physics_config.json
 
-`An example of an appropriately configured Physics Manager Attributes file can be found below <../../../data/test_assets/testing.phys_scene_config.json>`_:
+`An example of an appropriately configured Physics Manager Attributes file can be found below <../../../data/test_assets/testing.physics_config.json>`_:
 
-.. include:: ../../data/test_assets/testing.phys_scene_config.json
+.. include:: ../../data/test_assets/testing.physics_config.json
     :code: json
 
 
@@ -36,10 +36,10 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 "timestep"
 	- double
 	- The timestep to use for forward simulation.
-"friction coefficient"
+"friction_coefficient"
 	- double
 	- The default coefficient of friction. This can be overridden in Stage and Object Attributes.
-"restitution coefficient"
+"restitution_coefficient"
 	- double
 	- The default coefficient of restitution. This can be overridden in Stage and Object Attributes.
 "rigid object paths"
@@ -63,19 +63,19 @@ Stage Mesh Handles And Types
 
 Below are the handles and descriptors for various mesh assets used by a stage.
 
-"render mesh"
+"render_asset"
 	- string
 	- The name of the file describing the render mesh to be used by the stage.
-"collision mesh"
+"collision_asset"
 	- string
 	- The name of the file describing the collision mesh to be used by the stage.
-"semantic mesh"
+"semantic_asset"
 	- string
 	- The name of the file describing the stage's semantic mesh.
 "house filename"
 	- string
 	- The name of the file containing semantic type maps and hierarchy.
-"nav mesh"
+"nav_asset"
 	- string
 	- The name of the file describing the NavMesh for this stage.
 
@@ -108,16 +108,16 @@ Below are stage-specific physical and object-related quantities.  These values w
 "margin"
 	- double
 	- Distance margin for collision calculations.
-"friction coefficient"
+"friction_coefficient"
 	- double
 	- The coefficient of friction.
-"restitution coefficient"
+"restitution_coefficient"
 	- double
 	- The coefficient of restitution.
-"units to meters"
+"units_to_meters"
 	- double
 	- The conversion of given units to meters.
-"requires lighting"
+"requires_lighting"
 	- boolean
 	- Whether the stage should be rendered with lighting or flat shading.
 
@@ -125,11 +125,11 @@ Below are stage-specific physical and object-related quantities.  These values w
 ====================
 Object Attributes templates hold descriptive information for instancing rigid objects into Habitat-Sim.  These files should be formatted as follows:
 
- 	<objectname>.phys_properties.json
+ 	<objectname>.object_config.json
 
-`An example of an appropriately configured Object Attributes file can be found below <../../../data/test_assets/objects/donut.phys_properties.json>`_:
+`An example of an appropriately configured Object Attributes file can be found below <../../../data/test_assets/objects/donut.object_config.json>`_:
 
-.. include:: ../../data/test_assets/objects/donut.phys_properties.json
+.. include:: ../../data/test_assets/objects/donut.object_config.json
     :code: json
 
 Object Mesh Handles And Types
@@ -137,10 +137,10 @@ Object Mesh Handles And Types
 
 Below are the handles and descriptors for various mesh assets used by an object.
 
-"render mesh"
+"render_asset"
 	- string
 	- The name of the file describing the render mesh to be used by the object.
-"collision mesh"
+"collision_asset"
 	- string
 	- The name of the file describing the collision mesh to be used by the object.
 
@@ -165,16 +165,16 @@ Below are object-specific physical quantities.  These values will override simil
 "margin"
 	- double
 	- Distance margin for collision calculations.
-"friction coefficient"
+"friction_coefficient"
 	- double
 	- The coefficient of friction.
-"restitution coefficient"
+"restitution_coefficient"
 	- double
 	- The coefficient of restitution.
-"units to meters"
+"units_to_meters"
 	- double
 	- The conversion of given units to meters.
-"requires lighting"
+"requires_lighting"
 	- boolean
 	- Whether the object should be rendered with lighting or flat shading.
 "mass"
@@ -186,9 +186,9 @@ Below are object-specific physical quantities.  These values will override simil
 "COM"
 	- 3-vector
 	- The center of mass for the object.  If this is not specified in JSON, it will be derived from the object's bounding box in Habitat-Sim.
-"use bounding box for collision"
+"use_bounding_box_for_collision"
 	- boolean
 	- Whether or not to use the object's bounding box as collision geometry. Note: dynamic simulation will be significantly faster and more stable if this is true.
-"join collision meshes"
+"join_collision_meshes"
 	- boolean
 	- Whether or not sub-components of the object's collision asset should be joined into a single unified collision object.
