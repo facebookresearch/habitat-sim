@@ -244,7 +244,7 @@ bool ResourceManager::loadStage(
   // the collision mesh is empty scene
 
   if ((_physicsManager != nullptr) &&
-      (infoToUse.filepath.compare(EMPTY_SCENE) != 0)) {
+      (infoToUse.filepath.compare(EMPTY_SCENE) != 0) && buildCollisionMesh) {
     bool success = buildMeshGroups(infoToUse, meshGroup);
     if (!success) {
       return false;
