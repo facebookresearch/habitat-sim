@@ -38,7 +38,7 @@ uniform highp mat3 TextureMatrix
 #endif
 
 void main() {
-  vertexPositionInCamera = ModelViewMatrix * vertexPosition;
+  vec4 vertexPositionInCamera = ModelViewMatrix * vertexPosition;
   position = vertexPositionInCamera.xyz;
   normal = normalize(NormalMatrix * vertexNormal);
 #if defined(TEXTURED)
