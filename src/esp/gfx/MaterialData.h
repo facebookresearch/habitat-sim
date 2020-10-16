@@ -84,7 +84,7 @@ struct PbrMaterialData : public MaterialData {
   // channel) and "metallic" (in B channel)
   Magnum::GL::Texture2D* occlusionRoughnessMetallicTexture = nullptr;
   // TODO:
-  // AO texture, emisive texture
+  // AO texture
   ESP_SMART_POINTERS(PbrMaterialData)
 };
 
