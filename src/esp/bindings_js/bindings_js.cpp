@@ -14,6 +14,7 @@ using namespace esp::agent;
 using namespace esp::core;
 using namespace esp::geo;
 using namespace esp::gfx;
+using namespace esp::physics;
 using namespace esp::nav;
 using namespace esp::scene;
 using namespace esp::sensor;
@@ -50,6 +51,7 @@ std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
+  em::register_vector<int>("VectorInt");
   em::register_vector<std::string>("VectorString");
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
@@ -95,6 +97,22 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
+
+  em::class_<Magnum::Vector3>("Vector3")
+      .constructor<Magnum::Vector3>()
+      .constructor<float, float, float>()
+      .function("x", em::select_overload<float&()>(&Magnum::Vector3::x))
+      .function("y", em::select_overload<float&()>(&Magnum::Vector3::y))
+      .function("z", em::select_overload<float&()>(&Magnum::Vector3::z))
+      .class_function("xAxis", &Magnum::Vector3::xAxis)
+      .class_function("yAxis", &Magnum::Vector3::yAxis)
+      .class_function("zAxis", &Magnum::Vector3::zAxis)
+      .function(
+          "toString", em::optional_override([](const Magnum::Vector3& self) {
+            std::ostringstream out;
+            Magnum::Debug{&out, Magnum::Debug::Flag::NoNewlineAtTheEnd} << self;
+            return out.str();
+          }));
 
   em::class_<AgentConfiguration>("AgentConfiguration")
       .smart_ptr_constructor("AgentConfiguration",
@@ -170,7 +188,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
-      .property("compressTextures", &SimulatorConfiguration::compressTextures);
+      .property("compressTextures", &SimulatorConfiguration::compressTextures)
+      .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
+      .property("physicsConfigFile",
+                &SimulatorConfiguration::physicsConfigFile);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
@@ -216,6 +237,17 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
 
+  em::class_<SceneNode>("SceneNode")
+      .property("id", &SceneNode::getId, &SceneNode::setId)
+      .property("semanticId", &SceneNode::getSemanticId,
+                &SceneNode::setSemanticId);
+
+  em::enum_<MotionType>("MotionType")
+      .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
+      .value("STATIC", MotionType::STATIC)
+      .value("KINEMATIC", MotionType::KINEMATIC)
+      .value("DYNAMIC", MotionType::DYNAMIC);
+
   em::class_<Simulator>("Simulator")
       .smart_ptr_constructor("Simulator",
                              &Simulator::create<const SimulatorConfiguration&>)
@@ -237,5 +269,15 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("addAgentToNode",
                 em::select_overload<Agent::ptr(const AgentConfiguration&,
                                                scene::SceneNode&)>(
-                    &Simulator::addAgent));
+                    &Simulator::addAgent))
+      .function("addObjectByHandle", &Simulator::addObjectByHandle,
+                em::allow_raw_pointers())
+      .function("setTranslation", &Simulator::setTranslation)
+      .function("getTranslation", &Simulator::getTranslation)
+      .function("setObjectMotionType", &Simulator::setObjectMotionType)
+      .function("getObjectMotionType", &Simulator::getObjectMotionType)
+      .function("stepWorld", &Simulator::stepWorld)
+      .function("getWorldTime", &Simulator::getWorldTime)
+      .function("getExistingObjectIDs", &Simulator::getExistingObjectIDs);
+  ;
 }
