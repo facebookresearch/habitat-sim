@@ -65,20 +65,21 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
 
   flags_ = PbrShader::generateCorrectFlags(flags_);
 
-  updateShader().updateShaderLightParameters();
+  // Defer the shader initialization because at this point, the lightSetup may
+  // not be done in the Simulator. Simulator itself is currently under
+  // construction in this case.
+  // updateShader().updateShaderLightParameters();
 }
 
-void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetup) {
-  lightSetup_ = shaderManager_.get<LightSetup>(lightSetup);
-  updateShader().updateShaderLightParameters();
+void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
+  lightSetup_ = shaderManager_.get<LightSetup>(lightSetupKey);
 }
 
 void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
                        Mn::SceneGraph::Camera3D& camera) {
-  // no need to call updateShaderLightParameters() in the draw loop,
-  // only need to update the position or direction of the lights
-  updateShader().updateShaderLightDirectionParameters(transformationMatrix,
-                                                      camera);
+  updateShader()
+      .updateShaderLightParameters()
+      .updateShaderLightDirectionParameters(transformationMatrix, camera);
 
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been
