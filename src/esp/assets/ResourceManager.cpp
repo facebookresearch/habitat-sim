@@ -1768,6 +1768,9 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
   const auto& materialDataType =
       shaderManager_.get<gfx::MaterialData>(materialKey)->type;
   switch (materialDataType) {
+    case gfx::MaterialDataType::None:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
     case gfx::MaterialDataType::Phong:
       node.addFeature<gfx::GenericDrawable>(
           mesh,                // render mesh
@@ -1785,9 +1788,6 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
           lightSetupKey,       // lightSetup key
           materialKey,         // material key
           group);              // drawable group
-      break;
-    default:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
   }
 }

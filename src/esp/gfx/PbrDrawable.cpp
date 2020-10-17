@@ -53,7 +53,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       flags_ |= PbrShader::Flag::NormalTextureScale;
       CORRADE_ASSERT(materialData_->normalTextureScale > 0.0f,
                      "PbrDrawable::PbrDrawable(): the normal texture scale "
-                     "cannot be negative.", );
+                     "must be positive.", );
     }
   }
   if (materialData_->emissiveTexture) {
