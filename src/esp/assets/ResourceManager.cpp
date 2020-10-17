@@ -332,7 +332,12 @@ bool ResourceManager::buildMeshGroups(
       colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
           info.filepath, meshGroup);
     }
-    // TODO : PTEX collision support
+#ifdef ESP_BUILD_PTEX_SUPPORT
+    else if (info.type == AssetType::FRL_PTEX_MESH) {
+      colMeshGroupSuccess =
+          buildStageCollisionMeshGroup<PTexMeshData>(info.filepath, meshGroup);
+    }
+#endif
 
     // failure during build of collision mesh group
     if (!colMeshGroupSuccess) {
