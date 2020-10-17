@@ -60,10 +60,10 @@ import attr
 
 from habitat_sim.logging import logger
 
-env_var = os.environ.get("HABITAT_PROFILING", "0")
-enable_profiling = env_var != "0"
-if enable_profiling:
-    logger.info("HABITAT_PROFILING={}".format(env_var))
+_env_var = os.environ.get("HABITAT_PROFILING", "0")
+_enable_profiling = _env_var != "0"
+if _enable_profiling:
+    logger.info("HABITAT_PROFILING={}".format(_env_var))
     logger.info("profiling_utils.py range_push/range_pop annotation is enabled")
     from torch.cuda import nvtx
 
@@ -97,7 +97,7 @@ def configure(capture_start_step=-1, num_steps_to_capture=-1):
     terminates.
     """
 
-    if not enable_profiling:
+    if not _enable_profiling:
         return
 
     assert _helper.step_count == -1  # must call configure before on_start_step
@@ -120,7 +120,7 @@ def on_start_step():
     internal bookkeeping. See also configure().
     """
 
-    if not enable_profiling:
+    if not _enable_profiling:
         return
 
     _helper.step_count += 1
@@ -138,7 +138,7 @@ def range_push(msg: str) -> None:
     corresponding range_pop. Attached profilers can capture the time spent in
     ranges."
     """
-    if not enable_profiling:
+    if not _enable_profiling:
         return
 
     nvtx.range_push(msg)
@@ -152,7 +152,7 @@ def range_push(msg: str) -> None:
 
 def range_pop() -> None:
     r"""Annotates the end of a range for profiling. See also range_push."""
-    if not enable_profiling:
+    if not _enable_profiling:
         return
 
     assert _helper.range_depth > 0

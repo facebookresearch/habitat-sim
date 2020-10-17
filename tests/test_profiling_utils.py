@@ -12,16 +12,16 @@ from unittest.mock import patch
 
 from habitat_sim.utils import profiling_utils
 
-env_var_name = "HABITAT_PROFILING"
+_ENV_VAR_NAME = "HABITAT_PROFILING"
 
 # Based on the env var, reloading the profiling_utils module should set
-# profiling_utils.enable_profiling to True or False.
+# profiling_utils._enable_profiling to True or False.
 def test_env_var_enable():
 
     # test with env var not set
-    os.environ.pop(env_var_name, None)
+    os.environ.pop(_ENV_VAR_NAME, None)
     importlib.reload(profiling_utils)
-    assert not profiling_utils.enable_profiling
+    assert not profiling_utils._enable_profiling
     # We also call range_push/range_pop to verify they run without error.
     profiling_utils.range_push("test, env var not set")
     assert profiling_utils._helper.range_depth == 0
@@ -29,17 +29,17 @@ def test_env_var_enable():
 
     # test with env var set to "0". This is equivalent to
     # `export HABITAT_PROFILING=0` on the command line.
-    os.environ[env_var_name] = "0"
+    os.environ[_ENV_VAR_NAME] = "0"
     importlib.reload(profiling_utils)
-    assert not profiling_utils.enable_profiling
+    assert not profiling_utils._enable_profiling
     profiling_utils.range_push("test, HABITAT_PROFILING='0'")
     assert profiling_utils._helper.range_depth == 0
     profiling_utils.range_pop()
 
     # test with env var set to "1"
-    os.environ[env_var_name] = "1"
+    os.environ[_ENV_VAR_NAME] = "1"
     importlib.reload(profiling_utils)
-    assert profiling_utils.enable_profiling
+    assert profiling_utils._enable_profiling
     profiling_utils.range_push("test, HABITAT_PROFILING=True")
     assert profiling_utils._helper.range_depth == 1
     profiling_utils.range_pop()
@@ -48,7 +48,7 @@ def test_env_var_enable():
 # Create nested ranges and verify the code runs without error.
 def test_nested_range_push_pop():
 
-    os.environ[env_var_name] = "1"
+    os.environ[_ENV_VAR_NAME] = "1"
     importlib.reload(profiling_utils)
 
     assert profiling_utils._helper.range_depth == 0
@@ -65,7 +65,7 @@ def test_nested_range_push_pop():
 # Create ranges via RangeContext and verify the code runs without error.
 def test_range_context():
 
-    os.environ[env_var_name] = "1"
+    os.environ[_ENV_VAR_NAME] = "1"
     importlib.reload(profiling_utils)
 
     with profiling_utils.RangeContext("A"):
