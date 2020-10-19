@@ -5,6 +5,6 @@
     "friction_coefficient": 0.4,
     "restitution_coefficient": 0.1,
     "rigid object paths":[
-        "objects/nested_box"
+        "objects"
     ]
 }
