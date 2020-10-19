@@ -83,16 +83,23 @@ void ObjectAttributesManager::setValsFromJSONDoc(
   io::jsonIntoSetter<double>(
       jsonConfig, "mass",
       std::bind(&ObjectAttributes::setMass, objAttributes, _1));
-
+  // linear damping
+  io::jsonIntoSetter<double>(
+      jsonConfig, "linear_damping",
+      std::bind(&ObjectAttributes::setLinearDamping, objAttributes, _1));
+  // angular damping
+  io::jsonIntoSetter<double>(
+      jsonConfig, "angular_damping",
+      std::bind(&ObjectAttributes::setAngularDamping, objAttributes, _1));
   // Use bounding box as collision object
   io::jsonIntoSetter<bool>(
-      jsonConfig, "use bounding box for collision",
+      jsonConfig, "use_bounding_box_for_collision",
       std::bind(&ObjectAttributes::setBoundingBoxCollisions, objAttributes,
                 _1));
 
   // Join collision meshes if specified
   io::jsonIntoSetter<bool>(
-      jsonConfig, "join collision meshes",
+      jsonConfig, "join_collision_meshes",
       std::bind(&ObjectAttributes::setJoinCollisionMeshes, objAttributes, _1));
 
   // The object's interia matrix diagonal

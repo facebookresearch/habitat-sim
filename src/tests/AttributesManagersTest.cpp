@@ -35,9 +35,9 @@ using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
 const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
-const std::string physicsConfigFile = Cr::Utility::Directory::join(
-    SCENE_DATASETS,
-    "../test_assets/testing.phys_scene_config.json");
+const std::string physicsConfigFile =
+    Cr::Utility::Directory::join(SCENE_DATASETS,
+                                 "../test_assets/testing.physics_config.json");
 
 class AttributesManagersTest : public testing::Test {
  protected:
@@ -57,9 +57,9 @@ class AttributesManagersTest : public testing::Test {
    * @return attributes template built from JSON parsed from string
    */
   template <typename T, typename U>
-  std::shared_ptr<U> testBuildAttributesFromJSONString(std::shared_ptr<T> mgr) {
-    // get JSON sample config from static Attributes string
-    const std::string& jsonString = U::JSONConfigTestString;
+  std::shared_ptr<U> testBuildAttributesFromJSONString(
+      std::shared_ptr<T> mgr,
+      const std::string& jsonString) {
     // create JSON document
     try {
       esp::io::JsonDocument tmp = esp::io::parseJsonString(jsonString);
@@ -262,8 +262,8 @@ class AttributesManagersTest : public testing::Test {
       auto attrTemplate1 = mgr->createObject(handle, false);
       // set legitimate render handle in template
       newAttrTemplate0->set(
-          "renderAssetHandle",
-          attrTemplate1->template get<std::string>("renderAssetHandle"));
+          "render_asset",
+          attrTemplate1->template get<std::string>("render_asset"));
     }
 
     // register modified template and verify that this is the template now
@@ -365,17 +365,24 @@ class AttributesManagersTest : public testing::Test {
 };  // class AttributesManagersTest
 
 /**
- * @brief This test will verify that the attributes' managers' JSON loading
- * process is working as expected.
+ * @brief This test will verify that the physics attributes' managers' JSON
+ * loading process is working as expected.
  */
-TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {
-  LOG(INFO)
-      << "Starting AttributesManagersTest::AttributesManagers_JSONLoadTest";
-
+TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_PhysicsJSONLoadTest";
+  // build JSON sample config
+  const std::string& jsonString = R"({
+      "physics_simulator": "bullet_test",
+      "timestep": 1.0,
+      "gravity": [1,2,3],
+      "friction_coefficient": 1.4,
+      "restitution_coefficient": 1.1
+    })";
   auto physMgrAttr =
       testBuildAttributesFromJSONString<AttrMgrs::PhysicsAttributesManager,
                                         Attrs::PhysicsManagerAttributes>(
-          physicsAttributesManager_);
+          physicsAttributesManager_, jsonString);
   // verify exists
   ASSERT_NE(nullptr, physMgrAttr);
   // match values set in test JSON
@@ -385,11 +392,40 @@ TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {
   ASSERT_EQ(physMgrAttr->getSimulator(), "bullet_test");
   ASSERT_EQ(physMgrAttr->getFrictionCoefficient(), 1.4);
   ASSERT_EQ(physMgrAttr->getRestitutionCoefficient(), 1.1);
+}  // AttributesManagers_PhysicsJSONLoadTest
+
+/**
+ * @brief This test will verify that the Stage attributes' managers' JSON
+ * loading process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_StageJSONLoadTest";
+
+  // build JSON sample config
+  const std::string& jsonString =
+      R"({
+        "scale":[2,3,4],
+        "margin": 0.9,
+        "friction_coefficient": 0.321,
+        "restitution_coefficient": 0.456,
+        "requires_lighting": false,
+        "units_to_meters": 1.1,
+        "up":[2.1,0,0],
+        "front":[0,2.1,0],
+        "render_asset": "testJSONRenderAsset.glb",
+        "collision_asset": "testJSONCollisionAsset.glb",
+        "gravity": [9,8,7],
+        "origin":[1,2,3],
+        "semantic_asset":"testJSONSemanticAsset.glb",
+        "nav_asset":"testJSONNavMeshAsset.glb",
+        "house_filename":"testJSONHouseFileName.glb"
+      })";
 
   auto stageAttr =
       testBuildAttributesFromJSONString<AttrMgrs::StageAttributesManager,
                                         Attrs::StageAttributes>(
-          stageAttributesManager_);
+          stageAttributesManager_, jsonString);
   // verify exists
   ASSERT_NE(nullptr, stageAttr);
   // match values set in test JSON
@@ -410,11 +446,38 @@ TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {
   ASSERT_EQ(stageAttr->getSemanticAssetHandle(), "testJSONSemanticAsset.glb");
   ASSERT_EQ(stageAttr->getNavmeshAssetHandle(), "testJSONNavMeshAsset.glb");
   ASSERT_EQ(stageAttr->getHouseFilename(), "testJSONHouseFileName.glb");
+}  // AttributesManagers_StageJSONLoadTest
 
+/**
+ * @brief This test will verify that the Object attributes' managers' JSON
+ * loading process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_ObjectJSONLoadTest";
+  // build JSON sample config
+  const std::string& jsonString =
+      R"({
+        "scale":[2,3,4],
+        "margin": 0.9,
+        "friction_coefficient": 0.321,
+        "restitution_coefficient": 0.456,
+        "requires_lighting": false,
+        "units_to_meters": 1.1,
+        "up":[2.1,0,0],
+        "front":[0,2.1,0],
+        "render_asset": "testJSONRenderAsset.glb",
+        "collision_asset": "testJSONCollisionAsset.glb",
+        "mass": 9,
+        "use_bounding_box_for_collision": true,
+        "join_collision_meshes":true,
+        "inertia": [1.1, 0.9, 0.3],
+        "COM": [0.1,0.2,0.3]
+      })";
   auto objAttr =
       testBuildAttributesFromJSONString<AttrMgrs::ObjectAttributesManager,
                                         Attrs::ObjectAttributes>(
-          objectAttributesManager_);
+          objectAttributesManager_, jsonString);
   // verify exists
   ASSERT_NE(nullptr, objAttr);
   // match values set in test JSON
@@ -436,25 +499,20 @@ TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {
   ASSERT_EQ(objAttr->getInertia(), Magnum::Vector3(1.1, 0.9, 0.3));
   ASSERT_EQ(objAttr->getCOM(), Magnum::Vector3(0.1, 0.2, 0.3));
 
-}  // AttributesManagersTest::AttributesManagers_JSONLoadTest
+}  // AttributesManagersTest::AttributesManagers_ObjectJSONLoadTest
 
 /**
  * @brief This test will test creating, modifying, registering and deleting
- * Attributes via Attributes Mangers for all existing attributes
- * (PhysicsManagerAttributes, StageAttributes, ObjectAttributes, etc). These
+ * Attributes via Attributes Mangers for PhysicsManagerAttributes. These
  * tests should be consistent with most types of future attributes managers
  * specializing the AttributesManager class template that follow the same
  * expected behavior paths as extent attributes/attributesManagers.  Note :
  * PrimitiveAssetAttributes exhibit slightly different behavior and need their
  * own tests.
  */
-TEST_F(AttributesManagersTest, AttributesManagersCreate) {
-  LOG(INFO) << "Starting AttributesManagersTest::AttributesManagersCreate";
-  std::string stageConfigFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/scenes/simple_room.glb");
-
-  std::string objectConfigFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/chair.phys_properties.json");
+TEST_F(AttributesManagersTest, PhysicsAttributesManagersCreate) {
+  LOG(INFO)
+      << "Starting AttributesManagersTest::PhysicsAttributesManagersCreate";
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "PhysicsAttributesManager @ "
@@ -464,7 +522,21 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   testCreateAndRemove<AttrMgrs::PhysicsAttributesManager>(
       physicsAttributesManager_, physicsConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::PhysicsAttributesManager>(
-      physicsAttributesManager_, stageConfigFile, false);
+      physicsAttributesManager_, physicsConfigFile, false);
+}  // AttributesManagersTest::PhysicsAttributesManagersCreate
+
+/**
+ * @brief This test will test creating, modifying, registering and deleting
+ * Attributes via Attributes Mangers for StageAttributes.  These
+ * tests should be consistent with most types of future attributes managers
+ * specializing the AttributesManager class template that follow the same
+ * expected behavior paths as extent attributes/attributesManagers.  Note :
+ * PrimitiveAssetAttributes exhibit slightly different behavior and need their
+ * own tests.
+ */
+TEST_F(AttributesManagersTest, StageAttributesManagersCreate) {
+  std::string stageConfigFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/scenes/simple_room.glb");
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "StageAttributesManager @ "
@@ -475,6 +547,21 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
                                                         stageConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::StageAttributesManager>(
       stageAttributesManager_, stageConfigFile, true);
+
+}  // AttributesManagersTest::StageAttributesManagersCreate
+
+/**
+ * @brief This test will test creating, modifying, registering and deleting
+ * Attributes via Attributes Mangers for ObjectAttributes.  These
+ * tests should be consistent with most types of future attributes managers
+ * specializing the AttributesManager class template that follow the same
+ * expected behavior paths as extent attributes/attributesManagers.  Note :
+ * PrimitiveAssetAttributes exhibit slightly different behavior and need their
+ * own tests.
+ */
+TEST_F(AttributesManagersTest, ObjectAttributesManagersCreate) {
+  std::string objectConfigFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/chair.object_config.json");
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "ObjectAttributesManager @ "
@@ -510,7 +597,7 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   int newNumPrimBased3 = objectAttributesManager_->getNumSynthTemplateObjects();
   ASSERT_EQ(origNumFileBased, newNumFileBased3);
   ASSERT_EQ(origNumPrimBased, newNumPrimBased3);
-}  // AttributesManagersTest::AttributesManagersCreate test
+}  // AttributesManagersTest::ObjectAttributesManagersCreate test
 
 /**
  * @brief test primitive asset attributes functionality in attirbutes managers.

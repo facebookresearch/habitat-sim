@@ -202,7 +202,7 @@ Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
    Try to find the picture of a woman surrounded by a wreath.
    Have fun!
 
-1. **Physical interactions**: If you would like to try out habitat with dynamical objects, first download our pre-processed object data-set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip) and extract as `habitat-sim/data/objects/`.
+1. **Physical interactions**: If you would like to try out habitat with dynamical objects, first download our pre-processed object data-set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip) and extract as `habitat-sim/data/objects/`.
 
    To run an interactive C++ example GUI application with physics enabled run
    ```bash

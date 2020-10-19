@@ -1,5 +1,0 @@
-{
-    "render mesh": "sphere.glb",
-	"collision mesh": "icosphereSolid_subdivs_1",
-	"collision asset size":[0.25,0.25,0.25]
-}

@@ -274,7 +274,7 @@ void initAttributesManagersBindings(py::module& m) {
       .def("load_object_configs",
            &ObjectAttributesManager::loadAllConfigsFromPath,
            R"(DEPRECATED : use "load_configs" instead.
-            Build templates for all files with ".phys_properties.json" extension
+            Build templates for all files with ".object_config.json" extension
             that exist in the provided file or directory path. If save_as_defaults
             is true, then these templates will be unable to be deleted)"
            "path"_a,

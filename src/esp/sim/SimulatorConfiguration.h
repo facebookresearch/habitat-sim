@@ -39,9 +39,9 @@ struct SimulatorConfiguration {
    */
   bool requiresTextures = true;
   std::string physicsConfigFile =
-      ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH;  // should we instead link a
-                                               // PhysicsManagerConfiguration
-                                               // object here?
+      ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH;  // should we instead link a
+                                            // PhysicsManagerConfiguration
+                                            // object here?
   /** @brief Light setup key for scene */
   std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
 

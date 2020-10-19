@@ -36,8 +36,8 @@ void PhysicsAttributesManager::setValsFromJSONDoc(
         jsonConfig) {  // load the simulator preference - default is "none"
                        // simulator, set in
   // attributes ctor.
-  io::jsonIntoSetter<std::string>(
-      jsonConfig, "physics simulator",
+  io::jsonIntoConstSetter<std::string>(
+      jsonConfig, "physics_simulator",
       std::bind(&PhysicsManagerAttributes::setSimulator,
                 physicsManagerAttributes, _1));
 
@@ -47,18 +47,18 @@ void PhysicsAttributesManager::setValsFromJSONDoc(
                                        physicsManagerAttributes, _1));
 
   // load the max substeps between time step
-  io::jsonIntoSetter<int>(jsonConfig, "max substeps",
+  io::jsonIntoSetter<int>(jsonConfig, "max_substeps",
                           std::bind(&PhysicsManagerAttributes::setMaxSubsteps,
                                     physicsManagerAttributes, _1));
   // load the friction coefficient
   io::jsonIntoSetter<double>(
-      jsonConfig, "friction coefficient",
+      jsonConfig, "friction_coefficient",
       std::bind(&PhysicsManagerAttributes::setFrictionCoefficient,
                 physicsManagerAttributes, _1));
 
   // load the restitution coefficient
   io::jsonIntoSetter<double>(
-      jsonConfig, "restitution coefficient",
+      jsonConfig, "restitution_coefficient",
       std::bind(&PhysicsManagerAttributes::setRestitutionCoefficient,
                 physicsManagerAttributes, _1));
 

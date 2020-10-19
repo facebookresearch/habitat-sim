@@ -22,7 +22,7 @@ class PhysicsAttributesManager
  public:
   PhysicsAttributesManager(ObjectAttributesManager::ptr objectAttributesMgr)
       : AttributesManager<attributes::PhysicsManagerAttributes>::
-            AttributesManager("Physics Manager", "phys_scene_config.json"),
+            AttributesManager("Physics Manager", "physics_config.json"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
@@ -37,7 +37,7 @@ class PhysicsAttributesManager
    * overwritten with the newly created one if registerTemplate is true.
    *
    * @param physicsFilename The configuration file to parse. Defaults to the
-   * file location `ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH` set by cmake.
+   * file location `ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH` set by cmake.
    * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
    * subsequent editing will require re-registration. Defaults to true. If
@@ -47,8 +47,7 @@ class PhysicsAttributesManager
    * the specified configuration file.
    */
   attributes::PhysicsManagerAttributes::ptr createObject(
-      const std::string& physicsFilename =
-          ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH,
+      const std::string& physicsFilename = ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH,
       bool registerTemplate = true) override;
 
   /**
