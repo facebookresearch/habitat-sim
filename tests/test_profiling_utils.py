@@ -93,6 +93,9 @@ def test_range_context():
 # Use configure() to capture a desired range of train steps.
 def test_configure_and_on_start_step():
 
+    os.environ[_ENV_VAR_NAME] = "1"
+    importlib.reload(profiling_utils)
+
     # Use mock range_push/range_pop. This test only looks to confirm that these
     # functions get called at the right time.
     def fake_range_push(msg):
