@@ -334,9 +334,15 @@ jobs:
                 wget http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip
                 unzip objects_v0.1.zip -d data/objects/
                 rm objects_v0.1.zip
+                wget http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip
+                unzip -uo objects_v0.2.zip -d data/objects/
+                rm objects_v0.2.zip
                 wget http://dl.fbaipublicfiles.com/habitat/locobot_merged.zip
                 unzip locobot_merged.zip -d data/objects/
                 rm locobot_merged.zip
+                wget http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip
+                unzip -uo locobot_merged_v0.2.zip -d data/objects/
+                rm locobot_merged_v0.2.zip
                 cd ..
               fi
               if [ ! -d ./habitat-sim/data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb ]
