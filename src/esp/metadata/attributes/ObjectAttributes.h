@@ -22,15 +22,6 @@ namespace attributes {
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
   /**
-   * @brief This defines an example json descriptor for @ref
-   * esp::metadata::attributes::AbstractObjectAttributes Has values that are
-   * different than defaults so this can be used to test json loading. These
-   * values are set to be purposefully invalid, for testing purposes, and so
-   * should not be used.
-   */
-  static const std::string JSONConfigTestString;
-
-  /**
    * @brief Constant static map to provide mappings from string tags to @ref
    * esp::assets::AssetType values.  This will be used to map values set in json
    * for mesh type to @ref esp::assets::AssetType.  Keys must be lowercase.
@@ -187,14 +178,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
-  /**
-   * @brief This defines an example json descriptor for @ref ObjectAttributes.
-   * Has values that are different than defaults so this can be used to test
-   * json loading. These values are set to be purposefully invalid, for testing
-   * purposes, and so should not be used.
-   */
-  static const std::string JSONConfigTestString;
-
   ObjectAttributes(const std::string& handle = "");
   // center of mass (COM)
   void setCOM(const Magnum::Vector3& com) { setVec3("COM", com); }
@@ -270,13 +253,6 @@ class ObjectAttributes : public AbstractObjectAttributes {
 //! attributes for a single stage
 class StageAttributes : public AbstractObjectAttributes {
  public:
-  /**
-   * @brief This defines an example json descriptor for @ref StageAttributes
-   * Has values that are different than defaults so this can be used to test
-   * json loading. These values are set to be purposefully invalid, for testing
-   * purposes, and so should not be used.
-   */
-  static const std::string JSONConfigTestString;
   StageAttributes(const std::string& handle = "");
 
   void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }

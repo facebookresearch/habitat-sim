@@ -8,15 +8,6 @@ namespace esp {
 namespace metadata {
 namespace attributes {
 
-const std::string PhysicsManagerAttributes::JSONConfigTestString =
-    R"({
-      "physics simulator": "bullet_test",
-      "timestep": 1.0,
-      "gravity": [1,2,3],
-      "friction coefficient": 1.4,
-      "restitution coefficient": 1.1
-    })";
-
 PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
     : AbstractAttributes("PhysicsManagerAttributes", handle) {
   setSimulator("none");
