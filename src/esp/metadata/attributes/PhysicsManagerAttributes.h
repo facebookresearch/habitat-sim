@@ -17,15 +17,15 @@ class PhysicsManagerAttributes : public AbstractAttributes {
   PhysicsManagerAttributes(const std::string& handle = "");
 
   void setSimulator(const std::string& simulator) {
-    setString("simulator", simulator);
+    setString("physics_simulator", simulator);
   }
-  std::string getSimulator() const { return getString("simulator"); }
+  std::string getSimulator() const { return getString("physics_simulator"); }
 
   void setTimestep(double timestep) { setDouble("timestep", timestep); }
   double getTimestep() const { return getDouble("timestep"); }
 
-  void setMaxSubsteps(int maxSubsteps) { setInt("maxSubsteps", maxSubsteps); }
-  int getMaxSubsteps() const { return getInt("maxSubsteps"); }
+  void setMaxSubsteps(int maxSubsteps) { setInt("max_substeps", maxSubsteps); }
+  int getMaxSubsteps() const { return getInt("max_substeps"); }
 
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
@@ -33,17 +33,17 @@ class PhysicsManagerAttributes : public AbstractAttributes {
   Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
-    setDouble("frictionCoefficient", frictionCoefficient);
+    setDouble("friction_coefficient", frictionCoefficient);
   }
   double getFrictionCoefficient() const {
-    return getDouble("frictionCoefficient");
+    return getDouble("friction_coefficient");
   }
 
   void setRestitutionCoefficient(double restitutionCoefficient) {
-    setDouble("restitutionCoefficient", restitutionCoefficient);
+    setDouble("restitution_coefficient", restitutionCoefficient);
   }
   double getRestitutionCoefficient() const {
-    return getDouble("restitutionCoefficient");
+    return getDouble("restitution_coefficient");
   }
 
  public:

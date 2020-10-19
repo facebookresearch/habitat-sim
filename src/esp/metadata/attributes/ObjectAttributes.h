@@ -38,13 +38,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
 
-  void setCollisionAssetSize(const Magnum::Vector3& collisionAssetSize) {
-    setVec3("collisionAssetSize", collisionAssetSize);
-  }
-  Magnum::Vector3 getCollisionAssetSize() const {
-    return getVec3("collisionAssetSize");
-  }
-
   /**
    * @brief collision shape inflation margin
    */
@@ -55,54 +48,52 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief set default up orientation for object/stage mesh
    */
   void setOrientUp(const Magnum::Vector3& orientUp) {
-    setVec3("orientUp", orientUp);
+    setVec3("orient_up", orientUp);
   }
   /**
    * @brief get default up orientation for object/stage mesh
    */
-  Magnum::Vector3 getOrientUp() const { return getVec3("orientUp"); }
+  Magnum::Vector3 getOrientUp() const { return getVec3("orient_up"); }
   /**
    * @brief set default forwardd orientation for object/stage mesh
    */
   void setOrientFront(const Magnum::Vector3& orientFront) {
-    setVec3("orientFront", orientFront);
+    setVec3("orient_front", orientFront);
   }
   /**
    * @brief get default forwardd orientation for object/stage mesh
    */
-  Magnum::Vector3 getOrientFront() const { return getVec3("orientFront"); }
+  Magnum::Vector3 getOrientFront() const { return getVec3("orient_front"); }
 
   // units to meters mapping
   void setUnitsToMeters(double unitsToMeters) {
-    setDouble("unitsToMeters", unitsToMeters);
+    setDouble("units_to_meters", unitsToMeters);
   }
-  double getUnitsToMeters() const { return getDouble("unitsToMeters"); }
+  double getUnitsToMeters() const { return getDouble("units_to_meters"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
-    setDouble("frictionCoefficient", frictionCoefficient);
+    setDouble("friction_coefficient", frictionCoefficient);
   }
   double getFrictionCoefficient() const {
-    return getDouble("frictionCoefficient");
+    return getDouble("friction_coefficient");
   }
 
   void setRestitutionCoefficient(double restitutionCoefficient) {
-    setDouble("restitutionCoefficient", restitutionCoefficient);
+    setDouble("restitution_coefficient", restitutionCoefficient);
   }
   double getRestitutionCoefficient() const {
-    return getDouble("restitutionCoefficient");
+    return getDouble("restitution_coefficient");
   }
   void setRenderAssetType(int renderAssetType) {
-    setInt("renderAssetType", renderAssetType);
+    setInt("render_asset_type", renderAssetType);
   }
-  int getRenderAssetType() { return getInt("renderAssetType"); }
+  int getRenderAssetType() { return getInt("render_asset_type"); }
 
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
-    setString("renderAssetHandle", renderAssetHandle);
+    setString("render_asset", renderAssetHandle);
     setIsDirty();
   }
-  std::string getRenderAssetHandle() const {
-    return getString("renderAssetHandle");
-  }
+  std::string getRenderAssetHandle() const { return getString("render_asset"); }
 
   /**
    * @brief Sets whether this object uses file-based mesh render object or
@@ -114,21 +105,28 @@ class AbstractObjectAttributes : public AbstractAttributes {
     setBool("renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
 
-  void setCollisionAssetType(int collisionAssetType) {
-    setInt("collisionAssetType", collisionAssetType);
-  }
-  int getCollisionAssetType() { return getInt("collisionAssetType"); }
-
   bool getRenderAssetIsPrimitive() const {
     return getBool("renderAssetIsPrimitive");
   }
 
   void setCollisionAssetHandle(const std::string& collisionAssetHandle) {
-    setString("collisionAssetHandle", collisionAssetHandle);
+    setString("collision_asset", collisionAssetHandle);
     setIsDirty();
   }
   std::string getCollisionAssetHandle() const {
-    return getString("collisionAssetHandle");
+    return getString("collision_asset");
+  }
+
+  void setCollisionAssetType(int collisionAssetType) {
+    setInt("collision_asset_type", collisionAssetType);
+  }
+  int getCollisionAssetType() { return getInt("collision_asset_type"); }
+
+  void setCollisionAssetSize(const Magnum::Vector3& collisionAssetSize) {
+    setVec3("collision_asset_size", collisionAssetSize);
+  }
+  Magnum::Vector3 getCollisionAssetSize() const {
+    return getVec3("collision_asset_size");
   }
 
   /**
@@ -157,9 +155,9 @@ class AbstractObjectAttributes : public AbstractAttributes {
 
   // if true use phong illumination model instead of flat shading
   void setRequiresLighting(bool requiresLighting) {
-    setBool("requiresLighting", requiresLighting);
+    setBool("requires_lighting", requiresLighting);
   }
-  bool getRequiresLighting() const { return getBool("requiresLighting"); }
+  bool getRequiresLighting() const { return getBool("requires_lighting"); }
 
   bool getIsDirty() const { return getBool("__isDirty"); }
   void setIsClean() { setBool("__isDirty", false); }
@@ -199,30 +197,32 @@ class ObjectAttributes : public AbstractObjectAttributes {
   Magnum::Vector3 getInertia() const { return getVec3("inertia"); }
 
   void setLinearDamping(double linearDamping) {
-    setDouble("linearDamping", linearDamping);
+    setDouble("linear_damping", linearDamping);
   }
-  double getLinearDamping() const { return getDouble("linearDamping"); }
+  double getLinearDamping() const { return getDouble("linear_damping"); }
 
   void setAngularDamping(double angularDamping) {
-    setDouble("angularDamping", angularDamping);
+    setDouble("angular_damping", angularDamping);
   }
-  double getAngularDamping() const { return getDouble("angularDamping"); }
+  double getAngularDamping() const { return getDouble("angular_damping"); }
 
   // if true override other settings and use render mesh bounding box as
   // collision object
   void setBoundingBoxCollisions(bool useBoundingBoxForCollision) {
-    setBool("useBoundingBoxForCollision", useBoundingBoxForCollision);
+    setBool("use_bounding_box_for_collision", useBoundingBoxForCollision);
   }
   bool getBoundingBoxCollisions() const {
-    return getBool("useBoundingBoxForCollision");
+    return getBool("use_bounding_box_for_collision");
   }
 
   // if true join all mesh components of an asset into a unified collision
   // object
   void setJoinCollisionMeshes(bool joinCollisionMeshes) {
-    setBool("joinCollisionMeshes", joinCollisionMeshes);
+    setBool("join_collision_meshes", joinCollisionMeshes);
   }
-  bool getJoinCollisionMeshes() const { return getBool("joinCollisionMeshes"); }
+  bool getJoinCollisionMeshes() const {
+    return getBool("join_collision_meshes");
+  }
 
   /**
    * @brief If not visible can add dynamic non-rendered object into a scene

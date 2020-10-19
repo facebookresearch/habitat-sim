@@ -298,7 +298,7 @@ void StageAttributesManager::setValsFromJSONDoc(
   // populate semantic mesh type if present
   std::string semanticFName = stageAttributes->getSemanticAssetHandle();
   if (this->setJSONAssetHandleAndType(
-          stageAttributes, jsonConfig, "semantic mesh type", "semantic mesh",
+          stageAttributes, jsonConfig, "semantic_asset_type", "semantic_asset",
           semanticFName,
           std::bind(&StageAttributes::setSemanticAssetType, stageAttributes,
                     _1))) {
@@ -311,20 +311,20 @@ void StageAttributesManager::setValsFromJSONDoc(
         static_cast<int>(AssetType::INSTANCE_MESH));
   }
 
-  if (io::jsonIntoVal<std::string>(jsonConfig, "nav mesh", navmeshFName)) {
+  if (io::jsonIntoVal<std::string>(jsonConfig, "nav_asset", navmeshFName)) {
     navmeshFName = Cr::Utility::Directory::join(stageLocFileDir, navmeshFName);
     // if "nav mesh" is specified in stage json set value (override default).
     stageAttributes->setNavmeshAssetHandle(navmeshFName);
   }
 
-  if (io::jsonIntoVal<std::string>(jsonConfig, "house filename", houseFName)) {
+  if (io::jsonIntoVal<std::string>(jsonConfig, "house_filename", houseFName)) {
     houseFName = Cr::Utility::Directory::join(stageLocFileDir, houseFName);
     // if "house filename" is specified in stage json, set value (override
     // default).
     stageAttributes->setHouseFilename(houseFName);
   }
 
-  if (io::jsonIntoVal<std::string>(jsonConfig, "lighting setup", lightSetup)) {
+  if (io::jsonIntoVal<std::string>(jsonConfig, "lighting_setup", lightSetup)) {
     // if lighting is specified in stage json to non-empty value, set value
     // (override default).
     stageAttributes->setLightSetup(lightSetup);

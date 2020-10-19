@@ -195,7 +195,7 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
 
   // collision asset size
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonDoc, "collision asset size",
+      jsonDoc, "collision_asset_size",
       std::bind(&T::setCollisionAssetSize, attributes, _1));
   // margin
   io::jsonIntoSetter<double>(jsonDoc, "margin",
@@ -203,20 +203,20 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
 
   // load the friction coefficient
   io::jsonIntoSetter<double>(
-      jsonDoc, "friction coefficient",
+      jsonDoc, "friction_coefficient",
       std::bind(&T::setFrictionCoefficient, attributes, _1));
 
   // load the restitution coefficient
   io::jsonIntoSetter<double>(
-      jsonDoc, "restitution coefficient",
+      jsonDoc, "restitution_coefficient",
       std::bind(&T::setRestitutionCoefficient, attributes, _1));
 
   // if object will be flat or phong shaded
-  io::jsonIntoSetter<bool>(jsonDoc, "requires lighting",
+  io::jsonIntoSetter<bool>(jsonDoc, "requires_lighting",
                            std::bind(&T::setRequiresLighting, attributes, _1));
 
   // units to meters
-  io::jsonIntoSetter<double>(jsonDoc, "units to meters",
+  io::jsonIntoSetter<double>(jsonDoc, "units_to_meters",
                              std::bind(&T::setUnitsToMeters, attributes, _1));
 
   // load object/scene specific up orientation
@@ -233,7 +233,7 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
   std::string rTmpFName = attributes->getRenderAssetHandle();
   // is true if mesh name is found in JSON and different than current value
   if (setJSONAssetHandleAndType(
-          attributes, jsonDoc, "render mesh type", "render mesh", rTmpFName,
+          attributes, jsonDoc, "render_asset_type", "render_asset", rTmpFName,
           std::bind(&T::setRenderAssetType, attributes, _1))) {
     // set asset name to be what was read in json
     rndrFName = rTmpFName;
@@ -244,7 +244,7 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
   std::string cTmpFName = attributes->getCollisionAssetHandle();
   // is true if mesh name is found in JSON and different than current value
   if (setJSONAssetHandleAndType(
-          attributes, jsonDoc, "collision mesh type", "collision mesh",
+          attributes, jsonDoc, "collision_asset_type", "collision_asset",
           cTmpFName, std::bind(&T::setCollisionAssetType, attributes, _1))) {
     // set asset name to be what was read in json
     colFName = cTmpFName;
@@ -295,8 +295,8 @@ bool AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
   if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (T::AssetTypeNamesMap.count(tmpVal)) {
-      typeVal = static_cast<int>(T::AssetTypeNamesMap.at(tmpVal));
+    if (T::AssetTypeNamesMap.count(strToLookFor)) {
+      typeVal = static_cast<int>(T::AssetTypeNamesMap.at(strToLookFor));
     } else {
       LOG(WARNING)
           << "AbstractObjectAttributesManager::setJSONAssetHandleAndType : "
