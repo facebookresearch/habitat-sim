@@ -54,7 +54,7 @@ const std::string skokloster =
 const std::string planeScene =
     Cr::Utility::Directory::join(TEST_ASSETS, "scenes/plane.glb");
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(TEST_ASSETS, "testing.phys_scene_config.json");
+    Cr::Utility::Directory::join(TEST_ASSETS, "testing.physics_config.json");
 const std::string screenshotDir =
     Cr::Utility::Directory::join(TEST_ASSETS, "screenshots/");
 

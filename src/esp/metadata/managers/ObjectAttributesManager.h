@@ -21,7 +21,9 @@ class ObjectAttributesManager
  public:
   ObjectAttributesManager()
       : AbstractObjectAttributesManager<attributes::ObjectAttributes>::
-            AbstractObjectAttributesManager("Object", "phys_properties.json") {
+            AbstractObjectAttributesManager(
+                "Object",
+                "object_config.json") {  // was phys_properties.json
     buildCtorFuncPtrMaps();
   }
 
