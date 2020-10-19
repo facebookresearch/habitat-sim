@@ -27,7 +27,7 @@ Physics Manager Attributes templates describe quantities pertinent to building t
 
 Below are the supported JSON tags for Physics Manager Attributes templates, and their meanings.
 
-"physics simulator"
+"physics_simulator"
 	- string
 	- What physics engine should be used for dynamics simulation.  Currently supports "bullet" for Bullet physics simulation, and "none", meaning kinematic motion is to be used.
 "gravity"
