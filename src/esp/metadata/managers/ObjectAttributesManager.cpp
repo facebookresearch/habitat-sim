@@ -118,7 +118,8 @@ void ObjectAttributesManager::setValsFromJSONDoc(
 
 ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     const std::string& attributesHandle) {
-  ObjectAttributes::ptr newAttributes = this->constructFromDefault();
+  ObjectAttributes::ptr newAttributes =
+      this->constructFromDefault(attributesHandle);
   if (nullptr == newAttributes) {
     newAttributes = ObjectAttributes::create(attributesHandle);
   }

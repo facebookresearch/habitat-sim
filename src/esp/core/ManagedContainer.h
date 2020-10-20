@@ -512,9 +512,10 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::
 
   /**
-   * @brief This function will build the appropriate function pointer map for
-   * this container's managed object, keyed on the managed object's class
-   * type.
+   * @brief This function will build the appropriate @ref copyConstructorMap_
+   * copy constructor function pointer map for this container's managed object,
+   * keyed on the managed object's class type.  This MUST be called in the
+   * constructor of the -instancing- class.
    */
   virtual void buildCtorFuncPtrMaps() = 0;
 
@@ -532,13 +533,18 @@ class ManagedContainer : public ManagedContainerBase {
   /**
    * @brief Create a new object as a copy of @ref defaultObject_  if it exists,
    * otherwise return nullptr.
+   * @param newHandle the name for the copy of the default.
    * @return New object or nullptr
    */
-  ManagedPtr constructFromDefault() {
+  ManagedPtr constructFromDefault(const std::string& newHandle) {
     if (defaultObj_ == nullptr) {
       return nullptr;
     }
-    return this->copyObject(defaultObj_);
+    ManagedPtr res = this->copyObject(defaultObj_);
+    if (nullptr != res) {
+      res->setHandle(newHandle);
+    }
+    return res;
   }  // ManagedContainer::constructFromDefault
 
   /**
@@ -615,7 +621,7 @@ auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
     }
   }
   return res;
-}  // removeAllObjects
+}  // ManagedContainer<T>::removeObjectsBySubstring
 
 template <class T>
 auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
@@ -643,7 +649,7 @@ auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
   // holding them.
   deleteObjectInternal(attribsTemplate->getID(), objectHandle);
   return attribsTemplate;
-}  // ManagedContainer::removeObjectByHandle
+}  // ManagedContainer::removeObjectInternal
 
 }  // namespace core
 }  // namespace esp

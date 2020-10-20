@@ -21,6 +21,7 @@
 
 #include "esp/core/AbstractManagedObject.h"
 
+#include "esp/io/io.h"
 #include "esp/io/json.h"
 
 namespace Cr = Corrade;
@@ -213,7 +214,7 @@ class ManagedContainerBase {
     objectLibrary_[handle] = ptr;
   }
 
-  //======== Common JSON import functions ========
+  //======== Common JSON import and utility functions ========
 
   /**
    * @brief Verify passd @p filename is legal document of type T. Returns loaded
@@ -245,6 +246,30 @@ class ManagedContainerBase {
    */
   bool verifyLoadDocument(const std::string& filename,
                           io::JsonDocument& jsonDoc);
+
+  /**
+   * @brief Will build a json file name for @p filename by appending/replacing
+   * the extension with the passed @p jsonTypeExt, if it is missing.  NOTE :
+   * this does not verify that file exists.
+   * @param filename The original file name
+   * @param jsonTypeExt The extension to use.
+   * @return The file name changed so that it has the correct @p jsonTypeExtif
+   * it was missing.
+   */
+  std::string convertFilenameToJSON(const std::string& filename,
+                                    const std::string& jsonTypeExt) {
+    std::string strHandle = Cr::Utility::String::lowercase(filename);
+    std::string resHandle(filename);
+    if (std::string::npos ==
+        strHandle.find(Cr::Utility::String::lowercase(jsonTypeExt))) {
+      resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
+                  jsonTypeExt;
+    }
+    LOG(WARNING) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
+                 << filename
+                 << " changed to proposed JSON filename : " << resHandle;
+    return resHandle;
+  }  // ManagedContainerBase::convertFilenameToJSON
 
   /**
    * @brief This method will perform any necessary updating that is
