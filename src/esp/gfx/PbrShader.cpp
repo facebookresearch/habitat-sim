@@ -98,7 +98,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
   attributeLocationsStream << Cr::Utility::formatString(
       "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
-  if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent) && lightCount) {
+  if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent) &&
+      lightCount_) {
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
@@ -158,7 +159,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
       .addSource(
-          Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount))
+          Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
       .addSource(rs.get("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
@@ -175,40 +176,40 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 #endif
   {
     bindAttributeLocation(Position::Location, "vertexPosition");
-    if (lightCount) {
+    if (lightCount_) {
       bindAttributeLocation(Normal::Location, "vertexNormal");
-    }
-    if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent) &&
-        lightCount) {
-      bindAttributeLocation(Tangent4::Location, "vertexTangent");
+      if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent)) {
+        bindAttributeLocation(Tangent4::Location, "vertexTangent");
+      }
     }
     if (isTextured) {
       bindAttributeLocation(TextureCoordinates::Location, "vertexTexCoord");
     }
-  }
+  }  // if
 
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
-  if ((flags_ & Flag::BaseColorTexture) && lightCount_) {
-    setUniform(uniformLocation("BaseColorTexture"), TextureUnit::BaseColor);
-  }
-  if ((flags_ & Flag::RoughnessTexture) && lightCount_) {
-    setUniform(uniformLocation("RoughnessTexture"), TextureUnit::Roughness);
-  }
-  if ((flags_ & Flag::MetallicTexture) && lightCount_) {
-    setUniform(uniformLocation("MetallicTexture"), TextureUnit::Metallic);
-  }
-  if ((flags_ & Flag::NormalTexture) && lightCount_) {
-    setUniform(uniformLocation("NormalTexture"), TextureUnit::Normal);
+  if (lightCount_) {
+    if (flags_ & Flag::BaseColorTexture) {
+      setUniform(uniformLocation("BaseColorTexture"), TextureUnit::BaseColor);
+    }
+    if (flags_ & Flag::RoughnessTexture) {
+      setUniform(uniformLocation("RoughnessTexture"), TextureUnit::Roughness);
+    }
+    if (flags_ & Flag::MetallicTexture) {
+      setUniform(uniformLocation("MetallicTexture"), TextureUnit::Metallic);
+    }
+    if (flags_ & Flag::NormalTexture) {
+      setUniform(uniformLocation("NormalTexture"), TextureUnit::Normal);
+    }
+    if ((flags_ & Flag::NoneRoughnessMetallicTexture) ||
+        (flags_ & Flag::OcclusionRoughnessMetallicTexture)) {
+      setUniform(uniformLocation("PackedTexture"), TextureUnit::Packed);
+    }
   }
   // emissive texture does not depend on lights
   if (flags_ & Flag::EmissiveTexture) {
     setUniform(uniformLocation("EmissiveTexture"), TextureUnit::Emissive);
-  }
-  if (((flags_ & Flag::NoneRoughnessMetallicTexture) ||
-       (flags_ & Flag::OcclusionRoughnessMetallicTexture)) &&
-      lightCount_) {
-    setUniform(uniformLocation("PackedTexture"), TextureUnit::Packed);
   }
 
   // cache the uniform locations
@@ -247,7 +248,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     setBaseColor(Magnum::Color4{0.7f});
     setRoughness(0.9f);
     setMetallic(0.1f);
-    setNormalTextureScale(1.0f);
+    if (flags_ & Flag::NormalTexture) {
+      setNormalTextureScale(1.0f);
+    }
     setNormalMatrix(Mn::Matrix3x3{Mn::Math::IdentityInit});
 
     setLightVectors(Cr::Containers::Array<Mn::Vector4>{
