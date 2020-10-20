@@ -255,7 +255,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
     setLightVectors(Cr::Containers::Array<Mn::Vector4>{
         Cr::Containers::DirectInit, lightCount_,
-        Mn::Vector4{0.0f, 0.0f, 0.0f, 1.0f}});
+        // a single directional "fill" light, coming from the center of the
+        // camera.
+        Mn::Vector4{0.0f, 0.0f, 1.0f, 0.0f}});
     Cr::Containers::Array<Mn::Color3> colors{Cr::Containers::DirectInit,
                                              lightCount_, Mn::Color3{1.0f}};
     setLightColors(colors);

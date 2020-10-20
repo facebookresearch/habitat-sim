@@ -188,6 +188,21 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @brief Constructor
    * @param flags         Flags
    * @param lightCount    Count of light sources
+   *
+   * By default,
+   *
+   * the shader provides a single directional "fill" light, coming
+   * from the center of the camera. Using the @p lightCount parameter in
+   * constructor, you can specify how many lights you want, and then control
+   * light parameters using @ref setLightVectors(), @ref setLightColors(),
+   * and @ref setLightRanges(). Light positions (directions)
+   * are specified as four-component vectors, the last component distinguishing
+   * between directional (w == 0) and point lights (w == 1.0).
+   *
+   * the shader renders the mesh with a white color in an identity
+   * transformation.
+   *
+   * the light range is set to Magnum::Constants::inf()
    */
   explicit PbrShader(Flags flags = {}, unsigned int lightCount = 1);
 
