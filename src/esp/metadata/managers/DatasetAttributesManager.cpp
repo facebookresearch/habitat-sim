@@ -120,16 +120,29 @@ void DatasetAttributesManager::readDatasetJSONCell(
       // 2. "paths" an array of paths to search for appropriately typed config
       // files.
       if (jCell.HasMember("paths")) {
-        if (!jCell["paths"].IsArray()) {
+        if (!jCell["paths"].IsObject()) {
           LOG(WARNING) << "DatasetAttributesManager::readDatasetJSONCell : \""
                        << tag
                        << ".paths\" cell in JSON config unable to be parsed as "
                           "an array to determine search paths so skipping.";
         } else {
-          const auto& paths = jCell["paths"];
-          attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
-        }  // if is array
-      }    // if has paths cell
+          const auto& pathsObj = jCell["paths"];
+          if (pathsObj.HasMember(".json")) {
+            if (!pathsObj[".json"].IsArray()) {
+              LOG(WARNING)
+                  << "DatasetAttributesManager::readDatasetJSONCell : \"" << tag
+                  << ".paths.\".json\"\" cell in JSON config unable to be "
+                     "parsed as "
+                     "an array to determine search paths for json config so "
+                     "skipping.";
+            } else {
+              const auto& paths = pathsObj[".json"];
+              attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
+            }
+          }  // if has member ".json"
+             // TODO support other extention tags
+        }    // if paths cell is an object
+      }      // if has paths cell
       // 3. "configs" : an array of json cells defining customizations to
       // existing attributes.
       if (jCell.HasMember("configs")) {
