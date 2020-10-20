@@ -75,17 +75,24 @@ class PhysicsAttributesManager
    * any default values, before any specific values are set.
    *
    * @param handleName handle name to be assigned to attributes
+   * @param builtFromConfig Whether this PhysicsManagerAttributes is being built
+   * from a config file (i.e. handleName is the name of a configuration file) or
+   * from some other source.
+   * @return Newly created but unregistered PhysicsManagerAttributes pointer,
+   * with only default values set.
    */
   attributes::PhysicsManagerAttributes::ptr initNewObjectInternal(
-      const std::string& handleName) override {
+      const std::string& handleName,
+      bool builtFromConfig) override {
     attributes::PhysicsManagerAttributes::ptr newAttributes =
-        this->constructFromDefault();
+        this->constructFromDefault(handleName);
     if (nullptr == newAttributes) {
       newAttributes = attributes::PhysicsManagerAttributes::create(handleName);
     }
     this->setFileDirectoryFromHandle(newAttributes);
     return newAttributes;
-  }
+  }  // PhysicsAttributesManager::initNewObjectInternal
+
   /**
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
@@ -119,7 +126,7 @@ class PhysicsAttributesManager
     int physicsTemplateID = this->addObjectToLibrary(physicsAttributesTemplate,
                                                      physicsAttributesHandle);
     return physicsTemplateID;
-  }  // PhysicsAttributesManager::registerAttributesTemplate
+  }  // PhysicsAttributesManager::registerObjectFinalize
 
   /**
    * @brief Any physics-attributes-specific resetting that needs to happen on

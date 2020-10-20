@@ -71,7 +71,7 @@ class ManagedContainer : public ManagedContainerBase {
   ManagedPtr createDefaultObject(const std::string& objectName,
                                  bool registerObject = false) {
     // create default managed object
-    ManagedPtr object = this->initNewObjectInternal(objectName);
+    ManagedPtr object = this->initNewObjectInternal(objectName, false);
     if (nullptr == object) {
       return nullptr;
     }
@@ -96,7 +96,7 @@ class ManagedContainer : public ManagedContainerBase {
     if (!success) {
       LOG(ERROR) << "ManagedContainer::createObjectFromFile ("
                  << this->objectType_
-                 << ") : Failure reading document : " << filename
+                 << ") : Failure reading document as JSON : " << filename
                  << ". Aborting.";
       return nullptr;
     }
@@ -125,7 +125,7 @@ class ManagedContainer : public ManagedContainerBase {
   }
   /**
    * @brief Method to load a Managed Object's data from a file.  This is the
-   * JSON specialization.
+   * JSON specialization, using type inference.
    * @param filename name of file document to load from
    * @param config JSON document to read for data
    * @return a shared pointer of the created Managed Object
@@ -444,8 +444,14 @@ class ManagedContainer : public ManagedContainerBase {
    * with any default values, before any specific values are set.
    *
    * @param objectHandle handle name to be assigned to the managed object.
+   * @param builtFromConfig Managed Object is being constructed from a config
+   * file (i.e. @p objectHandle is config file filename).  If false this means
+   * Manage Object is being constructed as some kind of new/default.
+   * @return Newly created but unregistered ManagedObject pointer, with only
+   * default values set.
    */
-  virtual ManagedPtr initNewObjectInternal(const std::string& objectHandle) = 0;
+  virtual ManagedPtr initNewObjectInternal(const std::string& objectHandle,
+                                           bool builtFromConfig) = 0;
 
   /**
    * @brief Used Internally. Remove the managed object referenced by the passed
@@ -512,9 +518,10 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::
 
   /**
-   * @brief This function will build the appropriate function pointer map for
-   * this container's managed object, keyed on the managed object's class
-   * type.
+   * @brief This function will build the appropriate @ref copyConstructorMap_
+   * copy constructor function pointer map for this container's managed object,
+   * keyed on the managed object's class type.  This MUST be called in the
+   * constructor of the -instancing- class.
    */
   virtual void buildCtorFuncPtrMaps() = 0;
 
@@ -532,13 +539,18 @@ class ManagedContainer : public ManagedContainerBase {
   /**
    * @brief Create a new object as a copy of @ref defaultObject_  if it exists,
    * otherwise return nullptr.
+   * @param newHandle the name for the copy of the default.
    * @return New object or nullptr
    */
-  ManagedPtr constructFromDefault() {
+  ManagedPtr constructFromDefault(const std::string& newHandle) {
     if (defaultObj_ == nullptr) {
       return nullptr;
     }
-    return this->copyObject(defaultObj_);
+    ManagedPtr res = this->copyObject(defaultObj_);
+    if (nullptr != res) {
+      res->setHandle(newHandle);
+    }
+    return res;
   }  // ManagedContainer::constructFromDefault
 
   /**
@@ -615,7 +627,7 @@ auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
     }
   }
   return res;
-}  // removeAllObjects
+}  // ManagedContainer<T>::removeObjectsBySubstring
 
 template <class T>
 auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
@@ -643,7 +655,7 @@ auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
   // holding them.
   deleteObjectInternal(attribsTemplate->getID(), objectHandle);
   return attribsTemplate;
-}  // ManagedContainer::removeObjectByHandle
+}  // ManagedContainer::removeObjectInternal
 
 }  // namespace core
 }  // namespace esp

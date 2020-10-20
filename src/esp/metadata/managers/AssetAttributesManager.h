@@ -462,10 +462,14 @@ class AssetAttributesManager
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
    * @param primClassName Primitive Magnum class name.
+   * @param builtFromConfig Whether this Primitive Asset Attributes object is
+   * being created from a config file (i.e. a json file) or from some other
+   * source.
    * @return newAttributes Newly created attributes.
    */
   attributes::AbstractPrimitiveAttributes::ptr initNewObjectInternal(
-      const std::string& primClassName) override {
+      const std::string& primClassName,
+      bool builtFromConfig) override {
     if (primTypeConstructorMap_.count(primClassName) == 0) {
       LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
                     "primitive class"

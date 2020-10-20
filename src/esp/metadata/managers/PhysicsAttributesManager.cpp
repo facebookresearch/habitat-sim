@@ -31,7 +31,7 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
 }  // PhysicsAttributesManager::createObject
 
 void PhysicsAttributesManager::setValsFromJSONDoc(
-    attributes::PhysicsManagerAttributes::ptr physicsManagerAttributes,
+    PhysicsManagerAttributes::ptr physicsManagerAttributes,
     const io::JsonGenericValue&
         jsonConfig) {  // load the simulator preference - default is "none"
                        // simulator, set in
