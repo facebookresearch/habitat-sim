@@ -134,7 +134,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindEmissiveTexture(*materialData_->emissiveTexture);
   }
 
-  if (materialData_->textureMatrix != Mn::Matrix3{}) {
+  if ((flags_ & PbrShader::Flag::TextureTransformation) &&
+      (materialData_->textureMatrix != Mn::Matrix3{})) {
     shader_->setTextureMatrix(materialData_->textureMatrix);
   }
 
