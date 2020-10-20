@@ -13,6 +13,7 @@
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/DatasetAttributesManager.h"
+#include "esp/metadata/managers/LightAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
@@ -23,7 +24,7 @@ namespace Attrs = esp::metadata::attributes;
 class MetadataMediator {
  public:
   MetadataMediator(const std::string& _defaultDataset = "default")
-      : defaultDataset_(_defaultDataset) {
+      : activeDataset_(_defaultDataset) {
     buildAttributesManagers();
   }  // namespace metadata
   ~MetadataMediator() {}
@@ -57,11 +58,11 @@ class MetadataMediator {
    * for an empty dataset.
    * @return whether successful or not
    */
-  bool setCurrentDataset(const std::string& datasetName);
+  bool setActiveDatasetName(const std::string& datasetName);
   /**
    * @brief Returns the name of the current default dataset
    */
-  std::string getCurrentDataset() const { return defaultDataset_; }
+  std::string getActiveDatasetName() const { return activeDataset_; }
 
   /**
    * @brief Return manager for construction and access to asset attributes for
@@ -69,7 +70,7 @@ class MetadataMediator {
    */
   const managers::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getDefaultDSAttribs();
+    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getAssetAttributesManager();
   }
@@ -78,9 +79,20 @@ class MetadataMediator {
    * @brief Return manager for construction and access to object attributes for
    * current dataset.
    */
+  const managers::LightAttributesManager::ptr getLightAttributesManager()
+      const {
+    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    return (nullptr == datasetAttr) ? nullptr
+                                    : datasetAttr->getLightAttributesManager();
+  }
+
+  /**
+   * @brief Return manager for construction and access to object attributes for
+   * current dataset.
+   */
   const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getDefaultDSAttribs();
+    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getObjectAttributesManager();
   }
@@ -91,7 +103,7 @@ class MetadataMediator {
    */
   const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getDefaultDSAttribs();
+    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getStageAttributesManager();
   }  // MetadataMediator::getStageAttributesManager
@@ -112,24 +124,24 @@ class MetadataMediator {
    * @brief Retrieve the current default dataset object.  Currently only for
    * internal use.
    */
-  Attrs::DatasetAttributes::ptr getDefaultDSAttribs() const {
+  Attrs::DatasetAttributes::ptr getActiveDSAttribs() const {
     // do not get copy of dataset attributes until datasetAttributes deep copy
     // ctor implemented
     auto datasetAttr =
-        datasetAttributesManager_->getObjectByHandle(defaultDataset_);
+        datasetAttributesManager_->getObjectByHandle(activeDataset_);
     if (nullptr == datasetAttr) {
       LOG(ERROR)
-          << "MetadataMediator::getDefaultDSAttribs : Unknown dataset named "
-          << defaultDataset_ << ". Aborting";
+          << "MetadataMediator::getActiveDSAttribs : Unknown dataset named "
+          << activeDataset_ << ". Aborting";
       return nullptr;
     }
     return datasetAttr;
-  }  // MetadataMediator::getDefaultDSAttribs
+  }  // MetadataMediator::getActiveDSAttribs
 
   /**
    * @brief String name of current, default dataset.
    */
-  std::string defaultDataset_;
+  std::string activeDataset_;
   /**
    * @brief Manages all construction and access to asset attributes.
    */

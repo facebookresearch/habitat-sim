@@ -28,7 +28,8 @@ DatasetAttributes::ptr DatasetAttributesManager::createObject(
 
 DatasetAttributes::ptr DatasetAttributesManager::initNewObjectInternal(
     const std::string& datasetFilename) {
-  DatasetAttributes::ptr newAttributes = this->constructFromDefault();
+  DatasetAttributes::ptr newAttributes =
+      this->constructFromDefault(datasetFilename);
   if (nullptr == newAttributes) {
     newAttributes =
         DatasetAttributes::create(datasetFilename, physicsAttributesManager_);
@@ -56,9 +57,9 @@ void DatasetAttributesManager::setValsFromJSONDoc(
   readDatasetJSONCell(dsDir, "objects", jsonConfig,
                       dsAttribs->getObjectAttributesManager());
 
-  // process light setups - implement handling light setups TODO
-  // readDatasetJSONCell(dsDir,"light setups", jsonConfig,
-  //                     dsAttribs->getLightsAttributesManager());
+  // process light setups - implement handling light setups
+  readDatasetJSONCell(dsDir, "light setups", jsonConfig,
+                      dsAttribs->getLightAttributesManager());
 
   // process scene instances - implement handling scene instances TODO
   // readDatasetJSONCell(dsDir,"scene instances", jsonConfig,

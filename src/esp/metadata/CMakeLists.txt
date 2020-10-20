@@ -7,6 +7,8 @@ set(
   attributes/AttributesBase.h
   attributes/DatasetAttributes.h
   attributes/DatasetAttributes.cpp
+  attributes/LightAttributes.h
+  attributes/LightAttributes.cpp
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
   attributes/SceneAttributes.h
@@ -21,6 +23,8 @@ set(
   managers/AssetAttributesManager.cpp
   managers/DatasetAttributesManager.h
   managers/DatasetAttributesManager.cpp
+  managers/LightAttributesManager.h
+  managers/LightAttributesManager.cpp
   managers/ObjectAttributesManager.h
   managers/ObjectAttributesManager.cpp
   managers/PhysicsAttributesManager.h

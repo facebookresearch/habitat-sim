@@ -13,6 +13,7 @@
 #include "AttributesBase.h"
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/LightAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
@@ -38,11 +39,32 @@ class DatasetAttributes : public AbstractAttributes {
     return objectAttributesManager_;
   }
   /**
+   * @brief Return manager for construction and access to light attributes.
+   */
+  const managers::LightAttributesManager::ptr getLightAttributesManager()
+      const {
+    return lightAttributesManager_;
+  }
+  /**
    * @brief Return manager for construction and access to scene attributes.
    */
   const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
     return stageAttributesManager_;
+  }
+
+  /**
+   * @brief Return the map for navmesh file locations
+   */
+  const std::map<std::string, std::string>& getNavmeshMap() const {
+    return navmeshMap_;
+  }
+
+  /**
+   * @brief Return the map for semantic scene descriptor file locations
+   */
+  const std::map<std::string, std::string>& getSemanticSceneDescrMap() const {
+    return semanticSceneDescrMap_;
   }
 
   /**
@@ -80,6 +102,13 @@ class DatasetAttributes : public AbstractAttributes {
    * attributes for object construction
    */
   managers::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
+
+  /**
+   * @brief Manages all construction and access to light attributes from this
+   * dataset.
+   */
+  managers::LightAttributesManager::ptr lightAttributesManager_ = nullptr;
+
   /**
    * @brief Manages all construction and access to object attributes from this
    * dataset.
@@ -90,6 +119,15 @@ class DatasetAttributes : public AbstractAttributes {
    * dataset.
    */
   managers::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
+  /**
+   * @brief Maps names specified in dataset_config file to paths for navmeshes.
+   */
+  std::map<std::string, std::string> navmeshMap_;
+  /**
+   * @brief Maps names specified in dataset_config file to paths for semantic
+   * scene descriptor files
+   */
+  std::map<std::string, std::string> semanticSceneDescrMap_;
 
  public:
   ESP_SMART_POINTERS(DatasetAttributes)
