@@ -21,6 +21,7 @@
 
 #include "esp/core/AbstractManagedObject.h"
 
+#include "esp/io/io.h"
 #include "esp/io/json.h"
 
 namespace Cr = Corrade;
@@ -190,6 +191,11 @@ class ManagedContainerBase {
     return objectLibrary_.count(handle) > 0;
   }  // ManagedContainerBase::getObjectLibHasHandle
 
+  /**
+   * @brief Get the type of object this ManagedContainer manages.
+   */
+  const std::string& getObjectType() const { return objectType_; }
+
  protected:
   //======== Internally accessed getter ================
 
@@ -213,7 +219,7 @@ class ManagedContainerBase {
     objectLibrary_[handle] = ptr;
   }
 
-  //======== Common JSON import functions ========
+  //======== Common JSON import and utility functions ========
 
   /**
    * @brief Verify passd @p filename is legal document of type T. Returns loaded
@@ -245,6 +251,18 @@ class ManagedContainerBase {
    */
   bool verifyLoadDocument(const std::string& filename,
                           io::JsonDocument& jsonDoc);
+
+  /**
+   * @brief Will build a json file name for @p filename by appending/replacing
+   * the extension with the passed @p jsonTypeExt, if it is missing.  NOTE :
+   * this does not verify that file exists.
+   * @param filename The original file name
+   * @param jsonTypeExt The extension to use.
+   * @return The file name changed so that it has the correct @p jsonTypeExtif
+   * it was missing.
+   */
+  std::string convertFilenameToJSON(const std::string& filename,
+                                    const std::string& jsonTypeExt);
 
   /**
    * @brief This method will perform any necessary updating that is
@@ -306,7 +324,9 @@ class ManagedContainerBase {
 
   /**
    * @brief Get a list of all managed objects of passed type whose origin
-   * handles contain substr, ignoring subStr's case
+   * handles contain substr, ignoring subStr's case.
+   *
+   * This version works on std::map<int,std::string> maps' values.
    * @param mapOfHandles map containing the desired object-type managed object
    * handles
    * @param subStr substring to search for within existing primitive object
@@ -318,6 +338,25 @@ class ManagedContainerBase {
    */
   std::vector<std::string> getObjectHandlesBySubStringPerType(
       const std::map<int, std::string>& mapOfHandles,
+      const std::string& subStr,
+      bool contains) const;
+
+  /**
+   * @brief Get a list of all managed objects of passed type whose origin
+   * handles contain substr, ignoring subStr's case.
+   *
+   * This version works on std::map<std::string, std::set<std::string>> maps's
+   * keys.
+   * @param mapOfHandles map containing the desired keys to search.
+   * @param subStr substring to search for within existing primitive object
+   * managed objects
+   * @param contains Whether to search for handles containing, or not
+   * containting, substr
+   * @return vector of 0 or more managed object handles containing/not
+   * containing the passed substring
+   */
+  std::vector<std::string> getObjectHandlesBySubStringPerType(
+      const std::map<std::string, std::set<std::string>>& mapOfHandles,
       const std::string& subStr,
       bool contains) const;
 

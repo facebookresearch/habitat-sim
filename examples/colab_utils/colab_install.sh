@@ -48,8 +48,8 @@ rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere wit
 
 #Download Assets
 wget -c http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip && unzip -o habitat-test-scenes.zip
-wget -c http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip && unzip -o objects_v0.1.zip -d data/objects/
-wget -c http://dl.fbaipublicfiles.com/habitat/locobot_merged.zip && unzip -o locobot_merged.zip -d data/objects
+wget -c http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip && unzip -o objects_v0.2.zip -d data/objects/
+wget -c http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip && unzip -o locobot_merged_v0.2.zip -d data/objects
 
 #symlink assets appear in habitat-api folder
 ln -s /content/habitat-sim/data /content/habitat-lab/.

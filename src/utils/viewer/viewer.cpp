@@ -236,7 +236,7 @@ Viewer::Viewer(const Arguments& arguments)
                "Stage asset should be lit with Phong shading.")
       .addBooleanOption("debug-bullet")
       .setHelp("debug-bullet", "Render Bullet physics debug wireframes.")
-      .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH)
+      .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
       .addBooleanOption("disable-navmesh")

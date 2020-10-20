@@ -37,9 +37,9 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     return nullptr;
   }
 
-  // construct a ObjectAttributes
+  // construct a ObjectAttributes based on prim handle
   auto primObjectAttributes =
-      this->initNewObjectInternal(primAttrTemplateHandle);
+      this->initNewObjectInternal(primAttrTemplateHandle, false);
   // set margin to be 0
   primObjectAttributes->setMargin(0.0);
   // make smaller as default size - prims are approx meter in size
@@ -83,16 +83,23 @@ void ObjectAttributesManager::setValsFromJSONDoc(
   io::jsonIntoSetter<double>(
       jsonConfig, "mass",
       std::bind(&ObjectAttributes::setMass, objAttributes, _1));
-
+  // linear damping
+  io::jsonIntoSetter<double>(
+      jsonConfig, "linear_damping",
+      std::bind(&ObjectAttributes::setLinearDamping, objAttributes, _1));
+  // angular damping
+  io::jsonIntoSetter<double>(
+      jsonConfig, "angular_damping",
+      std::bind(&ObjectAttributes::setAngularDamping, objAttributes, _1));
   // Use bounding box as collision object
   io::jsonIntoSetter<bool>(
-      jsonConfig, "use bounding box for collision",
+      jsonConfig, "use_bounding_box_for_collision",
       std::bind(&ObjectAttributes::setBoundingBoxCollisions, objAttributes,
                 _1));
 
   // Join collision meshes if specified
   io::jsonIntoSetter<bool>(
-      jsonConfig, "join collision meshes",
+      jsonConfig, "join_collision_meshes",
       std::bind(&ObjectAttributes::setJoinCollisionMeshes, objAttributes, _1));
 
   // The object's interia matrix diagonal
@@ -110,27 +117,34 @@ void ObjectAttributesManager::setValsFromJSONDoc(
 }  // ObjectAttributesManager::setValsFromJSONDoc
 
 ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
-    const std::string& attributesHandle) {
-  ObjectAttributes::ptr newAttributes = this->constructFromDefault();
+    const std::string& attributesHandle,
+    bool builtFromConfig) {
+  ObjectAttributes::ptr newAttributes =
+      this->constructFromDefault(attributesHandle);
   if (nullptr == newAttributes) {
     newAttributes = ObjectAttributes::create(attributesHandle);
   }
   this->setFileDirectoryFromHandle(newAttributes);
-  // set default render asset handle
-  newAttributes->setRenderAssetHandle(attributesHandle);
-  // set default collision asset handle
-  newAttributes->setCollisionAssetHandle(attributesHandle);
-  // set defaults for passed render asset handles
-  this->setDefaultAssetNameBasedAttributes(
-      newAttributes, true, newAttributes->getRenderAssetHandle(),
-      std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
-                _1));
-  // set defaults for passed collision asset handles
-  this->setDefaultAssetNameBasedAttributes(
-      newAttributes, false, newAttributes->getCollisionAssetHandle(),
-      std::bind(&AbstractObjectAttributes::setCollisionAssetType, newAttributes,
-                _1));
 
+  // set default render and collision asset handle\
+  // only set handle defaults if attributesHandle is not a config file (which would
+  // never be a valid render or collision asset name).  Otherise, expect handles
+  // and types to be set when config is read.
+  if (!builtFromConfig) {
+    newAttributes->setRenderAssetHandle(attributesHandle);
+    newAttributes->setCollisionAssetHandle(attributesHandle);
+
+    // set defaults for passed render asset handles
+    this->setDefaultAssetNameBasedAttributes(
+        newAttributes, true, newAttributes->getRenderAssetHandle(),
+        std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
+                  _1));
+    // set defaults for passed collision asset handles
+    this->setDefaultAssetNameBasedAttributes(
+        newAttributes, false, newAttributes->getCollisionAssetHandle(),
+        std::bind(&AbstractObjectAttributes::setCollisionAssetType,
+                  newAttributes, _1));
+  }
   return newAttributes;
 }  // ObjectAttributesManager::initNewObjectInternal
 
@@ -160,9 +174,9 @@ int ObjectAttributesManager::registerObjectFinalize(
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
         << "ObjectAttributesManager::registerObjectFinalize : "
-           "Attributes template named"
+           "Attributes template named "
         << objectTemplateHandle
-        << "does not have a valid render asset handle specified. Aborting.";
+        << " does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
 
