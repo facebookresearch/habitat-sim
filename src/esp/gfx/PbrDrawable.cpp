@@ -174,17 +174,16 @@ PbrDrawable& PbrDrawable::updateShader() {
 
 // update every light's color, intensity, range etc.
 PbrDrawable& PbrDrawable::updateShaderLightParameters() {
-  constexpr float dummyRange = Mn::Constants::inf();
-  std::vector<float> ranges;
+  // light range has been initialized to Mn::Constants::inf()
+  // in the PbrShader's constructor.
+  // No need to reset it at this point.
   std::vector<Mn::Color3> colors;
   colors.reserve(lightSetup_->size());
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
-    ranges.push_back(dummyRange);
     // Note: the light color MUST take the intensity into account
     colors.emplace_back((*lightSetup_)[iLight].color);
   }
 
-  shader_->setLightRanges(ranges);
   shader_->setLightColors(colors);
   return *this;
 }
