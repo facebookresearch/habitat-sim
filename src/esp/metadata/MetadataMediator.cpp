@@ -55,8 +55,8 @@ bool MetadataMediator::setActiveDatasetName(const std::string& datasetName) {
               << datasetName << " successfully.";
     return true;
   }
-  // if does not exist, create it
-  bool success = createDataset(activeDataset_);
+  // if does not exist, attempt to create it
+  bool success = createDataset(datasetName);
   // if successfully created, set default name to access dataset attributes in
   // datasetAttributesManager
   if (success) {
