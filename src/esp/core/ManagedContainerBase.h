@@ -191,6 +191,11 @@ class ManagedContainerBase {
     return objectLibrary_.count(handle) > 0;
   }  // ManagedContainerBase::getObjectLibHasHandle
 
+  /**
+   * @brief Get the type of object this ManagedContainer manages.
+   */
+  const std::string& getObjectType() const { return objectType_; }
+
  protected:
   //======== Internally accessed getter ================
 

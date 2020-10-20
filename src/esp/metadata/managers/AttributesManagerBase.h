@@ -113,7 +113,7 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
       const io::JsonGenericValue& jsonConfig) override {
     // Construct a ObjectAttributes and populate with any
     // AbstractObjectAttributes fields found in json.
-    auto attributes = this->initNewObjectInternal(templateName);
+    auto attributes = this->initNewObjectInternal(templateName, true);
     // set the values for this attributes from the json config.
     this->setValsFromJSONDoc(attributes, jsonConfig);
     return attributes;

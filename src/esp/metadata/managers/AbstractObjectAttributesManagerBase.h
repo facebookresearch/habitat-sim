@@ -118,15 +118,16 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
    * new mesh handle, or empty.
    * @param meshTypeSetter Function pointer to the appropriate mesh type setter
    * in the Attributes object.
-   * @return Whether the render asset name was specified in the json and should
-   * be set from assetName variable.
+   * @return Either the previously set asset handle or a new one based on what
+   * was read from JSON config document.
    */
-  bool setJSONAssetHandleAndType(AbsObjAttrPtr attributes,
-                                 const io::JsonGenericValue& jsonDoc,
-                                 const char* jsonMeshTypeTag,
-                                 const char* jsonMeshHandleTag,
-                                 std::string& assetName,
-                                 std::function<void(int)> meshTypeSetter);
+  std::string setJSONAssetHandleAndType(
+      AbsObjAttrPtr attributes,
+      const io::JsonGenericValue& jsonDoc,
+      const char* jsonMeshTypeTag,
+      const char* jsonMeshHandleTag,
+      std::string& assetName,
+      std::function<void(int)> meshTypeSetter);
 
   /**
    * @brief Perform asset-name-based attributes initialization. This is to
@@ -228,27 +229,19 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
       jsonDoc, "front", std::bind(&T::setOrientFront, attributes, _1));
 
   // 4. parse render and collision mesh filepaths
-  std::string rndrFName = "";
   // current value - also place holder for json read result
   std::string rTmpFName = attributes->getRenderAssetHandle();
   // is true if mesh name is found in JSON and different than current value
-  if (setJSONAssetHandleAndType(
-          attributes, jsonDoc, "render_asset_type", "render_asset", rTmpFName,
-          std::bind(&T::setRenderAssetType, attributes, _1))) {
-    // set asset name to be what was read in json
-    rndrFName = rTmpFName;
-  }
+  std::string rndrFName = setJSONAssetHandleAndType(
+      attributes, jsonDoc, "render_asset_type", "render_asset", rTmpFName,
+      std::bind(&T::setRenderAssetType, attributes, _1));
 
-  std::string colFName = "";
   // current value - also place holder for json read result
   std::string cTmpFName = attributes->getCollisionAssetHandle();
   // is true if mesh name is found in JSON and different than current value
-  if (setJSONAssetHandleAndType(
-          attributes, jsonDoc, "collision_asset_type", "collision_asset",
-          cTmpFName, std::bind(&T::setCollisionAssetType, attributes, _1))) {
-    // set asset name to be what was read in json
-    colFName = cTmpFName;
-  }
+  std::string colFName = setJSONAssetHandleAndType(
+      attributes, jsonDoc, "collision_asset_type", "collision_asset", cTmpFName,
+      std::bind(&T::setCollisionAssetType, attributes, _1));
   // use non-empty result if either result is empty
   attributes->setRenderAssetHandle(rndrFName.compare("") == 0 ? colFName
                                                               : rndrFName);
@@ -273,7 +266,7 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
 
 template <class T>
-bool AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
+std::string AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,
     const io::JsonGenericValue& jsonDoc,
     const char* jsonMeshTypeTag,
@@ -311,7 +304,7 @@ bool AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
     meshTypeSetter(typeVal);
   }  // if type is found in json.  If not typeVal is -1
 
-  // Read json for new mesh handle
+  // Read json for new mesh handle if present
   if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshHandleTag, assetName)) {
     // value is specified in json doc
     if ((this->isValidPrimitiveAttributes(assetName)) &&
@@ -321,7 +314,7 @@ bool AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
       setDefaultAssetNameBasedAttributes(attributes, false, assetName,
                                          meshTypeSetter);
     } else {
-      // is not valid primitive, check if valid file name
+      // is not valid primitive, assume valid file name
       assetName =
           Cr::Utility::Directory::join(propertiesFileDirectory, assetName);
       if ((typeVal == -1) && (oldFName.compare(assetName) != 0)) {
@@ -332,9 +325,10 @@ bool AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
                                            meshTypeSetter);
       }
     }  // value is valid prim and exists, else value is valid file and exists
-    return true;
-  }  // value is present in json
-  return false;
+    return assetName;
+  }
+  // handle value is not present in JSON or is specified but does not change
+  return oldFName;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::setJSONAssetHandleAndType
 
 }  // namespace managers

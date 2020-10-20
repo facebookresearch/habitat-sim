@@ -38,9 +38,9 @@ int StageAttributesManager::registerObjectFinalize(
   if (stageAttributes->getRenderAssetHandle() == "") {
     LOG(ERROR)
         << "StageAttributesManager::registerObjectFinalize : "
-           "Attributes template named"
+           "Attributes template named "
         << stageAttributesHandle
-        << "does not have a valid render asset handle specified. Aborting.";
+        << " does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -130,7 +130,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   }
 
   // construct a stageAttributes
-  auto stageAttributes = initNewObjectInternal(primAssetHandle);
+  auto stageAttributes = initNewObjectInternal(primAssetHandle, false);
   // set margin to be 0
   stageAttributes->setMargin(0.0);
 
@@ -149,21 +149,20 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
 }  // StageAttributesManager::createPrimBasedAttributesTemplate
 
 StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
-    const std::string& stageFilename) {
-  // TODO if default template exists from some source, create this template as a
+    const std::string& attributesHandle,
+    bool builtFromConfig) {
+  // If default template exists from some source, create this template as a
   // copy
   StageAttributes::ptr newAttributes =
-      this->constructFromDefault(stageFilename);
+      this->constructFromDefault(attributesHandle);
   if (nullptr == newAttributes) {
-    newAttributes = StageAttributes::create(stageFilename);
+    newAttributes = StageAttributes::create(attributesHandle);
   }
   // attempt to set source directory if exists
   this->setFileDirectoryFromHandle(newAttributes);
 
   // set defaults that config files or other constructive processes might
   // override
-  newAttributes->setRenderAssetHandle(stageFilename);
-  newAttributes->setCollisionAssetHandle(stageFilename);
   newAttributes->setUseMeshCollision(true);
 
   // set defaults from SimulatorConfig values; these can also be overridden by
@@ -174,47 +173,55 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   // set value from config so not necessary to be passed as argument
   newAttributes->setFrustrumCulling(cfgFrustrumCulling_);
 
-  // set defaults for navmesh default handles and semantic mesh default
-  // handles
-  std::string navmeshFilename = io::changeExtension(stageFilename, ".navmesh");
-  if (cfgFilepaths_.count("navmesh")) {
-    navmeshFilename = cfgFilepaths_.at("navmesh");
-  }
-  if (Corrade::Utility::Directory::exists(navmeshFilename)) {
-    newAttributes->setNavmeshAssetHandle(navmeshFilename);
-  }
-  // Build default semantic descriptor file name
-  std::string houseFilename = io::changeExtension(stageFilename, ".house");
-  if (cfgFilepaths_.count("house")) {
-    houseFilename = cfgFilepaths_.at("house");
-  }
-  if (!Corrade::Utility::Directory::exists(houseFilename)) {
-    houseFilename = io::changeExtension(stageFilename, ".scn");
-  }
-  newAttributes->setHouseFilename(houseFilename);
-  // Build default semantic mesh file name
-  const std::string semanticMeshFilename =
-      io::removeExtension(houseFilename) + "_semantic.ply";
-  newAttributes->setSemanticAssetHandle(semanticMeshFilename);
+  // only set handle defaults if attributesHandle is not a config file (which
+  // would never be a valid render or collision asset name).  Otherise, expect
+  // handles to be set when config is read.
+  if (!builtFromConfig) {
+    newAttributes->setRenderAssetHandle(attributesHandle);
+    newAttributes->setCollisionAssetHandle(attributesHandle);
 
-  // set default origin and orientation values based on file name
-  // from AssetInfo::fromPath
-  // set defaults for passed render asset handles
-  this->setDefaultAssetNameBasedAttributes(
-      newAttributes, true, newAttributes->getRenderAssetHandle(),
-      std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
-                _1));
-  // set defaults for passed collision asset handles
-  this->setDefaultAssetNameBasedAttributes(
-      newAttributes, false, newAttributes->getCollisionAssetHandle(),
-      std::bind(&AbstractObjectAttributes::setCollisionAssetType, newAttributes,
-                _1));
+    // set defaults for navmesh default handles and semantic mesh default
+    // handles
+    std::string navmeshFilename =
+        io::changeExtension(attributesHandle, ".navmesh");
+    if (cfgFilepaths_.count("navmesh")) {
+      navmeshFilename = cfgFilepaths_.at("navmesh");
+    }
+    if (Corrade::Utility::Directory::exists(navmeshFilename)) {
+      newAttributes->setNavmeshAssetHandle(navmeshFilename);
+    }
+    // Build default semantic descriptor file name
+    std::string houseFilename = io::changeExtension(attributesHandle, ".house");
+    if (cfgFilepaths_.count("house")) {
+      houseFilename = cfgFilepaths_.at("house");
+    }
+    if (!Corrade::Utility::Directory::exists(houseFilename)) {
+      houseFilename = io::changeExtension(attributesHandle, ".scn");
+    }
+    newAttributes->setHouseFilename(houseFilename);
+    // Build default semantic mesh file name
+    const std::string semanticMeshFilename =
+        io::removeExtension(houseFilename) + "_semantic.ply";
+    newAttributes->setSemanticAssetHandle(semanticMeshFilename);
 
-  // set defaults for passed semantic asset handles
-  this->setDefaultAssetNameBasedAttributes(
-      newAttributes, false, newAttributes->getSemanticAssetHandle(),
-      std::bind(&StageAttributes::setSemanticAssetType, newAttributes, _1));
+    // set default origin and orientation values based on file name
+    // from AssetInfo::fromPath
+    // set defaults for passed render asset handles
+    this->setDefaultAssetNameBasedAttributes(
+        newAttributes, true, newAttributes->getRenderAssetHandle(),
+        std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
+                  _1));
+    // set defaults for passed collision asset handles
+    this->setDefaultAssetNameBasedAttributes(
+        newAttributes, false, newAttributes->getCollisionAssetHandle(),
+        std::bind(&AbstractObjectAttributes::setCollisionAssetType,
+                  newAttributes, _1));
 
+    // set defaults for passed semantic asset handles
+    this->setDefaultAssetNameBasedAttributes(
+        newAttributes, false, newAttributes->getSemanticAssetHandle(),
+        std::bind(&StageAttributes::setSemanticAssetType, newAttributes, _1));
+  }
   // set default physical quantities specified in physics manager attributes
   if (physicsAttributesManager_->getObjectLibHasHandle(
           physicsManagerAttributesHandle_)) {
@@ -298,19 +305,17 @@ void StageAttributesManager::setValsFromJSONDoc(
 
   // populate semantic mesh type if present
   std::string semanticFName = stageAttributes->getSemanticAssetHandle();
-  if (this->setJSONAssetHandleAndType(
-          stageAttributes, jsonConfig, "semantic_asset_type", "semantic_asset",
-          semanticFName,
-          std::bind(&StageAttributes::setSemanticAssetType, stageAttributes,
-                    _1))) {
-    // if "semantic mesh" is specified in stage json to non-empty value, set
-    // value (override default).
-    stageAttributes->setSemanticAssetHandle(semanticFName);
-    // TODO eventually remove this, but currently semantic mesh must be
-    // instance
-    stageAttributes->setSemanticAssetType(
-        static_cast<int>(AssetType::INSTANCE_MESH));
-  }
+  semanticFName = this->setJSONAssetHandleAndType(
+      stageAttributes, jsonConfig, "semantic_asset_type", "semantic_asset",
+      semanticFName,
+      std::bind(&StageAttributes::setSemanticAssetType, stageAttributes, _1));
+  // if "semantic mesh" is specified in stage json to non-empty value, set
+  // value (override default).
+  stageAttributes->setSemanticAssetHandle(semanticFName);
+  // TODO eventually remove this, but currently semantic mesh must be
+  // instance
+  stageAttributes->setSemanticAssetType(
+      static_cast<int>(AssetType::INSTANCE_MESH));
 
   if (io::jsonIntoVal<std::string>(jsonConfig, "nav_asset", navmeshFName)) {
     navmeshFName = Cr::Utility::Directory::join(stageLocFileDir, navmeshFName);
@@ -351,7 +356,7 @@ void StageAttributesManager::setValsFromJSONDoc(
       objectAttributesMgr_->loadAllConfigsFromPath(absolutePath, true);
     }
   }  // if load rigid object library metadata
-}  // StageAttributesManager::setValsFromJSONDoc
+}  // namespace managers
 
 }  // namespace managers
 }  // namespace metadata

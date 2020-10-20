@@ -118,9 +118,14 @@ class StageAttributesManager
    * any default values, before any specific values are set.
    *
    * @param handleName handle name to be assigned to attributes
+   * @param builtFromConfig whether this stage is being built from a config file
+   * (i.e. handleName is file name for config) or from some other source.
+   * @return Newly created but unregistered StageAttributes pointer, with only
+   * default values set.
    */
   attributes::StageAttributes::ptr initNewObjectInternal(
-      const std::string& handleName) override;
+      const std::string& handleName,
+      bool builtFromConfig) override;
 
   /**
    * @brief This method will perform any necessary updating that is

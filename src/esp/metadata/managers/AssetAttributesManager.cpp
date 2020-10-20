@@ -165,8 +165,8 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }
 
-  // create attributes for this primitive
-  auto primAssetAttributes = this->initNewObjectInternal(primClassName);
+  // create attributes for the primitive described in the JSON file
+  auto primAssetAttributes = this->initNewObjectInternal(primClassName, true);
   if (nullptr == primAssetAttributes) {
     LOG(ERROR)
         << "AssetAttributesManager::buildObjectFromJSONDoc : unable to "
