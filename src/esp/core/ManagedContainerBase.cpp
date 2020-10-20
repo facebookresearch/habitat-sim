@@ -7,6 +7,25 @@
 namespace esp {
 namespace core {
 
+std::string ManagedContainerBase::convertFilenameToJSON(
+    const std::string& filename,
+    const std::string& jsonTypeExt) {
+  std::string strHandle = Cr::Utility::String::lowercase(filename);
+  std::string resHandle(filename);
+  if (std::string::npos ==
+      strHandle.find(Cr::Utility::String::lowercase(jsonTypeExt))) {
+    resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
+                jsonTypeExt;
+    LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
+              << filename
+              << " changed to proposed JSON filename : " << resHandle;
+  } else {
+    LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
+              << filename << " determined to be legitimate JSON.";
+  }
+  return resHandle;
+}  // ManagedContainerBase::convertFilenameToJSON
+
 bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
@@ -78,6 +97,47 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
       // if found and searching for contains, or not found and searching for not
       // contains
       res.push_back(iter->second);
+    }
+  }
+  return res;
+}  // ManagedContainerBase::getObjectHandlesBySubStringPerType
+
+std::vector<std::string>
+ManagedContainerBase::getObjectHandlesBySubStringPerType(
+    const std::map<std::string, std::set<std::string>>& mapOfHandles,
+    const std::string& subStr,
+    bool contains) const {
+  std::vector<std::string> res;
+  // if empty return empty vector
+  if (mapOfHandles.size() == 0) {
+    return res;
+  }
+  // if search string is empty, return all values
+  if (subStr.length() == 0) {
+    for (auto elem : mapOfHandles) {
+      res.push_back(elem.first);
+    }
+    return res;
+  }
+  // build search criteria
+  std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
+
+  std::size_t strSize = strToLookFor.length();
+
+  for (std::map<std::string, std::set<std::string>>::const_iterator iter =
+           mapOfHandles.begin();
+       iter != mapOfHandles.end(); ++iter) {
+    std::string key = Cr::Utility::String::lowercase(iter->first);
+    // be sure that key is big enough to search in (otherwise find has undefined
+    // behavior)
+    if (key.length() < strSize) {
+      continue;
+    }
+    bool found = (std::string::npos != key.find(strToLookFor));
+    if (found == contains) {
+      // if found and searching for contains, or not found and searching for not
+      // contains
+      res.push_back(iter->first);
     }
   }
   return res;
