@@ -8,8 +8,8 @@ namespace esp {
 namespace metadata {
 void MetadataMediator::buildAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
-  datasetAttributesManager_ =
-      managers::DatasetAttributesManager::create(physicsAttributesManager_);
+  datasetAttributesManager_ = managers::SceneDatasetAttributesManager::create(
+      physicsAttributesManager_);
   // create blank default attributes manager
   createDataset(activeDataset_);
 }  // MetadataMediator::buildAttributesManagers
@@ -58,7 +58,7 @@ bool MetadataMediator::setActiveDatasetName(const std::string& datasetName) {
   // if does not exist, attempt to create it
   bool success = createDataset(datasetName);
   // if successfully created, set default name to access dataset attributes in
-  // datasetAttributesManager
+  // SceneDatasetAttributesManager
   if (success) {
     activeDataset_ = datasetName;
   }

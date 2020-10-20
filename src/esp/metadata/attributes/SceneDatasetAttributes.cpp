@@ -2,16 +2,16 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "DatasetAttributes.h"
+#include "SceneDatasetAttributes.h"
 
 namespace esp {
 namespace metadata {
 namespace attributes {
 
-DatasetAttributes::DatasetAttributes(
+SceneDatasetAttributes::SceneDatasetAttributes(
     const std::string& datasetName,
     const managers::PhysicsAttributesManager::ptr physAttrMgr)
-    : AbstractAttributes("DatasetAttributes", datasetName) {
+    : AbstractAttributes("SceneDatasetAttributes", datasetName) {
   assetAttributesManager_ = managers::AssetAttributesManager::create();
   objectAttributesManager_ = managers::ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);

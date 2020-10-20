@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_ATTRIBUTES_DATASETATTRIBUTES_H_
-#define ESP_METADATA_ATTRIBUTES_DATASETATTRIBUTES_H_
+#ifndef ESP_METADATA_ATTRIBUTES_SCENEDATASETATTRIBUTES_H_
+#define ESP_METADATA_ATTRIBUTES_SCENEDATASETATTRIBUTES_H_
 
 /** @file
  * @brief Class @ref esp::metadata::DatasetMetadata.  This class will hold
@@ -19,10 +19,11 @@
 namespace esp {
 namespace metadata {
 namespace attributes {
-class DatasetAttributes : public AbstractAttributes {
+class SceneDatasetAttributes : public AbstractAttributes {
  public:
-  DatasetAttributes(const std::string& datasetName,
-                    const managers::PhysicsAttributesManager::ptr physAttrMgr);
+  SceneDatasetAttributes(
+      const std::string& datasetName,
+      const managers::PhysicsAttributesManager::ptr physAttrMgr);
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
@@ -131,11 +132,11 @@ class DatasetAttributes : public AbstractAttributes {
   std::map<std::string, std::string> semanticSceneDescrMap_;
 
  public:
-  ESP_SMART_POINTERS(DatasetAttributes)
-};  // class DatasetAttributes
+  ESP_SMART_POINTERS(SceneDatasetAttributes)
+};  // class SceneDatasetAttributes
 
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_METADATA_ATTRIBUTES_DATASETATTRIBUTES_H_
+#endif  // ESP_METADATA_ATTRIBUTES_SCENEDATASETATTRIBUTES_H_

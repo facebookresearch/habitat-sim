@@ -12,9 +12,9 @@
 #include "esp/core/Configuration.h"
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
-#include "esp/metadata/managers/DatasetAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/SceneDatasetAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 namespace esp {
@@ -69,7 +69,7 @@ class MetadataMediator {
    */
   const managers::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    Attrs::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getAssetAttributesManager();
   }
@@ -80,7 +80,7 @@ class MetadataMediator {
    */
   const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    Attrs::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getObjectAttributesManager();
   }
@@ -91,7 +91,7 @@ class MetadataMediator {
    */
   const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    Attrs::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    Attrs::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getStageAttributesManager();
   }  // MetadataMediator::getStageAttributesManager
@@ -109,7 +109,7 @@ class MetadataMediator {
    * @brief Return copy of map of current active dataset's navmeshes.
    */
   const std::map<std::string, std::string> getActiveNavmeshMap() const {
-    attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
 
     if (nullptr == datasetAttr) {
       return std::map<std::string, std::string>();
@@ -122,7 +122,7 @@ class MetadataMediator {
    */
   const std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap()
       const {
-    attributes::DatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
 
     if (nullptr == datasetAttr) {
       return std::map<std::string, std::string>();
@@ -138,9 +138,9 @@ class MetadataMediator {
    * @brief Retrieve the current default dataset object.  Currently only for
    * internal use.
    */
-  Attrs::DatasetAttributes::ptr getActiveDSAttribs() const {
-    // do not get copy of dataset attributes until datasetAttributes deep copy
-    // ctor implemented
+  Attrs::SceneDatasetAttributes::ptr getActiveDSAttribs() const {
+    // do not get copy of dataset attributes until SceneDatasetAttributes deep
+    // copy ctor implemented
     auto datasetAttr =
         datasetAttributesManager_->getObjectByHandle(activeDataset_);
     if (nullptr == datasetAttr) {
@@ -159,7 +159,8 @@ class MetadataMediator {
   /**
    * @brief Manages all construction and access to asset attributes.
    */
-  managers::DatasetAttributesManager::ptr datasetAttributesManager_ = nullptr;
+  managers::SceneDatasetAttributesManager::ptr datasetAttributesManager_ =
+      nullptr;
 
   /**
    * @brief Manages all construction and access to physics world attributes.
