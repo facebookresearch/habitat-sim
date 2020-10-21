@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "LightLayoutAttributes.h"
-using namespace Magnum::Math::Literals;
+using Magnum::Math::Literals::operator""_radf;
 
 namespace esp {
 namespace metadata {

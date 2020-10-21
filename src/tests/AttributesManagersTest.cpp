@@ -16,7 +16,7 @@
 
 namespace Cr = Corrade;
 
-using namespace Magnum::Math::Literals;
+using Magnum::Math::Literals::operator""_radf;
 namespace AttrMgrs = esp::metadata::managers;
 namespace Attrs = esp::metadata::attributes;
 
