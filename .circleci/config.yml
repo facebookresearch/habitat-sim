@@ -353,6 +353,7 @@ jobs:
                 wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=1Pc-J6pZzXEd8RSeLM94t3iwO8q_RQ853' -O coda.zip
                 unzip coda.zip -d data/scene_datasets
                 rm coda.zip
+                cd ..
               fi
       - run:
           name: Build Javascript bindings
