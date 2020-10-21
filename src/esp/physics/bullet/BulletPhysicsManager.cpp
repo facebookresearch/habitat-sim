@@ -161,11 +161,6 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, /*maxSubSteps*/ 10000, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
-
-  // manually sync the motionstates for all objects
-  for (auto& objectItr : existingObjects_) {
-    objectItr.second->syncPose(true);
-  }
 }
 
 void BulletPhysicsManager::setMargin(const int physObjectID,

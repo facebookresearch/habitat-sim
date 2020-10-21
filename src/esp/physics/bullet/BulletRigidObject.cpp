@@ -312,17 +312,10 @@ void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
 
 //! Synchronize Physics transformations
 //! Needed after changing the pose from Magnum side
-void BulletRigidObject::syncPose(bool from) {
+void BulletRigidObject::syncPose() {
   //! For syncing objects
-  if (!from) {
-    // render to simulation
-    bObjectRigidBody_->setWorldTransform(
-        btTransform(node().transformationMatrix()));
-  } else {
-    // render from simulation
-    bObjectRigidBody_->getMotionState()->setWorldTransform(
-        bObjectRigidBody_->getWorldTransform());
-  }
+  bObjectRigidBody_->setWorldTransform(
+      btTransform(node().transformationMatrix()));
 }  // syncPose
 
 void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {

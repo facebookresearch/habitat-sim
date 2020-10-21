@@ -432,16 +432,13 @@ class BulletRigidObject : public BulletBase,
   bool initialization_LibSpecific(
       const assets::ResourceManager& resMgr) override;
 
-  /** @brief Used to synchronize object states between Habitat and
-   * Bullet. Called automatically on kinematic
-   * updates. Called to set state from Bullet after @ref stepPhysics.
-   *
-   * @param from Specifies the directionality of the state sync. If true, set
-   * the Habitat state from the Bullet state.
-   */
-  void syncPose(bool from = false) override;
-
  protected:
+  /**
+   * @brief Used to synchronize Bullet's notion of the object state
+   * after it was changed kinematically. Called automatically on kinematic
+   * updates. See @ref btRigidBody::setWorldTransform. */
+  void syncPose() override;
+
   /**
    * @brief construct a @ref btRigidBody for this object configured by
    * MotionType and add it to the world.
