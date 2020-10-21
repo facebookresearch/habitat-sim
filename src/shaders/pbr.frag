@@ -229,7 +229,9 @@ void main() {
   metallic *= texture(MetallicTexture, texCoord).r;
 #endif
 
-#if defined(NORMAL_TEXTURE)
+// normal map will only work if both normal texture and the tangents exist.
+// if only normal texture is set, normal mapping will be safely ignored.
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
   // normal is now in the camera space
   vec3 n = getNormalFromNormalMap();
 #else
