@@ -135,9 +135,10 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
   if (io::jsonIntoVal<std::string>(jCell, "motion_type", tmpVal)) {
     // motion type tag was found, perform check - first convert to lowercase
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (SceneObjectInstanceAttributes::MotionTypeNamesMap.count(strToLookFor)) {
-      motionTypeVal = static_cast<int>(
-          SceneObjectInstanceAttributes::MotionTypeNamesMap.at(strToLookFor));
+    auto found =
+        SceneObjectInstanceAttributes::MotionTypeNamesMap.find(strToLookFor);
+    if (found != SceneObjectInstanceAttributes::MotionTypeNamesMap.end()) {
+      motionTypeVal = static_cast<int>(found->second);
     } else {
       LOG(WARNING)
           << "SceneAttributesManager::createInstanceAttributesFromJSON : "
