@@ -88,14 +88,14 @@ class Viewer : public Mn::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
 
   // Interactive functions
-  void addObject(const std::string& configHandle);
-  void addObject(int objID);
+  int addObject(const std::string& configHandle);
+  int addObject(int objID);
 
   // add template-derived object
-  void addTemplateObject();
+  int addTemplateObject();
 
   // add primiitive object
-  void addPrimitiveObject();
+  int addPrimitiveObject();
 
   void pokeLastObject();
   void pushLastObject();
@@ -386,42 +386,45 @@ Viewer::Viewer(const Arguments& arguments)
   printHelpText();
 }  // end Viewer::Viewer
 
-void Viewer::addObject(int ID) {
+int Viewer::addObject(int ID) {
   const std::string& configHandle =
       simulator_->getObjectAttributesManager()->getObjectHandleByID(ID);
-  addObject(configHandle);
+  return addObject(configHandle);
 }  // addObject
 
-void Viewer::addObject(const std::string& configFile) {
+int Viewer::addObject(const std::string& objectAttrHandle) {
   // Relative to agent bodynode
   Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
 
-  int physObjectID = simulator_->addObjectByHandle(configFile);
+  int physObjectID = simulator_->addObjectByHandle(objectAttrHandle);
   simulator_->setTranslation(new_pos, physObjectID);
   simulator_->setRotation(esp::core::randomRotation(), physObjectID);
+  return physObjectID;
 }  // addObject
 
 // add file-based template derived object from keypress
-void Viewer::addTemplateObject() {
+int Viewer::addTemplateObject() {
   int numObjTemplates = objectAttrManager_->getNumFileTemplateObjects();
   if (numObjTemplates > 0) {
-    addObject(objectAttrManager_->getRandomFileTemplateHandle());
-  } else
+    return addObject(objectAttrManager_->getRandomFileTemplateHandle());
+  } else {
     LOG(WARNING) << "No objects loaded, can't add any";
-
+    return esp::ID_UNDEFINED;
+  }
 }  // addTemplateObject
 
 // add synthesized primiitive object from keypress
-void Viewer::addPrimitiveObject() {
+int Viewer::addPrimitiveObject() {
   // TODO : use this to implement synthesizing rendered physical objects
 
   int numObjPrims = objectAttrManager_->getNumSynthTemplateObjects();
   if (numObjPrims > 0) {
-    addObject(objectAttrManager_->getRandomSynthTemplateHandle());
-  } else
+    return addObject(objectAttrManager_->getRandomSynthTemplateHandle());
+  } else {
     LOG(WARNING) << "No primitive templates available, can't add any objects";
-
+    return esp::ID_UNDEFINED;
+  }
 }  // addPrimitiveObject
 
 void Viewer::removeLastObject() {
