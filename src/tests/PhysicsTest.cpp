@@ -546,13 +546,6 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   Magnum::Quaternion qLocalGroundTruth{{-0.95782, 0, 0}, 0.287495};
   qLocalGroundTruth = qLocalGroundTruth.normalized();
 
-  ASSERT_LE((physicsManager_->getTranslation(objectId) - posLocalGroundTruth)
-                .length(),
-            errorEps);
-  Magnum::Rad angleErrorLocal = Magnum::Math::angle(
-      physicsManager_->getRotation(objectId), qLocalGroundTruth);
-  ASSERT_LE(float(angleErrorLocal), errorEps);
-
   // test zero velocity kinematic integration (should not change state)
   velControl->linVel = Magnum::Vector3{0.0, 0.0, 0.0};
   velControl->angVel = Magnum::Vector3{0.0, 0.0, 0.0};
@@ -561,8 +554,8 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   ASSERT_LE((physicsManager_->getTranslation(objectId) - posLocalGroundTruth)
                 .length(),
             errorEps);
-  angleErrorLocal = Magnum::Math::angle(physicsManager_->getRotation(objectId),
-                                        qLocalGroundTruth);
+  Magnum::Rad angleErrorLocal = Magnum::Math::angle(
+      physicsManager_->getRotation(objectId), qLocalGroundTruth);
 
   ASSERT_LE(float(angleErrorLocal), errorEps);
 }
