@@ -59,7 +59,7 @@ DrawableTest::DrawableTest() {
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
   // flang-format on
-  auto stageAttributesMgr = resourceManager_->getStageAttributesManager();
+  auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
