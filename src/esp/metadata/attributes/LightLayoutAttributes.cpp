@@ -1,0 +1,27 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+#include "LightLayoutAttributes.h"
+namespace esp {
+namespace metadata {
+namespace attributes {
+
+LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
+    : AbstractAttributes("LightInstanceAttributes", handle) {
+  setPosition({0.0, 0.0, 0.0});
+  setDirection({0.0, -1.0, 0.0});
+  setColor({1.0, 1.0, 1.0});
+  setIntensity(1.0);
+  setType("point");
+  // ignored for all but spot lights
+  setInnerConeAngle(0.75);
+  setOuterConeAngle(1.5);
+}  // ctor
+
+LightLayoutAttributes::LightLayoutAttributes(const std::string& handle)
+    : AbstractAttributes("LightLayoutAttributes", handle) {}
+
+}  // namespace attributes
+}  // namespace metadata
+}  // namespace esp
