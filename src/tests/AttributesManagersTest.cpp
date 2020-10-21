@@ -44,6 +44,7 @@ class AttributesManagersTest : public testing::Test {
     auto MM = MetadataMediator::create();
     // get attributes managers for default dataset
     assetAttributesManager_ = MM->getAssetAttributesManager();
+    lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
     objectAttributesManager_ = MM->getObjectAttributesManager();
     physicsAttributesManager_ = MM->getPhysicsAttributesManager();
     stageAttributesManager_ = MM->getStageAttributesManager();
@@ -67,7 +68,7 @@ class AttributesManagersTest : public testing::Test {
       const esp::io::JsonGenericValue jsonDoc = tmp.GetObject();
       // create an empty template
       std::shared_ptr<U> attrTemplate1 =
-          mgr->buildManagedObjectFromDoc("new default template", jsonDoc);
+          mgr->buildManagedObjectFromDoc("new_template_from_json", jsonDoc);
 
       return attrTemplate1;
     } catch (...) {
@@ -158,6 +159,43 @@ class AttributesManagersTest : public testing::Test {
     auto oldTemplate3 = mgr->removeObjectByHandle(handle);
     // verify deleted template  exists
     ASSERT_NE(nullptr, oldTemplate3);
+    // verify there are same number of templates as when we started
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
+
+  }  // AttributesManagersTest::testCreateAndRemove
+
+  /**
+   * @brief Test creation, copying and removal of templates for lights
+   * attributes managers.
+   * @param mgr the Attributes Manager being tested,
+   * @param handle the handle of the desired attributes template to work with
+   */
+
+  void testCreateAndRemoveLights(
+      AttrMgrs::LightLayoutAttributesManager::ptr mgr,
+      const std::string& handle) {
+    // meaningless key to modify attributes for verifcation of behavior
+    std::string keyStr = "tempKey";
+    // get starting number of templates
+    int orignNumTemplates = mgr->getNumObjects();
+
+    // Source config for lights holds multiple light configurations.
+    // Create a single template for each defined light in configuration and
+    // register it.
+    mgr->createObject(handle, true);
+    // get number of templates loaded
+    int numLoadedLights = mgr->getNumObjects();
+    // verify lights were added
+    ASSERT_NE(numLoadedLights, orignNumTemplates);
+
+    // get handles of all lights added
+    auto lightHandles = mgr->getObjectHandlesBySubstring();
+    ASSERT_EQ(lightHandles.size(), numLoadedLights);
+
+    // remove all added handles
+    for (auto handle : lightHandles) {
+      mgr->removeObjectByHandle(handle);
+    }
     // verify there are same number of templates as when we started
     ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
 
@@ -357,6 +395,8 @@ class AttributesManagersTest : public testing::Test {
   }  // AttributesManagersTest::testAssetAttributesModRegRemove
 
   AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
+  AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
+      nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
@@ -392,6 +432,51 @@ TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
   ASSERT_EQ(physMgrAttr->getRestitutionCoefficient(), 1.1);
 }  // AttributesManagers_PhysicsJSONLoadTest
 
+/**
+ * @brief This test will verify that the Light Attributes' managers' JSON
+ * loading process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_LightJSONLoadTest";
+  // build JSON sample config
+  const std::string& jsonString = R"({
+  "lights":{
+      "test":{
+        "position": [2.5,0.1,3.8],
+        "direction": [1.0,-1.0,1.0],
+        "intensity": -0.1,
+        "color": [2,1,-1],
+        "type": "spot",
+        "spot": {
+          "innerConeAngle": -0.75,
+          "outerConeAngle": -1.57
+        }
+      }
+    }
+  })";
+
+  auto lightLayoutAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::LightLayoutAttributesManager,
+                                        Attrs::LightLayoutAttributes>(
+          lightLayoutAttributesManager_, jsonString);
+  // verify exists
+  ASSERT_NE(nullptr, lightLayoutAttr);
+
+  auto lightAttr = lightLayoutAttr->getLightInstance("test");
+  // verify that lightAttr exists
+  ASSERT_NE(nullptr, lightAttr);
+
+  // match values set in test JSON
+  // TODO : get these values programmatically?
+  ASSERT_EQ(lightAttr->getPosition(), Magnum::Vector3(2.5, 0.1, 3.8));
+  ASSERT_EQ(lightAttr->getDirection(), Magnum::Vector3(1.0, -1.0, 1.0));
+  ASSERT_EQ(lightAttr->getColor(), Magnum::Vector3(2, 1, -1));
+  ASSERT_EQ(lightAttr->getIntensity(), -0.1);
+  ASSERT_EQ(lightAttr->getType(), "spot");
+  ASSERT_EQ(lightAttr->getInnerConeAngle(), -0.75);
+  ASSERT_EQ(lightAttr->getOuterConeAngle(), -1.57);
+}  // AttributesManagers_LightJSONLoadTest
 /**
  * @brief This test will verify that the Stage attributes' managers' JSON
  * loading process is working as expected.
@@ -596,6 +681,21 @@ TEST_F(AttributesManagersTest, ObjectAttributesManagersCreate) {
   ASSERT_EQ(origNumFileBased, newNumFileBased3);
   ASSERT_EQ(origNumPrimBased, newNumPrimBased3);
 }  // AttributesManagersTest::ObjectAttributesManagersCreate test
+
+TEST_F(AttributesManagersTest, LightLayoutAttributesManagerTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::LightLayoutAttributesManagerTest";
+
+  std::string lightConfigFile = Cr::Utility::Directory::join(
+      DATA_DIR, "test_assets/lights/test_lights.lighting_config.json");
+
+  LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
+               "LightLayoutAttributesManager @ "
+            << lightConfigFile;
+  // light attributes manager attributes verifcation
+  testCreateAndRemoveLights(lightLayoutAttributesManager_, lightConfigFile);
+
+}  // AttributesManagersTest::LightLayoutAttributesManagerTest
 
 /**
  * @brief test primitive asset attributes functionality in attirbutes managers.
