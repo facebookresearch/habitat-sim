@@ -142,6 +142,7 @@ Key Commands:
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
+  '.': Take a single simulation step if not simulating continuously.
   '8': Instance a random primitive object in front of the agent.
   'o': Instance a random file-based object in front of the agent.
   'u': Remove most recently instanced object.
@@ -181,6 +182,10 @@ Key Commands:
 
   // Toggle physics simulation on/off
   bool simulating_ = true;
+
+  // Toggle a single simulation step at the next opportunity if not simulating
+  // continuously.
+  bool simulateSingleStep_ = false;
 
   // The managers belonging to the simulator
   std::shared_ptr<esp::metadata::managers::ObjectAttributesManager>
@@ -511,9 +516,11 @@ void Viewer::drawEvent() {
 
   // step physics at a fixed rate
   timeSinceLastSimulation += timeline_.previousFrameDuration();
-  if (timeSinceLastSimulation >= 1.0 / 60.0 && simulating_) {
+  if (timeSinceLastSimulation >= 1.0 / 60.0 &&
+      (simulating_ || simulateSingleStep_)) {
     simulator_->stepWorld(1.0 / 60.0);
     timeSinceLastSimulation = 0.0;
+    simulateSingleStep_ = false;
   }
 
   // using polygon offset to increase mesh depth to a avoid z-fighting with
@@ -741,6 +748,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Space:
       simulating_ = !simulating_;
       Mn::Debug{} << " Physics Simulation: " << simulating_;
+      break;
+    case KeyEvent::Key::Period:
+      // also `>` key
+      simulateSingleStep_ = true;
       break;
     case KeyEvent::Key::Left:
       defaultAgent_->act("turnLeft");
