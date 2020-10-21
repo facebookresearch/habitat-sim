@@ -8,8 +8,9 @@ namespace esp {
 namespace metadata {
 void MetadataMediator::buildAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
-  datasetAttributesManager_ =
-      managers::DatasetAttributesManager::create(physicsAttributesManager_);
+  SceneDatasetAttributesManager_ =
+      managers::SceneDatasetAttributesManager::create(
+          physicsAttributesManager_);
   // create blank default attributes manager
   createDataset(activeDataset_);
 }  // MetadataMediator::buildAttributesManagers
@@ -17,7 +18,8 @@ void MetadataMediator::buildAttributesManagers() {
 bool MetadataMediator::createDataset(const std::string& datasetName,
                                      bool overwrite) {
   // see if exists
-  bool exists = datasetAttributesManager_->getObjectLibHasHandle(datasetName);
+  bool exists =
+      SceneDatasetAttributesManager_->getObjectLibHasHandle(datasetName);
   if (exists) {
     // check if not overwrite and exists already
     if (!overwrite) {
@@ -28,11 +30,11 @@ bool MetadataMediator::createDataset(const std::string& datasetName,
       return false;
     }
     // overwrite specified, make sure not locked
-    datasetAttributesManager_->setLock(datasetName, false);
+    SceneDatasetAttributesManager_->setLock(datasetName, false);
   }
   // by here dataset either does not exist or exists but is unlocked.
   auto datasetAttribs =
-      datasetAttributesManager_->createObject(datasetName, true);
+      SceneDatasetAttributesManager_->createObject(datasetName, true);
   if (nullptr == datasetAttribs) {
     // not created, do not set name
     LOG(WARNING) << "MetadataMediator::createDataset : Unknown dataset "
@@ -48,7 +50,7 @@ bool MetadataMediator::createDataset(const std::string& datasetName,
 
 bool MetadataMediator::setActiveDatasetName(const std::string& datasetName) {
   // first check if dataset exists, if so then set default
-  if (datasetAttributesManager_->getObjectLibHasHandle(datasetName)) {
+  if (SceneDatasetAttributesManager_->getObjectLibHasHandle(datasetName)) {
     LOG(INFO) << "MetadataMediator::setActiveDatasetName : Old active dataset "
               << activeDataset_ << " changed to " << datasetName
               << " successfully.";
@@ -58,7 +60,7 @@ bool MetadataMediator::setActiveDatasetName(const std::string& datasetName) {
   // if does not exist, attempt to create it
   bool success = createDataset(datasetName);
   // if successfully created, set default name to access dataset attributes in
-  // datasetAttributesManager
+  // SceneDatasetAttributesManager
   if (success) {
     activeDataset_ = datasetName;
   }

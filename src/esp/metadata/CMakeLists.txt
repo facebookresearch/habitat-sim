@@ -5,8 +5,6 @@
 set(
   metadata_SOURCES
   attributes/AttributesBase.h
-  attributes/DatasetAttributes.h
-  attributes/DatasetAttributes.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
   attributes/ObjectAttributes.h
@@ -17,22 +15,24 @@ set(
   attributes/PrimitiveAssetAttributes.cpp
   attributes/SceneAttributes.h
   attributes/SceneAttributes.cpp
+  attributes/SceneDatasetAttributes.h
+  attributes/SceneDatasetAttributes.cpp
   managers/AttributesManagerBase.h
   managers/AbstractObjectAttributesManagerBase.h
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
-  managers/DatasetAttributesManager.h
-  managers/DatasetAttributesManager.cpp
   managers/LightLayoutAttributesManager.h
   managers/LightLayoutAttributesManager.cpp
   managers/ObjectAttributesManager.h
   managers/ObjectAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
-  managers/StageAttributesManager.h
-  managers/StageAttributesManager.cpp
   managers/SceneAttributesManager.h
   managers/SceneAttributesManager.cpp
+  managers/SceneDatasetAttributesManager.h
+  managers/SceneDatasetAttributesManager.cpp
+  managers/StageAttributesManager.h
+  managers/StageAttributesManager.cpp
   MetadataMediator.h
   MetadataMediator.cpp
 )

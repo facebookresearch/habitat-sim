@@ -36,7 +36,7 @@ const std::string physicsConfigFile =
                                  "test_assets/testing.physics_config.json");
 const std::string datasetConfigFile = Cr::Utility::Directory::join(
     DATA_DIR,
-    "test_assets/dataset_tests/test_dataset.dataset_config.json");
+    "test_assets/dataset_tests/test_dataset.scene_dataset_config.json");
 
 class MetadataMediatorTest : public testing::Test {
  protected:

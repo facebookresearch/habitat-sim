@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "DatasetAttributesManager.h"
+#include "SceneDatasetAttributesManager.h"
 
 #include "esp/io/io.h"
 #include "esp/io/json.h"
@@ -10,13 +10,13 @@
 namespace esp {
 namespace metadata {
 
-using attributes::DatasetAttributes;
+using attributes::SceneDatasetAttributes;
 namespace managers {
-DatasetAttributes::ptr DatasetAttributesManager::createObject(
+SceneDatasetAttributes::ptr SceneDatasetAttributesManager::createObject(
     const std::string& datasetHandle,
     bool registerTemplate) {
   std::string msg;
-  DatasetAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
+  SceneDatasetAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
       datasetHandle, msg, registerTemplate);
 
   if (nullptr != attrs) {
@@ -24,16 +24,17 @@ DatasetAttributes::ptr DatasetAttributesManager::createObject(
               << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
-}  // DatasetAttributesManager::createObject
+}  // SceneDatasetAttributesManager::createObject
 
-DatasetAttributes::ptr DatasetAttributesManager::initNewObjectInternal(
+SceneDatasetAttributes::ptr
+SceneDatasetAttributesManager::initNewObjectInternal(
     const std::string& datasetFilename,
     CORRADE_UNUSED bool builtFromConfig) {
-  DatasetAttributes::ptr newAttributes =
+  SceneDatasetAttributes::ptr newAttributes =
       this->constructFromDefault(datasetFilename);
   if (nullptr == newAttributes) {
-    newAttributes =
-        DatasetAttributes::create(datasetFilename, physicsAttributesManager_);
+    newAttributes = SceneDatasetAttributes::create(datasetFilename,
+                                                   physicsAttributesManager_);
   }
   // attempt to set source directory if exists
   this->setFileDirectoryFromHandle(newAttributes);
@@ -43,10 +44,10 @@ DatasetAttributes::ptr DatasetAttributesManager::initNewObjectInternal(
   newAttributes->setPhysicsManagerHandle(physicsManagerAttributesHandle_);
   // any internal default configuration here
   return newAttributes;
-}  // DatasetAttributesManager::initNewObjectInternal
+}  // SceneDatasetAttributesManager::initNewObjectInternal
 
-void DatasetAttributesManager::setValsFromJSONDoc(
-    attributes::DatasetAttributes::ptr dsAttribs,
+void SceneDatasetAttributesManager::setValsFromJSONDoc(
+    attributes::SceneDatasetAttributes::ptr dsAttribs,
     const io::JsonGenericValue& jsonConfig) {
   // dataset root directory to build paths from
   std::string dsDir = dsAttribs->getFileDirectory();
@@ -75,11 +76,11 @@ void DatasetAttributesManager::setValsFromJSONDoc(
       jsonConfig, "semantic_scene_descriptor_instances",
       dsAttribs->editSemanticSceneDescrMap());
 
-}  // DatasetAttributesManager::setValsFromJSONDoc
+}  // SceneDatasetAttributesManager::setValsFromJSONDoc
 
 // using type deduction
 template <typename U>
-void DatasetAttributesManager::readDatasetJSONCell(
+void SceneDatasetAttributesManager::readDatasetJSONCell(
     const std::string& dsDir,
     const char* tag,
     const io::JsonGenericValue& jsonConfig,
@@ -94,24 +95,27 @@ void DatasetAttributesManager::readDatasetJSONCell(
       // type.
       if (jCell.HasMember("default_attributes")) {
         if (!jCell["default_attributes"].IsObject()) {
-          LOG(WARNING) << "DatasetAttributesManager::readDatasetJSONCell : \""
-                       << tag
-                       << ".default attributes\" cell in JSON config unable to "
-                          "be parsed to set default attributes so skipping.";
+          LOG(WARNING)
+              << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
+              << tag
+              << ".default attributes\" cell in JSON config unable to "
+                 "be parsed to set default attributes so skipping.";
         } else {
           // load attributes as default from file, do not register
           auto attr = attrMgr->buildObjectFromJSONDoc(
               "default_attributes", jCell["default_attributes"]);
           if (nullptr == attr) {
-            LOG(WARNING) << "DatasetAttributesManager::readDatasetJSONCell : \""
-                         << tag
-                         << ".default attributes\" cell failed to successfully "
-                            "create an attributes, so skipping.";
+            LOG(WARNING)
+                << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
+                << tag
+                << ".default attributes\" cell failed to successfully "
+                   "create an attributes, so skipping.";
           } else {
             // set attributes as defaultObject_ in attrMgr.
             attrMgr->setDefaultObject(attr);
             LOG(INFO)
-                << "DatasetAttributesManager::readDatasetJSONCell : \"" << tag
+                << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
+                << tag
                 << ".default attributes\" set in Attributes Manager from JSON.";
           }
         }  // if is an object
@@ -120,24 +124,40 @@ void DatasetAttributesManager::readDatasetJSONCell(
       // 2. "paths" an array of paths to search for appropriately typed config
       // files.
       if (jCell.HasMember("paths")) {
-        if (!jCell["paths"].IsArray()) {
-          LOG(WARNING) << "DatasetAttributesManager::readDatasetJSONCell : \""
-                       << tag
-                       << ".paths\" cell in JSON config unable to be parsed as "
-                          "an array to determine search paths so skipping.";
+        if (!jCell["paths"].IsObject()) {
+          LOG(WARNING)
+              << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
+              << tag
+              << ".paths\" cell in JSON config unable to be parsed as "
+                 "an array to determine search paths so skipping.";
         } else {
-          const auto& paths = jCell["paths"];
-          attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
-        }  // if is array
-      }    // if has paths cell
+          const auto& pathsObj = jCell["paths"];
+          if (pathsObj.HasMember(".json")) {
+            if (!pathsObj[".json"].IsArray()) {
+              LOG(WARNING)
+                  << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
+                  << tag
+                  << ".paths.\".json\"\" cell in JSON config unable to be "
+                     "parsed as "
+                     "an array to determine search paths for json config so "
+                     "skipping.";
+            } else {
+              const auto& paths = pathsObj[".json"];
+              attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
+            }
+          }  // if has member ".json"
+             // TODO support other extention tags
+        }    // if paths cell is an object
+      }      // if has paths cell
       // 3. "configs" : an array of json cells defining customizations to
       // existing attributes.
       if (jCell.HasMember("configs")) {
         if (!jCell["configs"].IsArray()) {
-          LOG(WARNING) << "DatasetAttributesManager::readDatasetJSONCell : \""
-                       << tag
-                       << ".configs\" cell in JSON config unable to be parsed "
-                          "as an array to determine search paths so skipping.";
+          LOG(WARNING)
+              << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
+              << tag
+              << ".configs\" cell in JSON config unable to be parsed "
+                 "as an array to determine search paths so skipping.";
         } else {
           const auto& configsAra = jCell["configs"];
           for (rapidjson::SizeType i = 0; i < configsAra.Size(); i++) {
@@ -148,10 +168,10 @@ void DatasetAttributesManager::readDatasetJSONCell(
       }      // if has configs cell
     }        // if cell is an object
   }          // if cell exists
-}  // DatasetAttributesManager::readDatasetJSONCell
+}  // SceneDatasetAttributesManager::readDatasetJSONCell
 
 template <typename U>
-void DatasetAttributesManager::readDatasetConfigsJSONCell(
+void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     const std::string& dsDir,
     const char* tag,
     const io::JsonGenericValue& jCell,
@@ -159,7 +179,8 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
   // every cell within configs array must have an attributes tag
   if ((!jCell.HasMember("attributes")) || (!jCell["attributes"].IsObject())) {
     LOG(WARNING)
-        << "DatasetAttributesManager::readDatasetConfigsJSONCell : \"" << tag
+        << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
+        << tag
         << ".configs\" cell element in JSON config lacks required data to "
            "construct configuration override (an attributes tag and data "
            "describing the overrides is not found), so skipping.";
@@ -183,7 +204,8 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
         attrMgr->getObjectHandlesBySubstring(originalFile, true);
     if (handles.size() == 0) {
       LOG(WARNING)
-          << "DatasetAttributesManager::readDatasetConfigsJSONCell : \"" << tag
+          << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
+          << tag
           << ".configs\" cell element in JSON config specified source file : "
           << originalFile << " which cannot be found, so skipping.";
       return;
@@ -205,7 +227,8 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
   // if neither handle is specified, cell will fail
   if (!validCell) {
     LOG(WARNING)
-        << "DatasetAttributesManager::readDatasetConfigsJSONCell : \"" << tag
+        << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
+        << tag
         << ".configs\" cell element in JSON config lacks required data to "
            "construct configuration override (either an original_file or a "
            "template_handle must be provided) so skipping.";
@@ -228,14 +251,15 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
     // is known to be legitimate file
     auto attr = attrMgr->getObjectCopyByHandle(origObjHandle);
     if (nullptr == attr) {
-      LOG(WARNING) << "DatasetAttributesManager::readDatasetConfigsJSONCell : "
-                   << attrMgr->getObjectType()
-                   << " : Attempting to make a copy of " << origObjHandle
-                   << " failing so creating and registering a new object.";
+      LOG(WARNING)
+          << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : "
+          << attrMgr->getObjectType() << " : Attempting to make a copy of "
+          << origObjHandle
+          << " failing so creating and registering a new object.";
       attr = attrMgr->createObject(origObjHandle, true);
       if (nullptr == attr) {
         LOG(WARNING)
-            << "DatasetAttributesManager::readDatasetConfigsJSONCell : \""
+            << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
             << tag << ".configs\" cell element's original file ("
             << originalFile
             << ") failed to successfully create a base attributes to modify, "
@@ -255,7 +279,8 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
     // if null then failed for some reason to create a new default object.
     if (nullptr == attr) {
       LOG(WARNING)
-          << "DatasetAttributesManager::readDatasetConfigsJSONCell : \"" << tag
+          << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
+          << tag
           << ".configs\" cell element failed to successfully create an "
              "attributes, so skipping.";
       return;
@@ -271,16 +296,16 @@ void DatasetAttributesManager::readDatasetConfigsJSONCell(
   }  // if original filename was specified else
 }  // namespace managers
 
-int DatasetAttributesManager::registerObjectFinalize(
-    attributes::DatasetAttributes::ptr datasetAttributes,
-    const std::string& datasetAttributesHandle) {
+int SceneDatasetAttributesManager::registerObjectFinalize(
+    attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
+    const std::string& SceneDatasetAttributesHandle) {
   // adds template to library, and returns either the ID of the existing
-  // template referenced by datasetAttributesHandle, or the next available ID
-  // if not found.
-  int datasetTemplateID =
-      this->addObjectToLibrary(datasetAttributes, datasetAttributesHandle);
+  // template referenced by SceneDatasetAttributesHandle, or the next available
+  // ID if not found.
+  int datasetTemplateID = this->addObjectToLibrary(
+      SceneDatasetAttributes, SceneDatasetAttributesHandle);
   return datasetTemplateID;
-}  // DatasetAttributesManager::registerObjectFinalize
+}  // SceneDatasetAttributesManager::registerObjectFinalize
 
 }  // namespace managers
 }  // namespace metadata
