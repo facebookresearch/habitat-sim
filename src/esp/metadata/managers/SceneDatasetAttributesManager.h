@@ -12,7 +12,6 @@
 
 namespace esp {
 namespace metadata {
-
 namespace managers {
 class SceneDatasetAttributesManager
     : public AttributesManager<attributes::SceneDatasetAttributes> {
@@ -65,7 +64,7 @@ class SceneDatasetAttributesManager
    * subsequent editing will require re-registration. Defaults to true. If
    * specified as true, then this function returns a copy of the registered
    * template.
-   * @return a reference to the desired template.
+   * @return a reference to the newly-created template.
    */
   attributes::SceneDatasetAttributes::ptr createObject(
       const std::string& attributesTemplateHandle,
@@ -192,14 +191,14 @@ class SceneDatasetAttributesManager
    * user.
    *
    * @param SceneDatasetAttributes The attributes template.
-   * @param datasetAttributesHandle The key for referencing the template in the
+   * @param SceneDatasetAttributesHandle The key for referencing the template in
+   * the
    * @ref objectLibrary_.
-   * @return The index in the @ref objectLibrary_ of object
-   * template.
+   * @return The index in the @ref objectLibrary_ of the registered template.
    */
   int registerObjectFinalize(
       attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
-      const std::string& datasetAttributesHandle) override;
+      const std::string& SceneDatasetAttributesHandle) override;
 
   /**
    * @brief This function will assign the appropriately configured function
@@ -210,7 +209,7 @@ class SceneDatasetAttributesManager
     this->copyConstructorMap_["SceneDatasetAttributes"] =
         &SceneDatasetAttributesManager::createObjectCopy<
             attributes::SceneDatasetAttributes>;
-  }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
+  }  // SceneDatasetAttributesManager::buildCtorFuncPtrMaps
 
   /**
    * @brief This function is meaningless for this manager's ManagedObjects.
