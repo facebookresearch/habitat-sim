@@ -58,19 +58,19 @@ class LightInstanceAttributes : public AbstractAttributes {
    * @brief Get/Set inner cone angle for spotlights.  Should be ignored for
    * other lights
    */
-  void setInnerConeAngle(double innerConeAngle) {
-    setDouble("innerConeAngle", innerConeAngle);
+  void setInnerConeAngle(const Magnum::Rad& innerConeAngle) {
+    setRad("innerConeAngle", innerConeAngle);
   }
-  double getInnerConeAngle() const { return getDouble("innerConeAngle"); }
+  Magnum::Rad getInnerConeAngle() const { return getRad("innerConeAngle"); }
 
   /**
    * @brief Get/Set inner cone angle for spotlights. Should be ignored for other
    * lights
    */
-  void setOuterConeAngle(double outerConeAngle) {
-    setDouble("outerConeAngle", outerConeAngle);
+  void setOuterConeAngle(const Magnum::Rad& outerConeAngle) {
+    setRad("outerConeAngle", outerConeAngle);
   }
-  double getOuterConeAngle() const { return getDouble("outerConeAngle"); }
+  Magnum::Rad getOuterConeAngle() const { return getRad("outerConeAngle"); }
 
  public:
   ESP_SMART_POINTERS(LightInstanceAttributes)

@@ -16,6 +16,7 @@
 
 namespace Cr = Corrade;
 
+using namespace Magnum::Math::Literals;
 namespace AttrMgrs = esp::metadata::managers;
 namespace Attrs = esp::metadata::attributes;
 
@@ -474,8 +475,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
   ASSERT_EQ(lightAttr->getColor(), Magnum::Vector3(2, 1, -1));
   ASSERT_EQ(lightAttr->getIntensity(), -0.1);
   ASSERT_EQ(lightAttr->getType(), "spot");
-  ASSERT_EQ(lightAttr->getInnerConeAngle(), -0.75);
-  ASSERT_EQ(lightAttr->getOuterConeAngle(), -1.57);
+  ASSERT_EQ(lightAttr->getInnerConeAngle(), -0.75_radf);
+  ASSERT_EQ(lightAttr->getOuterConeAngle(), -1.57_radf);
 }  // AttributesManagers_LightJSONLoadTest
 /**
  * @brief This test will verify that the Stage attributes' managers' JSON

@@ -185,6 +185,32 @@ inline bool jsonIntoVal(const JsonGenericValue& d,
 }  // jsonIntoVal<std::string>
 
 /**
+ * @brief Check passed json doc for existence of passed @p tag as
+ * double. If present, populate passed @p val with value. Returns whether tag
+ * is found and successfully populated, or not. Logs an error if tag is found
+ * but is inappropriate type.
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool jsonIntoVal(const JsonGenericValue& d,
+                        const char* tag,
+                        Magnum::Rad& val) {
+  if (d.HasMember(tag)) {
+    if (d[tag].IsNumber()) {
+      val = Magnum::Rad{d[tag].GetFloat()};
+      return true;
+    }
+    LOG(ERROR) << "Invalid double value specified in JSON config at " << tag;
+  }
+  return false;
+}  // jsonIntoVal<double>
+
+/**
  * @brief Specialization to handle Magnum::Vector3 values.  Check passed json
  * doc for existence of passed @p tag as Magnum::Vector3. If present, populate
  * passed @p val with value. Returns whether tag is found and successfully
