@@ -3,7 +3,9 @@
         "default_attributes": {
             "origin":[1.0,2.0,3.0]
         },
-        "paths": ["stages"],
+        "paths": {
+			".json" : ["stages"]
+		},
         "configs" : [
         {
             "original_file": "stages/dataset_test_stage.stage_config.json",
@@ -37,7 +39,9 @@
 			"mass" : 10.0,
 			"inertia": [3,2,1]
         },
-        "paths": ["objects"],
+        "paths": {
+			".json" : ["objects"]
+		},
         "configs" : [
         {
             "original_file": "objects/dataset_test_object1.object_config.json",
@@ -61,7 +65,9 @@
     "light_setups":{
         "default_attributes": {
         },
-        "paths": ["lights"],
+        "paths": {
+			".json" : ["lights"]
+		},
         "configs" : [
         {
             "original_file":"lights/dataset_test_lights.lighting_config.json",
@@ -87,7 +93,9 @@
         ]
     },
 	"scene_instances":{
-		"paths":["scenes"]
+		"paths": {
+			".json" : ["scenes"]
+		}
 	},
     "navmesh_instances":{
         "navmesh_path1":"test_navmesh_path1",

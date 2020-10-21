@@ -26,6 +26,7 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 using esp::assets::ResourceManager;
+using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
 namespace Test {
@@ -52,7 +53,8 @@ void CullingTest::computeAbsoluteAABB() {
       esp::gfx::WindowlessContext::create_unique(0);
 
   // must declare these in this order due to avoid deallocation errors
-  ResourceManager resourceManager;
+  auto MM = MetadataMediator::create();
+  ResourceManager resourceManager(MM);
   SceneManager sceneManager;
   auto stageAttributesMgr = resourceManager.getStageAttributesManager();
   std::string stageFile =
@@ -125,7 +127,8 @@ void CullingTest::frustumCulling() {
       esp::gfx::WindowlessContext::create_unique(0);
 
   // must declare these in this order due to avoid deallocation errors
-  ResourceManager resourceManager;
+  auto MM = MetadataMediator::create();
+  ResourceManager resourceManager(MM);
   SceneManager sceneManager;
   auto stageAttributesMgr = resourceManager.getStageAttributesManager();
   std::string stageFile =

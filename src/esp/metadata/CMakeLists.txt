@@ -9,6 +9,8 @@ set(
   attributes/ObjectAttributes.cpp
   attributes/SceneAttributes.h
   attributes/SceneAttributes.cpp
+  attributes/SceneDatasetAttributes.h
+  attributes/SceneDatasetAttributes.cpp
   attributes/PhysicsManagerAttributes.h
   attributes/PhysicsManagerAttributes.cpp
   attributes/PrimitiveAssetAttributes.h
@@ -21,8 +23,12 @@ set(
   managers/ObjectAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
+  managers/SceneDatasetAttributesManager.h
+  managers/SceneDatasetAttributesManager.cpp
   managers/StageAttributesManager.h
   managers/StageAttributesManager.cpp
+  MetadataMediator.h
+  MetadataMediator.cpp
 )
 find_package(Magnum REQUIRED Primitives)
 
