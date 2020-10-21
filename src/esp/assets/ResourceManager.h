@@ -239,6 +239,15 @@ class ResourceManager {
     return metadataMediator_->getAssetAttributesManager();
   }
   /**
+   * @brief Return manager for construction and access to light and lighting
+   * layout attributes.
+   */
+  const metadata::managers::LightLayoutAttributesManager::ptr
+  getLightLayoutAttributesManager() const {
+    return metadataMediator_->getLightLayoutAttributesManager();
+  }
+
+  /**
    * @brief Return manager for construction and access to object attributes.
    */
   const metadata::managers::ObjectAttributesManager::ptr
