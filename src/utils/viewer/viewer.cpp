@@ -141,6 +141,7 @@ Key Commands:
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
 
   Object Interactions:
+  SPACE: Toggle physics simulation on/off
   '8': Instance a random primitive object in front of the agent.
   'o': Instance a random file-based object in front of the agent.
   'u': Remove most recently instanced object.
@@ -177,6 +178,9 @@ Key Commands:
 
   // The simulator object backend for this viewer instance
   std::unique_ptr<esp::sim::Simulator> simulator_;
+
+  // Toggle physics simulation on/off
+  bool simulating_ = true;
 
   // The managers belonging to the simulator
   std::shared_ptr<esp::metadata::managers::ObjectAttributesManager>
@@ -503,7 +507,7 @@ void Viewer::drawEvent() {
 
   // step physics at a fixed rate
   timeSinceLastSimulation += timeline_.previousFrameDuration();
-  if (timeSinceLastSimulation >= 1.0 / 60.0) {
+  if (timeSinceLastSimulation >= 1.0 / 60.0 && simulating_) {
     simulator_->stepWorld(1.0 / 60.0);
     timeSinceLastSimulation = 0.0;
   }
@@ -729,6 +733,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   switch (key) {
     case KeyEvent::Key::Esc:
       std::exit(0);
+      break;
+    case KeyEvent::Key::Space:
+      simulating_ = !simulating_;
+      Mn::Debug{} << " Physics Simulation: " << simulating_;
       break;
     case KeyEvent::Key::Left:
       defaultAgent_->act("turnLeft");
