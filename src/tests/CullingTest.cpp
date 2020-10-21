@@ -56,7 +56,7 @@ void CullingTest::computeAbsoluteAABB() {
   auto MM = MetadataMediator::create();
   ResourceManager resourceManager(MM);
   SceneManager sceneManager;
-  auto stageAttributesMgr = resourceManager.getStageAttributesManager();
+  auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
@@ -130,7 +130,7 @@ void CullingTest::frustumCulling() {
   auto MM = MetadataMediator::create();
   ResourceManager resourceManager(MM);
   SceneManager sceneManager;
-  auto stageAttributesMgr = resourceManager.getStageAttributesManager();
+  auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file

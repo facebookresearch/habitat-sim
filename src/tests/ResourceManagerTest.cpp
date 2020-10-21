@@ -33,7 +33,7 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   auto MM = MetadataMediator::create();
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
-  auto stageAttributesMgr = resourceManager.getStageAttributesManager();
+  auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string boxFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
 
