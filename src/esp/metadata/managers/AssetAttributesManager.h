@@ -469,7 +469,7 @@ class AssetAttributesManager
    */
   attributes::AbstractPrimitiveAttributes::ptr initNewObjectInternal(
       const std::string& primClassName,
-      bool builtFromConfig) override {
+      CORRADE_UNUSED bool builtFromConfig) override {
     if (primTypeConstructorMap_.count(primClassName) == 0) {
       LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
                     "primitive class"

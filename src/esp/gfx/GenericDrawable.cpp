@@ -129,17 +129,23 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.normalMatrix());
 
-  if (materialData_->textureMatrix != Mn::Matrix3{})
+  if ((flags_ & Mn::Shaders::Phong::Flag::TextureTransformation) &&
+      materialData_->textureMatrix != Mn::Matrix3{}) {
     shader_->setTextureMatrix(materialData_->textureMatrix);
+  }
 
-  if (materialData_->ambientTexture)
+  if (flags_ & Mn::Shaders::Phong::Flag::AmbientTexture) {
     shader_->bindAmbientTexture(*(materialData_->ambientTexture));
-  if (materialData_->diffuseTexture)
+  }
+  if (flags_ & Mn::Shaders::Phong::Flag::DiffuseTexture) {
     shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
-  if (materialData_->specularTexture)
+  }
+  if (flags_ & Mn::Shaders::Phong::Flag::SpecularTexture) {
     shader_->bindSpecularTexture(*(materialData_->specularTexture));
-  if (materialData_->normalTexture)
+  }
+  if (flags_ & Mn::Shaders::Phong::Flag::NormalTexture) {
     shader_->bindNormalTexture(*(materialData_->normalTexture));
+  }
 
   shader_->draw(mesh_);
 }

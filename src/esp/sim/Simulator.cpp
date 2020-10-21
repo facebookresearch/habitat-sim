@@ -73,8 +73,12 @@ void Simulator::close() {
 }
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
+  if (!metadataMediator_) {
+    metadataMediator_ = metadata::MetadataMediator::create();
+  }
   if (!resourceManager_) {
-    resourceManager_ = std::make_unique<assets::ResourceManager>();
+    resourceManager_ =
+        std::make_unique<assets::ResourceManager>(metadataMediator_);
   }
 
   if (!sceneManager_) {
@@ -106,12 +110,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // described by config file - this always exists to configure scene
   // attributes
   auto physicsManagerAttributes =
-      resourceManager_->getPhysicsAttributesManager()->createObject(
+      metadataMediator_->getPhysicsAttributesManager()->createObject(
           config_.physicsConfigFile, true);
   // if physicsManagerAttributes have been successfully created, inform
   // stageAttributesManager of the config handle of the attributes, so that
   // stageAttributes initialization can use phys Mgr Attr values as defaults
-  auto stageAttributesMgr = resourceManager_->getStageAttributesManager();
+  auto stageAttributesMgr = metadataMediator_->getStageAttributesManager();
   if (physicsManagerAttributes != nullptr) {
     stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
         physicsManagerAttributes->getHandle());

@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Quaternion.h>
 #include <Magnum/Math/Vector3.h>
 
 namespace esp {
@@ -81,7 +82,7 @@ inline bool jsonIntoVal(const JsonGenericValue& d,
     LOG(ERROR) << "Invalid float value specified in JSON config at " << tag;
   }
   return false;
-}  // jsonIntoFloat
+}  // jsonIntoVal<float>
 
 /**
  * @brief Check passed json doc for existence of passed @p tag as
@@ -107,7 +108,7 @@ inline bool jsonIntoVal(const JsonGenericValue& d,
     LOG(ERROR) << "Invalid double value specified in JSON config at " << tag;
   }
   return false;
-}  // jsonIntoDouble
+}  // jsonIntoVal<double>
 
 /**
  * @brief Check passed json doc for existence of passed @p tag as
@@ -131,7 +132,7 @@ inline bool jsonIntoVal(const JsonGenericValue& d, const char* tag, int& val) {
     LOG(ERROR) << "Invalid int value specified in JSON config at " << tag;
   }
   return false;
-}  // jsonIntoInt
+}  // jsonIntoVal<int>
 
 /**
  * @brief Check passed json doc for existence of passed @p tag as
@@ -155,7 +156,7 @@ inline bool jsonIntoVal(const JsonGenericValue& d, const char* tag, bool& val) {
     LOG(ERROR) << "Invalid boolean value specified in JSON config at " << tag;
   }
   return false;
-}  // jsonIntoBool
+}  // jsonIntoVal<bool>
 
 /**
  * @brief Check passed json doc for existence of passed @p tag as
@@ -181,7 +182,7 @@ inline bool jsonIntoVal(const JsonGenericValue& d,
     LOG(ERROR) << "Invalid string value specified in JSON config at " << tag;
   }
   return false;
-}  // jsonIntoString
+}  // jsonIntoVal<std::string>
 
 /**
  * @brief Specialization to handle Magnum::Vector3 values.  Check passed json
@@ -204,7 +205,7 @@ inline bool jsonIntoVal(const JsonGenericValue& d,
       if (d[tag][i].IsNumber()) {
         val[i] = d[tag][i].GetDouble();
       } else {
-        LOG(ERROR) << " Invalid numeric value specified in JSON config at "
+        LOG(ERROR) << " Invalid numeric value specified in JSON Vec3 config at "
                    << tag << " index :" << i;
         return false;
       }
@@ -212,14 +213,91 @@ inline bool jsonIntoVal(const JsonGenericValue& d,
     return true;
   }
   return false;
-}  // jsonIntoString
+}  // jsonIntoVal<Magnum::Vector3>
+
+/**
+ * @brief Specialization to handle Magnum::Quaternion values.  Check passed json
+ * doc for existence of passed @p tag as Magnum::Quaternion. If present,
+ * populate passed @p val with value. Returns whether tag is found and
+ * successfully populated, or not. Logs an error if tag is found but is
+ * inappropriate type.
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool jsonIntoVal(const JsonGenericValue& d,
+                        const char* tag,
+                        Magnum::Quaternion& val) {
+  if (d.HasMember(tag) && d[tag].IsArray() && d[tag].Size() == 4) {
+    for (rapidjson::SizeType i = 0; i < 4; ++i) {
+      if (d[tag][i].IsNumber()) {
+        if (i == 0) {
+          val.scalar() = d[tag][0].GetFloat();
+        } else {
+          val.vector()[i - 1] = d[tag][i].GetFloat();
+        }
+      } else {
+        LOG(ERROR)
+            << " Invalid numeric value specified in JSON Quaternion config at "
+            << tag << " index :" << i;
+        return false;
+      }
+    }  // build array
+    return true;
+  }
+  return false;
+}  // jsonIntoVal<Magnum::Quaternion>
+
+/**
+ * @brief Specialization to handle reading a JSON object into an
+ * std::map<std::string, std::string>.  Check passed json doc for existence of
+ * passed @p tag and verify it is an object. If present, populate passed @p val
+ * with key-value pairs in cell. Returns whether tag is found and successfully
+ * populated, or not. Logs an error if tag is found but is inappropriately
+ * configured
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination std::map to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool jsonIntoVal(const JsonGenericValue& d,
+                        const char* tag,
+                        std::map<std::string, std::string>& val) {
+  if (d.HasMember(tag)) {
+    if (d[tag].IsObject()) {
+      const auto& jCell = d[tag];
+      for (rapidjson::Value::ConstMemberIterator it = jCell.MemberBegin();
+           it != jCell.MemberEnd(); ++it) {
+        const std::string key = it->name.GetString();
+        if (it->value.IsString()) {
+          val.emplace(key, it->value.GetString());
+        } else {
+          LOG(ERROR) << "Invalid string value specified in JSON config " << tag
+                     << " at " << key << ". Skipping.";
+        }
+      }  // for each value
+      return true;
+    } else {  // if member is object
+      LOG(ERROR) << "Invalid JSON Object value specified in JSON config at "
+                 << tag << "; Unable to populate std::map.";
+    }
+  }  // if has tag
+  return false;
+}  // jsonIntoVal<Magnum::Vector3>
 
 /**
  * @brief Check passed json doc for existence of passed jsonTag as value of
  * type T. If present, populate passed setter with value. Returns
- * whether tag is found and successfully populated, or not. Logs an error if @p
- * tag is found but is inappropriate type.  Should use explicit type cast on
- * function call if setter is specified using std::bind()
+ * whether tag is found and successfully populated, or not. Logs an error if
+ * @p tag is found but is inappropriate type.  Should use explicit type cast
+ * on function call if setter is specified using std::bind()
  *
  * @tparam T type of destination variable - must be supported type.
  * @param d json document to parse
@@ -245,8 +323,8 @@ bool jsonIntoSetter(const JsonGenericValue& d,
  * type T, where the consuming setter will treat the value as const. If
  * present, populate passed setter with value. Returns whether @p tag is found
  * and successfully populated, or not. Logs an error if tag is found but is
- * inappropriate type.  Should use explicit type cast on function call if setter
- * is specified using std::bind()
+ * inappropriate type.  Should use explicit type cast on function call if
+ * setter is specified using std::bind()
  *
  * @tparam T type of destination variable - must be supported type.
  * @param d json document to parse
@@ -265,7 +343,7 @@ bool jsonIntoConstSetter(const JsonGenericValue& d,
     return true;
   }
   return false;
-}  // jsonIntoArraySetter
+}  // jsonIntoConstSetter
 
 template <typename GV, typename T>
 void toVector(const GV& arr,
