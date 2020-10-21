@@ -69,11 +69,11 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
 
   // process navmesh instances
   io::jsonIntoVal<std::map<std::string, std::string>>(
-      jsonConfig, "navmesh instances", dsAttribs->editNavmeshMap());
+      jsonConfig, "navmesh_instances", dsAttribs->editNavmeshMap());
 
   // process semantic scene descriptor instances
   io::jsonIntoVal<std::map<std::string, std::string>>(
-      jsonConfig, "semantic scene descriptor instances",
+      jsonConfig, "semantic_scene_descriptor_instances",
       dsAttribs->editSemanticSceneDescrMap());
 
 }  // SceneDatasetAttributesManager::setValsFromJSONDoc
@@ -91,10 +91,10 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     } else {
       const auto& jCell = jsonConfig[tag];
       // process JSON jCell here - this cell potentially holds :
-      // 1. "default attributes" : a single attributes default of the specified
+      // 1. "default_attributes" : a single attributes default of the specified
       // type.
-      if (jCell.HasMember("default attributes")) {
-        if (!jCell["default attributes"].IsObject()) {
+      if (jCell.HasMember("default_attributes")) {
+        if (!jCell["default_attributes"].IsObject()) {
           LOG(WARNING)
               << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
               << tag
@@ -103,7 +103,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
         } else {
           // load attributes as default from file, do not register
           auto attr = attrMgr->buildObjectFromJSONDoc(
-              "default attributes", jCell["default attributes"]);
+              "default_attributes", jCell["default_attributes"]);
           if (nullptr == attr) {
             LOG(WARNING)
                 << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
@@ -216,7 +216,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
   }
 
   // try to find new template name for attributes
-  if (io::jsonIntoVal<std::string>(jCell, "template handle",
+  if (io::jsonIntoVal<std::string>(jCell, "template_handle",
                                    newTemplateHandle)) {
     // if a new template handle has been specified, then this is a valid
     // configuration cell only if either an original to copy from or a source
@@ -254,8 +254,9 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
       LOG(WARNING)
           << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : "
           << attrMgr->getObjectType() << " : Attempting to make a copy of "
-          << origObjHandle << " failing so creating a new object.";
-      attr = attrMgr->createObject(origObjHandle);
+          << origObjHandle
+          << " failing so creating and registering a new object.";
+      attr = attrMgr->createObject(origObjHandle, true);
       if (nullptr == attr) {
         LOG(WARNING)
             << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
@@ -266,7 +267,8 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
         return;
       }
     }  // create copy/new object using old object file name
-
+    // set copied object's handle based on registration handle
+    attr->setHandle(regHandle);
     // object is available now. Modify it using json tag data
     attrMgr->setValsFromJSONDoc(attr, jCell["attributes"]);
     // register object
@@ -296,12 +298,12 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
 
 int SceneDatasetAttributesManager::registerObjectFinalize(
     attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
-    const std::string& datasetAttributesHandle) {
+    const std::string& SceneDatasetAttributesHandle) {
   // adds template to library, and returns either the ID of the existing
-  // template referenced by datasetAttributesHandle, or the next available ID
-  // if not found.
-  int datasetTemplateID =
-      this->addObjectToLibrary(SceneDatasetAttributes, datasetAttributesHandle);
+  // template referenced by SceneDatasetAttributesHandle, or the next available
+  // ID if not found.
+  int datasetTemplateID = this->addObjectToLibrary(
+      SceneDatasetAttributes, SceneDatasetAttributesHandle);
   return datasetTemplateID;
 }  // SceneDatasetAttributesManager::registerObjectFinalize
 
