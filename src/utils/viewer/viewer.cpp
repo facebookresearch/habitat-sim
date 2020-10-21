@@ -399,7 +399,8 @@ int Viewer::addObject(const std::string& objectAttrHandle) {
 
   int physObjectID = simulator_->addObjectByHandle(objectAttrHandle);
   simulator_->setTranslation(new_pos, physObjectID);
-  simulator_->setRotation(esp::core::randomRotation(), physObjectID);
+  simulator_->setRotation(Mn::Quaternion::fromMatrix(T.rotationNormalized()),
+                          physObjectID);
   return physObjectID;
 }  // addObject
 
