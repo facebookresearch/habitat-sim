@@ -40,7 +40,7 @@ class Configuration {
   bool setQuat(const std::string& key, const Magnum::Quaternion& value) {
     return set(key, value);
   }
-  bool setRad(const std::string& key, const Magnum::Rad& value) {
+  bool setRad(const std::string& key, Magnum::Rad value) {
     return set(key, value);
   }
   template <typename T>

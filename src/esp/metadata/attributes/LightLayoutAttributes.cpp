@@ -17,8 +17,8 @@ LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
   setIntensity(1.0);
   setType("point");
   // ignored for all but spot lights
-  setInnerConeAngle(0.75_radf);
-  setOuterConeAngle(1.5_radf);
+  setInnerConeAngle(0.0_radf);
+  setOuterConeAngle(1.57_radf);
 }  // ctor
 
 LightLayoutAttributes::LightLayoutAttributes(const std::string& handle)

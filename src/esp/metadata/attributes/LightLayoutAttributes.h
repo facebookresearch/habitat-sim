@@ -58,7 +58,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    * @brief Get/Set inner cone angle for spotlights.  Should be ignored for
    * other lights
    */
-  void setInnerConeAngle(const Magnum::Rad& innerConeAngle) {
+  void setInnerConeAngle(Magnum::Rad innerConeAngle) {
     setRad("innerConeAngle", innerConeAngle);
   }
   Magnum::Rad getInnerConeAngle() const { return getRad("innerConeAngle"); }
@@ -67,7 +67,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    * @brief Get/Set inner cone angle for spotlights. Should be ignored for other
    * lights
    */
-  void setOuterConeAngle(const Magnum::Rad& outerConeAngle) {
+  void setOuterConeAngle(Magnum::Rad outerConeAngle) {
     setRad("outerConeAngle", outerConeAngle);
   }
   Magnum::Rad getOuterConeAngle() const { return getRad("outerConeAngle"); }
