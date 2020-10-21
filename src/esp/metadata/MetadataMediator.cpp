@@ -8,7 +8,7 @@ namespace esp {
 namespace metadata {
 void MetadataMediator::buildAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
-  SceneDatasetAttributesManager_ =
+  sceneDatasetAttributesManager_ =
       managers::SceneDatasetAttributesManager::create(
           physicsAttributesManager_);
   // create blank default attributes manager
@@ -19,7 +19,7 @@ bool MetadataMediator::createDataset(const std::string& datasetName,
                                      bool overwrite) {
   // see if exists
   bool exists =
-      SceneDatasetAttributesManager_->getObjectLibHasHandle(datasetName);
+      sceneDatasetAttributesManager_->getObjectLibHasHandle(datasetName);
   if (exists) {
     // check if not overwrite and exists already
     if (!overwrite) {
@@ -30,11 +30,11 @@ bool MetadataMediator::createDataset(const std::string& datasetName,
       return false;
     }
     // overwrite specified, make sure not locked
-    SceneDatasetAttributesManager_->setLock(datasetName, false);
+    sceneDatasetAttributesManager_->setLock(datasetName, false);
   }
   // by here dataset either does not exist or exists but is unlocked.
   auto datasetAttribs =
-      SceneDatasetAttributesManager_->createObject(datasetName, true);
+      sceneDatasetAttributesManager_->createObject(datasetName, true);
   if (nullptr == datasetAttribs) {
     // not created, do not set name
     LOG(WARNING) << "MetadataMediator::createDataset : Unknown dataset "
@@ -50,7 +50,7 @@ bool MetadataMediator::createDataset(const std::string& datasetName,
 
 bool MetadataMediator::setActiveDatasetName(const std::string& datasetName) {
   // first check if dataset exists, if so then set default
-  if (SceneDatasetAttributesManager_->getObjectLibHasHandle(datasetName)) {
+  if (sceneDatasetAttributesManager_->getObjectLibHasHandle(datasetName)) {
     LOG(INFO) << "MetadataMediator::setActiveDatasetName : Old active dataset "
               << activeDataset_ << " changed to " << datasetName
               << " successfully.";

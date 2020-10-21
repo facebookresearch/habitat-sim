@@ -154,7 +154,7 @@ class MetadataMediator {
     // do not get copy of dataset attributes until SceneDatasetAttributes deep
     // copy ctor implemented
     auto datasetAttr =
-        SceneDatasetAttributesManager_->getObjectByHandle(activeDataset_);
+        sceneDatasetAttributesManager_->getObjectByHandle(activeDataset_);
     if (nullptr == datasetAttr) {
       LOG(ERROR)
           << "MetadataMediator::getActiveDSAttribs : Unknown dataset named "
@@ -171,7 +171,7 @@ class MetadataMediator {
   /**
    * @brief Manages all construction and access to asset attributes.
    */
-  managers::SceneDatasetAttributesManager::ptr SceneDatasetAttributesManager_ =
+  managers::SceneDatasetAttributesManager::ptr sceneDatasetAttributesManager_ =
       nullptr;
 
   /**
