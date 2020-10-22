@@ -27,6 +27,8 @@ set(
   managers/ObjectAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
+  managers/SceneAttributesManager.h
+  managers/SceneAttributesManager.cpp
   managers/SceneDatasetAttributesManager.h
   managers/SceneDatasetAttributesManager.cpp
   managers/StageAttributesManager.h

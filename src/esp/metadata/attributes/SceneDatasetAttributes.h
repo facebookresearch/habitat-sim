@@ -15,6 +15,7 @@
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/SceneAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 namespace esp {
@@ -51,6 +52,14 @@ class SceneDatasetAttributes : public AbstractAttributes {
 
   /**
    * @brief Return manager for construction and access to scene attributes.
+   */
+  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
+      const {
+    return sceneAttributesManager_;
+  }
+
+  /**
+   * @brief Return manager for construction and access to stage attributes.
    */
   const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
@@ -135,6 +144,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * dataset.
    */
   managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+
+  /**
+   * @brief Manages all construction and access to scene instance attributes
+   * from this dataset.
+   */
+  managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to stage attributes from this
