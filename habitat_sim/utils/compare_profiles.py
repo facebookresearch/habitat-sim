@@ -69,6 +69,7 @@ class SummaryItem:
 
     time_exclusive: int = 0
     time_inclusive: int = 0
+    count: int = 0
 
 
 def get_sqlite_events(conn: Connection) -> List[Event]:
@@ -154,6 +155,7 @@ def create_summary_from_events(events: List[Event]) -> DefaultDict[str, SummaryI
 
         assert event_duration >= exclusive_duration
         item.time_exclusive += exclusive_duration
+        item.count += 1
 
     return items
 
@@ -203,10 +205,13 @@ def print_summaries(
 
     column_pad = 2
     time_width = 12
+    count_width = 7
 
     if labels:
         assert len(labels) == len(summaries)
         max_label_len = time_width * 2 + column_pad
+        if not args.hide_counts:
+            max_label_len += count_width + column_pad
         print("".ljust(max_name_len + column_pad), end="")
         for label in labels:
             short_label = label[-max_label_len:]
@@ -215,6 +220,11 @@ def print_summaries(
 
     print(
         "event name".ljust(max_name_len + column_pad)
+        + (
+            "count".rjust(count_width).ljust(count_width + column_pad)
+            if not args.hide_counts
+            else ""
+        )
         + "incl (ms)".rjust(time_width).ljust(time_width + column_pad)
         + "excl (ms)".rjust(time_width).ljust(time_width + column_pad)
     )
@@ -235,6 +245,13 @@ def print_summaries(
                     time_inclusive = item.time_inclusive
                     time_exclusive = item.time_exclusive
                     show_sign = False
+                if not args.hide_counts:
+                    print(
+                        str(item.count)
+                        .rjust(count_width)
+                        .ljust(count_width + column_pad),
+                        end="",
+                    )
                 print(
                     _display_time_ms(time_inclusive, args, show_sign=show_sign)
                     .rjust(time_width)
@@ -245,9 +262,13 @@ def print_summaries(
                     end="",
                 )
             else:
+                if not args.hide_counts:
+                    print(
+                        "-".rjust(count_width).ljust(count_width + column_pad), end=""
+                    )
                 print(
-                    "-".ljust(time_width + column_pad)
-                    + "-".ljust(time_width + column_pad),
+                    "-".rjust(time_width).ljust(time_width + column_pad)
+                    + "-".rjust(time_width).ljust(time_width + column_pad),
                     end="",
                 )
         print("")
@@ -283,6 +304,12 @@ def create_arg_parser() -> ArgumentParser:
         action="store_true",
         default=False,
         help="When comparing 2+ profiles, display times as relative to the first profile's times.",
+    )
+    parser.add_argument(
+        "--hide-counts",
+        action="store_true",
+        default=False,
+        help="Hide event counts.",
     )
     return parser
 
