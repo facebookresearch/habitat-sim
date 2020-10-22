@@ -83,6 +83,9 @@ void initSimBindings(py::module& m) {
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")
+      .def_property("active_dataset", &Simulator::getActiveDatasetName,
+                    &Simulator::setActiveDatasetName,
+                    R"(The currently active dataset being used.)")
       /* --- Physics functions --- */
       /* --- Template Manager accessors --- */
       .def("get_asset_template_manager", &Simulator::getAssetAttributesManager,

@@ -271,6 +271,15 @@ class ResourceManager {
   }
 
   /**
+   * @brief Set a reference to the current @ref metadataMediator_.  Perform any
+   * initialization that may be required when @ref metadataMediator_ is changed.
+   * @param _MM a reference to the new @ref metadataMediator_.
+   */
+  void setMetadataMediator(metadata::MetadataMediator::ptr _MM) {
+    metadataMediator_ = _MM;
+  }
+
+  /**
    * @brief Retrieve the composition of all transforms applied to a mesh
    * since it was loaded.
    *
