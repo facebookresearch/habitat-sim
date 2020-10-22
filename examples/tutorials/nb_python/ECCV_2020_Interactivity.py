@@ -85,7 +85,7 @@ if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 # define some globals the first time we run.
-if not "sim" in globals():
+if "sim" not in globals():
     global sim
     sim = None
     global obj_attr_mgr
@@ -571,9 +571,8 @@ set_object_state_from_agent(sim, obj_id_1, offset=offset, orientation=orientatio
 
 # display a still frame of the scene after the object is added if RGB sensor is enabled
 observations = sim.get_sensor_observations()
-if display:
-    if sim_settings["color_sensor_1st_person"]:
-        display_sample(observations["color_sensor_1st_person"])
+if display and sim_settings["color_sensor_1st_person"]:
+    display_sample(observations["color_sensor_1st_person"])
 
 example_type = "adding objects test"
 make_sim_and_vid_button(example_type)
@@ -683,9 +682,11 @@ start_time = sim.get_world_time()
 while sim.get_world_time() < start_time + dt:
     sim.step_physics(1.0 / 60.0)
     # remove the object once it passes the occluder center
-    if obj_id_2 in sim.get_existing_object_ids():
-        if sim.get_translation(obj_id_2)[1] <= sim.get_translation(occluder_id)[1]:
-            sim.remove_object(obj_id_2)
+    if (
+        obj_id_2 in sim.get_existing_object_ids()
+        and sim.get_translation(obj_id_2)[1] <= sim.get_translation(occluder_id)[1]
+    ):
+        sim.remove_object(obj_id_2)
     observations.append(sim.get_sensor_observations())
 
 example_type = "object permanence"

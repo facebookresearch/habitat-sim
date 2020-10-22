@@ -135,9 +135,8 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     show_video = args.show_video
     make_video = args.make_video
-    if make_video:
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
+    if make_video and not os.path.exists(output_path):
+        os.mkdir(output_path)
 
 # %%
     # [initialize]

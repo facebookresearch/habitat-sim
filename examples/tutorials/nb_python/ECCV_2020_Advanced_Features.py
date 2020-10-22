@@ -91,7 +91,7 @@ if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 # define some globals the first time we run.
-if not "sim" in globals():
+if "sim" not in globals():
     global sim
     sim = None
     global obj_attr_mgr
@@ -574,7 +574,7 @@ def camera_track_simulate(sim, obj_ids, dt=2.0, get_frames=True, agent_ID=0):
     start_time = sim.get_world_time()
     observations = []
     num_objs = len(obj_ids)
-    if 0 == num_objs:
+    if num_objs == 0:
         print("camera_track_simulate : Aborting, no objects sent to track")
         return observations
     agent = sim.get_agent(agent_ID)

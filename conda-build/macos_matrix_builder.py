@@ -38,7 +38,6 @@ def build_parser():
 
 
 def main():
-    args = build_parser().parse_args()
     py_vers = ["3.6", "3.7", "3.8"]
     bullet_modes = [False, True]
 
