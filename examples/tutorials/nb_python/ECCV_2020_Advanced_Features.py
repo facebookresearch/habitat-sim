@@ -18,7 +18,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.5.2
+#       jupytext_version: 1.6.0
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -59,6 +59,14 @@ import git
 import magnum as mn
 import numpy as np
 
+# %matplotlib inline
+from matplotlib import pyplot as plt
+from PIL import Image
+
+import habitat_sim
+from habitat_sim.utils import common as ut
+from habitat_sim.utils import viz_utils as vut
+
 try:
     import ipywidgets as widgets
     from IPython.display import display as ipydisplay
@@ -68,13 +76,7 @@ try:
     HAS_WIDGETS = True
 except ImportError:
     HAS_WIDGETS = False
-# %matplotlib inline
-from matplotlib import pyplot as plt
-from PIL import Image
 
-import habitat_sim
-from habitat_sim.utils import common as ut
-from habitat_sim.utils import viz_utils as vut
 
 if "google.colab" in sys.modules:
     os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
@@ -518,8 +520,8 @@ def make_simulator_from_settings(sim_settings):
 
 
 def remove_all_objects(sim):
-    for id in sim.get_existing_object_ids():
-        sim.remove_object(id)
+    for obj_id in sim.get_existing_object_ids():
+        sim.remove_object(obj_id)
 
 
 def simulate(sim, dt=1.0, get_frames=True):

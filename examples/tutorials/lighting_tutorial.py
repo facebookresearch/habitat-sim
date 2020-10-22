@@ -42,8 +42,8 @@ def get_obs(sim, show, save):
 
 
 def remove_all_objects(sim):
-    for id in sim.get_existing_object_ids():
-        sim.remove_object(id)
+    for id_ in sim.get_existing_object_ids():
+        sim.remove_object(id_)
 
 
 def place_agent(sim):
