@@ -4,6 +4,7 @@
 
 #include "LightLayoutAttributes.h"
 using Magnum::Math::Literals::operator""_radf;
+using Magnum::Math::Literals::operator""_degf;
 
 namespace esp {
 namespace metadata {
@@ -18,7 +19,7 @@ LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
   setType("point");
   // ignored for all but spot lights
   setInnerConeAngle(0.0_radf);
-  setOuterConeAngle(1.57_radf);
+  setOuterConeAngle(90.0_degf);
 }  // ctor
 
 LightLayoutAttributes::LightLayoutAttributes(const std::string& handle)
