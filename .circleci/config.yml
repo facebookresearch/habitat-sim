@@ -288,14 +288,15 @@ jobs:
             ccache --max-size=10.0G
       - run:
           name: Build, install habitat-sim and run benchmark
-          no_output_timeout: 20m
+          no_output_timeout: 25m
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
-              python setup.py install --headless
+              git submodule update --init --recursive --jobs 4
+              python -u setup.py install --headless
       - run:
           name: run clang-tidy
           command: |
