@@ -73,7 +73,7 @@ repos:
     -   id: jupytext-sync
         name: Sync scripts and notebooks
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
-        entry: jupytext --update-metadata '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}' --set-formats 'nb_python//py:percent,colabs//ipynb' --pipe black --pipe 'isort - --treat-comment-as-code "# %%" --float-to-top' --pipe-fmt 'py:percent' --sync
+        entry: jupytext --update-metadata '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}' --set-formats 'nb_python//py:percent,colabs//ipynb' --pipe black --pipe 'isort - --treat-comment-as-code "# %%"' --pipe-fmt 'py:percent' --sync
         pass_filenames: true
         additional_dependencies:
             - 'jupytext==1.6.0'
