@@ -137,7 +137,6 @@ class SceneDatasetAttributes : public AbstractAttributes {
   managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
 
   /**
-   * @brief Manages all construction and access to scene attributes from this
    * @brief Manages all construction and access to stage attributes from this
    * dataset.
    */

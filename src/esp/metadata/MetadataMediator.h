@@ -66,6 +66,8 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to asset attributes for
    * current dataset.
+   * @return The current dataset's @ref managers::AssetAttributesManager::ptr,
+   * or nullptr if no current dataset.
    */
   const managers::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
@@ -77,6 +79,9 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to object attributes for
    * current dataset.
+   * @return The current dataset's @ref
+   * managers::LightLayoutAttributesManager::ptr, or nullptr if no current
+   * dataset.
    */
   const managers::LightLayoutAttributesManager::ptr
   getLightLayoutAttributesManager() const {
@@ -89,6 +94,8 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to object attributes for
    * current dataset.
+   * @return The current dataset's @ref managers::ObjectAttributesManager::ptr,
+   * or nullptr if no current dataset.
    */
   const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
@@ -100,6 +107,8 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to stage attributes for
    * current dataset.
+   * @return The current dataset's @ref managers::StageAttributesManager::ptr,
+   * or nullptr if no current dataset.
    */
   const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
@@ -118,7 +127,7 @@ class MetadataMediator {
   }
 
   /**
-   * @brief Return copy of map of current active dataset's navmeshes.
+   * @brief Return copy of map of current active dataset's navmesh handles.
    */
   const std::map<std::string, std::string> getActiveNavmeshMap() const {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
@@ -130,7 +139,8 @@ class MetadataMediator {
   }
 
   /**
-   * @brief Return copy of map of current active dataset's navmeshes.
+   * @brief Return copy of map of current active dataset's semantic scene
+   * descriptor handles.
    */
   const std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap()
       const {
