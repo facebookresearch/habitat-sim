@@ -26,3 +26,10 @@ Our linux conda builds currently only support ```{head / headless} x {with bulle
 
 
 
+### Notes
+
+* If building from your normal development clone of the repo, make sure to remove your build folder, i.e. ```rm -r ../build```.  The builder will copy that folder and cmake will error out otherwise.
+
+* You don't need to create a fresh conda env for building.  Just installing ```conda-build=3.18.9``` in any existing conda env (with python >= 3.6) is sufficient.
+
+* You can upload all the binaries with one command by running ```find . -name "*.tar.bz2" | xargs -I {} anaconda upload {}``` in this folder.

@@ -82,7 +82,6 @@ void GenericDrawable::updateShaderLightingParameters(
   std::vector<Mn::Color3> lightSpecularColors;
   lightSpecularColors.reserve(lightSetup_->size());
   constexpr float dummyRange = Mn::Constants::inf();
-  ;
   std::vector<float> lightRanges(lightSetup_->size(), dummyRange);
   const Mn::Color4 ambientLightColor = getAmbientLightColor(*lightSetup_);
 

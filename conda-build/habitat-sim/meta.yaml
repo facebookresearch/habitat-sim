@@ -63,7 +63,7 @@ requirements:
     - xorg-libxi                         # [linux]
     - xorg-libxrandr         # [linux]
     - xorg-libxcursor        # [linux]
-    {{ environ.get('CONDA_BULLET') }}
+    {{ environ.get('CONDA_BULLET', '') }}
     {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT', '') }}
 
 

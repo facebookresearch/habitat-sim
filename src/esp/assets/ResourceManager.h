@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/TextureFormat.h>
@@ -107,8 +108,26 @@ class ResourceManager {
   static constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] =
       "per_vertex_object_id";
 
+  /**
+   * @brief Flag
+   *
+   * @see @ref Flags, @ref flags()
+   */
+  enum class Flag : Magnum::UnsignedShort {
+    /**
+     * build phong material from PBR material
+     */
+    BuildPhongFromPbr = 1 << 0,
+  };
+
+  /**
+   * @brief Flags
+   */
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+
   /** @brief Constructor */
-  explicit ResourceManager(metadata::MetadataMediator::ptr& _metadataMediator);
+  explicit ResourceManager(metadata::MetadataMediator::ptr& _metadataMediator,
+                           Flags flags = {});
 
   /** @brief Destructor */
   ~ResourceManager() {}
@@ -603,6 +622,18 @@ class ResourceManager {
       int textureBaseIndex);
 
   /**
+   * @brief Build a @ref PbrMaterialData for use with PBR shading
+   *
+   * Textures must already be loaded for the asset this material belongs to
+   *
+   * @param material Material data with texture IDs
+   * @param textureBaseIndex Base index of the assets textures in textures_
+   */
+  gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
+      const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+      int textureBaseIndex);
+
+  /**
    * @brief Load a mesh describing some scene asset based on the passed
    * assetInfo.
    *
@@ -819,12 +850,15 @@ class ResourceManager {
    * @param color Optional color parameter for the shader program. Defaults to
    * white.
    */
-  void createGenericDrawable(Mn::GL::Mesh& mesh,
-                             gfx::Drawable::Flags& meshAttributeFlags,
-                             scene::SceneNode& node,
-                             const Mn::ResourceKey& lightSetupKey,
-                             const Mn::ResourceKey& materialKey,
-                             DrawableGroup* group = nullptr);
+
+  void createDrawable(Mn::GL::Mesh& mesh,
+                      gfx::Drawable::Flags& meshAttributeFlags,
+                      scene::SceneNode& node,
+                      const Mn::ResourceKey& lightSetupKey,
+                      const Mn::ResourceKey& materialKey,
+                      DrawableGroup* group = nullptr);
+
+  Flags flags_;
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
@@ -905,6 +939,8 @@ class ResourceManager {
    */
   bool requiresTextures_ = true;
 };
+
+CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
 
 }  // namespace assets
 }  // namespace esp
