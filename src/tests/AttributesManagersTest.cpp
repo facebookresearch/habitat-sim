@@ -12,6 +12,8 @@
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
+#include "esp/physics/RigidBase.h"
+
 #include "configure.h"
 
 namespace Cr = Corrade;
@@ -23,6 +25,8 @@ namespace Attrs = esp::metadata::attributes;
 using esp::metadata::MetadataMediator;
 using esp::metadata::PrimObjTypes;
 
+using esp::physics::MotionType;
+
 using AttrMgrs::AttributesManager;
 using Attrs::AbstractPrimitiveAttributes;
 using Attrs::CapsulePrimitiveAttributes;
@@ -32,6 +36,7 @@ using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
+using Attrs::SceneAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
@@ -48,6 +53,7 @@ class AttributesManagersTest : public testing::Test {
     lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
     objectAttributesManager_ = MM->getObjectAttributesManager();
     physicsAttributesManager_ = MM->getPhysicsAttributesManager();
+    sceneAttributesManager_ = MM->getSceneAttributesManager();
     stageAttributesManager_ = MM->getStageAttributesManager();
   };
 
@@ -400,6 +406,7 @@ class AttributesManagersTest : public testing::Test {
       nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+  AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 };  // class AttributesManagersTest
 
@@ -478,6 +485,76 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
   ASSERT_EQ(lightAttr->getInnerConeAngle(), -0.75_radf);
   ASSERT_EQ(lightAttr->getOuterConeAngle(), -1.57_radf);
 }  // AttributesManagers_LightJSONLoadTest
+/**
+ * @brief This test will verify that the Scene Instance attributes' managers'
+ * JSON loading process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
+  LOG(INFO)
+      << "Starting "
+         "AttributesManagersTest::AttributesManagers_SceneInstanceJSONLoadTest";
+  // build JSON sample config
+  const std::string& jsonString =
+      R"({
+      "stage_instance":{
+          "template_name": "test_stage_template",
+          "translation": [1,2,3],
+          "rotation": [0.1, 0.2, 0.3, 0.4]
+      },
+      "object_instances": [
+          {
+              "template_name": "test_object_template0",
+              "translation": [0,1,2],
+              "rotation": [0.2, 0.3, 0.4, 0.5],
+              "motion_type": "KINEMATIC"
+          },
+          {
+              "template_name": "test_object_template1",
+              "translation": [0,-1,-2],
+              "rotation": [0.5, 0.6, 0.7, 0.8],
+              "motion_type": "DYNAMIC"
+          }
+      ],
+      "default_lighting":  "test_lighting_configuration",
+      "navmesh_instance": "test_navmesh_path1",
+      "semantic_scene_instance": "test_semantic_descriptor_path1"
+     })";
+
+  auto sceneAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::SceneAttributesManager,
+                                        Attrs::SceneAttributes>(
+          sceneAttributesManager_, jsonString);
+
+  // verify exists
+  ASSERT_NE(nullptr, sceneAttr);
+
+  // match values set in test JSON
+  // TODO : get these values programmatically?
+  ASSERT_EQ(sceneAttr->getLightingHandle(), "test_lighting_configuration");
+  ASSERT_EQ(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
+  ASSERT_EQ(sceneAttr->getSemanticSceneHandle(),
+            "test_semantic_descriptor_path1");
+  // verify stage populated properly
+  auto stageInstance = sceneAttr->getStageInstance();
+  ASSERT_EQ(stageInstance->getHandle(), "test_stage_template");
+  ASSERT_EQ(stageInstance->getTranslation(), Magnum::Vector3(1, 2, 3));
+  // verify objects
+  auto objectInstanceList = sceneAttr->getObjectInstances();
+  ASSERT_EQ(objectInstanceList.size(), 2);
+  auto objInstance = objectInstanceList[0];
+  ASSERT_EQ(objInstance->getHandle(), "test_object_template0");
+  ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, 1, 2));
+  ASSERT_EQ(objInstance->getMotionType(),
+            static_cast<int>(esp::physics::MotionType::KINEMATIC));
+
+  objInstance = objectInstanceList[1];
+  ASSERT_EQ(objInstance->getHandle(), "test_object_template1");
+  ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, -1, -2));
+  ASSERT_EQ(objInstance->getMotionType(),
+            static_cast<int>(esp::physics::MotionType::DYNAMIC));
+
+}  // AttributesManagers_SceneInstanceJSONLoadTest
+
 /**
  * @brief This test will verify that the Stage attributes' managers' JSON
  * loading process is working as expected.
