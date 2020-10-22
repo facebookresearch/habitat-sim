@@ -87,14 +87,36 @@ class Viewer : public Mn::Platform::Application {
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
 
-  // Interactive functions
+  /**
+   * @brief Instance an object from an ObjectAttributes.
+   * @param configHandle The handle referencing the object's template in the
+   * ObjectAttributesManager.
+   * @return The newly allocated object's ID for referencing it through the
+   * Simulator API.
+   */
   int addObject(const std::string& configHandle);
+
+  /**
+   * @brief Instance an object from an ObjectAttributes.
+   * @param objID The unique ID referencing the object's template in the
+   * ObjectAttributesManager.
+   * @return The newly allocated object's ID for referencing it through the
+   * Simulator API.
+   */
   int addObject(int objID);
 
-  // add template-derived object
+  /**
+   * @brief Instance a random object based on an imported asset if one exists.
+   * @return The newly allocated object's ID for referencing it through the
+   * Simulator API.
+   */
   int addTemplateObject();
 
-  // add primiitive object
+  /**
+   * @brief Instance a random object based on a primitive shape.
+   * @return The newly allocated object's ID for referencing it through the
+   * Simulator API.
+   */
   int addPrimitiveObject();
 
   void pokeLastObject();
