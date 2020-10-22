@@ -8,7 +8,7 @@ class ExtractorLRUCache:
         self.size = 0
 
     def __getitem__(self, key):
-        if self.__contains__(key):
+        if self.__contains__(key):  # noqa: SIM106
             # Accessing the data should move it to front of cache
             k, data = self._order.pop(key)
             self._order[key] = (k, data)
