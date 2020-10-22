@@ -113,7 +113,7 @@ const float Epsilon = 0.0001;
 // normal: normal direction
 // light: light source direction
 // viwer: camera direction, aka light outgoing direction
-// halfVector: halfVector vector of light and view
+// halfVector: half vector of light and view
 float normalDistribution(vec3 normal, vec3 halfVector, float roughness) {
   float a = roughness * roughness;
   float a2 = a * a;
