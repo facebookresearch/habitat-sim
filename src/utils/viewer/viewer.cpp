@@ -87,15 +87,37 @@ class Viewer : public Mn::Platform::Application {
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
 
-  // Interactive functions
-  void addObject(const std::string& configHandle);
-  void addObject(int objID);
+  /**
+   * @brief Instance an object from an ObjectAttributes.
+   * @param configHandle The handle referencing the object's template in the
+   * ObjectAttributesManager.
+   * @return The newly allocated object's ID for referencing it through the
+   * Simulator API.
+   */
+  int addObject(const std::string& configHandle);
 
-  // add template-derived object
-  void addTemplateObject();
+  /**
+   * @brief Instance an object from an ObjectAttributes.
+   * @param objID The unique ID referencing the object's template in the
+   * ObjectAttributesManager.
+   * @return The newly allocated object's ID for referencing it through the
+   * Simulator API.
+   */
+  int addObject(int objID);
 
-  // add primiitive object
-  void addPrimitiveObject();
+  /**
+   * @brief Instance a random object based on an imported asset if one exists.
+   * @return The newly allocated object's ID for referencing it through the
+   * Simulator API.
+   */
+  int addTemplateObject();
+
+  /**
+   * @brief Instance a random object based on a primitive shape.
+   * @return The newly allocated object's ID for referencing it through the
+   * Simulator API.
+   */
+  int addPrimitiveObject();
 
   void pokeLastObject();
   void pushLastObject();
@@ -141,6 +163,8 @@ Key Commands:
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
 
   Object Interactions:
+  SPACE: Toggle physics simulation on/off
+  '.': Take a single simulation step if not simulating continuously.
   '8': Instance a random primitive object in front of the agent.
   'o': Instance a random file-based object in front of the agent.
   'u': Remove most recently instanced object.
@@ -177,6 +201,13 @@ Key Commands:
 
   // The simulator object backend for this viewer instance
   std::unique_ptr<esp::sim::Simulator> simulator_;
+
+  // Toggle physics simulation on/off
+  bool simulating_ = true;
+
+  // Toggle a single simulation step at the next opportunity if not simulating
+  // continuously.
+  bool simulateSingleStep_ = false;
 
   // The managers belonging to the simulator
   std::shared_ptr<esp::metadata::managers::ObjectAttributesManager>
@@ -382,42 +413,46 @@ Viewer::Viewer(const Arguments& arguments)
   printHelpText();
 }  // end Viewer::Viewer
 
-void Viewer::addObject(int ID) {
+int Viewer::addObject(int ID) {
   const std::string& configHandle =
       simulator_->getObjectAttributesManager()->getObjectHandleByID(ID);
-  addObject(configHandle);
+  return addObject(configHandle);
 }  // addObject
 
-void Viewer::addObject(const std::string& configFile) {
+int Viewer::addObject(const std::string& objectAttrHandle) {
   // Relative to agent bodynode
   Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
 
-  int physObjectID = simulator_->addObjectByHandle(configFile);
+  int physObjectID = simulator_->addObjectByHandle(objectAttrHandle);
   simulator_->setTranslation(new_pos, physObjectID);
-  simulator_->setRotation(esp::core::randomRotation(), physObjectID);
+  simulator_->setRotation(Mn::Quaternion::fromMatrix(T.rotationNormalized()),
+                          physObjectID);
+  return physObjectID;
 }  // addObject
 
 // add file-based template derived object from keypress
-void Viewer::addTemplateObject() {
+int Viewer::addTemplateObject() {
   int numObjTemplates = objectAttrManager_->getNumFileTemplateObjects();
   if (numObjTemplates > 0) {
-    addObject(objectAttrManager_->getRandomFileTemplateHandle());
-  } else
+    return addObject(objectAttrManager_->getRandomFileTemplateHandle());
+  } else {
     LOG(WARNING) << "No objects loaded, can't add any";
-
+    return esp::ID_UNDEFINED;
+  }
 }  // addTemplateObject
 
 // add synthesized primiitive object from keypress
-void Viewer::addPrimitiveObject() {
+int Viewer::addPrimitiveObject() {
   // TODO : use this to implement synthesizing rendered physical objects
 
   int numObjPrims = objectAttrManager_->getNumSynthTemplateObjects();
   if (numObjPrims > 0) {
-    addObject(objectAttrManager_->getRandomSynthTemplateHandle());
-  } else
+    return addObject(objectAttrManager_->getRandomSynthTemplateHandle());
+  } else {
     LOG(WARNING) << "No primitive templates available, can't add any objects";
-
+    return esp::ID_UNDEFINED;
+  }
 }  // addPrimitiveObject
 
 void Viewer::removeLastObject() {
@@ -503,9 +538,11 @@ void Viewer::drawEvent() {
 
   // step physics at a fixed rate
   timeSinceLastSimulation += timeline_.previousFrameDuration();
-  if (timeSinceLastSimulation >= 1.0 / 60.0) {
+  if (timeSinceLastSimulation >= 1.0 / 60.0 &&
+      (simulating_ || simulateSingleStep_)) {
     simulator_->stepWorld(1.0 / 60.0);
     timeSinceLastSimulation = 0.0;
+    simulateSingleStep_ = false;
   }
 
   // using polygon offset to increase mesh depth to a avoid z-fighting with
@@ -729,6 +766,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   switch (key) {
     case KeyEvent::Key::Esc:
       std::exit(0);
+      break;
+    case KeyEvent::Key::Space:
+      simulating_ = !simulating_;
+      Mn::Debug{} << " Physics Simulation: " << simulating_;
+      break;
+    case KeyEvent::Key::Period:
+      // also `>` key
+      simulateSingleStep_ = true;
       break;
     case KeyEvent::Key::Left:
       defaultAgent_->act("turnLeft");
