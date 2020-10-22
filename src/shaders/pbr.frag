@@ -113,11 +113,11 @@ const float Epsilon = 0.0001;
 // normal: normal direction
 // light: light source direction
 // viwer: camera direction, aka light outgoing direction
-// half: half vector of light and view
-float normalDistribution(vec3 normal, vec3 half, float roughness) {
+// halfVector: half vector of light and view
+float normalDistribution(vec3 normal, vec3 halfVector, float roughness) {
   float a = roughness * roughness;
   float a2 = a * a;
-  float n_dot_h = max(dot(normal, half), 0.0);
+  float n_dot_h = max(dot(normal, halfVector), 0.0);
 
   float d = n_dot_h * n_dot_h * (a2 - 1.0) + 1.0;
   d = PI * d * d;
@@ -153,9 +153,9 @@ float specularGeometricAttenuation(vec3 normal,
 // Specular F, aka Fresnel, use Schlick's approximation
 // F0: specular reflectance at normal incidence
 // view: camera direction, aka light outgoing direction
-// half: half vector of light and view
-vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 half) {
-  float v_dot_h = max(dot(view, half), 0.0);
+// halfVector: half vector of light and view
+vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 halfVector) {
+  float v_dot_h = max(dot(view, halfVector), 0.0);
   return F0 + (1.0 - F0) * pow(1.0 - v_dot_h, 5.0);
 }
 
@@ -177,11 +177,11 @@ vec3 microfacetModel(vec3 baseColor,
                      vec3 light,
                      vec3 view,
                      vec3 lightRadiance) {
-  vec3 half = normalize(light + view);
+  vec3 halfVector = normalize(light + view);
   // compute F0, specular reflectance at normal incidence
   // for nonmetal, using constant 0.04
   vec3 F0 = mix(vec3(0.04), baseColor, metallic);
-  vec3 Fresnel = fresnelSchlick(F0, view, half);
+  vec3 Fresnel = fresnelSchlick(F0, view, halfVector);
 
   // Diffuse BRDF
   // NOTE: energy conservation requires
@@ -197,7 +197,7 @@ vec3 microfacetModel(vec3 baseColor,
           Epsilon);
   vec3 specular = Fresnel *
                   specularGeometricAttenuation(normal, light, view, roughness) *
-                  normalDistribution(normal, half, roughness) / temp;
+                  normalDistribution(normal, halfVector, roughness) / temp;
 
   return (diffuse + specular) * lightRadiance * max(dot(normal, light), 0.0);
 }
