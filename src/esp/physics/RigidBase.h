@@ -622,12 +622,16 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   //! SceneGraph
   std::vector<esp::scene::SceneNode*> visualNodes_;
 
- protected:
-  /** @brief Used to synchronize other simulator's notion of the object state
-   * after it was changed kinematically. Called automatically on kinematic
-   * updates.*/
-  virtual void syncPose() { return; }
+  /** @brief Used to synchronize object states between Habitat and
+   * external physics simulation libraries. Called automatically on kinematic
+   * updates.
+   *
+   * @param from Specifies the directionality of the state sync. If true, set
+   * the Habitat state from the physics simulation state.
+   */
+  virtual void syncPose(bool from = false) { return; }
 
+ protected:
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */
   MotionType objectMotionType_;

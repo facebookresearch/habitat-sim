@@ -161,6 +161,14 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, /*maxSubSteps*/ 10000, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
+
+  // Manually sync the motionstates for all DYNAMIC objects. KINEMATIC and
+  // STATIC sync should always be one-way.
+  for (auto& objectItr : existingObjects_) {
+    if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
+      objectItr.second->syncPose(true);
+    }
+  }
 }
 
 void BulletPhysicsManager::setMargin(const int physObjectID,
