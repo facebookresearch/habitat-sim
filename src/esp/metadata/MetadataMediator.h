@@ -107,6 +107,8 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to scene instance
    * attributes for current dataset.
+   * @return The current dataset's @ref managers::SceneAttributesManager::ptr,
+   * or nullptr if no current dataset.
    */
   const managers::SceneAttributesManager::ptr getSceneAttributesManager()
       const {
