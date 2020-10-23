@@ -85,7 +85,7 @@ uniform mediump float NormalTextureScale
 #endif
 
 // -------------- shader ------------------
-#if defined(NORMAL_TEXTURE)
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
 vec3 getNormalFromNormalMap() {
   vec3 tangentNormal =
 #if defined(NORMAL_TEXTURE_SCALE)
