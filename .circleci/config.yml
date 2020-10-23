@@ -5,110 +5,11 @@ gpu: &gpu
   resource_class: gpu.small
   environment:
     FPS_THRESHOLD: 900
-
-jobs:
-  python_lint:
-    docker:
-      - image: circleci/python:3.6
+commands:
+  install_all_ubuntu_deps:
+    description: "Prepares the dependencies"
     steps:
-      - checkout
-      - run:
-          name: setup
-          command: |
-              sudo pip install -U black flake8 flake8-bugbear flake8-comprehensions "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
-              sudo pip install -r requirements.txt --progress-bar off
-      - run:
-          name: run black
-          command: |
-              black --version
-              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --diff
-              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --check
-      - run:
-          name: run isort
-          command: |
-              isort --version
-              isort habitat_sim/. examples/. tests/. setup.py --diff
-              isort habitat_sim/. examples/. tests/. setup.py --check-only
-      - run:
-          name: run flake8
-          command: |
-              flake8 --version
-              flake8 habitat_sim/. examples/. tests/. setup.py
-  cpp_lint:
-    docker:
-      - image: circleci/buildpack-deps:18.04
-    steps:
-      - checkout
-      - run:
-          name: setup
-          command: |
-              sudo apt-get update -y
-              sudo apt-get install -y clang-format-8
-              sudo ln -s /usr/bin/clang-format-8 /usr/bin/clang-format
-              clang-format --version
-      - run:
-          name: run clang-format
-          command: |
-            find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.(cpp|h|cu|hpp|cuh)$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
-
-  js_lint:
-    docker:
-      - image: circleci/node:11.9
-    steps:
-      - checkout
-      - run:
-          name: setup
-          command: |
-            npm install
-      - run:
-          name: run eslint
-          command: |
-            npm run lint
-
-  pre-commit:
-    docker:
-      - image: circleci/python:3.6
-    working_directory: ~/repo/
-
-    steps:
-      - checkout
-      - run:
-          name: Combine precommit config and python versions for caching
-          command: |
-            cat .pre-commit-config.yaml > pre-commit-deps.txt
-            python -VV >> pre-commit-deps.txt
-      - restore_cache:
-          keys:
-          - v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
-
-      - run:
-          name: Install Dependencies
-          command: |
-            sudo pip install -U pip setuptools pre-commit
-            # Install the hooks now so that they'll be cached
-            pre-commit install-hooks
-
-      - save_cache:
-          paths:
-            - ~/.cache/pre-commit
-          key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
-
-      - run:
-          name: Check Code Style using pre-commit
-          command: |
-            SKIP=clang-format,eslint pre-commit run --show-diff-on-failure --all-files
-
-  install_and_test_ubuntu:
-    <<: *gpu
-    steps:
-      - checkout:
-          path: ./habitat-sim
-      - run:
-          name: CPU info
-          no_output_timeout: 1m
-          command: |
-              cat /proc/cpuinfo
-      - run:
+       - run:
           name: Install clang-tidy
           command: |
               sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
@@ -116,7 +17,7 @@ jobs:
               sudo apt-get install -y clang-tidy-9
               sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
               clang-tidy --version
-      - run:
+       - run:
           name: Install cmake
           no_output_timeout: 5m
           # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
@@ -286,6 +187,202 @@ jobs:
             ccache --show-stats
             ccache --zero-stats
             ccache --max-size=10.0G
+
+jobs:
+  python_lint:
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: |
+              sudo pip install -U black flake8 flake8-bugbear flake8-comprehensions "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
+              sudo pip install -r requirements.txt --progress-bar off
+      - run:
+          name: run black
+          command: |
+              black --version
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --diff
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --check
+      - run:
+          name: run isort
+          command: |
+              isort --version
+              isort habitat_sim/. examples/. tests/. setup.py --diff
+              isort habitat_sim/. examples/. tests/. setup.py --check-only
+      - run:
+          name: run flake8
+          command: |
+              flake8 --version
+              flake8 habitat_sim/. examples/. tests/. setup.py
+  cpp_lint:
+    docker:
+      - image: circleci/buildpack-deps:18.04
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: |
+              sudo apt-get update -y
+              sudo apt-get install -y clang-format-8
+              sudo ln -s /usr/bin/clang-format-8 /usr/bin/clang-format
+              clang-format --version
+      - run:
+          name: run clang-format
+          command: |
+            find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.(cpp|h|cu|hpp|cuh)$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
+
+  js_lint:
+    docker:
+      - image: circleci/node:11.9
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: |
+            npm install
+      - run:
+          name: run eslint
+          command: |
+            npm run lint
+
+  pre-commit:
+    docker:
+      - image: circleci/python:3.6
+    working_directory: ~/repo/
+
+    steps:
+      - checkout
+      - run:
+          name: Combine precommit config and python versions for caching
+          command: |
+            cat .pre-commit-config.yaml > pre-commit-deps.txt
+            python -VV >> pre-commit-deps.txt
+      - restore_cache:
+          keys:
+          - v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Install Dependencies
+          command: |
+            sudo pip install -U pip setuptools pre-commit
+            # Install the hooks now so that they'll be cached
+            pre-commit install-hooks
+
+      - save_cache:
+          paths:
+            - ~/.cache/pre-commit
+          key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+
+      - run:
+          name: Check Code Style using pre-commit
+          command: |
+            SKIP=clang-format,eslint pre-commit run --show-diff-on-failure --all-files
+  build_and_test_habitat_lab_conda:
+    <<: *gpu
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - run:
+          name: CPU info
+          no_output_timeout: 1m
+          command: |
+              cat /proc/cpuinfo
+      - install_all_ubuntu_deps
+      - run:
+          name: Build sim documentation
+          no_output_timeout: 20m
+          command: |
+              sudo apt install --allow-change-held-packages \
+                  texlive-base \
+                  texlive-latex-extra \
+                  texlive-fonts-extra \
+                  texlive-fonts-recommended
+
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              # Rebuild with all options enabled
+              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
+              ./build.sh --with-cuda --with-bullet
+              cd docs
+              conda install -y -c conda-forge doxygen==1.8.16
+              conda install -y  jinja2 pygments docutils
+              git submodule update --init
+              ./build-public.sh
+      - run:
+          name: Install Habitat Lab
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              #Rebuild headless
+              python setup.py install --headless --with-bullet --with-cuda
+              cd ..
+              if [ ! -d ./habitat-lab ]
+              then
+                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
+              fi
+              cd habitat-lab
+              pip install -r requirements.txt --progress-bar off
+              ln -s ../habitat-sim/data data
+              touch ~/miniconda/pip_deps_installed
+      - save_cache:
+          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+          background: true
+          paths:
+            - ~/miniconda
+      - run:
+          name: Run Habitat Lab tests
+          no_output_timeout: 25m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat; cd habitat-lab
+              python -u setup.py develop --all
+              python -u setup.py test
+      - save_cache:
+          key: habitat-lab-{{ checksum "./hablab_sha" }}
+          background: true
+          paths:
+            - ./habitat-lab
+      - run:
+          name: Build Habitat Lab documentation
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-lab
+              python setup.py develop --all
+
+              cd docs
+              conda install -y -c conda-forge doxygen==1.8.16
+              conda install -y  jinja2 pygments docutils
+              ./build-public.sh
+      - save_cache:
+          key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
+          background: true
+          paths:
+            - ./habitat-sim/build/docs-public
+      - run:
+          name: Build conda Linux packages for CI
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
+              rm -rf build
+              cd conda-build
+              python linux_matrix_builder.py --ci_test
+  install_and_test_ubuntu:
+    <<: *gpu
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - run:
+          name: CPU info
+          no_output_timeout: 1m
+          command: |
+              cat /proc/cpuinfo
+      - install_all_ubuntu_deps
       - run:
           name: Build, install habitat-sim and run benchmark
           no_output_timeout: 25m
@@ -437,86 +534,8 @@ jobs:
               lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
               lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
-      - run:
-          name: Build sim documentation
-          command: |
-              sudo apt install --allow-change-held-packages \
-                  texlive-base \
-                  texlive-latex-extra \
-                  texlive-fonts-extra \
-                  texlive-fonts-recommended
-
-              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              # Rebuild with all options enabled
-              ./build.sh --with-cuda --with-bullet
-              cd docs
-              conda install -y -c conda-forge doxygen==1.8.16
-              conda install -y  jinja2 pygments docutils
-              git submodule update --init
-              ./build-public.sh
-      - run:
-          name: Install Habitat Lab
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              #Rebuild headless
-              python setup.py install --headless --with-bullet --with-cuda
-              cd ..
-              if [ ! -d ./habitat-lab ]
-              then
-                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
-              fi
-              cd habitat-lab
-              pip install -r requirements.txt --progress-bar off
-              ln -s ../habitat-sim/data data
-              touch ~/miniconda/pip_deps_installed
-      - save_cache:
-          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-          background: true
-          paths:
-            - ~/miniconda
-      - run:
-          name: Run Habitat Lab tests
-          no_output_timeout: 25m
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat; cd habitat-lab
-              python -u setup.py develop --all
-              python -u setup.py test
-      - save_cache:
-          key: habitat-lab-{{ checksum "./hablab_sha" }}
-          background: true
-          paths:
-            - ./habitat-lab
-      - run:
-          name: Build Habitat Lab documentation
-          command: |
-              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat; cd habitat-lab
-              python setup.py develop --all
-
-              cd docs
-              conda install -y -c conda-forge doxygen==1.8.16
-              conda install -y  jinja2 pygments docutils
-              ./build-public.sh
-      - save_cache:
-          key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
-          background: true
-          paths:
-            - ./habitat-sim/build/docs-public
-      - run:
-          name: Build conda Linux packages for CI
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
-              rm -rf build
-              cd conda-build
-              python linux_matrix_builder.py --ci_test
+      
+      
 
   build_conda_binaries:
     <<: *gpu
@@ -607,6 +626,7 @@ workflows:
       - python_lint
       - cpp_lint
       - js_lint
+      - build_and_test_habitat_lab_conda
       - install_and_test_ubuntu
       - pre-commit
   nightly:
@@ -618,6 +638,7 @@ workflows:
               only:
                 - master
     jobs:
+      - build_and_test_habitat_lab_conda
       - install_and_test_ubuntu
       - update_docs:
           requires:
