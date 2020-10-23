@@ -97,15 +97,15 @@ commands:
                   xdg-utils \
                   wget
       - run:
-          name: Install cuda
+          name: Check cuda
           no_output_timeout: 20m
           background: true
           command: |
-              wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
-              sudo dpkg -i cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
-              sudo apt-get update || true
-              sudo apt-get --yes --force-yes install cuda
-              touch ~/cuda_installed
+              #wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
+              #sudo dpkg -i cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
+              #sudo apt-get update || true
+              #sudo apt-get --yes --force-yes install cuda
+              #touch ~/cuda_installed
               nvidia-smi
       - restore_cache:
           keys:
@@ -342,7 +342,7 @@ jobs:
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
               git submodule update --init --recursive --jobs 4
-              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
+              #while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
                   texlive-base \
                   texlive-latex-extra \
@@ -497,7 +497,7 @@ jobs:
               #This way, pytest shows partial progress
               export PYTHONUNBUFFERED=1
               # CUDA isn't needed until here
-              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
+              #while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
 
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
