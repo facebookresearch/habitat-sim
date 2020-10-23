@@ -59,9 +59,9 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
   readDatasetJSONCell(dsDir, "objects", jsonConfig,
                       dsAttribs->getObjectAttributesManager());
 
-  // process light setups - implement handling light setups TODO
-  // readDatasetJSONCell(dsDir,"light setups", jsonConfig,
-  //                     dsAttribs->getLightsAttributesManager());
+  // process light setups - implement handling light setups
+  readDatasetJSONCell(dsDir, "light_setups", jsonConfig,
+                      dsAttribs->getLightLayoutAttributesManager());
 
   // process scene instances - implement handling scene instances TODO
   // readDatasetJSONCell(dsDir,"scene instances", jsonConfig,
