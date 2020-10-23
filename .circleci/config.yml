@@ -204,7 +204,7 @@ jobs:
               sudo dpkg -i cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
               sudo apt-get update || true
               sudo apt-get --yes --force-yes install cuda
-              touch ./cuda_installed
+              touch ~/cuda_installed
               nvidia-smi
       - restore_cache:
           keys:
@@ -396,7 +396,7 @@ jobs:
               #This way, pytest shows partial progress
               export PYTHONUNBUFFERED=1
               # CUDA isn't needed until here
-              while [ ! -f ./cuda_installed ]; do sleep 2; done # wait for CUDA
+              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
 
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
