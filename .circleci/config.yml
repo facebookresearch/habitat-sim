@@ -295,6 +295,7 @@ jobs:
           name: Build sim documentation
           no_output_timeout: 20m
           command: |
+              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
                   texlive-base \
                   texlive-latex-extra \
@@ -305,7 +306,6 @@ jobs:
               . activate habitat;
               cd habitat-sim
               # Rebuild with all options enabled
-              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               ./build.sh --with-cuda --with-bullet
               cd docs
               conda install -y -c conda-forge doxygen==1.8.16
