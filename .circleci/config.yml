@@ -1,7 +1,7 @@
 version: 2.1
 gpu: &gpu
   machine:
-    image: ubuntu-1604-cuda-10.1:201909-23
+    image: ubuntu-1604:201903-01
   resource_class: gpu.small
   environment:
     FPS_THRESHOLD: 900
