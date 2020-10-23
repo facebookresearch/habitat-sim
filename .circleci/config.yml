@@ -373,7 +373,6 @@ jobs:
       - run:
           name: Run sim benchmark
           command: |
-              while [ ! -f ./cuda_installed ]; do sleep 2; done # wait for CUDA
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
@@ -393,9 +392,11 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
 
-              export PYTHONPATH=$PYTHONPATH:$(pwd)
+              export PYTHONPATH=$(pwd):$PYTHONPATH
               #This way, pytest shows partial progress
               export PYTHONUNBUFFERED=1
+              # CUDA isn't needed until here
+              while [ ! -f ./cuda_installed ]; do sleep 2; done # wait for CUDA
 
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
@@ -460,6 +461,10 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
+              cd habitat-sim
+              #Rebuild headless
+              python setup.py install --headless --with-bullet --with-cuda
+              cd ..
               if [ ! -d ./habitat-lab ]
               then
                 git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
