@@ -480,11 +480,12 @@ jobs:
             - ~/miniconda
       - run:
           name: Run Habitat Lab tests
+          no_output_timeout: 25m
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-lab
-              python setup.py develop --all
-              python setup.py test
+              python -u setup.py develop --all
+              python -u setup.py test
       - save_cache:
           key: habitat-lab-{{ checksum "./hablab_sha" }}
           background: true
