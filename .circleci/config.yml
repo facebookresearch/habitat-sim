@@ -9,7 +9,7 @@ commands:
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
     steps:
-       - run:
+      - run:
           name: Install clang-tidy
           command: |
               sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
@@ -17,7 +17,7 @@ commands:
               sudo apt-get install -y clang-tidy-9
               sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
               clang-tidy --version
-       - run:
+      - run:
           name: Install cmake
           no_output_timeout: 5m
           # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
@@ -31,6 +31,7 @@ commands:
               sudo sh ./cmake-3.10.3-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
               sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
       - run: &install_deps
+
           name: Install dependencies
           no_output_timeout: 20m
           command: |
@@ -534,8 +535,8 @@ jobs:
               lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
               lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
-      
-      
+
+
 
   build_conda_binaries:
     <<: *gpu
