@@ -15,8 +15,7 @@ def create_mask_filter(labels, extractor):
     )
 
     # Function that filters out instance of objects we do not care about
-    mask_filter = np.vectorize(lambda x: x * int(x in labels_we_care_about))
-    return mask_filter
+    return np.vectorize(lambda x: x * int(x in labels_we_care_about))
 
 
 def area_filter(mask, bounding_box, img_height, img_width, size_tol=0.05):

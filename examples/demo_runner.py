@@ -347,9 +347,7 @@ class DemoRunner:
             self._sim.recompute_navmesh(self._sim.pathfinder, navmesh_settings)
 
         # initialize the agent at a random start state
-        start_state = self.init_agent_state(self._sim_settings["default_agent"])
-
-        return start_state
+        return self.init_agent_state(self._sim_settings["default_agent"])
 
     def _bench_target(self, _idx=0):
         self.init_common()

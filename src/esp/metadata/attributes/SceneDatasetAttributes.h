@@ -13,6 +13,7 @@
 #include "AttributesBase.h"
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
@@ -31,6 +32,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const {
     return assetAttributesManager_;
   }
+
   /**
    * @brief Return manager for construction and access to object attributes.
    */
@@ -38,6 +40,15 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const {
     return objectAttributesManager_;
   }
+
+  /**
+   * @brief Return manager for construction and access to light attributes.
+   */
+  const managers::LightLayoutAttributesManager::ptr
+  getLightLayoutAttributesManager() const {
+    return lightLayoutAttributesManager_;
+  }
+
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
@@ -61,14 +72,14 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Only DatasetAttributesManager should directly edit navemesh and
+   * @brief Only SceneDatasetAttributesManager should directly edit navemesh and
    * semantic scene descriptor maps. Return the map for navmesh file locations
    * for building/modification
    */
   std::map<std::string, std::string>& editNavmeshMap() { return navmeshMap_; }
 
   /**
-   * @brief Only DatasetAttributesManager should directly edit navemesh and
+   * @brief Only SceneDatasetAttributesManager should directly edit navemesh and
    * semantic scene descriptor maps. Return the map for semantic scene
    * descriptor file locations for building/modification
    */
@@ -111,13 +122,22 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * attributes for object construction
    */
   managers::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
+
+  /**
+   * @brief Manages all construction and access to light attributes from this
+   * dataset.
+   */
+  managers::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
+      nullptr;
+
   /**
    * @brief Manages all construction and access to object attributes from this
    * dataset.
    */
   managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+
   /**
-   * @brief Manages all construction and access to scene attributes from this
+   * @brief Manages all construction and access to stage attributes from this
    * dataset.
    */
   managers::StageAttributesManager::ptr stageAttributesManager_ = nullptr;

@@ -69,7 +69,7 @@ class Simulator(SimulatorBackend):
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
-        if not len(config.agents) > 0:
+        if len(config.agents) == 0:
             raise RuntimeError(
                 "Config has not agents specified.  Must specify at least 1 agent"
             )

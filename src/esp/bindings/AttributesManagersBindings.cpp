@@ -8,10 +8,12 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
+#include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
+#include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
@@ -27,6 +29,7 @@ using Attrs::ConePrimitiveAttributes;
 using Attrs::CubePrimitiveAttributes;
 using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
+using Attrs::LightLayoutAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
@@ -265,7 +268,13 @@ void initAttributesManagersBindings(py::module& m) {
              NULL if none exists.)",
            "handle"_a);
 
-  // ==== Physical Object Attributes Template manager ====
+  // ==== Light Layout Attributes Template manager ====
+  declareBaseAttributesManager<LightLayoutAttributes>(m, "BaseLightLayout");
+  py::class_<LightLayoutAttributesManager,
+             AttributesManager<LightLayoutAttributes>,
+             LightLayoutAttributesManager::ptr>(m,
+                                                "LightLayoutAttributesManager");
+  // ==== Object Attributes Template manager ====
   declareBaseAttributesManager<ObjectAttributes>(m, "BaseObject");
   py::class_<ObjectAttributesManager, AttributesManager<ObjectAttributes>,
              ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
