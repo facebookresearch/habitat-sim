@@ -312,6 +312,8 @@ jobs:
 
               # Rebuild with all options enabled
               ./build.sh --with-cuda --with-bullet
+              # Global Python Install
+              python -u setup.py install --headless --bullet --with-cuda
               cd docs
               git submodule update --init
               ./build-public.sh
