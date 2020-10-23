@@ -38,10 +38,12 @@ struct SimulatorConfiguration {
    * for RGB rendering
    */
   bool requiresTextures = true;
-  std::string physicsConfigFile =
-      ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH;  // should we instead link a
-                                            // PhysicsManagerConfiguration
-                                            // object here?
+  std::string physicsConfigFile = ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH;
+
+  /**
+   * @brief File location for initial dataset to use.
+   */
+  std::string datasetConfigFile = "default";
   /** @brief Light setup key for scene */
   std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
 

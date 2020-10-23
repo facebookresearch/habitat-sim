@@ -12,6 +12,7 @@
 #include "esp/core/Configuration.h"
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/SceneDatasetAttributesManager.h"
@@ -19,7 +20,6 @@
 
 namespace esp {
 namespace metadata {
-namespace Attrs = esp::metadata::attributes;
 class MetadataMediator {
  public:
   MetadataMediator(const std::string& _defaultDataset = "default")
@@ -66,10 +66,12 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to asset attributes for
    * current dataset.
+   * @return The current dataset's @ref managers::AssetAttributesManager::ptr,
+   * or nullptr if no current dataset.
    */
   const managers::AssetAttributesManager::ptr getAssetAttributesManager()
       const {
-    Attrs::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getAssetAttributesManager();
   }
@@ -77,10 +79,27 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to object attributes for
    * current dataset.
+   * @return The current dataset's @ref
+   * managers::LightLayoutAttributesManager::ptr, or nullptr if no current
+   * dataset.
+   */
+  const managers::LightLayoutAttributesManager::ptr
+  getLightLayoutAttributesManager() const {
+    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    return (nullptr == datasetAttr)
+               ? nullptr
+               : datasetAttr->getLightLayoutAttributesManager();
+  }
+
+  /**
+   * @brief Return manager for construction and access to object attributes for
+   * current dataset.
+   * @return The current dataset's @ref managers::ObjectAttributesManager::ptr,
+   * or nullptr if no current dataset.
    */
   const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
       const {
-    Attrs::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getObjectAttributesManager();
   }
@@ -88,10 +107,12 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to stage attributes for
    * current dataset.
+   * @return The current dataset's @ref managers::StageAttributesManager::ptr,
+   * or nullptr if no current dataset.
    */
   const managers::StageAttributesManager::ptr getStageAttributesManager()
       const {
-    Attrs::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (nullptr == datasetAttr) ? nullptr
                                     : datasetAttr->getStageAttributesManager();
   }  // MetadataMediator::getStageAttributesManager
@@ -106,7 +127,7 @@ class MetadataMediator {
   }
 
   /**
-   * @brief Return copy of map of current active dataset's navmeshes.
+   * @brief Return copy of map of current active dataset's navmesh handles.
    */
   const std::map<std::string, std::string> getActiveNavmeshMap() const {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
@@ -118,7 +139,8 @@ class MetadataMediator {
   }
 
   /**
-   * @brief Return copy of map of current active dataset's navmeshes.
+   * @brief Return copy of map of current active dataset's semantic scene
+   * descriptor handles.
    */
   const std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap()
       const {
@@ -138,11 +160,11 @@ class MetadataMediator {
    * @brief Retrieve the current default dataset object.  Currently only for
    * internal use.
    */
-  Attrs::SceneDatasetAttributes::ptr getActiveDSAttribs() const {
+  attributes::SceneDatasetAttributes::ptr getActiveDSAttribs() const {
     // do not get copy of dataset attributes until SceneDatasetAttributes deep
     // copy ctor implemented
     auto datasetAttr =
-        datasetAttributesManager_->getObjectByHandle(activeDataset_);
+        sceneDatasetAttributesManager_->getObjectByHandle(activeDataset_);
     if (nullptr == datasetAttr) {
       LOG(ERROR)
           << "MetadataMediator::getActiveDSAttribs : Unknown dataset named "
@@ -159,7 +181,7 @@ class MetadataMediator {
   /**
    * @brief Manages all construction and access to asset attributes.
    */
-  managers::SceneDatasetAttributesManager::ptr datasetAttributesManager_ =
+  managers::SceneDatasetAttributesManager::ptr sceneDatasetAttributesManager_ =
       nullptr;
 
   /**
