@@ -17,6 +17,7 @@ SceneDatasetAttributes::SceneDatasetAttributes(
       managers::LightLayoutAttributesManager::create();
   objectAttributesManager_ = managers::ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
+  sceneAttributesManager_ = managers::SceneAttributesManager::create();
   stageAttributesManager_ = managers::StageAttributesManager::create(
       objectAttributesManager_, physAttrMgr);
 }  // ctor
