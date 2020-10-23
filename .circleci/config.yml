@@ -522,6 +522,7 @@ jobs:
               npm run test_with_coverage
       - run:
           name: Upload test coverage
+          background: true
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
