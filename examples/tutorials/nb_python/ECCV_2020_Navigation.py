@@ -13,7 +13,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.5.2
+#       jupytext_version: 1.6.0
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -392,7 +392,7 @@ def print_scene_recur(scene, limit_output=10):
                 )
                 count += 1
                 if count >= limit_output:
-                    return None
+                    return
 
 
 # Print semantic annotation information (id, category, bounding box details)

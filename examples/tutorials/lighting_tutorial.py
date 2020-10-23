@@ -42,8 +42,8 @@ def get_obs(sim, show, save):
 
 
 def remove_all_objects(sim):
-    for id in sim.get_existing_object_ids():
-        sim.remove_object(id)
+    for id_ in sim.get_existing_object_ids():
+        sim.remove_object(id_)
 
 
 def place_agent(sim):
@@ -76,9 +76,8 @@ def make_configuration():
 
 # This is wrapped such that it can be added to a unit test
 def main(show_imgs=True, save_imgs=False):
-    if save_imgs:
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
+    if save_imgs and not os.path.exists(output_path):
+        os.mkdir(output_path)
 
     # [default scene lighting]
 

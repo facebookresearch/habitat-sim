@@ -101,9 +101,8 @@ def make_configuration(scene_file):
 
 # This is wrapped such that it can be added to a unit test
 def main(show_imgs=True, save_imgs=False):
-    if save_imgs:
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
+    if save_imgs and not os.path.exists(output_path):
+        os.mkdir(output_path)
 
     # [semantic id]
 

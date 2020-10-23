@@ -103,7 +103,7 @@ def perform_general_tests(attr_mgr, search_string):
     # attempt to remove templates that are locked
     removed_templates = attr_mgr.remove_templates_by_str(new_handle_stub, True)
     # verify that no templates were removed that have the new handle stub
-    assert 0 == len(removed_templates)
+    assert len(removed_templates) == 0
     # unlock all added templates
     unlocked_template_handles = attr_mgr.set_lock_by_substring(
         False, new_handle_stub, True
