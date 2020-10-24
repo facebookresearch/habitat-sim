@@ -42,7 +42,7 @@ pip install "${reqs[@]/#/-r}"
 set -e
 python setup.py develop --all
 pip install . #Reinstall to trigger sys.path update
-pip install -U --force-reinstall cffi #Fix bug with CFFI version issue
+pip install -U --force-reinstall cffi pyopenssl pillow #Fix conflicts with Colab installs
 cd /content/habitat-sim/
 rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
 
