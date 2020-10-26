@@ -1197,6 +1197,7 @@ void ResourceManager::loadMaterials(Importer& importer,
           materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
 
       if (flags_ & Flag::BuildPhongFromPbr) {
+        // if (true) {
         finalMaterial = gfx::buildPhongFromPbrMetallicRoughness(
             pbrMaterialData, textureBaseIndex, textures_);
       } else {
@@ -1386,6 +1387,10 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     // same texture ID, so just roughnessTexture
     finalMaterial->noneRoughnessMetallicTexture =
         textures_[textureBaseIndex + material.roughnessTexture()].get();
+  }
+
+  if (material.isDoubleSided()) {
+    finalMaterial->doubleSided = true;
   }
 
   return finalMaterial;

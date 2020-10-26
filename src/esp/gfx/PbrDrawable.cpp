@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/GL/Renderer.h>
 
 namespace Mn = Magnum;
 
@@ -62,6 +63,9 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   if (materialData_->perVertexObjectId) {
     // TODO: may be supported in the future
   }
+  if (materialData_->doubleSided) {
+    flags_ |= PbrShader::Flag::DoubleSided;
+  }
 
   flags_ = PbrShader::generateCorrectFlags(flags_);
 
@@ -80,6 +84,16 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   updateShader()
       .updateShaderLightParameters()
       .updateShaderLightDirectionParameters(transformationMatrix, camera);
+
+  if (glIsEnabled(GL_CULL_FACE)) {
+    if (flags_ & PbrShader::Flag::DoubleSided) {
+      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
+    }
+  } else {
+    if (!bool(flags_ & PbrShader::Flag::DoubleSided)) {
+      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+    }
+  }
 
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been
