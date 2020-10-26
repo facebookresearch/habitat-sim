@@ -41,9 +41,9 @@ struct SimulatorConfiguration {
   std::string physicsConfigFile = ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH;
 
   /**
-   * @brief File location for initial dataset to use.
+   * @brief File location for initial scene dataset to use.
    */
-  std::string datasetConfigFile = "default";
+  std::string sceneDatasetConfigFile = "default";
   /** @brief Light setup key for scene */
   std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
 

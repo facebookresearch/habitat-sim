@@ -32,6 +32,16 @@ StageAttributesManager::StageAttributesManager(
   buildCtorFuncPtrMaps();
 }  // StageAttributesManager ctor
 
+void StageAttributesManager::buildCtorFuncPtrMaps() {
+  this->copyConstructorMap_["StageAttributes"] =
+      &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
+  // create none-type stage attributes and set as undeletable
+  // based on default
+  auto tmplt = this->createDefaultObject("NONE", true);
+  std::string tmpltHandle = tmplt->getHandle();
+  this->undeletableObjectNames_.insert(tmpltHandle);
+}  // StageAttributesManager::buildCtorFuncPtrMaps
+
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
     const std::string& stageAttributesHandle) {
@@ -85,12 +95,11 @@ int StageAttributesManager::registerObjectFinalize(
     // system - if so then setCollisionAssetIsPrimitive to false
     stageAttributes->setCollisionAssetIsPrimitive(false);
   } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
-    // Render asset handle will be NONE as well - force type to be unknown
+    // Collision asset handle will be NONE as well - force type to be unknown
     stageAttributes->setCollisionAssetType(
         static_cast<int>(AssetType::UNKNOWN));
     stageAttributes->setCollisionAssetIsPrimitive(false);
   } else {
-    // Else, means no collision data specified, use specified render data
     // Else, means no collision data specified, use specified render data
     LOG(INFO)
         << "StageAttributesManager::registerObjectFinalize "
@@ -356,7 +365,7 @@ void StageAttributesManager::setValsFromJSONDoc(
       objectAttributesMgr_->loadAllConfigsFromPath(absolutePath, true);
     }
   }  // if load rigid object library metadata
-}  // namespace managers
+}  // StageAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata
