@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_SENSOR_PINHOLECAMERA_H_
+#define ESP_SENSOR_PINHOLECAMERA_H_
 
 #include "VisualSensor.h"
 #include "esp/core/esp.h"
@@ -53,6 +54,14 @@ class PinholeCamera : public VisualSensor {
   virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
       const override;
 
+  /**
+   * @brief Draw an observation to the frame buffer using simulator's renderer
+   * @return true if success, otherwise false (e.g., frame buffer is not set)
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be drawn
+   */
+  virtual bool drawObservation(sim::Simulator& sim) override;
+
  protected:
   // projection parameters
   int width_ = 640;      // canvas width
@@ -64,13 +73,6 @@ class PinholeCamera : public VisualSensor {
   ESP_SMART_POINTERS(PinholeCamera)
 
   /**
-   * @brief Draw an observation using simulator's renderer
-   * @param[in] sim Instance of Simulator class for which the observation needs
-   *                to be drawn
-   */
-  void drawObservation(sim::Simulator& sim);
-
-  /**
    * @brief Read the observation that was rendered by the simulator
    * @param[in,out] obs Instance of Observation class in which the observation
    *                    will be stored
@@ -80,3 +82,5 @@ class PinholeCamera : public VisualSensor {
 
 }  // namespace sensor
 }  // namespace esp
+
+#endif  // ESP_SENSOR_PINHOLECAMERA_H_

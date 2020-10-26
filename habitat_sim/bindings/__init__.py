@@ -7,31 +7,21 @@
 # TODO: this whole thing needs to get removed, kept just for compatibility
 #   with existing code
 
-modules = [
-    "cuda_enabled",
-    "SceneNodeType",
-    "GreedyFollowerCodes",
-    "GreedyGeodesicFollowerImpl",
-    "MultiGoalShortestPath",
-    "PathFinder",
-    "PinholeCamera",
-    "SceneGraph",
-    "SceneNode",
-    "Sensor",
-    "SensorSpec",
-    "SensorType",
-    "ShortestPath",
-    "SimulatorConfiguration",
-    "ConfigurationGroup",
-    "RigidState",
-]
-
-from habitat_sim._ext.habitat_sim_bindings import (  # noqa: F401 isort:skip
-    Simulator as SimulatorBackend,
+from habitat_sim._ext.habitat_sim_bindings import (
+    ConfigurationGroup,
+    GreedyFollowerCodes,
+    GreedyGeodesicFollowerImpl,
+    MultiGoalShortestPath,
+    PathFinder,
+    PinholeCamera,
+    RigidState,
+    SceneGraph,
+    SceneNode,
+    SceneNodeType,
+    Sensor,
+    SensorSpec,
+    SensorType,
+    ShortestPath,
 )
-
-exec(
-    "from habitat_sim._ext.habitat_sim_bindings import ({})".format(", ".join(modules))
-)
-
-__all__ = ["SimulatorBackend"] + modules
+from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
+from habitat_sim._ext.habitat_sim_bindings import SimulatorConfiguration, cuda_enabled

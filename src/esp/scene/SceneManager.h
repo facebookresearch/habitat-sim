@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_SCENE_SCENEMANAGER_H_
+#define ESP_SCENE_SCENEMANAGER_H_
 
 #include <memory>
 #include <vector>
@@ -39,3 +40,5 @@ class SceneManager {
 };
 }  // namespace scene
 }  // namespace esp
+
+#endif  // ESP_SCENE_SCENEMANAGER_H_

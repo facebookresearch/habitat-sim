@@ -20,62 +20,62 @@
 
 namespace Cr = Corrade;
 
-namespace AttrMgrs = esp::assets::managers;
+namespace AttrMgrs = esp::metadata::managers;
+using AttrMgrs::ObjectAttributesManager;
+using AttrMgrs::PhysicsAttributesManager;
 using esp::assets::ResourceManager;
-using esp::assets::attributes::ObjectAttributes;
-using esp::assets::managers::ObjectAttributesManager;
-using esp::assets::managers::PhysicsAttributesManager;
+using esp::metadata::MetadataMediator;
+using esp::metadata::attributes::ObjectAttributes;
 using esp::physics::PhysicsManager;
 using esp::scene::SceneManager;
 
 const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
 const std::string physicsConfigFile =
     Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "../default.phys_scene_config.json");
+                                 "../default.physics_config.json");
 
 class PhysicsManagerTest : public testing::Test {
  protected:
   void SetUp() override {
+    metadataMediator_ = MetadataMediator::create();
+    resourceManager_ = std::make_unique<ResourceManager>(metadataMediator_);
     context_ = esp::gfx::WindowlessContext::create_unique(0);
 
     sceneID_ = sceneManager_.initSceneGraph();
     // get attributes manager for physics world attributes
-    physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
+    physicsAttributesManager_ =
+        metadataMediator_->getPhysicsAttributesManager();
   };
 
-  void initScene(const std::string stageFile) {
-    // const esp::assets::AssetInfo info =
-    //     esp::assets::AssetInfo::fromPath(stageFile);
-
+  void initStage(const std::string stageFile) {
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
     auto& rootNode = sceneGraph.getRootNode();
 
     // construct appropriate physics attributes based on config file
     auto physicsManagerAttributes =
-        physicsAttributesManager_->createAttributesTemplate(physicsConfigFile,
-                                                            true);
-    auto stageAttributesMgr = resourceManager_.getStageAttributesManager();
+        physicsAttributesManager_->createObject(physicsConfigFile, true);
+    auto stageAttributesMgr = metadataMediator_->getStageAttributesManager();
     if (physicsManagerAttributes != nullptr) {
       stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
           physicsManagerAttributes->getHandle());
     }
-    auto stageAttributes =
-        stageAttributesMgr->createAttributesTemplate(stageFile, true);
+    auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
     // construct physics manager based on specifications in attributes
-    resourceManager_.initPhysicsManager(physicsManager_, true, &rootNode,
-                                        physicsManagerAttributes);
+    resourceManager_->initPhysicsManager(physicsManager_, true, &rootNode,
+                                         physicsManagerAttributes);
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    bool result = resourceManager_.loadStage(stageAttributes, physicsManager_,
-                                             &sceneManager_, tempIDs, false);
+    bool result = resourceManager_->loadStage(stageAttributes, physicsManager_,
+                                              &sceneManager_, tempIDs, false);
   }
 
   // must declare these in this order due to avoid deallocation errors
   esp::gfx::WindowlessContext::uptr context_;
 
-  ResourceManager resourceManager_;
+  std::shared_ptr<MetadataMediator> metadataMediator_ = nullptr;
+  std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
 
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_;
   SceneManager sceneManager_;
@@ -92,7 +92,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -102,13 +102,12 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
     ObjectAttributes->setRenderAssetHandle(objectFile);
     auto objectAttributesManager =
-        resourceManager_.getObjectAttributesManager();
-    objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                        objectFile);
+        metadataMediator_->getObjectAttributesManager();
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     ObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getTemplateCopyByHandle(objectFile);
+        objectAttributesManager->getObjectCopyByHandle(objectFile);
 
     for (int i = 0; i < 2; i++) {
       // mark the object not joined
@@ -117,7 +116,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       } else {
         objectTemplate->setJoinCollisionMeshes(true);
       }
-      objectAttributesManager->registerAttributesTemplate(objectTemplate);
+      objectAttributesManager->registerObject(objectTemplate);
       physicsManager_->reset();
 
       std::vector<int> objectIds;
@@ -153,6 +152,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       if (i == 1) {
         // when collision meshes are joined, objects should be stable
         ASSERT_EQ(numActiveObjects, 0);
+        ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
       }
 
       for (int o : objectIds) {
@@ -171,7 +171,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
   std::string objectFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/objects/sphere.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -184,13 +184,12 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
     ObjectAttributes->setJoinCollisionMeshes(false);
 
     auto objectAttributesManager =
-        resourceManager_.getObjectAttributesManager();
-    objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                        objectFile);
+        metadataMediator_->getObjectAttributesManager();
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     ObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getTemplateCopyByHandle(objectFile);
+        objectAttributesManager->getObjectCopyByHandle(objectFile);
 
     for (int i = 0; i < 2; i++) {
       if (i == 0) {
@@ -198,7 +197,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
       } else {
         objectTemplate->setBoundingBoxCollisions(true);
       }
-      objectAttributesManager->registerAttributesTemplate(objectTemplate);
+      objectAttributesManager->registerObject(objectTemplate);
       physicsManager_->reset();
 
       int objectId = physicsManager_->addObject(
@@ -248,7 +247,7 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -256,9 +255,8 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     ObjectAttributes->setRenderAssetHandle(objectFile);
     ObjectAttributes->setMargin(0.0);
     auto objectAttributesManager =
-        resourceManager_.getObjectAttributesManager();
-    objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                        objectFile);
+        metadataMediator_->getObjectAttributesManager();
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // generate two centered boxes with dimension 2x2x2
     int objectId0 = physicsManager_->addObject(objectFile, nullptr);
@@ -291,7 +289,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initScene(objectFile);
+  initStage(objectFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
@@ -301,29 +299,28 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     ObjectAttributes->setMargin(0.1);
 
     auto objectAttributesManager =
-        resourceManager_.getObjectAttributesManager();
-    objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                        objectFile);
+        metadataMediator_->getObjectAttributesManager();
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     ObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getTemplateCopyByHandle(objectFile);
+        objectAttributesManager->getObjectCopyByHandle(objectFile);
 
     auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
     // add the unjoined object
     objectTemplate->setJoinCollisionMeshes(false);
-    objectAttributesManager->registerAttributesTemplate(objectTemplate);
+    objectAttributesManager->registerObject(objectTemplate);
     int objectId0 = physicsManager_->addObject(objectFile, drawables);
 
     // add the joined object
     objectTemplate->setJoinCollisionMeshes(true);
-    objectAttributesManager->registerAttributesTemplate(objectTemplate);
+    objectAttributesManager->registerObject(objectTemplate);
     int objectId1 = physicsManager_->addObject(objectFile, drawables);
 
     // add bounding box object
     objectTemplate->setBoundingBoxCollisions(true);
-    objectAttributesManager->registerAttributesTemplate(objectTemplate);
+    objectAttributesManager->registerObject(objectTemplate);
     int objectId2 = physicsManager_->addObject(objectFile, drawables);
 
     esp::physics::BulletPhysicsManager* bPhysManager =
@@ -354,23 +351,26 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   // test scaling of objects via template configuration (visual and collision)
   LOG(INFO) << "Starting physics test: ConfigurableScaling";
 
+  std::string stageFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initScene("NONE");
+  initStage(stageFile);
 
   // test joined vs. unjoined
   ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
   ObjectAttributes->setRenderAssetHandle(objectFile);
   ObjectAttributes->setMargin(0.0);
 
-  auto objectAttributesManager = resourceManager_.getObjectAttributesManager();
-  objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                      objectFile);
+  auto objectAttributesManager =
+      metadataMediator_->getObjectAttributesManager();
+  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
   // get a reference to the stored template to edit
   ObjectAttributes::ptr objectTemplate =
-      objectAttributesManager->getTemplateCopyByHandle(objectFile);
+      objectAttributesManager->getObjectCopyByHandle(objectFile);
 
   std::vector<Magnum::Vector3> testScales{
       {1.0, 1.0, 1.0},  {4.0, 3.0, 2.0},    {0.1, 0.2, 0.3},
@@ -382,7 +382,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   std::vector<int> objectIDs;
   for (auto& testScale : testScales) {
     objectTemplate->setScale(testScale);
-    objectAttributesManager->registerAttributesTemplate(objectTemplate);
+    objectAttributesManager->registerObject(objectTemplate);
 
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
@@ -425,14 +425,14 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
   ObjectAttributes->setRenderAssetHandle(objectFile);
   ObjectAttributes->setMargin(0.0);
-  auto objectAttributesManager = resourceManager_.getObjectAttributesManager();
-  objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                      objectFile);
+  auto objectAttributesManager =
+      metadataMediator_->getObjectAttributesManager();
+  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
@@ -570,13 +570,13 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
   ObjectAttributes->setRenderAssetHandle(objectFile);
-  auto objectAttributesManager = resourceManager_.getObjectAttributesManager();
-  objectAttributesManager->registerAttributesTemplate(ObjectAttributes,
-                                                      objectFile);
+  auto objectAttributesManager =
+      metadataMediator_->getObjectAttributesManager();
+  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
   esp::scene::SceneNode& root =
       sceneManager_.getSceneGraph(sceneID_).getRootNode();
@@ -621,7 +621,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  initScene(stageFile);
+  initStage(stageFile);
 
   // ensure that changing default timestep does not affect results
   physicsManager_->setTimestep(0.0041666666);
@@ -636,10 +636,10 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
     ObjectAttributes->setBoundingBoxCollisions(true);
     ObjectAttributes->setScale({boxHalfExtent, boxHalfExtent, boxHalfExtent});
     auto objectAttributesManager =
-        resourceManager_.getObjectAttributesManager();
+        metadataMediator_->getObjectAttributesManager();
 
-    int boxId = objectAttributesManager->registerAttributesTemplate(
-        ObjectAttributes, objectFile);
+    int boxId =
+        objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
@@ -721,7 +721,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
                         .length(),
                     1.0e-4);
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
-                     Magnum::Vector3{0.556, boxHalfExtent * 4, 0.0})
+                     Magnum::Vector3{0.578, boxHalfExtent * 4, 0.0})
                         .length(),
                     2.0e-2);
         } break;
@@ -744,10 +744,10 @@ TEST_F(PhysicsManagerTest, TestURDF) {
   std::string robotFile = Cr::Utility::Directory::join(
       TEST_ASSETS, "URDF/kuka_iiwa/model_free_base.urdf");
 
-  std::string sceneFile = Cr::Utility::Directory::join(
+  std::string stageFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
 
-  initScene(sceneFile);
+  initStage(stageFile);
 
   // need a library to try loading a URDF
   if (physicsManager_->getPhysicsSimulationLibrary() !=
@@ -758,5 +758,100 @@ TEST_F(PhysicsManagerTest, TestURDF) {
     ASSERT_NE(robotId, esp::ID_UNDEFINED);
 
     physicsManager_->stepPhysics(1.0 / 60.0);
+  }
+}
+
+TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
+  std::string stageFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/scenes/simple_room.glb");
+
+  initStage(stageFile);
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    auto objectAttributesManager =
+        metadataMediator_->getObjectAttributesManager();
+
+    std::string cubeHandle =
+        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
+
+    // add a single cube
+    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
+    std::vector<int> cubeIds;
+    cubeIds.push_back(physicsManager_->addObject(cubeHandle, &drawables));
+    physicsManager_->setTranslation(cubeIds.back(), stackBase);
+
+    // no active contact points at start
+    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+
+    // simulate to let cube fall, stabilize and go to sleep
+    bool didHaveActiveContacts = false;
+    while (physicsManager_->getWorldTime() < 4.0) {
+      physicsManager_->stepPhysics(0.1);
+      if (physicsManager_->getNumActiveContactPoints() > 0) {
+        didHaveActiveContacts = true;
+      }
+    }
+    ASSERT(didHaveActiveContacts);
+
+    // no active contact points at end
+    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+  }
+}
+
+TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
+  // test that removing a sleeping support object wakes its collision island
+  LOG(INFO) << "Starting physics test: TestRemoveSleepingSupport";
+
+  std::string stageFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/scenes/simple_room.glb");
+
+  initStage(stageFile);
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    auto objectAttributesManager =
+        metadataMediator_->getObjectAttributesManager();
+
+    std::string cubeHandle =
+        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
+
+    // create a stack of cubes on the table
+    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
+    std::vector<int> cubeIds;
+    int stackSize = 3;
+    for (int i = 0; i < stackSize; ++i) {
+      cubeIds.push_back(physicsManager_->addObject(cubeHandle, &drawables));
+      physicsManager_->setTranslation(cubeIds.back(),
+                                      (Mn::Vector3(0, 0.2, 0) * i) + stackBase);
+    }
+
+    // simulate to stabilize the stack and populate collision islands
+    while (physicsManager_->getWorldTime() < 4.0) {
+      physicsManager_->stepPhysics(0.1);
+    }
+
+    // cubes should be sleeping
+    for (auto id : cubeIds) {
+      assert(!physicsManager_->isActive(id));
+    }
+
+    // no active contact points
+    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+
+    // remove the bottom cube
+    physicsManager_->removeObject(cubeIds.front());
+    cubeIds.erase(cubeIds.begin());
+
+    // remaining cubes should now be awake
+    for (auto id : cubeIds) {
+      assert(physicsManager_->isActive(id));
+    }
+
+    ASSERT_GT(physicsManager_->getNumActiveContactPoints(), 0);
   }
 }

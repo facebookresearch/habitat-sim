@@ -18,7 +18,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.5.2
+#       jupytext_version: 1.6.0
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -59,6 +59,14 @@ import git
 import magnum as mn
 import numpy as np
 
+# %matplotlib inline
+from matplotlib import pyplot as plt
+from PIL import Image
+
+import habitat_sim
+from habitat_sim.utils import common as ut
+from habitat_sim.utils import viz_utils as vut
+
 try:
     import ipywidgets as widgets
     from IPython.display import display as ipydisplay
@@ -68,13 +76,7 @@ try:
     HAS_WIDGETS = True
 except ImportError:
     HAS_WIDGETS = False
-# %matplotlib inline
-from matplotlib import pyplot as plt
-from PIL import Image
 
-import habitat_sim
-from habitat_sim.utils import common as ut
-from habitat_sim.utils import viz_utils as vut
 
 if "google.colab" in sys.modules:
     os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
@@ -91,7 +93,7 @@ if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 # define some globals the first time we run.
-if not "sim" in globals():
+if "sim" not in globals():
     global sim
     sim = None
     global obj_attr_mgr
@@ -490,6 +492,7 @@ def make_simulator_from_settings(sim_settings):
     sim = habitat_sim.Simulator(cfg)
     # Managers of various Attributes templates
     obj_attr_mgr = sim.get_object_template_manager()
+    obj_attr_mgr.load_configs(str(os.path.join(data_path, "objects")))
     prim_attr_mgr = sim.get_asset_template_manager()
     stage_attr_mgr = sim.get_stage_template_manager()
     # UI-populated handles used in various cells.  Need to initialize to valid
@@ -517,8 +520,8 @@ def make_simulator_from_settings(sim_settings):
 
 
 def remove_all_objects(sim):
-    for id in sim.get_existing_object_ids():
-        sim.remove_object(id)
+    for obj_id in sim.get_existing_object_ids():
+        sim.remove_object(obj_id)
 
 
 def simulate(sim, dt=1.0, get_frames=True):
@@ -573,7 +576,7 @@ def camera_track_simulate(sim, obj_ids, dt=2.0, get_frames=True, agent_ID=0):
     start_time = sim.get_world_time()
     observations = []
     num_objs = len(obj_ids)
-    if 0 == num_objs:
+    if num_objs == 0:
         print("camera_track_simulate : Aborting, no objects sent to track")
         return observations
     agent = sim.get_agent(agent_ID)

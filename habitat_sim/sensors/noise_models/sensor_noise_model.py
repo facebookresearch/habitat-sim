@@ -5,9 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import abc
-from typing import Optional
+from typing import Optional, Union
 
 import attr
+from numpy import ndarray
+from torch import Tensor
 
 from habitat_sim.sensor import SensorType
 
@@ -36,6 +38,8 @@ class SensorNoiseModel(abc.ABC):
         :return: The sensor observation with noise applied.
         """
 
-    def __call__(self, sensor_observation):
+    def __call__(
+        self, sensor_observation: Union[ndarray, Tensor]
+    ) -> Union[ndarray, Tensor]:
         r"""Alias of `apply()`"""
         return self.apply(sensor_observation)

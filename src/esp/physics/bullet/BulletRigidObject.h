@@ -29,7 +29,7 @@ namespace physics {
 /**
  * @brief An individual rigid object instance implementing an interface with
  * Bullet physics to enable dynamic objects. See @ref btRigidBody for @ref
- * RigidObjectType::OBJECT.
+ * esp::physics::RigidObjectType::OBJECT.
  *
  * Utilizes Magnum::BulletIntegration::MotionState to synchronize SceneNode
  * state with internal btRigidBody states
@@ -275,7 +275,7 @@ class BulletRigidObject : public BulletBase,
    * @param linVel Linear velocity to set.
    */
   void setLinearVelocity(const Magnum::Vector3& linVel) override {
-    if (objectMotionType_ == MotionType::DYNAMIC) {
+    if (objectMotionType_ != MotionType::STATIC) {
       setActive();
       bObjectRigidBody_->setLinearVelocity(btVector3(linVel));
     }
@@ -291,7 +291,7 @@ class BulletRigidObject : public BulletBase,
    * angles.
    */
   void setAngularVelocity(const Magnum::Vector3& angVel) override {
-    if (objectMotionType_ == MotionType::DYNAMIC) {
+    if (objectMotionType_ != MotionType::STATIC) {
       setActive();
       bObjectRigidBody_->setAngularVelocity(btVector3(angVel));
     }
@@ -432,6 +432,18 @@ class BulletRigidObject : public BulletBase,
   void syncPose() override;
 
   std::string getCollisionDebugName();
+
+  /**
+   * @brief construct a @ref btRigidBody for this object configured by
+   * MotionType and add it to the world.
+   */
+  void constructAndAddRigidBody(MotionType mt);
+
+  /**
+   * @brief Iterate through all collision objects and active all objects sharing
+   * a collision island tag with this object's collision shape.
+   */
+  void activateCollisionIsland();
 
  private:
   // === Physical object ===

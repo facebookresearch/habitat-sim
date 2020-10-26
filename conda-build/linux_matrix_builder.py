@@ -34,6 +34,7 @@ def call(cmd, env=None):
 def build_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ci_test', help="Test package conda build during continues integration test.", action='store_true')
+    parser.add_argument('--nightly', help="Make conda nightly build.", action='store_true')
     parser.add_argument('--conda_upload', help="Upload conda binaries as package to authenticated Anaconda cloud account.",
                         action='store_true')
 
@@ -42,23 +43,29 @@ def build_parser():
 
 def main():
     args = build_parser().parse_args()
-    py_vers = ["3.6"]
+    py_vers = ["3.6", "3.7", "3.8"]
     bullet_modes = [True, False]
-    headless_modes = [True, False][0:1]
+    headless_modes = [True, False]
     cuda_vers = [None, "9.2", "10.0"][0:1]
 
     # For CI test only one package build for test speed interest
     if args.ci_test:
         bullet_modes = [True]
         headless_modes = [True]
+        py_vers = ["3.6"]
 
-    for py_ver, use_bullet, headless, cuda_ver in itertools.product(
+    # TODO: Remove filter bullet_modes = True, headless_modes = False as failing
+    filter_bullet_with_display = lambda product: itertools.filterfalse(lambda op: op[1:3] == (True, False), product)
+
+    for py_ver, use_bullet, headless, cuda_ver in  filter_bullet_with_display(itertools.product(
         py_vers, bullet_modes, headless_modes, cuda_vers
-    ):
+    )):
         env = os.environ.copy()
 
+        env["VERSION"] = habitat_sim.__version__
         # including a timestamp in anticipation of nightly builds
-        env["VERSION"] = habitat_sim.__version__ + time.strftime(".%Y.%m.%d")
+        if args.nightly:
+            env["VERSION"] = env["VERSION"] + time.strftime(".%Y.%m.%d")
         env["WITH_BULLET"] = "0"
         env["WITH_CUDA"] = "0"
         env["HEADLESS"] = "0"

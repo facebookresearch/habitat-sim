@@ -4,11 +4,11 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
-#include "esp/assets/attributes/ObjectAttributes.h"
 #include "esp/core/esp.h"
 #include "esp/io/URDFParser.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "configure.h"
 
@@ -16,8 +16,11 @@ namespace Cr = Corrade;
 
 using namespace esp::io;
 
-using esp::assets::attributes::AbstractObjectAttributes;
-using esp::assets::attributes::ObjectAttributes;
+using esp::metadata::attributes::AbstractObjectAttributes;
+using esp::metadata::attributes::ObjectAttributes;
+
+const std::string dataDir =
+    Corrade::Utility::Directory::join(SCENE_DATASETS, "../");
 
 TEST(IOTest, fileExistTest) {
   std::string file = FILE_THAT_EXISTS;
@@ -118,12 +121,20 @@ TEST(IOTest, parseURDF) {
  * @brief Test basic JSON file processing
  */
 TEST(IOTest, JsonTest) {
-  std::string s = "{\"test\":[1, 2, 3, 4]}";
+  std::string s = "{\"test\":[1,2,3,4]}";
   const auto& json = esp::io::parseJsonString(s);
   std::vector<int> t;
   esp::io::toIntVector(json["test"], &t);
   EXPECT_EQ(t[1], 2);
-  EXPECT_EQ(esp::io::jsonToString(json), "{\"test\":[1,2,3,4]}");
+  EXPECT_EQ(esp::io::jsonToString(json), s);
+
+  // test io
+  auto testFilepath =
+      Corrade::Utility::Directory::join(dataDir, "../io_test_json.json");
+  EXPECT_TRUE(writeJsonToFile(json, testFilepath));
+  const auto& loadedJson = esp::io::parseJsonFile(testFilepath);
+  EXPECT_EQ(esp::io::jsonToString(loadedJson), s);
+  Corrade::Utility::Directory::rm(testFilepath);
 
   // test basic attributes populating
 
@@ -131,7 +142,10 @@ TEST(IOTest, JsonTest) {
       "{\"render mesh\": \"banana.glb\",\"join collision "
       "meshes\":false,\"mass\": 0.066,\"scale\": [2.0,2.0,2]}";
 
-  const auto& jsonDoc = esp::io::parseJsonString(attr_str);
+  // io::JsonGenericValue :
+  esp::io::JsonDocument tmpJSON = esp::io::parseJsonString(attr_str);
+  // io::JsonGenericValue :
+  const esp::io::JsonGenericValue jsonDoc = tmpJSON.GetObject();
 
   // for function ptr placeholder
   using std::placeholders::_1;

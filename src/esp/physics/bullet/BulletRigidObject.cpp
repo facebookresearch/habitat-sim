@@ -41,16 +41,15 @@ BulletRigidObject::BulletRigidObject(
       MotionState(*rigidBodyNode) {}
 
 BulletRigidObject::~BulletRigidObject() {
-  if (objectMotionType_ != MotionType::STATIC) {
-    // remove rigid body from the world
-    bWorld_->removeRigidBody(bObjectRigidBody_.get());
-  } else if (objectMotionType_ == MotionType::STATIC) {
-    // remove collision objects from the world
-    for (auto& co : bStaticCollisionObjects_) {
-      bWorld_->removeRigidBody(co.get());
-      collisionObjToObjIds_->erase(co.get());
-    }
+  if (!isActive()) {
+    // This object may be supporting other sleeping objects, so wake them before
+    // removing.
+    activateCollisionIsland();
   }
+
+  // remove rigid body from the world
+  bWorld_->removeRigidBody(bObjectRigidBody_.get());
+
   collisionObjToObjIds_->erase(bObjectRigidBody_.get());
 
 }  //~BulletRigidObject
@@ -81,7 +80,7 @@ bool BulletRigidObject::initialization_LibSpecific(
     // if using prim collider get appropriate bullet collision primitive
     // attributes and build bullet collision shape
     auto primAttributes =
-        resMgr.getAssetAttributesManager()->getTemplateCopyByHandle(
+        resMgr.getAssetAttributesManager()->getObjectCopyByHandle(
             collisionAssetHandle);
     // primitive object pointer construction
     auto primObjPtr = buildPrimitiveCollisionObject(
@@ -89,6 +88,7 @@ bool BulletRigidObject::initialization_LibSpecific(
     if (nullptr == primObjPtr) {
       return false;
     }
+    primObjPtr->setLocalScaling(btVector3(tmpAttr->getCollisionAssetSize()));
     bGenericShapes_.clear();
     bGenericShapes_.emplace_back(std::move(primObjPtr));
     bObjectShape_->addChildShape(btTransform::getIdentity(),
@@ -108,6 +108,8 @@ bool BulletRigidObject::initialization_LibSpecific(
 
       // add the final object after joining meshes
       if (joinCollisionMeshes) {
+        bObjectConvexShapes_.back()->setLocalScaling(
+            btVector3(tmpAttr->getCollisionAssetSize()));
         bObjectConvexShapes_.back()->setMargin(0.0);
         bObjectConvexShapes_.back()->recalcLocalAabb();
         bObjectShape_->addChildShape(btTransform::getIdentity(),
@@ -120,40 +122,10 @@ bool BulletRigidObject::initialization_LibSpecific(
   bObjectShape_->setMargin(margin);
 
   bObjectShape_->setLocalScaling(btVector3{tmpAttr->getScale()});
+  bObjectShape_->recalculateLocalAabb();
+  // create the bObjectRigidBody_
+  constructAndAddRigidBody(objectMotionType_);
 
-  btVector3 bInertia = btVector3(tmpAttr->getInertia());
-
-  if (!usingBBCollisionShape_) {
-    if (bInertia == btVector3{0, 0, 0}) {
-      // allow bullet to compute the inertia tensor if we don't have one
-      bObjectShape_->calculateLocalInertia(tmpAttr->getMass(),
-                                           bInertia);  // overrides bInertia
-    }
-  }
-
-  //! Bullet rigid body setup
-  btRigidBody::btRigidBodyConstructionInfo info =
-      btRigidBody::btRigidBodyConstructionInfo(tmpAttr->getMass(),
-                                               &(btMotionState()),
-                                               bObjectShape_.get(), bInertia);
-  info.m_friction = tmpAttr->getFrictionCoefficient();
-  info.m_restitution = tmpAttr->getRestitutionCoefficient();
-  info.m_linearDamping = tmpAttr->getLinearDamping();
-  info.m_angularDamping = tmpAttr->getAngularDamping();
-
-  //! Create rigid body
-  bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
-
-  //! Add to world
-  bWorld_->addRigidBody(bObjectRigidBody_.get(),
-                        btBroadphaseProxy::DefaultFilter,
-                        btBroadphaseProxy::AllFilter);
-  collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
-  BulletDebugManager::get().mapCollisionObjectTo(bObjectRigidBody_.get(),
-                                                 getCollisionDebugName());
-
-  //! Sync render pose with physics
-  syncPose();
   return true;
 }  // initialization_LibSpecific
 
@@ -171,51 +143,51 @@ BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
   CORRADE_ASSERT(
       (primTypeVal >= 0) &&
           (primTypeVal <
-           static_cast<int>(assets::PrimObjTypes::END_PRIM_OBJ_TYPES)),
+           static_cast<int>(metadata::PrimObjTypes::END_PRIM_OBJ_TYPES)),
       "BulletRigidObject::buildPrimitiveCollisionObject : Illegal primitive "
       "value requested : "
           << primTypeVal,
       nullptr);
-  assets::PrimObjTypes primType =
-      static_cast<assets::PrimObjTypes>(primTypeVal);
+  metadata::PrimObjTypes primType =
+      static_cast<metadata::PrimObjTypes>(primTypeVal);
 
   std::unique_ptr<btCollisionShape> obj(nullptr);
   switch (primType) {
-    case assets::PrimObjTypes::CAPSULE_SOLID:
-    case assets::PrimObjTypes::CAPSULE_WF: {
+    case metadata::PrimObjTypes::CAPSULE_SOLID:
+    case metadata::PrimObjTypes::CAPSULE_WF: {
       // use bullet capsule :  btCapsuleShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
       btScalar height = 2.0 * halfLength;
       obj = std::make_unique<btCapsuleShape>(radius, height);
       break;
     }
-    case assets::PrimObjTypes::CONE_SOLID:
-    case assets::PrimObjTypes::CONE_WF: {
+    case metadata::PrimObjTypes::CONE_SOLID:
+    case metadata::PrimObjTypes::CONE_WF: {
       // use bullet cone : btConeShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
       btScalar height = 2.0 * halfLength;
       obj = std::make_unique<btConeShape>(radius, height);
       break;
     }
-    case assets::PrimObjTypes::CUBE_SOLID:
-    case assets::PrimObjTypes::CUBE_WF: {
+    case metadata::PrimObjTypes::CUBE_SOLID:
+    case metadata::PrimObjTypes::CUBE_WF: {
       // use bullet box shape : btBoxShape( const btVector3& boxHalfExtents);
       btVector3 dim(1.0, 1.0, 1.0);
       obj = std::make_unique<btBoxShape>(dim);
       break;
     }
-    case assets::PrimObjTypes::CYLINDER_SOLID:
-    case assets::PrimObjTypes::CYLINDER_WF: {
+    case metadata::PrimObjTypes::CYLINDER_SOLID:
+    case metadata::PrimObjTypes::CYLINDER_WF: {
       // use bullet cylinder shape :btCylinderShape (const btVector3&
       // halfExtents);
       btVector3 dim(1.0, 1.0, 1.0);
       obj = std::make_unique<btCylinderShape>(dim);
       break;
     }
-    case assets::PrimObjTypes::ICOSPHERE_SOLID:
-    case assets::PrimObjTypes::ICOSPHERE_WF:
-    case assets::PrimObjTypes::UVSPHERE_SOLID:
-    case assets::PrimObjTypes::UVSPHERE_WF: {
+    case metadata::PrimObjTypes::ICOSPHERE_SOLID:
+    case metadata::PrimObjTypes::ICOSPHERE_WF:
+    case metadata::PrimObjTypes::UVSPHERE_SOLID:
+    case metadata::PrimObjTypes::UVSPHERE_WF: {
       // use bullet sphere shape :btSphereShape (btScalar radius)
       btScalar radius = 1.0f;
       obj = std::make_unique<btSphereShape>(radius);
@@ -244,8 +216,9 @@ void BulletRigidObject::setCollisionFromBB() {
   bObjectShape_->recalculateLocalAabb();
   bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
 
-  if (bObjectRigidBody_->getInvInertiaDiagLocal() == btVector3{0, 0, 0}) {
-    btVector3 bInertia(getInertiaVector());
+  auto tmpAttr = getInitializationAttributes();
+  btVector3 bInertia(tmpAttr->getInertia());
+  if (bInertia == btVector3{0, 0, 0}) {
     // allow bullet to compute the inertia tensor if we don't have one
     bObjectShape_->calculateLocalInertia(getMass(),
                                          bInertia);  // overrides bInertia
@@ -255,76 +228,23 @@ void BulletRigidObject::setCollisionFromBB() {
 }  // setCollisionFromBB
 
 bool BulletRigidObject::setMotionType(MotionType mt) {
+  if (mt == MotionType::UNDEFINED) {
+    return false;
+  }
   if (mt == objectMotionType_) {
     return true;  // no work
   }
 
   // remove the existing object from the world to change its type
-  if (objectMotionType_ == MotionType::STATIC) {
-    bWorld_->removeRigidBody(bStaticCollisionObjects_.back().get());
-    collisionObjToObjIds_->erase(bStaticCollisionObjects_.back().get());
-    bStaticCollisionObjects_.clear();
-  } else if (objectMotionType_ != MotionType::RENDER_ONLY) {
+  if (objectMotionType_ != MotionType::RENDER_ONLY) {
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
   }
 
-  if (mt == MotionType::KINEMATIC) {
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() |
-        btCollisionObject::CF_KINEMATIC_OBJECT);
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() &
-        ~btCollisionObject::CF_STATIC_OBJECT);
-    objectMotionType_ = MotionType::KINEMATIC;
-    bWorld_->addRigidBody(bObjectRigidBody_.get(),
-                          btBroadphaseProxy::KinematicFilter,
-                          btBroadphaseProxy::DefaultFilter);
-    return true;
-  } else if (mt == MotionType::STATIC) {
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() |
-        btCollisionObject::CF_STATIC_OBJECT);
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() &
-        ~btCollisionObject::CF_KINEMATIC_OBJECT);
-    objectMotionType_ = MotionType::STATIC;
-
-    // mass == 0 to indicate static. See isStaticObject assert below. See also
-    // examples/MultiThreadedDemo/CommonRigidBodyMTBase.h
-    btVector3 localInertia(0, 0, 0);
-    btRigidBody::btRigidBodyConstructionInfo cInfo(
-        /*mass*/ 0.0, nullptr, bObjectShape_.get(), localInertia);
-    cInfo.m_startWorldTransform = bObjectRigidBody_->getWorldTransform();
-    std::unique_ptr<btRigidBody> staticCollisionObject =
-        std::make_unique<btRigidBody>(cInfo);
-    ASSERT(staticCollisionObject->isStaticObject());
-    bWorld_->addRigidBody(staticCollisionObject.get(),
-                          btBroadphaseProxy::StaticFilter,
-                          btBroadphaseProxy::DefaultFilter);
-    collisionObjToObjIds_->emplace(staticCollisionObject.get(), objectId_);
-    BulletDebugManager::get().mapCollisionObjectTo(staticCollisionObject.get(),
-                                                   getCollisionDebugName());
-    bStaticCollisionObjects_.emplace_back(std::move(staticCollisionObject));
-    return true;
-  } else if (mt == MotionType::DYNAMIC) {
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() &
-        ~btCollisionObject::CF_STATIC_OBJECT);
-    bObjectRigidBody_->setCollisionFlags(
-        bObjectRigidBody_->getCollisionFlags() &
-        ~btCollisionObject::CF_KINEMATIC_OBJECT);
-    objectMotionType_ = MotionType::DYNAMIC;
-    bWorld_->addRigidBody(bObjectRigidBody_.get(),
-                          btBroadphaseProxy::DefaultFilter,
-                          btBroadphaseProxy::AllFilter);
-    setActive();
-    return true;
-  } else if (mt == MotionType::RENDER_ONLY) {
-    // don't add any collidable back to the world.
-    return true;
+  if (mt != MotionType::RENDER_ONLY) {
+    constructAndAddRigidBody(mt);
   }
-
-  return false;
+  objectMotionType_ = mt;
+  return true;
 }  // setMotionType
 
 void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
@@ -353,6 +273,77 @@ void BulletRigidObject::syncPose() {
 std::string BulletRigidObject::getCollisionDebugName() {
   return "RigidObject, " + initializationAttributes_->getHandle() + ", id " +
          std::to_string(objectId_);
+}
+
+void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
+  // get this object's creation template, appropriately cast
+  auto tmpAttr = getInitializationAttributes();
+
+  double mass = 0;
+  btVector3 bInertia = {0, 0, 0};
+  if (mt == MotionType::DYNAMIC) {
+    mass = tmpAttr->getMass();
+    bInertia = btVector3(tmpAttr->getInertia());
+    if (bInertia == btVector3{0, 0, 0}) {
+      // allow bullet to compute the inertia tensor if we don't have one
+      bObjectShape_->calculateLocalInertia(mass,
+                                           bInertia);  // overrides bInertia
+    }
+  }
+
+  //! Bullet rigid body setup
+  auto motionState =
+      (mt == MotionType::STATIC) ? nullptr : &(this->btMotionState());
+
+  btRigidBody::btRigidBodyConstructionInfo info =
+      btRigidBody::btRigidBodyConstructionInfo(mass, motionState,
+                                               bObjectShape_.get(), bInertia);
+
+  info.m_friction = tmpAttr->getFrictionCoefficient();
+  info.m_restitution = tmpAttr->getRestitutionCoefficient();
+  info.m_linearDamping = tmpAttr->getLinearDamping();
+  info.m_angularDamping = tmpAttr->getAngularDamping();
+  if (bObjectRigidBody_ != nullptr) {
+    info.m_startWorldTransform = bObjectRigidBody_->getWorldTransform();
+  }
+
+  //! Create rigid body
+  if (collisionObjToObjIds_->count(bObjectRigidBody_.get())) {
+    collisionObjToObjIds_->erase(bObjectRigidBody_.get());
+  }
+  bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
+  collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
+
+  if (mt == MotionType::KINEMATIC) {
+    bObjectRigidBody_->setCollisionFlags(
+        bObjectRigidBody_->getCollisionFlags() |
+        btCollisionObject::CF_KINEMATIC_OBJECT);
+    ASSERT(bObjectRigidBody_->isKinematicObject());
+  }
+
+  // add the object to the world
+  if (mt == MotionType::STATIC) {
+    ASSERT(bObjectRigidBody_->isStaticObject());
+    bWorld_->addRigidBody(
+        bObjectRigidBody_.get(),
+        2,       // collisionFilterGroup (2 == StaticFilter)
+        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+  } else {
+    bWorld_->addRigidBody(bObjectRigidBody_.get());
+    setActive();
+  }
+}
+
+void BulletRigidObject::activateCollisionIsland() {
+  // activate nearby objects in the simulation island as computed on the
+  // previous collision detection pass
+  btCollisionObject* thisColObj = bObjectRigidBody_.get();
+  auto& colObjs = bWorld_->getCollisionWorld()->getCollisionObjectArray();
+  for (auto objIx = 0; objIx < colObjs.size(); ++objIx) {
+    if (colObjs[objIx]->getIslandTag() == thisColObj->getIslandTag()) {
+      colObjs[objIx]->activate();
+    }
+  }
 }
 
 void BulletRigidObject::setCOM(const Magnum::Vector3&) {

@@ -26,6 +26,7 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 using esp::assets::ResourceManager;
+using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
 namespace Test {
@@ -52,14 +53,14 @@ void CullingTest::computeAbsoluteAABB() {
       esp::gfx::WindowlessContext::create_unique(0);
 
   // must declare these in this order due to avoid deallocation errors
-  ResourceManager resourceManager;
+  auto MM = MetadataMediator::create();
+  ResourceManager resourceManager(MM);
   SceneManager sceneManager;
-  auto stageAttributesMgr = resourceManager.getStageAttributesManager();
+  auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
-  auto stageAttributes =
-      stageAttributesMgr->createAttributesTemplate(stageFile, true);
+  auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
   int sceneID = sceneManager.initSceneGraph();
   auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
@@ -126,14 +127,14 @@ void CullingTest::frustumCulling() {
       esp::gfx::WindowlessContext::create_unique(0);
 
   // must declare these in this order due to avoid deallocation errors
-  ResourceManager resourceManager;
+  auto MM = MetadataMediator::create();
+  ResourceManager resourceManager(MM);
   SceneManager sceneManager;
-  auto stageAttributesMgr = resourceManager.getStageAttributesManager();
+  auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
-  auto stageAttributes =
-      stageAttributesMgr->createAttributesTemplate(stageFile, true);
+  auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
   // load the scene
   int sceneID = sceneManager.initSceneGraph();

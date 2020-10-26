@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_SENSOR_REDWOODNOISEMODEL_CUH_
+#define ESP_SENSOR_REDWOODNOISEMODEL_CUH_
 
 namespace esp {
 namespace sensor {
@@ -32,3 +33,5 @@ void simulateFromGPU(const float* __restrict__ devDepth,
 }  // namespace impl
 }  // namespace sensor
 }  // namespace esp
+
+#endif  // ESP_SENSOR_REDWOODNOISEMODEL_CUH_

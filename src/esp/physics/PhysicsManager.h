@@ -31,11 +31,9 @@
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
-
 //! core physics simulation namespace
 namespace physics {
 
-namespace Attrs = esp::assets::attributes;
 //! Holds information about one ray hit instance.
 struct RayHitInfo {
   //! The id of the object hit by this ray. Stage hits are -1.
@@ -126,7 +124,8 @@ class PhysicsManager {
    */
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const Attrs::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
+      const metadata::attributes::PhysicsManagerAttributes::cptr
+          _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
         physicsManagerAttributes_(_physicsManagerAttributes){};
 
@@ -168,10 +167,11 @@ class PhysicsManager {
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::managers::ObjectAttributesManager.
+   * the @ref esp::metadata::managers::ObjectAttributesManager.
    *  @anchor addObject_string
    *  @param configFile The filename of the object's physical properties file
-   * used as the key to query @ref esp::managers::ObjectAttributesManager.
+   * used as the key to query @ref
+   * esp::metadata::managers::ObjectAttributesManager.
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
    *  @param attachmentNode If supplied, attach the new physical object to an
@@ -186,9 +186,10 @@ class PhysicsManager {
                     assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::managers::ObjectAttributesManager by template handle.
+   * the @ref esp::metadata::managers::ObjectAttributesManager by template
+   * handle.
    *  @param objectLibId The ID of the object's template in @ref
-   * esp::managers::ObjectAttributesManager
+   * esp::metadata::managers::ObjectAttributesManager
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
    *  @param attachmentNode If supplied, attach the new physical object to an
@@ -989,10 +990,20 @@ class PhysicsManager {
    *
    * @return The initialization settings of the specified object instance.
    */
-  Attrs::ObjectAttributes::ptr getObjectInitAttributes(
+  metadata::attributes::ObjectAttributes::ptr getObjectInitAttributes(
       const int physObjectID) const {
     assertIDValidity(physObjectID);
     return existingObjects_.at(physObjectID)->getInitializationAttributes();
+  }
+
+  /**
+   * @brief Get a copy of the template used to initialize the stage.
+   *
+   * @return The initialization settings of the stage or nullptr if the stage is
+   * not initialized.
+   */
+  metadata::attributes::StageAttributes::ptr getStageInitAttributes() const {
+    return staticStageObject_->getInitializationAttributes();
   }
 
   /**
@@ -1000,8 +1011,9 @@ class PhysicsManager {
    *
    * @return The initialization settings for this physics manager
    */
-  Attrs::PhysicsManagerAttributes::ptr getInitializationAttributes() const {
-    return Attrs::PhysicsManagerAttributes::create(
+  metadata::attributes::PhysicsManagerAttributes::ptr
+  getInitializationAttributes() const {
+    return metadata::attributes::PhysicsManagerAttributes::create(
         *physicsManagerAttributes_.get());
   }
 
@@ -1171,7 +1183,6 @@ class PhysicsManager {
    *
    * @param handle the handle to the attributes structure defining physical
    * properties of the scene.
-   * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
 
@@ -1195,9 +1206,11 @@ class PhysicsManager {
    * assets that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager& resourceManager_;
 
-  /** @brief A pointer to the @ref assets::PhysicsManagerAttributes describing
+  /** @brief A pointer to the @ref
+   * esp::metadata::attributes::PhysicsManagerAttributes describing
    * this physics manager */
-  const Attrs::PhysicsManagerAttributes::cptr physicsManagerAttributes_;
+  const metadata::attributes::PhysicsManagerAttributes::cptr
+      physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager

@@ -38,9 +38,8 @@ def build_parser():
 
 
 def main():
-    args = build_parser().parse_args()
-    py_vers = ["3.6"]
-    bullet_modes = [True, False]
+    py_vers = ["3.6", "3.7", "3.8"]
+    bullet_modes = [False, True]
 
     for py_ver, use_bullet in itertools.product(py_vers, bullet_modes):
         env = os.environ.copy()

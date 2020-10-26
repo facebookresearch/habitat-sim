@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_RENDERCAMERA_H_
+#define ESP_GFX_RENDERCAMERA_H_
 
 #include "magnum.h"
 
@@ -123,10 +124,21 @@ class RenderCamera : public MagnumCamera {
    */
   esp::geo::Ray unproject(const Mn::Vector2i& viewportPosition);
 
+  /**
+   * @brief Query the cached number of Drawables visible after frustum culling
+   * for the most recent render pass.
+   */
+  size_t getPreviousNumVisibileDrawables() const {
+    return previousNumVisibleDrawables_;
+  }
+
  protected:
+  size_t previousNumVisibleDrawables_ = 0;
   bool useDrawableIds_ = false;
   ESP_SMART_POINTERS(RenderCamera)
 };
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_RENDERCAMERA_H_

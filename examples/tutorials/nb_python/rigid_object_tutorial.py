@@ -12,7 +12,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.5.2
+#       jupytext_version: 1.6.0
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -47,8 +47,8 @@ output_path = os.path.join(dir_path, "examples/tutorials/rigid_object_tutorial_o
 
 
 def remove_all_objects(sim):
-    for id in sim.get_existing_object_ids():
-        sim.remove_object(id)
+    for id_ in sim.get_existing_object_ids():
+        sim.remove_object(id_)
 
 
 def place_agent(sim):
@@ -135,11 +135,10 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     show_video = args.show_video
     make_video = args.make_video
-    if make_video:
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
+    if make_video and not os.path.exists(output_path):
+        os.mkdir(output_path)
 
-# %%
+    # %%
     # [initialize]
     # create the simulators AND resets the simulator
 
@@ -158,11 +157,11 @@ if __name__ == "__main__":
     obj_templates_mgr = sim.get_object_template_manager()
     # [/initialize]
 
-# %%
+    # %%
     # [basics]
 
     # load some object templates from configuration files
-    sphere_template_id = obj_templates_mgr.load_object_configs(
+    sphere_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
 
@@ -185,10 +184,11 @@ if __name__ == "__main__":
     # [/basics]
 
     remove_all_objects(sim)
-# %%
+    # %%
     # [dynamic_control]
 
     observations = []
+    obj_templates_mgr.load_configs(str(os.path.join(data_path, "objects")))
     # search for an object template by key sub-string
     cheezit_template_handle = obj_templates_mgr.get_template_handles(
         "data/objects/cheezit"
@@ -251,7 +251,7 @@ if __name__ == "__main__":
 
     # [/dynamic_control]
     remove_all_objects(sim)
-# %%
+    # %%
     # [kinematic_interactions]
 
     chefcan_template_handle = obj_templates_mgr.get_template_handles(
@@ -285,7 +285,7 @@ if __name__ == "__main__":
     # [/kinematic_interactions]
 
     remove_all_objects(sim)
-# %%
+    # %%
     # [kinematic_update]
     observations = []
 
@@ -319,7 +319,7 @@ if __name__ == "__main__":
         )
 
     # [/kinematic_update]
-# %%
+    # %%
     # [velocity_control]
 
     # get object VelocityControl structure and setup control
@@ -346,7 +346,7 @@ if __name__ == "__main__":
         )
 
     # [/velocity_control]
-# %%
+    # %%
     # [local_velocity_control]
 
     vel_control.linear_velocity = np.array([0, 0, 2.3])
@@ -368,11 +368,11 @@ if __name__ == "__main__":
 
     # [/local_velocity_control]
     remove_all_objects(sim)
-# %%
+    # %%
     # [embodied_agent]
 
     # load the lobot_merged asset
-    locobot_template_id = obj_templates_mgr.load_object_configs(
+    locobot_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
 
@@ -434,11 +434,11 @@ if __name__ == "__main__":
 
     # [/embodied_agent]
 
-# %%
+    # %%
     # [embodied_agent_navmesh]
 
     # load the lobot_merged asset
-    locobot_template_id = obj_templates_mgr.load_object_configs(
+    locobot_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
 

@@ -2,7 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_CORE_BUFFER_H_
+#define ESP_CORE_BUFFER_H_
+
 #include <Corrade/Containers/Array.h>
 
 #include "esp/core/esp.h"
@@ -51,3 +53,5 @@ class Buffer {
 
 }  // namespace core
 }  // namespace esp
+
+#endif  // ESP_CORE_BUFFER_H_

@@ -4,7 +4,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import Callable, Tuple, Union
+
 import attr
+import magnum as mn
 import numpy as np
 import quaternion  # noqa: F401
 
@@ -14,9 +17,10 @@ from habitat_sim.registry import registry
 
 # epislon used to deal with machine precision
 EPS = 1e-5
+_3d_point = Union[np.ndarray, mn.Vector3, Tuple[float, float, float]]
 
 
-def _noop_filter(start: np.array, end: np.array):
+def _noop_filter(start: _3d_point, end: _3d_point) -> _3d_point:
     return end
 
 
@@ -28,7 +32,9 @@ class ObjectControls(object):
         handle collisions
     """
 
-    move_filter_fn: float = attr.ib(default=_noop_filter)
+    move_filter_fn: Callable[[_3d_point, _3d_point], _3d_point] = attr.ib(
+        default=_noop_filter
+    )
 
     @staticmethod
     def is_body_action(action_name: str):

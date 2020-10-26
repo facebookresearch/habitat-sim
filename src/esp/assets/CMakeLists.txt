@@ -2,15 +2,6 @@ set(
   assets_SOURCES
   Asset.cpp
   Asset.h
-  attributes/AttributesBase.h
-  attributes/ObjectAttributes.h
-  attributes/ObjectAttributes.cpp
-  attributes/SceneAttributes.h
-  attributes/SceneAttributes.cpp
-  attributes/PhysicsManagerAttributes.h
-  attributes/PhysicsManagerAttributes.cpp
-  attributes/PrimitiveAssetAttributes.h
-  attributes/PrimitiveAssetAttributes.cpp
   BaseMesh.cpp
   BaseMesh.h
   CollisionMeshData.h
@@ -22,15 +13,6 @@ set(
   MeshMetaData.h
   Mp3dInstanceMeshData.cpp
   Mp3dInstanceMeshData.h
-  managers/AttributesManagerBase.h
-  managers/AssetAttributesManager.h
-  managers/AssetAttributesManager.cpp
-  managers/ObjectAttributesManager.h
-  managers/ObjectAttributesManager.cpp
-  managers/PhysicsAttributesManager.h
-  managers/PhysicsAttributesManager.cpp
-  managers/StageAttributesManager.h
-  managers/StageAttributesManager.cpp
   ResourceManager.cpp
   ResourceManager.h
 )
@@ -75,6 +57,7 @@ add_library(
 target_link_libraries(
   assets
   PUBLIC core
+         metadata
          physics
          scene
          nav

@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_ASSETS_PTEXMESHDATA_H_
+#define ESP_ASSETS_PTEXMESHDATA_H_
 
 #include <memory>
 #include <string>
@@ -92,6 +93,13 @@ class PTexMeshData : public BaseMesh {
 
   std::string atlasFolder_;
   std::vector<MeshData> submeshes_;
+  // In the case of splitting the mesh, we need seperate containers
+  // to hold the collsion mesh data as the contiguous meshdata be split up
+  // TODO We should use a decimated mesh for collsions here instead
+  //! @brief Stores the vertices for the collision mesh when the mesh is split
+  Corrade::Containers::Array<Magnum::Vector3> collisionVbo_;
+  //! @brief Stores the indices for the collision mesh when the mesh is split
+  Corrade::Containers::Array<Magnum::UnsignedInt> collisionIbo_;
 
   // ==== rendering ====
   // we will have to use smart pointer here since each item within the structure
@@ -101,3 +109,5 @@ class PTexMeshData : public BaseMesh {
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_ASSETS_PTEXMESHDATA_H_

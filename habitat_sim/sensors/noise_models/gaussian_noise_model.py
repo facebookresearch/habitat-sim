@@ -7,6 +7,7 @@
 import attr
 import numba
 import numpy as np
+from numpy import ndarray
 
 from habitat_sim.registry import registry
 from habitat_sim.sensor import SensorType
@@ -30,7 +31,7 @@ class GaussianNoiseModelCPUImpl:
     mean: int
     sigma: int
 
-    def simulate(self, image):
+    def simulate(self, image: ndarray) -> ndarray:
         return _simulate(image, self.intensity_constant, self.mean, self.sigma)
 
 
@@ -41,7 +42,7 @@ class GaussianNoiseModel(SensorNoiseModel):
     mean: int = 0
     sigma: int = 1
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         self._impl = GaussianNoiseModelCPUImpl(
             self.intensity_constant, self.mean, self.sigma
         )
@@ -50,9 +51,9 @@ class GaussianNoiseModel(SensorNoiseModel):
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return sensor_type == SensorType.COLOR
 
-    def simulate(self, image):
+    def simulate(self, image: ndarray) -> ndarray:
         return self._impl.simulate(image)
 
-    def apply(self, image):
+    def apply(self, image: ndarray) -> ndarray:
         r"""Alias of `simulate()` to conform to base-class and expected API"""
         return self.simulate(image)

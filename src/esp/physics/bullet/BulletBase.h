@@ -145,6 +145,7 @@ class BulletBase {
   //! list of @ref btCollisionShape for storing arbitrary collision shapes
   //! referenced within the @ref bObjectShape_.
   std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
+
   //! keep a map of collision objects to object ids for quick lookups from
   //! Bullet collision checking.
   std::shared_ptr<std::map<const btCollisionObject*, int>>
