@@ -44,9 +44,9 @@ class MetadataMediatorTest : public testing::Test {
   void testLoadStages() {
     const auto stageAttributesMgr = MM->getStageAttributesManager();
     int numHandles = stageAttributesMgr->getNumObjects();
-    // should be 3 - one original, one based on original but changed, and one
-    // new
-    ASSERT_EQ(numHandles, 3);
+    // should be 4 - one for default NONE stage, one original, one based on
+    // original but changed, and one new
+    ASSERT_EQ(numHandles, 4);
 
     // get list of matching handles for base - should always only be 1
     auto attrHandles = stageAttributesMgr->getObjectHandlesBySubstring(
