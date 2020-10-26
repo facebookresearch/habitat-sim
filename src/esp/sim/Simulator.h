@@ -130,8 +130,8 @@ class Simulator {
   /**
    * @brief Get current active dataset name from @ref metadataMediator_.
    */
-  std::string getActiveDatasetName() {
-    return metadataMediator_->getActiveDatasetName();
+  std::string getActiveSceneDatasetName() {
+    return metadataMediator_->getActiveSceneDatasetName();
   }
 
   /**
@@ -139,8 +139,8 @@ class Simulator {
    * @param _dsHandle The desired dataset to switch to. If has not been loaded,
    * an attempt will be made to load it.
    */
-  void setActiveDatasetName(const std::string& _dsHandle) {
-    metadataMediator_->setActiveDatasetName(_dsHandle);
+  void setActiveSceneDatasetName(const std::string& _dsHandle) {
+    metadataMediator_->setActiveSceneDatasetName(_dsHandle);
   }
 
   /** @brief Return the library implementation type for the simulator currently

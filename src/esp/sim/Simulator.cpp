@@ -76,9 +76,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // set dataset upon creation or reconfigure
   if (!metadataMediator_) {
     metadataMediator_ =
-        metadata::MetadataMediator::create(cfg.datasetConfigFile);
+        metadata::MetadataMediator::create(cfg.sceneDatasetConfigFile);
   } else {
-    metadataMediator_->setActiveDatasetName(cfg.datasetConfigFile);
+    metadataMediator_->setActiveSceneDatasetName(cfg.sceneDatasetConfigFile);
   }
   // assign MM to RM on create or reconfigure
   if (!resourceManager_) {

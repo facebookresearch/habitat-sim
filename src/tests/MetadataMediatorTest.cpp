@@ -34,13 +34,15 @@ using Attrs::UVSpherePrimitiveAttributes;
 const std::string physicsConfigFile =
     Cr::Utility::Directory::join(DATA_DIR,
                                  "test_assets/testing.physics_config.json");
-const std::string datasetConfigFile = Cr::Utility::Directory::join(
+const std::string sceneDatasetConfigFile = Cr::Utility::Directory::join(
     DATA_DIR,
     "test_assets/dataset_tests/test_dataset.scene_dataset_config.json");
 
 class MetadataMediatorTest : public testing::Test {
  protected:
-  void SetUp() override { MM = MetadataMediator::create(datasetConfigFile); };
+  void SetUp() override {
+    MM = MetadataMediator::create(sceneDatasetConfigFile);
+  };
   void testLoadStages() {
     const auto stageAttributesMgr = MM->getStageAttributesManager();
     int numHandles = stageAttributesMgr->getNumObjects();
@@ -283,9 +285,9 @@ TEST_F(MetadataMediatorTest, MetadataMediatorTest_CreateTestDataset) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::MetadataMediatorTest_CreateTestDataset : "
                "Dataset name : "
-            << datasetConfigFile;
+            << sceneDatasetConfigFile;
   // verify dataset name
-  ASSERT_EQ(MM->getActiveDatasetName(), datasetConfigFile);
+  ASSERT_EQ(MM->getActiveSceneDatasetName(), sceneDatasetConfigFile);
 
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadStages";
