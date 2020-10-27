@@ -9,9 +9,9 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 namespace tinyxml2 {
 class XMLElement;
