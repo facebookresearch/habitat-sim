@@ -13,6 +13,9 @@ catch() {
     echo "An error occured during the installation of Habitat-sim or Habitat-Lab." >&2
   fi
 }
+#Don't change the colab versions for these libraries
+PIL_VERSION="$(python -c 'import PIL; print(PIL.__version__)')"
+CFFI_VERSION="$(python -c 'import cffi; print(cffi.__version__)')"
 #Install Miniconda
 cd /content/
 wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && bash Miniconda3-latest-Linux-x86_64.sh -bfp /usr/local
@@ -21,13 +24,13 @@ wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh &&
 ln -s /usr/local/lib/python3.6/dist-packages /usr/local/lib/python3.6/site-packages
 
 ##Install Habitat-Sim and Magnum binaries
-conda config --set default_threads 4 #Enables multithread conda installation
+conda config --set pip_interop_enabled True 
 NIGHTLY="${NIGHTLY:-false}" #setting the ENV $NIGHTLY to true will install the nightly version from conda
 CHANNEL="${CHANNEL:-aihabitat}"
 if ${NIGHTLY}; then
   CHANNEL="${CHANNEL}-nightly"
 fi
-conda install -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet python=3.6
+conda install -S -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet python=3.6 "pillow==${PIL_VERSION}" "cffi==${CFFI_VERSION}" 
 
 #Shallow GIT clone for speed
 git clone https://github.com/facebookresearch/habitat-lab --depth 1
@@ -42,7 +45,6 @@ pip install "${reqs[@]/#/-r}"
 set -e
 python setup.py develop --all
 pip install . #Reinstall to trigger sys.path update
-pip install -U --force-reinstall cffi pyopenssl pillow #Fix conflicts with Colab installs
 cd /content/habitat-sim/
 rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
 
