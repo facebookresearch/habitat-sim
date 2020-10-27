@@ -22,8 +22,8 @@ namespace esp {
 namespace metadata {
 class MetadataMediator {
  public:
-  MetadataMediator(const std::string& _defaultDataset = "default")
-      : activeDataset_(_defaultDataset) {
+  MetadataMediator(const std::string& _defaultSceneDataset = "default")
+      : activeSceneDataset_(_defaultSceneDataset) {
     buildAttributesManagers();
   }  // namespace metadata
   ~MetadataMediator() {}
@@ -38,30 +38,31 @@ class MetadataMediator {
   void buildAttributesManagers();
 
   /**
-   * @brief Creates a dataset attributes using @p datasetName, and registers it.
-   * NOTE If an existing dataset attributes exists with this handle, then this
-   * will exit with a message unless @p overwrite is true.
-   * @param datasetName The name of the dataset to load or create.
+   * @brief Creates a dataset attributes using @p sceneDatasetName, and
+   * registers it. NOTE If an existing dataset attributes exists with this
+   * handle, then this will exit with a message unless @p overwrite is true.
+   * @param sceneDatasetName The name of the dataset to load or create.
    * @param overwrite Whether to overwrite an existing dataset or not
    * @return Whether successfully created a new dataset or not.
    */
-  bool createDataset(const std::string& datasetName, bool overwrite = true);
+  bool createDataset(const std::string& sceneDatasetName,
+                     bool overwrite = true);
 
   /**
    * @brief Sets default dataset attributes, if it exists already.  If it does
    * not exist, it will attempt to load a dataset_config.json with the given
    * name.  If none exists it will create an "empty" dataset attributes and give
    * it the passed name.
-   * @param datasetName the name of the existing dataset to use as default, or a
-   * json file describing the desired dataset attributes, or some handle to use
-   * for an empty dataset.
+   * @param sceneDatasetName the name of the existing dataset to use as default,
+   * or a json file describing the desired dataset attributes, or some handle to
+   * use for an empty dataset.
    * @return whether successful or not
    */
-  bool setActiveDatasetName(const std::string& datasetName);
+  bool setActiveSceneDatasetName(const std::string& sceneDatasetName);
   /**
    * @brief Returns the name of the current default dataset
    */
-  std::string getActiveDatasetName() const { return activeDataset_; }
+  std::string getActiveSceneDatasetName() const { return activeSceneDataset_; }
 
   /**
    * @brief Return manager for construction and access to asset attributes for
@@ -177,11 +178,11 @@ class MetadataMediator {
     // do not get copy of dataset attributes until SceneDatasetAttributes deep
     // copy ctor implemented
     auto datasetAttr =
-        sceneDatasetAttributesManager_->getObjectByHandle(activeDataset_);
+        sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
     if (nullptr == datasetAttr) {
       LOG(ERROR)
           << "MetadataMediator::getActiveDSAttribs : Unknown dataset named "
-          << activeDataset_ << ". Aborting";
+          << activeSceneDataset_ << ". Aborting";
       return nullptr;
     }
     return datasetAttr;
@@ -190,7 +191,7 @@ class MetadataMediator {
   /**
    * @brief String name of current, default dataset.
    */
-  std::string activeDataset_;
+  std::string activeSceneDataset_;
   /**
    * @brief Manages all construction and access to asset attributes.
    */
