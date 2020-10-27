@@ -1762,8 +1762,9 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primitiveID);
 }
 
-bool ResourceManager::importAsset(const std::string& filename,
-                                  std::shared_ptr<io::UrdfMaterial> material) {
+bool ResourceManager::importAsset(
+    const std::string& filename,
+    std::shared_ptr<io::URDF::Material> material) {
   bool meshSuccess = true;
   if (resourceDict_.count(filename) > 0) {
     if (material == nullptr)
@@ -1842,7 +1843,7 @@ bool ResourceManager::importAsset(const std::string& filename,
               << resourceDict_.at(filename).meshMetaData.materialIndex;
 
           if (material) {
-            io::UrdfMaterialColor& color = material->m_matColor;
+            io::URDF::MaterialColor& color = material->m_matColor;
             phongMaterial->ambientColor = color.m_rgbaColor * 0.2;
             phongMaterial->diffuseColor = color.m_rgbaColor * 0.8;
             phongMaterial->specularColor = color.m_specularColor;

@@ -25,13 +25,13 @@ namespace physics {
 static float gUrdfDefaultCollisionMargin = 0.001;
 
 btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
-    const io::UrdfCollision* collision) {
+    const io::URDF::CollisionShape* collision) {
   Cr::Utility::Debug() << "convertURDFToCollisionShape";
 
   btCollisionShape* shape = 0;
 
   switch (collision->m_geometry.m_type) {
-    case io::URDF_GEOM_PLANE: {
+    case io::URDF::GEOM_PLANE: {
       Mn::Vector3 planeNormal = collision->m_geometry.m_planeNormal;
       float planeConstant = 0;  // not available?
       btStaticPlaneShape* plane =
@@ -40,7 +40,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       shape->setMargin(gUrdfDefaultCollisionMargin);
       break;
     }
-    case io::URDF_GEOM_CAPSULE: {
+    case io::URDF::GEOM_CAPSULE: {
       float radius = collision->m_geometry.m_capsuleRadius;
       float height = collision->m_geometry.m_capsuleHeight;
       btCapsuleShapeZ* capsuleShape = new btCapsuleShapeZ(radius, height);
@@ -49,7 +49,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       break;
     }
 
-    case io::URDF_GEOM_CYLINDER: {
+    case io::URDF::GEOM_CYLINDER: {
       float cylRadius = collision->m_geometry.m_capsuleRadius;
       float cylHalfLength = 0.5 * collision->m_geometry.m_capsuleHeight;
       // if (m_data->m_flags & CUF_USE_IMPLICIT_CYLINDER) TODO: why not? Should
@@ -61,7 +61,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
 
       break;
     }
-    case io::URDF_GEOM_BOX: {
+    case io::URDF::GEOM_BOX: {
       btVector3 extents = btVector3(collision->m_geometry.m_boxSize);
       btBoxShape* boxShape = new btBoxShape(extents * 0.5f);
       // TODO: off for now, but may be necessary for better contacts?
@@ -75,14 +75,14 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       shape->setMargin(gUrdfDefaultCollisionMargin);
       break;
     }
-    case io::URDF_GEOM_SPHERE: {
+    case io::URDF::GEOM_SPHERE: {
       float radius = collision->m_geometry.m_sphereRadius;
       btSphereShape* sphereShape = new btSphereShape(radius);
       shape = sphereShape;
       shape->setMargin(gUrdfDefaultCollisionMargin);
       break;
     }
-    case io::URDF_GEOM_MESH: {
+    case io::URDF::GEOM_MESH: {
       // TODO: implement this from resourceManager_ structures. Share with
       // RigidBody interface (pull that out?)
       bool meshSuccess = resourceManager_.importAsset(
@@ -145,10 +145,10 @@ btCompoundShape* BulletURDFImporter::convertLinkCollisionShapes(
     itr++;
   }
   if (itr != urdfParser_.getModel().m_links.end()) {
-    std::shared_ptr<io::UrdfLink> link = itr->second;
+    std::shared_ptr<io::URDF::Link> link = itr->second;
 
     for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
-      const io::UrdfCollision& col = link->m_collisionArray[v];
+      const io::URDF::CollisionShape& col = link->m_collisionArray[v];
       btCollisionShape* childShape = convertURDFToCollisionShape(&col);
       if (childShape) {
         /*
@@ -186,16 +186,16 @@ int BulletURDFImporter::getCollisionGroupAndMask(int linkIndex,
     itr++;
   }
   if (itr != urdfParser_.getModel().m_links.end()) {
-    std::shared_ptr<io::UrdfLink> link = itr->second;
+    std::shared_ptr<io::URDF::Link> link = itr->second;
     for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
-      const io::UrdfCollision& col = link->m_collisionArray[v];
-      if (col.m_flags & io::URDF_HAS_COLLISION_GROUP) {
+      const io::URDF::CollisionShape& col = link->m_collisionArray[v];
+      if (col.m_flags & io::URDF::HAS_COLLISION_GROUP) {
         colGroup = col.m_collisionGroup;
-        result |= io::URDF_HAS_COLLISION_GROUP;
+        result |= io::URDF::HAS_COLLISION_GROUP;
       }
-      if (col.m_flags & io::URDF_HAS_COLLISION_MASK) {
+      if (col.m_flags & io::URDF::HAS_COLLISION_MASK) {
         colMask = col.m_collisionMask;
-        result |= io::URDF_HAS_COLLISION_MASK;
+        result |= io::URDF::HAS_COLLISION_MASK;
       }
     }
   }
@@ -268,26 +268,26 @@ void BulletURDFImporter::InitURDF2BulletCache(URDF2BulletCached& cache,
   }
 }
 
-void processContactParameters(const io::URDFLinkContactInfo& contactInfo,
+void processContactParameters(const io::URDF::LinkContactInfo& contactInfo,
                               btCollisionObject* col) {
-  if ((contactInfo.m_flags & io::URDF_CONTACT_HAS_LATERAL_FRICTION) != 0) {
+  if ((contactInfo.m_flags & io::URDF::CONTACT_HAS_LATERAL_FRICTION) != 0) {
     col->setFriction(contactInfo.m_lateralFriction);
   }
-  if ((contactInfo.m_flags & io::URDF_CONTACT_HAS_RESTITUTION) != 0) {
+  if ((contactInfo.m_flags & io::URDF::CONTACT_HAS_RESTITUTION) != 0) {
     col->setRestitution(contactInfo.m_restitution);
   }
 
-  if ((contactInfo.m_flags & io::URDF_CONTACT_HAS_ROLLING_FRICTION) != 0) {
+  if ((contactInfo.m_flags & io::URDF::CONTACT_HAS_ROLLING_FRICTION) != 0) {
     col->setRollingFriction(contactInfo.m_rollingFriction);
   }
-  if ((contactInfo.m_flags & io::URDF_CONTACT_HAS_SPINNING_FRICTION) != 0) {
+  if ((contactInfo.m_flags & io::URDF::CONTACT_HAS_SPINNING_FRICTION) != 0) {
     col->setSpinningFriction(contactInfo.m_spinningFriction);
   }
-  if ((contactInfo.m_flags & io::URDF_CONTACT_HAS_STIFFNESS_DAMPING) != 0) {
+  if ((contactInfo.m_flags & io::URDF::CONTACT_HAS_STIFFNESS_DAMPING) != 0) {
     col->setContactStiffnessAndDamping(contactInfo.m_contactStiffness,
                                        contactInfo.m_contactDamping);
   }
-  if ((contactInfo.m_flags & io::URDF_CONTACT_HAS_FRICTION_ANCHOR) != 0) {
+  if ((contactInfo.m_flags & io::URDF::CONTACT_HAS_FRICTION_ANCHOR) != 0) {
     col->setCollisionFlags(col->getCollisionFlags() |
                            btCollisionObject::CF_HAS_FRICTION_ANCHOR);
   }
@@ -379,10 +379,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
         btAssert(localInertiaDiagonal[1] < 1e10);
         btAssert(localInertiaDiagonal[2] < 1e10);
       }
-      io::URDFLinkContactInfo contactInfo;
+      io::URDF::LinkContactInfo contactInfo;
       getLinkContactInfo(urdfLinkIndex, contactInfo);
       // temporary inertia scaling until we load inertia from URDF
-      if (contactInfo.m_flags & io::URDF_CONTACT_HAS_INERTIA_SCALING) {
+      if (contactInfo.m_flags & io::URDF::CONTACT_HAS_INERTIA_SCALING) {
         localInertiaDiagonal *= contactInfo.m_inertiaScaling;
       }
     }
@@ -440,7 +440,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       }
 
       switch (jointType) {
-        case io::URDFSphericalJoint: {
+        case io::URDF::SphericalJoint: {
           // TODO: link mapping?
           // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
           cache.m_bulletMultiBody->setupSpherical(
@@ -450,7 +450,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
           break;
         }
-        case io::URDFPlanarJoint: {
+        case io::URDF::PlanarJoint: {
           // TODO: link mapping?
           // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
           cache.m_bulletMultiBody->setupPlanar(
@@ -462,11 +462,11 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
               btVector3(offsetInA.translation()), disableParentCollision);
           break;
         }
-        case io::URDFFloatingJoint:
+        case io::URDF::FloatingJoint:
 
-        case io::URDFFixedJoint: {
-          if ((jointType == io::URDFFloatingJoint) ||
-              (jointType == io::URDFPlanarJoint)) {
+        case io::URDF::FixedJoint: {
+          if ((jointType == io::URDF::FloatingJoint) ||
+              (jointType == io::URDF::PlanarJoint)) {
             printf(
                 "Warning: joint unsupported, creating a fixed joint instead.");
           }
@@ -480,8 +480,8 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
               btVector3(-offsetInB.translation()));
           break;
         }
-        case io::URDFContinuousJoint:
-        case io::URDFRevoluteJoint: {
+        case io::URDF::ContinuousJoint:
+        case io::URDF::RevoluteJoint: {
           // TODO: link mapping?
           // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
 
@@ -494,7 +494,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
               btVector3(offsetInA.translation()),
               btVector3(-offsetInB.translation()), disableParentCollision);
 
-          if (jointType == io::URDFRevoluteJoint &&
+          if (jointType == io::URDF::RevoluteJoint &&
               jointLowerLimit <= jointUpperLimit) {
             btMultiBodyConstraint* con = new btMultiBodyJointLimitConstraint(
                 cache.m_bulletMultiBody, mbLinkIndex, jointLowerLimit,
@@ -504,7 +504,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
           break;
         }
-        case io::URDFPrismaticJoint: {
+        case io::URDF::PrismaticJoint: {
           // TODO: link mapping?
           // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
 
@@ -571,7 +571,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       bool isDynamic =
           (mbLinkIndex < 0 && cache.m_bulletMultiBody->hasFixedBase()) ? false
                                                                        : true;
-      io::URDFLinkContactInfo contactInfo;
+      io::URDF::LinkContactInfo contactInfo;
       getLinkContactInfo(urdfLinkIndex, contactInfo);
 
       processContactParameters(contactInfo, col);
@@ -635,10 +635,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       int collisionFlags =
           getCollisionGroupAndMask(urdfLinkIndex, colGroup, colMask);
 
-      if (collisionFlags & io::URDF_HAS_COLLISION_GROUP) {
+      if (collisionFlags & io::URDF::HAS_COLLISION_GROUP) {
         collisionFilterGroup = colGroup;
       }
-      if (collisionFlags & io::URDF_HAS_COLLISION_MASK) {
+      if (collisionFlags & io::URDF::HAS_COLLISION_MASK) {
         collisionFilterMask = colMask;
       }
 

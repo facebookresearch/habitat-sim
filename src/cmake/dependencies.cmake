@@ -38,6 +38,10 @@ endif()
 # sophus
 include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 
+# tinyxml2
+include_directories("${DEPS_DIR}/tinyxml2")
+add_subdirectory("${DEPS_DIR}/tinyxml2")
+
 # glog. NOTE: emscripten does not support 32-bit targets, which glog requires.
 # Therefore we do not build glog and use a custom shim instead to emulate glog
 if(CORRADE_TARGET_EMSCRIPTEN)

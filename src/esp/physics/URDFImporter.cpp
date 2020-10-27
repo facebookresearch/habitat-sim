@@ -220,7 +220,7 @@ void URDFImporter::getMassAndInertia(int linkIndex,
 
 bool URDFImporter::getLinkContactInfo(
     int linkIndex,
-    io::URDFLinkContactInfo& contactInfo) const {
+    io::URDF::LinkContactInfo& contactInfo) const {
   auto link = urdfParser_.getModel().getLink(linkIndex);
   if (link == nullptr) {
     Corrade::Utility::Debug() << "E - No link with index = " << linkIndex;
@@ -231,7 +231,7 @@ bool URDFImporter::getLinkContactInfo(
   return true;
 }
 
-const io::UrdfModel& URDFImporter::getModel() const {
+const io::URDF::Model& URDFImporter::getModel() const {
   return urdfParser_.getModel();
 }
 

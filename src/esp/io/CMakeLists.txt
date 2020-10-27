@@ -8,9 +8,10 @@ add_library(
   URDFParser.h
 )
 
-add_subdirectory(tinyxml2)
+target_include_directories(io PRIVATE "${DEPS_DIR}/tinyxml2")
 
 target_link_libraries(
   io
-  PUBLIC core tinyxml2
+  PUBLIC core
+  PRIVATE tinyxml2
 )

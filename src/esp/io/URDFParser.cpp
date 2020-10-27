@@ -20,10 +20,12 @@ namespace Mn = Magnum;
 
 namespace esp {
 namespace io {
+namespace URDF {
 
-bool URDFParser::parseURDF(const std::string& filename) {
-  UrdfModel newURDFModel = UrdfModel();
+bool Parser::parseURDF(const std::string& filename) {
+  Model newURDFModel = Model();
   sourceFilePath_ = filename;
+  newURDFModel.m_sourceFile = filename;
 
   std::string xmlString = Corrade::Utility::Directory::readString(filename);
 
@@ -31,11 +33,11 @@ bool URDFParser::parseURDF(const std::string& filename) {
   xml_doc.Parse(xmlString.c_str());
   if (xml_doc.Error()) {
     Corrade::Utility::Debug()
-        << "URDFParser::parseURDF - XML parse error, aborting URDF parse/load.";
+        << "Parser::parseURDF - XML parse error, aborting URDF parse/load.";
     return false;
   }
   Corrade::Utility::Debug()
-      << "URDFParser::parseURDF - XML parsed starting URDF parse/load.";
+      << "Parser::parseURDF - XML parsed starting URDF parse/load.";
 
   XMLElement* robot_xml = xml_doc.FirstChildElement("robot");
   if (!robot_xml) {
@@ -55,7 +57,7 @@ bool URDFParser::parseURDF(const std::string& filename) {
   for (XMLElement* material_xml = robot_xml->FirstChildElement("material");
        material_xml;
        material_xml = material_xml->NextSiblingElement("material")) {
-    std::shared_ptr<UrdfMaterial> material = std::make_shared<UrdfMaterial>();
+    std::shared_ptr<Material> material = std::make_shared<Material>();
 
     parseMaterial(*material.get(), material_xml);
 
@@ -69,7 +71,7 @@ bool URDFParser::parseURDF(const std::string& filename) {
   // Get all link elements including shapes
   for (XMLElement* link_xml = robot_xml->FirstChildElement("link"); link_xml;
        link_xml = link_xml->NextSiblingElement("link")) {
-    std::shared_ptr<UrdfLink> link = std::make_shared<UrdfLink>();
+    std::shared_ptr<Link> link = std::make_shared<Link>();
 
     if (parseLink(newURDFModel, *link.get(), link_xml)) {
       if (newURDFModel.m_links.count(link->m_name)) {
@@ -80,7 +82,7 @@ bool URDFParser::parseURDF(const std::string& filename) {
       } else {
         // copy model material into link material, if link has no local material
         for (size_t i = 0; i < link->m_visualArray.size(); i++) {
-          UrdfVisual& vis = link->m_visualArray.at(i);
+          VisualShape& vis = link->m_visualArray.at(i);
           if (!vis.m_geometry.m_hasLocalMaterial &&
               !vis.m_materialName.empty()) {
             auto mat_itr = newURDFModel.m_materials.find(vis.m_materialName);
@@ -110,7 +112,7 @@ bool URDFParser::parseURDF(const std::string& filename) {
   // Get all Joint elements
   for (XMLElement* joint_xml = robot_xml->FirstChildElement("joint"); joint_xml;
        joint_xml = joint_xml->NextSiblingElement("joint")) {
-    std::shared_ptr<UrdfJoint> joint = std::make_shared<UrdfJoint>();
+    std::shared_ptr<Joint> joint = std::make_shared<Joint>();
 
     if (parseJoint(*joint.get(), joint_xml)) {
       if (newURDFModel.m_joints.count(joint->m_name)) {
@@ -180,7 +182,7 @@ static bool parseVector3(Mn::Vector3& vec3,
   return true;
 }
 
-bool URDFParser::parseMaterial(UrdfMaterial& material, XMLElement* config) {
+bool Parser::parseMaterial(Material& material, XMLElement* config) {
   if (!config->Attribute("name")) {
     Corrade::Utility::Debug() << "E - Material must contain a name attribute";
     return false;
@@ -223,16 +225,14 @@ bool URDFParser::parseMaterial(UrdfMaterial& material, XMLElement* config) {
   return true;
 }
 
-bool URDFParser::parseLink(UrdfModel& model,
-                           UrdfLink& link,
-                           XMLElement* config) {
+bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
   const char* linkName = config->Attribute("name");
   if (!linkName) {
     Corrade::Utility::Debug() << "E - Link with no name";
     return false;
   }
   Corrade::Utility::Debug() << "------------------------------------";
-  Corrade::Utility::Debug() << "URDFParser::parseLink: " << linkName;
+  Corrade::Utility::Debug() << "Parser::parseLink: " << linkName;
   link.m_name = linkName;
 
   {
@@ -249,7 +249,7 @@ bool URDFParser::parseLink(UrdfModel& model,
 
         link.m_contactInfo.m_inertiaScaling =
             std::stod(damping_xml->Attribute("value"));
-        link.m_contactInfo.m_flags |= URDF_CONTACT_HAS_INERTIA_SCALING;
+        link.m_contactInfo.m_flags |= CONTACT_HAS_INERTIA_SCALING;
       }
       {
         XMLElement* friction_xml = ci->FirstChildElement("lateral_friction");
@@ -276,7 +276,7 @@ bool URDFParser::parseLink(UrdfModel& model,
 
           link.m_contactInfo.m_rollingFriction =
               std::stod(rolling_xml->Attribute("value"));
-          link.m_contactInfo.m_flags |= URDF_CONTACT_HAS_ROLLING_FRICTION;
+          link.m_contactInfo.m_flags |= CONTACT_HAS_ROLLING_FRICTION;
         }
       }
 
@@ -291,7 +291,7 @@ bool URDFParser::parseLink(UrdfModel& model,
 
           link.m_contactInfo.m_restitution =
               std::stod(restitution_xml->Attribute("value"));
-          link.m_contactInfo.m_flags |= URDF_CONTACT_HAS_RESTITUTION;
+          link.m_contactInfo.m_flags |= CONTACT_HAS_RESTITUTION;
         }
       }
 
@@ -306,13 +306,13 @@ bool URDFParser::parseLink(UrdfModel& model,
 
           link.m_contactInfo.m_spinningFriction =
               std::stod(spinning_xml->Attribute("value"));
-          link.m_contactInfo.m_flags |= URDF_CONTACT_HAS_SPINNING_FRICTION;
+          link.m_contactInfo.m_flags |= CONTACT_HAS_SPINNING_FRICTION;
         }
       }
       {
         XMLElement* friction_anchor = ci->FirstChildElement("friction_anchor");
         if (friction_anchor) {
-          link.m_contactInfo.m_flags |= URDF_CONTACT_HAS_FRICTION_ANCHOR;
+          link.m_contactInfo.m_flags |= CONTACT_HAS_FRICTION_ANCHOR;
         }
       }
       {
@@ -326,7 +326,7 @@ bool URDFParser::parseLink(UrdfModel& model,
 
           link.m_contactInfo.m_contactStiffness =
               std::stod(stiffness_xml->Attribute("value"));
-          link.m_contactInfo.m_flags |= URDF_CONTACT_HAS_STIFFNESS_DAMPING;
+          link.m_contactInfo.m_flags |= CONTACT_HAS_STIFFNESS_DAMPING;
         }
       }
       {
@@ -340,7 +340,7 @@ bool URDFParser::parseLink(UrdfModel& model,
 
           link.m_contactInfo.m_contactDamping =
               std::stod(damping_xml->Attribute("value"));
-          link.m_contactInfo.m_flags |= URDF_CONTACT_HAS_STIFFNESS_DAMPING;
+          link.m_contactInfo.m_flags |= CONTACT_HAS_STIFFNESS_DAMPING;
         }
       }
     }
@@ -378,7 +378,7 @@ bool URDFParser::parseLink(UrdfModel& model,
   // Multiple Visuals (optional)
   for (XMLElement* vis_xml = config->FirstChildElement("visual"); vis_xml;
        vis_xml = vis_xml->NextSiblingElement("visual")) {
-    UrdfVisual visual;
+    VisualShape visual;
 
     if (parseVisual(model, visual, vis_xml)) {
       link.m_visualArray.push_back(visual);
@@ -392,7 +392,7 @@ bool URDFParser::parseLink(UrdfModel& model,
   // Multiple Collisions (optional)
   for (XMLElement* col_xml = config->FirstChildElement("collision"); col_xml;
        col_xml = col_xml->NextSiblingElement("collision")) {
-    UrdfCollision col;
+    CollisionShape col;
 
     if (parseCollision(col, col_xml)) {
       link.m_collisionArray.push_back(col);
@@ -406,7 +406,7 @@ bool URDFParser::parseLink(UrdfModel& model,
   return true;
 }
 
-bool URDFParser::parseCollision(UrdfCollision& collision, XMLElement* config) {
+bool Parser::parseCollision(CollisionShape& collision, XMLElement* config) {
   collision.m_linkLocalFrame = Mn::Matrix4();  // Identity
 
   // Origin
@@ -424,7 +424,7 @@ bool URDFParser::parseCollision(UrdfCollision& collision, XMLElement* config) {
   {
     const char* group_char = config->Attribute("group");
     if (group_char) {
-      collision.m_flags |= URDF_HAS_COLLISION_GROUP;
+      collision.m_flags |= HAS_COLLISION_GROUP;
       collision.m_collisionGroup = std::stoi(group_char);
     }
   }
@@ -432,7 +432,7 @@ bool URDFParser::parseCollision(UrdfCollision& collision, XMLElement* config) {
   {
     const char* mask_char = config->Attribute("mask");
     if (mask_char) {
-      collision.m_flags |= URDF_HAS_COLLISION_MASK;
+      collision.m_flags |= HAS_COLLISION_MASK;
       collision.m_collisionMask = std::stoi(mask_char);
     }
   }
@@ -443,14 +443,14 @@ bool URDFParser::parseCollision(UrdfCollision& collision, XMLElement* config) {
 
   const char* concave_char = config->Attribute("concave");
   if (concave_char)
-    collision.m_flags |= URDF_FORCE_CONCAVE_TRIMESH;
+    collision.m_flags |= FORCE_CONCAVE_TRIMESH;
 
   return true;
 }
 
-bool URDFParser::parseVisual(UrdfModel& model,
-                             UrdfVisual& visual,
-                             XMLElement* config) {
+bool Parser::parseVisual(Model& model,
+                         VisualShape& visual,
+                         XMLElement* config) {
   visual.m_linkLocalFrame = Mn::Matrix4();  // Identity
 
   // Origin
@@ -490,7 +490,7 @@ bool URDFParser::parseVisual(UrdfModel& model,
     if (t || c || s) {
       if (!visual.m_geometry.m_localMaterial.get()) {
         // create a new material
-        visual.m_geometry.m_localMaterial = std::make_shared<UrdfMaterial>();
+        visual.m_geometry.m_localMaterial = std::make_shared<Material>();
       }
       if (parseMaterial(*visual.m_geometry.m_localMaterial.get(), mat)) {
         // override if not new
@@ -504,7 +504,7 @@ bool URDFParser::parseVisual(UrdfModel& model,
   return true;
 }
 
-bool URDFParser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
+bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
   tr = Mn::Matrix4();  // Identity
 
   Mn::Vector3 vec(0, 0, 0);
@@ -543,7 +543,7 @@ bool URDFParser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
   return true;
 }
 
-bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
+bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
   if (g == 0)
     return false;
 
@@ -556,7 +556,7 @@ bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
   // const std::string type_name = shape->ValueTStr().c_str();
   const std::string type_name = shape->Value();
   if (type_name == "sphere") {
-    geom.m_type = URDF_GEOM_SPHERE;
+    geom.m_type = GEOM_SPHERE;
 
     if (!shape->Attribute("radius")) {
       Corrade::Utility::Debug()
@@ -567,7 +567,7 @@ bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
           m_urdfScaling * std::stod(shape->Attribute("radius"));
     }
   } else if (type_name == "box") {
-    geom.m_type = URDF_GEOM_BOX;
+    geom.m_type = GEOM_BOX;
     if (!shape->Attribute("size")) {
       Corrade::Utility::Debug() << "E - box requires a size attribute";
       return false;
@@ -576,7 +576,7 @@ bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
       geom.m_boxSize *= m_urdfScaling;
     }
   } else if (type_name == "cylinder") {
-    geom.m_type = URDF_GEOM_CYLINDER;
+    geom.m_type = GEOM_CYLINDER;
     geom.m_hasFromTo = false;
     geom.m_capsuleRadius = 0.1;
     geom.m_capsuleHeight = 0.1;
@@ -592,7 +592,7 @@ bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
         m_urdfScaling * std::stod(shape->Attribute("length"));
 
   } else if (type_name == "capsule") {
-    geom.m_type = URDF_GEOM_CAPSULE;
+    geom.m_type = GEOM_CAPSULE;
     geom.m_hasFromTo = false;
 
     if (!shape->Attribute("length") || !shape->Attribute("radius")) {
@@ -606,7 +606,7 @@ bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
         m_urdfScaling * std::stod(shape->Attribute("length"));
 
   } else if (type_name == "mesh") {
-    geom.m_type = URDF_GEOM_MESH;
+    geom.m_type = GEOM_MESH;
     geom.m_meshScale = Mn::Vector3(1.0, 1.0, 1.0);
     std::string fn;
 
@@ -644,7 +644,7 @@ bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
     }
   } else {
     if (type_name == "plane") {
-      geom.m_type = URDF_GEOM_PLANE;
+      geom.m_type = GEOM_PLANE;
 
       if (!shape->Attribute("normal")) {
         Corrade::Utility::Debug() << "E - Plane requires a normal attribute";
@@ -661,7 +661,7 @@ bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
   return true;
 }
 
-bool URDFParser::parseInertia(UrdfInertia& inertia, XMLElement* config) {
+bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
   inertia.m_linkLocalFrame = Mn::Matrix4();  // Identity
   inertia.m_mass = 0.f;
 
@@ -723,7 +723,7 @@ bool URDFParser::parseInertia(UrdfInertia& inertia, XMLElement* config) {
   return true;
 }
 
-bool URDFParser::validateMeshFile(std::string& meshFilename) {
+bool Parser::validateMeshFile(std::string& meshFilename) {
   std::string urdfDirectory =
       sourceFilePath_.substr(0, sourceFilePath_.find_last_of("/"));
 
@@ -746,7 +746,7 @@ bool URDFParser::validateMeshFile(std::string& meshFilename) {
   return meshSuccess;
 }
 
-bool URDFParser::initTreeAndRoot(UrdfModel& model) {
+bool Parser::initTreeAndRoot(Model& model) {
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
   std::map<std::string, std::string> parentLinkTree;
@@ -819,8 +819,7 @@ bool URDFParser::initTreeAndRoot(UrdfModel& model) {
   return true;
 }
 
-bool URDFParser::parseJointLimits(UrdfJoint& joint,
-                                  tinyxml2::XMLElement* config) {
+bool Parser::parseJointLimits(Joint& joint, tinyxml2::XMLElement* config) {
   joint.m_lowerLimit = 0.f;
   joint.m_upperLimit = -1.f;
   joint.m_effortLimit = 0.f;
@@ -838,7 +837,7 @@ bool URDFParser::parseJointLimits(UrdfJoint& joint,
     joint.m_upperLimit = std::stod(upper_str);
   }
 
-  if (joint.m_type == URDFPrismaticJoint) {
+  if (joint.m_type == PrismaticJoint) {
     joint.m_lowerLimit *= m_urdfScaling;
     joint.m_upperLimit *= m_urdfScaling;
   }
@@ -858,8 +857,7 @@ bool URDFParser::parseJointLimits(UrdfJoint& joint,
   return true;
 }
 
-bool URDFParser::parseJointDynamics(UrdfJoint& joint,
-                                    tinyxml2::XMLElement* config) {
+bool Parser::parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) {
   joint.m_jointDamping = 0;
   joint.m_jointFriction = 0;
 
@@ -884,7 +882,7 @@ bool URDFParser::parseJointDynamics(UrdfJoint& joint,
   return true;
 }
 
-bool URDFParser::parseJoint(UrdfJoint& joint, tinyxml2::XMLElement* config) {
+bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   // Get Joint Name
   const char* name = config->Attribute("name");
   if (!name) {
@@ -942,19 +940,19 @@ bool URDFParser::parseJoint(UrdfJoint& joint, tinyxml2::XMLElement* config) {
 
   std::string type_str = type_char;
   if (type_str == "spherical")
-    joint.m_type = URDFSphericalJoint;
+    joint.m_type = SphericalJoint;
   else if (type_str == "planar")
-    joint.m_type = URDFPlanarJoint;
+    joint.m_type = PlanarJoint;
   else if (type_str == "floating")
-    joint.m_type = URDFFloatingJoint;
+    joint.m_type = FloatingJoint;
   else if (type_str == "revolute")
-    joint.m_type = URDFRevoluteJoint;
+    joint.m_type = RevoluteJoint;
   else if (type_str == "continuous")
-    joint.m_type = URDFContinuousJoint;
+    joint.m_type = ContinuousJoint;
   else if (type_str == "prismatic")
-    joint.m_type = URDFPrismaticJoint;
+    joint.m_type = PrismaticJoint;
   else if (type_str == "fixed")
-    joint.m_type = URDFFixedJoint;
+    joint.m_type = FixedJoint;
   else {
     Corrade::Utility::Debug()
         << "E - Joint " << joint.m_name << " has unkown type: " << type_str;
@@ -962,7 +960,7 @@ bool URDFParser::parseJoint(UrdfJoint& joint, tinyxml2::XMLElement* config) {
   }
 
   // Get Joint Axis
-  if (joint.m_type != URDFFloatingJoint && joint.m_type != URDFFixedJoint) {
+  if (joint.m_type != FloatingJoint && joint.m_type != FixedJoint) {
     // axis
     XMLElement* axis_xml = config->FirstChildElement("axis");
     if (!axis_xml) {
@@ -990,12 +988,12 @@ bool URDFParser::parseJoint(UrdfJoint& joint, tinyxml2::XMLElement* config) {
           << "E - Could not parse limit element for joint:" << joint.m_name;
       return false;
     }
-  } else if (joint.m_type == URDFRevoluteJoint) {
+  } else if (joint.m_type == RevoluteJoint) {
     Corrade::Utility::Debug()
         << "E - Joint is of type REVOLUTE but it does not specify limits: "
         << joint.m_name;
     return false;
-  } else if (joint.m_type == URDFPrismaticJoint) {
+  } else if (joint.m_type == PrismaticJoint) {
     Corrade::Utility::Debug()
         << "E - Joint is of type PRISMATIC without limits: " << joint.m_name;
     return false;
@@ -1029,15 +1027,15 @@ bool URDFParser::parseJoint(UrdfJoint& joint, tinyxml2::XMLElement* config) {
   return true;
 }
 
-bool URDFParser::parseSensor(UrdfModel& model,
-                             UrdfLink& link,
-                             UrdfJoint& joint,
-                             tinyxml2::XMLElement* config) {
+bool Parser::parseSensor(Model& model,
+                         Link& link,
+                         Joint& joint,
+                         tinyxml2::XMLElement* config) {
   // TODO: this
   return false;
 }
 
-void printLinkChildrenHelper(UrdfLink& link, std::string printPrefix = "") {
+void printLinkChildrenHelper(Link& link, std::string printPrefix = "") {
   // Corrade::Utility::Debug() << printPrefix<<"link "<< link.m_name;
   int childIndex = 0;
   for (auto& child : link.m_childJoints) {
@@ -1055,11 +1053,10 @@ void printLinkChildrenHelper(UrdfLink& link, std::string printPrefix = "") {
   }
 }
 
-void UrdfModel::printKinematicChain() const {
+void Model::printKinematicChain() const {
   Corrade::Utility::Debug()
       << "------------------------------------------------------";
-  Corrade::Utility::Debug()
-      << "UrdfModel::printKinematicChain: model = " << m_name;
+  Corrade::Utility::Debug() << "Model::printKinematicChain: model = " << m_name;
   int rootIndex = 0;
   for (auto& root : m_rootLinks) {
     Corrade::Utility::Debug()
@@ -1071,5 +1068,6 @@ void UrdfModel::printKinematicChain() const {
       << "------------------------------------------------------";
 }
 
+}  // namespace URDF
 }  // namespace io
 }  // namespace esp

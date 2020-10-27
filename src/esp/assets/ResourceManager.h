@@ -457,7 +457,7 @@ class ResourceManager {
   inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }
 
   bool importAsset(const std::string& filename,
-                   std::shared_ptr<esp::io::UrdfMaterial> material = nullptr);
+                   std::shared_ptr<esp::io::URDF::Material> material = nullptr);
 
   // TODO: refactor this to use current pipeline
   //! Attach a visual asset to a SceneNode as part of a DrawableGroup

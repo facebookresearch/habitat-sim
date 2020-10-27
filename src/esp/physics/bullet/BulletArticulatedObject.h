@@ -154,8 +154,9 @@ class BulletArticulatedObject : public ArticulatedObject {
  protected:
   virtual bool attachGeometry(
       scene::SceneNode& node,
-      std::shared_ptr<io::UrdfLink> link,
-      const std::map<std::string, std::shared_ptr<io::UrdfMaterial>>& materials,
+      std::shared_ptr<io::URDF::Link> link,
+      const std::map<std::string, std::shared_ptr<io::URDF::Material>>&
+          materials,
       assets::ResourceManager& resourceManager,
       gfx::DrawableGroup* drawables) override;
 

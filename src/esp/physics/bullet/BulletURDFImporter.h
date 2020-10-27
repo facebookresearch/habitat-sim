@@ -63,7 +63,7 @@ class BulletURDFImporter : public URDFImporter {
       : URDFImporter(resourceManager){};
 
   btCollisionShape* convertURDFToCollisionShape(
-      const struct io::UrdfCollision* collision);
+      const struct io::URDF::CollisionShape* collision);
 
   btCompoundShape* convertLinkCollisionShapes(
       int linkIndex,
