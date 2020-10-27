@@ -1089,7 +1089,7 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
     if (findResult && std::get<0>(*findResult) < path.geodesicDistance) {
       path.pimpl_->minTheoreticalDist[i] = std::get<0>(*findResult);
       path.geodesicDistance = std::get<0>(*findResult);
-      path.points = std::move(std::get<1>(*findResult));
+      path.points = std::get<1>(*findResult);
     }
   }
 

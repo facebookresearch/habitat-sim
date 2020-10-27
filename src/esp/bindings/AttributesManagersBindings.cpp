@@ -48,7 +48,8 @@ namespace managers {
  */
 
 template <class T>
-void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
+void declareBaseAttributesManager(py::module& m,
+                                  const std::string& classStrPrefix) {
   using MgrClass = AttributesManager<T>;
   using AttribsPtr = std::shared_ptr<T>;
   // Most, but not all, of these methods are from ManagedContainer class

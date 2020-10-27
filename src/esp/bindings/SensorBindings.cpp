@@ -71,7 +71,7 @@ void initSensorBindings(py::module& m) {
             return py::getattr(handle, "__noise_model_kwargs");
           },
           [](SensorSpec& self, py::dict v) {
-            py::setattr(py::cast(self), "__noise_model_kwargs", v);
+            py::setattr(py::cast(self), "__noise_model_kwargs", std::move(v));
           })
       .def("__eq__",
            [](const SensorSpec& self, const SensorSpec& other) -> bool {
