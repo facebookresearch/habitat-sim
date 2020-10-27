@@ -16,10 +16,10 @@ output_path = os.path.join(dir_path, "URDF_robotics_tutorial_output/")
 
 
 def remove_all_objects(sim):
-    for id in sim.get_existing_object_ids():
-        sim.remove_object(id)
-    for id in sim.get_existing_articulated_object_ids():
-        sim.remove_articulated_object(id)
+    for ob_id in sim.get_existing_object_ids():
+        sim.remove_object(ob_id)
+    for ob_id in sim.get_existing_articulated_object_ids():
+        sim.remove_articulated_object(ob_id)
 
 
 def place_agent(sim):
@@ -97,9 +97,8 @@ def simulate(sim, dt=1.0, get_frames=True):
 
 # This is wrapped such that it can be added to a unit test
 def main(make_video=True, show_video=True):
-    if make_video:
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
+    if make_video and not os.path.exists(output_path):
+        os.mkdir(output_path)
 
     # [initialize]
     # create the simulator
