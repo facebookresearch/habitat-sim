@@ -51,7 +51,7 @@ Want to play with robots? Try the demo in viewer.
 - To get started:
   - Download and extract the [URDF demo assets](https://dl.fbaipublicfiles.com/habitat/URDF_demo_assets.zip)  into `path-to-habitat-sim/data/`.
   - Download and extract the [examples scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) into `path-to-habitat-sim/data/`.
-  - (optionally) Download and extract the [example rigid objects](http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip) into `path-to-habitat-sim/data/objects/` (structure should be e.g.: `path-to-habitat-sim/data/objects/banana.glb`).
+  - (optionally) Download and extract the [example rigid objects](http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip) into `path-to-habitat-sim/data/objects/` (structure should be e.g.: `path-to-habitat-sim/data/objects/banana.glb`).
   - Install the simulator for interactivity (with bullet) as described in [Installation](#installation).
 - Now run the viewer with physics as described in [Testing](#testing).
    ```

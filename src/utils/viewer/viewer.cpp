@@ -45,8 +45,6 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
-#include "esp/physics/bullet/BulletArticulatedObject.h"
-#include "esp/physics/bullet/BulletPhysicsManager.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/sim/Simulator.h"
 
@@ -1772,89 +1770,6 @@ void Viewer::setupDemoFurniture() {
                      [initialArticulatedObjectCount++],
                  7, 6, 0.5, 0),
     };
-  }
-
-  {
-    // TODO: change these paths for your local directories or download the
-    // assets these folders.
-    std::string zatunObjectsPath = "data/objects/zatun_objects/";
-    std::string ycbObjectsPath = "data/objects/ycb_google_16k/";
-    std::vector<std::string> objectFilenames = {
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_lamp.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_small_appliance_01.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_picture_03.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_basket.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_knifeblock.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_kitchen_utensil_08.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_kitchen_utensil_09.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_kitchen_utensil_06.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_choppingboard_02.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_bowl_06.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_cup_02.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_kitchen_utensil_02.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_cup_03.phys_properties.json",
-        zatunObjectsPath +
-            "configs_convex/"
-            "frl_apartment_cup_01.phys_properties.json",
-        ycbObjectsPath +
-            "configs/"
-            "006_mustard_bottle.phys_properties.json",
-    };
-    std::vector<int> parsedObjectIds;
-    for (auto filename : objectFilenames) {
-      parsedObjectIds.push_back(
-          objectAttrManager_->createObject(filename)->getID());
-    }
-    std::vector<std::pair<int, Mn::Vector3>> objectPositions = {
-        {0, {2.2311, -0.425956, 3.58849}},      // lamp 1
-        {0, {2.76, -0.425956, 3.85}},           // lamp 1
-        {1, {-0.468548, -0.507495, 2.59997}},   // mixer
-        {2, {-0.660318, -0.523204, 1.89543}},   // picture
-        {3, {-0.379807, -0.476218, 1.5544}},    // basket
-        {4, {-0.776413, -0.551627, 1.86241}},   // knife block
-        {5, {-0.622869, -0.568486, 1.77434}},   // untensil 8 (canister)
-        {6, {-0.661958, -0.56693, 1.68653}},    // untensil 9 (canister)
-        {7, {-0.795027, -0.590883, 2.00284}},   // untensil 6 (canister)
-        {8, {-0.944428, -0.505018, 1.75193}},   // chopping board (canister)
-        {9, {-0.384167, -0.565578, 3.38958}},   // bowl 6
-        {10, {-0.604808, -0.557711, 3.5138}},   // cup 2
-        {11, {-0.785562, -0.539605, 3.38024}},  // utensil 2 (canister)
-        {12, {-0.379722, -0.557321, 4.05498}},  // cup 3
-        {13, {-0.612517, -0.553776, 4.00046}},  // cup 1
-        {14, {-0.504227, -0.250771, 4.67401}},  // mustard
-    };
-
-    auto& drawables = activeSceneGraph_->getDrawables();
-    for (auto& objPlacement : objectPositions) {
-      auto objId = addObject(parsedObjectIds[objPlacement.first]);
-      simulator_->setTranslation(objPlacement.second, objId);
-    }
   }
 }
 
