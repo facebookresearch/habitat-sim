@@ -779,7 +779,7 @@ nav::PathFinder::ptr Simulator::getPathFinder() {
 }
 
 void Simulator::setPathFinder(nav::PathFinder::ptr pathfinder) {
-  pathfinder_ = pathfinder;
+  pathfinder_ = std::move(pathfinder);
 }
 gfx::RenderTarget* Simulator::getRenderTarget(int agentId,
                                               const std::string& sensorId) {
