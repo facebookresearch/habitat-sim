@@ -104,20 +104,19 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     MetallicTexture = 1 << 2,
 
     /*
-     * Roughness and Metalness are packed together in one texture, with
-     * Roughness taking G channel and metalness occupying B channel.
-     * R and Alpha channels are not used
-     * NOTE:
-     * if OcclusionRoughnessMetallicTexture is presented, this texture will be
-     * ignored.
+     * The occlusion map texture.
+     * The occlusion, Roughness and Metalness are packed together in one
+     * texture, with Occlusion in R channel, Roughness in G channel and
+     * metalness in B channel (Alpha channels is not used).
      */
-    NoneRoughnessMetallicTexture = 1 << 3,
+    PackedOcclusionTexture = 1 << 3,
+
     /*
-     * Occlusion, Roughness and Metalness are packed together in one texture,
-     * with Occlusion in R channel, Roughness in G channel and metalness in B
-     * channel. Alpha channels is not used
+     * The occlusion map texture.
+     * The occlusion map texture is separate from the metallicRoughness texture.
+     * The values are sampled from the R channel.
      */
-    OcclusionRoughnessMetallicTexture = 1 << 4,
+    SeparateOcclusionTexture = 1 << 4,
 
     /**
      * Modify normals according to a texture.
@@ -182,8 +181,6 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   typedef Corrade::Containers::EnumSet<Flag> Flags;
 
-  static Flags generateCorrectFlags(Flags originalFlags);
-
   /**
    * @brief Constructor
    * @param flags         Flags
@@ -233,33 +230,17 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& bindBaseColorTexture(Magnum::GL::Texture2D& texture);
   /**
-   * @brief Bind the roughness texture
+   * @brief Bind the metallic-roughness texture
+   * NOTE that though MetallicRoughnessTexture exists, it does not mean both
+   * metallic texture and roughness texture exist.
    * @return Reference to self (for method chaining)
    */
-  PbrShader& bindRoughnessTexture(Magnum::GL::Texture2D& texture);
-  /**
-   * @brief Bind the metallic texture
-   * @return Reference to self (for method chaining)
-   */
-  PbrShader& bindMetallicTexture(Magnum::GL::Texture2D& texture);
+  PbrShader& bindMetallicRoughnessTexture(Magnum::GL::Texture2D& texture);
   /**
    * @brief Bind the normal texture
    * @return Reference to self (for method chaining)
    */
   PbrShader& bindNormalTexture(Magnum::GL::Texture2D& texture);
-
-  /**
-   * @brief Bind the noneRoughnessMetallicTexture
-   * @return Reference to self (for method chaining)
-   */
-  PbrShader& bindNoneRoughnessMetallicTexture(Magnum::GL::Texture2D& texture);
-
-  /**
-   * @brief Bind the occlusionRoughnessMetallicTexture
-   * @return Reference to self (for method chaining)
-   */
-  PbrShader& bindOcclusionRoughnessMetallicTexture(
-      Magnum::GL::Texture2D& texture);
 
   /**
    * @brief Bind the emissive texture

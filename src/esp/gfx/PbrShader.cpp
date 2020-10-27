@@ -43,39 +43,14 @@ namespace gfx {
 namespace {
 enum TextureUnit : uint8_t {
   BaseColor = 0,
-  Roughness = 1,
-  Metallic = 2,
-  Normal = 3,
-  // NoneRoughnessMetallic or OcclusionRoughnessMetallic texture
-  Packed = 4,
-  Emissive = 5,
+  MetallicRoughness = 1,
+  Normal = 2,
+  Emissive = 3,
 };
 }  // namespace
 
-PbrShader::Flags PbrShader::generateCorrectFlags(Flags originalFlags) {
-  Flags result = originalFlags;
-  // NOTE:
-  // The priority of different kind of textures is as follows (priority
-  // means if two textures with different priorities exist at the same time,
-  // shader will adopt the texture with the higher priority, and ignore the
-  // other one.)
-  // 0 (highest): OcclusionRoughnessMetallicTexture
-  // 1          : NoneRoughnessMetallicTexture
-  // 2          : RoughnessTexture, MetallicTexture
-  if (result & Flag::OcclusionRoughnessMetallicTexture) {
-    result &= ~Flag::NoneRoughnessMetallicTexture;
-    result &= ~Flag::RoughnessTexture;
-    result &= ~Flag::MetallicTexture;
-  } else if (result & Flag::NoneRoughnessMetallicTexture) {
-    result &= ~Flag::RoughnessTexture;
-    result &= ~Flag::MetallicTexture;
-  }
-
-  return result;
-}
-
 PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
-    : flags_(generateCorrectFlags(originalFlags)), lightCount_(lightCount) {
+    : flags_(originalFlags), lightCount_(lightCount) {
   if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -103,11 +78,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
-  const bool isTextured = bool(
-      flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
-                Flag::MetallicTexture | Flag::NormalTexture |
-                Flag::EmissiveTexture | Flag::NoneRoughnessMetallicTexture |
-                Flag::OcclusionRoughnessMetallicTexture));
+  // TODO: Occlusion texture to be added.
+  const bool isTextured =
+      bool(flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
+                     Flag::MetallicTexture | Flag::NormalTexture |
+                     Flag::EmissiveTexture));
 
   if (isTextured) {
     attributeLocationsStream
@@ -144,12 +119,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                                                  : "")
       .addSource(flags_ & Flag::MetallicTexture ? "#define METALLIC_TEXTURE\n"
                                                 : "")
-      .addSource(flags_ & Flag::NoneRoughnessMetallicTexture
-                     ? "#define NONE_ROUGHNESS_METALLIC_TEXTURE\n"
-                     : "")
-      .addSource(flags_ & Flag::OcclusionRoughnessMetallicTexture
-                     ? "#define OCCLUSION_ROUGHNESS_METALLIC_TEXTURE\n"
-                     : "")
       .addSource(flags_ & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
       .addSource(flags_ & Flag::NormalTextureScale
                      ? "#define NORMAL_TEXTURE_SCALE\n"
@@ -193,11 +162,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     if (flags_ & Flag::BaseColorTexture) {
       setUniform(uniformLocation("BaseColorTexture"), TextureUnit::BaseColor);
     }
-    if (flags_ & Flag::RoughnessTexture) {
-      setUniform(uniformLocation("RoughnessTexture"), TextureUnit::Roughness);
-    }
-    if (flags_ & Flag::MetallicTexture) {
-      setUniform(uniformLocation("MetallicTexture"), TextureUnit::Metallic);
+    if (flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture)) {
+      setUniform(uniformLocation("MetallicRoughnessTexture"),
+                 TextureUnit::MetallicRoughness);
     }
     // TODO: explore the normal mapping without the precomputer tangent.
     // see http://www.thetenthplanet.de/archives/1180
@@ -206,10 +173,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::PrecomputedTangent)) {
       setUniform(uniformLocation("NormalTexture"), TextureUnit::Normal);
     }
-    if ((flags_ & Flag::NoneRoughnessMetallicTexture) ||
-        (flags_ & Flag::OcclusionRoughnessMetallicTexture)) {
-      setUniform(uniformLocation("PackedTexture"), TextureUnit::Packed);
-    }
+    // TODO occlusion texture
   }
   // emissive texture does not depend on lights
   if (flags_ & Flag::EmissiveTexture) {
@@ -286,28 +250,14 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::bindRoughnessTexture(Mn::GL::Texture2D& texture) {
+PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(
-      flags_ & Flag::RoughnessTexture,
-      "Shaders::PbrShader::bindRoughnessTexture(): the shader was not "
-      "created with independent roughness texture enabled. Are you using "
-      "packed texture? E.g., OcclusionRoughnessMetallic texture? ",
+      flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture),
+      "Shaders::PbrShader::bindMetallicRoughnessTexture(): the shader was not "
+      "created with metallicRoughness texture enabled.",
       *this);
   if (lightCount_) {
-    texture.bind(TextureUnit::Roughness);
-  }
-  return *this;
-}
-
-PbrShader& PbrShader::bindMetallicTexture(Mn::GL::Texture2D& texture) {
-  CORRADE_ASSERT(
-      flags_ & Flag::MetallicTexture,
-      "Shaders::PbrShader::bindMetallicTexture(): the shader was not "
-      "created with independent metallic texture enabled. Are you using packed "
-      "texture? E.g., OcclusionRoughnessMetallic texture? ",
-      *this);
-  if (lightCount_) {
-    texture.bind(TextureUnit::Metallic);
+    texture.bind(TextureUnit::MetallicRoughness);
   }
   return *this;
 }
@@ -319,33 +269,6 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
                  *this);
   if (lightCount_) {
     texture.bind(TextureUnit::Normal);
-  }
-  return *this;
-}
-
-PbrShader& PbrShader::bindNoneRoughnessMetallicTexture(
-    Magnum::GL::Texture2D& texture) {
-  CORRADE_ASSERT(flags_ & Flag::NoneRoughnessMetallicTexture,
-                 "Shaders::PbrShader::bindNoneRoughnessMetallicTexture(): the "
-                 "shader was not "
-                 "created with NoneRoughnessMetallic texture enabled",
-                 *this);
-  if (lightCount_) {
-    texture.bind(TextureUnit::Packed);
-  }
-  return *this;
-}
-
-PbrShader& PbrShader::bindOcclusionRoughnessMetallicTexture(
-    Magnum::GL::Texture2D& texture) {
-  CORRADE_ASSERT(
-      flags_ & Flag::OcclusionRoughnessMetallicTexture,
-      "Shaders::PbrShader::bindOcclusionRoughnessMetallicTexture(): the "
-      "shader was not "
-      "created with OcclusionRoughnessMetallic texture enabled",
-      *this);
-  if (lightCount_) {
-    texture.bind(TextureUnit::Packed);
   }
   return *this;
 }

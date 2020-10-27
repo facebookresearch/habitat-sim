@@ -1342,13 +1342,6 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     }
   }
 
-  // CAREFUL:
-  // certain texture will be stored "multiple times" in the `finalMaterial`;
-  // (e.g., roughnessTexture will be stored in noneRoughnessMetallicTexture,
-  // roughnessTexture, metallicTexture)
-  // It is OK! No worries! Such duplication (or "conflicts") will be handled in
-  // the PbrShader (see PbrMaterialData for more details)
-
   // roughness
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::Roughness)) {
     finalMaterial->roughness = material.roughness();
@@ -1357,7 +1350,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     finalMaterial->roughnessTexture =
         textures_[textureBaseIndex + material.roughnessTexture()].get();
     if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Roughness)) {
-      finalMaterial->roughness = 1.0f;
+      finalMaterial->roughness = 1.0f;  // based on GlTF 2.0 Spec
     }
   }
 
@@ -1369,23 +1362,8 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     finalMaterial->metallicTexture =
         textures_[textureBaseIndex + material.metalnessTexture()].get();
     if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
-      finalMaterial->metallic = 1.0f;
+      finalMaterial->metallic = 1.0f;  // based on GlTF 2.0 Spec
     }
-  }
-
-  // packed textures
-  if (material.hasOcclusionRoughnessMetallicTexture()) {
-    // occlusionTexture, roughnessTexture, metalnessTexture are pointing to the
-    // same texture ID, so just occlusionTexture
-    finalMaterial->occlusionRoughnessMetallicTexture =
-        textures_[textureBaseIndex + material.occlusionTexture()].get();
-  }
-
-  if (material.hasNoneRoughnessMetallicTexture()) {
-    // roughnessTexture, metalnessTexture are pointing to the
-    // same texture ID, so just roughnessTexture
-    finalMaterial->noneRoughnessMetallicTexture =
-        textures_[textureBaseIndex + material.roughnessTexture()].get();
   }
 
   return finalMaterial;
