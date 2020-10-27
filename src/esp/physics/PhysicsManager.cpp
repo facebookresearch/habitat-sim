@@ -145,6 +145,10 @@ void PhysicsManager::removeArticulatedObject(int physObjectID) {
   CHECK(existingArticulatedObjects_.count(physObjectID));
   scene::SceneNode* objectNode =
       &existingArticulatedObjects_.at(physObjectID)->node();
+  for (auto linkObjId :
+       existingArticulatedObjects_.at(physObjectID)->objectIdToLinkId_) {
+    deallocateObjectID(linkObjId.first);
+  }
   existingArticulatedObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
   delete objectNode;

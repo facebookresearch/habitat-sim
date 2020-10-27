@@ -322,22 +322,22 @@ std::string getEnumName(MouseInteractionMode mode) {
 struct MouseGrabber {
   Magnum::Vector3 target;
   int p2pId;
-  esp::physics::BulletPhysicsManager* bpm;
+  esp::sim::Simulator* sim_;
 
   float gripDepth;
 
   MouseGrabber(const Magnum::Vector3& clickPos,
                float _gripDepth,
-               esp::physics::BulletPhysicsManager* _bpm) {
-    bpm = _bpm;
+               esp::sim::Simulator* sim) {
+    sim_ = sim;
     target = clickPos;
     gripDepth = _gripDepth;
   }
 
-  virtual ~MouseGrabber() { bpm->removeP2PConstraint(p2pId); }
+  virtual ~MouseGrabber() { sim_->removeP2PConstraint(p2pId); }
 
   virtual void updatePivotB(Magnum::Vector3 pos) {
-    bpm->updateP2PConstraintPivot(p2pId, pos);
+    sim_->updateP2PConstraintPivot(p2pId, pos);
   }
 };
 
@@ -348,14 +348,14 @@ struct MouseLinkGrabber : public MouseGrabber {
                    float _gripDepth,
                    int _articulatedObjectId,
                    int _linkId,
-                   esp::physics::BulletPhysicsManager* _bpm)
-      : MouseGrabber(clickPos, _gripDepth, _bpm) {
+                   esp::sim::Simulator* sim)
+      : MouseGrabber(clickPos, _gripDepth, sim) {
     articulatedObjectId = _articulatedObjectId;
     linkId = _linkId;
     Corrade::Utility::Debug()
         << "MouseLinkGrabber init: articulatedObjectId=" << articulatedObjectId
         << ", linkId=" << linkId;
-    p2pId = _bpm->createArticulatedP2PConstraint(articulatedObjectId, linkId,
+    p2pId = sim_->createArticulatedP2PConstraint(articulatedObjectId, linkId,
                                                  clickPos);
   }
 };
@@ -367,28 +367,28 @@ struct MouseArticulatedBaseGrabber : public MouseGrabber {
   MouseArticulatedBaseGrabber(const Magnum::Vector3& clickPos,
                               float _gripDepth,
                               int _articulatedObjectId,
-                              esp::physics::BulletPhysicsManager* _bpm)
-      : MouseGrabber(clickPos, _gripDepth, _bpm) {
+                              esp::sim::Simulator* sim)
+      : MouseGrabber(clickPos, _gripDepth, sim) {
     articulatedObjectId = _articulatedObjectId;
     Magnum::Vector3 root =
-        bpm->getArticulatedObjectRootState(articulatedObjectId).translation();
+        sim_->getArticulatedObjectRootState(articulatedObjectId).translation();
     rootClickOffset = root - clickPos;
   }
 
   virtual ~MouseArticulatedBaseGrabber() override {
     Corrade::Utility::Debug()
         << "~MouseArticulatedBaseGrabber final root pos: "
-        << bpm->getArticulatedObjectRootState(articulatedObjectId)
+        << sim_->getArticulatedObjectRootState(articulatedObjectId)
                .translation();
   }
 
   virtual void updatePivotB(Magnum::Vector3 pos) override {
     Magnum::Matrix4 rootState =
-        bpm->getArticulatedObjectRootState(articulatedObjectId);
+        sim_->getArticulatedObjectRootState(articulatedObjectId);
     rootState.translation() = pos + rootClickOffset;
     Corrade::Utility::Debug() << "newRootState = " << rootState;
-    bpm->setArticulatedObjectSleep(articulatedObjectId, false);
-    bpm->setArticulatedObjectRootState(articulatedObjectId, rootState);
+    sim_->setArticulatedObjectSleep(articulatedObjectId, false);
+    sim_->setArticulatedObjectRootState(articulatedObjectId, rootState);
   }
 };
 
@@ -398,13 +398,13 @@ struct MouseObjectGrabber : public MouseGrabber {
   MouseObjectGrabber(const Magnum::Vector3& clickPos,
                      float _gripDepth,
                      int _objectId,
-                     esp::physics::BulletPhysicsManager* _bpm)
-      : MouseGrabber(clickPos, _gripDepth, _bpm) {
+                     esp::sim::Simulator* sim)
+      : MouseGrabber(clickPos, _gripDepth, sim) {
     objectId = _objectId;
-    bpm->setObjectMotionType(objectId, esp::physics::MotionType::DYNAMIC);
+    sim_->setObjectMotionType(esp::physics::MotionType::DYNAMIC, objectId);
     Corrade::Utility::Debug()
         << "MouseObjectGrabber init: objectId=" << objectId;
-    p2pId = _bpm->createRigidP2PConstraintFromPickPoint(objectId, clickPos);
+    p2pId = sim_->createRigidP2PConstraint(objectId, clickPos, true);
   }
 };
 
@@ -414,23 +414,23 @@ struct MouseObjectKinematicGrabber : public MouseGrabber {
   MouseObjectKinematicGrabber(const Magnum::Vector3& clickPos,
                               float _gripDepth,
                               int _objectId,
-                              esp::physics::BulletPhysicsManager* _bpm)
-      : MouseGrabber(clickPos, _gripDepth, _bpm) {
+                              esp::sim::Simulator* sim)
+      : MouseGrabber(clickPos, _gripDepth, sim) {
     objectId = _objectId;
-    Magnum::Vector3 origin = bpm->getTranslation(objectId);
+    Magnum::Vector3 origin = sim_->getTranslation(objectId);
     clickOffset = origin - clickPos;
-    bpm->setObjectMotionType(objectId, esp::physics::MotionType::KINEMATIC);
+    sim_->setObjectMotionType(esp::physics::MotionType::KINEMATIC, objectId);
   }
 
   virtual ~MouseObjectKinematicGrabber() override {
     Corrade::Utility::Debug()
         << "~MouseObjectKinematicGrabber final origin pos: "
-        << bpm->getTranslation(objectId);
+        << sim_->getTranslation(objectId);
   }
 
   virtual void updatePivotB(Magnum::Vector3 pos) override {
-    Magnum::Vector3 objectOrigin = bpm->getTranslation(objectId);
-    bpm->setTranslation(objectId, clickOffset + pos);
+    Magnum::Vector3 objectOrigin = sim_->getTranslation(objectId);
+    sim_->setTranslation(clickOffset + pos, objectId);
   }
 };
 
@@ -1215,7 +1215,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       simulator_->setTranslation(hitInfo.point, clickVisObjectID_);
 
       if (hitInfo.objectId != esp::ID_UNDEFINED) {
-        /*
         // we hit an non-stage collision object
 
         bool hitArticulatedObject = false;
@@ -1226,13 +1225,12 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         for (auto aoId : simulator_->getExistingArticulatedObjectIDs()) {
           if (aoId == hitInfo.objectId) {
             // TODO: grabbed the base link, do something with this
-          } else if (simulator_->getArticulatedObject(aoId)
-                         .objectIdToLinkId_.count(hitInfo.objectId) > 0) {
+          } else if (simulator_->getObjectIdsToLinkIds(aoId).count(
+                         hitInfo.objectId) > 0) {
             hitArticulatedObject = true;
             hitArticulatedObjectId = aoId;
             hitArticulatedLinkIndex =
-                simulator_->getArticulatedObject(aoId)
-                    .objectIdToLinkId_.at(hitInfo.objectId);
+                simulator_->getObjectIdsToLinkIds(aoId).at(hitInfo.objectId);
           }
         }
 
@@ -1243,13 +1241,14 @@ void Viewer::mousePressEvent(MouseEvent& event) {
                   hitInfo.point,
                   (hitInfo.point - renderCamera_->node().translation())
                       .length(),
-                  hitArticulatedObjectId, bpm);
+                  hitArticulatedObjectId, simulator_.get());
             } else if (event.button() == MouseEvent::Button::Left) {
               mouseGrabber_ = std::make_unique<MouseLinkGrabber>(
                   hitInfo.point,
                   (hitInfo.point - renderCamera_->node().translation())
                       .length(),
-                  hitArticulatedObjectId, hitArticulatedLinkIndex, bpm);
+                  hitArticulatedObjectId, hitArticulatedLinkIndex,
+                  simulator_.get());
             }
           } else {
             if (event.button() == MouseEvent::Button::Right) {
@@ -1257,13 +1256,13 @@ void Viewer::mousePressEvent(MouseEvent& event) {
                   hitInfo.point,
                   (hitInfo.point - renderCamera_->node().translation())
                       .length(),
-                  hitInfo.objectId, bpm);
+                  hitInfo.objectId, simulator_.get());
             } else if (event.button() == MouseEvent::Button::Left) {
               mouseGrabber_ = std::make_unique<MouseObjectGrabber>(
                   hitInfo.point,
                   (hitInfo.point - renderCamera_->node().translation())
                       .length(),
-                  hitInfo.objectId, bpm);
+                  hitInfo.objectId, simulator_.get());
             }
           }
         } else if (mouseInteractionMode == OPENCLOSE) {
@@ -1290,7 +1289,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
             }
           }
         }
-         */
       }  // end if not hit stage
     }    // end raycastResults.hasHits()
     if (mouseInteractionMode == THROW) {

@@ -202,29 +202,60 @@ class BulletPhysicsManager : public PhysicsManager {
 
   //============ Point To Point Constraints =============
 
-  //! Create a ball&socket joint to constrain a DYNAMIC RigidObject provided a
-  //! local offset
-  int createRigidP2PConstraint(int objectId, Magnum::Vector3 localOffset);
+  /**
+   * @brief Create a ball&socket joint to constrain a DYNAMIC RigidObject
+   * provided a position in local or global coordinates.
+   * @param objectId The id of the RigidObject to constrain.
+   * @param position The position of the ball and socket joint pivot.
+   * @param positionLocal Indicates whether the position is provided in global
+   * or object local coordinates.
+   * @return The unique id of the new constraint.
+   */
+  int createRigidP2PConstraint(int objectId,
+                               const Magnum::Vector3& position,
+                               bool positionLocal = true) override;
 
-  //! Create a ball&socket joint to constrain a DYNAMIC RigidObject provided a
-  //! global "pick" position
-  int createRigidP2PConstraintFromPickPoint(int objectId,
-                                            Magnum::Vector3 pickPoint);
-
-  // point2point constraint at specific local link offset
+  /**
+   * @brief Create a ball&socket joint to constrain a single link of an
+   * ArticulatedObject provided a position in global coordinates and a local
+   * offset.
+   * @param articulatedObjectId The id of the ArticulatedObject to constrain.
+   * @param linkId The local id of the ArticulatedLink to constrain.
+   * @param linkOffset The position of the ball and socket joint pivot in link
+   * local coordinates.
+   * @param pickPos The global position of the ball and socket joint pivot.
+   * @return The unique id of the new constraint.
+   */
   int createArticulatedP2PConstraint(int articulatedObjectId,
                                      int linkId,
-                                     Magnum::Vector3 linkOffset,
-                                     Magnum::Vector3 pickPos);
+                                     const Magnum::Vector3& linkOffset,
+                                     const Magnum::Vector3& pickPos) override;
 
-  // point2point constraint at pick position
+  /**
+   * @brief Create a ball&socket joint to constrain a single link of an
+   * ArticulatedObject provided a position in global coordinates.
+   * @param articulatedObjectId The id of the ArticulatedObject to constrain.
+   * @param linkId The local id of the ArticulatedLink to constrain.
+   * @param pickPos The global position of the ball and socket joint pivot.
+   * @return The unique id of the new constraint.
+   */
   int createArticulatedP2PConstraint(int articulatedObjectId,
                                      int linkId,
-                                     Magnum::Vector3 pickPos);
+                                     const Magnum::Vector3& pickPos) override;
 
-  void updateP2PConstraintPivot(int p2pId, Magnum::Vector3 pivot);
+  /**
+   * @brief Update the position target (pivot) of a constraint.
+   * @param p2pId The id of the constraint to update.
+   * @param pivot The new position target of the constraint.
+   */
+  void updateP2PConstraintPivot(int p2pId,
+                                const Magnum::Vector3& pivot) override;
 
-  void removeP2PConstraint(int p2pId);
+  /**
+   * @brief Remove a constraint by id.
+   * @param p2pId The id of the constraint to remove.
+   */
+  void removeP2PConstraint(int p2pId) override;
 
   int nextP2PId_ = 0;
   std::map<int, btMultiBodyPoint2Point*> articulatedP2ps;

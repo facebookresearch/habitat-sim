@@ -527,6 +527,18 @@ class Simulator {
   esp::physics::MotionType getArticulatedObjectMotionType(int objectId);
 
   int getNumArticulatedLinks(int objectId);
+
+  //! Get the map of object ids to link ids for a particular articulated rigid
+  //! object.
+  std::map<int, int> getObjectIdsToLinkIds(int articulatedObjectId) {
+    auto articulatedObjectIds = physicsManager_->getArticulatedObjectIds();
+    if (std::find(articulatedObjectIds.begin(), articulatedObjectIds.end(),
+                  articulatedObjectId) != articulatedObjectIds.end()) {
+      auto& ao = physicsManager_->getArticulatedObject(articulatedObjectId);
+      return ao.objectIdToLinkId_;
+    }
+    return std::map<int, int>();
+  };
   core::RigidState getArticulatedLinkRigidState(int objectId, int linkId);
 
   // Joint Motor API
@@ -578,6 +590,79 @@ class Simulator {
       const int objectId,
       esp::physics::JointMotorSettings settings =
           esp::physics::JointMotorSettings());
+
+  //============= Object Point to Point Constraint API =============
+
+  /**
+   * @brief Create a ball&socket joint to constrain a DYNAMIC RigidObject
+   * provided a position in local or global coordinates. Note: Method not
+   * implemented for base PhysicsManager.
+   * @param objectId The id of the RigidObject to constrain.
+   * @param position The position of the ball and socket joint pivot.
+   * @param positionLocal Indicates whether the position is provided in global
+   * or object local coordinates.
+   * @return The unique id of the new constraint.
+   */
+  int createRigidP2PConstraint(int objectId,
+                               const Magnum::Vector3& position,
+                               bool positionLocal = true) {
+    return physicsManager_->createRigidP2PConstraint(objectId, position,
+                                                     positionLocal);
+  };
+
+  /**
+   * @brief Create a ball&socket joint to constrain a single link of an
+   * ArticulatedObject provided a position in global coordinates and a local
+   * offset. Note: Method not implemented for base PhysicsManager.
+   * @param articulatedObjectId The id of the ArticulatedObject to constrain.
+   * @param linkId The local id of the ArticulatedLink to constrain.
+   * @param linkOffset The position of the ball and socket joint pivot in link
+   * local coordinates.
+   * @param pickPos The global position of the ball and socket joint pivot.
+   * @return The unique id of the new constraint.
+   */
+  int createArticulatedP2PConstraint(int articulatedObjectId,
+                                     int linkId,
+                                     const Magnum::Vector3& linkOffset,
+                                     const Magnum::Vector3& pickPos) {
+    return physicsManager_->createArticulatedP2PConstraint(
+        articulatedObjectId, linkId, linkOffset, pickPos);
+  };
+
+  /**
+   * @brief Create a ball&socket joint to constrain a single link of an
+   * ArticulatedObject provided a position in global coordinates. Note: Method
+   * not implemented for base PhysicsManager.
+   * @param articulatedObjectId The id of the ArticulatedObject to constrain.
+   * @param linkId The local id of the ArticulatedLink to constrain.
+   * @param pickPos The global position of the ball and socket joint pivot.
+   * @return The unique id of the new constraint.
+   */
+  int createArticulatedP2PConstraint(int articulatedObjectId,
+                                     int linkId,
+                                     const Magnum::Vector3& pickPos) {
+    return physicsManager_->createArticulatedP2PConstraint(articulatedObjectId,
+                                                           linkId, pickPos);
+  };
+
+  /**
+   * @brief Update the position target (pivot) of a constraint.
+   * Note: Method not implemented for base PhysicsManager.
+   * @param p2pId The id of the constraint to update.
+   * @param pivot The new position target of the constraint.
+   */
+  void updateP2PConstraintPivot(int p2pId, const Magnum::Vector3& pivot) {
+    physicsManager_->updateP2PConstraintPivot(p2pId, pivot);
+  };
+
+  /**
+   * @brief Remove a constraint by id.
+   * Note: Method not implemented for base PhysicsManager.
+   * @param p2pId The id of the constraint to remove.
+   */
+  void removeP2PConstraint(int p2pId) {
+    physicsManager_->removeP2PConstraint(p2pId);
+  };
 
   // END: Articulated Object API (UNSTABLE!)
   //===============================================================================//
