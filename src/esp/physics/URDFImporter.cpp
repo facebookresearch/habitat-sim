@@ -127,7 +127,7 @@ void URDFImporter::getMassAndInertia2(int linkIndex,
     auto link = urdfParser_.getModel().getLink(linkIndex);
     if (link != nullptr) {
       float linkMass;
-      if (link->m_parentJoint == 0 &&
+      if (link->m_parentJoint == nullptr &&
           urdfParser_.getModel().m_overrideFixedBase) {
         linkMass = 0.f;
       } else {
@@ -156,7 +156,7 @@ void URDFImporter::getMassAndInertia(int linkIndex,
   if (link != nullptr) {
     Mn::Matrix3 linkInertiaBasis;  // Identity
     float linkMass, principalInertiaX, principalInertiaY, principalInertiaZ;
-    if (link->m_parentJoint == 0 &&
+    if (link->m_parentJoint == nullptr &&
         urdfParser_.getModel().m_overrideFixedBase) {
       linkMass = 0.f;
       principalInertiaX = 0.f;
