@@ -9,8 +9,8 @@ google-*,
 -google-default-arguments,
 -google-readability-braces-around-statements,
 -google-readability-todo,
--google-runtime-references
-'
+-google-runtime-references,
+performance-*,'
 
 # Let deprecation warnings through. From time to time, Magnum annotates APIs
 # with deprecation warnings, suggesting people to upgrade to newer / better
