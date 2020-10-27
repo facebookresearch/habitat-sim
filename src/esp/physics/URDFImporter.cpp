@@ -170,7 +170,6 @@ void URDFImporter::getMassAndInertia(int linkIndex,
         principalInertiaY = link->m_inertia.m_iyy;
         principalInertiaZ = link->m_inertia.m_izz;
       } else {
-        principalInertiaX = link->m_inertia.m_ixx;
         // by column vector
         Mn::Matrix3 inertiaTensor(
             Mn::Vector3(link->m_inertia.m_ixx, link->m_inertia.m_ixy,
@@ -180,11 +179,15 @@ void URDFImporter::getMassAndInertia(int linkIndex,
             Mn::Vector3(link->m_inertia.m_ixz, link->m_inertia.m_iyz,
                         link->m_inertia.m_izz));
 
+        // TODO: diagonalization of inertia matrix:
+        Mn::Debug{} << "WARNING: getMassAndInertia: intertia not diagonal. "
+                       "TODO: diagonalize?";
+        /*
         float threshold = 1.0e-6;
         int numIterations = 30;
-        // TODO: is this necessary?
-        // inertiaTensor.diagonalize(linkInertiaBasis, threshold,
-        // numIterations);
+        inertiaTensor.diagonalize(linkInertiaBasis, threshold,
+         numIterations);
+         */
         principalInertiaX = inertiaTensor[0][0];
         principalInertiaY = inertiaTensor[1][1];
         principalInertiaZ = inertiaTensor[2][2];

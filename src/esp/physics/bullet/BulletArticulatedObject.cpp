@@ -71,7 +71,7 @@ bool BulletArticulatedObject::initializeFromURDF(
   u2b.InitURDF2BulletCache(cache, flags);
 
   int urdfLinkIndex = u2b.getRootLinkIndex();
-  int rootIndex = u2b.getRootLinkIndex();
+  // int rootIndex = u2b.getRootLinkIndex();
 
   // NOTE: recursive path only
   u2b.ConvertURDF2BulletInternal(cache, urdfLinkIndex,
@@ -232,6 +232,10 @@ bool BulletArticulatedObject::attachGeometry(
         Corrade::Utility::Debug() << "Trying to add visual plane";
         // TODO:
         break;
+      default:
+        Corrade::Utility::Debug() << "BulletArticulatedObject::attachGeometry "
+                                     ": Unsupported visual type.";
+        break;
     }
   }
 
@@ -249,7 +253,7 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
 }
 
 void BulletArticulatedObject::setForces(std::vector<float> forces) {
-  if (forces.size() != btMultiBody_->getNumDofs()) {
+  if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
         << "setForces - Force vector size mis-match (input: " << forces.size()
         << ", expected: " << btMultiBody_->getNumDofs() << "), aborting.";
@@ -279,7 +283,7 @@ std::vector<float> BulletArticulatedObject::getForces() {
 }
 
 void BulletArticulatedObject::setVelocities(std::vector<float> vels) {
-  if (vels.size() != btMultiBody_->getNumDofs()) {
+  if (vels.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
         << "setVelocities - Velocity vector size mis-match (input: "
         << vels.size() << ", expected: " << btMultiBody_->getNumDofs()
@@ -309,7 +313,7 @@ std::vector<float> BulletArticulatedObject::getVelocities() {
 }
 
 void BulletArticulatedObject::setPositions(std::vector<float> positions) {
-  if (positions.size() != btMultiBody_->getNumDofs()) {
+  if (positions.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
         << "setPositions - Position vector size mis-match (input: "
         << positions.size() << ", expected: " << btMultiBody_->getNumDofs()

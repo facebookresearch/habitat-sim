@@ -549,7 +549,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
       if (compoundShape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE) {
         btBvhTriangleMeshShape* trimeshShape =
-            (btBvhTriangleMeshShape*)compoundShape;
+            static_cast<btBvhTriangleMeshShape*>(compoundShape);
         if (trimeshShape->getTriangleInfoMap()) {
           col->setCollisionFlags(
               col->getCollisionFlags() |

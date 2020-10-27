@@ -92,5 +92,8 @@ class BulletURDFImporter : public URDFImporter {
       std::map<int, btCollisionShape*>& linkCollisionShapes);
 };
 
+void processContactParameters(const io::URDF::LinkContactInfo& contactInfo,
+                              btCollisionObject* col);
+
 }  // namespace physics
 }  // namespace esp

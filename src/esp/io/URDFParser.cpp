@@ -13,7 +13,9 @@
 
 #include "tinyxml2/tinyxml2.h"
 
-using namespace tinyxml2;
+// using namespace tinyxml2;
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;

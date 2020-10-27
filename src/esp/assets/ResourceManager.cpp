@@ -1775,8 +1775,8 @@ bool ResourceManager::importAsset(
       meshinfo = esp::assets::AssetInfo::fromPath(filename);
     }
     meshinfo.requiresLighting = true;
-    meshSuccess =
-        loadGeneralMeshData(meshinfo, nullptr, nullptr, DEFAULT_LIGHTING_KEY);
+    meshSuccess = loadGeneralMeshData(meshinfo, nullptr, nullptr, false,
+                                      DEFAULT_LIGHTING_KEY);
 
     // check if collision handle exists in collision mesh groups yet.  if not
     // then instance
