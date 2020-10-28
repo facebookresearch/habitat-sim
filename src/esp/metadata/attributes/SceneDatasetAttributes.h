@@ -100,16 +100,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
    * such as file paths, to make them available for stage attributes defaults.
    *
-   * @param filepaths the map of file paths from the configuration object
    * @param lightSetup the config-specified light setup
    * @param frustrumCulling whether or not (semantic) stage should be
    * partitioned for culling.
    */
-  void setCurrCfgVals(const std::map<std::string, std::string>& filepaths,
-                      const std::string& lightSetup,
-                      bool frustrumCulling) {
-    stageAttributesManager_->setCurrCfgVals(filepaths, lightSetup,
-                                            frustrumCulling);
+  void setCurrCfgVals(const std::string& lightSetup, bool frustrumCulling) {
+    stageAttributesManager_->setCurrCfgVals(lightSetup, frustrumCulling);
   }
 
   /**

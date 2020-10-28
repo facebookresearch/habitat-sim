@@ -29,20 +29,18 @@ class SceneDatasetAttributesManager
    * such as file paths, to make them available for stage attributes defaults.
    *
    * @param datasetName the name of the dataset to apply these to.
-   * @param filepaths the map of file paths from the configuration object
    * @param lightSetup the config-specified light setup
    * @param frustrumCulling whether or not (semantic) stage should be
    * partitioned for culling.
    */
   void setCurrCfgVals(const std::string& datasetName,
-                      const std::map<std::string, std::string>& filepaths,
                       const std::string& lightSetup,
                       bool frustrumCulling) {
     if (this->getObjectLibHasHandle(datasetName)) {
       auto dataset =
           this->getObjectInternal<attributes::SceneDatasetAttributes>(
               datasetName);
-      dataset->setCurrCfgVals(filepaths, lightSetup, frustrumCulling);
+      dataset->setCurrCfgVals(lightSetup, frustrumCulling);
     } else {
       LOG(ERROR) << "SceneDatasetAttributesManager::setCurrCfgVals : No "
                  << objectType_ << " managed object with handle " << datasetName
