@@ -1197,7 +1197,6 @@ void ResourceManager::loadMaterials(Importer& importer,
           materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
 
       if (flags_ & Flag::BuildPhongFromPbr) {
-        // if (true) {
         finalMaterial = gfx::buildPhongFromPbrMetallicRoughness(
             pbrMaterialData, textureBaseIndex, textures_);
       } else {
