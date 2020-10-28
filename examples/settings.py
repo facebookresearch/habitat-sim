@@ -50,7 +50,7 @@ def make_cfg(settings):
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]
     sim_cfg.gpu_device_id = 0
-    sim_cfg.scene.id = settings["scene"]
+    sim_cfg.scene_id = settings["scene"]
 
     # define default sensor parameters (see src/esp/Sensor/Sensor.h)
     sensors = {

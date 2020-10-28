@@ -95,7 +95,7 @@ def main():
 
     # Spin up the simulator
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
+    backend_cfg.scene_id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     sim = habitat_sim.Simulator(habitat_sim.Configuration(backend_cfg, [agent_config]))
     print(sim.get_agent(0).state)
 
