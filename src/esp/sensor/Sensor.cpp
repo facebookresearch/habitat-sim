@@ -6,11 +6,13 @@
 
 #include <Magnum/EigenIntegration/Integration.h>
 
+#include <utility>
+
 namespace esp {
 namespace sensor {
 
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
-    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(spec) {
+    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
   node.setType(scene::SceneNodeType::SENSOR);
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. The specification is null.";
@@ -20,7 +22,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   setTransformationFromSpec();
 }
 
-void SensorSuite::add(Sensor::ptr sensor) {
+void SensorSuite::add(const Sensor::ptr& sensor) {
   const std::string uuid = sensor->specification()->uuid;
   sensors_[uuid] = sensor;
 }

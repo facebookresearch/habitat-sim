@@ -171,7 +171,7 @@ void ResourceManager::initPhysicsManager(
 
 bool ResourceManager::loadStage(
     const StageAttributes::ptr& stageAttributes,
-    std::shared_ptr<physics::PhysicsManager> _physicsManager,
+    const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
     bool loadSemanticMesh) {
@@ -583,8 +583,8 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
       Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
       std::pair<Mn::Vector3, Mn::Vector3> bb = Mn::Math::minmax(pos);
-      bbPos.push_back(std::move(bb.first));
-      bbPos.push_back(std::move(bb.second));
+      bbPos.push_back(bb.first);
+      bbPos.push_back(bb.second);
     }
 
     // locate the scene node which contains the current drawable
