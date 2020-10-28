@@ -15,12 +15,12 @@ namespace esp {
 namespace sensor {
 
 PinholeCamera::PinholeCamera(scene::SceneNode& pinholeCameraNode,
-                             sensor::SensorSpec::ptr spec)
+                             const sensor::SensorSpec::ptr& spec)
     : sensor::VisualSensor(pinholeCameraNode, spec) {
   setProjectionParameters(spec);
 }
 
-void PinholeCamera::setProjectionParameters(SensorSpec::ptr spec) {
+void PinholeCamera::setProjectionParameters(const SensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
   width_ = spec_->resolution[1];
   height_ = spec_->resolution[0];

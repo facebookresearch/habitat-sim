@@ -267,7 +267,7 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
 ## WebGL
 
 1. Download the [test scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally to habitat-sim creating habitat-sim/data.
-1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (you need at least version 1.38.42, newer versions such as 2.0.6 work too)
+1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (you need at least version 1.38.48, newer versions such as 2.0.6 work too)
 1. Activate your emsdk environment
 1. Build using `./build_js.sh [--bullet]`
 1. Run webserver

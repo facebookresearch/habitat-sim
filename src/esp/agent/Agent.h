@@ -108,7 +108,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   void reset();
 
-  void getState(AgentState::ptr state) const;
+  void getState(const AgentState::ptr& state) const;
 
   void setState(const AgentState& state, const bool resetSensors = true);
 

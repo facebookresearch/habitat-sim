@@ -1,5 +1,6 @@
 Checks: '
 google-*,
+performance-*,
 -*-objc-*,
 -*.cocoa.*,
 -clang-analyzer-core.NullDereference,
@@ -9,7 +10,7 @@ google-*,
 -google-default-arguments,
 -google-readability-braces-around-statements,
 -google-readability-todo,
--google-runtime-references
+-google-runtime-references,
 '
 
 # Let deprecation warnings through. From time to time, Magnum annotates APIs

@@ -137,11 +137,9 @@ commands:
                 . activate habitat;
                 git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
                 cd ~/emsdk
-                git checkout 6a4c0f98
-                # Use 1.38.42 that has the following integrated:
-                # https://github.com/emscripten-core/emscripten/pull/9220
-                ./emsdk install 1.38.42
-                ./emsdk activate 1.38.42
+                ./emsdk install 1.38.48
+                ./emsdk activate 1.38.48
+                . ~/emsdk/emsdk_env.sh
                 touch ~/emscripten_installed
               fi
       - run:
@@ -466,8 +464,8 @@ jobs:
               . ~/.bashrc
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat
-              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
               nvm use v11.9.0
+              . ~/emsdk/emsdk_env.sh
               ./build_js.sh
               # TODO: Later fix this in the cmake build step
               cp -v build_js/Release/bin/hsim_bindings.* build_js/esp/bindings_js/
@@ -484,7 +482,6 @@ jobs:
             . ~/.bashrc
             export PATH=$HOME/miniconda/bin:$PATH
             . activate habitat
-            export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
             nvm use v11.9.0
             npm run test
       - run:
@@ -516,7 +513,7 @@ jobs:
               pytest --workers 4 --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
-              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+              . ~/emsdk/emsdk_env.sh
               nvm use v11.9.0
               # Generate JS CodeConv
               npm run test_with_coverage

@@ -25,9 +25,9 @@ class PinholeCamera : public VisualSensor {
   // construction;
   // user can use them immediately
   explicit PinholeCamera(scene::SceneNode& pinholeCameraNode,
-                         SensorSpec::ptr spec);
+                         const SensorSpec::ptr& spec);
 
-  void setProjectionParameters(SensorSpec::ptr spec);
+  void setProjectionParameters(const SensorSpec::ptr& spec);
 
   virtual ~PinholeCamera() {}
 

@@ -54,6 +54,8 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
   hullIdx.resize(k - 1);
 
   std::vector<vec2f> hull;
+  hull.reserve(hullIdx.size());
+
   for (auto& ix : hullIdx) {
     hull.emplace_back(points[ix]);
   }

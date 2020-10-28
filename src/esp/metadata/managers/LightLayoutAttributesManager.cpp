@@ -91,7 +91,7 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
 
 void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
-    LightInstanceAttributes::ptr lightAttribs,
+    const LightInstanceAttributes::ptr& lightAttribs,
     const io::JsonGenericValue& jsonConfig) {
   // jsonConfig here holds the JSON description for a single light attributes.
   // set position
