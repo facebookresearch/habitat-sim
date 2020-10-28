@@ -167,18 +167,18 @@ class Simulator(SimulatorBackend):
         if "navmesh" in config.sim_cfg.scene.filepaths:
             navmesh_filenname = config.sim_cfg.scene.filepaths["navmesh"]
         else:
-            scene_basename = osp.basename(config.sim_cfg.scene.id)
+            scene_basename = osp.basename(config.sim_cfg.scene_id)
             # "mesh.ply" is identified as a replica model, whose navmesh
             # is named as "mesh_semantic.navmesh" and is placed in the
             # subfolder called "habitat" (a level deeper than the "mesh.ply")
             if scene_basename == "mesh.ply":
-                scene_dir = osp.dirname(config.sim_cfg.scene.id)
+                scene_dir = osp.dirname(config.sim_cfg.scene_id)
                 navmesh_filenname = osp.join(
                     scene_dir, "habitat", "mesh_semantic.navmesh"
                 )
             else:
                 navmesh_filenname = (
-                    osp.splitext(config.sim_cfg.scene.id)[0] + ".navmesh"
+                    osp.splitext(config.sim_cfg.scene_id)[0] + ".navmesh"
                 )
 
         self.pathfinder = PathFinder()
