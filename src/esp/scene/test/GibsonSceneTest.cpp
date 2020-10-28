@@ -14,7 +14,6 @@
 
 namespace Cr = Corrade;
 
-using esp::scene::SceneConfiguration;
 using esp::scene::SemanticScene;
 using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;

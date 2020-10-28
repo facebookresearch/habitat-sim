@@ -8,8 +8,6 @@ add_library(
   ObjectControls.h
   ReplicaSemanticScene.cpp
   ReplicaSemanticScene.h
-  SceneConfiguration.cpp
-  SceneConfiguration.h
   SceneGraph.cpp
   SceneGraph.h
   SceneManager.cpp
