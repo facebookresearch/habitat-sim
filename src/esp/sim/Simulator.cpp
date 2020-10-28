@@ -132,8 +132,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // default semantic and navmesh file names, if they exist.  All values
   // set/built from these default values may be overridden by values in scene
   // json file, if present.
-  stageAttributesMgr->setCurrCfgVals(
-      config_.scene.filepaths, config_.sceneLightSetup, config_.frustumCulling);
+  stageAttributesMgr->setCurrCfgVals(config_.sceneLightSetup,
+                                     config_.frustumCulling);
 
   // Build scene file name based on config specification
   std::string stageFilename = config_.activeSceneID;
