@@ -1835,7 +1835,8 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         return objectNode;
       };
 
-      const std::string roomPath = basePath + "/room/" + houseId + "/";
+      const std::string roomPath =
+          basePath + std::string("/room/").append(houseId).append("/");
       if (nodeType == "Room") {
         const std::string roomBase = roomPath + node["modelId"].GetString();
         const int hideCeiling = node["hideCeiling"].GetInt();
@@ -1861,9 +1862,12 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         std::vector<float> transformVec;
         io::toFloatVector(node["transform"], &transformVec);
         mat4f transform(transformVec.data());
-        const AssetInfo info{
-            AssetType::SUNCG_OBJECT,
-            basePath + "/object/" + modelId + "/" + modelId + ".glb"};
+        const AssetInfo info{AssetType::SUNCG_OBJECT,
+                             basePath + std::string("/object/")
+                                            .append(modelId)
+                                            .append("/")
+                                            .append(modelId)
+                                            .append(".glb")};
         createObjectFunc(info, nodeId)
             .setTransformation(Magnum::Matrix4{transform});
       } else if (nodeType == "Box") {
