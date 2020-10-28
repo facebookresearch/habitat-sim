@@ -41,7 +41,6 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
-#include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
 #include "esp/nav/PathFinder.h"
