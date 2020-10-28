@@ -243,9 +243,7 @@ void main() {
 
   float metallic = Material.metallic;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-  // XXX
-  // metallic *= texture(PackedTexture, texCoord).b;
-  metallic = 0.01;
+  metallic *= texture(PackedTexture, texCoord).b;
 #elif defined(METALLIC_TEXTURE)
   metallic *= texture(MetallicTexture, texCoord).r;
 #endif
