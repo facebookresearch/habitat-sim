@@ -44,16 +44,14 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
   using namespace Magnum::Math::Literals;
 
   constexpr float w = 1;
-  return LightSetup{
-      {{box.frontTopLeft(), w}, lightColor},
-      {{box.frontTopRight(), w}, lightColor},
-      // {{box.frontBottomLeft(), w}, lightColor},
-      // {{box.frontBottomRight(), w}, lightColor},
-      {{box.backTopLeft(), w}, lightColor},
-      {{box.backTopRight(), w}, lightColor},
-      // {{box.backBottomLeft(), w}, lightColor},
-      // {{box.backBottomRight(), w}, lightColor}
-  };
+  return LightSetup{{{box.frontTopLeft(), w}, lightColor},
+                    {{box.frontTopRight(), w}, lightColor},
+                    {{box.frontBottomLeft(), w}, lightColor},
+                    {{box.frontBottomRight(), w}, lightColor},
+                    {{box.backTopLeft(), w}, lightColor},
+                    {{box.backTopRight(), w}, lightColor},
+                    {{box.backBottomLeft(), w}, lightColor},
+                    {{box.backBottomRight(), w}, lightColor}};
 }
 
 LightSetup getDefaultLights() {
