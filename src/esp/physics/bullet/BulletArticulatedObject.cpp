@@ -213,20 +213,28 @@ bool BulletArticulatedObject::attachGeometry(
         visualGeomComponent.scale(visual.m_geometry.m_meshScale);
 
         // first try to import the asset
-        std::shared_ptr<io::URDF::Material> material = nullptr;
-        if (materials.count(visual.m_materialName)) {
-          material = materials.at(visual.m_materialName);
-        }
-        bool meshSuccess = resourceManager.importAsset(
-            visual.m_geometry.m_meshFileName, material);
+        bool meshSuccess =
+            resourceManager.importAsset(visual.m_geometry.m_meshFileName);
         if (!meshSuccess) {
           Cr::Utility::Debug() << "Failed to import the render asset: "
                                << visual.m_geometry.m_meshFileName;
           return false;
         }
+
+        // create a modified asset if necessary
+        std::shared_ptr<io::URDF::Material> material =
+            visual.m_geometry.m_localMaterial;
+        std::string assetMatModName =
+            resourceManager.setupMaterialModifiedAsset(
+                visual.m_geometry.m_meshFileName, material);
+
         // then attach
         geomSuccess = resourceManager.attachAsset(
-            visual.m_geometry.m_meshFileName, visualGeomComponent, drawables);
+            (assetMatModName.empty()
+                 ? visual.m_geometry.m_meshFileName
+                 : assetMatModName),  // use either a material modified or
+                                      // original asset
+            visualGeomComponent, drawables);
       } break;
       case io::URDF::GEOM_PLANE:
         Corrade::Utility::Debug() << "Trying to add visual plane";

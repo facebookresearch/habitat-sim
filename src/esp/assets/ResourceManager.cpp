@@ -1762,13 +1762,10 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primitiveID);
 }
 
-bool ResourceManager::importAsset(
-    const std::string& filename,
-    std::shared_ptr<io::URDF::Material> material) {
+bool ResourceManager::importAsset(const std::string& filename) {
   bool meshSuccess = true;
   if (resourceDict_.count(filename) > 0) {
-    if (material == nullptr)
-      return true;
+    return true;
   } else {
     esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, filename};
     if (Corrade::Utility::String::endsWith(filename, ".dae")) {
@@ -1798,66 +1795,64 @@ bool ResourceManager::importAsset(
     }
   }
 
+  return meshSuccess;
+}
+
+std::string ResourceManager::setupMaterialModifiedAsset(
+    const std::string& filename,
+    std::shared_ptr<esp::io::URDF::Material> material) {
+  std::string modifiedAssetName = "";
+
+  if (resourceDict_.count(filename) == 0 || material == nullptr) {
+    Mn::Debug{} << "ResourceManager::setupMaterialModifiedAsset : Aborting - "
+                   "nothing to do here";
+    return modifiedAssetName;
+  }
+
+  modifiedAssetName = filename + "_MatMod";
+
+  if (resourceDict_.count(modifiedAssetName) == 0) {
+    // first register the copied metaData
+    resourceDict_.emplace(modifiedAssetName,
+                          LoadedAssetData(resourceDict_.at(filename)));
+  }
+
   // create/set a new PhongMaterialData
-  if (meshSuccess) {
-    auto& meshMetaData = resourceDict_.at(filename).meshMetaData;
+  auto& meshMetaData = resourceDict_.at(modifiedAssetName).meshMetaData;
 
-    int numMaterials = meshMetaData.materialIndex.second -
-                       meshMetaData.materialIndex.first + 1;
-    if (meshMetaData.materialIndex.first == ID_UNDEFINED) {
-      numMaterials = 0;
+  // create/register the new material
+  gfx::PhongMaterialData::uptr phongMaterial =
+      gfx::PhongMaterialData::create_unique();
+  io::URDF::MaterialColor& color = material->m_matColor;
+  phongMaterial->ambientColor = color.m_rgbaColor * 0.2;
+  phongMaterial->diffuseColor = color.m_rgbaColor * 0.8;
+  phongMaterial->specularColor = color.m_specularColor;
+
+  std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
+
+  int newMaterialIndex = nextMaterialID_++;
+  shaderManager_.set(std::to_string(newMaterialIndex), finalMaterial.release());
+
+  // set the material index
+  meshMetaData.materialIndex.first = newMaterialIndex;
+  meshMetaData.materialIndex.second = newMaterialIndex;
+
+  // iteratively reset the local material ids for all components
+  std::vector<MeshTransformNode*> nodeQueue;
+  nodeQueue.push_back(&meshMetaData.root);
+
+  while (!nodeQueue.empty()) {
+    MeshTransformNode* node = nodeQueue.back();
+    nodeQueue.pop_back();
+    for (auto& child : node->children) {
+      nodeQueue.push_back(&child);
     }
-
-    Corrade::Utility::Debug() << "Handling materials...";
-    Corrade::Utility::Debug() << "numMaterials = " << numMaterials;
-    Corrade::Utility::Debug() << "meshMetaData.materialIndex.second = "
-                              << meshMetaData.materialIndex.second;
-    Corrade::Utility::Debug() << "meshMetaData.materialIndex.first = "
-                              << meshMetaData.materialIndex.first;
-
-    std::vector<MeshTransformNode*> nodeQueue;
-    nodeQueue.push_back(&meshMetaData.root);
-
-    while (!nodeQueue.empty()) {
-      MeshTransformNode* node = nodeQueue.back();
-      nodeQueue.pop_back();
-      for (auto& child : node->children) {
-        nodeQueue.push_back(&child);
-      }
-      if (node->meshIDLocal != ID_UNDEFINED) {
-        Corrade::Utility::Debug()
-            << "node materialLocalID: " << node->materialIDLocal;
-        if (node->materialIDLocal == ID_UNDEFINED || material) {
-          Cr::Utility::Debug() << "generating a URDF material";
-          gfx::PhongMaterialData::uptr phongMaterial =
-              gfx::PhongMaterialData::create_unique();
-          int newMaterialIndex = nextMaterialID_++;
-          meshMetaData.materialIndex.second = newMaterialIndex;
-          if (meshMetaData.materialIndex.first == ID_UNDEFINED) {
-            meshMetaData.materialIndex.first = newMaterialIndex;
-          }
-          node->materialIDLocal = numMaterials++;
-
-          Corrade::Utility::Debug()
-              << "mat index after: "
-              << resourceDict_.at(filename).meshMetaData.materialIndex;
-
-          if (material) {
-            io::URDF::MaterialColor& color = material->m_matColor;
-            phongMaterial->ambientColor = color.m_rgbaColor * 0.2;
-            phongMaterial->diffuseColor = color.m_rgbaColor * 0.8;
-            phongMaterial->specularColor = color.m_specularColor;
-          }
-          std::unique_ptr<gfx::MaterialData> finalMaterial(
-              phongMaterial.release());
-          shaderManager_.set(std::to_string(newMaterialIndex),
-                             finalMaterial.release());
-        }
-      }
+    if (node->meshIDLocal != ID_UNDEFINED) {
+      node->materialIDLocal = 0;
     }
   }
 
-  return meshSuccess;
+  return modifiedAssetName;
 }
 
 bool ResourceManager::attachAsset(const std::string& filename,

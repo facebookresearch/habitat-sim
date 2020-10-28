@@ -465,8 +465,20 @@ class ResourceManager {
    */
   inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }
 
-  bool importAsset(const std::string& filename,
-                   std::shared_ptr<esp::io::URDF::Material> material = nullptr);
+  //! import an asset from file
+  bool importAsset(const std::string& filename);
+
+  /**
+   * @brief Create or modify an <asset>_MatMod resource with a new material.
+   * @param filename The original asset name. Will be converted to
+   * <asset>_MatMod internally.
+   * @param material The material to attach to the modified asset.
+   * @return The name of the modified asset for attachement to SceneNode with
+   * @ref attachAsset or empty if failed.
+   */
+  std::string setupMaterialModifiedAsset(
+      const std::string& filename,
+      std::shared_ptr<esp::io::URDF::Material> material = nullptr);
 
   // TODO: refactor this to use current pipeline
   //! Attach a visual asset to a SceneNode as part of a DrawableGroup

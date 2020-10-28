@@ -500,6 +500,16 @@ bool Parser::parseVisual(Model& model,
             visual.m_geometry.m_localMaterial;
         visual.m_geometry.m_hasLocalMaterial = true;
       }
+    } else if (model.m_materials.count(visual.m_materialName) > 0) {
+      // need this to handle possible overwriting of this material name in a
+      // later call.
+      visual.m_geometry.m_localMaterial =
+          model.m_materials.at(visual.m_materialName);
+      visual.m_geometry.m_hasLocalMaterial = true;
+    } else {
+      Mn::Debug{} << "Warning: Parser::parseVisual : visual element \""
+                  << visual.m_name << "\" specified un-defined material name \""
+                  << visual.m_materialName << "\".";
     }
   }
 
