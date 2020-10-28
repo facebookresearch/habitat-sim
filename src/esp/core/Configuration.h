@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_CORE_CONFIGURATION_H_
+#define ESP_CORE_CONFIGURATION_H_
 
 #include <Corrade/Utility/Configuration.h>
 #include <Magnum/Magnum.h>
@@ -36,7 +37,12 @@ class Configuration {
   bool setVec3(const std::string& key, const Magnum::Vector3& value) {
     return set(key, value);
   }
-
+  bool setQuat(const std::string& key, const Magnum::Quaternion& value) {
+    return set(key, value);
+  }
+  bool setRad(const std::string& key, Magnum::Rad value) {
+    return set(key, value);
+  }
   template <typename T>
   T get(const std::string& key) const {
     return cfg.value<T>(key);
@@ -50,6 +56,12 @@ class Configuration {
   }
   Magnum::Vector3 getVec3(const std::string& key) const {
     return get<Magnum::Vector3>(key);
+  }
+  Magnum::Quaternion getQuat(const std::string& key) const {
+    return get<Magnum::Quaternion>(key);
+  }
+  Magnum::Rad getRad(const std::string& key) const {
+    return get<Magnum::Rad>(key);
   }
 
   /**@brief Add a string to a group and return the resulting group size. */
@@ -111,3 +123,5 @@ class Configuration {
 
 }  // namespace core
 }  // namespace esp
+
+#endif  // ESP_CORE_CONFIGURATION_H_

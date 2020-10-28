@@ -281,13 +281,22 @@ bool BulletPhysicsManager::contactTest(const int physObjectID) {
 
 int BulletPhysicsManager::createRigidP2PConstraint(
     int objectId,
-    Magnum::Vector3 localOffset) {
+    const Magnum::Vector3& position,
+    bool positionLocal) {
   CHECK(existingObjects_.count(objectId));
   if (existingObjects_.at(objectId)->getMotionType() == MotionType::DYNAMIC) {
     btRigidBody* rb =
         static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
             ->bObjectRigidBody_.get();
     rb->setActivationState(DISABLE_DEACTIVATION);
+
+    Magnum::Vector3 localOffset = position;
+    if (!positionLocal) {
+      btVector3 localPivot =
+          rb->getCenterOfMassTransform().inverse() * btVector3(position);
+      localOffset = Magnum::Vector3(localPivot);
+    }
+
     btPoint2PointConstraint* p2p =
         new btPoint2PointConstraint(*rb, btVector3(localOffset));
     bWorld_->addConstraint(p2p);
@@ -301,27 +310,11 @@ int BulletPhysicsManager::createRigidP2PConstraint(
   }
 }
 
-int BulletPhysicsManager::createRigidP2PConstraintFromPickPoint(
-    int objectId,
-    Magnum::Vector3 pickPoint) {
-  CHECK(existingObjects_.count(objectId));
-  Magnum::Vector3 localOffset(pickPoint);
-  if (existingObjects_.at(objectId)->getMotionType() == MotionType::DYNAMIC) {
-    btRigidBody* rb =
-        static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
-            ->bObjectRigidBody_.get();
-    btVector3 localPivot =
-        rb->getCenterOfMassTransform().inverse() * btVector3(pickPoint);
-    localOffset = Magnum::Vector3(localPivot);
-  }
-  return createRigidP2PConstraint(objectId, localOffset);
-}
-
 int BulletPhysicsManager::createArticulatedP2PConstraint(
     int articulatedObjectId,
     int linkId,
-    Magnum::Vector3 linkOffset,
-    Magnum::Vector3 pickPos) {
+    const Magnum::Vector3& linkOffset,
+    const Magnum::Vector3& pickPos) {
   CHECK(existingArticulatedObjects_.count(articulatedObjectId));
   CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
         linkId);
@@ -342,7 +335,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
 int BulletPhysicsManager::createArticulatedP2PConstraint(
     int articulatedObjectId,
     int linkId,
-    Magnum::Vector3 pickPos) {
+    const Magnum::Vector3& pickPos) {
   CHECK(existingArticulatedObjects_.count(articulatedObjectId));
   CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
         linkId);
@@ -355,8 +348,9 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
                                         Magnum::Vector3(pivotInA), pickPos);
 }
 
-void BulletPhysicsManager::updateP2PConstraintPivot(int p2pId,
-                                                    Magnum::Vector3 pivot) {
+void BulletPhysicsManager::updateP2PConstraintPivot(
+    int p2pId,
+    const Magnum::Vector3& pivot) {
   if (articulatedP2ps.count(p2pId)) {
     articulatedP2ps.at(p2pId)->setPivotInB(btVector3(pivot));
   } else if (rigidP2ps.count(p2pId)) {

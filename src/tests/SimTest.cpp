@@ -25,11 +25,11 @@ using esp::agent::Agent;
 using esp::agent::AgentConfiguration;
 using esp::agent::AgentState;
 using esp::assets::ResourceManager;
-using esp::assets::attributes::AbstractPrimitiveAttributes;
-using esp::assets::attributes::ObjectAttributes;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
+using esp::metadata::attributes::AbstractPrimitiveAttributes;
+using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
 using esp::scene::SceneConfiguration;
 using esp::sensor::Observation;
@@ -54,7 +54,7 @@ const std::string skokloster =
 const std::string planeScene =
     Cr::Utility::Directory::join(TEST_ASSETS, "scenes/plane.glb");
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(TEST_ASSETS, "testing.phys_scene_config.json");
+    Cr::Utility::Directory::join(TEST_ASSETS, "testing.physics_config.json");
 const std::string screenshotDir =
     Cr::Utility::Directory::join(TEST_ASSETS, "screenshots/");
 
@@ -71,6 +71,10 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.sceneLightSetup = sceneLightingKey;
 
     auto sim = Simulator::create_unique(simConfig);
+    auto objAttrMgr = sim->getObjectAttributesManager();
+    objAttrMgr->loadAllConfigsFromPath(
+        Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+
     sim->setLightSetup(lightSetup1, "custom_lighting_1");
     sim->setLightSetup(lightSetup2, "custom_lighting_2");
     return sim;
@@ -99,10 +103,10 @@ struct SimTest : Cr::TestSuite::Tester {
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
-  LightSetup lightSetup1{{Magnum::Vector3{0.0f, 1.5f, -0.2f}, 0xffffff_rgbf,
-                          LightPositionModel::CAMERA}};
-  LightSetup lightSetup2{{Magnum::Vector3{0.0f, 0.5f, 1.0f}, 0xffffff_rgbf,
-                          LightPositionModel::CAMERA}};
+  LightSetup lightSetup1{{Magnum::Vector4{0.0f, 1.5f, -0.2f, 0.0f},
+                          0xffffff_rgbf, LightPositionModel::CAMERA}};
+  LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
+                          0xffffff_rgbf, LightPositionModel::CAMERA}};
 };
 
 SimTest::SimTest() {
@@ -215,56 +219,79 @@ void SimTest::checkPinholeCameraRGBAObservation(
 }
 
 void SimTest::getSceneRGBAObservation() {
+  Corrade::Utility::Debug() << "Starting Test : getSceneRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
+  Corrade::Utility::Debug() << "About to build simulator";
   auto simulator = getSimulator(vangogh);
+  Corrade::Utility::Debug() << "Built simulator";
   checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
                                     maxThreshold, 0.75f);
 }
 
 void SimTest::getSceneWithLightingRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : getSceneWithLightingRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh, "custom_lighting_1");
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
 }
 
 void SimTest::getDefaultLightingRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : getDefaultLightingRGBAObservation ";
   auto simulator = getSimulator(vangogh);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
-  auto objs = objectAttribsMgr->getTemplateHandlesBySubstring("nested_box");
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 }
 
 void SimTest::getCustomLightingRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : getCustomLightingRGBAObservation ";
   auto simulator = getSimulator(vangogh);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
-  auto objs = objectAttribsMgr->getTemplateHandlesBySubstring("nested_box");
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID =
       simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 }
 
 void SimTest::updateLightSetupRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : updateLightSetupRGBAObservation ";
   auto simulator = getSimulator(vangogh);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   // update default lighting
-  auto objs = objectAttribsMgr->getTemplateHandlesBySubstring("nested_box");
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -288,13 +315,18 @@ void SimTest::updateLightSetupRGBAObservation() {
 }
 
 void SimTest::updateObjectLightSetupRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : updateObjectLightSetupRGBAObservation ";
   auto simulator = getSimulator(vangogh);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
-  auto objs = objectAttribsMgr->getTemplateHandlesBySubstring("nested_box");
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -310,11 +342,16 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
 }
 
 void SimTest::multipleLightingSetupsRGBAObservation() {
+  Corrade::Utility::Debug()
+      << "Starting Test : multipleLightingSetupsRGBAObservation ";
+  CORRADE_SKIP(
+      "We are iterating on lighting as of Sep 2020, so the expected behavior "
+      "isn't finalized.");
   auto simulator = getSimulator(planeScene);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   // make sure updates apply to all objects using the light setup
-  auto objs = objectAttribsMgr->getTemplateHandlesBySubstring("nested_box");
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID =
       simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
@@ -340,6 +377,8 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
 }
 
 void SimTest::recomputeNavmeshWithStaticObjects() {
+  Corrade::Utility::Debug()
+      << "Starting Test : recomputeNavmeshWithStaticObjects ";
   auto simulator = getSimulator(skokloster);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
@@ -359,7 +398,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   }
 
   // add static object at a known navigable point
-  auto objs = objectAttribsMgr->getTemplateHandlesBySubstring("nested_box");
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID = simulator->addObjectByHandle(objs[0]);
   simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
   simulator->setObjectMotionType(esp::physics::MotionType::STATIC, objectID);
@@ -379,10 +418,9 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   simulator->removeObject(objectID);
 
   // test scaling
-  ObjectAttributes::ptr objectTemplate =
-      objectAttribsMgr->getTemplateCopyByID(0);
+  ObjectAttributes::ptr objectTemplate = objectAttribsMgr->getObjectCopyByID(0);
   objectTemplate->setScale({0.5, 0.5, 0.5});
-  int tmplateID = objectAttribsMgr->registerAttributesTemplate(objectTemplate);
+  int tmplateID = objectAttribsMgr->registerObject(objectTemplate);
 
   objectID = simulator->addObjectByHandle(objs[0]);
   simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
@@ -403,12 +441,13 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 }
 
 void SimTest::loadingObjectTemplates() {
+  Corrade::Utility::Debug() << "Starting Test : loadingObjectTemplates ";
   auto simulator = getSimulator(planeScene);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
   // test directory of templates
-  std::vector<int> templateIndices = objectAttribsMgr->loadObjectConfigs(
+  std::vector<int> templateIndices = objectAttribsMgr->loadAllConfigsFromPath(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
   for (auto index : templateIndices) {
@@ -416,7 +455,7 @@ void SimTest::loadingObjectTemplates() {
   }
 
   // reload again and ensure that old loaded indices are returned
-  std::vector<int> templateIndices2 = objectAttribsMgr->loadObjectConfigs(
+  std::vector<int> templateIndices2 = objectAttribsMgr->loadAllConfigsFromPath(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(templateIndices2 == templateIndices);
 
@@ -437,30 +476,28 @@ void SimTest::loadingObjectTemplates() {
   std::string tmpHndl = fullTmpHndl.substr(len.quot);
   // get all handles that match 2nd half of known handle
   std::vector<std::string> matchTmpltHandles =
-      objectAttribsMgr->getTemplateHandlesBySubstring(tmpHndl);
+      objectAttribsMgr->getObjectHandlesBySubstring(tmpHndl);
   CORRADE_VERIFY(matchTmpltHandles[0] == fullTmpHndl);
 
   // test fresh template as smart pointer
   ObjectAttributes::ptr newTemplate =
-      objectAttribsMgr->createAttributesTemplate("new template", false);
+      objectAttribsMgr->createObject("new template", false);
   std::string boxPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
   newTemplate->setRenderAssetHandle(boxPath);
-  int templateIndex =
-      objectAttribsMgr->registerAttributesTemplate(newTemplate, boxPath);
+  int templateIndex = objectAttribsMgr->registerObject(newTemplate, boxPath);
 
   CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
   // change render asset for object template named boxPath
   std::string chairPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/chair.glb");
   newTemplate->setRenderAssetHandle(chairPath);
-  int templateIndex2 =
-      objectAttribsMgr->registerAttributesTemplate(newTemplate, boxPath);
+  int templateIndex2 = objectAttribsMgr->registerObject(newTemplate, boxPath);
 
   CORRADE_VERIFY(templateIndex2 != esp::ID_UNDEFINED);
   CORRADE_VERIFY(templateIndex2 == templateIndex);
   ObjectAttributes::ptr newTemplate2 =
-      objectAttribsMgr->getTemplateCopyByHandle(boxPath);
+      objectAttribsMgr->getObjectCopyByHandle(boxPath);
   CORRADE_VERIFY(newTemplate2->getRenderAssetHandle() == chairPath);
 }
 
@@ -482,7 +519,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 
   // there should be 1 prim template per default primitive asset template
   int numPrimsExpected =
-      static_cast<int>(esp::assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
+      static_cast<int>(esp::metadata::PrimObjTypes::END_PRIM_OBJ_TYPES);
   // verify the number of primitive templates
   CORRADE_VERIFY(numPrimsExpected == primObjAssetHandles.size());
 
@@ -493,14 +530,14 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     for (int i = 0; i < numPrimsExpected; ++i) {
       std::string handle = primObjAssetHandles[i];
       CORRADE_VERIFY(handle != "");
-      primAttr = assetAttribsMgr->getTemplateCopyByHandle(handle);
+      primAttr = assetAttribsMgr->getObjectCopyByHandle(handle);
       CORRADE_VERIFY(primAttr != nullptr);
       CORRADE_VERIFY(primAttr->isValidTemplate());
       // verify that the attributes contains the handle, and the handle contains
       // the expected class name
       std::string className =
-          esp::assets::managers::AssetAttributesManager::PrimitiveNames3DMap.at(
-              static_cast<esp::assets::PrimObjTypes>(i));
+          esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap
+              .at(static_cast<esp::metadata::PrimObjTypes>(i));
       CORRADE_VERIFY((primAttr->getHandle() == handle) &&
                      (handle.find(className) != std::string::npos));
     }
@@ -540,12 +577,12 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   {
     // get existing default cylinder handle
     primObjAssetHandles = assetAttribsMgr->getTemplateHandlesByPrimType(
-        esp::assets::PrimObjTypes::CYLINDER_SOLID);
+        esp::metadata::PrimObjTypes::CYLINDER_SOLID);
     // should only be one handle in this vector
     CORRADE_VERIFY(1 == primObjAssetHandles.size());
     // primitive render object uses primitive render asset as handle
     std::string origCylinderHandle = primObjAssetHandles[0];
-    primAttr = assetAttribsMgr->getTemplateCopyByHandle(origCylinderHandle);
+    primAttr = assetAttribsMgr->getObjectCopyByHandle(origCylinderHandle);
     // verify that the origin handle matches what is expected
     CORRADE_VERIFY(primAttr->getHandle() == origCylinderHandle);
     // get original number of rings for this cylinder
@@ -559,20 +596,20 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // set test label, to validate that copy is reggistered
     primAttr->setString("test", "test0");
     // register new attributes
-    int idx = assetAttribsMgr->registerAttributesTemplate(primAttr);
+    int idx = assetAttribsMgr->registerObject(primAttr);
     CORRADE_VERIFY(idx != esp::ID_UNDEFINED);
     // set new test label, to validate against retrieved copy
     primAttr->setString("test", "test1");
     // retrieve registered attributes copy
     AbstractPrimitiveAttributes::ptr primAttr2 =
-        assetAttribsMgr->getTemplateCopyByHandle(newHandle);
+        assetAttribsMgr->getObjectCopyByHandle(newHandle);
     // verify pre-reg and post-reg are named the same
     CORRADE_VERIFY(primAttr->getHandle() == primAttr2->getHandle());
     // verify retrieved attributes is copy, not original
     CORRADE_VERIFY(primAttr->getString("test") != primAttr2->getString("test"));
     // remove modified attributes
     AbstractPrimitiveAttributes::ptr primAttr3 =
-        assetAttribsMgr->removeTemplateByHandle(newHandle);
+        assetAttribsMgr->removeObjectByHandle(newHandle);
     CORRADE_VERIFY(nullptr != primAttr3);
   }
   // empty vector of handles
@@ -581,21 +618,21 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // test creation of new object, using edited attributes
     // get existing default cylinder handle
     primObjAssetHandles = assetAttribsMgr->getTemplateHandlesByPrimType(
-        esp::assets::PrimObjTypes::CYLINDER_SOLID);
+        esp::metadata::PrimObjTypes::CYLINDER_SOLID);
     // primitive render object uses primitive render asset as handle
     std::string origCylinderHandle = primObjAssetHandles[0];
-    primAttr = assetAttribsMgr->getTemplateCopyByHandle(origCylinderHandle);
+    primAttr = assetAttribsMgr->getObjectCopyByHandle(origCylinderHandle);
     // modify attributes - this will change handle
     primAttr->setNumRings(2 * primAttr->getNumRings());
     // verify that internal name of attributes has changed due to essential
     // quantity being modified
     std::string newHandle = primAttr->getHandle();
     // register new attributes
-    int idx = assetAttribsMgr->registerAttributesTemplate(primAttr);
+    int idx = assetAttribsMgr->registerObject(primAttr);
 
     // create object template with modified primitive asset attributes, by
     // passing handle.  defaults to register object template
-    auto newCylObjAttr = objectAttribsMgr->createAttributesTemplate(newHandle);
+    auto newCylObjAttr = objectAttribsMgr->createObject(newHandle);
     CORRADE_VERIFY(nullptr != newCylObjAttr);
     // create object with new attributes
     int objectID = simulator->addObjectByHandle(newHandle);

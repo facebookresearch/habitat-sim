@@ -5,44 +5,56 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "esp/assets/ResourceManager.h"
-#include "esp/assets/managers/AttributesManagerBase.h"
+#include "esp/metadata/MetadataMediator.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
+#include "esp/metadata/managers/AttributesManagerBase.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/StageAttributesManager.h"
+
+#include "esp/physics/RigidBase.h"
 
 #include "configure.h"
 
 namespace Cr = Corrade;
 
-namespace AttrMgrs = esp::assets::managers;
-namespace Attrs = esp::assets::attributes;
+using Magnum::Math::Literals::operator""_radf;
+namespace AttrMgrs = esp::metadata::managers;
+namespace Attrs = esp::metadata::attributes;
 
-using esp::assets::PrimObjTypes;
-using esp::assets::ResourceManager;
-using esp::assets::managers::AttributesManager;
+using esp::metadata::MetadataMediator;
+using esp::metadata::PrimObjTypes;
 
-using esp::assets::attributes::AbstractPrimitiveAttributes;
-using esp::assets::attributes::CapsulePrimitiveAttributes;
-using esp::assets::attributes::ConePrimitiveAttributes;
-using esp::assets::attributes::CubePrimitiveAttributes;
-using esp::assets::attributes::CylinderPrimitiveAttributes;
-using esp::assets::attributes::IcospherePrimitiveAttributes;
-using esp::assets::attributes::ObjectAttributes;
-using esp::assets::attributes::PhysicsManagerAttributes;
-using esp::assets::attributes::StageAttributes;
-using esp::assets::attributes::UVSpherePrimitiveAttributes;
+using esp::physics::MotionType;
 
-const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
-const std::string physicsConfigFile = Cr::Utility::Directory::join(
-    SCENE_DATASETS,
-    "../test_assets/testing.phys_scene_config.json");
+using AttrMgrs::AttributesManager;
+using Attrs::AbstractPrimitiveAttributes;
+using Attrs::CapsulePrimitiveAttributes;
+using Attrs::ConePrimitiveAttributes;
+using Attrs::CubePrimitiveAttributes;
+using Attrs::CylinderPrimitiveAttributes;
+using Attrs::IcospherePrimitiveAttributes;
+using Attrs::ObjectAttributes;
+using Attrs::PhysicsManagerAttributes;
+using Attrs::SceneAttributes;
+using Attrs::StageAttributes;
+using Attrs::UVSpherePrimitiveAttributes;
+
+const std::string physicsConfigFile =
+    Cr::Utility::Directory::join(DATA_DIR,
+                                 "test_assets/testing.physics_config.json");
 
 class AttributesManagersTest : public testing::Test {
  protected:
   void SetUp() override {
-    // get attributes managers
-    assetAttributesManager_ = resourceManager_.getAssetAttributesManager();
-    objectAttributesManager_ = resourceManager_.getObjectAttributesManager();
-    physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
-    stageAttributesManager_ = resourceManager_.getStageAttributesManager();
+    auto MM = MetadataMediator::create();
+    // get attributes managers for default dataset
+    assetAttributesManager_ = MM->getAssetAttributesManager();
+    lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
+    objectAttributesManager_ = MM->getObjectAttributesManager();
+    physicsAttributesManager_ = MM->getPhysicsAttributesManager();
+    sceneAttributesManager_ = MM->getSceneAttributesManager();
+    stageAttributesManager_ = MM->getStageAttributesManager();
   };
 
   /**
@@ -53,15 +65,17 @@ class AttributesManagersTest : public testing::Test {
    * @return attributes template built from JSON parsed from string
    */
   template <typename T, typename U>
-  std::shared_ptr<U> testBuildAttributesFromJSONString(std::shared_ptr<T> mgr) {
-    // get JSON sample config from static Attributes string
-    const std::string& jsonString = U::JSONConfigTestString;
+  std::shared_ptr<U> testBuildAttributesFromJSONString(
+      std::shared_ptr<T> mgr,
+      const std::string& jsonString) {
     // create JSON document
     try {
-      const auto& jsonDoc = esp::io::parseJsonString(jsonString);
+      esp::io::JsonDocument tmp = esp::io::parseJsonString(jsonString);
+      // io::JsonGenericValue :
+      const esp::io::JsonGenericValue jsonDoc = tmp.GetObject();
       // create an empty template
       std::shared_ptr<U> attrTemplate1 =
-          mgr->loadAttributesFromJSONDoc("new default template", jsonDoc);
+          mgr->buildManagedObjectFromDoc("new_template_from_json", jsonDoc);
 
       return attrTemplate1;
     } catch (...) {
@@ -84,19 +98,19 @@ class AttributesManagersTest : public testing::Test {
     // meaningless key to modify attributes for verifcation of behavior
     std::string keyStr = "tempKey";
     // get starting number of templates
-    int orignNumTemplates = mgr->getNumTemplates();
+    int orignNumTemplates = mgr->getNumObjects();
     // verify template is not present - should not be
-    bool isPresentAlready = mgr->getTemplateLibHasHandle(handle);
+    bool isPresentAlready = mgr->getObjectLibHasHandle(handle);
     ASSERT_NE(isPresentAlready, true);
 
     // create template from source handle, register it and retrieve it
     // Note: registration of template means this is a copy of registered
     // template
-    auto attrTemplate1 = mgr->createAttributesTemplate(handle, true);
+    auto attrTemplate1 = mgr->createObject(handle, true);
     // verify it exists
     ASSERT_NE(nullptr, attrTemplate1);
     // retrieve a copy of the named attributes template
-    auto attrTemplate2 = mgr->getTemplateCopyByHandle(handle);
+    auto attrTemplate2 = mgr->getObjectCopyByHandle(handle);
     // verify copy has same quantities and values as original
     ASSERT_EQ(attrTemplate1->getHandle(), attrTemplate2->getHandle());
 
@@ -111,12 +125,12 @@ class AttributesManagersTest : public testing::Test {
 
     // register modified template and verify that this is the template now
     // stored
-    int newID = mgr->registerAttributesTemplate(attrTemplate2, handle);
+    int newID = mgr->registerObject(attrTemplate2, handle);
     // verify IDs are the same
     ASSERT_EQ(oldID, newID);
 
     // get another copy
-    auto attrTemplate3 = mgr->getTemplateCopyByHandle(handle);
+    auto attrTemplate3 = mgr->getObjectCopyByHandle(handle);
     // verify added field is present and the same
     ASSERT_EQ(attrTemplate3->getString(keyStr),
               attrTemplate2->getString(keyStr));
@@ -129,31 +143,68 @@ class AttributesManagersTest : public testing::Test {
     // test removal
     int removeID = attrTemplate2->getID();
     // remove template by ID, acquire copy of removed template
-    auto oldTemplate = mgr->removeTemplateByID(removeID);
+    auto oldTemplate = mgr->removeObjectByID(removeID);
     // verify it exists
     ASSERT_NE(nullptr, oldTemplate);
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
     // re-add template copy via registration
-    int newAddID = mgr->registerAttributesTemplate(attrTemplate2, handle);
+    int newAddID = mgr->registerObject(attrTemplate2, handle);
     // verify IDs are the same
     ASSERT_EQ(removeID, newAddID);
 
     // lock template referenced by handle
-    bool success = mgr->setTemplateLock(handle, true);
+    bool success = mgr->setLock(handle, true);
     // attempt to remove attributes via handle
-    auto oldTemplate2 = mgr->removeTemplateByHandle(handle);
+    auto oldTemplate2 = mgr->removeObjectByHandle(handle);
     // verify no template was deleted
     ASSERT_EQ(nullptr, oldTemplate2);
     // unlock template
-    success = mgr->setTemplateLock(handle, false);
+    success = mgr->setLock(handle, false);
 
     // remove  attributes via handle
-    auto oldTemplate3 = mgr->removeTemplateByHandle(handle);
+    auto oldTemplate3 = mgr->removeObjectByHandle(handle);
     // verify deleted template  exists
     ASSERT_NE(nullptr, oldTemplate3);
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
+
+  }  // AttributesManagersTest::testCreateAndRemove
+
+  /**
+   * @brief Test creation, copying and removal of templates for lights
+   * attributes managers.
+   * @param mgr the Attributes Manager being tested,
+   * @param handle the handle of the desired attributes template to work with
+   */
+
+  void testCreateAndRemoveLights(
+      AttrMgrs::LightLayoutAttributesManager::ptr mgr,
+      const std::string& handle) {
+    // meaningless key to modify attributes for verifcation of behavior
+    std::string keyStr = "tempKey";
+    // get starting number of templates
+    int orignNumTemplates = mgr->getNumObjects();
+
+    // Source config for lights holds multiple light configurations.
+    // Create a single template for each defined light in configuration and
+    // register it.
+    mgr->createObject(handle, true);
+    // get number of templates loaded
+    int numLoadedLights = mgr->getNumObjects();
+    // verify lights were added
+    ASSERT_NE(numLoadedLights, orignNumTemplates);
+
+    // get handles of all lights added
+    auto lightHandles = mgr->getObjectHandlesBySubstring();
+    ASSERT_EQ(lightHandles.size(), numLoadedLights);
+
+    // remove all added handles
+    for (auto handle : lightHandles) {
+      mgr->removeObjectByHandle(handle);
+    }
+    // verify there are same number of templates as when we started
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
 
   }  // AttributesManagersTest::testCreateAndRemove
 
@@ -169,10 +220,10 @@ class AttributesManagersTest : public testing::Test {
                                const std::string& handle,
                                bool setRenderHandle) {
     // get starting number of templates
-    int orignNumTemplates = mgr->getNumTemplates();
+    int orignNumTemplates = mgr->getNumObjects();
     // lock all current handles
     std::vector<std::string> origHandles =
-        mgr->setTemplatesLockBySubstring(true, "", true);
+        mgr->setLockBySubstring(true, "", true);
     // make sure we have locked all original handles
     ASSERT_EQ(orignNumTemplates, origHandles.size());
 
@@ -183,44 +234,43 @@ class AttributesManagersTest : public testing::Test {
       // assign template a handle
       std::string newHandleIter("newTemplateHandle_" + std::to_string(i));
       // create a template with a legal handle
-      auto attrTemplate1 = mgr->createAttributesTemplate(handle, false);
+      auto attrTemplate1 = mgr->createObject(handle, false);
       // register template with new handle
-      int tmpltID =
-          mgr->registerAttributesTemplate(attrTemplate1, newHandleIter);
+      int tmpltID = mgr->registerObject(attrTemplate1, newHandleIter);
       // verify template added
       ASSERT_NE(tmpltID, -1);
-      auto attrTemplate2 = mgr->getTemplateCopyByHandle(newHandleIter);
+      auto attrTemplate2 = mgr->getObjectCopyByHandle(newHandleIter);
       // verify added template  exists
       ASSERT_NE(nullptr, attrTemplate2);
     }
 
     // now delete all templates that
     auto removedNamedTemplates =
-        mgr->removeTemplatesBySubstring("newTemplateHandle_", true);
+        mgr->removeObjectsBySubstring("newTemplateHandle_", true);
     // verify that the number removed == the number added
     ASSERT_EQ(removedNamedTemplates.size(), numToAdd);
 
     // re-add templates
     for (auto& tmplt : removedNamedTemplates) {
       // register template with new handle
-      int tmpltID = mgr->registerAttributesTemplate(tmplt);
+      int tmpltID = mgr->registerObject(tmplt);
       // verify template added
       ASSERT_NE(tmpltID, -1);
-      auto attrTemplate2 = mgr->getTemplateCopyByHandle(tmplt->getHandle());
+      auto attrTemplate2 = mgr->getObjectCopyByHandle(tmplt->getHandle());
       // verify added template  exists
       ASSERT_NE(nullptr, attrTemplate2);
     }
 
     // now delete all templates that have just been added
-    auto removedTemplates = mgr->removeAllTemplates();
+    auto removedTemplates = mgr->removeAllObjects();
     // verify that the number removed == the number added
     ASSERT_EQ(removedTemplates.size(), numToAdd);
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
 
     // unlock all original handles
     std::vector<std::string> newOrigHandles =
-        mgr->setTemplateLockByHandles(origHandles, false);
+        mgr->setLockByHandles(origHandles, false);
     // verify orig handles are those that have been unlocked
     ASSERT_EQ(newOrigHandles, origHandles);
     // make sure we have unlocked all original handles
@@ -241,13 +291,12 @@ class AttributesManagersTest : public testing::Test {
                                   const std::string& handle,
                                   bool setRenderHandle) {
     // get starting number of templates
-    int orignNumTemplates = mgr->getNumTemplates();
+    int orignNumTemplates = mgr->getNumObjects();
     // assign template a handle
     std::string newHandle = "newTemplateHandle";
 
     // create new template but do not register it
-    auto newAttrTemplate0 =
-        mgr->createDefaultAttributesTemplate(newHandle, false);
+    auto newAttrTemplate0 = mgr->createDefaultObject(newHandle, false);
     // verify real template was returned
     ASSERT_NE(nullptr, newAttrTemplate0);
 
@@ -255,27 +304,27 @@ class AttributesManagersTest : public testing::Test {
     // Note: registration of template means this is a copy of registered
     // template
     if (setRenderHandle) {
-      auto attrTemplate1 = mgr->createAttributesTemplate(handle, false);
+      auto attrTemplate1 = mgr->createObject(handle, false);
       // set legitimate render handle in template
       newAttrTemplate0->set(
-          "renderAssetHandle",
-          attrTemplate1->template get<std::string>("renderAssetHandle"));
+          "render_asset",
+          attrTemplate1->template get<std::string>("render_asset"));
     }
 
     // register modified template and verify that this is the template now
     // stored
-    int newID = mgr->registerAttributesTemplate(newAttrTemplate0, newHandle);
+    int newID = mgr->registerObject(newAttrTemplate0, newHandle);
 
     // get a copy of added template
-    auto attrTemplate3 = mgr->getTemplateCopyByHandle(newHandle);
+    auto attrTemplate3 = mgr->getObjectCopyByHandle(newHandle);
 
     // remove new template by name
-    auto newAttrTemplate1 = mgr->removeTemplateByHandle(newHandle);
+    auto newAttrTemplate1 = mgr->removeObjectByHandle(newHandle);
 
     // verify it exists
     ASSERT_NE(nullptr, newAttrTemplate1);
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
 
   }  // AttributesManagersTest::testCreateAndRemoveDefault
 
@@ -297,7 +346,7 @@ class AttributesManagersTest : public testing::Test {
                                        int legalVal,
                                        int const* illegalVal) {
     // get starting number of templates
-    int orignNumTemplates = assetAttributesManager_->getNumTemplates();
+    int orignNumTemplates = assetAttributesManager_->getNumObjects();
 
     // get name of default template
     std::string oldHandle = defaultAttribs->getHandle();
@@ -327,51 +376,59 @@ class AttributesManagersTest : public testing::Test {
     std::string newHandle = defaultAttribs->getHandle();
     LOG(INFO) << "Modified Template Handle : " << newHandle;
     // register modified template
-    assetAttributesManager_->registerAttributesTemplate(defaultAttribs);
+    assetAttributesManager_->registerObject(defaultAttribs);
 
     // verify new handle is in template library
     // get template by handle
-    ASSERT(assetAttributesManager_->getTemplateLibHasHandle(newHandle));
+    ASSERT(assetAttributesManager_->getObjectLibHasHandle(newHandle));
     // verify old template is still present as well
-    ASSERT(assetAttributesManager_->getTemplateLibHasHandle(oldHandle));
+    ASSERT(assetAttributesManager_->getObjectLibHasHandle(oldHandle));
 
     // get new template
     std::shared_ptr<T> newAttribs =
-        assetAttributesManager_->getTemplateCopyByHandle<T>(newHandle);
+        assetAttributesManager_->getObjectCopyByHandle<T>(newHandle);
     // verify template has modified values
     int newValue = newAttribs->template get<int>(ctorModField);
     ASSERT_EQ(legalVal, newValue);
     // remove modified template via handle
     auto oldTemplate2 =
-        assetAttributesManager_->removeTemplateByHandle(newHandle);
+        assetAttributesManager_->removeObjectByHandle(newHandle);
     // verify deleted template  exists
     ASSERT_NE(nullptr, oldTemplate2);
 
     // verify there are same number of templates as when we started
-    ASSERT_EQ(orignNumTemplates, assetAttributesManager_->getNumTemplates());
+    ASSERT_EQ(orignNumTemplates, assetAttributesManager_->getNumObjects());
 
   }  // AttributesManagersTest::testAssetAttributesModRegRemove
 
-  ResourceManager resourceManager_;
-
   AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
+  AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
+      nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+  AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 };  // class AttributesManagersTest
 
 /**
- * @brief This test will verify that the attributes' managers' JSON loading
- * process is working as expected.
+ * @brief This test will verify that the physics attributes' managers' JSON
+ * loading process is working as expected.
  */
-TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {
-  LOG(INFO)
-      << "Starting AttributesManagersTest::AttributesManagers_JSONLoadTest";
-
+TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_PhysicsJSONLoadTest";
+  // build JSON sample config
+  const std::string& jsonString = R"({
+      "physics_simulator": "bullet_test",
+      "timestep": 1.0,
+      "gravity": [1,2,3],
+      "friction_coefficient": 1.4,
+      "restitution_coefficient": 1.1
+    })";
   auto physMgrAttr =
       testBuildAttributesFromJSONString<AttrMgrs::PhysicsAttributesManager,
                                         Attrs::PhysicsManagerAttributes>(
-          physicsAttributesManager_);
+          physicsAttributesManager_, jsonString);
   // verify exists
   ASSERT_NE(nullptr, physMgrAttr);
   // match values set in test JSON
@@ -381,11 +438,155 @@ TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {
   ASSERT_EQ(physMgrAttr->getSimulator(), "bullet_test");
   ASSERT_EQ(physMgrAttr->getFrictionCoefficient(), 1.4);
   ASSERT_EQ(physMgrAttr->getRestitutionCoefficient(), 1.1);
+}  // AttributesManagers_PhysicsJSONLoadTest
+
+/**
+ * @brief This test will verify that the Light Attributes' managers' JSON
+ * loading process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_LightJSONLoadTest";
+  // build JSON sample config
+  const std::string& jsonString = R"({
+  "lights":{
+      "test":{
+        "position": [2.5,0.1,3.8],
+        "direction": [1.0,-1.0,1.0],
+        "intensity": -0.1,
+        "color": [2,1,-1],
+        "type": "spot",
+        "spot": {
+          "innerConeAngle": -0.75,
+          "outerConeAngle": -1.57
+        }
+      }
+    }
+  })";
+
+  auto lightLayoutAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::LightLayoutAttributesManager,
+                                        Attrs::LightLayoutAttributes>(
+          lightLayoutAttributesManager_, jsonString);
+  // verify exists
+  ASSERT_NE(nullptr, lightLayoutAttr);
+
+  auto lightAttr = lightLayoutAttr->getLightInstance("test");
+  // verify that lightAttr exists
+  ASSERT_NE(nullptr, lightAttr);
+
+  // match values set in test JSON
+  // TODO : get these values programmatically?
+  ASSERT_EQ(lightAttr->getPosition(), Magnum::Vector3(2.5, 0.1, 3.8));
+  ASSERT_EQ(lightAttr->getDirection(), Magnum::Vector3(1.0, -1.0, 1.0));
+  ASSERT_EQ(lightAttr->getColor(), Magnum::Vector3(2, 1, -1));
+  ASSERT_EQ(lightAttr->getIntensity(), -0.1);
+  ASSERT_EQ(lightAttr->getType(), "spot");
+  ASSERT_EQ(lightAttr->getInnerConeAngle(), -0.75_radf);
+  ASSERT_EQ(lightAttr->getOuterConeAngle(), -1.57_radf);
+}  // AttributesManagers_LightJSONLoadTest
+/**
+ * @brief This test will verify that the Scene Instance attributes' managers'
+ * JSON loading process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
+  LOG(INFO)
+      << "Starting "
+         "AttributesManagersTest::AttributesManagers_SceneInstanceJSONLoadTest";
+  // build JSON sample config
+  const std::string& jsonString =
+      R"({
+      "stage_instance":{
+          "template_name": "test_stage_template",
+          "translation": [1,2,3],
+          "rotation": [0.1, 0.2, 0.3, 0.4]
+      },
+      "object_instances": [
+          {
+              "template_name": "test_object_template0",
+              "translation": [0,1,2],
+              "rotation": [0.2, 0.3, 0.4, 0.5],
+              "motion_type": "KINEMATIC"
+          },
+          {
+              "template_name": "test_object_template1",
+              "translation": [0,-1,-2],
+              "rotation": [0.5, 0.6, 0.7, 0.8],
+              "motion_type": "DYNAMIC"
+          }
+      ],
+      "default_lighting":  "test_lighting_configuration",
+      "navmesh_instance": "test_navmesh_path1",
+      "semantic_scene_instance": "test_semantic_descriptor_path1"
+     })";
+
+  auto sceneAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::SceneAttributesManager,
+                                        Attrs::SceneAttributes>(
+          sceneAttributesManager_, jsonString);
+
+  // verify exists
+  ASSERT_NE(nullptr, sceneAttr);
+
+  // match values set in test JSON
+  // TODO : get these values programmatically?
+  ASSERT_EQ(sceneAttr->getLightingHandle(), "test_lighting_configuration");
+  ASSERT_EQ(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
+  ASSERT_EQ(sceneAttr->getSemanticSceneHandle(),
+            "test_semantic_descriptor_path1");
+  // verify stage populated properly
+  auto stageInstance = sceneAttr->getStageInstance();
+  ASSERT_EQ(stageInstance->getHandle(), "test_stage_template");
+  ASSERT_EQ(stageInstance->getTranslation(), Magnum::Vector3(1, 2, 3));
+  // verify objects
+  auto objectInstanceList = sceneAttr->getObjectInstances();
+  ASSERT_EQ(objectInstanceList.size(), 2);
+  auto objInstance = objectInstanceList[0];
+  ASSERT_EQ(objInstance->getHandle(), "test_object_template0");
+  ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, 1, 2));
+  ASSERT_EQ(objInstance->getMotionType(),
+            static_cast<int>(esp::physics::MotionType::KINEMATIC));
+
+  objInstance = objectInstanceList[1];
+  ASSERT_EQ(objInstance->getHandle(), "test_object_template1");
+  ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, -1, -2));
+  ASSERT_EQ(objInstance->getMotionType(),
+            static_cast<int>(esp::physics::MotionType::DYNAMIC));
+
+}  // AttributesManagers_SceneInstanceJSONLoadTest
+
+/**
+ * @brief This test will verify that the Stage attributes' managers' JSON
+ * loading process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_StageJSONLoadTest";
+
+  // build JSON sample config
+  const std::string& jsonString =
+      R"({
+        "scale":[2,3,4],
+        "margin": 0.9,
+        "friction_coefficient": 0.321,
+        "restitution_coefficient": 0.456,
+        "requires_lighting": false,
+        "units_to_meters": 1.1,
+        "up":[2.1,0,0],
+        "front":[0,2.1,0],
+        "render_asset": "testJSONRenderAsset.glb",
+        "collision_asset": "testJSONCollisionAsset.glb",
+        "gravity": [9,8,7],
+        "origin":[1,2,3],
+        "semantic_asset":"testJSONSemanticAsset.glb",
+        "nav_asset":"testJSONNavMeshAsset.glb",
+        "house_filename":"testJSONHouseFileName.glb"
+      })";
 
   auto stageAttr =
       testBuildAttributesFromJSONString<AttrMgrs::StageAttributesManager,
                                         Attrs::StageAttributes>(
-          stageAttributesManager_);
+          stageAttributesManager_, jsonString);
   // verify exists
   ASSERT_NE(nullptr, stageAttr);
   // match values set in test JSON
@@ -406,11 +607,38 @@ TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {
   ASSERT_EQ(stageAttr->getSemanticAssetHandle(), "testJSONSemanticAsset.glb");
   ASSERT_EQ(stageAttr->getNavmeshAssetHandle(), "testJSONNavMeshAsset.glb");
   ASSERT_EQ(stageAttr->getHouseFilename(), "testJSONHouseFileName.glb");
+}  // AttributesManagers_StageJSONLoadTest
 
+/**
+ * @brief This test will verify that the Object attributes' managers' JSON
+ * loading process is working as expected.
+ */
+TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_ObjectJSONLoadTest";
+  // build JSON sample config
+  const std::string& jsonString =
+      R"({
+        "scale":[2,3,4],
+        "margin": 0.9,
+        "friction_coefficient": 0.321,
+        "restitution_coefficient": 0.456,
+        "requires_lighting": false,
+        "units_to_meters": 1.1,
+        "up":[2.1,0,0],
+        "front":[0,2.1,0],
+        "render_asset": "testJSONRenderAsset.glb",
+        "collision_asset": "testJSONCollisionAsset.glb",
+        "mass": 9,
+        "use_bounding_box_for_collision": true,
+        "join_collision_meshes":true,
+        "inertia": [1.1, 0.9, 0.3],
+        "COM": [0.1,0.2,0.3]
+      })";
   auto objAttr =
       testBuildAttributesFromJSONString<AttrMgrs::ObjectAttributesManager,
                                         Attrs::ObjectAttributes>(
-          objectAttributesManager_);
+          objectAttributesManager_, jsonString);
   // verify exists
   ASSERT_NE(nullptr, objAttr);
   // match values set in test JSON
@@ -432,25 +660,20 @@ TEST_F(AttributesManagersTest, AttributesManagers_JSONLoadTest) {
   ASSERT_EQ(objAttr->getInertia(), Magnum::Vector3(1.1, 0.9, 0.3));
   ASSERT_EQ(objAttr->getCOM(), Magnum::Vector3(0.1, 0.2, 0.3));
 
-}  // AttributesManagersTest::AttributesManagers_JSONLoadTest
+}  // AttributesManagersTest::AttributesManagers_ObjectJSONLoadTest
 
 /**
  * @brief This test will test creating, modifying, registering and deleting
- * Attributes via Attributes Mangers for all existing attributes
- * (PhysicsManagerAttributes, StageAttributes, ObjectAttributes, etc). These
+ * Attributes via Attributes Mangers for PhysicsManagerAttributes. These
  * tests should be consistent with most types of future attributes managers
  * specializing the AttributesManager class template that follow the same
  * expected behavior paths as extent attributes/attributesManagers.  Note :
  * PrimitiveAssetAttributes exhibit slightly different behavior and need their
  * own tests.
  */
-TEST_F(AttributesManagersTest, AttributesManagersCreate) {
-  LOG(INFO) << "Starting AttributesManagersTest::AttributesManagersCreate";
-  std::string stageConfigFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/scenes/simple_room.glb");
-
-  std::string objectConfigFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/chair.phys_properties.json");
+TEST_F(AttributesManagersTest, PhysicsAttributesManagersCreate) {
+  LOG(INFO)
+      << "Starting AttributesManagersTest::PhysicsAttributesManagersCreate";
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "PhysicsAttributesManager @ "
@@ -460,7 +683,21 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   testCreateAndRemove<AttrMgrs::PhysicsAttributesManager>(
       physicsAttributesManager_, physicsConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::PhysicsAttributesManager>(
-      physicsAttributesManager_, stageConfigFile, false);
+      physicsAttributesManager_, physicsConfigFile, false);
+}  // AttributesManagersTest::PhysicsAttributesManagersCreate
+
+/**
+ * @brief This test will test creating, modifying, registering and deleting
+ * Attributes via Attributes Mangers for StageAttributes.  These
+ * tests should be consistent with most types of future attributes managers
+ * specializing the AttributesManager class template that follow the same
+ * expected behavior paths as extent attributes/attributesManagers.  Note :
+ * PrimitiveAssetAttributes exhibit slightly different behavior and need their
+ * own tests.
+ */
+TEST_F(AttributesManagersTest, StageAttributesManagersCreate) {
+  std::string stageConfigFile = Cr::Utility::Directory::join(
+      DATA_DIR, "test_assets/scenes/simple_room.glb");
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "StageAttributesManager @ "
@@ -471,6 +708,21 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
                                                         stageConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::StageAttributesManager>(
       stageAttributesManager_, stageConfigFile, true);
+
+}  // AttributesManagersTest::StageAttributesManagersCreate
+
+/**
+ * @brief This test will test creating, modifying, registering and deleting
+ * Attributes via Attributes Mangers for ObjectAttributes.  These
+ * tests should be consistent with most types of future attributes managers
+ * specializing the AttributesManager class template that follow the same
+ * expected behavior paths as extent attributes/attributesManagers.  Note :
+ * PrimitiveAssetAttributes exhibit slightly different behavior and need their
+ * own tests.
+ */
+TEST_F(AttributesManagersTest, ObjectAttributesManagersCreate) {
+  std::string objectConfigFile = Cr::Utility::Directory::join(
+      DATA_DIR, "test_assets/objects/chair.object_config.json");
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "ObjectAttributesManager @ "
@@ -506,7 +758,22 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   int newNumPrimBased3 = objectAttributesManager_->getNumSynthTemplateObjects();
   ASSERT_EQ(origNumFileBased, newNumFileBased3);
   ASSERT_EQ(origNumPrimBased, newNumPrimBased3);
-}  // AttributesManagersTest::AttributesManagersCreate test
+}  // AttributesManagersTest::ObjectAttributesManagersCreate test
+
+TEST_F(AttributesManagersTest, LightLayoutAttributesManagerTest) {
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::LightLayoutAttributesManagerTest";
+
+  std::string lightConfigFile = Cr::Utility::Directory::join(
+      DATA_DIR, "test_assets/lights/test_lights.lighting_config.json");
+
+  LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
+               "LightLayoutAttributesManager @ "
+            << lightConfigFile;
+  // light attributes manager attributes verifcation
+  testCreateAndRemoveLights(lightLayoutAttributesManager_, lightConfigFile);
+
+}  // AttributesManagersTest::LightLayoutAttributesManagerTest
 
 /**
  * @brief test primitive asset attributes functionality in attirbutes managers.

@@ -50,7 +50,9 @@ class SceneNodeControl(abc.ABC):
     body_action: bool = False
 
     @abc.abstractmethod
-    def __call__(self, scene_node: hsim.SceneNode, acutation_spec: ActuationSpec):
+    def __call__(
+        self, scene_node: hsim.SceneNode, acutation_spec: ActuationSpec
+    ) -> None:
         r"""Abstract method to be overridden to implement the control
 
         :param scene_node: The scene node to control

@@ -57,7 +57,7 @@ bool BulletArticulatedObject::initializeFromURDF(
   BulletURDFImporter& u2b = *(static_cast<BulletURDFImporter*>(&urdfImporter));
   u2b.setFixedBase(fixedBase);
 
-  const io::UrdfModel& urdfModel = u2b.getModel();
+  const io::URDF::Model& urdfModel = u2b.getModel();
 
   // TODO: are these needed? Not used in examples.
   int flags = 0;
@@ -71,7 +71,7 @@ bool BulletArticulatedObject::initializeFromURDF(
   u2b.InitURDF2BulletCache(cache, flags);
 
   int urdfLinkIndex = u2b.getRootLinkIndex();
-  int rootIndex = u2b.getRootLinkIndex();
+  // int rootIndex = u2b.getRootLinkIndex();
 
   // NOTE: recursive path only
   u2b.ConvertURDF2BulletInternal(cache, urdfLinkIndex,
@@ -175,8 +175,9 @@ void BulletArticulatedObject::updateNodes() {
 
 bool BulletArticulatedObject::attachGeometry(
     scene::SceneNode& node,
-    std::shared_ptr<io::UrdfLink> link,
-    const std::map<std::string, std::shared_ptr<io::UrdfMaterial> >& materials,
+    std::shared_ptr<io::URDF::Link> link,
+    const std::map<std::string, std::shared_ptr<io::URDF::Material> >&
+        materials,
     assets::ResourceManager& resourceManager,
     gfx::DrawableGroup* drawables) {
   bool geomSuccess = false;
@@ -189,30 +190,30 @@ bool BulletArticulatedObject::attachGeometry(
         visual.m_linkLocalFrame);
 
     switch (visual.m_geometry.m_type) {
-      case io::URDF_GEOM_CAPSULE:
+      case io::URDF::GEOM_CAPSULE:
         Corrade::Utility::Debug() << "Trying to add visual capsule";
         // TODO:
         break;
-      case io::URDF_GEOM_CYLINDER:
+      case io::URDF::GEOM_CYLINDER:
         Corrade::Utility::Debug() << "Trying to add visual cylinder";
         // TODO:
         break;
-      case io::URDF_GEOM_BOX:
+      case io::URDF::GEOM_BOX:
         Corrade::Utility::Debug() << "Trying to add visual box";
         // TODO:
         break;
-      case io::URDF_GEOM_SPHERE:
+      case io::URDF::GEOM_SPHERE:
         Corrade::Utility::Debug() << "Trying to add visual sphere";
         // TODO:
         break;
-      case io::URDF_GEOM_MESH: {
+      case io::URDF::GEOM_MESH: {
         Corrade::Utility::Debug() << "visual.m_geometry.m_meshFileName = "
                                   << visual.m_geometry.m_meshFileName;
         // visual.m_sourceFileLocation
         visualGeomComponent.scale(visual.m_geometry.m_meshScale);
 
         // first try to import the asset
-        std::shared_ptr<io::UrdfMaterial> material = nullptr;
+        std::shared_ptr<io::URDF::Material> material = nullptr;
         if (materials.count(visual.m_materialName)) {
           material = materials.at(visual.m_materialName);
         }
@@ -227,9 +228,13 @@ bool BulletArticulatedObject::attachGeometry(
         geomSuccess = resourceManager.attachAsset(
             visual.m_geometry.m_meshFileName, visualGeomComponent, drawables);
       } break;
-      case io::URDF_GEOM_PLANE:
+      case io::URDF::GEOM_PLANE:
         Corrade::Utility::Debug() << "Trying to add visual plane";
         // TODO:
+        break;
+      default:
+        Corrade::Utility::Debug() << "BulletArticulatedObject::attachGeometry "
+                                     ": Unsupported visual type.";
         break;
     }
   }
@@ -248,7 +253,7 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
 }
 
 void BulletArticulatedObject::setForces(std::vector<float> forces) {
-  if (forces.size() != btMultiBody_->getNumDofs()) {
+  if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
         << "setForces - Force vector size mis-match (input: " << forces.size()
         << ", expected: " << btMultiBody_->getNumDofs() << "), aborting.";
@@ -278,7 +283,7 @@ std::vector<float> BulletArticulatedObject::getForces() {
 }
 
 void BulletArticulatedObject::setVelocities(std::vector<float> vels) {
-  if (vels.size() != btMultiBody_->getNumDofs()) {
+  if (vels.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
         << "setVelocities - Velocity vector size mis-match (input: "
         << vels.size() << ", expected: " << btMultiBody_->getNumDofs()
@@ -308,7 +313,7 @@ std::vector<float> BulletArticulatedObject::getVelocities() {
 }
 
 void BulletArticulatedObject::setPositions(std::vector<float> positions) {
-  if (positions.size() != btMultiBody_->getNumDofs()) {
+  if (positions.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
         << "setPositions - Position vector size mis-match (input: "
         << positions.size() << ", expected: " << btMultiBody_->getNumDofs()

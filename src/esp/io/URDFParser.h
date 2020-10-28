@@ -9,9 +9,9 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 namespace tinyxml2 {
 class XMLElement;
@@ -24,44 +24,46 @@ class XMLElement;
 namespace esp {
 namespace io {
 
-struct UrdfMaterialColor {
+namespace URDF {
+
+struct MaterialColor {
   Magnum::Color4 m_rgbaColor;
   Magnum::Color3 m_specularColor;
-  UrdfMaterialColor()
+  MaterialColor()
       : m_rgbaColor(0.8, 0.8, 0.8, 1), m_specularColor(0.4, 0.4, 0.4) {}
 };
 
-struct UrdfMaterial {
+struct Material {
   std::string m_name;
   std::string m_textureFilename;
-  UrdfMaterialColor m_matColor;
+  MaterialColor m_matColor;
 
-  UrdfMaterial() {}
+  Material() {}
 };
 
-enum UrdfJointTypes {
-  URDFRevoluteJoint = 1,
-  URDFPrismaticJoint,
-  URDFContinuousJoint,
-  URDFFloatingJoint,
-  URDFPlanarJoint,
-  URDFFixedJoint,
-  URDFSphericalJoint,
+enum JointTypes {
+  RevoluteJoint = 1,
+  PrismaticJoint,
+  ContinuousJoint,
+  FloatingJoint,
+  PlanarJoint,
+  FixedJoint,
+  SphericalJoint,
 
 };
 
-enum UrdfGeomTypes {
-  URDF_GEOM_SPHERE = 2,
-  URDF_GEOM_BOX,
-  URDF_GEOM_CYLINDER,
-  URDF_GEOM_MESH,
-  URDF_GEOM_PLANE,
-  URDF_GEOM_CAPSULE,  // non-standard URDF
-  URDF_GEOM_UNKNOWN,
+enum GeomTypes {
+  GEOM_SPHERE = 2,
+  GEOM_BOX,
+  GEOM_CYLINDER,
+  GEOM_MESH,
+  GEOM_PLANE,
+  GEOM_CAPSULE,  // non-standard URDF
+  GEOM_UNKNOWN,
 };
 
-struct UrdfGeometry {
-  UrdfGeomTypes m_type;
+struct Geometry {
+  GeomTypes m_type;
 
   double m_sphereRadius;
 
@@ -77,11 +79,11 @@ struct UrdfGeometry {
   std::string m_meshFileName;
   Magnum::Vector3 m_meshScale;
 
-  std::shared_ptr<UrdfMaterial> m_localMaterial;
+  std::shared_ptr<Material> m_localMaterial;
   bool m_hasLocalMaterial;
 
-  UrdfGeometry()
-      : m_type(URDF_GEOM_UNKNOWN),
+  Geometry()
+      : m_type(GEOM_UNKNOWN),
         m_sphereRadius(1),
         m_boxSize(1, 1, 1),
         m_capsuleRadius(1),
@@ -94,48 +96,48 @@ struct UrdfGeometry {
         m_hasLocalMaterial(false) {}
 };
 
-struct UrdfShape {
+struct Shape {
   std::string m_sourceFileLocation;
   Magnum::Matrix4 m_linkLocalFrame;
-  UrdfGeometry m_geometry;
+  Geometry m_geometry;
   std::string m_name;
 };
 
-struct UrdfVisual : UrdfShape {
+struct VisualShape : Shape {
   std::string m_materialName;
 };
 
 // TODO: need this?
-enum UrdfCollisionFlags {
-  URDF_FORCE_CONCAVE_TRIMESH = 1,
-  URDF_HAS_COLLISION_GROUP = 2,
-  URDF_HAS_COLLISION_MASK = 4,
+enum CollisionFlags {
+  FORCE_CONCAVE_TRIMESH = 1,
+  HAS_COLLISION_GROUP = 2,
+  HAS_COLLISION_MASK = 4,
 };
 
-struct UrdfCollision : UrdfShape {
+struct CollisionShape : Shape {
   int m_flags;
   int m_collisionGroup;
   int m_collisionMask;
-  UrdfCollision() : m_flags(0) {}
+  CollisionShape() : m_flags(0) {}
 };
 
-struct UrdfInertia {
+struct Inertia {
   Magnum::Matrix4 m_linkLocalFrame;
   bool m_hasLinkLocalFrame;
 
   double m_mass;
   double m_ixx, m_ixy, m_ixz, m_iyy, m_iyz, m_izz;
 
-  UrdfInertia() {
+  Inertia() {
     m_hasLinkLocalFrame = false;
     m_mass = 0.f;
     m_ixx = m_ixy = m_ixz = m_iyy = m_iyz = m_izz = 0.f;
   }
 };
 
-struct UrdfJoint {
+struct Joint {
   std::string m_name;
-  UrdfJointTypes m_type;
+  JointTypes m_type;
   Magnum::Matrix4 m_parentLinkToJointTransform;
   std::string m_parentLinkName;
   std::string m_childLinkName;
@@ -149,7 +151,7 @@ struct UrdfJoint {
 
   double m_jointDamping;
   double m_jointFriction;
-  UrdfJoint()
+  Joint()
       : m_lowerLimit(0),
         m_upperLimit(-1),
         m_effortLimit(0),
@@ -159,19 +161,19 @@ struct UrdfJoint {
 };
 
 // TODO: need this?
-enum URDF_LinkContactFlags {
-  URDF_CONTACT_HAS_LATERAL_FRICTION = 1,
-  URDF_CONTACT_HAS_INERTIA_SCALING = 2,
-  URDF_CONTACT_HAS_CONTACT_CFM = 4,
-  URDF_CONTACT_HAS_CONTACT_ERP = 8,
-  URDF_CONTACT_HAS_STIFFNESS_DAMPING = 16,
-  URDF_CONTACT_HAS_ROLLING_FRICTION = 32,
-  URDF_CONTACT_HAS_SPINNING_FRICTION = 64,
-  URDF_CONTACT_HAS_RESTITUTION = 128,
-  URDF_CONTACT_HAS_FRICTION_ANCHOR = 256,
+enum LinkContactFlags {
+  CONTACT_HAS_LATERAL_FRICTION = 1,
+  CONTACT_HAS_INERTIA_SCALING = 2,
+  CONTACT_HAS_CONTACT_CFM = 4,
+  CONTACT_HAS_CONTACT_ERP = 8,
+  CONTACT_HAS_STIFFNESS_DAMPING = 16,
+  CONTACT_HAS_ROLLING_FRICTION = 32,
+  CONTACT_HAS_SPINNING_FRICTION = 64,
+  CONTACT_HAS_RESTITUTION = 128,
+  CONTACT_HAS_FRICTION_ANCHOR = 256,
 };
 
-struct URDFLinkContactInfo {
+struct LinkContactInfo {
   float m_lateralFriction;
   float m_rollingFriction;
   float m_spinningFriction;
@@ -184,7 +186,7 @@ struct URDFLinkContactInfo {
 
   int m_flags;
 
-  URDFLinkContactInfo()
+  LinkContactInfo()
       : m_lateralFriction(0.5),
         m_rollingFriction(0),
         m_spinningFriction(0),
@@ -194,59 +196,59 @@ struct URDFLinkContactInfo {
         m_contactErp(0),
         m_contactStiffness(1e4),
         m_contactDamping(1) {
-    m_flags = URDF_CONTACT_HAS_LATERAL_FRICTION;
+    m_flags = CONTACT_HAS_LATERAL_FRICTION;
   }
 };
 
-struct UrdfLink {
+struct Link {
   std::string m_name;
-  UrdfInertia m_inertia;
+  Inertia m_inertia;
   Magnum::Matrix4 m_linkTransformInWorld;
-  std::vector<UrdfVisual> m_visualArray;
-  std::vector<UrdfCollision> m_collisionArray;
-  std::shared_ptr<UrdfLink> m_parentLink;
-  std::shared_ptr<UrdfJoint> m_parentJoint;
+  std::vector<VisualShape> m_visualArray;
+  std::vector<CollisionShape> m_collisionArray;
+  std::shared_ptr<Link> m_parentLink;
+  std::shared_ptr<Joint> m_parentJoint;
 
-  std::vector<std::shared_ptr<UrdfJoint>> m_childJoints;
-  std::vector<std::shared_ptr<UrdfLink>> m_childLinks;
+  std::vector<std::shared_ptr<Joint>> m_childJoints;
+  std::vector<std::shared_ptr<Link>> m_childLinks;
 
   int m_linkIndex;
 
-  URDFLinkContactInfo m_contactInfo;
+  LinkContactInfo m_contactInfo;
 
-  UrdfLink() : m_parentLink(0), m_parentJoint(0), m_linkIndex(-2) {}
+  Link() : m_parentLink(0), m_parentJoint(0), m_linkIndex(-2) {}
 };
 
-struct UrdfModel {
+struct Model {
   std::string m_name;
   std::string m_sourceFile;
   Magnum::Matrix4 m_rootTransformInWorld(Magnum::Math::IdentityInitT);
 
   //! map of names to materials
-  std::map<std::string, std::shared_ptr<UrdfMaterial>> m_materials;
+  std::map<std::string, std::shared_ptr<Material>> m_materials;
 
   //! map of names to links
-  std::map<std::string, std::shared_ptr<UrdfLink>> m_links;
+  std::map<std::string, std::shared_ptr<Link>> m_links;
 
   //! map of link indices to names
   std::map<int, std::string> m_linkIndicesToNames;
 
   //! map of names to joints
-  std::map<std::string, std::shared_ptr<UrdfJoint>> m_joints;
+  std::map<std::string, std::shared_ptr<Joint>> m_joints;
 
   //! list of root links (usually 1)
-  std::vector<std::shared_ptr<UrdfLink>> m_rootLinks;
+  std::vector<std::shared_ptr<Link>> m_rootLinks;
   bool m_overrideFixedBase;
 
   void printKinematicChain() const;
 
-  std::shared_ptr<UrdfLink> getLink(std::string linkName) const {
+  std::shared_ptr<Link> getLink(std::string linkName) const {
     if (m_links.count(linkName)) {
       return m_links.at(linkName);
     }
     return nullptr;
   }
-  std::shared_ptr<UrdfLink> getLink(int linkIndex) const {
+  std::shared_ptr<Link> getLink(int linkIndex) const {
     if (m_linkIndicesToNames.count(linkIndex)) {
       return getLink(m_linkIndicesToNames.at(linkIndex));
     }
@@ -254,19 +256,19 @@ struct UrdfModel {
   }
 
   //! get the parent joint of a link
-  std::shared_ptr<UrdfJoint> getJoint(int linkIndex) const {
+  std::shared_ptr<Joint> getJoint(int linkIndex) const {
     if (m_linkIndicesToNames.count(linkIndex)) {
       return getLink(m_linkIndicesToNames.at(linkIndex))->m_parentJoint;
     }
     return nullptr;
   }
 
-  UrdfModel() : m_overrideFixedBase(false) {}
+  Model() : m_overrideFixedBase(false) {}
 };
 
-class URDFParser {
+class Parser {
   // datastructures
-  UrdfModel m_urdfModel;
+  Model m_urdfModel;
   float m_urdfScaling = 1.0;
 
   // URDF file path of last load call
@@ -274,29 +276,27 @@ class URDFParser {
 
   // parser functions
   bool parseTransform(Magnum::Matrix4& tr, tinyxml2::XMLElement* xml);
-  bool parseInertia(UrdfInertia& inertia, tinyxml2::XMLElement* config);
-  bool parseGeometry(UrdfGeometry& geom, tinyxml2::XMLElement* g);
-  bool parseVisual(UrdfModel& model,
-                   UrdfVisual& visual,
+  bool parseInertia(Inertia& inertia, tinyxml2::XMLElement* config);
+  bool parseGeometry(Geometry& geom, tinyxml2::XMLElement* g);
+  bool parseVisual(Model& model,
+                   VisualShape& visual,
                    tinyxml2::XMLElement* config);
-  bool parseCollision(UrdfCollision& collision, tinyxml2::XMLElement* config);
-  bool initTreeAndRoot(UrdfModel& model);
-  bool parseMaterial(UrdfMaterial& material, tinyxml2::XMLElement* config);
-  bool parseJointLimits(UrdfJoint& joint, tinyxml2::XMLElement* config);
-  bool parseJointDynamics(UrdfJoint& joint, tinyxml2::XMLElement* config);
-  bool parseJoint(UrdfJoint& joint, tinyxml2::XMLElement* config);
-  bool parseLink(UrdfModel& model,
-                 UrdfLink& link,
-                 tinyxml2::XMLElement* config);
-  bool parseSensor(UrdfModel& model,
-                   UrdfLink& link,
-                   UrdfJoint& joint,
+  bool parseCollision(CollisionShape& collision, tinyxml2::XMLElement* config);
+  bool initTreeAndRoot(Model& model);
+  bool parseMaterial(Material& material, tinyxml2::XMLElement* config);
+  bool parseJointLimits(Joint& joint, tinyxml2::XMLElement* config);
+  bool parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config);
+  bool parseJoint(Joint& joint, tinyxml2::XMLElement* config);
+  bool parseLink(Model& model, Link& link, tinyxml2::XMLElement* config);
+  bool parseSensor(Model& model,
+                   Link& link,
+                   Joint& joint,
                    tinyxml2::XMLElement* config);
 
   bool validateMeshFile(std::string& filename);
 
  public:
-  URDFParser(){};
+  Parser(){};
 
   // parse a loaded URDF string into relevant general data structures
   // return false if the string is not a valid urdf or other error causes abort
@@ -305,10 +305,11 @@ class URDFParser {
   void setGlobalScaling(float scaling) { m_urdfScaling = scaling; }
   float getGlobalScaling() { return m_urdfScaling; }
 
-  const UrdfModel& getModel() const { return m_urdfModel; }
+  const Model& getModel() const { return m_urdfModel; }
 
-  UrdfModel& getModel() { return m_urdfModel; }
+  Model& getModel() { return m_urdfModel; }
 };
 
+}  // namespace URDF
 }  // namespace io
 }  // namespace esp

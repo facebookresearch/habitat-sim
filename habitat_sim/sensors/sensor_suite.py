@@ -6,5 +6,5 @@ class SensorSuite(dict):
     to lookup the name of a sensor as the key
     """
 
-    def add(self, sensor: hsim.Sensor):
+    def add(self, sensor: hsim.Sensor) -> None:
         self[sensor.specification().uuid] = sensor

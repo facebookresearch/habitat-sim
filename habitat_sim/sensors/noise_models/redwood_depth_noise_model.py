@@ -5,20 +5,26 @@
 # LICENSE file in the root directory of this source tree.
 
 from os import path as osp
+from typing import Union
 
 import attr
 import numba
 import numpy as np
+from numpy import ndarray
 
+try:
+    import torch
+    from torch import Tensor
+except ImportError:
+    torch = None
+
+from habitat_sim._ext.habitat_sim_bindings import SensorType
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.registry import registry
-from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 if cuda_enabled:
     from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelGPUImpl
-
-torch = None
 
 
 # Read about the noise model here: http://www.alexteichman.com/octo/clams/
@@ -108,7 +114,7 @@ class RedwoodNoiseModelCPUImpl:
 class RedwoodDepthNoiseModel(SensorNoiseModel):
     noise_multiplier: float = 1.0
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         dist = np.load(
             osp.join(osp.dirname(__file__), "data", "redwood-depth-dist-model.npy")
         )
@@ -124,23 +130,20 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return sensor_type == SensorType.DEPTH
 
-    def simulate(self, gt_depth):
-        global torch
+    def simulate(self, gt_depth: Union[ndarray, "Tensor"]) -> Union[ndarray, "Tensor"]:
         if cuda_enabled:
             if isinstance(gt_depth, np.ndarray):
                 return self._impl.simulate_from_cpu(gt_depth)
             else:
-                if torch is None:
-                    import torch
                 noisy_depth = torch.empty_like(gt_depth)
                 rows, cols = gt_depth.size()
                 self._impl.simulate_from_gpu(
-                    gt_depth.data_ptr(), rows, cols, noisy_depth.data_ptr()
+                    gt_depth.data_ptr(), rows, cols, noisy_depth.data_ptr()  # type: ignore
                 )
                 return noisy_depth
         else:
             return self._impl.simulate(gt_depth)
 
-    def apply(self, gt_depth):
+    def apply(self, gt_depth: Union[ndarray, "Tensor"]) -> Union[ndarray, "Tensor"]:
         r"""Alias of `simulate()` to conform to base-class and expected API"""
         return self.simulate(gt_depth)

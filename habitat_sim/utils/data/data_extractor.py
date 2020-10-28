@@ -1,27 +1,28 @@
-from typing import List, Union
+from typing import Callable, List, Union
 
 import numpy as np
 
 import habitat_sim
 from habitat_sim import bindings as hsim
 from habitat_sim import registry as registry
-from habitat_sim.agent import AgentState
+from habitat_sim.agent.agent import AgentConfiguration, AgentState
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
-from habitat_sim.utils.data.pose_extractor import PoseExtractor
+from habitat_sim.utils.data.pose_extractor import PoseExtractor, TopdownView
 
 
-def get_pose_extractor(name: str) -> PoseExtractor:
-    r"""Fetches the correct pose_extractor using the given name and keyword arguments
+def make_pose_extractor(name: str) -> Callable[..., PoseExtractor]:
+    r"""Constructs a pose_extractor using the given name and keyword arguments
 
     :param name: The name of the pose_extractor in the `habitat_sim.registry`
+    :param kwargs: The keyword arguments to be passed to the constructor of the pose extractor
     """
 
-    extractor = registry.get_pose_extractor(name)
-    assert (
-        extractor is not None
-    ), "Could not find a pose extractor for name '{}'".format(name)
+    model = registry.get_pose_extractor(name)
+    assert model is not None, "Could not find a pose extractor for name '{}'".format(
+        name
+    )
 
-    return extractor
+    return model
 
 
 class ImageExtractor:
@@ -78,7 +79,7 @@ class ImageExtractor:
 
         self.scene_filepaths = None
         self.cur_fp = None
-        if type(scene_filepath) == list:
+        if isinstance(scene_filepath, list):
             self.scene_filepaths = scene_filepath
         else:
             self.scene_filepaths = [scene_filepath]
@@ -113,8 +114,8 @@ class ImageExtractor:
             ]
 
         args = (self.tdv_fp_ref_triples, self.meters_per_pixel)
-        self.pose_extractor = get_pose_extractor(pose_extractor_name)(*args)
-        self.poses = self.pose_extractor.extract_all_poses(labels=self.labels)
+        self.pose_extractor = make_pose_extractor(pose_extractor_name)(*args)
+        self.poses = self.pose_extractor.extract_all_poses()
 
         if shuffle:
             np.random.shuffle(self.poses)
@@ -164,7 +165,7 @@ class ImageExtractor:
                 return self.cache[cache_entry]
 
         poses = self.mode_to_data[mymode]
-        pos, rot, label, fp = poses[idx]
+        pos, rot, fp = poses[idx]
 
         # Only switch scene if it is different from the last one accessed
         if fp != self.cur_fp:
@@ -180,7 +181,7 @@ class ImageExtractor:
             out_name: obs[self.out_name_to_sensor_name[out_name]]
             for out_name in self.output
         }
-        sample["label"] = label
+
         if self.use_caching:
             self.cache.add(cache_entry, sample)
 
@@ -301,14 +302,7 @@ class ImageExtractor:
                 sensor_specs.append(sensor_spec)
 
         # create agent specifications
-        agent_cfg = habitat_sim.agent.AgentConfiguration()
+        agent_cfg = AgentConfiguration()
         agent_cfg.sensor_specifications = sensor_specs
 
         return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-
-class TopdownView(object):
-    def __init__(self, sim, height, meters_per_pixel=0.1):
-        self.topdown_view = sim.pathfinder.get_topdown_view(
-            meters_per_pixel, height
-        ).astype(np.float64)

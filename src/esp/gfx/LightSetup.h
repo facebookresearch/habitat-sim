@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_LIGHTSETUP_H_
+#define ESP_GFX_LIGHTSETUP_H_
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Color.h>
@@ -25,8 +26,12 @@ enum class LightPositionModel {
 
 /** @brief Contains a single light's information. */
 struct LightInfo {
-  Magnum::Vector3 position;
-  Magnum::Color4 color{1};
+  // Vector4 homogeneous-coordinate position
+  // Use a Vector3 position and w == 1 to specify a point light with distance
+  // attenuation. Or, use a Vector3 direction and w == 0 to specify a
+  // directional light with no distance attenuation.
+  Magnum::Vector4 vector;
+  Magnum::Color3 color{1};
   LightPositionModel model = LightPositionModel::GLOBAL;
 };
 
@@ -38,13 +43,14 @@ using LightSetup = std::vector<LightInfo>;
 
 /**
  * @brief Get position relative to a camera for a @ref LightInfo and a
- * rendered object
+ * rendered object. light.position and the return value are Vector4, with
+ * w == 1 for positions and w == 0 for directions
  *
  * @param transformationMatrix Describes object position relative to camera
  * @param cameraMatrix Describes world position relative to camera
- * @return Magnum::Vector3 Light position relative to camera
+ * @return Magnum::Vector4 Light position relative to camera
  */
-Magnum::Vector3 getLightPositionRelativeToCamera(
+Magnum::Vector4 getLightPositionRelativeToCamera(
     const LightInfo& light,
     const Magnum::Matrix4& transformationMatrix,
     const Magnum::Matrix4& cameraMatrix);
@@ -54,7 +60,21 @@ Magnum::Vector3 getLightPositionRelativeToCamera(
  */
 LightSetup getLightsAtBoxCorners(
     const Magnum::Range3D& box,
-    const Magnum::Color4& lightColor = Magnum::Color4{0.4f});
+    const Magnum::Color3& lightColor = Magnum::Color3{10.0f});
+
+/**
+ * @brief Get a @ref LightSetup with some directional lights approximating
+ * daylight
+ */
+LightSetup getDefaultLights();
+
+/**
+ * @brief Get get a single, combined ambient light color for use with the Phong
+ * lighting model.
+ */
+Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup);
 
 }  // namespace gfx
 }  // namespace esp
+
+#endif  // ESP_GFX_LIGHTSETUP_H_

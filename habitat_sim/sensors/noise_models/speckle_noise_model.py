@@ -6,13 +6,16 @@
 
 import attr
 import numpy as np
+from numpy import ndarray
 
 from habitat_sim.registry import registry
 from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 
-def _simulate(image, intensity_constant, mean, sigma):
+def _simulate(
+    image: ndarray, intensity_constant: float, mean: int, sigma: int
+) -> ndarray:
     image = image / 255.0
 
     noise = np.random.normal(mean, sigma, image.shape)
@@ -29,7 +32,7 @@ class SpeckleNoiseModelCPUImpl:
     mean: int
     sigma: int
 
-    def simulate(self, image):
+    def simulate(self, image: ndarray) -> ndarray:
         return _simulate(image, self.intensity_constant, self.mean, self.sigma)
 
 
@@ -40,7 +43,7 @@ class SpeckleNoiseModel(SensorNoiseModel):
     mean: int = 0
     sigma: int = 1
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         self._impl = SpeckleNoiseModelCPUImpl(
             self.intensity_constant, self.mean, self.sigma
         )
@@ -49,9 +52,9 @@ class SpeckleNoiseModel(SensorNoiseModel):
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return sensor_type == SensorType.COLOR
 
-    def simulate(self, image):
+    def simulate(self, image: ndarray) -> ndarray:
         return self._impl.simulate(image)
 
-    def apply(self, image):
+    def apply(self, image: ndarray) -> ndarray:
         r"""Alias of `simulate()` to conform to base-class and expected API"""
         return self.simulate(image)

@@ -2,6 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#ifndef ESP_SCENE_SUNCGOBJECTCATEGORYMAP_H_
+#define ESP_SCENE_SUNCGOBJECTCATEGORYMAP_H_
+
 #include <map>
 #include <string>
 #include <utility>
@@ -2651,3 +2654,5 @@ static const std::map<std::string, std::string> kSuncgObjectCategoryMap = {
 
 }  // namespace scene
 }  // namespace esp
+
+#endif  // ESP_SCENE_SUNCGOBJECTCATEGORYMAP_H_

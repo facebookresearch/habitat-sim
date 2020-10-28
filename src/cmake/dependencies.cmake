@@ -26,9 +26,9 @@ if(USE_SYSTEM_EIGEN)
   find_package(Eigen3 REQUIRED)
   include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 else()
-  include_directories(SYSTEM "${DEPS_DIR}/eigen-git-mirror")
-  set(EIGEN3_INCLUDE_DIR "${DEPS_DIR}/eigen-git-mirror")
-  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen-git-mirror/cmake")
+  include_directories(SYSTEM "${DEPS_DIR}/eigen")
+  set(EIGEN3_INCLUDE_DIR "${DEPS_DIR}/eigen")
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen/cmake")
 endif()
 
 if(NOT IMGUI_DIR)
@@ -37,6 +37,10 @@ endif()
 
 # sophus
 include_directories(SYSTEM "${DEPS_DIR}/Sophus")
+
+# tinyxml2
+include_directories("${DEPS_DIR}/tinyxml2")
+add_subdirectory("${DEPS_DIR}/tinyxml2")
 
 # glog. NOTE: emscripten does not support 32-bit targets, which glog requires.
 # Therefore we do not build glog and use a custom shim instead to emulate glog

@@ -2,7 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 //
-#pragma once
+
+#ifndef ESP_SENSOR_REDWOODNOISEMODEL_H_
+#define ESP_SENSOR_REDWOODNOISEMODEL_H_
 
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
@@ -85,3 +87,5 @@ struct RedwoodNoiseModelGPUImpl {
 
 }  // namespace sensor
 }  // namespace esp
+
+#endif  // ESP_SENSOR_REDWOODNOISEMODEL_H_

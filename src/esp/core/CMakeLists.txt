@@ -30,12 +30,16 @@ find_package(Corrade REQUIRED Utility)
 
 add_library(
   core STATIC
+  AbstractManagedObject.h
   Buffer.cpp
   Buffer.h
   Configuration.h
   esp.cpp
   esp.h
   logging.h
+  ManagedContainer.h
+  ManagedContainerBase.cpp
+  ManagedContainerBase.h
   random.h
   spimpl.h
   Utility.h

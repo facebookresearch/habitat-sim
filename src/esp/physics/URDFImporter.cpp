@@ -127,7 +127,7 @@ void URDFImporter::getMassAndInertia2(int linkIndex,
     auto link = urdfParser_.getModel().getLink(linkIndex);
     if (link != nullptr) {
       float linkMass;
-      if (link->m_parentJoint == 0 &&
+      if (link->m_parentJoint == nullptr &&
           urdfParser_.getModel().m_overrideFixedBase) {
         linkMass = 0.f;
       } else {
@@ -156,7 +156,7 @@ void URDFImporter::getMassAndInertia(int linkIndex,
   if (link != nullptr) {
     Mn::Matrix3 linkInertiaBasis;  // Identity
     float linkMass, principalInertiaX, principalInertiaY, principalInertiaZ;
-    if (link->m_parentJoint == 0 &&
+    if (link->m_parentJoint == nullptr &&
         urdfParser_.getModel().m_overrideFixedBase) {
       linkMass = 0.f;
       principalInertiaX = 0.f;
@@ -170,7 +170,6 @@ void URDFImporter::getMassAndInertia(int linkIndex,
         principalInertiaY = link->m_inertia.m_iyy;
         principalInertiaZ = link->m_inertia.m_izz;
       } else {
-        principalInertiaX = link->m_inertia.m_ixx;
         // by column vector
         Mn::Matrix3 inertiaTensor(
             Mn::Vector3(link->m_inertia.m_ixx, link->m_inertia.m_ixy,
@@ -180,11 +179,15 @@ void URDFImporter::getMassAndInertia(int linkIndex,
             Mn::Vector3(link->m_inertia.m_ixz, link->m_inertia.m_iyz,
                         link->m_inertia.m_izz));
 
+        // TODO: diagonalization of inertia matrix:
+        Mn::Debug{} << "WARNING: getMassAndInertia: intertia not diagonal. "
+                       "TODO: diagonalize?";
+        /*
         float threshold = 1.0e-6;
         int numIterations = 30;
-        // TODO: is this necessary?
-        // inertiaTensor.diagonalize(linkInertiaBasis, threshold,
-        // numIterations);
+        inertiaTensor.diagonalize(linkInertiaBasis, threshold,
+         numIterations);
+         */
         principalInertiaX = inertiaTensor[0][0];
         principalInertiaY = inertiaTensor[1][1];
         principalInertiaZ = inertiaTensor[2][2];
@@ -220,7 +223,7 @@ void URDFImporter::getMassAndInertia(int linkIndex,
 
 bool URDFImporter::getLinkContactInfo(
     int linkIndex,
-    io::URDFLinkContactInfo& contactInfo) const {
+    io::URDF::LinkContactInfo& contactInfo) const {
   auto link = urdfParser_.getModel().getLink(linkIndex);
   if (link == nullptr) {
     Corrade::Utility::Debug() << "E - No link with index = " << linkIndex;
@@ -231,7 +234,7 @@ bool URDFImporter::getLinkContactInfo(
   return true;
 }
 
-const io::UrdfModel& URDFImporter::getModel() const {
+const io::URDF::Model& URDFImporter::getModel() const {
   return urdfParser_.getModel();
 }
 

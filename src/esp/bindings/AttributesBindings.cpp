@@ -7,35 +7,46 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
-#include "esp/assets/attributes/AttributesBase.h"
-#include "esp/assets/attributes/ObjectAttributes.h"
-#include "esp/assets/attributes/PhysicsManagerAttributes.h"
-#include "esp/assets/attributes/PrimitiveAssetAttributes.h"
-#include "esp/assets/attributes/SceneAttributes.h"
+#include "esp/core/AbstractManagedObject.h"
+#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/LightLayoutAttributes.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/PhysicsManagerAttributes.h"
+#include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
+#include "esp/metadata/attributes/SceneAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
 
-namespace esp {
-namespace assets {
+namespace Attrs = esp::metadata::attributes;
+using Attrs::AbstractAttributes;
+using Attrs::AbstractObjectAttributes;
+using Attrs::AbstractPrimitiveAttributes;
+using Attrs::CapsulePrimitiveAttributes;
+using Attrs::ConePrimitiveAttributes;
+using Attrs::CubePrimitiveAttributes;
+using Attrs::CylinderPrimitiveAttributes;
+using Attrs::IcospherePrimitiveAttributes;
+using Attrs::LightInstanceAttributes;
+using Attrs::LightLayoutAttributes;
+using Attrs::ObjectAttributes;
+using Attrs::PhysicsManagerAttributes;
+using Attrs::StageAttributes;
+using Attrs::UVSpherePrimitiveAttributes;
+using esp::core::AbstractManagedObject;
 
-using attributes::AbstractAttributes;
-using attributes::AbstractObjectAttributes;
-using attributes::AbstractPrimitiveAttributes;
-using attributes::CapsulePrimitiveAttributes;
-using attributes::ConePrimitiveAttributes;
-using attributes::CubePrimitiveAttributes;
-using attributes::CylinderPrimitiveAttributes;
-using attributes::IcospherePrimitiveAttributes;
-using attributes::ObjectAttributes;
-using attributes::PhysicsManagerAttributes;
-using attributes::StageAttributes;
-using attributes::UVSpherePrimitiveAttributes;
+namespace esp {
+namespace metadata {
 
 void initAttributesBindings(py::module& m) {
+  // ==== AbstractManagedObject ====
+  py::class_<AbstractManagedObject, AbstractManagedObject::ptr>(
+      m, "AbstractManagedObject");
+
   // ==== AbstractAttributes ====
-  py::class_<AbstractAttributes, esp::core::Configuration,
-             AbstractAttributes::ptr>(m, "AbstractAttributes")
+  py::class_<AbstractAttributes, esp::core::AbstractManagedObject,
+             esp::core::Configuration, AbstractAttributes::ptr>(
+      m, "AbstractAttributes")
       .def(py::init(
           &AbstractAttributes::create<const std::string&, const std::string&>))
       .def_property("handle", &AbstractAttributes::getHandle,
@@ -60,6 +71,13 @@ void initAttributesBindings(py::module& m) {
           "scale", &AbstractObjectAttributes::getScale,
           &AbstractObjectAttributes::setScale,
           R"(Scale multiplier for constructions built from this template in x,y,z)")
+      .def_property(
+          "collision_asset_size",
+          &AbstractObjectAttributes::getCollisionAssetSize,
+          &AbstractObjectAttributes::setCollisionAssetSize,
+          R"(Size of collsion assets for constructions built from this template in
+          x,y,z.  Default is [1.0,1.0,1.0].  This is used to resize a collision asset
+          to match a render asset if necessary, such as when using a primitive.)")
       .def_property(
           "margin", &AbstractObjectAttributes::getMargin,
           &AbstractObjectAttributes::setMargin,
@@ -232,6 +250,42 @@ void initAttributesBindings(py::module& m) {
           &StageAttributes::setFrustrumCulling,
           R"(Whether frustrum culling should be enabled for constructions built by this template.)");
 
+  // ==== LightInstanceAttributes ====
+  py::class_<LightInstanceAttributes, AbstractAttributes,
+             LightInstanceAttributes::ptr>(m, "LightInstanceAttributes")
+      .def(py::init(&LightInstanceAttributes::create<>))
+      .def(py::init(&LightInstanceAttributes::create<const std::string&>))
+      .def_property(
+          "position", &LightInstanceAttributes::getPosition,
+          &LightInstanceAttributes::setPosition,
+          R"(The 3-vector representation of the desired position of the light in the scene.)")
+      .def_property(
+          "direction", &LightInstanceAttributes::getDirection,
+          &LightInstanceAttributes::setDirection,
+          R"(The 3-vector representation of the desired direction of the light in the scene.)")
+      .def_property(
+          "color", &LightInstanceAttributes::getColor,
+          &LightInstanceAttributes::setColor,
+          R"(The 3-vector representation of the desired color of the light.)")
+      .def_property("intensity", &LightInstanceAttributes::getIntensity,
+                    &LightInstanceAttributes::setIntensity,
+                    R"(The intensity to use for the light.)")
+      .def_property("type", &LightInstanceAttributes::getType,
+                    &LightInstanceAttributes::setType,
+                    R"(The type of the light.)")
+      .def_property(
+          "spot_inner_cone_angle", &LightInstanceAttributes::getInnerConeAngle,
+          &LightInstanceAttributes::setInnerConeAngle,
+          R"(The inner cone angle to use for the dispersion of spot lights.
+                    Ignored for other types of lights.)")
+      .def_property(
+          "spot_outer_cone_angle", &LightInstanceAttributes::getOuterConeAngle,
+          &LightInstanceAttributes::setOuterConeAngle,
+          R"(The outter cone angle to use for the dispersion of spot lights.
+                    Ignored for other types of lights.)");
+
+  // TODO : LightLayoutAttributes
+
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,
              PhysicsManagerAttributes::ptr>(m, "PhysicsManagerAttributes")
@@ -390,5 +444,5 @@ void initAttributesBindings(py::module& m) {
 
 }  // initAttributesBindings
 
-}  // namespace assets
+}  // namespace metadata
 }  // namespace esp

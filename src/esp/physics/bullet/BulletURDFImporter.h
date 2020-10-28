@@ -63,7 +63,7 @@ class BulletURDFImporter : public URDFImporter {
       : URDFImporter(resourceManager){};
 
   btCollisionShape* convertURDFToCollisionShape(
-      const struct io::UrdfCollision* collision);
+      const struct io::URDF::CollisionShape* collision);
 
   btCompoundShape* convertLinkCollisionShapes(
       int linkIndex,
@@ -91,6 +91,9 @@ class BulletURDFImporter : public URDFImporter {
       int flags,
       std::map<int, btCollisionShape*>& linkCollisionShapes);
 };
+
+void processContactParameters(const io::URDF::LinkContactInfo& contactInfo,
+                              btCollisionObject* col);
 
 }  // namespace physics
 }  // namespace esp

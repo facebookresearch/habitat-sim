@@ -1,11 +1,11 @@
-exclude: 'build|data/datasets|data/scene_datasets|data/objects|src/deps|src/obsolete'
+exclude: 'build|data/datasets|data/scene_datasets|node_modules/|src/deps|src/obsolete'
 
 default_language_version:
     python: python3
 
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v3.3.0
     hooks:
     -   id: trailing-whitespace
     -   id: check-added-large-files
@@ -14,14 +14,18 @@ repos:
     -   id: check-case-conflict
     -   id: check-docstring-first
     -   id: check-executables-have-shebangs
+    -   id: check-json
+        # The JSONs below support comments (against spec)
+        exclude: ^(.eslintrc.json|tsconfig.json)
     -   id: check-merge-conflict
     -   id: check-toml
+    -   id: check-yaml
     -   id: debug-statements
     -   id: mixed-line-ending
         args: ['--fix=lf']
 
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.4.2
+    rev: 5.6.4
     hooks:
     -   id: isort
         exclude: docs/
@@ -34,38 +38,47 @@ repos:
       exclude: ^examples/tutorials/(nb_python|colabs)
 
 -   repo: https://github.com/myint/autoflake
-    rev: master
+    rev: v1.4
     hooks:
     -   id: autoflake
-        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place', '-c']
+        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
         exclude: docs/
 
 -   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.3
+    rev: 3.8.4
     hooks:
     -   id: flake8
         exclude: docs/
         additional_dependencies:
         - flake8-bugbear
+        - flake8-builtins
         - flake8-comprehensions
+        - flake8-return
+        - flake8-simplify
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v0.790'
+    hooks:
+    -   id: mypy
+        pass_filenames: false
 
 -   repo: https://github.com/kynan/nbstripout
-    rev: master
+    rev: 0.3.9
     hooks:
     -   id: nbstripout
-        files: ".ipynb"
+        files: '.ipynb'
 
 -   repo: local
     hooks:
     -   id: jupytext-sync
         name: Sync scripts and notebooks
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
-        entry: jupytext --update-metadata '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}' --set-formats 'nb_python//py:percent,colabs//ipynb' --pipe black --pipe "sed s/[[:space:]]*\#[[:space:]]\%\%/\#\%\%/g" --pipe 'isort -' --pipe-fmt 'py:percent' --sync
+        entry: jupytext --update-metadata '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}' --set-formats 'nb_python//py:percent,colabs//ipynb' --pipe black --pipe 'isort - --treat-comment-as-code "# %%"' --pipe-fmt 'py:percent' --sync
         pass_filenames: true
         additional_dependencies:
-            - 'jupytext==1.5.2'
-            - 'black==20.8b1'
-            - 'isort==5.4.2'
+            - 'jupytext==1.6.0'
+            - black
+            - isort
         always_run: false
         language: python
         require_serial: true
@@ -87,7 +100,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v6.4.0
+    rev: v7.11.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]

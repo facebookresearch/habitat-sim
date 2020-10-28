@@ -1,4 +1,9 @@
-#pragma once
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+#ifndef ESP_NAV_GREEDYFOLLOWER_H_
+#define ESP_NAV_GREEDYFOLLOWER_H_
 
 #include "esp/core/RigidState.h"
 #include "esp/core/esp.h"
@@ -159,3 +164,5 @@ class GreedyGeodesicFollowerImpl {
 
 }  // namespace nav
 }  // namespace esp
+
+#endif  // ESP_NAV_GREEDYFOLLOWER_H_

@@ -1,0 +1,59 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+#ifndef ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
+#define ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
+
+#include "Configuration.h"
+
+namespace esp {
+namespace core {
+/**
+ * @brief This abstract base class provides the interface of expected
+ * functionality for an object to be manageable by @ref
+ * esp::core::ManagedContainer class template specializations. Any class that
+ * inherits from this class properly can be managed by a @ref
+ * esp::core::ManagedContainer specilization.
+ */
+class AbstractManagedObject {
+ public:
+  virtual ~AbstractManagedObject() = default;
+  /**
+   * @brief Get the instancing class of the ManagedObject instance.  Should
+   * only be set from implementer's constructor. Used as key in constructor
+   * function pointer maps in @ref esp::core::ManagedContainer.
+   */
+  virtual std::string getClassKey() const = 0;
+
+  /**
+   * @brief Set this ManagedObject name/origin.  Some ManagedObject derive their
+   * own names based on their state, such as @ref
+   * esp::metadata::attributes::AbstractPrimitiveAttributes;  in such cases this
+   * should be overridden with NOP.
+   * @param handle the handle to set.
+   */
+  virtual void setHandle(const std::string& handle) = 0;
+  virtual std::string getHandle() const = 0;
+
+  /**
+   * @brief directory where files used to construct ManagedObject can be found.
+   */
+  virtual void setFileDirectory(const std::string& fileDirectory) = 0;
+  virtual std::string getFileDirectory() const = 0;
+
+  /**
+   *  @brief Unique ID referencing ManagedObject
+   */
+  virtual void setID(int ID) = 0;
+  virtual int getID() const = 0;
+
+ protected:
+  virtual void setClassKey(const std::string&) = 0;
+
+ public:
+  ESP_SMART_POINTERS(AbstractManagedObject)
+};  // class AbstractManagedObject
+}  // namespace core
+}  // namespace esp
+#endif  // ESP_CORE_ABSTRACTMANAGEDOBJECT_H_

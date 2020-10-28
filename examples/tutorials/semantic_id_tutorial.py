@@ -101,9 +101,8 @@ def make_configuration(scene_file):
 
 # This is wrapped such that it can be added to a unit test
 def main(show_imgs=True, save_imgs=False):
-    if save_imgs:
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
+    if save_imgs and not os.path.exists(output_path):
+        os.mkdir(output_path)
 
     # [semantic id]
 
@@ -127,7 +126,7 @@ def main(show_imgs=True, save_imgs=False):
         obj_templates_mgr = sim.get_object_template_manager()
 
         # load some chair object template from configuration file
-        chair_template_id = obj_templates_mgr.load_object_configs(
+        chair_template_id = obj_templates_mgr.load_configs(
             str(os.path.join(data_path, "test_assets/objects/chair"))
         )[0]
 

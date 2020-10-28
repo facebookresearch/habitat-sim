@@ -15,6 +15,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
+#include "esp/sim/SimulatorConfiguration.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -34,8 +35,6 @@ void initSimBindings(py::module& m) {
       .def_readwrite("default_camera_uuid",
                      &SimulatorConfiguration::defaultCameraUuid)
       .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
-      .def_readwrite("compress_textures",
-                     &SimulatorConfiguration::compressTextures)
       .def_readwrite("allow_sliding", &SimulatorConfiguration::allowSliding)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
       .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling)
@@ -46,6 +45,8 @@ void initSimBindings(py::module& m) {
                      &SimulatorConfiguration::sceneLightSetup)
       .def_readwrite("load_semantic_mesh",
                      &SimulatorConfiguration::loadSemanticMesh)
+      .def_readwrite("requires_textures",
+                     &SimulatorConfiguration::requiresTextures)
       .def(py::self == py::self)
       .def(py::self != py::self);
 
@@ -84,23 +85,29 @@ void initSimBindings(py::module& m) {
                     R"(Enable or disable the frustum culling)")
       /* --- Physics functions --- */
       /* --- Template Manager accessors --- */
-      .def(
-          "get_asset_template_manager", &Simulator::getAssetAttributesManager,
-          pybind11::return_value_policy::reference,
-          R"(Get the Simulator's AssetAttributesManager instance for configuring primitive asset templates.)")
-      .def(
-          "get_object_template_manager", &Simulator::getObjectAttributesManager,
-          pybind11::return_value_policy::reference,
-          R"(Get the Simulator's ObjectAttributesManager instance for configuring object templates.)")
-      .def(
-          "get_physics_template_manager",
-          &Simulator::getPhysicsAttributesManager,
-          pybind11::return_value_policy::reference,
-          R"(Get the Simulator's PhysicsAttributesManager instance for configuring PhysicsManager templates.)")
-      .def(
-          "get_stage_template_manager", &Simulator::getStageAttributesManager,
-          pybind11::return_value_policy::reference,
-          R"(Get the Simulator's StageAttributesManager instance for configuring simulation stage templates.)")
+      .def("get_asset_template_manager", &Simulator::getAssetAttributesManager,
+           pybind11::return_value_policy::reference,
+           R"(Get the current dataset's AssetAttributesManager instance
+            for configuring primitive asset templates.)")
+      .def("get_lighting_template_manager",
+           &Simulator::getLightLayoutAttributesManager,
+           pybind11::return_value_policy::reference,
+           R"(Get the current dataset's LightLayoutAttributesManager instance
+            for configuring light templates and layouts.)")
+      .def("get_object_template_manager",
+           &Simulator::getObjectAttributesManager,
+           pybind11::return_value_policy::reference,
+           R"(Get the current dataset's ObjectAttributesManager instance
+            for configuring object templates.)")
+      .def("get_physics_template_manager",
+           &Simulator::getPhysicsAttributesManager,
+           pybind11::return_value_policy::reference,
+           R"(Get the current dataset's PhysicsAttributesManager instance
+            for configuring PhysicsManager templates.)")
+      .def("get_stage_template_manager", &Simulator::getStageAttributesManager,
+           pybind11::return_value_policy::reference,
+           R"(Get the current dataset's StageAttributesManager instance
+            for configuring simulation stage templates.)")
       .def(
           "get_physics_simulation_library",
           &Simulator::getPhysicsSimulationLibrary,
@@ -134,6 +141,10 @@ void initSimBindings(py::module& m) {
           &Simulator::getObjectInitializationTemplate, "object_id"_a,
           "scene_id"_a = 0,
           R"(Get a copy of the ObjectAttributes template used to instance an object.)")
+      .def(
+          "get_stage_initialization_template",
+          &Simulator::getStageInitializationTemplate, "scene_id"_a = 0,
+          R"(Get a copy of the StageAttributes template used to instance a scene's stage or None if it does not exist.)")
       .def("get_object_motion_type", &Simulator::getObjectMotionType,
            "object_id"_a, "scene_id"_a = 0,
            R"(Get the MotionType of an object.)")

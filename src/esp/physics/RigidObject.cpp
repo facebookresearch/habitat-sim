@@ -21,7 +21,7 @@ bool RigidObject::initialize(const assets::ResourceManager& resMgr,
 
   // save a copy of the template at initialization time
   initializationAttributes_ =
-      resMgr.getObjectAttributesManager()->getTemplateCopyByHandle(handle);
+      resMgr.getObjectAttributesManager()->getObjectCopyByHandle(handle);
 
   return initialization_LibSpecific(resMgr);
 }  // RigidObject::initialize
@@ -30,8 +30,8 @@ bool RigidObject::finalizeObject() {
   node().computeCumulativeBB();
 
   // cast initialization attributes
-  Attrs::ObjectAttributes::cptr ObjectAttributes =
-      std::dynamic_pointer_cast<const Attrs::ObjectAttributes>(
+  metadata::attributes::ObjectAttributes::cptr ObjectAttributes =
+      std::dynamic_pointer_cast<const metadata::attributes::ObjectAttributes>(
           initializationAttributes_);
 
   if (!ObjectAttributes->getComputeCOMFromShape()) {

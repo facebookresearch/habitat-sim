@@ -29,12 +29,15 @@
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
+#include <Magnum/Trade/PbrMetallicRoughnessMaterialData.h>
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
+#include "esp/gfx/MaterialUtil.h"
+#include "esp/gfx/PbrDrawable.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -62,22 +65,31 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
+using metadata::attributes::AbstractObjectAttributes;
+using metadata::attributes::CubePrimitiveAttributes;
+using metadata::attributes::ObjectAttributes;
+using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::StageAttributes;
+using metadata::managers::AssetAttributesManager;
+using metadata::managers::ObjectAttributesManager;
+using metadata::managers::PhysicsAttributesManager;
+using metadata::managers::StageAttributesManager;
+
 namespace assets {
 
-using attributes::AbstractObjectAttributes;
-using attributes::CubePrimitiveAttributes;
-using attributes::ObjectAttributes;
-using attributes::PhysicsManagerAttributes;
-using attributes::StageAttributes;
 // static constexpr arrays require redundant definitions until C++17
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::WHITE_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
-ResourceManager::ResourceManager()
-    :
+ResourceManager::ResourceManager(
+    metadata::MetadataMediator::ptr& _metadataMediator,
+    Flags _flags)
+    : flags_(_flags),
+      metadataMediator_(_metadataMediator)
 #ifdef MAGNUM_BUILD_STATIC
+      ,
       // avoid using plugins that might depend on different library versions
       importerManager_("nonexistent")
 #endif
@@ -85,18 +97,10 @@ ResourceManager::ResourceManager()
 
   initDefaultLightSetups();
   initDefaultMaterials();
-  buildImportersAndAttributesManagers();
-}  // namespace assets
+  buildImporters();
+}
 
-void ResourceManager::buildImportersAndAttributesManagers() {
-  assetAttributesManager_ = managers::AssetAttributesManager::create(*this);
-  objectAttributesManager_ = managers::ObjectAttributesManager::create(*this);
-  objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ = managers::PhysicsAttributesManager::create(
-      *this, objectAttributesManager_);
-  stageAttributesManager_ = managers::StageAttributesManager::create(
-      *this, objectAttributesManager_, physicsAttributesManager_);
-
+void ResourceManager::buildImporters() {
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       primitiveImporter_ =
@@ -107,7 +111,7 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
-}  // buildImportersAndAttributesManagers
+}  // buildImporters
 
 void ResourceManager::initDefaultPrimAttributes() {
   // by this point, we should have a GL::Context so load the bb primitive.
@@ -115,8 +119,8 @@ void ResourceManager::initDefaultPrimAttributes() {
   // wireframe cube no differently than other primivite-based rendered
   // objects)
   auto cubeMeshName =
-      assetAttributesManager_
-          ->getTemplateCopyByHandle<CubePrimitiveAttributes>("cubeWireframe")
+      getAssetAttributesManager()
+          ->getObjectCopyByHandle<CubePrimitiveAttributes>("cubeWireframe")
           ->getPrimObjClassName();
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
@@ -129,7 +133,8 @@ void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
     bool isEnabled,
     scene::SceneNode* parent,
-    const PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
+    const metadata::attributes::PhysicsManagerAttributes::ptr&
+        physicsManagerAttributes) {
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
@@ -195,7 +200,6 @@ bool ResourceManager::loadStage(
   // collision mesh next
   bool renderMeshSuccess =
       loadStageInternal(renderInfo,         // AssetInfo
-                        nullptr,            // physics manager
                         &rootNode,          // parent scene node
                         &drawables,         //  drawable group
                         true,               // compute Absolute AABBs or not
@@ -208,12 +212,14 @@ bool ResourceManager::loadStage(
            "Aborting scene initialization.";
     return false;
   }
+  // declare mesh group variable
+  std::vector<CollisionMeshData> meshGroup;
+  AssetInfo& infoToUse = renderInfo;
   if (assetInfoMap.count("collision")) {
     AssetInfo colInfo = assetInfoMap.at("collision");
     // should this be checked to make sure we do not reload?
     bool collisionMeshSuccess =
         loadStageInternal(colInfo,            // AssetInfo
-                          _physicsManager,    // physics manager
                           nullptr,            // parent scene node
                           nullptr,            // drawable group
                           false,              // compute absolute AABBs or not
@@ -222,57 +228,37 @@ bool ResourceManager::loadStage(
 
     if (!collisionMeshSuccess) {
       LOG(ERROR) << " ResourceManager::loadStage : Stage collision mesh "
-                    "load failed, "
-                    "Aborting scene initialization.";
+                    "load failed.  Aborting scene initialization.";
       return false;
-    } else {
-      // if we have a collision mesh, and it does not exist already as a
-      // collision object, add it
-      if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
-        std::vector<CollisionMeshData> meshGroup;
-        if (collisionMeshGroups_.count(colInfo.filepath) == 0) {
-          //! Collect collision mesh group
-          bool colMeshGroupSuccess = false;
-          if (colInfo.type == AssetType::INSTANCE_MESH) {
-            // PLY Instance mesh
-            colMeshGroupSuccess =
-                buildStageCollisionMeshGroup<GenericInstanceMeshData>(
-                    colInfo.filepath, meshGroup);
-          } else if (colInfo.type == AssetType::MP3D_MESH ||
-                     colInfo.type == AssetType::UNKNOWN) {
-            // GLB Mesh
-            colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
-                colInfo.filepath, meshGroup);
-          }
-          // TODO : PTEX collision support
+    }
+    // if we have a collision mesh, and it does not exist already as a
+    // collision object, add it
+    if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
+      infoToUse = colInfo;
+    }  // if not colInfo.filepath.compare(EMPTY_SCENE)
+  }    // if collision mesh desired
+  // build the appropriate mesh groups, either for the collision mesh, or, if
+  // the collision mesh is empty scene
 
-          // failure during build of collision mesh group
-          if (!colMeshGroupSuccess) {
-            LOG(ERROR) << "ResourceManager::loadStage : Stage "
-                       << colInfo.filepath
-                       << " Collision mesh load failed. Aborting scene "
-                          "initialization.";
-            return false;
-          }
-          //! Add scene meshgroup to collision mesh groups
-          collisionMeshGroups_.emplace(colInfo.filepath, meshGroup);
-        } else {
-          // collision meshGroup already exists from prior load
-          meshGroup = collisionMeshGroups_.at(colInfo.filepath);
-        }
-        //! Add to physics manager
-        bool sceneSuccess =
-            _physicsManager->addStage(stageAttributes->getHandle(), meshGroup);
-        if (!sceneSuccess) {
-          LOG(ERROR)
-              << "ResourceManager::loadStage : Adding Stage "
-              << colInfo.filepath
-              << " to PhysicsManager failed. Aborting scene initialization.";
-          return false;
-        }
-      }  // if not empty collision scene
-    }    // if collisionMeshSuccess
-  }      // if collision mesh desired
+  if ((_physicsManager != nullptr) &&
+      (infoToUse.filepath.compare(EMPTY_SCENE) != 0)) {
+    bool success = buildMeshGroups(infoToUse, meshGroup);
+    if (!success) {
+      return false;
+    }
+    //! Add to physics manager - will only be null for certain tests
+    // Either add with pre-built meshGroup if collision assets are loaded
+    // or empty vector for mesh group - this should only be the case if
+    // we are using None-type physicsManager.
+    bool sceneSuccess =
+        _physicsManager->addStage(stageAttributes->getHandle(), meshGroup);
+    if (!sceneSuccess) {
+      LOG(ERROR) << "ResourceManager::loadStage : Adding Stage "
+                 << stageAttributes->getHandle()
+                 << " to PhysicsManager failed. Aborting scene initialization.";
+      return false;
+    }
+  }
 
   bool semanticStageSuccess = false;
   // set equal to current Simulator::activeSemanticSceneID_ value
@@ -296,7 +282,6 @@ bool ResourceManager::loadStage(
 
       semanticStageSuccess = loadStageInternal(
           semanticInfo,          // AssetInfo
-          nullptr,               // physics manager
           &semanticRootNode,     // parent scene node
           &semanticDrawables,    // drawable group
           computeSemanticAABBs,  // compute absolute AABBs or not
@@ -326,6 +311,46 @@ bool ResourceManager::loadStage(
 
   return true;
 }  // ResourceManager::loadScene
+
+bool ResourceManager::buildMeshGroups(
+    const AssetInfo& info,
+    std::vector<CollisionMeshData>& meshGroup) {
+  if (collisionMeshGroups_.count(info.filepath) == 0) {
+    //! Collect collision mesh group
+    bool colMeshGroupSuccess = false;
+    if (info.type == AssetType::INSTANCE_MESH) {
+      // PLY Instance mesh
+      colMeshGroupSuccess =
+          buildStageCollisionMeshGroup<GenericInstanceMeshData>(info.filepath,
+                                                                meshGroup);
+    } else if (info.type == AssetType::MP3D_MESH ||
+               info.type == AssetType::UNKNOWN) {
+      // GLB Mesh
+      colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
+          info.filepath, meshGroup);
+    }
+#ifdef ESP_BUILD_PTEX_SUPPORT
+    else if (info.type == AssetType::FRL_PTEX_MESH) {
+      colMeshGroupSuccess =
+          buildStageCollisionMeshGroup<PTexMeshData>(info.filepath, meshGroup);
+    }
+#endif
+
+    // failure during build of collision mesh group
+    if (!colMeshGroupSuccess) {
+      LOG(ERROR) << "ResourceManager::loadStage : Stage " << info.filepath
+                 << " Collision mesh load failed. Aborting scene "
+                    "initialization.";
+      return false;
+    }
+    //! Add scene meshgroup to collision mesh groups
+    collisionMeshGroups_.emplace(info.filepath, meshGroup);
+  } else {
+    // collision meshGroup already exists from prior load
+    meshGroup = collisionMeshGroups_.at(info.filepath);
+  }
+  return true;
+}  // ResourceManager::buildMeshGroups
 
 std::map<std::string, AssetInfo>
 ResourceManager::createStageAssetInfosFromAttributes(
@@ -400,12 +425,12 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
 
 bool ResourceManager::loadStageInternal(
     const AssetInfo& info,
-    std::shared_ptr<physics::PhysicsManager> _physicsManager,
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs /*  = false */,
     bool splitSemanticMesh /* = true */,
-    const Mn::ResourceKey& lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
+    const Mn::ResourceKey&
+        lightSetupKey /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
   // scene mesh loading
   const std::string& filename = info.filepath;
   bool meshSuccess = true;
@@ -425,11 +450,11 @@ bool ResourceManager::loadStageInternal(
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else if (info.type == AssetType::MP3D_MESH) {
         meshSuccess = loadGeneralMeshData(info, parent, drawables,
-                                          computeAbsoluteAABBs, lightSetup);
+                                          computeAbsoluteAABBs, lightSetupKey);
       } else {
         // Unknown type, just load general mesh data
         meshSuccess = loadGeneralMeshData(info, parent, drawables,
-                                          computeAbsoluteAABBs, lightSetup);
+                                          computeAbsoluteAABBs, lightSetupKey);
       }
     }
   } else {
@@ -647,7 +672,7 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
   auto primTemplate =
-      assetAttributesManager_->getTemplateByHandle(primTemplateHandle);
+      getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetHandle = primTemplate->getHandle();
@@ -861,9 +886,22 @@ bool ResourceManager::loadInstanceMeshData(
 
     for (uint32_t iMesh = start; iMesh <= end; ++iMesh) {
       scene::SceneNode& node = parent->createChild();
-      node.addFeature<gfx::GenericDrawable>(
-          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, NO_LIGHT_KEY,
-          PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
+
+      // Instance mesh does NOT have normal texture, so do not bother to
+      // query if the mesh data contain tangent or bitangent.
+      gfx::Drawable::Flags meshAttributeFlags{};
+      // WARNING:
+      // This is to initiate drawables for instance mesh, and the instance mesh
+      // data is NOT stored in the meshData_ in the BaseMesh.
+      // That means One CANNOT query the data like e.g.,
+      // meshes_[iMesh]->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
+      // It will SEGFAULT!
+      createDrawable(*(meshes_[iMesh]->getMagnumGLMesh()),  // render mesh
+                     meshAttributeFlags,                 // mesh attribute flags
+                     node,                               // scene node
+                     NO_LIGHT_KEY,                       // lightSetup key
+                     PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
+                     drawables);                         // drawable group
 
       if (computeAbsoluteAABBs) {
         staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
@@ -884,7 +922,7 @@ bool ResourceManager::loadGeneralMeshData(
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs, /* = false */
-    const Mn::ResourceKey& lightSetup) {
+    const Mn::ResourceKey& lightSetupKey) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
@@ -977,8 +1015,10 @@ bool ResourceManager::loadGeneralMeshData(
 
     // if this is a new file, load it and add it to the dictionary
     LoadedAssetData loadedAssetData{info};
-    loadTextures(*fileImporter_, loadedAssetData);
-    loadMaterials(*fileImporter_, loadedAssetData);
+    if (requiresTextures_) {
+      loadTextures(*fileImporter_, loadedAssetData);
+      loadMaterials(*fileImporter_, loadedAssetData);
+    }
     loadMeshes(*fileImporter_, loadedAssetData);
     auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
     MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
@@ -1028,7 +1068,7 @@ bool ResourceManager::loadGeneralMeshData(
 
   //! Do instantiate object
   const LoadedAssetData& loadedAssetData = resourceDict_[filename];
-  if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
+  if (!isLightSetupCompatible(loadedAssetData, lightSetupKey)) {
     LOG(WARNING) << "Loading scene with incompatible light setup, "
                     "scene will not be correctly lit. If the scene requires "
                     "lighting please enable AssetInfo::requiresLighting.";
@@ -1051,8 +1091,16 @@ bool ResourceManager::loadGeneralMeshData(
      // TODO: cache visual nodes added by this process
   std::vector<scene::SceneNode*> visNodeCache;
   std::vector<StaticDrawableInfo> staticDrawableInfo;
-  addComponent(meshMetaData, newNode, lightSetup, drawables, meshMetaData.root,
-               visNodeCache, computeAbsoluteAABBs, staticDrawableInfo);
+
+  addComponent(meshMetaData,       // mesh metadata
+               newNode,            // parent scene node
+               lightSetupKey,      // lightSetup key
+               drawables,          // drawble group
+               meshMetaData.root,  // mesh transform node
+               visNodeCache,       // a vector of scene nodes, the visNodeCache
+               computeAbsoluteAABBs,  // compute absolute aabbs
+               staticDrawableInfo);   // a vector of static drawable info
+
   if (computeAbsoluteAABBs) {
     // now compute aabbs by constructed staticDrawableInfo
     computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
@@ -1133,23 +1181,45 @@ void ResourceManager::loadMaterials(Importer& importer,
     // as long as the materialName includes the full path to the material
     Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
         importer.material(iMaterial);
-    if (!materialData ||
-        !(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
+
+    if (!materialData) {
       LOG(ERROR) << "Cannot load material, skipping";
       continue;
     }
 
-    const auto& phongMaterialData =
-        static_cast<Mn::Trade::PhongMaterialData&>(*materialData);
     std::unique_ptr<gfx::MaterialData> finalMaterial;
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
-    if (loadedAssetData.assetInfo.requiresLighting) {
-      finalMaterial =
-          buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
 
+    if (loadedAssetData.assetInfo.requiresLighting &&
+        materialData->types() &
+            Magnum::Trade::MaterialType::PbrMetallicRoughness) {
+      const auto& pbrMaterialData =
+          materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
+
+      if (flags_ & Flag::BuildPhongFromPbr) {
+        finalMaterial = gfx::buildPhongFromPbrMetallicRoughness(
+            pbrMaterialData, textureBaseIndex, textures_);
+      } else {
+        finalMaterial =
+            buildPbrShadedMaterialData(pbrMaterialData, textureBaseIndex);
+      }
     } else {
-      finalMaterial =
-          buildFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
+      ASSERT(materialData);
+      if (!(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
+        LOG(ERROR) << "Cannot load material, skipping";
+        continue;
+      }
+
+      const auto& phongMaterialData =
+          materialData->as<Mn::Trade::PhongMaterialData>();
+      if (loadedAssetData.assetInfo.requiresLighting) {
+        finalMaterial =
+            buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
+
+      } else {
+        finalMaterial =
+            buildFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
+      }
     }
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
@@ -1227,6 +1297,102 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
   return finalMaterial;
 }
 
+gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
+    const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+    int textureBaseIndex) {
+  // NOLINTNEXTLINE(google-build-using-namespace)
+  using namespace Mn::Math::Literals;
+
+  auto finalMaterial = gfx::PbrMaterialData::create_unique();
+
+  // texture transform, if there's none the matrix is an identity
+  finalMaterial->textureMatrix = material.commonTextureMatrix();
+
+  // base color (albedo)
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColor)) {
+    finalMaterial->baseColor = material.baseColor();
+  }
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
+    finalMaterial->baseColorTexture =
+        textures_[textureBaseIndex + material.baseColorTexture()].get();
+    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColor)) {
+      finalMaterial->baseColor = Mn::Vector4{1.0f};
+    }
+  }
+
+  // normal map
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTextureScale)) {
+    finalMaterial->normalTextureScale = material.normalTextureScale();
+  }
+
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
+    finalMaterial->normalTexture =
+        textures_[textureBaseIndex + material.normalTexture()].get();
+    // if normal texture scale is not presented, use the default value in the
+    // finalMaterial
+  }
+
+  // emission
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveColor)) {
+    finalMaterial->emissiveColor = material.emissiveColor();
+  }
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveTexture)) {
+    finalMaterial->emissiveTexture =
+        textures_[textureBaseIndex + material.emissiveTexture()].get();
+    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveColor)) {
+      finalMaterial->emissiveColor = Mn::Vector3{1.0f};
+    }
+  }
+
+  // CAREFUL:
+  // certain texture will be stored "multiple times" in the `finalMaterial`;
+  // (e.g., roughnessTexture will be stored in noneRoughnessMetallicTexture,
+  // roughnessTexture, metallicTexture)
+  // It is OK! No worries! Such duplication (or "conflicts") will be handled in
+  // the PbrShader (see PbrMaterialData for more details)
+
+  // roughness
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::Roughness)) {
+    finalMaterial->roughness = material.roughness();
+  }
+  if (material.hasRoughnessTexture()) {
+    finalMaterial->roughnessTexture =
+        textures_[textureBaseIndex + material.roughnessTexture()].get();
+    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Roughness)) {
+      finalMaterial->roughness = 1.0f;
+    }
+  }
+
+  // metalness
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
+    finalMaterial->metallic = material.metalness();
+  }
+  if (material.hasMetalnessTexture()) {
+    finalMaterial->metallicTexture =
+        textures_[textureBaseIndex + material.metalnessTexture()].get();
+    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
+      finalMaterial->metallic = 1.0f;
+    }
+  }
+
+  // packed textures
+  if (material.hasOcclusionRoughnessMetallicTexture()) {
+    // occlusionTexture, roughnessTexture, metalnessTexture are pointing to the
+    // same texture ID, so just occlusionTexture
+    finalMaterial->occlusionRoughnessMetallicTexture =
+        textures_[textureBaseIndex + material.occlusionTexture()].get();
+  }
+
+  if (material.hasNoneRoughnessMetallicTexture()) {
+    // roughnessTexture, metalnessTexture are pointing to the
+    // same texture ID, so just roughnessTexture
+    finalMaterial->noneRoughnessMetallicTexture =
+        textures_[textureBaseIndex + material.roughnessTexture()].get();
+  }
+
+  return finalMaterial;
+}
+
 void ResourceManager::loadMeshes(Importer& importer,
                                  LoadedAssetData& loadedAssetData) {
   int meshStart = meshes_.size();
@@ -1271,9 +1437,13 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh &&
       meshIDLocal != ID_UNDEFINED) {
     parent.children.back().meshIDLocal = meshIDLocal;
-    parent.children.back().materialIDLocal =
-        static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
-            ->material();
+    if (requiresTextures_) {
+      parent.children.back().materialIDLocal =
+          static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
+              ->material();
+    } else {
+      parent.children.back().materialIDLocal = ID_UNDEFINED;
+    }
   }
 
   // Recursively add children
@@ -1326,12 +1496,6 @@ void ResourceManager::loadTextures(Importer& importer,
       Mn::GL::TextureFormat format;
       if (image->isCompressed()) {
         format = Mn::GL::textureFormat(image->compressedFormat());
-      } else if (compressTextures_ &&
-                 image->format() == Mn::PixelFormat::RGBA8Unorm) {
-        format = Mn::GL::TextureFormat::CompressedRGBAS3tcDxt1;
-      } else if (compressTextures_ &&
-                 image->format() == Mn::PixelFormat::RGB8Unorm) {
-        format = Mn::GL::TextureFormat::CompressedRGBS3tcDxt1;
       } else {
         format = Mn::GL::textureFormat(image->format());
       }
@@ -1368,7 +1532,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
     const std::string& objectTemplateHandle) {
   // Meta data
   ObjectAttributes::ptr ObjectAttributes =
-      objectAttributesManager_->getTemplateByHandle(objectTemplateHandle);
+      getObjectAttributesManager()->getObjectByHandle(objectTemplateHandle);
 
   // if attributes are "dirty" (important values have changed since last
   // registered) then re-register.  Should never return ID_UNDEFINED - this
@@ -1379,7 +1543,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // attributes for objects requires object rebuilding.
   if (ObjectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
-        (ID_UNDEFINED != objectAttributesManager_->registerAttributesTemplate(
+        (ID_UNDEFINED != getObjectAttributesManager()->registerObject(
                              ObjectAttributes, objectTemplateHandle)),
         "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
@@ -1397,7 +1561,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   if (resourceDict_.count(renderAssetHandle) == 0) {
     if (ObjectAttributes->getRenderAssetIsPrimitive()) {
       // needs to have a primitive asset attributes with same name
-      if (!assetAttributesManager_->getTemplateLibHasHandle(
+      if (!getAssetAttributesManager()->getObjectLibHasHandle(
               renderAssetHandle)) {
         // this is bad, means no render primitive template exists with
         // expected name.  should never happen
@@ -1459,19 +1623,19 @@ void ResourceManager::addObjectToDrawables(
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>& visNodeCache,
-    const Mn::ResourceKey& lightSetup) {
+    const Mn::ResourceKey& lightSetupKey) {
   if (parent != nullptr and drawables != nullptr) {
     //! Add mesh to rendering stack
 
     // Meta data
     ObjectAttributes::ptr ObjectAttributes =
-        objectAttributesManager_->getTemplateByHandle(objTemplateHandle);
+        getObjectAttributesManager()->getObjectByHandle(objTemplateHandle);
 
     const std::string& renderObjectName =
         ObjectAttributes->getRenderAssetHandle();
 
     const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
-    if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
+    if (!isLightSetupCompatible(loadedAssetData, lightSetupKey)) {
       LOG(WARNING) << "Instantiating object with incompatible light setup, "
                       "object will not be correctly lit. If you need lighting "
                       "please ensure 'requires lighting' is enabled in object "
@@ -1488,9 +1652,14 @@ void ResourceManager::addObjectToDrawables(
     // after scene is loaded.
     std::vector<StaticDrawableInfo> staticDrawableInfo;
 
-    addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
-                 drawables, loadedAssetData.meshMetaData.root, visNodeCache,
-                 false, staticDrawableInfo);
+    addComponent(loadedAssetData.meshMetaData,       // mesh metadata
+                 scalingNode,                        // parent scene node
+                 lightSetupKey,                      // lightSetup key
+                 drawables,                          // drawable group
+                 loadedAssetData.meshMetaData.root,  // mesh transform node
+                 visNodeCache,  // a vector of scene nodes, the visNodeCache
+                 false,         // compute absolute AABBs
+                 staticDrawableInfo);  // a vector of static drawable info
 
     // set the node type for all cached visual nodes
     for (auto node : visNodeCache) {
@@ -1503,7 +1672,7 @@ void ResourceManager::addObjectToDrawables(
 void ResourceManager::addComponent(
     const MeshMetaData& metaData,
     scene::SceneNode& parent,
-    const Mn::ResourceKey& lightSetup,
+    const Mn::ResourceKey& lightSetupKey,
     DrawableGroup* drawables,
     const MeshTransformNode& meshTransformNode,
     std::vector<scene::SceneNode*>& visNodeCache,
@@ -1531,7 +1700,24 @@ void ResourceManager::addComponent(
           std::to_string(metaData.materialIndex.first + materialIDLocal);
     }
 
-    createGenericDrawable(mesh, node, lightSetup, materialKey, drawables);
+    gfx::Drawable::Flags meshAttributeFlags{};
+    const auto& meshData = meshes_[meshID]->getMeshData();
+    if (meshData != Cr::Containers::NullOpt) {
+      if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Tangent)) {
+        meshAttributeFlags |= gfx::Drawable::Flag::HasTangent;
+
+        // if it has tangent, then check if it has bitangent
+        if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Bitangent)) {
+          meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
+        }
+      }
+    }
+    createDrawable(mesh,                // render mesh
+                   meshAttributeFlags,  // mesh attribute flags
+                   node,                // scene node
+                   lightSetupKey,       // lightSetup Key
+                   materialKey,         // material key
+                   drawables);          // drawable group
 
     // compute the bounding box for the mesh we are adding
     if (computeAbsoluteAABBs) {
@@ -1543,8 +1729,14 @@ void ResourceManager::addComponent(
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, lightSetup, drawables, child, visNodeCache,
-                 computeAbsoluteAABBs, staticDrawableInfo);
+    addComponent(metaData,       // mesh metadata
+                 node,           // parent scene node
+                 lightSetupKey,  // lightSetup key
+                 drawables,      // drawable group
+                 child,          // mesh transform node
+                 visNodeCache,   // a vector of scene nodes, the visNodeCache
+                 computeAbsoluteAABBs,  // compute absolute aabbs
+                 staticDrawableInfo);   // a vector of static drawable info
   }
 }  // addComponent
 
@@ -1552,8 +1744,17 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
   CHECK(primitive_meshes_.count(primitiveID));
-  createGenericDrawable(*primitive_meshes_.at(primitiveID), node, NO_LIGHT_KEY,
-                        WHITE_MATERIAL_KEY, drawables);
+  // TODO:
+  // currently we assume the primitives does not have normal texture
+  // so do not need to worry about the tangent or bitangent.
+  // it might be changed in the future.
+  gfx::Drawable::Flags meshAttributeFlags{};
+  createDrawable(*primitive_meshes_.at(primitiveID),  // render mesh
+                 meshAttributeFlags,                  // meshAttributeFlags
+                 node,                                // scene node
+                 NO_LIGHT_KEY,                        // lightSetup key
+                 WHITE_MATERIAL_KEY,                  // material key
+                 drawables);                          // drawable group
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
@@ -1561,8 +1762,9 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primitiveID);
 }
 
-bool ResourceManager::importAsset(const std::string& filename,
-                                  std::shared_ptr<io::UrdfMaterial> material) {
+bool ResourceManager::importAsset(
+    const std::string& filename,
+    std::shared_ptr<io::URDF::Material> material) {
   bool meshSuccess = true;
   if (resourceDict_.count(filename) > 0) {
     if (material == nullptr)
@@ -1573,8 +1775,8 @@ bool ResourceManager::importAsset(const std::string& filename,
       meshinfo = esp::assets::AssetInfo::fromPath(filename);
     }
     meshinfo.requiresLighting = true;
-    meshSuccess =
-        loadGeneralMeshData(meshinfo, nullptr, nullptr, DEFAULT_LIGHTING_KEY);
+    meshSuccess = loadGeneralMeshData(meshinfo, nullptr, nullptr, false,
+                                      DEFAULT_LIGHTING_KEY);
 
     // check if collision handle exists in collision mesh groups yet.  if not
     // then instance
@@ -1641,7 +1843,7 @@ bool ResourceManager::importAsset(const std::string& filename,
               << resourceDict_.at(filename).meshMetaData.materialIndex;
 
           if (material) {
-            io::UrdfMaterialColor& color = material->m_matColor;
+            io::URDF::MaterialColor& color = material->m_matColor;
             phongMaterial->ambientColor = color.m_rgbaColor * 0.2;
             phongMaterial->diffuseColor = color.m_rgbaColor * 0.8;
             phongMaterial->specularColor = color.m_specularColor;
@@ -1676,14 +1878,37 @@ bool ResourceManager::attachAsset(const std::string& filename,
   return true;
 }
 
-void ResourceManager::createGenericDrawable(
-    Mn::GL::Mesh& mesh,
-    scene::SceneNode& node,
-    const Mn::ResourceKey& lightSetup,
-    const Mn::ResourceKey& material,
-    DrawableGroup* group /* = nullptr */) {
-  node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
-                                        material, group);
+void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
+                                     gfx::Drawable::Flags& meshAttributeFlags,
+                                     scene::SceneNode& node,
+                                     const Mn::ResourceKey& lightSetupKey,
+                                     const Mn::ResourceKey& materialKey,
+                                     DrawableGroup* group /* = nullptr */) {
+  const auto& materialDataType =
+      shaderManager_.get<gfx::MaterialData>(materialKey)->type;
+  switch (materialDataType) {
+    case gfx::MaterialDataType::None:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+    case gfx::MaterialDataType::Phong:
+      node.addFeature<gfx::GenericDrawable>(
+          mesh,                // render mesh
+          meshAttributeFlags,  // mesh attribute flags
+          shaderManager_,      // shader manager
+          lightSetupKey,       // lightSetup key
+          materialKey,         // material key
+          group);              // drawable group
+      break;
+    case gfx::MaterialDataType::Pbr:
+      node.addFeature<gfx::PbrDrawable>(
+          mesh,                // render mesh
+          meshAttributeFlags,  // mesh attribute flags
+          shaderManager_,      // shader manager
+          lightSetupKey,       // lightSetup key
+          materialKey,         // material key
+          group);              // drawable group
+      break;
+  }
 }
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
@@ -1795,10 +2020,10 @@ void ResourceManager::initDefaultMaterials() {
 
 bool ResourceManager::isLightSetupCompatible(
     const LoadedAssetData& loadedAssetData,
-    const Magnum::ResourceKey& lightSetup) const {
+    const Magnum::ResourceKey& lightSetupKey) const {
   // if light setup has lights in it, but asset was loaded in as flat shaded,
   // there may be an error when rendering.
-  return lightSetup == Mn::ResourceKey{NO_LIGHT_KEY} ||
+  return lightSetupKey == Mn::ResourceKey{NO_LIGHT_KEY} ||
          loadedAssetData.assetInfo.requiresLighting;
 }
 

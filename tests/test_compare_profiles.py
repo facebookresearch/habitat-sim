@@ -61,7 +61,8 @@ def test_compare_profiles():
     # Thread 2
     # 01234567890
     # ..[......).   incl 70   excl 10  root B
-    # ...[.....).   incl 60   excl 60  child 6
+    # ...[.....).   incl 60   excl 40  child 6
+    # ....[)..[).   incl 20   excl 20  child 7 (two events)
 
     # note on child 3: it's unrealistic for a child event to extend beyond the
     # end time of its parent (child 2 in this case), but we expect to handle it
@@ -78,6 +79,8 @@ def test_compare_profiles():
 
     c.execute("INSERT INTO NVTX_EVENTS VALUES (20, 90, 'root B', 2)")
     c.execute("INSERT INTO NVTX_EVENTS VALUES (30, 90, 'child 6', 2)")
+    c.execute("INSERT INTO NVTX_EVENTS VALUES (40, 50, 'child 7', 2)")
+    c.execute("INSERT INTO NVTX_EVENTS VALUES (80, 90, 'child 7', 2)")
 
     # Save (commit) the changes
     c.commit()
@@ -102,10 +105,13 @@ def test_compare_profiles():
     assert summary["root B"].time_inclusive == 70
     assert summary["root B"].time_exclusive == 10
     assert summary["child 6"].time_inclusive == 60
-    assert summary["child 6"].time_exclusive == 60
+    assert summary["child 6"].time_exclusive == 40
+    assert summary["child 7"].time_exclusive == 20
+    assert summary["child 7"].time_exclusive == 20
+    assert summary["child 7"].count == 2
 
     # verify print output (exact string match)
-    expected_output = """event name   incl (ms)     excl (ms)  \nroot A             90            20  \nroot B             70            10  \nchild 6            60            60  \nchild 2            40            10  \nchild 3            40            30  \nchild 0            20            10  \nchild 1            10            10  \nchild 4            10            10  \n"""
+    expected_output = """event name  count     incl (ms)     excl (ms)  \nroot A         1            90            20  \nroot B         1            70            10  \nchild 6        1            60            40  \nchild 2        1            40            10  \nchild 3        1            40            30  \nchild 0        1            20            10  \nchild 7        2            20            20  \nchild 1        1            10            10  \nchild 4        1            10            10  \n"""
 
     with patch("sys.stdout", new=StringIO()) as fake_out:
         compare_profiles.print_summaries(

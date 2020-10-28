@@ -6,7 +6,7 @@ class InvalidAttachedObject(RuntimeError):
     pass
 
 
-def assert_obj_valid(obj: mn.scenegraph.AbstractFeature3D):
+def assert_obj_valid(obj: mn.scenegraph.AbstractFeature3D) -> None:
     if not obj.object:
         raise InvalidAttachedObject(
             "Attached Object is invalid.  Attached to a valid scene graph before use."

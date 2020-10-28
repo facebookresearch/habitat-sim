@@ -47,7 +47,7 @@ class URDFImporter {
   // attempt to load a URDF file
   bool loadURDF(const std::string& filename);
 
-  virtual const io::UrdfModel& getModel() const;
+  virtual const io::URDF::Model& getModel() const;
 
   void setFixedBase(bool fixedBase) {
     urdfParser_.getModel().m_overrideFixedBase = fixedBase;
@@ -65,7 +65,7 @@ class URDFImporter {
                                    std::vector<int>& childLinkIndices) const;
 
   virtual bool getLinkContactInfo(int linkIndex,
-                                  io::URDFLinkContactInfo& contactInfo) const;
+                                  io::URDF::LinkContactInfo& contactInfo) const;
 
   // TODO: refactor this nonsense
   virtual bool getJointInfo(int linkIndex,
@@ -102,7 +102,7 @@ class URDFImporter {
  protected:
   // parses the URDF file into general, simulation platform invariant
   // datastructures
-  io::URDFParser urdfParser_;
+  io::URDF::Parser urdfParser_;
 
   esp::assets::ResourceManager& resourceManager_;
 };

@@ -59,7 +59,7 @@ int PhysicsManager::addObject(const int objectLibId,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
   const std::string& configHandle =
-      resourceManager_.getObjectAttributesManager()->getTemplateHandleByID(
+      resourceManager_.getObjectAttributesManager()->getObjectHandleByID(
           objectLibId);
 
   return addObject(configHandle, drawables, attachmentNode, lightSetup);
@@ -145,6 +145,10 @@ void PhysicsManager::removeArticulatedObject(int physObjectID) {
   CHECK(existingArticulatedObjects_.count(physObjectID));
   scene::SceneNode* objectNode =
       &existingArticulatedObjects_.at(physObjectID)->node();
+  for (auto linkObjId :
+       existingArticulatedObjects_.at(physObjectID)->objectIdToLinkId_) {
+    deallocateObjectID(linkObjId.first);
+  }
   existingArticulatedObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
   delete objectNode;

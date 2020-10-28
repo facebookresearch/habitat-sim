@@ -14,6 +14,14 @@ git submodule update --init
 ./build.sh # or ./build-public.sh when deploying to aihabitat.org
 ```
 
+If you're having trouble with doxygen, check your version with
+
+```bash
+doxygen -v
+```
+
+and make sure you're using 1.8.16.
+
 ## Viewing Docs Locally
 
 After a successful build, the `build.sh` script will show clickable links

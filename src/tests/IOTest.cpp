@@ -2,13 +2,14 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
-#include "esp/assets/attributes/ObjectAttributes.h"
 #include "esp/core/esp.h"
 #include "esp/io/URDFParser.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "configure.h"
 
@@ -16,8 +17,11 @@ namespace Cr = Corrade;
 
 using namespace esp::io;
 
-using esp::assets::attributes::AbstractObjectAttributes;
-using esp::assets::attributes::ObjectAttributes;
+using esp::metadata::attributes::AbstractObjectAttributes;
+using esp::metadata::attributes::ObjectAttributes;
+
+const std::string dataDir =
+    Corrade::Utility::Directory::join(SCENE_DATASETS, "../");
 
 TEST(IOTest, fileExistTest) {
   std::string file = FILE_THAT_EXISTS;
@@ -108,59 +112,24 @@ TEST(IOTest, parseURDF) {
   const std::string iiwaURDF = Cr::Utility::Directory::join(
       TEST_ASSETS, "URDF/kuka_iiwa/model_free_base.urdf");
 
-  URDFParser parser;
+  URDF::Parser parser;
 
+  // load the iiwa test asset
   parser.parseURDF(iiwaURDF);
+  auto& model = parser.getModel();
+  Cr::Utility::Debug() << "name: " << model.m_name;
+  EXPECT_EQ(model.m_name, "lbr_iiwa");
+  Cr::Utility::Debug() << "file: " << model.m_sourceFile;
+  EXPECT_EQ(model.m_sourceFile, iiwaURDF);
+  Cr::Utility::Debug() << "links: " << model.m_links;
+  EXPECT_EQ(model.m_links.size(), 8);
+  Cr::Utility::Debug() << "root links: " << model.m_rootLinks;
+  EXPECT_EQ(model.m_rootLinks.size(), 1);
+  Cr::Utility::Debug() << "joints: " << model.m_joints;
+  EXPECT_EQ(model.m_joints.size(), 7);
+  Cr::Utility::Debug() << "materials: " << model.m_materials;
+  EXPECT_EQ(model.m_materials.size(), 3);
+
+  // test overwrite re-load
   parser.parseURDF(iiwaURDF);
-}
-
-/**
- * @brief Test basic JSON file processing
- */
-TEST(IOTest, JsonTest) {
-  std::string s = "{\"test\":[1, 2, 3, 4]}";
-  const auto& json = esp::io::parseJsonString(s);
-  std::vector<int> t;
-  esp::io::toIntVector(json["test"], &t);
-  EXPECT_EQ(t[1], 2);
-  EXPECT_EQ(esp::io::jsonToString(json), "{\"test\":[1,2,3,4]}");
-
-  // test basic attributes populating
-
-  std::string attr_str =
-      "{\"render mesh\": \"banana.glb\",\"join collision "
-      "meshes\":false,\"mass\": 0.066,\"scale\": [2.0,2.0,2]}";
-
-  const auto& jsonDoc = esp::io::parseJsonString(attr_str);
-
-  // for function ptr placeholder
-  using std::placeholders::_1;
-  ObjectAttributes::ptr attributes = ObjectAttributes::create("temp");
-
-  bool success = false;
-  // test vector
-  success = esp::io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonDoc, "scale", std::bind(&ObjectAttributes::setScale, attributes, _1));
-  EXPECT_EQ(success, true);
-  EXPECT_EQ(attributes->getScale()[1], 2);
-
-  // test double
-  success = esp::io::jsonIntoSetter<double>(
-      jsonDoc, "mass", std::bind(&ObjectAttributes::setMass, attributes, _1));
-  EXPECT_EQ(success, true);
-  EXPECT_EQ(attributes->getMass(), 0.066);
-
-  // test bool
-  success = esp::io::jsonIntoSetter<bool>(
-      jsonDoc, "join collision meshes",
-      std::bind(&ObjectAttributes::setJoinCollisionMeshes, attributes, _1));
-  EXPECT_EQ(success, true);
-  EXPECT_EQ(attributes->getJoinCollisionMeshes(), false);
-
-  // test string
-  success = esp::io::jsonIntoSetter<std::string>(
-      jsonDoc, "render mesh",
-      std::bind(&ObjectAttributes::setRenderAssetHandle, attributes, _1));
-  EXPECT_EQ(success, true);
-  EXPECT_EQ(attributes->getRenderAssetHandle(), "banana.glb");
 }

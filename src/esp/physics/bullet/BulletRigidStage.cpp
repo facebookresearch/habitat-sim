@@ -46,8 +46,10 @@ bool BulletRigidStage::initialization_LibSpecific(
     object->setFriction(initializationAttributes_->getFrictionCoefficient());
     object->setRestitution(
         initializationAttributes_->getRestitutionCoefficient());
-    bWorld_->addRigidBody(object.get(), btBroadphaseProxy::StaticFilter,
-                          btBroadphaseProxy::DefaultFilter);
+    bWorld_->addRigidBody(
+        object.get(),
+        2,       // collisionFilterGroup (2 == StaticFilter)
+        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
     collisionObjToObjIds_->emplace(object.get(), objectId_);
   }
 
@@ -92,7 +94,7 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     std::unique_ptr<btBvhTriangleMeshShape> meshShape =
         std::make_unique<btBvhTriangleMeshShape>(indexedVertexArray.get(),
                                                  true);
-    meshShape->setMargin(0.04);
+    meshShape->setMargin(initializationAttributes_->getMargin());
     meshShape->setLocalScaling(
         btVector3{transformFromLocalToWorld
                       .scaling()});  // scale is a property of the shape
@@ -109,7 +111,7 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
                     btVector3{transformFromLocalToWorld.translation()}};
     std::unique_ptr<btRigidBody> sceneCollisionObject =
         std::make_unique<btRigidBody>(cInfo);
-    ASSERT(sceneCollisionObject->isStaticObject());
+    ASSERT(sceneCollisionObject->isStaticObject(), );
     BulletDebugManager::get().mapCollisionObjectTo(
         sceneCollisionObject.get(),
         getCollisionDebugName(bStaticCollisionObjects_.size()));

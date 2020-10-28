@@ -195,7 +195,7 @@ elif args.string:
 
 default_settings = dr.default_sim_settings.copy()
 
-if not (args.feature in default_settings.keys()):
+if args.feature not in default_settings.keys():
     raise RuntimeError("Feature to be tested is not defined in default_sim_settings.")
 if args.feature == "max_frames":
     raise RuntimeError("Feature cannot be the max_frames.")

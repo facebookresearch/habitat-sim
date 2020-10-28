@@ -13,6 +13,7 @@ target_link_libraries(
           gfx
           nav
           scene
+          sim
           Magnum::DebugTools
           MagnumIntegration::ImGui
 )

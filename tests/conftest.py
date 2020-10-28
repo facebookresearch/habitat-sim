@@ -2,9 +2,6 @@ from os import path as osp
 
 import pytest
 
-import habitat_sim
-from examples.settings import make_cfg
-
 _test_scene = osp.abspath(
     osp.join(
         osp.dirname(__file__),
@@ -13,7 +10,7 @@ _test_scene = osp.abspath(
 )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def make_cfg_settings():
     return dict(
         height=480,
@@ -26,10 +23,3 @@ def make_cfg_settings():
         scene=_test_scene,
         frustum_culling=True,
     )
-
-
-# Any test globally can take `sim` as an arguement and will get
-# the single instance of the Simulator
-@pytest.fixture(scope="session")
-def sim(make_cfg_settings):
-    return habitat_sim.Simulator(make_cfg(make_cfg_settings))

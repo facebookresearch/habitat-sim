@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GFX_MAGNUM_H_
+#define ESP_GFX_MAGNUM_H_
 
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/GL/Texture.h>
@@ -28,3 +29,5 @@ typedef Magnum::SceneGraph::Drawable3D MagnumDrawable;
 typedef Magnum::SceneGraph::DrawableGroup3D MagnumDrawableGroup;
 typedef Magnum::GL::AbstractShaderProgram MagnumShaderProgram;
 typedef Magnum::Trade::PhongMaterialData MagnumMaterialData;
+
+#endif  // ESP_GFX_MAGNUM_H_

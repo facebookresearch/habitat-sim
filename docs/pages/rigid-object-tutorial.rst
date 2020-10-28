@@ -15,7 +15,7 @@ Interactive Rigid Objects
 
 First, download the `example objects`_ and extract them into path/to/habitat-sim/data/objects/.
 
-.. _example objects: http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip
+.. _example objects: http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip
 
 The example code below is runnable via:
 
@@ -129,7 +129,7 @@ Velocities can also be specified in the local space of the object to easily appl
 
 For this tutorial section, you will need to download the `merged locobot asset`_ and extract it into path/to/habitat-sim/data/objects/
 
-.. _merged locobot asset: http://dl.fbaipublicfiles.com/habitat/locobot_merged.zip
+.. _merged locobot asset: http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip
 
 Previous stages of this tutorial have covered adding objects to the world and manipulating them by setting positions, velocity, forces, and torques.
 In all of these examples, the agent has been a passive onlooker observing the scene.
@@ -151,7 +151,7 @@ In this example, the agent is embodied by a rigid robot asset and the :ref:`habi
 
 For this tutorial section, if you have not done so, you will need to download the `merged locobot asset`_ and extract it into path/to/habitat-sim/data/objects/
 
-.. _merged locobot asset: http://dl.fbaipublicfiles.com/habitat/locobot_merged.zip
+.. _merged locobot asset: http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip
 
 Instead of full dynamic simulation, kinematic state setting and the NavMesh can be used to simulate constrained, continuous navigation tasks.
 In this example the agent is embodied by a robot asset with :ref:`habitat_sim.physics.MotionType.KINEMATIC`. We use a :ref:`habitat_sim.physics.VelocityControl` structure to manually integrate a control velocity and snap the resulting state to the NavMesh before running dynamic simulation.
@@ -178,7 +178,7 @@ With NavMesh sliding dis-allowed:
 Adding/Removing Objects
 ***********************
 
-Objects can be instanced from templates (i.e. :ref:`PhysicsObjectAttributes`) into the scene by template id with :ref:`Simulator.add_object` or by template string key with :ref:`Simulator.add_object_by_handle`.
+Objects can be instanced from templates (i.e. :ref:`ObjectAttributes`) into the scene by template id with :ref:`Simulator.add_object` or by template string key with :ref:`Simulator.add_object_by_handle`.
 These functions return a unique id which can be used to refer to the object instance. In the case of errors in construction, -1 is returned.
 
 By default, a new :ref:`SceneNode` will be created when an object is instanced. However, the object can be attached to an existing :ref:`SceneNode` (e.g. that of the :ref:`Agent`) if provided. This is demonstrated in `Embodied Agents`_.

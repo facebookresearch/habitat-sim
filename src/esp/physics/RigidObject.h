@@ -122,11 +122,13 @@ class RigidObject : public RigidBase {
   /**
    * @brief Get a copy of the template used to initialize this object.
    *
-   * @return A copy of the @ref ObjectAttributes template used to create
-   * this object.
+   * @return A copy of the @ref esp::metadata::attributes::ObjectAttributes
+   * template used to create this object.
    */
-  std::shared_ptr<Attrs::ObjectAttributes> getInitializationAttributes() const {
-    return RigidBase::getInitializationAttributes<Attrs::ObjectAttributes>();
+  std::shared_ptr<metadata::attributes::ObjectAttributes>
+  getInitializationAttributes() const {
+    return RigidBase::getInitializationAttributes<
+        metadata::attributes::ObjectAttributes>();
   };
 
  private:

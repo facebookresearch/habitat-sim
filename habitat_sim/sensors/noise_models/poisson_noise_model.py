@@ -6,13 +6,14 @@
 
 import attr
 import numpy as np
+from numpy import ndarray
 
 from habitat_sim.registry import registry
 from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 
-def _simulate(image):
+def _simulate(image: ndarray) -> ndarray:
 
     image = image / 255.0
 
@@ -29,23 +30,23 @@ def _simulate(image):
 @attr.s(auto_attribs=True)
 class PoissonNoiseModelCPUImpl:
     @staticmethod
-    def simulate(image):
+    def simulate(image: ndarray) -> ndarray:
         return _simulate(image)
 
 
 @registry.register_noise_model
 @attr.s(auto_attribs=True, kw_only=True)
 class PoissonNoiseModel(SensorNoiseModel):
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         self._impl = PoissonNoiseModelCPUImpl()
 
     @staticmethod
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return sensor_type == SensorType.COLOR
 
-    def simulate(self, image):
+    def simulate(self, image: ndarray) -> ndarray:
         return self._impl.simulate(image)
 
-    def apply(self, image):
+    def apply(self, image: ndarray) -> ndarray:
         r"""Alias of `simulate()` to conform to base-class and expected API"""
         return self.simulate(image)

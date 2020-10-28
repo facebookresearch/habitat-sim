@@ -12,6 +12,7 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
@@ -29,6 +30,7 @@
 static constexpr int ROTATION_SHIFT = 30;
 static constexpr int FACE_MASK = 0x3FFFFFFF;
 
+namespace Mn = Magnum;
 namespace Cr = Corrade;
 
 namespace esp {
@@ -466,9 +468,23 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
   PTexMeshData::MeshData originalMesh;
   parsePLY(meshFile, originalMesh);
 
+  computeTriangleMeshIndices(originalMesh.ibo.size() / 4, originalMesh);
+  collisionMeshData_.primitive = Mn::MeshPrimitive::Triangles;
+
   submeshes_.clear();
   if (splitSize_ > 0.0f) {
     LOG(INFO) << "Splitting mesh... ";
+
+    collisionVbo_ = Cr::Containers::Array<Mn::Vector3>(originalMesh.vbo.size());
+    Cr::Utility::copy(Cr::Containers::arrayCast<Mn::Vector3>(
+                          Cr::Containers::arrayView(originalMesh.vbo)),
+                      collisionVbo_);
+    collisionIbo_ =
+        Cr::Containers::Array<Mn::UnsignedInt>(originalMesh.ibo_tri.size());
+    Cr::Utility::copy(originalMesh.ibo_tri, collisionIbo_);
+
+    collisionMeshData_.positions = collisionVbo_;
+    collisionMeshData_.indices = collisionIbo_;
 
     // In this version, we load the sorted faces directly from an external
     // binary file dumped out from ReplicaSDK, and disable the function
@@ -485,6 +501,10 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
     // LOG(INFO) << "done" << std::endl;
   } else {
     submeshes_.emplace_back(std::move(originalMesh));
+    collisionMeshData_.positions = Cr::Containers::arrayCast<Mn::Vector3>(
+        Cr::Containers::arrayView(submeshes_.back().vbo));
+    collisionMeshData_.indices = Cr::Containers::arrayCast<Mn::UnsignedInt>(
+        Cr::Containers::arrayView(submeshes_.back().ibo_tri));
   }
 }
 
