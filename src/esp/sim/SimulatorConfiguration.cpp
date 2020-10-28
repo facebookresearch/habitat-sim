@@ -8,7 +8,8 @@ namespace esp {
 namespace sim {
 bool operator==(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b) {
-  return a.scene == b.scene && a.defaultAgentId == b.defaultAgentId &&
+  return a.activeSceneID == b.activeSceneID &&
+         a.defaultAgentId == b.defaultAgentId &&
          a.defaultCameraUuid == b.defaultCameraUuid &&
          a.compressTextures == b.compressTextures &&
          a.createRenderer == b.createRenderer &&
