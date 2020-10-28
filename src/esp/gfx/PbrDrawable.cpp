@@ -85,13 +85,17 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .updateShaderLightParameters()
       .updateShaderLightDirectionParameters(transformationMatrix, camera);
 
-  if (glIsEnabled(GL_CULL_FACE)) {
-    if (flags_ & PbrShader::Flag::DoubleSided) {
+  // Assume that in a model, double-sided meshes are significantly less than
+  // single-sided meshes.
+  // To reduce the usage of glIsEnabled, once a double-sided mesh is
+  // encountered, the FaceCulling is disabled, and will not be enabled again at
+  // least in this function.
+  // TODO:
+  // it should have a global GL state tracker in Magnum to track it.
+
+  if (flags_ & PbrShader::Flag::DoubleSided) {
+    if (glIsEnabled(GL_CULL_FACE)) {
       Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
-    }
-  } else {
-    if (!bool(flags_ & PbrShader::Flag::DoubleSided)) {
-      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
     }
   }
 
