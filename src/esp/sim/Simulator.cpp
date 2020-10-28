@@ -136,10 +136,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       config_.scene.filepaths, config_.sceneLightSetup, config_.frustumCulling);
 
   // Build scene file name based on config specification
-  std::string stageFilename = config_.scene.id;
-  if (config_.scene.filepaths.count("mesh")) {
-    stageFilename = config_.scene.filepaths.at("mesh");
-  }
+  std::string stageFilename = config_.activeSceneID;
 
   // Create scene attributes with values based on sceneFilename
   auto stageAttributes = stageAttributesMgr->createObject(stageFilename, true);

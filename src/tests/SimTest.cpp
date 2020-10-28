@@ -31,7 +31,6 @@ using esp::gfx::LightSetup;
 using esp::metadata::attributes::AbstractPrimitiveAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
-using esp::scene::SceneConfiguration;
 using esp::sensor::Observation;
 using esp::sensor::ObservationSpace;
 using esp::sensor::ObservationSpaceType;
@@ -51,7 +50,7 @@ const std::string vangogh =
 const std::string skokloster =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "habitat-test-scenes/skokloster-castle.glb");
-const std::string planeScene =
+const std::string planeStage =
     Cr::Utility::Directory::join(TEST_ASSETS, "scenes/plane.glb");
 const std::string physicsConfigFile =
     Cr::Utility::Directory::join(TEST_ASSETS, "testing.physics_config.json");
@@ -347,7 +346,7 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   CORRADE_SKIP(
       "We are iterating on lighting as of Sep 2020, so the expected behavior "
       "isn't finalized.");
-  auto simulator = getSimulator(planeScene);
+  auto simulator = getSimulator(planeStage);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   // make sure updates apply to all objects using the light setup
@@ -442,7 +441,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 
 void SimTest::loadingObjectTemplates() {
   Corrade::Utility::Debug() << "Starting Test : loadingObjectTemplates ";
-  auto simulator = getSimulator(planeScene);
+  auto simulator = getSimulator(planeStage);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
@@ -504,7 +503,7 @@ void SimTest::loadingObjectTemplates() {
 void SimTest::buildingPrimAssetObjectTemplates() {
   Corrade::Utility::Debug()
       << "Starting Test : buildingPrimAssetObjectTemplates ";
-  auto simulator = getSimulator(planeScene);
+  auto simulator = getSimulator(planeStage);
 
   // test that the correct number of default primitive assets are available as
   // render/collision targets
