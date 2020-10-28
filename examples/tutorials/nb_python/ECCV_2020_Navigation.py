@@ -186,7 +186,7 @@ sim_settings = {
 def make_simple_cfg(settings):
     # simulator backend
     sim_cfg = habitat_sim.SimulatorConfiguration()
-    sim_cfg.scene.id = settings["scene"]
+    sim_cfg.scene_id = settings["scene"]
 
     # agent
     agent_cfg = habitat_sim.agent.AgentConfiguration()
@@ -306,7 +306,7 @@ sim_settings = {
 def make_cfg(settings):
     sim_cfg = habitat_sim.SimulatorConfiguration()
     sim_cfg.gpu_device_id = 0
-    sim_cfg.scene.id = settings["scene"]
+    sim_cfg.scene_id = settings["scene"]
     sim_cfg.enable_physics = settings["enable_physics"]
 
     # Note: all sensors must have the same resolution
