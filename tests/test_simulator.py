@@ -16,8 +16,6 @@ def test_no_navmesh_smoke():
     agent_config.sensor_specifications = []
 
     sim_cfg.scene_id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
-    # Make it try to load a navmesh that doesn't exists
-    sim_cfg.scene.filepaths["navmesh"] = "/tmp/dne.navmesh"
 
     with habitat_sim.Simulator(
         habitat_sim.Configuration(sim_cfg, [agent_config])
