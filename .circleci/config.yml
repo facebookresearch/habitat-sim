@@ -137,11 +137,9 @@ commands:
                 . activate habitat;
                 git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
                 cd ~/emsdk
-                #git checkout 6a4c0f98
-                # Use 1.38.42 that has the following integrated:
-                # https://github.com/emscripten-core/emscripten/pull/9220
                 ./emsdk install 2.0.6
                 ./emsdk activate 2.0.6
+                source ./emsdk_env.sh
                 touch ~/emscripten_installed
               fi
       - run:
