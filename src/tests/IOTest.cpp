@@ -133,3 +133,65 @@ TEST(IOTest, parseURDF) {
   // test overwrite re-load
   parser.parseURDF(iiwaURDF);
 }
+
+/**
+ * @brief Test basic JSON file processing
+ */
+TEST(IOTest, JsonTest) {
+  std::string s = "{\"test\":[1,2,3,4]}";
+  const auto& json = esp::io::parseJsonString(s);
+  std::vector<int> t;
+  esp::io::toIntVector(json["test"], &t);
+  EXPECT_EQ(t[1], 2);
+  EXPECT_EQ(esp::io::jsonToString(json), s);
+
+  // test io
+  auto testFilepath =
+      Corrade::Utility::Directory::join(dataDir, "../io_test_json.json");
+  EXPECT_TRUE(writeJsonToFile(json, testFilepath));
+  const auto& loadedJson = esp::io::parseJsonFile(testFilepath);
+  EXPECT_EQ(esp::io::jsonToString(loadedJson), s);
+  Corrade::Utility::Directory::rm(testFilepath);
+
+  // test basic attributes populating
+
+  std::string attr_str =
+      "{\"render mesh\": \"banana.glb\",\"join collision "
+      "meshes\":false,\"mass\": 0.066,\"scale\": [2.0,2.0,2]}";
+
+  // io::JsonGenericValue :
+  esp::io::JsonDocument tmpJSON = esp::io::parseJsonString(attr_str);
+  // io::JsonGenericValue :
+  const esp::io::JsonGenericValue jsonDoc = tmpJSON.GetObject();
+
+  // for function ptr placeholder
+  using std::placeholders::_1;
+  ObjectAttributes::ptr attributes = ObjectAttributes::create("temp");
+
+  bool success = false;
+  // test vector
+  success = esp::io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "scale", std::bind(&ObjectAttributes::setScale, attributes, _1));
+  EXPECT_EQ(success, true);
+  EXPECT_EQ(attributes->getScale()[1], 2);
+
+  // test double
+  success = esp::io::jsonIntoSetter<double>(
+      jsonDoc, "mass", std::bind(&ObjectAttributes::setMass, attributes, _1));
+  EXPECT_EQ(success, true);
+  EXPECT_EQ(attributes->getMass(), 0.066);
+
+  // test bool
+  success = esp::io::jsonIntoSetter<bool>(
+      jsonDoc, "join collision meshes",
+      std::bind(&ObjectAttributes::setJoinCollisionMeshes, attributes, _1));
+  EXPECT_EQ(success, true);
+  EXPECT_EQ(attributes->getJoinCollisionMeshes(), false);
+
+  // test string
+  success = esp::io::jsonIntoSetter<std::string>(
+      jsonDoc, "render mesh",
+      std::bind(&ObjectAttributes::setRenderAssetHandle, attributes, _1));
+  EXPECT_EQ(success, true);
+  EXPECT_EQ(attributes->getRenderAssetHandle(), "banana.glb");
+}

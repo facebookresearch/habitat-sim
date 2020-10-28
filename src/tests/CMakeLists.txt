@@ -20,6 +20,9 @@ target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY
 
 test(CoreTest io)
 
+test(MetadataMediatorTest assets metadata)
+target_include_directories(MetadataMediatorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 test(NavTest nav assets)
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

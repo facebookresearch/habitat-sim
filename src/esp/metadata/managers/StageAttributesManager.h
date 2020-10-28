@@ -168,10 +168,7 @@ class StageAttributesManager
    * pointer for the copy constructor as required by
    * AttributesManager<StageAttributes::ptr>
    */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["StageAttributes"] =
-        &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
-  }  // StageAttributesManager::buildCtorFuncPtrMaps
+  void buildCtorFuncPtrMaps() override;
 
   // instance vars
 
