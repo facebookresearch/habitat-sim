@@ -93,10 +93,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // TODO:
   // it should have a global GL state tracker in Magnum to track it.
 
-  if (flags_ & PbrShader::Flag::DoubleSided) {
-    if (glIsEnabled(GL_CULL_FACE)) {
-      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
-    }
+  if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE)) {
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
 
   (*shader_)
