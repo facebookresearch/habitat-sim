@@ -1539,6 +1539,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       auto aliengoController =
           std::make_unique<AliengoController>(*simulator_.get(), objectId);
       aliengoControllers.push_back(std::move(aliengoController));
+
+      // edit the friction
+      /*
+      for(int linkId=0; linkId<simulator_->getNumArticulatedLinks(objectId);
+      ++linkId){ simulator_->setArticulatedLinkFriction(objectId, linkId, 1);
+      }
+       */
     } break;
     case KeyEvent::Key::One: {
       std::string urdfFilePath =

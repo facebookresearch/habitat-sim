@@ -363,6 +363,17 @@ void BulletArticulatedObject::addArticulatedLinkForce(int linkId,
   btMultiBody_->addLinkForce(linkId, btVector3{force});
 }
 
+float BulletArticulatedObject::getArticulatedLinkFriction(int linkId) {
+  CHECK(getNumLinks() > linkId);
+  return btMultiBody_->getLinkCollider(linkId)->getFriction();
+}
+
+void BulletArticulatedObject::setArticulatedLinkFriction(int linkId,
+                                                         float friction) {
+  CHECK(getNumLinks() > linkId);
+  btMultiBody_->getLinkCollider(linkId)->setFriction(friction);
+}
+
 void BulletArticulatedObject::reset() {
   // reset positions and velocities to zero
   // clears forces/torques

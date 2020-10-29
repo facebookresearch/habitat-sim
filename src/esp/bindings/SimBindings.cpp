@@ -305,6 +305,11 @@ void initSimBindings(py::module& m) {
            "object_id"_a)
       .def("get_articulated_link_rigid_state",
            &Simulator::getArticulatedLinkRigidState, "object_id"_a, "link_id"_a)
+      .def("get_articulated_link_friction",
+           &Simulator::getArticulatedLinkFriction, "object_id"_a, "link_id"_a)
+      .def("set_articulated_link_friction",
+           &Simulator::setArticulatedLinkFriction, "object_id"_a, "link_id"_a,
+           "friction"_a)
 
       /* --- Joint Motor API --- */
       .def("create_joint_motor", &Simulator::createJointMotor, "object_id"_a,

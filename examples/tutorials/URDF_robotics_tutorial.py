@@ -214,6 +214,14 @@ def main(make_video=True, show_video=True):
         link_rigid_state = sim.get_articulated_link_rigid_state(robot_id, link_id)
         sim.set_translation(link_rigid_state.translation, cube_id)
         sim.set_rotation(link_rigid_state.rotation, cube_id)
+        # get the link friction
+        print(
+            "Link "
+            + str(link_id)
+            + " friction coefficient = "
+            + str(sim.get_articulated_link_friction(robot_id, link_id))
+        )
+        # Note: set this with 'sim.get_articulated_link_friction(robot_id, link_id, friction)'
         observations += simulate(sim, dt=0.5, get_frames=make_video)
     sim.remove_object(cube_id)
 

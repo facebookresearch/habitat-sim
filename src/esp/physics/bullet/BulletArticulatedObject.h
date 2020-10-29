@@ -97,6 +97,12 @@ class BulletArticulatedObject : public ArticulatedObject {
   virtual void addArticulatedLinkForce(int linkId,
                                        Magnum::Vector3 force) override;
 
+  //! get the coefficient of friction for a link's collision objects
+  virtual float getArticulatedLinkFriction(int linkId) override;
+
+  //! set the coefficient of friction for a link's collision objects
+  virtual void setArticulatedLinkFriction(int linkId, float friction) override;
+
   /**
    * @brief reset the articulated rigid body to 0 velocities and positions.
    */

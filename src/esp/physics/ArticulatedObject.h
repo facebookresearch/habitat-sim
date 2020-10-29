@@ -317,6 +317,13 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual void addArticulatedLinkForce(CORRADE_UNUSED int linkId,
                                        CORRADE_UNUSED Magnum::Vector3 force){};
 
+  virtual float getArticulatedLinkFriction(CORRADE_UNUSED int linkId) {
+    return 0;
+  }
+
+  virtual void setArticulatedLinkFriction(CORRADE_UNUSED int linkId,
+                                          CORRADE_UNUSED float friction) {}
+
   /**
    * @brief reset the articulated rigid body to 0 velocities and positions.
    */

@@ -1148,6 +1148,17 @@ class PhysicsManager {
                                                                       force);
   }
 
+  float getArticulatedLinkFriction(int objectId, int linkId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getArticulatedLinkFriction(
+        linkId);
+  }
+
+  void setArticulatedLinkFriction(int objectId, int linkId, float friction) {
+    existingArticulatedObjects_.at(objectId)->setArticulatedLinkFriction(
+        linkId, friction);
+  }
+
   void setArticulatedObjectRootState(int objectId,
                                      const Magnum::Matrix4& state) {
     CHECK(existingArticulatedObjects_.count(objectId));

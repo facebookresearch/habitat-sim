@@ -557,6 +557,14 @@ class Simulator {
   };
   core::RigidState getArticulatedLinkRigidState(int objectId, int linkId);
 
+  float getArticulatedLinkFriction(int objectId, int linkId) {
+    return physicsManager_->getArticulatedLinkFriction(objectId, linkId);
+  }
+
+  void setArticulatedLinkFriction(int objectId, int linkId, float friction) {
+    physicsManager_->setArticulatedLinkFriction(objectId, linkId, friction);
+  }
+
   // Joint Motor API
 
   /**
