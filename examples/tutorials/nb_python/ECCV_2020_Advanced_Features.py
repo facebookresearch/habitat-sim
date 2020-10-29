@@ -1005,7 +1005,7 @@ print(object_orientation)
 
 # add a box with default semanticId configured in the template
 # Note: each face of this box asset is a separate component
-box_template = habitat_sim.attributes.PhysicsObjectAttributes()
+box_template = habitat_sim.attributes.ObjectAttributes()
 box_template.render_asset_handle = str(
     os.path.join(data_path, "test_assets/objects/transform_box.glb")
 )
