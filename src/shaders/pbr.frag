@@ -117,7 +117,11 @@ const float Epsilon = 0.0001;
 float normalDistribution(vec3 normal, vec3 halfVector, float roughness) {
   float a = roughness * roughness;
   float a2 = a * a;
+#if defined(DOUBLE_SIDED)
+  float n_dot_h = abs(dot(normal, halfVector));
+#else
   float n_dot_h = max(dot(normal, halfVector), 0.0);
+#endif
 
   float d = n_dot_h * n_dot_h * (a2 - 1.0) + 1.0;
   d = PI * d * d;
@@ -142,8 +146,13 @@ float specularGeometricAttenuation(vec3 normal,
                                    vec3 light,
                                    vec3 view,
                                    float roughness) {
+#if defined(DOUBLE_SIDED)
+  float n_dot_l = abs(dot(normal, light));
+  float n_dot_v = abs(dot(normal, view));
+#else
   float n_dot_l = max(dot(normal, light), 0.0);
   float n_dot_v = max(dot(normal, view), 0.0);
+#endif
   float ggx1 = geometrySchlickGGX(n_dot_l, roughness);
   float ggx2 = geometrySchlickGGX(n_dot_v, roughness);
 
@@ -192,14 +201,24 @@ vec3 microfacetModel(vec3 baseColor,
   vec3 diffuse = mix(vec3(1.0) - Fresnel, vec3(0.0), metallic) * baseColor;
 
   // Specular BDDF
+#if defined(DOUBLE_SIDED)
+  float temp =
+      max(4.0 * abs(dot(normal, light)) * abs(dot(normal, view)), Epsilon);
+#else
   float temp =
       max(4.0 * max(dot(normal, light), 0.0) * max(dot(normal, view), 0.0),
           Epsilon);
+#endif
   vec3 specular = Fresnel *
                   specularGeometricAttenuation(normal, light, view, roughness) *
                   normalDistribution(normal, halfVector, roughness) / temp;
 
-  return (diffuse + specular) * lightRadiance * max(dot(normal, light), 0.0);
+  return (diffuse + specular) * lightRadiance *
+#if defined(DOUBLE_SIDED)
+  abs(dot(normal, light));
+#else
+  max(dot(normal, light), 0.0);
+#endif
 }
 
 void main() {

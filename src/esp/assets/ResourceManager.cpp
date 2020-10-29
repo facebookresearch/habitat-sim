@@ -1388,6 +1388,10 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
         textures_[textureBaseIndex + material.roughnessTexture()].get();
   }
 
+  if (material.isDoubleSided()) {
+    finalMaterial->doubleSided = true;
+  }
+
   return finalMaterial;
 }
 
