@@ -107,9 +107,6 @@ commands:
               sudo apt-get --yes --force-yes install cuda
               touch ~/cuda_installed
               nvidia-smi
-      - restore_cache:
-          keys:
-            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
       - run: &install_conda
           name: Install conda and dependencies
           no_output_timeout: 20m
@@ -168,13 +165,6 @@ commands:
                 npm install
                 touch ~/npm_deps_installed
               fi
-      - restore_cache:
-          keys:
-            - habitat-lab-{{ checksum "./hablab_sha" }}
-      - restore_cache:
-          keys:
-            - ccache-{{ arch }}-master
-            - ccache-{{ arch }}-{{ .Branch }}
           paths:
             - /home/circleci/.ccache
       - run:
@@ -257,9 +247,6 @@ jobs:
           command: |
             cat .pre-commit-config.yaml > pre-commit-deps.txt
             python -VV >> pre-commit-deps.txt
-      - restore_cache:
-          keys:
-          - v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
 
       - run:
           name: Install Dependencies
@@ -486,6 +473,7 @@ jobs:
             npm run test
       - run:
           name: Run sim tests
+          no_output_timeout: 25m
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
@@ -505,12 +493,14 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest --workers 4 --cov-report=xml --typeguard-packages=habitat_sim --cov=./
+              #pytest --workers 4 --cov-report=xml --typeguard-packages=habitat_sim --cov=./
+              python -X faulthandler -m pytest -v --cov-report=xml --typeguard-packages=habitat_sim --cov=./ tests/test_simulator.py
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest --workers 4 --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
+              #pytest --workers 4 --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
+              python -X faulthandler -m pytest --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               . ~/emsdk/emsdk_env.sh
@@ -552,9 +542,6 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
-      - restore_cache:
-          keys:
-            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
       - run: *install_conda
       - run: *install_deps
       - run:
@@ -580,8 +567,6 @@ jobs:
       - image: circleci/buildpack-deps:disco
     steps:
       - checkout
-      - restore_cache:
-          key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
       - add_ssh_keys:
           fingerprints:
             - "18:88:e0:37:b1:b3:7a:23:aa:1e:f7:43:a8:5b:8e:05"
