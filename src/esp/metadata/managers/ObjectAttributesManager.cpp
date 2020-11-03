@@ -23,9 +23,10 @@ using attributes::AbstractObjectAttributes;
 using attributes::ObjectAttributes;
 namespace managers {
 
-auto ObjectAttributesManager::createPrimBasedAttributesTemplate(
+ObjectAttributes::ptr
+ObjectAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAttrTemplateHandle,
-    bool registerTemplate) -> ObjectAttributes::ptr {
+    bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
     LOG(ERROR)
@@ -115,9 +116,9 @@ void ObjectAttributesManager::setValsFromJSONDoc(
   objAttributes->setComputeCOMFromShape(!comIsSet);
 }  // ObjectAttributesManager::setValsFromJSONDoc
 
-auto ObjectAttributesManager::initNewObjectInternal(
+ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     const std::string& attributesHandle,
-    bool builtFromConfig) -> ObjectAttributes::ptr {
+    bool builtFromConfig) {
   ObjectAttributes::ptr newAttributes =
       this->constructFromDefault(attributesHandle);
   if (nullptr == newAttributes) {
@@ -167,9 +168,9 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
   }
 }  // SceneAttributesManager::setDefaultAssetNameBasedAttributes
 
-auto ObjectAttributesManager::registerObjectFinalize(
+int ObjectAttributesManager::registerObjectFinalize(
     ObjectAttributes::ptr objectTemplate,
-    const std::string& objectTemplateHandle) -> int {
+    const std::string& objectTemplateHandle) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
         << "ObjectAttributesManager::registerObjectFinalize : "

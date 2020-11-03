@@ -158,16 +158,15 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   shader_->draw(mesh_);
 }
 
-auto PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
-                               PbrShader::Flags flags) const
-    -> Mn::ResourceKey {
+Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
+                                          PbrShader::Flags flags) const {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
       static_cast<PbrShader::Flags::UnderlyingType>(
           PbrShader::generateCorrectFlags(flags)));
 }
 
-auto PbrDrawable::updateShader() -> PbrDrawable& {
+PbrDrawable& PbrDrawable::updateShader() {
   unsigned int lightCount = lightSetup_->size();
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {
@@ -191,7 +190,7 @@ auto PbrDrawable::updateShader() -> PbrDrawable& {
 }
 
 // update every light's color, intensity, range etc.
-auto PbrDrawable::updateShaderLightParameters() -> PbrDrawable& {
+PbrDrawable& PbrDrawable::updateShaderLightParameters() {
   // light range has been initialized to Mn::Constants::inf()
   // in the PbrShader's constructor.
   // No need to reset it at this point.
@@ -207,9 +206,9 @@ auto PbrDrawable::updateShaderLightParameters() -> PbrDrawable& {
 }
 
 // update light direction (or position) in *camera* space to the shader
-auto PbrDrawable::updateShaderLightDirectionParameters(
+PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     const Magnum::Matrix4& transformationMatrix,
-    Magnum::SceneGraph::Camera3D& camera) -> PbrDrawable& {
+    Magnum::SceneGraph::Camera3D& camera) {
   std::vector<Mn::Vector4> lightPositions;
   lightPositions.reserve(lightSetup_->size());
 

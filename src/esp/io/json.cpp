@@ -18,8 +18,8 @@ namespace Cr = Corrade;
 namespace esp {
 namespace io {
 
-auto writeJsonToFile(const JsonDocument& document, const std::string& filepath)
-    -> bool {
+bool writeJsonToFile(const JsonDocument& document,
+                     const std::string& filepath) {
   assert(!filepath.empty());
   std::string outFilePath = filepath;
   if (!Cr::Utility::String::endsWith(outFilePath, ".json")) {
@@ -41,7 +41,7 @@ auto writeJsonToFile(const JsonDocument& document, const std::string& filepath)
   return writeSuccess;
 }
 
-auto parseJsonFile(const std::string& file) -> JsonDocument {
+JsonDocument parseJsonFile(const std::string& file) {
   FILE* pFile = fopen(file.c_str(), "rb");
   char buffer[65536];
   rapidjson::FileReadStream is(pFile, buffer, sizeof(buffer));
@@ -57,7 +57,7 @@ auto parseJsonFile(const std::string& file) -> JsonDocument {
   return d;
 }
 
-auto parseJsonString(const std::string& jsonString) -> JsonDocument {
+JsonDocument parseJsonString(const std::string& jsonString) {
   JsonDocument d;
   d.Parse(jsonString.c_str());
 
@@ -69,14 +69,14 @@ auto parseJsonString(const std::string& jsonString) -> JsonDocument {
   return d;
 }
 
-auto jsonToString(const JsonDocument& d) -> std::string {
+std::string jsonToString(const JsonDocument& d) {
   rapidjson::StringBuffer buffer{};
   rapidjson::Writer<rapidjson::StringBuffer> writer{buffer};
   d.Accept(writer);
   return buffer.GetString();
 }
 
-auto jsonToVec3f(const JsonGenericValue& jsonArray) -> vec3f {
+vec3f jsonToVec3f(const JsonGenericValue& jsonArray) {
   vec3f vec;
   size_t dim = 0;
   ASSERT(jsonArray.GetArray().Size() == vec.size());

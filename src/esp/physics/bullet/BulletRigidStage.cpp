@@ -32,8 +32,8 @@ BulletRigidStage::~BulletRigidStage() {
     collisionObjToObjIds_->erase(co.get());
   }
 }
-auto BulletRigidStage::initialization_LibSpecific(
-    const assets::ResourceManager& resMgr) -> bool {
+bool BulletRigidStage::initialization_LibSpecific(
+    const assets::ResourceManager& resMgr) {
   const auto collisionAssetHandle =
       initializationAttributes_->getCollisionAssetHandle();
 
@@ -138,7 +138,7 @@ void BulletRigidStage::setRestitutionCoefficient(
   }
 }
 
-auto BulletRigidStage::getFrictionCoefficient() const -> double {
+double BulletRigidStage::getFrictionCoefficient() const {
   if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
   } else {
@@ -147,7 +147,7 @@ auto BulletRigidStage::getFrictionCoefficient() const -> double {
   }
 }
 
-auto BulletRigidStage::getRestitutionCoefficient() const -> double {
+double BulletRigidStage::getRestitutionCoefficient() const {
   // Assume uniform restitution in scene parts
   if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
@@ -156,7 +156,7 @@ auto BulletRigidStage::getRestitutionCoefficient() const -> double {
   }
 }
 
-auto BulletRigidStage::getCollisionShapeAabb() const -> const Magnum::Range3D {
+const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   Magnum::Range3D combinedAABB;
   // concatenate all component AABBs
   for (auto& object : bStaticCollisionObjects_) {

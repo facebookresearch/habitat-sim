@@ -27,17 +27,17 @@ CoordinateFrame::CoordinateFrame(const std::string& json) {
   fromJson(json);
 }
 
-auto CoordinateFrame::rotationWorldToFrame() const -> quatf {
+quatf CoordinateFrame::rotationWorldToFrame() const {
   const quatf R_frameUp_worldUp = quatf::FromTwoVectors(ESP_UP, up_);
   return quatf::FromTwoVectors(R_frameUp_worldUp * ESP_FRONT, front_) *
          R_frameUp_worldUp;
 }
 
-auto CoordinateFrame::rotationFrameToWorld() const -> quatf {
+quatf CoordinateFrame::rotationFrameToWorld() const {
   return rotationWorldToFrame().inverse();
 }
 
-auto CoordinateFrame::toJson() const -> std::string {
+std::string CoordinateFrame::toJson() const {
   std::stringstream ss;
   ss << "{\"up\":" << up() << ",\"front\":" << front()
      << ",\"origin\":" << origin() << "}";
@@ -57,11 +57,11 @@ void CoordinateFrame::fromJson(const std::string& jsonString) {
   ASSERT(up_.isOrthogonal(front_));
 }
 
-auto operator==(const CoordinateFrame& a, const CoordinateFrame& b) -> bool {
+bool operator==(const CoordinateFrame& a, const CoordinateFrame& b) {
   return a.up().isApprox(b.up()) && a.front().isApprox(b.front()) &&
          a.origin().isApprox(b.origin());
 }
-auto operator!=(const CoordinateFrame& a, const CoordinateFrame& b) -> bool {
+bool operator!=(const CoordinateFrame& a, const CoordinateFrame& b) {
   return !(a == b);
 }
 

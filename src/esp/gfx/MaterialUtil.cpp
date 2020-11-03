@@ -12,11 +12,10 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
-auto buildPhongFromPbrMetallicRoughness(
+gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
     const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
     int textureBaseIndex,
-    const std::vector<std::shared_ptr<Magnum::GL::Texture2D>>& textures)
-    -> gfx::PhongMaterialData::uptr {
+    const std::vector<std::shared_ptr<Magnum::GL::Texture2D>>& textures) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 

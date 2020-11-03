@@ -8,7 +8,7 @@
 namespace esp {
 namespace assets {
 
-auto BaseMesh::setMeshType(SupportedMeshType type) -> bool {
+bool BaseMesh::setMeshType(SupportedMeshType type) {
   if (type < SupportedMeshType::NOT_DEFINED ||
       type >= SupportedMeshType::NUM_SUPPORTED_MESH_TYPES) {
     LOG(ERROR) << "Cannot set the mesh type to " << type;

@@ -19,21 +19,21 @@ SceneNode::SceneNode(MagnumScene& parentNode) {
   setParent(&parentNode);
 }
 
-auto SceneNode::createChild() -> SceneNode& {
+SceneNode& SceneNode::createChild() {
   // will set the parent to *this
-  auto* node = new SceneNode(*this);
+  SceneNode* node = new SceneNode(*this);
   node->setId(this->getId());
   return *node;
 }
 
 //! @brief recursively compute the cumulative bounding box of this node's tree.
-auto SceneNode::computeCumulativeBB() -> const Mn::Range3D& {
+const Mn::Range3D& SceneNode::computeCumulativeBB() {
   // first copy from your precomputed mesh bb
   cumulativeBB_ = Mn::Range3D(meshBB_);
   auto* child = children().first();
 
   while (child != nullptr) {
-    auto* child_node = dynamic_cast<SceneNode*>(child);
+    SceneNode* child_node = dynamic_cast<SceneNode*>(child);
     if (child_node != nullptr) {
       child_node->computeCumulativeBB();
 

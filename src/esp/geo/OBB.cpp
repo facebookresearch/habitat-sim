@@ -34,7 +34,7 @@ static const vec3f kCorners[8] = {
     vec3f(-1, -1, -1), vec3f(-1, -1, +1), vec3f(-1, +1, -1), vec3f(-1, +1, +1),
     vec3f(+1, -1, -1), vec3f(+1, -1, +1), vec3f(+1, +1, -1), vec3f(+1, +1, +1)};
 
-auto OBB::toAABB() const -> box3f {
+box3f OBB::toAABB() const {
   box3f bbox;
   for (const auto& kCorner : kCorners) {
     const vec3f worldPoint =
@@ -64,7 +64,7 @@ void OBB::recomputeTransforms() {
   worldToLocal_.translation() = -worldToLocal_.linear() * center_;
 }
 
-auto OBB::contains(const vec3f& p, float eps /* = 1e-6f */) const -> bool {
+bool OBB::contains(const vec3f& p, float eps /* = 1e-6f */) const {
   const vec3f pLocal = worldToLocal() * p;
   const float bound = 1.0f + eps;
   for (int i = 0; i < 3; i++) {
@@ -75,7 +75,7 @@ auto OBB::contains(const vec3f& p, float eps /* = 1e-6f */) const -> bool {
   return true;  // Here only if all three coords within bounds
 }
 
-auto OBB::distance(const vec3f& p) const -> float {
+float OBB::distance(const vec3f& p) const {
   if (contains(p)) {
     return 0;
   }
@@ -83,7 +83,7 @@ auto OBB::distance(const vec3f& p) const -> float {
   return (p - closest).norm();
 }
 
-auto OBB::closestPoint(const vec3f& p) const -> vec3f {
+vec3f OBB::closestPoint(const vec3f& p) const {
   const vec3f d = p - center_;
   vec3f closest = center_;
   const mat3f R = rotation_.matrix();
@@ -94,15 +94,15 @@ auto OBB::closestPoint(const vec3f& p) const -> vec3f {
   return closest;
 }
 
-auto OBB::rotate(const quatf& q) -> OBB& {
+OBB& OBB::rotate(const quatf& q) {
   rotation_ = q * rotation_;
   recomputeTransforms();
   return *this;
 }
 
 // https://geidav.wordpress.com/tag/minimum-obb/
-auto computeGravityAlignedMOBB(const vec3f& gravity,
-                               const std::vector<vec3f>& points) -> OBB {
+OBB computeGravityAlignedMOBB(const vec3f& gravity,
+                              const std::vector<vec3f>& points) {
   const auto align_gravity = quatf::FromTwoVectors(gravity, -vec3f::UnitZ());
 
   static auto ortho = [](const vec2f& v) { return vec2f(v[1], -v[0]); };

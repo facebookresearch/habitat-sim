@@ -27,7 +27,7 @@ void SensorSuite::add(const Sensor::ptr& sensor) {
   sensors_[uuid] = sensor;
 }
 
-auto SensorSuite::get(const std::string& uuid) const -> Sensor::ptr {
+Sensor::ptr SensorSuite::get(const std::string& uuid) const {
   return (sensors_.at(uuid));
 }
 
@@ -49,7 +49,7 @@ void Sensor::setTransformationFromSpec() {
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
-auto operator==(const SensorSpec& a, const SensorSpec& b) -> bool {
+bool operator==(const SensorSpec& a, const SensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
          a.sensorSubtype == b.sensorSubtype && a.parameters == b.parameters &&
          a.position == b.position && a.orientation == b.orientation &&
@@ -57,7 +57,7 @@ auto operator==(const SensorSpec& a, const SensorSpec& b) -> bool {
          a.encoding == b.encoding && a.observationSpace == b.observationSpace &&
          a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
-auto operator!=(const SensorSpec& a, const SensorSpec& b) -> bool {
+bool operator!=(const SensorSpec& a, const SensorSpec& b) {
   return !(a == b);
 }
 

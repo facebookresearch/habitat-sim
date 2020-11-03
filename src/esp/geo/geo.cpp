@@ -13,7 +13,7 @@ namespace Mn = Magnum;
 namespace esp {
 namespace geo {
 
-auto convexHull2D(const std::vector<vec2f>& points) -> std::vector<vec2f> {
+std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
   ASSERT(points.size() > 2);
 
   auto cross = [](const vec2f& o, const vec2f& a, const vec2f& b) {
@@ -102,8 +102,8 @@ auto convexHull2D(const std::vector<vec2f>& points) -> std::vector<vec2f> {
  *
  * The derivation for x_min is similar since same logic applies.
  */
-auto getTransformedBB(const Mn::Range3D& range, const Mn::Matrix4& xform)
-    -> Mn::Range3D {
+Mn::Range3D getTransformedBB(const Mn::Range3D& range,
+                             const Mn::Matrix4& xform) {
   // compute the absolute value of the rotationScaling part of the original
   // transformation matrix
   auto absRotationScaling = Mn::Matrix3x3::fromVector(

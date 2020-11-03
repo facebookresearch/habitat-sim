@@ -27,7 +27,7 @@
 namespace esp {
 namespace assets {
 
-auto Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) -> bool {
+bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   std::ifstream ifs(plyFile);
   if (!ifs.good()) {
     LOG(ERROR) << "Cannot open file at " << plyFile;
@@ -132,9 +132,9 @@ auto Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) -> bool {
   return true;
 }
 
-auto Mp3dInstanceMeshData::saveSemMeshPLY(
+bool Mp3dInstanceMeshData::saveSemMeshPLY(
     const std::string& plyFile,
-    const std::unordered_map<int, int>& segmentIdToObjectIdMap) -> bool {
+    const std::unordered_map<int, int>& segmentIdToObjectIdMap) {
   const int nVertex = cpu_vbo_.size();
   const int nFace = cpu_ibo_.size();
 

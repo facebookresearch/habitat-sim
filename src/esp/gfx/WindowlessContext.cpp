@@ -68,7 +68,7 @@ struct WindowlessContext::Impl {
 
   void makeCurrent() { windowlessGLContext_.makeCurrent(); }
 
-  auto gpuDevice() const -> int { return device_; }
+  int gpuDevice() const { return device_; }
 
  private:
   int device_;
@@ -83,7 +83,7 @@ void WindowlessContext::makeCurrent() {
   pimpl_->makeCurrent();
 }
 
-auto WindowlessContext::gpuDevice() const -> int {
+int WindowlessContext::gpuDevice() const {
   return pimpl_->gpuDevice();
 }
 

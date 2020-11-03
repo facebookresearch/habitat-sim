@@ -18,9 +18,9 @@ using attributes::SceneObjectInstanceAttributes;
 
 namespace managers {
 
-auto SceneAttributesManager::createObject(
+SceneAttributes::ptr SceneAttributesManager::createObject(
     const std::string& sceneInstanceHandle,
-    bool registerTemplate) -> SceneAttributes::ptr {
+    bool registerTemplate) {
   std::string msg;
   SceneAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
       sceneInstanceHandle, msg, registerTemplate);
@@ -32,9 +32,9 @@ auto SceneAttributesManager::createObject(
   return attrs;
 }  // SceneAttributesManager::createObject
 
-auto SceneAttributesManager::initNewObjectInternal(
+SceneAttributes::ptr SceneAttributesManager::initNewObjectInternal(
     const std::string& sceneInstanceHandle,
-    bool builtFromConfig) -> SceneAttributes::ptr {
+    bool builtFromConfig) {
   SceneAttributes::ptr newAttributes =
       this->constructFromDefault(sceneInstanceHandle);
   if (nullptr == newAttributes) {
@@ -116,8 +116,9 @@ void SceneAttributesManager::setValsFromJSONDoc(
   }
 }  // SceneAttributesManager::setValsFromJSONDoc
 
-auto SceneAttributesManager::createInstanceAttributesFromJSON(
-    const io::JsonGenericValue& jCell) -> SceneObjectInstanceAttributes::ptr {
+SceneObjectInstanceAttributes::ptr
+SceneAttributesManager::createInstanceAttributesFromJSON(
+    const io::JsonGenericValue& jCell) {
   SceneObjectInstanceAttributes::ptr instanceAttrs =
       SceneObjectInstanceAttributes::create("");
   // template handle describing stage/object instance
@@ -165,9 +166,9 @@ auto SceneAttributesManager::createInstanceAttributesFromJSON(
 
 }  // SceneAttributesManager::createInstanceAttributesFromJSON
 
-auto SceneAttributesManager::registerObjectFinalize(
+int SceneAttributesManager::registerObjectFinalize(
     SceneAttributes::ptr sceneAttributes,
-    const std::string& sceneAttributesHandle) -> int {
+    const std::string& sceneAttributesHandle) {
   // adds template to library, and returns either the ID of the existing
   // template referenced by sceneAttributesHandle, or the next available ID
   // if not found.

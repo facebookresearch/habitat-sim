@@ -8,18 +8,18 @@
 namespace esp {
 namespace scene {
 
-auto SceneManager::initSceneGraph() -> int {
+int SceneManager::initSceneGraph() {
   sceneGraphs_.emplace_back(std::make_unique<SceneGraph>());
   int index = sceneGraphs_.size() - 1;
   return index;
 }
 
-auto SceneManager::getSceneGraph(int sceneID) -> SceneGraph& {
+SceneGraph& SceneManager::getSceneGraph(int sceneID) {
   ASSERT(sceneID >= 0 && sceneID < sceneGraphs_.size());
   return (*(sceneGraphs_[sceneID].get()));
 }
 
-auto SceneManager::getSceneGraph(int sceneID) const -> const SceneGraph& {
+const SceneGraph& SceneManager::getSceneGraph(int sceneID) const {
   ASSERT(sceneID >= 0 && sceneID < sceneGraphs_.size());
   return (*(sceneGraphs_[sceneID].get()));
 }

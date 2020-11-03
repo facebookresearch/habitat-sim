@@ -16,14 +16,14 @@ namespace io {
 #include <unistd.h>
 #endif
 
-auto exists(const std::string& filename) -> bool {
+bool exists(const std::string& filename) {
   return (access(filename.c_str(), 0) == 0);
 }
 
 // returns the size of the file, if it exists and can be opened,
 // otherwise returns 0
 // TODO: consider uint64_t as the return value type
-auto fileSize(const std::string& filename) -> size_t {
+size_t fileSize(const std::string& filename) {
   if (!exists(filename)) {
     return 0;
   }
@@ -51,8 +51,8 @@ auto fileSize(const std::string& filename) -> size_t {
 // This function returns: foo.\png
 // while replace_extension returns: foo.\\png
 
-auto changeExtension(const std::string& filename, const std::string& ext)
-    -> std::string {
+std::string changeExtension(const std::string& filename,
+                            const std::string& ext) {
   std::string correctExt = ext;
 
   // this is the only requirement on an extension, that is,
@@ -80,7 +80,7 @@ auto changeExtension(const std::string& filename, const std::string& ext)
   }
 }
 
-auto removeExtension(const std::string& filename) -> std::string {
+std::string removeExtension(const std::string& filename) {
   return changeExtension(filename, "");
 }
 
@@ -107,10 +107,10 @@ std::string removeExtension(const std::string& file) {
 }
 */
 
-auto tokenize(const std::string& string,
-              const std::string& delimiterCharList,
-              int limit /* = 0 */,
-              bool mergeAdjDelims /* = false */) -> std::vector<std::string> {
+std::vector<std::string> tokenize(const std::string& string,
+                                  const std::string& delimiterCharList,
+                                  int limit /* = 0 */,
+                                  bool mergeAdjDelims /* = false */) {
   std::vector<std::string> tokens;
   if (string.length() == 0) {
     return tokens;

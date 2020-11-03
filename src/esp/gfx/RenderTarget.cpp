@@ -162,7 +162,7 @@ struct RenderTarget::Impl {
     framebuffer_.mapForRead(ObjectIdBuffer).read(framebuffer_.viewport(), view);
   }
 
-  auto framebufferSize() const -> Mn::Vector2i {
+  Mn::Vector2i framebufferSize() const {
     return framebuffer_.viewport().size();
   }
 
@@ -304,7 +304,7 @@ void RenderTarget::blitRgbaToDefault() {
   pimpl_->blitRgbaToDefault();
 }
 
-auto RenderTarget::framebufferSize() const -> Mn::Vector2i {
+Mn::Vector2i RenderTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
 }
 

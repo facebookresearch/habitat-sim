@@ -29,7 +29,7 @@ Drawable::~Drawable() {
   }
 }
 
-auto Drawable::drawables() -> DrawableGroup* {
+DrawableGroup* Drawable::drawables() {
   auto* group = Magnum::SceneGraph::Drawable3D::drawables();
   if (!group) {
     return nullptr;

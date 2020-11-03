@@ -7,9 +7,9 @@
 namespace esp {
 namespace core {
 
-auto ManagedContainerBase::convertFilenameToJSON(const std::string& filename,
-                                                 const std::string& jsonTypeExt)
-    -> std::string {
+std::string ManagedContainerBase::convertFilenameToJSON(
+    const std::string& filename,
+    const std::string& jsonTypeExt) {
   std::string strHandle = Cr::Utility::String::lowercase(filename);
   std::string resHandle(filename);
   if (std::string::npos ==
@@ -26,8 +26,7 @@ auto ManagedContainerBase::convertFilenameToJSON(const std::string& filename,
   return resHandle;
 }  // ManagedContainerBase::convertFilenameToJSON
 
-auto ManagedContainerBase::setLock(const std::string& objectHandle, bool lock)
-    -> bool {
+bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
   if (!checkExistsWithMessage(objectHandle, "ManagedContainerBase::setLock")) {
@@ -42,9 +41,9 @@ auto ManagedContainerBase::setLock(const std::string& objectHandle, bool lock)
   }
   return true;
 }  // ManagedContainer::setLock
-auto ManagedContainerBase::getRandomObjectHandlePerType(
+std::string ManagedContainerBase::getRandomObjectHandlePerType(
     const std::map<int, std::string>& mapOfHandles,
-    const std::string& type) const -> std::string {
+    const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
     LOG(ERROR) << "Attempting to get a random " << type << objectType_
@@ -63,10 +62,11 @@ auto ManagedContainerBase::getRandomObjectHandlePerType(
   return res;
 }  // ManagedContainer::getRandomObjectHandlePerType
 
-auto ManagedContainerBase::getObjectHandlesBySubStringPerType(
+std::vector<std::string>
+ManagedContainerBase::getObjectHandlesBySubStringPerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const -> std::vector<std::string> {
+    bool contains) const {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -101,10 +101,11 @@ auto ManagedContainerBase::getObjectHandlesBySubStringPerType(
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
-auto ManagedContainerBase::getObjectHandlesBySubStringPerType(
+std::vector<std::string>
+ManagedContainerBase::getObjectHandlesBySubStringPerType(
     const std::map<std::string, std::set<std::string>>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const -> std::vector<std::string> {
+    bool contains) const {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -139,9 +140,8 @@ auto ManagedContainerBase::getObjectHandlesBySubStringPerType(
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
-auto ManagedContainerBase::verifyLoadDocument(const std::string& filename,
-                                              io::JsonDocument& jsonDoc)
-    -> bool {
+bool ManagedContainerBase::verifyLoadDocument(const std::string& filename,
+                                              io::JsonDocument& jsonDoc) {
   if (isValidFileName(filename)) {
     try {
       jsonDoc = io::parseJsonFile(filename);

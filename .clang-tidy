@@ -15,6 +15,9 @@ performance-*,
 -google-readability-braces-around-statements,
 -google-readability-todo,
 -google-runtime-references,
+-modernize-avoid-c-arrays,
+-modernize-use-auto,
+-modernize-use-trailing-return-type,
 '
 
 # Let deprecation warnings through. From time to time, Magnum annotates APIs

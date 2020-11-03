@@ -16,53 +16,53 @@ using Magnum::EigenIntegration::cast;
 namespace esp {
 namespace scene {
 
-auto moveRight(SceneNode& object, float distance) -> SceneNode& {
+SceneNode& moveRight(SceneNode& object, float distance) {
   // TODO: this assumes no scale is applied
   object.translateLocal(object.transformation().right() * distance);
   return object;
 }
 
-auto moveLeft(SceneNode& object, float distance) -> SceneNode& {
+SceneNode& moveLeft(SceneNode& object, float distance) {
   return moveRight(object, -distance);
 }
 
-auto moveUp(SceneNode& object, float distance) -> SceneNode& {
+SceneNode& moveUp(SceneNode& object, float distance) {
   // TODO: this assumes no scale is applied
   object.translateLocal(object.transformation().up() * distance);
   return object;
 }
 
-auto moveDown(SceneNode& object, float distance) -> SceneNode& {
+SceneNode& moveDown(SceneNode& object, float distance) {
   return moveUp(object, -distance);
 }
 
-auto moveBackward(SceneNode& object, float distance) -> SceneNode& {
+SceneNode& moveBackward(SceneNode& object, float distance) {
   // TODO: this assumes no scale is applied
   object.translateLocal(object.transformation().backward() * distance);
   return object;
 }
 
-auto moveForward(SceneNode& object, float distance) -> SceneNode& {
+SceneNode& moveForward(SceneNode& object, float distance) {
   return moveBackward(object, -distance);
 }
 
-auto turnLeft(SceneNode& object, float angleInDegrees) -> SceneNode& {
+SceneNode& turnLeft(SceneNode& object, float angleInDegrees) {
   object.rotateYLocal(Magnum::Deg(angleInDegrees));
   object.setRotation(object.rotation().normalized());
   return object;
 }
 
-auto turnRight(SceneNode& object, float angleInDegrees) -> SceneNode& {
+SceneNode& turnRight(SceneNode& object, float angleInDegrees) {
   return turnLeft(object, -angleInDegrees);
 }
 
-auto lookUp(SceneNode& object, float angleInDegrees) -> SceneNode& {
+SceneNode& lookUp(SceneNode& object, float angleInDegrees) {
   object.rotateXLocal(Magnum::Deg(angleInDegrees));
   object.setRotation(object.rotation().normalized());
   return object;
 }
 
-auto lookDown(SceneNode& object, float angleInDegrees) -> SceneNode& {
+SceneNode& lookDown(SceneNode& object, float angleInDegrees) {
   return lookUp(object, -angleInDegrees);
 }
 
@@ -79,16 +79,16 @@ ObjectControls::ObjectControls() {
   moveFuncMap_["lookDown"] = &lookDown;
 }
 
-auto ObjectControls::setMoveFilterFunction(MoveFilterFunc filterFunc)
-    -> ObjectControls& {
+ObjectControls& ObjectControls::setMoveFilterFunction(
+    MoveFilterFunc filterFunc) {
   moveFilterFunc_ = std::move(filterFunc);
   return *this;
 }
 
-auto ObjectControls::action(SceneNode& object,
-                            const std::string& actName,
-                            float distance,
-                            bool applyFilter /* = true */) -> ObjectControls& {
+ObjectControls& ObjectControls::action(SceneNode& object,
+                                       const std::string& actName,
+                                       float distance,
+                                       bool applyFilter /* = true */) {
   if (moveFuncMap_.count(actName)) {
     if (applyFilter) {
       // TODO: use magnum math for the filter func as well?

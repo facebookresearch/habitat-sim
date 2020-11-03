@@ -71,22 +71,20 @@ DepthShader::DepthShader(Flags flags) : flags_{flags} {
   }
 }
 
-auto DepthShader::setDepthUnprojection(const Mn::Vector2& depthUnprojection)
-    -> DepthShader& {
+DepthShader& DepthShader::setDepthUnprojection(
+    const Mn::Vector2& depthUnprojection) {
   CORRADE_INTERNAL_ASSERT(flags_ & Flag::UnprojectExistingDepth);
   setUniform(projectionMatrixOrDepthUnprojectionUniform_, depthUnprojection);
   return *this;
 }
 
-auto DepthShader::setTransformationMatrix(const Mn::Matrix4& matrix)
-    -> DepthShader& {
+DepthShader& DepthShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
   CORRADE_INTERNAL_ASSERT(!(flags_ & Flag::UnprojectExistingDepth));
   setUniform(transformationMatrixUniform_, matrix);
   return *this;
 }
 
-auto DepthShader::setProjectionMatrix(const Mn::Matrix4& matrix)
-    -> DepthShader& {
+DepthShader& DepthShader::setProjectionMatrix(const Mn::Matrix4& matrix) {
   if (flags_ & Flag::UnprojectExistingDepth) {
     setUniform(projectionMatrixOrDepthUnprojectionUniform_,
                calculateDepthUnprojection(matrix));
@@ -96,13 +94,12 @@ auto DepthShader::setProjectionMatrix(const Mn::Matrix4& matrix)
   return *this;
 }
 
-auto DepthShader::bindDepthTexture(Mn::GL::Texture2D& texture) -> DepthShader& {
+DepthShader& DepthShader::bindDepthTexture(Mn::GL::Texture2D& texture) {
   texture.bind(DepthTextureUnit);
   return *this;
 }
 
-auto calculateDepthUnprojection(const Mn::Matrix4& projectionMatrix)
-    -> Mn::Vector2 {
+Mn::Vector2 calculateDepthUnprojection(const Mn::Matrix4& projectionMatrix) {
   return Mn::Vector2{(projectionMatrix[2][2] - 1.0f), projectionMatrix[3][2]} *
          0.5f;
 }

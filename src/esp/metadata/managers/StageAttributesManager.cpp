@@ -44,9 +44,9 @@ void StageAttributesManager::buildCtorFuncPtrMaps() {
   this->undeletableObjectNames_.insert(tmpltHandle);
 }  // StageAttributesManager::buildCtorFuncPtrMaps
 
-auto StageAttributesManager::registerObjectFinalize(
+int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
-    const std::string& stageAttributesHandle) -> int {
+    const std::string& stageAttributesHandle) {
   if (stageAttributes->getRenderAssetHandle() == "") {
     LOG(ERROR)
         << "StageAttributesManager::registerObjectFinalize : "
@@ -127,9 +127,9 @@ auto StageAttributesManager::registerObjectFinalize(
   return stageTemplateID;
 }  // StageAttributesManager::registerAttributesTemplate
 
-auto StageAttributesManager::createPrimBasedAttributesTemplate(
+StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAssetHandle,
-    bool registerTemplate) -> StageAttributes::ptr {
+    bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAssetHandle)) {
     LOG(ERROR)
@@ -159,9 +159,9 @@ auto StageAttributesManager::createPrimBasedAttributesTemplate(
   return this->postCreateRegister(stageAttributes, registerTemplate);
 }  // StageAttributesManager::createPrimBasedAttributesTemplate
 
-auto StageAttributesManager::initNewObjectInternal(
+StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     const std::string& attributesHandle,
-    bool builtFromConfig) -> StageAttributes::ptr {
+    bool builtFromConfig) {
   // If default template exists from some source, create this template as a
   // copy
   StageAttributes::ptr newAttributes =

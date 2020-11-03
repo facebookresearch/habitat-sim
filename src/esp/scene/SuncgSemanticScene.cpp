@@ -17,20 +17,19 @@
 namespace esp {
 namespace scene {
 
-auto SuncgSemanticObject::id() const -> std::string {
+std::string SuncgSemanticObject::id() const {
   return nodeId_;
 }
 
-auto SuncgSemanticRegion::id() const -> std::string {
+std::string SuncgSemanticRegion::id() const {
   return nodeId_;
 }
 
-auto SuncgObjectCategory::index(const std::string& mapping) const -> int {
+int SuncgObjectCategory::index(const std::string& mapping) const {
   return ID_UNDEFINED;
 }
 
-auto SuncgObjectCategory::name(const std::string& mapping) const
-    -> std::string {
+std::string SuncgObjectCategory::name(const std::string& mapping) const {
   if (mapping == "model_id") {
     return modelId_;
   } else if (mapping == "node_id") {
@@ -48,12 +47,11 @@ auto SuncgObjectCategory::name(const std::string& mapping) const
   }
 }
 
-auto SuncgRegionCategory::index(const std::string& mapping) const -> int {
+int SuncgRegionCategory::index(const std::string& mapping) const {
   // NOTE: SUNCG regions are not linearized
   return ID_UNDEFINED;
 }
-auto SuncgRegionCategory::name(const std::string& mapping) const
-    -> std::string {
+std::string SuncgRegionCategory::name(const std::string& mapping) const {
   if (mapping == "node_id") {
     return nodeId_;
   } else if (mapping == "" || mapping == "category") {
@@ -64,10 +62,10 @@ auto SuncgRegionCategory::name(const std::string& mapping) const
   }
 }
 
-auto SemanticScene::loadSuncgHouse(
+bool SemanticScene::loadSuncgHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::Identity() */) -> bool {
+    const quatf& worldRotation /* = quatf::Identity() */) {
   if (!io::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;

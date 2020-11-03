@@ -27,7 +27,7 @@ void SceneGraph::setDefaultRenderCamera(sensor::VisualSensor& sensor) {
       .setViewport(defaultRenderCamera_);
 }
 
-auto SceneGraph::isRootNode(SceneNode& node) -> bool {
+bool SceneGraph::isRootNode(SceneNode& node) {
   auto parent = node.parent();
   // if the parent is null, it means the node is the world_ node.
   CORRADE_ASSERT(parent != nullptr,
@@ -35,19 +35,18 @@ auto SceneGraph::isRootNode(SceneNode& node) -> bool {
   return (parent->parent() == nullptr ? true : false);
 }
 
-auto SceneGraph::getDrawableGroup(const std::string& id)
-    -> gfx::DrawableGroup* {
+gfx::DrawableGroup* SceneGraph::getDrawableGroup(const std::string& id) {
   auto it = drawableGroups_.find(id);
   return it == drawableGroups_.end() ? nullptr : &it->second;
 }
 
-auto SceneGraph::getDrawableGroup(const std::string& id) const
-    -> const gfx::DrawableGroup* {
+const gfx::DrawableGroup* SceneGraph::getDrawableGroup(
+    const std::string& id) const {
   auto it = drawableGroups_.find(id);
   return it == drawableGroups_.end() ? nullptr : &it->second;
 }
 
-auto SceneGraph::deleteDrawableGroup(const std::string& id) -> bool {
+bool SceneGraph::deleteDrawableGroup(const std::string& id) {
   return drawableGroups_.erase(id);
 }
 

@@ -62,7 +62,7 @@ void PTexMeshData::load(const std::string& meshFile,
   loadMeshData(meshFile);
 }
 
-auto PTexMeshData::exposure() const -> float {
+float PTexMeshData::exposure() const {
   return exposure_;
 }
 
@@ -70,7 +70,7 @@ void PTexMeshData::setExposure(float val) {
   exposure_ = val;
 }
 
-auto PTexMeshData::gamma() const -> float {
+float PTexMeshData::gamma() const {
   return gamma_;
 }
 
@@ -78,7 +78,7 @@ void PTexMeshData::setGamma(float val) {
   gamma_ = val;
 }
 
-auto PTexMeshData::saturation() const -> float {
+float PTexMeshData::saturation() const {
   return saturation_;
 }
 
@@ -86,12 +86,11 @@ void PTexMeshData::setSaturation(float val) {
   saturation_ = val;
 }
 
-auto PTexMeshData::meshes() const
-    -> const std::vector<PTexMeshData::MeshData>& {
+const std::vector<PTexMeshData::MeshData>& PTexMeshData::meshes() const {
   return submeshes_;
 }
 
-auto PTexMeshData::atlasFolder() const -> std::string {
+std::string PTexMeshData::atlasFolder() const {
   return atlasFolder_;
 }
 // this is to break the quad into 2 triangles
@@ -131,8 +130,9 @@ void computeTriangleMeshIndices(uint64_t numFaces,
 // directly dumped from ReplicaSDK, and loaded to our simulator. See
 // loadSubMeshes(...) for more details;
 
-auto splitMesh(const PTexMeshData::MeshData& mesh, const float splitSize)
-    -> std::vector<PTexMeshData::MeshData> {
+std::vector<PTexMeshData::MeshData> splitMesh(
+    const PTexMeshData::MeshData& mesh,
+    const float splitSize) {
   std::vector<uint32_t> verts;
   verts.resize(mesh.vbo.size());
 
@@ -289,9 +289,9 @@ auto splitMesh(const PTexMeshData::MeshData& mesh, const float splitSize)
 
 // Put it in the sub-folder, "habitat".
 
-auto loadSubMeshes(const PTexMeshData::MeshData& mesh,
-                   const std::string& filename)
-    -> std::vector<PTexMeshData::MeshData> {
+std::vector<PTexMeshData::MeshData> loadSubMeshes(
+    const PTexMeshData::MeshData& mesh,
+    const std::string& filename) {
   // sanity checks
   CORRADE_ASSERT(!filename.empty(),
                  "PTexMeshData::loadSubMeshes: filename cannot be empty.", {});
@@ -945,8 +945,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-auto PTexMeshData::getRenderingBuffer(int submeshID)
-    -> PTexMeshData::RenderingBuffer* {
+PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
                  "PTexMeshData::getRenderingBuffer: the submesh ID"
                      << submeshID << "is out of range.",
@@ -954,7 +953,7 @@ auto PTexMeshData::getRenderingBuffer(int submeshID)
   return renderingBuffers_[submeshID].get();
 }
 
-auto PTexMeshData::getMagnumGLMesh(int submeshID) -> Magnum::GL::Mesh* {
+Magnum::GL::Mesh* PTexMeshData::getMagnumGLMesh(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
                  "PTexMeshData::getMagnumGLMesh: the submesh ID"
                      << submeshID << "is out of range.",

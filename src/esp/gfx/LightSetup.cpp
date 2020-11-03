@@ -7,18 +7,18 @@
 namespace esp {
 namespace gfx {
 
-auto operator==(const LightInfo& a, const LightInfo& b) -> bool {
+bool operator==(const LightInfo& a, const LightInfo& b) {
   return a.vector == b.vector && a.color == b.color && a.model == b.model;
 }
 
-auto operator!=(const LightInfo& a, const LightInfo& b) -> bool {
+bool operator!=(const LightInfo& a, const LightInfo& b) {
   return !(a == b);
 }
 
-auto getLightPositionRelativeToCamera(
+Magnum::Vector4 getLightPositionRelativeToCamera(
     const LightInfo& light,
     const Magnum::Matrix4& transformationMatrix,
-    const Magnum::Matrix4& cameraMatrix) -> Magnum::Vector4 {
+    const Magnum::Matrix4& cameraMatrix) {
   CORRADE_ASSERT(light.vector.w() == 1 || light.vector.w() == 0,
                  "Light vector"
                      << light.vector
@@ -38,8 +38,8 @@ auto getLightPositionRelativeToCamera(
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
-auto getLightsAtBoxCorners(const Magnum::Range3D& box,
-                           const Magnum::Color3& lightColor) -> LightSetup {
+LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
+                                 const Magnum::Color3& lightColor) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Magnum::Math::Literals;
 
@@ -54,12 +54,12 @@ auto getLightsAtBoxCorners(const Magnum::Range3D& box,
                     {{box.backBottomRight(), w}, lightColor}};
 }
 
-auto getDefaultLights() -> LightSetup {
+LightSetup getDefaultLights() {
   return LightSetup{{{1.0, 1.0, 0.0, 0.0}, {0.75, 0.75, 0.75}},
                     {{-0.5, 0.0, 1.0, 0.0}, {0.4, 0.4, 0.4}}};
 }
 
-auto getAmbientLightColor(const LightSetup& lightSetup) -> Magnum::Color3 {
+Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
   if (lightSetup.size() == 0) {
     // We assume an empty light setup means the user wants "flat" shading,
     // meaning object ambient color should be copied directly to pixels as-is.

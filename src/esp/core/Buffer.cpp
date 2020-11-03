@@ -7,7 +7,7 @@
 namespace esp {
 namespace core {
 
-auto getDataTypeByteSize(DataType dt) -> size_t {
+size_t getDataTypeByteSize(DataType dt) {
   switch (dt) {
     case DataType::DT_INT8:
     case DataType::DT_UINT8:

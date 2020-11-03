@@ -57,17 +57,16 @@ void MultiGoalShortestPath::setRequestedEnds(
   pimpl_->minTheoreticalDist.assign(newEnds.size(), 0);
 }
 
-auto MultiGoalShortestPath::getRequestedEnds() const
-    -> const std::vector<vec3f>& {
+const std::vector<vec3f>& MultiGoalShortestPath::getRequestedEnds() const {
   return pimpl_->requestedEnds;
 }
 
 namespace {
 template <typename T>
-auto projectToPoly(const T& pt,
-                   const dtNavMeshQuery* navQuery,
-                   const dtQueryFilter* filter)
-    -> std::tuple<dtStatus, dtPolyRef, vec3f> {
+std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
+    const T& pt,
+    const dtNavMeshQuery* navQuery,
+    const dtQueryFilter* filter) {
   // Defines size of the bounding box to search in for the nearest polygon.  If
   // there is no polygon inside the bounding box, the status is set to failure
   // and polyRef == 0
@@ -135,8 +134,7 @@ class IslandSystem {
     }
   }
 
-  inline auto hasConnection(dtPolyRef startRef, dtPolyRef endRef) const
-      -> bool {
+  inline bool hasConnection(dtPolyRef startRef, dtPolyRef endRef) const {
     // If both polygons are on the same island, there must be a path between
     // them
     auto itStart = polyToIsland_.find(startRef);
@@ -150,7 +148,7 @@ class IslandSystem {
     return itStart->second == itEnd->second;
   }
 
-  inline auto islandRadius(dtPolyRef ref) const -> float {
+  inline float islandRadius(dtPolyRef ref) const {
     auto itRef = polyToIsland_.find(ref);
     if (itRef == polyToIsland_.end())
       return 0.0;
@@ -218,54 +216,53 @@ struct PathFinder::Impl {
   Impl();
   ~Impl() = default;
 
-  auto build(const NavMeshSettings& bs,
+  bool build(const NavMeshSettings& bs,
              const float* verts,
              const int nverts,
              const int* tris,
              const int ntris,
              const float* bmin,
-             const float* bmax) -> bool;
-  auto build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh)
-      -> bool;
+             const float* bmax);
+  bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
-  auto getRandomNavigablePoint() -> vec3f;
+  vec3f getRandomNavigablePoint();
 
-  auto findPath(ShortestPath& path) -> bool;
-  auto findPath(MultiGoalShortestPath& path) -> bool;
-
-  template <typename T>
-  auto tryStep(const T& start, const T& end, bool allowSliding) -> T;
+  bool findPath(ShortestPath& path);
+  bool findPath(MultiGoalShortestPath& path);
 
   template <typename T>
-  auto snapPoint(const T& pt) -> T;
+  T tryStep(const T& start, const T& end, bool allowSliding);
 
-  auto loadNavMesh(const std::string& path) -> bool;
+  template <typename T>
+  T snapPoint(const T& pt);
 
-  auto saveNavMesh(const std::string& path) -> bool;
+  bool loadNavMesh(const std::string& path);
 
-  auto isLoaded() const -> bool { return navMesh_ != nullptr; };
+  bool saveNavMesh(const std::string& path);
 
-  auto getNavigableArea() const -> float { return navMeshArea_; };
+  bool isLoaded() const { return navMesh_ != nullptr; };
+
+  float getNavigableArea() const { return navMeshArea_; };
 
   void seed(uint32_t newSeed);
 
-  auto islandRadius(const vec3f& pt) const -> float;
+  float islandRadius(const vec3f& pt) const;
 
-  auto distanceToClosestObstacle(const vec3f& pt,
-                                 const float maxSearchRadius = 2.0) const
-      -> float;
-  auto closestObstacleSurfacePoint(const vec3f& pt,
-                                   const float maxSearchRadius = 2.0) const
-      -> HitRecord;
+  float distanceToClosestObstacle(const vec3f& pt,
+                                  const float maxSearchRadius = 2.0) const;
+  HitRecord closestObstacleSurfacePoint(
+      const vec3f& pt,
+      const float maxSearchRadius = 2.0) const;
 
-  auto isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const -> bool;
+  bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
 
-  auto bounds() const -> std::pair<vec3f, vec3f> { return bounds_; };
+  std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
-  auto getTopDownView(const float metersPerPixel, const float height)
-      -> Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>;
+  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
+      const float metersPerPixel,
+      const float height);
 
-  auto getNavMeshData() -> const assets::MeshData::ptr;
+  const assets::MeshData::ptr getNavMeshData();
 
  private:
   struct NavMeshDeleter {
@@ -292,19 +289,19 @@ struct PathFinder::Impl {
 
   void removeZeroAreaPolys();
 
-  auto initNavQuery() -> bool;
+  bool initNavQuery();
 
-  auto findPathInternal(const vec3f& start,
-                        dtPolyRef startRef,
-                        const vec3f& pathStart,
-                        const vec3f& end,
-                        dtPolyRef endRef,
-                        const vec3f& pathEnd)
-      -> Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>;
+  Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
+  findPathInternal(const vec3f& start,
+                   dtPolyRef startRef,
+                   const vec3f& pathStart,
+                   const vec3f& end,
+                   dtPolyRef endRef,
+                   const vec3f& pathEnd);
 
-  auto findPathSetup(MultiGoalShortestPath& path,
+  bool findPathSetup(MultiGoalShortestPath& path,
                      dtPolyRef& startRef,
-                     vec3f& pathStart) -> bool;
+                     vec3f& pathStart);
 };
 
 namespace {
@@ -342,13 +339,13 @@ PathFinder::Impl::Impl() {
   filter_->setExcludeFlags(0);
 }
 
-auto PathFinder::Impl::build(const NavMeshSettings& bs,
+bool PathFinder::Impl::build(const NavMeshSettings& bs,
                              const float* verts,
                              const int nverts,
                              const int* tris,
                              const int ntris,
                              const float* bmin,
-                             const float* bmax) -> bool {
+                             const float* bmax) {
   Workspace ws;
   rcContext ctx;
 
@@ -656,7 +653,7 @@ auto PathFinder::Impl::build(const NavMeshSettings& bs,
   return true;
 }
 
-auto PathFinder::Impl::initNavQuery() -> bool {
+bool PathFinder::Impl::initNavQuery() {
   // if we are reinitializing the NavQuery, then also reset the MeshData
   meshData_.reset();
 
@@ -673,8 +670,8 @@ auto PathFinder::Impl::initNavQuery() -> bool {
   return true;
 }
 
-auto PathFinder::Impl::build(const NavMeshSettings& bs,
-                             const esp::assets::MeshData& mesh) -> bool {
+bool PathFinder::Impl::build(const NavMeshSettings& bs,
+                             const esp::assets::MeshData& mesh) {
   const int numVerts = mesh.vbo.size();
   const int numIndices = mesh.ibo.size();
   const float mf = std::numeric_limits<float>::max();
@@ -719,8 +716,8 @@ struct Triangle {
   Triangle() { v.resize(3); }
 };
 
-auto getPolygonTriangles(const dtPoly* poly, const dtMeshTile* tile)
-    -> std::vector<Triangle> {
+std::vector<Triangle> getPolygonTriangles(const dtPoly* poly,
+                                          const dtMeshTile* tile) {
   // Code to iterate over triangles from here:
   // https://github.com/recastnavigation/recastnavigation/blob/57610fa6ef31b39020231906f8c5d40eaa8294ae/Detour/Source/DetourNavMesh.cpp#L684
   const std::ptrdiff_t ip = poly - tile->polys;
@@ -745,7 +742,7 @@ auto getPolygonTriangles(const dtPoly* poly, const dtMeshTile* tile)
 
 // Calculate the area of a polygon by iterating over the triangles in the detail
 // mesh and computing their area
-auto polyArea(const dtPoly* poly, const dtMeshTile* tile) -> float {
+float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
   std::vector<Triangle> triangles = getPolygonTriangles(poly, tile);
 
   float area = 0;
@@ -793,7 +790,7 @@ void PathFinder::Impl::removeZeroAreaPolys() {
   }
 }
 
-auto PathFinder::Impl::loadNavMesh(const std::string& path) -> bool {
+bool PathFinder::Impl::loadNavMesh(const std::string& path) {
   FILE* fp = fopen(path.c_str(), "rb");
   if (!fp)
     return false;
@@ -839,7 +836,7 @@ auto PathFinder::Impl::loadNavMesh(const std::string& path) -> bool {
     if (!tileHeader.tileRef || !tileHeader.dataSize)
       break;
 
-    auto* data = static_cast<unsigned char*>(
+    unsigned char* data = static_cast<unsigned char*>(
         dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM));
     if (!data)
       break;
@@ -873,7 +870,7 @@ auto PathFinder::Impl::loadNavMesh(const std::string& path) -> bool {
   return initNavQuery();
 }
 
-auto PathFinder::Impl::saveNavMesh(const std::string& path) -> bool {
+bool PathFinder::Impl::saveNavMesh(const std::string& path) {
   const dtNavMesh* navMesh = navMesh_.get();
   if (!navMesh)
     return false;
@@ -922,11 +919,11 @@ void PathFinder::Impl::seed(uint32_t newSeed) {
 }
 
 // Returns a random number [0..1]
-static auto frand() -> float {
+static float frand() {
   return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 }
 
-auto PathFinder::Impl::getRandomNavigablePoint() -> vec3f {
+vec3f PathFinder::Impl::getRandomNavigablePoint() {
   dtPolyRef ref;
   constexpr float inf = std::numeric_limits<float>::infinity();
   vec3f pt(inf, inf, inf);
@@ -939,7 +936,7 @@ auto PathFinder::Impl::getRandomNavigablePoint() -> vec3f {
 }
 
 namespace {
-auto pathLength(const std::vector<vec3f>& points) -> float {
+float pathLength(const std::vector<vec3f>& points) {
   CORRADE_INTERNAL_ASSERT(points.size() > 0);
 
   float length = 0;
@@ -953,7 +950,7 @@ auto pathLength(const std::vector<vec3f>& points) -> float {
 }
 }  // namespace
 
-auto PathFinder::Impl::findPath(ShortestPath& path) -> bool {
+bool PathFinder::Impl::findPath(ShortestPath& path) {
   MultiGoalShortestPath tmp;
   tmp.requestedStart = path.requestedStart;
   tmp.setRequestedEnds({path.requestedEnd});
@@ -965,13 +962,13 @@ auto PathFinder::Impl::findPath(ShortestPath& path) -> bool {
   return status;
 }
 
-auto PathFinder::Impl::findPathInternal(const vec3f& start,
-                                        dtPolyRef startRef,
-                                        const vec3f& pathStart,
-                                        const vec3f& end,
-                                        dtPolyRef endRef,
-                                        const vec3f& pathEnd)
-    -> Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>> {
+Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
+PathFinder::Impl::findPathInternal(const vec3f& start,
+                                   dtPolyRef startRef,
+                                   const vec3f& pathStart,
+                                   const vec3f& end,
+                                   dtPolyRef endRef,
+                                   const vec3f& pathEnd) {
   // check if trivial path (start is same as end) and early return
   if (pathStart.isApprox(pathEnd)) {
     return std::make_tuple(0.0f, std::vector<vec3f>{pathStart, pathEnd});
@@ -1009,9 +1006,9 @@ auto PathFinder::Impl::findPathInternal(const vec3f& start,
   return std::make_tuple(length, std::move(points));
 }
 
-auto PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
+bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
                                      dtPolyRef& startRef,
-                                     vec3f& pathStart) -> bool {
+                                     vec3f& pathStart) {
   path.geodesicDistance = std::numeric_limits<float>::infinity();
   path.points.clear();
 
@@ -1044,7 +1041,7 @@ auto PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
   return true;
 }
 
-auto PathFinder::Impl::findPath(MultiGoalShortestPath& path) -> bool {
+bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
   dtPolyRef startRef;
   vec3f pathStart;
   if (!findPathSetup(path, startRef, pathStart))
@@ -1100,8 +1097,7 @@ auto PathFinder::Impl::findPath(MultiGoalShortestPath& path) -> bool {
 }
 
 template <typename T>
-auto PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding)
-    -> T {
+T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
 
@@ -1176,7 +1172,7 @@ auto PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding)
 }
 
 template <typename T>
-auto PathFinder::Impl::snapPoint(const T& pt) -> T {
+T PathFinder::Impl::snapPoint(const T& pt) {
   dtStatus status;
   vec3f projectedPt;
   std::tie(status, std::ignore, projectedPt) =
@@ -1189,7 +1185,7 @@ auto PathFinder::Impl::snapPoint(const T& pt) -> T {
   }
 }
 
-auto PathFinder::Impl::islandRadius(const vec3f& pt) const -> float {
+float PathFinder::Impl::islandRadius(const vec3f& pt) const {
   dtPolyRef ptRef;
   dtStatus status;
   std::tie(status, ptRef, std::ignore) =
@@ -1201,15 +1197,15 @@ auto PathFinder::Impl::islandRadius(const vec3f& pt) const -> float {
   }
 }
 
-auto PathFinder::Impl::distanceToClosestObstacle(
+float PathFinder::Impl::distanceToClosestObstacle(
     const vec3f& pt,
-    const float maxSearchRadius /*= 2.0*/) const -> float {
+    const float maxSearchRadius /*= 2.0*/) const {
   return closestObstacleSurfacePoint(pt, maxSearchRadius).hitDist;
 }
 
-auto PathFinder::Impl::closestObstacleSurfacePoint(
+HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
     const vec3f& pt,
-    const float maxSearchRadius /*= 2.0*/) const -> HitRecord {
+    const float maxSearchRadius /*= 2.0*/) const {
   dtPolyRef ptRef;
   dtStatus status;
   vec3f polyPt;
@@ -1228,9 +1224,8 @@ auto PathFinder::Impl::closestObstacleSurfacePoint(
   }
 }
 
-auto PathFinder::Impl::isNavigable(const vec3f& pt,
-                                   const float maxYDelta /*= 0.5*/) const
-    -> bool {
+bool PathFinder::Impl::isNavigable(const vec3f& pt,
+                                   const float maxYDelta /*= 0.5*/) const {
   dtPolyRef ptRef;
   dtStatus status;
   vec3f polyPt;
@@ -1250,9 +1245,9 @@ auto PathFinder::Impl::isNavigable(const vec3f& pt,
 
 typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
 
-auto PathFinder::Impl::getTopDownView(const float metersPerPixel,
-                                      const float height)
-    -> Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> {
+Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
+PathFinder::Impl::getTopDownView(const float metersPerPixel,
+                                 const float height) {
   std::pair<vec3f, vec3f> mapBounds = bounds();
   vec3f bound1 = mapBounds.first;
   vec3f bound2 = mapBounds.second;
@@ -1280,7 +1275,7 @@ auto PathFinder::Impl::getTopDownView(const float metersPerPixel,
   return topdownMap;
 }
 
-auto PathFinder::Impl::getNavMeshData() -> const assets::MeshData::ptr {
+const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
   if (meshData_ == nullptr && isLoaded()) {
     meshData_ = assets::MeshData::create();
     std::vector<esp::vec3f>& vbo = meshData_->vbo;
@@ -1320,29 +1315,29 @@ auto PathFinder::Impl::getNavMeshData() -> const assets::MeshData::ptr {
 
 PathFinder::PathFinder() : pimpl_{spimpl::make_unique_impl<Impl>()} {};
 
-auto PathFinder::build(const NavMeshSettings& bs,
+bool PathFinder::build(const NavMeshSettings& bs,
                        const float* verts,
                        const int nverts,
                        const int* tris,
                        const int ntris,
                        const float* bmin,
-                       const float* bmax) -> bool {
+                       const float* bmax) {
   return pimpl_->build(bs, verts, nverts, tris, ntris, bmin, bmax);
 }
-auto PathFinder::build(const NavMeshSettings& bs,
-                       const esp::assets::MeshData& mesh) -> bool {
+bool PathFinder::build(const NavMeshSettings& bs,
+                       const esp::assets::MeshData& mesh) {
   return pimpl_->build(bs, mesh);
 }
 
-auto PathFinder::getRandomNavigablePoint() -> vec3f {
+vec3f PathFinder::getRandomNavigablePoint() {
   return pimpl_->getRandomNavigablePoint();
 }
 
-auto PathFinder::findPath(ShortestPath& path) -> bool {
+bool PathFinder::findPath(ShortestPath& path) {
   return pimpl_->findPath(path);
 }
 
-auto PathFinder::findPath(MultiGoalShortestPath& path) -> bool {
+bool PathFinder::findPath(MultiGoalShortestPath& path) {
   return pimpl_->findPath(path);
 }
 
@@ -1351,7 +1346,7 @@ template Mn::Vector3 PathFinder::tryStep<Mn::Vector3>(const Mn::Vector3&,
                                                       const Mn::Vector3&);
 
 template <typename T>
-auto PathFinder::tryStep(const T& start, const T& end) -> T {
+T PathFinder::tryStep(const T& start, const T& end) {
   return pimpl_->tryStep(start, end, /*allowSliding=*/true);
 }
 
@@ -1361,7 +1356,7 @@ template Mn::Vector3 PathFinder::tryStepNoSliding<Mn::Vector3>(
     const Mn::Vector3&);
 
 template <typename T>
-auto PathFinder::tryStepNoSliding(const T& start, const T& end) -> T {
+T PathFinder::tryStepNoSliding(const T& start, const T& end) {
   return pimpl_->tryStep(start, end, /*allowSliding=*/false);
 }
 
@@ -1369,19 +1364,19 @@ template vec3f PathFinder::snapPoint<vec3f>(const vec3f& pt);
 template Mn::Vector3 PathFinder::snapPoint<Mn::Vector3>(const Mn::Vector3& pt);
 
 template <typename T>
-auto PathFinder::snapPoint(const T& pt) -> T {
+T PathFinder::snapPoint(const T& pt) {
   return pimpl_->snapPoint(pt);
 }
 
-auto PathFinder::loadNavMesh(const std::string& path) -> bool {
+bool PathFinder::loadNavMesh(const std::string& path) {
   return pimpl_->loadNavMesh(path);
 }
 
-auto PathFinder::saveNavMesh(const std::string& path) -> bool {
+bool PathFinder::saveNavMesh(const std::string& path) {
   return pimpl_->saveNavMesh(path);
 }
 
-auto PathFinder::isLoaded() const -> bool {
+bool PathFinder::isLoaded() const {
   return pimpl_->isLoaded();
 }
 
@@ -1389,41 +1384,40 @@ void PathFinder::seed(uint32_t newSeed) {
   return pimpl_->seed(newSeed);
 }
 
-auto PathFinder::islandRadius(const vec3f& pt) const -> float {
+float PathFinder::islandRadius(const vec3f& pt) const {
   return pimpl_->islandRadius(pt);
 }
 
-auto PathFinder::distanceToClosestObstacle(const vec3f& pt,
-                                           const float maxSearchRadius) const
-    -> float {
+float PathFinder::distanceToClosestObstacle(const vec3f& pt,
+                                            const float maxSearchRadius) const {
   return pimpl_->distanceToClosestObstacle(pt, maxSearchRadius);
 }
 
-auto PathFinder::closestObstacleSurfacePoint(const vec3f& pt,
-                                             const float maxSearchRadius) const
-    -> HitRecord {
+HitRecord PathFinder::closestObstacleSurfacePoint(
+    const vec3f& pt,
+    const float maxSearchRadius) const {
   return pimpl_->closestObstacleSurfacePoint(pt, maxSearchRadius);
 }
 
-auto PathFinder::isNavigable(const vec3f& pt, const float maxYDelta) const
-    -> bool {
+bool PathFinder::isNavigable(const vec3f& pt, const float maxYDelta) const {
   return pimpl_->isNavigable(pt);
 }
 
-auto PathFinder::getNavigableArea() const -> float {
+float PathFinder::getNavigableArea() const {
   return pimpl_->getNavigableArea();
 }
 
-auto PathFinder::bounds() const -> std::pair<vec3f, vec3f> {
+std::pair<vec3f, vec3f> PathFinder::bounds() const {
   return pimpl_->bounds();
 }
 
-auto PathFinder::getTopDownView(const float metersPerPixel, const float height)
-    -> Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> {
+Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
+    const float metersPerPixel,
+    const float height) {
   return pimpl_->getTopDownView(metersPerPixel, height);
 }
 
-auto PathFinder::getNavMeshData() -> const assets::MeshData::ptr {
+const assets::MeshData::ptr PathFinder::getNavMeshData() {
   return pimpl_->getNavMeshData();
 }
 

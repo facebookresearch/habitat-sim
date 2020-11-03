@@ -24,7 +24,7 @@ using py::literals::operator""_a;
 
 namespace {
 template <class T>
-auto nodeGetter(T& self) -> esp::scene::SceneNode* {
+esp::scene::SceneNode* nodeGetter(T& self) {
   // TODO(mosra) PR#353
   // NOLINTNEXTLINE(clang-diagnostic-undefined-bool-conversion)
   if (!&self.node())
