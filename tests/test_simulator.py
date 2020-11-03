@@ -15,7 +15,7 @@ def test_no_navmesh_smoke():
     # with no navmesh and the navmesh isn't used for any exisitng sensors
     agent_config.sensor_specifications = []
 
-    sim_cfg.scene_id = "data/scene_datasets/habitat-test-scenes/stage_floor1.glb"
+    sim_cfg.scene_id = "data/test_assets/scenes/stage_floor1.glb"
 
     with habitat_sim.Simulator(
         habitat_sim.Configuration(sim_cfg, [agent_config])
