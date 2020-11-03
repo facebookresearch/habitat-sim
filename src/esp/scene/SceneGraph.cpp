@@ -35,13 +35,14 @@ auto SceneGraph::isRootNode(SceneNode& node) -> bool {
   return (parent->parent() == nullptr ? true : false);
 }
 
-auto SceneGraph::getDrawableGroup(const std::string& id) -> gfx::DrawableGroup* {
+auto SceneGraph::getDrawableGroup(const std::string& id)
+    -> gfx::DrawableGroup* {
   auto it = drawableGroups_.find(id);
   return it == drawableGroups_.end() ? nullptr : &it->second;
 }
 
-auto SceneGraph::getDrawableGroup(
-    const std::string& id) const -> const gfx::DrawableGroup* {
+auto SceneGraph::getDrawableGroup(const std::string& id) const
+    -> const gfx::DrawableGroup* {
   auto it = drawableGroups_.find(id);
   return it == drawableGroups_.end() ? nullptr : &it->second;
 }

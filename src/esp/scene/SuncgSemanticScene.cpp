@@ -29,7 +29,8 @@ auto SuncgObjectCategory::index(const std::string& mapping) const -> int {
   return ID_UNDEFINED;
 }
 
-auto SuncgObjectCategory::name(const std::string& mapping) const -> std::string {
+auto SuncgObjectCategory::name(const std::string& mapping) const
+    -> std::string {
   if (mapping == "model_id") {
     return modelId_;
   } else if (mapping == "node_id") {
@@ -51,7 +52,8 @@ auto SuncgRegionCategory::index(const std::string& mapping) const -> int {
   // NOTE: SUNCG regions are not linearized
   return ID_UNDEFINED;
 }
-auto SuncgRegionCategory::name(const std::string& mapping) const -> std::string {
+auto SuncgRegionCategory::name(const std::string& mapping) const
+    -> std::string {
   if (mapping == "node_id") {
     return nodeId_;
   } else if (mapping == "" || mapping == "category") {

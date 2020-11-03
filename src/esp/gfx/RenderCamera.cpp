@@ -28,8 +28,8 @@ namespace gfx {
  * that culls the aabb
  */
 auto rangeFrustum(const Mn::Range3D& range,
-                                           const Mn::Frustum& frustum,
-                                           int frustumPlaneIndex = 0) -> Cr::Containers::Optional<int> {
+                  const Mn::Frustum& frustum,
+                  int frustumPlaneIndex = 0) -> Cr::Containers::Optional<int> {
   const Mn::Vector3 center = range.min() + range.max();
   const Mn::Vector3 extent = range.max() - range.min();
 
@@ -64,10 +64,10 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
 }
 
 auto RenderCamera::setProjectionMatrix(int width,
-                                                int height,
-                                                float znear,
-                                                float zfar,
-                                                float hfov) -> RenderCamera& {
+                                       int height,
+                                       float znear,
+                                       float zfar,
+                                       float hfov) -> RenderCamera& {
   const float aspectRatio = static_cast<float>(width) / height;
   MagnumCamera::setProjectionMatrix(
       Mn::Matrix4::perspectiveProjection(Mn::Deg{hfov}, aspectRatio, znear,
@@ -126,7 +126,8 @@ auto RenderCamera::removeNonObjects(
   return (newEndIter - drawableTransforms.begin());
 }
 
-auto RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) -> uint32_t {
+auto RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags)
+    -> uint32_t {
   previousNumVisibleDrawables_ = drawables.size();
   if (flags == Flags()) {  // empty set
     MagnumCamera::draw(drawables);
@@ -166,7 +167,8 @@ auto RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) -> uint32_t
   return drawableTransforms.size();
 }
 
-auto RenderCamera::unproject(const Mn::Vector2i& viewportPosition) -> esp::geo::Ray {
+auto RenderCamera::unproject(const Mn::Vector2i& viewportPosition)
+    -> esp::geo::Ray {
   esp::geo::Ray ray;
   ray.origin = object().absoluteTranslation();
 

@@ -39,9 +39,8 @@ struct InstancePlyData {
   std::vector<uint16_t> objectIds;
 };
 
-auto parsePly(
-    Mn::Trade::AbstractImporter& importer,
-    const std::string& plyFile) -> Cr::Containers::Optional<InstancePlyData> {
+auto parsePly(Mn::Trade::AbstractImporter& importer, const std::string& plyFile)
+    -> Cr::Containers::Optional<InstancePlyData> {
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
      attributes to per-vertex, so nothing extra needs to be done. */
@@ -110,10 +109,10 @@ auto parsePly(
 
 }  // namespace
 
-auto
-GenericInstanceMeshData::fromPlySplitByObjectId(
+auto GenericInstanceMeshData::fromPlySplitByObjectId(
     Mn::Trade::AbstractImporter& importer,
-    const std::string& plyFile) -> std::vector<std::unique_ptr<GenericInstanceMeshData>> {
+    const std::string& plyFile)
+    -> std::vector<std::unique_ptr<GenericInstanceMeshData>> {
   Cr::Containers::Optional<InstancePlyData> parseResult =
       parsePly(importer, plyFile);
   if (!parseResult) {
@@ -139,9 +138,9 @@ GenericInstanceMeshData::fromPlySplitByObjectId(
   return splitMeshData;
 }
 
-auto GenericInstanceMeshData::fromPLY(
-    Mn::Trade::AbstractImporter& importer,
-    const std::string& plyFile) -> std::unique_ptr<GenericInstanceMeshData> {
+auto GenericInstanceMeshData::fromPLY(Mn::Trade::AbstractImporter& importer,
+                                      const std::string& plyFile)
+    -> std::unique_ptr<GenericInstanceMeshData> {
   Cr::Containers::Optional<InstancePlyData> parseResult =
       parsePly(importer, plyFile);
   if (!parseResult) {

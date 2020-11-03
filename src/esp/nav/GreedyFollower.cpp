@@ -33,16 +33,16 @@ GreedyGeodesicFollowerImpl::GreedyGeodesicFollowerImpl(
       thrashingThreshold_{thrashingThreshold} {};
 
 auto GreedyGeodesicFollowerImpl::geoDist(const Mn::Vector3& start,
-                                          const Mn::Vector3& end) -> float {
+                                         const Mn::Vector3& end) -> float {
   geoDistPath_.requestedStart = cast<vec3f>(start);
   geoDistPath_.requestedEnd = cast<vec3f>(end);
   pathfinder_->findPath(geoDistPath_);
   return geoDistPath_.geodesicDistance;
 }
 
-auto GreedyGeodesicFollowerImpl::tryStep(
-    const scene::SceneNode& node,
-    const Mn::Vector3& end) -> GreedyGeodesicFollowerImpl::TryStepResult {
+auto GreedyGeodesicFollowerImpl::tryStep(const scene::SceneNode& node,
+                                         const Mn::Vector3& end)
+    -> GreedyGeodesicFollowerImpl::TryStepResult {
   tryStepDummyNode_.MagnumObject::setTransformation(
       node.MagnumObject::transformation());
 
@@ -57,8 +57,8 @@ auto GreedyGeodesicFollowerImpl::tryStep(
 }
 
 auto GreedyGeodesicFollowerImpl::computeReward(const scene::SceneNode& node,
-                                                const ShortestPath& path,
-                                                const size_t primLen) -> float {
+                                               const ShortestPath& path,
+                                               const size_t primLen) -> float {
   const auto tryStepRes = tryStep(node, Mn::Vector3{path.requestedEnd});
 
   // Try to minimize geodesic distance to target
@@ -77,9 +77,10 @@ auto GreedyGeodesicFollowerImpl::computeReward(const scene::SceneNode& node,
                     : 0.0f));
 }
 
-auto
-GreedyGeodesicFollowerImpl::nextBestPrimAlong(const core::RigidState& state,
-                                              const ShortestPath& path) -> std::vector<GreedyGeodesicFollowerImpl::CODES> {
+auto GreedyGeodesicFollowerImpl::nextBestPrimAlong(
+    const core::RigidState& state,
+    const ShortestPath& path)
+    -> std::vector<GreedyGeodesicFollowerImpl::CODES> {
   if (path.geodesicDistance == std::numeric_limits<float>::infinity()) {
     return {CODES::ERROR};
   }
@@ -154,9 +155,9 @@ auto GreedyGeodesicFollowerImpl::isThrashing() -> bool {
   return thrashing;
 }
 
-auto GreedyGeodesicFollowerImpl::nextActionAlong(
-    const core::RigidState& start,
-    const Mn::Vector3& end) -> GreedyGeodesicFollowerImpl::CODES {
+auto GreedyGeodesicFollowerImpl::nextActionAlong(const core::RigidState& start,
+                                                 const Mn::Vector3& end)
+    -> GreedyGeodesicFollowerImpl::CODES {
   ShortestPath path;
   path.requestedStart = cast<vec3f>(start.translation);
   path.requestedEnd = cast<vec3f>(end);
@@ -184,9 +185,9 @@ auto GreedyGeodesicFollowerImpl::nextActionAlong(
   return actions_.back();
 }
 
-auto
-GreedyGeodesicFollowerImpl::findPath(const core::RigidState& start,
-                                     const Mn::Vector3& end) -> std::vector<GreedyGeodesicFollowerImpl::CODES> {
+auto GreedyGeodesicFollowerImpl::findPath(const core::RigidState& start,
+                                          const Mn::Vector3& end)
+    -> std::vector<GreedyGeodesicFollowerImpl::CODES> {
   constexpr int maxActions = 5e3;
   findPathDummyNode_.setTranslation(Mn::Vector3{start.translation});
   findPathDummyNode_.setRotation(Mn::Quaternion{start.rotation});
@@ -243,10 +244,10 @@ auto GreedyGeodesicFollowerImpl::nextActionAlong(
   return nextActionAlong({currentRot, currentPos}, end);
 }
 
-auto
-GreedyGeodesicFollowerImpl::findPath(const Mn::Quaternion& currentRot,
-                                     const Mn::Vector3& currentPos,
-                                     const Mn::Vector3& end) -> std::vector<GreedyGeodesicFollowerImpl::CODES> {
+auto GreedyGeodesicFollowerImpl::findPath(const Mn::Quaternion& currentRot,
+                                          const Mn::Vector3& currentPos,
+                                          const Mn::Vector3& end)
+    -> std::vector<GreedyGeodesicFollowerImpl::CODES> {
   return findPath({currentRot, currentPos}, end);
 }
 

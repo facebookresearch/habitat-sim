@@ -15,7 +15,8 @@ namespace gfx {
 auto buildPhongFromPbrMetallicRoughness(
     const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
     int textureBaseIndex,
-    const std::vector<std::shared_ptr<Magnum::GL::Texture2D>>& textures) -> gfx::PhongMaterialData::uptr {
+    const std::vector<std::shared_ptr<Magnum::GL::Texture2D>>& textures)
+    -> gfx::PhongMaterialData::uptr {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 

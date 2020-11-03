@@ -312,9 +312,9 @@ auto ResourceManager::loadStage(
   return true;
 }  // ResourceManager::loadScene
 
-auto ResourceManager::buildMeshGroups(
-    const AssetInfo& info,
-    std::vector<CollisionMeshData>& meshGroup) -> bool {
+auto ResourceManager::buildMeshGroups(const AssetInfo& info,
+                                      std::vector<CollisionMeshData>& meshGroup)
+    -> bool {
   if (collisionMeshGroups_.count(info.filepath) == 0) {
     //! Collect collision mesh group
     bool colMeshGroupSuccess = false;
@@ -352,8 +352,7 @@ auto ResourceManager::buildMeshGroups(
   return true;
 }  // ResourceManager::buildMeshGroups
 
-auto
-ResourceManager::createStageAssetInfosFromAttributes(
+auto ResourceManager::createStageAssetInfosFromAttributes(
     const StageAttributes::ptr& stageAttributes,
     bool createCollisionInfo,
     bool createSemanticInfo) -> std::map<std::string, AssetInfo> {
@@ -429,8 +428,8 @@ auto ResourceManager::loadStageInternal(
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs /*  = false */,
     bool splitSemanticMesh /* = true */,
-    const Mn::ResourceKey&
-        lightSetupKey /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) -> bool {
+    const Mn::ResourceKey& lightSetupKey /* = Mn::ResourceKey{NO_LIGHT_KEY})*/)
+    -> bool {
   // scene mesh loading
   const std::string& filename = info.filepath;
   bool meshSuccess = true;
@@ -625,7 +624,8 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
 }
 
 auto ResourceManager::computeAbsoluteTransformations(
-    const std::vector<StaticDrawableInfo>& staticDrawableInfo) -> std::vector<Mn::Matrix4> {
+    const std::vector<StaticDrawableInfo>& staticDrawableInfo)
+    -> std::vector<Mn::Matrix4> {
   // sanity check
   if (staticDrawableInfo.size() == 0) {
     return {};
@@ -824,12 +824,12 @@ auto ResourceManager::loadPTexMeshData(const AssetInfo& info,
 }
 
 // semantic instance mesh import
-auto ResourceManager::loadInstanceMeshData(
-    const AssetInfo& info,
-    scene::SceneNode* parent,
-    DrawableGroup* drawables,
-    bool computeAbsoluteAABBs,
-    bool splitSemanticMesh /* = true */) -> bool {
+auto ResourceManager::loadInstanceMeshData(const AssetInfo& info,
+                                           scene::SceneNode* parent,
+                                           DrawableGroup* drawables,
+                                           bool computeAbsoluteAABBs,
+                                           bool splitSemanticMesh /* = true */)
+    -> bool {
   if (info.type != AssetType::INSTANCE_MESH) {
     LOG(ERROR) << "loadInstanceMeshData only works with INSTANCE_MESH type!";
     return false;
@@ -1110,8 +1110,9 @@ auto ResourceManager::loadGeneralMeshData(
 }  // loadGeneralMeshData
 
 auto ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
-                                              scene::SceneNode* parent,
-                                              DrawableGroup* drawables) -> int {
+                                               scene::SceneNode* parent,
+                                               DrawableGroup* drawables)
+    -> int {
   int navMeshPrimitiveID = ID_UNDEFINED;
 
   if (!pathFinder.isLoaded())
@@ -1946,8 +1947,8 @@ void ResourceManager::joinHeirarchy(
   }
 }
 
-auto ResourceManager::createJoinedCollisionMesh(
-    const std::string& filename) -> std::unique_ptr<MeshData> {
+auto ResourceManager::createJoinedCollisionMesh(const std::string& filename)
+    -> std::unique_ptr<MeshData> {
   std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
 
   CHECK(resourceDict_.count(filename) > 0);

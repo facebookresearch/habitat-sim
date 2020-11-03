@@ -51,8 +51,8 @@ auto fileSize(const std::string& filename) -> size_t {
 // This function returns: foo.\png
 // while replace_extension returns: foo.\\png
 
-auto changeExtension(const std::string& filename,
-                            const std::string& ext) -> std::string {
+auto changeExtension(const std::string& filename, const std::string& ext)
+    -> std::string {
   std::string correctExt = ext;
 
   // this is the only requirement on an extension, that is,
@@ -108,9 +108,9 @@ std::string removeExtension(const std::string& file) {
 */
 
 auto tokenize(const std::string& string,
-                                  const std::string& delimiterCharList,
-                                  int limit /* = 0 */,
-                                  bool mergeAdjDelims /* = false */) -> std::vector<std::string> {
+              const std::string& delimiterCharList,
+              int limit /* = 0 */,
+              bool mergeAdjDelims /* = false */) -> std::vector<std::string> {
   std::vector<std::string> tokens;
   if (string.length() == 0) {
     return tokens;

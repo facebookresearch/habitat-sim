@@ -4,9 +4,7 @@
 
 #include "CoordinateFrame.h"
 
-
 #include <utility>
-
 
 #include "esp/geo/geo.h"
 #include "esp/io/json.h"
@@ -14,9 +12,9 @@
 namespace esp {
 namespace geo {
 
-CoordinateFrame::CoordinateFrame(vec3f  up /* = ESP_UP */,
-                                 vec3f  front /* = ESP_FRONT */,
-                                 vec3f  origin /* = vec3f(0, 0, 0) */)
+CoordinateFrame::CoordinateFrame(vec3f up /* = ESP_UP */,
+                                 vec3f front /* = ESP_FRONT */,
+                                 vec3f origin /* = vec3f(0, 0, 0) */)
     : up_(std::move(up)), front_(std::move(front)), origin_(std::move(origin)) {
   ASSERT(up_.isOrthogonal(front_));
 }

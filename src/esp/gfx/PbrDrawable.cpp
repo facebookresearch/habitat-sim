@@ -159,7 +159,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 }
 
 auto PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
-                                          PbrShader::Flags flags) const -> Mn::ResourceKey {
+                               PbrShader::Flags flags) const
+    -> Mn::ResourceKey {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
       static_cast<PbrShader::Flags::UnderlyingType>(

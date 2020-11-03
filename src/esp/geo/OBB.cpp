@@ -20,8 +20,10 @@ OBB::OBB() {
   box3f box;
 }
 
-OBB::OBB(vec3f  center, const vec3f& dimensions, const quatf& rotation)
-    : center_(std::move(center)), halfExtents_(dimensions * 0.5), rotation_(rotation) {
+OBB::OBB(vec3f center, const vec3f& dimensions, const quatf& rotation)
+    : center_(std::move(center)),
+      halfExtents_(dimensions * 0.5),
+      rotation_(rotation) {
   recomputeTransforms();
 }
 
@@ -34,7 +36,7 @@ static const vec3f kCorners[8] = {
 
 auto OBB::toAABB() const -> box3f {
   box3f bbox;
-  for (const auto & kCorner : kCorners) {
+  for (const auto& kCorner : kCorners) {
     const vec3f worldPoint =
         center_ + (rotation_ * kCorner.cwiseProduct(halfExtents_));
     bbox.extend(worldPoint);
@@ -100,7 +102,7 @@ auto OBB::rotate(const quatf& q) -> OBB& {
 
 // https://geidav.wordpress.com/tag/minimum-obb/
 auto computeGravityAlignedMOBB(const vec3f& gravity,
-                              const std::vector<vec3f>& points) -> OBB {
+                               const std::vector<vec3f>& points) -> OBB {
   const auto align_gravity = quatf::FromTwoVectors(gravity, -vec3f::UnitZ());
 
   static auto ortho = [](const vec2f& v) { return vec2f(v[1], -v[0]); };

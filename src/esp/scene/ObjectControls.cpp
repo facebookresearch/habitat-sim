@@ -79,16 +79,16 @@ ObjectControls::ObjectControls() {
   moveFuncMap_["lookDown"] = &lookDown;
 }
 
-auto ObjectControls::setMoveFilterFunction(
-    MoveFilterFunc filterFunc) -> ObjectControls& {
+auto ObjectControls::setMoveFilterFunction(MoveFilterFunc filterFunc)
+    -> ObjectControls& {
   moveFilterFunc_ = std::move(filterFunc);
   return *this;
 }
 
 auto ObjectControls::action(SceneNode& object,
-                                       const std::string& actName,
-                                       float distance,
-                                       bool applyFilter /* = true */) -> ObjectControls& {
+                            const std::string& actName,
+                            float distance,
+                            bool applyFilter /* = true */) -> ObjectControls& {
   if (moveFuncMap_.count(actName)) {
     if (applyFilter) {
       // TODO: use magnum math for the filter func as well?

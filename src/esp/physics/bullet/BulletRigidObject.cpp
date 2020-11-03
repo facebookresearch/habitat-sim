@@ -137,9 +137,9 @@ auto BulletRigidObject::finalizeObject_LibSpecific() -> bool {
   return true;
 }  // finalizeObject_LibSpecifc
 
-auto
-BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
-                                                 double halfLength) -> std::unique_ptr<btCollisionShape> {
+auto BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
+                                                      double halfLength)
+    -> std::unique_ptr<btCollisionShape> {
   // int primTypeVal = primAttributes.getPrimObjType();
   CORRADE_ASSERT(
       (primTypeVal >= 0) &&
@@ -149,8 +149,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
       "value requested : "
           << primTypeVal,
       nullptr);
-  auto primType =
-      static_cast<metadata::PrimObjTypes>(primTypeVal);
+  auto primType = static_cast<metadata::PrimObjTypes>(primTypeVal);
 
   std::unique_ptr<btCollisionShape> obj(nullptr);
   switch (primType) {

@@ -173,9 +173,9 @@ void GenericDrawable::updateShader() {
   }
 }
 
-auto GenericDrawable::getShaderKey(
-    Mn::UnsignedInt lightCount,
-    Mn::Shaders::Phong::Flags flags) const -> Mn::ResourceKey {
+auto GenericDrawable::getShaderKey(Mn::UnsignedInt lightCount,
+                                   Mn::Shaders::Phong::Flags flags) const
+    -> Mn::ResourceKey {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
       static_cast<Mn::Shaders::Phong::Flags::UnderlyingType>(flags));

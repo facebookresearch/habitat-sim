@@ -116,8 +116,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
   }
 }  // SceneAttributesManager::setValsFromJSONDoc
 
-auto
-SceneAttributesManager::createInstanceAttributesFromJSON(
+auto SceneAttributesManager::createInstanceAttributesFromJSON(
     const io::JsonGenericValue& jCell) -> SceneObjectInstanceAttributes::ptr {
   SceneObjectInstanceAttributes::ptr instanceAttrs =
       SceneObjectInstanceAttributes::create("");

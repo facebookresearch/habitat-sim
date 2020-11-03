@@ -7,9 +7,9 @@
 namespace esp {
 namespace core {
 
-auto ManagedContainerBase::convertFilenameToJSON(
-    const std::string& filename,
-    const std::string& jsonTypeExt) -> std::string {
+auto ManagedContainerBase::convertFilenameToJSON(const std::string& filename,
+                                                 const std::string& jsonTypeExt)
+    -> std::string {
   std::string strHandle = Cr::Utility::String::lowercase(filename);
   std::string resHandle(filename);
   if (std::string::npos ==
@@ -26,7 +26,8 @@ auto ManagedContainerBase::convertFilenameToJSON(
   return resHandle;
 }  // ManagedContainerBase::convertFilenameToJSON
 
-auto ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) -> bool {
+auto ManagedContainerBase::setLock(const std::string& objectHandle, bool lock)
+    -> bool {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
   if (!checkExistsWithMessage(objectHandle, "ManagedContainerBase::setLock")) {
@@ -62,8 +63,7 @@ auto ManagedContainerBase::getRandomObjectHandlePerType(
   return res;
 }  // ManagedContainer::getRandomObjectHandlePerType
 
-auto
-ManagedContainerBase::getObjectHandlesBySubStringPerType(
+auto ManagedContainerBase::getObjectHandlesBySubStringPerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& subStr,
     bool contains) const -> std::vector<std::string> {
@@ -84,7 +84,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (const auto & mapOfHandle : mapOfHandles) {
+  for (const auto& mapOfHandle : mapOfHandles) {
     std::string key = Cr::Utility::String::lowercase(mapOfHandle.second);
     // be sure that key is big enough to search in (otherwise find has undefined
     // behavior)
@@ -101,8 +101,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
-auto
-ManagedContainerBase::getObjectHandlesBySubStringPerType(
+auto ManagedContainerBase::getObjectHandlesBySubStringPerType(
     const std::map<std::string, std::set<std::string>>& mapOfHandles,
     const std::string& subStr,
     bool contains) const -> std::vector<std::string> {
@@ -123,7 +122,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (const auto & mapOfHandle : mapOfHandles) {
+  for (const auto& mapOfHandle : mapOfHandles) {
     std::string key = Cr::Utility::String::lowercase(mapOfHandle.first);
     // be sure that key is big enough to search in (otherwise find has undefined
     // behavior)
@@ -141,7 +140,8 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
 auto ManagedContainerBase::verifyLoadDocument(const std::string& filename,
-                                              io::JsonDocument& jsonDoc) -> bool {
+                                              io::JsonDocument& jsonDoc)
+    -> bool {
   if (isValidFileName(filename)) {
     try {
       jsonDoc = io::parseJsonFile(filename);

@@ -56,7 +56,8 @@ auto BulletPhysicsManager::addStageFinalize(const std::string& handle) -> bool {
 
 auto BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
                                                  const std::string& handle,
-                                                 scene::SceneNode* objectNode) -> bool {
+                                                 scene::SceneNode* objectNode)
+    -> bool {
   auto ptr = physics::BulletRigidObject::create_unique(
       objectNode, newObjectID, bWorld_, collisionObjToObjIds_);
   bool objSuccess = ptr->initialize(resourceManager_, handle);
@@ -103,7 +104,7 @@ auto BulletPhysicsManager::isMeshPrimitiveValid(
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
-  for (auto & existingObject : existingObjects_) {
+  for (auto& existingObject : existingObjects_) {
     existingObject.second->setActive();
   }
 }
@@ -193,15 +194,16 @@ auto BulletPhysicsManager::getStageRestitutionCoefficient() const -> double {
   return staticStageObject_->getRestitutionCoefficient();
 }
 
-auto BulletPhysicsManager::getCollisionShapeAabb(
-    const int physObjectID) const -> const Magnum::Range3D {
+auto BulletPhysicsManager::getCollisionShapeAabb(const int physObjectID) const
+    -> const Magnum::Range3D {
   assertIDValidity(physObjectID);
   return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->getCollisionShapeAabb();
 }
 
-auto BulletPhysicsManager::getStageCollisionShapeAabb() const -> const Magnum::Range3D {
+auto BulletPhysicsManager::getStageCollisionShapeAabb() const
+    -> const Magnum::Range3D {
   return static_cast<BulletRigidStage*>(staticStageObject_.get())
       ->getCollisionShapeAabb();
 }
@@ -219,8 +221,8 @@ auto BulletPhysicsManager::contactTest(const int physObjectID) -> bool {
       ->contactTest();
 }
 
-auto BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
-                                             double maxDistance) -> RaycastResults {
+auto BulletPhysicsManager::castRay(const esp::geo::Ray& ray, double maxDistance)
+    -> RaycastResults {
   RaycastResults results;
   results.ray = ray;
   double rayLength = ray.direction.length();

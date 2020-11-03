@@ -52,7 +52,8 @@ auto RigidObject::finalizeObject() -> bool {
   return finalizeObject_LibSpecific();
 }  // RigidObject::finalizeObject
 
-auto RigidObject::initialization_LibSpecific(const assets::ResourceManager&) -> bool {
+auto RigidObject::initialization_LibSpecific(const assets::ResourceManager&)
+    -> bool {
   // default kineamtic unless a simulator is initialized...
   objectMotionType_ = MotionType::KINEMATIC;
   return true;
@@ -70,9 +71,9 @@ auto RigidObject::setMotionType(MotionType mt) -> bool {
 //////////////////
 // VelocityControl
 
-auto VelocityControl::integrateTransform(
-    const float dt,
-    const core::RigidState& rigidState) -> core::RigidState {
+auto VelocityControl::integrateTransform(const float dt,
+                                         const core::RigidState& rigidState)
+    -> core::RigidState {
   core::RigidState newRigidState(rigidState);
   // linear first
   if (controllingLinVel) {

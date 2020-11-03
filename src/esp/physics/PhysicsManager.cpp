@@ -55,9 +55,9 @@ auto PhysicsManager::addStageFinalize(const std::string& handle) -> bool {
 }
 
 auto PhysicsManager::addObject(const int objectLibId,
-                              DrawableGroup* drawables,
-                              scene::SceneNode* attachmentNode,
-                              const Magnum::ResourceKey& lightSetup) -> int {
+                               DrawableGroup* drawables,
+                               scene::SceneNode* attachmentNode,
+                               const Magnum::ResourceKey& lightSetup) -> int {
   const std::string& configHandle =
       resourceManager_.getObjectAttributesManager()->getObjectHandleByID(
           objectLibId);
@@ -66,9 +66,9 @@ auto PhysicsManager::addObject(const int objectLibId,
 }
 
 auto PhysicsManager::addObject(const std::string& configFileHandle,
-                              DrawableGroup* drawables,
-                              scene::SceneNode* attachmentNode,
-                              const Magnum::ResourceKey& lightSetup) -> int {
+                               DrawableGroup* drawables,
+                               scene::SceneNode* attachmentNode,
+                               const Magnum::ResourceKey& lightSetup) -> int {
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
   scene::SceneNode* objectNode = attachmentNode;
@@ -141,13 +141,14 @@ void PhysicsManager::removeObject(const int physObjectID,
   }
 }
 
-auto PhysicsManager::setObjectMotionType(const int physObjectID,
-                                         MotionType mt) -> bool {
+auto PhysicsManager::setObjectMotionType(const int physObjectID, MotionType mt)
+    -> bool {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->setMotionType(mt);
 }
 
-auto PhysicsManager::getObjectMotionType(const int physObjectID) const -> MotionType {
+auto PhysicsManager::getObjectMotionType(const int physObjectID) const
+    -> MotionType {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getMotionType();
 }
@@ -169,7 +170,8 @@ auto PhysicsManager::deallocateObjectID(int physObjectID) -> int {
 
 auto PhysicsManager::makeAndAddRigidObject(int newObjectID,
                                            const std::string& handle,
-                                           scene::SceneNode* objectNode) -> bool {
+                                           scene::SceneNode* objectNode)
+    -> bool {
   auto ptr = physics::RigidObject::create_unique(objectNode, newObjectID);
   bool objSuccess = ptr->initialize(resourceManager_, handle);
   if (objSuccess) {
@@ -179,7 +181,8 @@ auto PhysicsManager::makeAndAddRigidObject(int newObjectID,
 }
 
 //! Base physics manager has no requirement for mesh primitive
-auto PhysicsManager::isMeshPrimitiveValid(const assets::CollisionMeshData&) -> bool {
+auto PhysicsManager::isMeshPrimitiveValid(const assets::CollisionMeshData&)
+    -> bool {
   return true;
 }
 
@@ -361,24 +364,26 @@ void PhysicsManager::rotateZLocal(const int physObjectID,
   existingObjects_.at(physObjectID)->rotateZLocal(angleInRad);
 }
 
-auto PhysicsManager::getTransformation(
-    const int physObjectID) const -> Magnum::Matrix4 {
+auto PhysicsManager::getTransformation(const int physObjectID) const
+    -> Magnum::Matrix4 {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->node().transformation();
 }
 
-auto PhysicsManager::getRigidState(
-    const int physObjectID) const -> esp::core::RigidState {
+auto PhysicsManager::getRigidState(const int physObjectID) const
+    -> esp::core::RigidState {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getRigidState();
 }
 
-auto PhysicsManager::getTranslation(const int physObjectID) const -> Magnum::Vector3 {
+auto PhysicsManager::getTranslation(const int physObjectID) const
+    -> Magnum::Vector3 {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->node().translation();
 }
 
-auto PhysicsManager::getRotation(const int physObjectID) const -> Magnum::Quaternion {
+auto PhysicsManager::getRotation(const int physObjectID) const
+    -> Magnum::Quaternion {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->node().rotation();
 }
@@ -395,20 +400,20 @@ void PhysicsManager::setAngularVelocity(const int physObjectID,
   existingObjects_.at(physObjectID)->setAngularVelocity(angVel);
 }
 
-auto PhysicsManager::getLinearVelocity(
-    const int physObjectID) const -> Magnum::Vector3 {
+auto PhysicsManager::getLinearVelocity(const int physObjectID) const
+    -> Magnum::Vector3 {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getLinearVelocity();
 }
 
-auto PhysicsManager::getAngularVelocity(
-    const int physObjectID) const -> Magnum::Vector3 {
+auto PhysicsManager::getAngularVelocity(const int physObjectID) const
+    -> Magnum::Vector3 {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getAngularVelocity();
 }
 
-auto PhysicsManager::getVelocityControl(
-    const int physObjectID) -> VelocityControl::ptr {
+auto PhysicsManager::getVelocityControl(const int physObjectID)
+    -> VelocityControl::ptr {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getVelocityControl();
 }
@@ -463,12 +468,14 @@ auto PhysicsManager::getCOM(const int physObjectID) const -> Magnum::Vector3 {
   return existingObjects_.at(physObjectID)->getCOM();
 }
 
-auto PhysicsManager::getInertiaVector(const int physObjectID) const -> Magnum::Vector3 {
+auto PhysicsManager::getInertiaVector(const int physObjectID) const
+    -> Magnum::Vector3 {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getInertiaVector();
 }
 
-auto PhysicsManager::getInertiaMatrix(const int physObjectID) const -> Magnum::Matrix3 {
+auto PhysicsManager::getInertiaMatrix(const int physObjectID) const
+    -> Magnum::Matrix3 {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getInertiaMatrix();
 }
@@ -478,12 +485,14 @@ auto PhysicsManager::getScale(const int physObjectID) const -> Magnum::Vector3 {
   return existingObjects_.at(physObjectID)->getScale();
 }
 
-auto PhysicsManager::getFrictionCoefficient(const int physObjectID) const -> double {
+auto PhysicsManager::getFrictionCoefficient(const int physObjectID) const
+    -> double {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getFrictionCoefficient();
 }
 
-auto PhysicsManager::getRestitutionCoefficient(const int physObjectID) const -> double {
+auto PhysicsManager::getRestitutionCoefficient(const int physObjectID) const
+    -> double {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getRestitutionCoefficient();
 }
@@ -525,8 +534,8 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
   }
 }
 
-auto PhysicsManager::getObjectSceneNode(
-    int physObjectID) const -> const scene::SceneNode& {
+auto PhysicsManager::getObjectSceneNode(int physObjectID) const
+    -> const scene::SceneNode& {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->node();
 }
@@ -538,14 +547,14 @@ auto PhysicsManager::getObjectSceneNode(int physObjectID) -> scene::SceneNode& {
           physObjectID));
 }
 
-auto PhysicsManager::getObjectVisualSceneNode(
-    int physObjectID) const -> const scene::SceneNode& {
+auto PhysicsManager::getObjectVisualSceneNode(int physObjectID) const
+    -> const scene::SceneNode& {
   assertIDValidity(physObjectID);
   return *existingObjects_.at(physObjectID)->visualNode_;
 }
 
-auto PhysicsManager::getObjectVisualSceneNodes(
-    const int physObjectID) const -> std::vector<scene::SceneNode*> {
+auto PhysicsManager::getObjectVisualSceneNodes(const int physObjectID) const
+    -> std::vector<scene::SceneNode*> {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->visualNodes_;
 }

@@ -18,8 +18,8 @@ namespace Cr = Corrade;
 namespace esp {
 namespace io {
 
-auto writeJsonToFile(const JsonDocument& document,
-                     const std::string& filepath) -> bool {
+auto writeJsonToFile(const JsonDocument& document, const std::string& filepath)
+    -> bool {
   assert(!filepath.empty());
   std::string outFilePath = filepath;
   if (!Cr::Utility::String::endsWith(outFilePath, ".json")) {

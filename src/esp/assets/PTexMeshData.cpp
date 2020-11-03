@@ -86,7 +86,8 @@ void PTexMeshData::setSaturation(float val) {
   saturation_ = val;
 }
 
-auto PTexMeshData::meshes() const -> const std::vector<PTexMeshData::MeshData>& {
+auto PTexMeshData::meshes() const
+    -> const std::vector<PTexMeshData::MeshData>& {
   return submeshes_;
 }
 
@@ -130,9 +131,8 @@ void computeTriangleMeshIndices(uint64_t numFaces,
 // directly dumped from ReplicaSDK, and loaded to our simulator. See
 // loadSubMeshes(...) for more details;
 
-auto splitMesh(
-    const PTexMeshData::MeshData& mesh,
-    const float splitSize) -> std::vector<PTexMeshData::MeshData> {
+auto splitMesh(const PTexMeshData::MeshData& mesh, const float splitSize)
+    -> std::vector<PTexMeshData::MeshData> {
   std::vector<uint32_t> verts;
   verts.resize(mesh.vbo.size());
 
@@ -152,7 +152,7 @@ auto splitMesh(
 
   box3f boundingBox;
 
-  for (const auto & i : mesh.vbo) {
+  for (const auto& i : mesh.vbo) {
     boundingBox.extend(i.head<3>());
   }
 
@@ -289,9 +289,9 @@ auto splitMesh(
 
 // Put it in the sub-folder, "habitat".
 
-auto loadSubMeshes(
-    const PTexMeshData::MeshData& mesh,
-    const std::string& filename) -> std::vector<PTexMeshData::MeshData> {
+auto loadSubMeshes(const PTexMeshData::MeshData& mesh,
+                   const std::string& filename)
+    -> std::vector<PTexMeshData::MeshData> {
   // sanity checks
   CORRADE_ASSERT(!filename.empty(),
                  "PTexMeshData::loadSubMeshes: filename cannot be empty.", {});
@@ -737,7 +737,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   size_t offsetSoFarBytes = 0;
 
-  for (auto & i : vertexLayout) {
+  for (auto& i : vertexLayout) {
     if (i == Properties::POSITION) {
       positionOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += positionBytes;
@@ -945,7 +945,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-auto PTexMeshData::getRenderingBuffer(int submeshID) -> PTexMeshData::RenderingBuffer* {
+auto PTexMeshData::getRenderingBuffer(int submeshID)
+    -> PTexMeshData::RenderingBuffer* {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
                  "PTexMeshData::getRenderingBuffer: the submesh ID"
                      << submeshID << "is out of range.",

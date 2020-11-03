@@ -26,8 +26,7 @@ auto SceneDatasetAttributesManager::createObject(
   return attrs;
 }  // SceneDatasetAttributesManager::createObject
 
-auto
-SceneDatasetAttributesManager::initNewObjectInternal(
+auto SceneDatasetAttributesManager::initNewObjectInternal(
     const std::string& datasetFilename,
     CORRADE_UNUSED bool builtFromConfig) -> SceneDatasetAttributes::ptr {
   SceneDatasetAttributes::ptr newAttributes =

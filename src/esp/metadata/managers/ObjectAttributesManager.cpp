@@ -23,8 +23,7 @@ using attributes::AbstractObjectAttributes;
 using attributes::ObjectAttributes;
 namespace managers {
 
-auto
-ObjectAttributesManager::createPrimBasedAttributesTemplate(
+auto ObjectAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAttrTemplateHandle,
     bool registerTemplate) -> ObjectAttributes::ptr {
   // verify that a primitive asset with the given handle exists

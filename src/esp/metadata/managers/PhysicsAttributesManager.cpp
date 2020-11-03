@@ -16,9 +16,9 @@ namespace metadata {
 using attributes::PhysicsManagerAttributes;
 namespace managers {
 
-auto PhysicsAttributesManager::createObject(
-    const std::string& physicsFilename,
-    bool registerTemplate) -> PhysicsManagerAttributes::ptr {
+auto PhysicsAttributesManager::createObject(const std::string& physicsFilename,
+                                            bool registerTemplate)
+    -> PhysicsManagerAttributes::ptr {
   std::string msg;
   PhysicsManagerAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
       physicsFilename, msg, registerTemplate);

@@ -20,7 +20,8 @@ namespace scene {
 constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
 auto SemanticScene::
-    loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) -> bool {
+    loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */)
+        -> bool {
   if (!Cr::Utility::Directory::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;

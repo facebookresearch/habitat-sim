@@ -324,8 +324,8 @@ auto PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) -> PbrShader& {
   return *this;
 }
 
-auto PbrShader::bindNoneRoughnessMetallicTexture(
-    Magnum::GL::Texture2D& texture) -> PbrShader& {
+auto PbrShader::bindNoneRoughnessMetallicTexture(Magnum::GL::Texture2D& texture)
+    -> PbrShader& {
   CORRADE_ASSERT(flags_ & Flag::NoneRoughnessMetallicTexture,
                  "Shaders::PbrShader::bindNoneRoughnessMetallicTexture(): the "
                  "shader was not "
@@ -351,7 +351,8 @@ auto PbrShader::bindOcclusionRoughnessMetallicTexture(
   return *this;
 }
 
-auto PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) -> PbrShader& {
+auto PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture)
+    -> PbrShader& {
   CORRADE_ASSERT(
       flags_ & Flag::EmissiveTexture,
       "Shaders::PbrShader::bindEmissiveTexture(): the shader was not "
@@ -372,7 +373,8 @@ auto PbrShader::setNormalMatrix(const Mn::Matrix3x3& matrix) -> PbrShader& {
   return *this;
 }
 
-auto PbrShader::setTransformationMatrix(const Mn::Matrix4& matrix) -> PbrShader& {
+auto PbrShader::setTransformationMatrix(const Mn::Matrix4& matrix)
+    -> PbrShader& {
   setUniform(modelviewMatrixUniform_, matrix);
   return *this;
 }
@@ -431,13 +433,13 @@ auto PbrShader::setLightVectors(
   return *this;
 }
 
-auto PbrShader::setLightVectors(
-    std::initializer_list<Mn::Vector4> vectors) -> PbrShader& {
+auto PbrShader::setLightVectors(std::initializer_list<Mn::Vector4> vectors)
+    -> PbrShader& {
   return setLightVectors(Cr::Containers::arrayView(vectors));
 }
 
 auto PbrShader::setLightPosition(unsigned int lightIndex,
-                                       const Mn::Vector3& pos) -> PbrShader& {
+                                 const Mn::Vector3& pos) -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightPosition: lightIndex" << lightIndex << "is illegal.",
@@ -448,7 +450,7 @@ auto PbrShader::setLightPosition(unsigned int lightIndex,
 }
 
 auto PbrShader::setLightDirection(unsigned int lightIndex,
-                                        const Mn::Vector3& dir) -> PbrShader& {
+                                  const Mn::Vector3& dir) -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightDirection: lightIndex" << lightIndex << "is illegal.",
@@ -457,8 +459,8 @@ auto PbrShader::setLightDirection(unsigned int lightIndex,
   return *this;
 }
 
-auto PbrShader::setLightVector(unsigned int lightIndex,
-                                     const Mn::Vector4& vec) -> PbrShader& {
+auto PbrShader::setLightVector(unsigned int lightIndex, const Mn::Vector4& vec)
+    -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightVector: lightIndex" << lightIndex << "is illegal.",
@@ -476,7 +478,8 @@ auto PbrShader::setLightVector(unsigned int lightIndex,
   return *this;
 }
 
-auto PbrShader::setLightRange(unsigned int lightIndex, float range) -> PbrShader& {
+auto PbrShader::setLightRange(unsigned int lightIndex, float range)
+    -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightRange: lightIndex" << lightIndex << "is illegal.",
@@ -485,8 +488,8 @@ auto PbrShader::setLightRange(unsigned int lightIndex, float range) -> PbrShader
   return *this;
 }
 auto PbrShader::setLightColor(unsigned int lightIndex,
-                                    const Mn::Vector3& color,
-                                    float intensity) -> PbrShader& {
+                              const Mn::Vector3& color,
+                              float intensity) -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
@@ -507,7 +510,8 @@ auto PbrShader::setLightColors(
   return *this;
 }
 
-auto PbrShader::setLightColors(std::initializer_list<Mn::Color3> colors) -> PbrShader& {
+auto PbrShader::setLightColors(std::initializer_list<Mn::Color3> colors)
+    -> PbrShader& {
   return setLightColors(Cr::Containers::arrayView(colors));
 }
 
@@ -533,7 +537,8 @@ auto PbrShader::setLightRanges(
   return *this;
 }
 
-auto PbrShader::setLightRanges(std::initializer_list<float> ranges) -> PbrShader& {
+auto PbrShader::setLightRanges(std::initializer_list<float> ranges)
+    -> PbrShader& {
   return setLightRanges(Cr::Containers::arrayView(ranges));
 }
 

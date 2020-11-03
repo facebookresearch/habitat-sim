@@ -107,9 +107,9 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
             << std::to_string(defaultPrimAttributeHandles_.size());
 }  // AssetAttributesManager::buildMapOfPrimTypeConstructors
 
-auto AssetAttributesManager::createObject(
-    const std::string& primClassName,
-    bool registerTemplate) -> AbstractPrimitiveAttributes::ptr {
+auto AssetAttributesManager::createObject(const std::string& primClassName,
+                                          bool registerTemplate)
+    -> AbstractPrimitiveAttributes::ptr {
   auto primAssetAttributes = this->createDefaultObject(primClassName, false);
   if (nullptr == primAssetAttributes) {
     return primAssetAttributes;

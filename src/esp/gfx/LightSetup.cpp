@@ -39,7 +39,7 @@ auto getLightPositionRelativeToCamera(
 }
 
 auto getLightsAtBoxCorners(const Magnum::Range3D& box,
-                                 const Magnum::Color3& lightColor) -> LightSetup {
+                           const Magnum::Color3& lightColor) -> LightSetup {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Magnum::Math::Literals;
 

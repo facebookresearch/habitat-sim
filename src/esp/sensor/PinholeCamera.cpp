@@ -29,14 +29,14 @@ void PinholeCamera::setProjectionParameters(const SensorSpec::ptr& spec) {
   hfov_ = std::atof(spec_->parameters.at("hfov").c_str());
 }
 
-auto PinholeCamera::setProjectionMatrix(
-    gfx::RenderCamera& targetCamera) -> PinholeCamera& {
+auto PinholeCamera::setProjectionMatrix(gfx::RenderCamera& targetCamera)
+    -> PinholeCamera& {
   targetCamera.setProjectionMatrix(width_, height_, near_, far_, hfov_);
   return *this;
 }
 
-auto PinholeCamera::setTransformationMatrix(
-    gfx::RenderCamera& targetCamera) -> PinholeCamera& {
+auto PinholeCamera::setTransformationMatrix(gfx::RenderCamera& targetCamera)
+    -> PinholeCamera& {
   CORRADE_ASSERT(!scene::SceneGraph::isRootNode(targetCamera.node()),
                  "PinholeCamera::setTransformationMatrix: target camera cannot "
                  "be on the root node of the scene graph",
@@ -70,7 +70,8 @@ auto PinholeCamera::setTransformationMatrix(
   return *this;
 }
 
-auto PinholeCamera::setViewport(gfx::RenderCamera& targetCamera) -> PinholeCamera& {
+auto PinholeCamera::setViewport(gfx::RenderCamera& targetCamera)
+    -> PinholeCamera& {
   targetCamera.setViewport(this->framebufferSize());
   return *this;
 }
@@ -89,7 +90,8 @@ auto PinholeCamera::getObservationSpace(ObservationSpace& space) -> bool {
   return true;
 }
 
-auto PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs) -> bool {
+auto PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs)
+    -> bool {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
   //
@@ -169,8 +171,8 @@ auto PinholeCamera::displayObservation(sim::Simulator& sim) -> bool {
   return true;
 }
 
-auto
-PinholeCamera::depthUnprojection() const -> Corrade::Containers::Optional<Magnum::Vector2> {
+auto PinholeCamera::depthUnprojection() const
+    -> Corrade::Containers::Optional<Magnum::Vector2> {
   const Magnum::Matrix4 projection = Magnum::Matrix4::perspectiveProjection(
       Magnum::Deg{hfov_}, static_cast<float>(width_) / height_, near_, far_);
 
