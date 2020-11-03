@@ -7,7 +7,7 @@
 namespace esp {
 namespace core {
 
-size_t getDataTypeByteSize(DataType dt) {
+auto getDataTypeByteSize(DataType dt) -> size_t {
   switch (dt) {
     case DataType::DT_INT8:
     case DataType::DT_UINT8:
@@ -38,8 +38,8 @@ void Buffer::clear() {
 
 void Buffer::alloc() {
   size_t size = 1;
-  for (size_t i = 0; i < this->shape.size(); i++) {
-    size *= this->shape[i];
+  for (unsigned long i : this->shape) {
+    size *= i;
   }
   if (size != this->totalSize) {
     this->totalSize = size;

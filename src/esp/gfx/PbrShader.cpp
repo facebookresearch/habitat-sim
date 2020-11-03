@@ -52,7 +52,7 @@ enum TextureUnit : uint8_t {
 };
 }  // namespace
 
-PbrShader::Flags PbrShader::generateCorrectFlags(Flags originalFlags) {
+auto PbrShader::generateCorrectFlags(Flags originalFlags) -> PbrShader::Flags {
   Flags result = originalFlags;
   // NOTE:
   // The priority of different kind of textures is as follows (priority
@@ -275,7 +275,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
-PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
+auto PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) -> PbrShader& {
   CORRADE_ASSERT(
       flags_ & Flag::BaseColorTexture,
       "Shaders::PbrShader::bindBaseColorTexture(): the shader was not "
@@ -287,7 +287,7 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::bindRoughnessTexture(Mn::GL::Texture2D& texture) {
+auto PbrShader::bindRoughnessTexture(Mn::GL::Texture2D& texture) -> PbrShader& {
   CORRADE_ASSERT(
       flags_ & Flag::RoughnessTexture,
       "Shaders::PbrShader::bindRoughnessTexture(): the shader was not "
@@ -300,7 +300,7 @@ PbrShader& PbrShader::bindRoughnessTexture(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::bindMetallicTexture(Mn::GL::Texture2D& texture) {
+auto PbrShader::bindMetallicTexture(Mn::GL::Texture2D& texture) -> PbrShader& {
   CORRADE_ASSERT(
       flags_ & Flag::MetallicTexture,
       "Shaders::PbrShader::bindMetallicTexture(): the shader was not "
@@ -313,7 +313,7 @@ PbrShader& PbrShader::bindMetallicTexture(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
+auto PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) -> PbrShader& {
   CORRADE_ASSERT(flags_ & Flag::NormalTexture,
                  "Shaders::PbrShader::bindNormalTexture(): the shader was not "
                  "created with normal texture enabled",
@@ -324,8 +324,8 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::bindNoneRoughnessMetallicTexture(
-    Magnum::GL::Texture2D& texture) {
+auto PbrShader::bindNoneRoughnessMetallicTexture(
+    Magnum::GL::Texture2D& texture) -> PbrShader& {
   CORRADE_ASSERT(flags_ & Flag::NoneRoughnessMetallicTexture,
                  "Shaders::PbrShader::bindNoneRoughnessMetallicTexture(): the "
                  "shader was not "
@@ -337,8 +337,8 @@ PbrShader& PbrShader::bindNoneRoughnessMetallicTexture(
   return *this;
 }
 
-PbrShader& PbrShader::bindOcclusionRoughnessMetallicTexture(
-    Magnum::GL::Texture2D& texture) {
+auto PbrShader::bindOcclusionRoughnessMetallicTexture(
+    Magnum::GL::Texture2D& texture) -> PbrShader& {
   CORRADE_ASSERT(
       flags_ & Flag::OcclusionRoughnessMetallicTexture,
       "Shaders::PbrShader::bindOcclusionRoughnessMetallicTexture(): the "
@@ -351,7 +351,7 @@ PbrShader& PbrShader::bindOcclusionRoughnessMetallicTexture(
   return *this;
 }
 
-PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) {
+auto PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) -> PbrShader& {
   CORRADE_ASSERT(
       flags_ & Flag::EmissiveTexture,
       "Shaders::PbrShader::bindEmissiveTexture(): the shader was not "
@@ -362,55 +362,55 @@ PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::setProjectionMatrix(const Mn::Matrix4& matrix) {
+auto PbrShader::setProjectionMatrix(const Mn::Matrix4& matrix) -> PbrShader& {
   setUniform(projMatrixUniform_, matrix);
   return *this;
 }
 
-PbrShader& PbrShader::setNormalMatrix(const Mn::Matrix3x3& matrix) {
+auto PbrShader::setNormalMatrix(const Mn::Matrix3x3& matrix) -> PbrShader& {
   setUniform(normalMatrixUniform_, matrix);
   return *this;
 }
 
-PbrShader& PbrShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
+auto PbrShader::setTransformationMatrix(const Mn::Matrix4& matrix) -> PbrShader& {
   setUniform(modelviewMatrixUniform_, matrix);
   return *this;
 }
 
-PbrShader& PbrShader::setObjectId(unsigned int objectId) {
+auto PbrShader::setObjectId(unsigned int objectId) -> PbrShader& {
   if (flags_ & Flag::ObjectId) {
     setUniform(objectIdUniform_, objectId);
   }
   return *this;
 }
 
-PbrShader& PbrShader::setBaseColor(const Mn::Color4& color) {
+auto PbrShader::setBaseColor(const Mn::Color4& color) -> PbrShader& {
   if (lightCount_) {
     setUniform(baseColorUniform_, color);
   }
   return *this;
 }
 
-PbrShader& PbrShader::setEmissiveColor(const Magnum::Color3& color) {
+auto PbrShader::setEmissiveColor(const Magnum::Color3& color) -> PbrShader& {
   setUniform(emissiveColorUniform_, color);
   return *this;
 }
 
-PbrShader& PbrShader::setRoughness(float roughness) {
+auto PbrShader::setRoughness(float roughness) -> PbrShader& {
   if (lightCount_) {
     setUniform(roughnessUniform_, roughness);
   }
   return *this;
 }
 
-PbrShader& PbrShader::setMetallic(float metallic) {
+auto PbrShader::setMetallic(float metallic) -> PbrShader& {
   if (lightCount_) {
     setUniform(metallicUniform_, metallic);
   }
   return *this;
 }
 
-PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
+auto PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) -> PbrShader& {
   CORRADE_ASSERT(flags_ & Flag::TextureTransformation,
                  "PbrShader::setTextureMatrix(): the shader was not "
                  "created with texture transformation enabled",
@@ -421,8 +421,8 @@ PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
   return *this;
 }
 
-PbrShader& PbrShader::setLightVectors(
-    Cr::Containers::ArrayView<const Mn::Vector4> vectors) {
+auto PbrShader::setLightVectors(
+    Cr::Containers::ArrayView<const Mn::Vector4> vectors) -> PbrShader& {
   CORRADE_ASSERT(lightCount_ == vectors.size(),
                  "PbrShader::setLightVectors(): expected"
                      << lightCount_ << "items but got" << vectors.size(),
@@ -431,13 +431,13 @@ PbrShader& PbrShader::setLightVectors(
   return *this;
 }
 
-PbrShader& PbrShader::setLightVectors(
-    std::initializer_list<Mn::Vector4> vectors) {
+auto PbrShader::setLightVectors(
+    std::initializer_list<Mn::Vector4> vectors) -> PbrShader& {
   return setLightVectors(Cr::Containers::arrayView(vectors));
 }
 
-PbrShader& PbrShader::setLightPosition(unsigned int lightIndex,
-                                       const Mn::Vector3& pos) {
+auto PbrShader::setLightPosition(unsigned int lightIndex,
+                                       const Mn::Vector3& pos) -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightPosition: lightIndex" << lightIndex << "is illegal.",
@@ -447,8 +447,8 @@ PbrShader& PbrShader::setLightPosition(unsigned int lightIndex,
   return *this;
 }
 
-PbrShader& PbrShader::setLightDirection(unsigned int lightIndex,
-                                        const Mn::Vector3& dir) {
+auto PbrShader::setLightDirection(unsigned int lightIndex,
+                                        const Mn::Vector3& dir) -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightDirection: lightIndex" << lightIndex << "is illegal.",
@@ -457,8 +457,8 @@ PbrShader& PbrShader::setLightDirection(unsigned int lightIndex,
   return *this;
 }
 
-PbrShader& PbrShader::setLightVector(unsigned int lightIndex,
-                                     const Mn::Vector4& vec) {
+auto PbrShader::setLightVector(unsigned int lightIndex,
+                                     const Mn::Vector4& vec) -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightVector: lightIndex" << lightIndex << "is illegal.",
@@ -476,7 +476,7 @@ PbrShader& PbrShader::setLightVector(unsigned int lightIndex,
   return *this;
 }
 
-PbrShader& PbrShader::setLightRange(unsigned int lightIndex, float range) {
+auto PbrShader::setLightRange(unsigned int lightIndex, float range) -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightRange: lightIndex" << lightIndex << "is illegal.",
@@ -484,9 +484,9 @@ PbrShader& PbrShader::setLightRange(unsigned int lightIndex, float range) {
   setUniform(lightRangesUniform_ + lightIndex, range);
   return *this;
 }
-PbrShader& PbrShader::setLightColor(unsigned int lightIndex,
+auto PbrShader::setLightColor(unsigned int lightIndex,
                                     const Mn::Vector3& color,
-                                    float intensity) {
+                                    float intensity) -> PbrShader& {
   CORRADE_ASSERT(
       lightIndex < lightCount_,
       "PbrShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
@@ -496,8 +496,8 @@ PbrShader& PbrShader::setLightColor(unsigned int lightIndex,
   return *this;
 }
 
-PbrShader& PbrShader::setLightColors(
-    Cr::Containers::ArrayView<const Mn::Color3> colors) {
+auto PbrShader::setLightColors(
+    Cr::Containers::ArrayView<const Mn::Color3> colors) -> PbrShader& {
   CORRADE_ASSERT(lightCount_ == colors.size(),
                  "PbrShader::setLightColors(): expected"
                      << lightCount_ << "items but got" << colors.size(),
@@ -507,11 +507,11 @@ PbrShader& PbrShader::setLightColors(
   return *this;
 }
 
-PbrShader& PbrShader::setLightColors(std::initializer_list<Mn::Color3> colors) {
+auto PbrShader::setLightColors(std::initializer_list<Mn::Color3> colors) -> PbrShader& {
   return setLightColors(Cr::Containers::arrayView(colors));
 }
 
-PbrShader& PbrShader::setNormalTextureScale(float scale) {
+auto PbrShader::setNormalTextureScale(float scale) -> PbrShader& {
   CORRADE_ASSERT(flags_ & Flag::NormalTexture,
                  "PbrShader::setNormalTextureScale(): the shader was not "
                  "created with normal texture enabled",
@@ -522,8 +522,8 @@ PbrShader& PbrShader::setNormalTextureScale(float scale) {
   return *this;
 }
 
-PbrShader& PbrShader::setLightRanges(
-    Corrade::Containers::ArrayView<const float> ranges) {
+auto PbrShader::setLightRanges(
+    Corrade::Containers::ArrayView<const float> ranges) -> PbrShader& {
   CORRADE_ASSERT(lightCount_ == ranges.size(),
                  "PbrShader::setLightRanges(): expected"
                      << lightCount_ << "items but got" << ranges.size(),
@@ -533,7 +533,7 @@ PbrShader& PbrShader::setLightRanges(
   return *this;
 }
 
-PbrShader& PbrShader::setLightRanges(std::initializer_list<float> ranges) {
+auto PbrShader::setLightRanges(std::initializer_list<float> ranges) -> PbrShader& {
   return setLightRanges(Cr::Containers::arrayView(ranges));
 }
 

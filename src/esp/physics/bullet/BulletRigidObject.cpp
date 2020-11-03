@@ -56,8 +56,8 @@ BulletRigidObject::~BulletRigidObject() {
 
 }  //~BulletRigidObject
 
-bool BulletRigidObject::initialization_LibSpecific(
-    const assets::ResourceManager& resMgr) {
+auto BulletRigidObject::initialization_LibSpecific(
+    const assets::ResourceManager& resMgr) -> bool {
   objectMotionType_ = MotionType::DYNAMIC;
   // get this object's creation template, appropriately cast
   auto tmpAttr = getInitializationAttributes();
@@ -130,16 +130,16 @@ bool BulletRigidObject::initialization_LibSpecific(
   return true;
 }  // initialization_LibSpecific
 
-bool BulletRigidObject::finalizeObject_LibSpecific() {
+auto BulletRigidObject::finalizeObject_LibSpecific() -> bool {
   if (usingBBCollisionShape_) {
     setCollisionFromBB();
   }
   return true;
 }  // finalizeObject_LibSpecifc
 
-std::unique_ptr<btCollisionShape>
+auto
 BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
-                                                 double halfLength) {
+                                                 double halfLength) -> std::unique_ptr<btCollisionShape> {
   // int primTypeVal = primAttributes.getPrimObjType();
   CORRADE_ASSERT(
       (primTypeVal >= 0) &&
@@ -149,7 +149,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
       "value requested : "
           << primTypeVal,
       nullptr);
-  metadata::PrimObjTypes primType =
+  auto primType =
       static_cast<metadata::PrimObjTypes>(primTypeVal);
 
   std::unique_ptr<btCollisionShape> obj(nullptr);
@@ -283,7 +283,7 @@ void BulletRigidObject::setCollisionFromBB() {
   }
 }  // setCollisionFromBB
 
-bool BulletRigidObject::setMotionType(MotionType mt) {
+auto BulletRigidObject::setMotionType(MotionType mt) -> bool {
   if (mt == MotionType::UNDEFINED) {
     return false;
   }
@@ -399,7 +399,7 @@ void BulletRigidObject::setCOM(const Magnum::Vector3&) {
         btTransform(Magnum::Matrix4<float>::translation(COM)));*/
 }  // setCOM
 
-Magnum::Vector3 BulletRigidObject::getCOM() const {
+auto BulletRigidObject::getCOM() const -> Magnum::Vector3 {
   // TODO: double check the position if there is any implicit transformation
   // done
 
@@ -408,13 +408,13 @@ Magnum::Vector3 BulletRigidObject::getCOM() const {
   return com;
 }  // getCOM
 
-bool BulletRigidObject::contactTest() {
+auto BulletRigidObject::contactTest() -> bool {
   SimulationContactResultCallback src;
   bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
   return src.bCollision;
 }  // contactTest
 
-const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
+auto BulletRigidObject::getCollisionShapeAabb() const -> const Magnum::Range3D {
   if (!bObjectShape_) {
     // e.g. empty scene
     return Magnum::Range3D();

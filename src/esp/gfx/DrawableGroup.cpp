@@ -8,27 +8,27 @@ namespace esp {
 namespace gfx {
 
 class Drawable;
-DrawableGroup& DrawableGroup::add(Drawable& drawable) {
+auto DrawableGroup::add(Drawable& drawable) -> DrawableGroup& {
   if (registerDrawable(drawable)) {
     this->Magnum::SceneGraph::DrawableGroup3D::add(drawable);
   }
   return *this;
 }
 
-DrawableGroup& DrawableGroup::remove(Drawable& drawable) {
+auto DrawableGroup::remove(Drawable& drawable) -> DrawableGroup& {
   if (unregisterDrawable(drawable)) {
     this->Magnum::SceneGraph::DrawableGroup3D::remove(drawable);
   }
   return *this;
 }
 
-DrawableGroup::~DrawableGroup() {}
+DrawableGroup::~DrawableGroup() = default;
 
-bool DrawableGroup::hasDrawable(uint64_t id) const {
+auto DrawableGroup::hasDrawable(uint64_t id) const -> bool {
   return (idToDrawable_.find(id) != idToDrawable_.end());
 }
 
-Drawable* DrawableGroup::getDrawable(uint64_t id) const {
+auto DrawableGroup::getDrawable(uint64_t id) const -> Drawable* {
   auto it = idToDrawable_.find(id);
   if (it != idToDrawable_.end()) {
     return it->second;
@@ -37,14 +37,14 @@ Drawable* DrawableGroup::getDrawable(uint64_t id) const {
   return nullptr;
 }
 
-bool DrawableGroup::registerDrawable(Drawable& drawable) {
+auto DrawableGroup::registerDrawable(Drawable& drawable) -> bool {
   // if it is already registered, emplace will do nothing
   if (idToDrawable_.emplace(drawable.getDrawableId(), &drawable).second) {
     return true;
   }
   return false;
 }
-bool DrawableGroup::unregisterDrawable(Drawable& drawable) {
+auto DrawableGroup::unregisterDrawable(Drawable& drawable) -> bool {
   // if it is not registered, erase will do nothing
   if (idToDrawable_.erase(drawable.getDrawableId()) == 0) {
     return false;

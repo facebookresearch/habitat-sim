@@ -7,18 +7,18 @@
 namespace esp {
 namespace gfx {
 
-bool operator==(const LightInfo& a, const LightInfo& b) {
+auto operator==(const LightInfo& a, const LightInfo& b) -> bool {
   return a.vector == b.vector && a.color == b.color && a.model == b.model;
 }
 
-bool operator!=(const LightInfo& a, const LightInfo& b) {
+auto operator!=(const LightInfo& a, const LightInfo& b) -> bool {
   return !(a == b);
 }
 
-Magnum::Vector4 getLightPositionRelativeToCamera(
+auto getLightPositionRelativeToCamera(
     const LightInfo& light,
     const Magnum::Matrix4& transformationMatrix,
-    const Magnum::Matrix4& cameraMatrix) {
+    const Magnum::Matrix4& cameraMatrix) -> Magnum::Vector4 {
   CORRADE_ASSERT(light.vector.w() == 1 || light.vector.w() == 0,
                  "Light vector"
                      << light.vector
@@ -38,8 +38,8 @@ Magnum::Vector4 getLightPositionRelativeToCamera(
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
-LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
-                                 const Magnum::Color3& lightColor) {
+auto getLightsAtBoxCorners(const Magnum::Range3D& box,
+                                 const Magnum::Color3& lightColor) -> LightSetup {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Magnum::Math::Literals;
 
@@ -54,18 +54,18 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
                     {{box.backBottomRight(), w}, lightColor}};
 }
 
-LightSetup getDefaultLights() {
+auto getDefaultLights() -> LightSetup {
   return LightSetup{{{1.0, 1.0, 0.0, 0.0}, {0.75, 0.75, 0.75}},
                     {{-0.5, 0.0, 1.0, 0.0}, {0.4, 0.4, 0.4}}};
 }
 
-Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
+auto getAmbientLightColor(const LightSetup& lightSetup) -> Magnum::Color3 {
   if (lightSetup.size() == 0) {
     // We assume an empty light setup means the user wants "flat" shading,
     // meaning object ambient color should be copied directly to pixels as-is.
     // We can achieve this in the Phong shader using an ambient light color of
     // (1,1,1) and no additional light sources.
-    return Magnum::Color3(1.0, 1.0, 1.0);
+    return {1.0, 1.0, 1.0};
   } else {
     // todo: add up ambient terms from all lights in lightSetup
     // temp: hard-coded ambient light tuned for ReplicaCAD

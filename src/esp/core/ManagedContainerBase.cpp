@@ -7,9 +7,9 @@
 namespace esp {
 namespace core {
 
-std::string ManagedContainerBase::convertFilenameToJSON(
+auto ManagedContainerBase::convertFilenameToJSON(
     const std::string& filename,
-    const std::string& jsonTypeExt) {
+    const std::string& jsonTypeExt) -> std::string {
   std::string strHandle = Cr::Utility::String::lowercase(filename);
   std::string resHandle(filename);
   if (std::string::npos ==
@@ -26,7 +26,7 @@ std::string ManagedContainerBase::convertFilenameToJSON(
   return resHandle;
 }  // ManagedContainerBase::convertFilenameToJSON
 
-bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
+auto ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) -> bool {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
   if (!checkExistsWithMessage(objectHandle, "ManagedContainerBase::setLock")) {
@@ -41,9 +41,9 @@ bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   }
   return true;
 }  // ManagedContainer::setLock
-std::string ManagedContainerBase::getRandomObjectHandlePerType(
+auto ManagedContainerBase::getRandomObjectHandlePerType(
     const std::map<int, std::string>& mapOfHandles,
-    const std::string& type) const {
+    const std::string& type) const -> std::string {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
     LOG(ERROR) << "Attempting to get a random " << type << objectType_
@@ -62,11 +62,11 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
   return res;
 }  // ManagedContainer::getRandomObjectHandlePerType
 
-std::vector<std::string>
+auto
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const {
+    bool contains) const -> std::vector<std::string> {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -84,9 +84,8 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
-       iter != mapOfHandles.end(); ++iter) {
-    std::string key = Cr::Utility::String::lowercase(iter->second);
+  for (const auto & mapOfHandle : mapOfHandles) {
+    std::string key = Cr::Utility::String::lowercase(mapOfHandle.second);
     // be sure that key is big enough to search in (otherwise find has undefined
     // behavior)
     if (key.length() < strSize) {
@@ -96,17 +95,17 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
     if (found == contains) {
       // if found and searching for contains, or not found and searching for not
       // contains
-      res.push_back(iter->second);
+      res.push_back(mapOfHandle.second);
     }
   }
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
-std::vector<std::string>
+auto
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
     const std::map<std::string, std::set<std::string>>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const {
+    bool contains) const -> std::vector<std::string> {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -124,10 +123,8 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (std::map<std::string, std::set<std::string>>::const_iterator iter =
-           mapOfHandles.begin();
-       iter != mapOfHandles.end(); ++iter) {
-    std::string key = Cr::Utility::String::lowercase(iter->first);
+  for (const auto & mapOfHandle : mapOfHandles) {
+    std::string key = Cr::Utility::String::lowercase(mapOfHandle.first);
     // be sure that key is big enough to search in (otherwise find has undefined
     // behavior)
     if (key.length() < strSize) {
@@ -137,14 +134,14 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
     if (found == contains) {
       // if found and searching for contains, or not found and searching for not
       // contains
-      res.push_back(iter->first);
+      res.push_back(mapOfHandle.first);
     }
   }
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
-bool ManagedContainerBase::verifyLoadDocument(const std::string& filename,
-                                              io::JsonDocument& jsonDoc) {
+auto ManagedContainerBase::verifyLoadDocument(const std::string& filename,
+                                              io::JsonDocument& jsonDoc) -> bool {
   if (isValidFileName(filename)) {
     try {
       jsonDoc = io::parseJsonFile(filename);

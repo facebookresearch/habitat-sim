@@ -19,7 +19,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   staticStageObject_.reset(nullptr);
 }
 
-bool BulletPhysicsManager::initPhysicsFinalize() {
+auto BulletPhysicsManager::initPhysicsFinalize() -> bool {
   activePhysSimLib_ = BULLET;
 
   //! We can potentially use other collision checking algorithms, by
@@ -47,16 +47,16 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addStageFinalize(const std::string& handle) {
+auto BulletPhysicsManager::addStageFinalize(const std::string& handle) -> bool {
   //! Initialize scene
   bool sceneSuccess = staticStageObject_->initialize(resourceManager_, handle);
 
   return sceneSuccess;
 }
 
-bool BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
+auto BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
                                                  const std::string& handle,
-                                                 scene::SceneNode* objectNode) {
+                                                 scene::SceneNode* objectNode) -> bool {
   auto ptr = physics::BulletRigidObject::create_unique(
       objectNode, newObjectID, bWorld_, collisionObjToObjIds_);
   bool objSuccess = ptr->initialize(resourceManager_, handle);
@@ -67,8 +67,8 @@ bool BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
 }
 
 //! Check if mesh primitive is compatible with physics
-bool BulletPhysicsManager::isMeshPrimitiveValid(
-    const assets::CollisionMeshData& meshData) {
+auto BulletPhysicsManager::isMeshPrimitiveValid(
+    const assets::CollisionMeshData& meshData) -> bool {
   if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
     //! Only triangle mesh works
     return true;
@@ -103,14 +103,12 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
-  for (std::map<int, physics::RigidObject::uptr>::iterator it =
-           existingObjects_.begin();
-       it != existingObjects_.end(); ++it) {
-    it->second->setActive();
+  for (auto & existingObject : existingObjects_) {
+    existingObject.second->setActive();
   }
 }
 
-Magnum::Vector3 BulletPhysicsManager::getGravity() const {
+auto BulletPhysicsManager::getGravity() const -> Magnum::Vector3 {
   return Magnum::Vector3(bWorld_->getGravity());
 }
 
@@ -180,30 +178,30 @@ void BulletPhysicsManager::setStageRestitutionCoefficient(
   staticStageObject_->setRestitutionCoefficient(restitutionCoefficient);
 }
 
-double BulletPhysicsManager::getMargin(const int physObjectID) const {
+auto BulletPhysicsManager::getMargin(const int physObjectID) const -> double {
   assertIDValidity(physObjectID);
   return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->getMargin();
 }
 
-double BulletPhysicsManager::getStageFrictionCoefficient() const {
+auto BulletPhysicsManager::getStageFrictionCoefficient() const -> double {
   return staticStageObject_->getFrictionCoefficient();
 }
 
-double BulletPhysicsManager::getStageRestitutionCoefficient() const {
+auto BulletPhysicsManager::getStageRestitutionCoefficient() const -> double {
   return staticStageObject_->getRestitutionCoefficient();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
-    const int physObjectID) const {
+auto BulletPhysicsManager::getCollisionShapeAabb(
+    const int physObjectID) const -> const Magnum::Range3D {
   assertIDValidity(physObjectID);
   return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->getCollisionShapeAabb();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
+auto BulletPhysicsManager::getStageCollisionShapeAabb() const -> const Magnum::Range3D {
   return static_cast<BulletRigidStage*>(staticStageObject_.get())
       ->getCollisionShapeAabb();
 }
@@ -213,7 +211,7 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   bWorld_->debugDrawWorld();
 }
 
-bool BulletPhysicsManager::contactTest(const int physObjectID) {
+auto BulletPhysicsManager::contactTest(const int physObjectID) -> bool {
   assertIDValidity(physObjectID);
   bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
   return static_cast<BulletRigidObject*>(
@@ -221,8 +219,8 @@ bool BulletPhysicsManager::contactTest(const int physObjectID) {
       ->contactTest();
 }
 
-RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
-                                             double maxDistance) {
+auto BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
+                                             double maxDistance) -> RaycastResults {
   RaycastResults results;
   results.ray = ray;
   double rayLength = ray.direction.length();
@@ -257,14 +255,14 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   return results;
 }
 
-int BulletPhysicsManager::getNumActiveContactPoints() {
+auto BulletPhysicsManager::getNumActiveContactPoints() -> int {
   int pointCount = 0;
   auto* dispatcher = bWorld_->getDispatcher();
   for (int i = 0; i < dispatcher->getNumManifolds(); i++) {
     auto* manifold = dispatcher->getManifoldByIndexInternal(i);
-    const btCollisionObject* colObj0 =
+    const auto* colObj0 =
         static_cast<const btCollisionObject*>(manifold->getBody0());
-    const btCollisionObject* colObj1 =
+    const auto* colObj1 =
         static_cast<const btCollisionObject*>(manifold->getBody1());
 
     // logic copied from btSimulationIslandManager::buildIslands. We want to

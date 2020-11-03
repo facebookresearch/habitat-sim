@@ -12,8 +12,8 @@ RigidObject::RigidObject(scene::SceneNode* rigidBodyNode, int objectId)
   objectId_ = objectId;
 }
 
-bool RigidObject::initialize(const assets::ResourceManager& resMgr,
-                             const std::string& handle) {
+auto RigidObject::initialize(const assets::ResourceManager& resMgr,
+                             const std::string& handle) -> bool {
   if (initializationAttributes_ != nullptr) {
     LOG(ERROR) << "Cannot initialize a RigidObject more than once";
     return false;
@@ -26,7 +26,7 @@ bool RigidObject::initialize(const assets::ResourceManager& resMgr,
   return initialization_LibSpecific(resMgr);
 }  // RigidObject::initialize
 
-bool RigidObject::finalizeObject() {
+auto RigidObject::finalizeObject() -> bool {
   node().computeCumulativeBB();
 
   // cast initialization attributes
@@ -52,13 +52,13 @@ bool RigidObject::finalizeObject() {
   return finalizeObject_LibSpecific();
 }  // RigidObject::finalizeObject
 
-bool RigidObject::initialization_LibSpecific(const assets::ResourceManager&) {
+auto RigidObject::initialization_LibSpecific(const assets::ResourceManager&) -> bool {
   // default kineamtic unless a simulator is initialized...
   objectMotionType_ = MotionType::KINEMATIC;
   return true;
 }  // RigidObject::initialization_LibSpecific
 
-bool RigidObject::setMotionType(MotionType mt) {
+auto RigidObject::setMotionType(MotionType mt) -> bool {
   if (mt != MotionType::DYNAMIC) {
     objectMotionType_ = mt;
     return true;
@@ -70,9 +70,9 @@ bool RigidObject::setMotionType(MotionType mt) {
 //////////////////
 // VelocityControl
 
-core::RigidState VelocityControl::integrateTransform(
+auto VelocityControl::integrateTransform(
     const float dt,
-    const core::RigidState& rigidState) {
+    const core::RigidState& rigidState) -> core::RigidState {
   core::RigidState newRigidState(rigidState);
   // linear first
   if (controllingLinVel) {

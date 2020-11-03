@@ -15,9 +15,9 @@ using attributes::LightInstanceAttributes;
 using attributes::LightLayoutAttributes;
 namespace managers {
 
-LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
+auto LightLayoutAttributesManager::createObject(
     const std::string& lightConfigName,
-    bool registerTemplate) {
+    bool registerTemplate) -> LightLayoutAttributes::ptr {
   std::string msg;
   bool doRegister = registerTemplate;
   // File based attributes are automatically registered.
@@ -138,9 +138,9 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   }  // if member spot present
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
 
-LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
+auto LightLayoutAttributesManager::initNewObjectInternal(
     const std::string& handleName,
-    bool builtFromConfig) {
+    bool builtFromConfig) -> LightLayoutAttributes::ptr {
   attributes::LightLayoutAttributes::ptr newAttributes =
       this->constructFromDefault(handleName);
   // if no default then create new.
@@ -150,9 +150,9 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
   return newAttributes;
 }  // LightLayoutAttributesManager::initNewObjectInternal
 
-int LightLayoutAttributesManager::registerObjectFinalize(
+auto LightLayoutAttributesManager::registerObjectFinalize(
     LightLayoutAttributes::ptr lightAttribs,
-    const std::string& lightAttribsHandle) {
+    const std::string& lightAttribsHandle) -> int {
   // adds template to library, and returns either the ID of the existing
   // template referenced by LightLayoutAttributesHandle, or the next available
   // ID if not found.

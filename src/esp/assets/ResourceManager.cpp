@@ -169,12 +169,12 @@ void ResourceManager::initPhysicsManager(
   physicsManager->initPhysics(parent);
 }  // ResourceManager::initPhysicsManager
 
-bool ResourceManager::loadStage(
+auto ResourceManager::loadStage(
     const StageAttributes::ptr& stageAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
-    bool loadSemanticMesh) {
+    bool loadSemanticMesh) -> bool {
   // create AssetInfos here for each potential mesh file for the scene, if they
   // are unique.
   bool buildCollisionMesh =
@@ -312,9 +312,9 @@ bool ResourceManager::loadStage(
   return true;
 }  // ResourceManager::loadScene
 
-bool ResourceManager::buildMeshGroups(
+auto ResourceManager::buildMeshGroups(
     const AssetInfo& info,
-    std::vector<CollisionMeshData>& meshGroup) {
+    std::vector<CollisionMeshData>& meshGroup) -> bool {
   if (collisionMeshGroups_.count(info.filepath) == 0) {
     //! Collect collision mesh group
     bool colMeshGroupSuccess = false;
@@ -352,11 +352,11 @@ bool ResourceManager::buildMeshGroups(
   return true;
 }  // ResourceManager::buildMeshGroups
 
-std::map<std::string, AssetInfo>
+auto
 ResourceManager::createStageAssetInfosFromAttributes(
     const StageAttributes::ptr& stageAttributes,
     bool createCollisionInfo,
-    bool createSemanticInfo) {
+    bool createSemanticInfo) -> std::map<std::string, AssetInfo> {
   std::map<std::string, AssetInfo> resMap;
   auto frame =
       buildFrameFromAttributes(stageAttributes, stageAttributes->getOrigin());
@@ -402,9 +402,9 @@ ResourceManager::createStageAssetInfosFromAttributes(
   return resMap;
 }  // ResourceManager::createStageAssetInfosFromAttributes
 
-esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
+auto ResourceManager::buildFrameFromAttributes(
     const AbstractObjectAttributes::ptr& attribs,
-    const Magnum::Vector3& origin) {
+    const Magnum::Vector3& origin) -> esp::geo::CoordinateFrame {
   const vec3f upEigen{
       Mn::EigenIntegration::cast<vec3f>(attribs->getOrientUp())};
   const vec3f frontEigen{
@@ -423,14 +423,14 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
   }
 }  // ResourceManager::buildCoordFrameFromAttribVals
 
-bool ResourceManager::loadStageInternal(
+auto ResourceManager::loadStageInternal(
     const AssetInfo& info,
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs /*  = false */,
     bool splitSemanticMesh /* = true */,
     const Mn::ResourceKey&
-        lightSetupKey /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
+        lightSetupKey /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) -> bool {
   // scene mesh loading
   const std::string& filename = info.filepath;
   bool meshSuccess = true;
@@ -469,9 +469,9 @@ bool ResourceManager::loadStageInternal(
 }  // ResourceManager::loadStageInternal
 
 template <class T>
-bool ResourceManager::buildStageCollisionMeshGroup(
+auto ResourceManager::buildStageCollisionMeshGroup(
     const std::string& filename,
-    std::vector<CollisionMeshData>& meshGroup) {
+    std::vector<CollisionMeshData>& meshGroup) -> bool {
   // TODO : refactor to manage any mesh groups, not just scene
 
   //! Collect collision mesh group
@@ -497,11 +497,11 @@ bool ResourceManager::buildStageCollisionMeshGroup(
   return true;
 }  // ResourceManager::buildStageCollisionMeshGroup
 
-bool ResourceManager::loadObjectMeshDataFromFile(
+auto ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
     const std::string& objectTemplateHandle,
     const std::string& meshType,
-    const bool requiresLighting) {
+    const bool requiresLighting) -> bool {
   bool success = false;
   if (!filename.empty()) {
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
@@ -515,7 +515,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   return success;
 }  // loadObjectMeshDataFromFile
 
-Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
+auto ResourceManager::computeMeshBB(BaseMesh* meshDataGL) -> Magnum::Range3D {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
   return Mn::Math::minmax(meshData.positions);
 }
@@ -533,7 +533,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(
       "transformations does not match number of drawables. Aborting.", );
 
   // obtain the sub-meshes within the ptex mesh
-  PTexMeshData& ptexMeshData = dynamic_cast<PTexMeshData&>(baseMesh);
+  auto& ptexMeshData = dynamic_cast<PTexMeshData&>(baseMesh);
   const std::vector<PTexMeshData::MeshData>& submeshes = ptexMeshData.meshes();
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
@@ -624,8 +624,8 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
   }  // iEntry
 }
 
-std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
-    const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
+auto ResourceManager::computeAbsoluteTransformations(
+    const std::vector<StaticDrawableInfo>& staticDrawableInfo) -> std::vector<Mn::Matrix4> {
   // sanity check
   if (staticDrawableInfo.size() == 0) {
     return {};
@@ -746,9 +746,9 @@ void ResourceManager::buildPrimitiveAssetData(
 
 }  // buildPrimitiveAssetData
 
-bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
+auto ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
-                                       DrawableGroup* drawables) {
+                                       DrawableGroup* drawables) -> bool {
 #ifdef ESP_BUILD_PTEX_SUPPORT
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
@@ -824,12 +824,12 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 }
 
 // semantic instance mesh import
-bool ResourceManager::loadInstanceMeshData(
+auto ResourceManager::loadInstanceMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     bool computeAbsoluteAABBs,
-    bool splitSemanticMesh /* = true */) {
+    bool splitSemanticMesh /* = true */) -> bool {
   if (info.type != AssetType::INSTANCE_MESH) {
     LOG(ERROR) << "loadInstanceMeshData only works with INSTANCE_MESH type!";
     return false;
@@ -917,12 +917,12 @@ bool ResourceManager::loadInstanceMeshData(
   return true;
 }
 
-bool ResourceManager::loadGeneralMeshData(
+auto ResourceManager::loadGeneralMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
     bool computeAbsoluteAABBs, /* = false */
-    const Mn::ResourceKey& lightSetupKey) {
+    const Mn::ResourceKey& lightSetupKey) -> bool {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
@@ -1109,9 +1109,9 @@ bool ResourceManager::loadGeneralMeshData(
   return true;
 }  // loadGeneralMeshData
 
-int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
+auto ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                               scene::SceneNode* parent,
-                                              DrawableGroup* drawables) {
+                                              DrawableGroup* drawables) -> int {
   int navMeshPrimitiveID = ID_UNDEFINED;
 
   if (!pathFinder.isLoaded())
@@ -1228,9 +1228,9 @@ void ResourceManager::loadMaterials(Importer& importer,
   }
 }
 
-gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
+auto ResourceManager::buildFlatShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
-    int textureBaseIndex) {
+    int textureBaseIndex) -> gfx::PhongMaterialData::uptr {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -1254,9 +1254,9 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
   return finalMaterial;
 }
 
-gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
+auto ResourceManager::buildPhongShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
-    int textureBaseIndex) {
+    int textureBaseIndex) -> gfx::PhongMaterialData::uptr {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -1295,9 +1295,9 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
   return finalMaterial;
 }
 
-gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
+auto ResourceManager::buildPbrShadedMaterialData(
     const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
-    int textureBaseIndex) {
+    int textureBaseIndex) -> gfx::PbrMaterialData::uptr {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -1428,7 +1428,7 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   }
 
   // Add the new node to the hierarchy and set its transformation
-  parent.children.push_back(MeshTransformNode());
+  parent.children.emplace_back();
   parent.children.back().transformFromLocalToParent =
       objectData->transformation();
   parent.children.back().componentID = componentID;
@@ -1530,8 +1530,8 @@ void ResourceManager::loadTextures(Importer& importer,
   }
 }  // ResourceManager::loadTextures
 
-bool ResourceManager::instantiateAssetsOnDemand(
-    const std::string& objectTemplateHandle) {
+auto ResourceManager::instantiateAssetsOnDemand(
+    const std::string& objectTemplateHandle) -> bool {
   // Meta data
   ObjectAttributes::ptr ObjectAttributes =
       getObjectAttributesManager()->getObjectByHandle(objectTemplateHandle);
@@ -1608,7 +1608,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
       //! Gather mesh components for meshGroup data
       std::vector<CollisionMeshData> meshGroup;
       for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
-        GenericMeshData& gltfMeshData =
+        auto& gltfMeshData =
             dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
         CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
         meshGroup.push_back(meshData);
@@ -1797,9 +1797,9 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
   }
 }
 
-bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
+auto ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
-                                         DrawableGroup* drawables) {
+                                         DrawableGroup* drawables) -> bool {
   ASSERT(parent != nullptr);
   std::string houseFile = Cr::Utility::Directory::join(
       Cr::Utility::Directory::current(), houseInfo.filepath);
@@ -1908,9 +1908,9 @@ void ResourceManager::initDefaultMaterials() {
   shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});
 }
 
-bool ResourceManager::isLightSetupCompatible(
+auto ResourceManager::isLightSetupCompatible(
     const LoadedAssetData& loadedAssetData,
-    const Magnum::ResourceKey& lightSetupKey) const {
+    const Magnum::ResourceKey& lightSetupKey) const -> bool {
   // if light setup has lights in it, but asset was loaded in as flat shaded,
   // there may be an error when rendering.
   return lightSetupKey == Mn::ResourceKey{NO_LIGHT_KEY} ||
@@ -1946,8 +1946,8 @@ void ResourceManager::joinHeirarchy(
   }
 }
 
-std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
-    const std::string& filename) {
+auto ResourceManager::createJoinedCollisionMesh(
+    const std::string& filename) -> std::unique_ptr<MeshData> {
   std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
 
   CHECK(resourceDict_.count(filename) > 0);

@@ -13,7 +13,7 @@ namespace Mn = Magnum;
 namespace esp {
 namespace geo {
 
-std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
+auto convexHull2D(const std::vector<vec2f>& points) -> std::vector<vec2f> {
   ASSERT(points.size() > 2);
 
   auto cross = [](const vec2f& o, const vec2f& a, const vec2f& b) {
@@ -33,13 +33,13 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
 
   // Build lower hull
   int k = 0;
-  for (size_t i = 0; i < idx.size(); ++i) {
+  for (unsigned long i : idx) {
     while (k >= 2 && cross(points[hullIdx[k - 2]], points[hullIdx[k - 1]],
-                           points[idx[i]]) <= 0) {
+                           points[i]) <= 0) {
       k--;
     }
 
-    hullIdx[k++] = idx[i];
+    hullIdx[k++] = i;
   }
 
   // Build upper hull
@@ -102,8 +102,8 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
  *
  * The derivation for x_min is similar since same logic applies.
  */
-Mn::Range3D getTransformedBB(const Mn::Range3D& range,
-                             const Mn::Matrix4& xform) {
+auto getTransformedBB(const Mn::Range3D& range,
+                             const Mn::Matrix4& xform) -> Mn::Range3D {
   // compute the absolute value of the rotationScaling part of the original
   // transformation matrix
   auto absRotationScaling = Mn::Matrix3x3::fromVector(

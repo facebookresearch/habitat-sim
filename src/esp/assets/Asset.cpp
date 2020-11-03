@@ -9,7 +9,7 @@
 namespace esp {
 namespace assets {
 
-AssetInfo AssetInfo::fromPath(const std::string& path) {
+auto AssetInfo::fromPath(const std::string& path) -> AssetInfo {
   using Corrade::Utility::String::endsWith;
   AssetInfo info{AssetType::UNKNOWN, path};
 
@@ -31,13 +31,13 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
   return info;
 }
 
-bool operator==(const AssetInfo& a, const AssetInfo& b) {
+auto operator==(const AssetInfo& a, const AssetInfo& b) -> bool {
   return a.type == b.type && a.filepath == b.filepath && a.frame == b.frame &&
          a.virtualUnitToMeters == b.virtualUnitToMeters &&
          a.requiresLighting == b.requiresLighting;
 }
 
-bool operator!=(const AssetInfo& a, const AssetInfo& b) {
+auto operator!=(const AssetInfo& a, const AssetInfo& b) -> bool {
   return !(a == b);
 }
 

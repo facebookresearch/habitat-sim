@@ -29,14 +29,14 @@ void PinholeCamera::setProjectionParameters(const SensorSpec::ptr& spec) {
   hfov_ = std::atof(spec_->parameters.at("hfov").c_str());
 }
 
-PinholeCamera& PinholeCamera::setProjectionMatrix(
-    gfx::RenderCamera& targetCamera) {
+auto PinholeCamera::setProjectionMatrix(
+    gfx::RenderCamera& targetCamera) -> PinholeCamera& {
   targetCamera.setProjectionMatrix(width_, height_, near_, far_, hfov_);
   return *this;
 }
 
-PinholeCamera& PinholeCamera::setTransformationMatrix(
-    gfx::RenderCamera& targetCamera) {
+auto PinholeCamera::setTransformationMatrix(
+    gfx::RenderCamera& targetCamera) -> PinholeCamera& {
   CORRADE_ASSERT(!scene::SceneGraph::isRootNode(targetCamera.node()),
                  "PinholeCamera::setTransformationMatrix: target camera cannot "
                  "be on the root node of the scene graph",
@@ -70,12 +70,12 @@ PinholeCamera& PinholeCamera::setTransformationMatrix(
   return *this;
 }
 
-PinholeCamera& PinholeCamera::setViewport(gfx::RenderCamera& targetCamera) {
+auto PinholeCamera::setViewport(gfx::RenderCamera& targetCamera) -> PinholeCamera& {
   targetCamera.setViewport(this->framebufferSize());
   return *this;
 }
 
-bool PinholeCamera::getObservationSpace(ObservationSpace& space) {
+auto PinholeCamera::getObservationSpace(ObservationSpace& space) -> bool {
   space.spaceType = ObservationSpaceType::TENSOR;
   space.shape = {static_cast<size_t>(spec_->resolution[0]),
                  static_cast<size_t>(spec_->resolution[1]),
@@ -89,7 +89,7 @@ bool PinholeCamera::getObservationSpace(ObservationSpace& space) {
   return true;
 }
 
-bool PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs) {
+auto PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs) -> bool {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
   //
@@ -102,7 +102,7 @@ bool PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs) {
   return true;
 }
 
-bool PinholeCamera::drawObservation(sim::Simulator& sim) {
+auto PinholeCamera::drawObservation(sim::Simulator& sim) -> bool {
   if (!hasRenderTarget()) {
     return false;
   }
@@ -158,7 +158,7 @@ void PinholeCamera::readObservation(Observation& obs) {
   }
 }
 
-bool PinholeCamera::displayObservation(sim::Simulator& sim) {
+auto PinholeCamera::displayObservation(sim::Simulator& sim) -> bool {
   if (!hasRenderTarget()) {
     return false;
   }
@@ -169,8 +169,8 @@ bool PinholeCamera::displayObservation(sim::Simulator& sim) {
   return true;
 }
 
-Corrade::Containers::Optional<Magnum::Vector2>
-PinholeCamera::depthUnprojection() const {
+auto
+PinholeCamera::depthUnprojection() const -> Corrade::Containers::Optional<Magnum::Vector2> {
   const Magnum::Matrix4 projection = Magnum::Matrix4::perspectiveProjection(
       Magnum::Deg{hfov_}, static_cast<float>(width_) / height_, near_, far_);
 

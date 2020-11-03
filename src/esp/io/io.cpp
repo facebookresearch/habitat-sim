@@ -16,14 +16,14 @@ namespace io {
 #include <unistd.h>
 #endif
 
-bool exists(const std::string& filename) {
+auto exists(const std::string& filename) -> bool {
   return (access(filename.c_str(), 0) == 0);
 }
 
 // returns the size of the file, if it exists and can be opened,
 // otherwise returns 0
 // TODO: consider uint64_t as the return value type
-size_t fileSize(const std::string& filename) {
+auto fileSize(const std::string& filename) -> size_t {
   if (!exists(filename)) {
     return 0;
   }
@@ -51,8 +51,8 @@ size_t fileSize(const std::string& filename) {
 // This function returns: foo.\png
 // while replace_extension returns: foo.\\png
 
-std::string changeExtension(const std::string& filename,
-                            const std::string& ext) {
+auto changeExtension(const std::string& filename,
+                            const std::string& ext) -> std::string {
   std::string correctExt = ext;
 
   // this is the only requirement on an extension, that is,
@@ -80,7 +80,7 @@ std::string changeExtension(const std::string& filename,
   }
 }
 
-std::string removeExtension(const std::string& filename) {
+auto removeExtension(const std::string& filename) -> std::string {
   return changeExtension(filename, "");
 }
 
@@ -107,10 +107,10 @@ std::string removeExtension(const std::string& file) {
 }
 */
 
-std::vector<std::string> tokenize(const std::string& string,
+auto tokenize(const std::string& string,
                                   const std::string& delimiterCharList,
                                   int limit /* = 0 */,
-                                  bool mergeAdjDelims /* = false */) {
+                                  bool mergeAdjDelims /* = false */) -> std::vector<std::string> {
   std::vector<std::string> tokens;
   if (string.length() == 0) {
     return tokens;
@@ -125,7 +125,7 @@ std::vector<std::string> tokenize(const std::string& string,
       if (pos > start) {
         tokens.push_back(string.substr(start, pos - start));
       } else if (!mergeAdjDelims || start == 0) {
-        tokens.push_back("");
+        tokens.emplace_back("");
       }
       done = (limit > 1 && tokens.size() == limit - 1);
       start = pos + 1;

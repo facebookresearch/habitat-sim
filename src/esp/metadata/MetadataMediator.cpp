@@ -15,8 +15,8 @@ void MetadataMediator::buildAttributesManagers() {
   createDataset(activeSceneDataset_);
 }  // MetadataMediator::buildAttributesManagers
 
-bool MetadataMediator::createDataset(const std::string& sceneDatasetName,
-                                     bool overwrite) {
+auto MetadataMediator::createDataset(const std::string& sceneDatasetName,
+                                     bool overwrite) -> bool {
   // see if exists
   bool exists =
       sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName);
@@ -48,8 +48,8 @@ bool MetadataMediator::createDataset(const std::string& sceneDatasetName,
   return true;
 }  // MetadataMediator::createDataset
 
-bool MetadataMediator::setActiveSceneDatasetName(
-    const std::string& sceneDatasetName) {
+auto MetadataMediator::setActiveSceneDatasetName(
+    const std::string& sceneDatasetName) -> bool {
   // first check if dataset exists, if so then set default
   if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName)) {
     LOG(INFO)

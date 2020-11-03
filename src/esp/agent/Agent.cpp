@@ -41,7 +41,7 @@ Agent::~Agent() {
   sensors_.clear();
 }
 
-bool Agent::act(const std::string& actionName) {
+auto Agent::act(const std::string& actionName) -> bool {
   if (hasAction(actionName)) {
     const ActionSpec& actionSpec = *configuration_.actionSpace.at(actionName);
     if (BodyActions.find(actionSpec.name) != BodyActions.end()) {
@@ -61,7 +61,7 @@ bool Agent::act(const std::string& actionName) {
   }
 }
 
-bool Agent::hasAction(const std::string& actionName) {
+auto Agent::hasAction(const std::string& actionName) -> bool {
   auto actionSpace = configuration_.actionSpace;
   return !(actionSpace.find(actionName) == actionSpace.end());
 }
@@ -95,14 +95,14 @@ void Agent::setState(const AgentState& state,
   // TODO other state members when implemented
 }
 
-bool operator==(const ActionSpec& a, const ActionSpec& b) {
+auto operator==(const ActionSpec& a, const ActionSpec& b) -> bool {
   return a.name == b.name && a.actuation == b.actuation;
 }
-bool operator!=(const ActionSpec& a, const ActionSpec& b) {
+auto operator!=(const ActionSpec& a, const ActionSpec& b) -> bool {
   return !(a == b);
 }
 
-bool operator==(const AgentConfiguration& a, const AgentConfiguration& b) {
+auto operator==(const AgentConfiguration& a, const AgentConfiguration& b) -> bool {
   return a.height == b.height && a.radius == b.radius && a.mass == b.mass &&
          a.linearAcceleration == b.linearAcceleration &&
          a.angularAcceleration == b.angularAcceleration &&
@@ -112,7 +112,7 @@ bool operator==(const AgentConfiguration& a, const AgentConfiguration& b) {
          esp::equal(a.sensorSpecifications, b.sensorSpecifications) &&
          esp::equal(a.actionSpace, b.actionSpace) && a.bodyType == b.bodyType;
 }
-bool operator!=(const AgentConfiguration& a, const AgentConfiguration& b) {
+auto operator!=(const AgentConfiguration& a, const AgentConfiguration& b) -> bool {
   return !(a == b);
 }
 

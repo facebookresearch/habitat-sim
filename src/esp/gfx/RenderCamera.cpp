@@ -27,9 +27,9 @@ namespace gfx {
  * @return NullOpt if aabb intersects the frustum, otherwise the fustum plane
  * that culls the aabb
  */
-Cr::Containers::Optional<int> rangeFrustum(const Mn::Range3D& range,
+auto rangeFrustum(const Mn::Range3D& range,
                                            const Mn::Frustum& frustum,
-                                           int frustumPlaneIndex = 0) {
+                                           int frustumPlaneIndex = 0) -> Cr::Containers::Optional<int> {
   const Mn::Vector3 center = range.min() + range.max();
   const Mn::Vector3 extent = range.max() - range.min();
 
@@ -63,11 +63,11 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
       Mn::Vector3{eye}, Mn::Vector3{target}, Mn::Vector3{up}));
 }
 
-RenderCamera& RenderCamera::setProjectionMatrix(int width,
+auto RenderCamera::setProjectionMatrix(int width,
                                                 int height,
                                                 float znear,
                                                 float zfar,
-                                                float hfov) {
+                                                float hfov) -> RenderCamera& {
   const float aspectRatio = static_cast<float>(width) / height;
   MagnumCamera::setProjectionMatrix(
       Mn::Matrix4::perspectiveProjection(Mn::Deg{hfov}, aspectRatio, znear,
@@ -76,9 +76,9 @@ RenderCamera& RenderCamera::setProjectionMatrix(int width,
   return *this;
 }
 
-size_t RenderCamera::cull(
+auto RenderCamera::cull(
     std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                          Mn::Matrix4>>& drawableTransforms) {
+                          Mn::Matrix4>>& drawableTransforms) -> size_t {
   // camera frustum relative to world origin
   const Mn::Frustum frustum =
       Mn::Frustum::fromMatrix(projectionMatrix() * cameraMatrix());
@@ -109,9 +109,9 @@ size_t RenderCamera::cull(
   return (newEndIter - drawableTransforms.begin());
 }
 
-size_t RenderCamera::removeNonObjects(
+auto RenderCamera::removeNonObjects(
     std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                          Mn::Matrix4>>& drawableTransforms) {
+                          Mn::Matrix4>>& drawableTransforms) -> size_t {
   auto newEndIter = std::remove_if(
       drawableTransforms.begin(), drawableTransforms.end(),
       [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
@@ -126,7 +126,7 @@ size_t RenderCamera::removeNonObjects(
   return (newEndIter - drawableTransforms.begin());
 }
 
-uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
+auto RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) -> uint32_t {
   previousNumVisibleDrawables_ = drawables.size();
   if (flags == Flags()) {  // empty set
     MagnumCamera::draw(drawables);
@@ -166,7 +166,7 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
   return drawableTransforms.size();
 }
 
-esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
+auto RenderCamera::unproject(const Mn::Vector2i& viewportPosition) -> esp::geo::Ray {
   esp::geo::Ray ray;
   ray.origin = object().absoluteTranslation();
 

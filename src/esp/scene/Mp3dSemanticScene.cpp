@@ -51,7 +51,7 @@ static const std::map<char, std::string> kRegionCategoryMap = {
     {'Z', "junk"}  // reflections of mirrors, points floating in space, etc.
 };
 
-int Mp3dObjectCategory::index(const std::string& mapping) const {
+auto Mp3dObjectCategory::index(const std::string& mapping) const -> int {
   if (mapping == "" || mapping == "mpcat40") {
     return mpcat40Index_;
   } else if (mapping == "raw") {
@@ -62,7 +62,7 @@ int Mp3dObjectCategory::index(const std::string& mapping) const {
   }
 }
 
-std::string Mp3dObjectCategory::name(const std::string& mapping) const {
+auto Mp3dObjectCategory::name(const std::string& mapping) const -> std::string {
   if (mapping == "" || mapping == "mpcat40") {
     return mpcat40Name_;
   } else if (mapping == "raw") {
@@ -73,20 +73,20 @@ std::string Mp3dObjectCategory::name(const std::string& mapping) const {
   }
 }
 
-int Mp3dRegionCategory::index(const std::string& mapping) const {
+auto Mp3dRegionCategory::index(const std::string& mapping) const -> int {
   return std::distance(kRegionCategoryMap.begin(),
                        kRegionCategoryMap.find(labelCode_));
 }
 
-std::string Mp3dRegionCategory::name(const std::string& mapping) const {
+auto Mp3dRegionCategory::name(const std::string& mapping) const -> std::string {
   return kRegionCategoryMap.at(labelCode_);
 }
 
-bool SemanticScene::loadMp3dHouse(
+auto SemanticScene::loadMp3dHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
     const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(),
-                                                       geo::ESP_GRAVITY) */ ) {
+                                                       geo::ESP_GRAVITY) */ ) -> bool {
   if (!io::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;

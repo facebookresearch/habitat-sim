@@ -85,40 +85,40 @@ PTexMeshShader::PTexMeshShader() {
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
-PTexMeshShader& PTexMeshShader::bindAtlasTexture(Mn::GL::Texture2D& texture) {
+auto PTexMeshShader::bindAtlasTexture(Mn::GL::Texture2D& texture) -> PTexMeshShader& {
   texture.bind(TextureBindingPointIndex::atlas);
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
-    Mn::GL::BufferTexture& texture) {
+auto PTexMeshShader::bindAdjFacesBufferTexture(
+    Mn::GL::BufferTexture& texture) -> PTexMeshShader& {
 #ifndef CORRADE_TARGET_APPLE
   texture.bind(TextureBindingPointIndex::adjFaces);
 #endif
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setMVPMatrix(const Mn::Matrix4& matrix) {
+auto PTexMeshShader::setMVPMatrix(const Mn::Matrix4& matrix) -> PTexMeshShader& {
   setUniform(MVPMatrixUniform_, matrix);
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setExposure(float exposure) {
+auto PTexMeshShader::setExposure(float exposure) -> PTexMeshShader& {
   setUniform(exposureUniform_, exposure);
   return *this;
 }
-PTexMeshShader& PTexMeshShader::setGamma(float gamma) {
+auto PTexMeshShader::setGamma(float gamma) -> PTexMeshShader& {
   setUniform(gammaUniform_, gamma);
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
+auto PTexMeshShader::setSaturation(float saturation) -> PTexMeshShader& {
   setUniform(saturationUniform_, saturation);
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Mn::GL::Texture2D& texture,
-                                                    uint32_t tileSize) {
+auto PTexMeshShader::setAtlasTextureSize(Mn::GL::Texture2D& texture,
+                                                    uint32_t tileSize) -> PTexMeshShader& {
   setUniform(tileSizeUniform_, static_cast<Mn::Int>(tileSize));
 
   // get image width in given mip level 0
@@ -128,7 +128,7 @@ PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Mn::GL::Texture2D& texture,
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setObjectId(unsigned int objectId) {
+auto PTexMeshShader::setObjectId(unsigned int objectId) -> PTexMeshShader& {
   setUniform(objectIdUniform_, objectId);
   return *this;
 }

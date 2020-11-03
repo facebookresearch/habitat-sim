@@ -12,9 +12,9 @@ namespace metadata {
 
 using attributes::SceneDatasetAttributes;
 namespace managers {
-SceneDatasetAttributes::ptr SceneDatasetAttributesManager::createObject(
+auto SceneDatasetAttributesManager::createObject(
     const std::string& datasetHandle,
-    bool registerTemplate) {
+    bool registerTemplate) -> SceneDatasetAttributes::ptr {
   std::string msg;
   SceneDatasetAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
       datasetHandle, msg, registerTemplate);
@@ -26,10 +26,10 @@ SceneDatasetAttributes::ptr SceneDatasetAttributesManager::createObject(
   return attrs;
 }  // SceneDatasetAttributesManager::createObject
 
-SceneDatasetAttributes::ptr
+auto
 SceneDatasetAttributesManager::initNewObjectInternal(
     const std::string& datasetFilename,
-    CORRADE_UNUSED bool builtFromConfig) {
+    CORRADE_UNUSED bool builtFromConfig) -> SceneDatasetAttributes::ptr {
   SceneDatasetAttributes::ptr newAttributes =
       this->constructFromDefault(datasetFilename);
   if (nullptr == newAttributes) {
@@ -296,9 +296,9 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
   }  // if original filename was specified else
 }  // namespace managers
 
-int SceneDatasetAttributesManager::registerObjectFinalize(
+auto SceneDatasetAttributesManager::registerObjectFinalize(
     attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
-    const std::string& SceneDatasetAttributesHandle) {
+    const std::string& SceneDatasetAttributesHandle) -> int {
   // adds template to library, and returns either the ID of the existing
   // template referenced by SceneDatasetAttributesHandle, or the next available
   // ID if not found.

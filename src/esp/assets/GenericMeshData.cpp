@@ -36,7 +36,7 @@ void GenericMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-Magnum::GL::Mesh* GenericMeshData::getMagnumGLMesh() {
+auto GenericMeshData::getMagnumGLMesh() -> Magnum::GL::Mesh* {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }

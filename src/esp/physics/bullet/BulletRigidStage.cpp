@@ -32,8 +32,8 @@ BulletRigidStage::~BulletRigidStage() {
     collisionObjToObjIds_->erase(co.get());
   }
 }
-bool BulletRigidStage::initialization_LibSpecific(
-    const assets::ResourceManager& resMgr) {
+auto BulletRigidStage::initialization_LibSpecific(
+    const assets::ResourceManager& resMgr) -> bool {
   const auto collisionAssetHandle =
       initializationAttributes_->getCollisionAssetHandle();
 
@@ -126,19 +126,19 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
 
 void BulletRigidStage::setFrictionCoefficient(
     const double frictionCoefficient) {
-  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
-    bStaticCollisionObjects_[i]->setFriction(frictionCoefficient);
+  for (auto & bStaticCollisionObject : bStaticCollisionObjects_) {
+    bStaticCollisionObject->setFriction(frictionCoefficient);
   }
 }
 
 void BulletRigidStage::setRestitutionCoefficient(
     const double restitutionCoefficient) {
-  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
-    bStaticCollisionObjects_[i]->setRestitution(restitutionCoefficient);
+  for (auto & bStaticCollisionObject : bStaticCollisionObjects_) {
+    bStaticCollisionObject->setRestitution(restitutionCoefficient);
   }
 }
 
-double BulletRigidStage::getFrictionCoefficient() const {
+auto BulletRigidStage::getFrictionCoefficient() const -> double {
   if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
   } else {
@@ -147,7 +147,7 @@ double BulletRigidStage::getFrictionCoefficient() const {
   }
 }
 
-double BulletRigidStage::getRestitutionCoefficient() const {
+auto BulletRigidStage::getRestitutionCoefficient() const -> double {
   // Assume uniform restitution in scene parts
   if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
@@ -156,7 +156,7 @@ double BulletRigidStage::getRestitutionCoefficient() const {
   }
 }
 
-const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
+auto BulletRigidStage::getCollisionShapeAabb() const -> const Magnum::Range3D {
   Magnum::Range3D combinedAABB;
   // concatenate all component AABBs
   for (auto& object : bStaticCollisionObjects_) {

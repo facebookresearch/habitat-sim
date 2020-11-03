@@ -17,19 +17,19 @@
 namespace esp {
 namespace scene {
 
-std::string SuncgSemanticObject::id() const {
+auto SuncgSemanticObject::id() const -> std::string {
   return nodeId_;
 }
 
-std::string SuncgSemanticRegion::id() const {
+auto SuncgSemanticRegion::id() const -> std::string {
   return nodeId_;
 }
 
-int SuncgObjectCategory::index(const std::string& mapping) const {
+auto SuncgObjectCategory::index(const std::string& mapping) const -> int {
   return ID_UNDEFINED;
 }
 
-std::string SuncgObjectCategory::name(const std::string& mapping) const {
+auto SuncgObjectCategory::name(const std::string& mapping) const -> std::string {
   if (mapping == "model_id") {
     return modelId_;
   } else if (mapping == "node_id") {
@@ -47,11 +47,11 @@ std::string SuncgObjectCategory::name(const std::string& mapping) const {
   }
 }
 
-int SuncgRegionCategory::index(const std::string& mapping) const {
+auto SuncgRegionCategory::index(const std::string& mapping) const -> int {
   // NOTE: SUNCG regions are not linearized
   return ID_UNDEFINED;
 }
-std::string SuncgRegionCategory::name(const std::string& mapping) const {
+auto SuncgRegionCategory::name(const std::string& mapping) const -> std::string {
   if (mapping == "node_id") {
     return nodeId_;
   } else if (mapping == "" || mapping == "category") {
@@ -62,10 +62,10 @@ std::string SuncgRegionCategory::name(const std::string& mapping) const {
   }
 }
 
-bool SemanticScene::loadSuncgHouse(
+auto SemanticScene::loadSuncgHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::Identity() */) {
+    const quatf& worldRotation /* = quatf::Identity() */) -> bool {
   if (!io::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
@@ -164,7 +164,7 @@ bool SemanticScene::loadSuncgHouse(
 
         for (int jRoomType = 0; jRoomType < node["roomTypes"].Size();
              ++jRoomType) {
-          roomTypes.push_back(node["roomTypes"][jRoomType].GetString());
+          roomTypes.emplace_back(node["roomTypes"][jRoomType].GetString());
         }
         for (int iChildNode = 0; iChildNode < node["nodeIndices"].Size();
              ++iChildNode) {

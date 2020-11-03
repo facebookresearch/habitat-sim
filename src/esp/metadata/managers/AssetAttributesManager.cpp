@@ -107,9 +107,9 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
             << std::to_string(defaultPrimAttributeHandles_.size());
 }  // AssetAttributesManager::buildMapOfPrimTypeConstructors
 
-AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
+auto AssetAttributesManager::createObject(
     const std::string& primClassName,
-    bool registerTemplate) {
+    bool registerTemplate) -> AbstractPrimitiveAttributes::ptr {
   auto primAssetAttributes = this->createDefaultObject(primClassName, false);
   if (nullptr == primAssetAttributes) {
     return primAssetAttributes;
@@ -121,9 +121,9 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
   return this->postCreateRegister(primAssetAttributes, registerTemplate);
 }  // AssetAttributesManager::createObject
 
-int AssetAttributesManager::registerObjectFinalize(
+auto AssetAttributesManager::registerObjectFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
-    const std::string&) {
+    const std::string&) -> int {
   std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
@@ -143,9 +143,9 @@ int AssetAttributesManager::registerObjectFinalize(
   return primTemplateID;
 }  // AssetAttributesManager::registerObjectFinalize
 
-AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
+auto AssetAttributesManager::buildObjectFromJSONDoc(
     const std::string& filename,
-    const io::JsonGenericValue& jsonDoc) {
+    const io::JsonGenericValue& jsonDoc) -> AbstractPrimitiveAttributes::ptr {
   // find type of attributes - file name should contain handle
   const std::string primAttrHandle =
       Cr::Utility::Directory::splitExtension(

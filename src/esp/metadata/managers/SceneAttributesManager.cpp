@@ -18,9 +18,9 @@ using attributes::SceneObjectInstanceAttributes;
 
 namespace managers {
 
-SceneAttributes::ptr SceneAttributesManager::createObject(
+auto SceneAttributesManager::createObject(
     const std::string& sceneInstanceHandle,
-    bool registerTemplate) {
+    bool registerTemplate) -> SceneAttributes::ptr {
   std::string msg;
   SceneAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
       sceneInstanceHandle, msg, registerTemplate);
@@ -32,9 +32,9 @@ SceneAttributes::ptr SceneAttributesManager::createObject(
   return attrs;
 }  // SceneAttributesManager::createObject
 
-SceneAttributes::ptr SceneAttributesManager::initNewObjectInternal(
+auto SceneAttributesManager::initNewObjectInternal(
     const std::string& sceneInstanceHandle,
-    bool builtFromConfig) {
+    bool builtFromConfig) -> SceneAttributes::ptr {
   SceneAttributes::ptr newAttributes =
       this->constructFromDefault(sceneInstanceHandle);
   if (nullptr == newAttributes) {
@@ -116,9 +116,9 @@ void SceneAttributesManager::setValsFromJSONDoc(
   }
 }  // SceneAttributesManager::setValsFromJSONDoc
 
-SceneObjectInstanceAttributes::ptr
+auto
 SceneAttributesManager::createInstanceAttributesFromJSON(
-    const io::JsonGenericValue& jCell) {
+    const io::JsonGenericValue& jCell) -> SceneObjectInstanceAttributes::ptr {
   SceneObjectInstanceAttributes::ptr instanceAttrs =
       SceneObjectInstanceAttributes::create("");
   // template handle describing stage/object instance
@@ -166,9 +166,9 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
 
 }  // SceneAttributesManager::createInstanceAttributesFromJSON
 
-int SceneAttributesManager::registerObjectFinalize(
+auto SceneAttributesManager::registerObjectFinalize(
     SceneAttributes::ptr sceneAttributes,
-    const std::string& sceneAttributesHandle) {
+    const std::string& sceneAttributesHandle) -> int {
   // adds template to library, and returns either the ID of the existing
   // template referenced by sceneAttributesHandle, or the next available ID
   // if not found.

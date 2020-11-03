@@ -39,9 +39,9 @@ struct InstancePlyData {
   std::vector<uint16_t> objectIds;
 };
 
-Cr::Containers::Optional<InstancePlyData> parsePly(
+auto parsePly(
     Mn::Trade::AbstractImporter& importer,
-    const std::string& plyFile) {
+    const std::string& plyFile) -> Cr::Containers::Optional<InstancePlyData> {
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
      attributes to per-vertex, so nothing extra needs to be done. */
@@ -110,10 +110,10 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
 
 }  // namespace
 
-std::vector<std::unique_ptr<GenericInstanceMeshData>>
+auto
 GenericInstanceMeshData::fromPlySplitByObjectId(
     Mn::Trade::AbstractImporter& importer,
-    const std::string& plyFile) {
+    const std::string& plyFile) -> std::vector<std::unique_ptr<GenericInstanceMeshData>> {
   Cr::Containers::Optional<InstancePlyData> parseResult =
       parsePly(importer, plyFile);
   if (!parseResult) {
@@ -139,9 +139,9 @@ GenericInstanceMeshData::fromPlySplitByObjectId(
   return splitMeshData;
 }
 
-std::unique_ptr<GenericInstanceMeshData> GenericInstanceMeshData::fromPLY(
+auto GenericInstanceMeshData::fromPLY(
     Mn::Trade::AbstractImporter& importer,
-    const std::string& plyFile) {
+    const std::string& plyFile) -> std::unique_ptr<GenericInstanceMeshData> {
   Cr::Containers::Optional<InstancePlyData> parseResult =
       parsePly(importer, plyFile);
   if (!parseResult) {
@@ -200,7 +200,7 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-Magnum::GL::Mesh* GenericInstanceMeshData::getMagnumGLMesh() {
+auto GenericInstanceMeshData::getMagnumGLMesh() -> Magnum::GL::Mesh* {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }

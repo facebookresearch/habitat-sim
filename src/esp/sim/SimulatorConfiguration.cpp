@@ -6,8 +6,8 @@
 
 namespace esp {
 namespace sim {
-bool operator==(const SimulatorConfiguration& a,
-                const SimulatorConfiguration& b) {
+auto operator==(const SimulatorConfiguration& a,
+                const SimulatorConfiguration& b) -> bool {
   return a.scene == b.scene && a.defaultAgentId == b.defaultAgentId &&
          a.defaultCameraUuid == b.defaultCameraUuid &&
          a.compressTextures == b.compressTextures &&
@@ -18,8 +18,8 @@ bool operator==(const SimulatorConfiguration& a,
          a.sceneLightSetup.compare(b.sceneLightSetup) == 0;
 }
 
-bool operator!=(const SimulatorConfiguration& a,
-                const SimulatorConfiguration& b) {
+auto operator!=(const SimulatorConfiguration& a,
+                const SimulatorConfiguration& b) -> bool {
   return !(a == b);
 }
 

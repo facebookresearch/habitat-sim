@@ -10,8 +10,8 @@ namespace physics {
 RigidStage::RigidStage(scene::SceneNode* rigidBodyNode)
     : RigidBase(rigidBodyNode) {}
 
-bool RigidStage::initialize(const assets::ResourceManager& resMgr,
-                            const std::string& handle) {
+auto RigidStage::initialize(const assets::ResourceManager& resMgr,
+                            const std::string& handle) -> bool {
   if (initializationAttributes_ != nullptr) {
     LOG(ERROR) << "Cannot initialize a RigidStage more than once";
     return false;

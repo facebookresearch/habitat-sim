@@ -93,7 +93,7 @@ struct MultiGoalShortestPath {
    *
    * Will be inf if no path exists
    */
-  float geodesicDistance;
+  float geodesicDistance{};
 
   friend class PathFinder;
 

@@ -4,16 +4,20 @@
 
 #include "CoordinateFrame.h"
 
+
+#include <utility>
+
+
 #include "esp/geo/geo.h"
 #include "esp/io/json.h"
 
 namespace esp {
 namespace geo {
 
-CoordinateFrame::CoordinateFrame(const vec3f& up /* = ESP_UP */,
-                                 const vec3f& front /* = ESP_FRONT */,
-                                 const vec3f& origin /* = vec3f(0, 0, 0) */)
-    : up_(up), front_(front), origin_(origin) {
+CoordinateFrame::CoordinateFrame(vec3f  up /* = ESP_UP */,
+                                 vec3f  front /* = ESP_FRONT */,
+                                 vec3f  origin /* = vec3f(0, 0, 0) */)
+    : up_(std::move(up)), front_(std::move(front)), origin_(std::move(origin)) {
   ASSERT(up_.isOrthogonal(front_));
 }
 
@@ -25,17 +29,17 @@ CoordinateFrame::CoordinateFrame(const std::string& json) {
   fromJson(json);
 }
 
-quatf CoordinateFrame::rotationWorldToFrame() const {
+auto CoordinateFrame::rotationWorldToFrame() const -> quatf {
   const quatf R_frameUp_worldUp = quatf::FromTwoVectors(ESP_UP, up_);
   return quatf::FromTwoVectors(R_frameUp_worldUp * ESP_FRONT, front_) *
          R_frameUp_worldUp;
 }
 
-quatf CoordinateFrame::rotationFrameToWorld() const {
+auto CoordinateFrame::rotationFrameToWorld() const -> quatf {
   return rotationWorldToFrame().inverse();
 }
 
-std::string CoordinateFrame::toJson() const {
+auto CoordinateFrame::toJson() const -> std::string {
   std::stringstream ss;
   ss << "{\"up\":" << up() << ",\"front\":" << front()
      << ",\"origin\":" << origin() << "}";
@@ -55,11 +59,11 @@ void CoordinateFrame::fromJson(const std::string& jsonString) {
   ASSERT(up_.isOrthogonal(front_));
 }
 
-bool operator==(const CoordinateFrame& a, const CoordinateFrame& b) {
+auto operator==(const CoordinateFrame& a, const CoordinateFrame& b) -> bool {
   return a.up().isApprox(b.up()) && a.front().isApprox(b.front()) &&
          a.origin().isApprox(b.origin());
 }
-bool operator!=(const CoordinateFrame& a, const CoordinateFrame& b) {
+auto operator!=(const CoordinateFrame& a, const CoordinateFrame& b) -> bool {
   return !(a == b);
 }
 

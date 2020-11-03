@@ -62,7 +62,7 @@ void PTexMeshData::load(const std::string& meshFile,
   loadMeshData(meshFile);
 }
 
-float PTexMeshData::exposure() const {
+auto PTexMeshData::exposure() const -> float {
   return exposure_;
 }
 
@@ -70,7 +70,7 @@ void PTexMeshData::setExposure(float val) {
   exposure_ = val;
 }
 
-float PTexMeshData::gamma() const {
+auto PTexMeshData::gamma() const -> float {
   return gamma_;
 }
 
@@ -78,7 +78,7 @@ void PTexMeshData::setGamma(float val) {
   gamma_ = val;
 }
 
-float PTexMeshData::saturation() const {
+auto PTexMeshData::saturation() const -> float {
   return saturation_;
 }
 
@@ -86,11 +86,11 @@ void PTexMeshData::setSaturation(float val) {
   saturation_ = val;
 }
 
-const std::vector<PTexMeshData::MeshData>& PTexMeshData::meshes() const {
+auto PTexMeshData::meshes() const -> const std::vector<PTexMeshData::MeshData>& {
   return submeshes_;
 }
 
-std::string PTexMeshData::atlasFolder() const {
+auto PTexMeshData::atlasFolder() const -> std::string {
   return atlasFolder_;
 }
 // this is to break the quad into 2 triangles
@@ -130,9 +130,9 @@ void computeTriangleMeshIndices(uint64_t numFaces,
 // directly dumped from ReplicaSDK, and loaded to our simulator. See
 // loadSubMeshes(...) for more details;
 
-std::vector<PTexMeshData::MeshData> splitMesh(
+auto splitMesh(
     const PTexMeshData::MeshData& mesh,
-    const float splitSize) {
+    const float splitSize) -> std::vector<PTexMeshData::MeshData> {
   std::vector<uint32_t> verts;
   verts.resize(mesh.vbo.size());
 
@@ -152,8 +152,8 @@ std::vector<PTexMeshData::MeshData> splitMesh(
 
   box3f boundingBox;
 
-  for (size_t i = 0; i < mesh.vbo.size(); i++) {
-    boundingBox.extend(mesh.vbo[i].head<3>());
+  for (const auto & i : mesh.vbo) {
+    boundingBox.extend(i.head<3>());
   }
 
 // calculate vertex grid position and code
@@ -289,9 +289,9 @@ std::vector<PTexMeshData::MeshData> splitMesh(
 
 // Put it in the sub-folder, "habitat".
 
-std::vector<PTexMeshData::MeshData> loadSubMeshes(
+auto loadSubMeshes(
     const PTexMeshData::MeshData& mesh,
-    const std::string& filename) {
+    const std::string& filename) -> std::vector<PTexMeshData::MeshData> {
   // sanity checks
   CORRADE_ASSERT(!filename.empty(),
                  "PTexMeshData::loadSubMeshes: filename cannot be empty.", {});
@@ -438,9 +438,9 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
 
       // find adjacent face
       int adjFace = -1;
-      for (size_t i = 0; i < adj.size(); i++) {
-        if (adj[i].face != f)
-          adjFace = adj[i].face;
+      for (auto i : adj) {
+        if (i.face != f)
+          adjFace = i.face;
       }
 
       // find number of 90 degree rotation steps between faces
@@ -737,14 +737,14 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   size_t offsetSoFarBytes = 0;
 
-  for (size_t i = 0; i < vertexLayout.size(); i++) {
-    if (vertexLayout[i] == Properties::POSITION) {
+  for (auto & i : vertexLayout) {
+    if (i == Properties::POSITION) {
       positionOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += positionBytes;
-    } else if (vertexLayout[i] == Properties::NORMAL) {
+    } else if (i == Properties::NORMAL) {
       normalOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += normalBytes;
-    } else if (vertexLayout[i] == Properties::COLOR) {
+    } else if (i == Properties::COLOR) {
       colorOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += colorBytes;
     } else {
@@ -945,7 +945,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
+auto PTexMeshData::getRenderingBuffer(int submeshID) -> PTexMeshData::RenderingBuffer* {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
                  "PTexMeshData::getRenderingBuffer: the submesh ID"
                      << submeshID << "is out of range.",
@@ -953,7 +953,7 @@ PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
   return renderingBuffers_[submeshID].get();
 }
 
-Magnum::GL::Mesh* PTexMeshData::getMagnumGLMesh(int submeshID) {
+auto PTexMeshData::getMagnumGLMesh(int submeshID) -> Magnum::GL::Mesh* {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
                  "PTexMeshData::getMagnumGLMesh: the submesh ID"
                      << submeshID << "is out of range.",

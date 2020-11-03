@@ -22,10 +22,10 @@ namespace scene {
 
 constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
-bool SemanticScene::loadReplicaHouse(
+auto SemanticScene::loadReplicaHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::Identity() */) {
+    const quatf& worldRotation /* = quatf::Identity() */) -> bool {
   if (!io::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
