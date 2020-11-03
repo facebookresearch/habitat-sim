@@ -60,12 +60,12 @@ bool BulletRigidObject::initialization_LibSpecific(
     const assets::ResourceManager& resMgr) {
   objectMotionType_ = MotionType::DYNAMIC;
   // get this object's creation template, appropriately cast
-  auto tmpAttr = getInitializationAttributes();
+  auto objectAttributes = getInitializationAttributes();
 
   //! Physical parameters
-  double margin = tmpAttr->getMargin();
-  bool joinCollisionMeshes = tmpAttr->getJoinCollisionMeshes();
-  usingBBCollisionShape_ = tmpAttr->getBoundingBoxCollisions();
+  double margin = objectAttributes->getMargin();
+  bool joinCollisionMeshes = objectAttributes->getJoinCollisionMeshes();
+  usingBBCollisionShape_ = objectAttributes->getBoundingBoxCollisions();
 
   // TODO(alexanderwclegg): should provide the option for joinCollisionMeshes
   // and collisionFromBB_ to specify complete vs. component level bounding box
@@ -76,9 +76,9 @@ bool BulletRigidObject::initialization_LibSpecific(
   bObjectShape_ = std::make_unique<btCompoundShape>();
   // collision mesh/asset handle
   const std::string collisionAssetHandle =
-      initializationAttributes_->getCollisionAssetHandle();
+      objectAttributes->getCollisionAssetHandle();
 
-  if (!initializationAttributes_->getUseMeshCollision()) {
+  if (!objectAttributes->getUseMeshCollision()) {
     // if using prim collider get appropriate bullet collision primitive
     // attributes and build bullet collision shape
     auto primAttributes =
@@ -90,7 +90,8 @@ bool BulletRigidObject::initialization_LibSpecific(
     if (nullptr == primObjPtr) {
       return false;
     }
-    primObjPtr->setLocalScaling(btVector3(tmpAttr->getCollisionAssetSize()));
+    primObjPtr->setLocalScaling(
+        btVector3(objectAttributes->getCollisionAssetSize()));
     bGenericShapes_.clear();
     bGenericShapes_.emplace_back(std::move(primObjPtr));
     bObjectShape_->addChildShape(btTransform::getIdentity(),
@@ -110,7 +111,7 @@ bool BulletRigidObject::initialization_LibSpecific(
       // add the final object after joining meshes
       if (joinCollisionMeshes) {
         bObjectConvexShapes_.back()->setLocalScaling(
-            btVector3(tmpAttr->getCollisionAssetSize()));
+            btVector3(objectAttributes->getCollisionAssetSize()));
         bObjectConvexShapes_.back()->setMargin(0.0);
         bObjectConvexShapes_.back()->recalcLocalAabb();
         bObjectShape_->addChildShape(btTransform::getIdentity(),
@@ -122,10 +123,14 @@ bool BulletRigidObject::initialization_LibSpecific(
   //! Set properties
   bObjectShape_->setMargin(margin);
 
-  bObjectShape_->setLocalScaling(btVector3{tmpAttr->getScale()});
+  bObjectShape_->setLocalScaling(btVector3{objectAttributes->getScale()});
   bObjectShape_->recalculateLocalAabb();
   // create the bObjectRigidBody_
   constructAndAddRigidBody(objectMotionType_);
+
+  if (!objectAttributes->getIsCollidable()) {
+    setMotionType(MotionType::VISUALIZATION_ONLY);
+  }
 
   return true;
 }  // initialization_LibSpecific
@@ -291,9 +296,20 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
     return true;  // no work
   }
 
-  // remove the existing object from the world to change its type
-  bWorld_->removeRigidBody(bObjectRigidBody_.get());
-  constructAndAddRigidBody(mt);
+  if (objectMotionType_ != MotionType::VISUALIZATION_ONLY) {
+    if (!isActive() && mt == MotionType::VISUALIZATION_ONLY) {
+      Mn::Debug{} << "activateCollisionIsland in setMotionType";
+      // This object may be supporting other sleeping objects, so wake them
+      // before removing.
+      activateCollisionIsland();
+    }
+
+    // remove the existing object from the world to change its type
+    bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  }
+  if (mt != MotionType::VISUALIZATION_ONLY) {
+    constructAndAddRigidBody(mt);
+  }
   objectMotionType_ = mt;
   return true;
 }  // setMotionType
@@ -386,6 +402,8 @@ void BulletRigidObject::activateCollisionIsland() {
   btCollisionObject* thisColObj = bObjectRigidBody_.get();
   auto& colObjs = bWorld_->getCollisionWorld()->getCollisionObjectArray();
   for (auto objIx = 0; objIx < colObjs.size(); ++objIx) {
+    Mn::Debug{} << "object " << objIx << " island "
+                << colObjs[objIx]->getIslandTag();
     if (colObjs[objIx]->getIslandTag() == thisColObj->getIslandTag()) {
       colObjs[objIx]->activate();
     }
