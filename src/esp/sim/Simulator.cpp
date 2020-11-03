@@ -472,7 +472,7 @@ esp::core::RigidState Simulator::getRigidState(const int objectID,
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getRigidState(objectID);
   }
-  return {};
+  return esp::core::RigidState();
 }
 
 void Simulator::setRigidState(const esp::core::RigidState& rigidState,
@@ -499,7 +499,7 @@ Magnum::Vector3 Simulator::getTranslation(const int objectID,
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getTranslation(objectID);
   }
-  return {};
+  return Magnum::Vector3();
 }
 
 // set object orientation directly
@@ -532,7 +532,7 @@ Magnum::Vector3 Simulator::getLinearVelocity(const int objectID,
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getLinearVelocity(objectID);
   }
-  return {};
+  return Magnum::Vector3();
 }
 
 void Simulator::setAngularVelocity(const Magnum::Vector3& angVel,
@@ -548,7 +548,7 @@ Magnum::Vector3 Simulator::getAngularVelocity(const int objectID,
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getAngularVelocity(objectID);
   }
-  return {};
+  return Magnum::Vector3();
 }
 
 bool Simulator::contactTest(const int objectID, const int sceneID) {
@@ -610,7 +610,7 @@ Magnum::Vector3 Simulator::getGravity(const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getGravity();
   }
-  return {};
+  return Magnum::Vector3();
 }
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,

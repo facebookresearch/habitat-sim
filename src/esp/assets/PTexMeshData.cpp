@@ -152,8 +152,8 @@ std::vector<PTexMeshData::MeshData> splitMesh(
 
   box3f boundingBox;
 
-  for (const auto& i : mesh.vbo) {
-    boundingBox.extend(i.head<3>());
+  for (size_t i = 0; i < mesh.vbo.size(); i++) {
+    boundingBox.extend(mesh.vbo[i].head<3>());
   }
 
 // calculate vertex grid position and code
@@ -438,9 +438,9 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
 
       // find adjacent face
       int adjFace = -1;
-      for (auto i : adj) {
-        if (i.face != f)
-          adjFace = i.face;
+      for (size_t i = 0; i < adj.size(); i++) {
+        if (adj[i].face != f)
+          adjFace = adj[i].face;
       }
 
       // find number of 90 degree rotation steps between faces
@@ -737,14 +737,14 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   size_t offsetSoFarBytes = 0;
 
-  for (auto& i : vertexLayout) {
-    if (i == Properties::POSITION) {
+  for (size_t i = 0; i < vertexLayout.size(); i++) {
+    if (vertexLayout[i] == Properties::POSITION) {
       positionOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += positionBytes;
-    } else if (i == Properties::NORMAL) {
+    } else if (vertexLayout[i] == Properties::NORMAL) {
       normalOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += normalBytes;
-    } else if (i == Properties::COLOR) {
+    } else if (vertexLayout[i] == Properties::COLOR) {
       colorOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += colorBytes;
     } else {

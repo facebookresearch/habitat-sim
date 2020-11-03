@@ -15,9 +15,9 @@ namespace geo {
 //! equivalently "gravity" and "back"
 class CoordinateFrame {
  public:
-  CoordinateFrame(vec3f up = ESP_UP,
-                  vec3f front = ESP_FRONT,
-                  vec3f origin = vec3f::Zero());
+  CoordinateFrame(const vec3f& up = ESP_UP,
+                  const vec3f& front = ESP_FRONT,
+                  const vec3f& origin = vec3f::Zero());
   CoordinateFrame(const quatf& rotation, const vec3f& origin = vec3f::Zero());
   explicit CoordinateFrame(const std::string& json);
 

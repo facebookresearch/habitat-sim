@@ -1428,7 +1428,7 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   }
 
   // Add the new node to the hierarchy and set its transformation
-  parent.children.emplace_back();
+  parent.children.push_back(MeshTransformNode());
   parent.children.back().transformFromLocalToParent =
       objectData->transformation();
   parent.children.back().componentID = componentID;

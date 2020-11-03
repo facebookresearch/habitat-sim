@@ -65,7 +65,7 @@ Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
     // meaning object ambient color should be copied directly to pixels as-is.
     // We can achieve this in the Phong shader using an ambient light color of
     // (1,1,1) and no additional light sources.
-    return {1.0, 1.0, 1.0};
+    return Magnum::Color3(1.0, 1.0, 1.0);
   } else {
     // todo: add up ambient terms from all lights in lightSetup
     // temp: hard-coded ambient light tuned for ReplicaCAD

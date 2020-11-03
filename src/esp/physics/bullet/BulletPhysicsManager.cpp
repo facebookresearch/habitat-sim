@@ -103,8 +103,10 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
-  for (auto& existingObject : existingObjects_) {
-    existingObject.second->setActive();
+  for (std::map<int, physics::RigidObject::uptr>::iterator it =
+           existingObjects_.begin();
+       it != existingObjects_.end(); ++it) {
+    it->second->setActive();
   }
 }
 

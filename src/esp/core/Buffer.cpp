@@ -38,8 +38,8 @@ void Buffer::clear() {
 
 void Buffer::alloc() {
   size_t size = 1;
-  for (unsigned long i : this->shape) {
-    size *= i;
+  for (size_t i = 0; i < this->shape.size(); i++) {
+    size *= this->shape[i];
   }
   if (size != this->totalSize) {
     this->totalSize = size;

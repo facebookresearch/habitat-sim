@@ -84,8 +84,9 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (const auto& mapOfHandle : mapOfHandles) {
-    std::string key = Cr::Utility::String::lowercase(mapOfHandle.second);
+  for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
+       iter != mapOfHandles.end(); ++iter) {
+    std::string key = Cr::Utility::String::lowercase(iter->second);
     // be sure that key is big enough to search in (otherwise find has undefined
     // behavior)
     if (key.length() < strSize) {
@@ -95,7 +96,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
     if (found == contains) {
       // if found and searching for contains, or not found and searching for not
       // contains
-      res.push_back(mapOfHandle.second);
+      res.push_back(iter->second);
     }
   }
   return res;
@@ -123,8 +124,10 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (const auto& mapOfHandle : mapOfHandles) {
-    std::string key = Cr::Utility::String::lowercase(mapOfHandle.first);
+  for (std::map<std::string, std::set<std::string>>::const_iterator iter =
+           mapOfHandles.begin();
+       iter != mapOfHandles.end(); ++iter) {
+    std::string key = Cr::Utility::String::lowercase(iter->first);
     // be sure that key is big enough to search in (otherwise find has undefined
     // behavior)
     if (key.length() < strSize) {
@@ -134,7 +137,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
     if (found == contains) {
       // if found and searching for contains, or not found and searching for not
       // contains
-      res.push_back(mapOfHandle.first);
+      res.push_back(iter->first);
     }
   }
   return res;
