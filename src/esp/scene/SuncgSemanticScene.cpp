@@ -9,7 +9,6 @@
 #include <map>
 #include <string>
 
-#include <Corrade/Utility/Macros.h>
 #include <Corrade/Utility/String.h>
 
 #include "esp/io/io.h"
@@ -26,8 +25,7 @@ std::string SuncgSemanticRegion::id() const {
   return nodeId_;
 }
 
-int SuncgObjectCategory::index(
-    CORRADE_UNUSED const std::string& mapping) const {
+int SuncgObjectCategory::index(const std::string&) const {
   return ID_UNDEFINED;
 }
 
@@ -49,8 +47,7 @@ std::string SuncgObjectCategory::name(const std::string& mapping) const {
   }
 }
 
-int SuncgRegionCategory::index(
-    CORRADE_UNUSED const std::string& mapping) const {
+int SuncgRegionCategory::index(const std::string&) const {
   // NOTE: SUNCG regions are not linearized
   return ID_UNDEFINED;
 }
