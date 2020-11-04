@@ -22,7 +22,7 @@ DrawableGroup& DrawableGroup::remove(Drawable& drawable) {
   return *this;
 }
 
-DrawableGroup::~DrawableGroup() {}
+DrawableGroup::~DrawableGroup() = default;
 
 bool DrawableGroup::hasDrawable(uint64_t id) const {
   return (idToDrawable_.find(id) != idToDrawable_.end());
