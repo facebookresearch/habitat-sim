@@ -4,18 +4,16 @@
 
 #include "CoordinateFrame.h"
 
-#include <utility>
-
 #include "esp/geo/geo.h"
 #include "esp/io/json.h"
 
 namespace esp {
 namespace geo {
 
-CoordinateFrame::CoordinateFrame(vec3f up /* = ESP_UP */,
-                                 vec3f front /* = ESP_FRONT */,
-                                 vec3f origin /* = vec3f(0, 0, 0) */)
-    : up_(std::move(up)), front_(std::move(front)), origin_(std::move(origin)) {
+CoordinateFrame::CoordinateFrame(const vec3f& up /* = ESP_UP */,
+                                 const vec3f& front /* = ESP_FRONT */,
+                                 const vec3f& origin /* = vec3f(0, 0, 0) */)
+    : up_(up), front_(front), origin_(origin) {
   ASSERT(up_.isOrthogonal(front_));
 }
 
