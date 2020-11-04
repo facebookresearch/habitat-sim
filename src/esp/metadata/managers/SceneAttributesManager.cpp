@@ -34,7 +34,7 @@ SceneAttributes::ptr SceneAttributesManager::createObject(
 
 SceneAttributes::ptr SceneAttributesManager::initNewObjectInternal(
     const std::string& sceneInstanceHandle,
-    bool builtFromConfig) {
+    CORRADE_UNUSED bool builtFromConfig) {
   SceneAttributes::ptr newAttributes =
       this->constructFromDefault(sceneInstanceHandle);
   if (nullptr == newAttributes) {

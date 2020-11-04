@@ -140,7 +140,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
 
 LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
     const std::string& handleName,
-    bool builtFromConfig) {
+    CORRADE_UNUSED bool builtFromConfig) {
   attributes::LightLayoutAttributes::ptr newAttributes =
       this->constructFromDefault(handleName);
   // if no default then create new.
