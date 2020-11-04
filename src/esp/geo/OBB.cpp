@@ -4,8 +4,6 @@
 
 #include "OBB.h"
 
-#include <utility>
-
 #include <vector>
 
 #include "esp/geo/geo.h"
@@ -20,10 +18,8 @@ OBB::OBB() {
   box3f box;
 }
 
-OBB::OBB(vec3f center, const vec3f& dimensions, const quatf& rotation)
-    : center_(std::move(center)),
-      halfExtents_(dimensions * 0.5),
-      rotation_(rotation) {
+OBB::OBB(const vec3f& center, const vec3f& dimensions, const quatf& rotation)
+    : center_(center), halfExtents_(dimensions * 0.5), rotation_(rotation) {
   recomputeTransforms();
 }
 

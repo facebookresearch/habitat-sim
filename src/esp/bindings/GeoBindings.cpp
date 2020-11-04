@@ -25,6 +25,7 @@ void initGeoBindings(py::module& m) {
 
   // ==== OBB ====
   py::class_<OBB>(m, "OBB")
+      .def(py::init<const vec3f&, const vec3f&, const quatf&>())
       .def(py::init<box3f&>())
       .def("contains", &OBB::contains)
       .def("closest_point", &OBB::closestPoint)
