@@ -412,3 +412,14 @@ def test_raycast():
             )
             assert abs(raycast_results.hits[0].ray_distance - 2.8935) < 0.001
             assert raycast_results.hits[0].object_id == 0
+
+            # test raycast against a VISUALIZATION_ONLY object.
+            # should not register a hit with the object.
+            sim.set_object_motion_type(
+                habitat_sim.physics.MotionType.VISUALIZATION_ONLY, cube_obj_id
+            )
+
+            raycast_results = sim.cast_ray(test_ray_1)
+
+            assert raycast_results.has_hits()
+            assert len(raycast_results.hits) == 1

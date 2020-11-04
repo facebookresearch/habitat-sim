@@ -21,7 +21,7 @@ void initPhysicsBindings(py::module& m) {
       .value("STATIC", MotionType::STATIC)
       .value("KINEMATIC", MotionType::KINEMATIC)
       .value("DYNAMIC", MotionType::DYNAMIC)
-      .value("DYNAMIC", MotionType::VISUALIZATION_ONLY);
+      .value("VISUALIZATION_ONLY", MotionType::VISUALIZATION_ONLY);
 
   // ==== struct object VelocityControl ====
   py::class_<VelocityControl, VelocityControl::ptr>(m, "VelocityControl")
