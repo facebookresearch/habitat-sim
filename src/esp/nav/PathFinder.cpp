@@ -1400,7 +1400,7 @@ HitRecord PathFinder::closestObstacleSurfacePoint(
 }
 
 bool PathFinder::isNavigable(const vec3f& pt, const float maxYDelta) const {
-  return pimpl_->isNavigable(pt);
+  return pimpl_->isNavigable(pt, maxYDelta);
 }
 
 float PathFinder::getNavigableArea() const {
