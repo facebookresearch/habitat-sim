@@ -23,12 +23,22 @@ using py::literals::operator""_a;
 namespace esp {
 namespace sim {
 
+struct SceneBackwardsCompat {
+  SimulatorConfiguration* cfg;
+};
+
 void initSimBindings(py::module& m) {
   // ==== SimulatorConfiguration ====
+  py::class_<SceneBackwardsCompat> sceneBackwardsCompat(m,
+                                                        "SceneBackwardsCompat");
   py::class_<SimulatorConfiguration, SimulatorConfiguration::ptr>(
       m, "SimulatorConfiguration")
       .def(py::init(&SimulatorConfiguration::create<>))
       .def_readwrite("scene_id", &SimulatorConfiguration::activeSceneID)
+      .def_property_readonly("scene",
+                             [](SimulatorConfiguration& self) {
+                               return SceneBackwardsCompat{&self};
+                             })
       .def_readwrite("random_seed", &SimulatorConfiguration::randomSeed)
       .def_readwrite("default_agent_id",
                      &SimulatorConfiguration::defaultAgentId)
@@ -49,6 +59,19 @@ void initSimBindings(py::module& m) {
                      &SimulatorConfiguration::requiresTextures)
       .def(py::self == py::self)
       .def(py::self != py::self);
+
+  sceneBackwardsCompat
+      .def(py::init<SimulatorConfiguration*>(), py::keep_alive<1, 2>())
+      .def_property(
+          "id",
+          [](SceneBackwardsCompat& self) {
+            LOG(WARNING) << "scene.id is depricated, use scene_id instead";
+            return self.cfg->activeSceneID;
+          },
+          [](SceneBackwardsCompat& self, const std::string newId) {
+            LOG(WARNING) << "scene.id is depricated, use scene_id instead";
+            self.cfg->activeSceneID = newId;
+          });
 
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")
