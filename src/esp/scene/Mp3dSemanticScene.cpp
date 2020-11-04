@@ -5,8 +5,6 @@
 #include "Mp3dSemanticScene.h"
 #include "SemanticScene.h"
 
-#include <Corrade/Utility/Macros.h>
-
 #include <algorithm>
 #include <fstream>
 #include <map>
