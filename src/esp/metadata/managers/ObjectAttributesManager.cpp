@@ -114,6 +114,19 @@ void ObjectAttributesManager::setValsFromJSONDoc(
       std::bind(&ObjectAttributes::setCOM, objAttributes, _1));
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
+
+  // Whether or not the object is initially configured to be visible when
+  // instanced.
+  io::jsonIntoSetter<bool>(
+      jsonConfig, "is_visible",
+      std::bind(&ObjectAttributes::setIsVisible, objAttributes, _1));
+
+  // Whether or not the object is initiialy configured to be
+  // MotionType::VISUALIZATION_ONLY with instanced.
+  io::jsonIntoSetter<bool>(
+      jsonConfig, "is_collidable",
+      std::bind(&ObjectAttributes::setIsCollidable, objAttributes, _1));
+
 }  // ObjectAttributesManager::setValsFromJSONDoc
 
 ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(

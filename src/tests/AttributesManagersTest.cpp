@@ -633,7 +633,9 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
         "use_bounding_box_for_collision": true,
         "join_collision_meshes":true,
         "inertia": [1.1, 0.9, 0.3],
-        "COM": [0.1,0.2,0.3]
+        "COM": [0.1,0.2,0.3],
+        "is_visible": false,
+        "is_collidable": false
       })";
   auto objAttr =
       testBuildAttributesFromJSONString<AttrMgrs::ObjectAttributesManager,
@@ -659,7 +661,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   ASSERT_EQ(objAttr->getJoinCollisionMeshes(), true);
   ASSERT_EQ(objAttr->getInertia(), Magnum::Vector3(1.1, 0.9, 0.3));
   ASSERT_EQ(objAttr->getCOM(), Magnum::Vector3(0.1, 0.2, 0.3));
-
+  ASSERT_EQ(objAttr->getIsVisible(), false);
+  ASSERT_EQ(objAttr->getIsCollidable(), false);
 }  // AttributesManagersTest::AttributesManagers_ObjectJSONLoadTest
 
 /**

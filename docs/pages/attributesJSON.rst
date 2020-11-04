@@ -42,9 +42,6 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 "restitution_coefficient"
 	- double
 	- The default coefficient of restitution. This can be overridden in Stage and Object Attributes.
-"rigid object paths"
-	- list of strings
-	- A list of locations to query for supported object files that should be available to be loaded into the world.
 
 `Stage Attributes`_
 ===================
@@ -177,6 +174,12 @@ Below are object-specific physical quantities.  These values will override simil
 "requires_lighting"
 	- boolean
 	- Whether the object should be rendered with lighting or flat shading.
+"is_visible"
+	- boolean
+	- Whether the object's render asset should be created upon instancing.
+"is_collidable"
+	- boolean
+	- Whether the object should be added to the collision and physics simulation world upon instancing. If false, object will be initialized with MotionType::VISUALIZATION_ONLY.
 "mass"
 	- double
 	- The mass of the object, for physics calculations.
