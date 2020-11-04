@@ -24,7 +24,7 @@ commands:
           # has 3.5, so once tinyply is removed, we could go lower (well, if
           # anybody actually needs that)
           command: |
-              echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
+              echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git refs/pull/516/head | awk '{ print $1}') > ./hablab_sha
               cat ./hablab_sha
               wget https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh
               sudo mkdir /opt/cmake
@@ -171,12 +171,6 @@ commands:
       - restore_cache:
           keys:
             - habitat-lab-{{ checksum "./hablab_sha" }}
-      - restore_cache:
-          keys:
-            - ccache-{{ arch }}-master
-            - ccache-{{ arch }}-{{ .Branch }}
-          paths:
-            - /home/circleci/.ccache
       - run:
           name: CCache initialization
           command: |
@@ -363,7 +357,7 @@ jobs:
               cd ..
               if [ ! -d ./habitat-lab ]
               then
-                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
+                git clone --single-branch --branch Remove_SceneConfig https://github.com/jturner65/habitat-lab.git --recursive
               fi
               cd habitat-lab
               pip install -r requirements.txt --progress-bar off
