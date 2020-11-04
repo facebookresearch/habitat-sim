@@ -81,9 +81,8 @@ void declareBaseAttributesManager(py::module& m,
               &MgrClass::loadAllConfigsFromPath),
           R"(Build templates for all JSON files with appropriate extension
             that exist in the provided file or directory path. If save_as_defaults
-            is true, then these templates will be unable to be deleted)"
-          "path"_a,
-          "save_as_defaults"_a = false)
+            is true, then these templates will be unable to be deleted)",
+          "path"_a, "save_as_defaults"_a = false)
       .def("create_template",
            static_cast<AttribsPtr (MgrClass::*)(const std::string&, bool)>(
                &MgrClass::createObject),
@@ -289,9 +288,8 @@ void initAttributesManagersBindings(py::module& m) {
            R"(DEPRECATED : use "load_configs" instead.
             Build templates for all files with ".object_config.json" extension
             that exist in the provided file or directory path. If save_as_defaults
-            is true, then these templates will be unable to be deleted)"
-           "path"_a,
-           "save_as_defaults"_a = false)
+            is true, then these templates will be unable to be deleted)",
+           "path"_a, "save_as_defaults"_a = false)
 
       // manage file-based templates access
       .def(
