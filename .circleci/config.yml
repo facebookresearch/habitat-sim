@@ -363,7 +363,7 @@ jobs:
               cd ..
               if [ ! -d ./habitat-lab ]
               then
-                git clone --single-branch --branch Remove_SceneConfig https://github.com/jturner65/habitat-lab.git --recursive
+                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
               pip install -r requirements.txt --progress-bar off
