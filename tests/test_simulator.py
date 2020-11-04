@@ -15,9 +15,7 @@ def test_no_navmesh_smoke():
     # with no navmesh and the navmesh isn't used for any exisitng sensors
     agent_config.sensor_specifications = []
 
-    sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
-    # Make it try to load a navmesh that doesn't exists
-    sim_cfg.scene.filepaths["navmesh"] = "/tmp/dne.navmesh"
+    sim_cfg.scene_id = "data/test_assets/scenes/stage_floor1.glb"
 
     with habitat_sim.Simulator(
         habitat_sim.Configuration(sim_cfg, [agent_config])
@@ -72,7 +70,7 @@ def test_keep_agent():
     sim_cfg = habitat_sim.SimulatorConfiguration()
     agent_config = habitat_sim.AgentConfiguration()
 
-    sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
+    sim_cfg.scene_id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     agents = []
 
     for _ in range(3):
@@ -87,7 +85,7 @@ def test_multiple_construct_destroy():
     sim_cfg = habitat_sim.SimulatorConfiguration()
     agent_config = habitat_sim.AgentConfiguration()
 
-    sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
+    sim_cfg.scene_id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
 
     for _ in range(3):
         with habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config])):

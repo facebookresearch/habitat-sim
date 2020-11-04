@@ -577,7 +577,7 @@ events happen:
         sim = habitat_sim.Simulator(self.cfg)
     else:
         # If a sim is provided we have to make a new cfg
-        self.cfg = self._config_sim(sim.config.sim_cfg.scene.id, img_size)
+        self.cfg = self._config_sim(sim.config.sim_cfg.scene_id, img_size)
         sim.reconfigure(self.cfg)
 
 2. A towndown view of the scene is created, which a 2d numpy array consisting of 0.0s (meaning the point is unnavigable) and 1.0s (meaning the point is navigable). We create a list of 3-tuples (<topdown view>, <scene filepath>, <reference point for the scene>), one for each scene. This allows us to switch between multiple scenes and have a coordinate reference point within each scene.

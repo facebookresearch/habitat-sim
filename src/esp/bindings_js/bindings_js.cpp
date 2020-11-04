@@ -153,20 +153,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<Sensor>("Sensor").function("specification",
                                         &Sensor::specification);
 
-  em::class_<SceneConfiguration>("SceneConfiguration")
-      .smart_ptr_constructor("SceneConfiguration",
-                             &SceneConfiguration::create<>)
-      .property("dataset", &SceneConfiguration::dataset)
-      .property("id", &SceneConfiguration::id)
-      .property("filepaths", &SceneConfiguration::filepaths)
-      .property("sceneUpDir", &SceneConfiguration::sceneUpDir)
-      .property("sceneFrontDir", &SceneConfiguration::sceneFrontDir)
-      .property("sceneScaleUnit", &SceneConfiguration::sceneScaleUnit);
-
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",
                              &SimulatorConfiguration::create<>)
-      .property("scene", &SimulatorConfiguration::scene)
+      .property("scene_id", &SimulatorConfiguration::activeSceneID)
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)

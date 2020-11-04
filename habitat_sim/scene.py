@@ -5,7 +5,6 @@
 from habitat_sim._ext.habitat_sim_bindings import (
     Mp3dObjectCategory,
     Mp3dRegionCategory,
-    SceneConfiguration,
     SceneGraph,
     SceneNode,
     SceneNodeType,
@@ -27,5 +26,4 @@ __all__ = [
     "SemanticObject",
     "SemanticRegion",
     "SemanticScene",
-    "SceneConfiguration",
 ]

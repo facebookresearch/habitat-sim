@@ -486,6 +486,7 @@ jobs:
             npm run test
       - run:
           name: Run sim tests
+          no_output_timeout: 25m
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
