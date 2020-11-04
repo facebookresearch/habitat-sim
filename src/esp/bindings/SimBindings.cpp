@@ -68,7 +68,7 @@ void initSimBindings(py::module& m) {
             LOG(WARNING) << "scene.id is depricated, use scene_id instead";
             return self.cfg->activeSceneID;
           },
-          [](SceneBackwardsCompat& self, const std::string newId) {
+          [](SceneBackwardsCompat& self, const std::string& newId) {
             LOG(WARNING) << "scene.id is depricated, use scene_id instead";
             self.cfg->activeSceneID = newId;
           });
