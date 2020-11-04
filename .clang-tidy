@@ -1,9 +1,22 @@
 Checks: '
-bugprone-argument-comment,
+bugprone-*,
 cppcoreguidelines-init-variables,
 cppcoreguidelines-pro-type-member-init,
 google-*,
+misc-definitions-in-headers,
+misc-static-assert,
+misc-unconventional-assign-operator,
+misc-unused-parameters,
+modernize-avoid-bind,
+modernize-redundant-void-arg,
+modernize-replace-disallow-copy-and-assign-macro,
+modernize-shrink-to-fit,
+modernize-unary-static-assert,
+modernize-use-bool-literals,
+modernize-use-default-member-init,
+modernize-use-noexcept,
 modernize-use-nullptr,
+modernize-use-override,
 performance-*,
 -*-objc-*,
 -*.cocoa.*,
@@ -26,4 +39,9 @@ performance-*,
 # counterproductive, since the first thing you want to do after an upgrade is
 # compiling existing *unchanged* code and ensuring all tests pass, and only
 # then start updating the code.
-WarningsAsErrors: '*,-clang-diagnostic-deprecated-declarations'
+WarningsAsErrors:
+'*,
+-bugprone-branch-clone,
+-bugprone-narrowing-conversions,
+-bugprone-unused-raii,
+-clang-diagnostic-deprecated-declarations'
