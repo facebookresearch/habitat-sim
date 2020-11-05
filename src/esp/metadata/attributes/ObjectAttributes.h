@@ -228,19 +228,19 @@ class ObjectAttributes : public AbstractObjectAttributes {
    * @brief If not visible can add dynamic non-rendered object into a scene
    * object.  If is not visible then should not add object to drawables.
    */
-  void setIsVisible(bool isVisible) { setBool("isVisible", isVisible); }
-  bool getIsVisible() const { return getBool("isVisible"); }
+  void setIsVisible(bool isVisible) { setBool("is_visible", isVisible); }
+  bool getIsVisible() const { return getBool("is_visible"); }
 
-  void setSemanticId(uint32_t semanticId) { setInt("semanticId", semanticId); }
+  void setSemanticId(uint32_t semanticId) { setInt("semantic_id", semanticId); }
 
-  uint32_t getSemanticId() const { return getInt("semanticId"); }
+  uint32_t getSemanticId() const { return getInt("semantic_id"); }
 
   // if object should be checked for collisions - if other objects can collide
   // with this object
   void setIsCollidable(bool isCollidable) {
-    setBool("isCollidable", isCollidable);
+    setBool("is_collidable", isCollidable);
   }
-  bool getIsCollidable() { return getBool("isCollidable"); }
+  bool getIsCollidable() { return getBool("is_collidable"); }
 
  public:
   ESP_SMART_POINTERS(ObjectAttributes)
