@@ -12,7 +12,6 @@
 
 #include "esp/scene/Mp3dSemanticScene.h"
 #include "esp/scene/ObjectControls.h"
-#include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -26,24 +25,6 @@ namespace esp {
 namespace scene {
 
 void initSceneBindings(py::module& m) {
-  // ==== SceneConfiguration ====
-  py::class_<SceneConfiguration, SceneConfiguration::ptr>(m,
-                                                          "SceneConfiguration")
-      .def(py::init(&SceneConfiguration::create<>))
-      .def_readwrite("dataset", &SceneConfiguration::dataset)
-      .def_readwrite("id", &SceneConfiguration::id)
-      .def_readwrite("filepaths", &SceneConfiguration::filepaths)
-      .def_readwrite("scene_up_dir", &SceneConfiguration::sceneUpDir)
-      .def_readwrite("scene_front_dir", &SceneConfiguration::sceneFrontDir)
-      .def_readwrite("scene_scale_unit", &SceneConfiguration::sceneScaleUnit)
-      .def(
-          "__eq__",
-          [](const SceneConfiguration& self,
-             const SceneConfiguration& other) -> bool { return self == other; })
-      .def("__neq__",
-           [](const SceneConfiguration& self, const SceneConfiguration& other)
-               -> bool { return self != other; });
-
   // ==== SceneGraph ====
 
   // !!Warning!!

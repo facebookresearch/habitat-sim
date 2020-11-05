@@ -25,7 +25,7 @@ std::string SuncgSemanticRegion::id() const {
   return nodeId_;
 }
 
-int SuncgObjectCategory::index(const std::string& mapping) const {
+int SuncgObjectCategory::index(const std::string&) const {
   return ID_UNDEFINED;
 }
 
@@ -47,7 +47,7 @@ std::string SuncgObjectCategory::name(const std::string& mapping) const {
   }
 }
 
-int SuncgRegionCategory::index(const std::string& mapping) const {
+int SuncgRegionCategory::index(const std::string&) const {
   // NOTE: SUNCG regions are not linearized
   return ID_UNDEFINED;
 }

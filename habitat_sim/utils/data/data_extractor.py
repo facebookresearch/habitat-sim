@@ -94,7 +94,7 @@ class ImageExtractor:
             sim = habitat_sim.Simulator(self.cfg)
         else:
             # If a sim is provided we have to make a new cfg
-            self.cfg = self._config_sim(sim.config.sim_cfg.scene.id, img_size)
+            self.cfg = self._config_sim(sim.config.sim_cfg.scene_id, img_size)
             sim.reconfigure(self.cfg)
 
         self.sim = sim
@@ -108,7 +108,7 @@ class ImageExtractor:
             self.tdv_fp_ref_triples = [
                 (
                     TopdownView(self.sim, ref_point[1], meters_per_pixel),
-                    self.sim.config.sim_cfg.scene.id,
+                    self.sim.config.sim_cfg.scene_id,
                     ref_point,
                 )
             ]
@@ -268,7 +268,7 @@ class ImageExtractor:
         sim_cfg = hsim.SimulatorConfiguration()
         sim_cfg.enable_physics = False
         sim_cfg.gpu_device_id = 0
-        sim_cfg.scene.id = settings["scene"]
+        sim_cfg.scene_id = settings["scene"]
 
         # define default sensor parameters (see src/esp/Sensor/Sensor.h)
         sensors = {

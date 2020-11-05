@@ -28,7 +28,7 @@ void initSimBindings(py::module& m) {
   py::class_<SimulatorConfiguration, SimulatorConfiguration::ptr>(
       m, "SimulatorConfiguration")
       .def(py::init(&SimulatorConfiguration::create<>))
-      .def_readwrite("scene", &SimulatorConfiguration::scene)
+      .def_readwrite("scene_id", &SimulatorConfiguration::activeSceneID)
       .def_readwrite("random_seed", &SimulatorConfiguration::randomSeed)
       .def_readwrite("default_agent_id",
                      &SimulatorConfiguration::defaultAgentId)
@@ -107,7 +107,7 @@ void initSimBindings(py::module& m) {
       .def("get_physics_template_manager",
            &Simulator::getPhysicsAttributesManager,
            pybind11::return_value_policy::reference,
-           R"(Get the current dataset's PhysicsAttributesManager instance
+           R"(Get the current PhysicsAttributesManager instance
             for configuring PhysicsManager templates.)")
       .def("get_stage_template_manager", &Simulator::getStageAttributesManager,
            pybind11::return_value_policy::reference,
