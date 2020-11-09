@@ -61,7 +61,7 @@ def place_agent(sim):
 def make_configuration(scene_file):
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene.id = scene_file
+    backend_cfg.scene_id = scene_file
     backend_cfg.enable_physics = True
 
     # sensor configurations

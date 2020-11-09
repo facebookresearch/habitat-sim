@@ -34,6 +34,8 @@ struct MaterialData {
   // construct it using the default constructor. NO initial values, such as
   // identity matrix
   Magnum::Matrix3 textureMatrix;
+
+  bool doubleSided = false;
 };
 
 struct PhongMaterialData : public MaterialData {

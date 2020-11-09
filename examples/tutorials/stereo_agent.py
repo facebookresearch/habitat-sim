@@ -47,7 +47,7 @@ def main(display=True):
         cv2.namedWindow("stereo_pair")
 
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene.id = (
+    backend_cfg.scene_id = (
         "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     )
 

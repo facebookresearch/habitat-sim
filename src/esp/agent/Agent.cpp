@@ -26,7 +26,7 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
       sensors_(),
       controls_(scene::ObjectControls::create()) {
   agentNode.setType(scene::SceneNodeType::AGENT);
-  for (sensor::SensorSpec::ptr spec : cfg.sensorSpecifications) {
+  for (const sensor::SensorSpec::ptr& spec : cfg.sensorSpecifications) {
     // TODO: this should take type into account to create appropriate
     // sensor
 
@@ -49,7 +49,7 @@ bool Agent::act(const std::string& actionName) {
                         actionSpec.actuation.at("amount"),
                         /*applyFilter=*/true);
     } else {
-      for (auto p : sensors_.getSensors()) {
+      for (const auto& p : sensors_.getSensors()) {
         controls_->action(p.second->object(), actionSpec.name,
                           actionSpec.actuation.at("amount"),
                           /*applyFilter=*/false);
@@ -70,7 +70,7 @@ void Agent::reset() {
   setState(initialState_);
 }
 
-void Agent::getState(AgentState::ptr state) const {
+void Agent::getState(const AgentState::ptr& state) const {
   // TODO this should be done less hackishly
   state->position = cast<vec3f>(node().absoluteTransformation().translation());
   state->rotation = quatf(node().rotation()).coeffs();
@@ -88,7 +88,7 @@ void Agent::setState(const AgentState& state,
   node().setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 
   if (resetSensors) {
-    for (auto p : sensors_.getSensors()) {
+    for (const auto& p : sensors_.getSensors()) {
       p.second->setTransformationFromSpec();
     }
   }

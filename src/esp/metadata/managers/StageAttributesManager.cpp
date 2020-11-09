@@ -4,6 +4,8 @@
 
 #include <Corrade/Utility/String.h>
 
+#include <utility>
+
 #include "AbstractObjectAttributesManagerBase.h"
 #include "StageAttributesManager.h"
 
@@ -26,8 +28,8 @@ StageAttributesManager::StageAttributesManager(
     PhysicsAttributesManager::ptr physicsAttributesManager)
     : AbstractObjectAttributesManager<StageAttributes>::
           AbstractObjectAttributesManager("Stage", "stage_config.json"),
-      objectAttributesMgr_(objectAttributesMgr),
-      physicsAttributesManager_(physicsAttributesManager),
+      objectAttributesMgr_(std::move(objectAttributesMgr)),
+      physicsAttributesManager_(std::move(physicsAttributesManager)),
       cfgLightSetup_(assets::ResourceManager::NO_LIGHT_KEY) {
   buildCtorFuncPtrMaps();
 }  // StageAttributesManager ctor
@@ -193,17 +195,13 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // handles
     std::string navmeshFilename =
         io::changeExtension(attributesHandle, ".navmesh");
-    if (cfgFilepaths_.count("navmesh")) {
-      navmeshFilename = cfgFilepaths_.at("navmesh");
-    }
+
     if (Corrade::Utility::Directory::exists(navmeshFilename)) {
       newAttributes->setNavmeshAssetHandle(navmeshFilename);
     }
     // Build default semantic descriptor file name
     std::string houseFilename = io::changeExtension(attributesHandle, ".house");
-    if (cfgFilepaths_.count("house")) {
-      houseFilename = cfgFilepaths_.at("house");
-    }
+
     if (!Corrade::Utility::Directory::exists(houseFilename)) {
       houseFilename = io::changeExtension(attributesHandle, ".scn");
     }

@@ -3,12 +3,15 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "VisualSensor.h"
+
+#include <utility>
+
 #include "esp/gfx/RenderTarget.h"
 
 namespace esp {
 namespace sensor {
 VisualSensor::VisualSensor(scene::SceneNode& node, SensorSpec::ptr spec)
-    : Sensor{node, spec}, tgt_{nullptr} {}
+    : Sensor{node, std::move(spec)}, tgt_{nullptr} {}
 
 VisualSensor::~VisualSensor() = default;
 

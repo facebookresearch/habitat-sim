@@ -410,7 +410,7 @@ def show_template_properties(template):
 def make_cfg(settings):
     sim_cfg = habitat_sim.SimulatorConfiguration()
     sim_cfg.gpu_device_id = 0
-    sim_cfg.scene.id = settings["scene"]
+    sim_cfg.scene_id = settings["scene"]
     sim_cfg.enable_physics = settings["enable_physics"]
 
     # Note: all sensors must have the same resolution
@@ -1005,7 +1005,7 @@ print(object_orientation)
 
 # add a box with default semanticId configured in the template
 # Note: each face of this box asset is a separate component
-box_template = habitat_sim.attributes.PhysicsObjectAttributes()
+box_template = habitat_sim.attributes.ObjectAttributes()
 box_template.render_asset_handle = str(
     os.path.join(data_path, "test_assets/objects/transform_box.glb")
 )

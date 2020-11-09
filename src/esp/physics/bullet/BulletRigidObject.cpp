@@ -6,6 +6,9 @@
 #include <Magnum/BulletIntegration/Integration.h>
 
 #include <Corrade/Utility/Assert.h>
+
+#include <utility>
+
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
@@ -35,7 +38,7 @@ BulletRigidObject::BulletRigidObject(
     std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
     std::shared_ptr<std::map<const btCollisionObject*, int> >
         collisionObjToObjIds)
-    : BulletBase(bWorld, collisionObjToObjIds),
+    : BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)),
       RigidObject(rigidBodyNode, objectId),
       MotionState(*rigidBodyNode) {}
 
@@ -378,12 +381,34 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
 }
 
 void BulletRigidObject::activateCollisionIsland() {
+  btCollisionObject* thisColObj = bObjectRigidBody_.get();
+
+  // first query overlapping pairs of the current object from the most recent
+  // broadphase to collect relevant simulation islands.
+  std::set<int> overlappingSimulationIslands = {thisColObj->getIslandTag()};
+  auto& pairCache =
+      bWorld_->getCollisionWorld()->getPairCache()->getOverlappingPairArray();
+
+  for (int i = 0; i < pairCache.size(); ++i) {
+    if (pairCache.at(i).m_pProxy0->m_clientObject == thisColObj) {
+      overlappingSimulationIslands.insert(
+          static_cast<btCollisionObject*>(
+              pairCache.at(i).m_pProxy1->m_clientObject)
+              ->getIslandTag());
+    } else if (pairCache.at(i).m_pProxy1->m_clientObject == thisColObj) {
+      overlappingSimulationIslands.insert(
+          static_cast<btCollisionObject*>(
+              pairCache.at(i).m_pProxy0->m_clientObject)
+              ->getIslandTag());
+    }
+  }
+
   // activate nearby objects in the simulation island as computed on the
   // previous collision detection pass
-  btCollisionObject* thisColObj = bObjectRigidBody_.get();
   auto& colObjs = bWorld_->getCollisionWorld()->getCollisionObjectArray();
   for (auto objIx = 0; objIx < colObjs.size(); ++objIx) {
-    if (colObjs[objIx]->getIslandTag() == thisColObj->getIslandTag()) {
+    if (overlappingSimulationIslands.count(colObjs[objIx]->getIslandTag()) >
+        0) {
       colObjs[objIx]->activate();
     }
   }

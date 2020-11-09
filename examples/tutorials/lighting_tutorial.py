@@ -60,7 +60,7 @@ def place_agent(sim):
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
+    backend_cfg.scene_id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     backend_cfg.enable_physics = True
 
     # agent configuration

@@ -5,6 +5,8 @@
 #include <Magnum/BulletIntegration/DebugDraw.h>
 #include <Magnum/BulletIntegration/Integration.h>
 
+#include <utility>
+
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
@@ -20,7 +22,8 @@ BulletRigidStage::BulletRigidStage(
     std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
     std::shared_ptr<std::map<const btCollisionObject*, int> >
         collisionObjToObjIds)
-    : BulletBase(bWorld, collisionObjToObjIds), RigidStage{rigidBodyNode} {}
+    : BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)),
+      RigidStage{rigidBodyNode} {}
 
 BulletRigidStage::~BulletRigidStage() {
   // remove collision objects from the world

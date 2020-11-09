@@ -14,7 +14,6 @@
 
 namespace Cr = Corrade;
 
-using esp::scene::SceneConfiguration;
 using esp::scene::SemanticScene;
 using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
@@ -48,7 +47,7 @@ TEST(GibsonSemanticSimTest, Basic) {
     GTEST_SKIP_(skip_message.c_str());
   }
   SimulatorConfiguration cfg;
-  cfg.scene.id = esp::io::changeExtension(gibsonSemanticFilename, ".glb");
+  cfg.activeSceneID = esp::io::changeExtension(gibsonSemanticFilename, ".glb");
   Simulator simulator(cfg);
   const auto& semanticScene = simulator.getSemanticScene();
   ASSERT_EQ(semanticScene->objects().size(), 34);

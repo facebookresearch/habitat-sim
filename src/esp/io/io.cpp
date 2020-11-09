@@ -66,7 +66,7 @@ std::string changeExtension(const std::string& filename,
     return filename + correctExt;
   }
 
-  size_t lastDot = filename.find_last_of(".");
+  size_t lastDot = filename.find_last_of('.');
   // in such case e.g., filename == ".png" or filename == "."
   if (lastDot == 0) {
     // match the replace_extension in c++17 (GCC 8.1, C++2a)

@@ -61,7 +61,7 @@ class LightLayoutAttributesManager
    * @param jsonConfig json document to parse
    */
   void setLightInstanceValsFromJSONDoc(
-      attributes::LightInstanceAttributes::ptr lightInstAttribs,
+      const attributes::LightInstanceAttributes::ptr& lightInstAttribs,
       const io::JsonGenericValue& jsonConfig);
 
  protected:

@@ -72,7 +72,7 @@ Below are the handles and descriptors for various mesh assets used by a stage.
 "semantic_asset"
 	- string
 	- The name of the file describing the stage's semantic mesh.
-"house filename"
+"house_filename"
 	- string
 	- The name of the file containing semantic type maps and hierarchy.
 "nav_asset"

@@ -34,7 +34,7 @@ SceneAttributes::ptr SceneAttributesManager::createObject(
 
 SceneAttributes::ptr SceneAttributesManager::initNewObjectInternal(
     const std::string& sceneInstanceHandle,
-    bool builtFromConfig) {
+    bool) {
   SceneAttributes::ptr newAttributes =
       this->constructFromDefault(sceneInstanceHandle);
   if (nullptr == newAttributes) {
@@ -129,8 +129,7 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
   // motion type of object.  Ignored for stage.  TODO : veify is valid motion
   // type using standard mechanism of static map comparison.
 
-  int motionTypeVal = motionTypeVal =
-      static_cast<int>(physics::MotionType::UNDEFINED);
+  int motionTypeVal = static_cast<int>(physics::MotionType::UNDEFINED);
   std::string tmpVal = "";
   if (io::jsonIntoVal<std::string>(jCell, "motion_type", tmpVal)) {
     // motion type tag was found, perform check - first convert to lowercase

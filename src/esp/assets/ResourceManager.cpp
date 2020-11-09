@@ -41,7 +41,6 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
-#include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
 #include "esp/nav/PathFinder.h"
@@ -171,7 +170,7 @@ void ResourceManager::initPhysicsManager(
 
 bool ResourceManager::loadStage(
     const StageAttributes::ptr& stageAttributes,
-    std::shared_ptr<physics::PhysicsManager> _physicsManager,
+    const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
     bool loadSemanticMesh) {
@@ -583,8 +582,8 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
       Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
       std::pair<Mn::Vector3, Mn::Vector3> bb = Mn::Math::minmax(pos);
-      bbPos.push_back(std::move(bb.first));
-      bbPos.push_back(std::move(bb.second));
+      bbPos.push_back(bb.first);
+      bbPos.push_back(bb.second);
     }
 
     // locate the scene node which contains the current drawable
@@ -1366,6 +1365,10 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     }
   }
 
+  if (material.isDoubleSided()) {
+    finalMaterial->doubleSided = true;
+  }
+
   return finalMaterial;
 }
 
@@ -1813,7 +1816,8 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         return objectNode;
       };
 
-      const std::string roomPath = basePath + "/room/" + houseId + "/";
+      const std::string roomPath =
+          basePath + std::string("/room/").append(houseId).append("/");
       if (nodeType == "Room") {
         const std::string roomBase = roomPath + node["modelId"].GetString();
         const int hideCeiling = node["hideCeiling"].GetInt();
@@ -1839,9 +1843,12 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         std::vector<float> transformVec;
         io::toFloatVector(node["transform"], &transformVec);
         mat4f transform(transformVec.data());
-        const AssetInfo info{
-            AssetType::SUNCG_OBJECT,
-            basePath + "/object/" + modelId + "/" + modelId + ".glb"};
+        const AssetInfo info{AssetType::SUNCG_OBJECT,
+                             basePath + std::string("/object/")
+                                            .append(modelId)
+                                            .append("/")
+                                            .append(modelId)
+                                            .append(".glb")};
         createObjectFunc(info, nodeId)
             .setTransformation(Magnum::Matrix4{transform});
       } else if (nodeType == "Box") {
