@@ -190,13 +190,15 @@ class SceneDatasetAttributesManager
    *
    * @param SceneDatasetAttributes The attributes template.
    * @param SceneDatasetAttributesHandle The key for referencing the template in
-   * the
-   * @ref objectLibrary_.
+   * the @ref objectLibrary_.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
    * @return The index in the @ref objectLibrary_ of the registered template.
    */
   int registerObjectFinalize(
       attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
-      const std::string& SceneDatasetAttributesHandle) override;
+      const std::string& SceneDatasetAttributesHandle,
+      CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief This function will assign the appropriately configured function

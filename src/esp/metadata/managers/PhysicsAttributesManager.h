@@ -113,12 +113,15 @@ class PhysicsAttributesManager
    * @param physicsAttributesTemplate The attributes template.
    * @param physicsAttributesHandle The key for referencing the template in the
    * @ref objectLibrary_.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
    * @return The index in the @ref objectLibrary_ of object
    * template.
    */
   int registerObjectFinalize(
       attributes::PhysicsManagerAttributes::ptr physicsAttributesTemplate,
-      const std::string& physicsAttributesHandle) override {
+      const std::string& physicsAttributesHandle,
+      CORRADE_UNUSED bool forceRegistration) override {
     // adds template to library, and returns either the ID of the existing
     // template referenced by physicsAttributesHandle, or the next available ID
     // if not found.

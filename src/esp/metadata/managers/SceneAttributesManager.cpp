@@ -167,7 +167,8 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
 
 int SceneAttributesManager::registerObjectFinalize(
     SceneAttributes::ptr sceneAttributes,
-    const std::string& sceneAttributesHandle) {
+    const std::string& sceneAttributesHandle,
+    bool forceRegistration) {
   // adds template to library, and returns either the ID of the existing
   // template referenced by sceneAttributesHandle, or the next available ID
   // if not found.

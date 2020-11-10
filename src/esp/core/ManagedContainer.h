@@ -153,21 +153,25 @@ class ManagedContainer : public ManagedContainerBase {
    *
    * @param managedObject The managed object.
    * @param objectHandle The key for referencing the managed object in
-   * the
-   * @ref objectLibrary_. Will be set as origin handle for managed
+   * the @ref objectLibrary_. Will be set as origin handle for managed
    * object. If empty string, use existing origin handle.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail in registerObjectFinalize.
+   *
    * @return The unique ID of the managed object being registered, or
    * ID_UNDEFINED if failed
    */
   int registerObject(ManagedPtr managedObject,
-                     const std::string& objectHandle = "") {
+                     const std::string& objectHandle = "",
+                     bool forceRegistration = false) {
     if (nullptr == managedObject) {
       LOG(ERROR) << "ManagedContainer::registerObject : Invalid "
                     "(null) managed object passed to registration. Aborting.";
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
-      return registerObjectFinalize(managedObject, objectHandle);
+      return registerObjectFinalize(managedObject, objectHandle,
+                                    forceRegistration);
     }
     std::string handleToSet = managedObject->getHandle();
     if ("" == handleToSet) {
@@ -176,7 +180,8 @@ class ManagedContainer : public ManagedContainerBase {
                  << objectType_ << " managed object to register. Aborting.";
       return ID_UNDEFINED;
     }
-    return registerObjectFinalize(managedObject, handleToSet);
+    return registerObjectFinalize(managedObject, handleToSet,
+                                  forceRegistration);
   }  // ManagedContainer::registerObject
 
   /**
@@ -498,11 +503,14 @@ class ManagedContainer : public ManagedContainerBase {
    * @param object the managed object to be registered
    * @param objectHandle the name to register the managed object with.
    * Expected to be valid.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
    * @return The unique ID of the managed object being registered, or
    * ID_UNDEFINED if failed
    */
   virtual int registerObjectFinalize(ManagedPtr object,
-                                     const std::string& objectHandle) = 0;
+                                     const std::string& objectHandle,
+                                     bool forceRegistration) = 0;
 
   /**
    * @brief Build a shared pointer to a copy of a the passed managed object,

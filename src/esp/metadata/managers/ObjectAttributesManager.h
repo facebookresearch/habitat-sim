@@ -220,12 +220,15 @@ class ObjectAttributesManager
    * @param attributesTemplate The attributes template.
    * @param attributesTemplateHandle The key for referencing the template in the
    * @ref objectLibrary_. Will be set as origin handle for template.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
    * @return The index in the @ref objectLibrary_ of object
    * template.
    */
   int registerObjectFinalize(
       attributes::ObjectAttributes::ptr attributesTemplate,
-      const std::string& attributesTemplateHandle) override;
+      const std::string& attributesTemplateHandle,
+      bool forceRegistration) override;
 
   /**
    * @brief Any object-attributes-specific resetting that needs to happen on

@@ -170,7 +170,8 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
 
 int ObjectAttributesManager::registerObjectFinalize(
     ObjectAttributes::ptr objectTemplate,
-    const std::string& objectTemplateHandle) {
+    const std::string& objectTemplateHandle,
+    bool forceRegistration) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
         << "ObjectAttributesManager::registerObjectFinalize : "
@@ -197,6 +198,16 @@ int ObjectAttributesManager::registerObjectFinalize(
     // to physicsFileObjTmpltLibByID_ - verify file  exists
     objectTemplate->setRenderAssetIsPrimitive(false);
     mapToUse = &physicsFileObjTmpltLibByID_;
+  } else if (forceRegistration) {
+    // Forcing registration in case of computationaly generated assets
+    LOG(WARNING)
+        << "ObjectAttributesManager::registerObjectFinalize "
+           ": Render asset template handle : "
+        << renderAssetHandle << " specified in object template with handle : "
+        << objectTemplateHandle
+        << " does not correspond to any existing file or primitive render "
+           "asset.  Objects created from this template may fail. ";
+    objectTemplate->setRenderAssetIsPrimitive(false);
   } else {
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
