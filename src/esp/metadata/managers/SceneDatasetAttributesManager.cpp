@@ -299,7 +299,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
 int SceneDatasetAttributesManager::registerObjectFinalize(
     attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
     const std::string& SceneDatasetAttributesHandle,
-    bool forceRegistration) {
+    bool) {
   // adds template to library, and returns either the ID of the existing
   // template referenced by SceneDatasetAttributesHandle, or the next available
   // ID if not found.
