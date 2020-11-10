@@ -26,14 +26,13 @@ from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
 from habitat_sim.registry import registry
 
 
-@attr.s(auto_attribs=True)
 class _TruncatedMultivariateGaussian:
-    mean: Union[np.ndarray, Sequence[float]]
-    cov: Union[np.ndarray, Sequence[float]]
+    mean: np.ndarray
+    cov: np.ndarray
 
-    def __attrs_post_init__(self):
-        self.mean = np.array(self.mean)
-        self.cov = np.array(self.cov)
+    def __init__(self, mean: Sequence, cov: Sequence) -> None:
+        self.mean = np.array(mean)
+        self.cov = np.array(cov)
         if len(self.cov.shape) == 1:
             self.cov = np.diag(self.cov)
 

@@ -139,11 +139,11 @@ class _Registry:
             return _wrapper(pose_extractor)
 
     @classmethod
-    def _get_impl(cls, _type, name):
+    def _get_impl(cls, _type, name: Optional[str]):
         return cls._mapping[_type].get(name, None)
 
     @classmethod
-    def get_move_fn(cls, name: str):
+    def get_move_fn(cls, name: Optional[str]):
         r"""Retrieve the move_fn register under ``name``
 
         :param name: The name provided to `register_move_fn`
@@ -151,7 +151,7 @@ class _Registry:
         return cls._get_impl("move_fn", name)
 
     @classmethod
-    def get_noise_model(cls, name: str):
+    def get_noise_model(cls, name: Optional[str]):
         r"""Retrieve the noise_model registered under ``name``
 
         :param name: The name provided to `register_noise_model`
@@ -159,7 +159,7 @@ class _Registry:
         return cls._get_impl("sensor_noise_model", name)
 
     @classmethod
-    def get_pose_extractor(cls, name: str):
+    def get_pose_extractor(cls, name: Optional[str]):
         r"""Retrieve the pose_extractor registered under ``name``
 
         :param name: The name provided to `register_pose_extractor`
