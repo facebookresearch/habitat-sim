@@ -12,14 +12,14 @@ https://github.com/facebookresearch/pyrobot
 Please cite PyRobot if you use this noise model
 """
 
-from typing import List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, List, Optional, Sequence, Tuple, cast
 
 import attr
 import magnum as mn
 import numpy as np
 import scipy.stats
 from attr._make import Attribute
-from numpy import float64, ndarray
+from numpy import ndarray
 
 from habitat_sim import bindings as hsim
 from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
@@ -44,7 +44,7 @@ class _TruncatedMultivariateGaussian:
     def sample(
         self,
         truncation: Optional[
-            Union[List[Optional[Tuple[float64, None]]], List[Tuple[float64, None]]]
+            List[Optional[Tuple[Optional[Any], Optional[Any]]]]
         ] = None,
     ) -> ndarray:
         if truncation is not None:
