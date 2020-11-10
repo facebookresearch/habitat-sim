@@ -119,7 +119,6 @@ class Viewer : public Mn::Platform::Application {
    * Simulator API.
    */
   int addPrimitiveObject();
-
   void pokeLastObject();
   void pushLastObject();
   void torqueLastObject();
@@ -196,7 +195,7 @@ Key Commands:
   void printHelpText() { Mn::Debug{} << helpText; };
 
   // single inline for logging agent state msgs, so can be easily modified
-  inline void logAgentStateMsg(bool showPos, bool showOrient) {
+  inline void showAgentStateMsg(bool showPos, bool showOrient) {
     std::stringstream strDat("");
     if (showPos) {
       strDat << "Agent position "
@@ -213,6 +212,43 @@ Key Commands:
       LOG(INFO) << str;
     }
   }
+
+  /**
+   * @brief vector holding past agent locations to build trajectory
+   * visualization
+   */
+  std::vector<Magnum::Vector3> agentLocs_;
+  bool agentLocRecordOn_ = false;
+
+  /**
+   * @brief Set whether agent locations should be recorded or not. If toggling
+   * on then clear old locations
+   */
+  inline void setAgentLocationRecord(bool enable) {
+    if (enable == !agentLocRecordOn_) {
+      agentLocRecordOn_ = enable;
+      if (enable) {  // if turning on, clear old data
+        agentLocs_.clear();
+        agentLocs_.push_back(agentBodyNode_->translation());
+      }
+    }
+    LOG(INFO) << "Agent location recording "
+              << (agentLocRecordOn_ ? "on" : "off");
+  }  // setAgentLocationRecord
+
+  /**
+   * @brief Record agent location if enabled.  Call after move.
+   */
+  inline void recAgentLocation() {
+    if (agentLocRecordOn_) {
+      agentLocs_.push_back(agentBodyNode_->translation());
+    }
+  }
+
+  /**
+   * @brief Build trajectory visualization
+   */
+  void buildTrajectoryVis();
 
   // The simulator object backend for this viewer instance
   std::unique_ptr<esp::sim::Simulator> simulator_;
@@ -494,6 +530,26 @@ int Viewer::addPrimitiveObject() {
   }
 }  // addPrimitiveObject
 
+void Viewer::buildTrajectoryVis() {
+  if (agentLocs_.size() == 0) {
+    LOG(WARNING) << "Viewer::buildTrajectoryVis : No recorded trajectory "
+                    "points, so nothing to build. Aborting.";
+    return;
+  }
+  LOG(INFO) << "Viewer::buildTrajectoryVis : Attempting to build trajectory "
+               "tube for :"
+            << agentLocs_.size() << " points.";
+  int trajObjID = simulator_->showTrajectoryVisualization(
+      "viewerTrajVis", agentLocs_, 4, 10, .01);
+  if (trajObjID != esp::ID_UNDEFINED) {
+    LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj ID : "
+              << trajObjID;
+  } else {
+    LOG(WARNING) << "Viewer::buildTrajectoryVis : Attempt to build trajectory "
+                    "vis failed; Returned ID_UNDEFINED.";
+  }
+}  // buildTrajectoryVis
+
 void Viewer::removeLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0) {
@@ -713,8 +769,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Right &&
       (event.modifiers() & MouseEvent::Modifier::Shift)) {
     // cannot use the default framebuffer, so setup another framebuffer,
-    // also, setup the color attachment for rendering, and remove the visualizer
-    // for the previously picked object
+    // also, setup the color attachment for rendering, and remove the
+    // visualizer for the previously picked object
     objectPickingHelper_->prepareToDraw();
 
     // redraw the scene on the object picking framebuffer
@@ -746,7 +802,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       if (raycastResults.hasHits()) {
         addPrimitiveObject();
         auto existingObjectIDs = simulator_->getExistingObjectIDs();
-        // use the bounding box to create a safety margin for adding the object
+        // use the bounding box to create a safety margin for adding the
+        // object
         float boundingBuffer =
             simulator_->getObjectSceneNode(existingObjectIDs.back())
                     ->computeCumulativeBB()
@@ -855,21 +912,27 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::A:
       defaultAgent_->act("moveLeft");
+      recAgentLocation();
       break;
     case KeyEvent::Key::D:
       defaultAgent_->act("moveRight");
+      recAgentLocation();
       break;
     case KeyEvent::Key::S:
       defaultAgent_->act("moveBackward");
+      recAgentLocation();
       break;
     case KeyEvent::Key::W:
       defaultAgent_->act("moveForward");
+      recAgentLocation();
       break;
     case KeyEvent::Key::X:
       defaultAgent_->act("moveDown");
+      recAgentLocation();
       break;
     case KeyEvent::Key::Z:
       defaultAgent_->act("moveUp");
+      recAgentLocation();
       break;
     case KeyEvent::Key::E:
       simulator_->setFrustumCullingEnabled(
@@ -910,7 +973,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::Q:
       // query the agent state
-      logAgentStateMsg(true, true);
+      showAgentStateMsg(true, true);
       break;
     case KeyEvent::Key::B: {
       // toggle bounding box on objects
@@ -921,6 +984,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::H:
       printHelpText();
+      break;
+    case KeyEvent::Key::Six:
+      // toggle agent location recording
+      setAgentLocationRecord(!agentLocRecordOn_);
+      break;
+    case KeyEvent::Key::Seven:
+      // test trajectory mesh synthesis
+      buildTrajectoryVis();
       break;
     default:
       break;

@@ -1244,11 +1244,14 @@ std::vector<Mn::Vector3> ResourceManager::buildSmoothTrajOfPoints(
 Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
     const std::vector<Mn::Vector3>& pts,
     int numSegments,
+    int numInterp,
     float radius) {
   // 1. Build smoothed trajectory through passed points
-  std::vector<Mn::Vector3> trajectory = buildSmoothTrajOfPoints(pts);
+  std::vector<Mn::Vector3> trajectory = buildSmoothTrajOfPoints(pts, numInterp);
 
-  // 2. Build circle points around each trajectory point
+  // 2. Build mesh vertex points around each trajectory point at appropriate
+  // distance (radius). For each point in trajectory, add a wireframe circle
+  // centered at that point, appropriately oriented based on tangents
 
   // make sure importer is open before use
   primitiveImporter_->openData("");
@@ -1261,33 +1264,36 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
     cfgGroup->setValue<int>("segments", numSegments);
   }
 
-  // get verts for circle primitive to use as endpoints
-  auto circleVerts =
+  // get verts for circle primitive to use as endpoints and transform them to
+  // more easily use them to calculate tangents at appropriate raidius and
+  // normals
+  Corrade::Containers::Array<Magnum::Vector3> circleVerts =
       primitiveImporter_->mesh("circle3DWireframe")->positions3DAsArray();
+  // normalized verts
+  Corrade::Containers::Array<Magnum::Vector3> circleNormVerts{
+      Cr::Containers::NoInit, sizeof(Magnum::Vector3) * circleVerts.size()};
+  // transform points to be on circle of given radius, and make copy to
+  // normalize points
+  for (int i = 0; i < circleVerts.size(); ++i) {
+    circleVerts[i] *= radius;
+    circleNormVerts[i] = circleVerts[i].normalized();
+  }
 
-  LOG(INFO) << "Specified # of circle verts : " << numSegments
-            << " | Actual # of circle verts : " << circleVerts.size();
-
-  // # of vertices in resultant tube
+  // # of vertices in resultant tube == # circle verts * # points in trajectory
   const Mn::UnsignedInt vertexCount = circleVerts.size() * trajectory.size();
   struct Vertex {  // a function-local struct
     Mn::Vector3 position;
     Mn::Vector3 normal;
   };
-
-  // for each point in trajectory, add a circle centered at that point,
-  // appropriately oriented based on tangents
-
   // Vertex data storage
   Cr::Containers::Array<char> vertexData{Cr::Containers::NoInit,
                                          sizeof(Vertex) * vertexCount};
 
   Cr::Containers::StridedArrayView1D<Vertex> vertices =
       Cr::Containers::arrayCast<Vertex>(vertexData);
-  // Position and normal views
+  // Position and normal views of vertex array
   Cr::Containers::StridedArrayView1D<Mn::Vector3> positions =
       vertices.slice(&Vertex::position);
-
   Cr::Containers::StridedArrayView1D<Mn::Vector3> normals =
       vertices.slice(&Vertex::normal);
 
@@ -1308,13 +1314,13 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
     // get the orientation matrix assuming y-up preference
     Mn::Matrix4 tangentOrientation =
         Mn::Matrix4::lookAt(vert, vert + tangent, Mn::Vector3{0, 1.0, 0});
-    for (auto& point : circleVerts) {
-      // build vertex
+    for (int i = 0; i < circleVerts.size(); ++i) {
+      // build vertex (circleVerts[i] is at radius)
       positions[circlePtIDX] =
-          tangentOrientation.transformPoint(point * radius);
+          tangentOrientation.transformPoint(circleVerts[i]);
       // pre-rotated normal for circle is normalized point
       normals[circlePtIDX] =
-          tangentOrientation.transformVector(point.normalized());
+          tangentOrientation.transformVector(circleNormVerts[i]);
       ++circlePtIDX;
     }
   }
@@ -1378,7 +1384,40 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
        Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal, normals}},
       static_cast<Mn::UnsignedInt>(positions.size())};
   return meshData;
+
 }  // ResourceManager::trajectoryTubeSolid
+
+bool ResourceManager::loadTrajectoryVisualization(
+    const std::string& assetName,
+    const std::vector<Mn::Vector3>& pts,
+    int numSegments,
+    int numInterp,
+    float radius) {
+  // enforce required minimum/reasonable values if illegal values specified
+  if (numSegments < 3) {  // required by circle prim
+    numSegments = 3;
+  }
+  if (numInterp <= 0) {  // 10 points per trajectory point
+    numInterp = 10;
+  }
+  if (radius <= 0) {  // 1 mm radius minimum
+    radius = .001;
+  }
+
+  LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Calling "
+               "trajectoryTubeSolid to build a tube named :"
+            << assetName << " with " << pts.size()
+            << " points, building a tube of radius :" << radius << " using "
+            << numSegments << " circular segments and " << numInterp
+            << " interpolated points between each trajectory point.";
+
+  // create mesh tube
+  Mn::Trade::MeshData trajTubeMesh =
+      trajectoryTubeSolid(pts, numSegments, numInterp, radius);
+  LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Successfully "
+               "returned from trajectoryTubeSolid ";
+  return true;
+}  // ResourceManager::loadTrajectoryVisualization
 
 int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                               scene::SceneNode* parent,
@@ -1424,10 +1463,9 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                     Cr::Containers::arrayView(positions)}}};
 
   // compile and add the new mesh to the structure
+  navMeshPrimitiveID = nextPrimitiveMeshId;
   primitive_meshes_[nextPrimitiveMeshId++] = std::make_unique<Magnum::GL::Mesh>(
       Magnum::MeshTools::compile(visualNavMesh));
-
-  navMeshPrimitiveID = nextPrimitiveMeshId - 1;
 
   if (parent != nullptr && drawables != nullptr &&
       navMeshPrimitiveID != ID_UNDEFINED) {
@@ -1860,6 +1898,8 @@ bool ResourceManager::instantiateAssetsOnDemand(
   }  // if no render asset exists
 
   // check if uses collision mesh
+  // TODO : handle visualization-only objects lacking collision assets
+  //        Probably just need to check attr->isCollidable()
   if (!ObjectAttributes->getCollisionAssetIsPrimitive()) {
     const auto collisionAssetHandle =
         ObjectAttributes->getCollisionAssetHandle();

@@ -425,49 +425,6 @@ class ResourceManager {
                                DrawableGroup* drawables);
 
   /**
-   * @brief Utility function to build a Cubic Hermitian spline to smooth
-   * trajectory points for trajectory visualization tube.
-   * @param a incoming tan at pt
-   * @param b outgoing tan at pt
-   * @param pt a point along the trajectory
-   * @return the resultant spline
-   */
-  Mn::Math::CubicHermite<Mn::Vector3> buildSpline(const Mn::Vector3& a,
-                                                  const Mn::Vector3& b,
-                                                  const Mn::Vector3& pt) {
-    const float B = 0.25;
-    Mn::Vector3 inTan = ((1 - B) * a + B * b).normalized();
-    Mn::Vector3 outTan = ((1 - B) * b + B * a).normalized();
-
-    return Mn::Math::CubicHermite<Mn::Vector3>{inTan, pt, outTan};
-  }  // ResourceManager::buildSpline
-
-  /**
-   * @brief Build a smooth trajectory of interpolated points from key points
-   * along a path using cubic hermitian spline
-   * @param pts The points of the trajectory
-   * @param numInterp The number of interpolations between each trajectory point
-   * @return interpolated points for trajectory
-   */
-
-  std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
-      const std::vector<Mn::Vector3>& pts,
-      int numInterp = 40);
-
-  /**
-   * @brief Build a mesh representing a tube of given radius around the
-   * trajectory given by the passed points.
-   * @param pts The points of a trajectory, in order
-   * @param numSegments The number of the segments around the circumference of
-   * the tube
-   * @param radius The radius of the tube
-   * @return The resultant meshdata for the tube
-   */
-  Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
-                                          int numSegments,
-                                          float radius);
-
-  /**
    * @brief Remove the specified primitive mesh.
    *
    * @param primitiveID The key of the primitive in @ref primitive_meshes_.
@@ -475,7 +432,7 @@ class ResourceManager {
   void removePrimitiveMesh(int primitiveID);
 
   /**
-   * @brief generate a new primitive mesh asset for the NavMesh loaded in the
+   * @brief Generate a new primitive mesh asset for the NavMesh loaded in the
    * provided PathFinder object.
    *
    * If parent and drawables are provided, create the Drawable and render the
@@ -489,6 +446,22 @@ class ResourceManager {
   int loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                scene::SceneNode* parent,
                                DrawableGroup* drawables);
+
+  /**
+   * @brief Generate a tube following the passed trajectory of points.
+   * @param assetName The name to use for the asset
+   * @param pts The points of a trajectory, in order
+   * @param numSegments The number of the segments around the circumference of
+   * the tube. Must be greater than or equal to 3.
+   * @param numInterp The number of interpolations between each trajectory point
+   * @param radius The radius of the tube.
+   * @return Whether the process was a success or not
+   */
+  bool loadTrajectoryVisualization(const std::string& assetName,
+                                   const std::vector<Mn::Vector3>& pts,
+                                   int numSegments = 3,
+                                   int numInterp = 20,
+                                   float radius = .001);
 
   /**
    * @brief Build a configuration frame from scene or object attributes values
@@ -843,6 +816,50 @@ class ResourceManager {
   // ======== Geometry helper functions, data structures ========
 
   /**
+   * @brief Utility function to build a Cubic Hermitian spline to smooth
+   * trajectory points for trajectory visualization tube.
+   * @param a incoming tan at pt
+   * @param b outgoing tan at pt
+   * @param pt a point along the trajectory
+   * @return the resultant spline
+   */
+  Mn::Math::CubicHermite<Mn::Vector3> buildSpline(const Mn::Vector3& a,
+                                                  const Mn::Vector3& b,
+                                                  const Mn::Vector3& pt) {
+    const float B = 0.25;
+    Mn::Vector3 inTan = ((1 - B) * a + B * b).normalized();
+    Mn::Vector3 outTan = ((1 - B) * b + B * a).normalized();
+
+    return Mn::Math::CubicHermite<Mn::Vector3>{inTan, pt, outTan};
+  }  // ResourceManager::buildSpline
+
+  /**
+   * @brief Build a smooth trajectory of interpolated points from key points
+   * along a path using cubic hermitian spline.  Used to build trajectory
+   * visualization tube.
+   * @param pts The points of the trajectory
+   * @param numInterp The number of interpolations between each trajectory point
+   * @return interpolated points for trajectory
+   */
+  std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
+      const std::vector<Mn::Vector3>& pts,
+      int numInterp);
+
+  /**
+   * @brief Build a mesh representing a tube of given radius around the
+   * trajectory given by the passed points.
+   * @param pts The points of a trajectory, in order
+   * @param numSegments The number of the segments around the circumference of
+   * the tube
+   * @param numInterp The number of interpolations between each trajectory point
+   * @param radius The radius of the tube
+   * @return The resultant meshdata for the tube
+   */
+  Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
+                                          int numSegments,
+                                          int numInterp,
+                                          float radius);
+  /**
    * @brief Apply a translation to the vertices of a mesh asset and store that
    * transformation in @ref BaseMesh::meshTransform_.
    *
@@ -1014,7 +1031,7 @@ class ResourceManager {
    * @brief Flag to load textures of meshes
    */
   bool requiresTextures_ = true;
-};
+};  // class ResourceManager
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
 

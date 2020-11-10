@@ -713,6 +713,38 @@ bool Simulator::isNavMeshVisualizationActive() {
   return (navMeshVisNode_ != nullptr && navMeshVisPrimID_ != ID_UNDEFINED);
 }
 
+int Simulator::showTrajectoryVisualization(const std::string& assetName,
+                                           const std::vector<Mn::Vector3>& pts,
+                                           int numSegments,
+                                           int numInterp,
+                                           float radius) {
+  auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& drawables = sceneGraph_.getDrawables();
+
+  // 1. create trajectory tube asset from points and save it
+  bool success = resourceManager_->loadTrajectoryVisualization(
+      assetName, pts, numSegments, numInterp, radius);
+  if (!success) {
+    LOG(ERROR) << "Simulator::showTrajectoryVisualization : Failed to load "
+                  "Trajectory visualization mesh for "
+               << assetName;
+    return false;
+  }
+  // 2. create object attributes for the trajectory
+  auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
+  auto trajObjAttr = objAttrMgr->createObject(assetName, false);
+  // turn off collisions
+  trajObjAttr->setIsCollidable(false);
+  objAttrMgr->registerObject(trajObjAttr, assetName, true);
+
+  // 3. add trajectory object to manager
+  auto trajVisID = physicsManager_->addObject(assetName, &drawables);
+  physicsManager_->setObjectMotionType(trajVisID,
+                                       esp::physics::MotionType::KINEMATIC);
+
+  return trajVisID;
+}
+
 // Agents
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   if (pathfinder_->isLoaded()) {

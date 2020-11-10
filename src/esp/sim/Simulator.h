@@ -631,6 +631,22 @@ class Simulator {
    */
   bool isNavMeshVisualizationActive();
 
+  /**
+   * @brief Compute a trajectory visualization for the passed points.
+   * @param assetName The name to use for the asset
+   * @param pts The points of a trajectory, in order
+   * @param numSegments The number of the segments around the circumference of
+   * the tube. Must be greater than or equal to 3.
+   * @param numInterp The number of interpolations between each trajectory point
+   * @param radius The radius of the tube.
+   * @return The ID of the object created for the visualization
+   */
+  int showTrajectoryVisualization(const std::string& assetName,
+                                  const std::vector<Mn::Vector3>& pts,
+                                  int numSegments = 3,
+                                  int numInterp = 20,
+                                  float radius = .001);
+
   agent::Agent::ptr getAgent(int agentId);
 
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
