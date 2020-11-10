@@ -181,7 +181,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     return ID_UNDEFINED;
   }
 
-  std::map<int, std::string>* mapToUse;
+  std::map<int, std::string>* mapToUse = nullptr;
   // Handles for rendering and collision assets
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
@@ -253,8 +253,10 @@ int ObjectAttributesManager::registerObjectFinalize(
   // Add object template to template library
   int objectTemplateID =
       this->addObjectToLibrary(objectTemplate, objectTemplateHandle);
-
-  mapToUse->emplace(objectTemplateID, objectTemplateHandle);
+      
+  if(mapToUse != nullptr){
+    mapToUse->emplace(objectTemplateID, objectTemplateHandle);
+  }
 
   return objectTemplateID;
 }  // ObjectAttributesManager::registerObjectFinalize
