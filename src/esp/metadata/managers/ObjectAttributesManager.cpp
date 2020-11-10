@@ -253,8 +253,8 @@ int ObjectAttributesManager::registerObjectFinalize(
   // Add object template to template library
   int objectTemplateID =
       this->addObjectToLibrary(objectTemplate, objectTemplateHandle);
-      
-  if(mapToUse != nullptr){
+
+  if (mapToUse != nullptr) {
     mapToUse->emplace(objectTemplateID, objectTemplateHandle);
   }
 
