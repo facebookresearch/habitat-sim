@@ -12,7 +12,7 @@ https://github.com/facebookresearch/pyrobot
 Please cite PyRobot if you use this noise model
 """
 
-from typing import Any, List, Optional, Sequence, Tuple, cast
+from typing import Any, List, Optional, Sequence, Tuple
 
 import attr
 import magnum as mn
@@ -52,7 +52,7 @@ class _TruncatedMultivariateGaussian:
 
         sample = np.zeros_like(self.mean)
         for i in range(len(self.mean)):
-            stdev = np.sqrt(cast(np.ndarray, self.cov)[i, i])
+            stdev = np.sqrt(self.cov[i, i])
             mean = self.mean[i]
             # Always truncate to 3 standard deviations
             a, b = -3, 3
