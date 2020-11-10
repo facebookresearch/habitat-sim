@@ -26,6 +26,7 @@ from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
 from habitat_sim.registry import registry
 
 
+@attr.s(auto_attribs=True, init=False)
 class _TruncatedMultivariateGaussian:
     mean: np.ndarray
     cov: np.ndarray
