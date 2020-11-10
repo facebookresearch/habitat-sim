@@ -63,10 +63,10 @@ def place_agent(sim):
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene.id = os.path.join(
+    backend_cfg.scene_id = os.path.join(
         data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
     )
-    assert os.path.exists(backend_cfg.scene.id)
+    assert os.path.exists(backend_cfg.scene_id)
     backend_cfg.enable_physics = True
 
     # sensor configurations

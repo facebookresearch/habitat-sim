@@ -23,10 +23,8 @@ class WebDemo {
     episode = defaultEpisode,
     initializeTopDown = true
   ) {
-    this.sceneConfig = new Module.SceneConfiguration();
-    this.sceneConfig.id = Module.scene;
     this.config = new Module.SimulatorConfiguration();
-    this.config.scene = this.sceneConfig;
+    this.config.scene_id = Module.scene;
     this.simenv = new SimEnv(this.config, episode, 0);
 
     agentConfig = this.updateAgentConfigWithSensors({ ...agentConfig });

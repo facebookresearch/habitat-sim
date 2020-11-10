@@ -178,8 +178,8 @@ class IslandSystem {
       dtPolyRef ref = stack.top();
       stack.pop();
 
-      const dtMeshTile* tile = 0;
-      const dtPoly* poly = 0;
+      const dtMeshTile* tile = nullptr;
+      const dtPoly* poly = nullptr;
       navMesh->getTileAndPolyByRefUnsafe(ref, &tile, &poly);
 
       for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
@@ -195,8 +195,8 @@ class IslandSystem {
         if (polyToIsland_.find(neighbourRef) != polyToIsland_.end())
           continue;
 
-        const dtMeshTile* neighbourTile = 0;
-        const dtPoly* neighbourPoly = 0;
+        const dtMeshTile* neighbourTile = nullptr;
+        const dtPoly* neighbourPoly = nullptr;
         navMesh->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile,
                                            &neighbourPoly);
 
@@ -306,12 +306,12 @@ struct PathFinder::Impl {
 
 namespace {
 struct Workspace {
-  rcHeightfield* solid = 0;
-  unsigned char* triareas = 0;
-  rcCompactHeightfield* chf = 0;
-  rcContourSet* cset = 0;
-  rcPolyMesh* pmesh = 0;
-  rcPolyMeshDetail* dmesh = 0;
+  rcHeightfield* solid = nullptr;
+  unsigned char* triareas = nullptr;
+  rcCompactHeightfield* chf = nullptr;
+  rcContourSet* cset = nullptr;
+  rcPolyMesh* pmesh = nullptr;
+  rcPolyMeshDetail* dmesh = nullptr;
 
   ~Workspace() {
     rcFreeHeightField(solid);
@@ -354,7 +354,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   //
 
   // Init build configuration from GUI
-  rcConfig cfg;
+  rcConfig cfg{};
   memset(&cfg, 0, sizeof(cfg));
   cfg.cs = bs.cellSize;
   cfg.ch = bs.cellHeight;
@@ -575,7 +575,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // The GUI may allow more max points per polygon than Detour can handle.
   // Only build the detour navmesh if we do not exceed the limit.
   if (cfg.maxVertsPerPoly <= DT_VERTS_PER_POLYGON) {
-    unsigned char* navData = 0;
+    unsigned char* navData = nullptr;
     int navDataSize = 0;
 
     // Update poly flags from areas.
@@ -590,7 +590,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
       }
     }
 
-    dtNavMeshCreateParams params;
+    dtNavMeshCreateParams params{};
     memset(&params, 0, sizeof(params));
     params.verts = ws.pmesh->verts;
     params.vertCount = ws.pmesh->nverts;
@@ -796,7 +796,7 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
     return false;
 
   // Read header.
-  NavMeshSetHeader header;
+  NavMeshSetHeader header{};
   size_t readLen = fread(&header, sizeof(NavMeshSetHeader), 1, fp);
   if (readLen != 1) {
     fclose(fp);
@@ -826,7 +826,7 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
 
   // Read tiles.
   for (int i = 0; i < header.numTiles; ++i) {
-    NavMeshTileHeader tileHeader;
+    NavMeshTileHeader tileHeader{};
     readLen = fread(&tileHeader, sizeof(tileHeader), 1, fp);
     if (readLen != 1) {
       fclose(fp);
@@ -849,7 +849,7 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
     }
 
     mesh->addTile(data, tileHeader.dataSize, DT_TILE_FREE_DATA,
-                  tileHeader.tileRef, 0);
+                  tileHeader.tileRef, nullptr);
     const dtMeshTile* tile = mesh->getTileByRef(tileHeader.tileRef);
     if (i == 0) {
       bmin = vec3f(tile->header->bmin);
@@ -880,7 +880,7 @@ bool PathFinder::Impl::saveNavMesh(const std::string& path) {
     return false;
 
   // Store header.
-  NavMeshSetHeader header;
+  NavMeshSetHeader header{};
   header.magic = NAVMESHSET_MAGIC;
   header.version = NAVMESHSET_VERSION;
   header.numTiles = 0;
@@ -899,7 +899,7 @@ bool PathFinder::Impl::saveNavMesh(const std::string& path) {
     if (!tile || !tile->header || !tile->dataSize)
       continue;
 
-    NavMeshTileHeader tileHeader;
+    NavMeshTileHeader tileHeader{};
     tileHeader.tileRef = navMesh->getTileRef(tile);
     tileHeader.dataSize = tile->dataSize;
     fwrite(&tileHeader, sizeof(tileHeader), 1, fp);
@@ -993,8 +993,8 @@ PathFinder::Impl::findPathInternal(const vec3f& start,
   int numPoints = 0;
   std::vector<vec3f> points(MAX_POLYS);
   status = navQuery_->findStraightPath(start.data(), end.data(), polys,
-                                       numPolys, points[0].data(), 0, 0,
-                                       &numPoints, MAX_POLYS);
+                                       numPolys, points[0].data(), nullptr,
+                                       nullptr, &numPoints, MAX_POLYS);
   if (status != DT_SUCCESS || numPoints == 0) {
     return Corrade::Containers::NullOpt;
   }
@@ -1151,8 +1151,8 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     // walls) The way to deal with this is to nudge the point into the polygon
     // we want it to be 'moveAlongSurface' tells us which polygon we want
     // endPoint to be in through the polys list
-    const dtMeshTile* tile = 0;
-    const dtPoly* poly = 0;
+    const dtMeshTile* tile = nullptr;
+    const dtPoly* poly = nullptr;
     navMesh_->getTileAndPolyByRefUnsafe(polys[numPolys - 1], &tile, &poly);
 
     // Calculate the center of the polygon we want the points to be in
@@ -1400,7 +1400,7 @@ HitRecord PathFinder::closestObstacleSurfacePoint(
 }
 
 bool PathFinder::isNavigable(const vec3f& pt, const float maxYDelta) const {
-  return pimpl_->isNavigable(pt);
+  return pimpl_->isNavigable(pt, maxYDelta);
 }
 
 float PathFinder::getNavigableArea() const {

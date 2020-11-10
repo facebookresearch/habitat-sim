@@ -42,16 +42,11 @@ class StageAttributesManager
    * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
    * such as file paths, to make them available for stage attributes defaults.
    *
-   * @param filepaths the map of file paths from the configuration object
    * @param lightSetup the config-specified light setup
    * @param frustrumCulling whether or not (semantic) stage should be
    * partitioned for culling.
    */
-  void setCurrCfgVals(const std::map<std::string, std::string>& filepaths,
-                      const std::string& lightSetup,
-                      bool frustrumCulling) {
-    cfgFilepaths_.clear();
-    cfgFilepaths_.insert(filepaths.begin(), filepaths.end());
+  void setCurrCfgVals(const std::string& lightSetup, bool frustrumCulling) {
     // set lightsetup default from configuration
     cfgLightSetup_ = lightSetup;
     // set frustrum culling default from configuration
@@ -149,13 +144,16 @@ class StageAttributesManager
    * @param StageAttributesTemplate The attributes template.
    * @param StageAttributesHandle The key for referencing the template in the
    * @ref objectLibrary_.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
    * @return The index in the @ref objectLibrary_ of object
    * template.
    */
 
   int registerObjectFinalize(
       attributes::StageAttributes::ptr StageAttributesTemplate,
-      const std::string& StageAttributesHandle) override;
+      const std::string& StageAttributesHandle,
+      bool forceRegistration) override;
 
   /**
    * @brief Any scene-attributes-specific resetting that needs to happen on
@@ -184,12 +182,6 @@ class StageAttributesManager
    * esp::metadata::attributes::StageAttributes are created.
    */
   PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
-
-  /**
-   * @brief Current file paths based on @ref esp::sim::SimulatorConfiguration
-   * settings. Paths can be overridden by json-specified values.
-   */
-  std::map<std::string, std::string> cfgFilepaths_;
 
   /**
    * @brief Current lighting default value based on current @ref

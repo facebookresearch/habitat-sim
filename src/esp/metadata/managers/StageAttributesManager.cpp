@@ -46,7 +46,8 @@ void StageAttributesManager::buildCtorFuncPtrMaps() {
 
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
-    const std::string& stageAttributesHandle) {
+    const std::string& stageAttributesHandle,
+    bool forceRegistration) {
   if (stageAttributes->getRenderAssetHandle() == "") {
     LOG(ERROR)
         << "StageAttributesManager::registerObjectFinalize : "
@@ -76,6 +77,14 @@ int StageAttributesManager::registerObjectFinalize(
     // Render asset handle will be NONE as well - force type to be unknown
     stageAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
     stageAttributes->setRenderAssetIsPrimitive(false);
+  } else if (forceRegistration) {
+    LOG(WARNING)
+        << "StageAttributesManager::registerObjectFinalize "
+           ": Render asset template handle : "
+        << renderAssetHandle << " specified in stage template with handle : "
+        << stageAttributesHandle
+        << " does not correspond to any existing file or primitive render "
+           "asset. This attributes is not in a valid state.";
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
     LOG(ERROR)
@@ -195,17 +204,13 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // handles
     std::string navmeshFilename =
         io::changeExtension(attributesHandle, ".navmesh");
-    if (cfgFilepaths_.count("navmesh")) {
-      navmeshFilename = cfgFilepaths_.at("navmesh");
-    }
+
     if (Corrade::Utility::Directory::exists(navmeshFilename)) {
       newAttributes->setNavmeshAssetHandle(navmeshFilename);
     }
     // Build default semantic descriptor file name
     std::string houseFilename = io::changeExtension(attributesHandle, ".house");
-    if (cfgFilepaths_.count("house")) {
-      houseFilename = cfgFilepaths_.at("house");
-    }
+
     if (!Corrade::Utility::Directory::exists(houseFilename)) {
       houseFilename = io::changeExtension(attributesHandle, ".scn");
     }

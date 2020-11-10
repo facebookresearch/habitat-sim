@@ -140,7 +140,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
 
 LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
     const std::string& handleName,
-    bool builtFromConfig) {
+    bool) {
   attributes::LightLayoutAttributes::ptr newAttributes =
       this->constructFromDefault(handleName);
   // if no default then create new.
@@ -152,7 +152,8 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
 
 int LightLayoutAttributesManager::registerObjectFinalize(
     LightLayoutAttributes::ptr lightAttribs,
-    const std::string& lightAttribsHandle) {
+    const std::string& lightAttribsHandle,
+    bool) {
   // adds template to library, and returns either the ID of the existing
   // template referenced by LightLayoutAttributesHandle, or the next available
   // ID if not found.

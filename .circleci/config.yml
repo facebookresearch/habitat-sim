@@ -121,10 +121,11 @@ commands:
                 ~/miniconda.sh -b -p $HOME/miniconda
                 rm ~/miniconda.sh
                 export PATH=$HOME/miniconda/bin:$PATH
+                conda config --set pip_interop_enabled True
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-parallel typeguard
+                pip install pytest-sugar pytest-xdist typeguard
               fi
       - run:
           name: Install emscripten
@@ -486,6 +487,7 @@ jobs:
             npm run test
       - run:
           name: Run sim tests
+          no_output_timeout: 25m
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
@@ -505,12 +507,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest --workers 4 --cov-report=xml --typeguard-packages=habitat_sim --cov=./
+              pytest -n 4 --cov-report=xml --typeguard-packages=habitat_sim --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest --workers 4 --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
+              pytest -n 4 --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               . ~/emsdk/emsdk_env.sh
