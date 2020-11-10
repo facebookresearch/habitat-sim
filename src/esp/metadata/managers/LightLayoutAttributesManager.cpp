@@ -152,7 +152,8 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
 
 int LightLayoutAttributesManager::registerObjectFinalize(
     LightLayoutAttributes::ptr lightAttribs,
-    const std::string& lightAttribsHandle) {
+    const std::string& lightAttribsHandle,
+    bool) {
   // adds template to library, and returns either the ID of the existing
   // template referenced by LightLayoutAttributesHandle, or the next available
   // ID if not found.

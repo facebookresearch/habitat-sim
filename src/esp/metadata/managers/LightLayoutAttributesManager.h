@@ -105,7 +105,8 @@ class LightLayoutAttributesManager
    */
   int registerObjectFinalize(
       attributes::LightLayoutAttributes::ptr LightLayoutAttributesTemplate,
-      const std::string& LightLayoutAttributesHandle) override;
+      const std::string& LightLayoutAttributesHandle,
+      CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief Any lights-attributes-specific resetting that needs to happen on

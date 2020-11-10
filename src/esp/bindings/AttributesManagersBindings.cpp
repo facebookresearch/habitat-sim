@@ -157,7 +157,8 @@ void declareBaseAttributesManager(py::module& m,
       .def("register_template", &MgrClass::registerObject,
            R"(This registers a copy of the passed template in the library, and
              returns the template's integer ID.)",
-           "template"_a, "specified_handle"_a = "")
+           "template"_a, "specified_handle"_a = "",
+           "force_registration"_a = false)
       .def("get_template_by_ID",
            static_cast<AttribsPtr (MgrClass::*)(int)>(
                &MgrClass::getObjectCopyByID),

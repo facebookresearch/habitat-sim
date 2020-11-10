@@ -108,10 +108,13 @@ class SceneAttributesManager
    * @param sceneAttributes The attributes template.
    * @param sceneAttributesHandle The key for referencing the template in the
    * @ref objectLibrary_.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
    * @return The index in the @ref objectLibrary_ of the registered template.
    */
   int registerObjectFinalize(attributes::SceneAttributes::ptr sceneAttributes,
-                             const std::string& sceneAttributesHandle) override;
+                             const std::string& sceneAttributesHandle,
+                             CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief This function will assign the appropriately configured function
