@@ -6,7 +6,7 @@
 
 import collections
 import re
-from typing import Any, DefaultDict, Optional, Type
+from typing import DefaultDict, Optional, Type
 
 __all__ = ["registry"]
 
