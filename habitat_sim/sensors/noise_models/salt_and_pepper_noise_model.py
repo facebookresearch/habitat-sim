@@ -29,7 +29,7 @@ def _simulate(image: ndarray, s_vs_p: float, amount: float) -> ndarray:
     return noisy_rgb
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class SaltAndPepperNoiseModelCPUImpl:
     s_vs_p: float
     amount: float
@@ -39,7 +39,7 @@ class SaltAndPepperNoiseModelCPUImpl:
 
 
 @registry.register_noise_model
-@attr.s(auto_attribs=True, kw_only=True)
+@attr.s(auto_attribs=True, kw_only=True, slots=True)
 class SaltAndPepperNoiseModel(SensorNoiseModel):
     s_vs_p: float = 0.5
     amount: float = 0.05

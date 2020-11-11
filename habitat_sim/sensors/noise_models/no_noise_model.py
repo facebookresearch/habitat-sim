@@ -22,7 +22,7 @@ except ImportError:
 
 
 @registry.register_noise_model(name="None")
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class NoSensorNoiseModel(SensorNoiseModel):
     @staticmethod
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:

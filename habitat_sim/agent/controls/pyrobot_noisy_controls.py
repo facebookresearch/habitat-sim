@@ -26,7 +26,7 @@ from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
 from habitat_sim.registry import registry
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class _TruncatedMultivariateGaussian:
     mean: Union[np.ndarray, Sequence[float]]
     cov: Union[np.ndarray, Sequence[float]]
@@ -69,19 +69,19 @@ class _TruncatedMultivariateGaussian:
         return sample
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class MotionNoiseModel:
     linear: _TruncatedMultivariateGaussian
     rotation: _TruncatedMultivariateGaussian
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class ControllerNoiseModel:
     linear_motion: MotionNoiseModel
     rotational_motion: MotionNoiseModel
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class RobotNoiseModel:
     ILQR: ControllerNoiseModel
     Proportional: ControllerNoiseModel
