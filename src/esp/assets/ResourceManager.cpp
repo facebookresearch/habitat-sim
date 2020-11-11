@@ -1247,7 +1247,8 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
     int numInterp,
     float radius) {
   // 1. Build smoothed trajectory through passed points
-  std::vector<Mn::Vector3> trajectory = buildSmoothTrajOfPoints(pts, numInterp);
+  std::vector<Mn::Vector3> trajectory =
+      pts;  // buildSmoothTrajOfPoints(pts, numInterp);
 
   // 2. Build mesh vertex points around each trajectory point at appropriate
   // distance (radius). For each point in trajectory, add a wireframe circle
@@ -1412,10 +1413,53 @@ bool ResourceManager::loadTrajectoryVisualization(
             << " interpolated points between each trajectory point.";
 
   // create mesh tube
-  Mn::Trade::MeshData trajTubeMesh =
+  Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
       trajectoryTubeSolid(pts, numSegments, numInterp, radius);
   LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Successfully "
                "returned from trajectoryTubeSolid ";
+
+  // make assetInfo
+  AssetInfo info{AssetType::PRIMITIVE};
+  info.requiresLighting = true;
+  // set up primitive mesh
+  // make  primitive mesh structure
+  auto visMeshData = std::make_unique<GenericMeshData>(false);
+  visMeshData->setMeshData(*std::move(trajTubeMesh));
+  // compute the mesh bounding box
+  visMeshData->BB = computeMeshBB(visMeshData.get());
+
+  visMeshData->uploadBuffersToGPU(false);
+
+  // make MeshMetaData
+  int meshStart = meshes_.size();
+  int meshEnd = meshStart;
+  MeshMetaData meshMetaData{meshStart, meshEnd};
+
+  meshes_.emplace_back(std::move(visMeshData));
+
+  // default material for now
+  auto phongMaterial = gfx::PhongMaterialData::create_unique();
+  phongMaterial->diffuseColor = {0.9, 0.1, 0.1, 1.0};
+  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
+  shaderManager_.set(std::to_string(nextMaterialID_++),
+                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
+
+  meshMetaData.root.meshIDLocal = 0;
+  meshMetaData.root.componentID = 0;
+  // store the rotation to world frame upon load - currently superfluous
+  const quatf transform = info.frame.rotationFrameToWorld();
+  Magnum::Matrix4 R = Magnum::Matrix4::from(
+      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+  meshMetaData.root.transformFromLocalToParent =
+      R * meshMetaData.root.transformFromLocalToParent;
+
+  // make LoadedAssetData corresponding to this asset
+  LoadedAssetData loadedAssetData{info, meshMetaData};
+  if (resourceDict_.count(assetName) != 0) {
+    resourceDict_.erase(assetName);
+  }
+  auto inserted = resourceDict_.emplace(assetName, std::move(loadedAssetData));
+
   return true;
 }  // ResourceManager::loadTrajectoryVisualization
 

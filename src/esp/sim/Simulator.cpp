@@ -720,6 +720,7 @@ int Simulator::showTrajectoryVisualization(const std::string& assetName,
                                            float radius) {
   auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
   auto& drawables = sceneGraph_.getDrawables();
+  auto& rootNode = sceneGraph_.getRootNode();
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_->loadTrajectoryVisualization(
@@ -739,8 +740,13 @@ int Simulator::showTrajectoryVisualization(const std::string& assetName,
 
   // 3. add trajectory object to manager
   auto trajVisID = physicsManager_->addObject(assetName, &drawables);
+  LOG(INFO)
+      << "Simulator::showTrajectoryVisualization : Object created with ID "
+      << trajVisID;
   physicsManager_->setObjectMotionType(trajVisID,
                                        esp::physics::MotionType::KINEMATIC);
+  LOG(INFO) << "Simulator::showTrajectoryVisualization : Object type set to "
+               "Kinematic";
 
   return trajVisID;
 }
