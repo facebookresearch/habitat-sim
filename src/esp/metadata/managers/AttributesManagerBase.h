@@ -251,25 +251,33 @@ auto AttributesManager<T>::createFromJsonOrDefaultInternal(
     std::string& msg,
     bool registerObj) -> AttribsPtr {
   AttribsPtr attrs;
+  // Modify the passed filename to have the format of a legitimate configuration
+  // file for this Attributes by changing the extension
   std::string jsonAttrFileName =
-      this->convertFilenameToJSON(filename, this->JSONTypeExt_);
+      (Cr::Utility::String::endsWith(filename, this->JSONTypeExt_)
+           ? filename
+           : this->convertFilenameToJSON(filename, this->JSONTypeExt_));
+  // Check if this configuration file exists and if so use it to build
+  // attributes
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
   if (jsonFileExists) {
-    // check if stageAttributesHandle corresponds to an actual, existing
-    // json stage file descriptor.
-    // this method lives in class template.
+    // configuration file exists with requested name, use to build Attributes
     attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
-    msg = "JSON File (" + jsonAttrFileName + ") Based";
+    msg = "JSON Configuration File (" + jsonAttrFileName + ") based";
   } else {
-    // if name is not json file descriptor but still appropriate file, or if
-    // is not a file .  Currently non-JSON files are treated as new, default
-    // attributes.
+    // An existing, valid configuration file could not be found using the passed
+    // filename.
+    // Currently non-JSON filenames are used to create new, default attributes.
     attrs = this->createDefaultObject(filename, registerObj);
+    // check if original filename is an actual object
     bool fileExists = (this->isValidFileName(filename));
+    // if filename passed is name of some kind of asset, or if it was not found
     if (fileExists) {
-      msg = "File (" + filename + ") not parsed, so new default";
+      msg = "File (" + filename +
+            ") exists but is not a recognized config filename extension, so "
+            "new default";
     } else {
-      msg = "New default (" + filename + ")";
+      msg = "File (" + filename + ") not found, so new default";
     }
   }
   return attrs;
