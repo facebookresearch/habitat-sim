@@ -7,20 +7,20 @@
 namespace esp {
 namespace physics {
 
-RigidStage::RigidStage(scene::SceneNode* rigidBodyNode)
-    : RigidBase(rigidBodyNode) {}
+RigidStage::RigidStage(scene::SceneNode* rigidBodyNode,
+                       const assets::ResourceManager& resMgr)
+    : RigidBase(rigidBodyNode, resMgr) {}
 
-bool RigidStage::initialize(const assets::ResourceManager& resMgr,
-                            const std::string& handle) {
+bool RigidStage::initialize(const std::string& handle) {
   if (initializationAttributes_ != nullptr) {
     LOG(ERROR) << "Cannot initialize a RigidStage more than once";
     return false;
   }
   objectMotionType_ = MotionType::STATIC;
   initializationAttributes_ =
-      resMgr.getStageAttributesManager()->getObjectCopyByHandle(handle);
+      resMgr_.getStageAttributesManager()->getObjectCopyByHandle(handle);
 
-  return initialization_LibSpecific(resMgr);
+  return initialization_LibSpecific();
 }
 
 }  // namespace physics

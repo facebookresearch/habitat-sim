@@ -39,7 +39,8 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   Corrade::Utility::Debug() << "creating staticStageObject_";
   //! Create new scene node
   staticStageObject_ = physics::BulletRigidStage::create_unique(
-      &physicsNode_->createChild(), bWorld_, collisionObjToObjIds_);
+      &physicsNode_->createChild(), resourceManager_, bWorld_,
+      collisionObjToObjIds_);
   Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
 
   return true;
@@ -49,7 +50,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addStageFinalize(const std::string& handle) {
   //! Initialize scene
-  bool sceneSuccess = staticStageObject_->initialize(resourceManager_, handle);
+  bool sceneSuccess = staticStageObject_->initialize(handle);
 
   return sceneSuccess;
 }
@@ -58,8 +59,9 @@ bool BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
                                                  const std::string& handle,
                                                  scene::SceneNode* objectNode) {
   auto ptr = physics::BulletRigidObject::create_unique(
-      objectNode, newObjectID, bWorld_, collisionObjToObjIds_);
-  bool objSuccess = ptr->initialize(resourceManager_, handle);
+      objectNode, newObjectID, resourceManager_, bWorld_,
+      collisionObjToObjIds_);
+  bool objSuccess = ptr->initialize(handle);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }

@@ -35,11 +35,12 @@ namespace physics {
 BulletRigidObject::BulletRigidObject(
     scene::SceneNode* rigidBodyNode,
     int objectId,
+    const assets::ResourceManager& resMgr,
     std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
     std::shared_ptr<std::map<const btCollisionObject*, int> >
         collisionObjToObjIds)
     : BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)),
-      RigidObject(rigidBodyNode, objectId),
+      RigidObject(rigidBodyNode, objectId, resMgr),
       MotionState(*rigidBodyNode) {}
 
 BulletRigidObject::~BulletRigidObject() {
@@ -56,9 +57,26 @@ BulletRigidObject::~BulletRigidObject() {
 
 }  //~BulletRigidObject
 
-bool BulletRigidObject::initialization_LibSpecific(
-    const assets::ResourceManager& resMgr) {
+bool BulletRigidObject::initialization_LibSpecific() {
+  // TODO: add is_dynamic flag
   objectMotionType_ = MotionType::DYNAMIC;
+
+  isCollidable_ = getInitializationAttributes()->getIsCollidable();
+
+  // create the bObjectRigidBody_
+  constructAndAddRigidBody(objectMotionType_);
+
+  return true;
+}  // initialization_LibSpecific
+
+bool BulletRigidObject::finalizeObject_LibSpecific() {
+  if (usingBBCollisionShape_) {
+    setCollisionFromBB();
+  }
+  return true;
+}  // finalizeObject_LibSpecifc
+
+bool BulletRigidObject::constructCollisionShape() {
   // get this object's creation template, appropriately cast
   auto tmpAttr = getInitializationAttributes();
 
@@ -82,12 +100,13 @@ bool BulletRigidObject::initialization_LibSpecific(
     // if using prim collider get appropriate bullet collision primitive
     // attributes and build bullet collision shape
     auto primAttributes =
-        resMgr.getAssetAttributesManager()->getObjectCopyByHandle(
+        resMgr_.getAssetAttributesManager()->getObjectCopyByHandle(
             collisionAssetHandle);
     // primitive object pointer construction
     auto primObjPtr = buildPrimitiveCollisionObject(
         primAttributes->getPrimObjType(), primAttributes->getHalfLength());
     if (nullptr == primObjPtr) {
+      bObjectShape_.reset();
       return false;
     }
     primObjPtr->setLocalScaling(btVector3(tmpAttr->getCollisionAssetSize()));
@@ -99,9 +118,9 @@ bool BulletRigidObject::initialization_LibSpecific(
   } else {
     // mesh collider
     const std::vector<assets::CollisionMeshData>& meshGroup =
-        resMgr.getCollisionMesh(collisionAssetHandle);
+        resMgr_.getCollisionMesh(collisionAssetHandle);
     const assets::MeshMetaData& metaData =
-        resMgr.getMeshMetaData(collisionAssetHandle);
+        resMgr_.getMeshMetaData(collisionAssetHandle);
 
     if (!usingBBCollisionShape_) {
       constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
@@ -124,18 +143,14 @@ bool BulletRigidObject::initialization_LibSpecific(
 
   bObjectShape_->setLocalScaling(btVector3{tmpAttr->getScale()});
   bObjectShape_->recalculateLocalAabb();
-  // create the bObjectRigidBody_
-  constructAndAddRigidBody(objectMotionType_);
 
-  return true;
-}  // initialization_LibSpecific
-
-bool BulletRigidObject::finalizeObject_LibSpecific() {
-  if (usingBBCollisionShape_) {
-    setCollisionFromBB();
+  if (!originShift_.isZero()) {
+    // for deferred creation of the shape
+    shiftObjectCollisionShape(originShift_);
   }
+
   return true;
-}  // finalizeObject_LibSpecifc
+}
 
 std::unique_ptr<btCollisionShape>
 BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
@@ -262,6 +277,10 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
 void BulletRigidObject::setCollisionFromBB() {
   btVector3 dim(node().getCumulativeBB().size() / 2.0);
 
+  if (!bObjectShape_) {
+    bObjectShape_ = std::make_unique<btCompoundShape>();
+  }
+
   for (auto& shape : bGenericShapes_) {
     bObjectShape_->removeChildShape(shape.get());
   }
@@ -270,16 +289,20 @@ void BulletRigidObject::setCollisionFromBB() {
   bObjectShape_->addChildShape(btTransform::getIdentity(),
                                bGenericShapes_.back().get());
   bObjectShape_->recalculateLocalAabb();
-  bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
 
-  auto tmpAttr = getInitializationAttributes();
-  btVector3 bInertia(tmpAttr->getInertia());
-  if (bInertia == btVector3{0, 0, 0}) {
-    // allow bullet to compute the inertia tensor if we don't have one
-    bObjectShape_->calculateLocalInertia(getMass(),
-                                         bInertia);  // overrides bInertia
+  if (isCollidable_) {
+    // otherwise this setup is deferred
+    bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
 
-    setInertiaVector(Magnum::Vector3(bInertia));
+    auto tmpAttr = getInitializationAttributes();
+    btVector3 bInertia(tmpAttr->getInertia());
+    if (bInertia == btVector3{0, 0, 0}) {
+      // allow bullet to compute the inertia tensor if we don't have one
+      bObjectShape_->calculateLocalInertia(getMass(),
+                                           bInertia);  // overrides bInertia
+
+      setInertiaVector(Magnum::Vector3(bInertia));
+    }
   }
 }  // setCollisionFromBB
 
@@ -298,10 +321,37 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
   return true;
 }  // setMotionType
 
+bool BulletRigidObject::setCollidable(bool collidable) {
+  if (collidable == isCollidable_) {
+    // no work
+    return true;
+  }
+
+  isCollidable_ = collidable;
+  if (!isCollidable_ && !isActive()) {
+    activateCollisionIsland();
+  }
+  bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  constructAndAddRigidBody(objectMotionType_);
+
+  return true;
+}
+
 void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
   if (visualNode_)
     visualNode_->translate(shift);
+  node().computeCumulativeBB();
 
+  originShift_ = shift;
+
+  if (bObjectShape_) {
+    // otherwise deferred to construction
+    shiftObjectCollisionShape(originShift_);
+  }
+}  // shiftOrigin
+
+void BulletRigidObject::shiftObjectCollisionShape(
+    const Magnum::Vector3& shift) {
   // shift all children of the parent collision shape
   for (int i = 0; i < bObjectShape_->getNumChildShapes(); i++) {
     btTransform cT = bObjectShape_->getChildTransform(i);
@@ -310,8 +360,7 @@ void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
   }
   // recompute the Aabb once when done
   bObjectShape_->recalculateLocalAabb();
-  node().computeCumulativeBB();
-}  // shiftOrigin
+}
 
 //! Synchronize Physics transformations
 //! Needed after changing the pose from Magnum side
@@ -325,15 +374,24 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   // get this object's creation template, appropriately cast
   auto tmpAttr = getInitializationAttributes();
 
+  if (bObjectShape_ == nullptr && isCollidable_) {
+    constructCollisionShape();
+  }
+
   double mass = 0;
   btVector3 bInertia = {0, 0, 0};
   if (mt == MotionType::DYNAMIC) {
     mass = tmpAttr->getMass();
     bInertia = btVector3(tmpAttr->getInertia());
     if (bInertia == btVector3{0, 0, 0}) {
-      // allow bullet to compute the inertia tensor if we don't have one
-      bObjectShape_->calculateLocalInertia(mass,
-                                           bInertia);  // overrides bInertia
+      if (bObjectShape_ != nullptr) {
+        // allow bullet to compute the inertia tensor if we don't have one
+        bObjectShape_->calculateLocalInertia(mass,
+                                             bInertia);  // overrides bInertia
+      } else {
+        // TODO: better default given object information?
+        bInertia = btVector3(1.0, 1.0, 1.0);
+      }
     }
   }
 
@@ -344,6 +402,12 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   btRigidBody::btRigidBodyConstructionInfo info =
       btRigidBody::btRigidBodyConstructionInfo(mass, motionState,
                                                bObjectShape_.get(), bInertia);
+
+  if (!isCollidable_) {
+    // set an empty collision shape to disable collisions
+    bEmptyShape_ = std::make_unique<btCompoundShape>();
+    info.m_collisionShape = bEmptyShape_.get();
+  }
 
   info.m_friction = tmpAttr->getFrictionCoefficient();
   info.m_restitution = tmpAttr->getRestitutionCoefficient();

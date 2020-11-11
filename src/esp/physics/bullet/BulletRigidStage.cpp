@@ -19,11 +19,12 @@ namespace physics {
 
 BulletRigidStage::BulletRigidStage(
     scene::SceneNode* rigidBodyNode,
+    const assets::ResourceManager& resMgr,
     std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
     std::shared_ptr<std::map<const btCollisionObject*, int> >
         collisionObjToObjIds)
     : BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)),
-      RigidStage{rigidBodyNode} {}
+      RigidStage{rigidBodyNode, resMgr} {}
 
 BulletRigidStage::~BulletRigidStage() {
   // remove collision objects from the world
@@ -32,16 +33,15 @@ BulletRigidStage::~BulletRigidStage() {
     collisionObjToObjIds_->erase(co.get());
   }
 }
-bool BulletRigidStage::initialization_LibSpecific(
-    const assets::ResourceManager& resMgr) {
+bool BulletRigidStage::initialization_LibSpecific() {
   const auto collisionAssetHandle =
       initializationAttributes_->getCollisionAssetHandle();
 
   const std::vector<assets::CollisionMeshData>& meshGroup =
-      resMgr.getCollisionMesh(collisionAssetHandle);
+      resMgr_.getCollisionMesh(collisionAssetHandle);
 
   const assets::MeshMetaData& metaData =
-      resMgr.getMeshMetaData(collisionAssetHandle);
+      resMgr_.getMeshMetaData(collisionAssetHandle);
 
   constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
   for (auto& object : bStaticCollisionObjects_) {

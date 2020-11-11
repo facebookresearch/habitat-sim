@@ -22,6 +22,7 @@ namespace physics {
 class BulletRigidStage : public BulletBase, public RigidStage {
  public:
   BulletRigidStage(scene::SceneNode* rigidBodyNode,
+                   const assets::ResourceManager& resMgr,
                    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
                    std::shared_ptr<std::map<const btCollisionObject*, int>>
                        collisionObjToObjIds);
@@ -39,8 +40,7 @@ class BulletRigidStage : public BulletBase, public RigidStage {
    * pertaining to the stage object
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialization_LibSpecific(
-      const assets::ResourceManager& resMgr) override;
+  bool initialization_LibSpecific() override;
 
   /**
    * @brief Recursively construct the static collision mesh objects from
