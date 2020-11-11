@@ -30,7 +30,7 @@ class _Registry:
 
     - Register a movement function : ``@registry.register_move_fn``
     """
-    _mapping: DefaultDict[str, Any] = collections.defaultdict(dict)
+    _mapping: DefaultDict[str, dict] = collections.defaultdict(dict)
 
     @classmethod
     def register_move_fn(
