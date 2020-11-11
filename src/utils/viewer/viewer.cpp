@@ -249,7 +249,7 @@ Key Commands:
       agentLocRecordOn_ = enable;
       if (enable) {  // if turning on, clear old data
         agentLocs_.clear();
-        agentLocs_.push_back(agentBodyNode_->translation());
+        recAgentLocation();
       }
     }
     LOG(INFO) << "Agent location recording "
@@ -261,9 +261,10 @@ Key Commands:
    */
   inline void recAgentLocation() {
     if (agentLocRecordOn_) {
-      agentLocs_.push_back(agentBodyNode_->translation());
-      LOG(INFO) << "Recording agent location : "
-                << Eigen::Map<esp::vec3f>(agentBodyNode_->translation().data());
+      auto pt = agentBodyNode_->translation() + Magnum::Vector3{0, 1, 0};
+      agentLocs_.push_back(pt);
+      LOG(INFO) << "Recording agent location : {" << pt.x() << "," << pt.y()
+                << "," << pt.z() << "}";
     }
   }
 
@@ -562,7 +563,7 @@ void Viewer::buildTrajectoryVis() {
                "tube for :"
             << agentLocs_.size() << " points.";
   int trajObjID = simulator_->showTrajectoryVisualization(
-      "viewerTrajVis", agentLocs_, 4, 10, .01);
+      "viewerTrajVis", agentLocs_, 4, 10, .1);
   if (trajObjID != esp::ID_UNDEFINED) {
     LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj ID : "
               << trajObjID;

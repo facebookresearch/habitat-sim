@@ -720,7 +720,6 @@ int Simulator::showTrajectoryVisualization(const std::string& assetName,
                                            float radius) {
   auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
   auto& drawables = sceneGraph_.getDrawables();
-  auto& rootNode = sceneGraph_.getRootNode();
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_->loadTrajectoryVisualization(
@@ -736,6 +735,7 @@ int Simulator::showTrajectoryVisualization(const std::string& assetName,
   auto trajObjAttr = objAttrMgr->createObject(assetName, false);
   // turn off collisions
   trajObjAttr->setIsCollidable(false);
+  trajObjAttr->setComputeCOMFromShape(false);
   objAttrMgr->registerObject(trajObjAttr, assetName, true);
 
   // 3. add trajectory object to manager
