@@ -844,9 +844,9 @@ class PhysicsManager {
   };
 
   /**
-   * @brief Set and object to collidable or not.
+   * @brief Set an object to collidable or not.
    */
-  bool setCollidable(const int physObjectID, bool collidable) {
+  bool setObjectIsCollidable(const int physObjectID, bool collidable) {
     assertIDValidity(physObjectID);
     return existingObjects_.at(physObjectID)->setCollidable(collidable);
   };
@@ -854,10 +854,22 @@ class PhysicsManager {
   /**
    * @brief Get whether or not an object is collision active.
    */
-  bool getCollidable(const int physObjectID) {
+  bool getObjectIsCollidable(const int physObjectID) {
     assertIDValidity(physObjectID);
     return existingObjects_.at(physObjectID)->getCollidable();
   };
+
+  /**
+   * @brief Set the stage to collidable or not.
+   */
+  bool setStageIsCollidable(bool collidable) {
+    return staticStageObject_->setCollidable(collidable);
+  };
+
+  /**
+   * @brief Get whether or not the stage is collision active.
+   */
+  bool getStageIsCollidable() { return staticStageObject_->getCollidable(); };
 
   /** @brief Return the library implementation type for the simulator currently
    * in use. Use to check for a particular implementation.

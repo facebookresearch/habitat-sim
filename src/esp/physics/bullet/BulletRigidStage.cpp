@@ -34,30 +34,64 @@ BulletRigidStage::~BulletRigidStage() {
   }
 }
 bool BulletRigidStage::initialization_LibSpecific() {
-  const auto collisionAssetHandle =
-      initializationAttributes_->getCollisionAssetHandle();
-
-  const std::vector<assets::CollisionMeshData>& meshGroup =
-      resMgr_.getCollisionMesh(collisionAssetHandle);
-
-  const assets::MeshMetaData& metaData =
-      resMgr_.getMeshMetaData(collisionAssetHandle);
-
-  constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
-  for (auto& object : bStaticCollisionObjects_) {
-    object->setFriction(initializationAttributes_->getFrictionCoefficient());
-    object->setRestitution(
-        initializationAttributes_->getRestitutionCoefficient());
-    bWorld_->addRigidBody(
-        object.get(),
-        2,       // collisionFilterGroup (2 == StaticFilter)
-        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
-    collisionObjToObjIds_->emplace(object.get(), objectId_);
+  if (isCollidable_) {
+    // defer construction until necessary
+    constructAndAddCollisionObjects();
   }
 
   return true;
 
 }  // initialization_LibSpecific
+
+bool BulletRigidStage::setCollidable(bool collidable) {
+  if (collidable == isCollidable_) {
+    // no work
+    return true;
+  }
+
+  isCollidable_ = collidable;
+  if (isCollidable_) {
+    constructAndAddCollisionObjects();
+  } else {
+    // remove existing collision objects
+    for (auto& object : bStaticCollisionObjects_) {
+      bWorld_->removeCollisionObject(object.get());
+    }
+  }
+
+  return true;
+}
+
+void BulletRigidStage::constructAndAddCollisionObjects() {
+  if (bStaticCollisionObjects_.empty()) {
+    // construct the objects first time
+    const auto collisionAssetHandle =
+        initializationAttributes_->getCollisionAssetHandle();
+
+    const std::vector<assets::CollisionMeshData>& meshGroup =
+        resMgr_.getCollisionMesh(collisionAssetHandle);
+
+    const assets::MeshMetaData& metaData =
+        resMgr_.getMeshMetaData(collisionAssetHandle);
+
+    constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
+
+    for (auto& object : bStaticCollisionObjects_) {
+      object->setFriction(initializationAttributes_->getFrictionCoefficient());
+      object->setRestitution(
+          initializationAttributes_->getRestitutionCoefficient());
+      collisionObjToObjIds_->emplace(object.get(), objectId_);
+    }
+  }
+
+  // add the objects to the world
+  for (auto& object : bStaticCollisionObjects_) {
+    bWorld_->addRigidBody(
+        object.get(),
+        2,       // collisionFilterGroup (2 == StaticFilter)
+        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+  }
+}
 
 void BulletRigidStage::constructBulletSceneFromMeshes(
     const Magnum::Matrix4& transformFromParentToWorld,

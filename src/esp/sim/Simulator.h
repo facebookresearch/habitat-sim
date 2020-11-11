@@ -515,16 +515,30 @@ class Simulator {
    */
   bool contactTest(int objectID, int sceneID = 0);
 
-  bool setCollidable(const int objectID, bool collidable) {
+  bool setObjectIsCollidable(bool collidable, const int objectID) {
     if (sceneHasPhysics(0)) {
-      return physicsManager_->setCollidable(objectID, collidable);
+      return physicsManager_->setObjectIsCollidable(objectID, collidable);
     }
     return false;
   };
 
-  bool getCollidable(const int objectID) {
+  bool getObjectIsCollidable(const int objectID) {
     if (sceneHasPhysics(0)) {
-      return physicsManager_->getCollidable(objectID);
+      return physicsManager_->getObjectIsCollidable(objectID);
+    }
+    return false;
+  };
+
+  bool setStageIsCollidable(bool collidable) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->setStageIsCollidable(collidable);
+    }
+    return false;
+  };
+
+  bool getStageIsCollidable() {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getStageIsCollidable();
     }
     return false;
   };

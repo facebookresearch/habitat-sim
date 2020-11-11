@@ -233,6 +233,16 @@ void initSimBindings(py::module& m) {
           "apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
           "scene_id"_a = 0,
           R"(Apply torque to an object. Only applies to MotionType::DYNAMIC objects.)")
+      .def("get_object_is_collidable", &Simulator::getObjectIsCollidable,
+           "object_id"_a, R"(Get whether or not an object is collidable.)")
+      .def("set_object_is_collidable", &Simulator::setObjectIsCollidable,
+           "collidable"_a, "object_id"_a,
+           R"(Set whether or not an object is collidable.)")
+      .def("get_stage_is_collidable", &Simulator::getStageIsCollidable,
+           R"(Get whether or not the static stage is collidable.)")
+      .def("set_stage_is_collidable", &Simulator::setStageIsCollidable,
+           "collidable"_a,
+           R"(Set whether or not the static stage is collidable.)")
       .def(
           "contact_test", &Simulator::contactTest, "object_id"_a,
           "scene_id"_a = 0,
