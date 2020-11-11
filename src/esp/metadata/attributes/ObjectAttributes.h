@@ -238,9 +238,9 @@ class ObjectAttributes : public AbstractObjectAttributes {
   // if object should be checked for collisions - if other objects can collide
   // with this object
   void setIsCollidable(bool isCollidable) {
-    setBool("isCollidable", isCollidable);
+    setBool("is_collidable", isCollidable);
   }
-  bool getIsCollidable() { return getBool("isCollidable"); }
+  bool getIsCollidable() const { return getBool("is_collidable"); }
 
  public:
   ESP_SMART_POINTERS(ObjectAttributes)

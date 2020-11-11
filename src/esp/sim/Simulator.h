@@ -515,6 +515,20 @@ class Simulator {
    */
   bool contactTest(int objectID, int sceneID = 0);
 
+  bool setCollidable(const int objectID, bool collidable) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->setCollidable(objectID, collidable);
+    }
+    return false;
+  };
+
+  bool getCollidable(const int objectID) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getCollidable(objectID);
+    }
+    return false;
+  };
+
   /**
    * @brief Raycast into the collision world of a scene.
    *

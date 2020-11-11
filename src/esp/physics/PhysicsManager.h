@@ -843,6 +843,22 @@ class PhysicsManager {
     return false;
   };
 
+  /**
+   * @brief Set and object to collidable or not.
+   */
+  bool setCollidable(const int physObjectID, bool collidable) {
+    assertIDValidity(physObjectID);
+    return existingObjects_.at(physObjectID)->setCollidable(collidable);
+  };
+
+  /**
+   * @brief Get whether or not an object is collision active.
+   */
+  bool getCollidable(const int physObjectID) {
+    assertIDValidity(physObjectID);
+    return existingObjects_.at(physObjectID)->getCollidable();
+  };
+
   /** @brief Return the library implementation type for the simulator currently
    * in use. Use to check for a particular implementation.
    * @return The implementation type of this simulator.
