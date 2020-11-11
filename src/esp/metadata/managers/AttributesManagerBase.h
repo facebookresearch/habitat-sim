@@ -274,9 +274,10 @@ auto AttributesManager<T>::createFromJsonOrDefaultInternal(
     // if filename passed is name of some kind of asset, or if it was not found
     if (fileExists) {
       msg = "File (" + filename +
-            ") not parseable configuration file, so new default";
+            ") exists but is not a recognized config filename extension, so "
+            "new default";
     } else {
-      msg = filename + " file not found so new default";
+      msg = "File (" + filename + ") not found, so new default";
     }
   }
   return attrs;
