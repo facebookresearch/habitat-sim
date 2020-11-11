@@ -1212,7 +1212,6 @@ std::vector<Mn::Vector3> ResourceManager::buildSmoothTrajOfPoints(
   std::vector<Mn::Math::CubicHermite<Mn::Vector3>> splinePath;
   std::vector<Mn::Vector3> trajectory;
   Mn::Vector3 a, b;
-  double tStep = 1.0 / numInterp;
   // pts.size() must be > 1
   // beginning point - tangents are opposites
   splinePath.emplace_back(buildSpline({(pts[0] - pts[1]).normalized()},
@@ -1224,7 +1223,8 @@ std::vector<Mn::Vector3> ResourceManager::buildSmoothTrajOfPoints(
                                         {(pts[i + 1] - pts[i]).normalized()},
                                         pts[i]));
 
-    for (double t = 0.0; t < 1.0; t += tStep) {
+    for (int j = 0; j < numInterp; ++j) {
+      double t = j / (1.0 * numInterp);
       trajectory.emplace_back(
           Mn::Math::splerp(splinePath[i - 1], splinePath[i], t));
     }
@@ -1234,7 +1234,8 @@ std::vector<Mn::Vector3> ResourceManager::buildSmoothTrajOfPoints(
   splinePath.emplace_back(buildSpline(
       {(pts[numPtsM1] - pts[numPtsM1 - 1]).normalized()},
       {(pts[numPtsM1 - 1] - pts[numPtsM1]).normalized()}, pts[numPtsM1]));
-  for (double t = 0.0; t < 1.0; t += 0.025) {
+  for (int j = 0; j < numInterp; ++j) {
+    double t = j / (1.0 * numInterp);
     trajectory.emplace_back(
         Mn::Math::splerp(splinePath[numPtsM1 - 1], splinePath[numPtsM1], t));
   }
