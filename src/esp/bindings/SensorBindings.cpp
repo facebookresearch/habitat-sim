@@ -48,6 +48,10 @@ void initSensorBindings(py::module& m) {
       .value("DEPTH", SensorType::DEPTH)
       .value("SEMANTIC", SensorType::SEMANTIC);
 
+  py::enum_<SensorSubtype>(m, "SensorSubType")
+      .value("PINHOLE", SensorSubtype::PINHOLE)
+      .value("ORHTOGRAPHIC", SensorSubtype::ORHTOGRAPHIC);
+
   // ==== SensorSpec ====
   py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())
       .def(py::init(&SensorSpec::create<>))

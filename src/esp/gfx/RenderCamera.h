@@ -71,6 +71,18 @@ class RenderCamera : public MagnumCamera {
                                     float hfov);
 
   /**
+   * @brief Set projection matrix for Orthographic camera
+   * @param width The width of the viewport
+   * @param height The height of the viewport
+   * @param znear The location of the near clipping plane
+   * @param zfar The location of the far clipping plane
+   */
+  RenderCamera& setOrthoProjectionMatrix(int width,
+                                         int height,
+                                         float znear,
+                                         float zfar);
+
+  /**
    * @brief Overload function to render the drawables
    * @param drawables, a drawable group containing all the drawables
    * @param frustumCulling, whether do frustum culling or not, default: false

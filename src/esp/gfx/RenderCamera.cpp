@@ -76,6 +76,18 @@ RenderCamera& RenderCamera::setProjectionMatrix(int width,
   return *this;
 }
 
+RenderCamera& RenderCamera::setOrthoProjectionMatrix(int width,
+                                                     int height,
+                                                     float znear,
+                                                     float zfar) {
+  auto orthoMat = Mn::Matrix4::orthographicProjection(Mn::Vector2{16.0f, 9.0f},
+                                                      znear, zfar);
+
+  MagnumCamera::setProjectionMatrix(orthoMat).setViewport(
+      Magnum::Vector2i(width, height));
+  return *this;
+}
+
 size_t RenderCamera::cull(
     std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>>& drawableTransforms) {

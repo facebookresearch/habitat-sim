@@ -37,11 +37,16 @@ enum class ObservationSpaceType {
   TEXT = 2,
 };
 
+enum class SensorSubtype {
+  PINHOLE = 0,
+  ORHTOGRAPHIC = 1,
+};
+
 // Specifies the configuration parameters of a sensor
 struct SensorSpec {
   std::string uuid = "rgba_camera";
   SensorType sensorType = SensorType::COLOR;
-  std::string sensorSubtype = "pinhole";
+  SensorSubtype sensorSubtype = SensorSubtype::PINHOLE;
   std::map<std::string, std::string> parameters = {{"near", "0.01"},
                                                    {"far", "1000"},
                                                    {"hfov", "90"}};
