@@ -412,3 +412,16 @@ def test_raycast():
             )
             assert abs(raycast_results.hits[0].ray_distance - 2.8935) < 0.001
             assert raycast_results.hits[0].object_id == 0
+
+            # test raycast against a non-collidable object.
+            # should not register a hit with the object.
+            sim.set_object_is_collidable(False, cube_obj_id)
+            raycast_results = sim.cast_ray(test_ray_1)
+            assert raycast_results.has_hits()
+            assert len(raycast_results.hits) == 1
+
+            # test raycast against a non-collidable stage.
+            # should not register any hits.
+            sim.set_stage_is_collidable(False)
+            raycast_results = sim.cast_ray(test_ray_1)
+            assert not raycast_results.has_hits()

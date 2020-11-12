@@ -519,7 +519,7 @@ class Simulator {
    * @brief Set an object to collidable or not.
    */
   bool setObjectIsCollidable(bool collidable, const int objectID) {
-    if (sceneHasPhysics(0)) {
+    if (sceneHasPhysics(activeSceneID_)) {
       return physicsManager_->setObjectIsCollidable(objectID, collidable);
     }
     return false;
@@ -529,7 +529,7 @@ class Simulator {
    * @brief Get whether or not an object is collision active.
    */
   bool getObjectIsCollidable(const int objectID) {
-    if (sceneHasPhysics(0)) {
+    if (sceneHasPhysics(activeSceneID_)) {
       return physicsManager_->getObjectIsCollidable(objectID);
     }
     return false;
@@ -539,7 +539,7 @@ class Simulator {
    * @brief Set the stage to collidable or not.
    */
   bool setStageIsCollidable(bool collidable) {
-    if (sceneHasPhysics(0)) {
+    if (sceneHasPhysics(activeSceneID_)) {
       return physicsManager_->setStageIsCollidable(collidable);
     }
     return false;
@@ -549,7 +549,7 @@ class Simulator {
    * @brief Get whether or not the stage is collision active.
    */
   bool getStageIsCollidable() {
-    if (sceneHasPhysics(0)) {
+    if (sceneHasPhysics(activeSceneID_)) {
       return physicsManager_->getStageIsCollidable();
     }
     return false;
