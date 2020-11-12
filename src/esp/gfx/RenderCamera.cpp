@@ -54,14 +54,23 @@ RenderCamera::RenderCamera(scene::SceneNode& node) : MagnumCamera{node} {
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node,
+                           const Mn::Vector3& eye,
+                           const Mn::Vector3& target,
+                           const Mn::Vector3& up)
+
+    : RenderCamera(node) {
+  // once it is attached, set the transformation
+  node.setTransformation(Mn::Matrix4::lookAt(eye, target, up));
+}
+
+RenderCamera::RenderCamera(scene::SceneNode& node,
                            const vec3f& eye,
                            const vec3f& target,
                            const vec3f& up)
-    : RenderCamera(node) {
-  // once it is attached, set the transformation
-  node.setTransformation(Mn::Matrix4::lookAt(
-      Mn::Vector3{eye}, Mn::Vector3{target}, Mn::Vector3{up}));
-}
+    : RenderCamera(node,
+                   Mn::Vector3{eye},
+                   Mn::Vector3{target},
+                   Mn::Vector3{up}) {}
 
 RenderCamera& RenderCamera::setProjectionMatrix(int width,
                                                 int height,

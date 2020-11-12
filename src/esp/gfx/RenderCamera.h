@@ -42,12 +42,33 @@ class RenderCamera : public MagnumCamera {
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
   CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
-
+  /**
+   * @brief Constructor
+   * @param node, the scene node to which the camera is attached
+   */
   RenderCamera(scene::SceneNode& node);
+  /**
+   * @brief Constructor
+   * @param node, the scene node to which the camera is attached
+   * @param eye, the eye position (parent node space)
+   * @param target, the target position (parent node space)
+   * @param up, the up direction (parent node space)
+   */
   RenderCamera(scene::SceneNode& node,
                const vec3f& eye,
                const vec3f& target,
                const vec3f& up);
+  /**
+   * @brief Constructor
+   * @param node, the scene node to which the camera is attached
+   * @param eye, the eye position (parent node space)
+   * @param target, the target position (parent node space)
+   * @param up, the up direction (parent node space)
+   */
+  RenderCamera(scene::SceneNode& node,
+               const Magnum::Vector3& eye,
+               const Magnum::Vector3& target,
+               const Magnum::Vector3& up);
   virtual ~RenderCamera() {
     // do nothing, let magnum handle the camera
   }
