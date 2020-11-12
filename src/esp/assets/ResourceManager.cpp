@@ -1245,11 +1245,12 @@ std::vector<Mn::Vector3> ResourceManager::buildSmoothTrajOfPoints(
 Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
     const std::vector<Mn::Vector3>& pts,
     int numSegments,
-    int numInterp,
-    float radius) {
-  // 1. Build smoothed trajectory through passed points
+    float radius,
+    bool smooth,
+    int numInterp) {
+  // 1. Build smoothed trajectory through passed points if requested
   std::vector<Mn::Vector3> trajectory =
-      pts;  // buildSmoothTrajOfPoints(pts, numInterp);
+      (smooth ? buildSmoothTrajOfPoints(pts, numInterp) : pts);
 
   // 2. Build mesh vertex points around each trajectory point at appropriate
   // distance (radius). For each point in trajectory, add a wireframe circle
@@ -1271,18 +1272,21 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
   // normals
   Corrade::Containers::Array<Magnum::Vector3> circleVerts =
       primitiveImporter_->mesh("circle3DWireframe")->positions3DAsArray();
+  ASSERT(numSegments == circleVerts.size());
+
   // normalized verts
   Corrade::Containers::Array<Magnum::Vector3> circleNormVerts{
-      Cr::Containers::NoInit, sizeof(Magnum::Vector3) * circleVerts.size()};
+      Cr::Containers::NoInit, sizeof(Magnum::Vector3) * numSegments};
   // transform points to be on circle of given radius, and make copy to
   // normalize points
-  for (int i = 0; i < circleVerts.size(); ++i) {
+  for (int i = 0; i < numSegments; ++i) {
     circleVerts[i] *= radius;
     circleNormVerts[i] = circleVerts[i].normalized();
   }
-
+  // size of trajectory
+  const Mn::UnsignedInt trajSize = trajectory.size();
   // # of vertices in resultant tube == # circle verts * # points in trajectory
-  const Mn::UnsignedInt vertexCount = circleVerts.size() * trajectory.size();
+  const Mn::UnsignedInt vertexCount = numSegments * trajSize;
   struct Vertex {  // a function-local struct
     Mn::Vector3 position;
     Mn::Vector3 normal;
@@ -1299,15 +1303,14 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
   Cr::Containers::StridedArrayView1D<Mn::Vector3> normals =
       vertices.slice(&Vertex::normal);
 
-  int circlePtIDX = 0;
-  for (int vertIx = 0; vertIx < trajectory.size(); ++vertIx) {
+  Mn::UnsignedInt circlePtIDX = 0;
+  for (Mn::UnsignedInt vertIx = 0; vertIx < trajSize; ++vertIx) {
     const Mn::Vector3& vert = trajectory[vertIx];
     Mn::Vector3 tangent;
-    if (!vertIx) {  // first vert
+    if (vertIx == 0) {  // first vert
       tangent = trajectory[1] - trajectory[0];
-    } else if (vertIx == trajectory.size() - 1) {  // last vert
-      tangent =
-          trajectory[trajectory.size() - 1] - trajectory[trajectory.size() - 2];
+    } else if (vertIx == trajSize - 1) {  // last vert
+      tangent = trajectory[trajSize - 1] - trajectory[trajSize - 2];
     } else {  // other verts, use tangent average
       Mn::Vector3 pTangent = trajectory[vertIx] - trajectory[vertIx - 1];
       Mn::Vector3 nTangent = trajectory[vertIx + 1] - trajectory[vertIx];
@@ -1316,7 +1319,7 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
     // get the orientation matrix assuming y-up preference
     Mn::Matrix4 tangentOrientation =
         Mn::Matrix4::lookAt(vert, vert + tangent, Mn::Vector3{0, 1.0, 0});
-    for (int i = 0; i < circleVerts.size(); ++i) {
+    for (int i = 0; i < numSegments; ++i) {
       // build vertex (circleVerts[i] is at radius)
       positions[circlePtIDX] =
           tangentOrientation.transformPoint(circleVerts[i]);
@@ -1330,7 +1333,7 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
   // 3. Create polys between all points
   Cr::Containers::Array<char> indexData{
       Cr::Containers::NoInit,
-      6 * numSegments * (trajectory.size() - 1) * sizeof(Mn::UnsignedInt)};
+      6 * numSegments * (trajSize - 1) * sizeof(Mn::UnsignedInt)};
   Cr::Containers::ArrayView<Mn::UnsignedInt> indices =
       Cr::Containers::arrayCast<Mn::UnsignedInt>(indexData);
 
@@ -1345,18 +1348,18 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
         F2 = [+1, +n+1, +n]
    */
   int iListIDX = 0;
-  for (int vIdx = 0; vIdx < trajectory.size() - 1;
+  for (Mn::UnsignedInt vIdx = 0; vIdx < trajSize - 1;
        ++vIdx) {  // skip last circle (adding forward)
     int vIdxNumSeg = vIdx * numSegments;
     for (Mn::UnsignedInt circleIx = 0; circleIx < numSegments; ++circleIx) {
-      int ix = circleIx + vIdxNumSeg;  //+0
-      int ixNext = ix + numSegments;   //+n
-      int ixPlus = ix + 1;             //+1
-      int ixNextPlus = ixNext + 1;     //+n+1
+      Mn::UnsignedInt ix = circleIx + vIdxNumSeg;  //+0
+      Mn::UnsignedInt ixNext = ix + numSegments;   //+n
+      Mn::UnsignedInt ixPlus = ix + 1;             //+1
+      Mn::UnsignedInt ixNextPlus = ixNext + 1;     //+n+1
       if (circleIx == numSegments - 1) {
         // last vert in a circle wraps to relative 0
         ixPlus = vIdxNumSeg;
-        ixNextPlus = (vIdx + 1) * numSegments;
+        ixNextPlus = vIdxNumSeg + numSegments;
       }
       // F1
       indices[iListIDX++] = (ix);
@@ -1385,21 +1388,22 @@ Mn::Trade::MeshData ResourceManager::trajectoryTubeSolid(
                                     positions},
        Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal, normals}},
       static_cast<Mn::UnsignedInt>(positions.size())};
-  return meshData;
 
+  return meshData;
 }  // ResourceManager::trajectoryTubeSolid
 
 bool ResourceManager::loadTrajectoryVisualization(
-    const std::string& assetName,
+    const std::string& trajVisName,
     const std::vector<Mn::Vector3>& pts,
     int numSegments,
-    int numInterp,
-    float radius) {
+    float radius,
+    bool smooth,
+    int numInterp) {
   // enforce required minimum/reasonable values if illegal values specified
   if (numSegments < 3) {  // required by circle prim
     numSegments = 3;
   }
-  if (numInterp <= 0) {  // 10 points per trajectory point
+  if (smooth && (numInterp <= 0)) {  // 10 points per trajectory point
     numInterp = 10;
   }
   if (radius <= 0) {  // 1 mm radius minimum
@@ -1408,14 +1412,14 @@ bool ResourceManager::loadTrajectoryVisualization(
 
   LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Calling "
                "trajectoryTubeSolid to build a tube named :"
-            << assetName << " with " << pts.size()
+            << trajVisName << " with " << pts.size()
             << " points, building a tube of radius :" << radius << " using "
             << numSegments << " circular segments and " << numInterp
             << " interpolated points between each trajectory point.";
 
   // create mesh tube
   Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
-      trajectoryTubeSolid(pts, numSegments, numInterp, radius);
+      trajectoryTubeSolid(pts, numSegments, radius, smooth, numInterp);
   LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Successfully "
                "returned from trajectoryTubeSolid ";
 
@@ -1456,10 +1460,11 @@ bool ResourceManager::loadTrajectoryVisualization(
 
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
-  if (resourceDict_.count(assetName) != 0) {
-    resourceDict_.erase(assetName);
+  if (resourceDict_.count(trajVisName) != 0) {
+    resourceDict_.erase(trajVisName);
   }
-  auto inserted = resourceDict_.emplace(assetName, std::move(loadedAssetData));
+  auto inserted =
+      resourceDict_.emplace(trajVisName, std::move(loadedAssetData));
 
   return true;
 }  // ResourceManager::loadTrajectoryVisualization

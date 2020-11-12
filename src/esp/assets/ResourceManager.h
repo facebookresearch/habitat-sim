@@ -449,19 +449,22 @@ class ResourceManager {
 
   /**
    * @brief Generate a tube following the passed trajectory of points.
-   * @param assetName The name to use for the asset
+   * @param trajVisName The name to use for the trajectory visualization mesh.
    * @param pts The points of a trajectory, in order
    * @param numSegments The number of the segments around the circumference of
    * the tube. Must be greater than or equal to 3.
-   * @param numInterp The number of interpolations between each trajectory point
    * @param radius The radius of the tube.
+   * @param smooth Whether to smooth the points in the trajectory or not
+   * @param numInterp The number of interpolations between each trajectory
+   * point, if smoothing.
    * @return Whether the process was a success or not
    */
-  bool loadTrajectoryVisualization(const std::string& assetName,
+  bool loadTrajectoryVisualization(const std::string& trajVisName,
                                    const std::vector<Mn::Vector3>& pts,
                                    int numSegments = 3,
-                                   int numInterp = 20,
-                                   float radius = .001);
+                                   float radius = .001,
+                                   bool smooth = false,
+                                   int numInterp = 20);
 
   /**
    * @brief Build a configuration frame from scene or object attributes values
@@ -851,14 +854,17 @@ class ResourceManager {
    * @param pts The points of a trajectory, in order
    * @param numSegments The number of the segments around the circumference of
    * the tube
-   * @param numInterp The number of interpolations between each trajectory point
    * @param radius The radius of the tube
+   * @param smooth Whether to smooth the points or not
+   * @param numInterp The number of interpolations between each trajectory
+   * point, if smoothing
    * @return The resultant meshdata for the tube
    */
   Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
                                           int numSegments,
-                                          int numInterp,
-                                          float radius);
+                                          float radius,
+                                          bool smooth,
+                                          int numInterp);
   /**
    * @brief Apply a translation to the vertices of a mesh asset and store that
    * transformation in @ref BaseMesh::meshTransform_.

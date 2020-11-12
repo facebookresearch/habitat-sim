@@ -563,7 +563,7 @@ void Viewer::buildTrajectoryVis() {
                "tube for :"
             << agentLocs_.size() << " points.";
   int trajObjID = simulator_->showTrajectoryVisualization(
-      "viewerTrajVis", agentLocs_, 4, 10, .1);
+      "viewerTrajVis", agentLocs_, 4, .1, false, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
     LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj ID : "
               << trajObjID;

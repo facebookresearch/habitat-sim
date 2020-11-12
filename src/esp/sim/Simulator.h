@@ -633,20 +633,76 @@ class Simulator {
 
   /**
    * @brief Compute a trajectory visualization for the passed points.
-   * @param assetName The name to use for the asset
+   * @param trajVisName The name to use for the trajectory visualization
    * @param pts The points of a trajectory, in order
    * @param numSegments The number of the segments around the circumference of
    * the tube. Must be greater than or equal to 3.
-   * @param numInterp The number of interpolations between each trajectory point
    * @param radius The radius of the tube.
+   * @param smooth Whether to smooth the points in the trajectory or not. Will
+   * build a much bigger mesh
+   * @param numInterp The number of interpolations between each trajectory
+   * point, if smoothed
    * @return The ID of the object created for the visualization
    */
-  int showTrajectoryVisualization(const std::string& assetName,
+  int showTrajectoryVisualization(const std::string& trajVisName,
                                   const std::vector<Mn::Vector3>& pts,
                                   int numSegments = 3,
-                                  int numInterp = 20,
-                                  float radius = .001);
+                                  float radius = .001,
+                                  bool smooth = false,
+                                  int numInterp = 20);
 
+  /**
+   * @brief Remove a trajectory visualization by name.
+   * @param trajVisName The name of the trajectory visualization to remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisByName(const std::string& trajVisName) {
+    if (trajVisIDByName.count(trajVisName) == 0) {
+      LOG(INFO) << "Simulator::removeTrajVisByName : No trajectory named "
+                << trajVisName << " exists.  Ignoring.";
+      return false;
+    }
+    return removeTrajVisObjectAndAssets(trajVisIDByName.at(trajVisName),
+                                        trajVisName);
+  }
+
+  /**
+   * @brief Remove a trajectory visualization by object ID.
+   * @param trajVisObjID The object ID of the trajectory visualization to
+   * remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisByID(int trajVisObjID) {
+    if (trajVisNameByID.count(trajVisObjID) == 0) {
+      LOG(INFO)
+          << "Simulator::removeTrajVisByName : No trajectory object with ID: "
+          << trajVisObjID << " exists.  Ignoring.";
+      return false;
+    }
+    return removeTrajVisObjectAndAssets(trajVisObjID,
+                                        trajVisNameByID.at(trajVisObjID));
+  }
+
+ protected:
+  /**
+   * @brief Internal use only. Remove a trajectory object, its mesh, and all
+   * references to it.
+   * @param trajVisObjID The object ID of the trajectory visualization to
+   * remove.
+   * @param trajVisName The name of the trajectory visualization to remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisObjectAndAssets(int trajVisObjID,
+                                    const std::string& trajVisName) {
+    removeObject(trajVisObjID);
+    // TODO : support removing asset by removing from resourceDict_ properly
+    // using trajVisName
+    trajVisIDByName.erase(trajVisName);
+    trajVisNameByID.erase(trajVisObjID);
+    return true;
+  }
+
+ public:
   agent::Agent::ptr getAgent(int agentId);
 
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
@@ -677,8 +733,8 @@ class Simulator {
 
   /**
    * @brief draw observations to the frame buffer stored in that
-   * particular sensor of an agent. Unlike the @displayObservation, it will not
-   * display the observation on the default frame buffer
+   * particular sensor of an agent. Unlike the @displayObservation, it will
+   * not display the observation on the default frame buffer
    * @param agentId    Id of the agent for which the observation is to
    *                   be returned
    * @param sensorId   Id of the sensor for which the observation is to
@@ -822,6 +878,10 @@ class Simulator {
   //! NavMesh visualization variables
   int navMeshVisPrimID_ = esp::ID_UNDEFINED;
   esp::scene::SceneNode* navMeshVisNode_ = nullptr;
+
+  //! Maps holding IDs and Names of trajectory visualizations
+  std::map<std::string, int> trajVisIDByName;
+  std::map<int, std::string> trajVisNameByID;
 
   /**
    * @brief Tracks whether or not the simulator was initialized
