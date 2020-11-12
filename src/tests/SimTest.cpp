@@ -154,7 +154,7 @@ void SimTest::reset() {
   PathFinder::ptr pathfinder = simulator.getPathFinder();
 
   auto pinholeCameraSpec = SensorSpec::create();
-  pinholeCameraSpec->sensorSubtype = "pinhole";
+  pinholeCameraSpec->sensorSubtype = esp::sensor::SensorSubtype::PINHOLE;
   pinholeCameraSpec->sensorType = SensorType::COLOR;
   pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
   pinholeCameraSpec->resolution = {100, 100};
@@ -181,7 +181,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
     Magnum::Float meanThreshold) {
   // do not rely on default SensorSpec default constructor to remain constant
   auto pinholeCameraSpec = SensorSpec::create();
-  pinholeCameraSpec->sensorSubtype = "pinhole";
+  pinholeCameraSpec->sensorSubtype = esp::sensor::SensorSubtype::PINHOLE;
   pinholeCameraSpec->sensorType = SensorType::COLOR;
   pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
   pinholeCameraSpec->resolution = {128, 128};
