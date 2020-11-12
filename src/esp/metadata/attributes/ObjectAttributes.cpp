@@ -34,6 +34,7 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setRenderAssetIsPrimitive(false);
   setCollisionAssetIsPrimitive(false);
   setUseMeshCollision(true);
+  setIsCollidable(true);
   setUnitsToMeters(1.0);
   setRenderAssetHandle("");
   setCollisionAssetHandle("");
@@ -55,7 +56,6 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   setRequiresLighting(true);
   setIsVisible(true);
   setSemanticId(0);
-  setIsCollidable(true);
 }  // ObjectAttributes ctor
 
 StageAttributes::StageAttributes(const std::string& handle)

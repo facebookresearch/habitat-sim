@@ -34,6 +34,8 @@ BulletRigidStage::~BulletRigidStage() {
   }
 }
 bool BulletRigidStage::initialization_LibSpecific() {
+  isCollidable_ = getInitializationAttributes()->getIsCollidable();
+
   if (isCollidable_) {
     // defer construction until necessary
     constructAndAddCollisionObjects();
