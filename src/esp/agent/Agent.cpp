@@ -37,7 +37,7 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
         sensors_.add(sensor::PinholeCamera::create(sensorNode, spec));
         break;
       }
-      case sensor::SensorSubtype::ORHTOGRAPHIC: {
+      case sensor::SensorSubtype::ORTHOGRAPHIC: {
         sensors_.add(sensor::OrthoCamera::create(sensorNode, spec));
         break;
       }

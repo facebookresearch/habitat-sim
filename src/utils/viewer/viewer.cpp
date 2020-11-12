@@ -396,7 +396,7 @@ Viewer::Viewer(const Arguments& arguments)
       esp::vec2i(viewportSize[1], viewportSize[0]);
   // try orthographic camera
   agentConfig.sensorSpecifications[0]->sensorSubtype =
-      esp::sensor::SensorSubtype::ORHTOGRAPHIC;
+      esp::sensor::SensorSubtype::ORTHOGRAPHIC;
   // add selects a random initial state and sets up the default controls and
   // step filter
   simulator_->addAgent(agentConfig);

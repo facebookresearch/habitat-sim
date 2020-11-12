@@ -39,7 +39,7 @@ enum class ObservationSpaceType {
 
 enum class SensorSubtype {
   PINHOLE = 0,
-  ORHTOGRAPHIC = 1,
+  ORTHOGRAPHIC = 1,
 };
 
 // Specifies the configuration parameters of a sensor
