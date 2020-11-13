@@ -82,6 +82,14 @@ constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::WHITE_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
+
+namespace {
+bool isRenderAssetGeneral(AssetType type) {
+  return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN ||
+         type == AssetType::SUNCG_OBJECT;
+}
+}  // namespace
+
 ResourceManager::ResourceManager(
     metadata::MetadataMediator::ptr& _metadataMediator,
     Flags _flags)
@@ -180,31 +188,85 @@ bool ResourceManager::loadStage(
       ((_physicsManager != nullptr) &&
        (_physicsManager->getInitializationAttributes()->getSimulator().compare(
             "none") != 0));
-  const Magnum::ResourceKey& renderLightSetup(stageAttributes->getLightSetup());
+  const std::string renderLightSetupKey(stageAttributes->getLightSetup());
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, buildCollisionMesh,
                                           loadSemanticMesh);
+
+  // set equal to current Simulator::activeSemanticSceneID_ value
+  int activeSemanticSceneID = activeSceneIDs[0];
+  // if semantic scene load is requested and possible
+  if (assetInfoMap.count("semantic")) {
+    // check if file names exist
+    AssetInfo semanticInfo = assetInfoMap.at("semantic");
+    auto semanticStageFilename = semanticInfo.filepath;
+    if (Cr::Utility::Directory::exists(semanticStageFilename)) {
+      LOG(INFO) << "ResourceManager::loadStage : Loading Semantic Stage mesh : "
+                << semanticStageFilename;
+      activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
+
+      auto& semanticSceneGraph =
+          sceneManagerPtr->getSceneGraph(activeSemanticSceneID);
+      auto& semanticRootNode = semanticSceneGraph.getRootNode();
+      auto& semanticDrawables = semanticSceneGraph.getDrawables();
+
+      RenderAssetInstanceCreation creation{
+          .filepath = semanticStageFilename,
+          .scale = Cr::Containers::NullOpt,
+          .isStatic =
+              stageAttributes->getFrustrumCulling(),  // only treat as static if
+                                                      // doing culling
+          .isRGBD = false,
+          .isSemantic = true,
+          .lightSetupKey = NO_LIGHT_KEY};
+
+      bool semanticStageSuccess =
+          loadStageInternal(semanticInfo,  // AssetInfo
+                            &creation,
+                            &semanticRootNode,    // parent scene node
+                            &semanticDrawables);  // drawable group
+
+      // regardless of load failure, original code still changed
+      // activeSemanticSceneID_
+      if (!semanticStageSuccess) {
+        LOG(ERROR) << " ResourceManager::loadStage : Semantic Stage mesh "
+                      "load failed.";
+        return false;
+      } else {
+        LOG(INFO) << "ResourceManager::loadStage : Semantic Stage mesh : "
+                  << semanticStageFilename << " loaded.";
+      }
+    } else {  // semantic file name does not exist but house does
+      LOG(WARNING)
+          << "ResourceManager::loadStage : Not loading semantic mesh - "
+             "File Name : "
+          << semanticStageFilename << " does not exist.";
+    }
+  } else {  // not wanting to create semantic mesh
+    LOG(INFO) << "ResourceManager::loadStage : Not loading semantic mesh";
+  }
+  // save active semantic scene ID so that simulator can consume
+  activeSceneIDs[1] = activeSemanticSceneID;
+  const bool isSeparateSemanticScene = activeSceneIDs[1] != activeSceneIDs[0];
 
   auto& sceneGraph = sceneManagerPtr->getSceneGraph(activeSceneIDs[0]);
   auto& rootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
 
-  // bool computeAbsoluteAABBs =
-  //   (info.type == AssetType::FRL_PTEX_MESH ||
-  //    info.type == AssetType::MP3D_MESH || info.type == AssetType::UNKNOWN ||
-  //    (info.type == AssetType::INSTANCE_MESH && splitSemanticMesh));
-
   AssetInfo renderInfo = assetInfoMap.at("render");
-  // pass nullptr as physics manager for render mesh, since we are loading
-  // collision mesh next
-  bool renderMeshSuccess =
-      loadStageInternal(renderInfo,         // AssetInfo
-                        &rootNode,          // parent scene node
-                        &drawables,         //  drawable group
-                        true,               // compute Absolute AABBs or not
-                        false,              // split semantic mesh or not
-                        renderLightSetup);  // light setup
 
+  RenderAssetInstanceCreation renderCreation{
+      .filepath = renderInfo.filepath,
+      .scale = Cr::Containers::NullOpt,
+      .isStatic = true,
+      .isRGBD = true,
+      .isSemantic = !isSeparateSemanticScene,
+      .lightSetupKey = renderLightSetupKey};
+
+  bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
+                                             &renderCreation,
+                        &rootNode,          // parent scene node
+                                             &drawables);  //  drawable group
   if (!renderMeshSuccess) {
     LOG(ERROR)
         << " ResourceManager::loadStage : Stage render mesh load failed, "
@@ -217,13 +279,10 @@ bool ResourceManager::loadStage(
   if (assetInfoMap.count("collision")) {
     AssetInfo colInfo = assetInfoMap.at("collision");
     // should this be checked to make sure we do not reload?
-    bool collisionMeshSuccess =
-        loadStageInternal(colInfo,            // AssetInfo
+    bool collisionMeshSuccess = loadStageInternal(colInfo,  // AssetInfo
+                                                  nullptr,  // creation
                           nullptr,            // parent scene node
-                          nullptr,            // drawable group
-                          false,              // compute absolute AABBs or not
-                          false,              // split semantic mesh or not
-                          renderLightSetup);  // light setup
+                                                  nullptr);  // drawable group
 
     if (!collisionMeshSuccess) {
       LOG(ERROR) << " ResourceManager::loadStage : Stage collision mesh "
@@ -258,55 +317,6 @@ bool ResourceManager::loadStage(
       return false;
     }
   }
-
-  bool semanticStageSuccess = false;
-  // set equal to current Simulator::activeSemanticSceneID_ value
-  int activeSemanticSceneID = activeSceneIDs[0];
-  // if semantic scene load is requested and possible
-  if (assetInfoMap.count("semantic")) {
-    // check if file names exist
-    AssetInfo semanticInfo = assetInfoMap.at("semantic");
-    auto semanticStageFilename = semanticInfo.filepath;
-    if (Cr::Utility::Directory::exists(semanticStageFilename)) {
-      LOG(INFO) << "ResourceManager::loadStage : Loading Semantic Stage mesh : "
-                << semanticStageFilename;
-      activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
-      bool splitSemanticMesh = stageAttributes->getFrustrumCulling();
-
-      auto& semanticSceneGraph =
-          sceneManagerPtr->getSceneGraph(activeSemanticSceneID);
-      auto& semanticRootNode = semanticSceneGraph.getRootNode();
-      auto& semanticDrawables = semanticSceneGraph.getDrawables();
-      bool computeSemanticAABBs = splitSemanticMesh;
-
-      semanticStageSuccess = loadStageInternal(
-          semanticInfo,          // AssetInfo
-          &semanticRootNode,     // parent scene node
-          &semanticDrawables,    // drawable group
-          computeSemanticAABBs,  // compute absolute AABBs or not
-          splitSemanticMesh);    // split semantic mesh or not
-      // regardless of load failure, original code still changed
-      // activeSemanticSceneID_
-      activeSceneIDs[1] = activeSemanticSceneID;
-      if (!semanticStageSuccess) {
-        LOG(ERROR) << " ResourceManager::loadStage : Semantic Stage mesh "
-                      "load failed.";
-        return false;
-      } else {
-        LOG(INFO) << "ResourceManager::loadStage : Semantic Stage mesh : "
-                  << semanticStageFilename << " loaded.";
-      }
-    } else {  // semantic file name does not exist but house does
-      LOG(WARNING)
-          << "ResourceManager::loadStage : Not loading semantic mesh - "
-             "File Name : "
-          << semanticStageFilename << " does not exist.";
-    }
-  } else {  // not wanting to create semantic mesh
-    LOG(INFO) << "ResourceManager::loadStage : Not loading semantic mesh";
-  }
-  // save active semantic scene ID so that simulator can consume
-  activeSceneIDs[1] = activeSemanticSceneID;
 
   return true;
 }  // ResourceManager::loadScene
@@ -393,8 +403,9 @@ ResourceManager::createStageAssetInfosFromAttributes(
         stageAttributes->getSemanticAssetHandle(),  // file path
         frame,                                      // frame
         virtualUnitToMeters,                        // virtualUnitToMeters
-        false                                       // requiresLighting
-
+        false,                                      // requiresLighting
+        // only split instance mesh if doing frustum culling
+        stageAttributes->getFrustrumCulling()  // splitInstanceMesh
     };
     resMap["semantic"] = semanticInfo;
   }
@@ -422,14 +433,76 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
   }
 }  // ResourceManager::buildCoordFrameFromAttribVals
 
+bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
+  bool meshSuccess = false;
+  if (info.type == AssetType::FRL_PTEX_MESH) {
+    meshSuccess = loadRenderAssetPTex(info);
+  } else if (info.type == AssetType::INSTANCE_MESH) {
+    meshSuccess = loadRenderAssetIMesh(info);
+  } else if (isRenderAssetGeneral(info.type)) {
+    meshSuccess = loadRenderAssetGeneral(info);
+  } else {
+    ASSERT(
+        false);  // loadRenderAsset doesn't yet support the requested asset type
+  }
+#if 0  // coming soon
+  if (renderKeyframeWriter_) {
+    renderKeyframeWriter_->onLoadRenderAsset(info);
+  }
+#endif
+  return meshSuccess;
+}
+
+scene::SceneNode* ResourceManager::createRenderAssetInstance(
+    const RenderAssetInstanceCreation& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    std::vector<scene::SceneNode*>* visNodeCache) {
+  // assert that asset is already loaded
+  CHECK(resourceDict_.count(creation.filepath));
+
+  const LoadedAssetData& loadedAssetData = resourceDict_.at(creation.filepath);
+  if (!isLightSetupCompatible(loadedAssetData, creation.lightSetupKey)) {
+    LOG(WARNING)
+        << "Instantiating render asset " << creation.filepath
+        << " with incompatible light setup, instance will not be correctly lit."
+           "For objects, please ensure 'requires lighting' is enabled in "
+           "object config file.";
+  }
+
+  const auto& info = loadedAssetData.assetInfo;
+  scene::SceneNode* newNode = nullptr;
+  if (info.type == AssetType::FRL_PTEX_MESH) {
+    ASSERT(
+        !visNodeCache);  // createRenderAssetInstancePTex doesn't support this
+    newNode = createRenderAssetInstancePTex(creation, parent, drawables);
+  } else if (info.type == AssetType::INSTANCE_MESH) {
+    ASSERT(
+        !visNodeCache);  // createRenderAssetInstanceIMesh doesn't support this
+    newNode = createRenderAssetInstanceIMesh(creation, parent, drawables);
+  } else if (isRenderAssetGeneral(info.type) ||
+             info.type == AssetType::PRIMITIVE) {
+    newNode = createRenderAssetInstanceGeneralPrimitive(
+        creation, parent, drawables, visNodeCache);
+  } else {
+    ASSERT(false);  // createRenderAssetInstance doesn't yet support the
+                    // requested asset type
+    newNode = nullptr;
+  }
+
+#if 0  // coming soon
+  if (renderKeyframeWriter_ && newNode) {
+    renderKeyframeWriter_->onCreateRenderAssetInstance(&newNode, creation);
+  }
+#endif
+  return newNode;
+}
+
 bool ResourceManager::loadStageInternal(
     const AssetInfo& info,
-    scene::SceneNode* parent /* = nullptr */,
-    DrawableGroup* drawables /* = nullptr */,
-    bool computeAbsoluteAABBs /*  = false */,
-    bool splitSemanticMesh /* = true */,
-    const Mn::ResourceKey&
-        lightSetupKey /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
+    const RenderAssetInstanceCreation* creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables) {
   // scene mesh loading
   const std::string& filename = info.filepath;
   bool meshSuccess = true;
@@ -440,20 +513,31 @@ bool ResourceManager::loadStageInternal(
           << filename;
       meshSuccess = false;
     } else {
-      if (info.type == AssetType::INSTANCE_MESH) {  // semantic
-        meshSuccess = loadInstanceMeshData(
-            info, parent, drawables, computeAbsoluteAABBs, splitSemanticMesh);
-      } else if (info.type == AssetType::FRL_PTEX_MESH) {
-        meshSuccess = loadPTexMeshData(info, parent, drawables);
-      } else if (info.type == AssetType::SUNCG_SCENE) {
+      if (info.type == AssetType::SUNCG_SCENE) {
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
-      } else if (info.type == AssetType::MP3D_MESH) {
-        meshSuccess = loadGeneralMeshData(info, parent, drawables,
-                                          computeAbsoluteAABBs, lightSetupKey);
       } else {
-        // Unknown type, just load general mesh data
-        meshSuccess = loadGeneralMeshData(info, parent, drawables,
-                                          computeAbsoluteAABBs, lightSetupKey);
+        // load render asset if necessary
+        if (resourceDict_.count(info.filepath) == 0) {
+          if (!loadRenderAsset(info)) {
+            return false;
+          }
+      } else {
+          if (resourceDict_[filename].assetInfo != info) {
+            // Right now, we only allow for an asset to be loaded with one
+            // configuration, since generated mesh data may be invalid for a new
+            // configuration
+            LOG(ERROR)
+                << "Reloading asset " << filename
+                << " with different configuration not currently supported. "
+                << "Asset may not be rendered correctly.";
+          }
+        }
+        // create render asset instance if requested
+        if (parent) {
+          ASSERT(creation);
+          createRenderAssetInstance(*creation, parent, drawables);
+        }
+        return true;
       }
     }
   } else {
@@ -505,7 +589,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   if (!filename.empty()) {
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.requiresLighting = requiresLighting;
-    success = loadGeneralMeshData(meshInfo);
+    success = loadRenderAsset(meshInfo);
     if (!success) {
       LOG(ERROR) << "Failed to load a physical object (" << objectTemplateHandle
                  << ")'s " << meshType << " mesh from file : " << filename;
@@ -745,13 +829,14 @@ void ResourceManager::buildPrimitiveAssetData(
 
 }  // buildPrimitiveAssetData
 
-bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
-                                       scene::SceneNode* parent,
-                                       DrawableGroup* drawables) {
+bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
+  ASSERT(info.type == AssetType::FRL_PTEX_MESH);
+
 #ifdef ESP_BUILD_PTEX_SUPPORT
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
-  if (resourceDict_.count(filename) == 0) {
+  ASSERT(resourceDict_.count(filename) == 0);
+
     const auto atlasDir = Cr::Utility::Directory::join(
         Cr::Utility::Directory::path(filename), "textures");
 
@@ -773,46 +858,12 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
     meshMetaData.root.transformFromLocalToParent =
         R * meshMetaData.root.transformFromLocalToParent;
-  }
 
-  // create the scene graph by request
-  if (parent) {
-    auto indexPair = getMeshMetaData(filename).meshIndex;
-    int start = indexPair.first;
-    int end = indexPair.second;
-    std::vector<StaticDrawableInfo> staticDrawableInfo;
-
-    for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
-
-      pTexMeshData->uploadBuffersToGPU(false);
-
-      for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
-        scene::SceneNode& node = parent->createChild();
-        const quatf transform = info.frame.rotationFrameToWorld();
-        node.setRotation(Magnum::Quaternion(transform));
-
-        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
-                                               shaderManager_, drawables);
-
-        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
-      }
-    }
-    // always compute absolute aabb for the PTEX mesh if parent exists
-    // because the ptex mesh is for sure a static scene.
-    CORRADE_ASSERT(
-        resourceDict_.count(filename) != 0,
-        "ResourceManager::loadScene: ptex mesh is not loaded. Aborting.",
-        false);
-    const MeshMetaData& metaData = getMeshMetaData(filename);
-    CORRADE_ASSERT(metaData.meshIndex.first == metaData.meshIndex.second,
-                   "ResourceManager::loadScene: ptex mesh is not loaded "
-                   "correctly. Aborting.",
-                   false);
-
-    computePTexMeshAbsoluteAABBs(*meshes_.at(metaData.meshIndex.first),
-                                 staticDrawableInfo);
-  }  // if parent
+  CORRADE_ASSERT(
+      meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
+      "ResourceManager::loadRenderAssetPTex: ptex mesh is not loaded "
+      "correctly. Aborting.",
+      false);
 
   return true;
 #else
@@ -822,28 +873,61 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 #endif
 }
 
-// semantic instance mesh import
-bool ResourceManager::loadInstanceMeshData(
-    const AssetInfo& info,
+scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
+    const RenderAssetInstanceCreation& creation,
     scene::SceneNode* parent,
-    DrawableGroup* drawables,
-    bool computeAbsoluteAABBs,
-    bool splitSemanticMesh /* = true */) {
-  if (info.type != AssetType::INSTANCE_MESH) {
-    LOG(ERROR) << "loadInstanceMeshData only works with INSTANCE_MESH type!";
-    return false;
-  }
+    DrawableGroup* drawables) {
+  ASSERT(!creation.scale);  // PTex doesn't support scale
+  ASSERT(creation.lightSetupKey ==
+         NO_LIGHT_KEY);  // PTex doesn't support lighting
 
+  const std::string& filename = creation.filepath;
+  const LoadedAssetData& loadedAssetData = resourceDict_.at(creation.filepath);
+  const MeshMetaData& metaData = getMeshMetaData(filename);
+  const auto& info = loadedAssetData.assetInfo;
+  auto indexPair = metaData.meshIndex;
+    int start = indexPair.first;
+    int end = indexPair.second;
+    std::vector<StaticDrawableInfo> staticDrawableInfo;
+
+  scene::SceneNode* instanceRoot = &parent->createChild();
+
+    for (int iMesh = start; iMesh <= end; ++iMesh) {
+      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
+
+      pTexMeshData->uploadBuffersToGPU(false);
+
+      for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
+      scene::SceneNode& node = instanceRoot->createChild();
+        const quatf transform = info.frame.rotationFrameToWorld();
+        node.setRotation(Magnum::Quaternion(transform));
+
+        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
+                                               shaderManager_, drawables);
+
+        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
+      }
+    }
+  // we assume a ptex mesh is only used as static
+  ASSERT(creation.isStatic);
+  ASSERT(metaData.meshIndex.first == metaData.meshIndex.second);
+
+    computePTexMeshAbsoluteAABBs(*meshes_.at(metaData.meshIndex.first),
+                                 staticDrawableInfo);
+  return instanceRoot;
+}
+
+bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
+  ASSERT(info.type == AssetType::INSTANCE_MESH);
+
+  const std::string& filename = info.filepath;
+  ASSERT(resourceDict_.count(filename) == 0);
   Cr::Containers::Pointer<Importer> importer;
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
-  // if this is a new file, load it and add it to the dictionary, create
-  // shaders and add it to the shaderPrograms_
-  const std::string& filename = info.filepath;
-  if (resourceDict_.count(filename) == 0) {
     std::vector<GenericInstanceMeshData::uptr> instanceMeshes;
-    if (splitSemanticMesh) {
+  if (info.splitInstanceMesh) {
       instanceMeshes =
           GenericInstanceMeshData::fromPlySplitByObjectId(*importer, filename);
     } else {
@@ -876,17 +960,29 @@ bool ResourceManager::loadInstanceMeshData(
     // update the dictionary
     resourceDict_.emplace(filename,
                           LoadedAssetData{info, std::move(meshMetaData)});
-  }
 
-  // create the scene graph by request
-  if (parent) {
+  return true;
+}
+
+scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
+    const RenderAssetInstanceCreation& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables) {
+  ASSERT(!creation.scale);  // IMesh doesn't support scale
+  ASSERT(creation.lightSetupKey ==
+         NO_LIGHT_KEY);  // IMesh doesn't support lighting
+
+  const bool computeAbsoluteAABBs = creation.isStatic;
+
     std::vector<StaticDrawableInfo> staticDrawableInfo;
-    auto indexPair = getMeshMetaData(filename).meshIndex;
+  auto indexPair = getMeshMetaData(creation.filepath).meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
 
-    for (int iMesh = start; iMesh <= end; ++iMesh) {
-      scene::SceneNode& node = parent->createChild();
+  scene::SceneNode* instanceRoot = &parent->createChild();
+
+  for (int iMesh = start; iMesh <= end; ++iMesh) {
+    scene::SceneNode& node = instanceRoot->createChild();
 
       // Instance mesh does NOT have normal texture, so do not bother to
       // query if the mesh data contain tangent or bitangent.
@@ -900,7 +996,7 @@ bool ResourceManager::loadInstanceMeshData(
       createDrawable(*(meshes_.at(iMesh)->getMagnumGLMesh()),  // render mesh
                      meshAttributeFlags,                 // mesh attribute flags
                      node,                               // scene node
-                     NO_LIGHT_KEY,                       // lightSetup key
+                   creation.lightSetupKey,             // lightSetup key
                      PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
                      drawables);                         // drawable group
 
@@ -908,25 +1004,19 @@ bool ResourceManager::loadInstanceMeshData(
         staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
       }
     }
-    // compute aabb if splitSemanticMesh set here - always done if parent not
-    // null and splitSemanticMesh is set to true
+
     if (computeAbsoluteAABBs) {
       computeInstanceMeshAbsoluteAABBs(staticDrawableInfo);
     }
-  }  // if parent not null
 
-  return true;
+  return instanceRoot;
 }
 
-bool ResourceManager::loadGeneralMeshData(
-    const AssetInfo& info,
-    scene::SceneNode* parent /* = nullptr */,
-    DrawableGroup* drawables /* = nullptr */,
-    bool computeAbsoluteAABBs, /* = false */
-    const Mn::ResourceKey& lightSetupKey) {
+bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
+  ASSERT(isRenderAssetGeneral(info.type));
+
   const std::string& filename = info.filepath;
-  const bool fileIsLoaded = resourceDict_.count(filename) > 0;
-  const bool drawData = parent != nullptr && drawables != nullptr;
+  CHECK(resourceDict_.count(filename) == 0);
 
   // Preferred plugins, Basis target GPU format
   importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
@@ -1007,14 +1097,12 @@ bool ResourceManager::loadGeneralMeshData(
 #endif
   }
 
-  // Optional File loading
-  if (!fileIsLoaded) {
     if (!fileImporter_->openFile(filename)) {
       LOG(ERROR) << "Cannot open file " << filename;
       return false;
     }
 
-    // if this is a new file, load it and add it to the dictionary
+  // load file and add it to the dictionary
     LoadedAssetData loadedAssetData{info};
     if (requiresTextures_) {
       loadTextures(*fileImporter_, loadedAssetData);
@@ -1051,55 +1139,48 @@ bool ResourceManager::loadGeneralMeshData(
         Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
     meshMetaData.root.transformFromLocalToParent =
         R * meshMetaData.root.transformFromLocalToParent;
-  } else if (resourceDict_[filename].assetInfo != info) {
-    // Right now, we only allow for an asset to be loaded with one
-    // configuration, since generated mesh data may be invalid for a new
-    // configuration
-    LOG(ERROR) << "Reloading asset " << filename
-               << " with different configuration not currently supported. "
-               << "Asset may not be rendered correctly.";
-  }
 
-  // Optional Instantiation
-  if (!drawData) {
-    //! Do not instantiate object
     return true;
-  }
-  // parent != nullptr to reach here
+}
 
-  //! Do instantiate object
-  const LoadedAssetData& loadedAssetData = resourceDict_[filename];
-  if (!isLightSetupCompatible(loadedAssetData, lightSetupKey)) {
-    LOG(WARNING) << "Loading scene with incompatible light setup, "
-                    "scene will not be correctly lit. If the scene requires "
-                    "lighting please enable AssetInfo::requiresLighting.";
-  }
-  const MeshMetaData& meshMetaData = loadedAssetData.meshMetaData;
+scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
+    const RenderAssetInstanceCreation& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    std::vector<scene::SceneNode*>* userVisNodeCache) {
+  ASSERT(parent);
+  ASSERT(drawables);
+
+  CHECK(resourceDict_.count(creation.filepath));
+  const LoadedAssetData& loadedAssetData = resourceDict_.at(creation.filepath);
+
+  std::vector<scene::SceneNode*> dummyVisNodeCache;
+  auto& visNodeCache = userVisNodeCache ? *userVisNodeCache : dummyVisNodeCache;
 
   scene::SceneNode& newNode = parent->createChild();
-  const bool forceReload = false;
-  // re-bind position, normals, uv, colors etc. to the corresponding buffers
-  // under *current* gl context
-  if (forceReload) {
-    int start = meshMetaData.meshIndex.first;
-    int end = meshMetaData.meshIndex.second;
-    if (0 <= start && start <= end) {
-      for (int iMesh = start; iMesh <= end; ++iMesh) {
-        meshes_.at(iMesh)->uploadBuffersToGPU(forceReload);
+  if (creation.scale) {
+    // need a new node for scaling because motion state will override scale
+    // set at the physical node
+    // perf todo: avoid this if unit scale
+    newNode.setScaling(*creation.scale);
+
+    // legacy quirky behavior: only add this node to viscache if using scaling
+    visNodeCache.push_back(&newNode);
       }
-    }
-  }  // forceReload
-     // TODO: cache visual nodes added by this process
-  std::vector<scene::SceneNode*> visNodeCache;
+
   std::vector<StaticDrawableInfo> staticDrawableInfo;
 
-  addComponent(meshMetaData,       // mesh metadata
+  auto nodeType = (creation.isStatic) ? scene::SceneNodeType::EMPTY
+                                      : scene::SceneNodeType::OBJECT;
+  bool computeAbsoluteAABBs = creation.isStatic;
+
+  addComponent(loadedAssetData.meshMetaData,       // mesh metadata
                newNode,            // parent scene node
-               lightSetupKey,      // lightSetup key
-               drawables,          // drawble group
-               meshMetaData.root,  // mesh transform node
+               creation.lightSetupKey,             // lightSetup key
+               drawables,                          // drawable group
+               loadedAssetData.meshMetaData.root,  // mesh transform node
                visNodeCache,       // a vector of scene nodes, the visNodeCache
-               computeAbsoluteAABBs,  // compute absolute aabbs
+               computeAbsoluteAABBs,  // compute absolute AABBs
                staticDrawableInfo);   // a vector of static drawable info
 
   if (computeAbsoluteAABBs) {
@@ -1107,8 +1188,15 @@ bool ResourceManager::loadGeneralMeshData(
     computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
   }
 
-  return true;
-}  // loadGeneralMeshData
+  // set the node type for all cached visual nodes
+  if (nodeType != scene::SceneNodeType::EMPTY) {
+    for (auto node : visNodeCache) {
+      node->setType(nodeType);
+    }
+  }
+
+  return &newNode;
+}
 
 int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                               scene::SceneNode* parent,
@@ -1630,7 +1718,7 @@ void ResourceManager::addObjectToDrawables(
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>& visNodeCache,
-    const Mn::ResourceKey& lightSetupKey) {
+    const std::string& lightSetupKey) {
   if (parent != nullptr and drawables != nullptr) {
     //! Add mesh to rendering stack
 
@@ -1641,37 +1729,15 @@ void ResourceManager::addObjectToDrawables(
     const std::string& renderObjectName =
         ObjectAttributes->getRenderAssetHandle();
 
-    const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
-    if (!isLightSetupCompatible(loadedAssetData, lightSetupKey)) {
-      LOG(WARNING) << "Instantiating object with incompatible light setup, "
-                      "object will not be correctly lit. If you need lighting "
-                      "please ensure 'requires lighting' is enabled in object "
-                      "config file";
-    }
+    RenderAssetInstanceCreation creation{.filepath = renderObjectName,
+                                         .scale = ObjectAttributes->getScale(),
+                                         .isStatic = false,
+                                         .isRGBD = true,
+                                         .isSemantic = true,
+                                         .lightSetupKey = lightSetupKey};
 
-    // need a new node for scaling because motion state will override scale
-    // set at the physical node
-    scene::SceneNode& scalingNode = parent->createChild();
-    visNodeCache.push_back(&scalingNode);
-    Magnum::Vector3 objectScaling = ObjectAttributes->getScale();
-    scalingNode.setScaling(objectScaling);
-    // ignored for objects since computeAbsoluteAABBs is always set to false
-    // after scene is loaded.
-    std::vector<StaticDrawableInfo> staticDrawableInfo;
+    createRenderAssetInstance(creation, parent, drawables, &visNodeCache);
 
-    addComponent(loadedAssetData.meshMetaData,       // mesh metadata
-                 scalingNode,                        // parent scene node
-                 lightSetupKey,                      // lightSetup key
-                 drawables,                          // drawable group
-                 loadedAssetData.meshMetaData.root,  // mesh transform node
-                 visNodeCache,  // a vector of scene nodes, the visNodeCache
-                 false,         // compute absolute AABBs
-                 staticDrawableInfo);  // a vector of static drawable info
-
-    // set the node type for all cached visual nodes
-    for (auto node : visNodeCache) {
-      node->setType(scene::SceneNodeType::OBJECT);
-    }
   }  // should always be specified, otherwise won't do anything
 }  // addObjectToDrawables
 
@@ -1839,7 +1905,15 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         nodeIds.push_back(id);
         objectNode.setId(nodeIndex);
         if (info.type == AssetType::SUNCG_OBJECT) {
-          loadGeneralMeshData(info, &objectNode, drawables);
+          CHECK(loadRenderAsset(info));
+          RenderAssetInstanceCreation objectCreation{
+              .filepath = info.filepath,
+              .scale = Cr::Containers::NullOpt,
+              .isStatic = false,
+              .isRGBD = true,
+              .isSemantic = true,
+              .lightSetupKey = NO_LIGHT_KEY};
+          createRenderAssetInstance(objectCreation, &objectNode, drawables);
         }
         return objectNode;
       };
