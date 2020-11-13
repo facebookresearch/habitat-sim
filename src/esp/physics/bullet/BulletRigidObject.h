@@ -42,9 +42,16 @@ class BulletRigidObject : public BulletBase,
    * @brief Constructor for a @ref BulletRigidObject.
    * @param rigidBodyNode The @ref scene::SceneNode this feature will be
    * attached to.
+   * @param objectId The unique ID for referencing this object.
+   * @param resMgr Reference to resource manager, to access relevant components
+   * pertaining to the scene object
+   * @param bWorld The Bullet world to which this object will belong.
+   * @param collisionObjToObjIds The global map of btCollisionObjects to Habitat
+   * object IDs for contact query identification.
    */
   BulletRigidObject(scene::SceneNode* rigidBodyNode,
                     int objectId,
+                    const assets::ResourceManager& resMgr,
                     std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
                     std::shared_ptr<std::map<const btCollisionObject*, int>>
                         collisionObjToObjIds);
@@ -93,6 +100,12 @@ class BulletRigidObject : public BulletBase,
       bool join);
 
   /**
+   * @brief Construct the @ref bObjectShape_ for this object.
+   * @return Whether or not construction was successful.
+   */
+  bool constructCollisionShape();
+
+  /**
    * @brief Check whether object is being actively simulated, or sleeping.
    * See @ref btCollisionObject::isActive.
    * @return true if active, false otherwise.
@@ -115,6 +128,12 @@ class BulletRigidObject : public BulletBase,
    * @return true if successfully set, false otherwise.
    */
   bool setMotionType(MotionType mt) override;
+
+  /**
+   * Set the object to be collidable or not by selectively adding or remove the
+   * @ref bObjectShape_ from the @ref bRigidObject_.
+   */
+  bool setCollidable(bool collidable) override;
 
   /**
    * @brief Shift the object's local origin by translating all children of this
@@ -425,12 +444,9 @@ class BulletRigidObject : public BulletBase,
    * @brief Finalize initialization of this @ref BulletRigidObject as a @ref
    * MotionType::DYNAMIC object. See @ref btRigidBody. This holds
    * bullet-specific functionality for objects.
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the scene object
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialization_LibSpecific(
-      const assets::ResourceManager& resMgr) override;
+  bool initialization_LibSpecific() override;
 
  protected:
   /**
@@ -446,6 +462,12 @@ class BulletRigidObject : public BulletBase,
   void constructAndAddRigidBody(MotionType mt);
 
   /**
+   * @brief shift all child shapes of the @ref bObjectShape_ to modify collision
+   * shape origin.
+   */
+  void shiftObjectCollisionShape(const Magnum::Vector3& shift);
+
+  /**
    * @brief Iterate through all collision objects and active all objects sharing
    * a collision island tag with this object's collision shape.
    */
@@ -456,6 +478,11 @@ class BulletRigidObject : public BulletBase,
   //! If true, the object's bounding box will be used for collision once
   //! computed
   bool usingBBCollisionShape_ = false;
+
+  //! cache the origin shift applied to the object during construction for
+  //! deffered construction of collision shape
+  Mn::Vector3 originShift_;
+
   //! Object data: Composite convex collision shape
   std::vector<std::unique_ptr<btConvexHullShape>> bObjectConvexShapes_;
 
@@ -465,6 +492,8 @@ class BulletRigidObject : public BulletBase,
 
   //! Object data: All components of the collision shape
   std::unique_ptr<btCompoundShape> bObjectShape_;
+
+  std::unique_ptr<btCompoundShape> bEmptyShape_;
 
   /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
    * wrapped into one @ref btRigidBody.

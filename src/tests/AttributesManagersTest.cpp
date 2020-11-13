@@ -576,6 +576,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
         "front":[0,2.1,0],
         "render_asset": "testJSONRenderAsset.glb",
         "collision_asset": "testJSONCollisionAsset.glb",
+        "is_collidable": false,
         "gravity": [9,8,7],
         "origin":[1,2,3],
         "semantic_asset":"testJSONSemanticAsset.glb",
@@ -601,6 +602,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
   ASSERT_EQ(stageAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));
   ASSERT_EQ(stageAttr->getRenderAssetHandle(), "testJSONRenderAsset.glb");
   ASSERT_EQ(stageAttr->getCollisionAssetHandle(), "testJSONCollisionAsset.glb");
+  ASSERT_EQ(stageAttr->getIsCollidable(), false);
   // stage-specific attributes
   ASSERT_EQ(stageAttr->getGravity(), Magnum::Vector3(9, 8, 7));
   ASSERT_EQ(stageAttr->getOrigin(), Magnum::Vector3(1, 2, 3));
@@ -629,6 +631,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
         "front":[0,2.1,0],
         "render_asset": "testJSONRenderAsset.glb",
         "collision_asset": "testJSONCollisionAsset.glb",
+        "is_collidable": false,
         "mass": 9,
         "use_bounding_box_for_collision": true,
         "join_collision_meshes":true,
@@ -653,6 +656,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   ASSERT_EQ(objAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));
   ASSERT_EQ(objAttr->getRenderAssetHandle(), "testJSONRenderAsset.glb");
   ASSERT_EQ(objAttr->getCollisionAssetHandle(), "testJSONCollisionAsset.glb");
+  ASSERT_EQ(objAttr->getIsCollidable(), false);
   // object-specific attributes
   ASSERT_EQ(objAttr->getMass(), 9);
   ASSERT_EQ(objAttr->getBoundingBoxCollisions(), true);

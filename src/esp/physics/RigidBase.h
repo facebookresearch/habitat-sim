@@ -69,9 +69,11 @@ enum class MotionType {
 
 class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  RigidBase(scene::SceneNode* rigidBodyNode)
+  RigidBase(scene::SceneNode* rigidBodyNode,
+            const assets::ResourceManager& resMgr)
       : Magnum::SceneGraph::AbstractFeature3D(*rigidBodyNode),
-        visualNode_(&rigidBodyNode->createChild()) {}
+        visualNode_(&rigidBodyNode->createChild()),
+        resMgr_(resMgr) {}
 
   /**
    * @brief Virtual destructor for a @ref RigidBase.
@@ -101,8 +103,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialize(const assets::ResourceManager& resMgr,
-                          const std::string& handle) = 0;
+  virtual bool initialize(const std::string& handle) = 0;
 
   /**
    * @brief Finalize the creation of @ref RigidObject or @ref RigidStage that
@@ -119,8 +120,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * pertaining to the object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialization_LibSpecific(
-      const assets::ResourceManager& resMgr) = 0;
+  virtual bool initialization_LibSpecific() = 0;
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
    * after @ref RigidObject or @ref RigidStage is created.
@@ -139,6 +139,15 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @return true if successfully set, false otherwise.
    */
   virtual bool setMotionType(MotionType mt) = 0;
+
+  /**
+   * @brief Set a rigid as collidable or not. Derived implementations handle the
+   * specifics of modifying the collision properties.
+   */
+  virtual bool setCollidable(CORRADE_UNUSED bool collidable) { return false; };
+
+  bool getCollidable() { return isCollidable_; }
+
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
    * Kinematic objects are always active, but derived dynamics implementations
@@ -632,6 +641,11 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * be performed on this object. */
   MotionType objectMotionType_;
 
+  /** @brief Flag sepcifying whether or not the object has an active collision
+   * shape.
+   */
+  bool isCollidable_ = false;
+
   /**
    * @brief Saved attributes when the object was initialized.
    */
@@ -640,6 +654,10 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   //! Access for the object to its own PhysicsManager id. Scene will keep -1.
   int objectId_ = -1;
+
+  //! Reference to the ResourceManager for internal access to the object's asset
+  //! data.
+  const assets::ResourceManager& resMgr_;
 
  public:
   ESP_SMART_POINTERS(RigidBase)

@@ -95,7 +95,9 @@ class RigidObject : public RigidBase {
    * @param rigidBodyNode The @ref scene::SceneNode this feature will be
    * attached to.
    */
-  RigidObject(scene::SceneNode* rigidBodyNode, int objectId);
+  RigidObject(scene::SceneNode* rigidBodyNode,
+              int objectId,
+              const assets::ResourceManager& resMgr);
 
   /**
    * @brief Virtual destructor for a @ref RigidObject.
@@ -109,8 +111,7 @@ class RigidObject : public RigidBase {
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialize(const assets::ResourceManager& resMgr,
-                  const std::string& handle) override;
+  bool initialize(const std::string& handle) override;
 
   /**
    * @brief Finalize the creation of @ref RigidObject or @ref RigidScene that
@@ -141,8 +142,7 @@ class RigidObject : public RigidBase {
    * components pertaining to the scene object
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialization_LibSpecific(
-      const assets::ResourceManager& resMgr) override;
+  bool initialization_LibSpecific() override;
 
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
