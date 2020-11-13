@@ -65,7 +65,7 @@ void initGfxBindings(py::module& m) {
            &RenderCamera::setOrthoProjectionMatrix, R"(
         Set this `Orthographic Camera`'s projection matrix.
       )",
-           "width"_a, "height"_a, "znear"_a, "zfar"_a)
+           "width"_a, "height"_a, "znear"_a, "zfar"_a, "scale"_a)
       .def(
           "unproject", &RenderCamera::unproject,
           R"(Unproject a 2D viewport point to a 3D ray with its origin at the camera position.)",

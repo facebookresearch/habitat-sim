@@ -79,9 +79,11 @@ RenderCamera& RenderCamera::setProjectionMatrix(int width,
 RenderCamera& RenderCamera::setOrthoProjectionMatrix(int width,
                                                      int height,
                                                      float znear,
-                                                     float zfar) {
-  auto orthoMat = Mn::Matrix4::orthographicProjection(Mn::Vector2{16.0f, 9.0f},
-                                                      znear, zfar);
+                                                     float zfar,
+                                                     float scale) {
+  auto size = Mn::Vector2{width / (1.0f * height), 1.0f};
+  size /= scale;
+  auto orthoMat = Mn::Matrix4::orthographicProjection(size, znear, zfar);
 
   MagnumCamera::setProjectionMatrix(orthoMat).setViewport(
       Magnum::Vector2i(width, height));

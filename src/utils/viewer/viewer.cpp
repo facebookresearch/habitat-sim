@@ -273,6 +273,12 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
+      .addBooleanOption("use-ortho-camera")
+      .setHelp("use-ortho-camera", "Use orthographic camera to view scene.")
+      .addOption("ortho-scale", ".1")
+      .setHelp(
+          "ortho-scale",
+          "If use-ortho-camera enabled, this value scales the resultant image.")
       .addBooleanOption("disable-navmesh")
       .setHelp("disable-navmesh",
                "Disable the navmesh, disabling agent navigation constraints.")
@@ -394,9 +400,19 @@ Viewer::Viewer(const Arguments& arguments)
   };
   agentConfig.sensorSpecifications[0]->resolution =
       esp::vec2i(viewportSize[1], viewportSize[0]);
-  // try orthographic camera
-  agentConfig.sensorSpecifications[0]->sensorSubtype =
-      esp::sensor::SensorSubtype::ORTHOGRAPHIC;
+  if (args.isSet("use-ortho-camera")) {
+    // try orthographic camera
+    agentConfig.sensorSpecifications[0]->sensorSubtype =
+        esp::sensor::SensorSubtype::ORTHOGRAPHIC;
+    // use this value to scale the ortho image.  The smaller the value, the
+    // larger the resultant image.
+    agentConfig.sensorSpecifications[0]->parameters["ortho_scale"] =
+        args.value("ortho-scale");
+
+  } else {
+    agentConfig.sensorSpecifications[0]->sensorSubtype =
+        esp::sensor::SensorSubtype::PINHOLE;
+  }
   // add selects a random initial state and sets up the default controls and
   // step filter
   simulator_->addAgent(agentConfig);

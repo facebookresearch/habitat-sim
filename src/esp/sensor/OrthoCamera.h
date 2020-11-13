@@ -60,6 +60,7 @@ class OrthoCamera : public VisualSensor {
   int height_ = 480;     // canvas height
   float near_ = 0.001f;  // near clipping plane
   float far_ = 1000.0f;  // far clipping plane
+  float scale_ = .1f;    // scale of resultant image
 
   ESP_SMART_POINTERS(OrthoCamera)
 

@@ -26,11 +26,12 @@ void OrthoCamera::setProjectionParameters(const SensorSpec::ptr& spec) {
   height_ = spec_->resolution[0];
   near_ = std::atof(spec_->parameters.at("near").c_str());
   far_ = std::atof(spec_->parameters.at("far").c_str());
+  scale_ = std::atof(spec_->parameters.at("ortho_scale").c_str());
 }
 
 OrthoCamera& OrthoCamera::setProjectionMatrix(gfx::RenderCamera& targetCamera) {
   // use ortho version of function
-  targetCamera.setOrthoProjectionMatrix(width_, height_, near_, far_);
+  targetCamera.setOrthoProjectionMatrix(width_, height_, near_, far_, scale_);
   return *this;
 }
 

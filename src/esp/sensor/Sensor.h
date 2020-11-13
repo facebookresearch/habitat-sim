@@ -49,7 +49,8 @@ struct SensorSpec {
   SensorSubtype sensorSubtype = SensorSubtype::PINHOLE;
   std::map<std::string, std::string> parameters = {{"near", "0.01"},
                                                    {"far", "1000"},
-                                                   {"hfov", "90"}};
+                                                   {"hfov", "90"},
+                                                   {"ortho_scale", ".1"}};
   vec3f position = {0, 1.5, 0};
   vec3f orientation = {0, 0, 0};
   vec2i resolution = {84, 84};

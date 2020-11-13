@@ -76,11 +76,13 @@ class RenderCamera : public MagnumCamera {
    * @param height The height of the viewport
    * @param znear The location of the near clipping plane
    * @param zfar The location of the far clipping plane
+   * @param scale A multiplier to scale the size of the resultant image.
    */
   RenderCamera& setOrthoProjectionMatrix(int width,
                                          int height,
                                          float znear,
-                                         float zfar);
+                                         float zfar,
+                                         float scale);
 
   /**
    * @brief Overload function to render the drawables
