@@ -877,6 +877,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
     const RenderAssetInstanceCreation& creation,
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
+#ifdef ESP_BUILD_PTEX_SUPPORT
   ASSERT(!creation.scale);  // PTex doesn't support scale
   ASSERT(creation.lightSetupKey ==
          NO_LIGHT_KEY);  // PTex doesn't support lighting
@@ -915,6 +916,11 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
     computePTexMeshAbsoluteAABBs(*meshes_.at(metaData.meshIndex.first),
                                  staticDrawableInfo);
   return instanceRoot;
+#else
+  LOG(ERROR) << "PTex support not enabled. Enable the BUILD_PTEX_SUPPORT CMake "
+                "option when building.";
+  return nullptr;
+#endif
 }
 
 bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
