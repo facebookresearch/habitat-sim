@@ -24,8 +24,8 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
 
 bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
-  staticStageObject_ =
-      physics::RigidStage::create_unique(&physicsNode_->createChild());
+  staticStageObject_ = physics::RigidStage::create_unique(
+      &physicsNode_->createChild(), resourceManager_);
   return true;
 }
 
@@ -50,7 +50,7 @@ bool PhysicsManager::addStage(
 
 bool PhysicsManager::addStageFinalize(const std::string& handle) {
   //! Initialize scene
-  bool sceneSuccess = staticStageObject_->initialize(resourceManager_, handle);
+  bool sceneSuccess = staticStageObject_->initialize(handle);
   return sceneSuccess;
 }
 
@@ -170,8 +170,9 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
 bool PhysicsManager::makeAndAddRigidObject(int newObjectID,
                                            const std::string& handle,
                                            scene::SceneNode* objectNode) {
-  auto ptr = physics::RigidObject::create_unique(objectNode, newObjectID);
-  bool objSuccess = ptr->initialize(resourceManager_, handle);
+  auto ptr = physics::RigidObject::create_unique(objectNode, newObjectID,
+                                                 resourceManager_);
+  bool objSuccess = ptr->initialize(handle);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }

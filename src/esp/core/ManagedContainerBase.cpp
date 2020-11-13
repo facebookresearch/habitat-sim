@@ -18,10 +18,11 @@ std::string ManagedContainerBase::convertFilenameToJSON(
                 jsonTypeExt;
     LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
               << filename
-              << " changed to proposed JSON filename : " << resHandle;
+              << " changed to proposed JSON configuration filename : "
+              << resHandle;
   } else {
     LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
-              << filename << " determined to be legitimate JSON.";
+              << filename << " is appropriate JSON configuration filename.";
   }
   return resHandle;
 }  // ManagedContainerBase::convertFilenameToJSON

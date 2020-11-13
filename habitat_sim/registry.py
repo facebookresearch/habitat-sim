@@ -6,7 +6,7 @@
 
 import collections
 import re
-from typing import Any, DefaultDict, Optional, Type
+from typing import DefaultDict, Optional, Type
 
 __all__ = ["registry"]
 
@@ -30,7 +30,7 @@ class _Registry:
 
     - Register a movement function : ``@registry.register_move_fn``
     """
-    _mapping: DefaultDict[str, Any] = collections.defaultdict(dict)
+    _mapping: DefaultDict[str, dict] = collections.defaultdict(dict)
 
     @classmethod
     def register_move_fn(
@@ -139,7 +139,7 @@ class _Registry:
             return _wrapper(pose_extractor)
 
     @classmethod
-    def _get_impl(cls, _type, name):
+    def _get_impl(cls, _type, name: str):
         return cls._mapping[_type].get(name, None)
 
     @classmethod
