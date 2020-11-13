@@ -331,6 +331,33 @@ class ResourceManager {
   }
 
   /**
+   * @brief Create and register a new Phong color material (no textures).
+   *
+   * Prototype feature, API likely to change.
+   *
+   * @return The unique id of the material for instance assignment.
+   */
+  int createPhongColorMaterial(const Mn::Color4& diffuse,
+                               const Mn::Color4& specular,
+                               const Mn::Color4& ambient = Mn::Color3(0),
+                               float shininess = 80) {
+    auto finalMaterial = gfx::PhongMaterialData::create_unique();
+
+    finalMaterial->shininess = shininess;
+
+    finalMaterial->ambientColor = ambient;
+    finalMaterial->diffuseColor = diffuse;
+    finalMaterial->specularColor = specular;
+
+    shaderManager_.set<gfx::MaterialData>(std::to_string(nextMaterialID_),
+                                          finalMaterial.release());
+
+    return nextMaterialID_++;
+  }
+
+  gfx::ShaderManager& getShaderManager() { return shaderManager_; }
+
+  /**
    * @brief Construct a unified @ref MeshData from a loaded asset's collision
    * meshes.
    *

@@ -841,7 +841,18 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::T:
       // Test key. Put what you want here...
-      torqueLastObject();
+      // torqueLastObject();
+      {
+        if (!simulator_->getExistingObjectIDs().empty()) {
+          Mn::Color4 randColor((rand() % 100) * 0.01, (rand() % 100) * 0.01,
+                               (rand() % 100) * 0.01, 1);
+          Mn::Debug{} << "Trying to set material: " << randColor;
+          int matId = simulator_->createPhongColorMaterial(randColor, randColor,
+                                                           randColor);
+          simulator_->setObjectMaterial(
+              simulator_->getExistingObjectIDs().back(), matId);
+        }
+      }
       break;
     case KeyEvent::Key::N:
       // toggle navmesh visualization
