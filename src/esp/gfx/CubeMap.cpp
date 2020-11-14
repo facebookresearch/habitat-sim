@@ -6,6 +6,7 @@
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/GL/TextureFormat.h>
+#include <Magnum/Shaders/Generic.h>
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -13,7 +14,14 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-CubeMap::CubeMap(int imageSize) {
+const Mn::GL::Framebuffer::ColorAttachment colorAttachment =
+    Mn::GL::Framebuffer::ColorAttachment{0};
+
+// TODO:
+// const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
+//    Mn::GL::Framebuffer::ColorAttachment{1};
+
+CubeMap::CubeMap(int imageSize, Flags flags) : flags_(flags) {
   reset(imageSize);
 }
 
@@ -36,38 +44,38 @@ void CubeMap::recreateTexture() {
   Mn::Vector2i size{imageSize_, imageSize_};
 
   // color texture
-  if (colorTexture_) {
-    colorTexture_.reset(nullptr);
+  if (flags_ | Flag::ColorTexture) {
+    auto& colorTexture = textures_[TextureType::Color];
+    colorTexture = std::make_unique<Mn::GL::CubeMapTexture>();
+    (*colorTexture)
+        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+        .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
+                               Mn::GL::SamplerMipmap::Linear)
+        .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
+        .setStorage(Mn::Math::log2(imageSize_) + 1, Mn::GL::TextureFormat::RGB8,
+                    size);
   }
-  colorTexture_ = std::make_unique<Mn::GL::CubeMapTexture>();
-  (*colorTexture_)
-      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-      .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
-                             Mn::GL::SamplerMipmap::Linear)
-      .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setStorage(Mn::Math::log2(imageSize_) + 1, Mn::GL::TextureFormat::RGB8,
-                  size);
 
   // depth texture
-  if (depthTexture_) {
-    depthTexture_.reset(nullptr);
+  if (flags_ | Flag::DepthTexture) {
+    auto& depthTexture = textures_[TextureType::Depth];
+    depthTexture = std::make_unique<Mn::GL::CubeMapTexture>();
+    (*depthTexture)
+        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+        .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+        .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+        .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, size);
   }
-  depthTexture_ = std::make_unique<Mn::GL::CubeMapTexture>();
-
-  (*depthTexture_)
-      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-      .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
-      .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
-      .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, size);
 }
 
 void CubeMap::recreateFramebuffer() {
   Mn::Vector2i viewportSize{imageSize_, imageSize_};
   frameBuffer_ = Mn::GL::Framebuffer{{{}, viewportSize}};
+  optionalDepthBuffer_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
+                                  viewportSize);
 }
 
 void CubeMap::prepareToDraw(int cubeSideIndex) {
-  // mapForDraw();
   CORRADE_ASSERT(cubeSideIndex >= 0 && cubeSideIndex < 6,
                  "CubeMap::prepareToDraw: the index of the cube side"
                      << cubeSideIndex << "is illegal.", );
@@ -94,18 +102,35 @@ void CubeMap::prepareToDraw(int cubeSideIndex) {
     default:  // never reach, just avoid compiler warning
       break;
   }
-  frameBuffer_
-      .attachCubeMapTexture(
-          Mn::GL::Framebuffer::ColorAttachment{colorAttachment_},
-          *colorTexture_, cubeMapCoord, 0)
-      .attachCubeMapTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
-                            *depthTexture_, cubeMapCoord, 0);
+  if (flags_ | Flag::ColorTexture) {
+    frameBuffer_.attachCubeMapTexture(
+        colorAttachment, *textures_[TextureType::Color], cubeMapCoord, 0);
+  }
+
+  if (flags_ | Flag::DepthTexture) {
+    frameBuffer_.attachCubeMapTexture(
+        Mn::GL::Framebuffer::BufferAttachment::Depth,
+        *textures_[TextureType::Depth], cubeMapCoord, 0);
+  } else {
+    frameBuffer_.attachRenderbuffer(
+        Mn::GL::Framebuffer::BufferAttachment::Depth, optionalDepthBuffer_);
+  }
+
+  mapForDraw();
 
   frameBuffer_.clearDepth(1.0f).clearColor(1, Mn::Vector4ui{0});
 
   CORRADE_INTERNAL_ASSERT(
       frameBuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
       Mn::GL::Framebuffer::Status::Complete);
+}
+
+void CubeMap::mapForDraw() {
+  frameBuffer_.mapForDraw({
+      {Mn::Shaders::Generic3D::ColorOutput, colorAttachment},
+      // TODO:
+      //{Mn::Shaders::Generic3D::ObjectIdOutput, objectIdAttachment}
+  });
 }
 
 void CubeMap::renderToTexture(CubeMapCamera& camera,
@@ -124,8 +149,8 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
 
     // TODO:
     // camera should have flags so that it can do "low quality" rendering,
-    // e.g., no normal maps, no specular lighting, low-poly meshes, low-quality
-    // textures.
+    // e.g., no normal maps, no specular lighting, low-poly meshes,
+    // low-quality textures.
 
     for (auto& it : sceneGraph.getDrawableGroups()) {
       // TODO: remove || true

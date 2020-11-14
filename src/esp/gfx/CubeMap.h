@@ -5,12 +5,14 @@
 #ifndef ESP_GFX_CUBEMAP_H_
 #define ESP_GFX_CUBEMAP_H_
 
+#include <map>
+
+#include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Trade/AbstractImporter.h>
-
 #include "esp/gfx/CubeMapCamera.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/scene/SceneGraph.h"
@@ -20,11 +22,33 @@ namespace esp {
 namespace gfx {
 class CubeMap {
  public:
+  enum class TextureType : int8_t {
+    Color = 0,
+    Depth = 1,
+    // TODO: ObjectId
+  };
+
+  enum class Flag : Magnum::UnsignedShort {
+    /**
+     *  create color cubemap
+     */
+    ColorTexture = 1 << 0,
+    /**
+     * create depth cubemap
+     */
+    DepthTexture = 1 << 1,
+  };
+
+  /**
+   * @brief Flags
+   */
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+
   /**
    * @brief, Constructor
    * @param size, the size of the cubemap texture (each face is size x size)
    */
-  CubeMap(int imageSize);
+  CubeMap(int imageSize, Flags flags = Flags{Flag::ColorTexture});
 
   /**
    * @brief, reset the image size
@@ -32,11 +56,10 @@ class CubeMap {
   void reset(int imageSize);
 
   /**
-   * @brief Get the cubemap color texture
+   * @brief Get the cubemap texture based on the texture type
    * @return Reference to the cubemap texture
    */
-  Magnum::GL::CubeMapTexture& getColorTexture() { return *colorTexture_; }
-  Magnum::GL::CubeMapTexture& getDepthTexture() { return *depthTexture_; }
+  Magnum::GL::CubeMapTexture& getTexture(TextureType type);
 
   /**
    * @brief Render to cubemap texture using the camera
@@ -63,25 +86,38 @@ class CubeMap {
                         const std::string& imageFileExtension);
 
  protected:
-  const unsigned int colorAttachment_ = 1;
+  Flags flags_;
   int imageSize_ = 0;
-  std::unique_ptr<Magnum::GL::CubeMapTexture> colorTexture_ = nullptr;
-  std::unique_ptr<Magnum::GL::CubeMapTexture> depthTexture_ = nullptr;
+  std::map<TextureType, std::unique_ptr<Magnum::GL::CubeMapTexture>> textures_;
+
+  /**
+   * @brief Recreate textures
+   */
   void recreateTexture();
 
   // framebuffer for drawable selection
   Magnum::GL::Framebuffer frameBuffer_{Magnum::NoCreate};
 
+  // in case there is no need to output depth texture, we need a depth buffer
+  Magnum::GL::Renderbuffer optionalDepthBuffer_;
+
   /**
-   * @brief recreate frame buffer
+   * @brief Recreate frame buffer
    */
   void recreateFramebuffer();
 
   /**
-   * @brief prepare to draw to the texture
+   * @brief Prepare to draw to the texture
    */
   void prepareToDraw(int cubeSideIndex);
+
+  /**
+   * @brief Map shader output to attachments.
+   */
+  void mapForDraw();
 };
+
+CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
 
 }  // namespace gfx
 }  // namespace esp
