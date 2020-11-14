@@ -33,28 +33,37 @@ void CubeMap::reset(int imageSize) {
 }
 
 void CubeMap::recreateTexture() {
-  if (texture_) {
-    texture_.reset(nullptr);
-  }
-  texture_ = std::make_unique<Mn::GL::CubeMapTexture>();
-
-  texture_->setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-      .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
-                             Mn::GL::SamplerMipmap::Linear);
-
   Mn::Vector2i size{imageSize_, imageSize_};
-  texture_->setStorage(Mn::Math::log2(imageSize_) + 1,
-                       Mn::GL::TextureFormat::RGB8, size);
+
+  // color texture
+  if (colorTexture_) {
+    colorTexture_.reset(nullptr);
+  }
+  colorTexture_ = std::make_unique<Mn::GL::CubeMapTexture>();
+  (*colorTexture_)
+      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+      .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
+                             Mn::GL::SamplerMipmap::Linear)
+      .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
+      .setStorage(Mn::Math::log2(imageSize_) + 1, Mn::GL::TextureFormat::RGB8,
+                  size);
+
+  // depth texture
+  if (depthTexture_) {
+    depthTexture_.reset(nullptr);
+  }
+  depthTexture_ = std::make_unique<Mn::GL::CubeMapTexture>();
+
+  (*depthTexture_)
+      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+      .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, size);
 }
 
 void CubeMap::recreateFramebuffer() {
   Mn::Vector2i viewportSize{imageSize_, imageSize_};
-  depthBuffer_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
-                          viewportSize);
   frameBuffer_ = Mn::GL::Framebuffer{{{}, viewportSize}};
-  frameBuffer_.attachRenderbuffer(Mn::GL::Framebuffer::BufferAttachment::Depth,
-                                  depthBuffer_);
 }
 
 void CubeMap::prepareToDraw(int cubeSideIndex) {
@@ -62,33 +71,38 @@ void CubeMap::prepareToDraw(int cubeSideIndex) {
   CORRADE_ASSERT(cubeSideIndex >= 0 && cubeSideIndex < 6,
                  "CubeMap::prepareToDraw: the index of the cube side"
                      << cubeSideIndex << "is illegal.", );
-  auto cubeMapCoord = [&]() {
-    switch (cubeSideIndex) {
-      case 0:
-        return (Mn::GL::CubeMapCoordinate::PositiveX);
-        break;
-      case 1:
-        return (Mn::GL::CubeMapCoordinate::NegativeX);
-        break;
-      case 2:
-        return (Mn::GL::CubeMapCoordinate::PositiveY);
-        break;
-      case 3:
-        return (Mn::GL::CubeMapCoordinate::NegativeY);
-        break;
-      case 4:
-        return (Mn::GL::CubeMapCoordinate::PositiveZ);
-        break;
-      case 5:
-        return (Mn::GL::CubeMapCoordinate::NegativeZ);
-        break;
-    }
-  };
-  frameBuffer_.attachCubeMapTexture(
-      Mn::GL::Framebuffer::ColorAttachment{colorAttachment_}, *texture_,
-      cubeMapCoord(), 0);
+  Mn::GL::CubeMapCoordinate cubeMapCoord = Mn::GL::CubeMapCoordinate::PositiveX;
+  switch (cubeSideIndex) {
+    case 0:
+      cubeMapCoord = Mn::GL::CubeMapCoordinate::PositiveX;
+      break;
+    case 1:
+      cubeMapCoord = Mn::GL::CubeMapCoordinate::NegativeX;
+      break;
+    case 2:
+      cubeMapCoord = Mn::GL::CubeMapCoordinate::PositiveY;
+      break;
+    case 3:
+      cubeMapCoord = Mn::GL::CubeMapCoordinate::NegativeY;
+      break;
+    case 4:
+      cubeMapCoord = Mn::GL::CubeMapCoordinate::PositiveZ;
+      break;
+    case 5:
+      cubeMapCoord = Mn::GL::CubeMapCoordinate::NegativeZ;
+      break;
+    default:  // never reach, just avoid compiler warning
+      break;
+  }
+  frameBuffer_
+      .attachCubeMapTexture(
+          Mn::GL::Framebuffer::ColorAttachment{colorAttachment_},
+          *colorTexture_, cubeMapCoord, 0)
+      .attachCubeMapTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
+                            *depthTexture_, cubeMapCoord, 0);
 
-  frameBuffer_.clearDepth(1.0f).clearColor(1, Mn::Vector4ui{0xffff});
+  frameBuffer_.clearDepth(1.0f).clearColor(1, Mn::Vector4ui{0});
+
   CORRADE_INTERNAL_ASSERT(
       frameBuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
       Mn::GL::Framebuffer::Status::Complete);
@@ -122,9 +136,9 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   }  // iFace
 }
 
-void CubeMap::loadTexture(Mn::Trade::AbstractImporter& importer,
-                          const std::string& imageFilePrefix,
-                          const std::string& imageFileExtension) {
+void CubeMap::loadColorTexture(Mn::Trade::AbstractImporter& importer,
+                               const std::string& imageFilePrefix,
+                               const std::string& imageFileExtension) {
   // TODO
 }
 

@@ -32,10 +32,11 @@ class CubeMap {
   void reset(int imageSize);
 
   /**
-   * @brief Get the cubemap texture
+   * @brief Get the cubemap color texture
    * @return Reference to the cubemap texture
    */
-  Magnum::GL::CubeMapTexture& getTexture() { return *texture_; }
+  Magnum::GL::CubeMapTexture& getColorTexture() { return *colorTexture_; }
+  Magnum::GL::CubeMapTexture& getDepthTexture() { return *depthTexture_; }
 
   /**
    * @brief Render to cubemap texture using the camera
@@ -57,19 +58,19 @@ class CubeMap {
    * {imageFilePrefix}+Z{imageFileExtension}
    * {imageFilePrefix}-Z{imageFileExtension}
    */
-  void loadTexture(Mn::Trade::AbstractImporter& importer,
-                   const std::string& imageFilePrefix,
-                   const std::string& imageFileExtension);
+  void loadColorTexture(Mn::Trade::AbstractImporter& importer,
+                        const std::string& imageFilePrefix,
+                        const std::string& imageFileExtension);
 
  protected:
-  const int colorAttachment_ = 1;
+  const unsigned int colorAttachment_ = 1;
   int imageSize_ = 0;
-  std::unique_ptr<Magnum::GL::CubeMapTexture> texture_ = nullptr;
+  std::unique_ptr<Magnum::GL::CubeMapTexture> colorTexture_ = nullptr;
+  std::unique_ptr<Magnum::GL::CubeMapTexture> depthTexture_ = nullptr;
   void recreateTexture();
 
   // framebuffer for drawable selection
   Magnum::GL::Framebuffer frameBuffer_{Magnum::NoCreate};
-  Magnum::GL::Renderbuffer depthBuffer_;
 
   /**
    * @brief recreate frame buffer

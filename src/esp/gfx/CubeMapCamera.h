@@ -8,6 +8,7 @@
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Tags.h>
+#include "esp/core/esp.h"
 #include "esp/gfx/RenderCamera.h"
 
 namespace esp {
@@ -99,6 +100,7 @@ class CubeMapCamera : public RenderCamera {
   // default value: identity matrix
   Magnum::Matrix4 originalViewingMatrix_ =
       Magnum::Matrix4{Magnum::Math::IdentityInit};
+  ESP_SMART_POINTERS(CubeMapCamera)
 };
 }  // namespace gfx
 }  // namespace esp
