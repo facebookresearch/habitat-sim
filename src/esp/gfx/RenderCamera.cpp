@@ -11,6 +11,7 @@
 #include <Magnum/SceneGraph/Drawable.h>
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/DrawableGroup.h"
+#include "esp/scene/SceneGraph.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -60,7 +61,7 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
 
     : RenderCamera(node) {
   // once it is attached, set the transformation
-  node.setTransformation(Mn::Matrix4::lookAt(eye, target, up));
+  resetViewingParameters(eye, target, up);
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node,
@@ -71,6 +72,17 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
                    Mn::Vector3{eye},
                    Mn::Vector3{target},
                    Mn::Vector3{up}) {}
+
+RenderCamera& RenderCamera::resetViewingParameters(const Mn::Vector3& eye,
+                                                   const Mn::Vector3& target,
+                                                   const Mn::Vector3& up) {
+  this->node().setTransformation(Mn::Matrix4::lookAt(eye, target, up));
+  return *this;
+}
+
+bool RenderCamera::isInSceneGraph(const scene::SceneGraph& sceneGraph) {
+  return (this->node().scene() == sceneGraph.getRootNode().parent());
+}
 
 RenderCamera& RenderCamera::setProjectionMatrix(int width,
                                                 int height,

@@ -1,5 +1,7 @@
 set(
   gfx_SOURCES
+  CubeMap.cpp
+  CubeMap.h
   DepthUnprojection.cpp
   DepthUnprojection.h
   Drawable.cpp

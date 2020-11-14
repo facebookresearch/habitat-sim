@@ -69,6 +69,25 @@ class RenderCamera : public MagnumCamera {
                const Magnum::Vector3& eye,
                const Magnum::Vector3& target,
                const Magnum::Vector3& up);
+  /**
+   * @brief Reset the initial viewing parameters of the camera
+   * @param eye, the eye position (parent node space)
+   * @param target, the target position (parent node space)
+   * @param up, the up direction (parent node space)
+   * @return Reference to self (for method chaining)
+   */
+  virtual RenderCamera& resetViewingParameters(const Magnum::Vector3& eye,
+                                               const Magnum::Vector3& target,
+                                               const Magnum::Vector3& up);
+  /**
+   * @brief Tell if the camera is attached to the scene graph
+   * @return true if it is attached to this scene graph, otherwise false
+   */
+  bool isInSceneGraph(const scene::SceneGraph& sceneGraph);
+
+  /**
+   * @brief destructor
+   */
   virtual ~RenderCamera() {
     // do nothing, let magnum handle the camera
   }

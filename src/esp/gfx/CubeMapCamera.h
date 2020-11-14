@@ -41,6 +41,7 @@ class CubeMapCamera : public RenderCamera {
                          const Magnum::Vector3& eye,
                          const Magnum::Vector3& target,
                          const Magnum::Vector3& up);
+  virtual ~CubeMapCamera(){};
   /**
    * @brief Move the camera towards a specified cube face
    * @param cubeSide, the cube map coordinate, see the following pictures
@@ -55,6 +56,41 @@ class CubeMapCamera : public RenderCamera {
    * @return Reference to self (for method chaining)
    */
   CubeMapCamera& switchToFace(Magnum::GL::CubeMapCoordinate cubeSide);
+  /**
+   * @brief Overload, move the camera towards a specified cube face
+   * @param cubSideIndex, the index of the cube map coordinate.
+   * 0: +X
+   * 1: -X
+   * 2: +Y
+   * 3: -Y
+   * 4: +Z
+   * 5: -Z
+   *           +----+
+   *           | -Y |
+   * +----+----+----+----+
+   * | -Z | -X | +Z | +X |
+   * +----+----+----+----+
+   *           | +Y |
+   *           +----+
+   * @return Reference to self (for method chaining)
+   */
+  CubeMapCamera& switchToFace(unsigned int cubeSideIndex);
+
+  /**
+   * Calling the the setProjectionMatrix from base class is not allowed
+   */
+  RenderCamera& setProjectionMatrix(int width,
+                                    int height,
+                                    float znear,
+                                    float zfar,
+                                    float hfov) = delete;
+  /**
+   * @brief Set the projection matrix
+   * @param width, the width of the square image plane
+   * @param znear the near clipping plane
+   * @param znear the far clipping plane
+   */
+  CubeMapCamera& setProjectionMatrix(int width, float znear, float zfar);
 
  protected:
   // viewing matrix (in parent node space) computed by Mn::Matrix4::lookAt(eye,
