@@ -12,28 +12,28 @@ https://github.com/facebookresearch/pyrobot
 Please cite PyRobot if you use this noise model
 """
 
-from typing import List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, List, Optional, Sequence, Tuple
 
 import attr
 import magnum as mn
 import numpy as np
 import scipy.stats
 from attr._make import Attribute
-from numpy import float64, ndarray
+from numpy import ndarray
 
 from habitat_sim import bindings as hsim
 from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
 from habitat_sim.registry import registry
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, init=False, slots=True)
 class _TruncatedMultivariateGaussian:
-    mean: Union[np.ndarray, Sequence[float]]
-    cov: Union[np.ndarray, Sequence[float]]
+    mean: np.ndarray
+    cov: np.ndarray
 
-    def __attrs_post_init__(self):
-        self.mean = np.array(self.mean)
-        self.cov = np.array(self.cov)
+    def __init__(self, mean: Sequence, cov: Sequence) -> None:
+        self.mean = np.array(mean)
+        self.cov = np.array(cov)
         if len(self.cov.shape) == 1:
             self.cov = np.diag(self.cov)
 
@@ -44,7 +44,7 @@ class _TruncatedMultivariateGaussian:
     def sample(
         self,
         truncation: Optional[
-            Union[List[Optional[Tuple[float64, None]]], List[Tuple[float64, None]]]
+            List[Optional[Tuple[Optional[Any], Optional[Any]]]]
         ] = None,
     ) -> ndarray:
         if truncation is not None:
@@ -52,7 +52,7 @@ class _TruncatedMultivariateGaussian:
 
         sample = np.zeros_like(self.mean)
         for i in range(len(self.mean)):
-            stdev = np.sqrt(cast(np.ndarray, self.cov)[i, i])
+            stdev = np.sqrt(self.cov[i, i])
             mean = self.mean[i]
             # Always truncate to 3 standard deviations
             a, b = -3, 3
@@ -69,19 +69,19 @@ class _TruncatedMultivariateGaussian:
         return sample
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class MotionNoiseModel:
     linear: _TruncatedMultivariateGaussian
     rotation: _TruncatedMultivariateGaussian
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class ControllerNoiseModel:
     linear_motion: MotionNoiseModel
     rotational_motion: MotionNoiseModel
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class RobotNoiseModel:
     ILQR: ControllerNoiseModel
     Proportional: ControllerNoiseModel

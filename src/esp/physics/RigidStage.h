@@ -14,7 +14,8 @@ namespace esp {
 namespace physics {
 class RigidStage : public RigidBase {
  public:
-  RigidStage(scene::SceneNode* rigidBodyNode);
+  RigidStage(scene::SceneNode* rigidBodyNode,
+             const assets::ResourceManager& resMgr);
 
   /**
    * @brief Virtual destructor for a @ref RigidStage.
@@ -29,8 +30,7 @@ class RigidStage : public RigidBase {
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialize(const assets::ResourceManager& resMgr,
-                  const std::string& handle) override;
+  bool initialize(const std::string& handle) override;
 
   /**
    * @brief Get a copy of the template used to initialize this stage object.
@@ -59,10 +59,7 @@ class RigidStage : public RigidBase {
    * pertaining to the stage object
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialization_LibSpecific(
-      CORRADE_UNUSED const assets::ResourceManager& resMgr) override {
-    return true;
-  }
+  bool initialization_LibSpecific() override { return true; }
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
    * after@ref RigidStage is created.  Called from finalizeObject.  Overridden

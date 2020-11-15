@@ -31,19 +31,20 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    1. [Details](#details)
    1. [Performance](#performance)
    1. [Installation](#installation)
-   1. [Common build issues](#common-build-issues)
    1. [Testing](#testing)
    1. [Documentation](#documentation)
    1. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
    1. [WebGL](#webgl)
    1. [Datasets](#datasets)
    1. [Examples](#examples)
+   1. [Code Style](#code-style)
+   1. [Development Tips](#development-tips)
    1. [Acknowledgments](#acknowledgments)
    1. [External Contributions](#external-contributions)
    1. [License](#license)
    1. [References](#references)
 
-## Motivation ##
+## Motivation
 AI Habitat enables training of embodied AI agents (virtual robots) in a highly photorealistic & efficient 3D simulator, before transferring the learned skills to reality.
 This empowers a paradigm shift from 'internet AI' based on static datasets (e.g. ImageNet, COCO, VQA) to embodied AI where agents act within realistic environments, bringing to the fore active perception, long-term planning, learning from interaction, and holding a dialog grounded in an environment.
 
@@ -285,7 +286,12 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
    tools/gen_gibson_semantics.sh /path/to/3DSceneGraph_medium/automated_graph /path/to/GibsonDataset /path/to/output
    ```
    To use semantics, you will need to enable the semantic sensor.
-
+- To work with the Replica dataset, you need a file called ```sorted_faces.bin``` for each model. Such files (1 file per model), along with a convenient setup script can be downloaded from here: [sorted_faces.zip](http://dl.fbaipublicfiles.com/habitat/sorted_faces.zip). You need:
+```
+  - Download the file from the above link;
+  - Unzip it;
+  - Use the script within to copy each data file to its corresponding folder (You will have to provide the path to the folder containing all replica models. For example, ~/models/replica/);
+```
 ## Examples
 
 Load a specific MP3D or Gibson house: `examples/example.py --scene path/to/mp3d/house_id.glb`.
@@ -295,7 +301,7 @@ Additional arguments to `example.py` are provided to change the sensor configura
 To reproduce the benchmark table from above run `examples/benchmark.py --scene /path/to/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb`.
 
 
-## Code style
+## Code Style
 
 We use `clang-format-8` for linting and code style enforcement of c++ code.
 Code style follows the [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html).

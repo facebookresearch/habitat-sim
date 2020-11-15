@@ -27,7 +27,7 @@ def _simulate(image: ndarray) -> ndarray:
     return noisy_rgb
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class PoissonNoiseModelCPUImpl:
     @staticmethod
     def simulate(image: ndarray) -> ndarray:
@@ -35,7 +35,7 @@ class PoissonNoiseModelCPUImpl:
 
 
 @registry.register_noise_model
-@attr.s(auto_attribs=True, kw_only=True)
+@attr.s(auto_attribs=True, kw_only=True, slots=True)
 class PoissonNoiseModel(SensorNoiseModel):
     def __attrs_post_init__(self) -> None:
         self._impl = PoissonNoiseModelCPUImpl()
