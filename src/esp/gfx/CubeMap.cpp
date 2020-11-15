@@ -2,11 +2,17 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree
 #include "CubeMap.h"
+#include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
+#include <Magnum/DebugTools/TextureImage.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/GL/TextureFormat.h>
+#include <Magnum/Image.h>
+#include <Magnum/ImageView.h>
+#include <Magnum/PixelFormat.h>
 #include <Magnum/Shaders/Generic.h>
+#include <Magnum/Trade/AbstractImageConverter.h>
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -44,7 +50,7 @@ void CubeMap::recreateTexture() {
   Mn::Vector2i size{imageSize_, imageSize_};
 
   // color texture
-  if (flags_ | Flag::ColorTexture) {
+  if (flags_ & Flag::ColorTexture) {
     auto& colorTexture = textures_[TextureType::Color];
     colorTexture = std::make_unique<Mn::GL::CubeMapTexture>();
     (*colorTexture)
@@ -52,12 +58,12 @@ void CubeMap::recreateTexture() {
         .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
                                Mn::GL::SamplerMipmap::Linear)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-        .setStorage(Mn::Math::log2(imageSize_) + 1, Mn::GL::TextureFormat::RGB8,
-                    size);
+        .setStorage(Mn::Math::log2(imageSize_) + 1,
+                    Mn::GL::TextureFormat::RGBA8, size);
   }
 
   // depth texture
-  if (flags_ | Flag::DepthTexture) {
+  if (flags_ & Flag::DepthTexture) {
     auto& depthTexture = textures_[TextureType::Depth];
     depthTexture = std::make_unique<Mn::GL::CubeMapTexture>();
     (*depthTexture)
@@ -75,39 +81,48 @@ void CubeMap::recreateFramebuffer() {
                                   viewportSize);
 }
 
-void CubeMap::prepareToDraw(int cubeSideIndex) {
-  CORRADE_ASSERT(cubeSideIndex >= 0 && cubeSideIndex < 6,
-                 "CubeMap::prepareToDraw: the index of the cube side"
-                     << cubeSideIndex << "is illegal.", );
-  Mn::GL::CubeMapCoordinate cubeMapCoord = Mn::GL::CubeMapCoordinate::PositiveX;
-  switch (cubeSideIndex) {
+Magnum::GL::CubeMapCoordinate CubeMap::convertFaceIndexToCubeMapCoordinate(
+    int faceIndex) {
+  CORRADE_ASSERT(faceIndex >= 0 && faceIndex < 6,
+                 "CubeMap::convertFaceIndexToCubeMapCoordinate(): the index of "
+                 "the cube side"
+                     << faceIndex << "is illegal.",
+                 Mn::GL::CubeMapCoordinate::PositiveX);
+  switch (faceIndex) {
     case 0:
-      cubeMapCoord = Mn::GL::CubeMapCoordinate::PositiveX;
+      return Mn::GL::CubeMapCoordinate::PositiveX;
       break;
     case 1:
-      cubeMapCoord = Mn::GL::CubeMapCoordinate::NegativeX;
+      return Mn::GL::CubeMapCoordinate::NegativeX;
       break;
     case 2:
-      cubeMapCoord = Mn::GL::CubeMapCoordinate::PositiveY;
+      return Mn::GL::CubeMapCoordinate::PositiveY;
       break;
     case 3:
-      cubeMapCoord = Mn::GL::CubeMapCoordinate::NegativeY;
+      return Mn::GL::CubeMapCoordinate::NegativeY;
       break;
     case 4:
-      cubeMapCoord = Mn::GL::CubeMapCoordinate::PositiveZ;
+      return Mn::GL::CubeMapCoordinate::PositiveZ;
       break;
     case 5:
-      cubeMapCoord = Mn::GL::CubeMapCoordinate::NegativeZ;
+      return Mn::GL::CubeMapCoordinate::NegativeZ;
       break;
     default:  // never reach, just avoid compiler warning
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
   }
-  if (flags_ | Flag::ColorTexture) {
+}
+
+void CubeMap::prepareToDraw(int cubeSideIndex) {
+  Magnum::GL::CubeMapCoordinate cubeMapCoord =
+      convertFaceIndexToCubeMapCoordinate(cubeSideIndex);
+
+  if (flags_ & Flag::ColorTexture) {
     frameBuffer_.attachCubeMapTexture(
         colorAttachment, *textures_[TextureType::Color], cubeMapCoord, 0);
   }
 
-  if (flags_ | Flag::DepthTexture) {
+  if (flags_ & Flag::DepthTexture) {
     frameBuffer_.attachCubeMapTexture(
         Mn::GL::Framebuffer::BufferAttachment::Depth,
         *textures_[TextureType::Depth], cubeMapCoord, 0);
@@ -131,6 +146,93 @@ void CubeMap::mapForDraw() {
       // TODO:
       //{Mn::Shaders::Generic3D::ObjectIdOutput, objectIdAttachment}
   });
+}
+void CubeMap::textureTypeSanityCheck(TextureType type,
+                                     const std::string& functionNameStr) {
+  // sanity check
+  switch (type) {
+    case TextureType::Color:
+      CORRADE_ASSERT(flags_ & Flag::ColorTexture,
+                     functionNameStr.c_str()
+                         << "instance was not created with color "
+                            "texture output enabled.", );
+      break;
+    case TextureType::Depth:
+      CORRADE_ASSERT(flags_ & Flag::DepthTexture,
+                     functionNameStr.c_str()
+                         << "instance was not created with depth "
+                            "texture output enabled.", );
+      break;
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
+}
+
+Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
+  textureTypeSanityCheck(type, "CubeMap::getTexture():");
+  return *textures_[type];
+}
+
+std::string CubeMap::getTextureTypeFilenameString(TextureType type) {
+  switch (type) {
+    case TextureType::Color:
+      return std::string(".rgba");
+      break;
+    case TextureType::Depth:
+      return std::string(".depth");
+      break;
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
+}
+
+bool CubeMap::saveTexture(TextureType type,
+                          const std::string& imageFilePrefix) {
+  textureTypeSanityCheck(type, "CubeMap::saveTexture():");
+
+  Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter> manager;
+  Cr::Containers::Pointer<Mn::Trade::AbstractImageConverter> converter;
+  if (!(converter = manager.loadAndInstantiate("AnyImageConverter"))) {
+    return false;
+  }
+
+  auto pixelFormat = [&]() {
+    switch (type) {
+      case TextureType::Color:
+        return Mn::PixelFormat::RGBA8Unorm;
+        break;
+      case TextureType::Depth:
+        return Mn::PixelFormat::R32F;
+        /*
+        case TextureType::ObjectId:
+        return Mn::PixelFormat::R32UI;
+        */
+      default:
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        break;
+    }
+  };
+
+  std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
+  for (int iFace = 0; iFace < 6; ++iFace) {
+    Mn::Image2D image = Mn::DebugTools::textureSubImage(
+        *textures_[type], convertFaceIndexToCubeMapCoordinate(iFace), 0,
+        frameBuffer_.viewport(), {pixelFormat()});
+
+    std::string filename = imageFilePrefix +
+                           getTextureTypeFilenameString(type) +
+                           coordStrings[iFace] + std::string{".png"};
+
+    if (!converter->exportToFile(image, filename)) {
+      return false;
+    } else {
+      LOG(INFO) << "Saved image " << iFace << " to " << filename;
+    }
+  }
+
+  return true;
 }
 
 void CubeMap::renderToTexture(CubeMapCamera& camera,
@@ -161,9 +263,10 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   }  // iFace
 }
 
-void CubeMap::loadColorTexture(Mn::Trade::AbstractImporter& importer,
-                               const std::string& imageFilePrefix,
-                               const std::string& imageFileExtension) {
+void CubeMap::loadTexture(Mn::Trade::AbstractImporter& importer,
+                          TextureType type,
+                          const std::string& imageFilePrefix,
+                          const std::string& imageFileExtension) {
   // TODO
 }
 

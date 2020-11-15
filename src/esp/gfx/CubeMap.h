@@ -60,6 +60,41 @@ class CubeMap {
    * @return Reference to the cubemap texture
    */
   Magnum::GL::CubeMapTexture& getTexture(TextureType type);
+  /**
+   * @brief save the cubemap texture based on the texture type
+   * @param type, texture type
+   * @param imageFilePrefix, the filename prefix
+   * The 6 image files then would be:
+   * {imageFilePrefix}.{texType}.+X.png
+   * {imageFilePrefix}.{texType}.-X.png
+   * {imageFilePrefix}.{texType}.+Y.png
+   * {imageFilePrefix}.{texType}.-Y.png
+   * {imageFilePrefix}.{texType}.+Z.png
+   * {imageFilePrefix}.{texType}.-Z.png
+   * @return true, if success, otherwise false
+   */
+  bool saveTexture(TextureType type, const std::string& imageFilePrefix);
+
+  /**
+   * @brief load cubemap texture from external images
+   * @param importer, image importer
+   * @param imageFilePrefix, the prefix of the image filename
+   * @param imageFileExtension, the image filename extension (such as "png",
+   * "jpg")
+   * The 6 image files then would be:
+   * {imageFilePrefix}.{texType}.+X.{imageFileExtension}
+   * {imageFilePrefix}.{texType}.-X.{imageFileExtension}
+   * {imageFilePrefix}.{texType}.+Y.{imageFileExtension}
+   * {imageFilePrefix}.{texType}.-Y.{imageFileExtension}
+   * {imageFilePrefix}.{texType}.+Z.{imageFileExtension}
+   * {imageFilePrefix}.{texType}.-Z.{imageFileExtension}
+   *
+   * texType can be "rgba", "depth", "objectId"
+   */
+  void loadTexture(Mn::Trade::AbstractImporter& importer,
+                   TextureType type,
+                   const std::string& imageFilePrefix,
+                   const std::string& imageFileExtension);
 
   /**
    * @brief Render to cubemap texture using the camera
@@ -68,22 +103,6 @@ class CubeMap {
   void renderToTexture(CubeMapCamera& camera,
                        scene::SceneGraph& sceneGraph,
                        RenderCamera::Flags flags);
-  /**
-   * @brief load cubemap texture from external images
-   * @param importer, image importer
-   * @param imageFilePrefix, the prefix of the image filename
-   * @param imageFileExtension, the image filename extension (such as .png,
-   * .jpg) The 6 image files then would be:
-   * {imageFilePrefix}+X{imageFileExtension}
-   * {imageFilePrefix}-X{imageFileExtension}
-   * {imageFilePrefix}+Y{imageFileExtension}
-   * {imageFilePrefix}-Y{imageFileExtension}
-   * {imageFilePrefix}+Z{imageFileExtension}
-   * {imageFilePrefix}-Z{imageFileExtension}
-   */
-  void loadColorTexture(Mn::Trade::AbstractImporter& importer,
-                        const std::string& imageFilePrefix,
-                        const std::string& imageFileExtension);
 
  protected:
   Flags flags_;
@@ -115,6 +134,24 @@ class CubeMap {
    * @brief Map shader output to attachments.
    */
   void mapForDraw();
+
+  /**
+   * @brief check if the class instance is created with corresponding texture
+   * enabled
+   */
+  void textureTypeSanityCheck(TextureType type,
+                              const std::string& functionNameStr);
+
+  /**
+   * @brief convert cube face index to Magnum::GL::CubeMapCoordinate
+   */
+  Magnum::GL::CubeMapCoordinate convertFaceIndexToCubeMapCoordinate(
+      int faceIndex);
+
+  /**
+   * @brief get texture type string for texture filename
+   */
+  std::string getTextureTypeFilenameString(TextureType type);
 };
 
 CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
