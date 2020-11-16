@@ -245,9 +245,10 @@ Key Commands:
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
 
-  std::unique_ptr<esp::gfx::CubeMapCamera> cubeMapCamera_;
-  std::unique_ptr<esp::gfx::CubeMap> cubeMap_;
-  esp::scene::SceneNode* cubeMapCameraNode_;
+  std::unique_ptr<esp::gfx::CubeMapCamera> cubeMapCamera_ = nullptr;
+  std::unique_ptr<esp::gfx::CubeMap> cubeMap_ = nullptr;
+  esp::scene::SceneNode* cubeMapCameraNode_ = nullptr;
+  bool cubeMapMode_ = false;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -416,10 +417,11 @@ Viewer::Viewer(const Arguments& arguments)
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
+  // cubeMapCamera node directly connects to the root node
   cubeMapCameraNode_ = &(activeSceneGraph_->getRootNode().createChild());
   cubeMapCamera_ =
       std::make_unique<esp::gfx::CubeMapCamera>(*cubeMapCameraNode_);
-  cubeMap_ = std::make_unique<esp::gfx::CubeMap>(1024);
+  cubeMap_ = std::make_unique<esp::gfx::CubeMap>(128);
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -544,6 +546,27 @@ void Viewer::wiggleLastObject() {
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
+  // test: create a cubemap and save the 6 images to the disk;
+  if (cubeMapMode_) {
+    esp::sensor::Sensor::ptr sensor = simulator_->getAgent(defaultAgentId_)
+                                          ->getSensorSuite()
+                                          .get("rgba_camera");
+    if (sensor) {
+      cubeMapCameraNode_->setTransformation(
+          sensor->node().absoluteTransformation());
+      esp::gfx::RenderCamera::Flags flags;
+      if (simulator_->isFrustumCullingEnabled()) {
+        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      }
+      cubeMap_->renderToTexture(*cubeMapCamera_, *activeSceneGraph_, flags);
+      if (cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color,
+                                std::string("cubemap"))) {
+        LOG(INFO) << "CubeMap has been successfully saved.";
+      }
+    }
+    cubeMapMode_ = !cubeMapMode_;
+  }
+
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
@@ -798,6 +821,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Down:
       defaultAgent_->act("lookDown");
       break;
+
+    case KeyEvent::Key::One:
+      cubeMapMode_ = !cubeMapMode_;
+      break;
+
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
       break;

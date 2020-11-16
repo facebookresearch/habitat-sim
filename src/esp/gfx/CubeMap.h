@@ -72,6 +72,14 @@ class CubeMap {
    * {imageFilePrefix}.{texType}.+Z.png
    * {imageFilePrefix}.{texType}.-Z.png
    * @return true, if success, otherwise false
+   * NOTE: +Y is top
+   *           +----+
+   *           | -Y |
+   * +----+----+----+----+
+   * | -Z | -X | +Z | +X |
+   * +----+----+----+----+
+   *           | +Y |
+   *           +----+
    */
   bool saveTexture(TextureType type, const std::string& imageFilePrefix);
 
@@ -90,6 +98,14 @@ class CubeMap {
    * {imageFilePrefix}.{texType}.-Z.{imageFileExtension}
    *
    * texType can be "rgba", "depth", "objectId"
+   * NOTE: +Y is top
+   *           +----+
+   *           | -Y |
+   * +----+----+----+----+
+   * | -Z | -X | +Z | +X |
+   * +----+----+----+----+
+   *           | +Y |
+   *           +----+
    */
   void loadTexture(Mn::Trade::AbstractImporter& importer,
                    TextureType type,
