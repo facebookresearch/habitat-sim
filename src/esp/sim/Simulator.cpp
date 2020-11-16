@@ -558,6 +558,14 @@ bool Simulator::contactTest(const int objectID, const int sceneID) {
   return false;
 }
 
+std::vector<esp::physics::ContactPointData> Simulator::getPhysicsContactPoints(
+    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getContactPoints();
+  }
+  return {};
+}
+
 esp::physics::RaycastResults Simulator::castRay(const esp::geo::Ray& ray,
                                                 float maxDistance,
                                                 const int sceneID) {
