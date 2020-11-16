@@ -50,6 +50,9 @@
 #include "ObjectPickingHelper.h"
 #include "esp/physics/configure.h"
 
+#include "esp/gfx/CubeMap.h"
+#include "esp/gfx/CubeMapCamera.h"
+
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
@@ -241,6 +244,10 @@ Key Commands:
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
+
+  std::unique_ptr<esp::gfx::CubeMapCamera> cubeMapCamera_;
+  std::unique_ptr<esp::gfx::CubeMap> cubeMap_;
+  esp::scene::SceneNode* cubeMapCameraNode_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -408,6 +415,10 @@ Viewer::Viewer(const Arguments& arguments)
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
+
+  cubeMapCameraNode_ = &(activeSceneGraph_->getRootNode().createChild());
+  cubeMapCamera_ =
+      std::make_unique<esp::gfx::CubeMapCamera>(*cubeMapCameraNode_);
 
   printHelpText();
 }  // end Viewer::Viewer

@@ -50,9 +50,10 @@ class RenderCamera : public MagnumCamera {
   /**
    * @brief Constructor
    * @param node, the scene node to which the camera is attached
-   * @param eye, the eye position (parent node space)
-   * @param target, the target position (parent node space)
-   * @param up, the up direction (parent node space)
+   * @param eye, the eye position (in PARENT node space)
+   * @param target, the target position (in PARENT node space)
+   * @param up, the up direction (in PARENT node space)
+   * NOTE: it will override any relative transformation w.r.t its parent node
    */
   RenderCamera(scene::SceneNode& node,
                const vec3f& eye,
@@ -61,9 +62,10 @@ class RenderCamera : public MagnumCamera {
   /**
    * @brief Constructor
    * @param node, the scene node to which the camera is attached
-   * @param eye, the eye position (parent node space)
-   * @param target, the target position (parent node space)
-   * @param up, the up direction (parent node space)
+   * @param eye, the eye position (in PARENT node space)
+   * @param target, the target position (in PARENT node space)
+   * @param up, the up direction (in PARENT node space)
+   * NOTE: it will override any relative transformation w.r.t its parent node
    */
   RenderCamera(scene::SceneNode& node,
                const Magnum::Vector3& eye,
@@ -71,10 +73,11 @@ class RenderCamera : public MagnumCamera {
                const Magnum::Vector3& up);
   /**
    * @brief Reset the initial viewing parameters of the camera
-   * @param eye, the eye position (parent node space)
-   * @param target, the target position (parent node space)
-   * @param up, the up direction (parent node space)
+   * @param eye, the eye position (in PARENT node space)
+   * @param target, the target position (in PARENT node space)
+   * @param up, the up direction (in PARENT node space)
    * @return Reference to self (for method chaining)
+   * NOTE: it will override any relative transformation w.r.t its parent node
    */
   virtual RenderCamera& resetViewingParameters(const Magnum::Vector3& eye,
                                                const Magnum::Vector3& target,
