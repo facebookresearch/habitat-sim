@@ -61,6 +61,28 @@ void initPhysicsBindings(py::module& m) {
       .def_readonly("hits", &RaycastResults::hits)
       .def_readonly("ray", &RaycastResults::ray)
       .def("has_hits", &RaycastResults::hasHits);
+
+  py::class_<ContactPointData, ContactPointData::ptr>(m, "ContactPointData")
+      .def(py::init(&ContactPointData::create<>))
+      .def_readwrite("object_id_a", &ContactPointData::objectIdA)
+      .def_readwrite("object_id_b", &ContactPointData::objectIdB)
+      .def_readwrite("link_id_a", &ContactPointData::linkIndexA)
+      .def_readwrite("link_id_b", &ContactPointData::linkIndexB)
+      .def_readwrite("position_on_a_in_ws", &ContactPointData::positionOnAInWS)
+      .def_readwrite("position_on_b_in_ws", &ContactPointData::positionOnBInWS)
+      .def_readwrite("contact_normal_on_b_in_ws",
+                     &ContactPointData::contactNormalOnBInWS)
+      .def_readwrite("contact_distance", &ContactPointData::contactDistance)
+      .def_readwrite("normal_force", &ContactPointData::normalForce)
+      .def_readwrite("linear_friction_force1",
+                     &ContactPointData::linearFrictionForce1)
+      .def_readwrite("linear_friction_force2",
+                     &ContactPointData::linearFrictionForce2)
+      .def_readwrite("linear_friction_direction1",
+                     &ContactPointData::linearFrictionDirection1)
+      .def_readwrite("linear_friction_direction2",
+                     &ContactPointData::linearFrictionDirection2)
+      .def_readwrite("is_active", &ContactPointData::isActive);
 }
 
 }  // namespace physics

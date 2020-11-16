@@ -66,6 +66,37 @@ struct RaycastResults {
   ESP_SMART_POINTERS(RaycastResults)
 };
 
+// based on Bullet b3ContactPointData
+struct ContactPointData {
+  int objectIdA = -2;  // stage is -1
+  int objectIdB = -2;
+  int linkIndexA = -1;  // -1 if not a multibody
+  int linkIndexB = -1;
+
+  Magnum::Vector3 positionOnAInWS;  // contact point location on object A, in
+                                    // world space coordinates
+  Magnum::Vector3 positionOnBInWS;  // contact point location on object B, in
+                                    // world space coordinates
+  Magnum::Vector3
+      contactNormalOnBInWS;  // the separating contact normal, pointing from
+                             // object B towards object A
+  double contactDistance =
+      0.0;  // negative number is penetration, positive is distance.
+
+  double normalForce = 0.0;
+
+  double linearFrictionForce1 = 0.0;
+  double linearFrictionForce2 = 0.0;
+  Magnum::Vector3 linearFrictionDirection1;
+  Magnum::Vector3 linearFrictionDirection2;
+
+  // the contact is considered active if at least one object is active (not
+  // asleep)
+  bool isActive = false;
+
+  ESP_SMART_POINTERS(ContactPointData)
+};
+
 // TODO: repurpose to manage multiple physical worlds. Currently represents
 // exactly one world.
 
@@ -1049,6 +1080,8 @@ class PhysicsManager {
   virtual bool contactTest(CORRADE_UNUSED const int physObjectID) {
     return false;
   };
+
+  virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
 
   /** @brief Return the library implementation type for the simulator currently
    * in use. Use to check for a particular implementation.

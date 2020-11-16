@@ -188,6 +188,13 @@ class BulletPhysicsManager : public PhysicsManager {
   bool contactTest(const int physObjectID) override;
 
   /**
+   * @brief Return ContactPointData objects describing the contacts from the
+   * most recent physics substep. This implementation is roughly identical to
+   * PyBullet's getContactPoints.
+   */
+  std::vector<ContactPointData> getContactPoints() const override;
+
+  /**
    * @brief Cast a ray into the collision world and return a @ref RaycastResults
    * with hit information.
    *
@@ -322,6 +329,8 @@ class BulletPhysicsManager : public PhysicsManager {
   std::shared_ptr<std::map<const btCollisionObject*, int>>
       collisionObjToObjIds_;
 
+  int m_recentNumSubStepsTaken = -1;  // for recent call to stepPhysics
+
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for
    * Bullet.
@@ -331,6 +340,10 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return true if valid, false otherwise.
    */
   bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
+
+  void lookUpObjectIdAndLinkId(const btCollisionObject* colObj,
+                               int* objectId,
+                               int* linkId) const;
 
   ESP_SMART_POINTERS(BulletPhysicsManager)
 
