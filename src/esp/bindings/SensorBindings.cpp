@@ -48,16 +48,16 @@ void initSensorBindings(py::module& m) {
       .value("DEPTH", SensorType::DEPTH)
       .value("SEMANTIC", SensorType::SEMANTIC);
 
-  py::enum_<SensorSubtype>(m, "SensorSubType")
-      .value("PINHOLE", SensorSubtype::PINHOLE)
-      .value("ORTHOGRAPHIC", SensorSubtype::ORTHOGRAPHIC);
+  py::enum_<SensorSubType>(m, "SensorSubType")
+      .value("PINHOLE", SensorSubType::Pinhole)
+      .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
 
   // ==== SensorSpec ====
   py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())
       .def(py::init(&SensorSpec::create<>))
       .def_readwrite("uuid", &SensorSpec::uuid)
       .def_readwrite("sensor_type", &SensorSpec::sensorType)
-      .def_readwrite("sensor_subtype", &SensorSpec::sensorSubtype)
+      .def_readwrite("sensor_subtype", &SensorSpec::sensorSubType)
       .def_readwrite("parameters", &SensorSpec::parameters)
       .def_readwrite("position", &SensorSpec::position)
       .def_readwrite("orientation", &SensorSpec::orientation)

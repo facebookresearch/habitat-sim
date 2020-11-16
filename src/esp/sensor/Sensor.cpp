@@ -51,7 +51,7 @@ void Sensor::setTransformationFromSpec() {
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubtype == b.sensorSubtype && a.parameters == b.parameters &&
+         a.sensorSubType == b.sensorSubType && a.parameters == b.parameters &&
          a.position == b.position && a.orientation == b.orientation &&
          a.resolution == b.resolution && a.channels == b.channels &&
          a.encoding == b.encoding && a.observationSpace == b.observationSpace &&

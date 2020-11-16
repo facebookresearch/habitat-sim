@@ -32,12 +32,12 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
     // sensor
 
     auto& sensorNode = agentNode.createChild();
-    switch (spec->sensorSubtype) {
-      case sensor::SensorSubtype::PINHOLE: {
+    switch (spec->sensorSubType) {
+      case sensor::SensorSubType::Pinhole: {
         sensors_.add(sensor::PinholeCamera::create(sensorNode, spec));
         break;
       }
-      case sensor::SensorSubtype::ORTHOGRAPHIC: {
+      case sensor::SensorSubType::Orthographic: {
         sensors_.add(sensor::OrthoCamera::create(sensorNode, spec));
         break;
       }

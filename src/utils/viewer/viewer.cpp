@@ -402,16 +402,16 @@ Viewer::Viewer(const Arguments& arguments)
       esp::vec2i(viewportSize[1], viewportSize[0]);
   if (args.isSet("use-ortho-camera")) {
     // try orthographic camera
-    agentConfig.sensorSpecifications[0]->sensorSubtype =
-        esp::sensor::SensorSubtype::ORTHOGRAPHIC;
+    agentConfig.sensorSpecifications[0]->sensorSubType =
+        esp::sensor::SensorSubType::Orthographic;
     // use this value to scale the ortho image.  The smaller the value, the
     // larger the resultant image.
     agentConfig.sensorSpecifications[0]->parameters["ortho_scale"] =
         args.value("ortho-scale");
 
   } else {
-    agentConfig.sensorSpecifications[0]->sensorSubtype =
-        esp::sensor::SensorSubtype::PINHOLE;
+    agentConfig.sensorSpecifications[0]->sensorSubType =
+        esp::sensor::SensorSubType::Pinhole;
   }
   // add selects a random initial state and sets up the default controls and
   // step filter

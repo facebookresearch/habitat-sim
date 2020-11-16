@@ -61,7 +61,7 @@ void initGfxBindings(py::module& m) {
         Set this `Camera`'s projection matrix.
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)
-      .def("set_ortho_projection_matrix",
+      .def("set_orthographic_projection_matrix",
            &RenderCamera::setOrthoProjectionMatrix, R"(
         Set this `Orthographic Camera`'s projection matrix.
       )",
