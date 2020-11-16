@@ -10,6 +10,7 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
+#include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/metadata/MetadataMediator.h"
@@ -732,6 +733,51 @@ class Simulator {
   void setObjectLightSetup(int objectID,
                            const std::string& lightSetupKey,
                            int sceneID = 0);
+
+  /**
+   * @brief Create and register a new Phong color material (no textures).
+   *
+   * Prototype feature, API likely to change.
+   *
+   * @return The unique id of the material for instance assignment.
+   */
+  int createPhongColorMaterial(const Mn::Color4& diffuse,
+                               const Mn::Color4& specular,
+                               const Mn::Color4& ambient = Mn::Color3(0),
+                               float shininess = 80) {
+    return resourceManager_->createPhongColorMaterial(diffuse, specular,
+                                                      ambient, shininess);
+  }
+
+  /**
+   * @brief Set all Drawable components of an object to use a particular
+   * material.
+   *
+   * @param objectID Which object to modify.
+   * @param materialKey The key of the material set. E.g. returned from @ref
+   * createPhongColorMaterial.
+   */
+  void setObjectMaterial(int objectID, int materialKey) {
+    if (sceneHasPhysics(activeSceneID_)) {
+      auto visualNodes = physicsManager_->getObjectVisualSceneNodes(objectID);
+      Mn::Debug{} << "Trying to set material for object node ("
+                  << visualNodes.size() << ")";
+      for (auto node : visualNodes) {
+        // look for a Drawable to modify in the feature list
+        auto feature = node->features().first();
+        while (feature != nullptr) {
+          auto drawable = dynamic_cast<gfx::GenericDrawable*>(feature);
+          if (drawable != nullptr) {
+            Mn::Debug{} << " - found one";
+            // found a drawable, set the material key
+            drawable->setMaterial(resourceManager_->getShaderManager(),
+                                  std::to_string(materialKey));
+          }
+          feature = feature->nextFeature();
+        }
+      }
+    }
+  }
 
   /**
    * @brief Getter for PRNG.

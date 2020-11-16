@@ -273,6 +273,14 @@ void initSimBindings(py::module& m) {
           "set_object_light_setup", &Simulator::setObjectLightSetup,
           "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0,
           R"(Modify the LightSetup used to the render all components of an object by setting the LightSetup key referenced by all Drawables attached to the object's visual SceneNodes.)")
+      .def(
+          "create_phong_color_material", &Simulator::createPhongColorMaterial,
+          "diffuse"_a, "specular"_a, "ambient"_a, "shininess"_a = 0,
+          R"(Prototype API, unstable. Create a new Phong color material and return the material key for assignment with Simulator.set_object_material(object_id, material_key).)")
+      .def(
+          "set_object_material", &Simulator::setObjectMaterial, "object_id"_a,
+          "material_key"_a,
+          R"(Prototype API, unstable. Assign a material to all of an object's Drawables.)")
 
       .def(
           "get_num_active_contact_points",
