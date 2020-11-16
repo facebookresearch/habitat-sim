@@ -421,7 +421,7 @@ Viewer::Viewer(const Arguments& arguments)
   cubeMapCameraNode_ = &(activeSceneGraph_->getRootNode().createChild());
   cubeMapCamera_ =
       std::make_unique<esp::gfx::CubeMapCamera>(*cubeMapCameraNode_);
-  cubeMap_ = std::make_unique<esp::gfx::CubeMap>(128);
+  cubeMap_ = std::make_unique<esp::gfx::CubeMap>(512);
 
   printHelpText();
 }  // end Viewer::Viewer

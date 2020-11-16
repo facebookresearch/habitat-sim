@@ -244,6 +244,10 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   camera.setProjectionMatrix(imageSize_,
                              0.001f,    // z-near
                              1000.0f);  // z-far
+  // In case user set the relative transformation of the camera node before
+  // calling this function, original viewing matrix of the camera MUST be
+  // updated as well.
+  camera.updateOriginalViewingMatrix();
   frameBuffer_.bind();
   for (int iFace = 0; iFace < 6; ++iFace) {
     camera.switchToFace(iFace);

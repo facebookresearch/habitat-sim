@@ -93,6 +93,12 @@ class CubeMapCamera : public RenderCamera {
    */
   CubeMapCamera& setProjectionMatrix(int width, float znear, float zfar);
 
+  /**
+   * @brief Updae the original viewing matrix. It MUST be called after each time
+   * the relative transformation of camera node has been set.
+   */
+  CubeMapCamera& updateOriginalViewingMatrix();
+
  protected:
   // viewing matrix (in parent node space) computed by Mn::Matrix4::lookAt(eye,
   // target, up)

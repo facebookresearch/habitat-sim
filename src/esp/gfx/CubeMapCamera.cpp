@@ -12,7 +12,7 @@ namespace esp {
 namespace gfx {
 
 CubeMapCamera::CubeMapCamera(scene::SceneNode& node) : RenderCamera(node) {
-  originalViewingMatrix_ = node.transformation();
+  updateOriginalViewingMatrix();
 }
 CubeMapCamera::CubeMapCamera(scene::SceneNode& node,
                              const vec3f& eye,
@@ -27,7 +27,11 @@ CubeMapCamera::CubeMapCamera(scene::SceneNode& node,
                              const Mn::Vector3& target,
                              const Mn::Vector3& up)
     : RenderCamera(node, eye, target, up) {
-  originalViewingMatrix_ = node.transformation();
+  updateOriginalViewingMatrix();
+}
+CubeMapCamera& CubeMapCamera::updateOriginalViewingMatrix() {
+  originalViewingMatrix_ = this->node().transformation();
+  return *this;
 }
 
 CubeMapCamera& CubeMapCamera::switchToFace(unsigned int cubeSideIndex) {
