@@ -147,7 +147,7 @@ Mouse Functions:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
   SHIFT-RIGHT:
     Click a mesh to highlight it.
-  WHEEL: 
+  WHEEL:
     Control Camera zoom (+SHIFT for fine grained control)
 
 Key Commands:

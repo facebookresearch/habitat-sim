@@ -61,7 +61,7 @@ class CameraSensor : public VisualSensor {
     float before = zoomMatrix_[0][0];
     zoomMatrix_ =
         Magnum::Matrix4::scaling({factor, factor, 1.0f}) * zoomMatrix_;
-    recalcProjectionMatrix();
+    recomputeProjectionMatrix();
   }
 
   /**
@@ -77,13 +77,13 @@ class CameraSensor : public VisualSensor {
    * display size. This should be called only when camera type, size or clipping
    * planes change.
    */
-  void recalcBaseProjectionMatrix();
+  void recomputeBaseProjectionMatrix();
 
   /**
    * @brief Recalculate the projection Matrix used by this Camera Sensor, which
-   * should be recalculated @ref zoomMatrix_ or @ref baseProjMatrix_ change.
+   * should be recomputeulated @ref zoomMatrix_ or @ref baseProjMatrix_ change.
    */
-  void recalcProjectionMatrix() {
+  void recomputeProjectionMatrix() {
     projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
   }
 
@@ -95,8 +95,8 @@ class CameraSensor : public VisualSensor {
   void readObservation(Observation& obs);
 
   /**
-   * @brief This camera's projection matrix. Should be recalculated every time
-   * size changes.
+   * @brief This camera's projection matrix. Should be recomputeulated every
+   * time size changes.
    */
   Magnum::Matrix4 projectionMatrix_;
 

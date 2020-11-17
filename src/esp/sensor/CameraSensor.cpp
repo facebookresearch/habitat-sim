@@ -48,24 +48,24 @@ void CameraSensor::setCameraType(const SensorSubType& _cameraType) {
   // addjust size to match parameters
   size_ /= scale;
   // rebuild base projection matrix and projection matrix.
-  recalcBaseProjectionMatrix();
+  recomputeBaseProjectionMatrix();
 }  // CameraSensor::setCameraType
 
-void CameraSensor::recalcBaseProjectionMatrix() {
+void CameraSensor::recomputeBaseProjectionMatrix() {
   if (cameraType_ == SensorSubType::Pinhole) {
     baseProjMatrix_ = Mn::Matrix4::perspectiveProjection(size_, near_, far_);
   } else if (cameraType_ == SensorSubType::Orthographic) {
     baseProjMatrix_ = Mn::Matrix4::orthographicProjection(size_, near_, far_);
   } else {
-    LOG(INFO) << "CameraSensor::recalcBaseProjectionMatrix : Unsupported "
+    LOG(INFO) << "CameraSensor::recomputeBaseProjectionMatrix : Unsupported "
                  "Camera type val :"
               << static_cast<int>(cameraType_) << " so defaulting to Pinhole.";
     cameraType_ = SensorSubType::Pinhole;
     baseProjMatrix_ = Mn::Matrix4::perspectiveProjection(size_, near_, far_);
   }
   // build projection matrix
-  recalcProjectionMatrix();
-}  // CameraSensor::recalcBaseProjectionMatrix
+  recomputeProjectionMatrix();
+}  // CameraSensor::recomputeBaseProjectionMatrix
 
 CameraSensor& CameraSensor::setProjectionMatrix(
     gfx::RenderCamera& targetCamera) {
