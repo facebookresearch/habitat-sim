@@ -48,7 +48,8 @@ namespace managers {
  */
 
 template <class T>
-void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
+void declareBaseAttributesManager(py::module& m,
+                                  const std::string& classStrPrefix) {
   using MgrClass = AttributesManager<T>;
   using AttribsPtr = std::shared_ptr<T>;
   // Most, but not all, of these methods are from ManagedContainer class
@@ -74,12 +75,14 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
           R"(Returns a list of template handles that either contain or explicitly do not
             contain the passed search_str, based on the value of boolean contains.)",
           "search_str"_a = "", "contains"_a = true)
-      .def("load_configs", &MgrClass::loadAllConfigsFromPath,
-           R"(Build templates for all JSON files with appropriate extension
+      .def(
+          "load_configs",
+          static_cast<std::vector<int> (MgrClass::*)(const std::string&, bool)>(
+              &MgrClass::loadAllConfigsFromPath),
+          R"(Build templates for all JSON files with appropriate extension
             that exist in the provided file or directory path. If save_as_defaults
-            is true, then these templates will be unable to be deleted)"
-           "path"_a,
-           "save_as_defaults"_a = false)
+            is true, then these templates will be unable to be deleted)",
+          "path"_a, "save_as_defaults"_a = false)
       .def("create_template",
            static_cast<AttribsPtr (MgrClass::*)(const std::string&, bool)>(
                &MgrClass::createObject),
@@ -154,7 +157,8 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
       .def("register_template", &MgrClass::registerObject,
            R"(This registers a copy of the passed template in the library, and
              returns the template's integer ID.)",
-           "template"_a, "specified_handle"_a = "")
+           "template"_a, "specified_handle"_a = "",
+           "force_registration"_a = false)
       .def("get_template_by_ID",
            static_cast<AttribsPtr (MgrClass::*)(int)>(
                &MgrClass::getObjectCopyByID),
@@ -285,9 +289,8 @@ void initAttributesManagersBindings(py::module& m) {
            R"(DEPRECATED : use "load_configs" instead.
             Build templates for all files with ".object_config.json" extension
             that exist in the provided file or directory path. If save_as_defaults
-            is true, then these templates will be unable to be deleted)"
-           "path"_a,
-           "save_as_defaults"_a = false)
+            is true, then these templates will be unable to be deleted)",
+           "path"_a, "save_as_defaults"_a = false)
 
       // manage file-based templates access
       .def(

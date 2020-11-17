@@ -78,8 +78,10 @@ struct JointMotor {
  */
 class ArticulatedLink : public RigidBase {
  public:
-  ArticulatedLink(scene::SceneNode* bodyNode, int index)
-      : mbIndex_(index), RigidBase(bodyNode){};
+  ArticulatedLink(scene::SceneNode* bodyNode,
+                  int index,
+                  const assets::ResourceManager& resMgr)
+      : mbIndex_(index), RigidBase(bodyNode, resMgr){};
 
   virtual ~ArticulatedLink(){};
 
@@ -110,8 +112,7 @@ class ArticulatedLink : public RigidBase {
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialize(CORRADE_UNUSED const assets::ResourceManager& resMgr,
-                          CORRADE_UNUSED const std::string& handle) override {
+  virtual bool initialize(CORRADE_UNUSED const std::string& handle) override {
     return true;
   };
 
@@ -202,14 +203,9 @@ class ArticulatedLink : public RigidBase {
  private:
   /**
    * @brief Finalize the initialization of this link.
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialization_LibSpecific(
-      CORRADE_UNUSED const assets::ResourceManager& resMgr) override {
-    return true;
-  };
+  virtual bool initialization_LibSpecific() override { return true; };
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
    * after creation.
@@ -235,8 +231,8 @@ class ArticulatedLink : public RigidBase {
  */
 class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  ArticulatedObject(scene::SceneNode* rootNode)
-      : Magnum::SceneGraph::AbstractFeature3D(*rootNode){};
+  ArticulatedObject(scene::SceneNode* rootNode, assets::ResourceManager& resMgr)
+      : Magnum::SceneGraph::AbstractFeature3D(*rootNode), resMgr_(resMgr){};
 
   virtual ~ArticulatedObject() {
     // clear links and delete their SceneNodes
@@ -269,7 +265,6 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual bool initializeFromURDF(
       CORRADE_UNUSED URDFImporter& urdfImporter,
       CORRADE_UNUSED const Magnum::Matrix4& worldTransform,
-      CORRADE_UNUSED assets::ResourceManager& resourceManager,
       CORRADE_UNUSED gfx::DrawableGroup* drawables,
       CORRADE_UNUSED scene::SceneNode* physicsNode,
       CORRADE_UNUSED bool fixedBase = false) {
@@ -419,7 +414,6 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
       CORRADE_UNUSED const
           std::map<std::string, std::shared_ptr<io::URDF::Material> >&
               materials,
-      CORRADE_UNUSED assets::ResourceManager& resourceManager,
       CORRADE_UNUSED gfx::DrawableGroup* drawables) {
     return false;
   };
@@ -431,6 +425,10 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   std::map<int, JointMotor::uptr> jointMotors_;
 
   MotionType motionType_ = MotionType::KINEMATIC;
+
+  //! Reference to the ResourceManager for internal access to the object's asset
+  //! data.
+  assets::ResourceManager& resMgr_;
 
   ESP_SMART_POINTERS(ArticulatedObject)
 };

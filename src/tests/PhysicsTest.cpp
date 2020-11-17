@@ -274,10 +274,23 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_FALSE(physicsManager_->contactTest(objectId1));
 
+    // set stage to non-collidable
+    ASSERT_TRUE(physicsManager_->getStageIsCollidable());
+    physicsManager_->setStageIsCollidable(false);
+    ASSERT_FALSE(physicsManager_->getStageIsCollidable());
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+
     // move box 0 into box 1
     physicsManager_->setTranslation(objectId0, Magnum::Vector3{1.1, 1.1, 0});
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_TRUE(physicsManager_->contactTest(objectId1));
+
+    // set box 0 to non-collidable
+    ASSERT_TRUE(physicsManager_->getObjectIsCollidable(objectId0));
+    physicsManager_->setObjectIsCollidable(objectId0, false);
+    ASSERT_FALSE(physicsManager_->getObjectIsCollidable(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
   }
 }
 
@@ -805,8 +818,7 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
   // test that removing a sleeping support object wakes its collision island
   LOG(INFO) << "Starting physics test: TestRemoveSleepingSupport";
 
-  std::string stageFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/scenes/simple_room.glb");
+  std::string stageFile = "NONE";
 
   initStage(stageFile);
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
@@ -820,38 +832,57 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
     std::string cubeHandle =
         objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
 
-    // create a stack of cubes on the table
+    // create a stack of cubes in free space
     Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
     std::vector<int> cubeIds;
-    int stackSize = 3;
+    int stackSize = 4;
     for (int i = 0; i < stackSize; ++i) {
       cubeIds.push_back(physicsManager_->addObject(cubeHandle, &drawables));
       physicsManager_->setTranslation(cubeIds.back(),
                                       (Mn::Vector3(0, 0.2, 0) * i) + stackBase);
     }
 
-    // simulate to stabilize the stack and populate collision islands
-    while (physicsManager_->getWorldTime() < 4.0) {
-      physicsManager_->stepPhysics(0.1);
+    physicsManager_->setObjectMotionType(cubeIds.front(),
+                                         esp::physics::MotionType::STATIC);
+
+    for (int testCase = 0; testCase < 2; ++testCase) {
+      // reset time to 0, should not otherwise modify state
+      physicsManager_->reset();
+      ASSERT(physicsManager_->getNumRigidObjects() > 0);
+
+      // simulate to stabilize the stack and populate collision islands
+      while (physicsManager_->getWorldTime() < 4.0) {
+        physicsManager_->stepPhysics(0.1);
+      }
+
+      // cubes should be sleeping
+      for (auto id : cubeIds) {
+        ASSERT(!physicsManager_->isActive(id));
+      }
+
+      // no active contact points
+      ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+
+      if (testCase == 0) {
+        // first remove the bottom-most DYNAMIC object, expecting those above to
+        // fall
+        physicsManager_->removeObject(cubeIds[1]);
+        cubeIds.erase(cubeIds.begin() + 1);
+      } else if (testCase == 1) {
+        // second remove the STATIC bottom cube
+        physicsManager_->removeObject(cubeIds.front());
+        cubeIds.erase(cubeIds.begin());
+      }
+
+      // remaining cubes should now be awake
+      for (auto id : cubeIds) {
+        if (physicsManager_->getObjectMotionType(id) !=
+            esp::physics::MotionType::STATIC) {
+          ASSERT(physicsManager_->isActive(id));
+        }
+      }
+
+      ASSERT_GT(physicsManager_->getNumActiveContactPoints(), 0);
     }
-
-    // cubes should be sleeping
-    for (auto id : cubeIds) {
-      assert(!physicsManager_->isActive(id));
-    }
-
-    // no active contact points
-    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
-
-    // remove the bottom cube
-    physicsManager_->removeObject(cubeIds.front());
-    cubeIds.erase(cubeIds.begin());
-
-    // remaining cubes should now be awake
-    for (auto id : cubeIds) {
-      assert(physicsManager_->isActive(id));
-    }
-
-    ASSERT_GT(physicsManager_->getNumActiveContactPoints(), 0);
   }
 }

@@ -10,7 +10,7 @@ namespace attributes {
 
 SceneDatasetAttributes::SceneDatasetAttributes(
     const std::string& datasetName,
-    const managers::PhysicsAttributesManager::ptr physAttrMgr)
+    const managers::PhysicsAttributesManager::ptr& physAttrMgr)
     : AbstractAttributes("SceneDatasetAttributes", datasetName) {
   assetAttributesManager_ = managers::AssetAttributesManager::create();
   lightLayoutAttributesManager_ =

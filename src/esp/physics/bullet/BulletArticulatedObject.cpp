@@ -45,7 +45,6 @@ BulletArticulatedObject::~BulletArticulatedObject() {
 bool BulletArticulatedObject::initializeFromURDF(
     URDFImporter& urdfImporter,
     const Magnum::Matrix4& worldTransform,
-    assets::ResourceManager& resourceManager,
     gfx::DrawableGroup* drawables,
     scene::SceneNode* physicsNode,
     bool fixedBase) {
@@ -118,14 +117,14 @@ bool BulletArticulatedObject::initializeFromURDF(
       scene::SceneNode* linkNode = &node();
       if (bulletLinkIx >= 0) {
         links_[bulletLinkIx] = std::make_unique<BulletArticulatedLink>(
-            &physicsNode->createChild(), bWorld_, bulletLinkIx,
+            &physicsNode->createChild(), resMgr_, bWorld_, bulletLinkIx,
             collisionObjToObjIds_);
         linkNode = &links_[bulletLinkIx]->node();
       }
 
-      bool success = attachGeometry(*linkNode, link.second,
-                                    urdfImporter.getModel().m_materials,
-                                    resourceManager, drawables);
+      bool success =
+          attachGeometry(*linkNode, link.second,
+                         urdfImporter.getModel().m_materials, drawables);
       Corrade::Utility::Debug() << "geomSuccess: " << success;
 
       urdfLinkIx++;
@@ -178,7 +177,6 @@ bool BulletArticulatedObject::attachGeometry(
     std::shared_ptr<io::URDF::Link> link,
     const std::map<std::string, std::shared_ptr<io::URDF::Material> >&
         materials,
-    assets::ResourceManager& resourceManager,
     gfx::DrawableGroup* drawables) {
   bool geomSuccess = false;
 
@@ -214,7 +212,7 @@ bool BulletArticulatedObject::attachGeometry(
 
         // first try to import the asset
         bool meshSuccess =
-            resourceManager.importAsset(visual.m_geometry.m_meshFileName);
+            resMgr_.importAsset(visual.m_geometry.m_meshFileName);
         if (!meshSuccess) {
           Cr::Utility::Debug() << "Failed to import the render asset: "
                                << visual.m_geometry.m_meshFileName;
@@ -224,12 +222,11 @@ bool BulletArticulatedObject::attachGeometry(
         // create a modified asset if necessary
         std::shared_ptr<io::URDF::Material> material =
             visual.m_geometry.m_localMaterial;
-        std::string assetMatModName =
-            resourceManager.setupMaterialModifiedAsset(
-                visual.m_geometry.m_meshFileName, material);
+        std::string assetMatModName = resMgr_.setupMaterialModifiedAsset(
+            visual.m_geometry.m_meshFileName, material);
 
         // then attach
-        geomSuccess = resourceManager.attachAsset(
+        geomSuccess = resMgr_.attachAsset(
             (assetMatModName.empty()
                  ? visual.m_geometry.m_meshFileName
                  : assetMatModName),  // use either a material modified or

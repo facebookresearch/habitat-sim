@@ -23,11 +23,12 @@ namespace physics {
 class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
  public:
   BulletArticulatedLink(scene::SceneNode* bodyNode,
+                        const assets::ResourceManager& resMgr,
                         std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
                         int index,
                         std::shared_ptr<std::map<const btCollisionObject*, int>>
                             collisionObjToObjIds)
-      : ArticulatedLink(bodyNode, index),
+      : ArticulatedLink(bodyNode, index, resMgr),
         BulletBase(bWorld, collisionObjToObjIds){};
 
   virtual const Magnum::Range3D getCollisionShapeAabb() const override {
@@ -53,10 +54,11 @@ class BulletArticulatedObject : public ArticulatedObject {
  public:
   BulletArticulatedObject(
       scene::SceneNode* rootNode,
+      assets::ResourceManager& resMgr,
       std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
       std::shared_ptr<std::map<const btCollisionObject*, int>>
           collisionObjToObjIds)
-      : bWorld_(bWorld), ArticulatedObject(rootNode) {
+      : bWorld_(bWorld), ArticulatedObject(rootNode, resMgr) {
     motionType_ = MotionType::DYNAMIC;
     collisionObjToObjIds_ = collisionObjToObjIds;
   };
@@ -65,7 +67,6 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   virtual bool initializeFromURDF(URDFImporter& u2b,
                                   const Magnum::Matrix4& worldTransform,
-                                  assets::ResourceManager& resourceManager,
                                   gfx::DrawableGroup* drawables,
                                   scene::SceneNode* physicsNode,
                                   bool fixedBase = false) override;
@@ -163,7 +164,6 @@ class BulletArticulatedObject : public ArticulatedObject {
       std::shared_ptr<io::URDF::Link> link,
       const std::map<std::string, std::shared_ptr<io::URDF::Material>>&
           materials,
-      assets::ResourceManager& resourceManager,
       gfx::DrawableGroup* drawables) override;
 
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;

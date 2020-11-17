@@ -28,7 +28,7 @@ void initSimBindings(py::module& m) {
   py::class_<SimulatorConfiguration, SimulatorConfiguration::ptr>(
       m, "SimulatorConfiguration")
       .def(py::init(&SimulatorConfiguration::create<>))
-      .def_readwrite("scene", &SimulatorConfiguration::scene)
+      .def_readwrite("scene_id", &SimulatorConfiguration::activeSceneID)
       .def_readwrite("random_seed", &SimulatorConfiguration::randomSeed)
       .def_readwrite("default_agent_id",
                      &SimulatorConfiguration::defaultAgentId)
@@ -107,7 +107,7 @@ void initSimBindings(py::module& m) {
       .def("get_physics_template_manager",
            &Simulator::getPhysicsAttributesManager,
            pybind11::return_value_policy::reference,
-           R"(Get the current dataset's PhysicsAttributesManager instance
+           R"(Get the current PhysicsAttributesManager instance
             for configuring PhysicsManager templates.)")
       .def("get_stage_template_manager", &Simulator::getStageAttributesManager,
            pybind11::return_value_policy::reference,
@@ -233,6 +233,16 @@ void initSimBindings(py::module& m) {
           "apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
           "scene_id"_a = 0,
           R"(Apply torque to an object. Only applies to MotionType::DYNAMIC objects.)")
+      .def("get_object_is_collidable", &Simulator::getObjectIsCollidable,
+           "object_id"_a, R"(Get whether or not an object is collidable.)")
+      .def("set_object_is_collidable", &Simulator::setObjectIsCollidable,
+           "collidable"_a, "object_id"_a,
+           R"(Set whether or not an object is collidable.)")
+      .def("get_stage_is_collidable", &Simulator::getStageIsCollidable,
+           R"(Get whether or not the static stage is collidable.)")
+      .def("set_stage_is_collidable", &Simulator::setStageIsCollidable,
+           "collidable"_a,
+           R"(Set whether or not the static stage is collidable.)")
       .def(
           "contact_test", &Simulator::contactTest, "object_id"_a,
           "scene_id"_a = 0,

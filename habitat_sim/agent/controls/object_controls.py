@@ -24,7 +24,7 @@ def _noop_filter(start: _3d_point, end: _3d_point) -> _3d_point:
     return end
 
 
-@attr.s
+@attr.s(auto_attribs=True)
 class ObjectControls(object):
     r"""Used to implement actions
 

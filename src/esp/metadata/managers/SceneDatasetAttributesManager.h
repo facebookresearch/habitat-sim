@@ -29,20 +29,18 @@ class SceneDatasetAttributesManager
    * such as file paths, to make them available for stage attributes defaults.
    *
    * @param datasetName the name of the dataset to apply these to.
-   * @param filepaths the map of file paths from the configuration object
    * @param lightSetup the config-specified light setup
    * @param frustrumCulling whether or not (semantic) stage should be
    * partitioned for culling.
    */
   void setCurrCfgVals(const std::string& datasetName,
-                      const std::map<std::string, std::string>& filepaths,
                       const std::string& lightSetup,
                       bool frustrumCulling) {
     if (this->getObjectLibHasHandle(datasetName)) {
       auto dataset =
           this->getObjectInternal<attributes::SceneDatasetAttributes>(
               datasetName);
-      dataset->setCurrCfgVals(filepaths, lightSetup, frustrumCulling);
+      dataset->setCurrCfgVals(lightSetup, frustrumCulling);
     } else {
       LOG(ERROR) << "SceneDatasetAttributesManager::setCurrCfgVals : No "
                  << objectType_ << " managed object with handle " << datasetName
@@ -192,13 +190,15 @@ class SceneDatasetAttributesManager
    *
    * @param SceneDatasetAttributes The attributes template.
    * @param SceneDatasetAttributesHandle The key for referencing the template in
-   * the
-   * @ref objectLibrary_.
+   * the @ref objectLibrary_.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
    * @return The index in the @ref objectLibrary_ of the registered template.
    */
   int registerObjectFinalize(
       attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
-      const std::string& SceneDatasetAttributesHandle) override;
+      const std::string& SceneDatasetAttributesHandle,
+      CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief This function will assign the appropriately configured function

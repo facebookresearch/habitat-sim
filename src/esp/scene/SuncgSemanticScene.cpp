@@ -25,7 +25,7 @@ std::string SuncgSemanticRegion::id() const {
   return nodeId_;
 }
 
-int SuncgObjectCategory::index(const std::string& mapping) const {
+int SuncgObjectCategory::index(const std::string&) const {
   return ID_UNDEFINED;
 }
 
@@ -47,7 +47,7 @@ std::string SuncgObjectCategory::name(const std::string& mapping) const {
   }
 }
 
-int SuncgRegionCategory::index(const std::string& mapping) const {
+int SuncgRegionCategory::index(const std::string&) const {
   // NOTE: SUNCG regions are not linearized
   return ID_UNDEFINED;
 }
@@ -160,6 +160,8 @@ bool SemanticScene::loadSuncgHouse(
         region->index_ = jRoom;
         region->parentIndex_ = iLevel;
         std::vector<std::string> roomTypes;
+        roomTypes.reserve(node["roomTypes"].Size());
+
         for (int jRoomType = 0; jRoomType < node["roomTypes"].Size();
              ++jRoomType) {
           roomTypes.push_back(node["roomTypes"][jRoomType].GetString());

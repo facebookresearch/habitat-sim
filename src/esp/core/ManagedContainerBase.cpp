@@ -18,10 +18,11 @@ std::string ManagedContainerBase::convertFilenameToJSON(
                 jsonTypeExt;
     LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
               << filename
-              << " changed to proposed JSON filename : " << resHandle;
+              << " changed to proposed JSON configuration filename : "
+              << resHandle;
   } else {
     LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
-              << filename << " determined to be legitimate JSON.";
+              << filename << " is appropriate JSON configuration filename.";
   }
   return resHandle;
 }  // ManagedContainerBase::convertFilenameToJSON
@@ -74,7 +75,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   }
   // if search string is empty, return all values
   if (subStr.length() == 0) {
-    for (auto elem : mapOfHandles) {
+    for (const auto& elem : mapOfHandles) {
       res.push_back(elem.second);
     }
     return res;
@@ -114,7 +115,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   }
   // if search string is empty, return all values
   if (subStr.length() == 0) {
-    for (auto elem : mapOfHandles) {
+    for (const auto& elem : mapOfHandles) {
       res.push_back(elem.first);
     }
     return res;

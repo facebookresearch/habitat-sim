@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
@@ -132,14 +133,11 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // default semantic and navmesh file names, if they exist.  All values
   // set/built from these default values may be overridden by values in scene
   // json file, if present.
-  stageAttributesMgr->setCurrCfgVals(
-      config_.scene.filepaths, config_.sceneLightSetup, config_.frustumCulling);
+  stageAttributesMgr->setCurrCfgVals(config_.sceneLightSetup,
+                                     config_.frustumCulling);
 
   // Build scene file name based on config specification
-  std::string stageFilename = config_.scene.id;
-  if (config_.scene.filepaths.count("mesh")) {
-    stageFilename = config_.scene.filepaths.at("mesh");
-  }
+  std::string stageFilename = config_.activeSceneID;
 
   // Create scene attributes with values based on sceneFilename
   auto stageAttributes = stageAttributesMgr->createObject(stageFilename, true);
@@ -788,7 +786,7 @@ nav::PathFinder::ptr Simulator::getPathFinder() {
 }
 
 void Simulator::setPathFinder(nav::PathFinder::ptr pathfinder) {
-  pathfinder_ = pathfinder;
+  pathfinder_ = std::move(pathfinder);
 }
 gfx::RenderTarget* Simulator::getRenderTarget(int agentId,
                                               const std::string& sensorId) {

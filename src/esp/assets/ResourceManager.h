@@ -185,7 +185,7 @@ class ResourceManager {
    */
   bool loadStage(
       const metadata::attributes::StageAttributes::ptr& sceneAttributes,
-      std::shared_ptr<physics::PhysicsManager> _physicsManager,
+      const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
       std::vector<int>& activeSceneIDs,
       bool createSemanticMesh);

@@ -45,7 +45,6 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
-#include "esp/scene/SceneConfiguration.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
@@ -708,7 +707,7 @@ Viewer::Viewer(const Arguments& arguments)
 
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
-  simConfig.scene.id = sceneFileName;
+  simConfig.activeSceneID = sceneFileName;
   simConfig.enablePhysics = useBullet;
   simConfig.frustumCulling = true;
   simConfig.requiresTextures = true;
@@ -1194,9 +1193,10 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       auto boxTemplate =
           objectAttrManager_->getObjectByHandle(boxTemplateHandle);
       boxTemplate->setScale({0.1, 0.1, 0.1});
+      boxTemplate->setIsCollidable(false);
       objectAttrManager_->registerObject(boxTemplate, "click_vis");
       clickVisObjectID_ = simulator_->addObjectByHandle("click_vis");
-      simulator_->setObjectMotionType(esp::physics::MotionType::RENDER_ONLY,
+      simulator_->setObjectMotionType(esp::physics::MotionType::KINEMATIC,
                                       clickVisObjectID_);
     }
 

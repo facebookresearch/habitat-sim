@@ -449,14 +449,17 @@ class AssetAttributesManager
    * object to the @ref objectLibrary_.
    *
    * @param attributesTemplate The attributes template.
-   * @param ignored Not used for asset attributes templates - handle is derived
-   * by configuration.
+   * @param objectHandle Not used for asset attributes templates - handle is
+   * derived by configuration.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
    * @return The index in the @ref objectLibrary_ of object
    * template.
    */
   int registerObjectFinalize(
       attributes::AbstractPrimitiveAttributes::ptr attributesTemplate,
-      const std::string& ignored = "") override;
+      CORRADE_UNUSED const std::string& objectHandle,
+      CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with

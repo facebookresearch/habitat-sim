@@ -99,8 +99,8 @@ void initGfxBindings(py::module& m) {
              return &self;
            })
       .def("__exit__",
-           [](RenderTarget& self, py::object exc_type, py::object exc_value,
-              py::object traceback) { self.renderExit(); })
+           [](RenderTarget& self, const py::object&, const py::object&,
+              const py::object&) { self.renderExit(); })
       .def("read_frame_rgba", &RenderTarget::readFrameRgba,
            "Reads RGBA frame into passed img in uint8 byte format.")
       .def("read_frame_depth", &RenderTarget::readFrameDepth)

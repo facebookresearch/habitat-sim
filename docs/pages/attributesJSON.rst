@@ -72,7 +72,7 @@ Below are the handles and descriptors for various mesh assets used by a stage.
 "semantic_asset"
 	- string
 	- The name of the file describing the stage's semantic mesh.
-"house filename"
+"house_filename"
 	- string
 	- The name of the file containing semantic type maps and hierarchy.
 "nav_asset"
@@ -105,6 +105,9 @@ Below are stage-specific physical and object-related quantities.  These values w
 "gravity"
 	- 3-vector
 	- Gravity to use for physical modeling.
+"is_collidable"
+	- boolean
+	- Whether the stage should be added to the collision and physics simulation world upon instancing.
 "margin"
 	- double
 	- Distance margin for collision calculations.
@@ -162,6 +165,9 @@ Below are object-specific physical quantities.  These values will override simil
 "scale"
 	- 3-vector
 	- The default scale to be used for the object.
+"is_collidable"
+	- boolean
+	- Whether the object should be added to the simulation world with a collision shape upon instancing.
 "margin"
 	- double
 	- Distance margin for collision calculations.

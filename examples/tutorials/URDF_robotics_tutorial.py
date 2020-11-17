@@ -35,7 +35,7 @@ def place_agent(sim):
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+    backend_cfg.scene_id = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
     backend_cfg.enable_physics = True
 
     # sensor configurations
@@ -209,6 +209,7 @@ def main(make_video=True, show_video=True):
     obj_mgr = sim.get_object_template_manager()
     cube_id = sim.add_object_by_handle(obj_mgr.get_template_handles("cube")[0])
     sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, cube_id)
+    sim.set_object_is_collidable(False, cube_id)
     num_links = sim.get_num_articulated_links(robot_id)
     for link_id in range(num_links):
         link_rigid_state = sim.get_articulated_link_rigid_state(robot_id, link_id)

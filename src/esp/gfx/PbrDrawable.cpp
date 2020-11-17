@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/GL/Renderer.h>
 
 namespace Mn = Magnum;
 
@@ -62,6 +63,9 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   if (materialData_->perVertexObjectId) {
     // TODO: may be supported in the future
   }
+  if (materialData_->doubleSided) {
+    flags_ |= PbrShader::Flag::DoubleSided;
+  }
 
   flags_ = PbrShader::generateCorrectFlags(flags_);
 
@@ -80,6 +84,18 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   updateShader()
       .updateShaderLightParameters()
       .updateShaderLightDirectionParameters(transformationMatrix, camera);
+
+  // Assume that in a model, double-sided meshes are significantly less than
+  // single-sided meshes.
+  // To reduce the usage of glIsEnabled, once a double-sided mesh is
+  // encountered, the FaceCulling is disabled, and will not be enabled again at
+  // least in this function.
+  // TODO:
+  // it should have a global GL state tracker in Magnum to track it.
+
+  if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE)) {
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
+  }
 
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been

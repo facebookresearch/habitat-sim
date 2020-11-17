@@ -124,7 +124,7 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
 class SensorSuite {
  public:
-  void add(Sensor::ptr sensor);
+  void add(const Sensor::ptr& sensor);
   void clear();
   ~SensorSuite() { LOG(INFO) << "Deconstructing SensorSuite"; }
 

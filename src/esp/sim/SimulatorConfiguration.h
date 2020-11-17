@@ -7,13 +7,15 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/physics/configure.h"
-#include "esp/scene/SceneConfiguration.h"
 
 namespace esp {
 namespace sim {
 
 struct SimulatorConfiguration {
-  scene::SceneConfiguration scene;
+  /**
+   * @brief Name of scene or stage config or asset to load
+   */
+  std::string activeSceneID;
   int defaultAgentId = 0;
   int gpuDeviceId = 0;
   unsigned int randomSeed = 0;

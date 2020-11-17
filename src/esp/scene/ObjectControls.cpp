@@ -6,6 +6,8 @@
 
 #include <Magnum/EigenIntegration/Integration.h>
 
+#include <utility>
+
 #include "SceneNode.h"
 #include "esp/core/esp.h"
 
@@ -79,7 +81,7 @@ ObjectControls::ObjectControls() {
 
 ObjectControls& ObjectControls::setMoveFilterFunction(
     MoveFilterFunc filterFunc) {
-  moveFilterFunc_ = filterFunc;
+  moveFilterFunc_ = std::move(filterFunc);
   return *this;
 }
 

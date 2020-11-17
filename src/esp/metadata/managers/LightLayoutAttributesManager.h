@@ -61,7 +61,7 @@ class LightLayoutAttributesManager
    * @param jsonConfig json document to parse
    */
   void setLightInstanceValsFromJSONDoc(
-      attributes::LightInstanceAttributes::ptr lightInstAttribs,
+      const attributes::LightInstanceAttributes::ptr& lightInstAttribs,
       const io::JsonGenericValue& jsonConfig);
 
  protected:
@@ -105,7 +105,8 @@ class LightLayoutAttributesManager
    */
   int registerObjectFinalize(
       attributes::LightLayoutAttributes::ptr LightLayoutAttributesTemplate,
-      const std::string& LightLayoutAttributesHandle) override;
+      const std::string& LightLayoutAttributesHandle,
+      CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief Any lights-attributes-specific resetting that needs to happen on
