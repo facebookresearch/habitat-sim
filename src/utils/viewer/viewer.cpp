@@ -163,9 +163,9 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
-  'c' switch ortho/perspective camera.
+  'num5' switch ortho/perspective camera.
   'e' enable/disable frustum culling.
-  'g' show/hide FPS overlay.
+  'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
 
@@ -405,15 +405,11 @@ Viewer::Viewer(const Arguments& arguments)
   };
   agentConfig.sensorSpecifications[0]->resolution =
       esp::vec2i(viewportSize[1], viewportSize[0]);
-  if (args.isSet("orthographic")) {
-    // try orthographic camera
-    agentConfig.sensorSpecifications[0]->sensorSubType =
-        esp::sensor::SensorSubType::Orthographic;
 
-  } else {
-    agentConfig.sensorSpecifications[0]->sensorSubType =
-        esp::sensor::SensorSubType::Pinhole;
-  }
+  agentConfig.sensorSpecifications[0]->sensorSubType =
+      args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
+                                 : esp::sensor::SensorSubType::Pinhole;
+
   // add selects a random initial state and sets up the default controls and
   // step filter
   simulator_->addAgent(agentConfig);
@@ -433,19 +429,19 @@ Viewer::Viewer(const Arguments& arguments)
 }  // end Viewer::Viewer
 
 void Viewer::switchCameraType() {
-  auto cameraSensor =
-      defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
-  auto cam = std::static_pointer_cast<esp::sensor::CameraSensor>(cameraSensor);
+  esp::sensor::Sensor& cameraSensor =
+      *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+  auto& cam = static_cast<esp::sensor::CameraSensor&>(cameraSensor);
 
-  auto oldCameraType = cam->getCameraType();
+  auto oldCameraType = cam.getCameraType();
   switch (oldCameraType) {
     case esp::sensor::SensorSubType::Pinhole: {
-      cam->setCameraType(esp::sensor::SensorSubType::Orthographic);
-      break;
+      cam.setCameraType(esp::sensor::SensorSubType::Orthographic);
+      return;
     }
     case esp::sensor::SensorSubType::Orthographic: {
-      cam->setCameraType(esp::sensor::SensorSubType::Pinhole);
-      break;
+      cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
+      return;
     }
   }
 }
@@ -773,10 +769,10 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   // Use shift for fine-grained zooming
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
   float mod = event.offset().y() > 0 ? modVal : 1.0 / modVal;
-  auto cameraSensor =
-      defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
-  auto cam = std::static_pointer_cast<esp::sensor::CameraSensor>(cameraSensor);
-  cam->setZoom(mod);
+  esp::sensor::Sensor& cameraSensor =
+      *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+  auto& cam = static_cast<esp::sensor::CameraSensor&>(cameraSensor);
+  cam.setZoom(mod);
   redraw();
 
   event.setAccepted();
@@ -840,7 +836,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
       break;
-    case KeyEvent::Key::C:
+    case KeyEvent::Key::NumFive:
       // switch camera between ortho and perspective
       switchCameraType();
 
@@ -867,7 +863,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       simulator_->setFrustumCullingEnabled(
           !simulator_->isFrustumCullingEnabled());
       break;
-    case KeyEvent::Key::G:
+    case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
       break;
     case KeyEvent::Key::O:
