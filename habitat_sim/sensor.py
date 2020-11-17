@@ -4,7 +4,7 @@
 
 from habitat_sim._ext.habitat_sim_bindings import (
     Observation,
-    PinholeCamera,
+    CameraSensor,
     Sensor,
     SensorSpec,
     SensorType,
@@ -13,7 +13,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
 
 __all__ = [
     "Observation",
-    "PinholeCamera",
+    "CameraSensor",
     "Sensor",
     "SensorType",
     "SensorSpec",

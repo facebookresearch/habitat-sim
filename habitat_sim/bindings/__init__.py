@@ -8,12 +8,12 @@
 #   with existing code
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    CameraSensor,
     ConfigurationGroup,
     GreedyFollowerCodes,
     GreedyGeodesicFollowerImpl,
     MultiGoalShortestPath,
     PathFinder,
-    PinholeCamera,
     RigidState,
     SceneGraph,
     SceneNode,
