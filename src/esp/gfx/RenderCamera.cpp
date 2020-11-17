@@ -67,10 +67,10 @@ RenderCamera& RenderCamera::setProjectionMatrix(int width,
                                                 int height,
                                                 float znear,
                                                 float zfar,
-                                                float hfov) {
+                                                Mn::Deg hfov) {
   const float aspectRatio = static_cast<float>(width) / height;
-  auto projMat = Mn::Matrix4::perspectiveProjection(Mn::Deg{hfov}, aspectRatio,
-                                                    znear, zfar);
+  auto projMat =
+      Mn::Matrix4::perspectiveProjection(hfov, aspectRatio, znear, zfar);
   return setProjectionMatrix(width, height, projMat);
 }
 

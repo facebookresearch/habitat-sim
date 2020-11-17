@@ -82,7 +82,7 @@ class RenderCamera : public MagnumCamera {
                                     int height,
                                     float znear,
                                     float zfar,
-                                    float hfov);
+                                    Mn::Deg hfov);
 
   /**
    * @brief Set projection matrix for Orthographic camera
