@@ -5,6 +5,7 @@
 #ifndef ESP_SENSOR_CAMERASENSOR_H_
 #define ESP_SENSOR_CAMERASENSOR_H_
 
+#include <Magnum/Math/ConfigurationValue.h>
 #include "VisualSensor.h"
 #include "esp/core/esp.h"
 
@@ -57,11 +58,22 @@ class CameraSensor : public VisualSensor {
    * @brief Modify the zoom matrix for perspective and ortho cameras
    * @param factor Modification amount.
    */
-  void setZoom(float factor) {
-    float before = zoomMatrix_[0][0];
+  void modZoom(float factor) {
     zoomMatrix_ =
         Magnum::Matrix4::scaling({factor, factor, 1.0f}) * zoomMatrix_;
     recomputeProjectionMatrix();
+  }
+
+  /**
+   * @brief Sets the FOV for this CameraSensor.  Only consumed by
+   * pinhole/perspective cameras.
+   * @param FOV desired FOV to set.
+   */
+  void setFOV(Mn::Deg FOV) {
+    spec_->parameters.at("hfov") =
+        Corrade::Utility::ConfigurationValue<Mn::Deg>::toString(
+            FOV, Corrade::Utility::ConfigurationValueFlags());
+    setProjectionParameters(spec_);
   }
 
   /**
@@ -69,7 +81,7 @@ class CameraSensor : public VisualSensor {
    */
   void setCameraType(const SensorSubType& _cameraType);
 
-  SensorSubType getCameraType() const { return cameraType_; }
+  SensorSubType getCameraType() const { return spec_->sensorSubType; }
 
  protected:
   /**
@@ -112,10 +124,6 @@ class CameraSensor : public VisualSensor {
 
   /** @brief projection parameters
    */
-
-  /** @brief Camera type
-   */
-  SensorSubType cameraType_ = sensor::SensorSubType::Pinhole;
 
   /** @brief canvas width
    */

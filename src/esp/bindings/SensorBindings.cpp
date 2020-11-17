@@ -112,7 +112,26 @@ void initSensorBindings(py::module& m) {
              VisualSensor, Magnum::SceneGraph::PyFeatureHolder<CameraSensor>>(
       m, "CameraSensor")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
-                          const SensorSpec::ptr&>());
+                          const SensorSpec::ptr&>())
+      .def("set_projection_params", &CameraSensor::setProjectionParameters,
+           R"(Specify the projection parameters this CameraSensor should use.
+           Should be consumed by first querying this CameraSensor's SensorSpec
+           and then modifying as necessary.)",
+           "sensor_spec"_a)
+      .def(
+          "set_fov",
+          static_cast<void (CameraSensor::*)(Mn::Deg)>(&CameraSensor::setFOV),
+          R"(Set the field of view to use for this CameraSensor.  Only applicable to 
+          Pinhole Camera Types)",
+          "fov"_a)
+      .def(
+          "zoom", &CameraSensor::modZoom,
+          R"(Modify Orthographic Zoom or Perspective FOV multiplicatively by passed amount)",
+          "factor"_a)
+      .def_property(
+          "camera_type", &CameraSensor::getCameraType,
+          &CameraSensor::setCameraType,
+          R"(The type of projection (ORTHOGRAPHIC or PINHOLE) this CameraSensor uses.)");
 
   // ==== SensorSuite ====
   py::class_<SensorSuite, SensorSuite::ptr>(m, "SensorSuite")

@@ -135,6 +135,12 @@ class Viewer : public Mn::Platform::Application {
   std::string viewerStartTimeString = getCurrentTimeString();
   void screenshot();
 
+  esp::sensor::CameraSensor& getAgentCamera() {
+    esp::sensor::Sensor& cameraSensor =
+        *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+    return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
+  }
+
   std::string helpText = R"(
 ==================================================
 Welcome to the Habitat-sim C++ Viewer application!
@@ -148,7 +154,7 @@ Mouse Functions:
   SHIFT-RIGHT:
     Click a mesh to highlight it.
   WHEEL:
-    Control Camera zoom (+SHIFT for fine grained control)
+    Control Orthographic Zoom/Perspective FOV (+SHIFT for fine grained control)
 
 Key Commands:
 -------------
@@ -429,9 +435,7 @@ Viewer::Viewer(const Arguments& arguments)
 }  // end Viewer::Viewer
 
 void Viewer::switchCameraType() {
-  esp::sensor::Sensor& cameraSensor =
-      *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
-  auto& cam = static_cast<esp::sensor::CameraSensor&>(cameraSensor);
+  auto& cam = getAgentCamera();
 
   auto oldCameraType = cam.getCameraType();
   switch (oldCameraType) {
@@ -639,11 +643,16 @@ void Viewer::drawEvent() {
     ImGui::Begin("main", NULL,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::SetWindowFontScale(2.0);
+    ImGui::SetWindowFontScale(1.5);
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
+    auto& cam = getAgentCamera();
+    ImGui::Text("%s camera",
+                (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
+                     ? "Orthographic"
+                     : "Pinhole"));
     ImGui::End();
   }
 
@@ -769,10 +778,8 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   // Use shift for fine-grained zooming
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
   float mod = event.offset().y() > 0 ? modVal : 1.0 / modVal;
-  esp::sensor::Sensor& cameraSensor =
-      *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
-  auto& cam = static_cast<esp::sensor::CameraSensor&>(cameraSensor);
-  cam.setZoom(mod);
+  auto& cam = getAgentCamera();
+  cam.modZoom(mod);
   redraw();
 
   event.setAccepted();

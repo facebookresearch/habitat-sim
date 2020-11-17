@@ -20,6 +20,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
     SceneNodeType,
     Sensor,
     SensorSpec,
+    SensorSubType,
     SensorType,
     ShortestPath,
 )

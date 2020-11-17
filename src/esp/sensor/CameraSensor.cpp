@@ -24,22 +24,31 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
 
 void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
-  spec_ = spec;
+  // update sensor spec to reflect these changes
+  spec_->resolution = spec->resolution;
+  for (const auto& elem : spec->parameters) {
+    spec_->parameters.at(elem.first) = elem.second;
+  }
+
   width_ = spec_->resolution[1];
   height_ = spec_->resolution[0];
   near_ = std::atof(spec_->parameters.at("near").c_str());
   far_ = std::atof(spec_->parameters.at("far").c_str());
-  setCameraType(spec_->sensorSubType);
+  setCameraType(spec->sensorSubType);
 
 }  // setProjectionParameters
 
 void CameraSensor::setCameraType(const SensorSubType& _cameraType) {
-  cameraType_ = _cameraType;
+  SensorSubType camType = _cameraType;
   float scale;
-  if (cameraType_ == SensorSubType::Orthographic) {
+  if (camType == SensorSubType::Orthographic) {
     scale = std::atof(spec_->parameters.at("ortho_scale").c_str());
-
-  } else {  // if (cameraType_ == SensorSubType::Pinhole) {
+  } else {
+    if (camType != SensorSubType::Pinhole) {
+      LOG(INFO) << "CameraSensor::setCameraType : Unsupported Camera type val :"
+                << static_cast<int>(camType) << " so defaulting to Pinhole.";
+      camType = SensorSubType::Pinhole;
+    }
     float fov = std::atof(spec_->parameters.at("hfov").c_str());
     Magnum::Deg halfHFovRad{Magnum::Deg(.5 * fov)};
     scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
@@ -47,20 +56,23 @@ void CameraSensor::setCameraType(const SensorSubType& _cameraType) {
   size_ = Mn::Vector2{1.0f, static_cast<float>(height_) / width_};
   // addjust size to match parameters
   size_ /= scale;
+  // set spec sensorSubType
+  spec_->sensorSubType = camType;
   // rebuild base projection matrix and projection matrix.
   recomputeBaseProjectionMatrix();
 }  // CameraSensor::setCameraType
 
 void CameraSensor::recomputeBaseProjectionMatrix() {
-  if (cameraType_ == SensorSubType::Pinhole) {
-    baseProjMatrix_ = Mn::Matrix4::perspectiveProjection(size_, near_, far_);
-  } else if (cameraType_ == SensorSubType::Orthographic) {
+  if (spec_->sensorSubType == SensorSubType::Orthographic) {
     baseProjMatrix_ = Mn::Matrix4::orthographicProjection(size_, near_, far_);
   } else {
-    LOG(INFO) << "CameraSensor::recomputeBaseProjectionMatrix : Unsupported "
-                 "Camera type val :"
-              << static_cast<int>(cameraType_) << " so defaulting to Pinhole.";
-    cameraType_ = SensorSubType::Pinhole;
+    if (spec_->sensorSubType != SensorSubType::Pinhole) {
+      LOG(INFO) << "CameraSensor::recomputeBaseProjectionMatrix : Unsupported "
+                   "Camera type val :"
+                << static_cast<int>(spec_->sensorSubType)
+                << " so defaulting to Pinhole.";
+      spec_->sensorSubType = SensorSubType::Pinhole;
+    }
     baseProjMatrix_ = Mn::Matrix4::perspectiveProjection(size_, near_, far_);
   }
   // build projection matrix
