@@ -2,8 +2,6 @@ from os import path as osp
 
 import pytest
 
-import examples.settings
-
 _test_scene = osp.abspath(
     osp.join(
         osp.dirname(__file__),
@@ -14,6 +12,8 @@ _test_scene = osp.abspath(
 
 @pytest.fixture(scope="function")
 def make_cfg_settings():
+    import examples.settings
+
     cfg = examples.settings.default_sim_settings.copy()
     cfg["height"] = 480
     cfg["width"] = 640
