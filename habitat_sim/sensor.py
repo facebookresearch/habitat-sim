@@ -3,8 +3,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim._ext.habitat_sim_bindings import (
-    Observation,
     CameraSensor,
+    Observation,
     Sensor,
     SensorSpec,
     SensorType,
@@ -12,8 +12,8 @@ from habitat_sim._ext.habitat_sim_bindings import (
 )
 
 __all__ = [
-    "Observation",
     "CameraSensor",
+    "Observation",
     "Sensor",
     "SensorType",
     "SensorSpec",
