@@ -12,6 +12,7 @@
 
 #include <utility>
 
+#include "esp/sensor/OrthographicCamera.h"
 #include "esp/sensor/PinholeCamera.h"
 #ifdef ESP_BUILD_WITH_CUDA
 #include "esp/sensor/RedwoodNoiseModel.h"
@@ -107,11 +108,25 @@ void initSensorBindings(py::module& m) {
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 
-  // ==== PinholeCamera (subclass of Sensor) ====
+  // === CameraSensor ====
+  py::class_<CameraSensor, Magnum::SceneGraph::PyFeature<CameraSensor>,
+             VisualSensor, Magnum::SceneGraph::PyFeatureHolder<CameraSensor>>(
+      m, "CameraSensor");
+
+  // ==== PinholeCamera (subclass of VisualSensor) ====
   py::class_<PinholeCamera, Magnum::SceneGraph::PyFeature<PinholeCamera>,
-             VisualSensor, Magnum::SceneGraph::PyFeatureHolder<PinholeCamera>>(
+             CameraSensor, Magnum::SceneGraph::PyFeatureHolder<PinholeCamera>>(
       m, "PinholeCamera")
-      // initialized, attached to pinholeCameraNode, status: "valid"
+      // initialized, attached to cameraNode, status: "valid"
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const SensorSpec::ptr&>());
+
+  // ==== OrthographicCamera (subclass of VisualSensor) ====
+  py::class_<OrthographicCamera,
+             Magnum::SceneGraph::PyFeature<OrthographicCamera>, CameraSensor,
+             Magnum::SceneGraph::PyFeatureHolder<OrthographicCamera>>(
+      m, "OrthographicCamera")
+      // initialized, attached to cameraNode, status: "valid"
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const SensorSpec::ptr&>());
 

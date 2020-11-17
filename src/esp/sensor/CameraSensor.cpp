@@ -6,39 +6,35 @@
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/PixelFormat.h>
 
-#include "OrthoCamera.h"
+#include "CameraSensor.h"
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {
 namespace sensor {
-
-OrthoCamera::OrthoCamera(scene::SceneNode& orthoCameraNode,
-                         const sensor::SensorSpec::ptr& spec)
-    : sensor::VisualSensor(orthoCameraNode, spec) {
-  setProjectionParameters(spec);
-}
-
-void OrthoCamera::setProjectionParameters(const SensorSpec::ptr& spec) {
+void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
   width_ = spec_->resolution[1];
   height_ = spec_->resolution[0];
   near_ = std::atof(spec_->parameters.at("near").c_str());
   far_ = std::atof(spec_->parameters.at("far").c_str());
-  scale_ = std::atof(spec_->parameters.at("ortho_scale").c_str());
-}
+  // set projection parameters that are specific to implementation camera class
+  this->setProjectionParameters_TypeSpecific(spec);
+  // build projection matrix
+  recalcProjectionMatrix();
+}  // setProjectionParameters
 
-OrthoCamera& OrthoCamera::setProjectionMatrix(gfx::RenderCamera& targetCamera) {
-  // use ortho version of function
-  targetCamera.setOrthoProjectionMatrix(width_, height_, near_, far_, scale_);
+CameraSensor& CameraSensor::setProjectionMatrix(
+    gfx::RenderCamera& targetCamera) {
+  targetCamera.setProjectionMatrix(width_, height_, projectionMatrix_);
   return *this;
 }
 
-OrthoCamera& OrthoCamera::setTransformationMatrix(
+CameraSensor& CameraSensor::setTransformationMatrix(
     gfx::RenderCamera& targetCamera) {
   CORRADE_ASSERT(!scene::SceneGraph::isRootNode(targetCamera.node()),
-                 "OrthoCamera::setTransformationMatrix: target camera cannot "
+                 "CameraSensor::setTransformationMatrix: target camera cannot "
                  "be on the root node of the scene graph",
                  *this);
   Magnum::Matrix4 absTransform = this->node().absoluteTransformation();
@@ -70,12 +66,12 @@ OrthoCamera& OrthoCamera::setTransformationMatrix(
   return *this;
 }
 
-OrthoCamera& OrthoCamera::setViewport(gfx::RenderCamera& targetCamera) {
+CameraSensor& CameraSensor::setViewport(gfx::RenderCamera& targetCamera) {
   targetCamera.setViewport(this->framebufferSize());
   return *this;
 }
 
-bool OrthoCamera::getObservationSpace(ObservationSpace& space) {
+bool CameraSensor::getObservationSpace(ObservationSpace& space) {
   space.spaceType = ObservationSpaceType::TENSOR;
   space.shape = {static_cast<size_t>(spec_->resolution[0]),
                  static_cast<size_t>(spec_->resolution[1]),
@@ -89,7 +85,7 @@ bool OrthoCamera::getObservationSpace(ObservationSpace& space) {
   return true;
 }
 
-bool OrthoCamera::getObservation(sim::Simulator& sim, Observation& obs) {
+bool CameraSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
   //
@@ -102,7 +98,7 @@ bool OrthoCamera::getObservation(sim::Simulator& sim, Observation& obs) {
   return true;
 }
 
-bool OrthoCamera::drawObservation(sim::Simulator& sim) {
+bool CameraSensor::drawObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;
   }
@@ -131,7 +127,7 @@ bool OrthoCamera::drawObservation(sim::Simulator& sim) {
   return true;
 }
 
-void OrthoCamera::readObservation(Observation& obs) {
+void CameraSensor::readObservation(Observation& obs) {
   // Make sure we have memory
   if (buffer_ == nullptr) {
     // TODO: check if our sensor was resized and resize our buffer if needed
@@ -158,7 +154,7 @@ void OrthoCamera::readObservation(Observation& obs) {
   }
 }
 
-bool OrthoCamera::displayObservation(sim::Simulator& sim) {
+bool CameraSensor::displayObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;
   }
@@ -169,13 +165,12 @@ bool OrthoCamera::displayObservation(sim::Simulator& sim) {
   return true;
 }
 
-Corrade::Containers::Optional<Magnum::Vector2> OrthoCamera::depthUnprojection()
+Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()
     const {
-  const Magnum::Matrix4 projection = Mn::Matrix4::orthographicProjection(
-      Mn::Vector2{1.0f * width_, 1.0f * height_}, near_, far_);
-
-  return {gfx::calculateDepthUnprojection(projection)};
-}
+  // projectionMatrix_ is managed by implementation class and is set whenever
+  // quantities change.
+  return {gfx::calculateDepthUnprojection(projectionMatrix_)};
+}  // CameraSensor::depthUnprojection
 
 }  // namespace sensor
 }  // namespace esp

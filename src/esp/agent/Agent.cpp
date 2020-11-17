@@ -8,7 +8,7 @@
 #include <Magnum/EigenIntegration/Integration.h>
 
 #include "esp/scene/ObjectControls.h"
-#include "esp/sensor/OrthoCamera.h"
+#include "esp/sensor/OrthographicCamera.h"
 #include "esp/sensor/PinholeCamera.h"
 #include "esp/sensor/Sensor.h"
 
@@ -38,7 +38,7 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
         break;
       }
       case sensor::SensorSubType::Orthographic: {
-        sensors_.add(sensor::OrthoCamera::create(sensorNode, spec));
+        sensors_.add(sensor::OrthographicCamera::create(sensorNode, spec));
         break;
       }
       default: {

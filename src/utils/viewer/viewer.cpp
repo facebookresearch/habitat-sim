@@ -45,6 +45,7 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
@@ -751,11 +752,17 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   if (!event.offset().y()) {
     return;
   }
-
+  // Use shift for fine-grained zooming
+  float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
+  float mod = event.offset().y() > 0 ? modVal : 1.0 / modVal;
+  auto cameraSensor =
+      defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+  auto cam = std::static_pointer_cast<esp::sensor::CameraSensor>(cameraSensor);
+  cam->setZoom(mod);
   redraw();
 
   event.setAccepted();
-}
+}  // namespace
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
