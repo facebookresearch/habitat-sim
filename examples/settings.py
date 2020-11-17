@@ -50,8 +50,10 @@ def make_cfg(settings):
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]
     sim_cfg.gpu_device_id = 0
-    if not hasattr(sim_cfg, 'scene_id'):
-        raise RuntimeException("Error: Please upgrade habitat-sim.")
+    if not hasattr(sim_cfg, "scene_id"):
+        raise RuntimeError(
+            "Error: Please upgrade habitat-sim. SimulatorConfig API version mismatch"
+        )
     sim_cfg.scene_id = settings["scene"]
 
     # define default sensor parameters (see src/esp/Sensor/Sensor.h)
