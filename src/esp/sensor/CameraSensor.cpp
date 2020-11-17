@@ -15,10 +15,10 @@ namespace esp {
 namespace sensor {
 void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
-  width_ = spec_->resolution[1];
-  height_ = spec_->resolution[0];
-  near_ = std::atof(spec_->parameters.at("near").c_str());
-  far_ = std::atof(spec_->parameters.at("far").c_str());
+  width_ = spec->resolution[1];
+  height_ = spec->resolution[0];
+  near_ = std::atof(spec->parameters.at("near").c_str());
+  far_ = std::atof(spec->parameters.at("far").c_str());
   // set projection parameters that are specific to implementation camera class
   this->setProjectionParameters_TypeSpecific(spec);
   // build projection matrix

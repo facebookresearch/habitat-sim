@@ -9,7 +9,7 @@ namespace sensor {
 
 void OrthographicCamera::setProjectionParameters_TypeSpecific(
     const SensorSpec::ptr& spec) {
-  scale_ = std::atof(spec_->parameters.at("ortho_scale").c_str());
+  scale_ = std::atof(spec->parameters.at("ortho_scale").c_str());
 }
 Mn::Matrix4 OrthographicCamera::recalcBaseProjectionMatrix() {
   auto size = Mn::Vector2{width_ / (1.0f * height_), 1.0f};

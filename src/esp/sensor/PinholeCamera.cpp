@@ -9,7 +9,7 @@ namespace sensor {
 
 void PinholeCamera::setProjectionParameters_TypeSpecific(
     const SensorSpec::ptr& spec) {
-  hfov_ = std::atof(spec_->parameters.at("hfov").c_str());
+  hfov_ = std::atof(spec->parameters.at("hfov").c_str());
 }
 
 Mn::Matrix4 PinholeCamera::recalcBaseProjectionMatrix() {
