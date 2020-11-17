@@ -2,10 +2,6 @@ set(
   sensor_SOURCES
   CameraSensor.cpp
   CameraSensor.h
-  OrthographicCamera.cpp
-  OrthographicCamera.h
-  PinholeCamera.cpp
-  PinholeCamera.h
   Sensor.cpp
   Sensor.h
   VisualSensor.cpp

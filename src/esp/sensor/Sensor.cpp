@@ -12,7 +12,8 @@ namespace esp {
 namespace sensor {
 
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
-    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
+    : Magnum::SceneGraph::AbstractFeature3D{node},
+      spec_(std::move(spec)) {  // why are we moving?
   node.setType(scene::SceneNodeType::SENSOR);
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. The specification is null.";
@@ -20,19 +21,6 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   ASSERT(spec_ != nullptr);
 
   setTransformationFromSpec();
-}
-
-void SensorSuite::add(const Sensor::ptr& sensor) {
-  const std::string uuid = sensor->specification()->uuid;
-  sensors_[uuid] = sensor;
-}
-
-Sensor::ptr SensorSuite::get(const std::string& uuid) const {
-  return (sensors_.at(uuid));
-}
-
-void SensorSuite::clear() {
-  sensors_.clear();
 }
 
 void Sensor::setTransformationFromSpec() {
@@ -47,6 +35,19 @@ void Sensor::setTransformationFromSpec() {
   node().rotateX(Magnum::Rad(spec_->orientation[0]));
   node().rotateY(Magnum::Rad(spec_->orientation[1]));
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
+}
+
+void SensorSuite::add(const Sensor::ptr& sensor) {
+  const std::string uuid = sensor->specification()->uuid;
+  sensors_[uuid] = sensor;
+}
+
+Sensor::ptr SensorSuite::get(const std::string& uuid) const {
+  return (sensors_.at(uuid));
+}
+
+void SensorSuite::clear() {
+  sensors_.clear();
 }
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {

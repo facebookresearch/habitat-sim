@@ -17,14 +17,11 @@ class CameraSensor : public VisualSensor {
   // construction;
   // user can use them immediately
   explicit CameraSensor(scene::SceneNode& cameraNode,
-                        const SensorSpec::ptr& spec)
-      : sensor::VisualSensor(cameraNode, spec),
-        zoomMatrix_(Magnum::Math::IdentityInit) {}
+                        const SensorSpec::ptr& spec);
   virtual ~CameraSensor() {}
 
   void setProjectionParameters(const SensorSpec::ptr& spec);
 
- public:
   // set the projection matrix to the given render camera
   virtual CameraSensor& setProjectionMatrix(
       gfx::RenderCamera& targetCamera) override;
@@ -57,7 +54,7 @@ class CameraSensor : public VisualSensor {
   virtual bool drawObservation(sim::Simulator& sim) override;
 
   /**
-   * @@brief Modify the zoom matrix for perspective and ortho cameras
+   * @brief Modify the zoom matrix for perspective and ortho cameras
    * @param factor Modification amount.
    */
   void setZoom(float factor) {
@@ -67,21 +64,27 @@ class CameraSensor : public VisualSensor {
     recalcProjectionMatrix();
   }
 
+  /**
+   * @brief Sets camera type and calculates appropriate size vector for display.
+   */
+  void setCameraType(const SensorSubType& _cameraType);
+
+  SensorSubType getCameraType() const { return cameraType_; }
+
  protected:
   /**
-   * @brief Set instancing-class-specific parameters for projection matrix.
+   * @brief Recalculate the base projection matrix, based on camera type and
+   * display size. This should be called only when camera type, size or clipping
+   * planes change.
    */
-  virtual void setProjectionParameters_TypeSpecific(
-      const SensorSpec::ptr& spec) = 0;
-
-  virtual Magnum::Matrix4 recalcBaseProjectionMatrix() = 0;
+  void recalcBaseProjectionMatrix();
 
   /**
    * @brief Recalculate the projection Matrix used by this Camera Sensor, which
-   * should be recalculated every time near plane size changes.
+   * should be recalculated @ref zoomMatrix_ or @ref baseProjMatrix_ change.
    */
   void recalcProjectionMatrix() {
-    projectionMatrix_ = zoomMatrix_ * recalcBaseProjectionMatrix();
+    projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
   }
 
   /**
@@ -98,12 +101,21 @@ class CameraSensor : public VisualSensor {
   Magnum::Matrix4 projectionMatrix_;
 
   /**
+   * @Brief A base projection matrix based on camera's type and display size.
+   */
+  Magnum::Matrix4 baseProjMatrix_;
+
+  /**
    * @brief A matrix to determine the zoom for the projection.
    */
   Magnum::Matrix4 zoomMatrix_;
 
   /** @brief projection parameters
    */
+
+  /** @brief Camera type
+   */
+  SensorSubType cameraType_;
 
   /** @brief canvas width
    */
@@ -120,6 +132,10 @@ class CameraSensor : public VisualSensor {
   /** @brief far clipping plane
    */
   float far_ = 1000.0f;
+
+  /** @brief size of near plane
+   */
+  Mn::Vector2 size_;
 
  public:
   ESP_SMART_POINTERS(CameraSensor)

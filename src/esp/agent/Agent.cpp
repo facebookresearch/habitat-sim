@@ -8,8 +8,7 @@
 #include <Magnum/EigenIntegration/Integration.h>
 
 #include "esp/scene/ObjectControls.h"
-#include "esp/sensor/OrthographicCamera.h"
-#include "esp/sensor/PinholeCamera.h"
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/Sensor.h"
 
 using Magnum::EigenIntegration::cast;
@@ -32,19 +31,7 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
     // sensor
 
     auto& sensorNode = agentNode.createChild();
-    switch (spec->sensorSubType) {
-      case sensor::SensorSubType::Pinhole: {
-        sensors_.add(sensor::PinholeCamera::create(sensorNode, spec));
-        break;
-      }
-      case sensor::SensorSubType::Orthographic: {
-        sensors_.add(sensor::OrthographicCamera::create(sensorNode, spec));
-        break;
-      }
-      default: {
-        sensors_.add(sensor::PinholeCamera::create(sensorNode, spec));
-      }
-    }
+    sensors_.add(sensor::CameraSensor::create(sensorNode, spec));
   }
 }  // Agent::Agent
 

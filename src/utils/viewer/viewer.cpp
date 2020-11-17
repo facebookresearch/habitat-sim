@@ -125,6 +125,10 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
+  /**
+   * @brief Toggle between ortho and perspective camera
+   */
+  void switchCameraType();
   Mn::Vector3 randomDirection();
 
   //! string rep of time when viewer application was started
@@ -143,6 +147,8 @@ Mouse Functions:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
   SHIFT-RIGHT:
     Click a mesh to highlight it.
+  WHEEL: 
+    Control Camera zoom (+SHIFT for fine grained control)
 
 Key Commands:
 -------------
@@ -157,8 +163,9 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
+  'c' switch ortho/perspective camera.
   'e' enable/disable frustum culling.
-  'c' show/hide FPS overlay.
+  'g' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
 
@@ -274,12 +281,9 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
-      .addBooleanOption("use-ortho-camera")
-      .setHelp("use-ortho-camera", "Use orthographic camera to view scene.")
-      .addOption("ortho-scale", ".1")
-      .setHelp(
-          "ortho-scale",
-          "If use-ortho-camera enabled, this value scales the resultant image.")
+      .addBooleanOption("orthographic")
+      .setHelp("orthographic",
+               "If specified, use orthographic camera to view scene.")
       .addBooleanOption("disable-navmesh")
       .setHelp("disable-navmesh",
                "Disable the navmesh, disabling agent navigation constraints.")
@@ -401,14 +405,10 @@ Viewer::Viewer(const Arguments& arguments)
   };
   agentConfig.sensorSpecifications[0]->resolution =
       esp::vec2i(viewportSize[1], viewportSize[0]);
-  if (args.isSet("use-ortho-camera")) {
+  if (args.isSet("orthographic")) {
     // try orthographic camera
     agentConfig.sensorSpecifications[0]->sensorSubType =
         esp::sensor::SensorSubType::Orthographic;
-    // use this value to scale the ortho image.  The smaller the value, the
-    // larger the resultant image.
-    agentConfig.sensorSpecifications[0]->parameters["ortho_scale"] =
-        args.value("ortho-scale");
 
   } else {
     agentConfig.sensorSpecifications[0]->sensorSubType =
@@ -431,6 +431,24 @@ Viewer::Viewer(const Arguments& arguments)
 
   printHelpText();
 }  // end Viewer::Viewer
+
+void Viewer::switchCameraType() {
+  auto cameraSensor =
+      defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+  auto cam = std::static_pointer_cast<esp::sensor::CameraSensor>(cameraSensor);
+
+  auto oldCameraType = cam->getCameraType();
+  switch (oldCameraType) {
+    case esp::sensor::SensorSubType::Pinhole: {
+      cam->setCameraType(esp::sensor::SensorSubType::Orthographic);
+      break;
+    }
+    case esp::sensor::SensorSubType::Orthographic: {
+      cam->setCameraType(esp::sensor::SensorSubType::Pinhole);
+      break;
+    }
+  }
+}
 
 int Viewer::addObject(int ID) {
   const std::string& configHandle =
@@ -822,6 +840,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
       break;
+    case KeyEvent::Key::C:
+      // switch camera between ortho and perspective
+      switchCameraType();
+
+      break;
     case KeyEvent::Key::A:
       defaultAgent_->act("moveLeft");
       break;
@@ -844,7 +867,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       simulator_->setFrustumCullingEnabled(
           !simulator_->isFrustumCullingEnabled());
       break;
-    case KeyEvent::Key::C:
+    case KeyEvent::Key::G:
       showFPS_ = !showFPS_;
       break;
     case KeyEvent::Key::O:
