@@ -24,7 +24,7 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
 
 void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
-  spec_ = std::move(spec);
+  spec_ = spec;
   width_ = spec_->resolution[1];
   height_ = spec_->resolution[0];
   near_ = std::atof(spec_->parameters.at("near").c_str());

@@ -780,7 +780,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   redraw();
 
   event.setAccepted();
-}  // namespace
+}  // Viewer::mouseScrollEvent
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
@@ -931,7 +931,7 @@ void Viewer::screenshot() {
   Mn::DebugTools::screenshot(
       Mn::GL::defaultFramebuffer,
       screenshot_directory + std::to_string(savedFrames++) + ".png");
-}
+}  // Viewer::screenshot
 
 }  // namespace
 

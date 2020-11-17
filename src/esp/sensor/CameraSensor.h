@@ -115,7 +115,7 @@ class CameraSensor : public VisualSensor {
 
   /** @brief Camera type
    */
-  SensorSubType cameraType_;
+  SensorSubType cameraType_ = sensor::SensorSubType::Pinhole;
 
   /** @brief canvas width
    */
