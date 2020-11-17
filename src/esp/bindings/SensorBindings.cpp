@@ -121,7 +121,7 @@ void initSensorBindings(py::module& m) {
       .def(
           "set_fov",
           static_cast<void (CameraSensor::*)(Mn::Deg)>(&CameraSensor::setFOV),
-          R"(Set the field of view to use for this CameraSensor.  Only applicable to 
+          R"(Set the field of view to use for this CameraSensor.  Only applicable to
           Pinhole Camera Types)",
           "fov"_a)
       .def(

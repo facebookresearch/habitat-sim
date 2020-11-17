@@ -59,25 +59,25 @@ def make_cfg(settings):
             "sensor_type": hsim.SensorType.COLOR,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
-            "sensor_subtype" : hsim.SensorSubType.PINHOLE,
+            "sensor_subtype": hsim.SensorSubType.PINHOLE,
         },
         "depth_sensor": {  # active if sim_settings["depth_sensor"]
             "sensor_type": hsim.SensorType.DEPTH,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
-            "sensor_subtype" : hsim.SensorSubType.PINHOLE,
+            "sensor_subtype": hsim.SensorSubType.PINHOLE,
         },
         "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
             "sensor_type": hsim.SensorType.SEMANTIC,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
-            "sensor_subtype" : hsim.SensorSubType.PINHOLE,
+            "sensor_subtype": hsim.SensorSubType.PINHOLE,
         },
         "ortho_sensor": {  # active if sim_settings["ortho_sensor"]
             "sensor_type": hsim.SensorType.COLOR,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
-            "sensor_subtype" : hsim.SensorSubType.ORTHOGRAPHIC,
+            "sensor_subtype": hsim.SensorSubType.ORTHOGRAPHIC,
         },
     }
 
