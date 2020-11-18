@@ -88,13 +88,23 @@ RenderCamera& RenderCamera::setProjectionMatrix(int width,
                                                 int height,
                                                 float znear,
                                                 float zfar,
-                                                float hfov) {
+                                                Mn::Deg hfov) {
   const float aspectRatio = static_cast<float>(width) / height;
-  MagnumCamera::setProjectionMatrix(
-      Mn::Matrix4::perspectiveProjection(Mn::Deg{hfov}, aspectRatio, znear,
-                                         zfar))
-      .setViewport(Magnum::Vector2i(width, height));
-  return *this;
+  auto projMat =
+      Mn::Matrix4::perspectiveProjection(hfov, aspectRatio, znear, zfar);
+  return setProjectionMatrix(width, height, projMat);
+}
+
+RenderCamera& RenderCamera::setOrthoProjectionMatrix(int width,
+                                                     int height,
+                                                     float znear,
+                                                     float zfar,
+                                                     float scale) {
+  auto size = Mn::Vector2{width / (1.0f * height), 1.0f};
+  size /= scale;
+  auto orthoMat = Mn::Matrix4::orthographicProjection(size, znear, zfar);
+
+  return setProjectionMatrix(width, height, orthoMat);
 }
 
 size_t RenderCamera::cull(

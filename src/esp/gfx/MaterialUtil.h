@@ -28,7 +28,7 @@ namespace gfx {
 gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
     const Magnum::Trade::PbrMetallicRoughnessMaterialData& material,
     int textureBaseIndex,
-    const std::vector<std::shared_ptr<Magnum::GL::Texture2D>>& textures);
+    const std::map<int, std::shared_ptr<Magnum::GL::Texture2D>>& textures);
 
 }  // namespace gfx
 }  // namespace esp

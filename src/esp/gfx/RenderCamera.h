@@ -107,11 +107,40 @@ class RenderCamera : public MagnumCamera {
     return static_cast<const scene::SceneNode&>(MagnumCamera::object());
   }
 
+  /**
+   * @brief Set precalculated projection matrix for this RenderCamera
+   * @param width The width of the viewport
+   * @param height The height of the viewport
+   * @return A reference to this RenderCamera
+   */
+  RenderCamera& setProjectionMatrix(int width,
+                                    int height,
+                                    Mn::Matrix4& projMat) {
+    MagnumCamera::setProjectionMatrix(projMat).setViewport(
+        Magnum::Vector2i(width, height));
+    return *this;
+  }
+
   RenderCamera& setProjectionMatrix(int width,
                                     int height,
                                     float znear,
                                     float zfar,
-                                    float hfov);
+                                    Mn::Deg hfov);
+
+  /**
+   * @brief Set projection matrix for Orthographic camera
+   * @param width The width of the viewport
+   * @param height The height of the viewport
+   * @param znear The location of the near clipping plane
+   * @param zfar The location of the far clipping plane
+   * @param scale A multiplier to scale the size of the resultant image.
+   * @return A reference to this RenderCamera
+   */
+  RenderCamera& setOrthoProjectionMatrix(int width,
+                                         int height,
+                                         float znear,
+                                         float zfar,
+                                         float scale);
 
   /**
    * @brief Overload function to render the drawables

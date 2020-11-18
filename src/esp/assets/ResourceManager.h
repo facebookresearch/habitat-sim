@@ -288,8 +288,8 @@ class ResourceManager {
    * @return The transformation matrix mapping from the original state to
    * its current state.
    */
-  const Mn::Matrix4& getMeshTransformation(const size_t meshIndex) const {
-    return meshes_[meshIndex]->meshTransform_;
+  const Mn::Matrix4& getMeshTransformation(const int meshIndex) const {
+    return meshes_.at(meshIndex)->meshTransform_;
   }
 
   /**
@@ -508,7 +508,7 @@ class ResourceManager {
    *
    * meshID:
    * -) for non-ptex mesh:
-   * meshID is the global index into meshes_.
+   * meshID is the global key into meshes_.
    * meshes_[meshID] is the BaseMesh corresponding to the drawable;
    *
    * -) for ptex mesh:
@@ -516,7 +516,7 @@ class ResourceManager {
    */
   struct StaticDrawableInfo {
     esp::scene::SceneNode& node;
-    uint32_t meshID;
+    int meshID;
   };
 
   //======== Scene Functions ========
@@ -884,14 +884,24 @@ class ResourceManager {
   // thus we can avoiding duplicated loading
 
   /**
+   * @brief The next available unique ID for loaded meshes
+   */
+  int nextMeshID_ = 0;
+
+  /**
    * @brief The mesh data for loaded assets.
    */
-  std::vector<std::shared_ptr<BaseMesh>> meshes_;
+  std::map<int, std::shared_ptr<BaseMesh>> meshes_;
+
+  /**
+   * @brief The next available unique ID for loaded textures
+   */
+  int nextTextureID_ = 0;
 
   /**
    * @brief The texture data for loaded assets.
    */
-  std::vector<std::shared_ptr<Mn::GL::Texture2D>> textures_;
+  std::map<int, std::shared_ptr<Mn::GL::Texture2D>> textures_;
 
   /**
    * @brief The next available unique ID for loaded materials

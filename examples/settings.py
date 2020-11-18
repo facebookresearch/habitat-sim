@@ -16,6 +16,7 @@ default_sim_settings = {
     "color_sensor": True,  # RGB sensor (default: ON)
     "semantic_sensor": False,  # semantic sensor (default: OFF)
     "depth_sensor": False,  # depth sensor (default: OFF)
+    "ortho_sensor": False,  # Orthographic RGB sensor (default: OFF)
     "seed": 1,
     "silent": False,  # do not print log info (default: OFF)
     # settings exclusive to example.py
@@ -50,6 +51,10 @@ def make_cfg(settings):
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]
     sim_cfg.gpu_device_id = 0
+    if not hasattr(sim_cfg, "scene_id"):
+        raise RuntimeError(
+            "Error: Please upgrade habitat-sim. SimulatorConfig API version mismatch"
+        )
     sim_cfg.scene_id = settings["scene"]
 
     # define default sensor parameters (see src/esp/Sensor/Sensor.h)
@@ -58,16 +63,25 @@ def make_cfg(settings):
             "sensor_type": hsim.SensorType.COLOR,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
+            "sensor_subtype": hsim.SensorSubType.PINHOLE,
         },
         "depth_sensor": {  # active if sim_settings["depth_sensor"]
             "sensor_type": hsim.SensorType.DEPTH,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
+            "sensor_subtype": hsim.SensorSubType.PINHOLE,
         },
         "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
             "sensor_type": hsim.SensorType.SEMANTIC,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
+            "sensor_subtype": hsim.SensorSubType.PINHOLE,
+        },
+        "ortho_sensor": {  # active if sim_settings["ortho_sensor"]
+            "sensor_type": hsim.SensorType.COLOR,
+            "resolution": [settings["height"], settings["width"]],
+            "position": [0.0, settings["sensor_height"], 0.0],
+            "sensor_subtype": hsim.SensorSubType.ORTHOGRAPHIC,
         },
     }
 
@@ -78,6 +92,7 @@ def make_cfg(settings):
             sensor_spec = hsim.SensorSpec()
             sensor_spec.uuid = sensor_uuid
             sensor_spec.sensor_type = sensor_params["sensor_type"]
+            sensor_spec.sensor_subtype = sensor_params["sensor_subtype"]
             sensor_spec.resolution = sensor_params["resolution"]
             sensor_spec.position = sensor_params["position"]
             sensor_spec.gpu2gpu_transfer = False

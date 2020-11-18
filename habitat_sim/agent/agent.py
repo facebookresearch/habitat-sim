@@ -143,7 +143,7 @@ class Agent(object):
             self._sensors.clear()
             for spec in self.agent_config.sensor_specifications:
                 self._sensors.add(
-                    hsim.PinholeCamera(self.scene_node.create_child(), spec)
+                    hsim.CameraSensor(self.scene_node.create_child(), spec)
                 )
 
     def act(self, action_id: Any) -> bool:
