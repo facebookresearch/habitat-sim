@@ -23,7 +23,7 @@
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
-#include "esp/sensor/PinholeCamera.h"
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/VisualSensor.h"
 
 namespace Cr = Corrade;

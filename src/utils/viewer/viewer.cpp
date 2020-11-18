@@ -45,6 +45,7 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
@@ -72,6 +73,7 @@ std::string getCurrentTimeString() {
 }
 
 using namespace Mn::Math::Literals;
+using Magnum::Math::Literals::operator""_degf;
 
 class Viewer : public Mn::Platform::Application {
  public:
@@ -124,11 +126,21 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
+  /**
+   * @brief Toggle between ortho and perspective camera
+   */
+  void switchCameraType();
   Mn::Vector3 randomDirection();
 
   //! string rep of time when viewer application was started
   std::string viewerStartTimeString = getCurrentTimeString();
   void screenshot();
+
+  esp::sensor::CameraSensor& getAgentCamera() {
+    esp::sensor::Sensor& cameraSensor =
+        *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+    return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
+  }
 
   std::string helpText = R"(
 ==================================================
@@ -142,6 +154,8 @@ Mouse Functions:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
   SHIFT-RIGHT:
     Click a mesh to highlight it.
+  WHEEL:
+    Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 
 Key Commands:
 -------------
@@ -156,6 +170,8 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
+  '5' switch ortho/perspective camera.
+  '6' reset ortho camera zoom/perspective camera FOV.
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
@@ -273,6 +289,9 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
+      .addBooleanOption("orthographic")
+      .setHelp("orthographic",
+               "If specified, use orthographic camera to view scene.")
       .addBooleanOption("disable-navmesh")
       .setHelp("disable-navmesh",
                "Disable the navmesh, disabling agent navigation constraints.")
@@ -394,6 +413,11 @@ Viewer::Viewer(const Arguments& arguments)
   };
   agentConfig.sensorSpecifications[0]->resolution =
       esp::vec2i(viewportSize[1], viewportSize[0]);
+
+  agentConfig.sensorSpecifications[0]->sensorSubType =
+      args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
+                                 : esp::sensor::SensorSubType::Pinhole;
+
   // add selects a random initial state and sets up the default controls and
   // step filter
   simulator_->addAgent(agentConfig);
@@ -411,6 +435,22 @@ Viewer::Viewer(const Arguments& arguments)
 
   printHelpText();
 }  // end Viewer::Viewer
+
+void Viewer::switchCameraType() {
+  auto& cam = getAgentCamera();
+
+  auto oldCameraType = cam.getCameraType();
+  switch (oldCameraType) {
+    case esp::sensor::SensorSubType::Pinhole: {
+      cam.setCameraType(esp::sensor::SensorSubType::Orthographic);
+      return;
+    }
+    case esp::sensor::SensorSubType::Orthographic: {
+      cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
+      return;
+    }
+  }
+}
 
 int Viewer::addObject(int ID) {
   const std::string& configHandle =
@@ -605,11 +645,16 @@ void Viewer::drawEvent() {
     ImGui::Begin("main", NULL,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::SetWindowFontScale(2.0);
+    ImGui::SetWindowFontScale(1.5);
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
+    auto& cam = getAgentCamera();
+    ImGui::Text("%s camera",
+                (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
+                     ? "Orthographic"
+                     : "Pinhole"));
     ImGui::End();
   }
 
@@ -732,11 +777,15 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   if (!event.offset().y()) {
     return;
   }
-
+  // Use shift for fine-grained zooming
+  float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
+  float mod = event.offset().y() > 0 ? modVal : 1.0 / modVal;
+  auto& cam = getAgentCamera();
+  cam.modZoom(mod);
   redraw();
 
   event.setAccepted();
-}
+}  // Viewer::mouseScrollEvent
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
@@ -795,6 +844,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
             simulator_->getPathFinder()->getRandomNavigablePoint();
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
+      break;
+    case KeyEvent::Key::Five:
+      // switch camera between ortho and perspective
+      switchCameraType();
+      break;
+    case KeyEvent::Key::Six:
+      // reset camera zoom
+      getAgentCamera().resetZoom();
       break;
     case KeyEvent::Key::A:
       defaultAgent_->act("moveLeft");
@@ -882,7 +939,7 @@ void Viewer::screenshot() {
   Mn::DebugTools::screenshot(
       Mn::GL::defaultFramebuffer,
       screenshot_directory + std::to_string(savedFrames++) + ".png");
-}
+}  // Viewer::screenshot
 
 }  // namespace
 
