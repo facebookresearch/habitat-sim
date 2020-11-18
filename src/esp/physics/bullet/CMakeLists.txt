@@ -14,10 +14,7 @@ add_library(
 
 target_link_libraries(
   bulletphysics
-  PUBLIC
-    assets
-    MagnumIntegration::Bullet
-    Bullet::Dynamics
+  PUBLIC assets MagnumIntegration::Bullet Bullet::Dynamics
 )
 
 ## Enable physics profiling
