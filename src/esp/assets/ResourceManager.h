@@ -20,7 +20,6 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/TextureFormat.h>
-#include <Magnum/Math/CubicHermite.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
@@ -818,53 +817,6 @@ class ResourceManager {
 
   // ======== Geometry helper functions, data structures ========
 
-  /**
-   * @brief Utility function to build a Cubic Hermitian spline to smooth
-   * trajectory points for trajectory visualization tube.
-   * @param a incoming tan at pt
-   * @param b outgoing tan at pt
-   * @param pt a point along the trajectory
-   * @return the resultant spline
-   */
-  Mn::Math::CubicHermite<Mn::Vector3> buildSpline(const Mn::Vector3& a,
-                                                  const Mn::Vector3& b,
-                                                  const Mn::Vector3& pt) {
-    const float B = 0.25;
-    Mn::Vector3 inTan = ((1 - B) * a + B * b).normalized();
-    Mn::Vector3 outTan = ((1 - B) * b + B * a).normalized();
-
-    return Mn::Math::CubicHermite<Mn::Vector3>{inTan, pt, outTan};
-  }  // ResourceManager::buildSpline
-
-  /**
-   * @brief Build a smooth trajectory of interpolated points from key points
-   * along a path using cubic hermitian spline.  Used to build trajectory
-   * visualization tube.
-   * @param pts The points of the trajectory
-   * @param numInterp The number of interpolations between each trajectory point
-   * @return interpolated points for trajectory
-   */
-  std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
-      const std::vector<Mn::Vector3>& pts,
-      int numInterp);
-
-  /**
-   * @brief Build a mesh representing a tube of given radius around the
-   * trajectory given by the passed points.
-   * @param pts The points of a trajectory, in order
-   * @param numSegments The number of the segments around the circumference of
-   * the tube
-   * @param radius The radius of the tube
-   * @param smooth Whether to smooth the points or not
-   * @param numInterp The number of interpolations between each trajectory
-   * point, if smoothing
-   * @return The resultant meshdata for the tube
-   */
-  Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
-                                          int numSegments,
-                                          float radius,
-                                          bool smooth,
-                                          int numInterp);
   /**
    * @brief Apply a translation to the vertices of a mesh asset and store that
    * transformation in @ref BaseMesh::meshTransform_.

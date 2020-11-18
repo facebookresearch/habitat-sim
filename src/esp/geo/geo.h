@@ -9,9 +9,11 @@
 
 #include "esp/core/esp.h"
 
+#include <Magnum/Math/CubicHermite.h>
 #include <Magnum/Math/Range.h>
 #include "esp/gfx/magnum.h"
 namespace Mn = Magnum;
+namespace Cr = Corrade;
 
 namespace esp {
 namespace geo {
@@ -40,6 +42,47 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points);
  */
 Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
                                  const Magnum::Matrix4& xform);
+
+/**
+ * @brief Utility function to build a Cubic Hermitian spline to smooth
+ * trajectory points for trajectory visualization tube.
+ * @param a incoming tan at pt
+ * @param b outgoing tan at pt
+ * @param pt a point along the trajectory
+ * @return the resultant spline
+ */
+Mn::CubicHermite3D buildCubicHermiteSpline(const Mn::Vector3& a,
+                                           const Mn::Vector3& b,
+                                           const Mn::Vector3& pt);
+
+/**
+ * @brief Build a smooth trajectory of interpolated points from key points
+ * along a path using cubic hermitian spline.
+ * @param pts The points of the trajectory
+ * @param numInterp The number of interpolations between each trajectory point
+ * @return interpolated points for trajectory
+ */
+std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
+    const std::vector<Mn::Vector3>& pts,
+    int numInterp);
+
+/**
+ * @brief Build a mesh representing a tube of given radius around the
+ * trajectory given by the passed points.
+ * @param pts The points of a trajectory, in order
+ * @param circleVerts The vertices of a circle around the desired tube.
+ * @param radius The radius of the tube
+ * @param smooth Whether to smooth the points or not
+ * @param numInterp The number of interpolations between each trajectory
+ * point, if smoothing
+ * @return The resultant meshdata for the tube
+ */
+Mn::Trade::MeshData trajectoryTubeSolid(
+    const std::vector<Mn::Vector3>& pts,
+    Cr::Containers::Array<Magnum::Vector3>& circleVerts,
+    float radius,
+    bool smooth,
+    int numInterp);
 
 template <typename T>
 T clamp(const T& n, const T& low, const T& high) {

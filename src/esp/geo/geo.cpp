@@ -5,10 +5,12 @@
 #include "esp/geo/geo.h"
 
 #include <Magnum/Math/FunctionsBatch.h>
+#include <Magnum/Trade/MeshData.h>
 #include <cmath>
 #include <numeric>
 
 namespace Mn = Magnum;
+namespace Cr = Corrade;
 
 namespace esp {
 namespace geo {
@@ -119,6 +121,185 @@ Mn::Range3D getTransformedBB(const Mn::Range3D& range,
 
   return Mn::Range3D::fromCenter(newCenter, newExtent);
 }
+
+Mn::CubicHermite3D buildCubicHermiteSpline(const Mn::Vector3& a,
+                                           const Mn::Vector3& b,
+                                           const Mn::Vector3& pt) {
+  const float B = 0.25;
+  Mn::Vector3 inTan = ((1 - B) * a + B * b).normalized();
+  Mn::Vector3 outTan = ((1 - B) * b + B * a).normalized();
+
+  return Mn::CubicHermite3D{inTan, pt, outTan};
+}  // buildSpline
+
+std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
+    const std::vector<Mn::Vector3>& pts,
+    int numInterp) {
+  std::vector<Mn::Math::CubicHermite<Mn::Vector3>> splinePath;
+  std::vector<Mn::Vector3> trajectory;
+  Mn::Vector3 a, b;
+  // pts.size() must be > 1
+  // beginning point - tangents are opposites
+  splinePath.emplace_back(
+      buildCubicHermiteSpline({(pts[0] - pts[1]).normalized()},
+                              {(pts[1] - pts[0]).normalized()}, pts[0]));
+  int numPtsM1 = pts.size() - 1;
+  for (int i = 1; i < numPtsM1; ++i) {
+    splinePath.emplace_back(
+        buildCubicHermiteSpline({(pts[i] - pts[i - 1]).normalized()},
+                                {(pts[i + 1] - pts[i]).normalized()}, pts[i]));
+
+    for (int j = 0; j < numInterp; ++j) {
+      double t = j / (1.0 * numInterp);
+      trajectory.emplace_back(
+          Mn::Math::splerp(splinePath[i - 1], splinePath[i], t));
+    }
+  }
+
+  // end point - tangents are opposites
+  splinePath.emplace_back(buildCubicHermiteSpline(
+      {(pts[numPtsM1] - pts[numPtsM1 - 1]).normalized()},
+      {(pts[numPtsM1 - 1] - pts[numPtsM1]).normalized()}, pts[numPtsM1]));
+  for (int j = 0; j < numInterp; ++j) {
+    double t = j / (1.0 * numInterp);
+    trajectory.emplace_back(
+        Mn::Math::splerp(splinePath[numPtsM1 - 1], splinePath[numPtsM1], t));
+  }
+  return trajectory;
+}  // buildSmoothTrajOfPoints
+
+Mn::Trade::MeshData trajectoryTubeSolid(
+    const std::vector<Mn::Vector3>& pts,
+    Cr::Containers::Array<Magnum::Vector3>& circleVerts,
+    float radius,
+    bool smooth,
+    int numInterp) {
+  // 1. Build smoothed trajectory through passed points if requested
+  std::vector<Mn::Vector3> trajectory =
+      (smooth ? geo::buildSmoothTrajOfPoints(pts, numInterp) : pts);
+
+  int numSegments = circleVerts.size();
+  // 2. Build mesh vertex points around each trajectory point at appropriate
+  // distance (radius). For each point in trajectory, add a wireframe circle
+  // centered at that point, appropriately oriented based on tangents
+
+  // normalized verts
+  Cr::Containers::Array<Magnum::Vector3> circleNormVerts{
+      Cr::Containers::NoInit, sizeof(Magnum::Vector3) * numSegments};
+  // transform points to be on circle of given radius, and make copy to
+  // normalize points
+  for (int i = 0; i < numSegments; ++i) {
+    circleVerts[i] *= radius;
+    circleNormVerts[i] = circleVerts[i].normalized();
+  }
+  // size of trajectory
+  const Mn::UnsignedInt trajSize = trajectory.size();
+  // # of vertices in resultant tube == # circle verts * # points in trajectory
+  const Mn::UnsignedInt vertexCount = numSegments * trajSize;
+  struct Vertex {  // a function-local struct
+    Mn::Vector3 position;
+    Mn::Vector3 normal;
+  };
+  // Vertex data storage
+  Cr::Containers::Array<char> vertexData{Cr::Containers::NoInit,
+                                         sizeof(Vertex) * vertexCount};
+
+  Cr::Containers::StridedArrayView1D<Vertex> vertices =
+      Cr::Containers::arrayCast<Vertex>(vertexData);
+  // Position and normal views of vertex array
+  Cr::Containers::StridedArrayView1D<Mn::Vector3> positions =
+      vertices.slice(&Vertex::position);
+  Cr::Containers::StridedArrayView1D<Mn::Vector3> normals =
+      vertices.slice(&Vertex::normal);
+
+  Mn::UnsignedInt circlePtIDX = 0;
+  for (Mn::UnsignedInt vertIx = 0; vertIx < trajSize; ++vertIx) {
+    const Mn::Vector3& vert = trajectory[vertIx];
+    Mn::Vector3 tangent;
+    if (vertIx == 0) {  // first vert
+      tangent = trajectory[1] - trajectory[0];
+    } else if (vertIx == trajSize - 1) {  // last vert
+      tangent = trajectory[trajSize - 1] - trajectory[trajSize - 2];
+    } else {  // other verts, use tangent average
+      Mn::Vector3 pTangent = trajectory[vertIx] - trajectory[vertIx - 1];
+      Mn::Vector3 nTangent = trajectory[vertIx + 1] - trajectory[vertIx];
+      tangent = (pTangent + nTangent) / 2.0;
+    }
+    // get the orientation matrix assuming y-up preference
+    Mn::Matrix4 tangentOrientation =
+        Mn::Matrix4::lookAt(vert, vert + tangent, Mn::Vector3{0, 1.0, 0});
+    for (int i = 0; i < numSegments; ++i) {
+      // build vertex (circleVerts[i] is at radius)
+      positions[circlePtIDX] =
+          tangentOrientation.transformPoint(circleVerts[i]);
+      // pre-rotated normal for circle is normalized point
+      normals[circlePtIDX] =
+          tangentOrientation.transformVector(circleNormVerts[i]);
+      ++circlePtIDX;
+    }
+  }
+
+  // 3. Create polys between all points
+  Cr::Containers::Array<char> indexData{
+      Cr::Containers::NoInit,
+      6 * numSegments * (trajSize - 1) * sizeof(Mn::UnsignedInt)};
+  Cr::Containers::ArrayView<Mn::UnsignedInt> indices =
+      Cr::Containers::arrayCast<Mn::UnsignedInt>(indexData);
+
+  // create triangle indices for each tube pair correspondance - ccw winding
+  /*
+            +n---+n+1
+            | \ F2|
+            |  \  |
+            |F1 \ |
+            +0---+1
+        F1 = [+0, +n, +1]
+        F2 = [+1, +n, +n+1]
+   */
+  int iListIDX = 0;
+  for (Mn::UnsignedInt vIdx = 0; vIdx < trajSize - 1;
+       ++vIdx) {  // skip last circle (adding forward)
+    int vIdxNumSeg = vIdx * numSegments;
+    for (Mn::UnsignedInt circleIx = 0; circleIx < numSegments; ++circleIx) {
+      Mn::UnsignedInt ix = circleIx + vIdxNumSeg;  //+0
+      Mn::UnsignedInt ixNext = ix + numSegments;   //+n
+      Mn::UnsignedInt ixPlus = ix + 1;             //+1
+      Mn::UnsignedInt ixNextPlus = ixNext + 1;     //+n+1
+      if (circleIx == numSegments - 1) {
+        // last vert in a circle wraps to relative 0
+        ixPlus = vIdxNumSeg;
+        ixNextPlus = vIdxNumSeg + numSegments;
+      }
+      // F1
+      indices[iListIDX++] = (ix);
+      indices[iListIDX++] = (ixNext);
+      indices[iListIDX++] = (ixPlus);
+      // F2
+      indices[iListIDX++] = (ixPlus);
+      indices[iListIDX++] = (ixNext);
+      indices[iListIDX++] = (ixNextPlus);
+    }
+  }
+
+  // Finally, make the MeshData. The indices have to be constructed first
+  // because function argument evaluation order is not guaranteed and so you
+  // might end up with the move happening before the MeshIndexData construction,
+  // which would result in 0 indices)
+
+  // Building mesh this way should obviate the need for interleaving
+
+  Mn::Trade::MeshData meshData{
+      Mn::MeshPrimitive::Triangles,
+      std::move(indexData),
+      Mn::Trade::MeshIndexData{indices},
+      std::move(vertexData),
+      {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
+                                    positions},
+       Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal, normals}},
+      static_cast<Mn::UnsignedInt>(positions.size())};
+
+  return meshData;
+}  // ResourceManager::trajectoryTubeSolid
 
 }  // namespace geo
 }  // namespace esp
