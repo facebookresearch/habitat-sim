@@ -64,6 +64,15 @@ class CameraSensor : public VisualSensor {
     recomputeProjectionMatrix();
   }
 
+  /**
+   * @brief Resets the zoom on this CameraSensor to reflect current sensor spec
+   * values.
+   */
+  void resetZoom() {
+    zoomMatrix_ = Magnum::Matrix4(Magnum::Math::IdentityInit);
+    recomputeProjectionMatrix();
+  }
+
   // ======== Accessors ========
 
   /**

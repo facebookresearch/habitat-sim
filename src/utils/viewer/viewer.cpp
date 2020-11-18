@@ -73,6 +73,7 @@ std::string getCurrentTimeString() {
 }
 
 using namespace Mn::Math::Literals;
+using Magnum::Math::Literals::operator""_degf;
 
 class Viewer : public Mn::Platform::Application {
  public:
@@ -154,7 +155,7 @@ Mouse Functions:
   SHIFT-RIGHT:
     Click a mesh to highlight it.
   WHEEL:
-    Control Orthographic Zoom/Perspective FOV (+SHIFT for fine grained control)
+    Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 
 Key Commands:
 -------------
@@ -170,6 +171,7 @@ Key Commands:
 
   Utilities:
   '5' switch ortho/perspective camera.
+  '6' reset ortho camera zoom/perspective camera FOV.
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
@@ -846,7 +848,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
       switchCameraType();
-
+      break;
+    case KeyEvent::Key::Six:
+      // reset camera zoom
+      getAgentCamera().resetZoom();
       break;
     case KeyEvent::Key::A:
       defaultAgent_->act("moveLeft");

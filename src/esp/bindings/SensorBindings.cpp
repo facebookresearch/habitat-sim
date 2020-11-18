@@ -122,6 +122,9 @@ void initSensorBindings(py::module& m) {
            R"(Modify Orthographic Zoom or Perspective FOV multiplicatively by
           passed amount. User >1 to increase, 0<factor<1 to decrease.)",
            "factor"_a)
+      .def("reset_zoom", &CameraSensor::resetZoom,
+           R"(Reset Orthographic Zoom or Perspective FOV to values
+          specified in current sensor spec for this CameraSensor.)")
       .def_property(
           "fov",
           static_cast<Mn::Deg (CameraSensor::*)() const>(&CameraSensor::getFOV),
