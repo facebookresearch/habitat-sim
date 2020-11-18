@@ -148,7 +148,7 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
   # libs, causing linker errors on Magnum side. If you have CMake 3.13, the
   # Find module is able to correct that on its own, otherwise you need to
   # enable BUILD_SHARED_LIBS to build as shared.
-  if(NOT CORRADE_TARGET_EMSCRIPTEN)
+  if((NOT CORRADE_TARGET_EMSCRIPTEN) AND CMAKE_VERSION VERSION_LESS 3.13)
     set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
   else()
     # On Emscripten we require 3.13, so there it's fine (and there we can't use
