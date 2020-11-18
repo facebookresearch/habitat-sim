@@ -144,7 +144,7 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
   # This is needed in case BUILD_EXTRAS is enabled, as you'd get a CMake syntax
   # error otherwise
   set(PKGCONFIG_INSTALL_PREFIX "lib${LIB_SUFFIX}/pkgconfig/")
- 
+
   # caches CXX_FLAGS so we can reset them at the end
   set(_PREV_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
