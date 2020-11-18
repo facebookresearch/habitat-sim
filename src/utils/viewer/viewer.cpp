@@ -169,6 +169,8 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
+  '1' toggle recording locations for trajectory visualization.
+  '2' build and display trajectory visualization.
   '5' switch ortho/perspective camera.
   '6' reset ortho camera zoom/perspective camera FOV.
   'e' enable/disable frustum culling.
@@ -237,11 +239,11 @@ Key Commands:
   }  // setAgentLocationRecord
 
   /**
-   * @brief Record agent location if enabled.  Call after move.
+   * @brief Record agent location if enabled.  Called after any movement.
    */
   inline void recAgentLocation() {
     if (agentLocRecordOn_) {
-      auto pt = agentBodyNode_->translation() + Magnum::Vector3{0, 1, 0};
+      auto pt = agentBodyNode_->translation() + Magnum::Vector3{0, .1, 0};
       agentLocs_.push_back(pt);
       LOG(INFO) << "Recording agent location : {" << pt.x() << "," << pt.y()
                 << "," << pt.z() << "}";
@@ -543,7 +545,7 @@ void Viewer::buildTrajectoryVis() {
                "tube for :"
             << agentLocs_.size() << " points.";
   int trajObjID = simulator_->showTrajectoryVisualization(
-      "viewerTrajVis", agentLocs_, 4, .1, false, 10);
+      "viewerTrajVis", agentLocs_, 6, .01, false, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
     LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj ID : "
               << trajObjID;
@@ -895,6 +897,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Down:
       defaultAgent_->act("lookDown");
       break;
+    case KeyEvent::Key::One:
+      // toggle agent location recording
+      setAgentLocationRecord(!agentLocRecordOn_);
+      break;
+    case KeyEvent::Key::Two:
+      // test trajectory mesh synthesis
+      buildTrajectoryVis();
+      break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
       break;
@@ -987,14 +997,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::H:
       printHelpText();
-      break;
-    case KeyEvent::Key::Six:
-      // toggle agent location recording
-      setAgentLocationRecord(!agentLocRecordOn_);
-      break;
-    case KeyEvent::Key::Seven:
-      // test trajectory mesh synthesis
-      buildTrajectoryVis();
       break;
     default:
       break;
