@@ -148,7 +148,13 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
   # libs, causing linker errors on Magnum side. If you have CMake 3.13, the
   # Find module is able to correct that on its own, otherwise you need to
   # enable BUILD_SHARED_LIBS to build as shared.
-  set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+  if(NOT CORRADE_TARGET_EMSCRIPTEN)
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+  else()
+    # On Emscripten we require 3.13, so there it's fine (and there we can't use
+    # shared libs)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  endif()
   # ... and because we have to build shared libs, we need exported symbols,
   # however the whole Habitat is built with -fvisibility=hidden and Bullet
   # doesn't export any of its symbols and relies on symbols being visible by
