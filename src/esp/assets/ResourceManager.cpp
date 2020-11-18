@@ -1440,7 +1440,7 @@ bool ResourceManager::loadTrajectoryVisualization(
   int meshEnd = meshStart;
   MeshMetaData meshMetaData{meshStart, meshEnd};
 
-  meshes_.emplace_back(std::move(visMeshData));
+  meshes_.emplace(meshStart, std::move(visMeshData));
 
   // default material for now
   auto phongMaterial = gfx::PhongMaterialData::create_unique();
