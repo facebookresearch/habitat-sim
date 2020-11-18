@@ -169,7 +169,7 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
-  'num5' switch ortho/perspective camera.
+  '5' switch ortho/perspective camera.
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
@@ -843,7 +843,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
       break;
-    case KeyEvent::Key::NumFive:
+    case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
       switchCameraType();
 

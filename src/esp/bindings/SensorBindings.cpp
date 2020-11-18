@@ -118,20 +118,31 @@ void initSensorBindings(py::module& m) {
            Should be consumed by first querying this CameraSensor's SensorSpec
            and then modifying as necessary.)",
            "sensor_spec"_a)
-      .def(
-          "set_fov",
+      .def("zoom", &CameraSensor::modZoom,
+           R"(Modify Orthographic Zoom or Perspective FOV multiplicatively by
+          passed amount. User >1 to increase, 0<factor<1 to decrease.)",
+           "factor"_a)
+      .def_property(
+          "fov",
+          static_cast<Mn::Deg (CameraSensor::*)() const>(&CameraSensor::getFOV),
           static_cast<void (CameraSensor::*)(Mn::Deg)>(&CameraSensor::setFOV),
           R"(Set the field of view to use for this CameraSensor.  Only applicable to
-          Pinhole Camera Types)",
-          "fov"_a)
-      .def(
-          "zoom", &CameraSensor::modZoom,
-          R"(Modify Orthographic Zoom or Perspective FOV multiplicatively by passed amount)",
-          "factor"_a)
+          Pinhole Camera Types)")
       .def_property(
           "camera_type", &CameraSensor::getCameraType,
           &CameraSensor::setCameraType,
-          R"(The type of projection (ORTHOGRAPHIC or PINHOLE) this CameraSensor uses.)");
+          R"(The type of projection (ORTHOGRAPHIC or PINHOLE) this CameraSensor uses.)")
+      .def_property("width", &CameraSensor::getWidth, &CameraSensor::setWidth,
+                    R"(The width of the viewport for this CameraSensor.)")
+      .def_property("height", &CameraSensor::getHeight,
+                    &CameraSensor::setHeight,
+                    R"(The height of the viewport for this CameraSensor.)")
+      .def_property(
+          "near_plane_dist", &CameraSensor::getNear, &CameraSensor::setNear,
+          R"(The distance to the near clipping plane for this CameraSensor uses.)")
+      .def_property(
+          "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
+          R"(The distance to the far clipping plane for this CameraSensor uses.)");
 
   // ==== SensorSuite ====
   py::class_<SensorSuite, SensorSuite::ptr>(m, "SensorSuite")

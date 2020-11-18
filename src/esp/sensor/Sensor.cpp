@@ -12,8 +12,7 @@ namespace esp {
 namespace sensor {
 
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
-    : Magnum::SceneGraph::AbstractFeature3D{node},
-      spec_(std::move(spec)) {  // why are we moving?
+    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
   node.setType(scene::SceneNodeType::SENSOR);
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. The specification is null.";

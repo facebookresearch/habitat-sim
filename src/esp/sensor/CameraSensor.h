@@ -64,6 +64,8 @@ class CameraSensor : public VisualSensor {
     recomputeProjectionMatrix();
   }
 
+  // ======== Accessors ========
+
   /**
    * @brief Sets the FOV for this CameraSensor.  Only consumed by
    * pinhole/perspective cameras.
@@ -73,27 +75,83 @@ class CameraSensor : public VisualSensor {
     spec_->parameters.at("hfov") =
         Corrade::Utility::ConfigurationValue<Mn::Deg>::toString(
             FOV, Corrade::Utility::ConfigurationValueFlags());
-    setProjectionParameters(spec_);
+    if (spec_->sensorSubType != SensorSubType::Pinhole) {
+      LOG(INFO)
+          << "CameraSensor::setFOV : Only Perspective-base CameraSensors use "
+             "FOV. Specified value saved but will not be consumed by this "
+             "CameraSensor.";
+    }
+    recomputeBaseProjectionMatrix();
+  }  // CameraSensor::setFOV
+
+  Mn::Deg getFOV() const {
+    float fov = std::atof(spec_->parameters.at("hfov").c_str());
+    return Mn::Deg{fov};
   }
 
   /**
-   * @brief Sets camera type and calculates appropriate size vector for display.
+   * @brief Sets camera type and calculates appropriate size vector for
+   * display.
    */
-  void setCameraType(const SensorSubType& _cameraType);
+  void setCameraType(const SensorSubType& _cameraType) {
+    spec_->sensorSubType = _cameraType;
+    recomputeBaseProjectionMatrix();
+  }  // CameraSensor::setCameraType
 
   SensorSubType getCameraType() const { return spec_->sensorSubType; }
+
+  /**
+   * @brief Sets width of this sensor's view port
+   */
+  void setWidth(int _width) {
+    spec_->resolution[1] = _width;
+    width_ = _width;
+    recomputeBaseProjectionMatrix();
+  }
+  int getWidth() const { return width_; }
+
+  /**
+   * @brief Sets height of this sensor's view port
+   */
+  void setHeight(int _height) {
+    spec_->resolution[0] = _height;
+    height_ = _height;
+    recomputeBaseProjectionMatrix();
+  }
+  int getHeight() const { return height_; }
+
+  /**
+   * @brief Sets near plane distance.
+   */
+  void setNear(float _near) {
+    spec_->parameters.at("near") = std::to_string(_near);
+    near_ = _near;
+    recomputeBaseProjectionMatrix();
+  }
+  float getNear() { return near_; }
+
+  /**
+   * @brief Sets far plane distance.
+   */
+  void setFar(float _far) {
+    spec_->parameters.at("far") = std::to_string(_far);
+    far_ = _far;
+    recomputeBaseProjectionMatrix();
+  }
+  float getFar() { return far_; }
 
  protected:
   /**
    * @brief Recalculate the base projection matrix, based on camera type and
-   * display size. This should be called only when camera type, size or clipping
-   * planes change.
+   * display size. This should be called only when camera type, size or
+   * clipping planes change.
    */
   void recomputeBaseProjectionMatrix();
 
   /**
-   * @brief Recalculate the projection Matrix used by this Camera Sensor, which
-   * should be recomputeulated @ref zoomMatrix_ or @ref baseProjMatrix_ change.
+   * @brief Recalculate the projection Matrix used by this Camera Sensor,
+   * which should be recomputeulated @ref zoomMatrix_ or @ref baseProjMatrix_
+   * change.
    */
   void recomputeProjectionMatrix() {
     projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
@@ -143,7 +201,7 @@ class CameraSensor : public VisualSensor {
 
   /** @brief size of near plane
    */
-  Mn::Vector2 size_;
+  Mn::Vector2 nearPlaneSize_;
 
  public:
   ESP_SMART_POINTERS(CameraSensor)
