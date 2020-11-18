@@ -144,6 +144,10 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
   # This is needed in case BUILD_EXTRAS is enabled, as you'd get a CMake syntax
   # error otherwise
   set(PKGCONFIG_INSTALL_PREFIX "lib${LIB_SUFFIX}/pkgconfig/")
+ 
+  # caches CXX_FLAGS so we can reset them at the end
+  set(_PREV_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
   # Bullet's buildsystem doesn't correctly express dependencies between static
   # libs, causing linker errors on Magnum side. If you have CMake 3.13, the
   # Find module is able to correct that on its own, otherwise you need to
@@ -153,16 +157,15 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
     # however the whole Habitat is built with -fvisibility=hidden and Bullet
     # doesn't export any of its symbols and relies on symbols being visible by
     # default. Which means we have to compile it without hidden visibility.
-    set(_PREV_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    # ... and because we have to build shared libs, we need exported symbols,
     string(REPLACE "-fvisibility=hidden" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-    add_subdirectory(${DEPS_DIR}/bullet3 EXCLUDE_FROM_ALL)
-    set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
   else()
     # On Emscripten we require 3.13, so there it's fine (and there we can't use
     # shared libs)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   endif()
-  # ... and because we have to build shared libs, we need exported symbols,
+  add_subdirectory(${DEPS_DIR}/bullet3 EXCLUDE_FROM_ALL)
+  set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
 endif()
 
 # Magnum. Use a system package, if preferred.
