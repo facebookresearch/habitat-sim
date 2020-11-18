@@ -194,21 +194,8 @@ foreach(_component ${MagnumIntegration_FIND_COMPONENTS})
                     INTERFACE_LINK_OPTIONS "SHELL:-s USE_BULLET=1")
             else()
                 find_package(Bullet)
-
                 set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                    INTERFACE_INCLUDE_DIRECTORIES ${BULLET_INCLUDE_DIRS})
-                # Need to handle special cases where both debug and release
-                # libraries are available (in form of debug;A;optimized;B in
-                # BULLET_LIBRARIES), thus appending them one by one
-                foreach(lib BULLET_DYNAMICS_LIBRARY BULLET_COLLISION_LIBRARY BULLET_MATH_LIBRARY BULLET_SOFTBODY_LIBRARY)
-                    if(${lib}_DEBUG)
-                        set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                            INTERFACE_LINK_LIBRARIES "$<$<NOT:$<CONFIG:Debug>>:${${lib}}>;$<$<CONFIG:Debug>:${${lib}_DEBUG}>")
-                    else()
-                        set_property(TARGET MagnumIntegration::${_component} APPEND PROPERTY
-                            INTERFACE_LINK_LIBRARIES ${${lib}})
-                    endif()
-                endforeach()
+                    INTERFACE_LINK_LIBRARIES Bullet::LinearMath)
             endif()
 
             set(_MAGNUMINTEGRATION_${_COMPONENT}_INCLUDE_PATH_NAMES MotionState.h)
