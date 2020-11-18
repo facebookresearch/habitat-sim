@@ -43,6 +43,7 @@ cmake ../src \
     -DCMAKE_INSTALL_PREFIX="." \
     -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1" \
     -DCMAKE_EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS}" \
+    -DBUILD_SHARED_LIBS=OFF `#Turn off bullets shared_libs` \
     -DBUILD_WITH_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )"
 
 cmake --build . -- -j 4 #TODO: Set to 4 cores only on CirelcCI
