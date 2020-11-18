@@ -150,19 +150,19 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
   # enable BUILD_SHARED_LIBS to build as shared.
   if((NOT CORRADE_TARGET_EMSCRIPTEN) AND CMAKE_VERSION VERSION_LESS 3.13)
     set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+    # however the whole Habitat is built with -fvisibility=hidden and Bullet
+    # doesn't export any of its symbols and relies on symbols being visible by
+    # default. Which means we have to compile it without hidden visibility.
+    set(_PREV_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    string(REPLACE "-fvisibility=hidden" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    add_subdirectory(${DEPS_DIR}/bullet3 EXCLUDE_FROM_ALL)
+    set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
   else()
     # On Emscripten we require 3.13, so there it's fine (and there we can't use
     # shared libs)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   endif()
   # ... and because we have to build shared libs, we need exported symbols,
-  # however the whole Habitat is built with -fvisibility=hidden and Bullet
-  # doesn't export any of its symbols and relies on symbols being visible by
-  # default. Which means we have to compile it without hidden visibility.
-  set(_PREV_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-  string(REPLACE "-fvisibility=hidden" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-  add_subdirectory(${DEPS_DIR}/bullet3 EXCLUDE_FROM_ALL)
-  set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
 endif()
 
 # Magnum. Use a system package, if preferred.
