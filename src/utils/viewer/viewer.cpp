@@ -220,6 +220,7 @@ Key Commands:
    * visualization
    */
   std::vector<Magnum::Vector3> agentLocs_;
+  const float agentTrajRad_ = .1f;
   bool agentLocRecordOn_ = false;
 
   /**
@@ -243,7 +244,8 @@ Key Commands:
    */
   inline void recAgentLocation() {
     if (agentLocRecordOn_) {
-      auto pt = agentBodyNode_->translation() + Magnum::Vector3{0, .1, 0};
+      auto pt = agentBodyNode_->translation() +
+                Magnum::Vector3{0, (2.0f * agentTrajRad_), 0};
       agentLocs_.push_back(pt);
       LOG(INFO) << "Recording agent location : {" << pt.x() << "," << pt.y()
                 << "," << pt.z() << "}";
@@ -536,7 +538,7 @@ int Viewer::addPrimitiveObject() {
 }  // addPrimitiveObject
 
 void Viewer::buildTrajectoryVis() {
-  if (agentLocs_.size() == 0) {
+  if (agentLocs_.size() < 2) {
     LOG(WARNING) << "Viewer::buildTrajectoryVis : No recorded trajectory "
                     "points, so nothing to build. Aborting.";
     return;
@@ -545,7 +547,7 @@ void Viewer::buildTrajectoryVis() {
                "tube for :"
             << agentLocs_.size() << " points.";
   int trajObjID = simulator_->showTrajectoryVisualization(
-      "viewerTrajVis", agentLocs_, 6, .01, false, 10);
+      "viewerTrajVis", agentLocs_, 6, agentTrajRad_, false, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
     LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj ID : "
               << trajObjID;

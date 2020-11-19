@@ -1231,32 +1231,9 @@ bool ResourceManager::loadTrajectoryVisualization(
             << numSegments << " circular segments and " << numInterp
             << " interpolated points between each trajectory point.";
 
-  // get circular vertices to use to construct the trajectory tube
-  // make sure importer is open before use
-  primitiveImporter_->openData("");
-  // configuration for PrimitiveImporter - replace appropriate group's data
-  // before instancing prim object
-  Cr::Utility::ConfigurationGroup* cfgGroup =
-      primitiveImporter_->configuration().group("circle3DWireframe");
-  CORRADE_ASSERT(cfgGroup != nullptr,
-                 "ResourceManager::loadTrajectoryVisualization: Error with "
-                 "primitiveImporter_ : Failed to supply circle3DWireframe "
-                 "configuration. Aborting.",
-                 false);
-
-  // set value for config group for 3D circle wireframes
-  cfgGroup->setValue<int>("segments", numSegments);
-
-  // get verts for circle primitive to use as endpoints and transform them to
-  // more easily use them to calculate tangents at appropriate raidius and
-  // normals
-  Cr::Containers::Array<Magnum::Vector3> circleVerts =
-      primitiveImporter_->mesh("circle3DWireframe")->positions3DAsArray();
-  ASSERT(numSegments == circleVerts.size());
-
   // create mesh tube
   Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
-      geo::trajectoryTubeSolid(pts, circleVerts, radius, smooth, numInterp);
+      geo::trajectoryTubeSolid(pts, numSegments, radius, smooth, numInterp);
   LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Successfully "
                "returned from trajectoryTubeSolid ";
 

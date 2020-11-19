@@ -70,19 +70,19 @@ std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
  * @brief Build a mesh representing a tube of given radius around the
  * trajectory given by the passed points.
  * @param pts The points of a trajectory, in order
- * @param circleVerts The vertices of a circle around the desired tube.
+ * @param numSegments The number of segments around the circumference of the
+ * tube.
  * @param radius The radius of the tube
  * @param smooth Whether to smooth the points or not
  * @param numInterp The number of interpolations between each trajectory
  * point, if smoothing
  * @return The resultant meshdata for the tube
  */
-Mn::Trade::MeshData trajectoryTubeSolid(
-    const std::vector<Mn::Vector3>& pts,
-    Cr::Containers::Array<Magnum::Vector3>& circleVerts,
-    float radius,
-    bool smooth,
-    int numInterp);
+Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
+                                        int numSegments,
+                                        float radius,
+                                        bool smooth,
+                                        int numInterp);
 
 template <typename T>
 T clamp(const T& n, const T& low, const T& high) {

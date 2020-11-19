@@ -5,6 +5,7 @@
 #include "esp/geo/geo.h"
 
 #include <Magnum/Math/FunctionsBatch.h>
+#include <Magnum/Primitives/Circle.h>
 #include <Magnum/Trade/MeshData.h>
 #include <cmath>
 #include <numeric>
@@ -168,24 +169,25 @@ std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
   return trajectory;
 }  // buildSmoothTrajOfPoints
 
-Mn::Trade::MeshData trajectoryTubeSolid(
-    const std::vector<Mn::Vector3>& pts,
-    Cr::Containers::Array<Magnum::Vector3>& circleVerts,
-    float radius,
-    bool smooth,
-    int numInterp) {
+Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
+                                        int numSegments,
+                                        float radius,
+                                        bool smooth,
+                                        int numInterp) {
   // 1. Build smoothed trajectory through passed points if requested
   std::vector<Mn::Vector3> trajectory =
       (smooth ? geo::buildSmoothTrajOfPoints(pts, numInterp) : pts);
 
-  int numSegments = circleVerts.size();
   // 2. Build mesh vertex points around each trajectory point at appropriate
   // distance (radius). For each point in trajectory, add a wireframe circle
   // centered at that point, appropriately oriented based on tangents
 
+  Cr::Containers::Array<Magnum::Vector3> circleVerts =
+      Mn::Primitives::circle3DWireframe(numSegments).positions3DAsArray();
   // normalized verts
   Cr::Containers::Array<Magnum::Vector3> circleNormVerts{
       Cr::Containers::NoInit, sizeof(Magnum::Vector3) * numSegments};
+
   // transform points to be on circle of given radius, and make copy to
   // normalize points
   for (int i = 0; i < numSegments; ++i) {
@@ -195,7 +197,7 @@ Mn::Trade::MeshData trajectoryTubeSolid(
   // size of trajectory
   const Mn::UnsignedInt trajSize = trajectory.size();
   // # of vertices in resultant tube == # circle verts * # points in trajectory
-  const Mn::UnsignedInt vertexCount = numSegments * trajSize;
+  const Mn::UnsignedInt vertexCount = numSegments * trajSize + 2;
   struct Vertex {  // a function-local struct
     Mn::Vector3 position;
     Mn::Vector3 normal;
@@ -213,20 +215,32 @@ Mn::Trade::MeshData trajectoryTubeSolid(
       vertices.slice(&Vertex::normal);
 
   Mn::UnsignedInt circlePtIDX = 0;
-  for (Mn::UnsignedInt vertIx = 0; vertIx < trajSize; ++vertIx) {
+  Mn::Vector3 tangent = trajectory[1] - trajectory[0];
+  // get the orientation matrix assuming y-up preference
+  Mn::Matrix4 tangentOrientation = Mn::Matrix4::lookAt(
+      trajectory[0], trajectory[0] + tangent, Mn::Vector3{0, 1.0, 0});
+  for (int i = 0; i < numSegments; ++i) {
+    // build vertex (circleVerts[i] is at radius)
+    positions[circlePtIDX] = tangentOrientation.transformPoint(circleVerts[i]);
+    // pre-rotated normal for circle is normalized point
+    normals[circlePtIDX] =
+        tangentOrientation.transformVector(circleNormVerts[i]);
+    ++circlePtIDX;
+  }
+  // add cap vert at the end of the list
+  // build vertex (circleVerts[i] is at radius)
+  positions[vertexCount - 2] = trajectory[0];
+  // pre-rotated normal for circle is normalized point
+  normals[vertexCount - 2] =
+      tangentOrientation.transformVector({0.0f, 0.0f, -1.0f});
+
+  for (Mn::UnsignedInt vertIx = 1; vertIx < trajSize - 1; ++vertIx) {
     const Mn::Vector3& vert = trajectory[vertIx];
-    Mn::Vector3 tangent;
-    if (vertIx == 0) {  // first vert
-      tangent = trajectory[1] - trajectory[0];
-    } else if (vertIx == trajSize - 1) {  // last vert
-      tangent = trajectory[trajSize - 1] - trajectory[trajSize - 2];
-    } else {  // other verts, use tangent average
-      Mn::Vector3 pTangent = trajectory[vertIx] - trajectory[vertIx - 1];
-      Mn::Vector3 nTangent = trajectory[vertIx + 1] - trajectory[vertIx];
-      tangent = (pTangent + nTangent) / 2.0;
-    }
+    Mn::Vector3 pTangent = vert - trajectory[vertIx - 1];
+    Mn::Vector3 nTangent = trajectory[vertIx + 1] - vert;
+    tangent = (pTangent + nTangent) / 2.0;
     // get the orientation matrix assuming y-up preference
-    Mn::Matrix4 tangentOrientation =
+    tangentOrientation =
         Mn::Matrix4::lookAt(vert, vert + tangent, Mn::Vector3{0, 1.0, 0});
     for (int i = 0; i < numSegments; ++i) {
       // build vertex (circleVerts[i] is at radius)
@@ -238,15 +252,34 @@ Mn::Trade::MeshData trajectoryTubeSolid(
       ++circlePtIDX;
     }
   }
+  int idx = trajSize - 1;
+  tangent = trajectory[idx] - trajectory[idx - 1];
+  // get the orientation matrix assuming y-up preference
+  tangentOrientation = Mn::Matrix4::lookAt(
+      trajectory[idx], trajectory[idx] + tangent, Mn::Vector3{0, 1.0, 0});
+  for (int i = 0; i < numSegments; ++i) {
+    // build vertex (circleVerts[i] is at radius)
+    positions[circlePtIDX] = tangentOrientation.transformPoint(circleVerts[i]);
+    // pre-rotated normal for circle is normalized point
+    normals[circlePtIDX] =
+        tangentOrientation.transformVector(circleNormVerts[i]);
+    ++circlePtIDX;
+  }
+  // add cap vert
+  // build vertex (circleVerts[i] is at radius)
+  positions[vertexCount - 1] = trajectory[idx];
+  // pre-rotated normal for circle is normalized point
+  normals[vertexCount - 1] =
+      tangentOrientation.transformVector({0.0f, 0.0f, 1.0f});
 
   // 3. Create polys between all points
   Cr::Containers::Array<char> indexData{
       Cr::Containers::NoInit,
-      6 * numSegments * (trajSize - 1) * sizeof(Mn::UnsignedInt)};
+      6 * numSegments * trajSize * sizeof(Mn::UnsignedInt)};
   Cr::Containers::ArrayView<Mn::UnsignedInt> indices =
       Cr::Containers::arrayCast<Mn::UnsignedInt>(indexData);
 
-  // create triangle indices for each tube pair correspondance - ccw winding
+  // create triangle indices for each tube pair correspondance - cw winding
   /*
             +n---+n+1
             | \ F2|
@@ -279,6 +312,22 @@ Mn::Trade::MeshData trajectoryTubeSolid(
       indices[iListIDX++] = (ixNext);
       indices[iListIDX++] = (ixNextPlus);
     }
+  }
+  int offset = numSegments * (trajSize - 1);
+  // end caps
+  for (Mn::UnsignedInt circleIx = 0; circleIx < numSegments; ++circleIx) {
+    // endcap 1
+    Mn::UnsignedInt ix = circleIx;
+    Mn::UnsignedInt ixPlus = (ix + 1) % numSegments;  //+1
+    indices[iListIDX++] = (ix);
+    indices[iListIDX++] = (ixPlus);
+    indices[iListIDX++] = (vertexCount - 2);
+    // endcap 2
+    ix += offset;
+    ixPlus += offset;  //+1
+    indices[iListIDX++] = (ixPlus);
+    indices[iListIDX++] = (ix);
+    indices[iListIDX++] = (vertexCount - 1);
   }
 
   // Finally, make the MeshData. The indices have to be constructed first
