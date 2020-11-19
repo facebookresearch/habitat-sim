@@ -13,8 +13,8 @@ import quaternion  # noqa: F401
 import habitat_sim
 import habitat_sim.errors
 import habitat_sim.utils.common
-from habitat_sim import bindings as hsim
 from habitat_sim.agent.controls.pyrobot_noisy_controls import pyrobot_noise_models
+from habitat_sim.scene import SceneGraph
 
 
 def _delta_translation(a, b):
@@ -38,7 +38,7 @@ def _delta_rotation(a, b):
 )
 def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
     np.random.seed(0)
-    scene_graph = hsim.SceneGraph()
+    scene_graph = SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         noisy_move_backward=habitat_sim.ActionSpec(
