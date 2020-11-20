@@ -51,6 +51,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         SceneNodeType,
         Sensor,
         SensorSpec,
+        SensorSubType,
         SensorType,
         SimulatorConfiguration,
         cuda_enabled,
