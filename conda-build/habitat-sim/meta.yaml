@@ -14,7 +14,6 @@ requirements:
     - {{ cdt('libpng-devel') }} # [linux]
     - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
     - {{ cdt('libxxf86vm-devel') }}      # [linux]
-    {{ environ.get('CONDA_BULLET', '') }}
 
   host:
     - python x.x
@@ -63,7 +62,6 @@ requirements:
     - xorg-libxi                         # [linux]
     - xorg-libxrandr         # [linux]
     - xorg-libxcursor        # [linux]
-    {{ environ.get('CONDA_BULLET', '') }}
     {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT', '') }}
 
 

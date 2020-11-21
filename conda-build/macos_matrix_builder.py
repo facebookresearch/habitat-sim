@@ -55,7 +55,6 @@ def main():
         if use_bullet:
             build_string += "bullet_"
             env["WITH_BULLET"] = "1"
-            env["CONDA_BULLET"] = "- bullet"
             env["CONDA_BULLET_FEATURE"] = "- withbullet"
 
         build_string += "osx"
