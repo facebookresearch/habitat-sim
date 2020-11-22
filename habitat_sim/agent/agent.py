@@ -142,9 +142,10 @@ class Agent(object):
         if reconfigure_sensors:
             self._sensors.clear()
             for spec in self.agent_config.sensor_specifications:
-                self._sensors.add(
-                    hsim.CameraSensor(self.scene_node.create_child(), spec)
-                )
+                self.add_sensor(spec)
+
+    def add_sensor(self, spec: hsim.SensorSpec) -> None:
+        self._sensors.add(hsim.CameraSensor(self.scene_node.create_child(), spec))
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id

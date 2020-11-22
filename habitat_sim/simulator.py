@@ -25,10 +25,15 @@ from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
-from habitat_sim.sensor import SensorType
+from habitat_sim.sensor import SensorSpec, SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
+
+
+def _overwrite_sensor_spec_uuid(spec: SensorSpec, agent_id: int = 0) -> SensorSpec:
+    spec.uuid = f"agent_{agent_id}/{spec.uuid}" if agent_id > 0 else spec.uuid
+    return spec
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -100,6 +105,11 @@ class Simulator(SimulatorBackend):
                 config.agents,
             )
         )
+        for i in range(len(config.agents)):
+            config.agents[i].sensor_specifications = [
+                _overwrite_sensor_spec_uuid(spec, agent_id=i)
+                for spec in config.agents[i].sensor_specifications
+            ]
 
     def __attrs_post_init__(self) -> None:
         self._sanitize_config(self.config)
@@ -208,6 +218,7 @@ class Simulator(SimulatorBackend):
             self.config = config
 
     def __set_from_config(self, config: Configuration):
+
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
@@ -218,15 +229,26 @@ class Simulator(SimulatorBackend):
 
         self._default_agent = self.get_agent(config.sim_cfg.default_agent_id)
 
-        agent_cfg = config.agents[config.sim_cfg.default_agent_id]
         self._sensors = {}
-        for spec in agent_cfg.sensor_specifications:
-            self._sensors[spec.uuid] = Sensor(
-                sim=self, agent=self._default_agent, sensor_id=spec.uuid
-            )
+        for i in range(len(self.agents)):
+
+            agent_cfg = config.agents[i]
+            for spec in agent_cfg.sensor_specifications:
+                self._update_simulator_sensors(spec.uuid, agent_id=i)
 
         for i in range(len(self.agents)):
             self.initialize_agent(i)
+
+    def _update_simulator_sensors(self, uuid: str, agent_id: int = 0) -> None:
+        self._sensors[uuid] = Sensor(
+            sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
+        )
+
+    def add_sensor(self, sensor_spec: SensorSpec, agent_id: int = 0) -> None:
+        agent = self.get_agent(agent_id=agent_id)
+        sensor_spec = _overwrite_sensor_spec_uuid(sensor_spec, agent_id=agent_id)
+        agent.add_sensor(sensor_spec)
+        self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
@@ -257,7 +279,7 @@ class Simulator(SimulatorBackend):
 
         return observations
 
-    def last_state(self):
+    def last_state(self) -> AgentState:
         return self._last_state
 
     def step(
