@@ -30,7 +30,7 @@
 #include "GenericMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
-#include "RenderAssetInstanceCreation.h"
+#include "RenderAssetInstanceCreationInfo.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
@@ -671,7 +671,7 @@ class ResourceManager {
    * testing
    */
   bool loadStageInternal(const AssetInfo& info,
-                         const RenderAssetInstanceCreation* creation,
+                         const RenderAssetInstanceCreationInfo* creation,
                          scene::SceneNode* parent,
                          DrawableGroup* drawables);
 
@@ -735,7 +735,7 @@ class ResourceManager {
    * as the result of this process.
    */
   scene::SceneNode* createRenderAssetInstance(
-      const RenderAssetInstanceCreation& creation,
+      const RenderAssetInstanceCreationInfo& creation,
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>* visNodeCache = nullptr);
@@ -744,7 +744,7 @@ class ResourceManager {
    * @brief PTex Mesh backend for createRenderAssetInstance
    */
   scene::SceneNode* createRenderAssetInstancePTex(
-      const RenderAssetInstanceCreation& creation,
+      const RenderAssetInstanceCreationInfo& creation,
       scene::SceneNode* parent,
       DrawableGroup* drawables);
 
@@ -752,7 +752,7 @@ class ResourceManager {
    * @brief Instance Mesh backend for createRenderAssetInstance
    */
   scene::SceneNode* createRenderAssetInstanceIMesh(
-      const RenderAssetInstanceCreation& creation,
+      const RenderAssetInstanceCreationInfo& creation,
       scene::SceneNode* parent,
       DrawableGroup* drawables);
 
@@ -761,7 +761,7 @@ class ResourceManager {
    * createRenderAssetInstance
    */
   scene::SceneNode* createRenderAssetInstanceGeneralPrimitive(
-      const RenderAssetInstanceCreation& creation,
+      const RenderAssetInstanceCreationInfo& creation,
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>* userVisNodeCache);

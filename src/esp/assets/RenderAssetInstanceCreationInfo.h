@@ -16,7 +16,7 @@ namespace esp {
 namespace assets {
 
 // parameters to control how a render asset instance is created
-struct RenderAssetInstanceCreation {
+struct RenderAssetInstanceCreationInfo {
   std::string filepath;  // see also AssetInfo::filepath
   Corrade::Containers::Optional<Magnum::Vector3> scale;
   bool isStatic =

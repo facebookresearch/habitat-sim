@@ -210,7 +210,7 @@ bool ResourceManager::loadStage(
       auto& semanticRootNode = semanticSceneGraph.getRootNode();
       auto& semanticDrawables = semanticSceneGraph.getDrawables();
 
-      RenderAssetInstanceCreation creation{
+      RenderAssetInstanceCreationInfo creation{
           .filepath = semanticStageFilename,
           .scale = Cr::Containers::NullOpt,
           .isStatic =
@@ -255,7 +255,7 @@ bool ResourceManager::loadStage(
 
   AssetInfo renderInfo = assetInfoMap.at("render");
 
-  RenderAssetInstanceCreation renderCreation{
+  RenderAssetInstanceCreationInfo renderCreation{
       .filepath = renderInfo.filepath,
       .scale = Cr::Containers::NullOpt,
       .isStatic = true,
@@ -265,7 +265,7 @@ bool ResourceManager::loadStage(
 
   bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
                                              &renderCreation,
-                        &rootNode,          // parent scene node
+                                             &rootNode,    // parent scene node
                                              &drawables);  //  drawable group
   if (!renderMeshSuccess) {
     LOG(ERROR)
@@ -281,7 +281,7 @@ bool ResourceManager::loadStage(
     // should this be checked to make sure we do not reload?
     bool collisionMeshSuccess = loadStageInternal(colInfo,  // AssetInfo
                                                   nullptr,  // creation
-                          nullptr,            // parent scene node
+                                                  nullptr,  // parent scene node
                                                   nullptr);  // drawable group
 
     if (!collisionMeshSuccess) {
@@ -454,7 +454,7 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
 }
 
 scene::SceneNode* ResourceManager::createRenderAssetInstance(
-    const RenderAssetInstanceCreation& creation,
+    const RenderAssetInstanceCreationInfo& creation,
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>* visNodeCache) {
@@ -500,7 +500,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
 
 bool ResourceManager::loadStageInternal(
     const AssetInfo& info,
-    const RenderAssetInstanceCreation* creation,
+    const RenderAssetInstanceCreationInfo* creation,
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
   // scene mesh loading
@@ -521,7 +521,7 @@ bool ResourceManager::loadStageInternal(
           if (!loadRenderAsset(info)) {
             return false;
           }
-      } else {
+        } else {
           if (resourceDict_[filename].assetInfo != info) {
             // Right now, we only allow for an asset to be loaded with one
             // configuration, since generated mesh data may be invalid for a new
@@ -837,27 +837,27 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
   const std::string& filename = info.filepath;
   ASSERT(resourceDict_.count(filename) == 0);
 
-    const auto atlasDir = Cr::Utility::Directory::join(
-        Cr::Utility::Directory::path(filename), "textures");
+  const auto atlasDir = Cr::Utility::Directory::join(
+      Cr::Utility::Directory::path(filename), "textures");
 
-    int index = nextMeshID_++;
-    meshes_.emplace(index, std::make_unique<PTexMeshData>());
+  int index = nextMeshID_++;
+  meshes_.emplace(index, std::make_unique<PTexMeshData>());
 
-    auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(index).get());
-    pTexMeshData->load(filename, atlasDir);
+  auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(index).get());
+  pTexMeshData->load(filename, atlasDir);
 
-    // update the dictionary
-    auto inserted =
-        resourceDict_.emplace(filename, LoadedAssetData{info, {index, index}});
-    MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
-    meshMetaData.root.meshIDLocal = 0;
-    meshMetaData.root.componentID = 0;
-    // store the rotation to world frame upon load
-    const quatf transform = info.frame.rotationFrameToWorld();
-    Magnum::Matrix4 R = Magnum::Matrix4::from(
-        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-    meshMetaData.root.transformFromLocalToParent =
-        R * meshMetaData.root.transformFromLocalToParent;
+  // update the dictionary
+  auto inserted =
+      resourceDict_.emplace(filename, LoadedAssetData{info, {index, index}});
+  MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
+  meshMetaData.root.meshIDLocal = 0;
+  meshMetaData.root.componentID = 0;
+  // store the rotation to world frame upon load
+  const quatf transform = info.frame.rotationFrameToWorld();
+  Magnum::Matrix4 R = Magnum::Matrix4::from(
+      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+  meshMetaData.root.transformFromLocalToParent =
+      R * meshMetaData.root.transformFromLocalToParent;
 
   CORRADE_ASSERT(
       meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
@@ -874,7 +874,7 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
 }
 
 scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
-    const RenderAssetInstanceCreation& creation,
+    const RenderAssetInstanceCreationInfo& creation,
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -887,34 +887,34 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
   const MeshMetaData& metaData = getMeshMetaData(filename);
   const auto& info = loadedAssetData.assetInfo;
   auto indexPair = metaData.meshIndex;
-    int start = indexPair.first;
-    int end = indexPair.second;
-    std::vector<StaticDrawableInfo> staticDrawableInfo;
+  int start = indexPair.first;
+  int end = indexPair.second;
+  std::vector<StaticDrawableInfo> staticDrawableInfo;
 
   scene::SceneNode* instanceRoot = &parent->createChild();
 
-    for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
+  for (int iMesh = start; iMesh <= end; ++iMesh) {
+    auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
 
-      pTexMeshData->uploadBuffersToGPU(false);
+    pTexMeshData->uploadBuffersToGPU(false);
 
-      for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
+    for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
       scene::SceneNode& node = instanceRoot->createChild();
-        const quatf transform = info.frame.rotationFrameToWorld();
-        node.setRotation(Magnum::Quaternion(transform));
+      const quatf transform = info.frame.rotationFrameToWorld();
+      node.setRotation(Magnum::Quaternion(transform));
 
-        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
-                                               shaderManager_, drawables);
+      node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
+                                             shaderManager_, drawables);
 
-        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
-      }
+      staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
     }
+  }
   // we assume a ptex mesh is only used as static
   ASSERT(creation.isStatic);
   ASSERT(metaData.meshIndex.first == metaData.meshIndex.second);
 
-    computePTexMeshAbsoluteAABBs(*meshes_.at(metaData.meshIndex.first),
-                                 staticDrawableInfo);
+  computePTexMeshAbsoluteAABBs(*meshes_.at(metaData.meshIndex.first),
+                               staticDrawableInfo);
   return instanceRoot;
 #else
   LOG(ERROR) << "PTex support not enabled. Enable the BUILD_PTEX_SUPPORT CMake "
@@ -932,46 +932,46 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
-    std::vector<GenericInstanceMeshData::uptr> instanceMeshes;
+  std::vector<GenericInstanceMeshData::uptr> instanceMeshes;
   if (info.splitInstanceMesh) {
-      instanceMeshes =
-          GenericInstanceMeshData::fromPlySplitByObjectId(*importer, filename);
-    } else {
-      GenericInstanceMeshData::uptr meshData =
-          GenericInstanceMeshData::fromPLY(*importer, filename);
-      if (meshData)
-        instanceMeshes.emplace_back(std::move(meshData));
-    }
+    instanceMeshes =
+        GenericInstanceMeshData::fromPlySplitByObjectId(*importer, filename);
+  } else {
+    GenericInstanceMeshData::uptr meshData =
+        GenericInstanceMeshData::fromPLY(*importer, filename);
+    if (meshData)
+      instanceMeshes.emplace_back(std::move(meshData));
+  }
 
-    if (instanceMeshes.empty()) {
-      LOG(ERROR) << "Error loading instance mesh data";
-      return false;
-    }
+  if (instanceMeshes.empty()) {
+    LOG(ERROR) << "Error loading instance mesh data";
+    return false;
+  }
 
-    int meshStart = nextMeshID_;
-    int meshEnd = meshStart + instanceMeshes.size() - 1;
-    nextMeshID_ = meshEnd + 1;
-    MeshMetaData meshMetaData{meshStart, meshEnd};
-    meshMetaData.root.children.resize(instanceMeshes.size());
+  int meshStart = nextMeshID_;
+  int meshEnd = meshStart + instanceMeshes.size() - 1;
+  nextMeshID_ = meshEnd + 1;
+  MeshMetaData meshMetaData{meshStart, meshEnd};
+  meshMetaData.root.children.resize(instanceMeshes.size());
 
-    for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
-         ++meshIDLocal) {
-      instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
-      meshes_.emplace(meshStart + meshIDLocal,
-                      std::move(instanceMeshes[meshIDLocal]));
+  for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
+       ++meshIDLocal) {
+    instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
+    meshes_.emplace(meshStart + meshIDLocal,
+                    std::move(instanceMeshes[meshIDLocal]));
 
-      meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
-    }
+    meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
+  }
 
-    // update the dictionary
-    resourceDict_.emplace(filename,
-                          LoadedAssetData{info, std::move(meshMetaData)});
+  // update the dictionary
+  resourceDict_.emplace(filename,
+                        LoadedAssetData{info, std::move(meshMetaData)});
 
   return true;
 }
 
 scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
-    const RenderAssetInstanceCreation& creation,
+    const RenderAssetInstanceCreationInfo& creation,
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
   ASSERT(!creation.scale);  // IMesh doesn't support scale
@@ -980,40 +980,40 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
 
   const bool computeAbsoluteAABBs = creation.isStatic;
 
-    std::vector<StaticDrawableInfo> staticDrawableInfo;
+  std::vector<StaticDrawableInfo> staticDrawableInfo;
   auto indexPair = getMeshMetaData(creation.filepath).meshIndex;
-    int start = indexPair.first;
-    int end = indexPair.second;
+  int start = indexPair.first;
+  int end = indexPair.second;
 
   scene::SceneNode* instanceRoot = &parent->createChild();
 
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     scene::SceneNode& node = instanceRoot->createChild();
 
-      // Instance mesh does NOT have normal texture, so do not bother to
-      // query if the mesh data contain tangent or bitangent.
-      gfx::Drawable::Flags meshAttributeFlags{};
-      // WARNING:
-      // This is to initiate drawables for instance mesh, and the instance mesh
-      // data is NOT stored in the meshData_ in the BaseMesh.
-      // That means One CANNOT query the data like e.g.,
-      // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
-      // It will SEGFAULT!
-      createDrawable(*(meshes_.at(iMesh)->getMagnumGLMesh()),  // render mesh
-                     meshAttributeFlags,                 // mesh attribute flags
-                     node,                               // scene node
+    // Instance mesh does NOT have normal texture, so do not bother to
+    // query if the mesh data contain tangent or bitangent.
+    gfx::Drawable::Flags meshAttributeFlags{};
+    // WARNING:
+    // This is to initiate drawables for instance mesh, and the instance mesh
+    // data is NOT stored in the meshData_ in the BaseMesh.
+    // That means One CANNOT query the data like e.g.,
+    // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
+    // It will SEGFAULT!
+    createDrawable(*(meshes_.at(iMesh)->getMagnumGLMesh()),  // render mesh
+                   meshAttributeFlags,                 // mesh attribute flags
+                   node,                               // scene node
                    creation.lightSetupKey,             // lightSetup key
-                     PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
-                     drawables);                         // drawable group
-
-      if (computeAbsoluteAABBs) {
-        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
-      }
-    }
+                   PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
+                   drawables);                         // drawable group
 
     if (computeAbsoluteAABBs) {
-      computeInstanceMeshAbsoluteAABBs(staticDrawableInfo);
+      staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
     }
+  }
+
+  if (computeAbsoluteAABBs) {
+    computeInstanceMeshAbsoluteAABBs(staticDrawableInfo);
+  }
 
   return instanceRoot;
 }
@@ -1103,54 +1103,54 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
 #endif
   }
 
-    if (!fileImporter_->openFile(filename)) {
-      LOG(ERROR) << "Cannot open file " << filename;
-      return false;
-    }
+  if (!fileImporter_->openFile(filename)) {
+    LOG(ERROR) << "Cannot open file " << filename;
+    return false;
+  }
 
   // load file and add it to the dictionary
-    LoadedAssetData loadedAssetData{info};
-    if (requiresTextures_) {
-      loadTextures(*fileImporter_, loadedAssetData);
-      loadMaterials(*fileImporter_, loadedAssetData);
-    }
-    loadMeshes(*fileImporter_, loadedAssetData);
-    auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
-    MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
+  LoadedAssetData loadedAssetData{info};
+  if (requiresTextures_) {
+    loadTextures(*fileImporter_, loadedAssetData);
+    loadMaterials(*fileImporter_, loadedAssetData);
+  }
+  loadMeshes(*fileImporter_, loadedAssetData);
+  auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
+  MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
 
-    // Register magnum mesh
-    if (fileImporter_->defaultScene() != -1) {
-      Cr::Containers::Optional<Magnum::Trade::SceneData> sceneData =
-          fileImporter_->scene(fileImporter_->defaultScene());
-      if (!sceneData) {
-        LOG(ERROR) << "Cannot load scene, exiting";
-        return false;
-      }
-      for (unsigned int sceneDataID : sceneData->children3D()) {
-        loadMeshHierarchy(*fileImporter_, meshMetaData.root, sceneDataID);
-      }
-    } else if (fileImporter_->meshCount() &&
-               meshes_.at(meshMetaData.meshIndex.first)) {
-      // no default scene --- standalone OBJ/PLY files, for example
-      // take a wild guess and load the first mesh with the first material
-      // addMeshToDrawables(metaData, *parent, drawables, 0, 0);
-      loadMeshHierarchy(*fileImporter_, meshMetaData.root, 0);
-    } else {
-      LOG(ERROR) << "No default scene available and no meshes found, exiting";
+  // Register magnum mesh
+  if (fileImporter_->defaultScene() != -1) {
+    Cr::Containers::Optional<Magnum::Trade::SceneData> sceneData =
+        fileImporter_->scene(fileImporter_->defaultScene());
+    if (!sceneData) {
+      LOG(ERROR) << "Cannot load scene, exiting";
       return false;
     }
+    for (unsigned int sceneDataID : sceneData->children3D()) {
+      loadMeshHierarchy(*fileImporter_, meshMetaData.root, sceneDataID);
+    }
+  } else if (fileImporter_->meshCount() &&
+             meshes_.at(meshMetaData.meshIndex.first)) {
+    // no default scene --- standalone OBJ/PLY files, for example
+    // take a wild guess and load the first mesh with the first material
+    // addMeshToDrawables(metaData, *parent, drawables, 0, 0);
+    loadMeshHierarchy(*fileImporter_, meshMetaData.root, 0);
+  } else {
+    LOG(ERROR) << "No default scene available and no meshes found, exiting";
+    return false;
+  }
 
-    const quatf transform = info.frame.rotationFrameToWorld();
-    Magnum::Matrix4 R = Magnum::Matrix4::from(
-        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-    meshMetaData.root.transformFromLocalToParent =
-        R * meshMetaData.root.transformFromLocalToParent;
+  const quatf transform = info.frame.rotationFrameToWorld();
+  Magnum::Matrix4 R = Magnum::Matrix4::from(
+      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+  meshMetaData.root.transformFromLocalToParent =
+      R * meshMetaData.root.transformFromLocalToParent;
 
-    return true;
+  return true;
 }
 
 scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
-    const RenderAssetInstanceCreation& creation,
+    const RenderAssetInstanceCreationInfo& creation,
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>* userVisNodeCache) {
@@ -1172,7 +1172,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
 
     // legacy quirky behavior: only add this node to viscache if using scaling
     visNodeCache.push_back(&newNode);
-      }
+  }
 
   std::vector<StaticDrawableInfo> staticDrawableInfo;
 
@@ -1181,11 +1181,11 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   bool computeAbsoluteAABBs = creation.isStatic;
 
   addComponent(loadedAssetData.meshMetaData,       // mesh metadata
-               newNode,            // parent scene node
+               newNode,                            // parent scene node
                creation.lightSetupKey,             // lightSetup key
                drawables,                          // drawable group
                loadedAssetData.meshMetaData.root,  // mesh transform node
-               visNodeCache,       // a vector of scene nodes, the visNodeCache
+               visNodeCache,  // a vector of scene nodes, the visNodeCache
                computeAbsoluteAABBs,  // compute absolute AABBs
                staticDrawableInfo);   // a vector of static drawable info
 
@@ -1735,12 +1735,13 @@ void ResourceManager::addObjectToDrawables(
     const std::string& renderObjectName =
         ObjectAttributes->getRenderAssetHandle();
 
-    RenderAssetInstanceCreation creation{.filepath = renderObjectName,
-                                         .scale = ObjectAttributes->getScale(),
-                                         .isStatic = false,
-                                         .isRGBD = true,
-                                         .isSemantic = true,
-                                         .lightSetupKey = lightSetupKey};
+    RenderAssetInstanceCreationInfo creation{
+        .filepath = renderObjectName,
+        .scale = ObjectAttributes->getScale(),
+        .isStatic = false,
+        .isRGBD = true,
+        .isSemantic = true,
+        .lightSetupKey = lightSetupKey};
 
     createRenderAssetInstance(creation, parent, drawables, &visNodeCache);
 
@@ -1912,7 +1913,7 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         objectNode.setId(nodeIndex);
         if (info.type == AssetType::SUNCG_OBJECT) {
           CHECK(loadRenderAsset(info));
-          RenderAssetInstanceCreation objectCreation{
+          RenderAssetInstanceCreationInfo objectCreation{
               .filepath = info.filepath,
               .scale = Cr::Containers::NullOpt,
               .isStatic = false,
