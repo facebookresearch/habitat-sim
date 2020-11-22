@@ -437,8 +437,8 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   } else if (isRenderAssetGeneral(info.type)) {
     meshSuccess = loadRenderAssetGeneral(info);
   } else {
-    ASSERT(
-        false);  // loadRenderAsset doesn't yet support the requested asset type
+    // loadRenderAsset doesn't yet support the requested asset type
+    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   }
 #if 0  // coming soon
   if (renderKeyframeWriter_) {
@@ -453,8 +453,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>* visNodeCache) {
-  // assert that asset is already loaded
-  CHECK(resourceDict_.count(creation.filepath));
+  CORRADE_ASSERT(resourceDict_.count(creation.filepath), "asset is not loaded",
+                 nullptr);
 
   const LoadedAssetData& loadedAssetData = resourceDict_.at(creation.filepath);
   if (!isLightSetupCompatible(loadedAssetData, creation.lightSetupKey)) {
@@ -468,21 +468,22 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
   const auto& info = loadedAssetData.assetInfo;
   scene::SceneNode* newNode = nullptr;
   if (info.type == AssetType::FRL_PTEX_MESH) {
-    ASSERT(
-        !visNodeCache);  // createRenderAssetInstancePTex doesn't support this
+    CORRADE_ASSERT(!visNodeCache,
+                   "createRenderAssetInstancePTex doesn't support this",
+                   nullptr);
     newNode = createRenderAssetInstancePTex(creation, parent, drawables);
   } else if (info.type == AssetType::INSTANCE_MESH) {
-    ASSERT(
-        !visNodeCache);  // createRenderAssetInstanceIMesh doesn't support this
+    CORRADE_ASSERT(!visNodeCache,
+                   "createRenderAssetInstanceIMesh doesn't support this",
+                   nullptr);
     newNode = createRenderAssetInstanceIMesh(creation, parent, drawables);
   } else if (isRenderAssetGeneral(info.type) ||
              info.type == AssetType::PRIMITIVE) {
     newNode = createRenderAssetInstanceGeneralPrimitive(
         creation, parent, drawables, visNodeCache);
   } else {
-    ASSERT(false);  // createRenderAssetInstance doesn't yet support the
-                    // requested asset type
-    newNode = nullptr;
+    // createRenderAssetInstance doesn't yet support the requested asset type
+    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   }
 
 #if 0  // coming soon
@@ -529,7 +530,7 @@ bool ResourceManager::loadStageInternal(
         }
         // create render asset instance if requested
         if (parent) {
-          ASSERT(creation);
+          CORRADE_INTERNAL_ASSERT(creation);
           createRenderAssetInstance(*creation, parent, drawables);
         }
         return true;
