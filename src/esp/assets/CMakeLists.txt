@@ -13,6 +13,7 @@ set(
   MeshMetaData.h
   Mp3dInstanceMeshData.cpp
   Mp3dInstanceMeshData.h
+  RenderAssetInstanceCreationInfo.cpp
   RenderAssetInstanceCreationInfo.h
   ResourceManager.cpp
   ResourceManager.h

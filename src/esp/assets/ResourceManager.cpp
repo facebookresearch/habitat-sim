@@ -210,15 +210,12 @@ bool ResourceManager::loadStage(
       auto& semanticRootNode = semanticSceneGraph.getRootNode();
       auto& semanticDrawables = semanticSceneGraph.getDrawables();
 
-      RenderAssetInstanceCreationInfo creation{
-          .filepath = semanticStageFilename,
-          .scale = Cr::Containers::NullOpt,
-          .isStatic =
-              stageAttributes->getFrustrumCulling(),  // only treat as static if
-                                                      // doing culling
-          .isRGBD = false,
-          .isSemantic = true,
-          .lightSetupKey = NO_LIGHT_KEY};
+      RenderAssetInstanceCreationInfo creation(
+          semanticStageFilename, Cr::Containers::NullOpt,
+          // only treat as static if doing culling
+          /*isStatic*/ stageAttributes->getFrustrumCulling(),
+          /*isRGBD*/ false,
+          /*isSemantic*/ true, NO_LIGHT_KEY);
 
       bool semanticStageSuccess =
           loadStageInternal(semanticInfo,  // AssetInfo
@@ -255,13 +252,11 @@ bool ResourceManager::loadStage(
 
   AssetInfo renderInfo = assetInfoMap.at("render");
 
-  RenderAssetInstanceCreationInfo renderCreation{
-      .filepath = renderInfo.filepath,
-      .scale = Cr::Containers::NullOpt,
-      .isStatic = true,
-      .isRGBD = true,
-      .isSemantic = !isSeparateSemanticScene,
-      .lightSetupKey = renderLightSetupKey};
+  RenderAssetInstanceCreationInfo renderCreation(
+      renderInfo.filepath, Cr::Containers::NullOpt,
+      /*isStatic*/ true,
+      /*isRGBD*/ true,
+      /*isSemantic*/ !isSeparateSemanticScene, renderLightSetupKey);
 
   bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
                                              &renderCreation,
@@ -910,7 +905,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
     }
   }
   // we assume a ptex mesh is only used as static
-  ASSERT(creation.isStatic);
+  ASSERT(creation.isStatic());
   ASSERT(metaData.meshIndex.first == metaData.meshIndex.second);
 
   computePTexMeshAbsoluteAABBs(*meshes_.at(metaData.meshIndex.first),
@@ -978,7 +973,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   ASSERT(creation.lightSetupKey ==
          NO_LIGHT_KEY);  // IMesh doesn't support lighting
 
-  const bool computeAbsoluteAABBs = creation.isStatic;
+  const bool computeAbsoluteAABBs = creation.isStatic();
 
   std::vector<StaticDrawableInfo> staticDrawableInfo;
   auto indexPair = getMeshMetaData(creation.filepath).meshIndex;
@@ -1176,9 +1171,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
 
   std::vector<StaticDrawableInfo> staticDrawableInfo;
 
-  auto nodeType = (creation.isStatic) ? scene::SceneNodeType::EMPTY
+  auto nodeType = creation.isStatic() ? scene::SceneNodeType::EMPTY
                                       : scene::SceneNodeType::OBJECT;
-  bool computeAbsoluteAABBs = creation.isStatic;
+  bool computeAbsoluteAABBs = creation.isStatic();
 
   addComponent(loadedAssetData.meshMetaData,       // mesh metadata
                newNode,                            // parent scene node
@@ -1735,13 +1730,11 @@ void ResourceManager::addObjectToDrawables(
     const std::string& renderObjectName =
         ObjectAttributes->getRenderAssetHandle();
 
-    RenderAssetInstanceCreationInfo creation{
-        .filepath = renderObjectName,
-        .scale = ObjectAttributes->getScale(),
-        .isStatic = false,
-        .isRGBD = true,
-        .isSemantic = true,
-        .lightSetupKey = lightSetupKey};
+    RenderAssetInstanceCreationInfo creation(
+        renderObjectName, ObjectAttributes->getScale(),
+        /*isStatic*/ false,
+        /*isRGBD*/ true,
+        /*isSemantic*/ true, lightSetupKey);
 
     createRenderAssetInstance(creation, parent, drawables, &visNodeCache);
 
@@ -1913,13 +1906,11 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         objectNode.setId(nodeIndex);
         if (info.type == AssetType::SUNCG_OBJECT) {
           CHECK(loadRenderAsset(info));
-          RenderAssetInstanceCreationInfo objectCreation{
-              .filepath = info.filepath,
-              .scale = Cr::Containers::NullOpt,
-              .isStatic = false,
-              .isRGBD = true,
-              .isSemantic = true,
-              .lightSetupKey = NO_LIGHT_KEY};
+          RenderAssetInstanceCreationInfo objectCreation(
+              info.filepath, Cr::Containers::NullOpt,
+              /*isStatic*/ false,
+              /*isRGBD*/ true,
+              /*isSemantic*/ true, NO_LIGHT_KEY);
           createRenderAssetInstance(objectCreation, &objectNode, drawables);
         }
         return objectNode;

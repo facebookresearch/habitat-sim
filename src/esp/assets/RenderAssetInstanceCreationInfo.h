@@ -10,6 +10,7 @@
 
 #include "Magnum/Resource.h"
 
+#include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
 
 namespace esp {
@@ -17,12 +18,28 @@ namespace assets {
 
 // parameters to control how a render asset instance is created
 struct RenderAssetInstanceCreationInfo {
+  enum class Flag : unsigned int {
+    IsStatic = 1 << 0,  // inform the renderer that this instance won't be moved
+    IsRGBD = 1 << 1,    // use in RGB and depth observations
+    IsSemantic = 1 << 2  // use in semantic observations
+  };
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+
+  RenderAssetInstanceCreationInfo(
+      const std::string& _filepath,
+      const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
+      bool isStatic,
+      bool isRGBD,
+      bool isSemantic,
+      const std::string& _lightSetupKey);
+
+  bool isStatic() const { return bool(flags & Flag::IsStatic); }
+  bool isRGBD() const { return bool(flags & Flag::IsRGBD); }
+  bool isSemantic() const { return bool(flags & Flag::IsSemantic); }
+
   std::string filepath;  // see also AssetInfo::filepath
   Corrade::Containers::Optional<Magnum::Vector3> scale;
-  bool isStatic =
-      false;            // inform the renderer that this instance won't be moved
-  bool isRGBD = false;  // use in RGB and depth observations
-  bool isSemantic = false;  // use in semantic observations
+  Flags flags;
   std::string lightSetupKey;
 };
 
