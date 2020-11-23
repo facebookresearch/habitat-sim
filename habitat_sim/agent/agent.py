@@ -142,9 +142,9 @@ class Agent(object):
         if reconfigure_sensors:
             self._sensors.clear()
             for spec in self.agent_config.sensor_specifications:
-                self.add_sensor(spec, modify_agent_config=False)
+                self._add_sensor(spec, modify_agent_config=False)
 
-    def add_sensor(
+    def _add_sensor(
         self, spec: hsim.SensorSpec, modify_agent_config: bool = True
     ) -> None:
         assert (

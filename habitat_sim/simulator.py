@@ -248,7 +248,7 @@ class Simulator(SimulatorBackend):
     def add_sensor(self, sensor_spec: SensorSpec, agent_id: int = 0) -> None:
         agent = self.get_agent(agent_id=agent_id)
         sensor_spec = _overwrite_sensor_spec_uuid(sensor_spec, agent_id=agent_id)
-        agent.add_sensor(sensor_spec)
+        agent._add_sensor(sensor_spec)
         self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
 
     def get_agent(self, agent_id: int) -> Agent:
