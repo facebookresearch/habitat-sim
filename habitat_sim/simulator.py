@@ -13,6 +13,7 @@ import magnum as mn
 import numpy as np
 from magnum import Vector3
 from numpy import ndarray
+from typing_extensions import Literal
 
 try:
     import torch
@@ -262,7 +263,7 @@ class Simulator(SimulatorBackend):
 
     @overload
     def get_sensor_observations(
-        self, agent_ids: List[int] = ...
+        self, agent_ids: List[int]
     ) -> List[Dict[str, Union[ndarray, "Tensor"]]]:
         ...
 
@@ -293,12 +294,30 @@ class Simulator(SimulatorBackend):
     def last_state(self) -> AgentState:
         return self._last_state
 
+    @overload
+    def step(
+        self,
+        action: Union[str, int],
+        dt: float = 1.0 / 60.0,
+        multi_agent: Literal[False] = False,
+    ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
+        ...
+
+    @overload
+    def step(
+        self, action: dict, dt: float = 1.0 / 60.0, multi_agent: Literal[True] = True
+    ) -> List[Dict[str, Union[bool, ndarray, "Tensor"]]]:
+        ...
+
     def step(
         self,
         action: Any,
         dt: float = 1.0 / 60.0,
-        multi_agent=False,
-    ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
+        multi_agent: bool = False,
+    ) -> Union[
+        List[Dict[str, Union[bool, ndarray, "Tensor"]]],
+        Dict[str, Union[bool, ndarray, "Tensor"]],
+    ]:
         self._num_total_frames += 1
         if not multi_agent:
             agent_ids: Union[List[int], int] = self._default_agent_id
@@ -317,19 +336,17 @@ class Simulator(SimulatorBackend):
         step_start_Time = time.time()
         super().step_world(dt)
         self._previous_step_time = time.time() - step_start_Time
-
-        observations = self.get_sensor_observations(agent_ids=agent_ids)
-        # Whether or not the action taken resulted in a collision
-        if not multi_agent:
-            observations = cast(Dict[str, Union[ndarray, "Tensor"]], observations)
-            observations["collided"] = collided
-        else:
+        if multi_agent:
+            agent_ids = cast(List[int], agent_ids)
+            multi_observations = self.get_sensor_observations(agent_ids=agent_ids)
             for agent_id in action.keys():
-                observations[agent_id]["collided"] = collided_dict[agent_id]
-            # CLUDGE
-            observations = cast(Dict[str, Union[ndarray, "Tensor"]], observations)
-
-        return observations
+                multi_observations[agent_id]["collided"] = collided_dict[agent_id]
+            return multi_observations
+        else:
+            agent_ids = cast(int, agent_ids)
+            observations = self.get_sensor_observations(agent_ids=agent_ids)
+            observations["collided"] = collided
+            return observations
 
     def make_greedy_follower(
         self,
