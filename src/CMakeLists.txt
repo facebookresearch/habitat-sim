@@ -44,6 +44,7 @@ option(USE_SYSTEM_GLFW "Use system GLFW instead of a bundled submodule" OFF)
 option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
 option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
+option(USE_SYSTEM_BULLET "Use system Bullet instead of a bundled submodule" OFF)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

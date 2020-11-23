@@ -1,4 +1,5 @@
 find_package(MagnumIntegration REQUIRED Bullet)
+find_package(Bullet REQUIRED Dynamics)
 
 add_library(
   bulletphysics STATIC
@@ -13,7 +14,7 @@ add_library(
 
 target_link_libraries(
   bulletphysics
-  PUBLIC assets MagnumIntegration::Bullet
+  PUBLIC assets MagnumIntegration::Bullet Bullet::Dynamics
 )
 
 ## Enable physics profiling

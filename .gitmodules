@@ -49,3 +49,6 @@
 [submodule "src/deps/tinyobjloader"]
 	path = src/deps/tinyobjloader
 	url = https://github.com/syoyo/tinyobjloader.git
+[submodule "src/deps/bullet3"]
+	path = src/deps/bullet3
+	url = https://github.com/bulletphysics/bullet3
