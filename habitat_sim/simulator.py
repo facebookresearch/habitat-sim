@@ -32,7 +32,8 @@ from habitat_sim.utils.common import quat_from_angle_axis
 
 
 def _overwrite_sensor_spec_uuid(spec: SensorSpec, agent_id: int = 0) -> SensorSpec:
-    spec.uuid = f"agent_{agent_id}/{spec.uuid}" if agent_id > 0 else spec.uuid
+    if agent_id > 0:
+        spec.uuid = f"agent_{agent_id}/{spec.uuid}"
     return spec
 
 
