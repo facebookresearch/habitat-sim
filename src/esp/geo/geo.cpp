@@ -123,49 +123,74 @@ Mn::Range3D getTransformedBB(const Mn::Range3D& range,
   return Mn::Range3D::fromCenter(newCenter, newExtent);
 }
 
-Mn::CubicHermite3D buildCubicHermiteSpline(const Mn::Vector3& a,
-                                           const Mn::Vector3& b,
-                                           const Mn::Vector3& pt) {
-  const float t0 = 0.25, t1 = 1.0f - t0;
-  Mn::Vector3 inTan = (t1 * a + t0 * b).normalized();
-  Mn::Vector3 outTan = (t1 * b + t0 * a).normalized();
+Mn::Vector3 interp2Points(const Mn::Vector3& a,
+                          float ta,
+                          const Mn::Vector3& b,
+                          float tb,
+                          float t) {
+  float denom = tb - ta;
+  return (((tb - t) / denom) * a) + (((t - ta) / denom) * b);
+}
 
-  return Mn::CubicHermite3D{inTan, pt, outTan};
-}  // buildSpline
+float calcTForPoints(const Mn::Vector3& a, const Mn::Vector3& b) {
+  // calc t value based on distance between a and b
+  float alpha = .25f;
+  Mn::Vector3 d = b - a;
+  float sqD = dot(d, d);
+  return Mn::Math::pow(sqD, alpha);
+}
+
+void buildCRTraj4Points(const std::vector<Mn::Vector3>& pts,
+                        const std::vector<float>& ptKnotVals,
+                        std::vector<Mn::Vector3>& trajectory,
+                        int stIdx,
+                        int numInterp) {
+  std::vector<float> tAra;
+  tAra.push_back(0.0f);
+  tAra.push_back(ptKnotVals[stIdx]);
+  tAra.push_back(ptKnotVals[stIdx + 1] + tAra[1]);
+  tAra.push_back(ptKnotVals[stIdx + 2] + tAra[2]);
+  float incr = (tAra[2] - tAra[1]) / (1.0f * numInterp);
+  // for (float t = tAra[1]; t < tAra[2]; t += incr) {
+  for (int i = 0; i < numInterp; ++i) {
+    float t = tAra[1] + i * incr;
+    t = (t > tAra[2]) ? tAra[2] : t;
+    Mn::Vector3 A0 =
+        interp2Points(pts[stIdx], tAra[0], pts[stIdx + 1], tAra[1], t);
+    Mn::Vector3 A1 =
+        interp2Points(pts[stIdx + 1], tAra[1], pts[stIdx + 2], tAra[2], t);
+    Mn::Vector3 A2 =
+        interp2Points(pts[stIdx + 2], tAra[2], pts[stIdx + 3], tAra[3], t);
+
+    Mn::Vector3 B0 = interp2Points(A0, tAra[0], A1, tAra[2], t);
+    Mn::Vector3 B1 = interp2Points(A1, tAra[1], A2, tAra[3], t);
+
+    trajectory.emplace_back(interp2Points(B0, tAra[1], B1, tAra[2], t));
+  }
+
+}  // buildCRTraj4Points
 
 std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
     const std::vector<Mn::Vector3>& pts,
     int numInterp) {
-  std::vector<Mn::Math::CubicHermite<Mn::Vector3>> splinePath;
   std::vector<Mn::Vector3> trajectory;
-  Mn::Vector3 a, b;
-  // pts.size() must be > 1
-  // beginning point - tangents are opposites
-  splinePath.emplace_back(
-      buildCubicHermiteSpline({(pts[0] - pts[1]).normalized()},
-                              {(pts[1] - pts[0]).normalized()}, pts[0]));
-  int numPtsM1 = pts.size() - 1;
-  for (int i = 1; i < numPtsM1; ++i) {
-    splinePath.emplace_back(
-        buildCubicHermiteSpline({(pts[i] - pts[i - 1]).normalized()},
-                                {(pts[i + 1] - pts[i]).normalized()}, pts[i]));
+  std::vector<Mn::Vector3> tmpPoints;
+  std::vector<float> ptKnotVals;
+  // build padded array of points to use to synthesize centripetal catmul-rom
+  // trajectory
+  tmpPoints.emplace_back(pts[0]);
 
-    for (int j = 0; j < numInterp; ++j) {
-      double t = j / (1.0 * numInterp);
-      trajectory.emplace_back(
-          Mn::Math::splerp(splinePath[i - 1], splinePath[i], t));
-    }
+  for (int i = 1; i < pts.size(); ++i) {
+    tmpPoints.emplace_back(pts[i]);
+    ptKnotVals.emplace_back(calcTForPoints(pts[i - 1], pts[i]));
+  }
+  tmpPoints.emplace_back(pts[pts.size() - 1]);
+  ptKnotVals.emplace_back(0);
+
+  for (int i = 0; i < tmpPoints.size() - 2; ++i) {
+    buildCRTraj4Points(pts, ptKnotVals, trajectory, i, numInterp);
   }
 
-  // end point - tangents are opposites
-  splinePath.emplace_back(buildCubicHermiteSpline(
-      {(pts[numPtsM1] - pts[numPtsM1 - 1]).normalized()},
-      {(pts[numPtsM1 - 1] - pts[numPtsM1]).normalized()}, pts[numPtsM1]));
-  for (int j = 0; j < numInterp; ++j) {
-    double t = j / (1.0 * numInterp);
-    trajectory.emplace_back(
-        Mn::Math::splerp(splinePath[numPtsM1 - 1], splinePath[numPtsM1], t));
-  }
   return trajectory;
 }  // buildSmoothTrajOfPoints
 

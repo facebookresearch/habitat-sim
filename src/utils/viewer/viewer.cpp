@@ -220,7 +220,7 @@ Key Commands:
    * visualization
    */
   std::vector<Magnum::Vector3> agentLocs_;
-  const float agentTrajRad_ = .1f;
+  const float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
 
   /**
@@ -547,7 +547,7 @@ void Viewer::buildTrajectoryVis() {
                "tube for :"
             << agentLocs_.size() << " points.";
   int trajObjID = simulator_->showTrajectoryVisualization(
-      "viewerTrajVis", agentLocs_, 6, agentTrajRad_, false, 10);
+      "viewerTrajVis", agentLocs_, 6, agentTrajRad_, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
     LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj ID : "
               << trajObjID;

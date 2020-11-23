@@ -44,18 +44,6 @@ Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
                                  const Magnum::Matrix4& xform);
 
 /**
- * @brief Utility function to build a Cubic Hermitian spline to smooth
- * trajectory points for trajectory visualization tube.
- * @param a incoming tan at pt
- * @param b outgoing tan at pt
- * @param pt a point along the trajectory
- * @return the resultant spline
- */
-Mn::CubicHermite3D buildCubicHermiteSpline(const Mn::Vector3& a,
-                                           const Mn::Vector3& b,
-                                           const Mn::Vector3& pt);
-
-/**
  * @brief Build a smooth trajectory of interpolated points from key points
  * along a path using cubic hermitian spline.
  * @param pts The points of the trajectory
@@ -65,6 +53,46 @@ Mn::CubicHermite3D buildCubicHermiteSpline(const Mn::Vector3& a,
 std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
     const std::vector<Mn::Vector3>& pts,
     int numInterp);
+
+/**
+ * @brief Interpolate between two points to find a third.
+ * @param a first point
+ * @param ta @ref a 's time along trajectory
+ * @param b second point
+ * @param tb @ref b 's time along trajectory
+ * @param t the time along the trajectory for the desired point
+ * @return the interpolated point at time @ref t
+ */
+Mn::Vector3 interp2Points(const Mn::Vector3& a,
+                          float ta,
+                          const Mn::Vector3& b,
+                          float tb,
+                          float t);
+
+/**
+ * @brief Determine the relative knot value for point b as a function of
+ * distance from point a.
+ * @param a a point whose knot value is known
+ * @param b a point whose knot value is unkknown
+ * @return b's knot valute relative to a
+ */
+float calcTForPoints(const Mn::Vector3& a, const Mn::Vector3& b);
+
+/**
+ * @brief Build a centripetal Catmull–Rom spline using 4 sequential points in
+ * @ref pts vector, where the spline will extend between the 2nd and 3rd of the
+ * 4 points.
+ * @param pts The points of the trajectory
+ * @param ptKnotVals Precalculated knot values for sequential points
+ * @param trajectory The resultant trajectory to build
+ * @param stIdx the index to start building the points
+ * @param numInterp The number of interpolations between each trajectory point
+ */
+void buildCRTraj4Points(const std::vector<Mn::Vector3>& pts,
+                        const std::vector<float>& ptKnotVals,
+                        std::vector<Mn::Vector3>& trajectory,
+                        int stIdx,
+                        int numInterp);
 
 /**
  * @brief Build a mesh representing a tube of given radius around the
