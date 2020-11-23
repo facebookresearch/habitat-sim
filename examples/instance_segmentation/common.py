@@ -85,8 +85,7 @@ class InstanceVisualizer:
         with torch.no_grad():
             cpu_device = torch.device("cpu")
             visuals = {}
-            num_out_so_far = 1
-            for images, targets in self.dataloader:
+            for num_out_so_far, (images, targets) in enumerate(self.dataloader):
                 images = [img.to(self.device) for img in images]
                 targets = [
                     {k: v.to(self.device) for k, v in t.items()} for t in targets
@@ -110,10 +109,8 @@ class InstanceVisualizer:
                     rgb = rgbs[image_id].cpu().permute(1, 2, 0).numpy()
                     visuals[image_id] = (rgb, visual)
 
-                if num_out_so_far == max_num_outputs:
+                if num_out_so_far + 1 == max_num_outputs:
                     break
-
-                num_out_so_far += 1
 
         return visuals
 

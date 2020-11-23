@@ -261,7 +261,7 @@ class Simulator(SimulatorBackend):
         return self._last_state
 
     def step(
-        self, action: str, dt: float = 1.0 / 60.0
+        self, action: Any, dt: float = 1.0 / 60.0
     ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
         self._num_total_frames += 1
         collided = self._default_agent.act(action)
