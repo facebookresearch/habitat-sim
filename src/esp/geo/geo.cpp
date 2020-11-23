@@ -126,9 +126,9 @@ Mn::Range3D getTransformedBB(const Mn::Range3D& range,
 Mn::CubicHermite3D buildCubicHermiteSpline(const Mn::Vector3& a,
                                            const Mn::Vector3& b,
                                            const Mn::Vector3& pt) {
-  const float B = 0.25;
-  Mn::Vector3 inTan = ((1 - B) * a + B * b).normalized();
-  Mn::Vector3 outTan = ((1 - B) * b + B * a).normalized();
+  const float t0 = 0.25, t1 = 1.0f - t0;
+  Mn::Vector3 inTan = (t1 * a + t0 * b).normalized();
+  Mn::Vector3 outTan = (t1 * b + t0 * a).normalized();
 
   return Mn::CubicHermite3D{inTan, pt, outTan};
 }  // buildSpline
@@ -177,7 +177,10 @@ Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
   // 1. Build smoothed trajectory through passed points if requested
   std::vector<Mn::Vector3> trajectory =
       (smooth ? geo::buildSmoothTrajOfPoints(pts, numInterp) : pts);
-
+  // size of trajectory
+  const Mn::UnsignedInt trajSize = trajectory.size();
+  LOG(INFO) << "geo::trajectoryTubeSolid : Number of trajectory points : "
+            << trajSize;
   // 2. Build mesh vertex points around each trajectory point at appropriate
   // distance (radius). For each point in trajectory, add a wireframe circle
   // centered at that point, appropriately oriented based on tangents
@@ -194,8 +197,7 @@ Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
     circleVerts[i] *= radius;
     circleNormVerts[i] = circleVerts[i].normalized();
   }
-  // size of trajectory
-  const Mn::UnsignedInt trajSize = trajectory.size();
+
   // # of vertices in resultant tube == # circle verts * # points in trajectory
   const Mn::UnsignedInt vertexCount = numSegments * trajSize + 2;
   struct Vertex {  // a function-local struct
