@@ -13,7 +13,6 @@ import magnum as mn
 import numpy as np
 from magnum import Vector3
 from numpy import ndarray
-from typing_extensions import Literal
 
 try:
     import torch
@@ -296,35 +295,29 @@ class Simulator(SimulatorBackend):
 
     @overload
     def step(
-        self,
-        action: Union[str, int],
-        dt: float = 1.0 / 60.0,
-        multi_agent: Literal[False] = False,
+        self, action: Union[str, int], dt: float = 1.0 / 60.0
     ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
         ...
 
     @overload
     def step(
-        self, action: dict, dt: float = 1.0 / 60.0, multi_agent: Literal[True] = True
+        self, action: dict, dt: float = 1.0 / 60.0
     ) -> List[Dict[str, Union[bool, ndarray, "Tensor"]]]:
         ...
 
     def step(
-        self,
-        action: Any,
-        dt: float = 1.0 / 60.0,
-        multi_agent: bool = False,
+        self, action: Any, dt: float = 1.0 / 60.0
     ) -> Union[
         List[Dict[str, Union[bool, ndarray, "Tensor"]]],
         Dict[str, Union[bool, ndarray, "Tensor"]],
     ]:
+        multi_agent = isinstance(action, dict)
         self._num_total_frames += 1
         if not multi_agent:
             agent_ids: Union[List[int], int] = self._default_agent_id
             collided = self.default_agent.act(action)
             self._last_state = self._default_agent.get_state()
         else:
-            assert isinstance(action, dict)
             agent_ids = list(action.keys())
             collided_dict: Dict[int, bool] = {}
             for agent_id, agent_act in action.items():
