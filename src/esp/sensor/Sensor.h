@@ -40,9 +40,12 @@ enum class ObservationSpaceType {
 enum class SensorSubType {
   Pinhole = 0,
   Orthographic = 1,
+  Fisheye = 2,
 };
 
 // Specifies the configuration parameters of a sensor
+// (sensor redesign) TODO:
+// SensorSpec --> VisualSensorSpec --> CameraSensorSpec --> Specific Sensor Spec
 struct SensorSpec {
   std::string uuid = "rgba_camera";
   SensorType sensorType = SensorType::COLOR;

@@ -6,6 +6,8 @@ set(
   Sensor.h
   VisualSensor.cpp
   VisualSensor.h
+  FisheyeSensor.cpp
+  FisheyeSensor.h
 )
 
 if(BUILD_WITH_CUDA)
