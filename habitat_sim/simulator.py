@@ -297,8 +297,8 @@ class Simulator(SimulatorBackend):
         self,
         action: Any,
         dt: float = 1.0 / 60.0,
-        multi_agent: bool = False,
-    ):
+        multi_agent=False,
+    ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
         self._num_total_frames += 1
         if not multi_agent:
             agent_ids: Union[List[int], int] = self._default_agent_id
