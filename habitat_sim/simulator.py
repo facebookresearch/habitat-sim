@@ -61,7 +61,7 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: Optional[int] = attr.ib(init=False, default=None)
-    _sensors: List[Dict[str, Any]] = attr.ib(factory=List[Dict[str, Any]], init=False)
+    _sensors: List[Dict[str, Any]] = attr.ib(init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
@@ -219,7 +219,9 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self._sensors = [Dict[str, Sensor]() for i in range(len(config.agents))]
+        self._sensors: List[Dict[str, Sensor]] = [
+            dict for i in range(len(config.agents))
+        ]
         for agent_id, agent_cfg in enumerate(config.agents):
             for spec in agent_cfg.sensor_specifications:
                 self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
