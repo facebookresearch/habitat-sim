@@ -6,7 +6,7 @@
 
 import time
 from os import path as osp
-from typing import Any, Dict, List, Optional, Union, cast, overload
+from typing import Any, Dict, List, Optional, Union, overload
 
 import attr
 import magnum as mn
@@ -61,7 +61,7 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: Optional[int] = attr.ib(init=False, default=None)
-    _sensors: List[Dict[str, Any]] = attr.ib(init=False)
+    _sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
@@ -220,7 +220,7 @@ class Simulator(SimulatorBackend):
         self._default_agent_id = config.sim_cfg.default_agent_id
 
         self._sensors: List[Dict[str, Sensor]] = [
-            dict for i in range(len(config.agents))
+            dict() for i in range(len(config.agents))
         ]
         for agent_id, agent_cfg in enumerate(config.agents):
             for spec in agent_cfg.sensor_specifications:
@@ -313,35 +313,30 @@ class Simulator(SimulatorBackend):
         List[Dict[str, Union[bool, ndarray, "Tensor"]]],
         Dict[str, Union[bool, ndarray, "Tensor"]],
     ]:
-        multi_agent = isinstance(action, dict)
         self._num_total_frames += 1
-        if not multi_agent:
-            agent_ids: Union[List[int], int] = self._default_agent_id
-            collided = self.default_agent.act(action)
-            self._last_state = self._default_agent.get_state()
+        if not isinstance(action, dict):
+            action = {self._default_agent_id: action}
+            return_single = True
         else:
-            agent_ids = list(action.keys())
-            collided_dict: Dict[int, bool] = {}
-            for agent_id, agent_act in action.items():
-                collided_dict[agent_id] = self._get_agent(agent_id).act(agent_act)
-            # TODO: Maybe should allow MultiAgent state return too...
-            self._last_state = self._get_agents(agent_ids[-1]).get_state()
+            return_single = False
+        agent_ids = list(action.keys())
+        collided_dict: Dict[int, bool] = {}
+        for agent_id, agent_act in action.items():
+            collided_dict[agent_id] = self._get_agent(agent_id).act(agent_act)
+        # TODO: Maybe should allow MultiAgent state return too...
+        self._last_state = self._get_agents(agent_ids[-1]).get_state()
 
         # step physics by dt
         step_start_Time = time.time()
         super().step_world(dt)
         self._previous_step_time = time.time() - step_start_Time
-        if multi_agent:
-            agent_ids = cast(List[int], agent_ids)
-            multi_observations = self.get_sensor_observations(agent_ids=agent_ids)
-            for agent_id in action.keys():
-                multi_observations[agent_id]["collided"] = collided_dict[agent_id]
-            return multi_observations
-        else:
-            agent_ids = cast(int, agent_ids)
-            observations = self.get_sensor_observations(agent_ids=agent_ids)
-            observations["collided"] = collided
-            return observations
+
+        multi_observations = self.get_sensor_observations(agent_ids=agent_ids)
+        for agent_id in action.keys():
+            multi_observations[agent_id]["collided"] = collided_dict[agent_id]
+        if return_single:
+            return multi_observations[self._default_agent_id]
+        return multi_observations
 
     def make_greedy_follower(
         self,
