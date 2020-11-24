@@ -95,5 +95,16 @@ void DoubleSphereCameraShader::setTextureBindingPoints() {
   // TODO: handle the other flags, DepthTexture, ObjectIdTexture
 }
 
+DoubleSphereCameraShader& DoubleSphereCameraShader::bindColorTexture(
+    Magnum::GL::Texture2D& texture) {
+  CORRADE_ASSERT(
+      flags_ & FisheyeShader::Flag::ColorTexture,
+      "DoubleSphereCameraShader::bindColorTexture(): the shader was not "
+      "created with color texture enabled",
+      *this);
+  texture.bind(TextureUnit::Color);
+  return *this;
+}
+
 }  // namespace gfx
 }  // namespace esp

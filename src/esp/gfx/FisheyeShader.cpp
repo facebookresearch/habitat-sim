@@ -23,5 +23,9 @@ FisheyeShader::FisheyeShader(Flags flags) : flags_(flags) {
                  "flags cannot be empty.", );
 }
 
+FisheyeShader& FisheyeShader::bindColorTexture(Magnum::GL::Texture2D& texture) {
+  return *this;
+}
+
 }  // namespace gfx
 }  // namespace esp

@@ -5,6 +5,7 @@
 #ifndef ESP_SENSOR_FISHEYESENSOR_H_
 #define ESP_SENSOR_FISHEYESENSOR_H_
 
+#include <Magnum/GL/Mesh.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/ResourceManager.h>
 #include "CameraSensor.h"
@@ -102,6 +103,8 @@ class FisheyeSensor : public CameraSensor {
   // DoubleSphereCameraShader, FieldOfViewCameraShader (TODO) ...
   Magnum::ResourceManager<gfx::FisheyeShader> fisheyeShaderManager_;
   Magnum::Resource<gfx::FisheyeShader> shader_;
+  // a big triangles that covers the whole screen
+  Magnum::GL::Mesh mesh_;
 
   gfx::FisheyeShader::Flags fisheyeShaderFlags_{};
 

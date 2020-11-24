@@ -59,6 +59,9 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
 
   // TODO: assign flag based on sensor type (color, depth, semantic)
   fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
+
+  mesh_ = Mn::GL::Mesh{};
+  mesh_.setCount(3);
 }
 
 Mn::ResourceKey FisheyeSensor::getShaderKey() {
@@ -100,6 +103,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
     }
   }
   CORRADE_INTERNAL_ASSERT(shader_ && shader_->flags() == fisheyeShaderFlags_);
+
   // draw the observation to the render target
 
   return true;
