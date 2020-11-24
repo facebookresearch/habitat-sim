@@ -304,12 +304,14 @@ class Simulator(SimulatorBackend):
 
     @overload
     def step(
-        self, action: dict, dt: float = 1.0 / 60.0
+        self, action: Dict[int, Union[str, int]], dt: float = 1.0 / 60.0
     ) -> List[Dict[str, Union[bool, ndarray, "Tensor"]]]:
         ...
 
     def step(
-        self, action: Union[str, int, dict], dt: float = 1.0 / 60.0
+        self,
+        action: Union[str, int, Dict[int, Union[str, int]]],
+        dt: float = 1.0 / 60.0,
     ) -> Union[
         List[Dict[str, Union[bool, ndarray, "Tensor"]]],
         Dict[str, Union[bool, ndarray, "Tensor"]],
@@ -332,8 +334,9 @@ class Simulator(SimulatorBackend):
         self._previous_step_time = time.time() - step_start_Time
 
         multi_observations = self.get_sensor_observations(agent_ids=agent_ids)
-        for agent_id in action.keys():
-            multi_observations[agent_id]["collided"] = collided_dict[agent_id]
+        for obs_id, agent_observation in enumerate(multi_observations):
+            agent_id_obs = agent_ids[obs_id]
+            agent_observation["collided"] = collided_dict[agent_id_obs]
         if return_single:
             return multi_observations[self._default_agent_id]
         return multi_observations

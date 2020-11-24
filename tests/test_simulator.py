@@ -1,4 +1,5 @@
 import random
+from copy import copy
 from os import path as osp
 
 import magnum as mn
@@ -6,6 +7,12 @@ import numpy as np
 
 import examples.settings
 import habitat_sim
+
+
+def is_same_state(initial_state, new_state) -> bool:
+    same_position = all(initial_state.position == new_state.position)
+    same_rotation = np.isclose(initial_state.rotation, new_state.rotation, rtol=1e-4)
+    return same_position and same_rotation
 
 
 def test_no_navmesh_smoke():
@@ -63,6 +70,50 @@ def test_sim_reset(make_cfg_settings):
             initial_state.rotation, new_state.rotation, rtol=1e-4
         )  # Numerical error can cause slight deviations
         assert same_position and same_rotation
+
+
+def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
+    sim_cfg = examples.settings.make_cfg(make_cfg_settings)
+    for _ in range(num_agents):
+        sim_cfg.agents.append(copy(sim_cfg.agents[0]))
+    with habitat_sim.Simulator(sim_cfg) as sim:
+        agent_initial_states = []
+        for i in range(num_agents):
+            sim.initialize_agent(i)
+            agent_initial_states.append(sim.get_agent(i).state)
+        # Take a random multi-agent move
+        agent_actions = {}
+        for i in range(num_agents):
+            agent_config = sim.config.agents[i]
+            action = random.choice(list(agent_config.action_space.keys()))
+            agent_actions[i] = action
+        observations = sim.step(agent_actions)
+        # Check all agents either moved or ran into something.
+        for agent_id, (initial_state, agent_obs) in enumerate(
+            zip(agent_initial_states, observations)
+        ):
+            assert (
+                not is_same_state(initial_state, sim.get_agent(agent_id).state)
+                or agent_obs["collided"]
+            )
+        sim.reset()
+        for agent_id, initial_state in enumerate(agent_initial_states):
+            # Check all the agents are in their proper position
+            assert is_same_state(initial_state, sim.get_agent(agent_id).state)
+        del agent_actions[2]
+        # Test with one agent being a NOOP. No Sensor Observation will be returned
+        observations = sim.step(agent_actions)
+        assert is_same_state(
+            agent_initial_states[2], sim.get_agent(2).state
+        ), "Agent 2 did not move"
+        for agent_id, (initial_state, agent_obs) in enumerate(
+            zip(agent_initial_states, observations)
+        ):
+            assert 2 not in observations
+            assert agent_id == 2 or (
+                not is_same_state(initial_state, sim.get_agent(agent_id).state)
+                or agent_obs["collided"]
+            )
 
 
 # Make sure you can keep a reference to an agent alive without crashing
