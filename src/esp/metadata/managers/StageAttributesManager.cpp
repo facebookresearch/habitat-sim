@@ -46,7 +46,8 @@ void StageAttributesManager::buildCtorFuncPtrMaps() {
 
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
-    const std::string& stageAttributesHandle) {
+    const std::string& stageAttributesHandle,
+    bool forceRegistration) {
   if (stageAttributes->getRenderAssetHandle() == "") {
     LOG(ERROR)
         << "StageAttributesManager::registerObjectFinalize : "
@@ -76,6 +77,14 @@ int StageAttributesManager::registerObjectFinalize(
     // Render asset handle will be NONE as well - force type to be unknown
     stageAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
     stageAttributes->setRenderAssetIsPrimitive(false);
+  } else if (forceRegistration) {
+    LOG(WARNING)
+        << "StageAttributesManager::registerObjectFinalize "
+           ": Render asset template handle : "
+        << renderAssetHandle << " specified in stage template with handle : "
+        << stageAttributesHandle
+        << " does not correspond to any existing file or primitive render "
+           "asset. This attributes is not in a valid state.";
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
     LOG(ERROR)

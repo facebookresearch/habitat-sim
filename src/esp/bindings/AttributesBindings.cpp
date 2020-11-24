@@ -149,6 +149,10 @@ void initAttributesBindings(py::module& m) {
           R"(Whether collisions involving constructions built from
            this template should be solved using the collision mesh
            or a primitive.)")
+      .def_property(
+          "is_collidable", &ObjectAttributes::getIsCollidable,
+          &ObjectAttributes::setIsCollidable,
+          R"(Whether constructions built from this template are collidable upon initialization.)")
       .def_property_readonly(
           "is_dirty", &AbstractObjectAttributes::getIsDirty,
           R"(Whether values in this attributes have been changed requiring
@@ -199,10 +203,6 @@ void initAttributesBindings(py::module& m) {
           "is_visibile", &ObjectAttributes::getIsVisible,
           &ObjectAttributes::setIsVisible,
           R"(Whether objects constructed from this template are visible.)")
-      .def_property(
-          "is_collidable", &ObjectAttributes::getIsCollidable,
-          &ObjectAttributes::setIsCollidable,
-          R"(Whether objects constructed from this template are collidable.)")
       .def_property(
           "semantic_id", &ObjectAttributes::getSemanticId,
           &ObjectAttributes::setSemanticId,

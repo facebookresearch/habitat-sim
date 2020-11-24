@@ -144,13 +144,16 @@ class StageAttributesManager
    * @param StageAttributesTemplate The attributes template.
    * @param StageAttributesHandle The key for referencing the template in the
    * @ref objectLibrary_.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
    * @return The index in the @ref objectLibrary_ of object
    * template.
    */
 
   int registerObjectFinalize(
       attributes::StageAttributes::ptr StageAttributesTemplate,
-      const std::string& StageAttributesHandle) override;
+      const std::string& StageAttributesHandle,
+      bool forceRegistration) override;
 
   /**
    * @brief Any scene-attributes-specific resetting that needs to happen on

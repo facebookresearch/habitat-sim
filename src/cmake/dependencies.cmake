@@ -127,6 +127,47 @@ if(BUILD_PYTHON_BINDINGS)
   endif()
 endif()
 
+if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
+  # The below block except for the visiblity patch verbatim copied from
+  # https://doc.magnum.graphics/magnum/namespaceMagnum_1_1BulletIntegration.html
+
+  # Disable Bullet tests and demos
+  set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+  set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "" FORCE)
+  set(BUILD_CPU_DEMOS OFF CACHE BOOL "" FORCE)
+  set(BUILD_OPENGL3_DEMOS OFF CACHE BOOL "" FORCE)
+  # While not needed for Magnum, you might actually want some of those
+  set(BUILD_ENET OFF CACHE BOOL "" FORCE)
+  set(BUILD_CLSOCKET OFF CACHE BOOL "" FORCE)
+  set(BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
+  set(BUILD_BULLET3 OFF CACHE BOOL "" FORCE)
+  # This is needed in case BUILD_EXTRAS is enabled, as you'd get a CMake syntax
+  # error otherwise
+  set(PKGCONFIG_INSTALL_PREFIX "lib${LIB_SUFFIX}/pkgconfig/")
+
+  # caches CXX_FLAGS so we can reset them at the end
+  set(_PREV_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+  # Bullet's buildsystem doesn't correctly express dependencies between static
+  # libs, causing linker errors on Magnum side. If you have CMake 3.13, the
+  # Find module is able to correct that on its own, otherwise you need to
+  # enable BUILD_SHARED_LIBS to build as shared.
+  if((NOT CORRADE_TARGET_EMSCRIPTEN) AND CMAKE_VERSION VERSION_LESS 3.13)
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+    # however the whole Habitat is built with -fvisibility=hidden and Bullet
+    # doesn't export any of its symbols and relies on symbols being visible by
+    # default. Which means we have to compile it without hidden visibility.
+    # ... and because we have to build shared libs, we need exported symbols,
+    string(REPLACE "-fvisibility=hidden" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  else()
+    # On Emscripten we require 3.13, so there it's fine (and there we can't use
+    # shared libs)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  endif()
+  add_subdirectory(${DEPS_DIR}/bullet3 EXCLUDE_FROM_ALL)
+  set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
+endif()
+
 # Magnum. Use a system package, if preferred.
 if(NOT USE_SYSTEM_MAGNUM)
   set(BUILD_PLUGINS_STATIC ON CACHE BOOL "BUILD_PLUGINS_STATIC" FORCE)

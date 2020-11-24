@@ -516,6 +516,46 @@ class Simulator {
   bool contactTest(int objectID, int sceneID = 0);
 
   /**
+   * @brief Set an object to collidable or not.
+   */
+  bool setObjectIsCollidable(bool collidable, const int objectID) {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->setObjectIsCollidable(objectID, collidable);
+    }
+    return false;
+  };
+
+  /**
+   * @brief Get whether or not an object is collision active.
+   */
+  bool getObjectIsCollidable(const int objectID) {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->getObjectIsCollidable(objectID);
+    }
+    return false;
+  };
+
+  /**
+   * @brief Set the stage to collidable or not.
+   */
+  bool setStageIsCollidable(bool collidable) {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->setStageIsCollidable(collidable);
+    }
+    return false;
+  };
+
+  /**
+   * @brief Get whether or not the stage is collision active.
+   */
+  bool getStageIsCollidable() {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->getStageIsCollidable();
+    }
+    return false;
+  };
+
+  /**
    * @brief Raycast into the collision world of a scene.
    *
    * Note: A default @ref physics::PhysicsManager has no collision world, so

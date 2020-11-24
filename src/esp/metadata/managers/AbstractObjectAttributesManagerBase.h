@@ -201,6 +201,9 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
   // margin
   io::jsonIntoSetter<double>(jsonDoc, "margin",
                              std::bind(&T::setMargin, attributes, _1));
+  // initialize with collisions on/off
+  io::jsonIntoSetter<bool>(jsonDoc, "is_collidable",
+                           std::bind(&T::setIsCollidable, attributes, _1));
 
   // load the friction coefficient
   io::jsonIntoSetter<double>(

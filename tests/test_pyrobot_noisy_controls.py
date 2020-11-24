@@ -13,8 +13,8 @@ import quaternion  # noqa: F401
 import habitat_sim
 import habitat_sim.errors
 import habitat_sim.utils.common
-from habitat_sim import bindings as hsim
 from habitat_sim.agent.controls.pyrobot_noisy_controls import pyrobot_noise_models
+from habitat_sim.scene import SceneGraph
 
 
 def _delta_translation(a, b):
@@ -38,7 +38,7 @@ def _delta_rotation(a, b):
 )
 def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
     np.random.seed(0)
-    scene_graph = hsim.SceneGraph()
+    scene_graph = SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         noisy_move_backward=habitat_sim.ActionSpec(
@@ -109,25 +109,24 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
             delta_translations.append(_delta_translation(base_state, noisy_state))
             delta_rotations.append(_delta_rotation(base_state, noisy_state))
 
-        delta_translations = np.stack(delta_translations)
-        delta_rotations = np.stack(delta_rotations)
+        delta_translations_arr = np.stack(delta_translations)
+        delta_rotations_arr = np.stack(delta_rotations)
         if "move" in base_action:
             noise_model = pyrobot_noise_models[robot][controller].linear_motion
         else:
             noise_model = pyrobot_noise_models[robot][controller].rotational_motion
-
         EPS = 5e-2
         assert (
             np.linalg.norm(
                 noise_model.linear.mean * noise_multiplier
-                - np.abs(delta_translations.mean(0))
+                - np.abs(delta_translations_arr.mean(0))
             )
             < EPS
         )
         assert (
             np.linalg.norm(
                 noise_model.rotation.mean * noise_multiplier
-                - np.abs(delta_rotations.mean(0))
+                - np.abs(delta_rotations_arr.mean(0))
             )
             < EPS
         )
@@ -135,14 +134,14 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
         assert (
             np.linalg.norm(
                 noise_model.linear.cov * noise_multiplier
-                - np.diag(delta_translations.std(0) ** 2)
+                - np.diag(delta_translations_arr.std(0) ** 2)
             )
             < EPS
         )
         assert (
             np.linalg.norm(
                 noise_model.rotation.cov * noise_multiplier
-                - (delta_rotations.std(0) ** 2)
+                - (delta_rotations_arr.std(0) ** 2)
             )
             < EPS
         )

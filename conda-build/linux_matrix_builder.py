@@ -79,7 +79,6 @@ def main():
 
         if use_bullet:
             build_string += "bullet_"
-            env["CONDA_BULLET"] = "- bullet"
             env["CONDA_BULLET_FEATURE"] = "- withbullet"
             env["WITH_BULLET"] = "1"
         else:

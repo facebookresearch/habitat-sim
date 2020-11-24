@@ -274,10 +274,23 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_FALSE(physicsManager_->contactTest(objectId1));
 
+    // set stage to non-collidable
+    ASSERT_TRUE(physicsManager_->getStageIsCollidable());
+    physicsManager_->setStageIsCollidable(false);
+    ASSERT_FALSE(physicsManager_->getStageIsCollidable());
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+
     // move box 0 into box 1
     physicsManager_->setTranslation(objectId0, Magnum::Vector3{1.1, 1.1, 0});
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_TRUE(physicsManager_->contactTest(objectId1));
+
+    // set box 0 to non-collidable
+    ASSERT_TRUE(physicsManager_->getObjectIsCollidable(objectId0));
+    physicsManager_->setObjectIsCollidable(objectId0, false);
+    ASSERT_FALSE(physicsManager_->getObjectIsCollidable(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
   }
 }
 

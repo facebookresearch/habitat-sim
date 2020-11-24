@@ -26,7 +26,7 @@ def _simulate(
     return noisy_rgb
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class SpeckleNoiseModelCPUImpl:
     intensity_constant: float
     mean: int
@@ -37,7 +37,7 @@ class SpeckleNoiseModelCPUImpl:
 
 
 @registry.register_noise_model
-@attr.s(auto_attribs=True, kw_only=True)
+@attr.s(auto_attribs=True, kw_only=True, slots=True)
 class SpeckleNoiseModel(SensorNoiseModel):
     intensity_constant: float = 0.2
     mean: int = 0

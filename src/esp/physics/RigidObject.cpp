@@ -7,13 +7,14 @@
 namespace esp {
 namespace physics {
 
-RigidObject::RigidObject(scene::SceneNode* rigidBodyNode, int objectId)
-    : RigidBase(rigidBodyNode), velControl_(VelocityControl::create()) {
+RigidObject::RigidObject(scene::SceneNode* rigidBodyNode,
+                         int objectId,
+                         const assets::ResourceManager& resMgr)
+    : RigidBase(rigidBodyNode, resMgr), velControl_(VelocityControl::create()) {
   objectId_ = objectId;
 }
 
-bool RigidObject::initialize(const assets::ResourceManager& resMgr,
-                             const std::string& handle) {
+bool RigidObject::initialize(const std::string& handle) {
   if (initializationAttributes_ != nullptr) {
     LOG(ERROR) << "Cannot initialize a RigidObject more than once";
     return false;
@@ -21,9 +22,9 @@ bool RigidObject::initialize(const assets::ResourceManager& resMgr,
 
   // save a copy of the template at initialization time
   initializationAttributes_ =
-      resMgr.getObjectAttributesManager()->getObjectCopyByHandle(handle);
+      resMgr_.getObjectAttributesManager()->getObjectCopyByHandle(handle);
 
-  return initialization_LibSpecific(resMgr);
+  return initialization_LibSpecific();
 }  // RigidObject::initialize
 
 bool RigidObject::finalizeObject() {
@@ -52,7 +53,7 @@ bool RigidObject::finalizeObject() {
   return finalizeObject_LibSpecific();
 }  // RigidObject::finalizeObject
 
-bool RigidObject::initialization_LibSpecific(const assets::ResourceManager&) {
+bool RigidObject::initialization_LibSpecific() {
   // default kineamtic unless a simulator is initialized...
   objectMotionType_ = MotionType::KINEMATIC;
   return true;

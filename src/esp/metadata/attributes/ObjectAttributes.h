@@ -44,6 +44,13 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setMargin(double margin) { setDouble("margin", margin); }
   double getMargin() const { return getDouble("margin"); }
 
+  // if object should be checked for collisions - if other objects can collide
+  // with this object
+  void setIsCollidable(bool isCollidable) {
+    setBool("is_collidable", isCollidable);
+  }
+  bool getIsCollidable() const { return getBool("is_collidable"); }
+
   /**
    * @brief set default up orientation for object/stage mesh
    */
@@ -234,13 +241,6 @@ class ObjectAttributes : public AbstractObjectAttributes {
   void setSemanticId(uint32_t semanticId) { setInt("semanticId", semanticId); }
 
   uint32_t getSemanticId() const { return getInt("semanticId"); }
-
-  // if object should be checked for collisions - if other objects can collide
-  // with this object
-  void setIsCollidable(bool isCollidable) {
-    setBool("isCollidable", isCollidable);
-  }
-  bool getIsCollidable() { return getBool("isCollidable"); }
 
  public:
   ESP_SMART_POINTERS(ObjectAttributes)

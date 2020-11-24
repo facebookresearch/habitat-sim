@@ -46,7 +46,7 @@ def pbar():
         return None
 
 
-num_fails = 0
+num_fails = 0.0
 num_tested = 0
 total_spl = 0.0
 

@@ -16,7 +16,7 @@ from settings import default_sim_settings, make_cfg
 
 import habitat_sim
 import habitat_sim.agent
-from habitat_sim import bindings as hsim
+from habitat_sim.nav import ShortestPath
 from habitat_sim.physics import MotionType
 from habitat_sim.utils.common import (
     d3_40_colors_rgb,
@@ -410,7 +410,7 @@ class DemoRunner:
 
         # initialize and compute shortest path to goal
         if self._sim_settings["compute_shortest_path"]:
-            self._shortest_path = hsim.ShortestPath()
+            self._shortest_path = ShortestPath()
             self.compute_shortest_path(
                 start_state.position, self._sim_settings["goal_position"]
             )

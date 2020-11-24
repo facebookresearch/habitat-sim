@@ -22,7 +22,7 @@ cmake ../src \
     -DBUILD_ASSIMP_SUPPORT=OFF \
     -DBUILD_DATATOOL=OFF \
     -DBUILD_PTEX_SUPPORT=OFF
-cmake --build . --target corrade-rc
+cmake --build . --target corrade-rc --
 popd
 
 mkdir -p build_js
@@ -30,10 +30,6 @@ cd build_js
 
 
 EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
-
-if ${BULLET}; 
-    then EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS} -s USE_BULLET=1"
-fi
 cmake ../src \
     -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/RelWithDebInfo/bin/corrade-rc \
     -DBUILD_GUI_VIEWERS=ON \
@@ -47,10 +43,9 @@ cmake ../src \
     -DCMAKE_INSTALL_PREFIX="." \
     -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1" \
     -DCMAKE_EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS}" \
-    -DBUILD_WITH_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )" \
-    -DUSE_EMSCRIPTEN_PORTS_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )"
+    -DBUILD_WITH_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )"
 
-cmake --build . -- -j 4
+cmake --build . -- -j 4 #TODO: Set to 4 cores only on CirelcCI
 cmake --build . --target install -- -j 4
 
 echo "Done building."

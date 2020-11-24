@@ -61,7 +61,7 @@ class SixDOFPose(object):
 @attr.s(auto_attribs=True, slots=True)
 class AgentState(object):
     position: np.ndarray = np.zeros(3)
-    rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
+    rotation: Union[np.quaternion, List, np.ndarray] = np.quaternion(1, 0, 0, 0)
     velocity: np.ndarray = np.zeros(3)
     angular_velocity: np.ndarray = np.zeros(3)
     force: np.ndarray = np.zeros(3)
@@ -143,7 +143,7 @@ class Agent(object):
             self._sensors.clear()
             for spec in self.agent_config.sensor_specifications:
                 self._sensors.add(
-                    hsim.PinholeCamera(self.scene_node.create_child(), spec)
+                    hsim.CameraSensor(self.scene_node.create_child(), spec)
                 )
 
     def act(self, action_id: Any) -> bool:
@@ -220,7 +220,7 @@ class Agent(object):
         """
         habitat_sim.errors.assert_obj_valid(self.body)
 
-        if isinstance(state.rotation, list):
+        if isinstance(state.rotation, (list, np.ndarray)):
             state.rotation = quat_from_coeffs(state.rotation)
 
         self.body.object.reset_transformation()

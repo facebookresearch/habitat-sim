@@ -25,7 +25,7 @@ def _simulate(image, intensity_constant, mean, sigma):
     )
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class GaussianNoiseModelCPUImpl:
     intensity_constant: float
     mean: int
@@ -36,7 +36,7 @@ class GaussianNoiseModelCPUImpl:
 
 
 @registry.register_noise_model
-@attr.s(auto_attribs=True, kw_only=True)
+@attr.s(auto_attribs=True, kw_only=True, slots=True)
 class GaussianNoiseModel(SensorNoiseModel):
     intensity_constant: float = 0.2
     mean: int = 0

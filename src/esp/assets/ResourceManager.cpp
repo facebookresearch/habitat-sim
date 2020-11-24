@@ -479,7 +479,7 @@ bool ResourceManager::buildStageCollisionMeshGroup(
   int start = indexPair.first;
   int end = indexPair.second;
   for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
-    T* rawMeshData = dynamic_cast<T*>(meshes_[mesh_i].get());
+    T* rawMeshData = dynamic_cast<T*>(meshes_.at(mesh_i).get());
     if (rawMeshData == nullptr) {
       // means dynamic cast failed
       Cr::Utility::Debug()
@@ -560,10 +560,10 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
                  "transforms does not match number of drawables.", );
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    const uint32_t meshID = staticDrawableInfo[iEntry].meshID;
+    const int meshID = staticDrawableInfo[iEntry].meshID;
 
     Cr::Containers::Optional<Magnum::Trade::MeshData>& meshData =
-        meshes_[meshID]->getMeshData();
+        meshes_.at(meshID)->getMeshData();
     CORRADE_ASSERT(meshData,
                    "ResourceManager::computeGeneralMeshAbsoluteAABBs: The mesh "
                    "data specified at ID:"
@@ -606,11 +606,11 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
       "transforms does not match number of drawables. Aborting.", );
 
   for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    const uint32_t meshID = staticDrawableInfo[iEntry].meshID;
+    const int meshID = staticDrawableInfo[iEntry].meshID;
 
     // convert std::vector<vec3f> to std::vector<Mn::Vector3>
     const std::vector<vec3f>& vertexPositions =
-        dynamic_cast<GenericInstanceMeshData&>(*meshes_[meshID])
+        dynamic_cast<GenericInstanceMeshData&>(*meshes_.at(meshID))
             .getVertexBufferObjectCPU();
     std::vector<Mn::Vector3> transformedPositions{vertexPositions.begin(),
                                                   vertexPositions.end()};
@@ -709,11 +709,11 @@ void ResourceManager::buildPrimitiveAssetData(
   primMeshData->uploadBuffersToGPU(false);
 
   // make MeshMetaData
-  int meshStart = meshes_.size();
+  int meshStart = nextMeshID_++;
   int meshEnd = meshStart;
   MeshMetaData meshMetaData{meshStart, meshEnd};
 
-  meshes_.emplace_back(std::move(primMeshData));
+  meshes_.emplace(meshStart, std::move(primMeshData));
 
   // default material for now
   std::unique_ptr<gfx::MaterialData> phongMaterial =
@@ -755,9 +755,10 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
     const auto atlasDir = Cr::Utility::Directory::join(
         Cr::Utility::Directory::path(filename), "textures");
 
-    meshes_.emplace_back(std::make_unique<PTexMeshData>());
-    int index = meshes_.size() - 1;
-    auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[index].get());
+    int index = nextMeshID_++;
+    meshes_.emplace(index, std::make_unique<PTexMeshData>());
+
+    auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(index).get());
     pTexMeshData->load(filename, atlasDir);
 
     // update the dictionary
@@ -782,7 +783,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
     std::vector<StaticDrawableInfo> staticDrawableInfo;
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[iMesh].get());
+      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
 
       pTexMeshData->uploadBuffersToGPU(false);
 
@@ -794,8 +795,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
                                                shaderManager_, drawables);
 
-        staticDrawableInfo.emplace_back(
-            StaticDrawableInfo{node, static_cast<uint32_t>(jSubmesh)});
+        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
       }
     }
     // always compute absolute aabb for the PTEX mesh if parent exists
@@ -810,7 +810,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                    "correctly. Aborting.",
                    false);
 
-    computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first],
+    computePTexMeshAbsoluteAABBs(*meshes_.at(metaData.meshIndex.first),
                                  staticDrawableInfo);
   }  // if parent
 
@@ -858,15 +858,17 @@ bool ResourceManager::loadInstanceMeshData(
       return false;
     }
 
-    int meshStart = meshes_.size();
+    int meshStart = nextMeshID_;
     int meshEnd = meshStart + instanceMeshes.size() - 1;
+    nextMeshID_ = meshEnd + 1;
     MeshMetaData meshMetaData{meshStart, meshEnd};
     meshMetaData.root.children.resize(instanceMeshes.size());
 
     for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
          ++meshIDLocal) {
       instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
-      meshes_.emplace_back(std::move(instanceMeshes[meshIDLocal]));
+      meshes_.emplace(meshStart + meshIDLocal,
+                      std::move(instanceMeshes[meshIDLocal]));
 
       meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
     }
@@ -883,7 +885,7 @@ bool ResourceManager::loadInstanceMeshData(
     int start = indexPair.first;
     int end = indexPair.second;
 
-    for (uint32_t iMesh = start; iMesh <= end; ++iMesh) {
+    for (int iMesh = start; iMesh <= end; ++iMesh) {
       scene::SceneNode& node = parent->createChild();
 
       // Instance mesh does NOT have normal texture, so do not bother to
@@ -893,9 +895,9 @@ bool ResourceManager::loadInstanceMeshData(
       // This is to initiate drawables for instance mesh, and the instance mesh
       // data is NOT stored in the meshData_ in the BaseMesh.
       // That means One CANNOT query the data like e.g.,
-      // meshes_[iMesh]->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
+      // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
       // It will SEGFAULT!
-      createDrawable(*(meshes_[iMesh]->getMagnumGLMesh()),  // render mesh
+      createDrawable(*(meshes_.at(iMesh)->getMagnumGLMesh()),  // render mesh
                      meshAttributeFlags,                 // mesh attribute flags
                      node,                               // scene node
                      NO_LIGHT_KEY,                       // lightSetup key
@@ -1034,7 +1036,7 @@ bool ResourceManager::loadGeneralMeshData(
         loadMeshHierarchy(*fileImporter_, meshMetaData.root, sceneDataID);
       }
     } else if (fileImporter_->meshCount() &&
-               meshes_[meshMetaData.meshIndex.first]) {
+               meshes_.at(meshMetaData.meshIndex.first)) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
       // addMeshToDrawables(metaData, *parent, drawables, 0, 0);
@@ -1083,7 +1085,7 @@ bool ResourceManager::loadGeneralMeshData(
     int end = meshMetaData.meshIndex.second;
     if (0 <= start && start <= end) {
       for (int iMesh = start; iMesh <= end; ++iMesh) {
-        meshes_[iMesh]->uploadBuffersToGPU(forceReload);
+        meshes_.at(iMesh)->uploadBuffersToGPU(forceReload);
       }
     }
   }  // forceReload
@@ -1240,13 +1242,13 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
 
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
-        textures_[textureBaseIndex + material.ambientTexture()].get();
+        textures_.at(textureBaseIndex + material.ambientTexture()).get();
   } else if (material.hasAttribute(
                  Mn::Trade::MaterialAttribute::DiffuseTexture)) {
     // if we want to force flat shading, but we don't have ambient texture,
     // check for diffuse texture and use that instead
     finalMaterial->ambientTexture =
-        textures_[textureBaseIndex + material.diffuseTexture()].get();
+        textures_.at(textureBaseIndex + material.diffuseTexture()).get();
   } else {
     finalMaterial->ambientColor = material.ambientColor();
   }
@@ -1269,27 +1271,27 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
   finalMaterial->ambientColor = material.ambientColor();
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
-        textures_[textureBaseIndex + material.ambientTexture()].get();
+        textures_.at(textureBaseIndex + material.ambientTexture()).get();
   }
 
   // diffuse material properties
   finalMaterial->diffuseColor = material.diffuseColor();
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::DiffuseTexture)) {
     finalMaterial->diffuseTexture =
-        textures_[textureBaseIndex + material.diffuseTexture()].get();
+        textures_.at(textureBaseIndex + material.diffuseTexture()).get();
   }
 
   // specular material properties
   finalMaterial->specularColor = material.specularColor();
   if (material.hasSpecularTexture()) {
     finalMaterial->specularTexture =
-        textures_[textureBaseIndex + material.specularTexture()].get();
+        textures_.at(textureBaseIndex + material.specularTexture()).get();
   }
 
   // normal mapping
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
     finalMaterial->normalTexture =
-        textures_[textureBaseIndex + material.normalTexture()].get();
+        textures_.at(textureBaseIndex + material.normalTexture()).get();
   }
   return finalMaterial;
 }
@@ -1311,7 +1313,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   }
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
     finalMaterial->baseColorTexture =
-        textures_[textureBaseIndex + material.baseColorTexture()].get();
+        textures_.at(textureBaseIndex + material.baseColorTexture()).get();
     if (!material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColor)) {
       finalMaterial->baseColor = Mn::Vector4{1.0f};
     }
@@ -1324,7 +1326,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
 
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
     finalMaterial->normalTexture =
-        textures_[textureBaseIndex + material.normalTexture()].get();
+        textures_.at(textureBaseIndex + material.normalTexture()).get();
     // if normal texture scale is not presented, use the default value in the
     // finalMaterial
   }
@@ -1335,7 +1337,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   }
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveTexture)) {
     finalMaterial->emissiveTexture =
-        textures_[textureBaseIndex + material.emissiveTexture()].get();
+        textures_.at(textureBaseIndex + material.emissiveTexture()).get();
     if (!material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveColor)) {
       finalMaterial->emissiveColor = Mn::Vector3{1.0f};
     }
@@ -1347,25 +1349,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   }
   if (material.hasRoughnessTexture()) {
     finalMaterial->roughnessTexture =
-        textures_[textureBaseIndex + material.roughnessTexture()].get();
-    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Roughness)) {
-      finalMaterial->roughness = 1.0f;  // based on GlTF 2.0 Spec
-    }
-  }
-
-  // metalness
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
-    finalMaterial->metallic = material.metalness();
-  }
-  if (material.hasMetalnessTexture()) {
-    finalMaterial->metallicTexture =
-        textures_[textureBaseIndex + material.metalnessTexture()].get();
-    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
-      finalMaterial->metallic = 1.0f;  // based on GlTF 2.0 Spec
-    }
-  }
-
-  if (material.isDoubleSided()) {
+        textures_.at(textureBaseIndex + material.roughnessTexture()).get();
     finalMaterial->doubleSided = true;
   }
 
@@ -1374,8 +1358,9 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
 
 void ResourceManager::loadMeshes(Importer& importer,
                                  LoadedAssetData& loadedAssetData) {
-  int meshStart = meshes_.size();
+  int meshStart = nextMeshID_;
   int meshEnd = meshStart + importer.meshCount() - 1;
+  nextMeshID_ = meshEnd + 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
 
   for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
@@ -1388,7 +1373,7 @@ void ResourceManager::loadMeshes(Importer& importer,
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
 
     gltfMeshData->uploadBuffersToGPU(false);
-    meshes_.emplace_back(std::move(gltfMeshData));
+    meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
   }
 }
 
@@ -1433,13 +1418,16 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
 
 void ResourceManager::loadTextures(Importer& importer,
                                    LoadedAssetData& loadedAssetData) {
-  int textureStart = textures_.size();
+  int textureStart = nextTextureID_;
   int textureEnd = textureStart + importer.textureCount() - 1;
+  nextTextureID_ = textureEnd + 1;
   loadedAssetData.meshMetaData.setTextureIndices(textureStart, textureEnd);
 
   for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
-    textures_.emplace_back(std::make_shared<Magnum::GL::Texture2D>());
-    auto& currentTexture = textures_.back();
+    auto currentTextureID = textureStart + iTexture;
+    textures_.emplace(currentTextureID,
+                      std::make_shared<Magnum::GL::Texture2D>());
+    auto& currentTexture = textures_.at(currentTextureID);
 
     auto textureData = importer.texture(iTexture);
     if (!textureData ||
@@ -1450,7 +1438,7 @@ void ResourceManager::loadTextures(Importer& importer,
     }
 
     // Configure the texture
-    Mn::GL::Texture2D& texture = *(textures_[textureStart + iTexture].get());
+    Mn::GL::Texture2D& texture = *(textures_.at(textureStart + iTexture).get());
     texture.setMagnificationFilter(textureData->magnificationFilter())
         .setMinificationFilter(textureData->minificationFilter(),
                                textureData->mipmapFilter())
@@ -1586,7 +1574,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
       std::vector<CollisionMeshData> meshGroup;
       for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
         GenericMeshData& gltfMeshData =
-            dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
+            dynamic_cast<GenericMeshData&>(*meshes_.at(mesh_i).get());
         CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
@@ -1668,8 +1656,8 @@ void ResourceManager::addComponent(
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int materialIDLocal = meshTransformNode.materialIDLocal;
-    const uint32_t meshID = metaData.meshIndex.first + meshIDLocal;
-    Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
+    const int meshID = metaData.meshIndex.first + meshIDLocal;
+    Magnum::GL::Mesh& mesh = *meshes_.at(meshID)->getMagnumGLMesh();
     Mn::ResourceKey materialKey;
     if (materialIDLocal == ID_UNDEFINED ||
         metaData.materialIndex.second == ID_UNDEFINED) {
@@ -1680,7 +1668,7 @@ void ResourceManager::addComponent(
     }
 
     gfx::Drawable::Flags meshAttributeFlags{};
-    const auto& meshData = meshes_[meshID]->getMeshData();
+    const auto& meshData = meshes_.at(meshID)->getMeshData();
     if (meshData != Cr::Containers::NullOpt) {
       if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Tangent)) {
         meshAttributeFlags |= gfx::Drawable::Flag::HasTangent;
@@ -1702,7 +1690,7 @@ void ResourceManager::addComponent(
     if (computeAbsoluteAABBs) {
       staticDrawableInfo.emplace_back(StaticDrawableInfo{node, meshID});
     }
-    BaseMesh* meshBB = meshes_[meshID].get();
+    BaseMesh* meshBB = meshes_.at(meshID).get();
     node.setMeshBB(computeMeshBB(meshBB));
   }
 
@@ -1906,7 +1894,7 @@ void ResourceManager::joinHeirarchy(
 
   if (node.meshIDLocal != ID_UNDEFINED) {
     CollisionMeshData& meshData =
-        meshes_[node.meshIDLocal + metaData.meshIndex.first]
+        meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
             ->getCollisionMeshData();
     int lastIndex = mesh.vbo.size();
     for (auto& pos : meshData.positions) {

@@ -15,7 +15,7 @@ namespace gfx {
 gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
     const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
     int textureBaseIndex,
-    const std::vector<std::shared_ptr<Magnum::GL::Texture2D>>& textures) {
+    const std::map<int, std::shared_ptr<Magnum::GL::Texture2D>>& textures) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -53,7 +53,7 @@ gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
   finalMaterial->diffuseColor = material.baseColor() * diffuseScale;
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
     finalMaterial->diffuseTexture =
-        textures[textureBaseIndex + material.baseColorTexture()].get();
+        textures.at(textureBaseIndex + material.baseColorTexture()).get();
   }
 
   // Set spec base color to white or material base color, depending on
@@ -72,7 +72,7 @@ gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
   // normal mapping
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
     finalMaterial->normalTexture =
-        textures[textureBaseIndex + material.normalTexture()].get();
+        textures.at(textureBaseIndex + material.normalTexture()).get();
   }
 
   return finalMaterial;

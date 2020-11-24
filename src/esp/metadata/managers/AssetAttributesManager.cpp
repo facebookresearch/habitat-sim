@@ -123,7 +123,8 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
 
 int AssetAttributesManager::registerObjectFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
-    const std::string&) {
+    const std::string&,
+    bool) {
   std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
