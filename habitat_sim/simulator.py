@@ -272,6 +272,8 @@ class Simulator(SimulatorBackend):
         if isinstance(agent_ids, int):
             return_single = True
             agent_ids = [agent_ids]
+        else:
+            return_single = False
 
         for agent_id, agent_sensorsuite in enumerate(self._sensors):
             if agent_id in agent_ids:
@@ -322,9 +324,9 @@ class Simulator(SimulatorBackend):
         agent_ids = list(action.keys())
         collided_dict: Dict[int, bool] = {}
         for agent_id, agent_act in action.items():
-            collided_dict[agent_id] = self._get_agent(agent_id).act(agent_act)
+            collided_dict[agent_id] = self.get_agent(agent_id).act(agent_act)
         # TODO: Maybe should allow MultiAgent state return too...
-        self._last_state = self._get_agents(agent_ids[-1]).get_state()
+        self._last_state = self.get_agent(agent_ids[-1]).get_state()
 
         # step physics by dt
         step_start_Time = time.time()
