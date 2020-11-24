@@ -319,7 +319,7 @@ class Simulator(SimulatorBackend):
         if not isinstance(action, dict):
             action = {self._default_agent_id: action}
             return_single = True
-        agent_ids = list(action.keys())
+        agent_ids = sorted(action.keys())
         collided_dict: Dict[int, bool] = {}
         for agent_id, agent_act in action.items():
             collided_dict[agent_id] = self.get_agent(agent_id).act(agent_act)
