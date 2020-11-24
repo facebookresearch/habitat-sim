@@ -61,7 +61,7 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: Optional[int] = attr.ib(init=False, default=None)
-    _sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
+    __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
@@ -106,12 +106,12 @@ class Simulator(SimulatorBackend):
         self.__set_from_config(self.config)
 
     def close(self) -> None:
-        for agent_sensorsuite in self._sensors:
+        for agent_sensorsuite in self.__sensors:
             for sensor in agent_sensorsuite.values():
                 sensor.close()
                 del sensor
 
-        self._sensors = []
+        self.__sensors = []
 
         for agent in self.agents:
             agent.close()
@@ -219,7 +219,7 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self._sensors: List[Dict[str, Sensor]] = [
+        self.__sensors: List[Dict[str, Sensor]] = [
             dict() for i in range(len(config.agents))
         ]
         for agent_id, agent_cfg in enumerate(config.agents):
@@ -228,7 +228,7 @@ class Simulator(SimulatorBackend):
             self.initialize_agent(agent_id)
 
     def _update_simulator_sensors(self, uuid: str, agent_id: int = 0) -> None:
-        self._sensors[agent_id][uuid] = Sensor(
+        self.__sensors[agent_id][uuid] = Sensor(
             sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
         )
 
@@ -275,14 +275,14 @@ class Simulator(SimulatorBackend):
             return_single = True
 
         for agent_id in agent_ids:
-            agent_sensorsuite = self._sensors[agent_id]
+            agent_sensorsuite = self.__sensors[agent_id]
             for _sensor_uuid, sensor in agent_sensorsuite.items():
                 sensor.draw_observation()
 
         observations: List[Dict[str, Union[ndarray, "Tensor"]]] = []
         for agent_id in agent_ids:
             agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
-            for sensor_uuid, sensor in self._sensors[agent_id].items():
+            for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor.get_observation()
             observations.append(agent_observations)
         if return_single:
@@ -291,7 +291,13 @@ class Simulator(SimulatorBackend):
 
     @property
     def _default_agent(self) -> Agent:
+        # TODO Deprecate and remove
         return self.get_agent(self._default_agent_id)
+
+    @property
+    def _sensors(self) -> Dict[str, "Sensor"]:
+        # TODO Deprecate and remove
+        return self.__sensors[self._default_agent_id]
 
     def last_state(self) -> AgentState:
         return self._last_state
