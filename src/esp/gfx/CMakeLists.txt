@@ -36,6 +36,8 @@ set(
   PbrDrawable.h
   DoubleSphereCameraShader.cpp
   DoubleSphereCameraShader.h
+  FisheyeShader.cpp
+  FisheyeShader.h
 )
 
 # If ptex support is enabled add relevant source files

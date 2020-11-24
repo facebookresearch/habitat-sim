@@ -6,16 +6,18 @@
 #define ESP_SENSOR_FISHEYESENSOR_H_
 
 #include <Magnum/Magnum.h>
+#include <Magnum/ResourceManager.h>
 #include "CameraSensor.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/CubeMap.h"
 #include "esp/gfx/CubeMapCamera.h"
+#include "esp/gfx/FisheyeShader.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {
 namespace sensor {
 
-enum class FisheyeSensorModelType : int8_t {
+enum class FisheyeSensorModelType : Magnum::UnsignedInt {
 
   // Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
   // Camera Model, The International Conference on 3D Vision (3DV), 2018
@@ -40,11 +42,6 @@ struct FisheyeSensorSpec : public SensorSpec {
    * relative to the image plane's origin.
    */
   Magnum::Vector2 principalPointOffset;
-
-  /**
-   * @brief field of view in degrees
-   */
-  float fov;
 
   /**
    * @brief check if the specification is legal
@@ -91,15 +88,24 @@ class FisheyeSensor : public CameraSensor {
    */
   virtual bool drawObservation(sim::Simulator& sim) override;
 
+  static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
+      "fisheye-model-type={}-flags={}";
+
  protected:
-  FisheyeSensorModelType type_;
+  FisheyeSensorSpec::ptr fisheyeSensorSpec_ = nullptr;
   // raw pointer only, we can create it but let magnum to handle the memory
   // recycling when releasing it.
   gfx::CubeMapCamera* cubeMapCamera_;
   std::unique_ptr<esp::gfx::CubeMap> cubeMap_ = nullptr;
 
-  // XXX
-  // auto convertSpec();
+  // fisheye shader resource manager, which manages different shaders such as
+  // DoubleSphereCameraShader, FieldOfViewCameraShader (TODO) ...
+  Magnum::ResourceManager<gfx::FisheyeShader> fisheyeShaderManager_;
+  Magnum::Resource<gfx::FisheyeShader> shader_;
+
+  gfx::FisheyeShader::Flags fisheyeShaderFlags_{};
+
+  Magnum::ResourceKey getShaderKey();
 };
 }  // namespace sensor
 }  // namespace esp

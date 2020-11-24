@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 #include "DoubleSphereCameraShader.h"
 
+#include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Resource.h>
@@ -27,15 +28,13 @@ namespace gfx {
 namespace {
 enum TextureUnit : uint8_t {
   Color = 0,
-  Depth = 1,
-  ObjectId = 2,
+  // TODO
+  // Depth = 1,
+  // ObjectId = 2,
 };
 }  // namespace
-DoubleSphereCameraShader::DoubleSphereCameraShader(Flags flags)
-    : flags_(flags) {
-  CORRADE_ASSERT(flags != Flags{},
-                 "DoubleSphereCameraShader::DoubleSphereCameraShader(): shader "
-                 "flags cannot be empty.", );
+DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
+    : FisheyeShader(flags) {
   if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -53,13 +52,8 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(Flags flags)
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
-  std::stringstream attributeLocationsStream;
-  attributeLocationsStream << Cr::Utility::formatString(
-      "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
-
   // Add macros
-  vert.addSource(attributeLocationsStream.str())
-      .addSource(rs.get("doubleSphereCamera.vert"));
+  vert.addSource(rs.get("doubleSphereCamera.vert"));
 
   std::stringstream outputAttributeLocationsStream;
   outputAttributeLocationsStream << Cr::Utility::formatString(
@@ -70,10 +64,35 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(Flags flags)
   */
 
   frag.addSource(outputAttributeLocationsStream.str())
-      .addSource(flags_ & Flag::ColorTexture ? "#define COLOR_TEXTURE\n" : "")
+      .addSource(flags_ & FisheyeShader::Flag::ColorTexture
+                     ? "#define COLOR_TEXTURE\n"
+                     : "")
       // TODO
       //.addSource(flags_ & Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
       .addSource(rs.get("doubleSphereCamera.frag"));
+
+  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
+
+  attachShaders({vert, frag});
+
+  CORRADE_INTERNAL_ASSERT_OUTPUT(link());
+
+  setTextureBindingPoints();
+  cacheUniforms();
+}
+
+void DoubleSphereCameraShader::cacheUniforms() {
+  focalLengthUniform_ = uniformLocation("FocalLength");
+  principalPointOffsetUniform_ = uniformLocation("PrincipalPointOffset");
+  alphaUniform_ = uniformLocation("Alpha");
+  xiUniform_ = uniformLocation("Xi");
+}
+
+void DoubleSphereCameraShader::setTextureBindingPoints() {
+  if (flags_ & FisheyeShader::Flag::ColorTexture) {
+    setUniform(uniformLocation("ColorTexture"), TextureUnit::Color);
+  }
+  // TODO: handle the other flags, DepthTexture, ObjectIdTexture
 }
 
 }  // namespace gfx

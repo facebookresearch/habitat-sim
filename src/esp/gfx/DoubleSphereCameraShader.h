@@ -6,21 +6,15 @@
 #define ESP_GFX_DOUBLESPHERECAMERASHADER_H_
 
 #include <Corrade/Containers/EnumSet.h>
-#include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/Shaders/Generic.h>
 
+#include "FisheyeShader.h"
 #include "esp/core/esp.h"
 
 namespace esp {
 namespace gfx {
-class DoubleSphereCameraShader : public Magnum::GL::AbstractShaderProgram {
+class DoubleSphereCameraShader : public FisheyeShader {
  public:
-  // ==== Attribute definitions ====
-  /**
-   * @brief vertex positions
-   */
-  typedef Magnum::Shaders::Generic3D::Position Position;
-
   enum : Magnum::UnsignedInt {
     /**
      * Color shader output. @ref shaders-generic "Generic output",
@@ -32,47 +26,26 @@ class DoubleSphereCameraShader : public Magnum::GL::AbstractShaderProgram {
     // TODO
     /**
      * Object ID shader output. @ref shaders-generic "Generic output",
-     * present only if @ref Flag::ObjectId is set. Expects a
+     * present only if @ref FisheyeShader::Flag::ObjectId is set. Expects a
      * single-component unsigned integral attachment. Writes the value
      * set in @ref setObjectId() there.
      */
     // ObjectIdOutput = Magnum::Shaders::Generic3D::ObjectIdOutput,
   };
 
-  /**
-   * @brief Flag
-   *
-   * @see @ref Flags, @ref flags()
-   */
-  enum class Flag : Magnum::UnsignedShort {
-    /**
-     * Multiply base color with the baseColor texture.
-     * @see @ref setBaseColor(), @ref bindBaseColorTexture()
-     */
-    ColorTexture = 1 << 0,
-    // TODO
-    // DepthTexture = 1 << 1,
-    // ObjectIdTexture = 1 << 2,
-  };
+  explicit DoubleSphereCameraShader(FisheyeShader::Flags flags = {
+                                        FisheyeShader::Flag::ColorTexture});
 
-  typedef Corrade::Containers::EnumSet<Flag> Flags;
-
-  explicit DoubleSphereCameraShader(Flags flags = {Flag::ColorTexture});
+  virtual ~DoubleSphereCameraShader(){};
 
  protected:
-  Flags flags_;
-
-  // ======= uniforms =======
-  // it hurts the performance to call glGetUniformLocation() every frame due
-  // to string operations. therefore, cache the locations in the constructor
-  // material uniforms
-  int mvpUniform_ = ID_UNDEFINED;
-  int colorTextureUniform_ = ID_UNDEFINED;
-  // int depthTextureUniform_ = ID_UNDEFINED;
-  // int objectIdTextureUniform_ = ID_UNDEFINED;
+  int focalLengthUniform_ = ID_UNDEFINED;
+  int principalPointOffsetUniform_ = ID_UNDEFINED;
+  int alphaUniform_ = ID_UNDEFINED;
+  int xiUniform_ = ID_UNDEFINED;
+  virtual void cacheUniforms() override;
+  virtual void setTextureBindingPoints() override;
 };
-
-CORRADE_ENUMSET_OPERATORS(DoubleSphereCameraShader::Flags)
 
 }  // namespace gfx
 }  // namespace esp

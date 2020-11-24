@@ -5,6 +5,8 @@
 #include "FisheyeSensor.h"
 
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/FormatStl.h>
+#include "esp/gfx/DoubleSphereCameraShader.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -21,9 +23,6 @@ void FisheyeSensorSpec::sanityCheck() {
   CORRADE_ASSERT(focalLength[0] > 0 && focalLength[1] > 0,
                  "FisheyeSensorSpec::sanityCheck(): focal length,"
                      << focalLength << "is illegal.", );
-  CORRADE_ASSERT(
-      fov > 0.0 && fov < 360.0,
-      "FisheyeSensorSpec::sanityCheck(): fov" << fov << "is illegal.", );
 }
 
 void FisheyeSensorDoubleSphereSpec::sanityCheck() {
@@ -35,12 +34,13 @@ void FisheyeSensorDoubleSphereSpec::sanityCheck() {
 
 FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
                              const FisheyeSensorSpec::ptr& spec)
-    : CameraSensor(cameraNode, std::static_pointer_cast<SensorSpec>(spec)),
-      type_(spec->fisheyeModelType) {
+    : CameraSensor(cameraNode, std::static_pointer_cast<SensorSpec>(spec)) {
+  fisheyeSensorSpec_ = std::static_pointer_cast<FisheyeSensorSpec>(spec_);
   auto convertSpec = [&]() {
-    switch (spec->fisheyeModelType) {
+    switch (fisheyeSensorSpec_->fisheyeModelType) {
       case FisheyeSensorModelType::DoubleSphere:
-        return std::static_pointer_cast<FisheyeSensorDoubleSphereSpec>(spec);
+        return static_cast<FisheyeSensorDoubleSphereSpec*>(
+            fisheyeSensorSpec_.get());
         break;
 
       default:
@@ -56,6 +56,17 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
 
   // initialize a cubemap
   cubeMap_ = std::make_unique<esp::gfx::CubeMap>(actualSpec->resolution[0]);
+
+  // TODO: assign flag based on sensor type (color, depth, semantic)
+  fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
+}
+
+Mn::ResourceKey FisheyeSensor::getShaderKey() {
+  return Cr::Utility::formatString(
+      FISH_EYE_SHADER_KEY_TEMPLATE,
+      static_cast<Mn::UnsignedInt>(fisheyeSensorSpec_->fisheyeModelType),
+      static_cast<gfx::FisheyeShader::Flags::UnderlyingType>(
+          fisheyeShaderFlags_));
 }
 
 bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
@@ -65,6 +76,33 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   }
   // generate the cubemap texture
   cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), flags);
+
+  // obtain shader based on fisheye model type
+  Mn::ResourceKey key = getShaderKey();
+  shader_ = fisheyeShaderManager_.get<gfx::FisheyeShader>(getShaderKey());
+
+  // if no shader with flags exists, create one
+  if (!shader_) {
+    switch (fisheyeSensorSpec_->fisheyeModelType) {
+      case FisheyeSensorModelType::DoubleSphere:
+        fisheyeShaderManager_.set<gfx::FisheyeShader>(
+            shader_.key(),
+            new gfx::DoubleSphereCameraShader{fisheyeShaderFlags_},
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+        break;
+
+        // TODO:
+        // The other FisheyeSensorModelType
+
+      default:
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        break;
+    }
+  }
+  CORRADE_INTERNAL_ASSERT(shader_ && shader_->flags() == fisheyeShaderFlags_);
+  // draw the observation to the render target
+
+  return true;
 }
 }  // namespace sensor
 }  // namespace esp
