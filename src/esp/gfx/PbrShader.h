@@ -426,10 +426,6 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int roughnessUniform_ = ID_UNDEFINED;  // roughness of a surface
   int metallicUniform_ = ID_UNDEFINED;
   int emissiveColorUniform_ = ID_UNDEFINED;
-  int baseColorTextureUniform_ = ID_UNDEFINED;
-  int roughnessTextureUniform_ = ID_UNDEFINED;
-  int metallicTextureUniform_ = ID_UNDEFINED;
-  int normalTextureUniform_ = ID_UNDEFINED;
   int objectIdUniform_ = ID_UNDEFINED;
   int textureMatrixUniform_ = ID_UNDEFINED;
   int normalTextureScaleUniform_ = ID_UNDEFINED;

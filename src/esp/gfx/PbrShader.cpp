@@ -240,11 +240,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
 PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
-  CORRADE_ASSERT(
-      flags_ & Flag::BaseColorTexture,
-      "Shaders::PbrShader::bindBaseColorTexture(): the shader was not "
-      "created with base color texture enabled",
-      *this);
+  CORRADE_ASSERT(flags_ & Flag::BaseColorTexture,
+                 "PbrShader::bindBaseColorTexture(): the shader was not "
+                 "created with base color texture enabled",
+                 *this);
   if (lightCount_) {
     texture.bind(TextureUnit::BaseColor);
   }
@@ -254,7 +253,7 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
 PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(
       flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture),
-      "Shaders::PbrShader::bindMetallicRoughnessTexture(): the shader was not "
+      "PbrShader::bindMetallicRoughnessTexture(): the shader was not "
       "created with metallicRoughness texture enabled.",
       *this);
   if (lightCount_) {
@@ -265,7 +264,7 @@ PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
 
 PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(flags_ & Flag::NormalTexture,
-                 "Shaders::PbrShader::bindNormalTexture(): the shader was not "
+                 "PbrShader::bindNormalTexture(): the shader was not "
                  "created with normal texture enabled",
                  *this);
   if (lightCount_) {
@@ -275,11 +274,10 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
 }
 
 PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) {
-  CORRADE_ASSERT(
-      flags_ & Flag::EmissiveTexture,
-      "Shaders::PbrShader::bindEmissiveTexture(): the shader was not "
-      "created with emissive texture enabled",
-      *this);
+  CORRADE_ASSERT(flags_ & Flag::EmissiveTexture,
+                 "PbrShader::bindEmissiveTexture(): the shader was not "
+                 "created with emissive texture enabled",
+                 *this);
   // emissive texture does not depend on lights
   texture.bind(TextureUnit::Emissive);
   return *this;
