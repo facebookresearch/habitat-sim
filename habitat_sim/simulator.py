@@ -269,16 +269,15 @@ class Simulator(SimulatorBackend):
         ...
 
     def get_sensor_observations(self, agent_ids: Union[int, List[int]] = 0):
+        return_single = False
         if isinstance(agent_ids, int):
-            return_single = True
             agent_ids = [agent_ids]
-        else:
-            return_single = False
+            return_single = True
 
-        for agent_id, agent_sensorsuite in enumerate(self._sensors):
-            if agent_id in agent_ids:
-                for _sensor_uuid, sensor in agent_sensorsuite.items():
-                    sensor.draw_observation()
+        for agent_id in agent_ids:
+            agent_sensorsuite = self._sensors[agent_id]
+            for _sensor_uuid, sensor in agent_sensorsuite.items():
+                sensor.draw_observation()
 
         observations: List[Dict[str, Union[ndarray, "Tensor"]]] = []
         for agent_id in agent_ids:
@@ -310,17 +309,16 @@ class Simulator(SimulatorBackend):
         ...
 
     def step(
-        self, action: Any, dt: float = 1.0 / 60.0
+        self, action: Union[str, int, dict], dt: float = 1.0 / 60.0
     ) -> Union[
         List[Dict[str, Union[bool, ndarray, "Tensor"]]],
         Dict[str, Union[bool, ndarray, "Tensor"]],
     ]:
         self._num_total_frames += 1
+        return_single = False
         if not isinstance(action, dict):
             action = {self._default_agent_id: action}
             return_single = True
-        else:
-            return_single = False
         agent_ids = list(action.keys())
         collided_dict: Dict[int, bool] = {}
         for agent_id, agent_act in action.items():
