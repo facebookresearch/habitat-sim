@@ -2,11 +2,11 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "CameraSensor.h"
+#include <Corrade/Utility/Assert.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/PixelFormat.h>
-
-#include "CameraSensor.h"
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/sim/Simulator.h"
@@ -19,6 +19,11 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit) {
+  CORRADE_ASSERT(
+      spec->sensorSubType == SensorSubType::Orthographic ||
+          spec->sensorSubType == SensorSubType::Pinhole,
+      "CameraSensor::CameraSensor(): the sub-type of the sensor, which is"
+          << static_cast<int>(spec->sensorSubType) << ", is illegal.", );
   setProjectionParameters(spec);
 }  // ctor
 
@@ -143,6 +148,10 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;
   }
+
+  // XXX
+  if (spec_->sensorSubType == SensorSubType::Fisheye)
+    LOG(INFO) << "NO!! Super weird.";
 
   renderTarget().renderEnter();
 

@@ -53,6 +53,7 @@
 
 #include "esp/gfx/CubeMap.h"
 #include "esp/gfx/CubeMapCamera.h"
+#include "esp/sensor/FisheyeSensor.h"
 
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
@@ -265,6 +266,8 @@ Key Commands:
   std::unique_ptr<esp::gfx::CubeMap> cubeMap_ = nullptr;
   esp::scene::SceneNode* cubeMapCameraNode_ = nullptr;
   bool cubeMapMode_ = false;
+
+  bool fisheyeMode_ = false;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -425,6 +428,25 @@ Viewer::Viewer(const Arguments& arguments)
   agentConfig.sensorSpecifications[0]->sensorSubType =
       args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
                                  : esp::sensor::SensorSubType::Pinhole;
+
+  // add the new fisheye sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::FisheyeSensorDoubleSphereSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+
+    spec->uuid = "fisheye";
+    spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
+    spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->xi = 0.3;
+    spec->alpha = 0.3;
+    int size =
+        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
+    spec->focalLength = Mn::Vector2(size * 0.15, size * 0.15);
+    spec->principalPointOffset = Mn::Vector2i(size / 2, size / 2);
+  }
 
   // add selects a random initial state and sets up the default controls and
   // step filter
@@ -619,56 +641,66 @@ void Viewer::drawEvent() {
     simulateSingleStep_ = false;
   }
 
-  // using polygon offset to increase mesh depth to a avoid z-fighting with
-  // debug draw (since lines will not respond to offset).
-  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-  Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
-
-  // ONLY draw the content to the frame buffer but not immediately blit the
-  // result to the default main buffer
-  // (this is the reason we do not call displayObservation)
-  simulator_->drawObservation(defaultAgentId_, "rgba_camera");
-  // TODO: enable other sensors to be displayed
-
-  Mn::GL::Renderer::setDepthFunction(
-      Mn::GL::Renderer::DepthFunction::LessOrEqual);
-  if (debugBullet_) {
-    Mn::Matrix4 camM(renderCamera_->cameraMatrix());
-    Mn::Matrix4 projM(renderCamera_->projectionMatrix());
-
-    simulator_->physicsDebugDraw(projM * camM);
-  }
-  Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
-  Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
-  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-
   uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
+  if (fisheyeMode_) {
+    simulator_->drawObservation(defaultAgentId_, "fisheye");
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, "fisheye");
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    sensorRenderTarget->blitRgbaToDefault();
+  } else {
+    // using polygon offset to increase mesh depth to avoid z-fighting with
+    // debug draw (since lines will not respond to offset).
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+    Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
 
-  esp::gfx::RenderTarget* sensorRenderTarget =
-      simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
-  CORRADE_ASSERT(sensorRenderTarget,
-                 "Error in Viewer::drawEvent: sensor's rendering target "
-                 "cannot be nullptr.", );
-  if (objectPickingHelper_->isObjectPicked()) {
-    // we need to immediately draw picked object to the SAME frame buffer
-    // so bind it first
-    // bind the framebuffer
-    sensorRenderTarget->renderReEnter();
+    // ONLY draw the content to the frame buffer but not immediately blit the
+    // result to the default main buffer
+    // (this is the reason we do not call displayObservation)
+    simulator_->drawObservation(defaultAgentId_, "rgba_camera");
+    // TODO: enable other sensors to be displayed
 
-    // setup blending function
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+    Mn::GL::Renderer::setDepthFunction(
+        Mn::GL::Renderer::DepthFunction::LessOrEqual);
+    if (debugBullet_) {
+      Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+      Mn::Matrix4 projM(renderCamera_->projectionMatrix());
 
-    // render the picked object on top of the existing contents
-    esp::gfx::RenderCamera::Flags flags;
-    if (simulator_->isFrustumCullingEnabled()) {
-      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      simulator_->physicsDebugDraw(projM * camM);
     }
-    renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+    Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
+    Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
-    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    if (objectPickingHelper_->isObjectPicked()) {
+      // we need to immediately draw picked object to the SAME frame buffer
+      // so bind it first
+      // bind the framebuffer
+      sensorRenderTarget->renderReEnter();
+
+      // setup blending function
+      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+      // render the picked object on top of the existing contents
+      esp::gfx::RenderCamera::Flags flags;
+      if (simulator_->isFrustumCullingEnabled()) {
+        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      }
+      renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+    }
+
+    sensorRenderTarget->blitRgbaToDefault();
   }
 
-  sensorRenderTarget->blitRgbaToDefault();
   // Immediately bind the main buffer back so that the "imgui" below can work
   // properly
   Mn::GL::defaultFramebuffer.bind();
@@ -684,12 +716,17 @@ void Viewer::drawEvent() {
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
-    ImGui::Text("%u culled", total - visibles);
+    if (!fisheyeMode_) {
+      ImGui::Text("%u culled", total - visibles);
+    }
     auto& cam = getAgentCamera();
-    ImGui::Text("%s camera",
-                (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
-                     ? "Orthographic"
-                     : "Pinhole"));
+    ImGui::Text(
+        "%s camera",
+        (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
+             ? "Orthographic"
+             : cam.getCameraType() == esp::sensor::SensorSubType::Pinhole
+                   ? "Pinhole"
+                   : "Fisheye"));
     ImGui::End();
   }
 
@@ -873,6 +910,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 
     case KeyEvent::Key::One:
       cubeMapMode_ = !cubeMapMode_;
+      break;
+
+    case KeyEvent::Key::Three:
+      fisheyeMode_ = !fisheyeMode_;
+      LOG(INFO) << "Fisheye sensor is " << (fisheyeMode_ ? "ON" : "OFF");
       break;
 
     case KeyEvent::Key::Eight:

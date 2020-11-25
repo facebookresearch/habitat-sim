@@ -17,9 +17,6 @@ namespace sensor {
 void FisheyeSensorSpec::sanityCheck() {
   // TODO:
   // call base class sanity check first
-  CORRADE_ASSERT(resolution[0] == resolution[1],
-                 "FisheyeSensorSpec::sanityCheck(): the image width and "
-                 "height should be identical.", );
   CORRADE_ASSERT(focalLength[0] > 0 && focalLength[1] > 0,
                  "FisheyeSensorSpec::sanityCheck(): focal length,"
                      << focalLength << "is illegal.", );
@@ -55,7 +52,9 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   cubeMapCamera_ = new gfx::CubeMapCamera(cameraNode);
 
   // initialize a cubemap
-  cubeMap_ = std::make_unique<esp::gfx::CubeMap>(actualSpec->resolution[0]);
+  auto& res = actualSpec->resolution;
+  int size = res[0] < res[1] ? res[0] : res[1];
+  cubeMap_ = std::make_unique<esp::gfx::CubeMap>(size);
 
   // TODO: assign flag based on sensor type (color, depth, semantic)
   fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
@@ -73,12 +72,21 @@ Mn::ResourceKey FisheyeSensor::getShaderKey() {
 }
 
 bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
+  if (!hasRenderTarget()) {
+    return false;
+  }
+
+  if (spec_->sensorSubType == SensorSubType::Fisheye)
+    LOG(INFO) << "Yes, I am here";
+
   esp::gfx::RenderCamera::Flags flags;
   if (sim.isFrustumCullingEnabled()) {
-    flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+    flags |= gfx::RenderCamera::Flag::FrustumCulling;
   }
   // generate the cubemap texture
   cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), flags);
+  // XXX debug
+  cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color, "viewerTest");
 
   // obtain shader based on fisheye model type
   Mn::ResourceKey key = getShaderKey();
@@ -103,8 +111,15 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
     }
   }
   CORRADE_INTERNAL_ASSERT(shader_ && shader_->flags() == fisheyeShaderFlags_);
-
   // draw the observation to the render target
+
+  renderTarget().renderEnter();
+  if (fisheyeShaderFlags_ & gfx::FisheyeShader::Flag::ColorTexture) {
+    shader_->bindColorTexture(
+        cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
+  }
+  shader_->draw(mesh_);
+  renderTarget().renderExit();
 
   return true;
 }

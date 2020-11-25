@@ -96,7 +96,7 @@ void DoubleSphereCameraShader::setTextureBindingPoints() {
 }
 
 DoubleSphereCameraShader& DoubleSphereCameraShader::bindColorTexture(
-    Magnum::GL::Texture2D& texture) {
+    Mn::GL::CubeMapTexture& texture) {
   CORRADE_ASSERT(
       flags_ & FisheyeShader::Flag::ColorTexture,
       "DoubleSphereCameraShader::bindColorTexture(): the shader was not "

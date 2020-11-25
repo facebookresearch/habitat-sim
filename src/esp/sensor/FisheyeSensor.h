@@ -39,10 +39,10 @@ struct FisheyeSensorSpec : public SensorSpec {
    */
   Magnum::Vector2 focalLength;
   /**
-   * @brief Principal Point Offset, cx, cy, location of the principal point
-   * relative to the image plane's origin.
+   * @brief Principal Point Offset in pixel, cx, cy, location of the principal
+   * point relative to the image plane's origin.
    */
-  Magnum::Vector2 principalPointOffset;
+  Magnum::Vector2i principalPointOffset;
 
   /**
    * @brief check if the specification is legal
@@ -60,8 +60,8 @@ struct FisheyeSensorDoubleSphereSpec : public FisheyeSensorSpec {
    */
   float alpha;
   float xi;
-  ESP_SMART_POINTERS(FisheyeSensorDoubleSphereSpec)
   virtual void sanityCheck();
+  ESP_SMART_POINTERS(FisheyeSensorDoubleSphereSpec)
 };
 
 // TODO:

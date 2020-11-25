@@ -7,7 +7,7 @@
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
-#include <Magnum/GL/Texture.h>
+#include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Shaders/Generic.h>
 
 #include "esp/core/esp.h"
@@ -64,7 +64,7 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
   /** @brief Flags */
   Flags flags() const { return flags_; }
 
-  virtual FisheyeShader& bindColorTexture(Magnum::GL::Texture2D& texture);
+  virtual FisheyeShader& bindColorTexture(Magnum::GL::CubeMapTexture& texture);
   // virtual FisheyeShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
   // virtual FisheyeShader& bindObjectIdTexture(Magnum::GL::Texture2D& texture);
 
