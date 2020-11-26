@@ -56,10 +56,13 @@ struct Renderer::Impl {
   }
 
   void bindRenderTarget(sensor::VisualSensor& sensor) {
+    LOG(INFO) << "Sensor sub Type: "
+              << static_cast<int>(sensor.specification()->sensorSubType);
     auto depthUnprojection = sensor.depthUnprojection();
     if (!depthUnprojection) {
       throw std::runtime_error(
-          "Sensor does not have a depthUnprojection matrix");
+          "Renderer::Impl::bindRenderTarget(): Sensor does not have a "
+          "depthUnprojection matrix");
     }
 
     if (!depthShader_) {

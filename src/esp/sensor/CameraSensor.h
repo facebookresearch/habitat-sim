@@ -36,8 +36,6 @@ class CameraSensor : public VisualSensor {
 
   virtual bool getObservationSpace(ObservationSpace& space) override;
 
-  virtual bool displayObservation(sim::Simulator& sim) override;
-
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's
    * perspective projection model.

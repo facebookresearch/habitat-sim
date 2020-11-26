@@ -9,6 +9,7 @@
 
 #include "esp/scene/ObjectControls.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
 #include "esp/sensor/Sensor.h"
 
 using Magnum::EigenIntegration::cast;
@@ -31,8 +32,14 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
     // sensor
 
     auto& sensorNode = agentNode.createChild();
-    sensors_.add(sensor::CameraSensor::create(sensorNode, spec));
+    if (spec->sensorSubType == sensor::SensorSubType::Fisheye) {
+      sensors_.add(sensor::FisheyeSensor::create(sensorNode, spec));
+    } else if (spec->sensorSubType == sensor::SensorSubType::Orthographic ||
+               spec->sensorSubType == sensor::SensorSubType::Pinhole) {
+      sensors_.add(sensor::CameraSensor::create(sensorNode, spec));
+    }
   }
+
 }  // Agent::Agent
 
 Agent::~Agent() {

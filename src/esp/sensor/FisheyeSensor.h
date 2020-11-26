@@ -8,7 +8,7 @@
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/ResourceManager.h>
-#include "CameraSensor.h"
+#include "VisualSensor.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/CubeMap.h"
 #include "esp/gfx/CubeMapCamera.h"
@@ -31,6 +31,14 @@ enum class FisheyeSensorModelType : Magnum::UnsignedInt {
 
 struct FisheyeSensorSpec : public SensorSpec {
   FisheyeSensorModelType fisheyeModelType;
+  /**
+   * @brief near clipping plane for cubemap camera
+   */
+  float cubeMapCameraNear = 0.01f;
+  /**
+   * @brief far clipping plane for cubemap camera
+   */
+  float cubeMapCameraFar = 100.0f;
   /**
    * @brief Focal length, fx, fy, the distance between the pinhole and the image
    * plane.
@@ -68,7 +76,7 @@ struct FisheyeSensorDoubleSphereSpec : public FisheyeSensorSpec {
 // struct FisheyeFieldOfViewSpec : public FisheyeSensorSpec {};
 // struct FisheyeKannalaBrandtSpec : public FisheyeSensorSpec {};
 
-class FisheyeSensor : public CameraSensor {
+class FisheyeSensor : public VisualSensor {
  public:
   /**
    * @brief constructor
@@ -76,7 +84,7 @@ class FisheyeSensor : public CameraSensor {
    * user can use them immediately
    */
   explicit FisheyeSensor(scene::SceneNode& cameraNode,
-                         const FisheyeSensorSpec::ptr& spec);
+                         const SensorSpec::ptr& spec);
   /**
    * @brief destructor
    */
@@ -88,6 +96,15 @@ class FisheyeSensor : public CameraSensor {
    *                to be drawn
    */
   virtual bool drawObservation(sim::Simulator& sim) override;
+
+  /**
+   * @brief Returns the parameters needed to unproject depth for the sensor.
+   *
+   * Will always be @ref Corrade::Containers::NullOpt for the base sensor class
+   * as it has no projection parameters
+   */
+  virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
+      const override;
 
   static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
       "fisheye-model-type={}-flags={}";
@@ -108,7 +125,22 @@ class FisheyeSensor : public CameraSensor {
 
   gfx::FisheyeShader::Flags fisheyeShaderFlags_{};
 
+  /**
+   * The two parameters in projection matrix (0-indexed, column major) related
+   * to the depth are proj[col=2][row=2] and proj[col=3][row=2],
+   * They are:
+   * -(f+n)/(f-n), -2fn/(f-n), where f is the far plane, and n is the near
+   * plane.
+   *
+   * depthParameters = 0.5 * vector(proj[2][2] - 1.0f, proj[3][2]).
+   *
+   * See @ref gfx::calculateDepthUnprojection() for more details
+   */
+  Magnum::Vector2 depthUnprojectionParameters_;
+
   Magnum::ResourceKey getShaderKey();
+
+  ESP_SMART_POINTERS(FisheyeSensor)
 };
 }  // namespace sensor
 }  // namespace esp

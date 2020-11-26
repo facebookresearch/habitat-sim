@@ -108,6 +108,12 @@ class VisualSensor : public Sensor {
     return false;
   }
 
+  virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
+
+  virtual bool getObservationSpace(ObservationSpace& space) override;
+
+  virtual bool displayObservation(sim::Simulator& sim) override;
+
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;
 

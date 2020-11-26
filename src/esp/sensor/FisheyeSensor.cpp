@@ -20,6 +20,11 @@ void FisheyeSensorSpec::sanityCheck() {
   CORRADE_ASSERT(focalLength[0] > 0 && focalLength[1] > 0,
                  "FisheyeSensorSpec::sanityCheck(): focal length,"
                      << focalLength << "is illegal.", );
+
+  CORRADE_ASSERT(
+      cubeMapCameraNear > 0.0 && cubeMapCameraFar > cubeMapCameraNear,
+      "FisheyeSensorSpec::sanityCheck(): clipping planes for the cubemap "
+      "camera are illegal.", );
 }
 
 void FisheyeSensorDoubleSphereSpec::sanityCheck() {
@@ -30,8 +35,8 @@ void FisheyeSensorDoubleSphereSpec::sanityCheck() {
 }
 
 FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
-                             const FisheyeSensorSpec::ptr& spec)
-    : CameraSensor(cameraNode, std::static_pointer_cast<SensorSpec>(spec)) {
+                             const SensorSpec::ptr& spec)
+    : VisualSensor(cameraNode, spec) {
   fisheyeSensorSpec_ = std::static_pointer_cast<FisheyeSensorSpec>(spec_);
   auto convertSpec = [&]() {
     switch (fisheyeSensorSpec_->fisheyeModelType) {
@@ -48,17 +53,39 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   auto actualSpec = convertSpec();
   actualSpec->sanityCheck();
 
-  // initialize the cubemap camera, it attaches to the same node as the sensor
-  cubeMapCamera_ = new gfx::CubeMapCamera(cameraNode);
-
   // initialize a cubemap
   auto& res = actualSpec->resolution;
   int size = res[0] < res[1] ? res[0] : res[1];
-  cubeMap_ = std::make_unique<esp::gfx::CubeMap>(size);
+  gfx::CubeMap::Flags cubeMapFlags = {};
+  if (fisheyeSensorSpec_->sensorType == SensorType::COLOR) {
+    cubeMapFlags |= gfx::CubeMap::Flag::ColorTexture;
+  }
+  cubeMap_ = std::make_unique<gfx::CubeMap>(size, cubeMapFlags);
+
+  // initialize the cubemap camera, it attaches to the same node as the sensor
+  cubeMapCamera_ = new gfx::CubeMapCamera(cameraNode);
+  cubeMapCamera_->setProjectionMatrix(size,
+                                      fisheyeSensorSpec_->cubeMapCameraNear,
+                                      fisheyeSensorSpec_->cubeMapCameraFar);
 
   // TODO: assign flag based on sensor type (color, depth, semantic)
-  fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
+  if (fisheyeSensorSpec_->sensorType == SensorType::COLOR) {
+    fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
+  }
 
+  // compute the depth unprojection parameters
+  {
+    float f = fisheyeSensorSpec_->cubeMapCameraFar;
+    float n = fisheyeSensorSpec_->cubeMapCameraNear;
+    float d = f - n;
+    // in projection matrix, two entries related to the depth are:
+    // -(f+n)/(f-n), -2fn/(f-n), where f is the far plane, and n is the near
+    // plane. depth parameters = 0.5 * vector(proj[2][2] - 1.0f, proj[3][2])
+    depthUnprojectionParameters_ =
+        0.5 * Mn::Vector2{-(f + n) / d - 1.0f, -2.0f * f * n / d};
+  }
+
+  // prepare a big triangle mesh to cover the screen
   mesh_ = Mn::GL::Mesh{};
   mesh_.setCount(3);
 }
@@ -76,9 +103,6 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
     return false;
   }
 
-  if (spec_->sensorSubType == SensorSubType::Fisheye)
-    LOG(INFO) << "Yes, I am here";
-
   esp::gfx::RenderCamera::Flags flags;
   if (sim.isFrustumCullingEnabled()) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
@@ -86,7 +110,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   // generate the cubemap texture
   cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), flags);
   // XXX debug
-  cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color, "viewerTest");
+  // cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color, "viewerTest");
 
   // obtain shader based on fisheye model type
   Mn::ResourceKey key = getShaderKey();
@@ -123,5 +147,16 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
 
   return true;
 }
+
+/**
+ * @brief Returns the parameters needed to unproject depth for the sensor.
+ *
+ * Will always be @ref Corrade::Containers::NullOpt for the base sensor class
+ * as it has no projection parameters
+ */
+Cr::Containers::Optional<Mn::Vector2> FisheyeSensor::depthUnprojection() const {
+  LOG(INFO) << "It is here!!";
+  return {depthUnprojectionParameters_};
+};
 }  // namespace sensor
 }  // namespace esp

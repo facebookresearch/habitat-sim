@@ -149,10 +149,6 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
     return false;
   }
 
-  // XXX
-  if (spec_->sensorSubType == SensorSubType::Fisheye)
-    LOG(INFO) << "NO!! Super weird.";
-
   renderTarget().renderEnter();
 
   gfx::RenderCamera::Flags flags;
@@ -202,17 +198,6 @@ void CameraSensor::readObservation(Observation& obs) {
         Magnum::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
         obs.buffer->data});
   }
-}
-
-bool CameraSensor::displayObservation(sim::Simulator& sim) {
-  if (!hasRenderTarget()) {
-    return false;
-  }
-
-  drawObservation(sim);
-  renderTarget().blitRgbaToDefault();
-
-  return true;
 }
 
 Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()
