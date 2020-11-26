@@ -139,8 +139,29 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
 
   renderTarget().renderEnter();
   if (fisheyeShaderFlags_ & gfx::FisheyeShader::Flag::ColorTexture) {
-    shader_->bindColorTexture(
-        cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
+    switch (fisheyeSensorSpec_->fisheyeModelType) {
+      case FisheyeSensorModelType::DoubleSphere: {
+        auto& actualShader =
+            static_cast<gfx::DoubleSphereCameraShader&>(*shader_);
+        auto& actualSpec =
+            static_cast<FisheyeSensorDoubleSphereSpec&>(*fisheyeSensorSpec_);
+        actualShader.setFocalLength(actualSpec.focalLength)
+            .setPrincipalPointOffset(actualSpec.principalPointOffset)
+            .setAlpha(actualSpec.alpha)
+            .setXi(actualSpec.xi);
+      } break;
+
+        // TODO:
+        // The other FisheyeSensorModelType
+
+      default:
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        break;
+    }
+    if (fisheyeSensorSpec_->sensorType == SensorType::COLOR) {
+      shader_->bindColorTexture(
+          cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
+    }
   }
   shader_->draw(mesh_);
   renderTarget().renderExit();

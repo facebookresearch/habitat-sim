@@ -106,5 +106,27 @@ DoubleSphereCameraShader& DoubleSphereCameraShader::bindColorTexture(
   return *this;
 }
 
+DoubleSphereCameraShader& DoubleSphereCameraShader::setFocalLength(
+    Magnum::Vector2 focalLength) {
+  setUniform(focalLengthUniform_, focalLength);
+  return *this;
+}
+
+DoubleSphereCameraShader& DoubleSphereCameraShader::setPrincipalPointOffset(
+    Magnum::Vector2i offset) {
+  setUniform(principalPointOffsetUniform_, offset);
+  return *this;
+}
+
+DoubleSphereCameraShader& DoubleSphereCameraShader::setAlpha(float alpha) {
+  setUniform(alphaUniform_, alpha);
+  return *this;
+}
+
+DoubleSphereCameraShader& DoubleSphereCameraShader::setXi(float xi) {
+  setUniform(xiUniform_, xi);
+  return *this;
+}
+
 }  // namespace gfx
 }  // namespace esp

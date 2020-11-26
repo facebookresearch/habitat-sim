@@ -64,9 +64,19 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
   /** @brief Flags */
   Flags flags() const { return flags_; }
 
+  /*
+  template <typename... DrawableGroupArgs>
+  gfx::DrawableGroup* createDrawableGroup(std::string id,
+                                          DrawableGroupArgs&&... args) {
+    auto inserted = drawableGroups_.emplace(
+        std::piecewise_construct, std::forward_as_tuple(std::move(id)),
+        std::forward_as_tuple(std::forward<DrawableGroupArgs>(args)...));
+        */
+
   virtual FisheyeShader& bindColorTexture(Magnum::GL::CubeMapTexture& texture);
   // virtual FisheyeShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
-  // virtual FisheyeShader& bindObjectIdTexture(Magnum::GL::Texture2D& texture);
+  // virtual FisheyeShader& bindObjectIdTexture(Magnum::GL::Texture2D&
+  // texture);
 
  protected:
   Flags flags_;
@@ -80,15 +90,15 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief cache the uniform locations
-   * NOTE: Subclass must implement this function, and call it at the end of the
-   * constructor
+   * NOTE: Subclass must implement this function, and call it at the end of
+   * the constructor
    */
   virtual void cacheUniforms() = 0;
 
   /**
    * @brief set texture binding points in the shader
-   * NOTE: Subclass must implement this function, and call it at the end of the
-   * constructor
+   * NOTE: Subclass must implement this function, and call it at the end of
+   * the constructor
    */
   virtual void setTextureBindingPoints() = 0;
 };
