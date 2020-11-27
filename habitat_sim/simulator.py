@@ -66,6 +66,7 @@ class Simulator(SimulatorBackend):
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
     )  # track the compute time of each step
+    _last_state: List[Optional[AgentState]] = attr.ib(factory=list, init=False)
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
@@ -122,6 +123,8 @@ class Simulator(SimulatorBackend):
         self._default_agent_id = None
 
         self.config = None
+
+        self._last_state = []
 
         super().close()
 
@@ -222,6 +225,7 @@ class Simulator(SimulatorBackend):
         self.__sensors: List[Dict[str, Sensor]] = [
             dict() for i in range(len(config.agents))
         ]
+        self._last_state = [None] * len(self.__sensors)
         for agent_id, agent_cfg in enumerate(config.agents):
             for spec in agent_cfg.sensor_specifications:
                 self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
@@ -253,7 +257,7 @@ class Simulator(SimulatorBackend):
                 )
 
         agent.set_state(initial_state, is_initial=True)
-        self._last_state = agent.state
+        self._last_state[agent_id] = agent.state
         return agent
 
     @overload
@@ -299,8 +303,8 @@ class Simulator(SimulatorBackend):
         # TODO Deprecate and remove
         return self.__sensors[self._default_agent_id]
 
-    def last_state(self) -> AgentState:
-        return self._last_state
+    def last_state(self, agent_id: int = 0) -> Optional[AgentState]:
+        return self._last_state[agent_id]
 
     @overload
     def step(
@@ -331,8 +335,7 @@ class Simulator(SimulatorBackend):
         collided_dict: Dict[int, bool] = {}
         for agent_id, agent_act in action.items():
             collided_dict[agent_id] = self.get_agent(agent_id).act(agent_act)
-        # TODO: Maybe should allow MultiAgent state return too...
-        self._last_state = self.get_agent(agent_ids[-1]).get_state()
+            self._last_state[agent_id] = self.get_agent(agent_ids[-1]).get_state()
 
         # step physics by dt
         step_start_Time = time.time()
