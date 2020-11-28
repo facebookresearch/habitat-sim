@@ -89,8 +89,8 @@ def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
             agent_actions[i] = action
         observations = sim.step(agent_actions)
         # Check all agents either moved or ran into something.
-        for agent_id, (initial_state, agent_obs) in enumerate(
-            zip(agent_initial_states, observations)
+        for initial_state, (agent_id, agent_obs) in zip(
+            agent_initial_states, observations.items()
         ):
             assert (
                 not is_same_state(initial_state, sim.get_agent(agent_id).state)
@@ -106,8 +106,8 @@ def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
         assert is_same_state(
             agent_initial_states[2], sim.get_agent(2).state
         ), "Agent 2 did not move"
-        for agent_id, (initial_state, agent_obs) in enumerate(
-            zip(agent_initial_states, observations)
+        for initial_state, (agent_id, agent_obs) in zip(
+            agent_initial_states, observations.items()
         ):
             assert 2 not in observations
             assert agent_id == 2 or (

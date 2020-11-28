@@ -5,8 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
+from collections import OrderedDict
+from collections.abc import MutableMapping
 from os import path as osp
-from typing import Any, Dict, List, Optional, Union, overload
+from typing import Any, Dict, List
+from typing import MutableMapping as MutableMapping_T
+from typing import Optional, Union, cast, overload
 
 import attr
 import magnum as mn
@@ -29,6 +33,8 @@ from habitat_sim.sensor import SensorSpec, SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
+
+# TODO maybe clean up types with TypeVars
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -269,33 +275,36 @@ class Simulator(SimulatorBackend):
     @overload
     def get_sensor_observations(
         self, agent_ids: List[int]
-    ) -> List[Dict[str, Union[ndarray, "Tensor"]]]:
+    ) -> Dict[int, Dict[str, Union[ndarray, "Tensor"]]]:
         ...
 
     def get_sensor_observations(self, agent_ids: Union[int, List[int]] = 0):
-        return_single = False
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
+        else:
+            return_single = False
 
         for agent_id in agent_ids:
             agent_sensorsuite = self.__sensors[agent_id]
             for _sensor_uuid, sensor in agent_sensorsuite.items():
                 sensor.draw_observation()
 
-        observations: List[Dict[str, Union[ndarray, "Tensor"]]] = []
+        # As backport. All Dicts are ordered in Python >= 3.7
+        observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
         for agent_id in agent_ids:
             agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor.get_observation()
-            observations.append(agent_observations)
+            observations[agent_id] = agent_observations
         if return_single:
-            return observations[0]
+            return next(iter(observations.values()))
         return observations
 
     @property
     def _default_agent(self) -> Agent:
         # TODO Deprecate and remove
+        assert self._default_agent_id
         return self.get_agent(self._default_agent_id)
 
     @property
@@ -314,38 +323,38 @@ class Simulator(SimulatorBackend):
 
     @overload
     def step(
-        self, action: Dict[int, Union[str, int]], dt: float = 1.0 / 60.0
-    ) -> List[Dict[str, Union[bool, ndarray, "Tensor"]]]:
+        self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
+    ) -> Dict[int, Dict[str, Union[bool, ndarray, "Tensor"]]]:
         ...
 
     def step(
         self,
-        action: Union[str, int, Dict[int, Union[str, int]]],
+        action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
         dt: float = 1.0 / 60.0,
     ) -> Union[
-        List[Dict[str, Union[bool, ndarray, "Tensor"]]],
         Dict[str, Union[bool, ndarray, "Tensor"]],
+        Dict[int, Dict[str, Union[bool, ndarray, "Tensor"]]],
     ]:
         self._num_total_frames += 1
-        return_single = False
-        if not isinstance(action, dict):
-            action = {self._default_agent_id: action}
+        if isinstance(action, MutableMapping):
+            return_single = False
+        else:
+            action = cast(Dict[int, Union[str, int]], {self._default_agent_id: action})
             return_single = True
-        agent_ids = sorted(action.keys())
         collided_dict: Dict[int, bool] = {}
         for agent_id, agent_act in action.items():
-            collided_dict[agent_id] = self.get_agent(agent_id).act(agent_act)
-            self._last_state[agent_id] = self.get_agent(agent_ids[-1]).get_state()
+            agent = self.get_agent(agent_id)
+            collided_dict[agent_id] = agent.act(agent_act)
+            self._last_state[agent_id] = agent.state
 
         # step physics by dt
         step_start_Time = time.time()
         super().step_world(dt)
         self._previous_step_time = time.time() - step_start_Time
 
-        multi_observations = self.get_sensor_observations(agent_ids=agent_ids)
-        for obs_id, agent_observation in enumerate(multi_observations):
-            agent_id_obs = agent_ids[obs_id]
-            agent_observation["collided"] = collided_dict[agent_id_obs]
+        multi_observations = self.get_sensor_observations(agent_ids=list(action.keys()))
+        for agent_id, agent_observation in multi_observations.items():
+            agent_observation["collided"] = collided_dict[agent_id]
         if return_single:
             return multi_observations[self._default_agent_id]
         return multi_observations
