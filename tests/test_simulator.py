@@ -74,8 +74,11 @@ def test_sim_reset(make_cfg_settings):
 
 def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
     sim_cfg = examples.settings.make_cfg(make_cfg_settings)
-    for _ in range(num_agents):
-        sim_cfg.agents.append(copy(sim_cfg.agents[0]))
+    for agent_id in range(1, num_agents):
+        new_agent = copy(sim_cfg.agents[0])
+        for sensor_spec in new_agent.sensor_specifications:
+            sensor_spec = f"{agent_id}_/{sensor_spec.uuid}"
+        sim_cfg.agents.append(new_agent)
     with habitat_sim.Simulator(sim_cfg) as sim:
         agent_initial_states = []
         for i in range(num_agents):
