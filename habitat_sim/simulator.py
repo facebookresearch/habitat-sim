@@ -66,13 +66,13 @@ class Simulator(SimulatorBackend):
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
-    _default_agent_id: Optional[int] = attr.ib(default=0)
+    _default_agent_id: Optional[int] = attr.ib(default=None, init=False)
     __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
     )  # track the compute time of each step
-    _last_state: List[Optional[AgentState]] = attr.ib(factory=list, init=False)
+    __last_state: List[Optional[AgentState]] = attr.ib(factory=list, init=False)
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
@@ -130,7 +130,7 @@ class Simulator(SimulatorBackend):
 
         self.config = None
 
-        self._last_state = []
+        self.__last_state = []
 
         super().close()
 
@@ -231,7 +231,7 @@ class Simulator(SimulatorBackend):
         self.__sensors: List[Dict[str, Sensor]] = [
             dict() for i in range(len(config.agents))
         ]
-        self._last_state = [None] * len(self.__sensors)
+        self.__last_state = [None] * len(self.__sensors)
         for agent_id, agent_cfg in enumerate(config.agents):
             for spec in agent_cfg.sensor_specifications:
                 self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
@@ -263,7 +263,7 @@ class Simulator(SimulatorBackend):
                 )
 
         agent.set_state(initial_state, is_initial=True)
-        self._last_state[agent_id] = agent.state
+        self.__last_state[agent_id] = agent.state
         return agent
 
     @overload
@@ -307,12 +307,20 @@ class Simulator(SimulatorBackend):
         return self.get_agent(self._default_agent_id)
 
     @property
+    def _last_state(self) -> AgentState:
+        return self.__last_state[self._default_agent_id]
+
+    @_last_state.setter
+    def _last_state(self, state: AgentState) -> None:
+        self.__last_state[self._default_agent_id] = state
+
+    @property
     def _sensors(self) -> Dict[str, "Sensor"]:
         # TODO Deprecate and remove
         return self.__sensors[self._default_agent_id]
 
     def last_state(self, agent_id: int = 0) -> Optional[AgentState]:
-        return self._last_state[agent_id]
+        return self.__last_state[agent_id]
 
     @overload
     def step(
@@ -344,7 +352,7 @@ class Simulator(SimulatorBackend):
         for agent_id, agent_act in action.items():
             agent = self.get_agent(agent_id)
             collided_dict[agent_id] = agent.act(agent_act)
-            self._last_state[agent_id] = agent.state
+            self.__last_state[agent_id] = agent.state
 
         # step physics by dt
         step_start_Time = time.time()
