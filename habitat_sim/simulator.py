@@ -66,7 +66,7 @@ class Simulator(SimulatorBackend):
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
-    _default_agent_id: Optional[int] = attr.ib(init=False, default=None)
+    _default_agent_id: Optional[int] = attr.ib(default=0)
     __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
