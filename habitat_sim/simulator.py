@@ -304,7 +304,6 @@ class Simulator(SimulatorBackend):
     @property
     def _default_agent(self) -> Agent:
         # TODO Deprecate and remove
-        assert self._default_agent_id
         return self.get_agent(self._default_agent_id)
 
     @property
