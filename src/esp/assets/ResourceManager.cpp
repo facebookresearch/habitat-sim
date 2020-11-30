@@ -210,12 +210,14 @@ bool ResourceManager::loadStage(
       auto& semanticRootNode = semanticSceneGraph.getRootNode();
       auto& semanticDrawables = semanticSceneGraph.getDrawables();
 
+      RenderAssetInstanceCreationInfo::Flags flags;
+      flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+      if (stageAttributes->getFrustrumCulling()) {
+        // only treat as static if doing culling
+        flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
+      }
       RenderAssetInstanceCreationInfo creation(
-          semanticStageFilename, Cr::Containers::NullOpt,
-          // only treat as static if doing culling
-          /*isStatic*/ stageAttributes->getFrustrumCulling(),
-          /*isRGBD*/ false,
-          /*isSemantic*/ true, NO_LIGHT_KEY);
+          semanticStageFilename, Cr::Containers::NullOpt, flags, NO_LIGHT_KEY);
 
       bool semanticStageSuccess =
           loadStageInternal(semanticInfo,  // AssetInfo
@@ -252,11 +254,14 @@ bool ResourceManager::loadStage(
 
   AssetInfo renderInfo = assetInfoMap.at("render");
 
+  RenderAssetInstanceCreationInfo::Flags flags;
+  flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
+  flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+  if (!isSeparateSemanticScene) {
+    flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+  }
   RenderAssetInstanceCreationInfo renderCreation(
-      renderInfo.filepath, Cr::Containers::NullOpt,
-      /*isStatic*/ true,
-      /*isRGBD*/ true,
-      /*isSemantic*/ !isSeparateSemanticScene, renderLightSetupKey);
+      renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
 
   bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
                                              &renderCreation,
@@ -1731,11 +1736,11 @@ void ResourceManager::addObjectToDrawables(
     const std::string& renderObjectName =
         ObjectAttributes->getRenderAssetHandle();
 
+    RenderAssetInstanceCreationInfo::Flags flags;
+    flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+    flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
     RenderAssetInstanceCreationInfo creation(
-        renderObjectName, ObjectAttributes->getScale(),
-        /*isStatic*/ false,
-        /*isRGBD*/ true,
-        /*isSemantic*/ true, lightSetupKey);
+        renderObjectName, ObjectAttributes->getScale(), flags, lightSetupKey);
 
     createRenderAssetInstance(creation, parent, drawables, &visNodeCache);
 
@@ -1907,11 +1912,11 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         objectNode.setId(nodeIndex);
         if (info.type == AssetType::SUNCG_OBJECT) {
           CHECK(loadRenderAsset(info));
+          RenderAssetInstanceCreationInfo::Flags flags;
+          flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+          flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
           RenderAssetInstanceCreationInfo objectCreation(
-              info.filepath, Cr::Containers::NullOpt,
-              /*isStatic*/ false,
-              /*isRGBD*/ true,
-              /*isSemantic*/ true, NO_LIGHT_KEY);
+              info.filepath, Cr::Containers::NullOpt, flags, NO_LIGHT_KEY);
           createRenderAssetInstance(objectCreation, &objectNode, drawables);
         }
         return objectNode;

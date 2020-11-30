@@ -10,15 +10,12 @@ namespace assets {
 RenderAssetInstanceCreationInfo::RenderAssetInstanceCreationInfo(
     const std::string& _filepath,
     const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
-    bool isStatic,
-    bool isRGBD,
-    bool isSemantic,
+    const Flags& _flags,
     const std::string& _lightSetupKey)
-    : filepath(_filepath), scale(_scale), lightSetupKey(_lightSetupKey) {
-  flags |= isStatic ? Flag::IsStatic : Flags();
-  flags |= isRGBD ? Flag::IsRGBD : Flags();
-  flags |= isSemantic ? Flag::IsSemantic : Flags();
-}
+    : filepath(_filepath),
+      scale(_scale),
+      flags(_flags),
+      lightSetupKey(_lightSetupKey) {}
 
 }  // namespace assets
 }  // namespace esp

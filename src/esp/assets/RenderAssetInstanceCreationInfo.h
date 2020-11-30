@@ -28,9 +28,7 @@ struct RenderAssetInstanceCreationInfo {
   RenderAssetInstanceCreationInfo(
       const std::string& _filepath,
       const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
-      bool isStatic,
-      bool isRGBD,
-      bool isSemantic,
+      const Flags& _flags,
       const std::string& _lightSetupKey);
 
   bool isStatic() const { return bool(flags & Flag::IsStatic); }
