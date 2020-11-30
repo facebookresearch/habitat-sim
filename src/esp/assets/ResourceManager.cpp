@@ -1258,13 +1258,17 @@ bool ResourceManager::loadTrajectoryVisualization(
 
   // default material for now
   auto phongMaterial = gfx::PhongMaterialData::create_unique();
+  phongMaterial->specularColor = {1.0, 1.0, 1.0, 1.0};
+  phongMaterial->ambientColor = {0.9, 0.1, 0.1, 1.0};
   phongMaterial->diffuseColor = {0.9, 0.1, 0.1, 1.0};
+
   meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
   shaderManager_.set(std::to_string(nextMaterialID_++),
                      static_cast<gfx::MaterialData*>(phongMaterial.release()));
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
+  meshMetaData.root.materialIDLocal = 0;
   // store the rotation to world frame upon load - currently superfluous
   const quatf transform = info.frame.rotationFrameToWorld();
   Magnum::Matrix4 R = Magnum::Matrix4::from(
