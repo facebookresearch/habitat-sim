@@ -1878,6 +1878,9 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
                                          DrawableGroup* drawables) {
   ASSERT(parent != nullptr);
+
+  LOG(WARNING) << "SUNCG support is deprecated. This codepath is untested.";
+
   std::string houseFile = Cr::Utility::Directory::join(
       Cr::Utility::Directory::current(), houseInfo.filepath);
   const auto& json = io::parseJsonFile(houseFile);
