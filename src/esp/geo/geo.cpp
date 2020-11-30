@@ -123,28 +123,20 @@ Mn::Range3D getTransformedBB(const Mn::Range3D& range,
   return Mn::Range3D::fromCenter(newCenter, newExtent);
 }
 
-Mn::Vector3 interp2Points(const Mn::Vector3& a,
-                          float ta,
-                          const Mn::Vector3& b,
-                          float tb,
-                          float t) {
-  float denom = tb - ta;
-  return (((tb - t) / denom) * a) + (((t - ta) / denom) * b);
-}
-
-float calcTForPoints(const Mn::Vector3& a, const Mn::Vector3& b) {
+float calcTForPoints(const Mn::Vector3& a, const Mn::Vector3& b, float alpha) {
+  // embed square root
+  alpha *= .5;
   // calc t value based on distance between a and b
-  float alpha = .25f;
   Mn::Vector3 d = b - a;
   float sqD = dot(d, d);
   return Mn::Math::pow(sqD, alpha);
 }
 
-void buildCRTraj4Points(const std::vector<Mn::Vector3>& pts,
-                        const std::vector<float>& ptKnotVals,
-                        std::vector<Mn::Vector3>& trajectory,
-                        int stIdx,
-                        int numInterp) {
+void buildCatmullRomTraj4Points(const std::vector<Mn::Vector3>& pts,
+                                const std::vector<float>& ptKnotVals,
+                                std::vector<Mn::Vector3>& trajectory,
+                                int stIdx,
+                                int numInterp) {
   std::vector<float> tAra;
   tAra.push_back(0.0f);
   tAra.push_back(ptKnotVals[stIdx]);
@@ -168,7 +160,7 @@ void buildCRTraj4Points(const std::vector<Mn::Vector3>& pts,
     trajectory.emplace_back(interp2Points(B0, tAra[1], B1, tAra[2], t));
   }
 
-}  // buildCRTraj4Points
+}  // buildCatmullRomTraj4Points
 
 std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
     const std::vector<Mn::Vector3>& pts,
@@ -176,19 +168,26 @@ std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
   std::vector<Mn::Vector3> trajectory;
   std::vector<Mn::Vector3> tmpPoints;
   std::vector<float> ptKnotVals;
+  // specify centrepital CR spline
+  float alpha = .5;
   // build padded array of points to use to synthesize centripetal catmul-rom
   // trajectory
-  tmpPoints.emplace_back(pts[0]);
-
-  for (int i = 1; i < pts.size(); ++i) {
+  // add "ghost point so we start drawing from
+  tmpPoints.emplace_back(pts[0] - (pts[1] - pts[0]));
+  ptKnotVals.emplace_back(calcTForPoints(tmpPoints[0], pts[0], alpha));
+  for (int i = 0; i < pts.size(); ++i) {
     tmpPoints.emplace_back(pts[i]);
-    ptKnotVals.emplace_back(calcTForPoints(pts[i - 1], pts[i]));
+    ptKnotVals.emplace_back(
+        calcTForPoints(tmpPoints[i], tmpPoints[i + 1], alpha));
   }
-  tmpPoints.emplace_back(pts[pts.size() - 1]);
-  ptKnotVals.emplace_back(0);
+  auto endPt =
+      pts[pts.size() - 1] + (pts[pts.size() - 1] - pts[pts.size() - 2]);
+  tmpPoints.emplace_back(endPt);
+  ptKnotVals.emplace_back(
+      calcTForPoints(tmpPoints[tmpPoints.size() - 2], endPt, alpha));
 
-  for (int i = 0; i < tmpPoints.size() - 2; ++i) {
-    buildCRTraj4Points(pts, ptKnotVals, trajectory, i, numInterp);
+  for (int i = 0; i < tmpPoints.size() - 3; ++i) {
+    buildCatmullRomTraj4Points(tmpPoints, ptKnotVals, trajectory, i, numInterp);
   }
 
   return trajectory;
@@ -204,8 +203,7 @@ Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
       (smooth ? geo::buildSmoothTrajOfPoints(pts, numInterp) : pts);
   // size of trajectory
   const Mn::UnsignedInt trajSize = trajectory.size();
-  LOG(INFO) << "geo::trajectoryTubeSolid : Number of trajectory points : "
-            << trajSize;
+
   // 2. Build mesh vertex points around each trajectory point at appropriate
   // distance (radius). For each point in trajectory, add a wireframe circle
   // centered at that point, appropriately oriented based on tangents

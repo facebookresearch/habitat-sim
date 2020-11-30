@@ -63,40 +63,50 @@ std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
  * @param t the time along the trajectory for the desired point
  * @return the interpolated point at time @ref t
  */
-Mn::Vector3 interp2Points(const Mn::Vector3& a,
-                          float ta,
-                          const Mn::Vector3& b,
-                          float tb,
-                          float t);
-
+inline Mn::Vector3 interp2Points(const Mn::Vector3& a,
+                                 float ta,
+                                 const Mn::Vector3& b,
+                                 float tb,
+                                 float t) {
+  float denom = tb - ta;
+  return (((tb - t) / denom) * a) + (((t - ta) / denom) * b);
+}
 /**
  * @brief Determine the relative knot value for point b as a function of
- * distance from point a.
+ * distance from point a, for use in Catmull-Rom spline derivation.
  * @param a a point whose knot value is known
  * @param b a point whose knot value is unkknown
+ * @param alpha power to use to derive distance, determines nature of resultant
+ * CR spline. 0 yields a standard uniform Catmull-Rom spline, .5 yields
+ * centrepital CR spline, 1.0 yields chordal CR spline.  Default is .5.
  * @return b's knot valute relative to a
  */
-float calcTForPoints(const Mn::Vector3& a, const Mn::Vector3& b);
+float calcTForPoints(const Mn::Vector3& a, const Mn::Vector3& b, float alpha);
 
 /**
- * @brief Build a centripetal Catmull–Rom spline using 4 sequential points in
- * @ref pts vector, where the spline will extend between the 2nd and 3rd of the
- * 4 points.
+ * @brief Build a Catmull–Rom spline using 4 sequential points in
+ * @ref pts vector, where the resultant spline will extend between the 2nd and
+ * 3rd of the 4 points.
  * @param pts The points of the trajectory
- * @param ptKnotVals Precalculated knot values for sequential points
+ * @param ptKnotVals Precalculated knot values for sequential points, derived
+ * from point-to-point distance.  Depending on how these are calculated, the
+ * result may be a uniform, centrepital or chordal CR spline.
  * @param trajectory The resultant trajectory to build
  * @param stIdx the index to start building the points
  * @param numInterp The number of interpolations between each trajectory point
  */
-void buildCRTraj4Points(const std::vector<Mn::Vector3>& pts,
-                        const std::vector<float>& ptKnotVals,
-                        std::vector<Mn::Vector3>& trajectory,
-                        int stIdx,
-                        int numInterp);
+void buildCatmullRomTraj4Points(const std::vector<Mn::Vector3>& pts,
+                                const std::vector<float>& ptKnotVals,
+                                std::vector<Mn::Vector3>& trajectory,
+                                int stIdx,
+                                int numInterp);
 
 /**
  * @brief Build a mesh representing a tube of given radius around the
- * trajectory given by the passed points.
+ * trajectory given by the passed points.  Will either build cylinders between
+ * each pair of points in @ref pts, or will build smoothed trajectory by
+ * deriving centripetal Catmull-Rom spline between subsequent sets of 4 points
+ * and interoplate
  * @param pts The points of a trajectory, in order
  * @param numSegments The number of segments around the circumference of the
  * tube.
