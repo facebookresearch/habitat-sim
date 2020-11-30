@@ -35,7 +35,7 @@ Working with light setups                           :ref:`Page <std:doc:lighting
 
 Extracting Images                                   :ref:`Page <std:doc:image-extractor>`
 
-Interactive Rigid Objects                           :ref:`Page <std:doc:rigid-object-tutorial>`
+Interactive Rigid Objects                           :ref:`Page <std:doc:rigid-object-tutorial>`                                                                         `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/rigid_object_tutorial.ipynb>`__
 =================================================== ======================================================================================== ======================
 
 Python Classes
