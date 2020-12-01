@@ -652,7 +652,7 @@ class Simulator {
                                   const Magnum::Color4& color = {0.9, 0.1, 0.1,
                                                                  1.0},
                                   bool smooth = false,
-                                  int numInterp = 20);
+                                  int numInterp = 10);
 
   /**
    * @brief Remove a trajectory visualization by name.

@@ -262,16 +262,16 @@ Key Commands:
     std::string mod = "";
     if (bigger) {
       if (agentTrajRad_ < 1.0) {
-        agentTrajRad_ += 0.01f;
+        agentTrajRad_ += 0.001f;
         mod = "increased to ";
       }
     } else {
-      if (agentTrajRad_ < 0.01f) {
-        agentTrajRad_ -= 0.01f;
+      if (agentTrajRad_ > 0.001f) {
+        agentTrajRad_ -= 0.001f;
         mod = "decreased to ";
       }
     }
-    esp::geo::clamp(agentTrajRad_, 0.01f, 1.0f);
+    esp::geo::clamp(agentTrajRad_, 0.001f, 1.0f);
     LOG(INFO) << "Agent Trajectory Radius " << mod << ": " << agentTrajRad_;
   }
 
