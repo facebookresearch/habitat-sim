@@ -1206,21 +1206,24 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   return &newNode;
 }
 
-bool ResourceManager::loadTrajectoryVisualization(
+bool ResourceManager::buildTrajectoryVisualization(
     const std::string& trajVisName,
     const std::vector<Mn::Vector3>& pts,
     int numSegments,
     float radius,
+    const Magnum::Color4& color,
     bool smooth,
     int numInterp) {
   // enforce required minimum/reasonable values if illegal values specified
   if (numSegments < 3) {  // required by circle prim
     numSegments = 3;
   }
-  if (smooth && (numInterp <= 0)) {  // 10 points per trajectory point
+  // clip to 10 points between trajectory points, if illegal value
+  if (smooth && (numInterp <= 0)) {
     numInterp = 10;
   }
-  if (radius <= 0) {  // 1 mm radius minimum
+  // 1 millimeter radius minimum
+  if (radius <= 0) {
     radius = .001;
   }
 
@@ -1233,7 +1236,8 @@ bool ResourceManager::loadTrajectoryVisualization(
 
   // create mesh tube
   Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
-      geo::trajectoryTubeSolid(pts, numSegments, radius, smooth, numInterp);
+      geo::buildTrajectoryTubeSolid(pts, numSegments, radius, smooth,
+                                    numInterp);
   LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Successfully "
                "returned from trajectoryTubeSolid ";
 
@@ -1259,8 +1263,8 @@ bool ResourceManager::loadTrajectoryVisualization(
   // default material for now
   auto phongMaterial = gfx::PhongMaterialData::create_unique();
   phongMaterial->specularColor = {1.0, 1.0, 1.0, 1.0};
-  phongMaterial->ambientColor = {0.9, 0.1, 0.1, 1.0};
-  phongMaterial->diffuseColor = {0.9, 0.1, 0.1, 1.0};
+  phongMaterial->ambientColor = color;
+  phongMaterial->diffuseColor = color;
 
   meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
   shaderManager_.set(std::to_string(nextMaterialID_++),

@@ -453,17 +453,20 @@ class ResourceManager {
    * @param numSegments The number of the segments around the circumference of
    * the tube. Must be greater than or equal to 3.
    * @param radius The radius of the tube.
+   * @param color Color for trajectory tube.
    * @param smooth Whether to smooth the points in the trajectory or not
    * @param numInterp The number of interpolations between each trajectory
    * point, if smoothing.
    * @return Whether the process was a success or not
    */
-  bool loadTrajectoryVisualization(const std::string& trajVisName,
-                                   const std::vector<Mn::Vector3>& pts,
-                                   int numSegments = 3,
-                                   float radius = .001,
-                                   bool smooth = false,
-                                   int numInterp = 20);
+  bool buildTrajectoryVisualization(const std::string& trajVisName,
+                                    const std::vector<Mn::Vector3>& pts,
+                                    int numSegments = 3,
+                                    float radius = .001,
+                                    const Magnum::Color4& color = {0.9, 0.1,
+                                                                   0.1, 1.0},
+                                    bool smooth = false,
+                                    int numInterp = 20);
 
   /**
    * @brief Build a configuration frame from scene or object attributes values

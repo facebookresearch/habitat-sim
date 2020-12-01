@@ -717,14 +717,15 @@ int Simulator::showTrajectoryVisualization(const std::string& trajVisName,
                                            const std::vector<Mn::Vector3>& pts,
                                            int numSegments,
                                            float radius,
+                                           const Magnum::Color4& color,
                                            bool smooth,
                                            int numInterp) {
   auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
   auto& drawables = sceneGraph_.getDrawables();
 
   // 1. create trajectory tube asset from points and save it
-  bool success = resourceManager_->loadTrajectoryVisualization(
-      trajVisName, pts, numSegments, radius, smooth, numInterp);
+  bool success = resourceManager_->buildTrajectoryVisualization(
+      trajVisName, pts, numSegments, radius, color, smooth, numInterp);
   if (!success) {
     LOG(ERROR) << "Simulator::showTrajectoryVisualization : Failed to create "
                   "Trajectory visualization mesh for "

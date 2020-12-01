@@ -123,13 +123,16 @@ Mn::Range3D getTransformedBB(const Mn::Range3D& range,
   return Mn::Range3D::fromCenter(newCenter, newExtent);
 }
 
-float calcTForPoints(const Mn::Vector3& a, const Mn::Vector3& b, float alpha) {
-  // embed square root
+float calcWeightedDistance(const Mn::Vector3& a,
+                           const Mn::Vector3& b,
+                           float alpha) {
+  // embed square root from distance calc
   alpha *= .5;
-  // calc t value based on distance between a and b
+  // calc t value based on L2 norm of displacement between a and b raised to
+  // passed alpha power.
   Mn::Vector3 d = b - a;
-  float sqD = dot(d, d);
-  return Mn::Math::pow(sqD, alpha);
+  float squareDist = dot(d, d);
+  return Mn::Math::pow(squareDist, alpha);
 }
 
 void buildCatmullRomTraj4Points(const std::vector<Mn::Vector3>& pts,
@@ -137,70 +140,87 @@ void buildCatmullRomTraj4Points(const std::vector<Mn::Vector3>& pts,
                                 std::vector<Mn::Vector3>& trajectory,
                                 int stIdx,
                                 int numInterp) {
-  std::vector<float> tAra;
-  tAra.push_back(0.0f);
-  tAra.push_back(ptKnotVals[stIdx]);
-  tAra.push_back(ptKnotVals[stIdx + 1] + tAra[1]);
-  tAra.push_back(ptKnotVals[stIdx + 2] + tAra[2]);
-  float incr = (tAra[2] - tAra[1]) / (1.0f * numInterp);
-  // for (float t = tAra[1]; t < tAra[2]; t += incr) {
+  // t values are based on distances between sequential points and type of
+  // spline
+  float t0 = 0.0f;
+  float t1 = ptKnotVals[stIdx];
+  float t2 = ptKnotVals[stIdx + 1] + t1;
+  float t3 = ptKnotVals[stIdx + 2] + t2;
+  float incr = (t2 - t1) / (1.0f * numInterp);
   for (int i = 0; i < numInterp; ++i) {
-    float t = tAra[1] + i * incr;
-    t = (t > tAra[2]) ? tAra[2] : t;
-    Mn::Vector3 A0 =
-        interp2Points(pts[stIdx], tAra[0], pts[stIdx + 1], tAra[1], t);
-    Mn::Vector3 A1 =
-        interp2Points(pts[stIdx + 1], tAra[1], pts[stIdx + 2], tAra[2], t);
-    Mn::Vector3 A2 =
-        interp2Points(pts[stIdx + 2], tAra[2], pts[stIdx + 3], tAra[3], t);
+    float t = t1 + i * incr;
+    // don't allow float error to cause t to go past 3rd interpolated point in
+    // spline
+    t = (t > t2) ? t2 : t;
+    Mn::Vector3 A0 = interp2Points(pts[stIdx], t0, pts[stIdx + 1], t1, t);
+    Mn::Vector3 A1 = interp2Points(pts[stIdx + 1], t1, pts[stIdx + 2], t2, t);
+    Mn::Vector3 A2 = interp2Points(pts[stIdx + 2], t2, pts[stIdx + 3], t3, t);
 
-    Mn::Vector3 B0 = interp2Points(A0, tAra[0], A1, tAra[2], t);
-    Mn::Vector3 B1 = interp2Points(A1, tAra[1], A2, tAra[3], t);
-
-    trajectory.emplace_back(interp2Points(B0, tAra[1], B1, tAra[2], t));
+    Mn::Vector3 B0 = interp2Points(A0, t0, A1, t2, t);
+    Mn::Vector3 B1 = interp2Points(A1, t1, A2, t3, t);
+    // resultant point will be between t1 and t2 in this 4-point spline
+    trajectory.emplace_back(interp2Points(B0, t1, B1, t2, t));
   }
 
 }  // buildCatmullRomTraj4Points
 
-std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
+std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
     const std::vector<Mn::Vector3>& pts,
-    int numInterp) {
+    int numInterp,
+    float alpha) {
+  // enforce alpha limits
+  alpha = clamp(alpha, 0.0f, 1.0f);
+  // points in trajectory
   std::vector<Mn::Vector3> trajectory;
   std::vector<Mn::Vector3> tmpPoints;
   std::vector<float> ptKnotVals;
-  // specify centrepital CR spline
-  float alpha = .5;
   // build padded array of points to use to synthesize centripetal catmul-rom
-  // trajectory
-  // add "ghost point so we start drawing from
+  // trajectory by adding "ghost" point so we start drawing from initial point
+  // in trajectory.
   tmpPoints.emplace_back(pts[0] - (pts[1] - pts[0]));
-  ptKnotVals.emplace_back(calcTForPoints(tmpPoints[0], pts[0], alpha));
+  ptKnotVals.emplace_back(calcWeightedDistance(tmpPoints[0], pts[0], alpha));
   for (int i = 0; i < pts.size(); ++i) {
     tmpPoints.emplace_back(pts[i]);
     ptKnotVals.emplace_back(
-        calcTForPoints(tmpPoints[i], tmpPoints[i + 1], alpha));
+        calcWeightedDistance(tmpPoints[i], tmpPoints[i + 1], alpha));
   }
-  auto endPt =
-      pts[pts.size() - 1] + (pts[pts.size() - 1] - pts[pts.size() - 2]);
-  tmpPoints.emplace_back(endPt);
-  ptKnotVals.emplace_back(
-      calcTForPoints(tmpPoints[tmpPoints.size() - 2], endPt, alpha));
+  // add final ghost point in trajectory
+  int lastIdx = pts.size() - 1;
+  tmpPoints.emplace_back(pts[lastIdx] + (pts[lastIdx] - pts[lastIdx - 1]));
+  ptKnotVals.emplace_back(calcWeightedDistance(
+      tmpPoints[tmpPoints.size() - 2], tmpPoints[tmpPoints.size() - 1], alpha));
 
   for (int i = 0; i < tmpPoints.size() - 3; ++i) {
     buildCatmullRomTraj4Points(tmpPoints, ptKnotVals, trajectory, i, numInterp);
   }
-
   return trajectory;
-}  // buildSmoothTrajOfPoints
+}  // buildCatmullRomTrajOfPoints
 
-Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
-                                        int numSegments,
-                                        float radius,
-                                        bool smooth,
-                                        int numInterp) {
+std::vector<float> getPointDistsAlongTrajectory(
+    const std::vector<Mn::Vector3>& pts) {
+  std::vector<float> dists;
+  dists.emplace_back(0.0f);
+  for (int i = 1; i < pts.size(); ++i) {
+    dists.emplace_back(dists[i - 1] +
+                       calcWeightedDistance(pts[i - 1], pts[i], 1.0f));
+  }
+  return dists;
+}  // getPointDistsAlongTrajectory
+
+Mn::Trade::MeshData buildTrajectoryTubeSolid(
+    const std::vector<Mn::Vector3>& pts,
+    int numSegments,
+    float radius,
+    bool smooth,
+    int numInterp) {
   // 1. Build smoothed trajectory through passed points if requested
+  // points in trajectory
+  // A centripetal CR spline (alpha == .5) will not have cusps, while remaining
+  // true to underlying key point trajectory.
+  float alpha = .5;
   std::vector<Mn::Vector3> trajectory =
-      (smooth ? geo::buildSmoothTrajOfPoints(pts, numInterp) : pts);
+      smooth ? buildCatmullRomTrajOfPoints(pts, numInterp, alpha) : pts;
+
   // size of trajectory
   const Mn::UnsignedInt trajSize = trajectory.size();
 
@@ -223,14 +243,16 @@ Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
 
   // # of vertices in resultant tube == # circle verts * # points in trajectory
   const Mn::UnsignedInt vertexCount = numSegments * trajSize + 2;
-  struct Vertex {  // a function-local struct
+  // a function-local struct representing a vertex
+  struct Vertex {
     Mn::Vector3 position;
     Mn::Vector3 normal;
   };
+
   // Vertex data storage
   Cr::Containers::Array<char> vertexData{Cr::Containers::NoInit,
                                          sizeof(Vertex) * vertexCount};
-
+  // Cast memory to be a strided array so it can be accessed via slices.
   Cr::Containers::StridedArrayView1D<Vertex> vertices =
       Cr::Containers::arrayCast<Vertex>(vertexData);
   // Position and normal views of vertex array
@@ -290,7 +312,7 @@ Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
         tangentOrientation.transformVector(circleNormVerts[i]);
     ++circlePtIDX;
   }
-  // add cap vert
+  // add cap verts
   // build vertex (circleVerts[i] is at radius)
   positions[vertexCount - 1] = trajectory[idx];
   // pre-rotated normal for circle is normalized point
@@ -329,25 +351,26 @@ Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
         ixNextPlus = vIdxNumSeg + numSegments;
       }
       // F1
-      indices[iListIDX++] = (ix);
-      indices[iListIDX++] = (ixNext);
-      indices[iListIDX++] = (ixPlus);
+      indices[iListIDX++] = ix;
+      indices[iListIDX++] = ixNext;
+      indices[iListIDX++] = ixPlus;
       // F2
-      indices[iListIDX++] = (ixPlus);
-      indices[iListIDX++] = (ixNext);
-      indices[iListIDX++] = (ixNextPlus);
+      indices[iListIDX++] = ixPlus;
+      indices[iListIDX++] = ixNext;
+      indices[iListIDX++] = ixNextPlus;
     }
   }
   int offset = numSegments * (trajSize - 1);
-  // end caps
+
+  // end caps - verts added at the end of the vertices array
   for (Mn::UnsignedInt circleIx = 0; circleIx < numSegments; ++circleIx) {
-    // endcap 1
+    // first endcap
     Mn::UnsignedInt ix = circleIx;
     Mn::UnsignedInt ixPlus = (ix + 1) % numSegments;  //+1
     indices[iListIDX++] = (ix);
     indices[iListIDX++] = (ixPlus);
     indices[iListIDX++] = (vertexCount - 2);
-    // endcap 2
+    // last endcap
     ix += offset;
     ixPlus += offset;  //+1
     indices[iListIDX++] = (ixPlus);
@@ -360,7 +383,7 @@ Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
   // might end up with the move happening before the MeshIndexData construction,
   // which would result in 0 indices)
 
-  // Building mesh this way should obviate the need for interleaving
+  // Building the mesh this way obviates the need for an interleaving step
 
   Mn::Trade::MeshData meshData{
       Mn::MeshPrimitive::Triangles,

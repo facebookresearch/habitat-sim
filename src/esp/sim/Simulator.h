@@ -638,6 +638,7 @@ class Simulator {
    * @param numSegments The number of the segments around the circumference of
    * the tube. Must be greater than or equal to 3.
    * @param radius The radius of the tube.
+   * @param color Color for trajectory tube.
    * @param smooth Whether to smooth the points in the trajectory or not. Will
    * build a much bigger mesh
    * @param numInterp The number of interpolations between each trajectory
@@ -648,6 +649,8 @@ class Simulator {
                                   const std::vector<Mn::Vector3>& pts,
                                   int numSegments = 3,
                                   float radius = .001,
+                                  const Magnum::Color4& color = {0.9, 0.1, 0.1,
+                                                                 1.0},
                                   bool smooth = false,
                                   int numInterp = 20);
 

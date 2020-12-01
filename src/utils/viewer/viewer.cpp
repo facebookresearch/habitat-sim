@@ -171,6 +171,8 @@ Key Commands:
   Utilities:
   '1' toggle recording locations for trajectory visualization.
   '2' build and display trajectory visualization.
+  '+' increase trajectory diameter
+  '-' decrease trajectory diameter
   '5' switch ortho/perspective camera.
   '6' reset ortho camera zoom/perspective camera FOV.
   'e' enable/disable frustum culling.
@@ -220,7 +222,7 @@ Key Commands:
    * visualization
    */
   std::vector<Magnum::Vector3> agentLocs_;
-  const float agentTrajRad_ = .01f;
+  float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
 
   /**
@@ -256,6 +258,22 @@ Key Commands:
    * @brief Build trajectory visualization
    */
   void buildTrajectoryVis();
+  void modTrajRad(bool bigger) {
+    std::string mod = "";
+    if (bigger) {
+      if (agentTrajRad_ < 1.0) {
+        agentTrajRad_ += 0.01f;
+        mod = "increased to ";
+      }
+    } else {
+      if (agentTrajRad_ < 0.01f) {
+        agentTrajRad_ -= 0.01f;
+        mod = "decreased to ";
+      }
+    }
+    esp::geo::clamp(agentTrajRad_, 0.01f, 1.0f);
+    LOG(INFO) << "Agent Trajectory Radius " << mod << ": " << agentTrajRad_;
+  }
 
   // The simulator object backend for this viewer instance
   std::unique_ptr<esp::sim::Simulator> simulator_;
@@ -543,11 +561,12 @@ void Viewer::buildTrajectoryVis() {
                     "points, so nothing to build. Aborting.";
     return;
   }
+  Mn::Color4 color{randomDirection(), 1.0f};
   LOG(INFO) << "Viewer::buildTrajectoryVis : Attempting to build trajectory "
                "tube for :"
             << agentLocs_.size() << " points.";
   int trajObjID = simulator_->showTrajectoryVisualization(
-      "viewerTrajVis", agentLocs_, 6, agentTrajRad_, true, 10);
+      "viewerTrajVis", agentLocs_, 6, agentTrajRad_, color, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
     LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj ID : "
               << trajObjID;
@@ -887,6 +906,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // also `>` key
       simulateSingleStep_ = true;
       break;
+      // ==== Look direction and Movement ====
     case KeyEvent::Key::Left:
       defaultAgent_->act("turnLeft");
       break;
@@ -898,32 +918,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::Down:
       defaultAgent_->act("lookDown");
-      break;
-    case KeyEvent::Key::One:
-      // toggle agent location recording
-      setAgentLocationRecord(!agentLocRecordOn_);
-      break;
-    case KeyEvent::Key::Two:
-      // test trajectory mesh synthesis
-      buildTrajectoryVis();
-      break;
-    case KeyEvent::Key::Eight:
-      addPrimitiveObject();
-      break;
-    case KeyEvent::Key::Nine:
-      if (simulator_->getPathFinder()->isLoaded()) {
-        const esp::vec3f position =
-            simulator_->getPathFinder()->getRandomNavigablePoint();
-        agentBodyNode_->setTranslation(Mn::Vector3(position));
-      }
-      break;
-    case KeyEvent::Key::Five:
-      // switch camera between ortho and perspective
-      switchCameraType();
-      break;
-    case KeyEvent::Key::Six:
-      // reset camera zoom
-      getAgentCamera().resetZoom();
       break;
     case KeyEvent::Key::A:
       defaultAgent_->act("moveLeft");
@@ -949,47 +943,46 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       defaultAgent_->act("moveUp");
       recAgentLocation();
       break;
-    case KeyEvent::Key::E:
-      simulator_->setFrustumCullingEnabled(
-          !simulator_->isFrustumCullingEnabled());
+      // ==== Miscellaneous ====
+    case KeyEvent::Key::One:
+      // toggle agent location recording for trajectory
+      setAgentLocationRecord(!agentLocRecordOn_);
       break;
-    case KeyEvent::Key::C:
-      showFPS_ = !showFPS_;
+    case KeyEvent::Key::Two:
+      // agent motion trajectory mesh synthesis with random color
+      buildTrajectoryVis();
       break;
-    case KeyEvent::Key::O:
-      addTemplateObject();
+    case KeyEvent::Key::Five:
+      // switch camera between ortho and perspective
+      switchCameraType();
       break;
-    case KeyEvent::Key::P:
-      pokeLastObject();
+    case KeyEvent::Key::Six:
+      // reset camera zoom
+      getAgentCamera().resetZoom();
       break;
-    case KeyEvent::Key::F:
-      pushLastObject();
+    case KeyEvent::Key::Eight:
+      addPrimitiveObject();
       break;
-    case KeyEvent::Key::K:
-      wiggleLastObject();
+    case KeyEvent::Key::Nine:
+      if (simulator_->getPathFinder()->isLoaded()) {
+        const esp::vec3f position =
+            simulator_->getPathFinder()->getRandomNavigablePoint();
+        agentBodyNode_->setTranslation(Mn::Vector3(position));
+      }
       break;
-    case KeyEvent::Key::U:
-      removeLastObject();
+
+    case KeyEvent::Key::Equal: {
+      // increase trajectory tube diameter
+      LOG(INFO) << "Bigger";
+      modTrajRad(true);
       break;
-    case KeyEvent::Key::V:
-      invertGravity();
+    }
+    case KeyEvent::Key::Minus: {
+      // decrease trajectory tube diameter
+      LOG(INFO) << "Smaller";
+      modTrajRad(false);
       break;
-    case KeyEvent::Key::T:
-      // Test key. Put what you want here...
-      torqueLastObject();
-      break;
-    case KeyEvent::Key::N:
-      // toggle navmesh visualization
-      simulator_->setNavMeshVisualization(
-          !simulator_->isNavMeshVisualizationActive());
-      break;
-    case KeyEvent::Key::I:
-      screenshot();
-      break;
-    case KeyEvent::Key::Q:
-      // query the agent state
-      showAgentStateMsg(true, true);
-      break;
+    }
     case KeyEvent::Key::B: {
       // toggle bounding box on objects
       drawObjectBBs = !drawObjectBBs;
@@ -997,8 +990,48 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         simulator_->setObjectBBDraw(drawObjectBBs, id);
       }
     } break;
+    case KeyEvent::Key::C:
+      showFPS_ = !showFPS_;
+      break;
+    case KeyEvent::Key::E:
+      simulator_->setFrustumCullingEnabled(
+          !simulator_->isFrustumCullingEnabled());
+      break;
+    case KeyEvent::Key::F:
+      pushLastObject();
+      break;
     case KeyEvent::Key::H:
       printHelpText();
+      break;
+    case KeyEvent::Key::I:
+      screenshot();
+      break;
+    case KeyEvent::Key::K:
+      wiggleLastObject();
+      break;
+    case KeyEvent::Key::N:
+      // toggle navmesh visualization
+      simulator_->setNavMeshVisualization(
+          !simulator_->isNavMeshVisualizationActive());
+      break;
+    case KeyEvent::Key::O:
+      addTemplateObject();
+      break;
+    case KeyEvent::Key::P:
+      pokeLastObject();
+      break;
+    case KeyEvent::Key::Q:
+      // query the agent state
+      showAgentStateMsg(true, true);
+      break;
+    case KeyEvent::Key::T:
+      torqueLastObject();
+      break;
+    case KeyEvent::Key::U:
+      removeLastObject();
+      break;
+    case KeyEvent::Key::V:
+      invertGravity();
       break;
     default:
       break;

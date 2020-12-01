@@ -44,18 +44,17 @@ Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
                                  const Magnum::Matrix4& xform);
 
 /**
- * @brief Build a smooth trajectory of interpolated points from key points
- * along a path using cubic hermitian spline.
- * @param pts The points of the trajectory
- * @param numInterp The number of interpolations between each trajectory point
- * @return interpolated points for trajectory
+ * @brief Return a vector of L2/Euclidean distances of points along a
+ * trajectory. First point will always be 0, and last point will give length of
+ * trajectory.
+ * @param pts Vector of points along trajectory.
  */
-std::vector<Mn::Vector3> buildSmoothTrajOfPoints(
-    const std::vector<Mn::Vector3>& pts,
-    int numInterp);
+std::vector<float> getPointDistsAlongTrajectory(
+    const std::vector<Mn::Vector3>& pts);
 
 /**
- * @brief Interpolate between two points to find a third.
+ * @brief Interpolate between two points to find a third at a specified @ref t
+ * between them.
  * @param a first point
  * @param ta @ref a 's time along trajectory
  * @param b second point
@@ -69,45 +68,50 @@ inline Mn::Vector3 interp2Points(const Mn::Vector3& a,
                                  float tb,
                                  float t) {
   float denom = tb - ta;
-  return (((tb - t) / denom) * a) + (((t - ta) / denom) * b);
+  return (((tb - t) * a) + ((t - ta) * b)) / denom;
 }
-/**
- * @brief Determine the relative knot value for point b as a function of
- * distance from point a, for use in Catmull-Rom spline derivation.
- * @param a a point whose knot value is known
- * @param b a point whose knot value is unkknown
- * @param alpha power to use to derive distance, determines nature of resultant
- * CR spline. 0 yields a standard uniform Catmull-Rom spline, .5 yields
- * centrepital CR spline, 1.0 yields chordal CR spline.  Default is .5.
- * @return b's knot valute relative to a
- */
-float calcTForPoints(const Mn::Vector3& a, const Mn::Vector3& b, float alpha);
 
 /**
- * @brief Build a Catmull–Rom spline using 4 sequential points in
- * @ref pts vector, where the resultant spline will extend between the 2nd and
- * 3rd of the 4 points.
- * @param pts The points of the trajectory
- * @param ptKnotVals Precalculated knot values for sequential points, derived
- * from point-to-point distance.  Depending on how these are calculated, the
- * result may be a uniform, centrepital or chordal CR spline.
- * @param trajectory The resultant trajectory to build
- * @param stIdx the index to start building the points
- * @param numInterp The number of interpolations between each trajectory point
+ * @brief Determine the weighted distance of point b from point a.  Used to
+ * derive relative knot value for point b as a function of distance from point
+ * a for Catmull-Rom spline derivation.
+ * @param a a point whose knot value is known
+ * @param b a point whose knot value is unkknown
+ * @param alpha Exponent for distance calculation used to derive time parameter
+ * for splines. Determines nature of resultant CR spline. 0 yields a standard
+ * uniform Catmull-Rom spline (which may have cusps), .5 yields centrepital CR
+ * spline, 1.0 yields chordal CR spline.  Default is .5.  Use alpha == 1.0f for
+ * L2 distance calc.
+ * @return b's knot valute relative to a / distance from a
  */
-void buildCatmullRomTraj4Points(const std::vector<Mn::Vector3>& pts,
-                                const std::vector<float>& ptKnotVals,
-                                std::vector<Mn::Vector3>& trajectory,
-                                int stIdx,
-                                int numInterp);
+float calcWeightedDistance(const Mn::Vector3& a,
+                           const Mn::Vector3& b,
+                           float alpha = .5f);
+
+/**
+ * @brief Build a smooth trajectory of interpolated points from key points
+ * along a path using Catmull-Rom Spline of type determined by chosen @ref
+ * alpha.
+ * @param pts The key points of the trajectory
+ * @param numInterp The number of interpolations between each trajectory point
+ * @param alpha Exponent for distance calculation used to derive time parameter.
+ * Determines nature of resultant CR spline. 0 yields a standard uniform
+ * Catmull-Rom spline (which may have cusps), .5 yields centrepital CR
+ * spline, 1.0 yields chordal CR spline.  Default is .5.
+ * @return interpolated points for trajectory
+ */
+std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
+    const std::vector<Mn::Vector3>& pts,
+    int numInterp,
+    float alpha = .5f);
 
 /**
  * @brief Build a mesh representing a tube of given radius around the
- * trajectory given by the passed points.  Will either build cylinders between
- * each pair of points in @ref pts, or will build smoothed trajectory by
- * deriving centripetal Catmull-Rom spline between subsequent sets of 4 points
- * and interoplate
- * @param pts The points of a trajectory, in order
+ * trajectory given by the passed points.  Will either build cylinders
+ * between each pair of points in @ref pts, or between sequential points in a
+ * smoothed trajectory derived using centripetal Catmull-Rom spline between
+ * points in @ref pts.
+ * @param pts  The key points of the trajectory, in order
  * @param numSegments The number of segments around the circumference of the
  * tube.
  * @param radius The radius of the tube
@@ -116,11 +120,12 @@ void buildCatmullRomTraj4Points(const std::vector<Mn::Vector3>& pts,
  * point, if smoothing
  * @return The resultant meshdata for the tube
  */
-Mn::Trade::MeshData trajectoryTubeSolid(const std::vector<Mn::Vector3>& pts,
-                                        int numSegments,
-                                        float radius,
-                                        bool smooth,
-                                        int numInterp);
+Mn::Trade::MeshData buildTrajectoryTubeSolid(
+    const std::vector<Mn::Vector3>& pts,
+    int numSegments,
+    float radius,
+    bool smooth,
+    int numInterp);
 
 template <typename T>
 T clamp(const T& n, const T& low, const T& high) {
