@@ -216,8 +216,7 @@ class Simulator(SimulatorBackend):
             self.__set_from_config(config)
             self.config = config
 
-    def __set_from_config(self, config: Configuration):
-
+    def __set_from_config(self, config: Configuration) -> None:
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
@@ -278,7 +277,12 @@ class Simulator(SimulatorBackend):
     ) -> Dict[int, Dict[str, Union[ndarray, "Tensor"]]]:
         ...
 
-    def get_sensor_observations(self, agent_ids: Union[int, List[int]] = 0):
+    def get_sensor_observations(
+        self, agent_ids: Union[int, List[int]] = 0
+    ) -> Union[
+        Dict[str, Union[ndarray, "Tensor"]],
+        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
+    ]:
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
@@ -319,7 +323,7 @@ class Simulator(SimulatorBackend):
         # TODO Deprecate and remove
         return self.__sensors[self._default_agent_id]
 
-    def last_state(self, agent_id: int = 0) -> Optional[AgentState]:
+    def last_state(self, agent_id: int = 0) -> AgentState:
         return self.__last_state[agent_id]
 
     @overload
