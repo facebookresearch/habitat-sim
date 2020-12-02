@@ -374,6 +374,14 @@ void Simulator::removeObject(const int objectID,
                              const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
+    if (trajVisNameByID.count(objectID) > 0) {
+      std::string trajVisAssetName = trajVisNameByID[objectID];
+      trajVisNameByID.erase(objectID);
+      trajVisIDByName.erase(trajVisAssetName);
+      // TODO : if object is trajectory visualization, remove its assets as well
+      // once this is supported.
+      // resourceManager_->removeResourceByName(trajVisAssetName);
+    }
   }
 }
 
@@ -712,6 +720,57 @@ bool Simulator::setNavMeshVisualization(bool visualize) {
 bool Simulator::isNavMeshVisualizationActive() {
   return (navMeshVisNode_ != nullptr && navMeshVisPrimID_ != ID_UNDEFINED);
 }
+
+int Simulator::addTrajectoryObject(const std::string& trajVisName,
+                                   const std::vector<Mn::Vector3>& pts,
+                                   int numSegments,
+                                   float radius,
+                                   const Magnum::Color4& color,
+                                   bool smooth,
+                                   int numInterp) {
+  auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& drawables = sceneGraph_.getDrawables();
+
+  // 1. create trajectory tube asset from points and save it
+  bool success = resourceManager_->buildTrajectoryVisualization(
+      trajVisName, pts, numSegments, radius, color, smooth, numInterp);
+  if (!success) {
+    LOG(ERROR) << "Simulator::showTrajectoryVisualization : Failed to create "
+                  "Trajectory visualization mesh for "
+               << trajVisName;
+    return ID_UNDEFINED;
+  }
+  // 2. create object attributes for the trajectory
+  auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
+  auto trajObjAttr = objAttrMgr->createObject(trajVisName, false);
+  // turn off collisions
+  trajObjAttr->setIsCollidable(false);
+  trajObjAttr->setComputeCOMFromShape(false);
+  objAttrMgr->registerObject(trajObjAttr, trajVisName, true);
+
+  // 3. add trajectory object to manager
+  auto trajVisID = physicsManager_->addObject(trajVisName, &drawables);
+  if (trajVisID == ID_UNDEFINED) {
+    // failed to add object - need to delete asset from resourceManager.
+    LOG(ERROR) << "Simulator::showTrajectoryVisualization : Failed to create "
+                  "Trajectory visualization object for "
+               << trajVisName;
+    // TODO : support removing asset by removing from resourceDict_ properly
+    // using trajVisName
+    return ID_UNDEFINED;
+  }
+  LOG(INFO) << "Simulator::showTrajectoryVisualization : Trajectory "
+               "visualization object created with ID "
+            << trajVisID;
+  physicsManager_->setObjectMotionType(trajVisID,
+                                       esp::physics::MotionType::KINEMATIC);
+  // add to internal references of object ID and resourceDict name
+  // this is for eventual asset deletion/resource freeing.
+  trajVisIDByName[trajVisName] = trajVisID;
+  trajVisNameByID[trajVisID] = trajVisName;
+
+  return trajVisID;
+}  // Simulator::showTrajectoryVisualization
 
 // Agents
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {

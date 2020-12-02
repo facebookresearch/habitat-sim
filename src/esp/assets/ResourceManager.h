@@ -431,7 +431,7 @@ class ResourceManager {
   void removePrimitiveMesh(int primitiveID);
 
   /**
-   * @brief generate a new primitive mesh asset for the NavMesh loaded in the
+   * @brief Generate a new primitive mesh asset for the NavMesh loaded in the
    * provided PathFinder object.
    *
    * If parent and drawables are provided, create the Drawable and render the
@@ -445,6 +445,28 @@ class ResourceManager {
   int loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                scene::SceneNode* parent,
                                DrawableGroup* drawables);
+
+  /**
+   * @brief Generate a tube following the passed trajectory of points.
+   * @param trajVisName The name to use for the trajectory visualization mesh.
+   * @param pts The points of a trajectory, in order
+   * @param numSegments The number of the segments around the circumference of
+   * the tube. Must be greater than or equal to 3.
+   * @param radius The radius of the tube.
+   * @param color Color for trajectory tube.
+   * @param smooth Whether to smooth the points in the trajectory or not
+   * @param numInterp The number of interpolations between each trajectory
+   * point, if smoothing.
+   * @return Whether the process was a success or not
+   */
+  bool buildTrajectoryVisualization(const std::string& trajVisName,
+                                    const std::vector<Mn::Vector3>& pts,
+                                    int numSegments = 3,
+                                    float radius = .001,
+                                    const Magnum::Color4& color = {0.9, 0.1,
+                                                                   0.1, 1.0},
+                                    bool smooth = false,
+                                    int numInterp = 10);
 
   /**
    * @brief Build a configuration frame from scene or object attributes values
@@ -855,8 +877,7 @@ class ResourceManager {
    *
    * Add this drawable to the @ref DrawableGroup if provided.
    * @param shaderType Indentifies the desired shader program for rendering
-   * the
-   * @ref gfx::Drawable.
+   * the @ref gfx::Drawable.
    * @param mesh The render mesh.
    * @param meshAttributeFlags flags for the attributes of the render mesh
    * @param node The @ref scene::SceneNode to which the drawable will be
@@ -971,7 +992,7 @@ class ResourceManager {
    * @brief Flag to load textures of meshes
    */
   bool requiresTextures_ = true;
-};
+};  // class ResourceManager
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
 

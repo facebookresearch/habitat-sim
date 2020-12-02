@@ -23,6 +23,7 @@
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
 #include <Magnum/Shaders/Flat.h>
@@ -1205,6 +1206,93 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   return &newNode;
 }
 
+bool ResourceManager::buildTrajectoryVisualization(
+    const std::string& trajVisName,
+    const std::vector<Mn::Vector3>& pts,
+    int numSegments,
+    float radius,
+    const Magnum::Color4& color,
+    bool smooth,
+    int numInterp) {
+  // enforce required minimum/reasonable values if illegal values specified
+  if (numSegments < 3) {  // required by circle prim
+    numSegments = 3;
+  }
+  // clip to 10 points between trajectory points, if illegal value
+  if (smooth && (numInterp <= 0)) {
+    numInterp = 10;
+  }
+  // 1 millimeter radius minimum
+  if (radius <= 0) {
+    radius = .001;
+  }
+
+  LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Calling "
+               "trajectoryTubeSolid to build a tube named :"
+            << trajVisName << " with " << pts.size()
+            << " points, building a tube of radius :" << radius << " using "
+            << numSegments << " circular segments and " << numInterp
+            << " interpolated points between each trajectory point.";
+
+  // create mesh tube
+  Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
+      geo::buildTrajectoryTubeSolid(pts, numSegments, radius, smooth,
+                                    numInterp);
+  LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Successfully "
+               "returned from trajectoryTubeSolid ";
+
+  // make assetInfo
+  AssetInfo info{AssetType::PRIMITIVE};
+  info.requiresLighting = true;
+  // set up primitive mesh
+  // make  primitive mesh structure
+  auto visMeshData = std::make_unique<GenericMeshData>(false);
+  visMeshData->setMeshData(*std::move(trajTubeMesh));
+  // compute the mesh bounding box
+  visMeshData->BB = computeMeshBB(visMeshData.get());
+
+  visMeshData->uploadBuffersToGPU(false);
+
+  // make MeshMetaData
+  int meshStart = meshes_.size();
+  int meshEnd = meshStart;
+  MeshMetaData meshMetaData{meshStart, meshEnd};
+
+  meshes_.emplace(meshStart, std::move(visMeshData));
+
+  // default material for now
+  auto phongMaterial = gfx::PhongMaterialData::create_unique();
+  phongMaterial->specularColor = {1.0, 1.0, 1.0, 1.0};
+  phongMaterial->ambientColor = color;
+  phongMaterial->diffuseColor = color;
+
+  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
+  shaderManager_.set(std::to_string(nextMaterialID_++),
+                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
+
+  meshMetaData.root.meshIDLocal = 0;
+  meshMetaData.root.componentID = 0;
+  meshMetaData.root.materialIDLocal = 0;
+  // store the rotation to world frame upon load - currently superfluous
+  const quatf transform = info.frame.rotationFrameToWorld();
+  Magnum::Matrix4 R = Magnum::Matrix4::from(
+      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+  meshMetaData.root.transformFromLocalToParent =
+      R * meshMetaData.root.transformFromLocalToParent;
+
+  // make LoadedAssetData corresponding to this asset
+  LoadedAssetData loadedAssetData{info, meshMetaData};
+  // TODO : need to free render assets associated with this object if collision
+  // occurs, otherwise leak! (Currently unsupported).
+  // if (resourceDict_.count(trajVisName) != 0) {
+  //   resourceDict_.erase(trajVisName);
+  // }
+  auto inserted =
+      resourceDict_.emplace(trajVisName, std::move(loadedAssetData));
+
+  return true;
+}  // ResourceManager::loadTrajectoryVisualization
+
 int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                               scene::SceneNode* parent,
                                               DrawableGroup* drawables) {
@@ -1249,10 +1337,9 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                     Cr::Containers::arrayView(positions)}}};
 
   // compile and add the new mesh to the structure
+  navMeshPrimitiveID = nextPrimitiveMeshId;
   primitive_meshes_[nextPrimitiveMeshId++] = std::make_unique<Magnum::GL::Mesh>(
       Magnum::MeshTools::compile(visualNavMesh));
-
-  navMeshPrimitiveID = nextPrimitiveMeshId - 1;
 
   if (parent != nullptr && drawables != nullptr &&
       navMeshPrimitiveID != ID_UNDEFINED) {
@@ -1261,7 +1348,7 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
   }
 
   return navMeshPrimitiveID;
-}  // loadNavMeshVisualization
+}  // ResourceManager::loadNavMeshVisualization
 
 void ResourceManager::loadMaterials(Importer& importer,
                                     LoadedAssetData& loadedAssetData) {
@@ -1685,6 +1772,8 @@ bool ResourceManager::instantiateAssetsOnDemand(
   }  // if no render asset exists
 
   // check if uses collision mesh
+  // TODO : handle visualization-only objects lacking collision assets
+  //        Probably just need to check attr->isCollidable()
   if (!ObjectAttributes->getCollisionAssetIsPrimitive()) {
     const auto collisionAssetHandle =
         ObjectAttributes->getCollisionAssetHandle();
