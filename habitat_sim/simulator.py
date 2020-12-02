@@ -242,6 +242,18 @@ class Simulator(SimulatorBackend):
         )
 
     def add_sensor(self, sensor_spec: SensorSpec, agent_id: int = 0) -> None:
+        if sensor_spec.sensor_type == SensorType.SEMANTIC:
+            raise NotImplementedError(
+                "Adding a semantic sensor currently requires restarting the simulator"
+            )
+        elif (
+            not self.config.sim_cfg.requires_texture
+            and sensor_spec.sensor_type == SensorType.COLOR
+        ):
+            raise ValueError(
+                """Error: Textures not loaded.
+                Cannot dynamically add COLOR sensors unless one already exists."""
+            )
         agent = self.get_agent(agent_id=agent_id)
         agent._add_sensor(sensor_spec)
         self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
