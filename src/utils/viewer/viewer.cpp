@@ -562,17 +562,25 @@ void Viewer::buildTrajectoryVis() {
     return;
   }
   Mn::Color4 color{randomDirection(), 1.0f};
+  // synthesize a name for asset based on color, radius, point count
+  std::ostringstream tmpName;
+  tmpName << "viewerTrajVis_R" << color.r() << "_G" << color.g() << "_B"
+          << color.b() << "_rad" << agentLocs_.size() << "_"
+          << agentLocs_.size() << "_pts";
+  std::string trajObjName(tmpName.str());
+
   LOG(INFO) << "Viewer::buildTrajectoryVis : Attempting to build trajectory "
                "tube for :"
             << agentLocs_.size() << " points.";
-  int trajObjID = simulator_->showTrajectoryVisualization(
-      "viewerTrajVis", agentLocs_, 6, agentTrajRad_, color, true, 10);
+  int trajObjID = simulator_->addTrajectoryObject(
+      trajObjName, agentLocs_, 6, agentTrajRad_, color, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
-    LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj ID : "
-              << trajObjID;
+    LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj Name : "
+              << trajObjName << " has object ID : " << trajObjID;
   } else {
     LOG(WARNING) << "Viewer::buildTrajectoryVis : Attempt to build trajectory "
-                    "vis failed; Returned ID_UNDEFINED.";
+                    "visualization "
+                 << trajObjName << " failed; Returned ID_UNDEFINED.";
   }
 }  // buildTrajectoryVis
 

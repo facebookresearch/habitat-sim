@@ -1282,9 +1282,11 @@ bool ResourceManager::buildTrajectoryVisualization(
 
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
-  if (resourceDict_.count(trajVisName) != 0) {
-    resourceDict_.erase(trajVisName);
-  }
+  // TODO : need to free render assets associated with this object if collision
+  // occurs, otherwise leak! (Currently unsupported).
+  // if (resourceDict_.count(trajVisName) != 0) {
+  //   resourceDict_.erase(trajVisName);
+  // }
   auto inserted =
       resourceDict_.emplace(trajVisName, std::move(loadedAssetData));
 

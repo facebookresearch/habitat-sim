@@ -262,7 +262,7 @@ void initSimBindings(py::module& m) {
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
           "navmesh_settings"_a, "include_static_objects"_a = false,
           R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings. Optionally include all MotionType::STATIC objects in the navigability constraints.)")
-      .def("show_trajectory", &Simulator::showTrajectoryVisualization,
+      .def("add_trajectory_object", &Simulator::addTrajectoryObject,
            "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,
            "radius"_a = .001, "color"_a = Mn::Color4{0.9, 0.1, 0.1, 1.0},
            "smooth"_a = false, "num_interpolations"_a = 10,

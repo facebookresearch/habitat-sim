@@ -645,14 +645,13 @@ class Simulator {
    * point, if smoothed
    * @return The ID of the object created for the visualization
    */
-  int showTrajectoryVisualization(const std::string& trajVisName,
-                                  const std::vector<Mn::Vector3>& pts,
-                                  int numSegments = 3,
-                                  float radius = .001,
-                                  const Magnum::Color4& color = {0.9, 0.1, 0.1,
-                                                                 1.0},
-                                  bool smooth = false,
-                                  int numInterp = 10);
+  int addTrajectoryObject(const std::string& trajVisName,
+                          const std::vector<Mn::Vector3>& pts,
+                          int numSegments = 3,
+                          float radius = .001,
+                          const Magnum::Color4& color = {0.9, 0.1, 0.1, 1.0},
+                          bool smooth = false,
+                          int numInterp = 10);
 
   /**
    * @brief Remove a trajectory visualization by name.
