@@ -181,6 +181,10 @@ class ResourceManager {
    * made, its activeID should be pushed onto vector
    * @param createSemanticMesh If the semantic mesh should be created, based on
    * @ref SimulatorConfiguration
+   * @param forceSeparateSemanticSceneGraph Force creation of a separate
+   * semantic scene graph, even when no semantic mesh is loaded for the stage.
+   * This is required to support playback of any replay that includes a
+   * semantic-only render asset instance.
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
@@ -188,7 +192,8 @@ class ResourceManager {
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
       std::vector<int>& activeSceneIDs,
-      bool createSemanticMesh);
+      bool createSemanticMesh,
+      bool forceSeparateSemanticSceneGraph = false);
 
   /**
    * @brief Construct scene collision mesh group based on name and type of

@@ -199,9 +199,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
     // Load scene
-    loadSuccess = resourceManager_->loadStage(stageAttributes, physicsManager_,
-                                              sceneManager_.get(), tempIDs,
-                                              config_.loadSemanticMesh);
+    loadSuccess = resourceManager_->loadStage(
+        stageAttributes, physicsManager_, sceneManager_.get(), tempIDs,
+        config_.loadSemanticMesh, config_.forceSeparateSemanticSceneGraph);
 
     if (!loadSuccess) {
       LOG(ERROR) << "Cannot load " << stageFilename;

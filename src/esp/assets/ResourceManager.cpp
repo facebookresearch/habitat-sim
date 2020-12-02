@@ -182,7 +182,8 @@ bool ResourceManager::loadStage(
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
-    bool loadSemanticMesh) {
+    bool createSemanticMesh,
+    bool forceSeparateSemanticSceneGraph) {
   // create AssetInfos here for each potential mesh file for the scene, if they
   // are unique.
   bool buildCollisionMesh =
@@ -192,7 +193,7 @@ bool ResourceManager::loadStage(
   const std::string renderLightSetupKey(stageAttributes->getLightSetup());
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, buildCollisionMesh,
-                                          loadSemanticMesh);
+                                          createSemanticMesh);
 
   // set equal to current Simulator::activeSemanticSceneID_ value
   int activeSemanticSceneID = activeSceneIDs[0];
@@ -245,6 +246,14 @@ bool ResourceManager::loadStage(
   } else {  // not wanting to create semantic mesh
     LOG(INFO) << "ResourceManager::loadStage : Not loading semantic mesh";
   }
+
+  if (forceSeparateSemanticSceneGraph &&
+      activeSemanticSceneID == activeSceneIDs[0]) {
+    // Create a separate semantic scene graph if it wasn't already created
+    // above.
+    activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
+  }
+
   // save active semantic scene ID so that simulator can consume
   activeSceneIDs[1] = activeSemanticSceneID;
   const bool isSeparateSemanticScene = activeSceneIDs[1] != activeSceneIDs[0];

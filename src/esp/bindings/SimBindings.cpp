@@ -45,6 +45,8 @@ void initSimBindings(py::module& m) {
                      &SimulatorConfiguration::sceneLightSetup)
       .def_readwrite("load_semantic_mesh",
                      &SimulatorConfiguration::loadSemanticMesh)
+      .def_readwrite("force_separate_semantic_scene_graph",
+                     &SimulatorConfiguration::forceSeparateSemanticSceneGraph)
       .def_readwrite("requires_textures",
                      &SimulatorConfiguration::requiresTextures)
       .def(py::self == py::self)
