@@ -136,7 +136,7 @@ def test_sensors(
 
     with habitat_sim.Simulator(cfg) as sim:
         if add_sensor_lazy:
-            obs = sim.reset()
+            obs: np.ndarray = sim.reset()
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
                 sim.add_sensor(sensor_spec)

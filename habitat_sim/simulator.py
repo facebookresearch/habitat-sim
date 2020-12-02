@@ -144,7 +144,7 @@ class Simulator(SimulatorBackend):
         super().seed(new_seed)
         self.pathfinder.seed(new_seed)
 
-    def reset(self) -> Dict[str, ndarray]:
+    def reset(self) -> Dict[str, Union[ndarray, "Tensor"]]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
@@ -242,17 +242,25 @@ class Simulator(SimulatorBackend):
         )
 
     def add_sensor(self, sensor_spec: SensorSpec, agent_id: int = 0) -> None:
-        if sensor_spec.sensor_type == SensorType.SEMANTIC:
-            raise NotImplementedError(
-                "Adding a semantic sensor currently requires restarting the simulator"
+        if (
+            (
+                not self.config.sim_cfg.load_semantic_mesh
+                and sensor_spec.sensor_type == SensorType.SEMANTIC
             )
-        elif (
-            not self.config.sim_cfg.requires_texture
-            and sensor_spec.sensor_type == SensorType.COLOR
+            or (
+                not self.config.sim_cfg.requires_textures
+                and sensor_spec.sensor_type == SensorType.COLOR
+            )
+            or (
+                not self.config.sim_cfg.create_renderer
+                and sensor_spec.sensor_type == SensorType.DEPTH
+            )
         ):
+            sensor_type = sensor_spec.sensor_type
             raise ValueError(
-                """Error: Textures not loaded.
-                Cannot dynamically add COLOR sensors unless one already exists."""
+                f"""Data for {sensor_type} sensor was not loaded during Simulator init.
+                    Cannot dynamically add a {sensor_type} sensor unless one already exists.
+                    """
             )
         agent = self.get_agent(agent_id=agent_id)
         agent._add_sensor(sensor_spec)
@@ -368,7 +376,7 @@ class Simulator(SimulatorBackend):
         for agent_id, agent_act in action.items():
             agent = self.get_agent(agent_id)
             collided_dict[agent_id] = agent.act(agent_act)
-            self.__last_state[agent_id] = agent.state
+            self.__last_state[agent_id] = agent.get_state()
 
         # step physics by dt
         step_start_Time = time.time()
