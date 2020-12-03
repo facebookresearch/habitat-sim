@@ -213,7 +213,7 @@ bool ResourceManager::loadStage(
 
       RenderAssetInstanceCreationInfo::Flags flags;
       flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-      if (stageAttributes->getFrustrumCulling()) {
+      if (stageAttributes->getFrustumCulling()) {
         // only treat as static if doing culling
         flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
       }
@@ -406,7 +406,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
         virtualUnitToMeters,                        // virtualUnitToMeters
         false,                                      // requiresLighting
         // only split instance mesh if doing frustum culling
-        stageAttributes->getFrustrumCulling()  // splitInstanceMesh
+        stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
     resMap["semantic"] = semanticInfo;
   }
