@@ -200,7 +200,7 @@ class ManagedContainerBase {
   //======== Internally accessed getter ================
 
   /**
-   * @brief Retrieve shared pointer to object held in library
+   * @brief Retrieve shared pointer to object held in library, NOT a copy.
    * @param handle the name of the object held in the smart pointer
    */
   template <class U>
