@@ -194,9 +194,40 @@ class MetadataMediator {
         datasetAttr->getSemanticSceneDescrMap());
   }  // getActiveSemanticSceneDescriptorMap
 
+  /**
+   * @brief Returns an appropriate scene instance attributes corresponding to
+   * the passed sceneID/name.  For back-compat, this function needs to manage
+   * various conditions pertaining to the passed name.  It will always return a
+   * valid SceneInstanceAttributes for the current active dataset.
+   * @param sceneName A string representation of the desired
+   * SceneInstanceAttributes.  May only correspond to a stage on disk, in which
+   * case a new SceneInstanceAttributes will be constructed and properly
+   * populated with the appropriate data.
+   * @return A valid SceneInstanceAttributes - registered in current dataset,
+   * with all references also registered in current dataset.
+   */
+  attributes::SceneAttributes::ptr getSceneAttributesByName(
+      const std::string& sceneName);
+
   //==================== Accessors ======================//
 
  protected:
+  /**
+   * @brief This will create a new, empty @ref SceneAttributes with the passed
+   * name, and create a SceneObjectInstance for the stage also using the passed
+   * name. It is assuming that the dataset has the stage registered, and that
+   * the calling function will register the created SceneInstance with the
+   * dataset.
+   * @param dsSceneAttrMgr The current dataset's SceneAttributesManager
+   * @param sceneName The name for the scene and also the stage within the
+   * scene.
+   * @return The created SceneAttributes, with the stage's SceneInstanceObject
+   * to be intialized to reference the stage also named with @p sceneName .
+   */
+  attributes::SceneAttributes::ptr makeSceneAndReferenceStage(
+      const managers::SceneAttributesManager::ptr dsSceneAttrMgr,
+      const std::string& sceneName);
+
   /**
    * @brief This function will build the @ref managers::PhysicsAttributesManager
    * and @ref managers::DatasetAttributeManager this mediator will manage.

@@ -130,5 +130,104 @@ bool MetadataMediator::setActiveSceneDatasetName(
   return success;
 }  // MetadataMediator::setActiveSceneDatasetName
 
+attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
+    const std::string& sceneName) {
+  // get current dataset attributes
+  attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+  // this should never happen
+  if (nullptr == datasetAttr) {
+    LOG(ERROR) << "MetadataMediator::getSceneAttributesByName : No dataset "
+                  "specified/exists.";
+    return nullptr;
+  }
+  // directory to look for attributes for this dataset
+  const std::string dsDir = datasetAttr->getFileDirectory();
+  // get appropriate attr managers for the current dataset
+  managers::SceneAttributesManager::ptr dsSceneAttrMgr =
+      datasetAttr->getSceneAttributesManager();
+  managers::StageAttributesManager::ptr dsStageAttrMgr =
+      datasetAttr->getStageAttributesManager();
+
+  attributes::SceneAttributes::ptr sceneAttributes = nullptr;
+  // sceneName can legally match any one of the following conditions :
+
+  if (dsSceneAttrMgr->getObjectLibHasHandle(sceneName)) {
+    // 1.  Existing, registered SceneAttributes in current active dataset.
+    //    In this case the SceneAttributes is returned.
+    LOG(INFO) << "MetadataMediator::getSceneAttributesByName : Query dataset : "
+              << activeSceneDataset_
+              << " for SceneAttributes named : " << sceneName << " successful.";
+    sceneAttributes = dsSceneAttrMgr->getObjectCopyByHandle(sceneName);
+  } else {
+    const std::string sceneFilenameCandidate =
+        dsSceneAttrMgr->getFormattedJSONFileName(sceneName);
+
+    if (dsSceneAttrMgr->isValidFileName(sceneFilenameCandidate)) {
+      // 2.  Existing, valid SceneAttributes file on disk, but not in dataset.
+      //    If this is the case, then the SceneAttributes should be loaded,
+      //    registered, added to the dataset and returned.
+      LOG(INFO) << "MetadataMediator::getSceneAttributesByName : Dataset : "
+                << activeSceneDataset_
+                << " does not reference a SceneAttributes named  " << sceneName
+                << " but a SceneAttributes config was found on disk, so "
+                   "loading.  Will be named :"
+                << sceneFilenameCandidate;
+      sceneAttributes = dsSceneAttrMgr->createObjectFromJSONFile(
+          sceneFilenameCandidate, true);
+    } else if (dsStageAttrMgr->getObjectLibHasHandle(sceneName)) {
+      // 3.  Existing, registered StageAttributes in current active dataset.
+      //    In this case, a SceneAttributes is created amd registered using
+      //    sceneName, referencing the StageAttributes of the same name; This
+      //    sceneAttributes is returned.
+      LOG(INFO) << "MetadataMediator::getSceneAttributesByName : Dataset : "
+                << activeSceneDataset_
+                << " has no SceneAttributes named : " << sceneName
+                << " but StageAttributes found, so constructing "
+                   "SceneAttributes with same name and adding to Dataset.";
+      // create a new SceneAttributes, and give it a
+      // SceneObjectInstanceAttributes for the stage with the same name.
+      sceneAttributes = makeSceneAndReferenceStage(dsSceneAttrMgr, sceneName);
+
+    } else {
+      // 4.  Existing stage config/asset on disk, but not in current dataset.
+      //    In this case, a stage attributes is loaded and registered, then
+      //    added to current dataset, and then 3. is performed.
+      LOG(INFO)
+          << "MetadataMediator::getSceneAttributesByName : Dataset : "
+          << activeSceneDataset_
+          << " has no preloaded SceneAttributes or StageAttributes named : "
+          << sceneName
+          << " so loading/creating a new StageAttributes with this "
+             "name, and then create a SceneAttributes with the same name "
+             "that referneces this stage.";
+      // create and register stage
+      auto stageAttributes = dsStageAttrMgr->createObject(sceneName, true);
+      // create a new SceneAttributes, and give it a
+      // SceneObjectInstanceAttributes for the stage with the same name.
+      sceneAttributes = makeSceneAndReferenceStage(dsSceneAttrMgr, sceneName);
+    }
+  }
+  // make sure that all attributes referenced in scene attributes are loaded in
+  // dataset, as well as the scene attributes itself.
+  datasetAttr->addNewSceneInstanceToDataset(sceneAttributes);
+
+  return sceneAttributes;
+
+}  // MetadataMediator::getSceneAttributesByName
+
+attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
+    const managers::SceneAttributesManager::ptr dsSceneAttrMgr,
+    const std::string& sceneName) {
+  // create scene attributes with passed name
+  attributes::SceneAttributes::ptr sceneAttributes =
+      dsSceneAttrMgr->createDefaultObject(sceneName, false);
+  // create stage instance and set its name
+  sceneAttributes->setStageInstance(
+      dsSceneAttrMgr->createEmptyInstanceAttributes(sceneName));
+  // register object
+  dsSceneAttrMgr->registerObject(sceneAttributes);
+  return sceneAttributes;
+}
+
 }  // namespace metadata
 }  // namespace esp

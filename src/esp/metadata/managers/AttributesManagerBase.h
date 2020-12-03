@@ -127,12 +127,23 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
    */
   virtual void setValsFromJSONDoc(AttribsPtr attribs,
                                   const io::JsonGenericValue& jsonConfig) = 0;
+  /**
+   * @brief Return a properly formated JSON file name for the attributes managed
+   * by this manager.  This will change the extension to the appropriate json
+   * extension.
+   * @param filename The original filename
+   * @return a candidate JSON file name for the attributes managed by this
+   * manager.
+   */
+  std::string getFormattedJSONFileName(const std::string& filename) {
+    return this->convertFilenameToJSON(filename, this->JSONTypeExt_);
+  }
 
  protected:
   /**
-   * @brief Called intenrally from createObject.  This will create either a file
-   * based AbstractAttributes or a default one based on whether the passed file
-   * name exists and has appropriate string tag/extension for @ref
+   * @brief Called intenrally from createObject.  This will create either a
+   * file based AbstractAttributes or a default one based on whether the
+   * passed file name exists and has appropriate string tag/extension for @ref
    * esp::metadata::attributes::AbstractAttributes.
    *
    * @param filename the file holding the configuration of the object
@@ -154,7 +165,7 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
 
-};  // class AttributesManager
+};  // namespace managers
 
 /////////////////////////////
 // Class Template Method Definitions
@@ -189,8 +200,7 @@ std::vector<int> AttributesManager<T>::loadAllConfigsFromPath(
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
   namespace Directory = Cr::Utility::Directory;
-  std::string attributesFilepath =
-      this->convertFilenameToJSON(path, this->JSONTypeExt_);
+  std::string attributesFilepath = getFormattedJSONFileName(path);
   const bool dirExists = Directory::isDirectory(path);
   const bool fileExists = Directory::exists(attributesFilepath);
 
@@ -256,7 +266,7 @@ auto AttributesManager<T>::createFromJsonOrDefaultInternal(
   std::string jsonAttrFileName =
       (Cr::Utility::String::endsWith(filename, this->JSONTypeExt_)
            ? filename
-           : this->convertFilenameToJSON(filename, this->JSONTypeExt_));
+           : getFormattedJSONFileName(filename));
   // Check if this configuration file exists and if so use it to build
   // attributes
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));

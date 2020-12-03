@@ -51,6 +51,15 @@ class SceneAttributesManager
   void setValsFromJSONDoc(attributes::SceneAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
+  /**
+   * @brief This will return a @ref
+   * attributes::SceneObjectInstanceAttributes object with passed handle.
+   */
+  attributes::SceneObjectInstanceAttributes::ptr createEmptyInstanceAttributes(
+      const std::string& handle) {
+    return attributes::SceneObjectInstanceAttributes::create(handle);
+  }
+
  protected:
   /**
    * @brief Used Internally.  Create a @ref
