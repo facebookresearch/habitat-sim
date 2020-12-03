@@ -191,7 +191,7 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   newAttributes->setRequiresLighting(cfgLightSetup_ !=
                                      assets::ResourceManager::NO_LIGHT_KEY);
   // set value from config so not necessary to be passed as argument
-  newAttributes->setFrustrumCulling(cfgFrustrumCulling_);
+  newAttributes->setFrustumCulling(cfgFrustumCulling_);
 
   // only set handle defaults if attributesHandle is not a config file (which
   // would never be a valid render or collision asset name).  Otherise, expect

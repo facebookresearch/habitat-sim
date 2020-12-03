@@ -101,11 +101,11 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * such as file paths, to make them available for stage attributes defaults.
    *
    * @param lightSetup the config-specified light setup
-   * @param frustrumCulling whether or not (semantic) stage should be
+   * @param frustumCulling whether or not (semantic) stage should be
    * partitioned for culling.
    */
-  void setCurrCfgVals(const std::string& lightSetup, bool frustrumCulling) {
-    stageAttributesManager_->setCurrCfgVals(lightSetup, frustrumCulling);
+  void setCurrCfgVals(const std::string& lightSetup, bool frustumCulling) {
+    stageAttributesManager_->setCurrCfgVals(lightSetup, frustumCulling);
   }
 
   /**

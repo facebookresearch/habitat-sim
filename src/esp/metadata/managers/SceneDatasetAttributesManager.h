@@ -30,17 +30,17 @@ class SceneDatasetAttributesManager
    *
    * @param datasetName the name of the dataset to apply these to.
    * @param lightSetup the config-specified light setup
-   * @param frustrumCulling whether or not (semantic) stage should be
+   * @param frustumCulling whether or not (semantic) stage should be
    * partitioned for culling.
    */
   void setCurrCfgVals(const std::string& datasetName,
                       const std::string& lightSetup,
-                      bool frustrumCulling) {
+                      bool frustumCulling) {
     if (this->getObjectLibHasHandle(datasetName)) {
       auto dataset =
           this->getObjectInternal<attributes::SceneDatasetAttributes>(
               datasetName);
-      dataset->setCurrCfgVals(lightSetup, frustrumCulling);
+      dataset->setCurrCfgVals(lightSetup, frustumCulling);
     } else {
       LOG(ERROR) << "SceneDatasetAttributesManager::setCurrCfgVals : No "
                  << objectType_ << " managed object with handle " << datasetName

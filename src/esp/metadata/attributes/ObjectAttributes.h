@@ -305,10 +305,10 @@ class StageAttributes : public AbstractObjectAttributes {
   }
   std::string getLightSetup() { return getString("lightSetup"); }
 
-  void setFrustrumCulling(bool frustrumCulling) {
-    setBool("frustrumCulling", frustrumCulling);
+  void setFrustumCulling(bool frustumCulling) {
+    setBool("frustumCulling", frustumCulling);
   }
-  bool getFrustrumCulling() const { return getBool("frustrumCulling"); }
+  bool getFrustumCulling() const { return getBool("frustumCulling"); }
 
  public:
   ESP_SMART_POINTERS(StageAttributes)
