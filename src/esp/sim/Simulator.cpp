@@ -251,6 +251,23 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 }  // Simulator::reconfigure
 
 bool Simulator::createSceneInstance() {
+  // by here, Simulator::config_ holds current information, and there exists
+
+  // 1. initial setup
+  // set config-driven overrides
+  metadataMediator_->setCurrDatasetCfgVals(config_.sceneLightSetup,
+                                           config_.frustumCulling);
+
+  // use physics attributes manager to configure physics manager attributes
+  // described by config file.
+  auto physicsManagerAttributes =
+      metadataMediator_->getCurrentPhysicsManagerAttributes();
+
+  // if physicsManagerAttributes have been successfully created, inform
+  // sceneAttributesMgr of the config handle of the attributes, so that
+  // stageAttributes initialization can use phys Mgr Attr values as defaults
+  auto sceneAttributesMgr = metadataMediator_->getSceneAttributesManager();
+
   return false;
 }  // Simulator::createSceneInstance
 

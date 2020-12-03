@@ -36,7 +36,7 @@ bool MetadataMediator::createPhysicsManagerAttributes(
     auto physAttrs = physicsAttributesManager_->createObject(
         _physicsManagerAttributesPath, true);
 
-    if (nullptr == physAttrs) {
+    if (physAttrs == nullptr) {
       // not created, do not set name
       LOG(WARNING)
           << "MetadataMediator::createPhysicsManagerAttributes : Unknown  "
@@ -69,7 +69,7 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
   // by here dataset either does not exist or exists but is unlocked.
   auto datasetAttribs =
       sceneDatasetAttributesManager_->createObject(sceneDatasetName, true);
-  if (nullptr == datasetAttribs) {
+  if (datasetAttribs == nullptr) {
     // not created, do not set name
     LOG(WARNING) << "MetadataMediator::createSceneDataset : Unknown dataset "
                  << sceneDatasetName
@@ -111,7 +111,7 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
 
 bool MetadataMediator::setActiveSceneDatasetName(
     const std::string& sceneDatasetName) {
-  // first check if dataset exists, if so then set default
+  // first check if dataset exists, if so then set as default
   if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName)) {
     LOG(INFO)
         << "MetadataMediator::setActiveSceneDatasetName : Old active dataset "
@@ -135,7 +135,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
   // get current dataset attributes
   attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
   // this should never happen
-  if (nullptr == datasetAttr) {
+  if (datasetAttr == nullptr) {
     LOG(ERROR) << "MetadataMediator::getSceneAttributesByName : No dataset "
                   "specified/exists.";
     return nullptr;
@@ -207,8 +207,9 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
       sceneAttributes = makeSceneAndReferenceStage(dsSceneAttrMgr, sceneName);
     }
   }
-  // make sure that all attributes referenced in scene attributes are loaded in
-  // dataset, as well as the scene attributes itself.
+  // make sure that all stage, object and lighting attributes referenced in
+  // scene attributes are loaded in dataset, as well as the scene attributes
+  // itself.
   datasetAttr->addNewSceneInstanceToDataset(sceneAttributes);
 
   return sceneAttributes;

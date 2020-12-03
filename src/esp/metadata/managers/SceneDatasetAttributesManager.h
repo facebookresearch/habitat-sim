@@ -25,30 +25,6 @@ class SceneDatasetAttributesManager
   }
 
   /**
-   * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
-   * such as file paths, to make them available for stage attributes defaults.
-   *
-   * @param datasetName the name of the dataset to apply these to.
-   * @param lightSetup the config-specified light setup
-   * @param frustumCulling whether or not (semantic) stage should be
-   * partitioned for culling.
-   */
-  void setCurrCfgVals(const std::string& datasetName,
-                      const std::string& lightSetup,
-                      bool frustumCulling) {
-    if (this->getObjectLibHasHandle(datasetName)) {
-      auto dataset =
-          this->getObjectInternal<attributes::SceneDatasetAttributes>(
-              datasetName);
-      dataset->setCurrCfgVals(lightSetup, frustumCulling);
-    } else {
-      LOG(ERROR) << "SceneDatasetAttributesManager::setCurrCfgVals : No "
-                 << objectType_ << " managed object with handle " << datasetName
-                 << "exists. Aborting";
-    }
-  }  // StageAttributesManager::setCurrCfgVals
-
-  /**
    * @brief Creates an instance of a dataset template described by passed
    * string. For dataset templates, this a file name.
    *
