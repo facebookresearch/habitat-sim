@@ -182,7 +182,8 @@ bool ResourceManager::loadStage(
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
-    bool loadSemanticMesh) {
+    bool createSemanticMesh,
+    bool forceSeparateSemanticSceneGraph) {
   // create AssetInfos here for each potential mesh file for the scene, if they
   // are unique.
   bool buildCollisionMesh =
@@ -192,7 +193,7 @@ bool ResourceManager::loadStage(
   const std::string renderLightSetupKey(stageAttributes->getLightSetup());
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, buildCollisionMesh,
-                                          loadSemanticMesh);
+                                          createSemanticMesh);
 
   // set equal to current Simulator::activeSemanticSceneID_ value
   int activeSemanticSceneID = activeSceneIDs[0];
@@ -245,6 +246,14 @@ bool ResourceManager::loadStage(
   } else {  // not wanting to create semantic mesh
     LOG(INFO) << "ResourceManager::loadStage : Not loading semantic mesh";
   }
+
+  if (forceSeparateSemanticSceneGraph &&
+      activeSemanticSceneID == activeSceneIDs[0]) {
+    // Create a separate semantic scene graph if it wasn't already created
+    // above.
+    activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
+  }
+
   // save active semantic scene ID so that simulator can consume
   activeSceneIDs[1] = activeSemanticSceneID;
   const bool isSeparateSemanticScene = activeSceneIDs[1] != activeSceneIDs[0];
@@ -433,6 +442,66 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     return frame;
   }
 }  // ResourceManager::buildCoordFrameFromAttribVals
+
+scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
+    const AssetInfo& assetInfo,
+    const RenderAssetInstanceCreationInfo& creation,
+    esp::scene::SceneManager* sceneManagerPtr,
+    const std::vector<int>& activeSceneIDs) {
+  // We map isStatic, isSemantic, and isRGBD to a scene graph.
+  int sceneID = -1;
+  if (!creation.isStatic()) {
+    // Non-static instances must always get added to the RGBD scene graph, with
+    // nodeType==OBJECT, and they will be drawn for both RGBD and Semantic
+    // sensors.
+    if (!(creation.isSemantic() && creation.isRGBD())) {
+      LOG(WARNING) << "unsupported instance creation flags for asset ["
+                   << assetInfo.filepath << "]";
+      return nullptr;
+    }
+    sceneID = activeSceneIDs[0];
+  } else {
+    if (creation.isSemantic() && creation.isRGBD()) {
+      if (activeSceneIDs[1] != activeSceneIDs[0]) {
+        // Because we have a separate semantic scene graph, we can't support a
+        // static instance with both isSemantic and isRGBD.
+        LOG(WARNING)
+            << "unsupported instance creation flags for asset ["
+            << assetInfo.filepath
+            << "] with "
+               "SimulatorConfiguration::forceSeparateSemanticSceneGraph=true.";
+        return nullptr;
+      }
+      sceneID = activeSceneIDs[0];
+    } else {
+      if (activeSceneIDs[1] == activeSceneIDs[0]) {
+        // A separate semantic scene graph wasn't constructed, so we can't
+        // support a Semantic-only (or RGBD-only) instance.
+        LOG(WARNING)
+            << "unsupported instance creation flags for asset ["
+            << assetInfo.filepath
+            << "] with "
+               "SimulatorConfiguration::forceSeparateSemanticSceneGraph=false.";
+        return nullptr;
+      }
+      sceneID = creation.isSemantic() ? activeSceneIDs[1] : activeSceneIDs[0];
+    }
+  }
+
+  auto& sceneGraph = sceneManagerPtr->getSceneGraph(sceneID);
+  auto& rootNode = sceneGraph.getRootNode();
+  auto& drawables = sceneGraph.getDrawables();
+
+  const bool fileIsLoaded = resourceDict_.count(assetInfo.filepath) > 0;
+  if (!fileIsLoaded) {
+    if (!loadRenderAsset(assetInfo)) {
+      return nullptr;
+    }
+  }
+
+  ASSERT(assetInfo.filepath == creation.filepath);
+  return createRenderAssetInstance(creation, &rootNode, &drawables);
+}
 
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   bool meshSuccess = false;

@@ -181,6 +181,10 @@ class ResourceManager {
    * made, its activeID should be pushed onto vector
    * @param createSemanticMesh If the semantic mesh should be created, based on
    * @ref SimulatorConfiguration
+   * @param forceSeparateSemanticSceneGraph Force creation of a separate
+   * semantic scene graph, even when no semantic mesh is loaded for the stage.
+   * This is required to support playback of any replay that includes a
+   * semantic-only render asset instance.
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
@@ -188,7 +192,8 @@ class ResourceManager {
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
       std::vector<int>& activeSceneIDs,
-      bool createSemanticMesh);
+      bool createSemanticMesh,
+      bool forceSeparateSemanticSceneGraph = false);
 
   /**
    * @brief Construct scene collision mesh group based on name and type of
@@ -486,6 +491,22 @@ class ResourceManager {
    * for rendering. Textures will not be loaded if this is false.
    */
   inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }
+
+  /**
+   * @brief Load a render asset (if not already loaded) and create a render
+   * asset instance.
+   *
+   * @param assetInfo the render asset to load
+   * @param creation How to create the instance
+   * @param sceneManagerPtr Info about the scene graph(s). See loadStage.
+   * @param activeSceneIDs Info about the scene graph(s). See loadStage.
+   * @return the root node of the instance, or nullptr (if the load failed)
+   */
+  scene::SceneNode* loadAndCreateRenderAssetInstance(
+      const AssetInfo& assetInfo,
+      const RenderAssetInstanceCreationInfo& creation,
+      esp::scene::SceneManager* sceneManagerPtr,
+      const std::vector<int>& activeSceneIDs);
 
  private:
   /**

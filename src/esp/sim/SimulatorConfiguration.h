@@ -36,6 +36,13 @@ struct SimulatorConfiguration {
    */
   bool loadSemanticMesh = true;
   /**
+   * Force creation of a separate semantic scene graph, even when no semantic
+   * mesh is loaded for the stage. Required to support playback of any replay
+   * that includes a semantic-only render asset instance. Set to false
+   * otherwise.
+   */
+  bool forceSeparateSemanticSceneGraph = false;
+  /**
    * @brief Whether or not to load textures for the meshes. This MUST be true
    * for RGB rendering
    */
