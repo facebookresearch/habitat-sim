@@ -21,8 +21,10 @@ from numpy import ndarray
 try:
     import torch
     from torch import Tensor
+
+    _HAS_TORCH = True
 except ImportError:
-    torch = None
+    _HAS_TORCH = False
 
 import habitat_sim.errors
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
@@ -48,8 +50,8 @@ class Configuration(object):
     configurations `agents`.
     """
 
-    sim_cfg: Optional[SimulatorConfiguration] = None
-    agents: Optional[List[AgentConfiguration]] = None
+    sim_cfg: SimulatorConfiguration
+    agents: List[AgentConfiguration]
 
 
 @attr.s(auto_attribs=True)
@@ -66,13 +68,13 @@ class Simulator(SimulatorBackend):
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
-    _default_agent_id: Optional[int] = attr.ib(default=None, init=False)
+    _default_agent_id: int = attr.ib(default=0, init=False)
     __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
     )  # track the compute time of each step
-    __last_state: List[Optional[AgentState]] = attr.ib(factory=list, init=False)
+    __last_state: List[AgentState] = attr.ib(factory=list, init=False)
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
@@ -126,7 +128,7 @@ class Simulator(SimulatorBackend):
 
         self.agents = []
 
-        self._default_agent_id = None
+        self._default_agent_id = 0
 
         self.config = None
 
@@ -230,18 +232,20 @@ class Simulator(SimulatorBackend):
         self.__sensors: List[Dict[str, Sensor]] = [
             dict() for i in range(len(config.agents))
         ]
-        self.__last_state = [None] * len(self.__sensors)
+        self.__last_state = []
         for agent_id, agent_cfg in enumerate(config.agents):
             for spec in agent_cfg.sensor_specifications:
                 self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
             self.initialize_agent(agent_id)
 
-    def _update_simulator_sensors(self, uuid: str, agent_id: int = 0) -> None:
+    def _update_simulator_sensors(self, uuid: str, agent_id: int) -> None:
         self.__sensors[agent_id][uuid] = Sensor(
             sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
         )
 
-    def add_sensor(self, sensor_spec: SensorSpec, agent_id: int = 0) -> None:
+    def add_sensor(
+        self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
+    ) -> None:
         if (
             (
                 not self.config.sim_cfg.load_semantic_mesh
@@ -262,7 +266,9 @@ class Simulator(SimulatorBackend):
                     Cannot dynamically add a {sensor_type} sensor unless one already exists.
                     """
             )
-        agent = self.get_agent(agent_id=agent_id)
+        if agent_id is None:
+            agent_id = self._default_agent_id
+        agent = self._get_agent(agent_id=agent_id)
         agent._add_sensor(sensor_spec)
         self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
 
@@ -282,7 +288,10 @@ class Simulator(SimulatorBackend):
                 )
 
         agent.set_state(initial_state, is_initial=True)
-        self.__last_state[agent_id] = agent.state
+        if agent_id == len(self.__last_state):
+            self.__last_state.append(agent.state)
+        else:
+            self.__last_state[agent_id] = agent.state
         return agent
 
     @overload
@@ -328,14 +337,16 @@ class Simulator(SimulatorBackend):
     @property
     def _default_agent(self) -> Agent:
         # TODO Deprecate and remove
-        return self.get_agent(self._default_agent_id)
+        return self.get_agent(agent_id=self._default_agent_id)
 
     @property
     def _last_state(self) -> AgentState:
+        # TODO Deprecate and remove
         return self.__last_state[self._default_agent_id]
 
     @_last_state.setter
     def _last_state(self, state: AgentState) -> None:
+        # TODO Deprecate and remove
         self.__last_state[self._default_agent_id] = state
 
     @property
@@ -343,7 +354,9 @@ class Simulator(SimulatorBackend):
         # TODO Deprecate and remove
         return self.__sensors[self._default_agent_id]
 
-    def last_state(self, agent_id: int = 0) -> AgentState:
+    def last_state(self, agent_id: Optional[int] = None) -> AgentState:
+        if agent_id is None:
+            agent_id = self._default_agent_id
         return self.__last_state[agent_id]
 
     @overload
@@ -392,7 +405,7 @@ class Simulator(SimulatorBackend):
 
     def make_greedy_follower(
         self,
-        agent_id: int = 0,
+        agent_id: Optional[int] = None,
         goal_radius: float = None,
         *,
         stop_key: Optional[Any] = None,
@@ -402,6 +415,8 @@ class Simulator(SimulatorBackend):
         fix_thrashing: bool = True,
         thrashing_threshold: int = 16,
     ):
+        if agent_id is None:
+            agent_id = self._default_agent_id
         return GreedyGeodesicFollower(
             self.pathfinder,
             self.get_agent(agent_id),
@@ -448,14 +463,15 @@ class Sensor:
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent._sensors.get(sensor_id)
+        self._sensor_object = self._agent._sensors[sensor_id]
+
         self._spec = self._sensor_object.specification()
 
         self._sim.renderer.bind_render_target(self._sensor_object)
 
         if self._spec.gpu2gpu_transfer:
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
-            assert torch is not None
+            assert _HAS_TORCH
             device = torch.device("cuda", self._sim.gpu_device)  # type: ignore[attr-defined]
             torch.cuda.set_device(device)
 
