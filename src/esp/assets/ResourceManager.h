@@ -492,6 +492,22 @@ class ResourceManager {
    */
   inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }
 
+  /**
+   * @brief Load a render asset (if not already loaded) and create a render
+   * asset instance.
+   *
+   * @param assetInfo the render asset to load
+   * @param creation How to create the instance
+   * @param sceneManagerPtr Info about the scene graph(s). See loadStage.
+   * @param activeSceneIDs Info about the scene graph(s). See loadStage.
+   * @return the root node of the instance, or nullptr (if the load failed)
+   */
+  scene::SceneNode* loadAndCreateRenderAssetInstance(
+      const AssetInfo& assetInfo,
+      const RenderAssetInstanceCreationInfo& creation,
+      esp::scene::SceneManager* sceneManagerPtr,
+      const std::vector<int>& activeSceneIDs);
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to

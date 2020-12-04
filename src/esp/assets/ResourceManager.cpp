@@ -443,6 +443,66 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
   }
 }  // ResourceManager::buildCoordFrameFromAttribVals
 
+scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
+    const AssetInfo& assetInfo,
+    const RenderAssetInstanceCreationInfo& creation,
+    esp::scene::SceneManager* sceneManagerPtr,
+    const std::vector<int>& activeSceneIDs) {
+  // We map isStatic, isSemantic, and isRGBD to a scene graph.
+  int sceneID = -1;
+  if (!creation.isStatic()) {
+    // Non-static instances must always get added to the RGBD scene graph, with
+    // nodeType==OBJECT, and they will be drawn for both RGBD and Semantic
+    // sensors.
+    if (!(creation.isSemantic() && creation.isRGBD())) {
+      LOG(WARNING) << "unsupported instance creation flags for asset ["
+                   << assetInfo.filepath << "]";
+      return nullptr;
+    }
+    sceneID = activeSceneIDs[0];
+  } else {
+    if (creation.isSemantic() && creation.isRGBD()) {
+      if (activeSceneIDs[1] != activeSceneIDs[0]) {
+        // Because we have a separate semantic scene graph, we can't support a
+        // static instance with both isSemantic and isRGBD.
+        LOG(WARNING)
+            << "unsupported instance creation flags for asset ["
+            << assetInfo.filepath
+            << "] with "
+               "SimulatorConfiguration::forceSeparateSemanticSceneGraph=true.";
+        return nullptr;
+      }
+      sceneID = activeSceneIDs[0];
+    } else {
+      if (activeSceneIDs[1] == activeSceneIDs[0]) {
+        // A separate semantic scene graph wasn't constructed, so we can't
+        // support a Semantic-only (or RGBD-only) instance.
+        LOG(WARNING)
+            << "unsupported instance creation flags for asset ["
+            << assetInfo.filepath
+            << "] with "
+               "SimulatorConfiguration::forceSeparateSemanticSceneGraph=false.";
+        return nullptr;
+      }
+      sceneID = creation.isSemantic() ? activeSceneIDs[1] : activeSceneIDs[0];
+    }
+  }
+
+  auto& sceneGraph = sceneManagerPtr->getSceneGraph(sceneID);
+  auto& rootNode = sceneGraph.getRootNode();
+  auto& drawables = sceneGraph.getDrawables();
+
+  const bool fileIsLoaded = resourceDict_.count(assetInfo.filepath) > 0;
+  if (!fileIsLoaded) {
+    if (!loadRenderAsset(assetInfo)) {
+      return nullptr;
+    }
+  }
+
+  ASSERT(assetInfo.filepath == creation.filepath);
+  return createRenderAssetInstance(creation, &rootNode, &drawables);
+}
+
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   bool meshSuccess = false;
   if (info.type == AssetType::FRL_PTEX_MESH) {
