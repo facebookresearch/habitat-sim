@@ -68,7 +68,6 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
                                       fisheyeSensorSpec_->cubeMapCameraNear,
                                       fisheyeSensorSpec_->cubeMapCameraFar);
 
-  // TODO: assign flag based on sensor type (color, depth, semantic)
   if (fisheyeSensorSpec_->sensorType == SensorType::COLOR) {
     fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
   }
@@ -108,7 +107,9 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
   }
   // generate the cubemap texture
-  cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), flags);
+  // cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
+  // flags);
+  cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "debug", "png");
   // XXX debug
   // cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color, "viewerTest");
 
@@ -176,7 +177,6 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
  * as it has no projection parameters
  */
 Cr::Containers::Optional<Mn::Vector2> FisheyeSensor::depthUnprojection() const {
-  LOG(INFO) << "It is here!!";
   return {depthUnprojectionParameters_};
 };
 }  // namespace sensor

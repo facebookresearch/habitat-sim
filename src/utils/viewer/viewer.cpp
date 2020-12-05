@@ -440,12 +440,16 @@ Viewer::Viewer(const Arguments& arguments)
     spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
     spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-    spec->xi = 0.3;
-    spec->alpha = 0.3;
+    // spec->xi = 0.3;
+    // spec->alpha = 0.3;
+    spec->xi = 0.0;
+    spec->alpha = 0.0;
     int size =
         viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
-    spec->focalLength = Mn::Vector2(size * 0.15, size * 0.15);
+    // spec->focalLength = Mn::Vector2(size * 0.15, size * 0.15);
+    spec->focalLength = Mn::Vector2(size / 2.0, size / 2.0);
     spec->principalPointOffset = Mn::Vector2i(size / 2, size / 2);
+    // spec->principalPointOffset = Mn::Vector2i(0, 0);
   }
 
   // add selects a random initial state and sets up the default controls and

@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree
 #include "CubeMap.h"
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
 #include <Magnum/DebugTools/TextureImage.h>
@@ -10,9 +11,9 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
-#include <Magnum/PixelFormat.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Trade/AbstractImageConverter.h>
+#include <Magnum/Trade/ImageData.h>
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -37,8 +38,9 @@ void CubeMap::reset(int imageSize) {
   }
 
   imageSize_ = imageSize;
-  CORRADE_ASSERT(imageSize_ > 0,
-                 "CubeMap::reset: image size" << imageSize << "is illegal.", );
+  CORRADE_ASSERT(
+      imageSize_ > 0,
+      "CubeMap::reset(): image size" << imageSize << "is illegal.", );
   // create an empty cubemap texture
   recreateTexture();
 
@@ -187,6 +189,22 @@ std::string CubeMap::getTextureTypeFilenameString(TextureType type) {
       break;
   }
 }
+Mn::PixelFormat CubeMap::getPixelFormat(TextureType type) {
+  switch (type) {
+    case TextureType::Color:
+      return Mn::PixelFormat::RGBA8Unorm;
+      break;
+    case TextureType::Depth:
+      return Mn::PixelFormat::R32F;
+      /*
+      case TextureType::ObjectId:
+      return Mn::PixelFormat::R32UI;
+      */
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
+}
 
 bool CubeMap::saveTexture(TextureType type,
                           const std::string& imageFilePrefix) {
@@ -198,28 +216,11 @@ bool CubeMap::saveTexture(TextureType type,
     return false;
   }
 
-  auto pixelFormat = [&]() {
-    switch (type) {
-      case TextureType::Color:
-        return Mn::PixelFormat::RGBA8Unorm;
-        break;
-      case TextureType::Depth:
-        return Mn::PixelFormat::R32F;
-        /*
-        case TextureType::ObjectId:
-        return Mn::PixelFormat::R32UI;
-        */
-      default:
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-        break;
-    }
-  };
-
   std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
   for (int iFace = 0; iFace < 6; ++iFace) {
     Mn::Image2D image = Mn::DebugTools::textureSubImage(
         *textures_[type], convertFaceIndexToCubeMapCoordinate(iFace), 0,
-        frameBuffer_.viewport(), {pixelFormat()});
+        frameBuffer_.viewport(), {getPixelFormat(type)});
 
     std::string filename = imageFilePrefix +
                            getTextureTypeFilenameString(type) +
@@ -267,11 +268,87 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   }  // iFace
 }
 
-void CubeMap::loadTexture(Mn::Trade::AbstractImporter& importer,
-                          TextureType type,
+void CubeMap::loadTexture(TextureType type,
                           const std::string& imageFilePrefix,
                           const std::string& imageFileExtension) {
-  // TODO
+  auto loadImporter = [&](const std::string& plugin) {
+    Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
+    Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
+        manager.loadAndInstantiate(plugin);
+    CORRADE_ASSERT(importer,
+                   "CubeMap::loadTexture(): cannot initialize" << plugin, );
+
+    imageImporterManger_.set<Mn::Trade::AbstractImporter>(
+        plugin, importer.release(), Mn::ResourceDataState::Final,
+        Mn::ResourcePolicy::Manual);
+  };
+
+  std::string plugin;
+  if (imageFileExtension == "png") {
+    plugin = "PngImporter";
+  } else if (imageFileExtension == "jpg") {
+    plugin = "JpegImporter";
+  } else {
+    LOG(INFO) << "CubeMap::loadTexture(): cannot support image type "
+              << imageFileExtension;
+    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  }
+
+  Mn::Resource<Mn::Trade::AbstractImporter> importer =
+      imageImporterManger_.get<Mn::Trade::AbstractImporter>(plugin);
+  // create one if there is no such importer
+  if (!importer) {
+    loadImporter(plugin);
+  }
+  CORRADE_INTERNAL_ASSERT(importer);
+
+  std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
+  int imageSize = 0;
+  for (int iFace = 0; iFace < 6; ++iFace) {
+    // open image file
+    std::string filename =
+        imageFilePrefix + getTextureTypeFilenameString(type) +
+        coordStrings[iFace] + "." + std::string{imageFileExtension};
+    importer->openFile(filename);
+    Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
+        importer->image2D(0);
+
+    // sanity checks
+    CORRADE_INTERNAL_ASSERT(image);
+    Mn::Vector2i size = image->size();
+    CORRADE_ASSERT(
+        size.x() == size.y(),
+        " CubeMap::loadTexture(): each texture image must be a square.", );
+    if (iFace == 0) {
+      imageSize = size.x();
+      reset(imageSize);
+    } else {
+      CORRADE_ASSERT(
+          size.x() == imageSize,
+          " CubeMap::loadTexture(): texture images must have the same size.", );
+    }
+
+    // set images
+    Mn::GL::CubeMapTexture* texture;
+    switch (type) {
+      case TextureType::Color:
+        texture = textures_[TextureType::Color].get();
+        break;
+
+      case TextureType::Depth:
+        texture = textures_[TextureType::Depth].get();
+        break;
+
+      default:
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        break;
+    }
+    texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
+                         *image);
+  }
+
+  // We don't need the importer anymore
+  imageImporterManger_.free<Mn::Trade::AbstractImporter>();
 }
 
 }  // namespace gfx

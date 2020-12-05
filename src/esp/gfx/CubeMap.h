@@ -12,6 +12,8 @@
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/Magnum.h>
+#include <Magnum/PixelFormat.h>
+#include <Magnum/ResourceManager.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include "esp/gfx/CubeMapCamera.h"
 #include "esp/gfx/RenderCamera.h"
@@ -85,7 +87,6 @@ class CubeMap {
 
   /**
    * @brief load cubemap texture from external images
-   * @param importer, image importer
    * @param imageFilePrefix, the prefix of the image filename
    * @param imageFileExtension, the image filename extension (such as "png",
    * "jpg")
@@ -107,14 +108,14 @@ class CubeMap {
    *           | +Y |
    *           +----+
    */
-  void loadTexture(Mn::Trade::AbstractImporter& importer,
-                   TextureType type,
+  void loadTexture(TextureType type,
                    const std::string& imageFilePrefix,
                    const std::string& imageFileExtension);
 
   /**
    * @brief Render to cubemap texture using the camera
    * @param camera, a cubemap camera
+   * NOTE: It will NOT automatically generate the mipmap for the user
    */
   void renderToTexture(CubeMapCamera& camera,
                        scene::SceneGraph& sceneGraph,
@@ -124,6 +125,8 @@ class CubeMap {
   Flags flags_;
   int imageSize_ = 0;
   std::map<TextureType, std::unique_ptr<Magnum::GL::CubeMapTexture>> textures_;
+
+  Magnum::ResourceManager<Magnum::Trade::AbstractImporter> imageImporterManger_;
 
   /**
    * @brief Recreate textures
@@ -168,6 +171,11 @@ class CubeMap {
    * @brief get texture type string for texture filename
    */
   std::string getTextureTypeFilenameString(TextureType type);
+  /**
+   * @brief get the pixel format based on texture type (color, depth objectId
+   * etc.)
+   */
+  Magnum::PixelFormat getPixelFormat(TextureType type);
 };
 
 CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)

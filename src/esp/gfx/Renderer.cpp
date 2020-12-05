@@ -56,8 +56,6 @@ struct Renderer::Impl {
   }
 
   void bindRenderTarget(sensor::VisualSensor& sensor) {
-    LOG(INFO) << "Sensor sub Type: "
-              << static_cast<int>(sensor.specification()->sensorSubType);
     auto depthUnprojection = sensor.depthUnprojection();
     if (!depthUnprojection) {
       throw std::runtime_error(
