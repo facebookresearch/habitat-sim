@@ -4,7 +4,9 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
+#include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/esp.h"
+#include "esp/io/JsonAllTypes.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
@@ -164,4 +166,117 @@ TEST(IOTest, JsonTest) {
       std::bind(&ObjectAttributes::setRenderAssetHandle, attributes, _1));
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getRenderAssetHandle(), "banana.glb");
+}
+
+namespace {
+// some test structs for JsonUserTypeTest below
+struct MyNestedStruct {
+  std::string a;
+};
+
+struct MyOuterStruct {
+  MyNestedStruct nested;
+  float b;
+};
+
+// Beware, ToRJsonValue/FromRJsonValue should generally go in JsonAllTypes.h,
+// not scattered in user code as done here.
+inline RJsonValue ToRJsonValue(const MyNestedStruct& x,
+                               RJsonAllocator& allocator) {
+  RJsonValue obj(rapidjson::kObjectType);
+  AddMember(obj, "a", x.a, allocator);
+  return obj;
+}
+
+void FromRJsonValue(const RJsonValue& obj, MyNestedStruct& x) {
+  ReadMember(obj, "a", x.a);
+}
+
+inline RJsonValue ToRJsonValue(const MyOuterStruct& x,
+                               RJsonAllocator& allocator) {
+  RJsonValue obj(rapidjson::kObjectType);
+  AddMember(obj, "nested", x.nested, allocator);
+  AddMember(obj, "b", x.b, allocator);
+  return obj;
+}
+
+void FromRJsonValue(const RJsonValue& obj, MyOuterStruct& x) {
+  ReadMember(obj, "nested", x.nested);
+  ReadMember(obj, "b", x.b);
+}
+}  // namespace
+
+// Serialize/deserialize MyOuterStruct using io::AddMember/ReadMember and assert
+// equality.
+TEST(IOTest, JsonUserTypeTest) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+
+  MyOuterStruct myStruct{{"hello world"}, 2.f};
+  AddMember(d, "myStruct", myStruct, allocator);
+
+  MyOuterStruct myStruct2;
+  ReadMember(d, "myStruct", myStruct2);
+
+  ASSERT(myStruct2.nested.a == myStruct.nested.a);
+  ASSERT(myStruct2.b == myStruct.b);
+}
+
+// Serialize/deserialize a few esp types using io::AddMember/ReadMember and
+// assert equality.
+TEST(IOTest, JsonEspTypesTest) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+
+  // add RenderAssetInstanceCreationInfo
+  esp::assets::RenderAssetInstanceCreationInfo creationInfo(
+      "test_filepath", Magnum::Vector3(1.f, 2.f, 3.f),
+      esp::assets::RenderAssetInstanceCreationInfo::Flags(),
+      "test_light_setup");
+  AddMember(d, "creationInfo", creationInfo, allocator);
+
+  // AssetInfo
+  esp::assets::AssetInfo assetInfo{
+      esp::assets::AssetType::MP3D_MESH,
+      "test_filepath2",
+      esp::geo::CoordinateFrame(esp::vec3f(1.f, 0.f, 0.f),
+                                esp::vec3f(0.f, 0.f, 1.f),
+                                esp::vec3f(1.f, 2.f, 3.f)),
+      4.f,
+      true,
+      false};
+  AddMember(d, "assetInfo", assetInfo, allocator);
+
+  // add RenderAssetInstanceState
+  esp::gfx::replay::RenderAssetInstanceState state{
+      {Magnum::Vector3(1.f, 2.f, 3.f),
+       Magnum::Quaternion::rotation(Magnum::Rad{1.f},
+                                    Magnum::Vector3(0.f, 1.f, 0.f))},
+      4};
+  AddMember(d, "state", state, allocator);
+
+  // read and compare RenderAssetInstanceCreationInfo
+  esp::assets::RenderAssetInstanceCreationInfo creationInfo2;
+  ReadMember(d, "creationInfo", creationInfo2);
+  ASSERT(creationInfo2.filepath == creationInfo.filepath);
+  ASSERT(creationInfo2.scale == creationInfo.scale);
+  ASSERT(creationInfo2.flags == creationInfo.flags);
+  ASSERT(creationInfo2.lightSetupKey == creationInfo.lightSetupKey);
+
+  // read and compare AssetInfo
+  esp::assets::AssetInfo assetInfo2;
+  ReadMember(d, "assetInfo", assetInfo2);
+  ASSERT(assetInfo2.type == assetInfo.type);
+  ASSERT(assetInfo2.filepath == assetInfo.filepath);
+  ASSERT(assetInfo2.frame.up() == assetInfo.frame.up());
+  ASSERT(assetInfo2.frame.front() == assetInfo.frame.front());
+  ASSERT(assetInfo2.frame.origin() == assetInfo.frame.origin());
+  ASSERT(assetInfo2.virtualUnitToMeters == assetInfo.virtualUnitToMeters);
+  ASSERT(assetInfo2.requiresLighting == assetInfo.requiresLighting);
+  ASSERT(assetInfo2.splitInstanceMesh == assetInfo.splitInstanceMesh);
+
+  // read and compare RenderAssetInstanceState
+  esp::gfx::replay::RenderAssetInstanceState state2;
+  ReadMember(d, "state", state2);
+  ASSERT(state2 == state);
 }
