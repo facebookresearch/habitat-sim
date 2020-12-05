@@ -26,6 +26,8 @@ struct RenderAssetInstanceCreationInfo {
   };
   typedef Corrade::Containers::EnumSet<Flag> Flags;
 
+  RenderAssetInstanceCreationInfo() = default;
+
   RenderAssetInstanceCreationInfo(
       const std::string& _filepath,
       const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
