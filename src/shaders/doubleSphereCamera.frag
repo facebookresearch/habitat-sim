@@ -36,4 +36,5 @@ void main(void) {
 #if defined(COLOR_TEXTURE)
   fragmentColor = texture(ColorTexture, normalize(ray));
 #endif
+  fragmentColor = gl_FragCoord.xy / vec2(800, 600);
 }
