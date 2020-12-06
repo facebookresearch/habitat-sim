@@ -74,7 +74,7 @@ class Simulator(SimulatorBackend):
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
     )  # track the compute time of each step
-    __last_state: List[AgentState] = attr.ib(factory=list, init=False)
+    __last_state: Dict[int, AgentState] = attr.ib(factory=dict, init=False)
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
@@ -128,11 +128,7 @@ class Simulator(SimulatorBackend):
 
         self.agents = []
 
-        self._default_agent_id = 0
-
-        self.config = None
-
-        self.__last_state = []
+        self.__last_state.clear()
 
         super().close()
 
@@ -146,12 +142,38 @@ class Simulator(SimulatorBackend):
         super().seed(new_seed)
         self.pathfinder.seed(new_seed)
 
-    def reset(self) -> Dict[str, Union[ndarray, "Tensor"]]:
+    @overload
+    def reset(
+        self, agent_ids: List[int]
+    ) -> Dict[int, Dict[str, Union[ndarray, "Tensor"]]]:
+        ...
+
+    @overload
+    def reset(
+        self, agent_ids: Optional[int] = None
+    ) -> Dict[str, Union[ndarray, "Tensor"]]:
+        ...
+
+    def reset(
+        self, agent_ids: Union[Optional[int], List[int]] = None
+    ) -> Union[
+        Dict[str, Union[ndarray, "Tensor"]],
+        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
+    ]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
 
-        return self.get_sensor_observations()
+        if agent_ids is None:
+            agent_ids = [self._default_agent_id]
+            return_single = True
+        else:
+            agent_ids = cast(List[int], agent_ids)
+            return_single = False
+        obs = self.get_sensor_observations(agent_ids=agent_ids)
+        if return_single:
+            return obs[agent_ids[0]]
+        return obs
 
     def reset_agent(self, agent_id: int) -> None:
         agent = self.get_agent(agent_id)
@@ -232,7 +254,7 @@ class Simulator(SimulatorBackend):
         self.__sensors: List[Dict[str, Sensor]] = [
             dict() for i in range(len(config.agents))
         ]
-        self.__last_state = []
+        self.__last_state = dict()
         for agent_id, agent_cfg in enumerate(config.agents):
             for spec in agent_cfg.sensor_specifications:
                 self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
@@ -288,10 +310,7 @@ class Simulator(SimulatorBackend):
                 )
 
         agent.set_state(initial_state, is_initial=True)
-        if agent_id == len(self.__last_state):
-            self.__last_state.append(agent.state)
-        else:
-            self.__last_state[agent_id] = agent.state
+        self.__last_state[agent_id] = agent.state
         return agent
 
     @overload
