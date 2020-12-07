@@ -150,6 +150,14 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
             .setPrincipalPointOffset(actualSpec.principalPointOffset)
             .setAlpha(actualSpec.alpha)
             .setXi(actualSpec.xi);
+
+        // XXX
+        LOG(INFO) << "focal length " << actualSpec.focalLength.x() << ", "
+                  << actualSpec.focalLength.y();
+        LOG(INFO) << "principal offset " << actualSpec.principalPointOffset.x()
+                  << ", " << actualSpec.principalPointOffset.y();
+        LOG(INFO) << actualSpec.alpha;
+        LOG(INFO) << actualSpec.xi;
       } break;
 
         // TODO:

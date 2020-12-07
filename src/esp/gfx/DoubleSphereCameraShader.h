@@ -47,7 +47,7 @@ class DoubleSphereCameraShader : public FisheyeShader {
    *  @param offset, the offset of the principal point in pixels
    *  @return Reference to self (for method chaining)
    */
-  DoubleSphereCameraShader& setPrincipalPointOffset(Magnum::Vector2i offset);
+  DoubleSphereCameraShader& setPrincipalPointOffset(Magnum::Vector2 offset);
   /**
    * @brief Set the alpha value in the "Double Sphere Camera" model.
    * See details in:

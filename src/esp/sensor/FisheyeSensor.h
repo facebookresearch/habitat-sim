@@ -50,7 +50,7 @@ struct FisheyeSensorSpec : public SensorSpec {
    * @brief Principal Point Offset in pixel, cx, cy, location of the principal
    * point relative to the image plane's origin.
    */
-  Magnum::Vector2i principalPointOffset;
+  Magnum::Vector2 principalPointOffset;
 
   /**
    * @brief check if the specification is legal

@@ -3,8 +3,10 @@
 // LICENSE file in the root directory of this source tree.
 
 // ------------ uniform ----------------------
-uniform vec2 FocalLength;
-uniform vec2 PrincipalPointOffset;
+uniform highp vec2 FocalLength;
+uniform highp vec2 PrincipalPointOffset;
+uniform float fx = 600;
+uniform float fy = 600;
 uniform float Alpha;
 uniform float Xi;
 
@@ -31,10 +33,14 @@ void main(void) {
   }
 
   // unproject to get the ray direction
-  vec3 ray = (m.z * Xi + sqrt(sq2)) / (mz2 + r2) * m - vec3(0.0, 0.0, Xi);
+  // vec3 ray = (m.z * Xi + sqrt(sq2)) / (mz2 + r2) * m - vec3(0.0, 0.0, Xi);
+  vec3 ray = m;
 
 #if defined(COLOR_TEXTURE)
   fragmentColor = texture(ColorTexture, normalize(ray));
 #endif
-  fragmentColor = gl_FragCoord.xy / vec2(800, 600);
+  // XXX debug:
+  // fragmentColor = vec4(m.xy, 0.0, 1.0);
+  // fragmentColor = vec4(gl_FragCoord.xy / FocalLength - vec2(v, v), 0.0, 1.0);
+  // fragmentColor = vec4(PrincipalPointOffset / 1200, 0.0, 1.0);
 }
