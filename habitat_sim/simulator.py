@@ -290,7 +290,7 @@ class Simulator(SimulatorBackend):
             )
         if agent_id is None:
             agent_id = self._default_agent_id
-        agent = self._get_agent(agent_id=agent_id)
+        agent = self.get_agent(agent_id=agent_id)
         agent._add_sensor(sensor_spec)
         self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
 
