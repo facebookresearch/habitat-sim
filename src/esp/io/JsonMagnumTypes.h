@@ -10,8 +10,12 @@
 
 #include "JsonBuiltinTypes.h"
 
+#include "esp/core/logging.h"
+
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/Magnum.h>
 #include <Magnum/Math/Matrix4.h>
+#include <Magnum/Math/Quaternion.h>
 
 namespace esp {
 namespace io {

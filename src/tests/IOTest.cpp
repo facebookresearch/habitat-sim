@@ -222,6 +222,33 @@ TEST(IOTest, JsonUserTypeTest) {
   ASSERT(myStruct2.b == myStruct.b);
 }
 
+// Serialize/deserialize a few stl types using io::AddMember/ReadMember and
+// assert equality.
+TEST(IOTest, JsonStlTypesTest) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+
+  std::string s{"hello world"};
+  AddMember(d, "s", s, allocator);
+  std::string s2;
+  ReadMember(d, "s", s2);
+  ASSERT(s2 == s);
+
+  // test a vector of ints
+  std::vector<int> vec{3, 4, 5, 6};
+  AddMember(d, "vec", vec, allocator);
+  std::vector<int> vec2;
+  ReadMember(d, "vec", vec2);
+  ASSERT(vec2 == vec);
+
+  // test an empty vector
+  std::vector<float> emptyVec{};
+  AddMember(d, "emptyVec", emptyVec, allocator);
+  std::vector<float> emptyVec2;
+  ReadMember(d, "emptyVec", emptyVec2);
+  ASSERT(emptyVec2 == emptyVec);
+}
+
 // Serialize/deserialize a few esp types using io::AddMember/ReadMember and
 // assert equality.
 TEST(IOTest, JsonEspTypesTest) {

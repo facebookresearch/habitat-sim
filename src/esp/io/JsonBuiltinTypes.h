@@ -19,107 +19,76 @@ namespace io {
 using RJsonValue = rapidjson::Value;
 using RJsonAllocator = rapidjson::MemoryPoolAllocator<>;
 
-// AddMember wrappers for the 7 rapidjson builtin types
-inline void AddMember(RJsonValue& value,
-                      rapidjson::GenericStringRef<char> name,
-                      bool obj,
-                      RJsonAllocator& allocator) {
-  value.AddMember(name, obj, allocator);
+// template AddMember/ReadMember to match any type. These are declared here,
+// before all ToRJsonValue/FromRJsonValue definitions, and they are defined
+// later in JsonBuiltinTypes.hpp. The quirky ordering is to avoid some compile
+// errors.
+template <typename T>
+void AddMember(RJsonValue& value,
+               rapidjson::GenericStringRef<char> name,
+               const T& obj,
+               RJsonAllocator& allocator);
+
+template <typename T>
+void ReadMember(const RJsonValue& value, const char* name, T& x);
+
+// ToRJsonValue wrappers for the 7 rapidjson builtin types. A ToRJsonValue can
+// be directly constructed from the builtin types.
+inline RJsonValue ToRJsonValue(bool x, RJsonAllocator& allocator) {
+  return RJsonValue(x);
 }
 
-inline void AddMember(RJsonValue& value,
-                      rapidjson::GenericStringRef<char> name,
-                      int obj,
-                      RJsonAllocator& allocator) {
-  value.AddMember(name, obj, allocator);
+inline RJsonValue ToRJsonValue(int x, RJsonAllocator& allocator) {
+  return RJsonValue(x);
 }
 
-inline void AddMember(RJsonValue& value,
-                      rapidjson::GenericStringRef<char> name,
-                      unsigned obj,
-                      RJsonAllocator& allocator) {
-  value.AddMember(name, obj, allocator);
+inline RJsonValue ToRJsonValue(unsigned x, RJsonAllocator& allocator) {
+  return RJsonValue(x);
 }
 
-inline void AddMember(RJsonValue& value,
-                      rapidjson::GenericStringRef<char> name,
-                      int64_t obj,
-                      RJsonAllocator& allocator) {
-  value.AddMember(name, obj, allocator);
+inline RJsonValue ToRJsonValue(int64_t x, RJsonAllocator& allocator) {
+  return RJsonValue(x);
 }
 
-inline void AddMember(RJsonValue& value,
-                      rapidjson::GenericStringRef<char> name,
-                      uint64_t obj,
-                      RJsonAllocator& allocator) {
-  value.AddMember(name, obj, allocator);
+inline RJsonValue ToRJsonValue(uint64_t x, RJsonAllocator& allocator) {
+  return RJsonValue(x);
 }
 
-inline void AddMember(RJsonValue& value,
-                      rapidjson::GenericStringRef<char> name,
-                      double obj,
-                      RJsonAllocator& allocator) {
-  value.AddMember(name, obj, allocator);
+inline RJsonValue ToRJsonValue(double x, RJsonAllocator& allocator) {
+  return RJsonValue(x);
 }
 
-inline void AddMember(RJsonValue& value,
-                      rapidjson::GenericStringRef<char> name,
-                      float obj,
-                      RJsonAllocator& allocator) {
-  value.AddMember(name, obj, allocator);
+inline RJsonValue ToRJsonValue(float x, RJsonAllocator& allocator) {
+  return RJsonValue(x);
 }
 
-// ReadMember wrappers for the 7 rapidjson builtin types
-inline void ReadMember(const RJsonValue& value, const char* name, bool& obj) {
-  obj = value[name].Get<bool>();
+// FromRJsonValue wrappers for the 7 rapidjson builtin types
+inline void FromRJsonValue(const RJsonValue& obj, bool& x) {
+  x = obj.Get<bool>();
 }
 
-inline void ReadMember(const RJsonValue& value, const char* name, int& obj) {
-  obj = value[name].Get<int>();
+inline void FromRJsonValue(const RJsonValue& obj, int& x) {
+  x = obj.Get<int>();
 }
 
-inline void ReadMember(const RJsonValue& value,
-                       const char* name,
-                       unsigned& obj) {
-  obj = value[name].Get<unsigned>();
+inline void FromRJsonValue(const RJsonValue& obj, unsigned& x) {
+  x = obj.Get<unsigned>();
 }
 
-inline void ReadMember(const RJsonValue& value,
-                       const char* name,
-                       int64_t& obj) {
-  obj = value[name].Get<int64_t>();
+inline void FromRJsonValue(const RJsonValue& obj, int64_t& x) {
+  x = obj.Get<int64_t>();
 }
 
-inline void ReadMember(const RJsonValue& value,
-                       const char* name,
-                       uint64_t& obj) {
-  obj = value[name].Get<uint64_t>();
+inline void FromRJsonValue(const RJsonValue& obj, uint64_t& x) {
+  x = obj.Get<uint64_t>();
 }
 
-inline void ReadMember(const RJsonValue& value, const char* name, double& obj) {
-  obj = value[name].Get<double>();
+inline void FromRJsonValue(const RJsonValue& obj, double& x) {
+  x = obj.Get<double>();
 }
 
-inline void ReadMember(const RJsonValue& value, const char* name, float& obj) {
-  obj = value[name].Get<float>();
-}
-
-// TODO: consider RAPIDJSON_HAS_STDSTRING instead of implementing these
-// std::string helpers
-inline void AddMember(RJsonValue& value,
-                      rapidjson::GenericStringRef<char> name,
-                      const std::string& str,
-                      RJsonAllocator& allocator) {
-  RJsonValue strObj;
-  strObj.SetString(str.c_str(), allocator);
-  value.AddMember(name, strObj, allocator);
-}
-
-inline void ReadMember(const RJsonValue& value,
-                       const char* name,
-                       std::string& str) {
-  const RJsonValue& strObj = value[name];
-  str = strObj.GetString();
+inline void FromRJsonValue(const RJsonValue& obj, float& x) {
+  x = obj.Get<float>();
 }
 
 // wrappers intended for enums
@@ -155,20 +124,6 @@ inline void AddMember(RJsonValue& value,
                       RJsonAllocator& allocator) {
   value.AddMember(name, child, allocator);
 }
-
-// These are template versions of AddMember/ReadMember that will match any
-// type T. They expect to find ToJsonValue/FromJsonValue overloads for T.
-// These are declared here, before all ToRJsonValue/FromRJsonValue definitions,
-// and they are defined later in JsonBuiltinTypes.hpp. The quirky ordering is to
-// avoid some compile errors.
-template <typename T>
-void AddMember(RJsonValue& value,
-               rapidjson::GenericStringRef<char> name,
-               const T& obj,
-               RJsonAllocator& allocator);
-
-template <typename T>
-void ReadMember(const RJsonValue& value, const char* name, T& x);
 
 }  // namespace io
 }  // namespace esp

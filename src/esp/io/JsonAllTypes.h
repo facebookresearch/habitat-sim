@@ -23,6 +23,7 @@
 // below.
 #include "JsonEspTypes.h"
 #include "JsonMagnumTypes.h"
+#include "JsonStlTypes.h"
 
 // This must go after all ToRJsonValue/FromRJsonValue. The quirky ordering is to
 // avoid some compile errors.
