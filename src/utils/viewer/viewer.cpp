@@ -406,7 +406,7 @@ Viewer::Viewer(const Arguments& arguments)
 
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
-  simConfig.activeSceneID = sceneFileName;
+  simConfig.activeSceneName = sceneFileName;
   simConfig.enablePhysics = useBullet;
   simConfig.frustumCulling = true;
   simConfig.requiresTextures = true;

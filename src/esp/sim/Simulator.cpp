@@ -118,6 +118,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                     "initialized with True.  Call close() to change this.";
   }
 
+  createSceneInstance();
+
+  LOG(INFO) << "createSceneInstance success";
+
   // use physics attributes manager to configure physics manager attributes
   // described by config file.
   auto physicsManagerAttributes =
@@ -136,9 +140,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                                      config_.frustumCulling);
 
   // Build stage file name based on config specification
-  std::string stageFilename = config_.activeSceneID;
+  std::string stageFilename = config_.activeSceneName;
 
-  // Create stage attributes with values based on stageFilename
+  // Create stage attributes with values based on stageFilename, or load stage
+  // attributes file if exists
   auto stageAttributes = stageAttributesMgr->createObject(stageFilename, true);
 
   std::string navmeshFilename = stageAttributes->getNavmeshAssetHandle();
@@ -197,7 +202,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     bool loadSuccess = false;
 
     std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
-    // Load scene
+    // Load stage
     loadSuccess = resourceManager_->loadStage(
         stageAttributes, physicsManager_, sceneManager_.get(), tempIDs,
         config_.loadSemanticMesh, config_.forceSeparateSemanticSceneGraph);
@@ -251,7 +256,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 }  // Simulator::reconfigure
 
 bool Simulator::createSceneInstance() {
-  // by here, Simulator::config_ holds current information, and there exists
+  // by here, Simulator::config_ holds current config information, and there
+  // exists a scene instance attributes describing the desired stage, objects
+  // (if any), lighting (if any), etc, and this scene instance is named
+  // config_.activeSceneID
 
   // 1. initial setup
   // set config-driven overrides
@@ -263,12 +271,11 @@ bool Simulator::createSceneInstance() {
   auto physicsManagerAttributes =
       metadataMediator_->getCurrentPhysicsManagerAttributes();
 
-  // if physicsManagerAttributes have been successfully created, inform
-  // sceneAttributesMgr of the config handle of the attributes, so that
-  // stageAttributes initialization can use phys Mgr Attr values as defaults
-  auto sceneAttributesMgr = metadataMediator_->getSceneAttributesManager();
+  // get scene instance attributes corresponding to passed active scene name
+  auto sceneInstanceAttributes =
+      metadataMediator_->getSceneAttributesByName(config_.activeSceneName);
 
-  return false;
+  return true;
 }  // Simulator::createSceneInstance
 
 bool Simulator::loadSemanticSceneDescriptor(

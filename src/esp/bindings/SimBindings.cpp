@@ -29,7 +29,7 @@ void initSimBindings(py::module& m) {
   py::class_<SimulatorConfiguration, SimulatorConfiguration::ptr>(
       m, "SimulatorConfiguration")
       .def(py::init(&SimulatorConfiguration::create<>))
-      .def_readwrite("scene_id", &SimulatorConfiguration::activeSceneID)
+      .def_readwrite("scene_id", &SimulatorConfiguration::activeSceneName)
       .def_readwrite("random_seed", &SimulatorConfiguration::randomSeed)
       .def_readwrite("default_agent_id",
                      &SimulatorConfiguration::defaultAgentId)

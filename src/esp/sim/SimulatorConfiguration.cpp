@@ -8,7 +8,7 @@ namespace esp {
 namespace sim {
 bool operator==(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b) {
-  return a.activeSceneID.compare(b.activeSceneID) == 0 &&
+  return a.activeSceneName.compare(b.activeSceneName) == 0 &&
          a.defaultAgentId == b.defaultAgentId &&
          a.gpuDeviceId == b.gpuDeviceId && a.randomSeed == b.randomSeed &&
          a.defaultCameraUuid.compare(b.defaultCameraUuid) == 0 &&

@@ -30,13 +30,19 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   // and if not, add it.
   const auto& stageInstance = sceneInstance->getStageInstance();
   const std::string stageHandle = stageInstance->getHandle();
+  // info display message prefix
+  const std::string infoPrefix(
+      "SceneDatasetAttributes::addNewSceneInstanceToDataset : Dataset : '" +
+      datasetName + "' :");
   if (!stageAttributesManager_->getObjectLibHasHandle(stageHandle)) {
     LOG(INFO)
-        << "SceneDatasetAttributes::addNewSceneInstanceToDataset : Dataset : "
-        << datasetName << " : Stage Attributes " << stageHandle
-        << " specified in Scene Attributes but does not exist in dataset, so "
+        << infoPrefix << " Stage Attributes '" << stageHandle
+        << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     stageAttributesManager_->createObject(stageHandle, true);
+  } else {
+    LOG(INFO) << infoPrefix << " Stage Attributes '" << stageHandle
+              << "' specified in Scene Attributes exists in dataset library.";
   }
 
   // verify each object in sceneInstance exists in SceneDatasetAttributes
@@ -44,32 +50,40 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   for (const auto& objInstance : objectInstances) {
     const std::string objHandle = objInstance->getHandle();
     if (!objectAttributesManager_->getObjectLibHasHandle(objHandle)) {
-      LOG(INFO)
-          << "SceneDatasetAttributes::addNewSceneInstanceToDataset : Dataset : "
-          << datasetName << " : Object Attributes " << objHandle
-          << " specified in Scene Attributes but does not exist in dataset, so "
-             "creating.";
+      LOG(INFO) << infoPrefix << " Object Attributes '" << objHandle
+                << "' specified in Scene Attributes but does not exist in "
+                   "dataset, so creating.";
       objectAttributesManager_->createObject(objHandle, true);
+    } else {
+      LOG(INFO) << infoPrefix << " Object Attributes '" << objHandle
+                << "' specified in Scene Attributes exists in dataset library.";
     }
   }
 
   // verify lighting
-  const std::string lightHandle = sceneInstance->getLightingHandle();
+  std::string lightHandle = sceneInstance->getLightingHandle();
+  // if lighthandle is empty, give handle same name as scene instance
+  // should only be empty if not specified in scene instance config, or if scene
+  // instance config is synthesized (i.e. when Simulator::reconfigure is called
+  // with SimulatorConfiguration::activeSceneName being a stage)
+  if (lightHandle.length() == 0) {
+    lightHandle = sceneInstanceName;
+  }
   if (!lightLayoutAttributesManager_->getObjectLibHasHandle(lightHandle)) {
     LOG(INFO)
-        << "SceneDatasetAttributes::addNewSceneInstanceToDataset : Dataset : "
-        << datasetName << " : Lighting Layout Attributes " << lightHandle
-        << " specified in Scene Attributes but does not exist in dataset, so "
+        << infoPrefix << "Lighting Layout Attributes '" << lightHandle
+        << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     lightLayoutAttributesManager_->createObject(lightHandle, true);
+  } else {
+    LOG(INFO) << infoPrefix << " Lighting Layout Attributes " << lightHandle
+              << " specified in Scene Attributes exists in dataset library.";
   }
 
   // add scene attributes to scene attributes manager
   if (!sceneAttributesManager_->getObjectLibHasHandle(sceneInstanceName)) {
-    LOG(INFO)
-        << "SceneDatasetAttributes::addNewSceneInstanceToDataset : Dataset : "
-        << datasetName << " : Scene Attributes " << sceneInstanceName
-        << " does not exist in dataset so adding.";
+    LOG(INFO) << infoPrefix << " Scene Attributes " << sceneInstanceName
+              << " does not exist in dataset so adding.";
     sceneAttributesManager_->registerObject(sceneInstance);
   }
   return true;
