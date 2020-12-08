@@ -96,8 +96,16 @@ class CubeMapCamera : public RenderCamera {
   /**
    * @brief Updae the original viewing matrix. It MUST be called after each time
    * the relative transformation of camera node has been set.
+   * @return Reference to self (for method chaining)
    */
   CubeMapCamera& updateOriginalViewingMatrix();
+
+  /**
+   * @brief restore the local transformation of the camera node using the stored
+   * original viewing matrix
+   * @return Reference to self (for method chaining)
+   */
+  CubeMapCamera& restoreTransformation();
 
  protected:
   // viewing matrix (in parent node space) computed by Mn::Matrix4::lookAt(eye,

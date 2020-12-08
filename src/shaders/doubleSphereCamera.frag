@@ -5,8 +5,6 @@
 // ------------ uniform ----------------------
 uniform highp vec2 FocalLength;
 uniform highp vec2 PrincipalPointOffset;
-uniform float fx = 600;
-uniform float fy = 600;
 uniform float Alpha;
 uniform float Xi;
 
@@ -15,11 +13,13 @@ uniform samplerCube ColorTexture;
 #endif
 
 // ------------ output -----------------------
-out vec4 fragmentColor;
+layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out vec4 fragmentColor;
 
 void main(void) {
   vec3 m;
   m.xy = (gl_FragCoord.xy - PrincipalPointOffset) / FocalLength;
+  // MUST flip the x axis
+  m.x = -m.x;
   float r2 = dot(m.xy, m.xy);
   float sq1 = 1.0 - (2 * Alpha - 1.0) * r2;
   if (sq1 < 0.0) {
@@ -33,14 +33,9 @@ void main(void) {
   }
 
   // unproject to get the ray direction
-  // vec3 ray = (m.z * Xi + sqrt(sq2)) / (mz2 + r2) * m - vec3(0.0, 0.0, Xi);
-  vec3 ray = m;
+  vec3 ray = (m.z * Xi + sqrt(sq2)) / (mz2 + r2) * m - vec3(0.0, 0.0, Xi);
 
 #if defined(COLOR_TEXTURE)
   fragmentColor = texture(ColorTexture, normalize(ray));
 #endif
-  // XXX debug:
-  // fragmentColor = vec4(m.xy, 0.0, 1.0);
-  // fragmentColor = vec4(gl_FragCoord.xy / FocalLength - vec2(v, v), 0.0, 1.0);
-  // fragmentColor = vec4(PrincipalPointOffset / 1200, 0.0, 1.0);
 }

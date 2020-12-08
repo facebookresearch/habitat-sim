@@ -511,7 +511,8 @@ Viewer::Viewer(const Arguments& arguments)
         viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
     spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
     // spec->focalLength = Mn::Vector2(size / 2.0, size / 2.0);
-    spec->principalPointOffset = Mn::Vector2(size / 2, size / 2);
+    spec->principalPointOffset =
+        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
     // spec->principalPointOffset = Mn::Vector2(size, size);
     // spec->principalPointOffset = Mn::Vector2(0, 0);
   }
@@ -535,7 +536,11 @@ Viewer::Viewer(const Arguments& arguments)
   cubeMapCameraNode_ = &(activeSceneGraph_->getRootNode().createChild());
   cubeMapCamera_ =
       std::make_unique<esp::gfx::CubeMapCamera>(*cubeMapCameraNode_);
-  cubeMap_ = std::make_unique<esp::gfx::CubeMap>(512);
+  {
+    int imageSize = 512;
+    cubeMap_ = std::make_unique<esp::gfx::CubeMap>(imageSize);
+    cubeMapCamera_->setProjectionMatrix(imageSize, 0.001, 1000);
+  }
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -719,7 +724,7 @@ void Viewer::drawEvent() {
       }
       cubeMap_->renderToTexture(*cubeMapCamera_, *activeSceneGraph_, flags);
       if (cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color,
-                                std::string("cubemap"))) {
+                                std::string("cubemap_viewer"))) {
         LOG(INFO) << "CubeMap has been successfully saved.";
       }
     }

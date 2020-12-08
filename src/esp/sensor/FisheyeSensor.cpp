@@ -109,9 +109,12 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   // generate the cubemap texture
   // cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
   // flags);
-  cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "debug", "png");
   // XXX debug
-  // cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color, "viewerTest");
+  // cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color, "cubemap");
+  // XXX debug
+  // cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "cubemap", "png");
+  cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "cubemap_viewer",
+                        "png");
 
   // obtain shader based on fisheye model type
   Mn::ResourceKey key = getShaderKey();
@@ -138,7 +141,6 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   CORRADE_INTERNAL_ASSERT(shader_ && shader_->flags() == fisheyeShaderFlags_);
   // draw the observation to the render target
 
-  renderTarget().renderEnter();
   if (fisheyeShaderFlags_ & gfx::FisheyeShader::Flag::ColorTexture) {
     switch (fisheyeSensorSpec_->fisheyeModelType) {
       case FisheyeSensorModelType::DoubleSphere: {
@@ -150,14 +152,6 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
             .setPrincipalPointOffset(actualSpec.principalPointOffset)
             .setAlpha(actualSpec.alpha)
             .setXi(actualSpec.xi);
-
-        // XXX
-        LOG(INFO) << "focal length " << actualSpec.focalLength.x() << ", "
-                  << actualSpec.focalLength.y();
-        LOG(INFO) << "principal offset " << actualSpec.principalPointOffset.x()
-                  << ", " << actualSpec.principalPointOffset.y();
-        LOG(INFO) << actualSpec.alpha;
-        LOG(INFO) << actualSpec.xi;
       } break;
 
         // TODO:
@@ -172,6 +166,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
           cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
     }
   }
+  renderTarget().renderEnter();
   shader_->draw(mesh_);
   renderTarget().renderExit();
 

@@ -242,12 +242,23 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   CORRADE_ASSERT(camera.isInSceneGraph(sceneGraph),
                  "CubeMap::renderToTexture: camera is NOT attached to the "
                  "current scene graph.", );
-  camera.setProjectionMatrix(imageSize_,
-                             0.001f,    // z-near
-                             1000.0f);  // z-far
-  // In case user set the relative transformation of the camera node before
-  // calling this function, original viewing matrix of the camera MUST be
-  // updated as well.
+  // ==== projection matrix ====
+  // CAREFUL! In this function the projection matrix of the camera is assumed to
+  // be set already outside by the user.
+  // we simply do sanity check here.
+  {
+    Mn::Vector2i vp = camera.viewport();
+    CORRADE_ASSERT(vp.x() == vp.y() && vp.x() == imageSize_,
+                   "CubeMap::renderToTexture: the image size with in the "
+                   "CubeMapCamera, which is"
+                       << vp.x() << "by" << vp.y() << "compared to"
+                       << imageSize_ << "is not correct.", );
+  }
+
+  // ==== camera matrix ====
+  // In case user set the relative transformation of
+  // the camera node before calling this function, original viewing matrix of
+  // the camera MUST be updated as well.
   camera.updateOriginalViewingMatrix();
   frameBuffer_.bind();
   for (int iFace = 0; iFace < 6; ++iFace) {
@@ -266,6 +277,14 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
       }
     }
   }  // iFace
+
+  // CAREFUL!!!
+  // switchToFace() will change the local transformation of this camera node!
+  // If you do not do anything, in next rendering cycle, since
+  // camera.updateOriginalViewingMatrix() is called, the original viewing matrix
+  // will be updated by mistake!!! To prevent such mistakes, local
+  // transformation of this camera node must be reset.
+  camera.restoreTransformation();
 }
 
 void CubeMap::loadTexture(TextureType type,

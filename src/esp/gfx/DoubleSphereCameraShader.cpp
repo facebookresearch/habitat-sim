@@ -109,16 +109,12 @@ DoubleSphereCameraShader& DoubleSphereCameraShader::bindColorTexture(
 DoubleSphereCameraShader& DoubleSphereCameraShader::setFocalLength(
     Magnum::Vector2 focalLength) {
   setUniform(focalLengthUniform_, focalLength);
-  LOG(INFO) << "focal length Uniform = " << focalLengthUniform_
-            << " offset = " << focalLength.x() << ", " << focalLength.y();
   return *this;
 }
 
 DoubleSphereCameraShader& DoubleSphereCameraShader::setPrincipalPointOffset(
     Magnum::Vector2 offset) {
   setUniform(principalPointOffsetUniform_, offset);
-  LOG(INFO) << "principalUniform = " << principalPointOffsetUniform_
-            << " offset = " << offset.x() << ", " << offset.y();
   return *this;
 }
 
