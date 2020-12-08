@@ -8,8 +8,6 @@
 #include "esp/io/json.h"
 #include "esp/scene/SceneNode.h"
 
-using namespace rapidjson;
-
 namespace esp {
 namespace gfx {
 namespace replay {
@@ -25,7 +23,7 @@ class NodeDeletionHelper : public Magnum::SceneGraph::AbstractFeature3D {
         node(&node_),
         recorder_(writer) {}
 
-  virtual ~NodeDeletionHelper() {
+  ~NodeDeletionHelper() override {
     recorder_->onDeleteRenderAssetInstance(node);
   }
 
