@@ -117,7 +117,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     LOG(WARNING) << "Not changing requiresTextures as the simulator was "
                     "initialized with True.  Call close() to change this.";
   }
-
+  // (re) create scene instance
   createSceneInstance();
 
   LOG(INFO) << "createSceneInstance success";
@@ -272,6 +272,9 @@ bool Simulator::createSceneInstance() {
       metadataMediator_->getCurrentPhysicsManagerAttributes();
 
   // get scene instance attributes corresponding to passed active scene name
+  // This will retrieve, or construct, an appropriately configured scene
+  // instance attributes, depending on what exists in the Scene Dataset library
+  // for the current dataset.
   auto sceneInstanceAttributes =
       metadataMediator_->getSceneAttributesByName(config_.activeSceneName);
 
@@ -973,7 +976,7 @@ int Simulator::getAgentObservations(
   if (ag != nullptr) {
     const std::map<std::string, sensor::Sensor::ptr>& sensors =
         ag->getSensorSuite().getSensors();
-    for (std::pair<std::string, sensor::Sensor::ptr> s : sensors) {
+    for (const std::pair<const std::string, sensor::Sensor::ptr>& s : sensors) {
       sensor::Observation obs;
       if (s.second->getObservation(*this, obs)) {
         observations[s.first] = obs;
@@ -1004,7 +1007,7 @@ int Simulator::getAgentObservationSpaces(
   if (ag != nullptr) {
     const std::map<std::string, sensor::Sensor::ptr>& sensors =
         ag->getSensorSuite().getSensors();
-    for (std::pair<std::string, sensor::Sensor::ptr> s : sensors) {
+    for (const std::pair<const std::string, sensor::Sensor::ptr>& s : sensors) {
       sensor::ObservationSpace space;
       if (s.second->getObservationSpace(space)) {
         spaces[s.first] = space;
