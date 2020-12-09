@@ -49,7 +49,7 @@ void Recorder::onCreateRenderAssetInstance(
     scene::SceneNode* node,
     const esp::assets::RenderAssetInstanceCreationInfo& creation) {
   ASSERT(node);
-  ASSERT(findInstance(node) == -1);
+  ASSERT(findInstance(node) == ID_UNDEFINED);
 
   RenderAssetInstanceKey instanceKey = getNewInstanceKey();
 
@@ -108,7 +108,7 @@ void Recorder::checkAndAddDeletion(Keyframe* keyframe,
 
 void Recorder::onDeleteRenderAssetInstance(const scene::SceneNode* node) {
   int index = findInstance(node);
-  ASSERT(index != -1);
+  ASSERT(index != ID_UNDEFINED);
 
   auto instanceKey = instanceRecords_[index].instanceKey;
 
@@ -131,7 +131,8 @@ int Recorder::findInstance(const scene::SceneNode* queryNode) {
                            return record.node == queryNode;
                          });
 
-  return it == instanceRecords_.end() ? -1 : int(it - instanceRecords_.begin());
+  return it == instanceRecords_.end() ? ID_UNDEFINED
+                                      : int(it - instanceRecords_.begin());
 }
 
 RenderAssetInstanceState Recorder::getInstanceState(

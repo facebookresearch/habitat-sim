@@ -109,7 +109,7 @@ class Recorder {
   // Helper for tracking render asset instances
   struct InstanceRecord {
     scene::SceneNode* node = nullptr;
-    RenderAssetInstanceKey instanceKey = -1;
+    RenderAssetInstanceKey instanceKey = ID_UNDEFINED;
     Corrade::Containers::Optional<RenderAssetInstanceState> recentState;
     NodeDeletionHelper* deletionHelper = nullptr;
   };

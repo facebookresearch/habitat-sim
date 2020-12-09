@@ -15,7 +15,7 @@ class SceneNode;
 namespace gfx {
 namespace replay {
 
-using RenderAssetInstanceKey = uint32_t;
+using RenderAssetInstanceKey = int32_t;
 
 /**
  * @brief serialization/replay-friendly Transform class
@@ -35,7 +35,7 @@ struct Transform {
 struct RenderAssetInstanceState {
   Transform absTransform;  // localToWorld
   // note we currently only support semanticId per instance, not per drawable
-  int semanticId = -1;
+  int semanticId = ID_UNDEFINED;
   // note we don't currently support runtime changes to lightSetupKey
   bool operator==(const RenderAssetInstanceState& rhs) const {
     return absTransform == rhs.absTransform && semanticId == rhs.semanticId;
