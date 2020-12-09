@@ -180,7 +180,7 @@ class Simulator {
   int addObject(int objectLibId,
                 scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetupKey =
-                    assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+                    metadata::MetadataMediator::DEFAULT_LIGHTING_KEY,
                 int sceneID = 0);
 
   /**
@@ -202,7 +202,7 @@ class Simulator {
   int addObjectByHandle(const std::string& objectLibHandle,
                         scene::SceneNode* attachmentNode = nullptr,
                         const std::string& lightSetupKey =
-                            assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+                            metadata::MetadataMediator::DEFAULT_LIGHTING_KEY,
                         int sceneID = 0);
 
   /**
@@ -779,7 +779,8 @@ class Simulator {
    * @param key The string key of the @ref gfx::LightSetup.
    */
   gfx::LightSetup getLightSetup(
-      const std::string& key = assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+      const std::string& key =
+          metadata::MetadataMediator::DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Register a @ref gfx::LightSetup with a key name.
@@ -790,9 +791,9 @@ class Simulator {
    * @param lightSetup The @ref gfx::LightSetup this key will now reference.
    * @param key Key to identify this @ref gfx::LightSetup.
    */
-  void setLightSetup(
-      gfx::LightSetup lightSetup,
-      const std::string& key = assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+  void setLightSetup(gfx::LightSetup lightSetup,
+                     const std::string& key =
+                         metadata::MetadataMediator::DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Set the light setup of an object

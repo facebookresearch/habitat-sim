@@ -89,8 +89,8 @@ void DrawableTest::addRemoveDrawables() {
   // add a toy box here!
   node.addFeature<esp::gfx::GenericDrawable>(
       box, meshAttributeFlags, resourceManager_->getShaderManager(),
-      esp::assets::ResourceManager::NO_LIGHT_KEY,
-      esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+      esp::metadata::MetadataMediator::NO_LIGHT_KEY,
+      esp::metadata::MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       drawableGroup_);
   // we already had 5 boxes in the scene, so the id for the above toy box must
   // be 5
@@ -102,8 +102,8 @@ void DrawableTest::addRemoveDrawables() {
       box,
       meshAttributeFlags,
       resourceManager_->getShaderManager(),
-      esp::assets::ResourceManager::NO_LIGHT_KEY,
-      esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+      esp::metadata::MetadataMediator::NO_LIGHT_KEY,
+      esp::metadata::MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       drawableGroup_};
 
   // we already had 5 boxes in the scene, 1 toy box added before the current
@@ -118,8 +118,8 @@ void DrawableTest::addRemoveDrawables() {
       box,
       meshAttributeFlags,
       resourceManager_->getShaderManager(),
-      esp::assets::ResourceManager::NO_LIGHT_KEY,
-      esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+      esp::metadata::MetadataMediator::NO_LIGHT_KEY,
+      esp::metadata::MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       nullptr};
   // it has NOT been added to this group, so it should not find it!
   CORRADE_VERIFY(!drawableGroup_->hasDrawable(dr->getDrawableId()));
@@ -145,8 +145,8 @@ void DrawableTest::addRemoveDrawables() {
       box,
       meshAttributeFlags,
       resourceManager_->getShaderManager(),
-      esp::assets::ResourceManager::NO_LIGHT_KEY,
-      esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+      esp::metadata::MetadataMediator::NO_LIGHT_KEY,
+      esp::metadata::MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       nullptr};
   drawableGroup_->remove(*dr);
   CORRADE_VERIFY(!drawableGroup_->hasDrawable(dr->getDrawableId()));

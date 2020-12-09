@@ -5,8 +5,7 @@
 #ifndef ESP_SIM_SIMULATORCONFIGURATION_H_
 #define ESP_SIM_SIMULATORCONFIGURATION_H_
 
-#include "esp/assets/ResourceManager.h"
-#include "esp/physics/configure.h"
+#include "esp/metadata/MetadataMediator.h"
 
 namespace esp {
 namespace sim {
@@ -54,7 +53,7 @@ struct SimulatorConfiguration {
    */
   std::string sceneDatasetConfigFile = "default";
   /** @brief Light setup key for scene */
-  std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
+  std::string sceneLightSetup = metadata::MetadataMediator::NO_LIGHT_KEY;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
