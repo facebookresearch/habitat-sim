@@ -150,6 +150,33 @@ constexpr double PHYSICS_ATTR_UNDEFINED = -1.0;
 
 static const double NO_TIME = 0.0;
 
+/**
+ * @brief The @ref ShaderManager key for @ref LightInfo which has no lights
+ */
+constexpr char NO_LIGHT_KEY[] = "no_lights";
+
+/**
+ *@brief The @ref ShaderManager key for the default @ref LightInfo
+ */
+constexpr char DEFAULT_LIGHTING_KEY[] = "";
+
+/**
+ *@brief The @ref ShaderManager key for the default @ref MaterialInfo
+ */
+constexpr char DEFAULT_MATERIAL_KEY[] = "";
+
+/**
+ *@brief The @ref ShaderManager key for full ambient white @ref MaterialInfo
+ *used for primitive wire-meshes
+ */
+constexpr char WHITE_MATERIAL_KEY[] = "ambient_white";
+
+/**
+ *@brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
+ * object ID
+ */
+constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] = "per_vertex_object_id";
+
 template <typename T>
 inline bool equal(const std::vector<std::shared_ptr<T>>& a,
                   const std::vector<std::shared_ptr<T>>& b) {

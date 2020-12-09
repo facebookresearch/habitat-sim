@@ -63,7 +63,7 @@ struct SimTest : Cr::TestSuite::Tester {
 
   Simulator::uptr getSimulator(
       const std::string& scene,
-      const std::string& sceneLightingKey = MetadataMediator::NO_LIGHT_KEY) {
+      const std::string& sceneLightingKey = esp::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
     simConfig.activeSceneID = scene;
     simConfig.enablePhysics = true;

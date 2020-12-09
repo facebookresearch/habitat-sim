@@ -288,8 +288,7 @@ class ResourceManager {
    * @brief Get a named @ref LightSetup
    */
   Mn::Resource<gfx::LightSetup> getLightSetup(
-      const Mn::ResourceKey& key = Mn::ResourceKey{
-          metadata::MetadataMediator::DEFAULT_LIGHTING_KEY}) {
+      const Mn::ResourceKey& key = Mn::ResourceKey{DEFAULT_LIGHTING_KEY}) {
     return shaderManager_.get<gfx::LightSetup>(key);
   }
 
@@ -304,7 +303,7 @@ class ResourceManager {
    */
   void setLightSetup(gfx::LightSetup setup,
                      const Mn::ResourceKey& key = Mn::ResourceKey{
-                         metadata::MetadataMediator::DEFAULT_LIGHTING_KEY}) {
+                         DEFAULT_LIGHTING_KEY}) {
     shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
                        Mn::ResourcePolicy::Manual);
   }
@@ -347,8 +346,7 @@ class ResourceManager {
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>& visNodeCache,
-      const std::string& lightSetupKey =
-          metadata::MetadataMediator::DEFAULT_LIGHTING_KEY) {
+      const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY) {
     if (objTemplateLibID != ID_UNDEFINED) {
       const std::string& objTemplateHandleName =
           metadataMediator_->getObjectAttributesManager()->getObjectHandleByID(
@@ -385,8 +383,7 @@ class ResourceManager {
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>& visNodeCache,
-      const std::string& lightSetupKey =
-          metadata::MetadataMediator::DEFAULT_LIGHTING_KEY);
+      const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref

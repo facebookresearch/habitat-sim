@@ -7,13 +7,6 @@
 namespace esp {
 namespace metadata {
 
-// static constexpr arrays require redundant definitions until C++17
-constexpr char MetadataMediator::NO_LIGHT_KEY[];
-constexpr char MetadataMediator::DEFAULT_LIGHTING_KEY[];
-constexpr char MetadataMediator::DEFAULT_MATERIAL_KEY[];
-constexpr char MetadataMediator::WHITE_MATERIAL_KEY[];
-constexpr char MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
-
 void MetadataMediator::buildAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
   sceneDatasetAttributesManager_ =

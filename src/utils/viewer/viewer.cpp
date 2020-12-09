@@ -396,8 +396,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig.requiresTextures = true;
   if (args.isSet("stage-requires-lighting")) {
     Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
-    simConfig.sceneLightSetup =
-        esp::metadata::MetadataMediator::DEFAULT_LIGHTING_KEY;
+    simConfig.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
   }
 
   // setup the PhysicsManager config file

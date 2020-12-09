@@ -89,22 +89,21 @@ void DrawableTest::addRemoveDrawables() {
   // add a toy box here!
   node.addFeature<esp::gfx::GenericDrawable>(
       box, meshAttributeFlags, resourceManager_->getShaderManager(),
-      esp::metadata::MetadataMediator::NO_LIGHT_KEY,
-      esp::metadata::MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+      esp::NO_LIGHT_KEY, esp::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       drawableGroup_);
   // we already had 5 boxes in the scene, so the id for the above toy box must
   // be 5
   int toyBoxId = 5;
 
   // step 1: basic tests
-  esp::gfx::GenericDrawable* dr = new esp::gfx::GenericDrawable{
-      node,
-      box,
-      meshAttributeFlags,
-      resourceManager_->getShaderManager(),
-      esp::metadata::MetadataMediator::NO_LIGHT_KEY,
-      esp::metadata::MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
-      drawableGroup_};
+  esp::gfx::GenericDrawable* dr =
+      new esp::gfx::GenericDrawable{node,
+                                    box,
+                                    meshAttributeFlags,
+                                    resourceManager_->getShaderManager(),
+                                    esp::NO_LIGHT_KEY,
+                                    esp::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+                                    drawableGroup_};
 
   // we already had 5 boxes in the scene, 1 toy box added before the current
   // one, so the id should be 6
@@ -113,14 +112,13 @@ void DrawableTest::addRemoveDrawables() {
   CORRADE_VERIFY(dr->drawables() == drawableGroup_);
 
   // step 2: add a single drawable to a group
-  dr = new esp::gfx::GenericDrawable{
-      node,
-      box,
-      meshAttributeFlags,
-      resourceManager_->getShaderManager(),
-      esp::metadata::MetadataMediator::NO_LIGHT_KEY,
-      esp::metadata::MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
-      nullptr};
+  dr = new esp::gfx::GenericDrawable{node,
+                                     box,
+                                     meshAttributeFlags,
+                                     resourceManager_->getShaderManager(),
+                                     esp::NO_LIGHT_KEY,
+                                     esp::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+                                     nullptr};
   // it has NOT been added to this group, so it should not find it!
   CORRADE_VERIFY(!drawableGroup_->hasDrawable(dr->getDrawableId()));
   drawableGroup_->add(*dr);
@@ -140,14 +138,13 @@ void DrawableTest::addRemoveDrawables() {
   CORRADE_VERIFY(!drawableGroup_->hasDrawable(toyBoxId));
 
   // step 5: remove a drawable, that is NOT in the group! should be fine!!
-  dr = new esp::gfx::GenericDrawable{
-      node,
-      box,
-      meshAttributeFlags,
-      resourceManager_->getShaderManager(),
-      esp::metadata::MetadataMediator::NO_LIGHT_KEY,
-      esp::metadata::MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
-      nullptr};
+  dr = new esp::gfx::GenericDrawable{node,
+                                     box,
+                                     meshAttributeFlags,
+                                     resourceManager_->getShaderManager(),
+                                     esp::NO_LIGHT_KEY,
+                                     esp::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+                                     nullptr};
   drawableGroup_->remove(*dr);
   CORRADE_VERIFY(!drawableGroup_->hasDrawable(dr->getDrawableId()));
 }
