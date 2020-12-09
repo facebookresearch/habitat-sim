@@ -397,7 +397,7 @@ Viewer::Viewer(const Arguments& arguments)
   if (args.isSet("stage-requires-lighting")) {
     Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig.sceneLightSetup =
-        esp::assets::ResourceManager::DEFAULT_LIGHTING_KEY;
+        esp::metadata::MetadataMediator::DEFAULT_LIGHTING_KEY;
   }
 
   // setup the PhysicsManager config file
