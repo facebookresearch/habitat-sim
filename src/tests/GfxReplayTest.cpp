@@ -13,7 +13,6 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/WindowlessContext.h"
-#include "esp/gfx/replay/Player.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/scene/SceneManager.h"
 
