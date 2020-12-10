@@ -231,11 +231,11 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::getObjectByID
 
   /**
-   * @brief Get a reference to the managed object for the asset
-   * identified by the passed objectHandle.  Should only be used
-   * internally. Users should only ever access copies of managed objects.
+   * @brief Get a reference to the managed object identified by the passed
+   * objectHandle.  Should only be used internally. Users should only ever
+   * access copies of managed objects.
    *
-   * @param objectHandle The key referencing the asset in @ref
+   * @param objectHandle The key referencing the managed object in @ref
    * objectLibrary_.
    * @return A reference to the managed object, or nullptr if does not
    * exist

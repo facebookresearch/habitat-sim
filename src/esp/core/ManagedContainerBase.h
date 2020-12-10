@@ -197,7 +197,7 @@ class ManagedContainerBase {
   const std::string& getObjectType() const { return objectType_; }
 
  protected:
-  //======== Internally accessed getter ================
+  //======== Internally accessed getter/setter ================
 
   /**
    * @brief Retrieve shared pointer to object held in library, NOT a copy.
