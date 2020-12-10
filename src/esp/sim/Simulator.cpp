@@ -79,8 +79,7 @@ void Simulator::close() {
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // set dataset upon creation or reconfigure
   if (!metadataMediator_) {
-    metadataMediator_ = metadata::MetadataMediator::create(
-        cfg.sceneDatasetConfigFile, cfg.physicsConfigFile);
+    metadataMediator_ = metadata::MetadataMediator::create(cfg);
   }
   metadataMediator_->setSimulatorConfiguration(cfg);
 

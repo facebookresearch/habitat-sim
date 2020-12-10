@@ -68,11 +68,8 @@ class SceneDatasetAttributesManager
    */
   void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
     physicsManagerAttributesHandle_ = handle;
-    for (auto& val : this->objectLibrary_) {
-      auto dataset =
-          this->getObjectInternal<attributes::SceneDatasetAttributes>(
-              val.first);
-      dataset->setPhysicsManagerHandle(handle);
+    for (const auto& val : this->objectLibrary_) {
+      this->getObjectByHandle(val.first)->setPhysicsManagerHandle(handle);
     }
   }  // SceneDatasetAttributesManager::setCurrPhysicsManagerAttributesHandle
 

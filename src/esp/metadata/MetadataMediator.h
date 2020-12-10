@@ -29,6 +29,7 @@ namespace metadata {
 
 class MetadataMediator {
  public:
+  MetadataMediator(const sim::SimulatorConfiguration& cfg);
   MetadataMediator(const std::string& _activeSceneDataset = "default",
                    const std::string& _physicsManagerAttributesPath =
                        ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
@@ -50,7 +51,7 @@ class MetadataMediator {
    * @return Whether successfully created a new dataset or not.
    */
   bool createSceneDataset(const std::string& sceneDatasetName,
-                          bool overwrite = true);
+                          bool overwrite = false);
 
   /**
    * @brief Load a physics manager attributes defined by passed string file path
@@ -225,6 +226,17 @@ class MetadataMediator {
   attributes::SceneAttributes::ptr getSceneAttributesByName(
       const std::string& sceneName);
 
+  /**
+   * @brief Allow removal of the named @ref
+   * esp::metadata::attributes::SceneDatasetAttributes.  Will silently force
+   * removal of locked attributes.  If @p datasetName references @ref
+   * activeSceneDataset_ then will fail, returning false.
+   *
+   * @param sceneDatasetName The name of the SceneDatasetAttributes to remove.
+   * @return whether successful or not.
+   */
+  bool removeSceneDataset(const std::string& sceneDatasetName);
+
  protected:
   /**
    * @brief This will create a new, empty @ref SceneAttributes with the passed
@@ -244,10 +256,8 @@ class MetadataMediator {
 
   /**
    * @brief This function will build the @ref managers::PhysicsAttributesManager
-   * and @ref managers::DatasetAttributeManager this mediator will manage.
-   *
-   * This will also attempt to build templates for the default physics manager
-   * and dataset.
+   * and @ref managers::SceneDatasetAttributesManager this mediator will manage.
+   * This should only be called from constructor or reset (TODO).
    */
   void buildAttributesManagers();
 
@@ -272,7 +282,8 @@ class MetadataMediator {
   //================== Instance variables ==================//
 
   /**
-   * @brief Current Simulator Configuration.
+   * @brief Current Simulator Configuration. A copy (not a ref) so that it can
+   * exceed the lifespan of the source config from, for example, Simulator.
    */
   sim::SimulatorConfiguration simConfig_;
 
