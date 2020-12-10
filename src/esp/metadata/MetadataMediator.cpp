@@ -11,7 +11,8 @@ MetadataMediator::MetadataMediator(
     const std::string& _activeSceneDataset,
     const std::string& _physicsManagerAttributesPath)
     : activeSceneDataset_(_activeSceneDataset),
-      currPhysicsManagerAttributes_(_physicsManagerAttributesPath) {
+      currPhysicsManagerAttributes_(_physicsManagerAttributesPath),
+      simConfig_(sim::SimulatorConfiguration{}) {
   buildAttributesManagers();
 }  // MetadataMediator ctor
 void MetadataMediator::buildAttributesManagers() {
@@ -27,6 +28,38 @@ void MetadataMediator::buildAttributesManagers() {
   setCurrPhysicsAttributesHandle(currPhysicsManagerAttributes_);
 
 }  // MetadataMediator::buildAttributesManagers
+
+bool MetadataMediator::setSimulatorConfiguration(
+    const sim::SimulatorConfiguration& cfg) {
+  simConfig_ = cfg;
+
+  // set active physics attributes handle
+  bool success = setCurrPhysicsAttributesHandle(simConfig_.physicsConfigFile);
+  if (!success) {
+    // something failed about setting up physics attributes
+
+    return false;
+  }
+
+  // set current active dataset name
+  success = setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile);
+  if (!success) {
+    // something failed about setting up active scene dataset
+
+    return false;
+  }
+  // get a ref to current dataset attributes
+  attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+  if (datasetAttr != nullptr) {
+    datasetAttr->setCurrCfgVals(simConfig_.sceneLightSetup,
+                                simConfig_.frustumCulling);
+  } else {
+    LOG(ERROR) << "MetadataMediator::setSimulatorConfiguration : No active "
+                  "dataset exists or has been specified. Aborting";
+    return false;
+  }
+
+}  // MetadataMediator::setSimulatorConfiguration
 
 bool MetadataMediator::createPhysicsManagerAttributes(
     const std::string& _physicsManagerAttributesPath) {
@@ -96,6 +129,7 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
         currPhysicsManagerAttributes_);
     return true;
   }
+  // if this handle does not exist, create the attributes for it.
   bool success = createPhysicsManagerAttributes(_physicsManagerAttributesPath);
   // if successfully created, set default name to physics manager attributes in
   // SceneDatasetAttributesManager
