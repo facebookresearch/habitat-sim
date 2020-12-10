@@ -205,8 +205,7 @@ bool ResourceManager::loadStage(
         flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
       }
       RenderAssetInstanceCreationInfo creation(
-          semanticStageFilename, Cr::Containers::NullOpt, flags,
-          metadata::MetadataMediator::NO_LIGHT_KEY);
+          semanticStageFilename, Cr::Containers::NullOpt, flags, NO_LIGHT_KEY);
 
       bool semanticStageSuccess =
           loadStageInternal(semanticInfo,  // AssetInfo
@@ -936,10 +935,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
 #ifdef ESP_BUILD_PTEX_SUPPORT
-  ASSERT(!creation.scale);  // PTex doesn't support scale
-  ASSERT(creation.lightSetupKey ==
-         metadata::MetadataMediator::NO_LIGHT_KEY);  // PTex doesn't support
-                                                     // lighting
+  ASSERT(!creation.scale);                         // PTex doesn't support scale
+  ASSERT(creation.lightSetupKey == NO_LIGHT_KEY);  // PTex doesn't support
+                                                   // lighting
 
   const std::string& filename = creation.filepath;
   const LoadedAssetData& loadedAssetData = resourceDict_.at(creation.filepath);
@@ -1034,9 +1032,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
   ASSERT(!creation.scale);  // IMesh doesn't support scale
-  ASSERT(creation.lightSetupKey ==
-         metadata::MetadataMediator::NO_LIGHT_KEY);  // IMesh doesn't support
-                                                     // lighting
+  ASSERT(creation.lightSetupKey == NO_LIGHT_KEY);  // IMesh doesn't support
+                                                   // lighting
 
   const bool computeAbsoluteAABBs = creation.isStatic();
 
@@ -1060,13 +1057,11 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
     // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
     // It will SEGFAULT!
     createDrawable(*(meshes_.at(iMesh)->getMagnumGLMesh()),  // render mesh
-                   meshAttributeFlags,      // mesh attribute flags
-                   node,                    // scene node
-                   creation.lightSetupKey,  // lightSetup key
-                   metadata::MetadataMediator::
-                       PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material
-                                                           // key
-                   drawables);                             // drawable group
+                   meshAttributeFlags,                 // mesh attribute flags
+                   node,                               // scene node
+                   creation.lightSetupKey,             // lightSetup key
+                   PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
+                   drawables);                         // drawable group
 
     if (computeAbsoluteAABBs) {
       staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
@@ -1922,7 +1917,7 @@ void ResourceManager::addComponent(
     Mn::ResourceKey materialKey;
     if (materialIDLocal == ID_UNDEFINED ||
         metaData.materialIndex.second == ID_UNDEFINED) {
-      materialKey = metadata::MetadataMediator::DEFAULT_MATERIAL_KEY;
+      materialKey = DEFAULT_MATERIAL_KEY;
     } else {
       materialKey =
           std::to_string(metaData.materialIndex.first + materialIDLocal);
@@ -1977,13 +1972,12 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
   // so do not need to worry about the tangent or bitangent.
   // it might be changed in the future.
   gfx::Drawable::Flags meshAttributeFlags{};
-  createDrawable(
-      *primitive_meshes_.at(primitiveID),              // render mesh
-      meshAttributeFlags,                              // meshAttributeFlags
-      node,                                            // scene node
-      metadata::MetadataMediator::NO_LIGHT_KEY,        // lightSetup key
-      metadata::MetadataMediator::WHITE_MATERIAL_KEY,  // material key
-      drawables);                                      // drawable group
+  createDrawable(*primitive_meshes_.at(primitiveID),  // render mesh
+                 meshAttributeFlags,                  // meshAttributeFlags
+                 node,                                // scene node
+                 NO_LIGHT_KEY,                        // lightSetup key
+                 WHITE_MATERIAL_KEY,                  // material key
+                 drawables);                          // drawable group
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
@@ -2069,8 +2063,7 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
           flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;
           flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
           RenderAssetInstanceCreationInfo objectCreation(
-              info.filepath, Cr::Containers::NullOpt, flags,
-              metadata::MetadataMediator::NO_LIGHT_KEY);
+              info.filepath, Cr::Containers::NullOpt, flags, NO_LIGHT_KEY);
           createRenderAssetInstance(objectCreation, &objectNode, drawables);
         }
         return objectNode;
@@ -2126,26 +2119,22 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   return true;
 }
 void ResourceManager::initDefaultLightSetups() {
-  shaderManager_.set(metadata::MetadataMediator::NO_LIGHT_KEY,
-                     gfx::LightSetup{});
+  shaderManager_.set(NO_LIGHT_KEY, gfx::LightSetup{});
   shaderManager_.setFallback(gfx::LightSetup{});
 }
 
 void ResourceManager::initDefaultMaterials() {
-  shaderManager_.set<gfx::MaterialData>(
-      metadata::MetadataMediator::DEFAULT_MATERIAL_KEY,
-      new gfx::PhongMaterialData{});
+  shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
+                                        new gfx::PhongMaterialData{});
   auto whiteMaterialData = new gfx::PhongMaterialData;
   whiteMaterialData->ambientColor = Magnum::Color4{1.0};
-  shaderManager_.set<gfx::MaterialData>(
-      metadata::MetadataMediator::WHITE_MATERIAL_KEY, whiteMaterialData);
+  shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
   auto perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
   perVertexObjectId->vertexColored = true;
   perVertexObjectId->ambientColor = Mn::Color4{1.0};
-  shaderManager_.set<gfx::MaterialData>(
-      metadata::MetadataMediator::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
-      perVertexObjectId);
+  shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+                                        perVertexObjectId);
   shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});
 }
 
@@ -2154,8 +2143,7 @@ bool ResourceManager::isLightSetupCompatible(
     const Magnum::ResourceKey& lightSetupKey) const {
   // if light setup has lights in it, but asset was loaded in as flat shaded,
   // there may be an error when rendering.
-  return lightSetupKey ==
-             Mn::ResourceKey{metadata::MetadataMediator::NO_LIGHT_KEY} ||
+  return lightSetupKey == Mn::ResourceKey{NO_LIGHT_KEY} ||
          loadedAssetData.assetInfo.requiresLighting;
 }
 

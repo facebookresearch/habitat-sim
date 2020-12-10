@@ -22,34 +22,6 @@ namespace esp {
 namespace metadata {
 class MetadataMediator {
  public:
-  /**
-   * @brief The @ref ShaderManager key for @ref LightInfo which has no lights
-   */
-  static constexpr char NO_LIGHT_KEY[] = "no_lights";
-
-  /**
-   *@brief The @ref ShaderManager key for the default @ref LightInfo
-   */
-  static constexpr char DEFAULT_LIGHTING_KEY[] = "";
-
-  /**
-   *@brief The @ref ShaderManager key for the default @ref MaterialInfo
-   */
-  static constexpr char DEFAULT_MATERIAL_KEY[] = "";
-
-  /**
-   *@brief The @ref ShaderManager key for full ambient white @ref MaterialInfo
-   *used for primitive wire-meshes
-   */
-  static constexpr char WHITE_MATERIAL_KEY[] = "ambient_white";
-
-  /**
-   *@brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
-   * object ID
-   */
-  static constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] =
-      "per_vertex_object_id";
-
   MetadataMediator(const std::string& _defaultSceneDataset = "default")
       : activeSceneDataset_(_defaultSceneDataset) {
     buildAttributesManagers();

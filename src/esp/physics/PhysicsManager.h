@@ -181,8 +181,7 @@ class PhysicsManager {
   int addObject(const std::string& configFile,
                 DrawableGroup* drawables,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup =
-                    metadata::MetadataMediator::DEFAULT_LIGHTING_KEY);
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
@@ -199,8 +198,7 @@ class PhysicsManager {
   int addObject(const int objectLibId,
                 DrawableGroup* drawables,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup =
-                    metadata::MetadataMediator::DEFAULT_LIGHTING_KEY);
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref

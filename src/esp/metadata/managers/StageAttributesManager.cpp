@@ -30,7 +30,7 @@ StageAttributesManager::StageAttributesManager(
           AbstractObjectAttributesManager("Stage", "stage_config.json"),
       objectAttributesMgr_(std::move(objectAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),
-      cfgLightSetup_(metadata::MetadataMediator::NO_LIGHT_KEY) {
+      cfgLightSetup_(NO_LIGHT_KEY) {
   buildCtorFuncPtrMaps();
 }  // StageAttributesManager ctor
 
@@ -188,8 +188,7 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   // set defaults from SimulatorConfig values; these can also be overridden by
   // json, for example.
   newAttributes->setLightSetup(cfgLightSetup_);
-  newAttributes->setRequiresLighting(cfgLightSetup_ !=
-                                     metadata::MetadataMediator::NO_LIGHT_KEY);
+  newAttributes->setRequiresLighting(cfgLightSetup_ != NO_LIGHT_KEY);
   // set value from config so not necessary to be passed as argument
   newAttributes->setFrustumCulling(cfgFrustumCulling_);
 
