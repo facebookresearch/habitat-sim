@@ -151,23 +151,26 @@ constexpr double PHYSICS_ATTR_UNDEFINED = -1.0;
 static const double NO_TIME = 0.0;
 
 /**
- * @brief The @ref ShaderManager key for @ref LightInfo which has no lights
+ * @brief The @ref esp::gfx::ShaderManager key for @ref esp::gfx::LightInfo
+ * which has no lights
  */
 constexpr char NO_LIGHT_KEY[] = "no_lights";
 
 /**
- *@brief The @ref ShaderManager key for the default @ref LightInfo
+ *@brief The @ref esp::gfx::ShaderManager key for the default @ref
+ *esp::gfx::LightInfo
  */
 constexpr char DEFAULT_LIGHTING_KEY[] = "";
 
 /**
- *@brief The @ref ShaderManager key for the default @ref MaterialInfo
+ *@brief The @ref esp::gfx::ShaderManager key for the default @ref
+ *esp::gfx::MaterialInfo
  */
 constexpr char DEFAULT_MATERIAL_KEY[] = "";
 
 /**
- *@brief The @ref ShaderManager key for full ambient white @ref MaterialInfo
- *used for primitive wire-meshes
+ *@brief The @ref esp::gfx::ShaderManager key for full ambient white @ref
+ *esp::gfx::MaterialInfo used for primitive wire-meshes
  */
 constexpr char WHITE_MATERIAL_KEY[] = "ambient_white";
 
