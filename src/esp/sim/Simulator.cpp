@@ -81,10 +81,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   if (!metadataMediator_) {
     metadataMediator_ = metadata::MetadataMediator::create(
         cfg.sceneDatasetConfigFile, cfg.physicsConfigFile);
-  } else {
-    metadataMediator_->setCurrPhysicsAttributesHandle(cfg.physicsConfigFile);
-    metadataMediator_->setActiveSceneDatasetName(cfg.sceneDatasetConfigFile);
   }
+  metadataMediator_->setSimulatorConfiguration(cfg);
+
   // assign MM to RM on create or reconfigure
   if (!resourceManager_) {
     resourceManager_ =
@@ -262,10 +261,6 @@ bool Simulator::createSceneInstance() {
   // config_.activeSceneID
 
   // 1. initial setup
-  // set config-driven overrides
-  metadataMediator_->setCurrDatasetCfgVals(config_.sceneLightSetup,
-                                           config_.frustumCulling);
-
   // use physics attributes manager to configure physics manager attributes
   // described by config file.
   auto physicsManagerAttributes =
@@ -277,6 +272,8 @@ bool Simulator::createSceneInstance() {
   // for the current dataset.
   auto sceneInstanceAttributes =
       metadataMediator_->getSceneAttributesByName(config_.activeSceneName);
+
+  //
 
   return true;
 }  // Simulator::createSceneInstance

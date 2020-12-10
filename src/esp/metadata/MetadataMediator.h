@@ -17,15 +17,29 @@
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/SceneDatasetAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
+#include "esp/sim/SimulatorConfiguration.h"
 
 namespace esp {
+
+namespace sim {
+class SimulatorConfiguration;
+}
+
 namespace metadata {
+
 class MetadataMediator {
  public:
   MetadataMediator(const std::string& _activeSceneDataset = "default",
                    const std::string& _physicsManagerAttributesPath =
                        ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
   ~MetadataMediator() {}
+
+  /**
+   * @brief Set current @ref esp::sim::SimulatorConfiguration to be used.
+   * @param cfg Current configuration being used by Simulator.
+   * @return Whether config was set properly.
+   */
+  bool setSimulatorConfiguration(const sim::SimulatorConfiguration& cfg);
 
   /**
    * @brief Creates a dataset attributes using @p sceneDatasetName, and
@@ -50,26 +64,6 @@ class MetadataMediator {
           ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
 
   //==================== Accessors ======================//
-
-  /**
-   * @brief Set appropriate values based on current @ref
-   * esp::sim::SimulatorConfiguration, including propagating relevant config
-   * values to
-   * @param datasetName the name of the dataset to apply these to.
-   * @param lightSetup the config-specified light setup
-   * @param frustrumCulling whether or not (semantic) stage should be
-   * partitioned for culling.
-   */
-  void setCurrDatasetCfgVals(const std::string& lightSetup,
-                             bool frustumCulling) {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    if (datasetAttr != nullptr) {
-      datasetAttr->setCurrCfgVals(lightSetup, frustumCulling);
-    } else {
-      LOG(ERROR) << "MetadataMediator::setCurrDatasetCfgVals : No active "
-                    "dataset exists or has been specified. Aborting";
-    }
-  }  // MetadataMediator::setCurrDatasetCfgVals
 
   /**
    * @brief Sets default dataset attributes, if it exists already.  If it does
@@ -276,6 +270,11 @@ class MetadataMediator {
   }  // MetadataMediator::getActiveDSAttribs
 
   //================== Instance variables ==================//
+
+  /**
+   * @brief Current Simulator Configuration.
+   */
+  sim::SimulatorConfiguration simConfig_;
 
   /**
    * @brief String name of current, default dataset.
