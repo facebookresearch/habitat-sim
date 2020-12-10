@@ -198,3 +198,6 @@ Below are object-specific physical quantities.  These values will override simil
 "join_collision_meshes"
 	- boolean
 	- Whether or not sub-components of the object's collision asset should be joined into a single unified collision object.
+"semantic_id"
+    - integer
+	- The semantic id assigned to objects made with this configuration.
