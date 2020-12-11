@@ -87,6 +87,7 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   // prepare a big triangle mesh to cover the screen
   mesh_ = Mn::GL::Mesh{};
   mesh_.setCount(3);
+  gfx::CubeMap::enableSeamlessCubeMapTexture();
 }
 
 Mn::ResourceKey FisheyeSensor::getShaderKey() {

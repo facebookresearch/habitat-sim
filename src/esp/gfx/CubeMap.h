@@ -24,6 +24,7 @@ namespace esp {
 namespace gfx {
 class CubeMap {
  public:
+  static void enableSeamlessCubeMapTexture();
   enum class TextureType : int8_t {
     Color = 0,
     Depth = 1,

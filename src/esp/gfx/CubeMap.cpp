@@ -8,6 +8,7 @@
 #include <Magnum/DebugTools/TextureImage.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
+#include <Magnum/GL/Renderer.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
@@ -27,6 +28,10 @@ const Mn::GL::Framebuffer::ColorAttachment colorAttachment =
 // TODO:
 // const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
 //    Mn::GL::Framebuffer::ColorAttachment{1};
+
+void CubeMap::enableSeamlessCubeMapTexture() {
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::SeamlessCubeMapTexture);
+}
 
 CubeMap::CubeMap(int imageSize, Flags flags) : flags_(flags) {
   reset(imageSize);
@@ -285,6 +290,14 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // will be updated by mistake!!! To prevent such mistakes, local
   // transformation of this camera node must be reset.
   camera.restoreTransformation();
+
+  if (flags_ & Flag::ColorTexture) {
+    textures_[TextureType::Color]->generateMipmap();
+  }
+
+  if (flags_ & Flag::DepthTexture) {
+    textures_[TextureType::Depth]->generateMipmap();
+  }
 }
 
 void CubeMap::loadTexture(TextureType type,
@@ -323,6 +336,21 @@ void CubeMap::loadTexture(TextureType type,
 
   std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
   int imageSize = 0;
+  // set images
+  Mn::GL::CubeMapTexture* texture;
+  switch (type) {
+    case TextureType::Color:
+      texture = textures_[TextureType::Color].get();
+      break;
+
+    case TextureType::Depth:
+      texture = textures_[TextureType::Depth].get();
+      break;
+
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
   for (int iFace = 0; iFace < 6; ++iFace) {
     // open image file
     std::string filename =
@@ -342,30 +370,15 @@ void CubeMap::loadTexture(TextureType type,
       imageSize = size.x();
       reset(imageSize);
     } else {
-      CORRADE_ASSERT(
-          size.x() == imageSize,
-          " CubeMap::loadTexture(): texture images must have the same size.", );
+      CORRADE_ASSERT(size.x() == imageSize,
+                     " CubeMap::loadTexture(): texture images must have the "
+                     "same size.", );
     }
 
-    // set images
-    Mn::GL::CubeMapTexture* texture;
-    switch (type) {
-      case TextureType::Color:
-        texture = textures_[TextureType::Color].get();
-        break;
-
-      case TextureType::Depth:
-        texture = textures_[TextureType::Depth].get();
-        break;
-
-      default:
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-        break;
-    }
     texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
                          *image);
   }
-
+  texture->generateMipmap();
   // We don't need the importer anymore
   imageImporterManger_.free<Mn::Trade::AbstractImporter>();
 }
