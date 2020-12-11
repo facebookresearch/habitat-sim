@@ -190,7 +190,10 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // Get name of navmesh and use to create pathfinder and load navmesh
   bool navMeshSuccess = createPathfinder(navmeshFileLoc);
-
+  if (!navMeshSuccess) {
+    LOG(INFO) << "Simulator::createSceneInstance : Navmesh file "
+              << navmeshFileLoc << " unable to load.";
+  }
   // Calling to seeding needs to be done after the pathfinder creation
   seed(config_.randomSeed);
 
@@ -302,9 +305,13 @@ bool Simulator::createSceneInstanceNoRenderer(
   const std::string& stageAttributesHandle = stageInstance->getHandle();
 
   // Get name of navmesh and use to create pathfinder and load navmesh
-  bool navMeshSuccess =
-      createPathfinder(metadataMediator_->getNavmeshPathByHandle(
-          sceneInstanceAttributes->getNavmeshHandle()));
+  std::string navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
+      sceneInstanceAttributes->getNavmeshHandle());
+  bool navMeshSuccess = createPathfinder(navmeshFileLoc);
+  if (!navMeshSuccess) {
+    LOG(INFO) << "Simulator::createSceneInstance : Navmesh file "
+              << navmeshFileLoc << " unable to load.";
+  }
 
   // Get StageAttributes
   auto stageAttributes =

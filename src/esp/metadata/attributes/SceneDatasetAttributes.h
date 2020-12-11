@@ -98,31 +98,34 @@ class SceneDatasetAttributes : public AbstractAttributes {
 
   /**
    * @brief Add an entry to the navmeshMap with the passed key.  If @p overwrite
-   * then overwrite existing entry, otherwise give warning and return false.
+   * then overwrite existing entry, otherwise will modify key and add value with
+   * modified key.  Returns pair of added KV.
    * @param key The handle for the navmesh path to add
    * @param path The path to the navmesh asset to add
    * @param overwrite Whether to overwrite existing entries or not
-   * @return Path that currently is at key location.
+   * @return K-V pair for path being added.
    */
-  std::string addNavmeshPathEntry(const std::string& key,
-                                  const std::string& path,
-                                  bool overwrite = false) {
+  std::pair<std::string, std::string> addNavmeshPathEntry(
+      const std::string& key,
+      const std::string& path,
+      bool overwrite = false) {
     return addNewValToMap(key, path, overwrite, navmeshMap_,
                           "SceneDatasetAttributes::addNavmeshPathEntry");
   }  // addNavmeshPathEntry
 
   /**
    * @brief Add an entry to the SemanticSceneDescr map with the passed key. If
-   * @p overwrite then overwrite existing entry, otherwise give warning and
-   * return false.
+   * @p overwrite then overwrite existing entry,  otherwise will modify key and
+   * add value with modified key.  Returns pair of added KV.
    * @param key The handle for the SemanticSceneDescr path to add
    * @param path The path to the SemanticSceneDescr asset to add
    * @param overwrite Whether to overwrite existing entries or not
-   * @return Path that currently is at key location.
+   * @return K-V pair for SemanticSceneDescr being added.
    */
-  std::string addSemanticSceneDescrPathEntry(const std::string& key,
-                                             const std::string& path,
-                                             bool overwrite = false) {
+  std::pair<std::string, std::string> addSemanticSceneDescrPathEntry(
+      const std::string& key,
+      const std::string& path,
+      bool overwrite = false) {
     return addNewValToMap(
         key, path, overwrite, semanticSceneDescrMap_,
         "SceneDatasetAttributes::addSemanticSceneDescrPathEntry");
@@ -171,11 +174,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief
    */
-  std::string addNewValToMap(const std::string& key,
-                             const std::string& path,
-                             bool overwrite,
-                             std::map<std::string, std::string>& map,
-                             const std::string& descString);
+  std::pair<std::string, std::string> addNewValToMap(
+      const std::string& key,
+      const std::string& path,
+      bool overwrite,
+      std::map<std::string, std::string>& map,
+      const std::string& descString);
 
   /**
    * @brief Reference to AssetAttributesManager to give access to primitive
@@ -212,6 +216,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * navmeshes.
    */
   std::map<std::string, std::string> navmeshMap_;
+
   /**
    * @brief Maps names specified in dataset_config file to paths for semantic
    * scene descriptor files

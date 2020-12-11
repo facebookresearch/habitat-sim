@@ -42,10 +42,7 @@ void MetadataMediator::buildAttributesManagers() {
 
 bool MetadataMediator::setSimulatorConfiguration(
     const sim::SimulatorConfiguration& cfg) {
-  // save if changed
-  if (cfg != simConfig_) {
-    simConfig_ = cfg;
-  }
+  simConfig_ = cfg;
 
   // set current active dataset name - if unchanged, does nothing
   bool success = setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile);
@@ -323,8 +320,8 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
 }  // MetadataMediator::getSceneAttributesByName
 
 attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
-    attributes::SceneDatasetAttributes::ptr datasetAttr,
-    const attributes::StageAttributes::cptr stageAttributes,
+    const attributes::SceneDatasetAttributes::ptr& datasetAttr,
+    const attributes::StageAttributes::ptr& stageAttributes,
     const managers::SceneAttributesManager::ptr& dsSceneAttrMgr,
     const std::string& sceneName) {
   // create scene attributes with passed name
@@ -335,8 +332,32 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   sceneAttributes->setStageInstance(
       dsSceneAttrMgr->createEmptyInstanceAttributes(sceneName));
 
-  // add the navmesh path from the stage attributes, giving it an appropriately
-  // obvious name.
+  // The following is to manage stage files that have navmesh and semantic scene
+  // descriptor ("house file") handles in them. This mechanism has been
+  // deprecated, but in order to provide backwards compatibility, we are going
+  // to support these values here when we synthesize a non-existing scene
+  // instance attributes only.
+
+  // add a ref to the navmesh path from the stage attributes to scene
+  // attributes, giving it an appropriately obvious name.  This entails adding
+  // the path itself to the dataset, if it does not already exist there, keyed
+  // by the ref that the scene attributes will use.
+  std::pair<std::string, std::string> navmeshEntry =
+      datasetAttr->addNavmeshPathEntry(
+          sceneName, stageAttributes->getNavmeshAssetHandle(), false);
+  // navmeshEntry holds the navmesh key in the dataset to use by this scene
+  // instance
+  sceneAttributes->setNavmeshHandle(navmeshEntry.first);
+
+  // add a ref to semantic scene descriptor ("house file") from stage attributes
+  // to scene attributes, giving it an appropriately obvious name.  This entails
+  // adding the path itself to the dataset, if it does not already exist there,
+  // keyed by the ref that the scene attributes will use.
+  std::pair<std::string, std::string> ssdEntry =
+      datasetAttr->addSemanticSceneDescrPathEntry(
+          sceneName, stageAttributes->getSemanticAssetHandle(), false);
+  // ssdEntry holds the ssd key in the dataset to use by this scene
+  sceneAttributes->setSemanticSceneHandle(navmeshEntry.first);
 
   // register SceneAttributes object
   dsSceneAttrMgr->registerObject(sceneAttributes);
