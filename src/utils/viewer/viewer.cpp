@@ -863,7 +863,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
         auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
             visualSensor->specification().get());
 
-        auto viewportSize = framebufferSize();
+        const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
         int size = viewportSize[0] < viewportSize[1] ? viewportSize[0]
                                                      : viewportSize[1];
         spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
@@ -878,7 +878,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
                   event.windowSize(), event.framebufferSize());
 
   objectPickingHelper_->handleViewportChange(event.framebufferSize());
-}
+}  // namespace
 
 void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
   for (auto& it : activeSceneGraph_->getDrawableGroups()) {
