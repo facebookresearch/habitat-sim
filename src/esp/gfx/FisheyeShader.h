@@ -6,6 +6,7 @@
 #define ESP_GFX_FISHEYESHADER_H_
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Utility/Macros.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Shaders/Generic.h>
@@ -73,7 +74,8 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
         std::forward_as_tuple(std::forward<DrawableGroupArgs>(args)...));
         */
 
-  virtual FisheyeShader& bindColorTexture(Magnum::GL::CubeMapTexture& texture);
+  virtual FisheyeShader& bindColorTexture(
+      CORRADE_UNUSED Magnum::GL::CubeMapTexture& texture);
   // virtual FisheyeShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
   // virtual FisheyeShader& bindObjectIdTexture(Magnum::GL::Texture2D&
   // texture);
