@@ -37,20 +37,22 @@ CubeMap::CubeMap(int imageSize, Flags flags) : flags_(flags) {
   reset(imageSize);
 }
 
-void CubeMap::reset(int imageSize) {
+bool CubeMap::reset(int imageSize) {
   if (imageSize_ == imageSize) {
-    return;
+    return false;
   }
 
   imageSize_ = imageSize;
-  CORRADE_ASSERT(
-      imageSize_ > 0,
-      "CubeMap::reset(): image size" << imageSize << "is illegal.", );
+  CORRADE_ASSERT(imageSize_ > 0,
+                 "CubeMap::reset(): image size" << imageSize << "is illegal.",
+                 false);
   // create an empty cubemap texture
   recreateTexture();
 
   // prepare frame buffer and render buffer
   recreateFramebuffer();
+
+  return true;
 }
 
 void CubeMap::recreateTexture() {
@@ -64,9 +66,15 @@ void CubeMap::recreateTexture() {
         .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
                                Mn::GL::SamplerMipmap::Linear)
-        .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-        .setStorage(Mn::Math::log2(imageSize_) + 1,
-                    Mn::GL::TextureFormat::RGBA8, size);
+        .setMagnificationFilter(Mn::GL::SamplerFilter::Linear);
+
+    if (flags_ & Flag::BuildMipMap) {
+      (*colorTexture)
+          .setStorage(Mn::Math::log2(imageSize_) + 1,
+                      Mn::GL::TextureFormat::RGBA8, size);
+    } else {
+      (*colorTexture).setStorage(1, Mn::GL::TextureFormat::RGBA8, size);
+    }
   }
 
   // depth texture
@@ -223,9 +231,9 @@ bool CubeMap::saveTexture(TextureType type,
 
   std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
   for (int iFace = 0; iFace < 6; ++iFace) {
-    Mn::Image2D image = Mn::DebugTools::textureSubImage(
-        *textures_[type], convertFaceIndexToCubeMapCoordinate(iFace), 0,
-        frameBuffer_.viewport(), {getPixelFormat(type)});
+    // TODO: use frambuffer.read() instead
+    Mn::Image2D image = textures_[type]->image(
+        convertFaceIndexToCubeMapCoordinate(iFace), 0, {getPixelFormat(type)});
 
     std::string filename = imageFilePrefix +
                            getTextureTypeFilenameString(type) +
@@ -291,12 +299,14 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // transformation of this camera node must be reset.
   camera.restoreTransformation();
 
-  if (flags_ & Flag::ColorTexture) {
-    textures_[TextureType::Color]->generateMipmap();
-  }
+  if (flags_ & Flag::BuildMipMap) {
+    if (flags_ & Flag::ColorTexture) {
+      textures_[TextureType::Color]->generateMipmap();
+    }
 
-  if (flags_ & Flag::DepthTexture) {
-    textures_[TextureType::Depth]->generateMipmap();
+    if (flags_ & Flag::DepthTexture) {
+      textures_[TextureType::Depth]->generateMipmap();
+    }
   }
 }
 

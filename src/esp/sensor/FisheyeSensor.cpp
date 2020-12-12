@@ -60,6 +60,7 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   if (fisheyeSensorSpec_->sensorType == SensorType::COLOR) {
     cubeMapFlags |= gfx::CubeMap::Flag::ColorTexture;
   }
+  // TODO: Depth, Semantic
   cubeMap_ = std::make_unique<gfx::CubeMap>(size, cubeMapFlags);
 
   // initialize the cubemap camera, it attaches to the same node as the sensor
@@ -103,19 +104,30 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
     return false;
   }
 
+  // in case the fisheye sensor resolution changed at runtime
+  {
+    auto& res = spec_->resolution;
+    int size = res[0] < res[1] ? res[0] : res[1];
+    bool reset = cubeMap_->reset(size);
+    if (reset) {
+      cubeMapCamera_->setProjectionMatrix(size,
+                                          fisheyeSensorSpec_->cubeMapCameraNear,
+                                          fisheyeSensorSpec_->cubeMapCameraFar);
+    }
+  }
+
   esp::gfx::RenderCamera::Flags flags;
   if (sim.isFrustumCullingEnabled()) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
   }
   // generate the cubemap texture
-  // cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
-  // flags);
+  cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), flags);
   // XXX debug
   // cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color, "cubemap");
   // XXX debug
   // cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "cubemap", "png");
-  cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "cubemap_viewer",
-                        "png");
+  // cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "cubemap_viewer",
+  //                      "png");
 
   // obtain shader based on fisheye model type
   Mn::ResourceKey key = getShaderKey();

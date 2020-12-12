@@ -501,20 +501,13 @@ Viewer::Viewer(const Arguments& arguments)
     spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
     spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-    // spec->xi = 0.3;
-    // spec->alpha = 0.3;
     spec->xi = -0.18;
     spec->alpha = 0.59;
-    // spec->xi = 0.0;
-    // spec->alpha = 0.0;
     int size =
         viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
     spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
-    // spec->focalLength = Mn::Vector2(size / 2.0, size / 2.0);
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
-    // spec->principalPointOffset = Mn::Vector2(size, size);
-    // spec->principalPointOffset = Mn::Vector2(0, 0);
   }
 
   // add selects a random initial state and sets up the default controls and
@@ -824,11 +817,13 @@ void Viewer::drawEvent() {
     auto& cam = getAgentCamera();
     ImGui::Text(
         "%s camera",
-        (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
-             ? "Orthographic"
-             : cam.getCameraType() == esp::sensor::SensorSubType::Pinhole
-                   ? "Pinhole"
-                   : "Fisheye"));
+        (fisheyeMode_
+             ? "Fisheye"
+             : (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
+                    ? "Orthographic"
+                    : cam.getCameraType() == esp::sensor::SensorSubType::Pinhole
+                          ? "Pinhole"
+                          : "Fisheye")));
     ImGui::End();
   }
 
@@ -863,6 +858,18 @@ void Viewer::viewportEvent(ViewportEvent& event) {
       visualSensor->specification()->resolution = {event.windowSize()[1],
                                                    event.windowSize()[0]};
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
+
+      if (visualSensor->specification()->uuid == "fisheye") {
+        auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
+            visualSensor->specification().get());
+
+        auto viewportSize = framebufferSize();
+        int size = viewportSize[0] < viewportSize[1] ? viewportSize[0]
+                                                     : viewportSize[1];
+        spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+        spec->principalPointOffset =
+            Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+      }
     }
   }
   Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});

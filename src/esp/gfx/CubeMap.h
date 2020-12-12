@@ -40,6 +40,16 @@ class CubeMap {
      * create depth cubemap
      */
     DepthTexture = 1 << 1,
+    /**
+     * TODO: ObjectId
+     */
+    /**
+     * Build mipmap for cubemap color texture
+     * By default, NO mipmap will be built, only 1 level
+     * By turning on this option, it will build the mipmap for the color texture
+     * if any.
+     */
+    BuildMipMap = 1 << 3,
   };
 
   /**
@@ -55,8 +65,10 @@ class CubeMap {
 
   /**
    * @brief, reset the image size
+   * @return true, if image size has been changed, and reset has happened,
+   * otherwise false
    */
-  void reset(int imageSize);
+  bool reset(int imageSize);
 
   /**
    * @brief Get the cubemap texture based on the texture type
