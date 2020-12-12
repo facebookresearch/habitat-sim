@@ -82,34 +82,6 @@ class ResourceManager {
   using Importer = Mn::Trade::AbstractImporter;
 
   /**
-   * @brief The @ref ShaderManager key for @ref LightInfo which has no lights
-   */
-  static constexpr char NO_LIGHT_KEY[] = "no_lights";
-
-  /**
-   *@brief The @ref ShaderManager key for the default @ref LightInfo
-   */
-  static constexpr char DEFAULT_LIGHTING_KEY[] = "";
-
-  /**
-   *@brief The @ref ShaderManager key for the default @ref MaterialInfo
-   */
-  static constexpr char DEFAULT_MATERIAL_KEY[] = "";
-
-  /**
-   *@brief The @ref ShaderManager key for full ambient white @ref MaterialInfo
-   *used for primitive wire-meshes
-   */
-  static constexpr char WHITE_MATERIAL_KEY[] = "ambient_white";
-
-  /**
-   *@brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
-   * object ID
-   */
-  static constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] =
-      "per_vertex_object_id";
-
-  /**
    * @brief Flag
    *
    * @see @ref Flags, @ref flags()
@@ -565,6 +537,15 @@ class ResourceManager {
 
   //======== Scene Functions ========
 
+  /**
+   * @brief Determines if passed type is a general mesh data.
+   * @param type The type to verify.
+   * @return Whether it is a General
+   */
+  inline bool isRenderAssetGeneral(AssetType type) {
+    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN ||
+           type == AssetType::SUNCG_OBJECT;
+  }
   /**
    * @brief Recursive contruction of scene nodes for an asset.
    *

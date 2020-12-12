@@ -166,9 +166,8 @@ void initGfxBindings(py::module& m) {
       .def(py::self == py::self)
       .def(py::self != py::self);
 
-  m.attr("DEFAULT_LIGHTING_KEY") =
-      assets::ResourceManager::DEFAULT_LIGHTING_KEY;
-  m.attr("NO_LIGHT_KEY") = assets::ResourceManager::NO_LIGHT_KEY;
+  m.attr("DEFAULT_LIGHTING_KEY") = DEFAULT_LIGHTING_KEY;
+  m.attr("NO_LIGHT_KEY") = NO_LIGHT_KEY;
 }
 
 }  // namespace gfx

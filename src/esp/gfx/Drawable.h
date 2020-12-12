@@ -71,7 +71,8 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    */
   uint64_t getDrawableId() { return drawableId_; }
 
-  virtual void setLightSetup(const Magnum::ResourceKey& lightSetup){};
+  virtual void setLightSetup(
+      CORRADE_UNUSED const Magnum::ResourceKey& lightSetup){};
 
   Magnum::GL::Mesh& getMesh() { return mesh_; }
 

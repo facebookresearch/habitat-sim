@@ -182,7 +182,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     // reinitalize members
     if (!renderer_) {
       gfx::Renderer::Flags flags;
-      if (!config_.requiresTextures)
+      if (!(*requiresTextures_))
         flags |= gfx::Renderer::Flag::NoTextures;
       renderer_ = gfx::Renderer::create(flags);
     }

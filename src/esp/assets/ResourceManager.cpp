@@ -77,20 +77,6 @@ using metadata::managers::StageAttributesManager;
 
 namespace assets {
 
-// static constexpr arrays require redundant definitions until C++17
-constexpr char ResourceManager::NO_LIGHT_KEY[];
-constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
-constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
-constexpr char ResourceManager::WHITE_MATERIAL_KEY[];
-constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
-
-namespace {
-bool isRenderAssetGeneral(AssetType type) {
-  return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN ||
-         type == AssetType::SUNCG_OBJECT;
-}
-}  // namespace
-
 ResourceManager::ResourceManager(
     metadata::MetadataMediator::ptr& _metadataMediator,
     Flags _flags)
@@ -949,9 +935,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
 #ifdef ESP_BUILD_PTEX_SUPPORT
-  ASSERT(!creation.scale);  // PTex doesn't support scale
-  ASSERT(creation.lightSetupKey ==
-         NO_LIGHT_KEY);  // PTex doesn't support lighting
+  ASSERT(!creation.scale);                         // PTex doesn't support scale
+  ASSERT(creation.lightSetupKey == NO_LIGHT_KEY);  // PTex doesn't support
+                                                   // lighting
 
   const std::string& filename = creation.filepath;
   const LoadedAssetData& loadedAssetData = resourceDict_.at(creation.filepath);
@@ -1046,8 +1032,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
   ASSERT(!creation.scale);  // IMesh doesn't support scale
-  ASSERT(creation.lightSetupKey ==
-         NO_LIGHT_KEY);  // IMesh doesn't support lighting
+  ASSERT(creation.lightSetupKey == NO_LIGHT_KEY);  // IMesh doesn't support
+                                                   // lighting
 
   const bool computeAbsoluteAABBs = creation.isStatic();
 

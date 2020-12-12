@@ -24,6 +24,11 @@ set(
   CubeMapCamera.h
   Renderer.cpp
   Renderer.h
+  replay/Keyframe.h
+  replay/Player.cpp
+  replay/Player.h
+  replay/Recorder.cpp
+  replay/Recorder.h
   WindowlessContext.cpp
   WindowlessContext.h
   RenderTarget.cpp
