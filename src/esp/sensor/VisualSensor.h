@@ -108,9 +108,11 @@ class VisualSensor : public Sensor {
     return false;
   }
 
-  virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
+  virtual bool getObservation(CORRADE_UNUSED sim::Simulator& sim,
+                              CORRADE_UNUSED Observation& obs) override;
 
-  virtual bool getObservationSpace(ObservationSpace& space) override;
+  virtual bool getObservationSpace(
+      CORRADE_UNUSED ObservationSpace& space) override;
 
   virtual bool displayObservation(sim::Simulator& sim) override;
 
