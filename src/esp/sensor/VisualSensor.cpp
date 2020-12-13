@@ -22,14 +22,6 @@ void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
   tgt_ = std::move(tgt);
 }
 
-bool VisualSensor::getObservation(sim::Simulator& sim, Observation& obs) {
-  return false;
-}
-
-bool VisualSensor::getObservationSpace(ObservationSpace& space) {
-  return false;
-}
-
 bool VisualSensor::displayObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;

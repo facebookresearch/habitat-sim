@@ -22,11 +22,5 @@ FisheyeShader::FisheyeShader(Flags flags) : flags_(flags) {
                  "FisheyeShader::FisheyeShader(): shader "
                  "flags cannot be empty.", );
 }
-
-FisheyeShader& FisheyeShader::bindColorTexture(
-    Mn::GL::CubeMapTexture& texture) {
-  return *this;
-}
-
 }  // namespace gfx
 }  // namespace esp
