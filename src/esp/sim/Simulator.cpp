@@ -303,7 +303,8 @@ bool Simulator::createSceneInstanceNoRenderer(
 
   // Get name of StageAttributes
   const std::string& stageAttributesHandle = stageInstance->getHandle();
-
+  LOG(INFO) << "Simulator::createSceneInstance : Stage Attributes handle : "
+            << stageAttributesHandle;
   // Get name of navmesh and use to create pathfinder and load navmesh
   std::string navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
       sceneInstanceAttributes->getNavmeshHandle());
@@ -351,12 +352,15 @@ bool Simulator::createPathfinder(const std::string& navmeshFilename) {
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
   if (io::exists(navmeshFilename)) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+    LOG(INFO) << "Simulator::createPathfinder : Loading navmesh from "
+              << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
-    LOG(INFO) << "Loaded.";
+    LOG(INFO) << "Simulator::createPathfinder : Loaded.";
     return true;
   }
-  LOG(WARNING) << "Navmesh file not found, checked at " << navmeshFilename;
+  LOG(WARNING) << "Simulator::createPathfinder : Navmesh file not found, "
+                  "checked at filename : '"
+               << navmeshFilename << "'";
   return false;
 }  // Simulator::createPathfinder
 

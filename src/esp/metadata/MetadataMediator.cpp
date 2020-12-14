@@ -327,10 +327,10 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   // create scene attributes with passed name
   attributes::SceneAttributes::ptr sceneAttributes =
       dsSceneAttrMgr->createDefaultObject(sceneName, false);
-  // create stage instance attributes and set its name (scene and stage here
-  // share same name)
+  // create stage instance attributes and set its name (from stage attributes)
   sceneAttributes->setStageInstance(
-      dsSceneAttrMgr->createEmptyInstanceAttributes(sceneName));
+      dsSceneAttrMgr->createEmptyInstanceAttributes(
+          stageAttributes->getHandle()));
 
   // The following is to manage stage files that have navmesh and semantic scene
   // descriptor ("house file") handles in them. This mechanism has been
