@@ -163,6 +163,7 @@ run_example
 
 # Vim swap files
 *.swp
+tags
 
 tests/17DRP5sb8fy
 /data/datasets/
