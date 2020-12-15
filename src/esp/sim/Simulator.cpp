@@ -20,6 +20,7 @@
 #include "esp/io/io.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletDebugManager.h"
 #include "esp/scene/ObjectControls.h"
@@ -1093,6 +1094,56 @@ std::map<int, int> Simulator::createMotorsForAllDofs(
     return physicsManager_->createMotorsForAllDofs(objectId, settings);
   }
   return std::map<int, int>();
+}
+
+void Simulator::overrideCollisionGroup(int objectID, int group) {
+  // todo: find a safe way to convert int to enum
+  physicsManager_->overrideCollisionGroup(objectID,
+                                          esp::physics::CollisionGroup(group));
+}
+
+int Simulator::createArticulatedP2PConstraint(int articulatedObjectId,
+                                              int linkId,
+                                              int objectId,
+                                              float maxImpulse) {
+  ASSERT(sceneHasPhysics(0));
+  return physicsManager_->createArticulatedP2PConstraint(
+      articulatedObjectId, linkId, objectId, maxImpulse,
+      Corrade::Containers::NullOpt, Corrade::Containers::NullOpt);
+}
+
+int Simulator::createArticulatedP2PConstraintWithPivots(
+    int articulatedObjectId,
+    int linkId,
+    int objectId,
+    const Magnum::Vector3& pivotA,
+    const Magnum::Vector3& pivotB,
+    float maxImpulse) {
+  ASSERT(sceneHasPhysics(0));
+  return physicsManager_->createArticulatedP2PConstraint(
+      articulatedObjectId, linkId, objectId, maxImpulse, pivotA, pivotB);
+}
+
+int Simulator::createArticulatedFixedConstraint(int articulatedObjectId,
+                                                int linkId,
+                                                int objectId,
+                                                float maxImpulse) {
+  ASSERT(sceneHasPhysics(0));
+  return physicsManager_->createArticulatedFixedConstraint(
+      articulatedObjectId, linkId, objectId, maxImpulse,
+      Corrade::Containers::NullOpt, Corrade::Containers::NullOpt);
+}
+
+int Simulator::createArticulatedFixedConstraintWithPivots(
+    int articulatedObjectId,
+    int linkId,
+    int objectId,
+    const Magnum::Vector3& pivotA,
+    const Magnum::Vector3& pivotB,
+    float maxImpulse) {
+  ASSERT(sceneHasPhysics(0));
+  return physicsManager_->createArticulatedFixedConstraint(
+      articulatedObjectId, linkId, objectId, maxImpulse, pivotA, pivotB);
 }
 
 // END: Articulated Object API (UNSTABLE!)

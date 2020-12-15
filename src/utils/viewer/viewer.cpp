@@ -318,7 +318,7 @@ std::string getEnumName(MouseInteractionMode mode) {
 
 struct MouseGrabber {
   Magnum::Vector3 target;
-  int p2pId;
+  int constraintId;
   esp::sim::Simulator* sim_;
 
   float gripDepth;
@@ -331,10 +331,10 @@ struct MouseGrabber {
     gripDepth = _gripDepth;
   }
 
-  virtual ~MouseGrabber() { sim_->removeP2PConstraint(p2pId); }
+  virtual ~MouseGrabber() { sim_->removeConstraint(constraintId); }
 
   virtual void updatePivotB(Magnum::Vector3 pos) {
-    sim_->updateP2PConstraintPivot(p2pId, pos);
+    sim_->updateP2PConstraintPivot(constraintId, pos);
   }
 };
 
@@ -352,8 +352,8 @@ struct MouseLinkGrabber : public MouseGrabber {
     Corrade::Utility::Debug()
         << "MouseLinkGrabber init: articulatedObjectId=" << articulatedObjectId
         << ", linkId=" << linkId;
-    p2pId = sim_->createArticulatedP2PConstraint(articulatedObjectId, linkId,
-                                                 clickPos);
+    constraintId = sim_->createArticulatedP2PConstraint(articulatedObjectId,
+                                                        linkId, clickPos);
   }
 };
 
@@ -401,7 +401,7 @@ struct MouseObjectGrabber : public MouseGrabber {
     sim_->setObjectMotionType(esp::physics::MotionType::DYNAMIC, objectId);
     Corrade::Utility::Debug()
         << "MouseObjectGrabber init: objectId=" << objectId;
-    p2pId = sim_->createRigidP2PConstraint(objectId, clickPos, true);
+    constraintId = sim_->createRigidP2PConstraint(objectId, clickPos, true);
   }
 };
 

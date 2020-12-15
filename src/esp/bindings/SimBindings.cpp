@@ -339,10 +339,45 @@ void initSimBindings(py::module& m) {
       .def("create_motors_for_all_dofs", &Simulator::createMotorsForAllDofs,
            "object_id"_a, "settings"_a = esp::physics::JointMotorSettings())
 
+      .def("override_collision_group", &Simulator::overrideCollisionGroup,
+           "object_id"_a, "group"_a,
+           R"(see Habitat-Sim CollisionGroupHelper.h)")
+
       .def(
-          "get_physics_num_active_contact_points",
-          &Simulator::getPhysicsNumActiveContactPoints,
-          R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
+          "create_articulated_p2p_constraint",
+          [](Simulator& self, int articulatedObjectId, int linkId, int objectId,
+             float maxImpulse) {
+            return self.createArticulatedP2PConstraint(
+                articulatedObjectId, linkId, objectId, maxImpulse);
+          },
+          "object_id_a"_a, "link_id"_a, "object_id_b"_a, "max_impulse"_a = 1.0,
+          R"(add p2p constraint between articulated object a link and an object; the pivot is at the object's origin)")
+
+      .def(
+          "create_articulated_p2p_constraint_with_pivots",
+          &Simulator::createArticulatedP2PConstraintWithPivots, "object_id_a"_a,
+          "link_id"_a, "object_id_b"_a, "pivot_a"_a, "pivot_b"_a,
+          "max_impulse"_a = 1.0,
+          R"(add p2p constraint between articulated object a link and an object; pivots are specified in the link/object's local space)")
+
+      .def(
+          "create_articulated_fixed_constraint",
+          &Simulator::createArticulatedFixedConstraint, "object_id_a"_a,
+          "link_id"_a, "object_id_b"_a, "max_impulse"_a = 1.0,
+          R"(add fixed constraint between articulated object a link and an object; the pivot is at the object's origin; the current relative orientation of the link and the object will be fixed)")
+
+      .def(
+          "create_articulated_fixed_constraint_with_pivots",
+          &Simulator::createArticulatedFixedConstraintWithPivots,
+          "object_id_a"_a, "link_id"_a, "object_id_b"_a, "pivot_a"_a,
+          "pivot_b"_a, "max_impulse"_a = 1.0,
+          R"(add fixed constraint between articulated object link and rigid object; pivots are specified in the link/object's local space; the current relative orientation of the link and the object will be fixed)")
+
+      .def("remove_constraint", &Simulator::removeConstraint, "constraint_id"_a,
+           R"(See create_articulated_p2p_constraint)")
+
+      .def(
+          "get_physics_num_active_contact_points", &Simulator::getPhysicsNumActiveContactPoints, R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
       .def(
           "get_physics_num_active_overlapping_pairs",
           &Simulator::getPhysicsNumActiveOverlappingPairs,

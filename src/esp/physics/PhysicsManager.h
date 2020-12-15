@@ -18,6 +18,7 @@
 /* Bullet Physics Integration */
 
 #include "ArticulatedObject.h"
+#include "CollisionGroupHelper.h"
 #include "RigidObject.h"
 #include "RigidStage.h"
 #include "esp/assets/Asset.h"
@@ -469,11 +470,11 @@ class PhysicsManager {
   /**
    * @brief Update the position target (pivot) of a constraint.
    * Note: Method not implemented for base PhysicsManager.
-   * @param p2pId The id of the constraint to update.
+   * @param constraintId The id of the constraint to update.
    * @param pivot The new position target of the constraint.
    */
   virtual void updateP2PConstraintPivot(
-      CORRADE_UNUSED int p2pId,
+      CORRADE_UNUSED int constraintId,
       CORRADE_UNUSED const Magnum::Vector3& pivot) {
     Magnum::Debug{}
         << "updateP2PConstraintPivot not implemented in base PhysicsManager.";
@@ -482,12 +483,32 @@ class PhysicsManager {
   /**
    * @brief Remove a constraint by id.
    * Note: Method not implemented for base PhysicsManager.
-   * @param p2pId The id of the constraint to remove.
+   * @param constraintId The id of the constraint to remove.
    */
-  virtual void removeP2PConstraint(CORRADE_UNUSED int p2pId) {
+  virtual void removeConstraint(CORRADE_UNUSED int constraintId) {
     Magnum::Debug{}
-        << "removeP2PConstraint not implemented in base PhysicsManager.";
+        << "removeConstraint not implemented in base PhysicsManager.";
   };
+
+  virtual int createArticulatedP2PConstraint(
+      int articulatedObjectId,
+      int linkId,
+      int objectId,
+      float maxImpulse,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+    return -1;
+  }
+
+  virtual int createArticulatedFixedConstraint(
+      int articulatedObjectId,
+      int linkId,
+      int objectId,
+      float maxImpulse,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+    return -1;
+  }
 
   //============ Simulator functions =============
 
@@ -1080,6 +1101,9 @@ class PhysicsManager {
   virtual bool contactTest(CORRADE_UNUSED const int physObjectID) {
     return false;
   };
+
+  virtual void overrideCollisionGroup(const int physObjectID,
+                                      CollisionGroup group) const {}
 
   virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
 

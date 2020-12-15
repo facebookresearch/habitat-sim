@@ -668,23 +668,47 @@ class Simulator {
                                                            linkId, pickPos);
   };
 
+  int createArticulatedP2PConstraint(int articulatedObjectId,
+                                     int linkId,
+                                     int objectId,
+                                     float maxImpulse);
+
+  int createArticulatedP2PConstraintWithPivots(int articulatedObjectId,
+                                               int linkId,
+                                               int objectId,
+                                               const Magnum::Vector3& pivotA,
+                                               const Magnum::Vector3& pivotB,
+                                               float maxImpulse);
+
+  int createArticulatedFixedConstraint(int articulatedObjectId,
+                                       int linkId,
+                                       int objectId,
+                                       float maxImpulse);
+
+  int createArticulatedFixedConstraintWithPivots(int articulatedObjectId,
+                                                 int linkId,
+                                                 int objectId,
+                                                 const Magnum::Vector3& pivotA,
+                                                 const Magnum::Vector3& pivotB,
+                                                 float maxImpulse);
   /**
    * @brief Update the position target (pivot) of a constraint.
    * Note: Method not implemented for base PhysicsManager.
-   * @param p2pId The id of the constraint to update.
+   * @param constraintId The id of the constraint to update.
    * @param pivot The new position target of the constraint.
    */
-  void updateP2PConstraintPivot(int p2pId, const Magnum::Vector3& pivot) {
-    physicsManager_->updateP2PConstraintPivot(p2pId, pivot);
+  void updateP2PConstraintPivot(int constraintId,
+                                const Magnum::Vector3& pivot) {
+    physicsManager_->updateP2PConstraintPivot(constraintId, pivot);
   };
 
   /**
    * @brief Remove a constraint by id.
    * Note: Method not implemented for base PhysicsManager.
-   * @param p2pId The id of the constraint to remove.
+   * @param constraintId The id of the constraint to remove.
    */
-  void removeP2PConstraint(int p2pId) {
-    physicsManager_->removeP2PConstraint(p2pId);
+  void removeConstraint(int constraintId) {
+    physicsManager_->removeConstraint(constraintId);
   };
 
   // END: Articulated Object API (UNSTABLE!)
@@ -943,6 +967,8 @@ class Simulator {
    * python random or numpy.random modules.
    */
   core::Random::ptr random() { return random_; }
+
+  void overrideCollisionGroup(int objectID, int group);
 
   int getPhysicsNumActiveContactPoints() {
     return physicsManager_->getNumActiveContactPoints();
