@@ -17,6 +17,7 @@
 
 #include "BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
+#include "BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
 #include "BulletDynamics/Featherstone/btMultiBodyPoint2Point.h"
 
@@ -25,6 +26,7 @@
 #include "BulletDebugManager.h"
 #include "BulletRigidObject.h"
 #include "BulletRigidStage.h"
+#include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletRigidObject.h"
 
@@ -187,6 +189,8 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   bool contactTest(const int physObjectID) override;
 
+  void overrideCollisionGroup(const int physObjectID,
+                              CollisionGroup group) const override;
   /**
    * @brief Return ContactPointData objects describing the contacts from the
    * most recent physics substep. This implementation is roughly identical to
@@ -252,20 +256,43 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /**
    * @brief Update the position target (pivot) of a constraint.
-   * @param p2pId The id of the constraint to update.
+   * @param constraintId The id of the constraint to update.
    * @param pivot The new position target of the constraint.
    */
-  void updateP2PConstraintPivot(int p2pId,
+  void updateP2PConstraintPivot(int constraintId,
                                 const Magnum::Vector3& pivot) override;
+  // point2point constraint between multibody and rigid body
+  int createArticulatedP2PConstraint(
+      int articulatedObjectId,
+      int linkId,
+      int objectId,
+      float maxImpulse,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) override;
+
+  int createArticulatedFixedConstraint(
+      int articulatedObjectId,
+      int linkId,
+      int objectId,
+      float maxImpulse,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) override;
+
+  void updateP2PConstraintPivot(int constraintId, Magnum::Vector3 pivot);
 
   /**
    * @brief Remove a constraint by id.
-   * @param p2pId The id of the constraint to remove.
+   * @param constraintId The id of the constraint to remove.
    */
-  void removeP2PConstraint(int p2pId) override;
+  void removeConstraint(int constraintId) override;
 
-  int nextP2PId_ = 0;
+  int createArticulatedFixedConstraint(int articulatedObjectId,
+                                       int linkId,
+                                       int objectId);
+
+  int nextConstraintId_ = 0;
   std::map<int, btMultiBodyPoint2Point*> articulatedP2ps;
+  std::map<int, btMultiBodyFixedConstraint*> articulatedFixedConstraints;
   std::map<int, btPoint2PointConstraint*> rigidP2ps;
 
   int getNumActiveContactPoints() {

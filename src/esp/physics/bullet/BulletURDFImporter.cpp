@@ -13,6 +13,7 @@
 #include "BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/bullet/BulletBase.h"
 
 namespace Mn = Magnum;
@@ -624,12 +625,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
         cache.m_bulletMultiBody->setBaseCollider(col);
       }
 
-      int collisionFilterGroup = isDynamic
-                                     ? int(btBroadphaseProxy::DefaultFilter)
-                                     : int(btBroadphaseProxy::StaticFilter);
-      int collisionFilterMask = isDynamic
-                                    ? int(btBroadphaseProxy::AllFilter)
-                                    : int(btBroadphaseProxy::DefaultFilter);
+      int collisionFilterGroup =
+          isDynamic ? int(CollisionGroup::Robot) : int(CollisionGroup::Static);
+      int collisionFilterMask = CollisionGroupHelper::getMaskForGroup(
+          CollisionGroup(collisionFilterGroup));
 
       int colGroup = 0, colMask = 0;
       int collisionFlags =

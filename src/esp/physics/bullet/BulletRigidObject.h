@@ -20,6 +20,7 @@
 
 #include "esp/core/esp.h"
 
+#include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/bullet/BulletBase.h"
 
@@ -425,6 +426,8 @@ class BulletRigidObject : public BulletBase,
    * object.
    */
   bool isMe(const btCollisionObject* collisionObject);
+
+  void overrideCollisionGroup(CollisionGroup group);
 
   /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
    * wrapped into one @ref btRigidBody.
