@@ -63,7 +63,13 @@ enum class MotionType {
    * Default behavior of @ref RigidObject with a physics simulator defined. See
    * @ref BulletRigidObject.
    */
-  DYNAMIC
+  DYNAMIC,
+
+  /**
+   * The object is not simulated or collidable and can be updated kinematically.
+   * Warning: Not an officially supported API, and likely to change.
+   */
+  RENDER_ONLY
 
 };
 

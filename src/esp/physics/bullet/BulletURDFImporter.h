@@ -37,7 +37,7 @@ struct URDF2BulletCached {
     return m_urdfLinkParentIndices[linkIndex];
   }
   int getMbIndexFromUrdfIndex(int urdfIndex) const {
-    Corrade::Utility::Debug() << "  ::getMbIndexFromUrdfIndex";
+    //Corrade::Utility::Debug() << "  ::getMbIndexFromUrdfIndex";
     if (urdfIndex == -2)
       return -2;
     return m_urdfLinkIndices2BulletLinkIndices[urdfIndex];

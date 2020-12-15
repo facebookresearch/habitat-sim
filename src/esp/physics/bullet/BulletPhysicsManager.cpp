@@ -40,12 +40,12 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   // currently GLB meshes are y-up
   bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
 
-  Corrade::Utility::Debug() << "creating staticStageObject_";
+  //Corrade::Utility::Debug() << "creating staticStageObject_";
   //! Create new scene node
   staticStageObject_ = physics::BulletRigidStage::create_unique(
       &physicsNode_->createChild(), resourceManager_, bWorld_,
       collisionObjToObjIds_);
-  Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
+  //Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
 
   m_recentNumSubStepsTaken = -1;
 

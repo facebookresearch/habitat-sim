@@ -2046,8 +2046,8 @@ std::string ResourceManager::setupMaterialModifiedAsset(
   std::string modifiedAssetName = "";
 
   if (resourceDict_.count(filename) == 0 || material == nullptr) {
-    Mn::Debug{} << "ResourceManager::setupMaterialModifiedAsset : Aborting - "
-                   "nothing to do here";
+    //Mn::Debug{} << "ResourceManager::setupMaterialModifiedAsset : Aborting - "
+    //               "nothing to do here";
     return modifiedAssetName;
   }
 

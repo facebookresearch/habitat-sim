@@ -27,7 +27,7 @@ static float gUrdfDefaultCollisionMargin = 0.001;
 
 btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
     const io::URDF::CollisionShape* collision) {
-  Cr::Utility::Debug() << "convertURDFToCollisionShape";
+  //Cr::Utility::Debug() << "convertURDFToCollisionShape";
 
   btCollisionShape* shape = 0;
 
@@ -137,8 +137,8 @@ btCompoundShape* BulletURDFImporter::convertLinkCollisionShapes(
 
   compoundShape->setMargin(gUrdfDefaultCollisionMargin);
 
-  Cr::Utility::Debug() << " num links = "
-                       << urdfParser_.getModel().m_links.size();
+  //Cr::Utility::Debug() << " num links = "
+  //                     << urdfParser_.getModel().m_links.size();
 
   auto itr = urdfParser_.getModel().m_links.begin();
   for (int i = 0;
@@ -163,8 +163,8 @@ btCompoundShape* BulletURDFImporter::convertLinkCollisionShapes(
         */
 
         Magnum::Matrix4 childTrans = col.m_linkLocalFrame;
-        Corrade::Utility::Debug() << "col.m_linkLocalFrame: "
-                                  << Magnum::Matrix4(col.m_linkLocalFrame);
+        //Corrade::Utility::Debug() << "col.m_linkLocalFrame: "
+        //                          << Magnum::Matrix4(col.m_linkLocalFrame);
 
         compoundShape->addChildShape(
             localInertiaFrame.inverse() * btTransform(childTrans), childShape);
@@ -239,8 +239,8 @@ void BulletURDFImporter::InitURDF2BulletCache(URDF2BulletCached& cache,
   cache.m_totalNumJoints1 = 0;
 
   int rootLinkIndex = getRootLinkIndex();
-  Cr::Utility::Debug() << "InitURDF2BulletCache() - rootLinkIndex = "
-                       << rootLinkIndex;
+  //Cr::Utility::Debug() << "InitURDF2BulletCache() - rootLinkIndex = "
+  //                     << rootLinkIndex;
   if (rootLinkIndex >= 0) {
     ComputeTotalNumberOfJoints(cache, rootLinkIndex);
     int numTotalLinksIncludingBase = 1 + cache.m_totalNumJoints1;
@@ -301,33 +301,33 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
     btMultiBodyDynamicsWorld* world1,
     int flags,
     std::map<int, btCollisionShape*>& linkCollisionShapes) {
-  Corrade::Utility::Debug() << "++++++++++++++++++++++++++++++++++++++";
-  Corrade::Utility::Debug() << "ConvertURDF2BulletInternal...";
+  //Corrade::Utility::Debug() << "++++++++++++++++++++++++++++++++++++++";
+  //Corrade::Utility::Debug() << "ConvertURDF2BulletInternal...";
 
   Mn::Matrix4 linkTransformInWorldSpace;
 
-  Corrade::Utility::Debug() << "  urdfLinkIndex = " << urdfLinkIndex;
+  //Corrade::Utility::Debug() << "  urdfLinkIndex = " << urdfLinkIndex;
 
   int mbLinkIndex = cache.getMbIndexFromUrdfIndex(urdfLinkIndex);
-  Corrade::Utility::Debug() << "  mbLinkIndex = " << mbLinkIndex;
+  //Corrade::Utility::Debug() << "  mbLinkIndex = " << mbLinkIndex;
 
   int urdfParentIndex = cache.getParentUrdfIndex(urdfLinkIndex);
-  Corrade::Utility::Debug() << "  urdfParentIndex = " << urdfParentIndex;
+  //Corrade::Utility::Debug() << "  urdfParentIndex = " << urdfParentIndex;
   int mbParentIndex = cache.getMbIndexFromUrdfIndex(urdfParentIndex);
-  Corrade::Utility::Debug() << "  mbParentIndex = " << mbParentIndex;
+  //Corrade::Utility::Debug() << "  mbParentIndex = " << mbParentIndex;
 
   Mn::Matrix4 parentLocalInertialFrame;
   btScalar parentMass(1);
   Mn::Vector3 parentLocalInertiaDiagonal(1);
 
   if (urdfParentIndex == -2) {
-    Corrade::Utility::Debug() << "root link has no parent";
+    //Corrade::Utility::Debug() << "root link has no parent";
   } else {
     getMassAndInertia2(urdfParentIndex, parentMass, parentLocalInertiaDiagonal,
                        parentLocalInertialFrame, flags);
   }
 
-  Corrade::Utility::Debug() << "  about to get mass/inertia";
+  //Corrade::Utility::Debug() << "  about to get mass/inertia";
 
   btScalar mass = 0;
   Mn::Matrix4 localInertialFrame;
@@ -335,7 +335,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
   getMassAndInertia2(urdfLinkIndex, mass, localInertiaDiagonal,
                      localInertialFrame, flags);
 
-  Corrade::Utility::Debug() << "  about to get joint info";
+  //Corrade::Utility::Debug() << "  about to get joint info";
 
   Mn::Matrix4 parent2joint;
   int jointType;
@@ -359,7 +359,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
     linkTransformInWorldSpace = parentTransformInWorldSpace * parent2joint;
   }
 
-  Corrade::Utility::Debug() << "  about to convert link collision shapes";
+  //Corrade::Utility::Debug() << "  about to convert link collision shapes";
 
   btCompoundShape* tmpShape = convertLinkCollisionShapes(
       urdfLinkIndex, btTransform(localInertialFrame));
@@ -369,7 +369,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
     compoundShape = tmpShape->getChildShape(0);
   }
 
-  Corrade::Utility::Debug() << "  about to deal with compoundShape";
+  //Corrade::Utility::Debug() << "  about to deal with compoundShape";
   if (compoundShape) {
     if (mass) {
       if (!(flags & CUF_USE_URDF_INERTIA)) {
@@ -563,8 +563,8 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       // simulator will do this when syncing the btMultiBody link transforms to
       // the btMultiBodyLinkCollider
 
-      Corrade::Utility::Debug()
-          << "~~~~~~~~~~~~~ col->setWorldTransform(btTransform(tr)): " << tr;
+      //Corrade::Utility::Debug()
+      //    << "~~~~~~~~~~~~~ col->setWorldTransform(btTransform(tr)): " << tr;
 
       col->setWorldTransform(btTransform(tr));
 
@@ -657,7 +657,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
     }
   }
 
-  Corrade::Utility::Debug() << "  about to recurse";
+  //Corrade::Utility::Debug() << "  about to recurse";
 
   std::vector<int> urdfChildIndices;
   getLinkChildIndices(urdfLinkIndex, urdfChildIndices);

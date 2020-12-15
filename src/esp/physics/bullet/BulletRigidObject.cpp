@@ -262,6 +262,10 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
   if (mt == objectMotionType_) {
     return true;  // no work
   }
+  else if (mt == MotionType::RENDER_ONLY) {
+    // don't add any collidable back to the world.
+    return true;
+  }
 
   // remove the existing object from the world to change its type
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
