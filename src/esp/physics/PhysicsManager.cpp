@@ -57,7 +57,7 @@ bool PhysicsManager::addStageFinalize(const std::string& handle) {
 int PhysicsManager::addObject(const int objectLibId,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
-                              const Magnum::ResourceKey& lightSetup) {
+                              const std::string& lightSetup) {
   const std::string& configHandle =
       resourceManager_.getObjectAttributesManager()->getObjectHandleByID(
           objectLibId);
@@ -68,7 +68,7 @@ int PhysicsManager::addObject(const int objectLibId,
 int PhysicsManager::addObject(const std::string& configFileHandle,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
-                              const Magnum::ResourceKey& lightSetup) {
+                              const std::string& lightSetup) {
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
   scene::SceneNode* objectNode = attachmentNode;

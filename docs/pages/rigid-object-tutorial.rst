@@ -13,15 +13,17 @@ Interactive Rigid Objects
 .. contents::
     :class: m-block m-default
 
-First, download the `example objects`_ and extract them into path/to/habitat-sim/data/objects/.
+The example code below is available on `Collab`_, or runnable via:
 
-.. _example objects: http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip
-
-The example code below is runnable via:
+.. _Collab: <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/rigid_object_tutorial.ipynb>
 
 .. code:: shell-session
 
-    $ python path/to/habitat-sim/examples/tutorials/rigid_object_tutorial.py
+    $ python path/to/habitat-sim/examples/tutorials/nb_python/rigid_object_tutorial.py
+
+First, download the `example objects`_ and extract them into path/to/habitat-sim/data/objects/.
+
+.. _example objects: http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip
 
 Import necessary modules, define some convenience functions, and initialize the :ref:`Simulator` and :ref:`Agent`.
 

@@ -52,7 +52,19 @@ void initGeoBindings(py::module& m) {
       .def(py::init<>())
       .def_readwrite("origin", &Ray::origin)
       .def_readwrite("direction", &Ray::direction);
-}
+
+  // ==== Trajectory utilities ====
+  geo.def(
+      "build_catmull_rom_spline", &geo::buildCatmullRomTrajOfPoints,
+      R"(This function builds an interpolating Catmull-Rom spline through the passed list of
+      key points, with num_interpolations interpolated points between each key point, and
+      alpha [0,1] deteriming the nature of the spline (default is .5) :
+           0.0 is a standard Catmull-Rom spline (which may have cusps)
+           0.5 is a centripetal Catmull-Rom spline
+           1.0 is a chordal Catmull-Rom spline)",
+      "key_points"_a, "num_interpolations"_a, "alpha"_a = .5f);
+
+}  // initGeoBindings
 
 }  // namespace geo
 }  // namespace esp

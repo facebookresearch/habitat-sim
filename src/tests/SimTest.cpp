@@ -28,6 +28,7 @@ using esp::assets::ResourceManager;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
+using esp::metadata::MetadataMediator;
 using esp::metadata::attributes::AbstractPrimitiveAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
@@ -62,7 +63,7 @@ struct SimTest : Cr::TestSuite::Tester {
 
   Simulator::uptr getSimulator(
       const std::string& scene,
-      const std::string& sceneLightingKey = ResourceManager::NO_LIGHT_KEY) {
+      const std::string& sceneLightingKey = esp::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
     simConfig.activeSceneID = scene;
     simConfig.enablePhysics = true;
@@ -154,7 +155,7 @@ void SimTest::reset() {
   PathFinder::ptr pathfinder = simulator.getPathFinder();
 
   auto pinholeCameraSpec = SensorSpec::create();
-  pinholeCameraSpec->sensorSubtype = "pinhole";
+  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
   pinholeCameraSpec->sensorType = SensorType::COLOR;
   pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
   pinholeCameraSpec->resolution = {100, 100};
@@ -181,7 +182,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
     Magnum::Float meanThreshold) {
   // do not rely on default SensorSpec default constructor to remain constant
   auto pinholeCameraSpec = SensorSpec::create();
-  pinholeCameraSpec->sensorSubtype = "pinhole";
+  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
   pinholeCameraSpec->sensorType = SensorType::COLOR;
   pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
   pinholeCameraSpec->resolution = {128, 128};

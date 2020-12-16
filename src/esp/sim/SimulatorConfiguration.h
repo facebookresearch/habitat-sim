@@ -5,12 +5,14 @@
 #ifndef ESP_SIM_SIMULATORCONFIGURATION_H_
 #define ESP_SIM_SIMULATORCONFIGURATION_H_
 
-#include "esp/assets/ResourceManager.h"
+#include <string>
+
+#include "esp/core/esp.h"
 #include "esp/physics/configure.h"
 
 namespace esp {
-namespace sim {
 
+namespace sim {
 struct SimulatorConfiguration {
   /**
    * @brief Name of scene or stage config or asset to load
@@ -36,6 +38,13 @@ struct SimulatorConfiguration {
    */
   bool loadSemanticMesh = true;
   /**
+   * Force creation of a separate semantic scene graph, even when no semantic
+   * mesh is loaded for the stage. Required to support playback of any replay
+   * that includes a semantic-only render asset instance. Set to false
+   * otherwise.
+   */
+  bool forceSeparateSemanticSceneGraph = false;
+  /**
    * @brief Whether or not to load textures for the meshes. This MUST be true
    * for RGB rendering
    */
@@ -48,7 +57,7 @@ struct SimulatorConfiguration {
   std::string sceneDatasetConfigFile = "default";
 
   /** @brief Light setup key for scene */
-  std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
+  std::string sceneLightSetup = esp::NO_LIGHT_KEY;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };

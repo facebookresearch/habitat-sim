@@ -22,19 +22,6 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   setTransformationFromSpec();
 }
 
-void SensorSuite::add(const Sensor::ptr& sensor) {
-  const std::string uuid = sensor->specification()->uuid;
-  sensors_[uuid] = sensor;
-}
-
-Sensor::ptr SensorSuite::get(const std::string& uuid) const {
-  return (sensors_.at(uuid));
-}
-
-void SensorSuite::clear() {
-  sensors_.clear();
-}
-
 void Sensor::setTransformationFromSpec() {
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. the specification is null.";
@@ -49,9 +36,22 @@ void Sensor::setTransformationFromSpec() {
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
+void SensorSuite::add(const Sensor::ptr& sensor) {
+  const std::string uuid = sensor->specification()->uuid;
+  sensors_[uuid] = sensor;
+}
+
+Sensor::ptr SensorSuite::get(const std::string& uuid) const {
+  return (sensors_.at(uuid));
+}
+
+void SensorSuite::clear() {
+  sensors_.clear();
+}
+
 bool operator==(const SensorSpec& a, const SensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubtype == b.sensorSubtype && a.parameters == b.parameters &&
+         a.sensorSubType == b.sensorSubType && a.parameters == b.parameters &&
          a.position == b.position && a.orientation == b.orientation &&
          a.resolution == b.resolution && a.channels == b.channels &&
          a.encoding == b.encoding && a.observationSpace == b.observationSpace &&

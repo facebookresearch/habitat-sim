@@ -143,7 +143,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
       .property("uuid", &SensorSpec::uuid)
       .property("sensorType", &SensorSpec::sensorType)
-      .property("sensorSubtype", &SensorSpec::sensorSubtype)
+      .property("sensorSubtype", &SensorSpec::sensorSubType)
       .property("position", &SensorSpec::position)
       .property("orientation", &SensorSpec::orientation)
       .property("resolution", &SensorSpec::resolution)

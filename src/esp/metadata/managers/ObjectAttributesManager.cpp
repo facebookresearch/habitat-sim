@@ -96,7 +96,6 @@ void ObjectAttributesManager::setValsFromJSONDoc(
       jsonConfig, "use_bounding_box_for_collision",
       std::bind(&ObjectAttributes::setBoundingBoxCollisions, objAttributes,
                 _1));
-
   // Join collision meshes if specified
   io::jsonIntoSetter<bool>(
       jsonConfig, "join_collision_meshes",
@@ -106,6 +105,11 @@ void ObjectAttributesManager::setValsFromJSONDoc(
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "inertia",
       std::bind(&ObjectAttributes::setInertia, objAttributes, _1));
+
+  // The object's semantic ID
+  io::jsonIntoSetter<int>(
+      jsonConfig, "semantic_id",
+      std::bind(&ObjectAttributes::setSemanticId, objAttributes, _1));
 
   // The center of mass (in the local frame of the object)
   // if COM is provided, use it for mesh shift

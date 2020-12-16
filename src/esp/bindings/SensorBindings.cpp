@@ -12,7 +12,7 @@
 
 #include <utility>
 
-#include "esp/sensor/PinholeCamera.h"
+#include "esp/sensor/CameraSensor.h"
 #ifdef ESP_BUILD_WITH_CUDA
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
@@ -48,12 +48,16 @@ void initSensorBindings(py::module& m) {
       .value("DEPTH", SensorType::DEPTH)
       .value("SEMANTIC", SensorType::SEMANTIC);
 
+  py::enum_<SensorSubType>(m, "SensorSubType")
+      .value("PINHOLE", SensorSubType::Pinhole)
+      .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
+
   // ==== SensorSpec ====
   py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())
       .def(py::init(&SensorSpec::create<>))
       .def_readwrite("uuid", &SensorSpec::uuid)
       .def_readwrite("sensor_type", &SensorSpec::sensorType)
-      .def_readwrite("sensor_subtype", &SensorSpec::sensorSubtype)
+      .def_readwrite("sensor_subtype", &SensorSpec::sensorSubType)
       .def_readwrite("parameters", &SensorSpec::parameters)
       .def_readwrite("position", &SensorSpec::position)
       .def_readwrite("orientation", &SensorSpec::orientation)
@@ -103,13 +107,45 @@ void initSensorBindings(py::module& m) {
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 
-  // ==== PinholeCamera (subclass of Sensor) ====
-  py::class_<PinholeCamera, Magnum::SceneGraph::PyFeature<PinholeCamera>,
-             VisualSensor, Magnum::SceneGraph::PyFeatureHolder<PinholeCamera>>(
-      m, "PinholeCamera")
-      // initialized, attached to pinholeCameraNode, status: "valid"
+  // === CameraSensor ====
+  py::class_<CameraSensor, Magnum::SceneGraph::PyFeature<CameraSensor>,
+             VisualSensor, Magnum::SceneGraph::PyFeatureHolder<CameraSensor>>(
+      m, "CameraSensor")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
-                          const SensorSpec::ptr&>());
+                          const SensorSpec::ptr&>())
+      .def("set_projection_params", &CameraSensor::setProjectionParameters,
+           R"(Specify the projection parameters this CameraSensor should use.
+           Should be consumed by first querying this CameraSensor's SensorSpec
+           and then modifying as necessary.)",
+           "sensor_spec"_a)
+      .def("zoom", &CameraSensor::modZoom,
+           R"(Modify Orthographic Zoom or Perspective FOV multiplicatively by
+          passed amount. User >1 to increase, 0<factor<1 to decrease.)",
+           "factor"_a)
+      .def("reset_zoom", &CameraSensor::resetZoom,
+           R"(Reset Orthographic Zoom or Perspective FOV to values
+          specified in current sensor spec for this CameraSensor.)")
+      .def_property(
+          "fov",
+          static_cast<Mn::Deg (CameraSensor::*)() const>(&CameraSensor::getFOV),
+          static_cast<void (CameraSensor::*)(Mn::Deg)>(&CameraSensor::setFOV),
+          R"(Set the field of view to use for this CameraSensor.  Only applicable to
+          Pinhole Camera Types)")
+      .def_property(
+          "camera_type", &CameraSensor::getCameraType,
+          &CameraSensor::setCameraType,
+          R"(The type of projection (ORTHOGRAPHIC or PINHOLE) this CameraSensor uses.)")
+      .def_property("width", &CameraSensor::getWidth, &CameraSensor::setWidth,
+                    R"(The width of the viewport for this CameraSensor.)")
+      .def_property("height", &CameraSensor::getHeight,
+                    &CameraSensor::setHeight,
+                    R"(The height of the viewport for this CameraSensor.)")
+      .def_property(
+          "near_plane_dist", &CameraSensor::getNear, &CameraSensor::setNear,
+          R"(The distance to the near clipping plane for this CameraSensor uses.)")
+      .def_property(
+          "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
+          R"(The distance to the far clipping plane for this CameraSensor uses.)");
 
   // ==== SensorSuite ====
   py::class_<SensorSuite, SensorSuite::ptr>(m, "SensorSuite")

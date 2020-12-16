@@ -28,6 +28,7 @@ namespace Mn = Magnum;
 using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
+using Magnum::Math::Literals::operator""_degf;
 
 namespace Test {
 // on GCC and Clang, the following namespace causes useful warnings to be
@@ -168,7 +169,7 @@ void CullingTest::frustumCulling() {
                                    frameBufferSize.y(),  // height
                                    0.01f,                // znear
                                    100.0f,               // zfar
-                                   39.6f);               // hfov
+                                   39.6_degf);           // hfov
 
   esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
   esp::scene::SceneNode cameraNode = agentNode.createChild();

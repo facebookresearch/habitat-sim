@@ -38,6 +38,7 @@ struct AssetInfo {
   geo::CoordinateFrame frame;
   float virtualUnitToMeters = 1.0f;
   bool requiresLighting = false;
+  bool splitInstanceMesh = true;  // only applies to AssetType::INSTANCE_MESH
 
   //! Populates a preset AssetInfo by matching against known filepaths
   static AssetInfo fromPath(const std::string& filepath);

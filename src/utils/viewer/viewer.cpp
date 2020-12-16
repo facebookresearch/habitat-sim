@@ -45,6 +45,7 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
@@ -445,6 +446,7 @@ std::string getCurrentTimeString() {
 }
 
 using namespace Mn::Math::Literals;
+using Magnum::Math::Literals::operator""_degf;
 
 class Viewer : public Mn::Platform::Application {
  public:
@@ -521,11 +523,21 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
+  /**
+   * @brief Toggle between ortho and perspective camera
+   */
+  void switchCameraType();
   Mn::Vector3 randomDirection();
 
   //! string rep of time when viewer application was started
   std::string viewerStartTimeString = getCurrentTimeString();
   void screenshot();
+
+  esp::sensor::CameraSensor& getAgentCamera() {
+    esp::sensor::Sensor& cameraSensor =
+        *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+    return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
+  }
 
   std::string helpText = R"(
 ==================================================
@@ -539,6 +551,8 @@ Mouse Functions:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
   SHIFT-RIGHT:
     Click a mesh to highlight it.
+  WHEEL:
+    Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 
 Key Commands:
 -------------
@@ -553,6 +567,7 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
+  '2' switch ortho/perspective camera.
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
@@ -577,7 +592,7 @@ Key Commands:
   void printHelpText() { Mn::Debug{} << helpText; };
 
   // single inline for logging agent state msgs, so can be easily modified
-  inline void logAgentStateMsg(bool showPos, bool showOrient) {
+  inline void showAgentStateMsg(bool showPos, bool showOrient) {
     std::stringstream strDat("");
     if (showPos) {
       strDat << "Agent position "
@@ -593,6 +608,64 @@ Key Commands:
     if (str.size() > 0) {
       LOG(INFO) << str;
     }
+  }
+
+  /**
+   * @brief vector holding past agent locations to build trajectory
+   * visualization
+   */
+  std::vector<Magnum::Vector3> agentLocs_;
+  float agentTrajRad_ = .01f;
+  bool agentLocRecordOn_ = false;
+
+  /**
+   * @brief Set whether agent locations should be recorded or not. If toggling
+   * on then clear old locations
+   */
+  inline void setAgentLocationRecord(bool enable) {
+    if (enable == !agentLocRecordOn_) {
+      agentLocRecordOn_ = enable;
+      if (enable) {  // if turning on, clear old data
+        agentLocs_.clear();
+        recAgentLocation();
+      }
+    }
+    LOG(INFO) << "Agent location recording "
+              << (agentLocRecordOn_ ? "on" : "off");
+  }  // setAgentLocationRecord
+
+  /**
+   * @brief Record agent location if enabled.  Called after any movement.
+   */
+  inline void recAgentLocation() {
+    if (agentLocRecordOn_) {
+      auto pt = agentBodyNode_->translation() +
+                Magnum::Vector3{0, (2.0f * agentTrajRad_), 0};
+      agentLocs_.push_back(pt);
+      LOG(INFO) << "Recording agent location : {" << pt.x() << "," << pt.y()
+                << "," << pt.z() << "}";
+    }
+  }
+
+  /**
+   * @brief Build trajectory visualization
+   */
+  void buildTrajectoryVis();
+  void modTrajRad(bool bigger) {
+    std::string mod = "";
+    if (bigger) {
+      if (agentTrajRad_ < 1.0) {
+        agentTrajRad_ += 0.001f;
+        mod = "increased to ";
+      }
+    } else {
+      if (agentTrajRad_ > 0.001f) {
+        agentTrajRad_ -= 0.001f;
+        mod = "decreased to ";
+      }
+    }
+    esp::geo::clamp(agentTrajRad_, 0.001f, 1.0f);
+    LOG(INFO) << "Agent Trajectory Radius " << mod << ": " << agentTrajRad_;
   }
 
   // The simulator object backend for this viewer instance
@@ -670,6 +743,9 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
+      .addBooleanOption("orthographic")
+      .setHelp("orthographic",
+               "If specified, use orthographic camera to view scene.")
       .addBooleanOption("disable-navmesh")
       .setHelp("disable-navmesh",
                "Disable the navmesh, disabling agent navigation constraints.")
@@ -713,8 +789,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig.requiresTextures = true;
   if (args.isSet("stage-requires-lighting")) {
     Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
-    simConfig.sceneLightSetup =
-        esp::assets::ResourceManager::DEFAULT_LIGHTING_KEY;
+    simConfig.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
   }
 
   // setup the PhysicsManager config file
@@ -791,6 +866,11 @@ Viewer::Viewer(const Arguments& arguments)
   };
   agentConfig.sensorSpecifications[0]->resolution =
       esp::vec2i(viewportSize[1], viewportSize[0]);
+
+  agentConfig.sensorSpecifications[0]->sensorSubType =
+      args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
+                                 : esp::sensor::SensorSubType::Pinhole;
+
   // add selects a random initial state and sets up the default controls and
   // step filter
   simulator_->addAgent(agentConfig);
@@ -808,6 +888,22 @@ Viewer::Viewer(const Arguments& arguments)
 
   printHelpText();
 }  // end Viewer::Viewer
+
+void Viewer::switchCameraType() {
+  auto& cam = getAgentCamera();
+
+  auto oldCameraType = cam.getCameraType();
+  switch (oldCameraType) {
+    case esp::sensor::SensorSubType::Pinhole: {
+      cam.setCameraType(esp::sensor::SensorSubType::Orthographic);
+      return;
+    }
+    case esp::sensor::SensorSubType::Orthographic: {
+      cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
+      return;
+    }
+  }
+}
 
 int Viewer::addObject(int ID) {
   const std::string& configHandle =
@@ -912,6 +1008,34 @@ void Viewer::toggleArticulatedMotionType(int objectId) {
     Corrade::Utility::Debug() << "setting MotionType::DYNAMIC";
   }
 }
+void Viewer::buildTrajectoryVis() {
+  if (agentLocs_.size() < 2) {
+    LOG(WARNING) << "Viewer::buildTrajectoryVis : No recorded trajectory "
+                    "points, so nothing to build. Aborting.";
+    return;
+  }
+  Mn::Color4 color{randomDirection(), 1.0f};
+  // synthesize a name for asset based on color, radius, point count
+  std::ostringstream tmpName;
+  tmpName << "viewerTrajVis_R" << color.r() << "_G" << color.g() << "_B"
+          << color.b() << "_rad" << agentLocs_.size() << "_"
+          << agentLocs_.size() << "_pts";
+  std::string trajObjName(tmpName.str());
+
+  LOG(INFO) << "Viewer::buildTrajectoryVis : Attempting to build trajectory "
+               "tube for :"
+            << agentLocs_.size() << " points.";
+  int trajObjID = simulator_->addTrajectoryObject(
+      trajObjName, agentLocs_, 6, agentTrajRad_, color, true, 10);
+  if (trajObjID != esp::ID_UNDEFINED) {
+    LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj Name : "
+              << trajObjName << " has object ID : " << trajObjID;
+  } else {
+    LOG(WARNING) << "Viewer::buildTrajectoryVis : Attempt to build trajectory "
+                    "visualization "
+                 << trajObjName << " failed; Returned ID_UNDEFINED.";
+  }
+}  // buildTrajectoryVis
 
 void Viewer::removeLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
@@ -1083,11 +1207,16 @@ void Viewer::drawEvent() {
     ImGui::Begin("main", NULL,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::SetWindowFontScale(2.0);
+    ImGui::SetWindowFontScale(1.5);
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
+    auto& cam = getAgentCamera();
+    ImGui::Text("%s camera",
+                (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
+                     ? "Orthographic"
+                     : "Pinhole"));
     ImGui::End();
   }
 
@@ -1156,8 +1285,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Right &&
       (event.modifiers() & MouseEvent::Modifier::Shift)) {
     // cannot use the default framebuffer, so setup another framebuffer,
-    // also, setup the color attachment for rendering, and remove the visualizer
-    // for the previously picked object
+    // also, setup the color attachment for rendering, and remove the
+    // visualizer for the previously picked object
     objectPickingHelper_->prepareToDraw();
 
     // redraw the scene on the object picking framebuffer
@@ -1346,7 +1475,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   }
 
   event.setAccepted();
-}
+}  // Viewer::mouseScrollEvent
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   if (mouseInteractionMode == LOOK &&
@@ -1412,7 +1541,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   switch (key) {
     case KeyEvent::Key::Esc:
-      std::exit(0);
+      /* Using Application::exit(), which exits at the next iteration of the
+         event loop (same as the window close button would do). Using
+         std::exit() would exit immediately, but without calling any scoped
+         destructors, which could hide potential destruction order issues or
+         crashes at exit. We don't want that. */
+      exit(0);
       break;
     case KeyEvent::Key::Space:
       simulating_ = !simulating_;
@@ -1422,6 +1556,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // also `>` key
       simulateSingleStep_ = true;
       break;
+      // ==== Look direction and Movement ====
     case KeyEvent::Key::Left:
       defaultAgent_->act("turnLeft");
       break;
@@ -1434,6 +1569,30 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Down:
       defaultAgent_->act("lookDown");
       break;
+    case KeyEvent::Key::A:
+      defaultAgent_->act("moveLeft");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::D:
+      defaultAgent_->act("moveRight");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::S:
+      defaultAgent_->act("moveBackward");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::W:
+      defaultAgent_->act("moveForward");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::X:
+      defaultAgent_->act("moveDown");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::Z:
+      defaultAgent_->act("moveUp");
+      recAgentLocation();
+      break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
       break;
@@ -1444,52 +1603,18 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
       break;
-    case KeyEvent::Key::A:
-      defaultAgent_->act("moveLeft");
-      break;
-    case KeyEvent::Key::D:
-      defaultAgent_->act("moveRight");
-      break;
-    case KeyEvent::Key::S:
-      defaultAgent_->act("moveBackward");
-      break;
-    case KeyEvent::Key::W:
-      defaultAgent_->act("moveForward");
-      break;
-    case KeyEvent::Key::X:
-      defaultAgent_->act("moveDown");
-      break;
-    case KeyEvent::Key::Z:
-      defaultAgent_->act("moveUp");
+    case KeyEvent::Key::C:
+      showFPS_ = !showFPS_;
       break;
     case KeyEvent::Key::E:
       simulator_->setFrustumCullingEnabled(
           !simulator_->isFrustumCullingEnabled());
-      break;
-    case KeyEvent::Key::C:
-      showFPS_ = !showFPS_;
-      break;
-    case KeyEvent::Key::O:
-      addTemplateObject();
-      break;
-    case KeyEvent::Key::P:
-      pokeLastObject();
       break;
     case KeyEvent::Key::F:
       pushLastObject();
       break;
     case KeyEvent::Key::K:
       wiggleLastObject();
-      break;
-    case KeyEvent::Key::U:
-      removeLastObject();
-      break;
-    case KeyEvent::Key::V:
-      invertGravity();
-      break;
-    case KeyEvent::Key::T:
-      // Test key. Put what you want here...
-      torqueLastObject();
       break;
     case KeyEvent::Key::N:
       // toggle navmesh visualization
@@ -1503,9 +1628,15 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::I:
       screenshot();
       break;
+    case KeyEvent::Key::O:
+      addTemplateObject();
+      break;
+    case KeyEvent::Key::P:
+      pokeLastObject();
+      break;
     case KeyEvent::Key::Q:
       // query the agent state
-      logAgentStateMsg(true, true);
+      showAgentStateMsg(true, true);
       break;
     case KeyEvent::Key::B: {
       // toggle bounding box on objects
@@ -1561,7 +1692,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
     } break;
     case KeyEvent::Key::Two: {
-      // TODO: open
+      // switch camera between ortho and perspective
+      switchCameraType();
     } break;
     case KeyEvent::Key::Three: {
       std::string urdfFilePath =
@@ -1645,6 +1777,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::H:
       printHelpText();
+    case KeyEvent::Key::T:
+      torqueLastObject();
+      break;
+    case KeyEvent::Key::U:
+      removeLastObject();
+      break;
+    case KeyEvent::Key::V:
+      invertGravity();
       break;
     default:
       break;
@@ -1663,7 +1803,7 @@ void Viewer::screenshot() {
   Mn::DebugTools::screenshot(
       Mn::GL::defaultFramebuffer,
       screenshot_directory + std::to_string(savedFrames++) + ".png");
-}
+}  // Viewer::screenshot
 
 void Viewer::setupDemoFurniture() {
   Magnum::Matrix4 T;

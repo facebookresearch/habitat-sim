@@ -238,9 +238,9 @@ class ObjectAttributes : public AbstractObjectAttributes {
   void setIsVisible(bool isVisible) { setBool("isVisible", isVisible); }
   bool getIsVisible() const { return getBool("isVisible"); }
 
-  void setSemanticId(uint32_t semanticId) { setInt("semanticId", semanticId); }
+  void setSemanticId(uint32_t semanticId) { setInt("semantic_id", semanticId); }
 
-  uint32_t getSemanticId() const { return getInt("semanticId"); }
+  uint32_t getSemanticId() const { return getInt("semantic_id"); }
 
  public:
   ESP_SMART_POINTERS(ObjectAttributes)
@@ -305,10 +305,10 @@ class StageAttributes : public AbstractObjectAttributes {
   }
   std::string getLightSetup() { return getString("lightSetup"); }
 
-  void setFrustrumCulling(bool frustrumCulling) {
-    setBool("frustrumCulling", frustrumCulling);
+  void setFrustumCulling(bool frustumCulling) {
+    setBool("frustumCulling", frustumCulling);
   }
-  bool getFrustrumCulling() const { return getBool("frustrumCulling"); }
+  bool getFrustumCulling() const { return getBool("frustumCulling"); }
 
  public:
   ESP_SMART_POINTERS(StageAttributes)

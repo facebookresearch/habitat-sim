@@ -270,7 +270,7 @@ void main() {
     // that to make the distance zero -- which will then ensure the
     // attenuation is always 1.0
     highp float dist =
-        length(LightDirections[iLight].xyz) * LightDirections[iLight].w;
+        length(LightDirections[iLight].xyz - position) * LightDirections[iLight].w;
     // If range is 0 for whatever reason, clamp it to a small value to
     // avoid a NaN when dist is 0 as well (which is the case for
     // directional lights).

@@ -1,7 +1,7 @@
 set(
   sensor_SOURCES
-  PinholeCamera.cpp
-  PinholeCamera.h
+  CameraSensor.cpp
+  CameraSensor.h
   Sensor.cpp
   Sensor.h
   VisualSensor.cpp

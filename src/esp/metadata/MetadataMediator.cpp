@@ -6,6 +6,7 @@
 
 namespace esp {
 namespace metadata {
+
 void MetadataMediator::buildAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
   sceneDatasetAttributesManager_ =

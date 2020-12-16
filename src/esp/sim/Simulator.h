@@ -180,8 +180,7 @@ class Simulator {
    */
   int addObject(int objectLibId,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetupKey =
-                    assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+                const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY,
                 int sceneID = 0);
 
   /**
@@ -202,8 +201,7 @@ class Simulator {
    */
   int addObjectByHandle(const std::string& objectLibHandle,
                         scene::SceneNode* attachmentNode = nullptr,
-                        const std::string& lightSetupKey =
-                            assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+                        const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY,
                         int sceneID = 0);
 
   /**
@@ -834,6 +832,80 @@ class Simulator {
    */
   bool isNavMeshVisualizationActive();
 
+  /**
+   * @brief Compute a trajectory visualization for the passed points.
+   * @param trajVisName The name to use for the trajectory visualization
+   * @param pts The points of a trajectory, in order
+   * @param numSegments The number of the segments around the circumference of
+   * the tube. Must be greater than or equal to 3.
+   * @param radius The radius of the tube.
+   * @param color Color for trajectory tube.
+   * @param smooth Whether to smooth the points in the trajectory or not. Will
+   * build a much bigger mesh
+   * @param numInterp The number of interpolations between each trajectory
+   * point, if smoothed
+   * @return The ID of the object created for the visualization
+   */
+  int addTrajectoryObject(const std::string& trajVisName,
+                          const std::vector<Mn::Vector3>& pts,
+                          int numSegments = 3,
+                          float radius = .001,
+                          const Magnum::Color4& color = {0.9, 0.1, 0.1, 1.0},
+                          bool smooth = false,
+                          int numInterp = 10);
+
+  /**
+   * @brief Remove a trajectory visualization by name.
+   * @param trajVisName The name of the trajectory visualization to remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisByName(const std::string& trajVisName) {
+    if (trajVisIDByName.count(trajVisName) == 0) {
+      LOG(INFO) << "Simulator::removeTrajVisByName : No trajectory named "
+                << trajVisName << " exists.  Ignoring.";
+      return false;
+    }
+    return removeTrajVisObjectAndAssets(trajVisIDByName.at(trajVisName),
+                                        trajVisName);
+  }
+
+  /**
+   * @brief Remove a trajectory visualization by object ID.
+   * @param trajVisObjID The object ID of the trajectory visualization to
+   * remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisByID(int trajVisObjID) {
+    if (trajVisNameByID.count(trajVisObjID) == 0) {
+      LOG(INFO)
+          << "Simulator::removeTrajVisByName : No trajectory object with ID: "
+          << trajVisObjID << " exists.  Ignoring.";
+      return false;
+    }
+    return removeTrajVisObjectAndAssets(trajVisObjID,
+                                        trajVisNameByID.at(trajVisObjID));
+  }
+
+ protected:
+  /**
+   * @brief Internal use only. Remove a trajectory object, its mesh, and all
+   * references to it.
+   * @param trajVisObjID The object ID of the trajectory visualization to
+   * remove.
+   * @param trajVisName The name of the trajectory visualization to remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisObjectAndAssets(int trajVisObjID,
+                                    const std::string& trajVisName) {
+    removeObject(trajVisObjID);
+    // TODO : support removing asset by removing from resourceDict_ properly
+    // using trajVisName
+    trajVisIDByName.erase(trajVisName);
+    trajVisNameByID.erase(trajVisObjID);
+    return true;
+  }
+
+ public:
   agent::Agent::ptr getAgent(int agentId);
 
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
@@ -864,8 +936,8 @@ class Simulator {
 
   /**
    * @brief draw observations to the frame buffer stored in that
-   * particular sensor of an agent. Unlike the @displayObservation, it will not
-   * display the observation on the default frame buffer
+   * particular sensor of an agent. Unlike the @displayObservation, it will
+   * not display the observation on the default frame buffer
    * @param agentId    Id of the agent for which the observation is to
    *                   be returned
    * @param sensorId   Id of the sensor for which the observation is to
@@ -907,8 +979,7 @@ class Simulator {
    *
    * @param key The string key of the @ref gfx::LightSetup.
    */
-  gfx::LightSetup getLightSetup(
-      const std::string& key = assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+  gfx::LightSetup getLightSetup(const std::string& key = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Register a @ref gfx::LightSetup with a key name.
@@ -919,9 +990,8 @@ class Simulator {
    * @param lightSetup The @ref gfx::LightSetup this key will now reference.
    * @param key Key to identify this @ref gfx::LightSetup.
    */
-  void setLightSetup(
-      gfx::LightSetup lightSetup,
-      const std::string& key = assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+  void setLightSetup(gfx::LightSetup lightSetup,
+                     const std::string& key = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Set the light setup of an object
@@ -1015,6 +1085,10 @@ class Simulator {
   //! NavMesh visualization variables
   int navMeshVisPrimID_ = esp::ID_UNDEFINED;
   esp::scene::SceneNode* navMeshVisNode_ = nullptr;
+
+  //! Maps holding IDs and Names of trajectory visualizations
+  std::map<std::string, int> trajVisIDByName;
+  std::map<int, std::string> trajVisNameByID;
 
   /**
    * @brief Tracks whether or not the simulator was initialized

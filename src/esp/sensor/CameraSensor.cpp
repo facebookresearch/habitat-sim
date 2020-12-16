@@ -6,7 +6,7 @@
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/PixelFormat.h>
 
-#include "PinholeCamera.h"
+#include "CameraSensor.h"
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/sim/Simulator.h"
@@ -14,31 +14,68 @@
 namespace esp {
 namespace sensor {
 
-PinholeCamera::PinholeCamera(scene::SceneNode& pinholeCameraNode,
-                             const sensor::SensorSpec::ptr& spec)
-    : sensor::VisualSensor(pinholeCameraNode, spec) {
+CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
+                           const SensorSpec::ptr& spec)
+    : VisualSensor(cameraNode, spec),
+      baseProjMatrix_(Magnum::Math::IdentityInit),
+      zoomMatrix_(Magnum::Math::IdentityInit) {
   setProjectionParameters(spec);
-}
+}  // ctor
 
-void PinholeCamera::setProjectionParameters(const SensorSpec::ptr& spec) {
+void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
+  // update this sensor's sensor spec to reflect the passed new values
+  spec_->resolution = spec->resolution;
+  for (const auto& elem : spec->parameters) {
+    spec_->parameters.at(elem.first) = elem.second;
+  }
+
   width_ = spec_->resolution[1];
   height_ = spec_->resolution[0];
   near_ = std::atof(spec_->parameters.at("near").c_str());
   far_ = std::atof(spec_->parameters.at("far").c_str());
-  hfov_ = std::atof(spec_->parameters.at("hfov").c_str());
-}
+  setCameraType(spec->sensorSubType);
 
-PinholeCamera& PinholeCamera::setProjectionMatrix(
+}  // setProjectionParameters
+
+void CameraSensor::recomputeBaseProjectionMatrix() {
+  // refresh size after relevant parameters have changed
+  Mn::Vector2 nearPlaneSize_ =
+      Mn::Vector2{1.0f, static_cast<float>(height_) / width_};
+  float scale;
+  if (spec_->sensorSubType == SensorSubType::Orthographic) {
+    scale = std::atof(spec_->parameters.at("ortho_scale").c_str());
+    nearPlaneSize_ /= scale;
+    baseProjMatrix_ =
+        Mn::Matrix4::orthographicProjection(nearPlaneSize_, near_, far_);
+  } else {
+    if (spec_->sensorSubType != SensorSubType::Pinhole) {
+      LOG(INFO) << "CameraSensor::setCameraType : Unsupported Camera type val :"
+                << static_cast<int>(spec_->sensorSubType)
+                << " so defaulting to Pinhole.";
+      spec_->sensorSubType = SensorSubType::Pinhole;
+    }
+    float fov = std::atof(spec_->parameters.at("hfov").c_str());
+    Magnum::Deg halfHFovRad{Magnum::Deg(.5 * fov)};
+    scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
+    nearPlaneSize_ /= scale;
+    baseProjMatrix_ =
+        Mn::Matrix4::perspectiveProjection(nearPlaneSize_, near_, far_);
+  }
+  // build projection matrix
+  recomputeProjectionMatrix();
+}  // CameraSensor::recomputeNearPlaneSize
+
+CameraSensor& CameraSensor::setProjectionMatrix(
     gfx::RenderCamera& targetCamera) {
-  targetCamera.setProjectionMatrix(width_, height_, near_, far_, hfov_);
+  targetCamera.setProjectionMatrix(width_, height_, projectionMatrix_);
   return *this;
 }
 
-PinholeCamera& PinholeCamera::setTransformationMatrix(
+CameraSensor& CameraSensor::setTransformationMatrix(
     gfx::RenderCamera& targetCamera) {
   CORRADE_ASSERT(!scene::SceneGraph::isRootNode(targetCamera.node()),
-                 "PinholeCamera::setTransformationMatrix: target camera cannot "
+                 "CameraSensor::setTransformationMatrix: target camera cannot "
                  "be on the root node of the scene graph",
                  *this);
   Magnum::Matrix4 absTransform = this->node().absoluteTransformation();
@@ -70,12 +107,12 @@ PinholeCamera& PinholeCamera::setTransformationMatrix(
   return *this;
 }
 
-PinholeCamera& PinholeCamera::setViewport(gfx::RenderCamera& targetCamera) {
+CameraSensor& CameraSensor::setViewport(gfx::RenderCamera& targetCamera) {
   targetCamera.setViewport(this->framebufferSize());
   return *this;
 }
 
-bool PinholeCamera::getObservationSpace(ObservationSpace& space) {
+bool CameraSensor::getObservationSpace(ObservationSpace& space) {
   space.spaceType = ObservationSpaceType::TENSOR;
   space.shape = {static_cast<size_t>(spec_->resolution[0]),
                  static_cast<size_t>(spec_->resolution[1]),
@@ -89,7 +126,7 @@ bool PinholeCamera::getObservationSpace(ObservationSpace& space) {
   return true;
 }
 
-bool PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs) {
+bool CameraSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
   //
@@ -102,7 +139,7 @@ bool PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs) {
   return true;
 }
 
-bool PinholeCamera::drawObservation(sim::Simulator& sim) {
+bool CameraSensor::drawObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;
   }
@@ -131,7 +168,7 @@ bool PinholeCamera::drawObservation(sim::Simulator& sim) {
   return true;
 }
 
-void PinholeCamera::readObservation(Observation& obs) {
+void CameraSensor::readObservation(Observation& obs) {
   // Make sure we have memory
   if (buffer_ == nullptr) {
     // TODO: check if our sensor was resized and resize our buffer if needed
@@ -158,7 +195,7 @@ void PinholeCamera::readObservation(Observation& obs) {
   }
 }
 
-bool PinholeCamera::displayObservation(sim::Simulator& sim) {
+bool CameraSensor::displayObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;
   }
@@ -169,13 +206,12 @@ bool PinholeCamera::displayObservation(sim::Simulator& sim) {
   return true;
 }
 
-Corrade::Containers::Optional<Magnum::Vector2>
-PinholeCamera::depthUnprojection() const {
-  const Magnum::Matrix4 projection = Magnum::Matrix4::perspectiveProjection(
-      Magnum::Deg{hfov_}, static_cast<float>(width_) / height_, near_, far_);
-
-  return {gfx::calculateDepthUnprojection(projection)};
-}
+Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()
+    const {
+  // projectionMatrix_ is managed by implementation class and is set whenever
+  // quantities change.
+  return {gfx::calculateDepthUnprojection(projectionMatrix_)};
+}  // CameraSensor::depthUnprojection
 
 }  // namespace sensor
 }  // namespace esp

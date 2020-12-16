@@ -45,6 +45,10 @@ void initSimBindings(py::module& m) {
                      &SimulatorConfiguration::sceneLightSetup)
       .def_readwrite("load_semantic_mesh",
                      &SimulatorConfiguration::loadSemanticMesh)
+      .def_readwrite(
+          "force_separate_semantic_scene_graph",
+          &SimulatorConfiguration::forceSeparateSemanticSceneGraph,
+          R"(Required to support playback of any gfx replay that includes a stage with a semantic mesh. Set to false otherwise.)")
       .def_readwrite("requires_textures",
                      &SimulatorConfiguration::requiresTextures)
       .def(py::self == py::self)
@@ -121,14 +125,12 @@ void initSimBindings(py::module& m) {
       .def(
           "add_object", &Simulator::addObject, "object_lib_id"_a,
           "attachment_node"_a = nullptr,
-          "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
-          "scene_id"_a = 0,
+          "light_setup_key"_a = DEFAULT_LIGHTING_KEY, "scene_id"_a = 0,
           R"(Instance an object into the scene via a template referenced by library id. Optionally attach the object to an existing SceneNode and assign its initial LightSetup key.)")
       .def(
           "add_object_by_handle", &Simulator::addObjectByHandle,
           "object_lib_handle"_a, "attachment_node"_a = nullptr,
-          "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
-          "scene_id"_a = 0,
+          "light_setup_key"_a = DEFAULT_LIGHTING_KEY, "scene_id"_a = 0,
           R"(Instance an object into the scene via a template referenced by its handle. Optionally attach the object to an existing SceneNode and assign its initial LightSetup key.)")
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
            "delete_object_node"_a = true, "delete_visual_node"_a = true,
@@ -266,12 +268,23 @@ void initSimBindings(py::module& m) {
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
           "navmesh_settings"_a, "include_static_objects"_a = false,
           R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings. Optionally include all MotionType::STATIC objects in the navigability constraints.)")
+      .def("add_trajectory_object", &Simulator::addTrajectoryObject,
+           "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,
+           "radius"_a = .001, "color"_a = Mn::Color4{0.9, 0.1, 0.1, 1.0},
+           "smooth"_a = false, "num_interpolations"_a = 10,
+           R"(Build a tube visualization around the passed trajectory of points.
+              points : (list of 3-tuples of floats) key point locations to use to create trajectory tube.
+              num_segments : (Integer) the number of segments around the tube to be used to make the visualization.
+              radius : (Float) the radius of the resultant tube.
+              color : (4-tuple of float) the color of the trajectory tube.
+              smooth : (Bool) whether or not to smooth trajectory using a Catmull-Rom spline interpolating spline.
+              num_interpolations : (Integer) the number of interpolation points to find between successive key points.)")
       .def("get_light_setup", &Simulator::getLightSetup,
-           "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+           "key"_a = DEFAULT_LIGHTING_KEY,
            R"(Get a copy of the LightSetup registered with a specific key.)")
       .def(
           "set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
-          "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+          "key"_a = DEFAULT_LIGHTING_KEY,
           R"(Register a LightSetup with a specific key. If a LightSetup is already registered with this key, it will be overriden. All Drawables referencing the key will use the newly registered LightSetup.)")
       .def(
           "set_object_light_setup", &Simulator::setObjectLightSetup,
