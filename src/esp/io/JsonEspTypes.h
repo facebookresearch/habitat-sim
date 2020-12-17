@@ -99,11 +99,11 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
                           esp::assets::RenderAssetInstanceCreationInfo& x) {
   readMember(obj, "filepath", x.filepath);
   readMember(obj, "scale", x.scale);
-  bool isStatic;
+  bool isStatic = false;
   readMember(obj, "isStatic", isStatic);
-  bool isRGBD;
+  bool isRGBD = false;
   readMember(obj, "isRGBD", isRGBD);
-  bool isSemantic;
+  bool isSemantic = false;
   readMember(obj, "isSemantic", isSemantic);
   if (isStatic) {
     x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsStatic;
