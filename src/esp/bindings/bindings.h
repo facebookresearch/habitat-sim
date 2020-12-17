@@ -23,7 +23,10 @@ void initGeoBindings(pybind11::module& m);
 
 namespace gfx {
 void initGfxBindings(pybind11::module& m);
+namespace replay {
+void initGfxReplayBindings(pybind11::module& m);
 }
+}  // namespace gfx
 
 namespace nav {
 void initShortestPathBindings(pybind11::module& m);

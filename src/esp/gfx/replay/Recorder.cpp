@@ -5,6 +5,7 @@
 #include "Recorder.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/io/JsonAllTypes.h"
 #include "esp/io/json.h"
 #include "esp/scene/SceneNode.h"
 
@@ -165,27 +166,40 @@ void Recorder::writeSavedKeyframesToFile(const std::string& filepath) {
   auto document = writeKeyframesToJsonDocument();
   esp::io::writeJsonToFile(document, filepath);
 
+  consolidateSavedKeyframes();
+}
+
+std::string Recorder::writeSavedKeyframesToString() {
+  auto document = writeKeyframesToJsonDocument();
+
+  consolidateSavedKeyframes();
+
+  return esp::io::jsonToString(document);
+}
+
+void Recorder::consolidateSavedKeyframes() {
   // consolidate saved keyframes into current keyframe
   addLoadsCreationsDeletions(savedKeyframes_.begin(), savedKeyframes_.end(),
                              &getKeyframe());
+  // clear instanceRecord.recentState to ensure updates get included in the next
+  // saved keyframe.
+  for (auto& instanceRecord : instanceRecords_) {
+    instanceRecord.recentState = Corrade::Containers::NullOpt;
+  }
   savedKeyframes_.clear();
 }
 
 rapidjson::Document Recorder::writeKeyframesToJsonDocument() {
-  LOG(WARNING) << "Recorder::writeKeyframesToJsonDocument: not implemented";
-  return rapidjson::Document();
-#if 0  // coming soon
   if (savedKeyframes_.empty()) {
     LOG(WARNING) << "Recorder::writeKeyframesToJsonDocument: no saved "
                     "keyframes to write";
     return rapidjson::Document();
   }
 
-  Document d(kObjectType);
-  Document::AllocatorType& allocator = d.GetAllocator();
-  esp::io::AddMember(d, "keyframes", savedKeyframes_, allocator);
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  esp::io::addMember(d, "keyframes", savedKeyframes_, allocator);
   return d;
-#endif
 }
 
 }  // namespace replay

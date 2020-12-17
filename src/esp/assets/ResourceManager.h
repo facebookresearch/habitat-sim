@@ -57,7 +57,10 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 class Drawable;
+namespace replay {
+class Recorder;
 }
+}  // namespace gfx
 namespace scene {
 struct SceneConfiguration;
 }
@@ -485,6 +488,15 @@ class ResourceManager {
   bool attachAsset(const std::string& filename,
                    scene::SceneNode& node,
                    DrawableGroup* drawables);
+  /**
+   * @brief Set a replay recorder so that ResourceManager can notify it about
+   * render assets.
+   */
+  void setRecorder(
+      const std::shared_ptr<gfx::replay::Recorder>& gfxReplayRecorder) {
+    gfxReplayRecorder_ = gfxReplayRecorder;
+  }
+
   /**
    * @brief Load a render asset (if not already loaded) and create a render
    * asset instance.
@@ -1015,6 +1027,11 @@ class ResourceManager {
    * @brief Flag to load textures of meshes
    */
   bool requiresTextures_ = true;
+
+  /**
+   * @brief See @ref setRecorder.
+   */
+  std::shared_ptr<esp::gfx::replay::Recorder> gfxReplayRecorder_;
 };  // class ResourceManager
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)

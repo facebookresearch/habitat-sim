@@ -68,11 +68,11 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                       dsAttribs->getSceneAttributesManager());
 
   // process navmesh instances
-  io::jsonIntoVal<std::map<std::string, std::string>>(
+  io::readMember<std::map<std::string, std::string>>(
       jsonConfig, "navmesh_instances", dsAttribs->editNavmeshMap());
 
   // process semantic scene descriptor instances
-  io::jsonIntoVal<std::map<std::string, std::string>>(
+  io::readMember<std::map<std::string, std::string>>(
       jsonConfig, "semantic_scene_descriptor_instances",
       dsAttribs->editSemanticSceneDescrMap());
 
@@ -198,7 +198,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
   std::string newTemplateHandle = "";
   std::string newTemplateSrcDir = "";
   // try to find original file name for attributes
-  if (io::jsonIntoVal<std::string>(jCell, "original_file", originalFile)) {
+  if (io::readMember<std::string>(jCell, "original_file", originalFile)) {
     // verify that a template with this field as the original file was loaded.
     std::vector<std::string> handles =
         attrMgr->getObjectHandlesBySubstring(originalFile, true);
@@ -216,8 +216,8 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
   }
 
   // try to find new template name for attributes
-  if (io::jsonIntoVal<std::string>(jCell, "template_handle",
-                                   newTemplateHandle)) {
+  if (io::readMember<std::string>(jCell, "template_handle",
+                                  newTemplateHandle)) {
     // if a new template handle has been specified, then this is a valid
     // configuration cell only if either an original to copy from or a source
     // directory for this template's new assets is specified.

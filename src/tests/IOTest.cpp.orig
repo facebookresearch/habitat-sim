@@ -7,16 +7,22 @@
 #include <gtest/gtest.h>
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/esp.h"
-#include "esp/io/JsonAllTypes.h"
+<<<<<<< HEAD
 #include "esp/io/URDFParser.h"
+=======
+#include "esp/io/JsonAllTypes.h"
+>>>>>>> 6f383b53... rapidjson serialization and refactor
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "configure.h"
 
+<<<<<<< HEAD
 namespace Cr = Corrade;
+=======
 #include <limits>
+>>>>>>> 6f383b53... rapidjson serialization and refactor
 
 using namespace esp::io;
 

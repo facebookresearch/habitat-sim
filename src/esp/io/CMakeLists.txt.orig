@@ -4,14 +4,17 @@ add_library(
   io.h
   json.cpp
   json.h
+<<<<<<< HEAD
+  URDFParser.cpp
+  URDFParser.h
+=======
   JsonAllTypes.h
   JsonBuiltinTypes.h
   JsonEspTypes.cpp
   JsonEspTypes.h
   JsonMagnumTypes.h
   JsonStlTypes.h
-  URDFParser.cpp
-  URDFParser.h
+>>>>>>> 6f383b53... rapidjson serialization and refactor
 )
 
 target_include_directories(io PRIVATE "${DEPS_DIR}/tinyxml2")

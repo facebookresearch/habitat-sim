@@ -28,6 +28,7 @@ default_sim_settings = {
     "test_scene_data_url": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
     "goal_position": [5.047, 0.199, 11.145],
     "enable_physics": False,
+    "enable_gfx_replay_save": False,
     "physics_config_file": "./data/default.physics_config.json",
     "num_objects": 10,
     "test_object_index": 0,
