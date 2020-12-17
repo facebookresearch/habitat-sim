@@ -96,6 +96,11 @@ class Recorder {
   void writeSavedKeyframesToFile(const std::string& filepath);
 
   /**
+   * @brief write saved keyframes to string. Not implemented yet.
+   */
+  std::string writeSavedKeyframesToString();
+
+  /**
    * @brief Reserved for unit-testing.
    */
   const std::vector<Keyframe>& debugGetSavedKeyframes() const {
@@ -129,6 +134,7 @@ class Recorder {
   void addLoadsCreationsDeletions(KeyframeIterator begin,
                                   KeyframeIterator end,
                                   Keyframe* dest);
+  void consolidateSavedKeyframes();
 
   std::vector<InstanceRecord> instanceRecords_;
   Keyframe currKeyframe_;
