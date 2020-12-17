@@ -16,6 +16,7 @@
 #include <rapidjson/document.h>
 
 #include <string>
+#include <typeinfo>
 
 namespace esp {
 namespace io {
