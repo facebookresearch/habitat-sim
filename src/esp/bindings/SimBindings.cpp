@@ -78,8 +78,8 @@ void initSimBindings(py::module& m) {
             )")
       .def_property_readonly("renderer", &Simulator::getRenderer)
       .def_property_readonly(
-          "gfx_replay", &Simulator::getGfxReplayManager,
-          R"(Use the gfx_replay object for replay recording and playback.)")
+          "gfx_replay_manager", &Simulator::getGfxReplayManager,
+          R"(Use gfx_replay_manager for replay recording and playback.)")
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)

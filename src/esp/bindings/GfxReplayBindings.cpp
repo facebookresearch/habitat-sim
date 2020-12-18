@@ -35,19 +35,20 @@ void initGfxReplayBindings(py::module& m) {
             Magnum::Vector3 translation;
             Magnum::Quaternion rotation;
             bool found = self.getUserTransform(name, &translation, &rotation);
-            return found ? py::make_tuple(translation, rotation)
-                         : py::make_tuple(nullptr, nullptr);
+            return found ? py::cast<py::object>(
+                               py::make_tuple(translation, rotation))
+                         : py::cast<py::object>(Py_None);
           },
-          R"(todo)");
+          R"(Get a previously-added user transform. See also ReplayManager.add_user_transform_to_keyframe.)");
 
   py::class_<ReplayManager, ReplayManager::ptr>(m, "ReplayManager")
       .def(
           "save_keyframe",
           [](ReplayManager& self) {
             if (!self.getRecorder()) {
-              LOG(ERROR) << "save_keyframe: not enabled. See "
-                            "SimulatorConfiguration::enableGfxReplaySave.";
-              return;
+              throw std::runtime_error(
+                  "replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
             }
             self.getRecorder()->saveKeyframe();
           },
@@ -59,9 +60,9 @@ void initGfxReplayBindings(py::module& m) {
              const Magnum::Vector3& translation,
              const Magnum::Quaternion& rotation) {
             if (!self.getRecorder()) {
-              LOG(ERROR) << "add_user_transform_to_keyframe: not enabled. See "
-                            "SimulatorConfiguration::enableGfxReplaySave.";
-              return;
+              throw std::runtime_error(
+                  "replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
             }
             self.getRecorder()->addUserTransformToKeyframe(name, translation,
                                                            rotation);
@@ -72,9 +73,9 @@ void initGfxReplayBindings(py::module& m) {
           "write_saved_keyframes_to_file",
           [](ReplayManager& self, const std::string& filepath) {
             if (!self.getRecorder()) {
-              LOG(ERROR) << "write_saved_keyframes_to_file: not enabled. See "
-                            "SimulatorConfiguration::enableGfxReplaySave.";
-              return;
+              throw std::runtime_error(
+                  "replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
             }
             self.getRecorder()->writeSavedKeyframesToFile(filepath);
           },
