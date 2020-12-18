@@ -468,8 +468,6 @@ jobs:
               nvm use v11.9.0
               . ~/emsdk/emsdk_env.sh
               ./build_js.sh
-              # TODO: Later fix this in the cmake build step
-              cp -v build_js/Release/bin/hsim_bindings.* build_js/esp/bindings_js/
       - run:
           name: Run sim benchmark
           command: |
