@@ -59,6 +59,7 @@ class WebDemo {
     const sensorConfigs = [
       {
         uuid: "rgb",
+        sensorType: Module.SensorType.COLOR
         sensorType: Module.SensorType.COLOR,
         sensorSubType: Module.SensorSubType.PINHOLE
       },
