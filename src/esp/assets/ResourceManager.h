@@ -513,6 +513,14 @@ class ResourceManager {
       esp::scene::SceneManager* sceneManagerPtr,
       const std::vector<int>& activeSceneIDs);
 
+  /**
+   * @brief Temporary interface for URDF branch to create render asset instances
+   */
+  scene::SceneNode* hackTryCreateRenderAssetInstance(
+      const RenderAssetInstanceCreationInfo& creation,
+      scene::SceneNode* parent,
+      DrawableGroup* drawables);
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -539,6 +547,13 @@ class ResourceManager {
    * primitive to instantiate
    */
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
+
+  /**
+   * @brief Replace references to runtime-created assets with reasonable
+   * fallback persistent assets.
+   */
+  RenderAssetInstanceCreationInfo hackReplaceRuntimeAssets(
+      const RenderAssetInstanceCreationInfo& creation);
 
  protected:
   // ======== Structs and Types only used locally ========
