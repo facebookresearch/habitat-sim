@@ -510,6 +510,16 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
   return createRenderAssetInstance(creation, &rootNode, &drawables);
 }
 
+scene::SceneNode* ResourceManager::hackTryCreateRenderAssetInstance(
+    const RenderAssetInstanceCreationInfo& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables) {
+  if (!resourceDict_.count(creation.filepath)) {
+    return nullptr;
+  }
+  return createRenderAssetInstance(creation, parent, drawables);
+}
+
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   bool meshSuccess = false;
   if (info.type == AssetType::FRL_PTEX_MESH) {
@@ -567,10 +577,20 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
   }
 
   if (gfxReplayRecorder_ && newNode) {
-    gfxReplayRecorder_->onCreateRenderAssetInstance(newNode, creation);
+    gfxReplayRecorder_->onCreateRenderAssetInstance(
+        newNode, hackReplaceRuntimeAssets(creation));
   }
 
   return newNode;
+}
+
+RenderAssetInstanceCreationInfo ResourceManager::hackReplaceRuntimeAssets(
+    const RenderAssetInstanceCreationInfo& creation) {
+  CORRADE_INTERNAL_ASSERT(resourceDict_.count(creation.filepath));
+  RenderAssetInstanceCreationInfo copy{creation};
+  const auto& info = resourceDict_.at(creation.filepath);
+  copy.filepath = info.assetInfo.filepath;
+  return copy;
 }
 
 bool ResourceManager::loadStageInternal(
@@ -2008,7 +2028,7 @@ bool ResourceManager::importAsset(const std::string& filename) {
       meshinfo = esp::assets::AssetInfo::fromPath(filename);
     }
     meshinfo.requiresLighting = true;
-    meshSuccess = loadRenderAssetGeneral(meshinfo);
+    meshSuccess = loadRenderAsset(meshinfo);
 
     // check if collision handle exists in collision mesh groups yet.  if not
     // then instance

@@ -265,10 +265,7 @@ bool BulletArticulatedObject::attachGeometry(
 
   for (auto& visual : link->m_visualArray) {
     // create a new child for each visual component
-    scene::SceneNode& visualGeomComponent = node.createChild();
-    visualGeomComponent.setTransformation(
-        link->m_inertia.m_linkLocalFrame.invertedRigid() *
-        visual.m_linkLocalFrame);
+    scene::SceneNode* visualGeomComponent = nullptr;
 
     switch (visual.m_geometry.m_type) {
       case io::URDF::GEOM_CAPSULE:
@@ -295,7 +292,6 @@ bool BulletArticulatedObject::attachGeometry(
         // Corrade::Utility::Debug() << "visual.m_geometry.m_meshFileName = "
         //                          << visual.m_geometry.m_meshFileName;
         // visual.m_sourceFileLocation
-        visualGeomComponent.scale(visual.m_geometry.m_meshScale);
 
         // first try to import the asset
         bool meshSuccess =
@@ -312,13 +308,34 @@ bool BulletArticulatedObject::attachGeometry(
         std::string assetMatModName = resMgr_.setupMaterialModifiedAsset(
             visual.m_geometry.m_meshFileName, material);
 
-        // then attach
-        geomSuccess = resMgr_.attachAsset(
-            (assetMatModName.empty()
-                 ? visual.m_geometry.m_meshFileName
-                 : assetMatModName),  // use either a material modified or
-                                      // original asset
-            visualGeomComponent, drawables);
+        // use either a material modified or original asset
+        const auto filename = assetMatModName.empty()
+                                  ? visual.m_geometry.m_meshFileName
+                                  : assetMatModName;
+
+#if 1
+        // use hackTryCreateRenderAssetInstance so that gfx-replay can record
+        // this
+        assets::RenderAssetInstanceCreationInfo::Flags flags;
+        flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+        flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+        assets::RenderAssetInstanceCreationInfo creation(
+            filename, visual.m_geometry.m_meshScale, flags,
+            DEFAULT_LIGHTING_KEY);
+        visualGeomComponent = resMgr_.hackTryCreateRenderAssetInstance(
+            creation, &node, drawables);
+        geomSuccess = (visualGeomComponent != nullptr);
+        visualGeomComponent
+            ->computeCumulativeBB();  // ported from old version of attachAsset
+#else
+        // Leaving this here for reference. This alternate codepath works,
+        // except gfx-replay won't record this.
+        visualGeomComponent = &node.createChild();
+        geomSuccess =
+            resMgr_.attachAsset(filename, *visualGeomComponent, drawables);
+        visualGeomComponent->scale(visual.m_geometry.m_meshScale);
+#endif
+
       } break;
       case io::URDF::GEOM_PLANE:
         Corrade::Utility::Debug()
@@ -329,6 +346,12 @@ bool BulletArticulatedObject::attachGeometry(
         Corrade::Utility::Debug() << "BulletArticulatedObject::attachGeometry "
                                      ": Unsupported visual type.";
         break;
+    }
+
+    if (visualGeomComponent) {
+      visualGeomComponent->setTransformation(
+          link->m_inertia.m_linkLocalFrame.invertedRigid() *
+          visual.m_linkLocalFrame);
     }
   }
 
