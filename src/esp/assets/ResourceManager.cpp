@@ -316,7 +316,6 @@ bool ResourceManager::loadStage(
 
   return true;
 }  // ResourceManager::loadScene
-
 bool ResourceManager::buildMeshGroups(
     const AssetInfo& info,
     std::vector<CollisionMeshData>& meshGroup) {
@@ -1865,17 +1864,13 @@ bool ResourceManager::instantiateAssetsOnDemand(
 }  // ResourceManager::instantiateAssetsOnDemand
 
 void ResourceManager::addObjectToDrawables(
-    const std::string& objTemplateHandle,
+    const ObjectAttributes::ptr& ObjectAttributes,
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>& visNodeCache,
     const std::string& lightSetupKey) {
   if (parent != nullptr and drawables != nullptr) {
     //! Add mesh to rendering stack
-
-    // Meta data
-    ObjectAttributes::ptr ObjectAttributes =
-        getObjectAttributesManager()->getObjectByHandle(objTemplateHandle);
 
     const std::string& renderObjectName =
         ObjectAttributes->getRenderAssetHandle();

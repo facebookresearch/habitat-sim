@@ -109,9 +109,9 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
           ->getInitializationAttributes()
           ->getIsVisible()) {
     resourceManager_.addObjectToDrawables(
-        configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
-        drawables, existingObjects_.at(nextObjectID_)->visualNodes_,
-        lightSetup);
+        existingObjects_.at(nextObjectID_)->getInitializationAttributes(),
+        existingObjects_.at(nextObjectID_)->visualNode_, drawables,
+        existingObjects_.at(nextObjectID_)->visualNodes_, lightSetup);
   }
 
   // finalize rigid object creation
