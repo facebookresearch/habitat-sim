@@ -21,21 +21,23 @@ namespace io {
 
 inline JsonGenericValue toJsonValue(const esp::vec3f& vec,
                                     JsonAllocator& allocator) {
-  JsonGenericValue floatsArray(rapidjson::kArrayType);
-  for (int i = 0; i < vec.size(); i++) {
-    floatsArray.PushBack(vec.data()[i], allocator);
-  }
-  return floatsArray;
+  return toJsonArrayHelper(vec.data(), 3, allocator);
 }
 
-inline bool fromJsonValue(const JsonGenericValue& floatsArray,
-                          esp::vec3f& vec) {
-  // TODO: helper for objects that are simply arrays, with error-handling
-  ASSERT(floatsArray.Size() == vec.size());
-  for (int i = 0; i < vec.size(); i++) {
-    vec.data()[i] = floatsArray[i].GetFloat();
+inline bool fromJsonValue(const JsonGenericValue& obj, esp::vec3f& val) {
+  if (obj.IsArray() && obj.Size() == 3) {
+    for (rapidjson::SizeType i = 0; i < 3; ++i) {
+      if (obj[i].IsNumber()) {
+        val[i] = obj[i].GetDouble();
+      } else {
+        LOG(ERROR) << " Invalid numeric value specified in JSON vec3f, index :"
+                   << i;
+        return false;
+      }
+    }
+    return true;
   }
-  return true;
+  return false;
 }
 
 inline JsonGenericValue toJsonValue(const esp::geo::CoordinateFrame& frame,
@@ -49,14 +51,15 @@ inline JsonGenericValue toJsonValue(const esp::geo::CoordinateFrame& frame,
 
 inline bool fromJsonValue(const JsonGenericValue& obj,
                           esp::geo::CoordinateFrame& frame) {
+  bool success = true;
   esp::vec3f up;
   esp::vec3f front;
   esp::vec3f origin;
-  readMember(obj, "up", up);
-  readMember(obj, "front", front);
-  readMember(obj, "origin", origin);
+  success &= readMember(obj, "up", up);
+  success &= readMember(obj, "front", front);
+  success &= readMember(obj, "origin", origin);
   frame = esp::geo::CoordinateFrame(up, front, origin);
-  return true;
+  return success;
 }
 
 inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
@@ -128,9 +131,10 @@ inline JsonGenericValue toJsonValue(const esp::gfx::replay::Transform& x,
 
 inline bool fromJsonValue(const JsonGenericValue& obj,
                           esp::gfx::replay::Transform& x) {
-  readMember(obj, "translation", x.translation);
-  readMember(obj, "rotation", x.rotation);
-  return true;
+  bool success = true;
+  success &= readMember(obj, "translation", x.translation);
+  success &= readMember(obj, "rotation", x.rotation);
+  return success;
 }
 
 inline JsonGenericValue toJsonValue(
