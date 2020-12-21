@@ -5,7 +5,6 @@
 #include "RedwoodNoiseModel.cuh"
 
 #include <algorithm>
-#include <iostream>
 
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
