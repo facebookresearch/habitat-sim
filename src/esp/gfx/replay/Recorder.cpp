@@ -5,6 +5,7 @@
 #include "Recorder.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/io/JsonAllTypes.h"
 #include "esp/io/json.h"
 #include "esp/scene/SceneNode.h"
 
@@ -172,20 +173,16 @@ void Recorder::writeSavedKeyframesToFile(const std::string& filepath) {
 }
 
 rapidjson::Document Recorder::writeKeyframesToJsonDocument() {
-  LOG(WARNING) << "Recorder::writeKeyframesToJsonDocument: not implemented";
-  return rapidjson::Document();
-#if 0  // coming soon
   if (savedKeyframes_.empty()) {
     LOG(WARNING) << "Recorder::writeKeyframesToJsonDocument: no saved "
                     "keyframes to write";
     return rapidjson::Document();
   }
 
-  Document d(kObjectType);
-  Document::AllocatorType& allocator = d.GetAllocator();
-  esp::io::AddMember(d, "keyframes", savedKeyframes_, allocator);
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  esp::io::addMember(d, "keyframes", savedKeyframes_, allocator);
   return d;
-#endif
 }
 
 }  // namespace replay

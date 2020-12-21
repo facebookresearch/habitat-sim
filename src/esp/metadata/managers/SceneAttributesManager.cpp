@@ -81,8 +81,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
                  << attribsName << ", or specification error.";
   }
   std::string dfltLighting = "";
-  if (io::jsonIntoVal<std::string>(jsonConfig, "default_lighting",
-                                   dfltLighting)) {
+  if (io::readMember<std::string>(jsonConfig, "default_lighting",
+                                  dfltLighting)) {
     // if "default lighting" is specified in scene json set value.
     attribs->setLightingHandle(dfltLighting);
   } else {
@@ -93,8 +93,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
   }
 
   std::string navmeshName = "";
-  if (io::jsonIntoVal<std::string>(jsonConfig, "navmesh_instance",
-                                   navmeshName)) {
+  if (io::readMember<std::string>(jsonConfig, "navmesh_instance",
+                                  navmeshName)) {
     // if "navmesh_instance" is specified in scene json set value.
     attribs->setNavmeshHandle(navmeshName);
   } else {
@@ -105,8 +105,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
   }
 
   std::string semanticDesc = "";
-  if (io::jsonIntoVal<std::string>(jsonConfig, "semantic_scene_instance",
-                                   semanticDesc)) {
+  if (io::readMember<std::string>(jsonConfig, "semantic_scene_instance",
+                                  semanticDesc)) {
     // if "semantic scene instance" is specified in scene json set value.
     attribs->setSemanticSceneHandle(semanticDesc);
   } else {
@@ -131,7 +131,7 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
 
   int motionTypeVal = static_cast<int>(physics::MotionType::UNDEFINED);
   std::string tmpVal = "";
-  if (io::jsonIntoVal<std::string>(jCell, "motion_type", tmpVal)) {
+  if (io::readMember<std::string>(jCell, "motion_type", tmpVal)) {
     // motion type tag was found, perform check - first convert to lowercase
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
     auto found =

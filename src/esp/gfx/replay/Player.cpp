@@ -6,6 +6,7 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
+#include "esp/io/JsonAllTypes.h"
 
 #include <rapidjson/document.h>
 
@@ -13,12 +14,9 @@ namespace esp {
 namespace gfx {
 namespace replay {
 
-void Player::readKeyframesFromJsonDocument(const rapidjson::Document&) {
-  LOG(WARNING) << "Player::readKeyframesFromJsonDocument: not implemented";
-#if 0  // coming soon
+void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   ASSERT(keyframes_.empty());
-  esp::io::ReadMember(d, "keyframes", keyframes_);
-#endif
+  esp::io::readMember(d, "keyframes", keyframes_);
 }
 
 Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
