@@ -816,6 +816,13 @@ class Simulator {
   }
 
   /**
+   * @brief Get this simulator's MetadataMediator
+   */
+  const metadata::MetadataMediator::ptr getMetadataMediator() const {
+    return metadataMediator_;
+  }
+
+  /**
    * @brief Set this simulator's MetadataMediator
    */
   void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
