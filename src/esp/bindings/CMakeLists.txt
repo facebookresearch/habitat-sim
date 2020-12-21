@@ -7,6 +7,7 @@ pybind11_add_module(
   AttributesManagersBindings.cpp
   GeoBindings.cpp
   GfxBindings.cpp
+  MetadataMediatorBindings.cpp
   OpaqueTypes.h
   PhysicsBindings.cpp
   SceneBindings.cpp

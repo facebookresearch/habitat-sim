@@ -12,6 +12,7 @@ namespace esp {
 
 namespace metadata {
 void initAttributesBindings(pybind11::module& m);
+void initMetadataMediatorBindings(pybind11::module& m);
 namespace managers {
 void initAttributesManagersBindings(pybind11::module& m);
 }  // namespace managers
