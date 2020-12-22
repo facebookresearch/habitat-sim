@@ -849,10 +849,33 @@ class Simulator {
   Simulator(){};
 
   /**
-   * @brief Builds a scene instance and populates it with initial object layout,
-   * if appropriate.  Uses current @ref config_
+   * @brief Creates a pathfinder and loads the navmesh from the specified
+   * location if it exists, otherwise returns a warning.
+   * @param navmeshFilename The filename of the navmesh to load when pathfinder
+   * is created
+   * @return Whether successful or not
    */
-  bool createSceneInstance();
+  bool createPathfinder(const std::string& navmeshFilename);
+
+  /**
+   * @brief Builds a scene instance and populates it with initial object layout,
+   * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes
+   * referenced by @p activeSceneName .
+   * @param activeSceneName The name of the desired SceneAttributes to use to
+   * instantiate a scene.
+   * @return Whether successful or not.
+   */
+  bool createSceneInstance(const std::string& activeSceneName);
+
+  /**
+   * @brief Builds a scene instance based on @ref
+   * esp::metadata::attributes::SceneAttributes referenced by @p activeSceneName
+   * . This function is specifically for cases where no renderer is desired.
+   * @param activeSceneName The name of the desired SceneAttributes to use to
+   * instantiate a scene.
+   * @return Whether successful or not.
+   */
+  bool createSceneInstanceNoRenderer(const std::string& activeSceneName);
 
   /**
    * @brief Load a @ref esp::scene::SemanticScene object that aggregates the

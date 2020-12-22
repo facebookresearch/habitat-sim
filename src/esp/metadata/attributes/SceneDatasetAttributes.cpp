@@ -89,6 +89,30 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   return true;
 }  // SceneDatasetAttributes::addSceneInstanceToDataset
 
+std::string SceneDatasetAttributes::addNewValToMap(
+    const std::string& key,
+    const std::string& path,
+    bool overwrite,
+    std::map<std::string, std::string>& map,
+    const std::string& descString) {
+  if (map.count(key) > 0) {
+    if (!overwrite) {
+      LOG(WARNING) << descString << " : Unable to overwrite map entry at "
+                   << key << " with value " << path
+                   << " so returning existing value " << map.at(key)
+                   << ". Set overwrite to true to overwrite.";
+      return map.at(key);
+    } else {
+      LOG(WARNING) << descString
+                   << " : Warning : Overwriting existing map entry "
+                   << map.at(key) << " at key " << key << " with value " << path
+                   << ".";
+    }
+  }
+  map[key] = path;
+  return path;
+}  // SceneDatasetAttributes::addNewValToMap
+
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp

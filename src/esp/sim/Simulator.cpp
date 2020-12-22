@@ -34,6 +34,7 @@ namespace esp {
 namespace sim {
 
 using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
 Simulator::Simulator(const SimulatorConfiguration& cfg)
@@ -80,8 +81,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // set dataset upon creation or reconfigure
   if (!metadataMediator_) {
     metadataMediator_ = metadata::MetadataMediator::create(cfg);
+  } else {
+    metadataMediator_->setSimulatorConfiguration(cfg);
   }
-  metadataMediator_->setSimulatorConfiguration(cfg);
 
   // assign MM to RM on create or reconfigure
   if (!resourceManager_) {
@@ -115,50 +117,79 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     LOG(WARNING) << "Not changing requiresTextures as the simulator was "
                     "initialized with True.  Call close() to change this.";
   }
-  // (re) create scene instance
-  createSceneInstance();
 
-  LOG(INFO) << "createSceneInstance success";
+  bool success;
 
+  if (config_.createRenderer) {
+    /* When creating a viewer based app, there is no need to create a
+    WindowlessContext since a (windowed) context already exists. */
+    if (!context_ && !Magnum::GL::Context::hasCurrent()) {
+      context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
+    }
+
+    // reinitalize members
+    if (!renderer_) {
+      gfx::Renderer::Flags flags;
+      if (!(*requiresTextures_))
+        flags |= gfx::Renderer::Flag::NoTextures;
+      renderer_ = gfx::Renderer::create(flags);
+    }
+
+    // (re) create scene instance
+    success = createSceneInstance(config_.activeSceneName);
+  } else {
+    // (re) create scene instance without renderer
+    success = createSceneInstanceNoRenderer(config_.activeSceneName);
+  }
+
+  LOG(INFO) << "Simulator::reconfigure : createSceneInstance success == "
+            << (success ? "true" : "false")
+            << " for active scene name : " << config_.activeSceneName
+            << (config_.createRenderer ? "with" : "without") << " renderer.";
+
+}  // Simulator::reconfigure
+
+bool Simulator::createSceneInstance(const std::string& activeSceneName) {
+  // by here, Simulator::config_ holds current config information, and there
+  // exists a scene instance attributes describing the desired stage, objects
+  // (if any), lighting (if any), etc, and this scene instance is named
+  // config_.activeSceneID
+
+  // 1. initial setup
   // use physics attributes manager to configure physics manager attributes
   // described by config file.
   auto physicsManagerAttributes =
       metadataMediator_->getCurrentPhysicsManagerAttributes();
 
-  // if physicsManagerAttributes have been successfully created, inform
-  // stageAttributesManager of the config handle of the attributes, so that
-  // stageAttributes initialization can use phys Mgr Attr values as defaults
-  auto stageAttributesMgr = metadataMediator_->getStageAttributesManager();
+  // get scene instance attributes corresponding to passed active scene name
+  // This will retrieve, or construct, an appropriately configured scene
+  // instance attributes, depending on what exists in the Scene Dataset library
+  // for the current dataset.
+  auto sceneInstanceAttributes =
+      metadataMediator_->getSceneAttributesByName(activeSceneName);
 
-  // set stage attributes defaults to cfg-based values, i.e. to construct
-  // default semantic and navmesh file names, if they exist.  All values
-  // set/built from these default values may be overridden by values in stage
-  // json file, if present.
-  stageAttributesMgr->setCurrCfgVals(config_.sceneLightSetup,
-                                     config_.frustumCulling);
+  // Get StageAttributes handle - this attributes will already exist
+  const SceneObjectInstanceAttributes::ptr stageInstance =
+      sceneInstanceAttributes->getStageInstance();
 
-  // Build stage file name based on config specification
-  std::string stageFilename = config_.activeSceneName;
+  // Get name of StageAttributes
+  const std::string& stageAttributesHandle = stageInstance->getHandle();
+  // Get StageAttributes
+  auto stageAttributes =
+      metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
+          stageAttributesHandle);
 
-  // Create stage attributes with values based on stageFilename, or load stage
-  // attributes file if exists
-  auto stageAttributes = stageAttributesMgr->createObject(stageFilename, true);
+  const std::string& navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
+      sceneInstanceAttributes->getNavmeshHandle());
 
-  std::string navmeshFilename = stageAttributes->getNavmeshAssetHandle();
-  std::string semanticSceneDescFilename = stageAttributes->getHouseFilename();
+  LOG(INFO) << "Simulator::createSceneInstance : Navmesh file location in "
+               "scene instance : "
+            << navmeshFileLoc
+            << " | navmesh file location in stage attributes : "
+            << stageAttributes->getNavmeshAssetHandle();
 
-  assets::AssetType stageType =
-      static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
-
-  // create pathfinder and load navmesh if available
-  pathfinder_ = nav::PathFinder::create();
-  if (io::exists(navmeshFilename)) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-    LOG(INFO) << "Loaded.";
-  } else {
-    LOG(WARNING) << "Navmesh file not found, checked at " << navmeshFilename;
-  }
+  // Get name of navmesh and use to create pathfinder and load navmesh
+  bool navMeshSuccess = createPathfinder(navmeshFileLoc);
 
   // Calling to seeding needs to be done after the pathfinder creation
   seed(config_.randomSeed);
@@ -177,105 +208,150 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   auto& rootNode = sceneGraph.getRootNode();
 
-  if (config_.createRenderer) {
-    /* When creating a viewer based app, there is no need to create a
-    WindowlessContext since a (windowed) context already exists. */
-    if (!context_ && !Magnum::GL::Context::hasCurrent()) {
-      context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
-    }
+  // (re)seat & (re)init physics manager
+  resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
+                                       &rootNode, physicsManagerAttributes);
 
-    // reinitalize members
-    if (!renderer_) {
-      gfx::Renderer::Flags flags;
-      if (!(*requiresTextures_))
-        flags |= gfx::Renderer::Flag::NoTextures;
-      renderer_ = gfx::Renderer::create(flags);
-    }
+  bool loadSuccess = false;
 
-    reconfigureReplayManager();
-    // (re)seat & (re)init physics manager
-    resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
-                                         &rootNode, physicsManagerAttributes);
+  reconfigureReplayManager();
 
-    bool loadSuccess = false;
+  std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
+  // Load stage
+  loadSuccess = resourceManager_->loadStage(
+      stageAttributes, physicsManager_, sceneManager_.get(), tempIDs,
+      config_.loadSemanticMesh, config_.forceSeparateSemanticSceneGraph);
 
-    std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
-    // Load stage
-    loadSuccess = resourceManager_->loadStage(
-        stageAttributes, physicsManager_, sceneManager_.get(), tempIDs,
-        config_.loadSemanticMesh, config_.forceSeparateSemanticSceneGraph);
+  if (!loadSuccess) {
+    LOG(ERROR) << "Cannot load " << stageAttributesHandle;
+    // Pass the error to the python through pybind11 allowing graceful exit
+    throw std::invalid_argument("Cannot load: " + stageAttributesHandle);
+  }
 
-    if (!loadSuccess) {
-      LOG(ERROR) << "Cannot load " << stageFilename;
-      // Pass the error to the python through pybind11 allowing graceful exit
-      throw std::invalid_argument("Cannot load: " + stageFilename);
-    }
+  // refresh the NavMesh visualization if necessary after loading a new
+  // SceneGraph
+  if (isNavMeshVisualizationActive()) {
+    // if updating pathfinder_ instance, refresh the visualization.
+    setNavMeshVisualization(false);  // first clear the old instance
+    setNavMeshVisualization(true);
+  }
 
-    // refresh the NavMesh visualization if necessary after loading a new
-    // SceneGraph
-    if (isNavMeshVisualizationActive()) {
-      // if updating pathfinder_ instance, refresh the visualization.
-      setNavMeshVisualization(false);  // first clear the old instance
-      setNavMeshVisualization(true);
-    }
+  const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
+  resourceManager_->setLightSetup(gfx::getDefaultLights());
 
-    const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
-    resourceManager_->setLightSetup(gfx::getDefaultLights());
+  assets::AssetType stageType =
+      static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
 
-    // set activeSemanticSceneID_ values and push onto sceneID vector if
-    // appropriate - tempIDs[1] will either be old activeSemanticSceneID_ (if
-    // no semantic mesh was requested in loadStage); ID_UNDEFINED if desired
-    // was not found; activeSceneID_, or a unique value, the last of which means
-    // the semantic scene mesh is loaded.
+  // set activeSemanticSceneID_ values and push onto sceneID vector if
+  // appropriate - tempIDs[1] will either be old activeSemanticSceneID_ (if
+  // no semantic mesh was requested in loadStage); ID_UNDEFINED if desired
+  // was not found; activeSceneID_, or a unique value, the last of which means
+  // the semantic scene mesh is loaded.
 
-    if (activeSemanticSceneID_ != tempIDs[1]) {
-      // id has changed so act - if ID has not changed, do nothing
-      activeSemanticSceneID_ = tempIDs[1];
-      if ((activeSemanticSceneID_ != ID_UNDEFINED) &&
-          (activeSemanticSceneID_ != activeSceneID_)) {
-        sceneID_.push_back(activeSemanticSceneID_);
-      } else {  // activeSemanticSceneID_ = activeSceneID_;
-        // instance meshes and suncg houses contain their semantic annotations
-        // empty scene has none to worry about
-        if (!(stageType == assets::AssetType::SUNCG_SCENE ||
-              stageType == assets::AssetType::INSTANCE_MESH ||
-              stageFilename.compare(assets::EMPTY_SCENE) == 0)) {
-          // TODO: programmatic generation of semantic meshes when no
-          // annotations are provided.
-          LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
-                          "annotations. \n---";
-        }
+  if (activeSemanticSceneID_ != tempIDs[1]) {
+    // id has changed so act - if ID has not changed, do nothing
+    activeSemanticSceneID_ = tempIDs[1];
+    if ((activeSemanticSceneID_ != ID_UNDEFINED) &&
+        (activeSemanticSceneID_ != activeSceneID_)) {
+      sceneID_.push_back(activeSemanticSceneID_);
+    } else {  // activeSemanticSceneID_ = activeSceneID_;
+      // instance meshes and suncg houses contain their semantic annotations
+      // empty scene has none to worry about
+      if (!(stageType == assets::AssetType::SUNCG_SCENE ||
+            stageType == assets::AssetType::INSTANCE_MESH ||
+            stageAttributesHandle.compare(assets::EMPTY_SCENE) == 0)) {
+        // TODO: programmatic generation of semantic meshes when no
+        // annotations are provided.
+        LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
+                        "annotations. \n---";
       }
-    }  // if ID has changed - needs to be reset
-  }    // if (config_.createRenderer)
+    }
+  }  // if ID has changed - needs to be reset
 
-  loadSemanticSceneDescriptor(semanticSceneDescFilename, stageType);
+  // Get name of appropriate semantic scene descriptor for this scene instance.
+  loadSemanticSceneDescriptor(
+      metadataMediator_->getSemanticSceneDescriptorPathByHandle(
+          sceneInstanceAttributes->getSemanticSceneHandle()),
+      stageType);
   reset();
-}  // Simulator::reconfigure
 
-bool Simulator::createSceneInstance() {
+  return true;
+}  // Simulator::createSceneInstance
+
+bool Simulator::createSceneInstanceNoRenderer(
+    const std::string& activeSceneName) {
   // by here, Simulator::config_ holds current config information, and there
   // exists a scene instance attributes describing the desired stage, objects
   // (if any), lighting (if any), etc, and this scene instance is named
   // config_.activeSceneID
 
   // 1. initial setup
-  // use physics attributes manager to configure physics manager attributes
-  // described by config file.
-  auto physicsManagerAttributes =
-      metadataMediator_->getCurrentPhysicsManagerAttributes();
 
   // get scene instance attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene
   // instance attributes, depending on what exists in the Scene Dataset library
   // for the current dataset.
   auto sceneInstanceAttributes =
-      metadataMediator_->getSceneAttributesByName(config_.activeSceneName);
+      metadataMediator_->getSceneAttributesByName(activeSceneName);
 
-  //
+  // Get StageAttributes handle - this attributes will already exist
+  const SceneObjectInstanceAttributes::ptr stageInstance =
+      sceneInstanceAttributes->getStageInstance();
 
+  // Get name of StageAttributes
+  const std::string& stageAttributesHandle = stageInstance->getHandle();
+
+  // Get name of navmesh and use to create pathfinder and load navmesh
+  bool navMeshSuccess =
+      createPathfinder(metadataMediator_->getNavmeshPathByHandle(
+          sceneInstanceAttributes->getNavmeshHandle()));
+
+  // Get StageAttributes
+  auto stageAttributes =
+      metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
+          stageAttributesHandle);
+
+  assets::AssetType stageType =
+      static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
+
+  // Calling to seeding needs to be done after the pathfinder creation
+  seed(config_.randomSeed);
+
+  // initalize scene graph
+  // CAREFUL!
+  // previous scene graph is not deleted!
+  // TODO:
+  // We need to make a design decision here:
+  // when doing reconfigure, shall we delete all of the previous scene graphs
+
+  activeSceneID_ = sceneManager_->initSceneGraph();
+  // LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
+  sceneID_.push_back(activeSceneID_);
+
+  auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& rootNode = sceneGraph.getRootNode();
+
+  // Get name of appropriate semantic scene descriptor for this scene instance.
+  loadSemanticSceneDescriptor(
+      metadataMediator_->getSemanticSceneDescriptorPathByHandle(
+          sceneInstanceAttributes->getSemanticSceneHandle()),
+      stageType);
+  reset();
   return true;
-}  // Simulator::createSceneInstance
+}  // Simulator::createSceneInstanceNoRenderer
+
+bool Simulator::createPathfinder(const std::string& navmeshFilename) {
+  // create pathfinder and load navmesh if available
+  pathfinder_ = nav::PathFinder::create();
+  if (io::exists(navmeshFilename)) {
+    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+    pathfinder_->loadNavMesh(navmeshFilename);
+    LOG(INFO) << "Loaded.";
+    return true;
+  }
+  LOG(WARNING) << "Navmesh file not found, checked at " << navmeshFilename;
+  return false;
+}  // Simulator::createPathfinder
 
 bool Simulator::loadSemanticSceneDescriptor(
     const std::string& semanticSceneDescFilename,
@@ -314,7 +390,8 @@ bool Simulator::loadSemanticSceneDescriptor(
       break;
     }
     case assets::AssetType::SUNCG_SCENE:
-      // scene::SemanticScene::loadSuncgHouse(stageFilename, *semanticScene_);
+      // scene::SemanticScene::loadSuncgHouse(stageAttributesHandle,
+      // *semanticScene_);
       return false;
     default:
       break;
