@@ -142,10 +142,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   auto stageAttributes = stageAttributesMgr->createObject(stageFilename, true);
 
   std::string navmeshFilename = stageAttributes->getNavmeshAssetHandle();
-  std::string houseFilename = stageAttributes->getHouseFilename();
+  std::string semanticSceneDescFilename = stageAttributes->getHouseFilename();
 
-  esp::assets::AssetType stageType = static_cast<esp::assets::AssetType>(
-      stageAttributes->getRenderAssetType());
+  assets::AssetType stageType =
+      static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
 
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
@@ -168,9 +168,15 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // when doing reconfigure, shall we delete all of the previous scene graphs
 
   activeSceneID_ = sceneManager_->initSceneGraph();
-
   // LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
   sceneID_.push_back(activeSceneID_);
+
+  auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& rootNode = sceneGraph.getRootNode();
+
+  // (re)seat & (re)init physics manager
+  resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
+                                       &rootNode, physicsManagerAttributes);
 
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
@@ -188,16 +194,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
 
     reconfigureReplayManager();
-
-    auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
-    auto& rootNode = sceneGraph.getRootNode();
-    // auto& drawables = sceneGraph.getDrawables();
-
     bool loadSuccess = false;
-
-    // (re)seat & (re)init physics manager
-    resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
-                                         &rootNode, physicsManagerAttributes);
 
     std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
     // Load scene
@@ -249,36 +246,48 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }  // if ID has changed - needs to be reset
   }    // if (config_.createRenderer)
 
+  loadSemanticSceneDescriptor(semanticSceneDescFilename, stageType);
+  reset();
+}  // Simulator::reconfigure
+
+bool Simulator::createSceneInstance() {}  // Simulator::createSceneInstance
+
+bool Simulator::loadSemanticSceneDescriptor(
+    const std::string& semanticSceneDescFilename,
+    const assets::AssetType& assetType) {
   semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
-  switch (stageType) {
-    case assets::AssetType::INSTANCE_MESH:
-      houseFilename = Cr::Utility::Directory::join(
-          Cr::Utility::Directory::path(houseFilename), "info_semantic.json");
-      if (io::exists(houseFilename)) {
-        scene::SemanticScene::loadReplicaHouse(houseFilename, *semanticScene_);
+  switch (assetType) {
+    case assets::AssetType::INSTANCE_MESH: {
+      const std::string tmpFName = Cr::Utility::Directory::join(
+          Cr::Utility::Directory::path(semanticSceneDescFilename),
+          "info_semantic.json");
+      if (io::exists(tmpFName)) {
+        scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
       }
       break;
-    case assets::AssetType::MP3D_MESH:
+    }
+    case assets::AssetType::MP3D_MESH: {
       // TODO(msb) Fix AssetType determination logic.
-      if (io::exists(houseFilename)) {
+      if (io::exists(semanticSceneDescFilename)) {
         using Corrade::Utility::String::endsWith;
-        if (endsWith(houseFilename, ".house")) {
-          scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
-        } else if (endsWith(houseFilename, ".scn")) {
-          scene::SemanticScene::loadGibsonHouse(houseFilename, *semanticScene_);
+        if (endsWith(semanticSceneDescFilename, ".house")) {
+          scene::SemanticScene::loadMp3dHouse(semanticSceneDescFilename,
+                                              *semanticScene_);
+        } else if (endsWith(semanticSceneDescFilename, ".scn")) {
+          scene::SemanticScene::loadGibsonHouse(semanticSceneDescFilename,
+                                                *semanticScene_);
         }
       }
       break;
+    }
     case assets::AssetType::SUNCG_SCENE:
-      scene::SemanticScene::loadSuncgHouse(stageFilename, *semanticScene_);
+      // scene::SemanticScene::loadSuncgHouse(stageFilename, *semanticScene_);
       break;
     default:
       break;
   }
-
-  reset();
-}  // Simulator::reconfigure
+}  // Simulator::createSceneInstance
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {

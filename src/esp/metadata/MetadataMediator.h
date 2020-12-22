@@ -124,6 +124,15 @@ class MetadataMediator {
   }
 
   /**
+   * @brief Return manager for construction and access to physics world
+   * attributes.
+   */
+  const managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
+      const {
+    return physicsAttributesManager_;
+  }  // getPhysicsAttributesManager
+
+  /**
    * @brief Return manager for construction and access to scene instance
    * attributes for current dataset.
    * @return The current dataset's @ref managers::SceneAttributesManager::ptr,
@@ -150,22 +159,13 @@ class MetadataMediator {
   }  // MetadataMediator::getStageAttributesManager
 
   /**
-   * @brief Return manager for construction and access to physics world
-   * attributes.
-   */
-  const managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
-      const {
-    return physicsAttributesManager_;
-  }
-
-  /**
    * @brief Return current physics manager attributes.
    */
   attributes::PhysicsManagerAttributes::ptr
   getCurrentPhysicsManagerAttributes() {
     return physicsAttributesManager_->getObjectCopyByHandle(
         currPhysicsManagerAttributes_);
-  }
+  }  // getCurrentPhysicsManagerAttributes
 
   /**
    * @brief Return copy of map of current active dataset's navmesh handles.
@@ -177,7 +177,7 @@ class MetadataMediator {
       return std::map<std::string, std::string>();
     }
     return std::map<std::string, std::string>(datasetAttr->getNavmeshMap());
-  }
+  }  // getActiveNavmeshMap
 
   /**
    * @brief Return copy of map of current active dataset's semantic scene
@@ -192,7 +192,7 @@ class MetadataMediator {
     }
     return std::map<std::string, std::string>(
         datasetAttr->getSemanticSceneDescrMap());
-  }
+  }  // getActiveSemanticSceneDescriptorMap
 
   //==================== Accessors ======================//
 
