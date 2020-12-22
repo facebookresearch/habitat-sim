@@ -51,12 +51,13 @@ Module.preRun.push(() => {
   }
 });
 
-Module.onRuntimeInitialized = () => {
+Module.onRuntimeInitialized = async function() {
   console.log("hsim_bindings initialized");
   let demo;
   if (window.vrEnabled) {
-    if (navigator && navigator.getVRDisplays) {
-      console.log("Web VR is supported");
+    const supported = await navigator.xr.isSessionSupported("immersive-vr");
+    if (supported) {
+      console.log("WebXR is supported");
       demo = new VRDemo();
     }
   } else if (window.viewerEnabled) {
