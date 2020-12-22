@@ -36,10 +36,10 @@ def _undistort(x, y, z, model):
     a = (z - (i1 * 2.0 + 1.0)) / 2.0
     x = x // 8
     y = y // 6
-    f = (1 - a) * model[y, x, min(max(i1, 0), 4)] + a * model[y, x, min(i2, 4)]
+    f = (1.0 - a) * model[y, x, min(max(i1, 0), 4)] + a * model[y, x, min(i2, 4)]
 
     if f < 1e-5:
-        return 0
+        return 0.0
     else:
         return z / f
 
