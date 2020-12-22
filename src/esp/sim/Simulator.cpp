@@ -79,9 +79,10 @@ void Simulator::close() {
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // set dataset upon creation or reconfigure
   if (!metadataMediator_) {
-    metadataMediator_ =
-        metadata::MetadataMediator::create(cfg.sceneDatasetConfigFile);
+    metadataMediator_ = metadata::MetadataMediator::create(
+        cfg.sceneDatasetConfigFile, cfg.physicsConfigFile);
   } else {
+    metadataMediator_->setCurrPhysicsAttributesHandle(cfg.physicsConfigFile);
     metadataMediator_->setActiveSceneDatasetName(cfg.sceneDatasetConfigFile);
   }
   // assign MM to RM on create or reconfigure
@@ -117,31 +118,27 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                     "initialized with True.  Call close() to change this.";
   }
 
-  // use physics attributes manager to get physics manager attributes
-  // described by config file - this always exists to configure scene
-  // attributes
+  // use physics attributes manager to configure physics manager attributes
+  // described by config file.
   auto physicsManagerAttributes =
-      metadataMediator_->getPhysicsAttributesManager()->createObject(
-          config_.physicsConfigFile, true);
+      metadataMediator_->getCurrentPhysicsManagerAttributes();
+
   // if physicsManagerAttributes have been successfully created, inform
   // stageAttributesManager of the config handle of the attributes, so that
   // stageAttributes initialization can use phys Mgr Attr values as defaults
   auto stageAttributesMgr = metadataMediator_->getStageAttributesManager();
-  if (physicsManagerAttributes != nullptr) {
-    stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
-        physicsManagerAttributes->getHandle());
-  }
-  // set scene attributes defaults to cfg-based values, i.e. to construct
+
+  // set stage attributes defaults to cfg-based values, i.e. to construct
   // default semantic and navmesh file names, if they exist.  All values
-  // set/built from these default values may be overridden by values in scene
+  // set/built from these default values may be overridden by values in stage
   // json file, if present.
   stageAttributesMgr->setCurrCfgVals(config_.sceneLightSetup,
                                      config_.frustumCulling);
 
-  // Build scene file name based on config specification
+  // Build stage file name based on config specification
   std::string stageFilename = config_.activeSceneID;
 
-  // Create scene attributes with values based on sceneFilename
+  // Create stage attributes with values based on stageFilename
   auto stageAttributes = stageAttributesMgr->createObject(stageFilename, true);
 
   std::string navmeshFilename = stageAttributes->getNavmeshAssetHandle();
