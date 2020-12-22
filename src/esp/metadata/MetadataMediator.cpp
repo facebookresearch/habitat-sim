@@ -37,6 +37,7 @@ void MetadataMediator::buildAttributesManagers() {
   createSceneDataset("default");
   // should always have default physicsManagerAttributesPath
   createPhysicsManagerAttributes(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
+  // after this setSimulatorConfiguration will be called
 }  // MetadataMediator::buildAttributesManagers
 
 bool MetadataMediator::setSimulatorConfiguration(
@@ -58,7 +59,8 @@ bool MetadataMediator::setSimulatorConfiguration(
   success = setCurrPhysicsAttributesHandle(simConfig_.physicsConfigFile);
   if (!success) {
     // something failed about setting up physics attributes
-    LOG(ERROR) << "MetadataMediator::setSimulatorConfiguration : ";
+    LOG(ERROR) << "MetadataMediator::setSimulatorConfiguration : Some error "
+                  "prevented current physics ";
 
     return false;
   }
@@ -287,7 +289,9 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
                    "SceneAttributes with same name and adding to Dataset.";
       // create a new SceneAttributes, and give it a
       // SceneObjectInstanceAttributes for the stage with the same name.
-      sceneAttributes = makeSceneAndReferenceStage(dsSceneAttrMgr, sceneName);
+      sceneAttributes = makeSceneAndReferenceStage(
+          datasetAttr, dsStageAttrMgr->getObjectByHandle(sceneName),
+          dsSceneAttrMgr, sceneName);
 
     } else {
       // 4.  Existing stage config/asset on disk, but not in current dataset.
@@ -299,13 +303,14 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
           << " has no preloaded SceneAttributes or StageAttributes named : "
           << sceneName
           << " so loading/creating a new StageAttributes with this "
-             "name, and then create a SceneAttributes with the same name "
+             "name, and then creating a SceneAttributes with the same name "
              "that referneces this stage.";
       // create and register stage
       auto stageAttributes = dsStageAttrMgr->createObject(sceneName, true);
       // create a new SceneAttributes, and give it a
       // SceneObjectInstanceAttributes for the stage with the same name.
-      sceneAttributes = makeSceneAndReferenceStage(dsSceneAttrMgr, sceneName);
+      sceneAttributes = makeSceneAndReferenceStage(datasetAttr, stageAttributes,
+                                                   dsSceneAttrMgr, sceneName);
     }
   }
   // make sure that all stage, object and lighting attributes referenced in
@@ -318,15 +323,22 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
 }  // MetadataMediator::getSceneAttributesByName
 
 attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
+    attributes::SceneDatasetAttributes::ptr datasetAttr,
+    const attributes::StageAttributes::cptr stageAttributes,
     const managers::SceneAttributesManager::ptr& dsSceneAttrMgr,
     const std::string& sceneName) {
   // create scene attributes with passed name
   attributes::SceneAttributes::ptr sceneAttributes =
       dsSceneAttrMgr->createDefaultObject(sceneName, false);
-  // create stage instance and set its name
+  // create stage instance attributes and set its name (scene and stage here
+  // share same name)
   sceneAttributes->setStageInstance(
       dsSceneAttrMgr->createEmptyInstanceAttributes(sceneName));
-  // register object
+
+  // add the navmesh path from the stage attributes, giving it an appropriately
+  // obvious name.
+
+  // register SceneAttributes object
   dsSceneAttrMgr->registerObject(sceneAttributes);
   return sceneAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage

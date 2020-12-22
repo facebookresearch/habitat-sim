@@ -97,8 +97,41 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
-   * such as file paths, to make them available for stage attributes defaults.
+   * @brief Add an entry to the navmeshMap with the passed key.  If @p overwrite
+   * then overwrite existing entry, otherwise give warning and return false.
+   * @param key The handle for the navmesh path to add
+   * @param path The path to the navmesh asset to add
+   * @param overwrite Whether to overwrite existing entries or not
+   * @return Path that currently is at key location.
+   */
+  std::string addNavmeshPathEntry(const std::string& key,
+                                  const std::string& path,
+                                  bool overwrite = false) {
+    return addNewValToMap(key, path, overwrite, navmeshMap_,
+                          "SceneDatasetAttributes::addNavmeshPathEntry");
+  }  // addNavmeshPathEntry
+
+  /**
+   * @brief Add an entry to the SemanticSceneDescr map with the passed key. If
+   * @p overwrite then overwrite existing entry, otherwise give warning and
+   * return false.
+   * @param key The handle for the SemanticSceneDescr path to add
+   * @param path The path to the SemanticSceneDescr asset to add
+   * @param overwrite Whether to overwrite existing entries or not
+   * @return Path that currently is at key location.
+   */
+  std::string addSemanticSceneDescrPathEntry(const std::string& key,
+                                             const std::string& path,
+                                             bool overwrite = false) {
+    return addNewValToMap(
+        key, path, overwrite, semanticSceneDescrMap_,
+        "SceneDatasetAttributes::addSemanticSceneDescrPathEntry");
+  }  // addNavmeshPathEntry
+
+  /**
+   * @brief copy current @ref esp::sim::SimulatorConfiguration driven
+   * values, such as file paths, to make them available for stage attributes
+   * defaults.
    *
    * @param lightSetup the config-specified light setup
    * @param frustumCulling whether or not (semantic) stage should be
@@ -123,10 +156,10 @@ class SceneDatasetAttributes : public AbstractAttributes {
 
   /**
    * @brief Add the passed @p sceneInstance to the dataset, verifying that all
-   * the attributes and assets references in the scene instance exist, and if so
-   * adding them.  This is to handle the addition of an existing sceneInstance
-   * that might reference stages, objects, navmeshes, etc. that do not exist in
-   * the dataset.
+   * the attributes and assets references in the scene instance exist, and if
+   * so adding them.  This is to handle the addition of an existing
+   * sceneInstance that might reference stages, objects, navmeshes, etc. that
+   * do not exist in the dataset.
    * @param sceneInstance A Scene Instance Attributes.  It is assumed the @p
    * sceneInstance at least references a valid stage.
    * @return whether this sceneInstance was successfully added to the dataset.
@@ -135,6 +168,15 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const attributes::SceneAttributes::ptr& sceneInstance);
 
  protected:
+  /**
+   * @brief
+   */
+  std::string addNewValToMap(const std::string& key,
+                             const std::string& path,
+                             bool overwrite,
+                             std::map<std::string, std::string>& map,
+                             const std::string& descString);
+
   /**
    * @brief Reference to AssetAttributesManager to give access to primitive
    * attributes for object construction
@@ -166,7 +208,8 @@ class SceneDatasetAttributes : public AbstractAttributes {
    */
   managers::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
   /**
-   * @brief Maps names specified in dataset_config file to paths for navmeshes.
+   * @brief Maps names specified in dataset_config file to paths for
+   * navmeshes.
    */
   std::map<std::string, std::string> navmeshMap_;
   /**

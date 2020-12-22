@@ -294,7 +294,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // register object
     attrMgr->registerObject(attr, regHandle);
   }  // if original filename was specified else
-}  // namespace managers
+}  // SceneDatasetAttributesManager::readDatasetConfigsJSONCell
 
 int SceneDatasetAttributesManager::registerObjectFinalize(
     attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
