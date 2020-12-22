@@ -26,8 +26,19 @@ void Player::readKeyframesFromFile(const std::string& filepath) {
   clearFrame();
   keyframes_.clear();
 
-  auto newDoc = esp::io::parseJsonFile(filepath);
-  readKeyframesFromJsonDocument(newDoc);
+  if (!Corrade::Utility::Directory::exists(filepath)) {
+    LOG(ERROR) << "Player::readKeyframesFromFile: file " << filepath
+               << " not found.";
+    return;
+  }
+  try {
+    auto newDoc = esp::io::parseJsonFile(filepath);
+    readKeyframesFromJsonDocument(newDoc);
+  } catch (...) {
+    LOG(ERROR)
+        << "Player::readKeyframesFromFile: failed to parse keyframes from "
+        << filepath << ".";
+  }
 }
 
 int Player::getKeyframeIndex() const {
