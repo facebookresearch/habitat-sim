@@ -23,7 +23,7 @@ SceneDatasetAttributes::SceneDatasetAttributes(
 }  // ctor
 
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
-    attributes::SceneAttributes::ptr sceneInstance) {
+    const attributes::SceneAttributes::ptr& sceneInstance) {
   const std::string datasetName = getHandle();
   const std::string sceneInstanceName = sceneInstance->getHandle();
   // verify stage in sceneInstance (required) exists in SceneDatasetAttributes,
@@ -72,7 +72,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
         << " does not exist in dataset so adding.";
     sceneAttributesManager_->registerObject(sceneInstance);
   }
-
+  return true;
 }  // SceneDatasetAttributes::addSceneInstanceToDataset
 
 }  // namespace attributes

@@ -250,7 +250,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   reset();
 }  // Simulator::reconfigure
 
-bool Simulator::createSceneInstance() {}  // Simulator::createSceneInstance
+bool Simulator::createSceneInstance() {
+  return false;
+}  // Simulator::createSceneInstance
 
 bool Simulator::loadSemanticSceneDescriptor(
     const std::string& semanticSceneDescFilename,
@@ -264,6 +266,9 @@ bool Simulator::loadSemanticSceneDescriptor(
           "info_semantic.json");
       if (io::exists(tmpFName)) {
         scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
+      } else {
+        // Provide warning msgs for failures?
+        return false;
       }
       break;
     }
@@ -277,17 +282,23 @@ bool Simulator::loadSemanticSceneDescriptor(
         } else if (endsWith(semanticSceneDescFilename, ".scn")) {
           scene::SemanticScene::loadGibsonHouse(semanticSceneDescFilename,
                                                 *semanticScene_);
+        } else {
+          return false;
         }
+      } else {
+        return false;
       }
       break;
     }
     case assets::AssetType::SUNCG_SCENE:
       // scene::SemanticScene::loadSuncgHouse(stageFilename, *semanticScene_);
-      break;
+      return false;
     default:
       break;
-  }
-}  // Simulator::createSceneInstance
+  }  // switch
+
+  return true;
+}  // Simulator::loadSemanticSceneDescriptor
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {

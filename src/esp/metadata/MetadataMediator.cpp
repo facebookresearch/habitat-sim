@@ -216,7 +216,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
 }  // MetadataMediator::getSceneAttributesByName
 
 attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
-    const managers::SceneAttributesManager::ptr dsSceneAttrMgr,
+    const managers::SceneAttributesManager::ptr& dsSceneAttrMgr,
     const std::string& sceneName) {
   // create scene attributes with passed name
   attributes::SceneAttributes::ptr sceneAttributes =
