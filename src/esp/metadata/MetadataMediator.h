@@ -225,7 +225,7 @@ class MetadataMediator {
    * to be intialized to reference the stage also named with @p sceneName .
    */
   attributes::SceneAttributes::ptr makeSceneAndReferenceStage(
-      const managers::SceneAttributesManager::ptr dsSceneAttrMgr,
+      const managers::SceneAttributesManager::ptr& dsSceneAttrMgr,
       const std::string& sceneName);
 
   /**

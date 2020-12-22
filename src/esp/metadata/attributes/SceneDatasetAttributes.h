@@ -132,7 +132,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return whether this sceneInstance was successfully added to the dataset.
    */
   bool addNewSceneInstanceToDataset(
-      attributes::SceneAttributes::ptr sceneInstance);
+      const attributes::SceneAttributes::ptr& sceneInstance);
 
  protected:
   /**
