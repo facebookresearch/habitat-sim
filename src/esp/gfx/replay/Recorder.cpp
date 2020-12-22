@@ -166,9 +166,26 @@ void Recorder::writeSavedKeyframesToFile(const std::string& filepath) {
   auto document = writeKeyframesToJsonDocument();
   esp::io::writeJsonToFile(document, filepath);
 
+  consolidateSavedKeyframes();
+}
+
+std::string Recorder::writeSavedKeyframesToString() {
+  auto document = writeKeyframesToJsonDocument();
+
+  consolidateSavedKeyframes();
+
+  return esp::io::jsonToString(document);
+}
+
+void Recorder::consolidateSavedKeyframes() {
   // consolidate saved keyframes into current keyframe
   addLoadsCreationsDeletions(savedKeyframes_.begin(), savedKeyframes_.end(),
                              &getKeyframe());
+  // clear instanceRecord.recentState to ensure updates get included in the next
+  // saved keyframe.
+  for (auto& instanceRecord : instanceRecords_) {
+    instanceRecord.recentState = Corrade::Containers::NullOpt;
+  }
   savedKeyframes_.clear();
 }
 
