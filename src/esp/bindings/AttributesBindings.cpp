@@ -40,6 +40,7 @@ namespace metadata {
 
 void initAttributesBindings(py::module& m) {
   // ==== AbstractManagedObject ====
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<AbstractManagedObject, AbstractManagedObject::ptr>(
       m, "AbstractManagedObject");
 

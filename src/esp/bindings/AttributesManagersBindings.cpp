@@ -274,12 +274,14 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Light Layout Attributes Template manager ====
   declareBaseAttributesManager<LightLayoutAttributes>(m, "BaseLightLayout");
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<LightLayoutAttributesManager,
              AttributesManager<LightLayoutAttributes>,
              LightLayoutAttributesManager::ptr>(m,
                                                 "LightLayoutAttributesManager");
   // ==== Object Attributes Template manager ====
   declareBaseAttributesManager<ObjectAttributes>(m, "BaseObject");
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<ObjectAttributesManager, AttributesManager<ObjectAttributes>,
              ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
 
@@ -333,12 +335,14 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Stage Attributes Template manager ====
   declareBaseAttributesManager<StageAttributes>(m, "BaseStage");
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<StageAttributesManager, AttributesManager<StageAttributes>,
              StageAttributesManager::ptr>(m, "StageAttributesManager");
 
   // ==== Physics World/Manager Template manager ====
 
   declareBaseAttributesManager<PhysicsManagerAttributes>(m, "BasePhysics");
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<PhysicsAttributesManager,
              AttributesManager<PhysicsManagerAttributes>,
              PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
