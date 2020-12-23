@@ -39,6 +39,7 @@
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
+#include "esp/gfx/replay/Recorder.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -316,7 +317,6 @@ bool ResourceManager::loadStage(
 
   return true;
 }  // ResourceManager::loadScene
-
 bool ResourceManager::buildMeshGroups(
     const AssetInfo& info,
     std::vector<CollisionMeshData>& meshGroup) {
@@ -501,11 +501,9 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
     // loadRenderAsset doesn't yet support the requested asset type
     CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   }
-#if 0  // coming soon
-  if (renderKeyframeWriter_) {
-    renderKeyframeWriter_->onLoadRenderAsset(info);
+  if (gfxReplayRecorder_) {
+    gfxReplayRecorder_->onLoadRenderAsset(info);
   }
-#endif
   return meshSuccess;
 }
 
@@ -547,11 +545,10 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
     CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   }
 
-#if 0  // coming soon
-  if (renderKeyframeWriter_ && newNode) {
-    renderKeyframeWriter_->onCreateRenderAssetInstance(&newNode, creation);
+  if (gfxReplayRecorder_ && newNode) {
+    gfxReplayRecorder_->onCreateRenderAssetInstance(newNode, creation);
   }
-#endif
+
   return newNode;
 }
 
@@ -1865,17 +1862,13 @@ bool ResourceManager::instantiateAssetsOnDemand(
 }  // ResourceManager::instantiateAssetsOnDemand
 
 void ResourceManager::addObjectToDrawables(
-    const std::string& objTemplateHandle,
+    const ObjectAttributes::ptr& ObjectAttributes,
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>& visNodeCache,
     const std::string& lightSetupKey) {
   if (parent != nullptr and drawables != nullptr) {
     //! Add mesh to rendering stack
-
-    // Meta data
-    ObjectAttributes::ptr ObjectAttributes =
-        getObjectAttributesManager()->getObjectByHandle(objTemplateHandle);
 
     const std::string& renderObjectName =
         ObjectAttributes->getRenderAssetHandle();

@@ -21,7 +21,13 @@ LICENSE file in the root directory of this source tree.-->
     <div id="status">Initialization...</div>
     <div id="status-description"></div>
   </div>
+
+
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js"></script>
   <script>
+    const WebXRPolyfill = window.WebXRPolyfill;
+    window.webxrpolyfill = new WebXRPolyfill();
+
     // TODO(aps): Later move to configuration based system
     window.vrEnabled = true;
   </script>

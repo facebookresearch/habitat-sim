@@ -25,6 +25,8 @@ set(
   replay/Player.h
   replay/Recorder.cpp
   replay/Recorder.h
+  replay/ReplayManager.h
+  replay/ReplayManager.cpp
   WindowlessContext.cpp
   WindowlessContext.h
   RenderTarget.cpp
