@@ -42,4 +42,5 @@ performance-*,
 WarningsAsErrors:
 '*,
 -bugprone-narrowing-conversions,
+-bugprone-unused-raii,
 -clang-diagnostic-deprecated-declarations'
