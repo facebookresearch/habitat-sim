@@ -54,6 +54,8 @@ class CubeMapCamera : public RenderCamera {
    * +----+----+----+----+
    *           | +Y |
    *           +----+
+   * CAREFUL! the local transformation of the camera node will be set after
+   * calling this function.
    * @return Reference to self (for method chaining)
    */
   CubeMapCamera& switchToFace(Magnum::GL::CubeMapCoordinate cubeSide);
@@ -94,15 +96,17 @@ class CubeMapCamera : public RenderCamera {
   CubeMapCamera& setProjectionMatrix(int width, float znear, float zfar);
 
   /**
-   * @brief Updae the original viewing matrix. It MUST be called after each time
-   * the relative transformation of camera node has been set.
+   * @brief Update the original viewing matrix. It MUST be called after each
+   * time the local transformation of camera node has been set.
    * @return Reference to self (for method chaining)
    */
   CubeMapCamera& updateOriginalViewingMatrix();
 
   /**
    * @brief restore the local transformation of the camera node using the stored
-   * original viewing matrix
+   * original viewing matrix.
+   * It is useful, since @ref switchToFace() will change the local
+   * transformations and user want to revert such changes.
    * @return Reference to self (for method chaining)
    */
   CubeMapCamera& restoreTransformation();
