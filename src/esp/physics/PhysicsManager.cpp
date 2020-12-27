@@ -99,23 +99,23 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
     return ID_UNDEFINED;
   }
 
-  existingObjects_.at(nextObjectID_)
-      ->visualNodes_.push_back(existingObjects_.at(nextObjectID_)->visualNode_);
+  // temp non-owning pointer to object
+  esp::physics::RigidObject* const obj =
+      (existingObjects_.at(nextObjectID_).get());
+
+  obj->visualNodes_.push_back(obj->visualNode_);
 
   //! Draw object via resource manager
   //! Render node as child of physics node
   //! Verify we should make the object drawable
-  if (existingObjects_.at(nextObjectID_)
-          ->getInitializationAttributes()
-          ->getIsVisible()) {
-    resourceManager_.addObjectToDrawables(
-        configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
-        drawables, existingObjects_.at(nextObjectID_)->visualNodes_,
-        lightSetup);
+  if (obj->getInitializationAttributes()->getIsVisible()) {
+    resourceManager_.addObjectToDrawables(obj->getInitializationAttributes(),
+                                          obj->visualNode_, drawables,
+                                          obj->visualNodes_, lightSetup);
   }
 
   // finalize rigid object creation
-  objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();
+  objectSuccess = obj->finalizeObject();
   if (!objectSuccess) {
     removeObject(nextObjectID_, true, true);
     LOG(ERROR) << "PhysicsManager::addObject : PhysicsManager::finalizeObject "

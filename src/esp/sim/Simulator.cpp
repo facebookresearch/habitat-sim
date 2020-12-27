@@ -17,6 +17,8 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/replay/Recorder.h"
+#include "esp/gfx/replay/ReplayManager.h"
 #include "esp/io/io.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
@@ -55,6 +57,7 @@ void Simulator::close() {
   agents_.clear();
 
   physicsManager_ = nullptr;
+  gfxReplayMgr_ = nullptr;
   semanticScene_ = nullptr;
 
   sceneID_.clear();
@@ -187,6 +190,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       renderer_ = gfx::Renderer::create(flags);
     }
 
+    reconfigureReplayManager();
+
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
     auto& rootNode = sceneGraph.getRootNode();
     // auto& drawables = sceneGraph.getDrawables();
@@ -295,6 +300,23 @@ void Simulator::reset() {
 void Simulator::seed(uint32_t newSeed) {
   random_->seed(newSeed);
   pathfinder_->seed(newSeed);
+}
+
+void Simulator::reconfigureReplayManager() {
+  gfxReplayMgr_ = std::make_shared<gfx::replay::ReplayManager>();
+
+  // construct Recorder instance if requested
+  gfxReplayMgr_->setRecorder(config_.enableGfxReplaySave
+                                 ? std::make_shared<gfx::replay::Recorder>()
+                                 : nullptr);
+  // assign Recorder to ResourceManager
+  ASSERT(resourceManager_);
+  resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
+
+  // provide Player callback to replay manager
+  gfxReplayMgr_->setPlayerCallback(
+      std::bind(&esp::sim::Simulator::loadAndCreateRenderAssetInstance, this,
+                std::placeholders::_1, std::placeholders::_2));
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
@@ -783,6 +805,16 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   } else {
     LOG(ERROR) << "No loaded PathFinder, aborting sampleRandomAgentState.";
   }
+}
+
+scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
+    const assets::AssetInfo& assetInfo,
+    const assets::RenderAssetInstanceCreationInfo& creation) {
+  // Note this pattern of passing the scene manager and two scene ids to
+  // resource manager. This is similar to ResourceManager::loadStage.
+  std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
+  return resourceManager_->loadAndCreateRenderAssetInstance(
+      assetInfo, creation, sceneManager_.get(), tempIDs);
 }
 
 agent::Agent::ptr Simulator::addAgent(

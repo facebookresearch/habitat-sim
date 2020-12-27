@@ -4,12 +4,16 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
+#include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/esp.h"
+#include "esp/io/JsonAllTypes.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "configure.h"
+
+#include <limits>
 
 using namespace esp::io;
 
@@ -164,4 +168,278 @@ TEST(IOTest, JsonTest) {
       std::bind(&ObjectAttributes::setRenderAssetHandle, attributes, _1));
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getRenderAssetHandle(), "banana.glb");
+}
+
+// Serialize/deserialize the 7 rapidjson builtin types using
+// io::addMember/readMember and assert equality.
+TEST(IOTest, JsonBuiltinTypesTest) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+
+  {
+    int x{std::numeric_limits<int>::lowest()};
+    addMember(d, "myint", x, allocator);
+    int x2{0};
+    EXPECT_TRUE(readMember(d, "myint", x2));
+    EXPECT_EQ(x2, x);
+  }
+
+  {
+    unsigned x{std::numeric_limits<unsigned>::max()};
+    addMember(d, "myunsigned", x, allocator);
+    unsigned x2{0};
+    EXPECT_TRUE(readMember(d, "myunsigned", x2));
+    EXPECT_EQ(x2, x);
+  }
+
+  {
+    int64_t x{std::numeric_limits<int64_t>::lowest()};
+    addMember(d, "myint64_t", x, allocator);
+    int64_t x2{0};
+    EXPECT_TRUE(readMember(d, "myint64_t", x2));
+    EXPECT_EQ(x2, x);
+  }
+
+  {
+    uint64_t x{std::numeric_limits<uint64_t>::max()};
+    addMember(d, "myuint64_t", x, allocator);
+    uint64_t x2{0};
+    EXPECT_TRUE(readMember(d, "myuint64_t", x2));
+    EXPECT_EQ(x2, x);
+  }
+
+  {
+    float x{1.0 / 7};
+    addMember(d, "myfloat", x, allocator);
+    float x2{0};
+    EXPECT_TRUE(readMember(d, "myfloat", x2));
+    EXPECT_EQ(x2, x);
+  }
+
+  {
+    double x{1.0 / 13};
+    addMember(d, "mydouble", x, allocator);
+    double x2{0};
+    EXPECT_TRUE(readMember(d, "mydouble", x2));
+    EXPECT_EQ(x2, x);
+  }
+
+  {
+    bool x{true};
+    addMember(d, "mybool", x, allocator);
+    bool x2{false};
+    EXPECT_TRUE(readMember(d, "mybool", x2));
+    EXPECT_EQ(x2, x);
+  }
+
+  // verify failure to read bool into int
+  {
+    int x2{0};
+    EXPECT_FALSE(readMember(d, "mybool", x2));
+  }
+
+  // verify failure to read missing tag
+  {
+    int x2{0};
+    EXPECT_FALSE(readMember(d, "my_missing_int", x2));
+  }
+}
+
+// Serialize/deserialize a few stl types using io::addMember/readMember and
+// assert equality.
+TEST(IOTest, JsonStlTypesTest) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+
+  std::string s{"hello world"};
+  addMember(d, "s", s, allocator);
+  std::string s2;
+  EXPECT_TRUE(readMember(d, "s", s2));
+  EXPECT_EQ(s2, s);
+
+  // test a vector of ints
+  std::vector<int> vec{3, 4, 5, 6};
+  addMember(d, "vec", vec, allocator);
+  std::vector<int> vec2;
+  EXPECT_TRUE(readMember(d, "vec", vec2));
+  EXPECT_EQ(vec2, vec);
+
+  // test an empty vector
+  std::vector<float> emptyVec{};
+  addMember(d, "emptyVec", emptyVec, allocator);
+  std::vector<float> emptyVec2;
+  EXPECT_TRUE(readMember(d, "emptyVec", emptyVec2));
+  EXPECT_EQ(emptyVec2, emptyVec);
+
+  // test reading a vector of wrong type
+  std::vector<std::string> vec3;
+  EXPECT_FALSE(readMember(d, "vec", vec3));
+}
+
+// Serialize/deserialize a few Magnum types using io::addMember/readMember and
+// assert equality.
+TEST(IOTest, JsonMagnumTypesTest) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+
+  Magnum::Vector3 vec{1, 2, 3};
+  addMember(d, "myvec", vec, allocator);
+  Magnum::Vector3 vec2;
+  EXPECT_TRUE(readMember(d, "myvec", vec2));
+  EXPECT_EQ(vec2, vec);
+
+  Magnum::Quaternion quat{{1, 2, 3}, 4};
+  addMember(d, "myquat", quat, allocator);
+  Magnum::Quaternion quat2;
+  EXPECT_TRUE(readMember(d, "myquat", quat2));
+  EXPECT_EQ(quat2, quat);
+
+  // test reading the wrong type (wrong number of fields)
+  Magnum::Quaternion quat3;
+  EXPECT_FALSE(readMember(d, "myvec", quat3));
+
+  // test reading the wrong type (wrong number of fields)
+  Magnum::Vector3 vec3;
+  EXPECT_FALSE(readMember(d, "myquat", vec3));
+
+  // test reading the wrong type (array elements aren't numbers)
+  std::vector<std::string> vecOfStrings{"1", "2", "3"};
+  addMember(d, "myVecOfStrings", vecOfStrings, allocator);
+  EXPECT_FALSE(readMember(d, "myVecOfStrings", vec3));
+}
+
+// Serialize/deserialize a few esp types using io::addMember/readMember and
+// assert equality.
+TEST(IOTest, JsonEspTypesTest) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+
+  {
+    // vec3f
+    esp::vec3f vec{1, 2, 3};
+    addMember(d, "myvec3f", vec, allocator);
+    esp::vec3f vec2;
+    EXPECT_TRUE(readMember(d, "myvec3f", vec2));
+    EXPECT_EQ(vec2, vec);
+
+    // test reading the wrong type (wrong number of fields)
+    std::vector<float> wrongNumFieldsVec{1, 3, 4, 4};
+    addMember(d, "mywrongNumFieldsVec", wrongNumFieldsVec, allocator);
+    esp::vec3f vec3;
+    EXPECT_FALSE(readMember(d, "mywrongNumFieldsVec", vec3));
+
+    // test reading the wrong type (array elements aren't numbers)
+    std::vector<std::string> vecOfStrings{"1", "2", "3"};
+    addMember(d, "myVecOfStrings", vecOfStrings, allocator);
+    EXPECT_FALSE(readMember(d, "myVecOfStrings", vec3));
+  }
+
+  {
+    // RenderAssetInstanceCreationInfo
+    esp::assets::RenderAssetInstanceCreationInfo creationInfo(
+        "test_filepath", Magnum::Vector3(1.f, 2.f, 3.f),
+        esp::assets::RenderAssetInstanceCreationInfo::Flags(),
+        "test_light_setup");
+    addMember(d, "creationInfo", creationInfo, allocator);
+    esp::assets::RenderAssetInstanceCreationInfo creationInfo2;
+    EXPECT_TRUE(readMember(d, "creationInfo", creationInfo2));
+    EXPECT_EQ(creationInfo2.filepath, creationInfo.filepath);
+    EXPECT_EQ(creationInfo2.scale, creationInfo.scale);
+    EXPECT_EQ(creationInfo2.flags, creationInfo.flags);
+    EXPECT_EQ(creationInfo2.lightSetupKey, creationInfo.lightSetupKey);
+  }
+
+  {
+    // AssetInfo
+    esp::assets::AssetInfo assetInfo{
+        esp::assets::AssetType::MP3D_MESH,
+        "test_filepath2",
+        esp::geo::CoordinateFrame(esp::vec3f(1.f, 0.f, 0.f),
+                                  esp::vec3f(0.f, 0.f, 1.f),
+                                  esp::vec3f(1.f, 2.f, 3.f)),
+        4.f,
+        true,
+        false};
+    addMember(d, "assetInfo", assetInfo, allocator);
+    esp::assets::AssetInfo assetInfo2;
+    EXPECT_TRUE(readMember(d, "assetInfo", assetInfo2));
+    EXPECT_EQ(assetInfo2.type, assetInfo.type);
+    EXPECT_EQ(assetInfo2.filepath, assetInfo.filepath);
+    EXPECT_EQ(assetInfo2.frame.up(), assetInfo.frame.up());
+    EXPECT_EQ(assetInfo2.frame.front(), assetInfo.frame.front());
+    EXPECT_EQ(assetInfo2.frame.origin(), assetInfo.frame.origin());
+    EXPECT_EQ(assetInfo2.virtualUnitToMeters, assetInfo.virtualUnitToMeters);
+    EXPECT_EQ(assetInfo2.requiresLighting, assetInfo.requiresLighting);
+    EXPECT_EQ(assetInfo2.splitInstanceMesh, assetInfo.splitInstanceMesh);
+  }
+
+  {
+    // RenderAssetInstanceState
+    esp::gfx::replay::RenderAssetInstanceState state{
+        {Magnum::Vector3(1.f, 2.f, 3.f),
+         Magnum::Quaternion::rotation(Magnum::Rad{1.f},
+                                      Magnum::Vector3(0.f, 1.f, 0.f))},
+        4};
+    addMember(d, "state", state, allocator);
+    // read and compare RenderAssetInstanceState
+    esp::gfx::replay::RenderAssetInstanceState state2;
+    EXPECT_TRUE(readMember(d, "state", state2));
+    EXPECT_EQ(state2, state);
+  }
+}
+
+namespace {
+// some test structs for JsonUserTypeTest below
+struct MyNestedStruct {
+  std::string a;
+};
+
+struct MyOuterStruct {
+  MyNestedStruct nested;
+  float b;
+};
+
+// Beware, toJsonValue/fromJsonValue should generally go in JsonAllTypes.h,
+// not scattered in user code as done here.
+inline JsonGenericValue toJsonValue(const MyNestedStruct& x,
+                                    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "a", x.a, allocator);
+  return obj;
+}
+
+bool fromJsonValue(const JsonGenericValue& obj, MyNestedStruct& x) {
+  readMember(obj, "a", x.a);
+  return true;
+}
+
+inline JsonGenericValue toJsonValue(const MyOuterStruct& x,
+                                    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "nested", x.nested, allocator);
+  addMember(obj, "b", x.b, allocator);
+  return obj;
+}
+
+bool fromJsonValue(const JsonGenericValue& obj, MyOuterStruct& x) {
+  readMember(obj, "nested", x.nested);
+  readMember(obj, "b", x.b);
+  return true;
+}
+}  // namespace
+
+// Serialize/deserialize MyOuterStruct using io::addMember/readMember and assert
+// equality.
+TEST(IOTest, JsonUserTypeTest) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+
+  MyOuterStruct myStruct{{"hello world"}, 2.f};
+  addMember(d, "myStruct", myStruct, allocator);
+
+  MyOuterStruct myStruct2;
+  readMember(d, "myStruct", myStruct2);
+
+  EXPECT_EQ(myStruct2.nested.a, myStruct.nested.a);
+  EXPECT_EQ(myStruct2.b, myStruct.b);
 }

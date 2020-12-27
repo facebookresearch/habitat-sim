@@ -72,7 +72,7 @@ bool operator!=(const SensorSpec& a, const SensorSpec& b);
 // Represents a particular sensor Observation
 struct Observation {
   // TODO: populate this struct with raw data
-  core::Buffer::ptr buffer;
+  core::Buffer::ptr buffer{nullptr};
   ESP_SMART_POINTERS(Observation)
 };
 

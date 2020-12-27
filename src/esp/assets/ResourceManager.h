@@ -56,7 +56,10 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 class Drawable;
+namespace replay {
+class Recorder;
 }
+}  // namespace gfx
 namespace scene {
 struct SceneConfiguration;
 }
@@ -325,50 +328,12 @@ class ResourceManager {
    * specified @ref DrawableGroup as a child of the specified @ref
    * scene::SceneNode if provided.
    *
-   * If the attributes specified by objTemplateID exists in @ref
-   * esp::metadata::managers::ObjectAttributesManager::objectLibrary_, and both
-   * parent and drawables are specified, than an object referenced by that key
-   * is added to the scene.
-   * @param objTemplateLibID The ID of the object attributes in the @ref
-   * esp::metadata::managers::ObjectAttributesManager::objectLibrary_.  This is
-   * expected to exist
-   * @param parent The @ref scene::SceneNode of which the object will be a
-   * child.
-   * @param drawables The @ref DrawableGroup with which the object @ref
-   * gfx::Drawable will be rendered.
-   * @param lightSetupKey The @ref LightSetup key that will be used
-   * for the added component.
-   * @param[out] visNodeCache Cache for pointers to all nodes created as the
-   * result of this process.
-   */
-  void addObjectToDrawables(
-      int objTemplateLibID,
-      scene::SceneNode* parent,
-      DrawableGroup* drawables,
-      std::vector<scene::SceneNode*>& visNodeCache,
-      const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY) {
-    if (objTemplateLibID != ID_UNDEFINED) {
-      const std::string& objTemplateHandleName =
-          metadataMediator_->getObjectAttributesManager()->getObjectHandleByID(
-              objTemplateLibID);
-
-      addObjectToDrawables(objTemplateHandleName, parent, drawables,
-                           visNodeCache, lightSetupKey);
-    }  // else objTemplateID does not exist - shouldn't happen
-  }    // addObjectToDrawables
-
-  /**
-   * @brief Add an object from a specified object template handle to the
-   * specified @ref DrawableGroup as a child of the specified @ref
-   * scene::SceneNode if provided.
-   *
    * If the attributes specified by objTemplateHandle exists in @ref
    * esp::metadata::managers::ObjectAttributesManager::objectLibrary_, and both
    * parent and drawables are specified, than an object referenced by that key
    * is added to the scene.
-   * @param objTemplateHandle The key of the attributes in the @ref  to parse
-   * and load.  The attributes are expected to exist but will be created (in the
-   * case of synthesized objects) if it does not.
+   * @param ObjectAttributes The attributes used to create the object being
+   * added.
    * @param parent The @ref scene::SceneNode of which the object will be a
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
@@ -379,7 +344,7 @@ class ResourceManager {
    * result of this process.
    */
   void addObjectToDrawables(
-      const std::string& objTemplateHandle,
+      const metadata::attributes::ObjectAttributes::ptr& ObjectAttributes,
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>& visNodeCache,
@@ -463,6 +428,15 @@ class ResourceManager {
    * for rendering. Textures will not be loaded if this is false.
    */
   inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }
+
+  /**
+   * @brief Set a replay recorder so that ResourceManager can notify it about
+   * render assets.
+   */
+  void setRecorder(
+      const std::shared_ptr<gfx::replay::Recorder>& gfxReplayRecorder) {
+    gfxReplayRecorder_ = gfxReplayRecorder;
+  }
 
   /**
    * @brief Load a render asset (if not already loaded) and create a render
@@ -994,6 +968,11 @@ class ResourceManager {
    * @brief Flag to load textures of meshes
    */
   bool requiresTextures_ = true;
+
+  /**
+   * @brief See @ref setRecorder.
+   */
+  std::shared_ptr<esp::gfx::replay::Recorder> gfxReplayRecorder_;
 };  // class ResourceManager
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
