@@ -30,7 +30,7 @@ StageAttributesManager::StageAttributesManager(
           AbstractObjectAttributesManager("Stage", "stage_config.json"),
       objectAttributesMgr_(std::move(objectAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),
-      cfgLightSetup_(assets::ResourceManager::NO_LIGHT_KEY) {
+      cfgLightSetup_(NO_LIGHT_KEY) {
   buildCtorFuncPtrMaps();
 }  // StageAttributesManager ctor
 
@@ -188,10 +188,9 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   // set defaults from SimulatorConfig values; these can also be overridden by
   // json, for example.
   newAttributes->setLightSetup(cfgLightSetup_);
-  newAttributes->setRequiresLighting(cfgLightSetup_ !=
-                                     assets::ResourceManager::NO_LIGHT_KEY);
+  newAttributes->setRequiresLighting(cfgLightSetup_ != NO_LIGHT_KEY);
   // set value from config so not necessary to be passed as argument
-  newAttributes->setFrustrumCulling(cfgFrustrumCulling_);
+  newAttributes->setFrustumCulling(cfgFrustumCulling_);
 
   // only set handle defaults if attributesHandle is not a config file (which
   // would never be a valid render or collision asset name).  Otherise, expect
@@ -333,20 +332,20 @@ void StageAttributesManager::setValsFromJSONDoc(
   stageAttributes->setSemanticAssetType(
       static_cast<int>(AssetType::INSTANCE_MESH));
 
-  if (io::jsonIntoVal<std::string>(jsonConfig, "nav_asset", navmeshFName)) {
+  if (io::readMember<std::string>(jsonConfig, "nav_asset", navmeshFName)) {
     navmeshFName = Cr::Utility::Directory::join(stageLocFileDir, navmeshFName);
     // if "nav mesh" is specified in stage json set value (override default).
     stageAttributes->setNavmeshAssetHandle(navmeshFName);
   }
 
-  if (io::jsonIntoVal<std::string>(jsonConfig, "house_filename", houseFName)) {
+  if (io::readMember<std::string>(jsonConfig, "house_filename", houseFName)) {
     houseFName = Cr::Utility::Directory::join(stageLocFileDir, houseFName);
     // if "house filename" is specified in stage json, set value (override
     // default).
     stageAttributes->setHouseFilename(houseFName);
   }
 
-  if (io::jsonIntoVal<std::string>(jsonConfig, "lighting_setup", lightSetup)) {
+  if (io::readMember<std::string>(jsonConfig, "lighting_setup", lightSetup)) {
     // if lighting is specified in stage json to non-empty value, set value
     // (override default).
     stageAttributes->setLightSetup(lightSetup);

@@ -28,6 +28,7 @@ using esp::assets::ResourceManager;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
+using esp::metadata::MetadataMediator;
 using esp::metadata::attributes::AbstractPrimitiveAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
@@ -62,7 +63,7 @@ struct SimTest : Cr::TestSuite::Tester {
 
   Simulator::uptr getSimulator(
       const std::string& scene,
-      const std::string& sceneLightingKey = ResourceManager::NO_LIGHT_KEY) {
+      const std::string& sceneLightingKey = esp::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
     simConfig.activeSceneID = scene;
     simConfig.enablePhysics = true;

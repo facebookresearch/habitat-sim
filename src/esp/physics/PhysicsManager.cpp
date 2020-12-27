@@ -57,7 +57,7 @@ bool PhysicsManager::addStageFinalize(const std::string& handle) {
 int PhysicsManager::addObject(const int objectLibId,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
-                              const Magnum::ResourceKey& lightSetup) {
+                              const std::string& lightSetup) {
   const std::string& configHandle =
       resourceManager_.getObjectAttributesManager()->getObjectHandleByID(
           objectLibId);
@@ -68,7 +68,7 @@ int PhysicsManager::addObject(const int objectLibId,
 int PhysicsManager::addObject(const std::string& configFileHandle,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
-                              const Magnum::ResourceKey& lightSetup) {
+                              const std::string& lightSetup) {
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
   scene::SceneNode* objectNode = attachmentNode;
@@ -99,23 +99,23 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
     return ID_UNDEFINED;
   }
 
-  existingObjects_.at(nextObjectID_)
-      ->visualNodes_.push_back(existingObjects_.at(nextObjectID_)->visualNode_);
+  // temp non-owning pointer to object
+  esp::physics::RigidObject* const obj =
+      (existingObjects_.at(nextObjectID_).get());
+
+  obj->visualNodes_.push_back(obj->visualNode_);
 
   //! Draw object via resource manager
   //! Render node as child of physics node
   //! Verify we should make the object drawable
-  if (existingObjects_.at(nextObjectID_)
-          ->getInitializationAttributes()
-          ->getIsVisible()) {
-    resourceManager_.addObjectToDrawables(
-        configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
-        drawables, existingObjects_.at(nextObjectID_)->visualNodes_,
-        lightSetup);
+  if (obj->getInitializationAttributes()->getIsVisible()) {
+    resourceManager_.addObjectToDrawables(obj->getInitializationAttributes(),
+                                          obj->visualNode_, drawables,
+                                          obj->visualNodes_, lightSetup);
   }
 
   // finalize rigid object creation
-  objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();
+  objectSuccess = obj->finalizeObject();
   if (!objectSuccess) {
     removeObject(nextObjectID_, true, true);
     LOG(ERROR) << "PhysicsManager::addObject : PhysicsManager::finalizeObject "

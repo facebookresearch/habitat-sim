@@ -636,6 +636,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
         "use_bounding_box_for_collision": true,
         "join_collision_meshes":true,
         "inertia": [1.1, 0.9, 0.3],
+        "semantic_id" : 7,
         "COM": [0.1,0.2,0.3]
       })";
   auto objAttr =
@@ -657,6 +658,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   ASSERT_EQ(objAttr->getRenderAssetHandle(), "testJSONRenderAsset.glb");
   ASSERT_EQ(objAttr->getCollisionAssetHandle(), "testJSONCollisionAsset.glb");
   ASSERT_EQ(objAttr->getIsCollidable(), false);
+  ASSERT_EQ(objAttr->getSemanticId(), 7);
   // object-specific attributes
   ASSERT_EQ(objAttr->getMass(), 9);
   ASSERT_EQ(objAttr->getBoundingBoxCollisions(), true);

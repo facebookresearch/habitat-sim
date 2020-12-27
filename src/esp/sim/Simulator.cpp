@@ -17,6 +17,8 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/replay/Recorder.h"
+#include "esp/gfx/replay/ReplayManager.h"
 #include "esp/io/io.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
@@ -55,6 +57,7 @@ void Simulator::close() {
   agents_.clear();
 
   physicsManager_ = nullptr;
+  gfxReplayMgr_ = nullptr;
   semanticScene_ = nullptr;
 
   sceneID_.clear();
@@ -182,10 +185,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     // reinitalize members
     if (!renderer_) {
       gfx::Renderer::Flags flags;
-      if (!config_.requiresTextures)
+      if (!(*requiresTextures_))
         flags |= gfx::Renderer::Flag::NoTextures;
       renderer_ = gfx::Renderer::create(flags);
     }
+
+    reconfigureReplayManager();
 
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
     auto& rootNode = sceneGraph.getRootNode();
@@ -199,9 +204,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
     // Load scene
-    loadSuccess = resourceManager_->loadStage(stageAttributes, physicsManager_,
-                                              sceneManager_.get(), tempIDs,
-                                              config_.loadSemanticMesh);
+    loadSuccess = resourceManager_->loadStage(
+        stageAttributes, physicsManager_, sceneManager_.get(), tempIDs,
+        config_.loadSemanticMesh, config_.forceSeparateSemanticSceneGraph);
 
     if (!loadSuccess) {
       LOG(ERROR) << "Cannot load " << stageFilename;
@@ -297,6 +302,23 @@ void Simulator::seed(uint32_t newSeed) {
   pathfinder_->seed(newSeed);
 }
 
+void Simulator::reconfigureReplayManager() {
+  gfxReplayMgr_ = std::make_shared<gfx::replay::ReplayManager>();
+
+  // construct Recorder instance if requested
+  gfxReplayMgr_->setRecorder(config_.enableGfxReplaySave
+                                 ? std::make_shared<gfx::replay::Recorder>()
+                                 : nullptr);
+  // assign Recorder to ResourceManager
+  ASSERT(resourceManager_);
+  resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
+
+  // provide Player callback to replay manager
+  gfxReplayMgr_->setPlayerCallback(
+      std::bind(&esp::sim::Simulator::loadAndCreateRenderAssetInstance, this,
+                std::placeholders::_1, std::placeholders::_2));
+}
+
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
   CHECK_GE(activeSceneID_, 0);
   CHECK_LT(activeSceneID_, sceneID_.size());
@@ -374,6 +396,14 @@ void Simulator::removeObject(const int objectID,
                              const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
+    if (trajVisNameByID.count(objectID) > 0) {
+      std::string trajVisAssetName = trajVisNameByID[objectID];
+      trajVisNameByID.erase(objectID);
+      trajVisIDByName.erase(trajVisAssetName);
+      // TODO : if object is trajectory visualization, remove its assets as well
+      // once this is supported.
+      // resourceManager_->removeResourceByName(trajVisAssetName);
+    }
   }
 }
 
@@ -713,6 +743,57 @@ bool Simulator::isNavMeshVisualizationActive() {
   return (navMeshVisNode_ != nullptr && navMeshVisPrimID_ != ID_UNDEFINED);
 }
 
+int Simulator::addTrajectoryObject(const std::string& trajVisName,
+                                   const std::vector<Mn::Vector3>& pts,
+                                   int numSegments,
+                                   float radius,
+                                   const Magnum::Color4& color,
+                                   bool smooth,
+                                   int numInterp) {
+  auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& drawables = sceneGraph_.getDrawables();
+
+  // 1. create trajectory tube asset from points and save it
+  bool success = resourceManager_->buildTrajectoryVisualization(
+      trajVisName, pts, numSegments, radius, color, smooth, numInterp);
+  if (!success) {
+    LOG(ERROR) << "Simulator::showTrajectoryVisualization : Failed to create "
+                  "Trajectory visualization mesh for "
+               << trajVisName;
+    return ID_UNDEFINED;
+  }
+  // 2. create object attributes for the trajectory
+  auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
+  auto trajObjAttr = objAttrMgr->createObject(trajVisName, false);
+  // turn off collisions
+  trajObjAttr->setIsCollidable(false);
+  trajObjAttr->setComputeCOMFromShape(false);
+  objAttrMgr->registerObject(trajObjAttr, trajVisName, true);
+
+  // 3. add trajectory object to manager
+  auto trajVisID = physicsManager_->addObject(trajVisName, &drawables);
+  if (trajVisID == ID_UNDEFINED) {
+    // failed to add object - need to delete asset from resourceManager.
+    LOG(ERROR) << "Simulator::showTrajectoryVisualization : Failed to create "
+                  "Trajectory visualization object for "
+               << trajVisName;
+    // TODO : support removing asset by removing from resourceDict_ properly
+    // using trajVisName
+    return ID_UNDEFINED;
+  }
+  LOG(INFO) << "Simulator::showTrajectoryVisualization : Trajectory "
+               "visualization object created with ID "
+            << trajVisID;
+  physicsManager_->setObjectMotionType(trajVisID,
+                                       esp::physics::MotionType::KINEMATIC);
+  // add to internal references of object ID and resourceDict name
+  // this is for eventual asset deletion/resource freeing.
+  trajVisIDByName[trajVisName] = trajVisID;
+  trajVisNameByID[trajVisID] = trajVisName;
+
+  return trajVisID;
+}  // Simulator::showTrajectoryVisualization
+
 // Agents
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   if (pathfinder_->isLoaded()) {
@@ -724,6 +805,16 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   } else {
     LOG(ERROR) << "No loaded PathFinder, aborting sampleRandomAgentState.";
   }
+}
+
+scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
+    const assets::AssetInfo& assetInfo,
+    const assets::RenderAssetInstanceCreationInfo& creation) {
+  // Note this pattern of passing the scene manager and two scene ids to
+  // resource manager. This is similar to ResourceManager::loadStage.
+  std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
+  return resourceManager_->loadAndCreateRenderAssetInstance(
+      assetInfo, creation, sceneManager_.get(), tempIDs);
 }
 
 agent::Agent::ptr Simulator::addAgent(

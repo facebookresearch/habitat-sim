@@ -96,11 +96,13 @@ all_sensor_types = ["color_sensor", "depth_sensor", "semantic_sensor"]
 # NB: This should go last, we have to force a close on the simulator when
 # this value changes, thus we should change it as little as possible
 @pytest.mark.parametrize("frustum_culling", [True, False])
+@pytest.mark.parametrize("add_sensor_lazy", [True, False])
 def test_sensors(
     scene,
     sensor_type,
     gpu2gpu,
     frustum_culling,
+    add_sensor_lazy,
     make_cfg_settings,
 ):
     if not osp.exists(scene):
@@ -109,18 +111,35 @@ def test_sensors(
     if not habitat_sim.cuda_enabled and gpu2gpu:
         pytest.skip("Skipping GPU->GPU test")
 
+    # We only support adding more RGB Sensors if one is already in a scene
+    # We can add depth sensors whenever
+    add_sensor_lazy = add_sensor_lazy and all_sensor_types[1] == sensor_type
+
     for sens in all_sensor_types:
-        make_cfg_settings[sens] = False
+        if add_sensor_lazy:
+            make_cfg_settings[sens] = (
+                sens in all_sensor_types[:2] and sens != sensor_type
+            )
+        else:
+            make_cfg_settings[sens] = False
 
     make_cfg_settings[sensor_type] = True
     make_cfg_settings["scene"] = scene
     make_cfg_settings["frustum_culling"] = frustum_culling
 
     cfg = make_cfg(make_cfg_settings)
+    if add_sensor_lazy:
+        additional_sensors = cfg.agents[0].sensor_specifications[1:]
+        cfg.agents[0].sensor_specifications = cfg.agents[0].sensor_specifications[:1]
     for sensor_spec in cfg.agents[0].sensor_specifications:
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
     with habitat_sim.Simulator(cfg) as sim:
+        if add_sensor_lazy:
+            obs: np.ndarray = sim.reset()
+            assert len(obs) == 1, "Other sensors were not removed"
+            for sensor_spec in additional_sensors:
+                sim.add_sensor(sensor_spec)
         obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
 
         # Different GPUs and different driver version will produce slightly

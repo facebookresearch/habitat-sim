@@ -288,7 +288,7 @@ std::string AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
   //-1 if tag is not found in json.
   int typeVal = -1;
   std::string tmpVal = "";
-  if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
+  if (io::readMember<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
     if (T::AssetTypeNamesMap.count(strToLookFor)) {
@@ -308,7 +308,7 @@ std::string AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
   }  // if type is found in json.  If not typeVal is -1
 
   // Read json for new mesh handle if present
-  if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshHandleTag, assetName)) {
+  if (io::readMember<std::string>(jsonDoc, jsonMeshHandleTag, assetName)) {
     // value is specified in json doc
     if ((this->isValidPrimitiveAttributes(assetName)) &&
         (oldFName.compare(assetName) != 0)) {

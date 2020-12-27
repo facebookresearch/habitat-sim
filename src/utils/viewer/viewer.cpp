@@ -119,7 +119,6 @@ class Viewer : public Mn::Platform::Application {
    * Simulator API.
    */
   int addPrimitiveObject();
-
   void pokeLastObject();
   void pushLastObject();
   void torqueLastObject();
@@ -170,6 +169,10 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
+  '1' toggle recording locations for trajectory visualization.
+  '2' build and display trajectory visualization.
+  '+' increase trajectory diameter
+  '-' decrease trajectory diameter
   '5' switch ortho/perspective camera.
   '6' reset ortho camera zoom/perspective camera FOV.
   'e' enable/disable frustum culling.
@@ -196,7 +199,7 @@ Key Commands:
   void printHelpText() { Mn::Debug{} << helpText; };
 
   // single inline for logging agent state msgs, so can be easily modified
-  inline void logAgentStateMsg(bool showPos, bool showOrient) {
+  inline void showAgentStateMsg(bool showPos, bool showOrient) {
     std::stringstream strDat("");
     if (showPos) {
       strDat << "Agent position "
@@ -212,6 +215,64 @@ Key Commands:
     if (str.size() > 0) {
       LOG(INFO) << str;
     }
+  }
+
+  /**
+   * @brief vector holding past agent locations to build trajectory
+   * visualization
+   */
+  std::vector<Magnum::Vector3> agentLocs_;
+  float agentTrajRad_ = .01f;
+  bool agentLocRecordOn_ = false;
+
+  /**
+   * @brief Set whether agent locations should be recorded or not. If toggling
+   * on then clear old locations
+   */
+  inline void setAgentLocationRecord(bool enable) {
+    if (enable == !agentLocRecordOn_) {
+      agentLocRecordOn_ = enable;
+      if (enable) {  // if turning on, clear old data
+        agentLocs_.clear();
+        recAgentLocation();
+      }
+    }
+    LOG(INFO) << "Agent location recording "
+              << (agentLocRecordOn_ ? "on" : "off");
+  }  // setAgentLocationRecord
+
+  /**
+   * @brief Record agent location if enabled.  Called after any movement.
+   */
+  inline void recAgentLocation() {
+    if (agentLocRecordOn_) {
+      auto pt = agentBodyNode_->translation() +
+                Magnum::Vector3{0, (2.0f * agentTrajRad_), 0};
+      agentLocs_.push_back(pt);
+      LOG(INFO) << "Recording agent location : {" << pt.x() << "," << pt.y()
+                << "," << pt.z() << "}";
+    }
+  }
+
+  /**
+   * @brief Build trajectory visualization
+   */
+  void buildTrajectoryVis();
+  void modTrajRad(bool bigger) {
+    std::string mod = "";
+    if (bigger) {
+      if (agentTrajRad_ < 1.0) {
+        agentTrajRad_ += 0.001f;
+        mod = "increased to ";
+      }
+    } else {
+      if (agentTrajRad_ > 0.001f) {
+        agentTrajRad_ -= 0.001f;
+        mod = "decreased to ";
+      }
+    }
+    esp::geo::clamp(agentTrajRad_, 0.001f, 1.0f);
+    LOG(INFO) << "Agent Trajectory Radius " << mod << ": " << agentTrajRad_;
   }
 
   // The simulator object backend for this viewer instance
@@ -335,8 +396,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig.requiresTextures = true;
   if (args.isSet("stage-requires-lighting")) {
     Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
-    simConfig.sceneLightSetup =
-        esp::assets::ResourceManager::DEFAULT_LIGHTING_KEY;
+    simConfig.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
   }
 
   // setup the PhysicsManager config file
@@ -493,6 +553,35 @@ int Viewer::addPrimitiveObject() {
     return esp::ID_UNDEFINED;
   }
 }  // addPrimitiveObject
+
+void Viewer::buildTrajectoryVis() {
+  if (agentLocs_.size() < 2) {
+    LOG(WARNING) << "Viewer::buildTrajectoryVis : No recorded trajectory "
+                    "points, so nothing to build. Aborting.";
+    return;
+  }
+  Mn::Color4 color{randomDirection(), 1.0f};
+  // synthesize a name for asset based on color, radius, point count
+  std::ostringstream tmpName;
+  tmpName << "viewerTrajVis_R" << color.r() << "_G" << color.g() << "_B"
+          << color.b() << "_rad" << agentLocs_.size() << "_"
+          << agentLocs_.size() << "_pts";
+  std::string trajObjName(tmpName.str());
+
+  LOG(INFO) << "Viewer::buildTrajectoryVis : Attempting to build trajectory "
+               "tube for :"
+            << agentLocs_.size() << " points.";
+  int trajObjID = simulator_->addTrajectoryObject(
+      trajObjName, agentLocs_, 6, agentTrajRad_, color, true, 10);
+  if (trajObjID != esp::ID_UNDEFINED) {
+    LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj Name : "
+              << trajObjName << " has object ID : " << trajObjID;
+  } else {
+    LOG(WARNING) << "Viewer::buildTrajectoryVis : Attempt to build trajectory "
+                    "visualization "
+                 << trajObjName << " failed; Returned ID_UNDEFINED.";
+  }
+}  // buildTrajectoryVis
 
 void Viewer::removeLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
@@ -713,8 +802,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Right &&
       (event.modifiers() & MouseEvent::Modifier::Shift)) {
     // cannot use the default framebuffer, so setup another framebuffer,
-    // also, setup the color attachment for rendering, and remove the visualizer
-    // for the previously picked object
+    // also, setup the color attachment for rendering, and remove the
+    // visualizer for the previously picked object
     objectPickingHelper_->prepareToDraw();
 
     // redraw the scene on the object picking framebuffer
@@ -746,7 +835,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       if (raycastResults.hasHits()) {
         addPrimitiveObject();
         auto existingObjectIDs = simulator_->getExistingObjectIDs();
-        // use the bounding box to create a safety margin for adding the object
+        // use the bounding box to create a safety margin for adding the
+        // object
         float boundingBuffer =
             simulator_->getObjectSceneNode(existingObjectIDs.back())
                     ->computeCumulativeBB()
@@ -813,7 +903,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   switch (key) {
     case KeyEvent::Key::Esc:
-      std::exit(0);
+      /* Using Application::exit(), which exits at the next iteration of the
+         event loop (same as the window close button would do). Using
+         std::exit() would exit immediately, but without calling any scoped
+         destructors, which could hide potential destruction order issues or
+         crashes at exit. We don't want that. */
+      exit(0);
       break;
     case KeyEvent::Key::Space:
       simulating_ = !simulating_;
@@ -823,6 +918,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // also `>` key
       simulateSingleStep_ = true;
       break;
+      // ==== Look direction and Movement ====
     case KeyEvent::Key::Left:
       defaultAgent_->act("turnLeft");
       break;
@@ -835,6 +931,47 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Down:
       defaultAgent_->act("lookDown");
       break;
+    case KeyEvent::Key::A:
+      defaultAgent_->act("moveLeft");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::D:
+      defaultAgent_->act("moveRight");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::S:
+      defaultAgent_->act("moveBackward");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::W:
+      defaultAgent_->act("moveForward");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::X:
+      defaultAgent_->act("moveDown");
+      recAgentLocation();
+      break;
+    case KeyEvent::Key::Z:
+      defaultAgent_->act("moveUp");
+      recAgentLocation();
+      break;
+      // ==== Miscellaneous ====
+    case KeyEvent::Key::One:
+      // toggle agent location recording for trajectory
+      setAgentLocationRecord(!agentLocRecordOn_);
+      break;
+    case KeyEvent::Key::Two:
+      // agent motion trajectory mesh synthesis with random color
+      buildTrajectoryVis();
+      break;
+    case KeyEvent::Key::Five:
+      // switch camera between ortho and perspective
+      switchCameraType();
+      break;
+    case KeyEvent::Key::Six:
+      // reset camera zoom
+      getAgentCamera().resetZoom();
+      break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
       break;
@@ -845,73 +982,19 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
       break;
-    case KeyEvent::Key::Five:
-      // switch camera between ortho and perspective
-      switchCameraType();
+
+    case KeyEvent::Key::Equal: {
+      // increase trajectory tube diameter
+      LOG(INFO) << "Bigger";
+      modTrajRad(true);
       break;
-    case KeyEvent::Key::Six:
-      // reset camera zoom
-      getAgentCamera().resetZoom();
+    }
+    case KeyEvent::Key::Minus: {
+      // decrease trajectory tube diameter
+      LOG(INFO) << "Smaller";
+      modTrajRad(false);
       break;
-    case KeyEvent::Key::A:
-      defaultAgent_->act("moveLeft");
-      break;
-    case KeyEvent::Key::D:
-      defaultAgent_->act("moveRight");
-      break;
-    case KeyEvent::Key::S:
-      defaultAgent_->act("moveBackward");
-      break;
-    case KeyEvent::Key::W:
-      defaultAgent_->act("moveForward");
-      break;
-    case KeyEvent::Key::X:
-      defaultAgent_->act("moveDown");
-      break;
-    case KeyEvent::Key::Z:
-      defaultAgent_->act("moveUp");
-      break;
-    case KeyEvent::Key::E:
-      simulator_->setFrustumCullingEnabled(
-          !simulator_->isFrustumCullingEnabled());
-      break;
-    case KeyEvent::Key::C:
-      showFPS_ = !showFPS_;
-      break;
-    case KeyEvent::Key::O:
-      addTemplateObject();
-      break;
-    case KeyEvent::Key::P:
-      pokeLastObject();
-      break;
-    case KeyEvent::Key::F:
-      pushLastObject();
-      break;
-    case KeyEvent::Key::K:
-      wiggleLastObject();
-      break;
-    case KeyEvent::Key::U:
-      removeLastObject();
-      break;
-    case KeyEvent::Key::V:
-      invertGravity();
-      break;
-    case KeyEvent::Key::T:
-      // Test key. Put what you want here...
-      torqueLastObject();
-      break;
-    case KeyEvent::Key::N:
-      // toggle navmesh visualization
-      simulator_->setNavMeshVisualization(
-          !simulator_->isNavMeshVisualizationActive());
-      break;
-    case KeyEvent::Key::I:
-      screenshot();
-      break;
-    case KeyEvent::Key::Q:
-      // query the agent state
-      logAgentStateMsg(true, true);
-      break;
+    }
     case KeyEvent::Key::B: {
       // toggle bounding box on objects
       drawObjectBBs = !drawObjectBBs;
@@ -919,8 +1002,48 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         simulator_->setObjectBBDraw(drawObjectBBs, id);
       }
     } break;
+    case KeyEvent::Key::C:
+      showFPS_ = !showFPS_;
+      break;
+    case KeyEvent::Key::E:
+      simulator_->setFrustumCullingEnabled(
+          !simulator_->isFrustumCullingEnabled());
+      break;
+    case KeyEvent::Key::F:
+      pushLastObject();
+      break;
     case KeyEvent::Key::H:
       printHelpText();
+      break;
+    case KeyEvent::Key::I:
+      screenshot();
+      break;
+    case KeyEvent::Key::K:
+      wiggleLastObject();
+      break;
+    case KeyEvent::Key::N:
+      // toggle navmesh visualization
+      simulator_->setNavMeshVisualization(
+          !simulator_->isNavMeshVisualizationActive());
+      break;
+    case KeyEvent::Key::O:
+      addTemplateObject();
+      break;
+    case KeyEvent::Key::P:
+      pokeLastObject();
+      break;
+    case KeyEvent::Key::Q:
+      // query the agent state
+      showAgentStateMsg(true, true);
+      break;
+    case KeyEvent::Key::T:
+      torqueLastObject();
+      break;
+    case KeyEvent::Key::U:
+      removeLastObject();
+      break;
+    case KeyEvent::Key::V:
+      invertGravity();
       break;
     default:
       break;

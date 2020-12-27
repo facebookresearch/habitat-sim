@@ -51,6 +51,9 @@ target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 test(PhysicsTest physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+test(GfxReplayTest assets gfx)
+target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 test(ResourceManagerTest assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

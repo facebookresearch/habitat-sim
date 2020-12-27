@@ -5,8 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
+from collections import OrderedDict
+from collections.abc import MutableMapping
 from os import path as osp
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
+from typing import MutableMapping as MutableMapping_T
+from typing import Optional, Union, cast, overload
 
 import attr
 import magnum as mn
@@ -17,18 +21,22 @@ from numpy import ndarray
 try:
     import torch
     from torch import Tensor
+
+    _HAS_TORCH = True
 except ImportError:
-    torch = None
+    _HAS_TORCH = False
 
 import habitat_sim.errors
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
-from habitat_sim.sensor import SensorType
+from habitat_sim.sensor import SensorSpec, SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
+
+# TODO maybe clean up types with TypeVars
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -42,8 +50,8 @@ class Configuration(object):
     configurations `agents`.
     """
 
-    sim_cfg: Optional[SimulatorConfiguration] = None
-    agents: Optional[List[AgentConfiguration]] = None
+    sim_cfg: SimulatorConfiguration
+    agents: List[AgentConfiguration]
 
 
 @attr.s(auto_attribs=True)
@@ -60,12 +68,13 @@ class Simulator(SimulatorBackend):
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
-    _default_agent: Agent = attr.ib(init=False, default=None)
-    _sensors: Dict = attr.ib(factory=dict, init=False)
+    _default_agent_id: int = attr.ib(default=0, init=False)
+    __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
     )  # track the compute time of each step
+    __last_state: Dict[int, AgentState] = attr.ib(factory=dict, init=False)
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
@@ -106,11 +115,12 @@ class Simulator(SimulatorBackend):
         self.__set_from_config(self.config)
 
     def close(self) -> None:
-        for sensor in self._sensors.values():
-            sensor.close()
-            del sensor
+        for agent_sensorsuite in self.__sensors:
+            for sensor in agent_sensorsuite.values():
+                sensor.close()
+                del sensor
 
-        self._sensors = {}
+        self.__sensors = []
 
         for agent in self.agents:
             agent.close()
@@ -118,10 +128,7 @@ class Simulator(SimulatorBackend):
 
         self.agents = []
 
-        del self._default_agent
-        self._default_agent = None
-
-        self.config = None
+        self.__last_state.clear()
 
         super().close()
 
@@ -135,12 +142,38 @@ class Simulator(SimulatorBackend):
         super().seed(new_seed)
         self.pathfinder.seed(new_seed)
 
-    def reset(self) -> Dict[str, ndarray]:
+    @overload
+    def reset(
+        self, agent_ids: List[int]
+    ) -> Dict[int, Dict[str, Union[ndarray, "Tensor"]]]:
+        ...
+
+    @overload
+    def reset(
+        self, agent_ids: Optional[int] = None
+    ) -> Dict[str, Union[ndarray, "Tensor"]]:
+        ...
+
+    def reset(
+        self, agent_ids: Union[Optional[int], List[int]] = None
+    ) -> Union[
+        Dict[str, Union[ndarray, "Tensor"]],
+        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
+    ]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
 
-        return self.get_sensor_observations()
+        if agent_ids is None:
+            agent_ids = [self._default_agent_id]
+            return_single = True
+        else:
+            agent_ids = cast(List[int], agent_ids)
+            return_single = False
+        obs = self.get_sensor_observations(agent_ids=agent_ids)
+        if return_single:
+            return obs[agent_ids[0]]
+        return obs
 
     def reset_agent(self, agent_id: int) -> None:
         agent = self.get_agent(agent_id)
@@ -207,7 +240,7 @@ class Simulator(SimulatorBackend):
             self.__set_from_config(config)
             self.config = config
 
-    def __set_from_config(self, config: Configuration):
+    def __set_from_config(self, config: Configuration) -> None:
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
@@ -216,17 +249,50 @@ class Simulator(SimulatorBackend):
         for i in range(len(self.agents)):
             self.agents[i].controls.move_filter_fn = self.step_filter
 
-        self._default_agent = self.get_agent(config.sim_cfg.default_agent_id)
+        self._default_agent_id = config.sim_cfg.default_agent_id
 
-        agent_cfg = config.agents[config.sim_cfg.default_agent_id]
-        self._sensors = {}
-        for spec in agent_cfg.sensor_specifications:
-            self._sensors[spec.uuid] = Sensor(
-                sim=self, agent=self._default_agent, sensor_id=spec.uuid
+        self.__sensors: List[Dict[str, Sensor]] = [
+            dict() for i in range(len(config.agents))
+        ]
+        self.__last_state = dict()
+        for agent_id, agent_cfg in enumerate(config.agents):
+            for spec in agent_cfg.sensor_specifications:
+                self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
+            self.initialize_agent(agent_id)
+
+    def _update_simulator_sensors(self, uuid: str, agent_id: int) -> None:
+        self.__sensors[agent_id][uuid] = Sensor(
+            sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
+        )
+
+    def add_sensor(
+        self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
+    ) -> None:
+        if (
+            (
+                not self.config.sim_cfg.load_semantic_mesh
+                and sensor_spec.sensor_type == SensorType.SEMANTIC
             )
-
-        for i in range(len(self.agents)):
-            self.initialize_agent(i)
+            or (
+                not self.config.sim_cfg.requires_textures
+                and sensor_spec.sensor_type == SensorType.COLOR
+            )
+            or (
+                not self.config.sim_cfg.create_renderer
+                and sensor_spec.sensor_type == SensorType.DEPTH
+            )
+        ):
+            sensor_type = sensor_spec.sensor_type
+            raise ValueError(
+                f"""Data for {sensor_type} sensor was not loaded during Simulator init.
+                    Cannot dynamically add a {sensor_type} sensor unless one already exists.
+                    """
+            )
+        if agent_id is None:
+            agent_id = self._default_agent_id
+        agent = self.get_agent(agent_id=agent_id)
+        agent._add_sensor(sensor_spec)
+        self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
@@ -244,43 +310,121 @@ class Simulator(SimulatorBackend):
                 )
 
         agent.set_state(initial_state, is_initial=True)
-        self._last_state = agent.state
+        self.__last_state[agent_id] = agent.state
         return agent
 
-    def get_sensor_observations(self) -> Dict[str, Union[ndarray, "Tensor"]]:
-        for _, sensor in self._sensors.items():
-            sensor.draw_observation()
+    @overload
+    def get_sensor_observations(
+        self, agent_ids: int = 0
+    ) -> Dict[str, Union[ndarray, "Tensor"]]:
+        ...
 
-        observations = {}
-        for sensor_uuid, sensor in self._sensors.items():
-            observations[sensor_uuid] = sensor.get_observation()
+    @overload
+    def get_sensor_observations(
+        self, agent_ids: List[int]
+    ) -> Dict[int, Dict[str, Union[ndarray, "Tensor"]]]:
+        ...
 
+    def get_sensor_observations(
+        self, agent_ids: Union[int, List[int]] = 0
+    ) -> Union[
+        Dict[str, Union[ndarray, "Tensor"]],
+        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
+    ]:
+        if isinstance(agent_ids, int):
+            agent_ids = [agent_ids]
+            return_single = True
+        else:
+            return_single = False
+
+        for agent_id in agent_ids:
+            agent_sensorsuite = self.__sensors[agent_id]
+            for _sensor_uuid, sensor in agent_sensorsuite.items():
+                sensor.draw_observation()
+
+        # As backport. All Dicts are ordered in Python >= 3.7
+        observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
+        for agent_id in agent_ids:
+            agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
+            for sensor_uuid, sensor in self.__sensors[agent_id].items():
+                agent_observations[sensor_uuid] = sensor.get_observation()
+            observations[agent_id] = agent_observations
+        if return_single:
+            return next(iter(observations.values()))
         return observations
 
-    def last_state(self):
-        return self._last_state
+    @property
+    def _default_agent(self) -> Agent:
+        # TODO Deprecate and remove
+        return self.get_agent(agent_id=self._default_agent_id)
+
+    @property
+    def _last_state(self) -> AgentState:
+        # TODO Deprecate and remove
+        return self.__last_state[self._default_agent_id]
+
+    @_last_state.setter
+    def _last_state(self, state: AgentState) -> None:
+        # TODO Deprecate and remove
+        self.__last_state[self._default_agent_id] = state
+
+    @property
+    def _sensors(self) -> Dict[str, "Sensor"]:
+        # TODO Deprecate and remove
+        return self.__sensors[self._default_agent_id]
+
+    def last_state(self, agent_id: Optional[int] = None) -> AgentState:
+        if agent_id is None:
+            agent_id = self._default_agent_id
+        return self.__last_state[agent_id]
+
+    @overload
+    def step(
+        self, action: Union[str, int], dt: float = 1.0 / 60.0
+    ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
+        ...
+
+    @overload
+    def step(
+        self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
+    ) -> Dict[int, Dict[str, Union[bool, ndarray, "Tensor"]]]:
+        ...
 
     def step(
-        self, action: Any, dt: float = 1.0 / 60.0
-    ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
+        self,
+        action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
+        dt: float = 1.0 / 60.0,
+    ) -> Union[
+        Dict[str, Union[bool, ndarray, "Tensor"]],
+        Dict[int, Dict[str, Union[bool, ndarray, "Tensor"]]],
+    ]:
         self._num_total_frames += 1
-        collided = self._default_agent.act(action)
-        self._last_state = self._default_agent.get_state()
+        if isinstance(action, MutableMapping):
+            return_single = False
+        else:
+            action = cast(Dict[int, Union[str, int]], {self._default_agent_id: action})
+            return_single = True
+        collided_dict: Dict[int, bool] = {}
+        for agent_id, agent_act in action.items():
+            agent = self.get_agent(agent_id)
+            collided_dict[agent_id] = agent.act(agent_act)
+            self.__last_state[agent_id] = agent.get_state()
 
         # step physics by dt
         step_start_Time = time.time()
         super().step_world(dt)
         self._previous_step_time = time.time() - step_start_Time
 
-        observations = self.get_sensor_observations()
-        # Whether or not the action taken resulted in a collision
-        observations["collided"] = collided
-
-        return observations
+        multi_observations = self.get_sensor_observations(agent_ids=list(action.keys()))
+        for agent_id, agent_observation in multi_observations.items():
+            agent_observation["collided"] = collided_dict[agent_id]
+        if return_single:
+            return multi_observations[self._default_agent_id]
+        return multi_observations
 
     def make_greedy_follower(
         self,
-        agent_id: int = 0,
+        agent_id: Optional[int] = None,
         goal_radius: float = None,
         *,
         stop_key: Optional[Any] = None,
@@ -290,6 +434,8 @@ class Simulator(SimulatorBackend):
         fix_thrashing: bool = True,
         thrashing_threshold: int = 16,
     ):
+        if agent_id is None:
+            agent_id = self._default_agent_id
         return GreedyGeodesicFollower(
             self.pathfinder,
             self.get_agent(agent_id),
@@ -336,14 +482,15 @@ class Sensor:
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent._sensors.get(sensor_id)
+        self._sensor_object = self._agent._sensors[sensor_id]
+
         self._spec = self._sensor_object.specification()
 
         self._sim.renderer.bind_render_target(self._sensor_object)
 
         if self._spec.gpu2gpu_transfer:
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
-            assert torch is not None
+            assert _HAS_TORCH
             device = torch.device("cuda", self._sim.gpu_device)  # type: ignore[attr-defined]
             torch.cuda.set_device(device)
 

@@ -246,9 +246,9 @@ void initAttributesBindings(py::module& m) {
           &StageAttributes::setLightSetup,
           R"(Habitat lighting setup to use for constructions built by this template.)")
       .def_property(
-          "frustrum_culling", &StageAttributes::getFrustrumCulling,
-          &StageAttributes::setFrustrumCulling,
-          R"(Whether frustrum culling should be enabled for constructions built by this template.)");
+          "frustum_culling", &StageAttributes::getFrustumCulling,
+          &StageAttributes::setFrustumCulling,
+          R"(Whether frustum culling should be enabled for constructions built by this template.)");
 
   // ==== LightInstanceAttributes ====
   py::class_<LightInstanceAttributes, AbstractAttributes,
