@@ -55,12 +55,16 @@ struct PhongMaterialData : public MaterialData {
 struct PbrMaterialData : public MaterialData {
   PbrMaterialData() : MaterialData(MaterialDataType::Pbr){};
 
-  // material with default magic values:
+  // TODO: Migrate the the Magnum built-in PBR material
+  // material with default values:
   // when both the material property and the texture (e.g., roughness and
-  // roughness texture) are NOT presented, use these default magic values;
-  Magnum::Color4 baseColor{0.7f};
-  Magnum::Float roughness = 0.9f;
-  Magnum::Float metallic = 0.01f;
+  // roughness texture) are NOT presented, use these default values;
+  // accoding to glTF 2.0:
+  // "If a texture is not given, all respective texture components within this
+  // material model are assumed to have a value of 1.0. "
+  Magnum::Color4 baseColor{1.0f};
+  Magnum::Float roughness = 1.0f;
+  Magnum::Float metallic = 1.0f;
   Magnum::Color3 emissiveColor{0.0f};
   Magnum::Float normalTextureScale = 1.0f;
 

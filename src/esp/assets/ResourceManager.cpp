@@ -1548,9 +1548,6 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
     finalMaterial->baseColorTexture =
         textures_.at(textureBaseIndex + material.baseColorTexture()).get();
-    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColor)) {
-      finalMaterial->baseColor = Mn::Vector4{1.0f};
-    }
   }
 
   // normal map
@@ -1584,8 +1581,29 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   if (material.hasRoughnessTexture()) {
     finalMaterial->roughnessTexture =
         textures_.at(textureBaseIndex + material.roughnessTexture()).get();
-    finalMaterial->doubleSided = true;
   }
+
+  // metallic
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
+    finalMaterial->metallic = material.metalness();
+  }
+  if (material.hasMetalnessTexture()) {
+    finalMaterial->metallicTexture =
+        textures_.at(textureBaseIndex + material.metalnessTexture()).get();
+  }
+
+  // sanity check when both metallic and roughness materials are presented
+  if (material.hasMetalnessTexture() && material.hasRoughnessTexture()) {
+    CORRADE_ASSERT(
+        finalMaterial->metallicTexture == finalMaterial->roughnessTexture,
+        "ResourceManager::buildPbrShadedMaterialData(): if both the metallic "
+        "and roughness texture exist, they must be packed in the same texture "
+        "based on glTF 2.0 Spec.",
+        finalMaterial);
+  }
+
+  // double-sided
+  finalMaterial->doubleSided = material.isDoubleSided();
 
   return finalMaterial;
 }
