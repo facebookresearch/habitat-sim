@@ -204,22 +204,26 @@ bool SemanticScene::loadMp3dHouse(
         }
         break;
       }
+      // NOLINTNEXTLINE(bugprone-branch-clone)
       case 'P': {  // portal or panorama
         // P portal_index region0_index region1_index label  xlo ylo zlo xhi
         //   yhi zhi  0 0 0 0
         // P name  panorama_index region_index 0  px py pz  0 0 0 0 0
         break;
       }
+      // NOLINTNEXTLINE(bugprone-branch-clone)
       case 'S': {  // surface
         // S surface_index region_index 0 label px py pz  nx ny nz  xlo ylo
         // zlo
         //   xhi yhi zhi  0 0 0 0 0
         break;
       }
+      // NOLINTNEXTLINE(bugprone-branch-clone)
       case 'V': {  // vertex
         // V vertex_index surface_index label  px py pz  nx ny nz  0 0 0
         break;
       }
+      // NOLINTNEXTLINE(bugprone-branch-clone)
       case 'I': {  // image
         // I image_index panorama_index  name camera_index yaw_index e00 e01
         //   e02 e03 e10 e11 e12 e13 e20 e21 e22 e23 e30 e31 e32 e33  i00 i01

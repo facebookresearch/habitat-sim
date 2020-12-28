@@ -38,6 +38,7 @@ namespace sensor {
 
 void initSensorBindings(py::module& m) {
   // ==== Observation ====
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
   // TODO fill out other SensorTypes
