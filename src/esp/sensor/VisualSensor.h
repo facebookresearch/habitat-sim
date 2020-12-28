@@ -113,7 +113,8 @@ class VisualSensor : public Sensor {
     return false;
   }
 
-  virtual bool getObservationSpace(CORRADE_UNUSED ObservationSpace& space) {
+  virtual bool getObservationSpace(
+      CORRADE_UNUSED ObservationSpace& space) override {
     return false;
   }
 

@@ -103,6 +103,7 @@ class CubeMap {
    * @param imageFilePrefix, the prefix of the image filename
    * @param imageFileExtension, the image filename extension (such as "png",
    * "jpg")
+   * @return true if succeeded, otherwise false
    * The 6 image files then would be:
    * {imageFilePrefix}.{texType}.+X.{imageFileExtension}
    * {imageFilePrefix}.{texType}.-X.{imageFileExtension}

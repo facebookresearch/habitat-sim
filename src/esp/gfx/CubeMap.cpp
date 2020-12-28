@@ -30,7 +30,9 @@ const Mn::GL::Framebuffer::ColorAttachment colorAttachment =
 //    Mn::GL::Framebuffer::ColorAttachment{1};
 
 void CubeMap::enableSeamlessCubeMapTexture() {
+#ifndef MAGNUM_TARGET_WEBGL
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::SeamlessCubeMapTexture);
+#endif
 }
 
 CubeMap::CubeMap(int imageSize, Flags flags) : flags_(flags) {
@@ -221,6 +223,11 @@ Mn::PixelFormat CubeMap::getPixelFormat(TextureType type) {
 
 bool CubeMap::saveTexture(TextureType type,
                           const std::string& imageFilePrefix) {
+#ifdef MAGNUM_TARGET_WEBGL
+  // because Mn::Image2D image = textures_[type]->image(...)
+  // requires desktop OpenGL
+  return false;
+#else
   textureTypeSanityCheck(type, "CubeMap::saveTexture():");
 
   Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter> manager;
@@ -231,7 +238,9 @@ bool CubeMap::saveTexture(TextureType type,
 
   std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
   for (int iFace = 0; iFace < 6; ++iFace) {
-    // TODO: use frambuffer.read() instead
+    // TODO: use framebuffer.read() instead somehow?
+    // But the question is it has NOTHING to do with the framebuffer
+    // anymore at this moment.
     Mn::Image2D image = textures_[type]->image(
         convertFaceIndexToCubeMapCoordinate(iFace), 0, {getPixelFormat(type)});
 
@@ -247,6 +256,7 @@ bool CubeMap::saveTexture(TextureType type,
   }
 
   return true;
+#endif
 }
 
 void CubeMap::renderToTexture(CubeMapCamera& camera,
