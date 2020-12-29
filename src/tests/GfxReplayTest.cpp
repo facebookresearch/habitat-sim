@@ -35,8 +35,9 @@ TEST(GfxReplayTest, recorder) {
 
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  auto MM = MetadataMediator::create(cfg);
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   std::string boxFile =
@@ -108,8 +109,9 @@ TEST(GfxReplayTest, player) {
 
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  auto MM = MetadataMediator::create(cfg);
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   std::string boxFile =
