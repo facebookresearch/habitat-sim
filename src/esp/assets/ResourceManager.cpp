@@ -1556,8 +1556,6 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
 
     finalMaterial->normalTexture =
         textures_.at(textureBaseIndex + material.normalTexture()).get();
-    // if normal texture scale is not presented, use the default value in the
-    // finalMaterial
   }
 
   // emission
