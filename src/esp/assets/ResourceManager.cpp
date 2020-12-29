@@ -1597,8 +1597,6 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
        instead of GB), and it is NOT supported in the current version.
        so hasNormalRoughnessMetallicTexture() is not needed here.
 
-       TODO:
-       Support NormalRoughnessMetallicTexture packing
     */
     CORRADE_ASSERT(
         material.hasNoneRoughnessMetallicTexture(),
@@ -1607,6 +1605,14 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
         "based on glTF 2.0 Spec.",
         finalMaterial);
   }
+
+  // TODO:
+  // Support NormalRoughnessMetallicTexture packing
+  CORRADE_ASSERT(!material.hasNormalRoughnessMetallicTexture(),
+                 "ResourceManager::buildPbrShadedMaterialData(): "
+                 "Sorry. NormalRoughnessMetallicTexture is NOT supported in "
+                 "the current version.",
+                 finalMaterial);
 
   // double-sided
   finalMaterial->doubleSided = material.isDoubleSided();
