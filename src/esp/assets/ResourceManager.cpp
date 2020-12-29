@@ -1549,9 +1549,10 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   }
 
   // normal map
-  finalMaterial->normalTextureScale = material.normalTextureScale();
-
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
+    // must be inside the if clause otherwise assertion fais if no normal
+    // texture is presented
+    finalMaterial->normalTextureScale = material.normalTextureScale();
     finalMaterial->normalTexture =
         textures_.at(textureBaseIndex + material.normalTexture()).get();
     // if normal texture scale is not presented, use the default value in the
