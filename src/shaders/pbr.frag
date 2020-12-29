@@ -42,9 +42,9 @@ struct MaterialData {
   vec4 baseColor;     // diffuse color, if BaseColorTexture exists,
                       // multiply it with the BaseColorTexture
   float roughness;    // roughness of a surface, if roughness texture exists,
-                      // multiply it with the RoughnessTexture
+                      // multiply it with the MetallicRoughnessTexture
   float metallic;     // metalness of a surface, if metallic texture exists,
-                      // multiply it the MetallicTexture
+                      // multiply it the MetallicRoughnessTexture
   vec3 emissiveColor; // emissiveColor, if emissive texture exists,
                       // multiply it the EmissiveTexture
 };
@@ -53,20 +53,14 @@ uniform MaterialData Material;
 #if defined(BASECOLOR_TEXTURE)
 uniform sampler2D BaseColorTexture;
 #endif
-#if defined(ROUGHNESS_TEXTURE)
-uniform sampler2D RoughnessTexture;
-#endif
-#if defined(METALLIC_TEXTURE)
-uniform sampler2D MetallicTexture;
+#if defined(METALLIC_TEXTURE) || defined(ROUGHNESS_TEXTURE)
+uniform sampler2D MetallicRoughnessTexture;
 #endif
 #if defined(NORMAL_TEXTURE)
 uniform sampler2D NormalTexture;
 #endif
-
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-uniform sampler2D PackedTexture;
-#endif
-
+// TODO: separate occlusion texture
+// (if it is not packed with metallicRoughness texture)
 #if defined(EMISSIVE_TEXTURE)
 uniform sampler2D EmissiveTexture;
 #endif
@@ -98,6 +92,8 @@ vec3 getNormalFromNormalMap() {
 #if defined(PRECOMPUTED_TANGENT)
   mat3 TBN = mat3(tangent, biTangent, normal);
 #else
+// TODO:
+// explore robust screen-space normal mapping withOUT precomputed tangents
 #error Normal mapping requires precomputed tangents.
 #endif
 
@@ -168,12 +164,9 @@ vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 halfVector) {
   return F0 + (1.0 - F0) * pow(1.0 - v_dot_h, 5.0);
 }
 
-// baseColor: diffuse color from BaseColorTexture
-//              or from baseColor in the material;
-// metallic: metalness of the surface, from MetallicTexture
-//           or from metallic in the material;
-// roughness: roughness of the surface, from RoughnessTexture
-//            or from roughness in the material;
+// baseColor: diffuse color
+// metallic: metalness of the surface
+// roughness: roughness of the surface
 // normal: normal direction
 // light: light source direction
 // view: camera direction, aka light outgoing direction
@@ -235,17 +228,13 @@ void main() {
 #endif
 
   float roughness = Material.roughness;
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-  roughness *= texture(PackedTexture, texCoord).g;
-#elif defined(ROUGHNESS_TEXTURE)
-  roughness *= texture(RoughnessTexture, texCoord).r;
+#if defined(ROUGHNESS_TEXTURE)
+  roughness *= texture(MetallicRoughnessTexture, texCoord).g;
 #endif
 
   float metallic = Material.metallic;
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE) || defined(OCCLUSION_ROUGHNESS_METALLIC_TEXTURE)
-  metallic *= texture(PackedTexture, texCoord).b;
-#elif defined(METALLIC_TEXTURE)
-  metallic *= texture(MetallicTexture, texCoord).r;
+#if defined(METALLIC_TEXTURE)
+  metallic *= texture(MetallicRoughnessTexture, texCoord).b;
 #endif
 
 // normal map will only work if both normal texture and the tangents exist.
