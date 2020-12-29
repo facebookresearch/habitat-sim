@@ -22,7 +22,7 @@
 namespace esp {
 
 namespace sim {
-class SimulatorConfiguration;
+struct SimulatorConfiguration;
 }
 
 namespace metadata {
@@ -30,9 +30,8 @@ namespace metadata {
 class MetadataMediator {
  public:
   MetadataMediator(const sim::SimulatorConfiguration& cfg);
-  MetadataMediator(const std::string& _activeSceneDataset = "default",
-                   const std::string& _physicsManagerAttributesPath =
-                       ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
+
+  MetadataMediator() : MetadataMediator(sim::SimulatorConfiguration{}) {}
   ~MetadataMediator() {}
 
   /**

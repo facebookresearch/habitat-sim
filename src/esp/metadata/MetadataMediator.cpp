@@ -15,17 +15,6 @@ MetadataMediator::MetadataMediator(const sim::SimulatorConfiguration& cfg)
   setSimulatorConfiguration(simConfig_);
 }  // MetadataMediator ctor (SimulatorConfiguration)
 
-MetadataMediator::MetadataMediator(
-    const std::string& _activeSceneDataset,
-    const std::string& _physicsManagerAttributesPath)
-    : activeSceneDataset_(_activeSceneDataset),
-      currPhysicsManagerAttributes_(_physicsManagerAttributesPath),
-      simConfig_(sim::SimulatorConfiguration{}) {
-  simConfig_.sceneDatasetConfigFile = _activeSceneDataset;
-  simConfig_.physicsConfigFile = _physicsManagerAttributesPath;
-  buildAttributesManagers();
-  setSimulatorConfiguration(simConfig_);
-}  // MetadataMediator ctor
 void MetadataMediator::buildAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
 
