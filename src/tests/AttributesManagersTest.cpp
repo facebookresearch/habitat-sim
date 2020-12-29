@@ -47,7 +47,9 @@ const std::string physicsConfigFile =
 class AttributesManagersTest : public testing::Test {
  protected:
   void SetUp() override {
-    auto MM = MetadataMediator::create();
+    // set up a default simulation config to initialize MM
+    auto cfg = esp::sim::SimulatorConfiguration{};
+    auto MM = MetadataMediator::create(cfg);
     // get attributes managers for default dataset
     assetAttributesManager_ = MM->getAssetAttributesManager();
     lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();

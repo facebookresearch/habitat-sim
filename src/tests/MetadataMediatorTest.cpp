@@ -41,7 +41,10 @@ const std::string sceneDatasetConfigFile = Cr::Utility::Directory::join(
 class MetadataMediatorTest : public testing::Test {
  protected:
   void SetUp() override {
-    MM = MetadataMediator::create(sceneDatasetConfigFile);
+    auto cfg = esp::sim::SimulatorConfiguration{};
+    cfg.sceneDatasetConfigFile = sceneDatasetConfigFile;
+    cfg.physicsConfigFile = physicsConfigFile;
+    MM = MetadataMediator::create(cfg);
   };
   void testLoadStages() {
     const auto stageAttributesMgr = MM->getStageAttributesManager();
