@@ -25,19 +25,20 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
           shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)} {
-  flags_ = PbrShader::Flag::ObjectId;
+  if (materialData_->metallicTexture && materialData_->roughnessTexture) {
+    CORRADE_ASSERT(
+        materialData_->metallicTexture == materialData_->roughnessTexture,
+        "PbrDrawable::PbrDrawable(): if both the metallic and roughness "
+        "texture exist, they must be packed in the same texture based on glTF "
+        "2.0 Spec.", );
+  }
 
+  flags_ = PbrShader::Flag::ObjectId;
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
     flags_ |= PbrShader::Flag::TextureTransformation;
   }
   if (materialData_->baseColorTexture) {
     flags_ |= PbrShader::Flag::BaseColorTexture;
-  }
-  if (materialData_->occlusionRoughnessMetallicTexture) {
-    flags_ |= PbrShader::Flag::OcclusionRoughnessMetallicTexture;
-  }
-  if (materialData_->noneRoughnessMetallicTexture) {
-    flags_ |= PbrShader::Flag::NoneRoughnessMetallicTexture;
   }
   if (materialData_->roughnessTexture) {
     flags_ |= PbrShader::Flag::RoughnessTexture;
@@ -66,8 +67,6 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   if (materialData_->doubleSided) {
     flags_ |= PbrShader::Flag::DoubleSided;
   }
-
-  flags_ = PbrShader::generateCorrectFlags(flags_);
 
   // Defer the shader initialization because at this point, the lightSetup may
   // not be done in the Simulator. Simulator itself is currently under
@@ -118,26 +117,17 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindBaseColorTexture(*materialData_->baseColorTexture);
   }
 
-  if ((flags_ & PbrShader::Flag::RoughnessTexture) &&
-      materialData_->roughnessTexture) {
-    shader_->bindRoughnessTexture(*materialData_->roughnessTexture);
-  }
-
-  if ((flags_ & PbrShader::Flag::MetallicTexture) &&
-      materialData_->metallicTexture) {
-    shader_->bindMetallicTexture(*materialData_->metallicTexture);
-  }
-
-  if ((flags_ & PbrShader::Flag::NoneRoughnessMetallicTexture) &&
-      materialData_->noneRoughnessMetallicTexture) {
-    shader_->bindNoneRoughnessMetallicTexture(
-        *materialData_->noneRoughnessMetallicTexture);
-  }
-
-  if ((flags_ & PbrShader::Flag::OcclusionRoughnessMetallicTexture) &&
-      materialData_->occlusionRoughnessMetallicTexture) {
-    shader_->bindOcclusionRoughnessMetallicTexture(
-        *materialData_->occlusionRoughnessMetallicTexture);
+  if (flags_ &
+      (PbrShader::Flag::RoughnessTexture | PbrShader::Flag::MetallicTexture)) {
+    Magnum::GL::Texture2D* metallicRoughnessTexture =
+        materialData_->roughnessTexture;
+    if (!metallicRoughnessTexture) {
+      metallicRoughnessTexture = materialData_->metallicTexture;
+    }
+    CORRADE_ASSERT(metallicRoughnessTexture,
+                   "PbrDrawable::draw(): texture pointer cannot be nullptr if "
+                   "RoughnessTexture or MetallicTexture is enabled.", );
+    shader_->bindMetallicRoughnessTexture(*metallicRoughnessTexture);
   }
 
   if ((flags_ & PbrShader::Flag::NormalTexture) &&
@@ -162,8 +152,7 @@ Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
                                           PbrShader::Flags flags) const {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<PbrShader::Flags::UnderlyingType>(
-          PbrShader::generateCorrectFlags(flags)));
+      static_cast<PbrShader::Flags::UnderlyingType>(flags));
 }
 
 PbrDrawable& PbrDrawable::updateShader() {

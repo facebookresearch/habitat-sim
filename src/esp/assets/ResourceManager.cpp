@@ -1542,33 +1542,24 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   finalMaterial->textureMatrix = material.commonTextureMatrix();
 
   // base color (albedo)
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColor)) {
-    finalMaterial->baseColor = material.baseColor();
-  }
+  finalMaterial->baseColor = material.baseColor();
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
     finalMaterial->baseColorTexture =
         textures_.at(textureBaseIndex + material.baseColorTexture()).get();
-    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColor)) {
-      finalMaterial->baseColor = Mn::Vector4{1.0f};
-    }
   }
 
   // normal map
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTextureScale)) {
-    finalMaterial->normalTextureScale = material.normalTextureScale();
-  }
-
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
+    // must be inside the if clause otherwise assertion fails if no normal
+    // texture is presented
+    finalMaterial->normalTextureScale = material.normalTextureScale();
+
     finalMaterial->normalTexture =
         textures_.at(textureBaseIndex + material.normalTexture()).get();
-    // if normal texture scale is not presented, use the default value in the
-    // finalMaterial
   }
 
   // emission
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveColor)) {
-    finalMaterial->emissiveColor = material.emissiveColor();
-  }
+  finalMaterial->emissiveColor = material.emissiveColor();
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveTexture)) {
     finalMaterial->emissiveTexture =
         textures_.at(textureBaseIndex + material.emissiveTexture()).get();
@@ -1577,55 +1568,54 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     }
   }
 
-  // CAREFUL:
-  // certain texture will be stored "multiple times" in the `finalMaterial`;
-  // (e.g., roughnessTexture will be stored in noneRoughnessMetallicTexture,
-  // roughnessTexture, metallicTexture)
-  // It is OK! No worries! Such duplication (or "conflicts") will be handled in
-  // the PbrShader (see PbrMaterialData for more details)
-
   // roughness
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::Roughness)) {
-    finalMaterial->roughness = material.roughness();
-  }
+  finalMaterial->roughness = material.roughness();
   if (material.hasRoughnessTexture()) {
     finalMaterial->roughnessTexture =
         textures_.at(textureBaseIndex + material.roughnessTexture()).get();
-    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Roughness)) {
-      finalMaterial->roughness = 1.0f;
-    }
   }
 
-  // metalness
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
-    finalMaterial->metallic = material.metalness();
-  }
+  // metallic
+  finalMaterial->metallic = material.metalness();
   if (material.hasMetalnessTexture()) {
     finalMaterial->metallicTexture =
         textures_.at(textureBaseIndex + material.metalnessTexture()).get();
-    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::Metalness)) {
-      finalMaterial->metallic = 1.0f;
-    }
   }
 
-  // packed textures
-  if (material.hasOcclusionRoughnessMetallicTexture()) {
-    // occlusionTexture, roughnessTexture, metalnessTexture are pointing to the
-    // same texture ID, so just occlusionTexture
-    finalMaterial->occlusionRoughnessMetallicTexture =
-        textures_.at(textureBaseIndex + material.occlusionTexture()).get();
+  // sanity check when both metallic and roughness materials are presented
+  if (material.hasMetalnessTexture() && material.hasRoughnessTexture()) {
+    /*
+       sanity check using hasNoneRoughnessMetallicTexture() to ensure that:
+        - both use the same texture coordinate attribute,
+        - both have the same texture transformation, and
+        - the metalness is in B and roughness is in G
+
+       It checks for a subset of hasOcclusionRoughnessMetallicTexture(),
+       so hasOcclusionRoughnessMetallicTexture() is not needed here.
+
+       The normal/roughness/metallic is a totally different packing (in BA
+       instead of GB), and it is NOT supported in the current version.
+       so hasNormalRoughnessMetallicTexture() is not needed here.
+
+    */
+    CORRADE_ASSERT(
+        material.hasNoneRoughnessMetallicTexture(),
+        "ResourceManager::buildPbrShadedMaterialData(): if both the metallic "
+        "and roughness texture exist, they must be packed in the same texture "
+        "based on glTF 2.0 Spec.",
+        finalMaterial);
   }
 
-  if (material.hasNoneRoughnessMetallicTexture()) {
-    // roughnessTexture, metalnessTexture are pointing to the
-    // same texture ID, so just roughnessTexture
-    finalMaterial->noneRoughnessMetallicTexture =
-        textures_.at(textureBaseIndex + material.roughnessTexture()).get();
-  }
+  // TODO:
+  // Support NormalRoughnessMetallicTexture packing
+  CORRADE_ASSERT(!material.hasNormalRoughnessMetallicTexture(),
+                 "ResourceManager::buildPbrShadedMaterialData(): "
+                 "Sorry. NormalRoughnessMetallicTexture is not supported in "
+                 "the current version. We will work on it.",
+                 finalMaterial);
 
-  if (material.isDoubleSided()) {
-    finalMaterial->doubleSided = true;
-  }
+  // double-sided
+  finalMaterial->doubleSided = material.isDoubleSided();
 
   return finalMaterial;
 }
