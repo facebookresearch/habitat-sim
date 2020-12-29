@@ -1610,8 +1610,8 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   // Support NormalRoughnessMetallicTexture packing
   CORRADE_ASSERT(!material.hasNormalRoughnessMetallicTexture(),
                  "ResourceManager::buildPbrShadedMaterialData(): "
-                 "Sorry. NormalRoughnessMetallicTexture is NOT supported in "
-                 "the current version.",
+                 "Sorry. NormalRoughnessMetallicTexture is not supported in "
+                 "the current version. We will work on it.",
                  finalMaterial);
 
   // double-sided
