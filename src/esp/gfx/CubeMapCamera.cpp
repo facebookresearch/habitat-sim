@@ -40,32 +40,12 @@ CubeMapCamera& CubeMapCamera::restoreTransformation() {
 }
 
 CubeMapCamera& CubeMapCamera::switchToFace(unsigned int cubeSideIndex) {
-  switch (cubeSideIndex) {
-    case 0:
-      switchToFace(Mn::GL::CubeMapCoordinate::PositiveX);
-      break;
-    case 1:
-      switchToFace(Mn::GL::CubeMapCoordinate::NegativeX);
-      break;
-    case 2:
-      switchToFace(Mn::GL::CubeMapCoordinate::PositiveY);
-      break;
-    case 3:
-      switchToFace(Mn::GL::CubeMapCoordinate::NegativeY);
-      break;
-    case 4:
-      switchToFace(Mn::GL::CubeMapCoordinate::PositiveZ);
-      break;
-    case 5:
-      switchToFace(Mn::GL::CubeMapCoordinate::NegativeZ);
-      break;
-    default:
-      LOG(ERROR)
-          << "Warning: CubeMapCamera::switchToFace: the index of cube side "
-          << cubeSideIndex
-          << " is illegal. Camera orientation stays unchanged.";
-      break;
-  }
+  CORRADE_ASSERT(cubeSideIndex < 6,
+                 "CubeMapCamera::switchToFace(): the index of the cube side,"
+                     << cubeSideIndex << "is illegal.",
+                 *this);
+  switchToFace(Mn::GL::CubeMapCoordinate(
+      int(Mn::GL::CubeMapCoordinate::PositiveX) + cubeSideIndex));
   return *this;
 }
 
@@ -95,7 +75,7 @@ CubeMapCamera& CubeMapCamera::switchToFace(Mn::GL::CubeMapCoordinate cubeSide) {
         return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 0.0, 1.0}, -yUp);
         break;
       default:
-        return Mn::Matrix4{Magnum::Math::IdentityInit};
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
     }
   };
@@ -107,13 +87,15 @@ CubeMapCamera& CubeMapCamera::switchToFace(Mn::GL::CubeMapCoordinate cubeSide) {
 CubeMapCamera& CubeMapCamera::setProjectionMatrix(int width,
                                                   float znear,
                                                   float zfar) {
+  // NOLINTNEXTLINE(google-build-using-namespace)
+  using namespace Mn::Math::Literals;
   MagnumCamera::setProjectionMatrix(
       Mn::Matrix4::perspectiveProjection(
-          Mn::Deg{90.0},  // horizontal field of view angle
-          1.0,            // aspect ratio (width/height)
-          znear,          // z-near plane
-          zfar))          // z-far plane
-      .setViewport(Magnum::Vector2i(width, width));
+          Mn::Deg{90.0_degf},  // horizontal field of view angle
+          1.0,                 // aspect ratio (width/height)
+          znear,               // z-near plane
+          zfar))               // z-far plane
+      .setViewport({width, width});
   return *this;
 }
 

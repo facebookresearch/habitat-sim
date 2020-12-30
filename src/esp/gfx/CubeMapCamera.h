@@ -45,8 +45,7 @@ class CubeMapCamera : public RenderCamera {
   virtual ~CubeMapCamera(){};
   /**
    * @brief Move the camera towards a specified cube face
-   * @param cubeSide, the cube map coordinate, see the following pictures
-   * NOTE: +Y is top
+   * ```
    *           +----+
    *           | -Y |
    * +----+----+----+----+
@@ -54,6 +53,9 @@ class CubeMapCamera : public RenderCamera {
    * +----+----+----+----+
    *           | +Y |
    *           +----+
+   * ```
+   * @param cubeSide, the cube map coordinate, see the following pictures
+   * NOTE: +Y is top
    * CAREFUL! the local transformation of the camera node will be set after
    * calling this function.
    * @return Reference to self (for method chaining)
@@ -61,13 +63,7 @@ class CubeMapCamera : public RenderCamera {
   CubeMapCamera& switchToFace(Magnum::GL::CubeMapCoordinate cubeSide);
   /**
    * @brief Overload, move the camera towards a specified cube face
-   * @param cubSideIndex, the index of the cube map coordinate.
-   * 0: +X
-   * 1: -X
-   * 2: +Y
-   * 3: -Y
-   * 4: +Z
-   * 5: -Z
+   * ```
    *           +----+
    *           | -Y |
    * +----+----+----+----+
@@ -75,12 +71,21 @@ class CubeMapCamera : public RenderCamera {
    * +----+----+----+----+
    *           | +Y |
    *           +----+
+   * ```
+   * @param cubSideIndex, the index of the cube map coordinate.
+   * 0: +X
+   * 1: -X
+   * 2: +Y
+   * 3: -Y
+   * 4: +Z
+   * 5: -Z
    * @return Reference to self (for method chaining)
    */
   CubeMapCamera& switchToFace(unsigned int cubeSideIndex);
 
   /**
-   * Calling the the setProjectionMatrix from base class is not allowed
+   * Calling the the setProjectionMatrix from the base class is not allowed.
+   * Use the new one instead.
    */
   RenderCamera& setProjectionMatrix(int width,
                                     int height,
