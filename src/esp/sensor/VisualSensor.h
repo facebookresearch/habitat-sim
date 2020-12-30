@@ -109,7 +109,7 @@ class VisualSensor : public Sensor {
   }
 
   virtual bool getObservation(CORRADE_UNUSED sim::Simulator& sim,
-                              CORRADE_UNUSED Observation& obs) {
+                              CORRADE_UNUSED Observation& obs) override {
     return false;
   }
 
