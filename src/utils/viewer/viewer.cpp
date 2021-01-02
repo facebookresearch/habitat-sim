@@ -26,6 +26,8 @@
 #include <Magnum/Timeline.h>
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/replay/Recorder.h"
+#include "esp/gfx/replay/ReplayManager.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneNode.h"
@@ -321,6 +323,7 @@ Key Commands:
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::scene::SceneGraph* activeSceneGraph_ = nullptr;
   bool drawObjectBBs = false;
+  std::string gfxReplayRecordFilepath_;
 
   Mn::Timeline timeline_;
 
@@ -361,6 +364,9 @@ Viewer::Viewer(const Arguments& arguments)
                "Stage asset should be lit with Phong shading.")
       .addBooleanOption("debug-bullet")
       .setHelp("debug-bullet", "Render Bullet physics debug wireframes.")
+      .addOption("gfx-replay-record-filepath")
+      .setHelp("gfx-replay-record-filepath",
+               "Enable replay recording with R key.")
       .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
@@ -406,6 +412,8 @@ Viewer::Viewer(const Arguments& arguments)
     debugBullet_ = true;
   }
 
+  gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
+
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
   simConfig.activeSceneName = sceneFileName;
@@ -414,6 +422,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig.enablePhysics = useBullet;
   simConfig.frustumCulling = true;
   simConfig.requiresTextures = true;
+  simConfig.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
   if (args.isSet("stage-requires-lighting")) {
     Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
@@ -717,6 +726,10 @@ void Viewer::drawEvent() {
       // even if timeSinceLastSimulation is quite large
       simulator_->stepWorld(1.0 / 60.0);
       simulateSingleStep_ = false;
+      const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
+      if (recorder) {
+        recorder->saveKeyframe();
+      }
     }
     // reset timeSinceLastSimulation, accounting for potential overflow
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
@@ -998,6 +1011,12 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   switch (key) {
+    case KeyEvent::Key::R: {
+      const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
+      if (recorder) {
+        recorder->writeSavedKeyframesToFile(gfxReplayRecordFilepath_);
+      }
+    } break;
     case KeyEvent::Key::Esc:
       /* Using Application::exit(), which exits at the next iteration of the
          event loop (same as the window close button would do). Using
