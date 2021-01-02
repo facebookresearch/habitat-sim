@@ -22,6 +22,10 @@ if(BUILD_WITH_BULLET)
   set(ESP_BUILD_WITH_BULLET ON)
 endif()
 
+if(IS_JS_BUILD)
+  set(ESP_IS_JS_BUILD ON)
+endif()
+
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )

@@ -86,8 +86,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
   // assign MM to RM on create or reconfigure
   if (!resourceManager_) {
+    assets::ResourceManager::Flags flags;
+#ifdef ESP_IS_JS_BUILD
+    flags |= assets::ResourceManager::Flag::BuildPhongFromPbr;
+#endif
     resourceManager_ =
-        std::make_unique<assets::ResourceManager>(metadataMediator_);
+        std::make_unique<assets::ResourceManager>(metadataMediator_, flags);
   } else {
     resourceManager_->setMetadataMediator(metadataMediator_);
   }
