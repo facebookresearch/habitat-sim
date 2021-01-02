@@ -9,6 +9,8 @@
 
 namespace em = emscripten;
 
+#include "esp/gfx/replay/Player.h"
+#include "esp/gfx/replay/ReplayManager.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
@@ -18,6 +20,7 @@ using namespace esp::agent;
 using namespace esp::core;
 using namespace esp::geo;
 using namespace esp::gfx;
+using namespace esp::gfx::replay;
 using namespace esp::nav;
 using namespace esp::scene;
 using namespace esp::sensor;
@@ -79,9 +82,16 @@ vec4f eulerToQuaternion(const vec3f& q) {
       .coeffs();
 }
 
+vec4f quaternionMultiply(const vec4f& q1, const vec4f& q2) {
+  auto product = Magnum::Quaternion(quatf(q1)) * Magnum::Quaternion(quatf(q2));
+  return vec4f(product.data()[0], product.data()[1], product.data()[2],
+               product.data()[3]);
+}
+
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::function("quaternionToEuler", &quaternionToEuler);
   em::function("eulerToQuaternion", &eulerToQuaternion);
+  em::function("quaternionMultiply", &quaternionMultiply);
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
@@ -198,7 +208,9 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
-      .property("compressTextures", &SimulatorConfiguration::compressTextures);
+      .property("compressTextures", &SimulatorConfiguration::compressTextures)
+      .property("enableGfxReplaySave",
+                &SimulatorConfiguration::enableGfxReplaySave);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
@@ -244,10 +256,57 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
 
+  em::class_<Player>("Player")
+      .smart_ptr<Player::ptr>("Player::ptr")
+      .property("numKeyframes", &Player::getNumKeyframes)
+      // setKeyframeIndex is an expensive call, so we use explicit getter/setter
+      // instead of a property.
+      .function("setKeyframeIndex", &Player::setKeyframeIndex)
+      .function("getKeyframeIndex", &Player::getKeyframeIndex);
+
+  em::class_<ReplayManager>("ReplayManager")
+      .smart_ptr<ReplayManager::ptr>("ReplayManager::ptr")
+      .function("saveKeyframe", em::optional_override([](ReplayManager& self) {
+                  if (!self.getRecorder()) {
+                    LOG(ERROR) << "saveKeyframe: not enabled. See "
+                                  "SimulatorConfiguration::"
+                                  "enableGfxReplaySave.";
+                    return;
+                  }
+                  self.getRecorder()->saveKeyframe();
+                }))
+      .function("addUserTransformToKeyframe",
+                em::optional_override(
+                    [](ReplayManager& self, const std::string& name,
+                       const vec3f& translation, const vec4f& rotation) {
+                      if (!self.getRecorder()) {
+                        LOG(ERROR)
+                            << "addUserTransformToKeyframe: not enabled. See "
+                               "SimulatorConfiguration::"
+                               "enableGfxReplaySave.";
+                        return;
+                      }
+                      self.getRecorder()->addUserTransformToKeyframe(
+                          name, Mn::Vector3(translation),
+                          Magnum::Quaternion(quatf(rotation)));
+                    }))
+      .function("writeSavedKeyframesToString",
+                em::optional_override([](ReplayManager& self) {
+                  if (!self.getRecorder()) {
+                    LOG(ERROR)
+                        << "writeSavedKeyframesToString: not enabled. See "
+                           "SimulatorConfiguration::enableGfxReplaySave.";
+                    return std::string();
+                  }
+                  return self.getRecorder()->writeSavedKeyframesToString();
+                }))
+      .function("readKeyframesFromFile", &ReplayManager::readKeyframesFromFile);
+
   em::class_<Simulator>("Simulator")
       .smart_ptr_constructor("Simulator",
                              &Simulator::create<const SimulatorConfiguration&>)
       .function("getSemanticScene", &Simulator::getSemanticScene)
+      .function("getGfxReplayManager", &Simulator::getGfxReplayManager)
       .function("seed", &Simulator::seed)
       .function("reconfigure", &Simulator::reconfigure)
       .function("reset", &Simulator::reset)

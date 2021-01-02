@@ -31,6 +31,7 @@ set(
   ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.navmesh
   ${MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS}
   ${MAGNUM_WEBAPPLICATION_CSS}
+  ${DATA_DIR}
 )
 
 foreach(resource ${resources})
@@ -56,6 +57,7 @@ add_custom_command(
 set(
   bundle_files
   bindings.html
+  replay_viewer.html
   webvr.html
   viewer.html
   bindings.css
@@ -64,6 +66,7 @@ set(
   index.js
   modules/object_sensor.js
   modules/navigate.js
+  modules/replay_viewer.js
   modules/simenv_embind.js
   modules/topdown.js
   modules/web_demo.js

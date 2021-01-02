@@ -7,6 +7,7 @@
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
+import ReplayViewer from "./modules/replay_viewer";
 import { defaultScene } from "./modules/defaults";
 import "./bindings.css";
 import {
@@ -16,11 +17,11 @@ import {
   buildConfigFromURLParameters
 } from "./modules/utils";
 
-function preload(url) {
+function preload(url, useLocalFullPath = true) {
   let file_parents_str = "/";
   const splits = url.split("/");
   let file = splits[splits.length - 1];
-  if (url.indexOf("http") === -1) {
+  if (url.indexOf("http") === -1 && useLocalFullPath) {
     let file_parents = splits.slice(0, splits.length - 1);
     for (let i = 0; i < splits.length - 1; i += 1) {
       file_parents_str += file_parents[i] + "/";
@@ -34,20 +35,24 @@ function preload(url) {
 }
 
 Module.preRun.push(() => {
-  let config = {};
-  config.scene = defaultScene;
-  buildConfigFromURLParameters(config);
-  window.config = config;
-  const scene = config.scene;
-  Module.scene = preload(scene);
-  const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
+  if (window.replayViewerEnabled) {
+    ReplayViewer.preloadFiles(preload);
+  } else {
+    let config = {};
+    config.scene = defaultScene;
+    buildConfigFromURLParameters(config);
+    window.config = config;
+    const scene = config.scene;
+    Module.scene = preload(scene);
+    const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
 
-  preload(fileNoExtension + ".navmesh");
-  if (config.semantic === "mp3d") {
-    preload(fileNoExtension + ".house");
-    preload(fileNoExtension + "_semantic.ply");
-  } else if (config.semantic === "replica") {
-    preload(getInfoSemanticUrl(config.scene));
+    preload(fileNoExtension + ".navmesh");
+    if (config.semantic === "mp3d") {
+      preload(fileNoExtension + ".house");
+      preload(fileNoExtension + "_semantic.ply");
+    } else if (config.semantic === "replica") {
+      preload(getInfoSemanticUrl(config.scene));
+    }
   }
 });
 
@@ -62,6 +67,8 @@ Module.onRuntimeInitialized = async function() {
     }
   } else if (window.viewerEnabled) {
     demo = new ViewerDemo();
+  } else if (window.replayViewerEnabled) {
+    demo = new ReplayViewer();
   }
 
   if (!demo) {

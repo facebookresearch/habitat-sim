@@ -113,6 +113,11 @@ class SimEnv {
     return state;
   }
 
+  setAgentState(state) {
+    const agent = this.sim.getAgent(this.selectedAgentId);
+    agent.setState(state, /*resetSensors*/ true);
+  }
+
   /**
    * Get the distance to goal in polar coordinates.
    * @returns {Array} [magnitude, clockwise-angle (in radians)]
