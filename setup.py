@@ -13,15 +13,24 @@ import builtins
 import glob
 import json
 import os
+import os.path as osp
 import re
 import shlex
 import subprocess
 import sys
 from distutils.version import StrictVersion
-from os import path as osp
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+
+try:
+    import cmake
+
+    # If the cmake python package is installed, use that exe
+    CMAKE_BIN_DIR = cmake.CMAKE_BIN_DIR
+except ImportError:
+    CMAKE_BIN_DIR = ""
+
 
 ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
@@ -99,6 +108,15 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         help="Don't install magnum.  "
         "This is nice for incrementally building for development but "
         "can cause install magnum bindings to fall out-of-sync",
+    )
+
+    parser.add_argument(
+        "--build-basis-compressor",
+        "--basis-compressor",
+        dest="build_basis_compressor",
+        action="store_true",
+        help="Wether or not to build the basis compressor."
+        "  Loading basis compressed meshes does NOT require this.",
     )
     return parser
 
@@ -193,7 +211,7 @@ class CMakeBuild(build_ext):
 
     def run(self):
         try:
-            subprocess.check_output(["cmake", "--version"])
+            subprocess.check_output([osp.join(CMAKE_BIN_DIR, "cmake"), "--version"])
         except (OSError, subprocess.SubprocessError):
             raise RuntimeError(
                 "CMake must be installed to build the following extensions: "
@@ -258,6 +276,11 @@ class CMakeBuild(build_ext):
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
         ]
         cmake_args += ["-DBUILD_WITH_CUDA={}".format("ON" if args.with_cuda else "OFF")]
+        cmake_args += [
+            "-DBUILD_BASIS_COMPRESSOR={}".format(
+                "ON" if args.build_basis_compressor else "OFF"
+            )
+        ]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
@@ -266,17 +289,18 @@ class CMakeBuild(build_ext):
 
         if self.run_cmake(cmake_args):
             subprocess.check_call(
-                shlex.split(
-                    'cmake -H"{}" -B"{}"'.format(ext.sourcedir, self.build_temp)
-                )
-                + cmake_args,
+                [osp.join(CMAKE_BIN_DIR, "cmake")]
+                + cmake_args
+                + [f"-S{ext.sourcedir}", f"-B{self.build_temp}"],
                 env=env,
             )
 
         if not is_pip():
             self.create_compile_commands()
 
-        subprocess.check_call(["cmake", "--build", self.build_temp] + build_args)
+        subprocess.check_call(
+            [osp.join(CMAKE_BIN_DIR, "cmake"), "--build", self.build_temp] + build_args
+        )
         print()  # Add an empty line for cleaner output
 
         # The things following this don't work with pip

@@ -2,7 +2,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-cmake_minimum_required(VERSION 3.10)
+option(
+  BUILD_BASIS_COMPRESSOR
+  "Wether or not to build the basis compressor.  Loading basis compressed meshes does NOT require this."
+  OFF
+)
+
+if(BUILD_BASIS_COMPRESSOR)
+  cmake_minimum_required(VERSION 3.13)
+  cmake_policy(SET CMP0079 NEW)
+else()
+  cmake_minimum_required(VERSION 3.10)
+endif()
 
 option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA"
        OFF
@@ -94,6 +105,10 @@ endif()
 if(BUILD_GUI_VIEWERS)
   message("Building GUI viewer")
   add_subdirectory(utils/viewer)
+endif()
+
+if(BUILD_BASIS_COMPRESSOR)
+  add_subdirectory(utils/imageconverter)
 endif()
 
 if(BUILD_TEST)
