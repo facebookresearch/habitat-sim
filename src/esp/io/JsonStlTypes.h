@@ -56,7 +56,7 @@ template <typename T>
 bool readMember(const JsonGenericValue& value,
                 const char* tag,
                 std::vector<T>& vec) {
-  ASSERT(vec.empty());
+  ASSERT(vec.empty(),);
   JsonGenericValue::ConstMemberIterator itr = value.FindMember(tag);
   if (itr != value.MemberEnd()) {
     const JsonGenericValue& arr = itr->value;
@@ -65,7 +65,7 @@ bool readMember(const JsonGenericValue& value,
       return false;
     }
     vec.reserve(arr.Size());
-    for (int i = 0; i < arr.Size(); i++) {
+    for (uint i = 0; i < arr.Size(); i++) {
       const auto& itemObj = arr[i];
       T item;
       if (!fromJsonValue(itemObj, item)) {
