@@ -327,7 +327,7 @@ void CubeMap::loadTexture(TextureType type,
     plugin = "PngImporter";
   } else if (imageFileExtension == "jpg") {
     plugin = "JpegImporter";
-  } else if (imageFileExtension == "") {
+  } else if (imageFileExtension == "hdr") {
     plugin = "HdrImporter";
   } else {
     LOG(INFO) << "CubeMap::loadTexture(): cannot support image type "
