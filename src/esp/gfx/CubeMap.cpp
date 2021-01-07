@@ -217,9 +217,6 @@ bool CubeMap::saveTexture(TextureType type,
 
   std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
   for (int iFace = 0; iFace < 6; ++iFace) {
-    // TODO: use framebuffer.read() instead somehow?
-    // But the question is it has NOTHING to do with the framebuffer
-    // anymore at this moment.
     Mn::Image2D image = textures_[type]->image(
         convertFaceIndexToCubeMapCoordinate(iFace), 0, {getPixelFormat(type)});
 
