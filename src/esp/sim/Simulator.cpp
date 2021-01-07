@@ -150,10 +150,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 }  // Simulator::reconfigure
 
 bool Simulator::createSceneInstance(const std::string& activeSceneName) {
-  // by here, Simulator::config_ holds current config information, and there
-  // exists a scene instance attributes describing the desired stage, objects
-  // (if any), lighting (if any), etc, and this scene instance is named
-  // config_.activeSceneID
+  // by here, Simulator::config_ holds current config information.
 
   // 1. initial setup
   // use physics attributes manager to configure physics manager attributes
@@ -168,7 +165,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   auto sceneInstanceAttributes =
       metadataMediator_->getSceneAttributesByName(activeSceneName);
 
-  // Get StageAttributes handle - this attributes will already exist
+  // Get a pointer to the instance attributes for the stage used by this scene instance. 
   const SceneObjectInstanceAttributes::ptr stageInstance =
       sceneInstanceAttributes->getStageInstance();
 
@@ -283,10 +280,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
 bool Simulator::createSceneInstanceNoRenderer(
     const std::string& activeSceneName) {
-  // by here, Simulator::config_ holds current config information, and there
-  // exists a scene instance attributes describing the desired stage, objects
-  // (if any), lighting (if any), etc, and this scene instance is named
-  // config_.activeSceneID
+  // by here, Simulator::config_ holds current config information
 
   // 1. initial setup
 
