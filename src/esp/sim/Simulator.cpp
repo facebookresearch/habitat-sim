@@ -89,6 +89,11 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   if (!resourceManager_) {
     resourceManager_ =
         std::make_unique<assets::ResourceManager>(metadataMediator_);
+    if (config_.createRenderer) {
+      // needs to be called after ResourceManager exists but before any assets
+      // have been loaded
+      reconfigureReplayManager();
+    }
   } else {
     resourceManager_->setMetadataMediator(metadataMediator_);
   }
@@ -119,7 +124,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   bool success;
-
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
     WindowlessContext since a (windowed) context already exists. */
@@ -149,41 +153,27 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 }  // Simulator::reconfigure
 
-bool Simulator::createSceneInstance(const std::string& activeSceneName) {
-  // by here, Simulator::config_ holds current config information.
+metadata::attributes::SceneAttributes::cptr
+Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
+  // This should always/only be called by either createSceneInstance or
+  // createSceneInstanceNoRendere.
 
-  // 1. initial setup
-  // use physics attributes manager to configure physics manager attributes
-  // described by config file.
-  auto physicsManagerAttributes =
-      metadataMediator_->getCurrentPhysicsManagerAttributes();
-
-  // get scene instance attributes corresponding to passed active scene name
+  // Get scene instance attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene
   // instance attributes, depending on what exists in the Scene Dataset library
   // for the current dataset.
-  auto sceneInstanceAttributes =
+
+  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
       metadataMediator_->getSceneAttributesByName(activeSceneName);
 
-  // Get a pointer to the instance attributes for the stage used by this scene instance. 
-  const SceneObjectInstanceAttributes::ptr stageInstance =
-      sceneInstanceAttributes->getStageInstance();
-
-  // Get name of StageAttributes
-  const std::string& stageAttributesHandle = stageInstance->getHandle();
-  // Get StageAttributes
-  auto stageAttributes =
-      metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
-          stageAttributesHandle);
+  // 1. Load navmesh specified in current scene instance attributes.
 
   const std::string& navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
-      sceneInstanceAttributes->getNavmeshHandle());
+      curSceneInstanceAttributes->getNavmeshHandle());
 
   LOG(INFO) << "Simulator::createSceneInstance : Navmesh file location in "
                "scene instance : "
-            << navmeshFileLoc
-            << " | navmesh file location in stage attributes : "
-            << stageAttributes->getNavmeshAssetHandle();
+            << navmeshFileLoc;
 
   // Get name of navmesh and use to create pathfinder and load navmesh
   bool navMeshSuccess = createPathfinder(navmeshFileLoc);
@@ -191,7 +181,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     LOG(INFO) << "Simulator::createSceneInstance : Navmesh file "
               << navmeshFileLoc << " unable to load.";
   }
-  // Calling to seeding needs to be done after the pathfinder creation
+  // Calling to seeding needs to be done after the pathfinder creation but
+  // before anything else.
   seed(config_.randomSeed);
 
   // initalize scene graph
@@ -199,33 +190,87 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // previous scene graph is not deleted!
   // TODO:
   // We need to make a design decision here:
-  // when doing reconfigure, shall we delete all of the previous scene graphs
+  // when instancing a new scene, shall we delete all of the previous scene
+  // graphs?
 
   activeSceneID_ = sceneManager_->initSceneGraph();
   // LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
   sceneID_.push_back(activeSceneID_);
 
+  // 2. Load the Semantic Scene Descriptor file appropriate for the current
+  // scene instance.
+  // get name of desired semantic scene descriptor file
+  const std::string semanticSceneDescFilename =
+      metadataMediator_->getSemanticSceneDescriptorPathByHandle(
+          curSceneInstanceAttributes->getSemanticSceneHandle());
+
+  LOG(INFO) << "Simulator::loadSemanticSceneDescriptor : SceneInstance : "
+            << activeSceneName
+            << " proposed Semantic Scene Descriptor filename : "
+            << semanticSceneDescFilename;
+  // get stage attributes for current scene instance
+  auto stageAttributes =
+      metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
+          curSceneInstanceAttributes->getStageInstance()->getHandle());
+
+  // assetType of stage is used to specify semanctic scene descriptor format
+  assets::AssetType assetType =
+      static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
+
+  loadSemanticSceneDescriptor(semanticSceneDescFilename, assetType);
+
+  // return a const ptr to the cur scene instance attributes
+  return curSceneInstanceAttributes;
+
+}  // Simulator::setSceneInstanceAttributes
+
+bool Simulator::createSceneInstance(const std::string& activeSceneName) {
+  // 1. initial setup for scene instancing - sets or creates the
+  // current scene instance to correspond to the given name.
+  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
+      setSceneInstanceAttributes(activeSceneName);
+
+  // get sceneGraph and rootNode
   auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   auto& rootNode = sceneGraph.getRootNode();
 
-  // (re)seat & (re)init physics manager
-  resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
-                                       &rootNode, physicsManagerAttributes);
+  // 2. (re)seat & (re)init physics manager using the physics manager attributes
+  // specified in current simulator configuration held in metadataMediator.
+  resourceManager_->initPhysicsManager(
+      physicsManager_, config_.enablePhysics, &rootNode,
+      metadataMediator_->getCurrentPhysicsManagerAttributes());
 
-  bool loadSuccess = false;
+  // 3. Load stage specified by Scene Instance Attributes
+  // Get Stage Instance Attributes - contains name of stage and initial
+  // transformation of stage in scene.
+  // TODO : need to support stageInstanceAttributes transformation upon
+  // creation.
 
-  reconfigureReplayManager();
+  const SceneObjectInstanceAttributes::ptr stageInstanceAttributes =
+      curSceneInstanceAttributes->getStageInstance();
+  // Get name of StageAttributes
+  const std::string& stageAttributesHandle =
+      stageInstanceAttributes->getHandle();
+  // Get StageAttributes
+  auto stageAttributes =
+      metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
+          stageAttributesHandle);
 
+  // create a structure to manage active scene and active semantic scene ID
+  // passing to and from loadStage
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
   // Load stage
-  loadSuccess = resourceManager_->loadStage(
+  bool loadSuccess = resourceManager_->loadStage(
       stageAttributes, physicsManager_, sceneManager_.get(), tempIDs,
       config_.loadSemanticMesh, config_.forceSeparateSemanticSceneGraph);
 
   if (!loadSuccess) {
-    LOG(ERROR) << "Cannot load " << stageAttributesHandle;
+    LOG(ERROR) << "Simulator::createSceneInstance : Cannot load stage : "
+               << stageAttributesHandle;
     // Pass the error to the python through pybind11 allowing graceful exit
-    throw std::invalid_argument("Cannot load: " + stageAttributesHandle);
+    throw std::invalid_argument(
+        "Simulator::createSceneInstance : Cannot load: " +
+        stageAttributesHandle);
   }
 
   // refresh the NavMesh visualization if necessary after loading a new
@@ -235,12 +280,6 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     setNavMeshVisualization(false);  // first clear the old instance
     setNavMeshVisualization(true);
   }
-
-  const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
-  resourceManager_->setLightSetup(gfx::getDefaultLights());
-
-  assets::AssetType stageType =
-      static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
 
   // set activeSemanticSceneID_ values and push onto sceneID vector if
   // appropriate - tempIDs[1] will either be old activeSemanticSceneID_ (if
@@ -255,6 +294,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
         (activeSemanticSceneID_ != activeSceneID_)) {
       sceneID_.push_back(activeSemanticSceneID_);
     } else {  // activeSemanticSceneID_ = activeSceneID_;
+      assets::AssetType stageType =
+          static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
       // instance meshes and suncg houses contain their semantic annotations
       // empty scene has none to worry about
       if (!(stageType == assets::AssetType::SUNCG_SCENE ||
@@ -262,17 +303,72 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
             stageAttributesHandle.compare(assets::EMPTY_SCENE) == 0)) {
         // TODO: programmatic generation of semantic meshes when no
         // annotations are provided.
-        LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
+        LOG(WARNING) << "\n---\nSimulator::createSceneInstance : The active "
+                        "scene does not contain semantic "
                         "annotations. \n---";
       }
     }
   }  // if ID has changed - needs to be reset
 
-  // Get name of appropriate semantic scene descriptor for this scene instance.
-  loadSemanticSceneDescriptor(
-      metadataMediator_->getSemanticSceneDescriptorPathByHandle(
-          sceneInstanceAttributes->getSemanticSceneHandle()),
-      stageType);
+  // 4. Load lighting as specified .
+  // get name of light setup for this scene instance
+  const std::string lightSetupKey =
+      curSceneInstanceAttributes->getLightingHandle();
+  // lighting attributes corresponding to this key should exist unless it is
+  // empty if empty, the following does nothing.
+  esp::gfx::LightSetup lightingSetup =
+      metadataMediator_->getLightLayoutAttributesManager()
+          ->createLightSetupFromAttributes(lightSetupKey);
+  // set lightsetup in resource manager
+  resourceManager_->setLightSetup(lightingSetup,
+                                  Mn::ResourceKey{lightSetupKey});
+
+  // 5. Load object instances as spceified by Scene Instance Attributes.
+
+  // Get all instances of objects described in scene
+  const std::vector<SceneObjectInstanceAttributes::ptr> objectInstances =
+      curSceneInstanceAttributes->getObjectInstances();
+
+  // current scene graph's drawables
+  auto& drawables = sceneGraph.getDrawables();
+  // node to attach object to
+  scene::SceneNode* attachmentNode = nullptr;
+  // vector holding all objects added
+  std::vector<int> objectsAdded;
+  int objID;
+  // Iterate through instances, create object and implement initial
+  // transformation.
+  for (const auto& objInst : objectInstances) {
+    objID = physicsManager_->addObject(objInst->getHandle(), &drawables,
+                                       attachmentNode, lightSetupKey);
+    if (objID == ID_UNDEFINED) {
+      // instancing failed for some reason.
+      LOG(WARNING)
+          << "Simulator::createSceneInstance : Failed to instantiate object "
+             "specified in Scene Instance Attributes using template named : "
+          << objInst->getHandle();
+      continue;
+    }
+    // set object's location and rotation based on translation and rotation
+    // params specified in instance attributes
+    physicsManager_->setTransformation(
+        objID, Magnum::Matrix4::from(objInst->getRotation().toMatrix(),
+                                     objInst->getTranslation()));
+    // set object's motion type if different than set value
+    const physics::MotionType attrObjMotionType =
+        static_cast<physics::MotionType>(objInst->getMotionType());
+    const physics::MotionType objMotionType =
+        physicsManager_->getObjectMotionType(objID);
+
+    if ((attrObjMotionType != objMotionType) &&
+        (attrObjMotionType != physics::MotionType::UNDEFINED)) {
+    }
+    objectsAdded.push_back(objID);
+  }  // for each object attributes
+  // objectsAdded holds all ids of added objects.
+
+  // TODO : reset may eventually have all the scene instance instantiation code
+  // so that scenes can be reset
   reset();
 
   return true;
@@ -280,64 +376,13 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
 bool Simulator::createSceneInstanceNoRenderer(
     const std::string& activeSceneName) {
-  // by here, Simulator::config_ holds current config information
-
-  // 1. initial setup
-
-  // get scene instance attributes corresponding to passed active scene name
-  // This will retrieve, or construct, an appropriately configured scene
-  // instance attributes, depending on what exists in the Scene Dataset library
-  // for the current dataset.
-  auto sceneInstanceAttributes =
+  // Initial setup for scene instancing without renderer - sets or creates the
+  // current scene instance to correspond to the given name.
+  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
       metadataMediator_->getSceneAttributesByName(activeSceneName);
 
-  // Get StageAttributes handle - this attributes will already exist
-  const SceneObjectInstanceAttributes::ptr stageInstance =
-      sceneInstanceAttributes->getStageInstance();
-
-  // Get name of StageAttributes
-  const std::string& stageAttributesHandle = stageInstance->getHandle();
-  LOG(INFO) << "Simulator::createSceneInstance : Stage Attributes handle : "
-            << stageAttributesHandle;
-  // Get name of navmesh and use to create pathfinder and load navmesh
-  std::string navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
-      sceneInstanceAttributes->getNavmeshHandle());
-  bool navMeshSuccess = createPathfinder(navmeshFileLoc);
-  if (!navMeshSuccess) {
-    LOG(INFO) << "Simulator::createSceneInstance : Navmesh file "
-              << navmeshFileLoc << " unable to load.";
-  }
-
-  // Get StageAttributes
-  auto stageAttributes =
-      metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
-          stageAttributesHandle);
-
-  assets::AssetType stageType =
-      static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
-
-  // Calling to seeding needs to be done after the pathfinder creation
-  seed(config_.randomSeed);
-
-  // initalize scene graph
-  // CAREFUL!
-  // previous scene graph is not deleted!
-  // TODO:
-  // We need to make a design decision here:
-  // when doing reconfigure, shall we delete all of the previous scene graphs
-
-  activeSceneID_ = sceneManager_->initSceneGraph();
-  // LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
-  sceneID_.push_back(activeSceneID_);
-
-  auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
-  auto& rootNode = sceneGraph.getRootNode();
-
-  // Get name of appropriate semantic scene descriptor for this scene instance.
-  loadSemanticSceneDescriptor(
-      metadataMediator_->getSemanticSceneDescriptorPathByHandle(
-          sceneInstanceAttributes->getSemanticSceneHandle()),
-      stageType);
+  // TODO : reset may eventually have all the scene instance instantiation code
+  // so that scenes can be reset
   reset();
   return true;
 }  // Simulator::createSceneInstanceNoRenderer
@@ -361,48 +406,56 @@ bool Simulator::createPathfinder(const std::string& navmeshFilename) {
 bool Simulator::loadSemanticSceneDescriptor(
     const std::string& semanticSceneDescFilename,
     const assets::AssetType& assetType) {
+  namespace FileUtil = Cr::Utility::Directory;
+
+  // semantic scene descriptor might not exist, so
   semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
+  bool present = false;
   switch (assetType) {
     case assets::AssetType::INSTANCE_MESH: {
-      const std::string tmpFName = Cr::Utility::Directory::join(
-          Cr::Utility::Directory::path(semanticSceneDescFilename),
-          "info_semantic.json");
-      if (io::exists(tmpFName)) {
-        scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
+      const std::string tmpFName = FileUtil::join(
+          FileUtil::path(semanticSceneDescFilename), "info_semantic.json");
+      if (FileUtil::exists(tmpFName)) {
+        present =
+            scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
       } else {
         // Provide warning msgs for failures?
-        return false;
+        present = false;
       }
       break;
     }
     case assets::AssetType::MP3D_MESH: {
       // TODO(msb) Fix AssetType determination logic.
-      if (io::exists(semanticSceneDescFilename)) {
+      if (FileUtil::exists(semanticSceneDescFilename)) {
         using Corrade::Utility::String::endsWith;
         if (endsWith(semanticSceneDescFilename, ".house")) {
-          scene::SemanticScene::loadMp3dHouse(semanticSceneDescFilename,
-                                              *semanticScene_);
+          present = scene::SemanticScene::loadMp3dHouse(
+              semanticSceneDescFilename, *semanticScene_);
         } else if (endsWith(semanticSceneDescFilename, ".scn")) {
-          scene::SemanticScene::loadGibsonHouse(semanticSceneDescFilename,
-                                                *semanticScene_);
+          present = scene::SemanticScene::loadGibsonHouse(
+              semanticSceneDescFilename, *semanticScene_);
         } else {
-          return false;
+          present = false;
         }
       } else {
-        return false;
+        present = false;
       }
       break;
     }
-    case assets::AssetType::SUNCG_SCENE:
+    case assets::AssetType::SUNCG_SCENE: {
+      // SUNCG is not handled anymore
       // scene::SemanticScene::loadSuncgHouse(stageAttributesHandle,
       // *semanticScene_);
-      return false;
-    default:
+      present = false;
       break;
-  }  // switch
-
-  return true;
+    }
+    default:
+      present = false;
+      break;
+  }  // end switch
+     // return whether SSD is present and loaded successfully
+  return present;
 }  // Simulator::loadSemanticSceneDescriptor
 
 void Simulator::reset() {
@@ -432,7 +485,7 @@ void Simulator::reconfigureReplayManager() {
                                  ? std::make_shared<gfx::replay::Recorder>()
                                  : nullptr);
   // assign Recorder to ResourceManager
-  ASSERT(resourceManager_);
+  CORRADE_INTERNAL_ASSERT(resourceManager_);
   resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
 
   // provide Player callback to replay manager
@@ -463,8 +516,8 @@ int Simulator::addObject(const int objectLibId,
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
-    auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
-    auto& drawables = sceneGraph_.getDrawables();
+    auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+    auto& drawables = sceneGraph.getDrawables();
     return physicsManager_->addObject(objectLibId, &drawables, attachmentNode,
                                       lightSetupKey);
   }
@@ -478,8 +531,8 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
-    auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
-    auto& drawables = sceneGraph_.getDrawables();
+    auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+    auto& drawables = sceneGraph.getDrawables();
     return physicsManager_->addObject(objectLibHandle, &drawables,
                                       attachmentNode, lightSetupKey);
   }

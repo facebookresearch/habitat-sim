@@ -16,7 +16,7 @@ namespace attributes {
 
 /**
  * @brief This class describes an instance of a stage or object in a scene -
- * it's template name, translation from the origin, rotation, and (if
+ * its template name, translation from the origin, rotation, and (if
  * appropriate) motiontype
  */
 class SceneObjectInstanceAttributes : public AbstractAttributes {
@@ -28,6 +28,11 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    */
   static const std::map<std::string, esp::physics::MotionType>
       MotionTypeNamesMap;
+
+  /**
+   * @brief SceneObjectInstanceAttributes handle is also the handle of the
+   * underlying @ref AbstractObjectAttributes for the object being instanced.
+   */
   SceneObjectInstanceAttributes(const std::string& handle);
 
   /**

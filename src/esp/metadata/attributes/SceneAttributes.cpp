@@ -19,6 +19,8 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle)
     : AbstractAttributes("SceneObjectInstanceAttributes", handle) {
   setMotionType(-1);  // defaults to unknown
+  // set to no rotation
+  setQuat("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
 }
 SceneAttributes::SceneAttributes(const std::string& handle)
     : AbstractAttributes("SceneAttributes", handle) {}
