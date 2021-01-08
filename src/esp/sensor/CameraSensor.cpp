@@ -113,14 +113,14 @@ CameraSensor& CameraSensor::setViewport(gfx::RenderCamera& targetCamera) {
 }
 
 bool CameraSensor::getObservationSpace(ObservationSpace& space) {
-  space.spaceType = ObservationSpaceType::TENSOR;
+  space.spaceType = ObservationSpaceType::Tensor;
   space.shape = {static_cast<size_t>(spec_->resolution[0]),
                  static_cast<size_t>(spec_->resolution[1]),
                  static_cast<size_t>(spec_->channels)};
   space.dataType = core::DataType::DT_UINT8;
-  if (spec_->sensorType == SensorType::SEMANTIC) {
+  if (spec_->sensorType == SensorType::Semantic) {
     space.dataType = core::DataType::DT_UINT32;
-  } else if (spec_->sensorType == SensorType::DEPTH) {
+  } else if (spec_->sensorType == SensorType::Depth) {
     space.dataType = core::DataType::DT_FLOAT;
   }
   return true;
@@ -151,7 +151,7 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
-  if (spec_->sensorType == SensorType::SEMANTIC) {
+  if (spec_->sensorType == SensorType::Semantic) {
     // TODO: check sim has semantic scene graph
     renderer->draw(*this, sim.getActiveSemanticSceneGraph(), flags);
     if (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph()) {
@@ -159,7 +159,7 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
       renderer->draw(*this, sim.getActiveSceneGraph(), flags);
     }
   } else {
-    // SensorType is DEPTH or any other type
+    // SensorType is Depth or any other type
     renderer->draw(*this, sim.getActiveSceneGraph(), flags);
   }
 
@@ -180,11 +180,11 @@ void CameraSensor::readObservation(Observation& obs) {
 
   // TODO: have different classes for the different types of sensors
   // TODO: do we need to flip axis?
-  if (spec_->sensorType == SensorType::SEMANTIC) {
+  if (spec_->sensorType == SensorType::Semantic) {
     renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
         obs.buffer->data});
-  } else if (spec_->sensorType == SensorType::DEPTH) {
+  } else if (spec_->sensorType == SensorType::Depth) {
     renderTarget().readFrameDepth(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
         obs.buffer->data});

@@ -112,7 +112,7 @@ class SceneNode : public MagnumObject {
   int id_ = ID_UNDEFINED;
 
   //! The semantic category of this node. Used to render attached Drawables with
-  //! SEMANTIC sensor when no perVertexObjectIds are present.
+  //! Semantic sensor when no perVertexObjectIds are present.
   uint32_t semanticId_ = 0;
 
   //! the local bounding box for meshes stored at this node
