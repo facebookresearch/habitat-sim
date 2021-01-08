@@ -15,7 +15,6 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
-
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
@@ -36,6 +35,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/Screenshot.h>
+#include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
@@ -179,6 +179,7 @@ Key Commands:
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
+  ',' toggle frame profiler.
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -318,6 +319,11 @@ Key Commands:
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
+
+  //Profiling
+  Mn::DebugTools::GLFrameProfiler _profiler;
+  Mn::Debug _profilerOut{Mn::Debug::Flag::NoNewlineAtTheEnd|
+      (Mn::Debug::isTty() ? Mn::Debug::Flags{} : Mn::Debug::Flag::DisableColors)};
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -661,6 +667,7 @@ void Viewer::wiggleLastObject() {
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
+  _profiler.beginFrame();
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
@@ -720,6 +727,14 @@ void Viewer::drawEvent() {
     renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
 
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+
+    _profiler.endFrame();
+    _profiler.printStatistics(_profilerOut, 10);
+
+     /* Schedule a redraw only if profiling is enabled to avoid hogging the CPU */
+    if(_profiler.isEnabled()) {
+        redraw();
+    }
   }
 
   sensorRenderTarget->blitRgbaToDefault();
@@ -1045,6 +1060,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
+    case KeyEvent::Key::Comma:
+       _profiler.isEnabled() ? _profiler.disable() : _profiler.enable();
+       LOG(INFO) << "Profiler toggled";
+       break;
     default:
       break;
   }
