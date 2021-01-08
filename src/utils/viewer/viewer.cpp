@@ -51,6 +51,8 @@
 #include "ObjectPickingHelper.h"
 #include "esp/physics/configure.h"
 
+using std::chrono::high_resolution_clock;
+
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
@@ -321,7 +323,22 @@ Key Commands:
   // included)
 
   //Profiling
-  Mn::DebugTools::GLFrameProfiler _profiler;
+
+  high_resolution_clock::time_point frameBeginTime;
+  Mn::DebugTools::FrameProfiler _profiler{{
+      Mn::DebugTools::FrameProfiler::Measurement{"CPU time",
+          Mn::DebugTools::FrameProfiler::Units::Nanoseconds,
+          [](void* state) {
+              *static_cast<high_resolution_clock::time_point*>(state)
+                  = high_resolution_clock::now();
+          },
+          [](void* state) {
+              return Mn::UnsignedLong(
+                  std::chrono::duration_cast<std::chrono::nanoseconds>(
+                      *static_cast<high_resolution_clock::time_point*>(state)
+                      - high_resolution_clock::now()).count());
+          }, &frameBeginTime}
+  }, 50};
   Mn::Debug _profilerOut{Mn::Debug::Flag::NoNewlineAtTheEnd|
       (Mn::Debug::isTty() ? Mn::Debug::Flags{} : Mn::Debug::Flag::DisableColors)};
 };
@@ -667,7 +684,6 @@ void Viewer::wiggleLastObject() {
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
-  _profiler.beginFrame();
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
@@ -679,7 +695,6 @@ void Viewer::drawEvent() {
     timeSinceLastSimulation = 0.0;
     simulateSingleStep_ = false;
   }
-
   // using polygon offset to increase mesh depth to a avoid z-fighting with
   // debug draw (since lines will not respond to offset).
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
@@ -727,14 +742,6 @@ void Viewer::drawEvent() {
     renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
 
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
-
-    _profiler.endFrame();
-    _profiler.printStatistics(_profilerOut, 10);
-
-     /* Schedule a redraw only if profiling is enabled to avoid hogging the CPU */
-    if(_profiler.isEnabled()) {
-        redraw();
-    }
   }
 
   sensorRenderTarget->blitRgbaToDefault();
@@ -743,7 +750,7 @@ void Viewer::drawEvent() {
   Mn::GL::defaultFramebuffer.bind();
 
   imgui_.newFrame();
-
+  _profiler.beginFrame();
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("main", NULL,
@@ -780,8 +787,13 @@ void Viewer::drawEvent() {
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
 
   swapBuffers();
+  _profiler.endFrame();
+  _profiler.printStatistics(_profilerOut, 10);
   timeline_.nextFrame();
-  redraw();
+  /* Schedule a redraw only if profiling is enabled to avoid hogging the CPU */
+  if(_profiler.isEnabled()) {
+      redraw();
+  }
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
