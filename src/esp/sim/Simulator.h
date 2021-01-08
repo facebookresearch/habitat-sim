@@ -211,11 +211,11 @@ class Simulator {
                         int sceneID = 0);
 
   /**
-   * @brief Get a static view of a physics object's template when the object was
-   * instanced.
+   * @brief Get a static view of a physics object's template when the object
+   * was instanced.
    *
-   * Use this to query the object's properties when it was initialized.  Object
-   * pointed at by pointer is const, and can not be modified.
+   * Use this to query the object's properties when it was initialized.
+   * Object pointed at by pointer is const, and can not be modified.
    */
   const metadata::attributes::ObjectAttributes::cptr
   getObjectInitializationTemplate(int objectId, int sceneID = 0) const;
@@ -878,18 +878,33 @@ class Simulator {
   bool createSceneInstanceNoRenderer(const std::string& activeSceneName);
 
   /**
+   * @brief Shared initial functionality for creating/setting the current scene
+   * instance attributes corresponding to activeSceneName, regardless of desired
+   * renderer state.
+   * @param activeSceneName The name of the desired active scene instance, as
+   * specified in Simulator Configuration.
+   * @return a constant pointer to the current scene instance attributes.
+   */
+  metadata::attributes::SceneAttributes::cptr setSceneInstanceAttributes(
+      const std::string& activeSceneName);
+
+  /**
    * @brief Load a @ref esp::scene::SemanticScene object that aggregates the
-   * semantic description of the scene.
-   * @param semanticSceneDescFilename The name of the semantic scene description
-   * file.
-   * @param assetType The asset type for the scene's stage.  This is currently
-   * used to determine the mechanism for laoding the SemanticScene object.
+   * semantic description of the scene, based on the current scene instance and
+   * the current stage's asset type.
+   * @param semanticSceneDescFilename The proposed file name for the semantic
+   * scene descriptor file.
+   * @param assetType The type of the stage, which will inform the mechanism for
+   * loading the semantic scene descriptor.
    * @return Whether successful or not.
    */
   bool loadSemanticSceneDescriptor(const std::string& semanticSceneDescFilename,
                                    const assets::AssetType& assetType);
 
-  //! sample a random valid AgentState in passed agentState
+  /**
+   * @brief sample a random valid AgentState in passed agentState
+   * @param agentState [out] The placeholder for the sampled agent state.
+   */
   void sampleRandomAgentState(agent::AgentState& agentState);
 
   bool isValidScene(int sceneID) const {
@@ -912,7 +927,9 @@ class Simulator {
   // during the deconstruction
   std::unique_ptr<assets::ResourceManager> resourceManager_ = nullptr;
 
-  // Owns and manages the metadata/attributes managers
+  /**
+   * @brief Owns and manages the metadata/attributes managers
+   */
   metadata::MetadataMediator::ptr metadataMediator_ = nullptr;
   scene::SceneManager::uptr sceneManager_ = nullptr;
   int activeSceneID_ = ID_UNDEFINED;

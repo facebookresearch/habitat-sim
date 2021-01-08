@@ -37,7 +37,9 @@ bool MetadataMediator::setSimulatorConfiguration(
   bool success = setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile);
   if (!success) {
     // something failed about setting up active scene dataset
-
+    LOG(ERROR) << "MetadataMediator::setSimulatorConfiguration : Some error "
+                  "prevented current scene dataset name to be changed to "
+               << simConfig_.sceneDatasetConfigFile;
     return false;
   }
 
@@ -46,8 +48,8 @@ bool MetadataMediator::setSimulatorConfiguration(
   if (!success) {
     // something failed about setting up physics attributes
     LOG(ERROR) << "MetadataMediator::setSimulatorConfiguration : Some error "
-                  "prevented current physics ";
-
+                  "prevented current physics attributes to "
+               << simConfig_.physicsConfigFile;
     return false;
   }
 

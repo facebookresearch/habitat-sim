@@ -129,6 +129,9 @@ class SceneAttributesManager
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as required by
    * AttributesManager<PhysicsSceneAttributes::ptr>
+   *
+   * NOTE : currently this will only perform a shallow copy of the
+   * SceneAttributes.
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["SceneAttributes"] =
