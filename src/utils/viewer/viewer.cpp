@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <stdlib.h>
+#include <math.h>
 #include <ctime>
 
 #include <Magnum/configure.h>
@@ -51,8 +52,8 @@
 #include "ObjectPickingHelper.h"
 #include "esp/physics/configure.h"
 
-constexpr float moveSensitivity = 0.1f;
-constexpr float lookSensitivity = 11.25f;
+constexpr float moveSensitivity = 0.08f;
+constexpr float lookSensitivity = 0.8f;
 constexpr float rgbSensorHeight = 1.5f;
 
 // for ease of access
@@ -80,6 +81,21 @@ class Viewer : public Mn::Platform::Application {
   explicit Viewer(const Arguments& arguments);
 
  private:
+
+  // Keys for moving/looking are recorded according to whether they are currently being pressed
+  std::map<KeyEvent::Key, bool> keysPressed = {
+    {KeyEvent::Key::Left, false},
+    {KeyEvent::Key::Right, false},
+    {KeyEvent::Key::Up, false},
+    {KeyEvent::Key::Down, false},
+    {KeyEvent::Key::A, false},
+    {KeyEvent::Key::D, false},
+    {KeyEvent::Key::S, false},
+    {KeyEvent::Key::W, false},
+    {KeyEvent::Key::X, false},
+    {KeyEvent::Key::Z, false}
+  };
+
   void drawEvent() override;
   void viewportEvent(ViewportEvent& event) override;
   void mousePressEvent(MouseEvent& event) override;
@@ -87,6 +103,8 @@ class Viewer : public Mn::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
+  void keyReleaseEvent(KeyEvent& event) override;
+  void moveAndLook(int repetitions);
 
   /**
    * @brief Instance an object from an ObjectAttributes.
@@ -664,13 +682,24 @@ void Viewer::drawEvent() {
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
-  // step physics at a fixed rate
+  // Move and look actions should occur at a rate of 60 per second,
+  //  which is the optimal frame rate (so 1 event per frame in the optimal case)
+  //  In the non-optimal case, the number of actions per frame is given by repetitionsToPerform:
   timeSinceLastSimulation += timeline_.previousFrameDuration();
-  if (timeSinceLastSimulation >= 1.0 / 60.0 &&
-      (simulating_ || simulateSingleStep_)) {
-    simulator_->stepWorld(1.0 / 60.0);
-    timeSinceLastSimulation = 0.0;
-    simulateSingleStep_ = false;
+  int repetitionsToPerform = timeSinceLastSimulation * 60.0;
+  moveAndLook(repetitionsToPerform);
+
+  // occasionally a frame will pass quicker than 1/60 seconds
+  if (timeSinceLastSimulation >= 1.0 / 60.0) {
+    if (simulating_ || simulateSingleStep_) {
+      // step physics at a fixed rate
+      // In the interest of frame rate, only a single step is taken,
+      // even if timeSinceLastSimulation is quite large
+      simulator_->stepWorld(1.0 / 60.0);
+      simulateSingleStep_ = false;
+    }
+    // reset timeSinceLastSimulation, accounting for potential overflow
+    timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
 
   // using polygon offset to increase mesh depth to a avoid z-fighting with
@@ -767,6 +796,44 @@ void Viewer::drawEvent() {
   swapBuffers();
   timeline_.nextFrame();
   redraw();
+}
+
+void Viewer::moveAndLook(int repetitions) {
+  if (repetitions <= 2) {repetitions = 1;}    // for visual smoothness, for small deviations around 60fps, we default to repetitions=1.
+
+  for (int i = 0; i < repetitions; i++) {
+    if (keysPressed[KeyEvent::Key::Left]) {
+      defaultAgent_->act("turnLeft");
+    }
+    if (keysPressed[KeyEvent::Key::Right]) {
+      defaultAgent_->act("turnRight");
+    }
+    if (keysPressed[KeyEvent::Key::Up]) {
+      defaultAgent_->act("lookUp");
+    }
+    if (keysPressed[KeyEvent::Key::Down]) {
+      defaultAgent_->act("lookDown");
+    }
+
+    if (keysPressed[KeyEvent::Key::A]) {
+      defaultAgent_->act("moveLeft");
+    }
+    if (keysPressed[KeyEvent::Key::D]) {
+      defaultAgent_->act("moveRight");
+    }
+    if (keysPressed[KeyEvent::Key::S]) {
+      defaultAgent_->act("moveBackward");
+    }
+    if (keysPressed[KeyEvent::Key::W]) {
+      defaultAgent_->act("moveForward");
+    }
+    if (keysPressed[KeyEvent::Key::X]) {
+      defaultAgent_->act("moveDown");
+    }
+    if (keysPressed[KeyEvent::Key::Z]) {
+      defaultAgent_->act("moveUp");
+    }
+  }
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
@@ -918,43 +985,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // also `>` key
       simulateSingleStep_ = true;
       break;
-      // ==== Look direction and Movement ====
-    case KeyEvent::Key::Left:
-      defaultAgent_->act("turnLeft");
-      break;
-    case KeyEvent::Key::Right:
-      defaultAgent_->act("turnRight");
-      break;
-    case KeyEvent::Key::Up:
-      defaultAgent_->act("lookUp");
-      break;
-    case KeyEvent::Key::Down:
-      defaultAgent_->act("lookDown");
-      break;
-    case KeyEvent::Key::A:
-      defaultAgent_->act("moveLeft");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::D:
-      defaultAgent_->act("moveRight");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::S:
-      defaultAgent_->act("moveBackward");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::W:
-      defaultAgent_->act("moveForward");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::X:
-      defaultAgent_->act("moveDown");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::Z:
-      defaultAgent_->act("moveUp");
-      recAgentLocation();
-      break;
       // ==== Miscellaneous ====
     case KeyEvent::Key::One:
       // toggle agent location recording for trajectory
@@ -1047,6 +1077,25 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     default:
       break;
+  }
+
+  // Update map of moving/looking keys which are currently pressed
+  for (const auto& [k, b] : keysPressed) {
+    if (key == k) {
+      keysPressed[key] = true;
+    }
+  }
+
+  redraw();
+}
+
+void Viewer::keyReleaseEvent(KeyEvent& event) {
+  // Update map of moving/looking keys which are currently pressed
+  const auto key = event.key();
+  for (const auto& [k, b] : keysPressed) {
+    if (key == k) {
+      keysPressed[key] = false;
+    }
   }
   redraw();
 }
