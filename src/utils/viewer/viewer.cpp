@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <stdlib.h>
 #include <math.h>
+#include <stdlib.h>
 #include <ctime>
 
 #include <Magnum/configure.h>
@@ -52,9 +52,10 @@
 #include "ObjectPickingHelper.h"
 #include "esp/physics/configure.h"
 
-constexpr float moveSensitivity = 0.08f;
-constexpr float lookSensitivity = 0.8f;
+constexpr float moveSensitivity = 0.07f;
+constexpr float lookSensitivity = 0.9f;
 constexpr float rgbSensorHeight = 1.5f;
+constexpr float agentActionsPerSecond = 60.0f;
 
 // for ease of access
 namespace Cr = Corrade;
@@ -81,20 +82,14 @@ class Viewer : public Mn::Platform::Application {
   explicit Viewer(const Arguments& arguments);
 
  private:
-
-  // Keys for moving/looking are recorded according to whether they are currently being pressed
+  // Keys for moving/looking are recorded according to whether they are
+  // currently being pressed
   std::map<KeyEvent::Key, bool> keysPressed = {
-    {KeyEvent::Key::Left, false},
-    {KeyEvent::Key::Right, false},
-    {KeyEvent::Key::Up, false},
-    {KeyEvent::Key::Down, false},
-    {KeyEvent::Key::A, false},
-    {KeyEvent::Key::D, false},
-    {KeyEvent::Key::S, false},
-    {KeyEvent::Key::W, false},
-    {KeyEvent::Key::X, false},
-    {KeyEvent::Key::Z, false}
-  };
+      {KeyEvent::Key::Left, false}, {KeyEvent::Key::Right, false},
+      {KeyEvent::Key::Up, false},   {KeyEvent::Key::Down, false},
+      {KeyEvent::Key::A, false},    {KeyEvent::Key::D, false},
+      {KeyEvent::Key::S, false},    {KeyEvent::Key::W, false},
+      {KeyEvent::Key::X, false},    {KeyEvent::Key::Z, false}};
 
   void drawEvent() override;
   void viewportEvent(ViewportEvent& event) override;
@@ -682,12 +677,10 @@ void Viewer::drawEvent() {
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
-  // Move and look actions should occur at a rate of 60 per second,
-  //  which is the optimal frame rate (so 1 event per frame in the optimal case)
-  //  In the non-optimal case, the number of actions per frame is given by repetitionsToPerform:
+  // Agent actions should occur at a fixed rate per second
   timeSinceLastSimulation += timeline_.previousFrameDuration();
-  int repetitionsToPerform = timeSinceLastSimulation * 60.0;
-  moveAndLook(repetitionsToPerform);
+  int numAgentActions = timeSinceLastSimulation * agentActionsPerSecond;
+  moveAndLook(numAgentActions);
 
   // occasionally a frame will pass quicker than 1/60 seconds
   if (timeSinceLastSimulation >= 1.0 / 60.0) {
@@ -799,8 +792,6 @@ void Viewer::drawEvent() {
 }
 
 void Viewer::moveAndLook(int repetitions) {
-  if (repetitions <= 2) {repetitions = 1;}    // for visual smoothness, for small deviations around 60fps, we default to repetitions=1.
-
   for (int i = 0; i < repetitions; i++) {
     if (keysPressed[KeyEvent::Key::Left]) {
       defaultAgent_->act("turnLeft");
@@ -817,21 +808,27 @@ void Viewer::moveAndLook(int repetitions) {
 
     if (keysPressed[KeyEvent::Key::A]) {
       defaultAgent_->act("moveLeft");
+      recAgentLocation();
     }
     if (keysPressed[KeyEvent::Key::D]) {
       defaultAgent_->act("moveRight");
+      recAgentLocation();
     }
     if (keysPressed[KeyEvent::Key::S]) {
       defaultAgent_->act("moveBackward");
+      recAgentLocation();
     }
     if (keysPressed[KeyEvent::Key::W]) {
       defaultAgent_->act("moveForward");
+      recAgentLocation();
     }
     if (keysPressed[KeyEvent::Key::X]) {
       defaultAgent_->act("moveDown");
+      recAgentLocation();
     }
     if (keysPressed[KeyEvent::Key::Z]) {
       defaultAgent_->act("moveUp");
+      recAgentLocation();
     }
   }
 }
@@ -1080,22 +1077,17 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   }
 
   // Update map of moving/looking keys which are currently pressed
-  for (const auto& [k, b] : keysPressed) {
-    if (key == k) {
-      keysPressed[key] = true;
-    }
+  if (keysPressed.count(key) > 0) {
+    keysPressed[key] = true;
   }
-
   redraw();
 }
 
 void Viewer::keyReleaseEvent(KeyEvent& event) {
   // Update map of moving/looking keys which are currently pressed
   const auto key = event.key();
-  for (const auto& [k, b] : keysPressed) {
-    if (key == k) {
-      keysPressed[key] = false;
-    }
+  if (keysPressed.count(key) > 0) {
+    keysPressed[key] = false;
   }
   redraw();
 }
