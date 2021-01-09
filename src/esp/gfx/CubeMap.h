@@ -75,6 +75,8 @@ class CubeMap {
    * @return Reference to the cubemap texture
    */
   Magnum::GL::CubeMapTexture& getTexture(TextureType type);
+
+#ifndef MAGNUM_TARGET_WEBGL
   /**
    * ```
    *           +----+
@@ -99,6 +101,7 @@ class CubeMap {
    * @return true, if success, otherwise false
    */
   bool saveTexture(TextureType type, const std::string& imageFilePrefix);
+#endif
 
   /**
    * ```
@@ -182,7 +185,7 @@ class CubeMap {
    * @brief convert cube face index to Magnum::GL::CubeMapCoordinate
    */
   Magnum::GL::CubeMapCoordinate convertFaceIndexToCubeMapCoordinate(
-      int faceIndex);
+      unsigned int faceIndex);
 
   /**
    * @brief get texture type string for texture filename
