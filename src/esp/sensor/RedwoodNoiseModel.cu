@@ -10,8 +10,8 @@
 #include <curand_kernel.h>
 
 namespace {
-const int MODEL_N_DIMS = 5;
-const int MODEL_N_COLS = 80;
+const int MODEL_N_DIMS = 4;
+const int MODEL_N_COLS = 100;
 
 // Read about the noise model here: http://www.alexteichman.com/octo/clams/
 // Original source code: http://redwood-data.org/indoor/data/simdepth.py
@@ -21,17 +21,17 @@ __device__ float undistort(const int _x,
                            const float* __restrict__ model) {
   const int i2 = (z + 1) / 2;
   const int i1 = i2 - 1;
-  const float a = (z - (i1 * 2 + 1)) / 2.0f;
+  const float a = (z - (i1 * 2.0f + 1.0f)) / 2.0f;
   const int x = _x / 8;
   const int y = _y / 6;
 
   const float f =
-      (1 - a) *
+      (1.0f - a) *
           model[(y * MODEL_N_COLS + x) * MODEL_N_DIMS + min(max(i1, 0), 4)] +
       a * model[(y * MODEL_N_COLS + x) * MODEL_N_DIMS + min(i2, 4)];
 
-  if (f <= 1e-5f)
-    return 0;
+  if (f < 1e-5)
+    return 0.0f;
   else
     return z / f;
 }
@@ -77,17 +77,19 @@ __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
         // The noise model was originally made for a 640x480 sensor,
         // so re-map our arbitrarily sized sensor to that size!
         const float undistorted_d =
-            undistort(x / xmax * 639.0f, y / ymax * 479.0f, d, model);
+            undistort(static_cast<float>(x) / xmax * 639.0f + 0.5f,
+                      static_cast<float>(y) / ymax * 479.0f + 0.5f, d, model);
 
         // quantization and high freq noise
-        if (undistorted_d == 0.0f)
+        if (undistorted_d == 0.0f) {
           noisyDepth[j * W + i] = 0.0f;
-        else {
-          const float denom = (round(35.130f / undistorted_d +
-                                     curand_normal(&curandState) * 0.027778f *
-                                         noiseMultiplier) *
-                               8.0f);
-          noisyDepth[j * W + i] = denom > 1e-5 ? (35.130f * 8.0f / denom) : 0.0;
+        } else {
+          const float denom = round(
+              (35.130f / static_cast<double>(undistorted_d) +
+               curand_normal(&curandState) * 0.027778f * noiseMultiplier) *
+              8.0f);
+          noisyDepth[j * W + i] =
+              denom > 1e-5 ? (35.130f * 8.0f / denom) : 0.0f;
         }
       }
     }
@@ -123,6 +125,7 @@ struct CurandStates {
     if (devStates != 0) {
       cudaFree(devStates);
       devStates = 0;
+      n_blocks_ = 0;
     }
   }
 

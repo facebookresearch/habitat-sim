@@ -117,7 +117,7 @@ class ManagedContainer : public ManagedContainerBase {
    */
   template <typename U>
   ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
-                                       const U& config) {
+                                       CORRADE_UNUSED const U& config) {
     LOG(ERROR)
         << "ManagedContainer::buildManagedObjectFromDoc (" << this->objectType_
         << ") : Failure loading attributes from document of unknown type : "

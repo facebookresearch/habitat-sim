@@ -19,22 +19,22 @@ namespace sensor {
 
 // Enumeration of types of sensors
 enum class SensorType {
-  NONE = 0,
-  COLOR = 1,
-  DEPTH = 2,
-  NORMAL = 3,
-  SEMANTIC = 4,
-  PATH = 5,
-  GOAL = 6,
-  FORCE = 7,
-  TENSOR = 8,
-  TEXT = 9,
+  None = 0,
+  Color = 1,
+  Depth = 2,
+  Normal = 3,
+  Semantic = 4,
+  Path = 5,
+  Goal = 6,
+  Force = 7,
+  Tensor = 8,
+  Text = 9,
 };
 
 enum class ObservationSpaceType {
-  NONE = 0,
-  TENSOR = 1,
-  TEXT = 2,
+  None = 0,
+  Tensor = 1,
+  Text = 2,
 };
 
 enum class SensorSubType {
@@ -45,7 +45,7 @@ enum class SensorSubType {
 // Specifies the configuration parameters of a sensor
 struct SensorSpec {
   std::string uuid = "rgba_camera";
-  SensorType sensorType = SensorType::COLOR;
+  SensorType sensorType = SensorType::Color;
   SensorSubType sensorSubType = SensorSubType::Pinhole;
   std::map<std::string, std::string> parameters = {{"near", "0.01"},
                                                    {"far", "1000"},
@@ -69,12 +69,12 @@ bool operator!=(const SensorSpec& a, const SensorSpec& b);
 // Represents a particular sensor Observation
 struct Observation {
   // TODO: populate this struct with raw data
-  core::Buffer::ptr buffer;
+  core::Buffer::ptr buffer{nullptr};
   ESP_SMART_POINTERS(Observation)
 };
 
 struct ObservationSpace {
-  ObservationSpaceType spaceType = ObservationSpaceType::TENSOR;
+  ObservationSpaceType spaceType = ObservationSpaceType::Tensor;
   core::DataType dataType = core::DataType::DT_UINT8;
   std::vector<size_t> shape;
   ESP_SMART_POINTERS(ObservationSpace)

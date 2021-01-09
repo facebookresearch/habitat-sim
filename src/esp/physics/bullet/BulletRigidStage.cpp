@@ -150,7 +150,7 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
                     btVector3{transformFromLocalToWorld.translation()}};
     std::unique_ptr<btRigidBody> sceneCollisionObject =
         std::make_unique<btRigidBody>(cInfo);
-    ASSERT(sceneCollisionObject->isStaticObject(), );
+    CORRADE_INTERNAL_ASSERT(sceneCollisionObject->isStaticObject());
     BulletDebugManager::get().mapCollisionObjectTo(
         sceneCollisionObject.get(),
         getCollisionDebugName(bStaticCollisionObjects_.size()));

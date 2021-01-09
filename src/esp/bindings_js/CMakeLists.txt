@@ -12,7 +12,15 @@ target_link_libraries(
          sim
 )
 
-set_target_properties(hsim_bindings PROPERTIES LINK_FLAGS "--bind")
+set_target_properties(
+  hsim_bindings
+  PROPERTIES
+    LINK_FLAGS "--bind"
+    # Override the Magnum-set default which is in $<CONFIG>/bin or $<CONFIG>/lib
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 # copy JS/HTML/CSS resources for WebGL build
 set(

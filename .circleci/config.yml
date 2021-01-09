@@ -121,7 +121,6 @@ commands:
                 ~/miniconda.sh -b -p $HOME/miniconda
                 rm ~/miniconda.sh
                 export PATH=$HOME/miniconda/bin:$PATH
-                conda config --set pip_interop_enabled True
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
@@ -190,14 +189,21 @@ commands:
 jobs:
   python_lint:
     docker:
-      - image: circleci/python:3.6
+      - image: cimg/python:3.6
     steps:
       - checkout
       - run:
           name: setup
           command: |
-              sudo pip install -U black flake8 flake8-bugbear flake8-comprehensions "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
-              sudo pip install -r requirements.txt --progress-bar off
+              # Updated llvm to v 10
+              sudo apt-get update
+              sudo apt-get install llvm-10
+              cd /usr/bin
+              sudo rm  llvm-config
+              sudo ln -s llvm-config-10 llvm-config
+              cd ~/project/
+              pip install -U black flake8 flake8-bugbear flake8-comprehensions "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
+              pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
           command: |
@@ -234,7 +240,7 @@ jobs:
 
   js_lint:
     docker:
-      - image: circleci/node:11.9
+      - image: cimg/node:12.20
     steps:
       - checkout
       - run:
@@ -248,7 +254,7 @@ jobs:
 
   pre-commit:
     docker:
-      - image: circleci/python:3.6
+      - image: cimg/python:3.6
     working_directory: ~/repo/
 
     steps:
@@ -265,7 +271,7 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
-            sudo pip install -U pip setuptools pre-commit
+            pip install -U pip setuptools pre-commit
             # Install the hooks now so that they'll be cached
             pre-commit install-hooks
 
@@ -393,6 +399,8 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-lab
+              # Install requirments first to avoid errors related to gym
+              pip install -r requirements.txt --progress-bar off
               python setup.py develop --all
 
               cd docs
@@ -468,8 +476,6 @@ jobs:
               nvm use v11.9.0
               . ~/emsdk/emsdk_env.sh
               ./build_js.sh
-              # TODO: Later fix this in the cmake build step
-              cp -v build_js/Release/bin/hsim_bindings.* build_js/esp/bindings_js/
       - run:
           name: Run sim benchmark
           command: |
@@ -579,7 +585,7 @@ jobs:
 
   update_docs:
     docker:
-      - image: circleci/buildpack-deps:disco
+      - image: cimg/base:2020.01
     steps:
       - checkout
       - restore_cache:
@@ -637,8 +643,7 @@ workflows:
           cron: "0 7 * * *"
           filters:
             branches:
-              only:
-                - master
+              only: master
     jobs:
       - build_and_test_habitat_lab_conda
       - install_and_test_ubuntu

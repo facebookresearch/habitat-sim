@@ -4,9 +4,13 @@
 
 #include <emscripten/bind.h>
 
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
+
 namespace em = emscripten;
 
 #include "esp/scene/SemanticScene.h"
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
 
 using namespace esp;
@@ -47,7 +51,38 @@ std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
   return spaces;
 }
 
+Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
+  Observation ret;
+  if (CameraSensor * camera{dynamic_cast<CameraSensor*>(&sensor)})
+    camera->getObservation(sim, ret);
+  return ret;
+}
+
+void Sensor_setLocalTransform(Sensor& sensor,
+                              const vec3f& pos,
+                              const vec4f& rot) {
+  SceneNode& node{sensor.node()};
+
+  node.resetTransformation();
+  node.translate(Magnum::Vector3(pos));
+  node.setRotation(Magnum::Quaternion(quatf(rot)).normalized());
+}
+
+vec3f quaternionToEuler(const quatf& q) {
+  return q.toRotationMatrix().eulerAngles(0, 1, 2);
+}
+
+vec4f eulerToQuaternion(const vec3f& q) {
+  return (Eigen::AngleAxisf(q.x(), vec3f::UnitX()) *
+          Eigen::AngleAxisf(q.y(), vec3f::UnitY()) *
+          Eigen::AngleAxisf(q.z(), vec3f::UnitZ()))
+      .coeffs();
+}
+
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
+  em::function("quaternionToEuler", &quaternionToEuler);
+  em::function("eulerToQuaternion", &eulerToQuaternion);
+
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
   em::register_vector<std::string>("VectorString");
@@ -128,16 +163,16 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("get", &SensorSuite::get);
 
   em::enum_<SensorType>("SensorType")
-      .value("NONE", SensorType::NONE)
-      .value("COLOR", SensorType::COLOR)
-      .value("DEPTH", SensorType::DEPTH)
-      .value("NORMAL", SensorType::NORMAL)
-      .value("SEMANTIC", SensorType::SEMANTIC)
-      .value("PATH", SensorType::PATH)
-      .value("GOAL", SensorType::GOAL)
-      .value("FORCE", SensorType::FORCE)
-      .value("TENSOR", SensorType::TENSOR)
-      .value("TEXT", SensorType::TEXT);
+      .value("NONE", SensorType::None)
+      .value("COLOR", SensorType::Color)
+      .value("DEPTH", SensorType::Depth)
+      .value("NORMAL", SensorType::Normal)
+      .value("SEMANTIC", SensorType::Semantic)
+      .value("PATH", SensorType::Path)
+      .value("GOAL", SensorType::Goal)
+      .value("FORCE", SensorType::Force)
+      .value("TENSOR", SensorType::Tensor)
+      .value("TEXT", SensorType::Text);
 
   em::class_<SensorSpec>("SensorSpec")
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
@@ -150,8 +185,11 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("channels", &SensorSpec::channels)
       .property("parameters", &SensorSpec::parameters);
 
-  em::class_<Sensor>("Sensor").function("specification",
-                                        &Sensor::specification);
+  em::class_<Sensor>("Sensor")
+      .smart_ptr<Sensor::ptr>("Sensor::ptr")
+      .function("getObservation", &Sensor_getObservation)
+      .function("setLocalTransform", &Sensor_setLocalTransform)
+      .function("specification", &Sensor::specification);
 
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",

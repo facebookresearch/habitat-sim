@@ -33,6 +33,9 @@ class SemanticScene;
 }  // namespace scene
 namespace gfx {
 class Renderer;
+namespace replay {
+class ReplayManager;
+}  // namespace replay
 }  // namespace gfx
 }  // namespace esp
 
@@ -68,6 +71,10 @@ class Simulator {
 
   scene::SceneGraph& getActiveSceneGraph();
   scene::SceneGraph& getActiveSemanticSceneGraph();
+
+  std::shared_ptr<gfx::replay::ReplayManager> getGfxReplayManager() {
+    return gfxReplayMgr_;
+  }
 
   void saveFrame(const std::string& filename);
 
@@ -1025,11 +1032,27 @@ class Simulator {
   }
 
   /**
+   * @brief Get this simulator's MetadataMediator
+   */
+  const metadata::MetadataMediator::ptr getMetadataMediator() const {
+    return metadataMediator_;
+  }
+
+  /**
    * @brief Set this simulator's MetadataMediator
    */
   void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
     metadataMediator_ = _metadataMediator;
   }
+
+  /**
+   * @brief Load and add a render asset instance to the current scene graph(s).
+   * @param assetInfo the asset to load
+   * @param creation how to create the instance
+   */
+  scene::SceneNode* loadAndCreateRenderAssetInstance(
+      const assets::AssetInfo& assetInfo,
+      const assets::RenderAssetInstanceCreationInfo& creation);
 
  protected:
   Simulator(){};
@@ -1044,6 +1067,8 @@ class Simulator {
   bool sceneHasPhysics(int sceneID) const {
     return isValidScene(sceneID) && physicsManager_ != nullptr;
   }
+
+  void reconfigureReplayManager();
 
   gfx::WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<gfx::Renderer> renderer_ = nullptr;
@@ -1065,6 +1090,8 @@ class Simulator {
   std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_ = nullptr;
+
+  std::shared_ptr<esp::gfx::replay::ReplayManager> gfxReplayMgr_;
 
   core::Random::ptr random_;
   SimulatorConfiguration config_;

@@ -41,7 +41,6 @@ performance-*,
 # then start updating the code.
 WarningsAsErrors:
 '*,
--bugprone-branch-clone,
 -bugprone-narrowing-conversions,
 -bugprone-unused-raii,
 -clang-diagnostic-deprecated-declarations'

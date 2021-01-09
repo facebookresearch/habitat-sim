@@ -4,6 +4,12 @@ add_library(
   io.h
   json.cpp
   json.h
+  JsonAllTypes.h
+  JsonBuiltinTypes.h
+  JsonEspTypes.cpp
+  JsonEspTypes.h
+  JsonMagnumTypes.h
+  JsonStlTypes.h
   URDFParser.cpp
   URDFParser.h
 )
