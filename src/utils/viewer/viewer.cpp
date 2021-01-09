@@ -323,24 +323,14 @@ Key Commands:
   // included)
 
   //Profiling
-
-  high_resolution_clock::time_point frameBeginTime;
-  Mn::DebugTools::FrameProfiler _profiler{{
-      Mn::DebugTools::FrameProfiler::Measurement{"CPU time",
-          Mn::DebugTools::FrameProfiler::Units::Nanoseconds,
-          [](void* state) {
-              *static_cast<high_resolution_clock::time_point*>(state)
-                  = high_resolution_clock::now();
-          },
-          [](void* state) {
-              return Mn::UnsignedLong(
-                  std::chrono::duration_cast<std::chrono::nanoseconds>(
-                      *static_cast<high_resolution_clock::time_point*>(state)
-                      - high_resolution_clock::now()).count());
-          }, &frameBeginTime}
-  }, 50};
-  Mn::Debug _profilerOut{Mn::Debug::Flag::NoNewlineAtTheEnd|
-      (Mn::Debug::isTty() ? Mn::Debug::Flags{} : Mn::Debug::Flag::DisableColors)};
+  //high_resolution_clock::time_point frameBeginTime;
+   Mn::DebugTools::GLFrameProfiler _profiler{
+        Mn::DebugTools::GLFrameProfiler::Value::FrameTime|
+        Mn::DebugTools::GLFrameProfiler::Value::CpuDuration|
+        Mn::DebugTools::GLFrameProfiler::Value::GpuDuration|
+        Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio|
+        Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio
+    , 50};
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -742,6 +732,8 @@ void Viewer::drawEvent() {
     renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
 
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+
+    _profiler.disable();
   }
 
   sensorRenderTarget->blitRgbaToDefault();
@@ -786,9 +778,10 @@ void Viewer::drawEvent() {
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::ScissorTest);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
 
-  swapBuffers();
+
   _profiler.endFrame();
-  _profiler.printStatistics(_profilerOut, 10);
+  _profiler.printStatistics(10);
+  swapBuffers();
   timeline_.nextFrame();
   /* Schedule a redraw only if profiling is enabled to avoid hogging the CPU */
   if(_profiler.isEnabled()) {
@@ -1074,7 +1067,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::Comma:
        _profiler.isEnabled() ? _profiler.disable() : _profiler.enable();
-       LOG(INFO) << "Profiler toggled";
        break;
     default:
       break;
