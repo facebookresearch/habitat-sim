@@ -99,8 +99,8 @@ void CubeMap::recreateFramebuffer() {
 }
 
 Mn::GL::CubeMapCoordinate CubeMap::convertFaceIndexToCubeMapCoordinate(
-    int faceIndex) {
-  CORRADE_ASSERT(faceIndex >= 0 && faceIndex < 6,
+    unsigned int faceIndex) {
+  CORRADE_ASSERT(faceIndex < 6,
                  "CubeMap::convertFaceIndexToCubeMapCoordinate(): the index of "
                  "the cube side"
                      << faceIndex << "is illegal.",
@@ -129,7 +129,9 @@ void CubeMap::prepareToDraw(int cubeSideIndex) {
 
   mapForDraw();
 
-  frameBuffer_.clearDepth(1.0f).clearColor(1, Mn::Vector4ui{0});
+  frameBuffer_.clearDepth(1.0f).clearColor(0,                // color attachment
+                                           Mn::Vector4ui{0}  // clear color
+  );
 
   CORRADE_INTERNAL_ASSERT(
       frameBuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
@@ -158,10 +160,8 @@ void CubeMap::textureTypeSanityCheck(TextureType type,
                          << "instance was not created with depth "
                             "texture output enabled.", );
       break;
-    default:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      break;
   }
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
 Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
@@ -177,10 +177,8 @@ std::string CubeMap::getTextureTypeFilenameString(TextureType type) {
     case TextureType::Depth:
       return std::string(".depth");
       break;
-    default:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      break;
   }
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 Mn::PixelFormat CubeMap::getPixelFormat(TextureType type) {
   switch (type) {
@@ -194,19 +192,15 @@ Mn::PixelFormat CubeMap::getPixelFormat(TextureType type) {
       case TextureType::ObjectId:
       return Mn::PixelFormat::R32UI;
       */
-    default:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      break;
   }
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
+#ifndef MAGNUM_TARGET_WEBGL
+// because Mn::Image2D image = textures_[type]->image(...)
+// requires desktop OpenGL
 bool CubeMap::saveTexture(TextureType type,
                           const std::string& imageFilePrefix) {
-#ifdef MAGNUM_TARGET_WEBGL
-  // because Mn::Image2D image = textures_[type]->image(...)
-  // requires desktop OpenGL
-  return false;
-#else
   textureTypeSanityCheck(type, "CubeMap::saveTexture():");
 
   Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter> manager;
@@ -220,7 +214,7 @@ bool CubeMap::saveTexture(TextureType type,
     Mn::Image2D image = textures_[type]->image(
         convertFaceIndexToCubeMapCoordinate(iFace), 0, {getPixelFormat(type)});
 
-    std::string filename;
+    std::string filename = "";
     switch (type) {
       case TextureType::Color: {
         filename = imageFilePrefix + getTextureTypeFilenameString(type) +
@@ -231,11 +225,9 @@ bool CubeMap::saveTexture(TextureType type,
         filename = imageFilePrefix + getTextureTypeFilenameString(type) +
                    coordStrings[iFace] + std::string{".hdr"};
       } break;
-
-      default:
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-        break;
     }
+    CORRADE_ASSERT(!filename.empty(),
+                   "CubeMap::saveTexture(): Unknown texture type.", false);
 
     if (!converter->exportToFile(image, filename)) {
       return false;
@@ -245,8 +237,8 @@ bool CubeMap::saveTexture(TextureType type,
   }
 
   return true;
-#endif
 }
+#endif
 
 void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,
@@ -342,8 +334,9 @@ void CubeMap::loadTexture(TextureType type,
 
   std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
   int imageSize = 0;
+
   // set images
-  Mn::GL::CubeMapTexture* texture;
+  Mn::GL::CubeMapTexture* texture = nullptr;
   switch (type) {
     case TextureType::Color:
       texture = textures_[TextureType::Color].get();
@@ -352,11 +345,9 @@ void CubeMap::loadTexture(TextureType type,
     case TextureType::Depth:
       texture = textures_[TextureType::Depth].get();
       break;
-
-    default:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      break;
   }
+  CORRADE_ASSERT(texture, "CubeMap::loadTexture(): Unknown texture type.", );
+
   for (int iFace = 0; iFace < 6; ++iFace) {
     // open image file
     std::string filename =
