@@ -195,6 +195,7 @@ Key Commands:
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
+  'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -208,7 +209,7 @@ Key Commands:
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
-==================================================
+  ==================================================
   )";
 
   //! Print viewer help text to terminal output.
