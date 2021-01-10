@@ -104,13 +104,10 @@ Mn::PixelFormat getPixelFormat(CubeMap::TextureType type) {
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
-void CubeMap::enableSeamlessCubeMapTexture() {
+CubeMap::CubeMap(int imageSize, Flags flags) : flags_(flags) {
 #ifndef MAGNUM_TARGET_WEBGL
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::SeamlessCubeMapTexture);
 #endif
-}
-
-CubeMap::CubeMap(int imageSize, Flags flags) : flags_(flags) {
   reset(imageSize);
 }
 

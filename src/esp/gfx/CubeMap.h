@@ -24,11 +24,17 @@ namespace esp {
 namespace gfx {
 class CubeMap {
  public:
-  static void enableSeamlessCubeMapTexture();
   enum class TextureType : int8_t {
+    /**
+     * rgba texture with 8 bits per channel
+     */
     Color = 0,
+    /**
+     * HDR depth texture
+     */
     Depth = 1,
     // TODO: ObjectId
+    // TODO: HDR color
   };
 
   enum class Flag : Magnum::UnsignedShort {
