@@ -49,7 +49,7 @@ class CubeMap {
      * By turning on this option, it will build the mipmap for the color texture
      * if any.
      */
-    BuildMipMap = 1 << 3,
+    BuildMipmap = 1 << 3,
   };
 
   /**
@@ -100,6 +100,7 @@ class CubeMap {
    * {imageFilePrefix}.{texType}.-Z.png
    * @return true, if success, otherwise false
    */
+  // TODO: color HDR textures
   bool saveTexture(TextureType type, const std::string& imageFilePrefix);
 #endif
 
@@ -190,7 +191,7 @@ class CubeMap {
   /**
    * @brief get texture type string for texture filename
    */
-  std::string getTextureTypeFilenameString(TextureType type);
+  const char* getTextureTypeFilenameString(TextureType type);
   /**
    * @brief get the pixel format based on texture type (color, depth objectId
    * etc.)
