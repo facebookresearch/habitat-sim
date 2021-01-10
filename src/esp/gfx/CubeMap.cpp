@@ -5,6 +5,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Magnum/DebugTools/TextureImage.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
@@ -70,7 +71,7 @@ void CubeMap::recreateTexture() {
                                Mn::GL::SamplerMipmap::Linear)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Linear);
 
-    if (flags_ & Flag::BuildMipMap) {
+    if (flags_ & Flag::BuildMipmap) {
       (*colorTexture)
           .setStorage(Mn::Math::log2(imageSize_) + 1,
                       Mn::GL::TextureFormat::RGBA8, size);
@@ -169,13 +170,13 @@ Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
   return *textures_[type];
 }
 
-std::string CubeMap::getTextureTypeFilenameString(TextureType type) {
+const char* CubeMap::getTextureTypeFilenameString(TextureType type) {
   switch (type) {
     case TextureType::Color:
-      return std::string(".rgba");
+      return "rgba";
       break;
     case TextureType::Depth:
-      return std::string(".depth");
+      return "depth";
       break;
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -209,7 +210,7 @@ bool CubeMap::saveTexture(TextureType type,
     return false;
   }
 
-  std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
+  const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
   for (int iFace = 0; iFace < 6; ++iFace) {
     Mn::Image2D image = textures_[type]->image(
         convertFaceIndexToCubeMapCoordinate(iFace), 0, {getPixelFormat(type)});
@@ -217,13 +218,15 @@ bool CubeMap::saveTexture(TextureType type,
     std::string filename = "";
     switch (type) {
       case TextureType::Color: {
-        filename = imageFilePrefix + getTextureTypeFilenameString(type) +
-                   coordStrings[iFace] + std::string{".png"};
+        filename = Cr::Utility::formatString("{}.{}.{}.png", imageFilePrefix,
+                                             getTextureTypeFilenameString(type),
+                                             coordStrings[iFace]);
       } break;
 
       case TextureType::Depth: {
-        filename = imageFilePrefix + getTextureTypeFilenameString(type) +
-                   coordStrings[iFace] + std::string{".hdr"};
+        filename = Cr::Utility::formatString("{}.{}.{}.hdr", imageFilePrefix,
+                                             getTextureTypeFilenameString(type),
+                                             coordStrings[iFace]);
       } break;
     }
     CORRADE_ASSERT(!filename.empty(),
@@ -252,11 +255,11 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // we simply do sanity check here.
   {
     Mn::Vector2i vp = camera.viewport();
-    CORRADE_ASSERT(vp.x() == vp.y() && vp.x() == imageSize_,
+    CORRADE_ASSERT(vp == Mn::Vector2i{imageSize_},
                    "CubeMap::renderToTexture(): the image size with in the "
                    "CubeMapCamera, which is"
-                       << vp.x() << "by" << vp.y() << "compared to"
-                       << imageSize_ << "is not correct.", );
+                       << vp << "compared to" << imageSize_
+                       << "is not correct.", );
   }
 
   // ==== camera matrix ====
@@ -291,7 +294,7 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   camera.restoreTransformation();
 
   // Color texture ONLY, NOT for depth
-  if (flags_ & (Flag::BuildMipMap | Flag::ColorTexture)) {
+  if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
     textures_[TextureType::Color]->generateMipmap();
   }
 }
@@ -332,7 +335,7 @@ void CubeMap::loadTexture(TextureType type,
   }
   CORRADE_INTERNAL_ASSERT(importer);
 
-  std::string coordStrings[6] = {".+X", ".-X", ".+Y", ".-Y", ".+Z", ".-Z"};
+  const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
   int imageSize = 0;
 
   // set images
@@ -350,9 +353,11 @@ void CubeMap::loadTexture(TextureType type,
 
   for (int iFace = 0; iFace < 6; ++iFace) {
     // open image file
-    std::string filename =
-        imageFilePrefix + getTextureTypeFilenameString(type) +
-        coordStrings[iFace] + "." + std::string{imageFileExtension};
+
+    std::string filename = Cr::Utility::formatString(
+        "{}.{}.{}.{}", imageFilePrefix, getTextureTypeFilenameString(type),
+        coordStrings[iFace], imageFileExtension);
+
     importer->openFile(filename);
     Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
         importer->image2D(0);
@@ -376,7 +381,7 @@ void CubeMap::loadTexture(TextureType type,
                          *image);
   }
   // Color texture ONLY, NOT for depth
-  if (flags_ & (Flag::BuildMipMap | Flag::ColorTexture)) {
+  if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
     texture->generateMipmap();
   }
   // We don't need the importer anymore
