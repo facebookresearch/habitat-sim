@@ -142,12 +142,10 @@ class CubeMap {
                        scene::SceneGraph& sceneGraph,
                        RenderCamera::Flags flags);
 
- protected:
+ private:
   Flags flags_;
   int imageSize_ = 0;
   std::map<TextureType, std::unique_ptr<Magnum::GL::CubeMapTexture>> textures_;
-
-  Magnum::ResourceManager<Magnum::Trade::AbstractImporter> imageImporterManger_;
 
   /**
    * @brief Recreate textures
@@ -174,29 +172,6 @@ class CubeMap {
    * @brief Map shader output to attachments.
    */
   void mapForDraw();
-
-  /**
-   * @brief check if the class instance is created with corresponding texture
-   * enabled
-   */
-  void textureTypeSanityCheck(TextureType type,
-                              const std::string& functionNameStr);
-
-  /**
-   * @brief convert cube face index to Magnum::GL::CubeMapCoordinate
-   */
-  Magnum::GL::CubeMapCoordinate convertFaceIndexToCubeMapCoordinate(
-      unsigned int faceIndex);
-
-  /**
-   * @brief get texture type string for texture filename
-   */
-  const char* getTextureTypeFilenameString(TextureType type);
-  /**
-   * @brief get the pixel format based on texture type (color, depth objectId
-   * etc.)
-   */
-  Magnum::PixelFormat getPixelFormat(TextureType type);
 };
 
 CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)

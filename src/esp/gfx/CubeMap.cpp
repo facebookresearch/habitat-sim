@@ -30,6 +30,80 @@ const Mn::GL::Framebuffer::ColorAttachment colorAttachment =
 // const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
 //    Mn::GL::Framebuffer::ColorAttachment{1};
 
+/**
+ * @brief check if the class instance is created with corresponding texture
+ * enabled
+ */
+void textureTypeSanityCheck(CubeMap::Flags& flag,
+                            CubeMap::TextureType type,
+                            const std::string& functionNameStr) {
+  switch (type) {
+    case CubeMap::TextureType::Color:
+      CORRADE_ASSERT(flag & CubeMap::Flag::ColorTexture,
+                     functionNameStr.c_str()
+                         << "instance was not created with color "
+                            "texture output enabled.", );
+      break;
+    case CubeMap::TextureType::Depth:
+      CORRADE_ASSERT(flag & CubeMap::Flag::DepthTexture,
+                     functionNameStr.c_str()
+                         << "instance was not created with depth "
+                            "texture output enabled.", );
+      break;
+  }
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+}
+
+/**
+ * @brief convert cube face index to Magnum::GL::CubeMapCoordinate
+ */
+Magnum::GL::CubeMapCoordinate convertFaceIndexToCubeMapCoordinate(
+    unsigned int faceIndex) {
+  CORRADE_ASSERT(
+      faceIndex < 6,
+      "In CubeMap: ConvertFaceIndexToCubeMapCoordinate(): the index of "
+      "the cube side"
+          << faceIndex << "is illegal.",
+      Mn::GL::CubeMapCoordinate::PositiveX);
+  return Mn::GL::CubeMapCoordinate(int(Mn::GL::CubeMapCoordinate::PositiveX) +
+                                   faceIndex);
+}
+
+/**
+ * @brief get texture type string for texture filename
+ */
+const char* getTextureTypeFilenameString(CubeMap::TextureType type) {
+  switch (type) {
+    case CubeMap::TextureType::Color:
+      return "rgba";
+      break;
+    case CubeMap::TextureType::Depth:
+      return "depth";
+      break;
+  }
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+}
+
+/**
+ * @brief get the pixel format based on texture type (color, depth objectId
+ * etc.)
+ */
+Mn::PixelFormat getPixelFormat(CubeMap::TextureType type) {
+  switch (type) {
+    case CubeMap::TextureType::Color:
+      return Mn::PixelFormat::RGBA8Unorm;
+      break;
+    case CubeMap::TextureType::Depth:
+      return Mn::PixelFormat::R32F;
+      break;
+      /*
+      case CubeMap::TextureType::ObjectId:
+      return Mn::PixelFormat::R32UI;
+      */
+  }
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+}
+
 void CubeMap::enableSeamlessCubeMapTexture() {
 #ifndef MAGNUM_TARGET_WEBGL
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::SeamlessCubeMapTexture);
@@ -99,17 +173,6 @@ void CubeMap::recreateFramebuffer() {
                                   viewportSize);
 }
 
-Mn::GL::CubeMapCoordinate CubeMap::convertFaceIndexToCubeMapCoordinate(
-    unsigned int faceIndex) {
-  CORRADE_ASSERT(faceIndex < 6,
-                 "CubeMap::convertFaceIndexToCubeMapCoordinate(): the index of "
-                 "the cube side"
-                     << faceIndex << "is illegal.",
-                 Mn::GL::CubeMapCoordinate::PositiveX);
-  return Mn::GL::CubeMapCoordinate(int(Mn::GL::CubeMapCoordinate::PositiveX) +
-                                   faceIndex);
-}
-
 void CubeMap::prepareToDraw(int cubeSideIndex) {
   Magnum::GL::CubeMapCoordinate cubeMapCoord =
       convertFaceIndexToCubeMapCoordinate(cubeSideIndex);
@@ -146,55 +209,10 @@ void CubeMap::mapForDraw() {
       //{Mn::Shaders::Generic3D::ObjectIdOutput, objectIdAttachment}
   });
 }
-void CubeMap::textureTypeSanityCheck(TextureType type,
-                                     const std::string& functionNameStr) {
-  switch (type) {
-    case TextureType::Color:
-      CORRADE_ASSERT(flags_ & Flag::ColorTexture,
-                     functionNameStr.c_str()
-                         << "instance was not created with color "
-                            "texture output enabled.", );
-      break;
-    case TextureType::Depth:
-      CORRADE_ASSERT(flags_ & Flag::DepthTexture,
-                     functionNameStr.c_str()
-                         << "instance was not created with depth "
-                            "texture output enabled.", );
-      break;
-  }
-  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-}
 
 Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
-  textureTypeSanityCheck(type, "CubeMap::getTexture():");
+  textureTypeSanityCheck(flags_, type, "CubeMap::getTexture():");
   return *textures_[type];
-}
-
-const char* CubeMap::getTextureTypeFilenameString(TextureType type) {
-  switch (type) {
-    case TextureType::Color:
-      return "rgba";
-      break;
-    case TextureType::Depth:
-      return "depth";
-      break;
-  }
-  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-}
-Mn::PixelFormat CubeMap::getPixelFormat(TextureType type) {
-  switch (type) {
-    case TextureType::Color:
-      return Mn::PixelFormat::RGBA8Unorm;
-      break;
-    case TextureType::Depth:
-      return Mn::PixelFormat::R32F;
-      break;
-      /*
-      case TextureType::ObjectId:
-      return Mn::PixelFormat::R32UI;
-      */
-  }
-  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
 #ifndef MAGNUM_TARGET_WEBGL
@@ -202,7 +220,7 @@ Mn::PixelFormat CubeMap::getPixelFormat(TextureType type) {
 // requires desktop OpenGL
 bool CubeMap::saveTexture(TextureType type,
                           const std::string& imageFilePrefix) {
-  textureTypeSanityCheck(type, "CubeMap::saveTexture():");
+  textureTypeSanityCheck(flags_, type, "CubeMap::saveTexture():");
 
   Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter> manager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImageConverter> converter;
@@ -302,37 +320,11 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
 void CubeMap::loadTexture(TextureType type,
                           const std::string& imageFilePrefix,
                           const std::string& imageFileExtension) {
-  auto loadImporter = [&](const std::string& plugin) {
-    Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
-    Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
-        manager.loadAndInstantiate(plugin);
-    CORRADE_ASSERT(importer,
-                   "CubeMap::loadTexture(): cannot initialize" << plugin, );
-
-    imageImporterManger_.set<Mn::Trade::AbstractImporter>(
-        plugin, importer.release(), Mn::ResourceDataState::Final,
-        Mn::ResourcePolicy::Manual);
-  };
-
-  std::string plugin;
-  if (imageFileExtension == "png") {
-    plugin = "PngImporter";
-  } else if (imageFileExtension == "jpg") {
-    plugin = "JpegImporter";
-  } else if (imageFileExtension == "hdr") {
-    plugin = "HdrImporter";
-  } else {
-    LOG(INFO) << "CubeMap::loadTexture(): cannot support image type "
-              << imageFileExtension;
-    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-  }
-
-  Mn::Resource<Mn::Trade::AbstractImporter> importer =
-      imageImporterManger_.get<Mn::Trade::AbstractImporter>(plugin);
-  // create one if there is no such importer
-  if (!importer) {
-    loadImporter(plugin);
-  }
+  // plugin manager used to instantiate importers which in turn are used
+  // to load image data
+  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
+  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
+      manager.loadAndInstantiate("AnyImageImporter");
   CORRADE_INTERNAL_ASSERT(importer);
 
   const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
@@ -384,8 +376,6 @@ void CubeMap::loadTexture(TextureType type,
   if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
     texture->generateMipmap();
   }
-  // We don't need the importer anymore
-  imageImporterManger_.free<Mn::Trade::AbstractImporter>();
 }
 
 }  // namespace gfx
