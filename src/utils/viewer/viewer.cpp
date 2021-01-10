@@ -806,28 +806,33 @@ void Viewer::moveAndLook(int repetitions) {
       defaultAgent_->act("lookDown");
     }
 
+    bool moved = false;
     if (keysPressed[KeyEvent::Key::A]) {
       defaultAgent_->act("moveLeft");
-      recAgentLocation();
+      moved = true;
     }
     if (keysPressed[KeyEvent::Key::D]) {
       defaultAgent_->act("moveRight");
-      recAgentLocation();
+      moved = true;
     }
     if (keysPressed[KeyEvent::Key::S]) {
       defaultAgent_->act("moveBackward");
-      recAgentLocation();
+      moved = true;
     }
     if (keysPressed[KeyEvent::Key::W]) {
       defaultAgent_->act("moveForward");
-      recAgentLocation();
+      moved = true;
     }
     if (keysPressed[KeyEvent::Key::X]) {
       defaultAgent_->act("moveDown");
-      recAgentLocation();
+      moved = true;
     }
     if (keysPressed[KeyEvent::Key::Z]) {
       defaultAgent_->act("moveUp");
+      moved = true;
+    }
+
+    if (moved) {
       recAgentLocation();
     }
   }
