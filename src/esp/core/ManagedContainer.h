@@ -17,7 +17,7 @@ namespace core {
 /**
  * @brief Class template defining responsibilities and functionality for
  * managing @ref esp::core::AbstractManagedObject constructs.
- * @tparam ManagedPtr the type of managed object a particular specialization of
+ * @tparam T the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
  * esp::core::AbstractManagedObject.
  */

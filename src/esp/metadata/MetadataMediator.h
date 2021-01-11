@@ -159,7 +159,7 @@ class MetadataMediator {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (datasetAttr == nullptr) ? nullptr
                                     : datasetAttr->getSceneAttributesManager();
-  }  // MetadataMediator::getStageAttributesManager
+  }  // MetadataMediator::getSceneAttributesManager
 
   /**
    * @brief Return manager for construction and access to stage attributes for
@@ -270,6 +270,117 @@ class MetadataMediator {
       const std::string& sceneName);
 
   /**
+   * @brief Returns stage attributes corresponding to passed handle as
+   * substring. Assumes stage attributes with @p stageAttrName as substring
+   * exists in current dataset.
+   * @param stageAttrName substring to handle of stage instance attributes that
+   * exists in current active dataset. The attributes will be found via
+   * substring search, so the name is expected to be sufficiently restrictive to
+   * have exactly 1 match in dataset.
+   * @return smart pointer to stage attributes if exists, nullptr otherwise.
+   */
+  attributes::StageAttributes::ptr getNamedStageAttributesCopy(
+      const std::string& stageAttrName);
+
+  /**
+   * @brief Returns object attributes corresponding to passed handle as
+   * substring. Assumes object attributes with @p objAttrName as substring
+   * exists in current dataset.
+   * @param objAttrName substring to handle of object instance attributes that
+   * exists in current active dataset. The attributes will be found via
+   * substring search, so the name is expected to be sufficiently restrictive to
+   * have exactly 1 match in dataset.
+   * @return smart pointer to object attributes if exists, nullptr otherwise.
+   */
+  attributes::ObjectAttributes::ptr getNamedObjectAttributesCopy(
+      const std::string& objAttrName);
+
+  /**
+   * @brief Returns a lightsetup object configured by the attributes whose
+   * handle contains the passed @p lightSetupName
+   * @param lightSetupName Name of the attributes to be used to build the
+   * lightsetup.  The attributes will be found via substring search, so the name
+   * is expected to be sufficiently restrictive to have exactly 1 match in
+   * dataset.
+   * @return the lightsetup corresponding to @p lightSetupName.
+   */
+  esp::gfx::LightSetup getNamedLightSetup(const std::string& lightSetupName);
+
+  /**
+   * @brief Returns stage attributes handle in dataset corresponding to passed
+   * name as substring. Assumes stage attributes with @p stageAttrName as
+   * substring exists in current dataset.
+   * @param stageAttrName substring to handle of stage instance attributes that
+   * exists in current active dataset. The attributes will be found via
+   * substring search, so the name is expected to be sufficiently restrictive to
+   * have exactly 1 match in dataset.
+   * @return name of stage attributes with handle containing @p stageAttrName ,
+   * or empty string if none.
+   */
+  const std::string getStageAttrFullHandle(const std::string& stageAttrName) {
+    // get current dataset's stage attributes manager
+    auto dsStageAttrMgr = getStageAttributesManager();
+    // this should never happen
+    if (dsStageAttrMgr == nullptr) {
+      LOG(ERROR) << "MetadataMediator::getStageAttrFullHandle : No dataset "
+                    "specified/exists or no StageAttributesManager found for "
+                    "current active dataset "
+                 << activeSceneDataset_ << ".";
+      return "";
+    }
+    return getFullAttrNameFromStr(stageAttrName, dsStageAttrMgr);
+  }  // getStageAttrFullHandle
+
+  /**
+   * @brief Returns object attributes handle in dataset corresponding to passed
+   * name as substring. Assumes object attributes with @p objAttrName as
+   * substring exists in current dataset.
+   * @param objAttrName substring to handle of object instance attributes that
+   * exists in current active dataset. The attributes will be found via
+   * substring search, so the name is expected to be sufficiently restrictive to
+   * have exactly 1 match in dataset.
+   * @return name of object attributes with handle containing @p objAttrName or
+   * empty string if none.
+   */
+  const std::string getObjAttrFullHandle(const std::string& objAttrName) {
+    // get current dataset's object attributes manager
+    auto dsObjAttrMgr = getObjectAttributesManager();
+    // this should never happen
+    if (dsObjAttrMgr == nullptr) {
+      LOG(ERROR) << "MetadataMediator::getObjAttrFullHandle : No dataset "
+                    "specified/exists or no ObjectAttributesManager found for "
+                    "current active dataset "
+                 << activeSceneDataset_ << ".";
+      return "";
+    }
+    return getFullAttrNameFromStr(objAttrName, dsObjAttrMgr);
+  }  // getObjAttrFullHandle
+
+  /**
+   * @brief Returns the full name of the lightsetup attributes whose
+   * handle contains the passed @p lightSetupName
+   * @param lightSetupName Name of the attributes desired.  The attributes will
+   * be found via substring search, so the name is expected to be sufficiently
+   * restrictive to have exactly 1 match in dataset.
+   * @return the full attributes name corresponding to @p lightSetupName , or
+   * the empty string.
+   */
+  const std::string getLightSetupFullHandle(const std::string& lightSetupName) {
+    // get current dataset's light layout attributes manager
+    auto dsLightAttrMgr = getLightLayoutAttributesManager();
+    // this should never happen
+    if (dsLightAttrMgr == nullptr) {
+      LOG(ERROR)
+          << "MetadataMediator::getLightSetupFullHandle : No dataset "
+             "specified/exists or no LightLayoutAttributesManager found for "
+             "current active dataset "
+          << activeSceneDataset_ << ".";
+      return "";
+    }
+    return getFullAttrNameFromStr(lightSetupName, dsLightAttrMgr);
+  }  // getLightSetupFullHandle
+
+  /**
    * @brief Allow removal of the named @ref
    * esp::metadata::attributes::SceneDatasetAttributes.  Will silently force
    * removal of locked attributes.  If @p datasetName references @ref
@@ -281,6 +392,26 @@ class MetadataMediator {
   bool removeSceneDataset(const std::string& sceneDatasetName);
 
  protected:
+  /**
+   * @brief Returns actual attributes handle containing @p attrName as a
+   * substring, or the empty string if none exists, from passed @p attrMgr .
+   * Does a substring search, and returns first value found.
+   * @param attrName name to be used as searching substring in @p attrMgr .
+   * @param attrMgr attributes manager to be searched
+   * @return actual name of attributes in attrMgr, or empty string if does not
+   * exist.
+   */
+
+  inline const std::string getFullAttrNameFromStr(
+      const std::string& attrName,
+      const esp::core::ManagedContainerBase::ptr attrMgr) {
+    auto handleList = attrMgr->getObjectHandlesBySubstring(attrName);
+    if (handleList.size() > 0) {
+      return handleList[0];
+    }
+    return "";
+  }  // getFullAttrNameFromStr
+
   /**
    * @brief Return the file path corresponding to the passed handle in the
    * current active dataset

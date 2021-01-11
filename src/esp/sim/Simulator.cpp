@@ -203,22 +203,23 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   const std::string semanticSceneDescFilename =
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(
           curSceneInstanceAttributes->getSemanticSceneHandle());
+  if (semanticSceneDescFilename.compare("") != 0) {
+    // some candidate for SSD exists in scene instance attributes.
+    LOG(INFO) << "Simulator::loadSemanticSceneDescriptor : SceneInstance : "
+              << activeSceneName
+              << " proposed Semantic Scene Descriptor filename : "
+              << semanticSceneDescFilename;
+    // get stage attributes for current scene instance
+    auto stageAttributes = metadataMediator_->getNamedStageAttributesCopy(
+        curSceneInstanceAttributes->getStageInstance()->getHandle());
+    if (stageAttributes != nullptr) {
+      // assetType of stage is used to specify semanctic scene descriptor format
+      assets::AssetType assetType =
+          static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
 
-  LOG(INFO) << "Simulator::loadSemanticSceneDescriptor : SceneInstance : "
-            << activeSceneName
-            << " proposed Semantic Scene Descriptor filename : "
-            << semanticSceneDescFilename;
-  // get stage attributes for current scene instance
-  auto stageAttributes =
-      metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
-          curSceneInstanceAttributes->getStageInstance()->getHandle());
-
-  // assetType of stage is used to specify semanctic scene descriptor format
-  assets::AssetType assetType =
-      static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
-
-  loadSemanticSceneDescriptor(semanticSceneDescFilename, assetType);
-
+      loadSemanticSceneDescriptor(semanticSceneDescFilename, assetType);
+    }
+  }
   // return a const ptr to the cur scene instance attributes
   return curSceneInstanceAttributes;
 
@@ -248,9 +249,10 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   const SceneObjectInstanceAttributes::ptr stageInstanceAttributes =
       curSceneInstanceAttributes->getStageInstance();
-  // Get name of StageAttributes
-  const std::string& stageAttributesHandle =
-      stageInstanceAttributes->getHandle();
+  // Get full library name of StageAttributes
+  const std::string stageAttributesHandle =
+      metadataMediator_->getStageAttrFullHandle(
+          stageInstanceAttributes->getHandle());
   // Get StageAttributes
   auto stageAttributes =
       metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
@@ -312,10 +314,10 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // 4. Load lighting as specified .
   // get name of light setup for this scene instance
-  const std::string lightSetupKey =
-      curSceneInstanceAttributes->getLightingHandle();
+  const std::string lightSetupKey = metadataMediator_->getLightSetupFullHandle(
+      curSceneInstanceAttributes->getLightingHandle());
   // lighting attributes corresponding to this key should exist unless it is
-  // empty if empty, the following does nothing.
+  // empty; if empty, the following does nothing.
   esp::gfx::LightSetup lightingSetup =
       metadataMediator_->getLightLayoutAttributesManager()
           ->createLightSetupFromAttributes(lightSetupKey);
@@ -339,7 +341,15 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& objInst : objectInstances) {
-    objID = physicsManager_->addObject(objInst->getHandle(), &drawables,
+    const std::string objAttrFullHandle =
+        metadataMediator_->getObjAttrFullHandle(objInst->getHandle());
+    if (objAttrFullHandle == "") {
+      LOG(WARNING) << "Simulator::createSceneInstance : Unable to find "
+                      "attributes whose handle contains "
+                   << objInst->getHandle() << " so skipping. ";
+      continue;
+    }
+    objID = physicsManager_->addObject(objAttrFullHandle, &drawables,
                                        attachmentNode, lightSetupKey);
     if (objID == ID_UNDEFINED) {
       // instancing failed for some reason.
@@ -377,9 +387,10 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 bool Simulator::createSceneInstanceNoRenderer(
     const std::string& activeSceneName) {
   // Initial setup for scene instancing without renderer - sets or creates the
-  // current scene instance to correspond to the given name.
+  // current scene instance to correspond to the given name.  Also builds
+  // navmesh and semantic scene descriptor file if appropriate.
   metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
-      metadataMediator_->getSceneAttributesByName(activeSceneName);
+      setSceneInstanceAttributes(activeSceneName);
 
   // TODO : reset may eventually have all the scene instance instantiation code
   // so that scenes can be reset
