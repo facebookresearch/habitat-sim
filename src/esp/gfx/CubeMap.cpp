@@ -143,6 +143,7 @@ void CubeMap::recreateTexture() {
         .setMagnificationFilter(Mn::GL::SamplerFilter::Linear);
 
     if (flags_ & Flag::BuildMipmap) {
+      // RGBA8 is for the LDR. Use RGBA16F for the HDR (TODO)
       (*colorTexture)
           .setStorage(Mn::Math::log2(imageSize_) + 1,
                       Mn::GL::TextureFormat::RGBA8, size);
@@ -166,6 +167,8 @@ void CubeMap::recreateTexture() {
 void CubeMap::recreateFramebuffer() {
   Mn::Vector2i viewportSize{imageSize_, imageSize_};
   frameBuffer_ = Mn::GL::Framebuffer{{{}, viewportSize}};
+  // optional depth buffer is 24-bit integer pixel, which is different from the
+  // depth texture (32-bit float)
   optionalDepthBuffer_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
                                   viewportSize);
 }
@@ -258,6 +261,81 @@ bool CubeMap::saveTexture(TextureType type,
 }
 #endif
 
+void CubeMap::loadTexture(TextureType type,
+                          const std::string& imageFilePrefix,
+                          const std::string& imageFileExtension) {
+  // plugin manager used to instantiate importers which in turn are used
+  // to load image data
+  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
+  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
+      manager.loadAndInstantiate("AnyImageImporter");
+  CORRADE_INTERNAL_ASSERT(importer);
+
+  const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
+  int imageSize = 0;
+
+  // set images
+  Mn::GL::CubeMapTexture* texture = nullptr;
+  switch (type) {
+    case TextureType::Color:
+      texture = textures_[TextureType::Color].get();
+      break;
+
+    case TextureType::Depth:
+      texture = textures_[TextureType::Depth].get();
+      break;
+  }
+  CORRADE_ASSERT(texture, "CubeMap::loadTexture(): Unknown texture type.", );
+
+  for (int iFace = 0; iFace < 6; ++iFace) {
+    // open image file
+
+    std::string filename = Cr::Utility::formatString(
+        "{}.{}.{}.{}", imageFilePrefix, getTextureTypeFilenameString(type),
+        coordStrings[iFace], imageFileExtension);
+
+    importer->openFile(filename);
+    Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
+        importer->image2D(0);
+
+    // sanity checks
+    CORRADE_INTERNAL_ASSERT(image);
+    Mn::Vector2i size = image->size();
+    CORRADE_ASSERT(
+        size.x() == size.y(),
+        " CubeMap::loadTexture(): each texture image must be a square.", );
+    if (iFace == 0) {
+      imageSize = size.x();
+      reset(imageSize);
+    } else {
+      CORRADE_ASSERT(size.x() == imageSize,
+                     " CubeMap::loadTexture(): texture images must have the "
+                     "same size.", );
+    }
+
+    switch (type) {
+      case TextureType::Color:
+        texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
+                             *image);
+        break;
+
+      case TextureType::Depth: {
+        // R32F means 4 bytes per pixel
+        const int dim = static_cast<int>(std::sqrt(image->pixelSize() / 4));
+        // reinterpret the data as a R32F image
+        Mn::ImageView2D imageView(Mn::PixelFormat::R32F, {dim, dim},
+                                  image->data());
+        texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
+                             imageView);
+      } break;
+    }
+  }
+  // Color texture ONLY, NOT for depth
+  if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
+    texture->generateMipmap();
+  }
+}
+
 void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,
                               RenderCamera::Flags flags) {
@@ -311,67 +389,6 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // Color texture ONLY, NOT for depth
   if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
     textures_[TextureType::Color]->generateMipmap();
-  }
-}
-
-void CubeMap::loadTexture(TextureType type,
-                          const std::string& imageFilePrefix,
-                          const std::string& imageFileExtension) {
-  // plugin manager used to instantiate importers which in turn are used
-  // to load image data
-  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
-  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
-      manager.loadAndInstantiate("AnyImageImporter");
-  CORRADE_INTERNAL_ASSERT(importer);
-
-  const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
-  int imageSize = 0;
-
-  // set images
-  Mn::GL::CubeMapTexture* texture = nullptr;
-  switch (type) {
-    case TextureType::Color:
-      texture = textures_[TextureType::Color].get();
-      break;
-
-    case TextureType::Depth:
-      texture = textures_[TextureType::Depth].get();
-      break;
-  }
-  CORRADE_ASSERT(texture, "CubeMap::loadTexture(): Unknown texture type.", );
-
-  for (int iFace = 0; iFace < 6; ++iFace) {
-    // open image file
-
-    std::string filename = Cr::Utility::formatString(
-        "{}.{}.{}.{}", imageFilePrefix, getTextureTypeFilenameString(type),
-        coordStrings[iFace], imageFileExtension);
-
-    importer->openFile(filename);
-    Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
-        importer->image2D(0);
-
-    // sanity checks
-    CORRADE_INTERNAL_ASSERT(image);
-    Mn::Vector2i size = image->size();
-    CORRADE_ASSERT(
-        size.x() == size.y(),
-        " CubeMap::loadTexture(): each texture image must be a square.", );
-    if (iFace == 0) {
-      imageSize = size.x();
-      reset(imageSize);
-    } else {
-      CORRADE_ASSERT(size.x() == imageSize,
-                     " CubeMap::loadTexture(): texture images must have the "
-                     "same size.", );
-    }
-
-    texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
-                         *image);
-  }
-  // Color texture ONLY, NOT for depth
-  if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
-    texture->generateMipmap();
   }
 }
 
