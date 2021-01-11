@@ -321,7 +321,7 @@ Key Commands:
   // included)
 
   // Profiling
-  Mn::DebugTools::GLFrameProfiler _profiler{
+  Mn::DebugTools::GLFrameProfiler profiler_{
       Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
           Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
           Mn::DebugTools::GLFrameProfiler::Value::GpuDuration |
@@ -730,7 +730,7 @@ void Viewer::drawEvent() {
 
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
 
-    _profiler.disable();
+    profiler_.disable();
   }
 
   sensorRenderTarget->blitRgbaToDefault();
@@ -739,7 +739,7 @@ void Viewer::drawEvent() {
   Mn::GL::defaultFramebuffer.bind();
 
   imgui_.newFrame();
-  _profiler.beginFrame();
+  profiler_.beginFrame();
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("main", NULL,
@@ -775,12 +775,12 @@ void Viewer::drawEvent() {
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::ScissorTest);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
 
-  _profiler.endFrame();
+  profiler_.endFrame();
   swapBuffers();
   timeline_.nextFrame();
   /* Schedule a redraw only if profiling is enabled to avoid hogging the CPU */
-  if (_profiler.isEnabled()) {
-    _profiler.printStatistics(10);
+  if (profiler_.isEnabled()) {
+    profiler_.printStatistics(10);
     redraw();
   }
 }
@@ -1062,7 +1062,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       invertGravity();
       break;
     case KeyEvent::Key::Comma:
-      _profiler.isEnabled() ? _profiler.disable() : _profiler.enable();
+      profiler_.isEnabled() ? profiler_.disable() : profiler_.enable();
       break;
     default:
       break;
