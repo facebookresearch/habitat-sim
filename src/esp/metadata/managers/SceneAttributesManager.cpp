@@ -51,6 +51,25 @@ void SceneAttributesManager::setValsFromJSONDoc(
     SceneAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   const std::string attribsName = attribs->getHandle();
+  // Check for source specification
+  int sourceTypeVal = static_cast<int>(SceneSourceType::Unknown);
+  std::string tmpSrcVal = "";
+  if (io::readMember<std::string>(jsonConfig, "source", tmpSrcVal)) {
+    // source type tag was found, perform check - first convert to lowercase
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpSrcVal);
+    auto found = SceneAttributes::SceneInstanceSourceMap.find(strToLookFor);
+    if (found != SceneAttributes::SceneInstanceSourceMap.end()) {
+      sourceTypeVal = static_cast<int>(found->second);
+    } else {
+      LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : "
+                      "motion_type value in json  : `"
+                   << tmpSrcVal << "|" << strToLookFor
+                   << "` does not map to a valid SceneSourceType value, so "
+                      "defaulting motion type to SceneSourceType::Unknown.";
+    }
+  }
+  attribs->setSource(sourceTypeVal);
+
   // Check for stage instance existance
   if ((jsonConfig.HasMember("stage_instance")) &&
       (jsonConfig["stage_instance"].IsObject())) {

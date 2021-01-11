@@ -12,6 +12,34 @@ namespace esp {
 namespace metadata {
 
 namespace managers {
+
+/**
+ * @brief This enum class defines the possible sources for a particular scene
+ * instance.  Depending on this value, we may take certain actions when
+ * instantiating a scene described by a scene instance. For example, scene
+ * instances created in blender will have no conception of an object's COM, and
+ * so may require adjustment to translations to account for COM location before
+ * the object is placed.
+ */
+enum class SceneSourceType {
+  /**
+   * @brief Default value - source of scene instance is unknown.  Does not
+   * transform objects on load based on COM location.
+   */
+  Unknown = -1,
+  /**
+   * @brief Indicates scene instance was created in blender.  Objects created
+   * from this scene instance need to have locations corrected by COM location.
+   */
+  Blender,
+  /**
+   * @brief Indicates scene instance was created in habitat (saved from a
+   * particular layout).  Objects should not be transformed on load based on COM
+   * location.
+   */
+  Habitat
+};
+
 class SceneAttributesManager
     : public AttributesManager<attributes::SceneAttributes> {
  public:

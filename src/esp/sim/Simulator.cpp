@@ -338,6 +338,13 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // vector holding all objects added
   std::vector<int> objectsAdded;
   int objID;
+
+  // whether or not to correct for COM shift - only do for blender-sourced scene
+  // attributes
+  bool COM_Correction = (static_cast<metadata::managers::SceneSourceType>(
+                             curSceneInstanceAttributes->getSource()) ==
+                         metadata::managers::SceneSourceType::Blender);
+
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& objInst : objectInstances) {
@@ -361,9 +368,14 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     }
     // set object's location and rotation based on translation and rotation
     // params specified in instance attributes
+    auto translate = objInst->getTranslation();
+    if (COM_Correction) {
+      translate -=
+          physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation();
+    }
     physicsManager_->setTransformation(
-        objID, Magnum::Matrix4::from(objInst->getRotation().toMatrix(),
-                                     objInst->getTranslation()));
+        objID,
+        Magnum::Matrix4::from(objInst->getRotation().toMatrix(), translate));
     // set object's motion type if different than set value
     const physics::MotionType attrObjMotionType =
         static_cast<physics::MotionType>(objInst->getMotionType());
