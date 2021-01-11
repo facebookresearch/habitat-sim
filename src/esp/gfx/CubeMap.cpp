@@ -322,6 +322,9 @@ void CubeMap::loadTexture(TextureType type,
       case TextureType::Depth: {
         // R32F means 4 bytes per pixel
         const int dim = static_cast<int>(std::sqrt(image->pixelSize() / 4));
+        CORRADE_ASSERT(
+            dim * dim * 4 == image->pixelSize(),
+            "CubeMap::loadTexture(): the depth texture is not a square.", );
         // reinterpret the data as a R32F image
         Mn::ImageView2D imageView(Mn::PixelFormat::R32F, {dim, dim},
                                   image->data());
