@@ -274,14 +274,13 @@ class ReplayViewerTask {
 
 class ReplayViewer {
   static preloadFiles(preloadFunc) {
-    let dataUrlBase = "";
-    let useLocalSourceFiles = window.location.href.indexOf("0.0.0.0") != -1;
-    if (useLocalSourceFiles) {
-      dataUrlBase = "data";
-    } else {
-      dataUrlBase = "https://www.ericundersander.com/habitat/data";
-    }
-
+    // For dataUrlBase, if you specify a relative path here like "data", it is relative
+    // to the bindings_js folder where index.js is served. You can alternately specify a
+    // full URL base such as https://www.mywebsite.com/data". For local testing, note
+    // that we symlink your habitat-sim data directory (habitat-sim/data) to
+    // /build_js/esp/bindings_js/data. (See "resources" in
+    // src/esp/bindings_js/CMakeLists.txt.)
+    let dataUrlBase = "data";
     preloadFunc(
       dataUrlBase + "/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
       false
