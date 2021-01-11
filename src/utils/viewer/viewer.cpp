@@ -179,7 +179,6 @@ Key Commands:
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
-  ',' toggle frame profiler.
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -321,13 +320,21 @@ Key Commands:
   // included)
 
   // Profiling
-  Mn::DebugTools::GLFrameProfiler profiler_{
+  Mn::DebugTools::GLFrameProfiler::Values profilerValues =
       Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
-          Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
-          Mn::DebugTools::GLFrameProfiler::Value::GpuDuration |
-          Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
-          Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio,
-      50};
+      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
+      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
+
+#ifdef MAGNUM_TARGET_GLES
+  if (Mn::GL::Context::current()
+          .isExtensionSupported<
+              Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
+    values |= Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
+              Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio;
+  }
+#endif
+
+  Mn::DebugTools::GLFrameProfiler profiler_{profilerValues, 50};
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -502,9 +509,6 @@ Viewer::Viewer(const Arguments& arguments)
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
-
-  // Set up profiler to default disabled
-  profiler_.disable();
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -756,6 +760,7 @@ void Viewer::drawEvent() {
                 (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
                      ? "Orthographic"
                      : "Pinhole"));
+    ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
 
@@ -779,11 +784,7 @@ void Viewer::drawEvent() {
   profiler_.endFrame();
   swapBuffers();
   timeline_.nextFrame();
-  /* Schedule a redraw only if profiling is enabled to avoid hogging the CPU */
-  if (profiler_.isEnabled()) {
-    profiler_.printStatistics(10);
-    redraw();
-  }
+  redraw();
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
@@ -1021,6 +1022,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
+      showFPS_ ? profiler_.enable() : profiler_.disable();
       break;
     case KeyEvent::Key::E:
       simulator_->setFrustumCullingEnabled(
@@ -1061,9 +1063,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::V:
       invertGravity();
-      break;
-    case KeyEvent::Key::Comma:
-      profiler_.isEnabled() ? profiler_.disable() : profiler_.enable();
       break;
     default:
       break;
