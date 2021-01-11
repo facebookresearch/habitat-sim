@@ -12,15 +12,15 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
-#include <Magnum/PixelFormat.h>
-#include <Magnum/SceneGraph/Camera.h>
-#include <Magnum/Timeline.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/PixelFormat.h>
+#include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
+#include <Magnum/Timeline.h>
 
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
@@ -34,8 +34,8 @@
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
-#include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
+#include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
@@ -320,14 +320,14 @@ Key Commands:
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
 
-  //Profiling
-   Mn::DebugTools::GLFrameProfiler _profiler{
-        Mn::DebugTools::GLFrameProfiler::Value::FrameTime|
-        Mn::DebugTools::GLFrameProfiler::Value::CpuDuration|
-        Mn::DebugTools::GLFrameProfiler::Value::GpuDuration|
-        Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio|
-        Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio
-    , 50};
+  // Profiling
+  Mn::DebugTools::GLFrameProfiler _profiler{
+      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
+          Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
+          Mn::DebugTools::GLFrameProfiler::Value::GpuDuration |
+          Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
+          Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio,
+      50};
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -775,14 +775,13 @@ void Viewer::drawEvent() {
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::ScissorTest);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
 
-
   _profiler.endFrame();
   swapBuffers();
   timeline_.nextFrame();
   /* Schedule a redraw only if profiling is enabled to avoid hogging the CPU */
-  if(_profiler.isEnabled()) {
-      _profiler.printStatistics(10);
-      redraw();
+  if (_profiler.isEnabled()) {
+    _profiler.printStatistics(10);
+    redraw();
   }
 }
 
@@ -1063,8 +1062,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       invertGravity();
       break;
     case KeyEvent::Key::Comma:
-       _profiler.isEnabled() ? _profiler.disable() : _profiler.enable();
-       break;
+      _profiler.isEnabled() ? _profiler.disable() : _profiler.enable();
+      break;
     default:
       break;
   }
