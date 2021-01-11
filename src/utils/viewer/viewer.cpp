@@ -51,8 +51,6 @@
 #include "ObjectPickingHelper.h"
 #include "esp/physics/configure.h"
 
-using std::chrono::high_resolution_clock;
-
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
@@ -323,7 +321,6 @@ Key Commands:
   // included)
 
   //Profiling
-  //high_resolution_clock::time_point frameBeginTime;
    Mn::DebugTools::GLFrameProfiler _profiler{
         Mn::DebugTools::GLFrameProfiler::Value::FrameTime|
         Mn::DebugTools::GLFrameProfiler::Value::CpuDuration|
