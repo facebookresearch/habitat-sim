@@ -1,6 +1,7 @@
 import math
 
 import hypothesis
+import pytest
 from hypothesis import strategies as st
 
 import habitat_sim
@@ -16,12 +17,18 @@ def test_data_func():
     return pf, pf.get_random_navigable_point()
 
 
+@pytest.fixture(scope="function")
+def test_data():
+    return test_data_func()
+
+
 @hypothesis.given(
     nudge=st.tuples(st.floats(-10, 10), st.floats(-2.5, 2.5), st.floats(-10, 10)),
+    test_data=st.just(test_data_func()),
 )
 @hypothesis.settings(max_examples=int(1e3))
-def test_snap_point(nudge):
-    pf, start_pt = test_data_func()
+def test_snap_point(nudge, test_data):
+    pf, start_pt = test_data
 
     pt = start_pt + nudge
 
