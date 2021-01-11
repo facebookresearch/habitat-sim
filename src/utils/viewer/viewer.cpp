@@ -780,11 +780,11 @@ void Viewer::drawEvent() {
 
 
   _profiler.endFrame();
-  _profiler.printStatistics(10);
   swapBuffers();
   timeline_.nextFrame();
   /* Schedule a redraw only if profiling is enabled to avoid hogging the CPU */
   if(_profiler.isEnabled()) {
+      _profiler.printStatistics(10);
       redraw();
   }
 }
