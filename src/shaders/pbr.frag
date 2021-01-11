@@ -5,6 +5,8 @@
 // This is an implementation of
 // Karis, Brian. “Real Shading in Unreal Engine 4 by.” (2013).
 
+precision highp float;
+
 // -------------- input ---------------------
 // position, normal, tangent in camera space
 in highp vec3 position;
