@@ -503,6 +503,9 @@ Viewer::Viewer(const Arguments& arguments)
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
+  //Set up profiler to default disabled
+  profiler_.disable();
+
   printHelpText();
 }  // end Viewer::Viewer
 
@@ -729,8 +732,6 @@ void Viewer::drawEvent() {
     renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
 
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
-
-    profiler_.disable();
   }
 
   sensorRenderTarget->blitRgbaToDefault();
