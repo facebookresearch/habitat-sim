@@ -503,7 +503,7 @@ Viewer::Viewer(const Arguments& arguments)
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
-  //Set up profiler to default disabled
+  // Set up profiler to default disabled
   profiler_.disable();
 
   printHelpText();
