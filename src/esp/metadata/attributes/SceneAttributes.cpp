@@ -18,12 +18,22 @@ const std::map<std::string, esp::physics::MotionType>
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle)
     : AbstractAttributes("SceneObjectInstanceAttributes", handle) {
-  setMotionType(-1);  // defaults to unknown
+  // defaults to unknown/undefined
+  setMotionType(static_cast<int>(esp::physics::MotionType::UNDEFINED));
   // set to no rotation
   setQuat("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
 }
+
+const std::map<std::string, managers::SceneSourceType>
+    SceneAttributes::SceneInstanceSourceMap = {
+        {"blender", managers::SceneSourceType::Blender},
+        {"habitat", managers::SceneSourceType::Habitat},
+};
 SceneAttributes::SceneAttributes(const std::string& handle)
-    : AbstractAttributes("SceneAttributes", handle) {}
+    : AbstractAttributes("SceneAttributes", handle) {
+  // defaults to unknown
+  setSource(static_cast<int>(managers::SceneSourceType::Unknown));
+}
 
 }  // namespace attributes
 }  // namespace metadata

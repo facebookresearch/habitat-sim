@@ -499,6 +499,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   // build JSON sample config
   const std::string& jsonString =
       R"({
+      "source" : "habitat",
       "stage_instance":{
           "template_name": "test_stage_template",
           "translation": [1,2,3],
@@ -533,6 +534,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
 
   // match values set in test JSON
   // TODO : get these values programmatically?
+  ASSERT_EQ(sceneAttr->getSource(),
+            static_cast<int>(AttrMgrs::SceneSourceType::Habitat));
   ASSERT_EQ(sceneAttr->getLightingHandle(), "test_lighting_configuration");
   ASSERT_EQ(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
   ASSERT_EQ(sceneAttr->getSemanticSceneHandle(),

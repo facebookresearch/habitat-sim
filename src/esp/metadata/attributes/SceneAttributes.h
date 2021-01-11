@@ -12,6 +12,9 @@ namespace physics {
 enum class MotionType;
 }
 namespace metadata {
+namespace managers {
+enum class SceneSourceType;
+}
 namespace attributes {
 
 /**
@@ -75,7 +78,27 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
 
 class SceneAttributes : public AbstractAttributes {
  public:
+  /**
+   * @brief Constant static map to provide mappings from string tags to @ref
+   * esp::assets::AssetType values.  This will be used to map values set in json
+   * for mesh type to @ref esp::assets::AssetType.  Keys must be lowercase.
+   */
+  static const std::map<std::string, esp::metadata::managers::SceneSourceType>
+      SceneInstanceSourceMap;
+
   SceneAttributes(const std::string& handle);
+
+  /**
+   * @brief Set a value representing the mechanism used to create this scene
+   * instance - should map to an enum value in @SceneInstanceSourceMap.
+   */
+  void setSource(int source) { setInt("source", source); }
+
+  /**
+   * @brief Get the value representing the mechanism used to create this scene
+   * instance - should map to an enum value in @SceneInstanceSourceMap.
+   */
+  int getSource() const { return getInt("source"); }
 
   /**
    * @brief Set the name of the template that describes the scene's default
