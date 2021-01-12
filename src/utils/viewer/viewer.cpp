@@ -12,6 +12,8 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
+#include <Magnum/GL/Context.h>
+#include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
@@ -21,7 +23,6 @@
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
-
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/nav/PathFinder.h"
@@ -325,15 +326,6 @@ Key Commands:
       Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
       Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
 
-#ifdef MAGNUM_TARGET_GLES
-  if (Mn::GL::Context::current()
-          .isExtensionSupported<
-              Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
-    values |= Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
-              Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio;
-  }
-#endif
-
   Mn::DebugTools::GLFrameProfiler profiler_{profilerValues, 50};
 };
 
@@ -509,6 +501,17 @@ Viewer::Viewer(const Arguments& arguments)
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
+
+#ifndef MAGNUM_TARGET_GLES
+  if (Mn::GL::Context::current()
+          .isExtensionSupported<
+              Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
+    profilerValues |=
+        Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
+        Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio;
+    profiler_.setup(profilerValues, 50);
+  }
+#endif
 
   printHelpText();
 }  // end Viewer::Viewer
