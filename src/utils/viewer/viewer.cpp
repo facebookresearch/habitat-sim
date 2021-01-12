@@ -353,6 +353,8 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("scene", "scene/stage file to load")
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
+      .addOption("dataset", "default")
+      .setHelp("dataset", "dataset configuration file to use")
       .addBooleanOption("enable-physics")
       .addBooleanOption("stage-requires-lighting")
       .setHelp("stage-requires-lighting",
@@ -407,6 +409,8 @@ Viewer::Viewer(const Arguments& arguments)
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
   simConfig.activeSceneName = sceneFileName;
+  simConfig.sceneDatasetConfigFile = args.value("dataset");
+  LOG(INFO) << "Dataset : " << simConfig.sceneDatasetConfigFile;
   simConfig.enablePhysics = useBullet;
   simConfig.frustumCulling = true;
   simConfig.requiresTextures = true;
