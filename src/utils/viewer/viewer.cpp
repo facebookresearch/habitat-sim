@@ -410,6 +410,7 @@ Viewer::Viewer(const Arguments& arguments)
   auto simConfig = esp::sim::SimulatorConfiguration();
   simConfig.activeSceneName = sceneFileName;
   simConfig.sceneDatasetConfigFile = args.value("dataset");
+  LOG(INFO) << "Dataset : " << simConfig.sceneDatasetConfigFile;
   simConfig.enablePhysics = useBullet;
   simConfig.frustumCulling = true;
   simConfig.requiresTextures = true;
