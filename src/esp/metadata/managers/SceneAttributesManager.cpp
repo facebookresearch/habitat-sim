@@ -51,24 +51,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
     SceneAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   const std::string attribsName = attribs->getHandle();
-  // Check for source specification
-  int sourceTypeVal = static_cast<int>(SceneSourceType::Unknown);
-  std::string tmpSrcVal = "";
-  if (io::readMember<std::string>(jsonConfig, "source", tmpSrcVal)) {
-    // source type tag was found, perform check - first convert to lowercase
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpSrcVal);
-    auto found = SceneAttributes::SceneInstanceSourceMap.find(strToLookFor);
-    if (found != SceneAttributes::SceneInstanceSourceMap.end()) {
-      sourceTypeVal = static_cast<int>(found->second);
-    } else {
-      LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : "
-                      "motion_type value in json  : `"
-                   << tmpSrcVal << "|" << strToLookFor
-                   << "` does not map to a valid SceneSourceType value, so "
-                      "defaulting motion type to SceneSourceType::Unknown.";
-    }
-  }
-  attribs->setSource(sourceTypeVal);
+  // Check for translation origin.  Default to unknown.
+  attribs->setTranslationOrigin(getTranslationOriginVal(jsonConfig));
 
   // Check for stage instance existance
   if ((jsonConfig.HasMember("stage_instance")) &&
@@ -145,6 +129,10 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
       jCell, "template_name",
       std::bind(&SceneObjectInstanceAttributes::setHandle, instanceAttrs, _1));
 
+  // Check for translation origin override for a particular instance.  Default
+  // to unknown, which will mean use scene instance-level default.
+  instanceAttrs->setTranslationOrigin(getTranslationOriginVal(jCell));
+
   // motion type of object.  Ignored for stage.  TODO : verify is valid motion
   // type using standard mechanism of static map comparison.
 
@@ -183,6 +171,33 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
   return instanceAttrs;
 
 }  // SceneAttributesManager::createInstanceAttributesFromJSON
+
+int SceneAttributesManager::getTranslationOriginVal(
+    const io::JsonGenericValue& jsonDoc) {
+  // Check for translation origin.  Default to unknown.
+  int transOrigin = static_cast<int>(SceneInstanceTranslationOrigin::Unknown);
+  std::string tmpTransOriginVal = "";
+  if (io::readMember<std::string>(jsonDoc, "translation_origin",
+                                  tmpTransOriginVal)) {
+    // translation_origin tag was found, perform check - first convert to
+    // lowercase
+    std::string strToLookFor =
+        Cr::Utility::String::lowercase(tmpTransOriginVal);
+    auto found =
+        SceneAttributes::InstanceTranslationOriginMap.find(strToLookFor);
+    if (found != SceneAttributes::InstanceTranslationOriginMap.end()) {
+      transOrigin = static_cast<int>(found->second);
+    } else {
+      LOG(WARNING) << "SceneAttributesManager::getTranslationOriginVal : "
+                      "motion_type value in json  : `"
+                   << tmpTransOriginVal << "|" << strToLookFor
+                   << "` does not map to a valid "
+                      "SceneInstanceTranslationOrigin value, so defaulting "
+                      "motion type to SceneInstanceTranslationOrigin::Unknown.";
+    }
+  }
+  return transOrigin;
+}  // SceneAttributesManager::getTranslationOriginVal
 
 int SceneAttributesManager::registerObjectFinalize(
     SceneAttributes::ptr sceneAttributes,

@@ -13,7 +13,7 @@ enum class MotionType;
 }
 namespace metadata {
 namespace managers {
-enum class SceneSourceType;
+enum class SceneInstanceTranslationOrigin;
 }
 namespace attributes {
 
@@ -52,6 +52,24 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   Magnum::Vector3 getTranslation() const { return getVec3("translation"); }
 
   /**
+   * @brief Set a value representing the mechanism used to create this scene
+   * instance - should map to an enum value in @InstanceTranslationOriginMap.
+   * This acts as an instance-specific override to the scene-instance-wide
+   * setting.
+   */
+  void setTranslationOrigin(int translation_origin) {
+    setInt("translation_origin", translation_origin);
+  }
+
+  /**
+   * @brief Get the value representing the mechanism used to create this scene
+   * instance - should map to an enum value in @InstanceTranslationOriginMap.
+   * This acts as an instance-specific override to the scene-instance-wide
+   * setting.
+   */
+  int getTranslationOrigin() const { return getInt("translation_origin"); }
+
+  /**
    * @brief Set the rotation of the object
    */
   void setRotation(const Magnum::Quaternion& rotation) {
@@ -80,25 +98,30 @@ class SceneAttributes : public AbstractAttributes {
  public:
   /**
    * @brief Constant static map to provide mappings from string tags to @ref
-   * esp::assets::AssetType values.  This will be used to map values set in json
-   * for mesh type to @ref esp::assets::AssetType.  Keys must be lowercase.
+   * metadata::managers::SceneInstanceTranslationOrigin values.  This will be
+   * used to map values set in json for translation origin to @ref
+   * metadata::managers::SceneInstanceTranslationOrigin.  Keys must be
+   * lowercase.
    */
-  static const std::map<std::string, esp::metadata::managers::SceneSourceType>
-      SceneInstanceSourceMap;
+  static const std::map<std::string,
+                        metadata::managers::SceneInstanceTranslationOrigin>
+      InstanceTranslationOriginMap;
 
   SceneAttributes(const std::string& handle);
 
   /**
    * @brief Set a value representing the mechanism used to create this scene
-   * instance - should map to an enum value in @SceneInstanceSourceMap.
+   * instance - should map to an enum value in @InstanceTranslationOriginMap.
    */
-  void setSource(int source) { setInt("source", source); }
+  void setTranslationOrigin(int translation_origin) {
+    setInt("translation_origin", translation_origin);
+  }
 
   /**
    * @brief Get the value representing the mechanism used to create this scene
-   * instance - should map to an enum value in @SceneInstanceSourceMap.
+   * instance - should map to an enum value in @InstanceTranslationOriginMap.
    */
-  int getSource() const { return getInt("source"); }
+  int getTranslationOrigin() const { return getInt("translation_origin"); }
 
   /**
    * @brief Set the name of the template that describes the scene's default

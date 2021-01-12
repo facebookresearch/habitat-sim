@@ -14,30 +14,33 @@ namespace metadata {
 namespace managers {
 
 /**
- * @brief This enum class defines the possible sources for a particular scene
- * instance.  Depending on this value, we may take certain actions when
- * instantiating a scene described by a scene instance. For example, scene
- * instances created in blender will have no conception of an object's COM, and
- * so may require adjustment to translations to account for COM location before
- * the object is placed.
- */
-enum class SceneSourceType {
+ * @brief This enum class describes whether a translation should   Depending on
+this value, we may take certain actions when
+ * instantiating a scene described by a scene instance. Scene instances created
+in blender will have no conception of an object's COM, and
+ * so will require adjustment to translations to account for COM location when
+the object is placed.  @p SceneInstanceTranslationOrigin::Unknown will mean to
+use the specified default (in the case of individual object instances), or to
+not correct for COM location (in the case of the scene instance default setting)
+. */
+enum class SceneInstanceTranslationOrigin {
   /**
-   * @brief Default value - source of scene instance is unknown.  Does not
-   * transform objects on load based on COM location.
+   * @brief Default value - in the case of object instances, this means use the
+   * specified scene instance default; in the case of a scene instance, this
+   * means do not correct for COM.
    */
   Unknown = -1,
   /**
-   * @brief Indicates scene instance was created in blender.  Objects created
-   * from this scene instance need to have locations corrected by COM location.
+   * @brief Indicates scene instance objects were placed without knowledge of
+   * their COM location, and so need to be corrected when placed in scene in
+   * Habitat.
    */
-  Blender,
+  AssetLocal,
   /**
-   * @brief Indicates scene instance was created in habitat (saved from a
-   * particular layout).  Objects should not be transformed on load based on COM
-   * location.
+   * @brief Indicates scene instance objects' location were recorded at their
+   * COM location, and so do not need correction.
    */
-  Habitat
+  COM
 };
 
 class SceneAttributesManager
@@ -89,6 +92,16 @@ class SceneAttributesManager
   }
 
  protected:
+  /**
+   * @brief Gets the int value of the appropriate enum corresponding to the
+   * desired Translation Origin used to determine the location of the asset in
+   * the scene instance.  The purpose of this value is to know whether to
+   * correct placement by location of COM of object when instance is created.
+   * @param jsonDoc document where value may be specified.
+   * @return the int value to set for translation_origin in instance attributes.
+   */
+  int getTranslationOriginVal(const io::JsonGenericValue& jsonDoc);
+
   /**
    * @brief Used Internally.  Create a @ref
    * esp::metadata::attributes::SceneObjectInstanceAttributes object from the

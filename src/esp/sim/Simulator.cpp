@@ -341,9 +341,10 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // whether or not to correct for COM shift - only do for blender-sourced scene
   // attributes
-  bool COM_Correction = (static_cast<metadata::managers::SceneSourceType>(
-                             curSceneInstanceAttributes->getSource()) ==
-                         metadata::managers::SceneSourceType::Blender);
+  bool Default_COM_Correction =
+      (static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
+           curSceneInstanceAttributes->getTranslationOrigin()) ==
+       metadata::managers::SceneInstanceTranslationOrigin::AssetLocal);
 
   // Iterate through instances, create object and implement initial
   // transformation.
@@ -369,7 +370,17 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     // set object's location and rotation based on translation and rotation
     // params specified in instance attributes
     auto translate = objInst->getTranslation();
-    if (COM_Correction) {
+    // get instance override value, if exists
+    auto Instance_COM_Origin =
+        static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
+            objInst->getTranslationOrigin());
+    if (((Default_COM_Correction) &&
+         (Instance_COM_Origin !=
+          metadata::managers::SceneInstanceTranslationOrigin::COM)) ||
+        (Instance_COM_Origin ==
+         metadata::managers::SceneInstanceTranslationOrigin::AssetLocal)) {
+      // if default COM correction is set and no object-based override, or if
+      // Object set to correct for COM.
       translate -=
           physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation();
     }
