@@ -320,13 +320,7 @@ Key Commands:
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
 
-  // Profiling
-  Mn::DebugTools::GLFrameProfiler::Values profilerValues =
-      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
-      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
-      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
-
-  Mn::DebugTools::GLFrameProfiler profiler_{profilerValues, 50};
+  Mn::DebugTools::GLFrameProfiler profiler_{};
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -502,6 +496,13 @@ Viewer::Viewer(const Arguments& arguments)
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
+  // Set up per frame profiler
+  Mn::DebugTools::GLFrameProfiler::Values profilerValues =
+      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
+      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
+      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
+
+// VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
 #ifndef MAGNUM_TARGET_GLES
   if (Mn::GL::Context::current()
           .isExtensionSupported<
@@ -509,9 +510,10 @@ Viewer::Viewer(const Arguments& arguments)
     profilerValues |=
         Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
         Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio;
-    profiler_.setup(profilerValues, 50);
   }
 #endif
+
+  profiler_.setup(profilerValues, 50);
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -681,6 +683,7 @@ void Viewer::wiggleLastObject() {
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
+  profiler_.beginFrame();
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
@@ -742,12 +745,12 @@ void Viewer::drawEvent() {
   }
 
   sensorRenderTarget->blitRgbaToDefault();
+  profiler_.endFrame();
   // Immediately bind the main buffer back so that the "imgui" below can work
   // properly
   Mn::GL::defaultFramebuffer.bind();
 
   imgui_.newFrame();
-  profiler_.beginFrame();
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("main", NULL,
@@ -784,7 +787,6 @@ void Viewer::drawEvent() {
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::ScissorTest);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
 
-  profiler_.endFrame();
   swapBuffers();
   timeline_.nextFrame();
   redraw();
