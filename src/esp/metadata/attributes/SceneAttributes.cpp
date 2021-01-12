@@ -24,15 +24,16 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   setQuat("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
 }
 
-const std::map<std::string, managers::SceneSourceType>
-    SceneAttributes::SceneInstanceSourceMap = {
-        {"blender", managers::SceneSourceType::Blender},
-        {"habitat", managers::SceneSourceType::Habitat},
+const std::map<std::string, managers::SceneInstanceTranslationOrigin>
+    SceneAttributes::InstanceTranslationOriginMap = {
+        {"asset_local", managers::SceneInstanceTranslationOrigin::AssetLocal},
+        {"com", managers::SceneInstanceTranslationOrigin::COM},
 };
 SceneAttributes::SceneAttributes(const std::string& handle)
     : AbstractAttributes("SceneAttributes", handle) {
   // defaults to unknown
-  setSource(static_cast<int>(managers::SceneSourceType::Unknown));
+  setTranslationOrigin(
+      static_cast<int>(managers::SceneInstanceTranslationOrigin::Unknown));
 }
 
 }  // namespace attributes

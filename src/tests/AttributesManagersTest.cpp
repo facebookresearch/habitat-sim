@@ -499,7 +499,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   // build JSON sample config
   const std::string& jsonString =
       R"({
-      "source" : "habitat",
+      "translation_origin" : "Asset_Local",
       "stage_instance":{
           "template_name": "test_stage_template",
           "translation": [1,2,3],
@@ -508,6 +508,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
       "object_instances": [
           {
               "template_name": "test_object_template0",
+              "translation_origin": "COM",
               "translation": [0,1,2],
               "rotation": [0.2, 0.3, 0.4, 0.5],
               "motion_type": "KINEMATIC"
@@ -534,8 +535,9 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
 
   // match values set in test JSON
   // TODO : get these values programmatically?
-  ASSERT_EQ(sceneAttr->getSource(),
-            static_cast<int>(AttrMgrs::SceneSourceType::Habitat));
+  ASSERT_EQ(
+      sceneAttr->getTranslationOrigin(),
+      static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::AssetLocal));
   ASSERT_EQ(sceneAttr->getLightingHandle(), "test_lighting_configuration");
   ASSERT_EQ(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
   ASSERT_EQ(sceneAttr->getSemanticSceneHandle(),
@@ -549,6 +551,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   ASSERT_EQ(objectInstanceList.size(), 2);
   auto objInstance = objectInstanceList[0];
   ASSERT_EQ(objInstance->getHandle(), "test_object_template0");
+  ASSERT_EQ(objInstance->getTranslationOrigin(),
+            static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
   ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, 1, 2));
   ASSERT_EQ(objInstance->getMotionType(),
             static_cast<int>(esp::physics::MotionType::KINEMATIC));
