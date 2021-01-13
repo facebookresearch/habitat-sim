@@ -933,10 +933,6 @@ class Simulator {
   metadata::MetadataMediator::ptr metadataMediator_ = nullptr;
   scene::SceneManager::uptr sceneManager_ = nullptr;
 
-  /**
-   * @brief Currently active light setup key.
-   */
-  Mn::ResourceKey currLightSetup = Mn::ResourceKey{DEFAULT_LIGHTING_KEY};
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;

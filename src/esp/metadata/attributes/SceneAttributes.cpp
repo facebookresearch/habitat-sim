@@ -22,6 +22,9 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   setMotionType(static_cast<int>(esp::physics::MotionType::UNDEFINED));
   // set to no rotation
   setQuat("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
+  // defaults to unknown so that obj instances use scene instance setting
+  setTranslationOrigin(
+      static_cast<int>(managers::SceneInstanceTranslationOrigin::Unknown));
 }
 
 const std::map<std::string, managers::SceneInstanceTranslationOrigin>
@@ -31,9 +34,9 @@ const std::map<std::string, managers::SceneInstanceTranslationOrigin>
 };
 SceneAttributes::SceneAttributes(const std::string& handle)
     : AbstractAttributes("SceneAttributes", handle) {
-  // defaults to unknown
+  // defaults to asset local
   setTranslationOrigin(
-      static_cast<int>(managers::SceneInstanceTranslationOrigin::Unknown));
+      static_cast<int>(managers::SceneInstanceTranslationOrigin::AssetLocal));
 }
 
 }  // namespace attributes
