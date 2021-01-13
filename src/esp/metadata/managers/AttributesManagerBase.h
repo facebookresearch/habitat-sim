@@ -174,18 +174,25 @@ std::vector<int> AttributesManager<T>::loadAllFileBasedTemplates(
     const std::vector<std::string>& paths,
     bool saveAsDefaults) {
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
-  for (int i = 0; i < paths.size(); ++i) {
-    auto attributesFilename = paths[i];
-    LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Load "
-              << this->objectType_ << " template: " << attributesFilename;
-    auto tmplt = this->createObjectFromJSONFile(attributesFilename, true);
+  if (paths.size() > 0) {
+    std::string dir = Cr::Utility::Directory::path(paths[0]);
+    LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Loading "
+              << paths.size() << " " << this->objectType_
+              << " templates found in " << dir;
+    for (int i = 0; i < paths.size(); ++i) {
+      auto attributesFilename = paths[i];
+      LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Load "
+                << this->objectType_ << " template: "
+                << Cr::Utility::Directory::filename(attributesFilename);
+      auto tmplt = this->createObjectFromJSONFile(attributesFilename, true);
 
-    // save handles in list of defaults, so they are not removed, if desired.
-    if (saveAsDefaults) {
-      std::string tmpltHandle = tmplt->getHandle();
-      this->undeletableObjectNames_.insert(tmpltHandle);
+      // save handles in list of defaults, so they are not removed, if desired.
+      if (saveAsDefaults) {
+        std::string tmpltHandle = tmplt->getHandle();
+        this->undeletableObjectNames_.insert(tmpltHandle);
+      }
+      templateIndices[i] = tmplt->getID();
     }
-    templateIndices[i] = tmplt->getID();
   }
   LOG(INFO)
       << "AttributesManager::loadAllFileBasedTemplates : Loaded file-based "
@@ -199,33 +206,36 @@ std::vector<int> AttributesManager<T>::loadAllConfigsFromPath(
     bool saveAsDefaults) {
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
-  namespace Directory = Cr::Utility::Directory;
-  std::string attributesFilepath = getFormattedJSONFileName(path);
-  const bool dirExists = Directory::isDirectory(path);
-  const bool fileExists = Directory::exists(attributesFilepath);
+  namespace Dir = Cr::Utility::Directory;
 
-  if (!dirExists && !fileExists) {
-    LOG(WARNING) << "AttributesManager::loadAllConfigsFromPath : Parsing "
-                 << this->objectType_ << " : Cannot find " << path << " or "
-                 << attributesFilepath << ". Aborting parse.";
-    return templateIndices;
-  }
-
-  if (fileExists) {
-    paths.push_back(attributesFilepath);
-  }
-
+  // Check if directory
+  const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
     LOG(INFO) << "AttributesManager::loadAllConfigsFromPath : Parsing "
               << this->objectType_ << " library directory: " + path;
-    for (auto& file : Directory::list(path, Directory::Flag::SortAscending)) {
-      std::string absoluteSubfilePath = Directory::join(path, file);
+    for (auto& file : Dir::list(path, Dir::Flag::SortAscending)) {
+      std::string absoluteSubfilePath = Dir::join(path, file);
       if (Cr::Utility::String::endsWith(absoluteSubfilePath,
                                         this->JSONTypeExt_)) {
         paths.push_back(absoluteSubfilePath);
       }
     }
-  }
+  } else {
+    // not a directory, perhaps a file
+    std::string attributesFilepath = getFormattedJSONFileName(path);
+    const bool fileExists = Dir::exists(attributesFilepath);
+
+    if (fileExists) {
+      paths.push_back(attributesFilepath);
+    } else {  // neither a directory or a file
+      LOG(WARNING) << "AttributesManager::loadAllConfigsFromPath : Parsing "
+                   << this->objectType_ << " : Cannot find " << path
+                   << " as directory or " << attributesFilepath
+                   << " as config file. Aborting parse.";
+      return templateIndices;
+    }  // if fileExists else
+  }    // if dirExists else
+
   // build templates from aggregated paths
   templateIndices = this->loadAllFileBasedTemplates(paths, saveAsDefaults);
 

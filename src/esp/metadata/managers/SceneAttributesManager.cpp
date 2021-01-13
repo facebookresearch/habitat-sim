@@ -50,7 +50,7 @@ SceneAttributes::ptr SceneAttributesManager::initNewObjectInternal(
 void SceneAttributesManager::setValsFromJSONDoc(
     SceneAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
-  const std::string attribsName = attribs->getHandle();
+  const std::string attribsDispName = attribs->getSimplifiedHandle();
   // Check for translation origin.  Default to unknown.
   attribs->setTranslationOrigin(getTranslationOriginVal(jsonConfig));
 
@@ -62,7 +62,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
   } else {
     LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No Stage "
                     "specified for scene "
-                 << attribsName << ", or specification error.";
+                 << attribsDispName << ", or specification error.";
   }
   // Check for object instances existance
   if ((jsonConfig.HasMember("object_instances")) &&
@@ -75,13 +75,13 @@ void SceneAttributesManager::setValsFromJSONDoc(
       } else {
         LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : Object "
                         "specification error in scene "
-                     << attribsName << " at idx : " << i << ".";
+                     << attribsDispName << " at idx : " << i << ".";
       }
     }
   } else {
     LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No Objects "
                     "specified for scene "
-                 << attribsName << ", or specification error.";
+                 << attribsDispName << ", or specification error.";
   }
   std::string dfltLighting = "";
   if (io::readMember<std::string>(jsonConfig, "default_lighting",
@@ -92,7 +92,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     LOG(WARNING)
         << "SceneAttributesManager::setValsFromJSONDoc : No default_lighting "
            "specified for scene "
-        << attribsName << ".";
+        << attribsDispName << ".";
   }
 
   std::string navmeshName = "";
@@ -104,7 +104,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     LOG(WARNING)
         << "SceneAttributesManager::setValsFromJSONDoc : No navmesh_instance "
            "specified for scene "
-        << attribsName << ".";
+        << attribsDispName << ".";
   }
 
   std::string semanticDesc = "";
@@ -115,7 +115,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
   } else {
     LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No "
                     "semantic_scene_instance specified for scene "
-                 << attribsName << ".";
+                 << attribsDispName << ".";
   }
 }  // SceneAttributesManager::setValsFromJSONDoc
 

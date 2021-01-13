@@ -71,8 +71,8 @@ bool MetadataMediator::setSimulatorConfiguration(
             << " which "
             << (activeSceneDataset_.compare(
                     simConfig_.sceneDatasetConfigFile) == 0
-                    ? " is currently active dataset."
-                    : " is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
+                    ? "is currently active dataset."
+                    : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
   return true;
 }  // MetadataMediator::setSimulatorConfiguration
 
