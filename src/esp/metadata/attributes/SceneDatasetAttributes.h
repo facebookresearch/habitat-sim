@@ -251,6 +251,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
    */
   inline const std::string getLightSetupFullHandle(
       const std::string& lightSetupName) {
+    if (lightSetupName.compare(DEFAULT_LIGHTING_KEY) == 0) {
+      return DEFAULT_LIGHTING_KEY;
+    }
+    if (lightSetupName.compare(NO_LIGHT_KEY) == 0) {
+      return NO_LIGHT_KEY;
+    }
     return getFullAttrNameFromStr(lightSetupName,
                                   lightLayoutAttributesManager_);
   }  // getLightSetupFullHandle

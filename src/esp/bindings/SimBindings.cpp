@@ -54,6 +54,10 @@ void initSimBindings(py::module& m) {
           R"(Enable replay recording. See sim.gfx_replay.save_keyframe.)")
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile)
+      .def_readwrite(
+          "override_scene_ligh_defaults",
+          &SimulatorConfiguration::overrideSceneLightDefaults,
+          R"(Override scene lighting setup to use with value specified below.)")
       .def_readwrite("scene_light_setup",
                      &SimulatorConfiguration::sceneLightSetup)
       .def_readwrite("load_semantic_mesh",

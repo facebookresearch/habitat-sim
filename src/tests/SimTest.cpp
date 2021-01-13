@@ -67,6 +67,7 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.activeSceneName = scene;
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
+    simConfig.overrideSceneLightDefaults = true;
     simConfig.sceneLightSetup = sceneLightingKey;
 
     auto sim = Simulator::create_unique(simConfig);

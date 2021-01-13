@@ -244,16 +244,25 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // 3. Load lighting as specified for scene instance - perform before stage
   // load so lighting key can be set appropriately. get name of light setup for
   // this scene instance
-  const std::string lightSetupKey = metadataMediator_->getLightSetupFullHandle(
-      curSceneInstanceAttributes->getLightingHandle());
-  // lighting attributes corresponding to this key should exist unless it is
-  // empty; if empty, the following does nothing.
-  esp::gfx::LightSetup lightingSetup =
-      metadataMediator_->getLightLayoutAttributesManager()
-          ->createLightSetupFromAttributes(lightSetupKey);
-  // set lightsetup in resource manager
-  resourceManager_->setLightSetup(lightingSetup,
-                                  Mn::ResourceKey{lightSetupKey});
+  std::string lightSetupKey;
+
+  if (config_.overrideSceneLightDefaults) {
+    lightSetupKey = config_.sceneLightSetup;
+  } else {
+    lightSetupKey = metadataMediator_->getLightSetupFullHandle(
+        curSceneInstanceAttributes->getLightingHandle());
+    // lighting attributes corresponding to this key should exist unless it is
+    // empty; if empty, the following does nothing.
+    esp::gfx::LightSetup lightingSetup =
+        metadataMediator_->getLightLayoutAttributesManager()
+            ->createLightSetupFromAttributes(lightSetupKey);
+    // set lightsetup in resource manager
+    resourceManager_->setLightSetup(lightingSetup,
+                                    Mn::ResourceKey{lightSetupKey});
+  }
+  LOG(WARNING) << "Simulator::createSceneInstance : Sceme Instance-specified "
+                  "Light key : "
+               << lightSetupKey;
 
   // 4. Load stage specified by Scene Instance Attributes
   // Get Stage Instance Attributes - contains name of stage and initial

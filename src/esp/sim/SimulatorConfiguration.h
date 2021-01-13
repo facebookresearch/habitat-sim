@@ -59,6 +59,13 @@ struct SimulatorConfiguration {
    * @brief File location for initial scene dataset to use.
    */
   std::string sceneDatasetConfigFile = "default";
+
+  /**
+   * @brief allows for overriding any scene lighting setup specified in a scene
+   * instance file with the value specified below.
+   */
+  bool overrideSceneLightDefaults = false;
+
   /** @brief Light setup key for scene */
   std::string sceneLightSetup = esp::NO_LIGHT_KEY;
 
