@@ -19,7 +19,6 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
-#include "esp/io/io.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
@@ -149,7 +148,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   LOG(INFO) << "Simulator::reconfigure : createSceneInstance success == "
             << (success ? "true" : "false")
             << " for active scene name : " << config_.activeSceneName
-            << (config_.createRenderer ? "with" : "without") << " renderer.";
+            << (config_.createRenderer ? " with" : " without") << " renderer.";
 
 }  // Simulator::reconfigure
 
@@ -171,14 +170,15 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   const std::string& navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
       curSceneInstanceAttributes->getNavmeshHandle());
 
-  LOG(INFO) << "Simulator::createSceneInstance : Navmesh file location in "
-               "scene instance : "
-            << navmeshFileLoc;
+  LOG(INFO)
+      << "Simulator::setSceneInstanceAttributes : Navmesh file location in "
+         "scene instance : "
+      << navmeshFileLoc;
 
   // Get name of navmesh and use to create pathfinder and load navmesh
   bool navMeshSuccess = createPathfinder(navmeshFileLoc);
   if (!navMeshSuccess) {
-    LOG(INFO) << "Simulator::createSceneInstance : Navmesh file "
+    LOG(INFO) << "Simulator::setSceneInstanceAttributes : Navmesh file "
               << navmeshFileLoc << " unable to load.";
   }
   // Calling to seeding needs to be done after the pathfinder creation but
@@ -261,6 +261,12 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
+  LOG(INFO) << "Simulator::createSceneInstance : Start to load stage named : "
+            << stageAttributes->getHandle() << " with render asset : "
+            << stageAttributes->getRenderAssetHandle()
+            << " and collision asset : "
+            << stageAttributes->getCollisionAssetHandle();
+
   // Load stage
   bool loadSuccess = resourceManager_->loadStage(
       stageAttributes, physicsManager_, sceneManager_.get(), tempIDs,
@@ -273,6 +279,10 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     throw std::invalid_argument(
         "Simulator::createSceneInstance : Cannot load: " +
         stageAttributesHandle);
+  } else {
+    LOG(INFO)
+        << "Simulator::createSceneInstance : Successfully loaded stage named : "
+        << stageAttributes->getHandle();
   }
 
   // refresh the NavMesh visualization if necessary after loading a new
@@ -424,7 +434,7 @@ bool Simulator::createSceneInstanceNoRenderer(
 bool Simulator::createPathfinder(const std::string& navmeshFilename) {
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
-  if (io::exists(navmeshFilename)) {
+  if (Cr::Utility::Directory::exists(navmeshFilename)) {
     LOG(INFO) << "Simulator::createPathfinder : Loading navmesh from "
               << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);

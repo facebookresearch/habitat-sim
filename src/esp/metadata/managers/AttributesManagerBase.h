@@ -270,6 +270,11 @@ auto AttributesManager<T>::createFromJsonOrDefaultInternal(
   // Check if this configuration file exists and if so use it to build
   // attributes
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+  LOG(INFO) << "AttributesManager<T>::createFromJsonOrDefaultInternal  ("
+            << this->objectType_
+            << ") : Proposing JSON name : " << jsonAttrFileName
+            << " from original name : " << filename << " | This file "
+            << (jsonFileExists ? " exists." : " does not exist.");
   if (jsonFileExists) {
     // configuration file exists with requested name, use to build Attributes
     attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
