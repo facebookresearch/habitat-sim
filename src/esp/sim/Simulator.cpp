@@ -71,7 +71,6 @@ void Simulator::close() {
   activeSceneID_ = ID_UNDEFINED;
   activeSemanticSceneID_ = ID_UNDEFINED;
   config_ = SimulatorConfiguration{};
-  currLightSetup = Mn::ResourceKey{DEFAULT_LIGHTING_KEY};
 
   frustumCulling_ = true;
   requiresTextures_ = Cr::Containers::NullOpt;
@@ -242,7 +241,21 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
       physicsManager_, config_.enablePhysics, &rootNode,
       metadataMediator_->getCurrentPhysicsManagerAttributes());
 
-  // 3. Load stage specified by Scene Instance Attributes
+  // 3. Load lighting as specified for scene instance - perform before stage
+  // load so lighting key can be set appropriately. get name of light setup for
+  // this scene instance
+  const std::string lightSetupKey = metadataMediator_->getLightSetupFullHandle(
+      curSceneInstanceAttributes->getLightingHandle());
+  // lighting attributes corresponding to this key should exist unless it is
+  // empty; if empty, the following does nothing.
+  esp::gfx::LightSetup lightingSetup =
+      metadataMediator_->getLightLayoutAttributesManager()
+          ->createLightSetupFromAttributes(lightSetupKey);
+  // set lightsetup in resource manager
+  resourceManager_->setLightSetup(lightingSetup,
+                                  Mn::ResourceKey{lightSetupKey});
+
+  // 4. Load stage specified by Scene Instance Attributes
   // Get Stage Instance Attributes - contains name of stage and initial
   // transformation of stage in scene.
   // TODO : need to support stageInstanceAttributes transformation upon
@@ -258,6 +271,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   auto stageAttributes =
       metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
           stageAttributesHandle);
+  stageAttributes->setLightSetup(lightSetupKey);
 
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage
@@ -322,19 +336,6 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
       }
     }
   }  // if ID has changed - needs to be reset
-
-  // 4. Load lighting as specified .
-  // get name of light setup for this scene instance
-  const std::string lightSetupKey = metadataMediator_->getLightSetupFullHandle(
-      curSceneInstanceAttributes->getLightingHandle());
-  // lighting attributes corresponding to this key should exist unless it is
-  // empty; if empty, the following does nothing.
-  esp::gfx::LightSetup lightingSetup =
-      metadataMediator_->getLightLayoutAttributesManager()
-          ->createLightSetupFromAttributes(lightSetupKey);
-  // set lightsetup in resource manager
-  resourceManager_->setLightSetup(lightingSetup,
-                                  Mn::ResourceKey{lightSetupKey});
 
   // 5. Load object instances as spceified by Scene Instance Attributes.
 
