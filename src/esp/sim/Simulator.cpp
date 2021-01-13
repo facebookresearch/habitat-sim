@@ -71,6 +71,7 @@ void Simulator::close() {
   activeSceneID_ = ID_UNDEFINED;
   activeSemanticSceneID_ = ID_UNDEFINED;
   config_ = SimulatorConfiguration{};
+  currLightSetup = Mn::ResourceKey{DEFAULT_LIGHTING_KEY};
 
   frustumCulling_ = true;
   requiresTextures_ = Cr::Containers::NullOpt;

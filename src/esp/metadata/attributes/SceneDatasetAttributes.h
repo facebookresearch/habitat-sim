@@ -26,6 +26,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   SceneDatasetAttributes(
       const std::string& datasetName,
       const managers::PhysicsAttributesManager::ptr& physAttrMgr);
+
   /**
    * @brief Return manager for construction and access to asset attributes.
    */

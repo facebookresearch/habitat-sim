@@ -27,7 +27,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   // info display message prefix
   const std::string infoPrefix(
       "SceneDatasetAttributes::addNewSceneInstanceToDataset : Dataset : '" +
-      getHandle() + "' :");
+      getSimplifiedHandle() + "' :");
 
   const std::string sceneInstanceName = sceneInstance->getHandle();
   // verify stage in sceneInstance (required) exists in SceneDatasetAttributes,

@@ -55,6 +55,8 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
   LightInstanceAttributes::ptr lightInstanceAttribs = nullptr;
   if (jsonConfig.HasMember("lights") && jsonConfig["lights"].IsObject()) {
     const auto& lightCell = jsonConfig["lights"];
+    size_t numLightConfigs = lightCell.Size();
+    int count = 0;
     // iterate through objects
     for (rapidjson::Value::ConstMemberIterator it = lightCell.MemberBegin();
          it != lightCell.MemberEnd(); ++it) {
@@ -71,13 +73,14 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
 
       // add ref to object in appropriate layout
       lightAttribs->addLightInstance(lightInstanceAttribs);
-
-      LOG(INFO) << "LightLayoutAttributesManager::setValsFromJSONDoc : "
-                   "LightInstanceAttributes "
-                << lightInstanceAttribs->getHandle()
-                << " created successfully and added to LightLayoutAttributes "
-                << layoutName << ".";
+      ++count;
     }
+    LOG(INFO) << "LightLayoutAttributesManager::setValsFromJSONDoc : " << count
+              << " of " << numLightConfigs
+              << " LightInstanceAttributes created successfully and added to "
+                 "LightLayoutAttributes "
+              << layoutName << ".";
+
     // register
     this->postCreateRegister(lightAttribs, true);
 
