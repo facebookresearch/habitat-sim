@@ -71,15 +71,9 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
   loadAndValidateMap(dsDir, "navmesh_instances", jsonConfig,
                      dsAttribs->editNavmeshMap());
 
-  // io::readMember<std::map<std::string, std::string>>(
-  //     jsonConfig, "navmesh_instances", dsAttribs->editNavmeshMap());
-
   // process semantic scene descriptor instances
   loadAndValidateMap(dsDir, "semantic_scene_descriptor_instances", jsonConfig,
                      dsAttribs->editSemanticSceneDescrMap());
-  // io::readMember<std::map<std::string, std::string>>(
-  //     jsonConfig, "semantic_scene_descriptor_instances",
-  //     dsAttribs->editSemanticSceneDescrMap());
 
 }  // SceneDatasetAttributesManager::setValsFromJSONDoc
 
@@ -95,17 +89,17 @@ void SceneDatasetAttributesManager::loadAndValidateMap(
   // now verify that all entries in map exist.  If not replace entry with
   // dsDir-prepended entry
   for (std::pair<const std::string, std::string>& entry : map) {
-    const std::string key = entry.first;
     const std::string loc = entry.second;
     if (!Cr::Utility::Directory::exists(loc)) {
       std::string newLoc = Cr::Utility::Directory::join(dsDir, loc);
       if (!Cr::Utility::Directory::exists(newLoc)) {
         LOG(WARNING) << "SceneDatasetAttributesManager::loadAndValidateMap : "
                      << jsonTag << " Value : " << loc
-                     << " not found as absolute path or relative to " << dsDir;
+                     << " not found on disk as absolute path or relative to "
+                     << dsDir;
       } else {
         // replace value with dataset-augmented absolute path
-        map[key] = newLoc;
+        map[entry.first] = newLoc;
       }
     }  // loc does not exist
   }    // for each loc

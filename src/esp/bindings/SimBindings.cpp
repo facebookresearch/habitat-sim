@@ -29,7 +29,15 @@ void initSimBindings(py::module& m) {
   py::class_<SimulatorConfiguration, SimulatorConfiguration::ptr>(
       m, "SimulatorConfiguration")
       .def(py::init(&SimulatorConfiguration::create<>))
-      .def_readwrite("scene_id", &SimulatorConfiguration::activeSceneName)
+      .def_readwrite(
+          "scene_dataset_config_file",
+          &SimulatorConfiguration::sceneDatasetConfigFile,
+          R"(The location of the scene dataset configuration file that describes the
+          dataset to be used.)")
+      .def_readwrite(
+          "scene_id", &SimulatorConfiguration::activeSceneName,
+          R"(Either the name of a stage asset or configuration file, or else the name of a scene
+          instance configuration, used to initialize the simulator world.)")
       .def_readwrite("random_seed", &SimulatorConfiguration::randomSeed)
       .def_readwrite("default_agent_id",
                      &SimulatorConfiguration::defaultAgentId)
@@ -53,7 +61,8 @@ void initSimBindings(py::module& m) {
       .def_readwrite(
           "force_separate_semantic_scene_graph",
           &SimulatorConfiguration::forceSeparateSemanticSceneGraph,
-          R"(Required to support playback of any gfx replay that includes a stage with a semantic mesh. Set to false otherwise.)")
+          R"(Required to support playback of any gfx replay that includes a
+          stage with a semantic mesh. Set to false otherwise.)")
       .def_readwrite("requires_textures",
                      &SimulatorConfiguration::requiresTextures)
       .def(py::self == py::self)
