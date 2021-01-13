@@ -13,17 +13,17 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
-#include <Magnum/PixelFormat.h>
-#include <Magnum/SceneGraph/Camera.h>
-#include <Magnum/Timeline.h>
-
+#include <Magnum/GL/Context.h>
+#include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/PixelFormat.h>
+#include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
-
+#include <Magnum/Timeline.h>
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/nav/PathFinder.h"
@@ -36,6 +36,7 @@
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
+#include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -331,6 +332,8 @@ Key Commands:
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
+
+  Mn::DebugTools::GLFrameProfiler profiler_{};
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -506,6 +509,25 @@ Viewer::Viewer(const Arguments& arguments)
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
+  // Set up per frame profiler
+  Mn::DebugTools::GLFrameProfiler::Values profilerValues =
+      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
+      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
+      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
+
+// VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
+#ifndef MAGNUM_TARGET_GLES
+  if (Mn::GL::Context::current()
+          .isExtensionSupported<
+              Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
+    profilerValues |=
+        Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
+        Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio;
+  }
+#endif
+
+  profiler_.setup(profilerValues, 50);
+
   printHelpText();
 }  // end Viewer::Viewer
 
@@ -674,6 +696,7 @@ void Viewer::wiggleLastObject() {
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
+  profiler_.beginFrame();
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
@@ -694,7 +717,6 @@ void Viewer::drawEvent() {
     // reset timeSinceLastSimulation, accounting for potential overflow
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
-
   // using polygon offset to increase mesh depth to a avoid z-fighting with
   // debug draw (since lines will not respond to offset).
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
@@ -745,12 +767,12 @@ void Viewer::drawEvent() {
   }
 
   sensorRenderTarget->blitRgbaToDefault();
+  profiler_.endFrame();
   // Immediately bind the main buffer back so that the "imgui" below can work
   // properly
   Mn::GL::defaultFramebuffer.bind();
 
   imgui_.newFrame();
-
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("main", NULL,
@@ -766,6 +788,7 @@ void Viewer::drawEvent() {
                 (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
                      ? "Orthographic"
                      : "Pinhole"));
+    ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
 
@@ -1036,6 +1059,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
+      showFPS_ ? profiler_.enable() : profiler_.disable();
       break;
     case KeyEvent::Key::E:
       simulator_->setFrustumCullingEnabled(
