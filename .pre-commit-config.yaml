@@ -82,6 +82,7 @@ repos:
         pass_filenames: true
         additional_dependencies:
             - 'jupytext==1.6.0'
+            - 'nbformat<=5.0.8'
             - black
             - isort
         always_run: false
