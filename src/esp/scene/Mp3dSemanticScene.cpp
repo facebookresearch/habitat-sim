@@ -95,7 +95,7 @@ bool SemanticScene::loadMp3dHouse(
   const bool hasWorldRotation = !rotation.isApprox(quatf::Identity());
 
   auto getVec3f = [&](const std::vector<std::string>& tokens, int offset,
-                      bool applyRotation = true) {
+                      bool applyRotation = true) -> vec3f {
     const float x = std::stof(tokens[offset]);
     const float y = std::stof(tokens[offset + 1]);
     const float z = std::stof(tokens[offset + 2]);
@@ -106,7 +106,8 @@ bool SemanticScene::loadMp3dHouse(
     return p;
   };
 
-  auto getBBox = [&](const std::vector<std::string>& tokens, int offset) {
+  auto getBBox = [&](const std::vector<std::string>& tokens,
+                     int offset) -> box3f {
     // Get the bounding box without rotating as rotating min/max is odd
     box3f sceneBox{getVec3f(tokens, offset, /*applyRotation=*/false),
                    getVec3f(tokens, offset + 3, /*applyRotation=*/false)};
@@ -114,11 +115,12 @@ bool SemanticScene::loadMp3dHouse(
       return sceneBox;
 
     // Apply the rotation to center/sizes
-    auto worldCenter = rotation * sceneBox.center();
-    auto worldHalfSizes =
+    const vec3f worldCenter = rotation * sceneBox.center();
+    const vec3f worldHalfSizes =
         (rotation * sceneBox.sizes()).array().abs().matrix() / 2.0f;
     // Then remake the box with min/max computed from rotated center/size
-    return box3f{worldCenter - worldHalfSizes, worldCenter + worldHalfSizes};
+    return box3f{(worldCenter - worldHalfSizes).eval(),
+                 (worldCenter + worldHalfSizes).eval()};
   };
 
   auto getOBB = [&](const std::vector<std::string>& tokens, int offset) {
@@ -204,22 +206,26 @@ bool SemanticScene::loadMp3dHouse(
         }
         break;
       }
+      // NOLINTNEXTLINE(bugprone-branch-clone)
       case 'P': {  // portal or panorama
         // P portal_index region0_index region1_index label  xlo ylo zlo xhi
         //   yhi zhi  0 0 0 0
         // P name  panorama_index region_index 0  px py pz  0 0 0 0 0
         break;
       }
+      // NOLINTNEXTLINE(bugprone-branch-clone)
       case 'S': {  // surface
         // S surface_index region_index 0 label px py pz  nx ny nz  xlo ylo
         // zlo
         //   xhi yhi zhi  0 0 0 0 0
         break;
       }
+      // NOLINTNEXTLINE(bugprone-branch-clone)
       case 'V': {  // vertex
         // V vertex_index surface_index label  px py pz  nx ny nz  0 0 0
         break;
       }
+      // NOLINTNEXTLINE(bugprone-branch-clone)
       case 'I': {  // image
         // I image_index panorama_index  name camera_index yaw_index e00 e01
         //   e02 e03 e10 e11 e12 e13 e20 e21 e22 e23 e30 e31 e32 e33  i00 i01

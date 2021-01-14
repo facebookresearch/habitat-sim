@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <math.h>
 #include <stdlib.h>
 #include <ctime>
 
@@ -12,17 +13,17 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
-#include <Magnum/PixelFormat.h>
-#include <Magnum/SceneGraph/Camera.h>
-#include <Magnum/Timeline.h>
-
+#include <Magnum/GL/Context.h>
+#include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/PixelFormat.h>
+#include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
-
+#include <Magnum/Timeline.h>
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/nav/PathFinder.h"
@@ -35,6 +36,7 @@
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
+#include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -51,9 +53,10 @@
 #include "ObjectPickingHelper.h"
 #include "esp/physics/configure.h"
 
-constexpr float moveSensitivity = 0.1f;
-constexpr float lookSensitivity = 11.25f;
+constexpr float moveSensitivity = 0.07f;
+constexpr float lookSensitivity = 0.9f;
 constexpr float rgbSensorHeight = 1.5f;
+constexpr float agentActionsPerSecond = 60.0f;
 
 // for ease of access
 namespace Cr = Corrade;
@@ -80,6 +83,15 @@ class Viewer : public Mn::Platform::Application {
   explicit Viewer(const Arguments& arguments);
 
  private:
+  // Keys for moving/looking are recorded according to whether they are
+  // currently being pressed
+  std::map<KeyEvent::Key, bool> keysPressed = {
+      {KeyEvent::Key::Left, false}, {KeyEvent::Key::Right, false},
+      {KeyEvent::Key::Up, false},   {KeyEvent::Key::Down, false},
+      {KeyEvent::Key::A, false},    {KeyEvent::Key::D, false},
+      {KeyEvent::Key::S, false},    {KeyEvent::Key::W, false},
+      {KeyEvent::Key::X, false},    {KeyEvent::Key::Z, false}};
+
   void drawEvent() override;
   void viewportEvent(ViewportEvent& event) override;
   void mousePressEvent(MouseEvent& event) override;
@@ -87,6 +99,8 @@ class Viewer : public Mn::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
+  void keyReleaseEvent(KeyEvent& event) override;
+  void moveAndLook(int repetitions);
 
   /**
    * @brief Instance an object from an ObjectAttributes.
@@ -318,6 +332,8 @@ Key Commands:
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
+
+  Mn::DebugTools::GLFrameProfiler profiler_{};
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -493,6 +509,25 @@ Viewer::Viewer(const Arguments& arguments)
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
+  // Set up per frame profiler
+  Mn::DebugTools::GLFrameProfiler::Values profilerValues =
+      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
+      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
+      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
+
+// VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
+#ifndef MAGNUM_TARGET_GLES
+  if (Mn::GL::Context::current()
+          .isExtensionSupported<
+              Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
+    profilerValues |=
+        Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
+        Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio;
+  }
+#endif
+
+  profiler_.setup(profilerValues, 50);
+
   printHelpText();
 }  // end Viewer::Viewer
 
@@ -661,18 +696,27 @@ void Viewer::wiggleLastObject() {
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
+  profiler_.beginFrame();
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
-  // step physics at a fixed rate
+  // Agent actions should occur at a fixed rate per second
   timeSinceLastSimulation += timeline_.previousFrameDuration();
-  if (timeSinceLastSimulation >= 1.0 / 60.0 &&
-      (simulating_ || simulateSingleStep_)) {
-    simulator_->stepWorld(1.0 / 60.0);
-    timeSinceLastSimulation = 0.0;
-    simulateSingleStep_ = false;
-  }
+  int numAgentActions = timeSinceLastSimulation * agentActionsPerSecond;
+  moveAndLook(numAgentActions);
 
+  // occasionally a frame will pass quicker than 1/60 seconds
+  if (timeSinceLastSimulation >= 1.0 / 60.0) {
+    if (simulating_ || simulateSingleStep_) {
+      // step physics at a fixed rate
+      // In the interest of frame rate, only a single step is taken,
+      // even if timeSinceLastSimulation is quite large
+      simulator_->stepWorld(1.0 / 60.0);
+      simulateSingleStep_ = false;
+    }
+    // reset timeSinceLastSimulation, accounting for potential overflow
+    timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
+  }
   // using polygon offset to increase mesh depth to a avoid z-fighting with
   // debug draw (since lines will not respond to offset).
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
@@ -723,12 +767,12 @@ void Viewer::drawEvent() {
   }
 
   sensorRenderTarget->blitRgbaToDefault();
+  profiler_.endFrame();
   // Immediately bind the main buffer back so that the "imgui" below can work
   // properly
   Mn::GL::defaultFramebuffer.bind();
 
   imgui_.newFrame();
-
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("main", NULL,
@@ -744,6 +788,7 @@ void Viewer::drawEvent() {
                 (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
                      ? "Orthographic"
                      : "Pinhole"));
+    ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
 
@@ -767,6 +812,53 @@ void Viewer::drawEvent() {
   swapBuffers();
   timeline_.nextFrame();
   redraw();
+}
+
+void Viewer::moveAndLook(int repetitions) {
+  for (int i = 0; i < repetitions; i++) {
+    if (keysPressed[KeyEvent::Key::Left]) {
+      defaultAgent_->act("turnLeft");
+    }
+    if (keysPressed[KeyEvent::Key::Right]) {
+      defaultAgent_->act("turnRight");
+    }
+    if (keysPressed[KeyEvent::Key::Up]) {
+      defaultAgent_->act("lookUp");
+    }
+    if (keysPressed[KeyEvent::Key::Down]) {
+      defaultAgent_->act("lookDown");
+    }
+
+    bool moved = false;
+    if (keysPressed[KeyEvent::Key::A]) {
+      defaultAgent_->act("moveLeft");
+      moved = true;
+    }
+    if (keysPressed[KeyEvent::Key::D]) {
+      defaultAgent_->act("moveRight");
+      moved = true;
+    }
+    if (keysPressed[KeyEvent::Key::S]) {
+      defaultAgent_->act("moveBackward");
+      moved = true;
+    }
+    if (keysPressed[KeyEvent::Key::W]) {
+      defaultAgent_->act("moveForward");
+      moved = true;
+    }
+    if (keysPressed[KeyEvent::Key::X]) {
+      defaultAgent_->act("moveDown");
+      moved = true;
+    }
+    if (keysPressed[KeyEvent::Key::Z]) {
+      defaultAgent_->act("moveUp");
+      moved = true;
+    }
+
+    if (moved) {
+      recAgentLocation();
+    }
+  }
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
@@ -918,43 +1010,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // also `>` key
       simulateSingleStep_ = true;
       break;
-      // ==== Look direction and Movement ====
-    case KeyEvent::Key::Left:
-      defaultAgent_->act("turnLeft");
-      break;
-    case KeyEvent::Key::Right:
-      defaultAgent_->act("turnRight");
-      break;
-    case KeyEvent::Key::Up:
-      defaultAgent_->act("lookUp");
-      break;
-    case KeyEvent::Key::Down:
-      defaultAgent_->act("lookDown");
-      break;
-    case KeyEvent::Key::A:
-      defaultAgent_->act("moveLeft");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::D:
-      defaultAgent_->act("moveRight");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::S:
-      defaultAgent_->act("moveBackward");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::W:
-      defaultAgent_->act("moveForward");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::X:
-      defaultAgent_->act("moveDown");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::Z:
-      defaultAgent_->act("moveUp");
-      recAgentLocation();
-      break;
       // ==== Miscellaneous ====
     case KeyEvent::Key::One:
       // toggle agent location recording for trajectory
@@ -1004,6 +1059,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
+      showFPS_ ? profiler_.enable() : profiler_.disable();
       break;
     case KeyEvent::Key::E:
       simulator_->setFrustumCullingEnabled(
@@ -1047,6 +1103,20 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     default:
       break;
+  }
+
+  // Update map of moving/looking keys which are currently pressed
+  if (keysPressed.count(key) > 0) {
+    keysPressed[key] = true;
+  }
+  redraw();
+}
+
+void Viewer::keyReleaseEvent(KeyEvent& event) {
+  // Update map of moving/looking keys which are currently pressed
+  const auto key = event.key();
+  if (keysPressed.count(key) > 0) {
+    keysPressed[key] = false;
   }
   redraw();
 }

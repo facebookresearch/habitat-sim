@@ -435,12 +435,12 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
     bObjectRigidBody_->setCollisionFlags(
         bObjectRigidBody_->getCollisionFlags() |
         btCollisionObject::CF_KINEMATIC_OBJECT);
-    ASSERT(bObjectRigidBody_->isKinematicObject());
+    CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isKinematicObject());
   }
 
   // add the object to the world
   if (mt == MotionType::STATIC) {
-    ASSERT(bObjectRigidBody_->isStaticObject());
+    CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isStaticObject());
     bWorld_->addRigidBody(
         bObjectRigidBody_.get(),
         2,       // collisionFilterGroup (2 == StaticFilter)

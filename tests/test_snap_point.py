@@ -7,8 +7,7 @@ from hypothesis import strategies as st
 import habitat_sim
 
 
-@pytest.fixture(scope="function")
-def test_data():
+def test_data_func():
     pf = habitat_sim.PathFinder()
     pf.load_nav_mesh(
         "data/scene_datasets/habitat-test-scenes/skokloster-castle.navmesh"
@@ -18,8 +17,14 @@ def test_data():
     return pf, pf.get_random_navigable_point()
 
 
+@pytest.fixture(scope="function")
+def test_data():
+    return test_data_func()
+
+
 @hypothesis.given(
-    nudge=st.tuples(st.floats(-10, 10), st.floats(-2.5, 2.5), st.floats(-10, 10))
+    nudge=st.tuples(st.floats(-10, 10), st.floats(-2.5, 2.5), st.floats(-10, 10)),
+    test_data=st.just(test_data_func()),
 )
 @hypothesis.settings(max_examples=int(1e3))
 def test_snap_point(nudge, test_data):

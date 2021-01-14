@@ -2,12 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Corrade/Containers/Optional.h>
-#include <Corrade/Utility/Directory.h>
-#include <Magnum/EigenIntegration/Integration.h>
-#include <Magnum/Math/Range.h>
-#include <gtest/gtest.h>
-#include <string>
+#include "configure.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
@@ -17,7 +12,14 @@
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/scene/SceneManager.h"
 
-#include "configure.h"
+#include <Corrade/Containers/Optional.h>
+#include <Corrade/Utility/Directory.h>
+#include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/Math/Range.h>
+
+#include <gtest/gtest.h>
+#include <fstream>
+#include <string>
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -232,5 +234,44 @@ TEST(GfxReplayTest, player) {
                                      &userRotation));
       ASSERT(userTranslation == Mn::Vector3(4.f, 5.f, 6.f));
     }
+  }
+}
+
+TEST(GfxReplayTest, playerReadMissingFile) {
+  auto dummyCallback =
+      [&](const esp::assets::AssetInfo& assetInfo,
+          const esp::assets::RenderAssetInstanceCreationInfo& creation) {
+        return nullptr;
+      };
+  esp::gfx::replay::Player player(dummyCallback);
+
+  player.readKeyframesFromFile("file_that_does_not_exist.json");
+  EXPECT_EQ(player.getNumKeyframes(), 0);
+}
+
+TEST(GfxReplayTest, playerReadInvalidFile) {
+  auto testFilepath =
+      Corrade::Utility::Directory::join(DATA_DIR, "./gfx_replay_test.json");
+
+  std::ofstream out(testFilepath);
+  out << "{invalid json";
+  out.close();
+
+  auto dummyCallback =
+      [&](const esp::assets::AssetInfo& assetInfo,
+          const esp::assets::RenderAssetInstanceCreationInfo& creation) {
+        return nullptr;
+      };
+  esp::gfx::replay::Player player(dummyCallback);
+
+  player.readKeyframesFromFile(testFilepath);
+  EXPECT_EQ(player.getNumKeyframes(), 0);
+
+  // remove bogus file created for this test
+  bool success = Corrade::Utility::Directory::rm(testFilepath);
+  if (!success) {
+    LOG(WARNING) << "GfxReplayTest::playerReadInvalidFile : unable to remove "
+                    "temporary test JSON file "
+                 << testFilepath;
   }
 }

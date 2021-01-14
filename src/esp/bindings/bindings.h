@@ -12,6 +12,7 @@ namespace esp {
 
 namespace metadata {
 void initAttributesBindings(pybind11::module& m);
+void initMetadataMediatorBindings(pybind11::module& m);
 namespace managers {
 void initAttributesManagersBindings(pybind11::module& m);
 }  // namespace managers
@@ -23,7 +24,10 @@ void initGeoBindings(pybind11::module& m);
 
 namespace gfx {
 void initGfxBindings(pybind11::module& m);
+namespace replay {
+void initGfxReplayBindings(pybind11::module& m);
 }
+}  // namespace gfx
 
 namespace nav {
 void initShortestPathBindings(pybind11::module& m);

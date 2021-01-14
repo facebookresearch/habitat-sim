@@ -17,13 +17,20 @@ import {
 } from "./modules/utils";
 
 function preload(url) {
-  let file = url;
-  if (url.indexOf("http") === 0) {
-    const splits = url.split("/");
-    file = splits[splits.length - 1];
+  let file_parents_str = "/";
+  const splits = url.split("/");
+  let file = splits[splits.length - 1];
+  if (url.indexOf("http") === -1) {
+    let file_parents = splits.slice(0, splits.length - 1);
+    for (let i = 0; i < splits.length - 1; i += 1) {
+      file_parents_str += file_parents[i] + "/";
+      if (!FS.analyzePath(file_parents_str).exists) {
+        FS.mkdir(file_parents_str, 777);
+      }
+    }
   }
-  FS.createPreloadedFile("/", file, url, true, false);
-  return file;
+  FS.createPreloadedFile(file_parents_str, file, url, true, false);
+  return file_parents_str + file;
 }
 
 Module.preRun.push(() => {
