@@ -80,8 +80,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // set dataset upon creation or reconfigure
   if (!metadataMediator_) {
     metadataMediator_ = metadata::MetadataMediator::create(cfg);
+    LOG(WARNING) << "Simulator::reconfigure : create MM w/ cfg w/setting "
+                 << cfg.overrideSceneLightDefaults;
   } else {
     metadataMediator_->setSimulatorConfiguration(cfg);
+    LOG(WARNING) << "Simulator::reconfigure : set sim MM w/ cfg w/setting "
+                 << cfg.overrideSceneLightDefaults;
   }
 
   // assign MM to RM on create or reconfigure
@@ -248,21 +252,27 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   if (config_.overrideSceneLightDefaults) {
     lightSetupKey = config_.sceneLightSetup;
+    LOG(WARNING) << "Simulator::createSceneInstance : Using config-specified "
+                    "Light key : -"
+                 << lightSetupKey << "-";
   } else {
     lightSetupKey = metadataMediator_->getLightSetupFullHandle(
         curSceneInstanceAttributes->getLightingHandle());
-    // lighting attributes corresponding to this key should exist unless it is
-    // empty; if empty, the following does nothing.
-    esp::gfx::LightSetup lightingSetup =
-        metadataMediator_->getLightLayoutAttributesManager()
-            ->createLightSetupFromAttributes(lightSetupKey);
-    // set lightsetup in resource manager
-    resourceManager_->setLightSetup(lightingSetup,
-                                    Mn::ResourceKey{lightSetupKey});
+    LOG(WARNING)
+        << "Simulator::createSceneInstance : Using scene instance-specified "
+           "Light key : -"
+        << lightSetupKey << "-";
+    if (lightSetupKey.compare(NO_LIGHT_KEY) != 0) {
+      // lighting attributes corresponding to this key should exist unless it is
+      // empty; if empty, the following does nothing.
+      esp::gfx::LightSetup lightingSetup =
+          metadataMediator_->getLightLayoutAttributesManager()
+              ->createLightSetupFromAttributes(lightSetupKey);
+      // set lightsetup in resource manager
+      resourceManager_->setLightSetup(lightingSetup,
+                                      Mn::ResourceKey{lightSetupKey});
+    }
   }
-  LOG(WARNING) << "Simulator::createSceneInstance : Sceme Instance-specified "
-                  "Light key : "
-               << lightSetupKey;
 
   // 4. Load stage specified by Scene Instance Attributes
   // Get Stage Instance Attributes - contains name of stage and initial

@@ -17,11 +17,14 @@ bool operator==(const SimulatorConfiguration& a,
          a.allowSliding == b.allowSliding &&
          a.frustumCulling == b.frustumCulling &&
          a.enablePhysics == b.enablePhysics &&
+         a.enableGfxReplaySave == b.enableGfxReplaySave &&
          a.loadSemanticMesh == b.loadSemanticMesh &&
+         a.forceSeparateSemanticSceneGraph ==
+             b.forceSeparateSemanticSceneGraph &&
          a.requiresTextures == b.requiresTextures &&
-         a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
-         a.physicsConfigFile.compare(b.physicsConfigFile) == 0 &&
          a.sceneDatasetConfigFile.compare(b.sceneDatasetConfigFile) == 0 &&
+         a.physicsConfigFile.compare(b.physicsConfigFile) == 0 &&
+         a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
          a.sceneLightSetup.compare(b.sceneLightSetup) == 0;
 }
 

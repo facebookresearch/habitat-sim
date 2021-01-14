@@ -15,14 +15,13 @@ namespace managers {
 
 /**
  * @brief This enum class describes whether a translation should   Depending on
-this value, we may take certain actions when
- * instantiating a scene described by a scene instance. Scene instances created
-in blender will have no conception of an object's COM, and
- * so will require adjustment to translations to account for COM location when
-the object is placed.  @p SceneInstanceTranslationOrigin::Unknown will mean to
-use the specified default (in the case of individual object instances), or to
-not correct for COM location (in the case of the scene instance default setting)
-. */
+ * this value, we may take certain actions when instantiating a scene described
+ * by a scene instance. Scene instances created in blender will have no
+ * conception of an object's COM, and so will require adjustment to translations
+ * to account for COM location when the object is placed.  @p
+ * SceneInstanceTranslationOrigin::Unknown will mean to use the specified
+ * default (in the case of individual object instances), or to not correct for
+ * COM location (in the case of the scene instance default setting).*/
 enum class SceneInstanceTranslationOrigin {
   /**
    * @brief Default value - in the case of object instances, this means use the
