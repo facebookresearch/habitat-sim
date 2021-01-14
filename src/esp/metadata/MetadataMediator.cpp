@@ -64,15 +64,15 @@ bool MetadataMediator::setSimulatorConfiguration(
                   "dataset exists or has been specified. Aborting";
     return false;
   }
-  LOG(INFO) << "MetadataMediator::setSimulatorConfiguration : Set new "
-               "simulator config for scene/stage : "
-            << simConfig_.activeSceneName
-            << " and dataset : " << simConfig_.sceneDatasetConfigFile
-            << " which "
-            << (activeSceneDataset_.compare(
-                    simConfig_.sceneDatasetConfigFile) == 0
-                    ? "is currently active dataset."
-                    : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
+  LOG(WARNING) << "MetadataMediator::setSimulatorConfiguration : Set new "
+                  "simulator config for scene/stage : "
+               << simConfig_.activeSceneName
+               << " and dataset : " << simConfig_.sceneDatasetConfigFile
+               << " which "
+               << (activeSceneDataset_.compare(
+                       simConfig_.sceneDatasetConfigFile) == 0
+                       ? "is currently active dataset."
+                       : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
   return true;
 }  // MetadataMediator::setSimulatorConfiguration
 
