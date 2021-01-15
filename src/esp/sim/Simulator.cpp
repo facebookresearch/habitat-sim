@@ -412,12 +412,15 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
          metadata::managers::SceneInstanceTranslationOrigin::AssetLocal)) {
       // if default COM correction is set and no object-based override, or if
       // Object set to correct for COM.
-      translate -=
-          physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation();
+
+      translate -= objInst->getRotation().transformVector(
+          physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation());
+
+      // translate -=
+      //     physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation();
     }
-    physicsManager_->setTransformation(
-        objID,
-        Magnum::Matrix4::from(objInst->getRotation().toMatrix(), translate));
+    physicsManager_->setTranslation(objID, translate);
+    physicsManager_->setRotation(objID, objInst->getRotation());
     // set object's motion type if different than set value
     const physics::MotionType attrObjMotionType =
         static_cast<physics::MotionType>(objInst->getMotionType());
@@ -426,6 +429,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
     if ((attrObjMotionType != objMotionType) &&
         (attrObjMotionType != physics::MotionType::UNDEFINED)) {
+      physicsManager_->setObjectMotionType(objID, attrObjMotionType);
     }
     objectsAdded.push_back(objID);
   }  // for each object attributes
