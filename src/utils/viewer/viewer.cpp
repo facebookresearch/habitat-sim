@@ -38,6 +38,7 @@
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
@@ -150,10 +151,10 @@ class Viewer : public Mn::Platform::Application {
 
   void saveCameraTransformToFile();
   void saveNodeTransformToFile(esp::scene::SceneNode& node,
-                               std::string filename);
+                               const std::string& filename);
   void loadCameraTransformFromFile();
   void loadNodeTransformFromFile(esp::scene::SceneNode& node,
-                                 std::string filename);
+                                 const std::string& filename);
 
   //! string rep of time when viewer application was started
   std::string viewerStartTimeString = getCurrentTimeString();
@@ -197,16 +198,16 @@ Key Commands:
   '2' build and display trajectory visualization.
   '+' increase trajectory diameter
   '-' decrease trajectory diameter
-  '3' toggle flying camera mode (unlocks camera from agent)
+  '3' toggle flying camera mode (user can apply camera transformation loaded from disk)
   '5' switch ortho/perspective camera.
   '6' reset ortho camera zoom/perspective camera FOV.
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
+  'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.  
   '[' save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt"
   ']' load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance
-  'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -337,10 +338,10 @@ Key Commands:
   bool drawObjectBBs = false;
   std::string gfxReplayRecordFilepath_;
 
-  const std::string saved_transformations_directory = "saved_transformations/";
-  std::string cameraLoadTimeString_;
-  bool cameraSaved = false;
-  Mn::Matrix4 lastCameraSave_;
+  std::string cameraLoadPath_;
+  // bool cameraSaved_ = false;
+  // Mn::Matrix4 lastCameraSave_;
+  Cr::Containers::Optional<Mn::Matrix4> lastCameraSave_;
 
   Mn::Timeline timeline_;
 
@@ -404,10 +405,7 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("recompute-navmesh",
                "Programmatically re-generate the scene navmesh.")
       .addOption("camera")
-      .setHelp("camera",
-               "Specify time to load camera transformation from. Format: "
-               "y_m_d_h-m-s as in ./" +
-                   saved_transformations_directory)
+      .setHelp("camera", "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -585,56 +583,49 @@ void Viewer::switchCameraType() {
 }
 
 void Viewer::saveCameraTransformToFile() {
-  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
-    Cr::Utility::Directory::mkpath(saved_transformations_directory);
+  const char* saved_transformations_directory_ = "saved_transformations/";
+  if (!Cr::Utility::Directory::exists(saved_transformations_directory_)) {
+    Cr::Utility::Directory::mkpath(saved_transformations_directory_);
   }
 
   // update temporary save
   lastCameraSave_ = renderCamera_->node().absoluteTransformation();
-  cameraSaved = true;
 
   // update save in file system
-  saveNodeTransformToFile(renderCamera_->node(),
-                          saved_transformations_directory + "camera." +
-                              getCurrentTimeString() + ".txt");
+  saveNodeTransformToFile(
+      renderCamera_->node(),
+      Cr::Utility::formatString("{}camera.{}.txt",
+                                saved_transformations_directory_,
+                                getCurrentTimeString()));
 }
 
 void Viewer::loadCameraTransformFromFile() {
-  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
-    LOG(INFO) << "Cannot find saved transformations directory. Make sure that "
-                 "you've saved a transformation before trying to load one.";
-    return;
-  }
-
-  if (!cameraLoadTimeString_.empty()) {
+  if (!cameraLoadPath_.empty()) {
     // loading from file system
-    loadNodeTransformFromFile(renderCamera_->node(),
-                              saved_transformations_directory + "camera." +
-                                  cameraLoadTimeString_ + ".txt");
+    loadNodeTransformFromFile(renderCamera_->node(), cameraLoadPath_);
   } else {
     // attempting to load from last temporary save
-    LOG(INFO) << "Camera transform file not specified, attempting to load from "
-                 "current instance. Use --camera to specify file to load from.";
-    if (!cameraSaved) {
-      LOG(INFO) << "No transformation saved in current instance. Save a "
-                   "transformation before trying to load one.";
+    LOG(INFO)
+        << "Note: Camera transform file not specified, attempting to load from "
+           "current instance. Use --camera to specify file to load from.";
+    if (!lastCameraSave_) {
+      LOG(INFO) << "No transformation saved in current instance.";
       return;
     }
 
+    renderCamera_->node().setTransformation(*lastCameraSave_);
     LOG(INFO) << "Transformation matrix loaded from current instance : "
-              << Eigen::Map<esp::mat4f>(lastCameraSave_.data());
-
-    renderCamera_->node().setTransformation(lastCameraSave_);
+              << Eigen::Map<esp::mat4f>(lastCameraSave_->data());
   }
 
   if (!flyingCameraMode_) {
-    LOG(INFO) << "Note: flying camera mode is OFF, so loading camera transform "
-                 "will have no effect.";
+    LOG(INFO) << "Note: the flying camera mode is currently OFF. You may not "
+                 "see any view change.";
   }
 }
 
 void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
-                                     std::string filename) {
+                                     const std::string& filename) {
   std::ofstream file(filename);
   if (!file.good()) {
     LOG(INFO) << "Cannot open " << filename << " to output data.";
@@ -654,7 +645,7 @@ void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
 }
 
 void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
-                                       std::string filename) {
+                                       const std::string& filename) {
   std::ifstream file(filename);
   if (!file.good()) {
     LOG(INFO) << "Cannot open " << filename << " to load data.";
@@ -673,15 +664,14 @@ void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
 
   // checking for corruption
   if (!transform.isRigidTransformation()) {
-    LOG(INFO) << "File error: Data loaded from " << filename
+    LOG(INFO) << "Warning: Data loaded from " << filename
               << " is not a valid transformation.";
     return;
   }
 
+  node.setTransformation(transform);
   LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
             << Eigen::Map<esp::mat4f>(transform.data());
-
-  node.setTransformation(transform);
 }
 
 int Viewer::addObject(int ID) {
