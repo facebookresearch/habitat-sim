@@ -415,9 +415,6 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
       translate -= objInst->getRotation().transformVector(
           physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation());
-
-      // translate -=
-      //     physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation();
     }
     physicsManager_->setTranslation(objID, translate);
     physicsManager_->setRotation(objID, objInst->getRotation());
