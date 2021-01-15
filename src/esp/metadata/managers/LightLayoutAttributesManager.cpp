@@ -165,7 +165,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
                     _1));
     }
   }  // if member spot present
-}  // namespace managers
+}  // LightLayoutAttributesManager::setValsFromJSONDoc
 
 LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
     const std::string& handleName,
@@ -212,9 +212,8 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
         const LightInstanceAttributes::ptr& lightAttr = elem.second;
         const int type = lightAttr->getType();
         const gfx::LightType typeEnum = static_cast<gfx::LightType>(type);
-        const Magnum::Color3 color = lightAttr->getColor();
-        // TODO How to handle this?
-        // const float intensity = lightAttr->getIntensity();
+        const Magnum::Color3 color =
+            lightAttr->getColor() * lightAttr->getIntensity();
         Magnum::Vector4 lightVector;
         switch (typeEnum) {
           case gfx::LightType::Point: {
