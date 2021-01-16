@@ -404,7 +404,7 @@ Viewer::Viewer(const Arguments& arguments)
       .addBooleanOption("recompute-navmesh")
       .setHelp("recompute-navmesh",
                "Programmatically re-generate the scene navmesh.")
-      .addOption("camera")
+      .addOption("camera-transform-filepath")
       .setHelp("camera", "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
 
@@ -607,9 +607,10 @@ void Viewer::loadCameraTransformFromFile() {
     // attempting to load from last temporary save
     LOG(INFO)
         << "Note: Camera transform file not specified, attempting to load from "
-           "current instance. Use --camera to specify file to load from.";
+           "current instance. Use --camera-transform-filepath to specify file "
+           "to load from.";
     if (!lastCameraSave_) {
-      LOG(INFO) << "No transformation saved in current instance.";
+      LOG(WARNING) << "No transformation saved in current instance.";
       return;
     }
 
@@ -628,7 +629,7 @@ void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
                                      const std::string& filename) {
   std::ofstream file(filename);
   if (!file.good()) {
-    LOG(INFO) << "Cannot open " << filename << " to output data.";
+    LOG(WARNING) << "Cannot open " << filename << " to output data.";
     return;
   }
 
@@ -648,7 +649,7 @@ void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
                                        const std::string& filename) {
   std::ifstream file(filename);
   if (!file.good()) {
-    LOG(INFO) << "Cannot open " << filename << " to load data.";
+    LOG(WARNING) << "Cannot open " << filename << " to load data.";
     return;
   }
 
@@ -664,8 +665,8 @@ void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
 
   // checking for corruption
   if (!transform.isRigidTransformation()) {
-    LOG(INFO) << "Warning: Data loaded from " << filename
-              << " is not a valid transformation.";
+    LOG(WARNING) << "Data loaded from " << filename
+                 << " is not a valid transformation.";
     return;
   }
 
