@@ -405,7 +405,8 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("recompute-navmesh",
                "Programmatically re-generate the scene navmesh.")
       .addOption("camera-transform-filepath")
-      .setHelp("camera", "Specify path to load camera transform from.")
+      .setHelp("camera-transform-filepath",
+               "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -583,9 +584,9 @@ void Viewer::switchCameraType() {
 }
 
 void Viewer::saveCameraTransformToFile() {
-  const char* saved_transformations_directory_ = "saved_transformations/";
-  if (!Cr::Utility::Directory::exists(saved_transformations_directory_)) {
-    Cr::Utility::Directory::mkpath(saved_transformations_directory_);
+  const char* saved_transformations_directory = "saved_transformations/";
+  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
+    Cr::Utility::Directory::mkpath(saved_transformations_directory);
   }
 
   // update temporary save
@@ -595,7 +596,7 @@ void Viewer::saveCameraTransformToFile() {
   saveNodeTransformToFile(
       renderCamera_->node(),
       Cr::Utility::formatString("{}camera.{}.txt",
-                                saved_transformations_directory_,
+                                saved_transformations_directory,
                                 getCurrentTimeString()));
 }
 
@@ -605,12 +606,12 @@ void Viewer::loadCameraTransformFromFile() {
     loadNodeTransformFromFile(renderCamera_->node(), cameraLoadPath_);
   } else {
     // attempting to load from last temporary save
-    LOG(INFO)
-        << "Note: Camera transform file not specified, attempting to load from "
+    LOG(WARNING)
+        << "Camera transform file not specified, attempting to load from "
            "current instance. Use --camera-transform-filepath to specify file "
            "to load from.";
     if (!lastCameraSave_) {
-      LOG(WARNING) << "No transformation saved in current instance.";
+      LOG(ERROR) << "No transformation saved in current instance.";
       return;
     }
 
@@ -620,7 +621,7 @@ void Viewer::loadCameraTransformFromFile() {
   }
 
   if (!flyingCameraMode_) {
-    LOG(INFO) << "Note: the flying camera mode is currently OFF. You may not "
+    LOG(INFO) << "Note: The flying camera mode is currently OFF. You may not "
                  "see any view change.";
   }
 }
@@ -629,7 +630,7 @@ void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
                                      const std::string& filename) {
   std::ofstream file(filename);
   if (!file.good()) {
-    LOG(WARNING) << "Cannot open " << filename << " to output data.";
+    LOG(ERROR) << "Cannot open " << filename << " to output data.";
     return;
   }
 
@@ -649,7 +650,7 @@ void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
                                        const std::string& filename) {
   std::ifstream file(filename);
   if (!file.good()) {
-    LOG(WARNING) << "Cannot open " << filename << " to load data.";
+    LOG(ERROR) << "Cannot open " << filename << " to load data.";
     return;
   }
 
