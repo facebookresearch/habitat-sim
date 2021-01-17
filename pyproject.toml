@@ -1,9 +1,3 @@
-[tool.isort]
-skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
-profile = 'black'
-treat_comments_as_code = "# %%"
-
-
 [tool.black]
 exclude = '''
 (
@@ -25,3 +19,8 @@ exclude = '''
   )/
 )
 '''
+
+[tool.isort]
+skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
+profile = 'black'
+treat_comments_as_code = "# %%"
