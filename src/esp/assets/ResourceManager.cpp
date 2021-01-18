@@ -277,19 +277,21 @@ bool ResourceManager::loadStage(
   AssetInfo& infoToUse = renderInfo;
   if (assetInfoMap.count("collision")) {
     AssetInfo colInfo = assetInfoMap.at("collision");
-    LOG(INFO) << "ResourceManager::loadStage : start load collision asset "
-              << colInfo.filepath << ".";
+    if (resourceDict_.count(colInfo.filepath) == 0) {
+      LOG(INFO) << "ResourceManager::loadStage : start load collision asset "
+                << colInfo.filepath << ".";
+      // will not reload if already present
+      bool collisionMeshSuccess =
+          loadStageInternal(colInfo,   // AssetInfo
+                            nullptr,   // creation
+                            nullptr,   // parent scene node
+                            nullptr);  // drawable group
 
-    // should this be checked to make sure we do not reload?
-    bool collisionMeshSuccess = loadStageInternal(colInfo,  // AssetInfo
-                                                  nullptr,  // creation
-                                                  nullptr,  // parent scene node
-                                                  nullptr);  // drawable group
-
-    if (!collisionMeshSuccess) {
-      LOG(ERROR) << " ResourceManager::loadStage : Stage collision mesh "
-                    "load failed.  Aborting scene initialization.";
-      return false;
+      if (!collisionMeshSuccess) {
+        LOG(ERROR) << " ResourceManager::loadStage : Stage collision mesh "
+                      "load failed.  Aborting scene initialization.";
+        return false;
+      }
     }
     // if we have a collision mesh, and it does not exist already as a
     // collision object, add it
