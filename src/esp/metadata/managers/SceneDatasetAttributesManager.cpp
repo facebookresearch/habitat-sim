@@ -68,15 +68,48 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                       dsAttribs->getSceneAttributesManager());
 
   // process navmesh instances
-  io::readMember<std::map<std::string, std::string>>(
-      jsonConfig, "navmesh_instances", dsAttribs->editNavmeshMap());
+  loadAndValidateMap(dsDir, "navmesh_instances", jsonConfig,
+                     dsAttribs->editNavmeshMap());
+
+  // io::readMember<std::map<std::string, std::string>>(
+  //     jsonConfig, "navmesh_instances", dsAttribs->editNavmeshMap());
 
   // process semantic scene descriptor instances
-  io::readMember<std::map<std::string, std::string>>(
-      jsonConfig, "semantic_scene_descriptor_instances",
-      dsAttribs->editSemanticSceneDescrMap());
+  loadAndValidateMap(dsDir, "semantic_scene_descriptor_instances", jsonConfig,
+                     dsAttribs->editSemanticSceneDescrMap());
+  // io::readMember<std::map<std::string, std::string>>(
+  //     jsonConfig, "semantic_scene_descriptor_instances",
+  //     dsAttribs->editSemanticSceneDescrMap());
 
 }  // SceneDatasetAttributesManager::setValsFromJSONDoc
+
+void SceneDatasetAttributesManager::loadAndValidateMap(
+    const std::string& dsDir,
+    const std::string& jsonTag,
+    const io::JsonGenericValue& jsonConfig,
+    std::map<std::string, std::string>& map) {
+  // load values into map
+  io::readMember<std::map<std::string, std::string>>(jsonConfig,
+                                                     jsonTag.c_str(), map);
+
+  // now verify that all entries in map exist.  If not replace entry with
+  // dsDir-prepended entry
+  for (std::pair<const std::string, std::string>& entry : map) {
+    const std::string key = entry.first;
+    const std::string loc = entry.second;
+    if (!Cr::Utility::Directory::exists(loc)) {
+      std::string newLoc = Cr::Utility::Directory::join(dsDir, loc);
+      if (!Cr::Utility::Directory::exists(newLoc)) {
+        LOG(WARNING) << "SceneDatasetAttributesManager::loadAndValidateMap : "
+                     << jsonTag << " Value : " << loc
+                     << " not found as absolute path or relative to " << dsDir;
+      } else {
+        // replace value with dataset-augmented absolute path
+        map[key] = newLoc;
+      }
+    }  // loc does not exist
+  }    // for each loc
+}  // SceneDatasetAttributesManager::loadAndValidateMap
 
 // using type deduction
 template <typename U>

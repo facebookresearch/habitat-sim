@@ -179,7 +179,8 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
   // first check if physics manager attributes exists, if so then set as current
   if (physicsAttributesManager_->getObjectLibHasHandle(
           _physicsManagerAttributesPath)) {
-    if (!currPhysicsManagerAttributes_.compare(_physicsManagerAttributesPath)) {
+    if (currPhysicsManagerAttributes_.compare(_physicsManagerAttributesPath) !=
+        0) {
       LOG(INFO) << "MetadataMediator::setCurrPhysicsAttributesHandle : Old "
                    "physics manager attributes "
                 << currPhysicsManagerAttributes_ << " changed to "
@@ -208,7 +209,7 @@ bool MetadataMediator::setActiveSceneDatasetName(
     const std::string& sceneDatasetName) {
   // first check if dataset exists/is loaded, if so then set as default
   if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName)) {
-    if (!activeSceneDataset_.compare(sceneDatasetName)) {
+    if (activeSceneDataset_.compare(sceneDatasetName) != 0) {
       LOG(INFO)
           << "MetadataMediator::setActiveSceneDatasetName : Old active dataset "
           << activeSceneDataset_ << " changed to " << sceneDatasetName

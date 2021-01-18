@@ -75,14 +75,30 @@ class SceneDatasetAttributesManager
 
  protected:
   /**
-   * @brief Verify a particular subcell exists within the dataset_config.JSON
-   * file, and if so, handle reading the possible JSON sub-cells it might hold.
-   * using the passed attributesManager for the dataset being processed.
+   * @brief This will load a dataset map with file location values from the
+   * dataset config.  It will also attempt to either verify those locations are
+   * valid files, or else prefix the given location with the dataset root
+   * directory.
+   * @param dsDir the dataset's root directory
+   * @param jsonTag the appropriate tag for the map being read
+   * @param jsonConfig the json configuration file being read
+   * @param map A ref to the dataset's map that is being populated.
+   */
+  void loadAndValidateMap(const std::string& dsDir,
+                          const std::string& jsonTag,
+                          const io::JsonGenericValue& jsonConfig,
+                          std::map<std::string, std::string>& map);
+
+  /**
+   * @brief Verify a particular subcell exists within the
+   * dataset_config.JSON file, and if so, handle reading the possible JSON
+   * sub-cells it might hold. using the passed attributesManager for the
+   * dataset being processed.
    * @tparam the type of the attributes manager.
    * @param dsDir The root directory of the dataset attributes being built.
-   * @param tag The name of the JSON cell being processed - corresponds to what
-   * type of data is being loaded from dataset configuration (i.e. stages,
-   * objects, etc)
+   * @param tag The name of the JSON cell being processed - corresponds to
+   * what type of data is being loaded from dataset configuration (i.e.
+   * stages, objects, etc)
    * @param jsonConfig The sub cell in the json document being processed.
    * @param attrMgr The dataset's attributes manager for @p tag 's data.
    */
