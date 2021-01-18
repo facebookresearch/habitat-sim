@@ -259,6 +259,8 @@ bool ResourceManager::loadStage(
   }
   RenderAssetInstanceCreationInfo renderCreation(
       renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
+  LOG(INFO) << "ResourceManager::loadStage : start load render asset "
+            << renderInfo.filepath << ".";
 
   bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
                                              &renderCreation,
@@ -275,6 +277,9 @@ bool ResourceManager::loadStage(
   AssetInfo& infoToUse = renderInfo;
   if (assetInfoMap.count("collision")) {
     AssetInfo colInfo = assetInfoMap.at("collision");
+    LOG(INFO) << "ResourceManager::loadStage : start load collision asset "
+              << colInfo.filepath << ".";
+
     // should this be checked to make sure we do not reload?
     bool collisionMeshSuccess = loadStageInternal(colInfo,  // AssetInfo
                                                   nullptr,  // creation
@@ -559,6 +564,8 @@ bool ResourceManager::loadStageInternal(
     DrawableGroup* drawables) {
   // scene mesh loading
   const std::string& filename = info.filepath;
+  LOG(INFO) << "ResourceManager::loadStageInternal : Attempting to load stage "
+            << filename << " ";
   bool meshSuccess = true;
   if (info.filepath.compare(EMPTY_SCENE) != 0) {
     if (!Cr::Utility::Directory::exists(filename)) {
