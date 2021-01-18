@@ -17,7 +17,7 @@ struct SimulatorConfiguration {
   /**
    * @brief Name of scene or stage config or asset to load
    */
-  std::string activeSceneID;
+  std::string activeSceneName;
   int defaultAgentId = 0;
   int gpuDeviceId = 0;
   unsigned int randomSeed = 0;
