@@ -120,13 +120,13 @@ SceneObjectInstanceAttributes::ptr
 SceneAttributesManager::createInstanceAttributesFromJSON(
     const io::JsonGenericValue& jCell) {
   SceneObjectInstanceAttributes::ptr instanceAttrs =
-      SceneObjectInstanceAttributes::create("");
+      createEmptyInstanceAttributes("");
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
       jCell, "template_name",
       std::bind(&SceneObjectInstanceAttributes::setHandle, instanceAttrs, _1));
 
-  // motion type of object.  Ignored for stage.  TODO : veify is valid motion
+  // motion type of object.  Ignored for stage.  TODO : verify is valid motion
   // type using standard mechanism of static map comparison.
 
   int motionTypeVal = static_cast<int>(physics::MotionType::UNDEFINED);

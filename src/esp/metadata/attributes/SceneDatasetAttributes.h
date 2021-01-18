@@ -121,6 +121,19 @@ class SceneDatasetAttributes : public AbstractAttributes {
     return getString("physMgrAttrHandle");
   }
 
+  /**
+   * @brief Add the passed @p sceneInstance to the dataset, verifying that all
+   * the attributes and assets references in the scene instance exist, and if so
+   * adding them.  This is to handle the addition of an existing sceneInstance
+   * that might reference stages, objects, navmeshes, etc. that do not exist in
+   * the dataset.
+   * @param sceneInstance A Scene Instance Attributes.  It is assumed the @p
+   * sceneInstance at least references a valid stage.
+   * @return whether this sceneInstance was successfully added to the dataset.
+   */
+  bool addNewSceneInstanceToDataset(
+      attributes::SceneAttributes::ptr sceneInstance);
+
  protected:
   /**
    * @brief Reference to AssetAttributesManager to give access to primitive

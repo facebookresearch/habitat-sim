@@ -21,8 +21,7 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
   std::string msg;
   bool doRegister = registerTemplate;
   // File based attributes are automatically registered.
-  std::string jsonAttrFileName =
-      this->convertFilenameToJSON(lightConfigName, this->JSONTypeExt_);
+  std::string jsonAttrFileName = getFormattedJSONFileName(lightConfigName);
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
   if (jsonFileExists) {
     // if exists, force registration to be true.

@@ -174,10 +174,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   auto& rootNode = sceneGraph.getRootNode();
 
-  // (re)seat & (re)init physics manager
-  resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
-                                       &rootNode, physicsManagerAttributes);
-
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
     WindowlessContext since a (windowed) context already exists. */
@@ -194,6 +190,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
 
     reconfigureReplayManager();
+    // (re)seat & (re)init physics manager
+    resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
+                                         &rootNode, physicsManagerAttributes);
+
     bool loadSuccess = false;
 
     std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};

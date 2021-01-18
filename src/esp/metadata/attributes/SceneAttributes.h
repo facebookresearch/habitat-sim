@@ -73,13 +73,15 @@ class SceneAttributes : public AbstractAttributes {
   SceneAttributes(const std::string& handle);
 
   /**
-   * @brief Set the name of the template that describes the scene's stage
+   * @brief Set the name of the template that describes the scene's default
+   * lighting
    */
   void setLightingHandle(const std::string& lightingHandle) {
     setString("default_lighting", lightingHandle);
   }
   /**
-   * @brief Get the name of the template that describes the scene's stage
+   * @brief Get the name of the template that describes the scene's default
+   * lighting
    */
   std::string getLightingHandle() const {
     return getString("default_lighting");
@@ -102,6 +104,7 @@ class SceneAttributes : public AbstractAttributes {
   void setSemanticSceneHandle(const std::string& semanticSceneDesc) {
     setString("semantic_scene_instance", semanticSceneDesc);
   }
+
   /**
    * @brief Get the name of the semantic scene descriptor
    */
