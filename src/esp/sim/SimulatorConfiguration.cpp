@@ -19,6 +19,7 @@ bool operator==(const SimulatorConfiguration& a,
          a.enablePhysics == b.enablePhysics &&
          a.loadSemanticMesh == b.loadSemanticMesh &&
          a.requiresTextures == b.requiresTextures &&
+         a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
          a.physicsConfigFile.compare(b.physicsConfigFile) == 0 &&
          a.sceneDatasetConfigFile.compare(b.sceneDatasetConfigFile) == 0 &&
          a.sceneLightSetup.compare(b.sceneLightSetup) == 0;
