@@ -22,20 +22,10 @@ namespace esp {
 namespace metadata {
 class MetadataMediator {
  public:
-  MetadataMediator(const std::string& _defaultSceneDataset = "default")
-      : activeSceneDataset_(_defaultSceneDataset) {
-    buildAttributesManagers();
-  }  // namespace metadata
+  MetadataMediator(const std::string& _activeSceneDataset = "default",
+                   const std::string& _physicsManagerAttributesPath =
+                       ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
   ~MetadataMediator() {}
-
-  /**
-   * @brief This function will build the @ref managers::PhysicsAttributesManager
-   * and @ref managers::DatasetAttributeManager this mediator will manage.
-   *
-   * This will also attempt to build templates for the default physics manager
-   * and dataset.
-   */
-  void buildAttributesManagers();
 
   /**
    * @brief Creates a dataset attributes using @p sceneDatasetName, and
@@ -45,8 +35,19 @@ class MetadataMediator {
    * @param overwrite Whether to overwrite an existing dataset or not
    * @return Whether successfully created a new dataset or not.
    */
-  bool createDataset(const std::string& sceneDatasetName,
-                     bool overwrite = true);
+  bool createSceneDataset(const std::string& sceneDatasetName,
+                          bool overwrite = true);
+
+  /**
+   * @brief Load a physics manager attributes defined by passed string file path
+   * @param _physicsManagerAttributesPath The path to look for the physics
+   * config file.
+   * @return Whether successfully created a new physics manager attributes or
+   * not.
+   */
+  bool createPhysicsManagerAttributes(
+      const std::string& _physicsManagerAttributesPath =
+          ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
 
   /**
    * @brief Sets default dataset attributes, if it exists already.  If it does
@@ -59,10 +60,27 @@ class MetadataMediator {
    * @return whether successful or not
    */
   bool setActiveSceneDatasetName(const std::string& sceneDatasetName);
+
   /**
-   * @brief Returns the name of the current default dataset
+   * @brief Returns the name of the current active dataset
    */
   std::string getActiveSceneDatasetName() const { return activeSceneDataset_; }
+
+  /**
+   * @brief Sets desired physics manager attributes handle.  Will load if does
+   * not exist.
+   * @param _physicsManagerAttributesPath The path to look for the physics
+   * config file.
+   * @return whether successful or not
+   */
+  bool setCurrPhysicsAttributesHandle(
+      const std::string& _physicsManagerAttributesPath);
+  /**
+   * @brief Returns the name of the currently used physics manager attributes
+   */
+  std::string getCurrPhysicsAttributesHandle() {
+    return currPhysicsManagerAttributes_;
+  }
 
   /**
    * @brief Return manager for construction and access to asset attributes for
@@ -106,6 +124,15 @@ class MetadataMediator {
   }
 
   /**
+   * @brief Return manager for construction and access to physics world
+   * attributes.
+   */
+  const managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
+      const {
+    return physicsAttributesManager_;
+  }  // getPhysicsAttributesManager
+
+  /**
    * @brief Return manager for construction and access to scene instance
    * attributes for current dataset.
    * @return The current dataset's @ref managers::SceneAttributesManager::ptr,
@@ -132,13 +159,13 @@ class MetadataMediator {
   }  // MetadataMediator::getStageAttributesManager
 
   /**
-   * @brief Return manager for construction and access to physics world
-   * attributes.
+   * @brief Return current physics manager attributes.
    */
-  const managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
-      const {
-    return physicsAttributesManager_;
-  }
+  attributes::PhysicsManagerAttributes::ptr
+  getCurrentPhysicsManagerAttributes() {
+    return physicsAttributesManager_->getObjectCopyByHandle(
+        currPhysicsManagerAttributes_);
+  }  // getCurrentPhysicsManagerAttributes
 
   /**
    * @brief Return copy of map of current active dataset's navmesh handles.
@@ -150,7 +177,7 @@ class MetadataMediator {
       return std::map<std::string, std::string>();
     }
     return std::map<std::string, std::string>(datasetAttr->getNavmeshMap());
-  }
+  }  // getActiveNavmeshMap
 
   /**
    * @brief Return copy of map of current active dataset's semantic scene
@@ -165,11 +192,20 @@ class MetadataMediator {
     }
     return std::map<std::string, std::string>(
         datasetAttr->getSemanticSceneDescrMap());
-  }
+  }  // getActiveSemanticSceneDescriptorMap
 
   //==================== Accessors ======================//
 
  protected:
+  /**
+   * @brief This function will build the @ref managers::PhysicsAttributesManager
+   * and @ref managers::DatasetAttributeManager this mediator will manage.
+   *
+   * This will also attempt to build templates for the default physics manager
+   * and dataset.
+   */
+  void buildAttributesManagers();
+
   /**
    * @brief Retrieve the current default dataset object.  Currently only for
    * internal use.
@@ -188,10 +224,16 @@ class MetadataMediator {
     return datasetAttr;
   }  // MetadataMediator::getActiveDSAttribs
 
+  //================== Instance variables ==================//
+
   /**
    * @brief String name of current, default dataset.
    */
   std::string activeSceneDataset_;
+  /**
+   * @brief String name of current Physis Manager attributes
+   */
+  std::string currPhysicsManagerAttributes_;
   /**
    * @brief Manages all construction and access to asset attributes.
    */

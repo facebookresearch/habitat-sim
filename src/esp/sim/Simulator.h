@@ -848,6 +848,24 @@ class Simulator {
  protected:
   Simulator(){};
 
+  /**
+   * @brief Builds a scene instance and populates it with initial object layout,
+   * if appropriate.  Uses current @ref config_
+   */
+  bool createSceneInstance();
+
+  /**
+   * @brief Load a @ref esp::scene::SemanticScene object that aggregates the
+   * semantic description of the scene.
+   * @param semanticSceneDescFilename The name of the semantic scene description
+   * file.
+   * @param assetType The asset type for the scene's stage.  This is currently
+   * used to determine the mechanism for laoding the SemanticScene object.
+   * @return Whether successful or not.
+   */
+  bool loadSemanticSceneDescriptor(const std::string& semanticSceneDescFilename,
+                                   const assets::AssetType& assetType);
+
   //! sample a random valid AgentState in passed agentState
   void sampleRandomAgentState(agent::AgentState& agentState);
 
