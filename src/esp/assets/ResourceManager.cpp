@@ -1083,6 +1083,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   ASSERT(isRenderAssetGeneral(info.type));
 
   const std::string& filename = info.filepath;
+  const std::string dispFileName = Cr::Utility::Directory::filename(filename);
   CHECK(resourceDict_.count(filename) == 0);
 
   // Preferred plugins, Basis target GPU format
@@ -1102,7 +1103,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
             Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
 #endif
     {
-      LOG(INFO) << "Importing Basis files as ASTC 4x4";
+      LOG(INFO) << "Importing Basis files as ASTC 4x4 for " << dispFileName;
       metadata->configuration().setValue("format", "Astc4x4RGBA");
     }
 #ifdef MAGNUM_TARGET_GLES
@@ -1113,7 +1114,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
                  Mn::GL::Extensions::ARB::texture_compression_bptc>())
 #endif
     {
-      LOG(INFO) << "Importing Basis files as BC7";
+      LOG(INFO) << "Importing Basis files as BC7 for " << dispFileName;
       metadata->configuration().setValue("format", "Bc7RGBA");
     }
 #ifdef MAGNUM_TARGET_WEBGL
@@ -1129,7 +1130,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
                  Mn::GL::Extensions::EXT::texture_compression_s3tc>())
 #endif
     {
-      LOG(INFO) << "Importing Basis files as BC3";
+      LOG(INFO) << "Importing Basis files as BC3 for " << dispFileName;
       metadata->configuration().setValue("format", "Bc3RGBA");
     }
 #ifndef MAGNUM_TARGET_GLES2
@@ -1139,7 +1140,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
                 Mn::GL::Extensions::ARB::ES3_compatibility>())
 #endif
     {
-      LOG(INFO) << "Importing Basis files as ETC2";
+      LOG(INFO) << "Importing Basis files as ETC2 for " << dispFileName;
       metadata->configuration().setValue("format", "Etc2RGBA");
     }
 #else /* For ES2, fall back to PVRTC as ETC2 is not available */
@@ -1150,7 +1151,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
         if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
 #endif
     {
-      LOG(INFO) << "Importing Basis files as PVRTC 4bpp";
+      LOG(INFO) << "Importing Basis files as PVRTC 4bpp for " << dispFileName;
       metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
     }
 #endif
@@ -1158,7 +1159,8 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     else /* ES3 has ETC2 always */
     {
       LOG(WARNING) << "No supported GPU compressed texture format detected, "
-                      "Basis images will get imported as RGBA8";
+                      "Basis images will get imported as RGBA8 for "
+                   << dispFileName;
       metadata->configuration().setValue("format", "RGBA8");
     }
 #endif
