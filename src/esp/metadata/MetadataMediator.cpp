@@ -64,6 +64,12 @@ bool MetadataMediator::setSimulatorConfiguration(
                   "dataset exists or has been specified. Aborting";
     return false;
   }
+  LOG(INFO) << "MetadataMediator::setSimulatorConfiguration : Set new "
+               "simulator config for scene/stage : "
+            << simConfig_.activeSceneName
+            << " and dataset : " << simConfig_.sceneDatasetConfigFile
+            << " which should be currently active dataset : "
+            << activeSceneDataset_;
   return true;
 }  // MetadataMediator::setSimulatorConfiguration
 
@@ -212,12 +218,19 @@ bool MetadataMediator::setActiveSceneDatasetName(
     return true;
   }
   // if does not exist, attempt to create it
+  LOG(INFO) << "MetadataMediator::setActiveSceneDatasetName : Attempting to "
+               "create new dataset "
+            << sceneDatasetName;
   bool success = createSceneDataset(sceneDatasetName);
   // if successfully created, set default name to access dataset attributes in
   // SceneDatasetAttributesManager
   if (success) {
     activeSceneDataset_ = sceneDatasetName;
   }
+  LOG(INFO) << "MetadataMediator::setActiveSceneDatasetName : Attempt to "
+               "create new dataset "
+            << sceneDatasetName << " "
+            << (success ? " succeeded." : " failed.");
   return success;
 }  // MetadataMediator::setActiveSceneDatasetName
 
@@ -365,75 +378,6 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   dsSceneAttrMgr->registerObject(sceneAttributes);
   return sceneAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage
-
-esp::gfx::LightSetup MetadataMediator::getNamedLightSetup(
-    const std::string& lightSetupName) {
-  // get current dataset's light layout attributes manager
-  managers::LightLayoutAttributesManager::ptr dsLightAttrMgr =
-      getLightLayoutAttributesManager();
-  // this should never happen
-  if (dsLightAttrMgr == nullptr) {
-    LOG(ERROR)
-        << "MetadataMediator::getNamedLightSetup : No dataset "
-           "specified/exists or no LightLayoutAttributesManager found for "
-           "current active dataset "
-        << activeSceneDataset_ << ".";
-    return esp::gfx::LightSetup{};
-  }
-
-  auto lightLayoutAttrName =
-      getFullAttrNameFromStr(lightSetupName, dsLightAttrMgr);
-  if (lightLayoutAttrName.compare("") == 0) {
-    return esp::gfx::LightSetup{};
-  }
-  return dsLightAttrMgr->createLightSetupFromAttributes(lightLayoutAttrName);
-
-}  // MetadataMediator::getNamedLightSetup
-
-attributes::StageAttributes::ptr MetadataMediator::getNamedStageAttributesCopy(
-    const std::string& stageAttrName) {
-  // get current dataset's stage attributes manager
-  managers::StageAttributesManager::ptr dsStageAttrMgr =
-      getStageAttributesManager();
-  // this should never happen
-  if (dsStageAttrMgr == nullptr) {
-    LOG(ERROR) << "MetadataMediator::getNamedStageAttributesCopy : No dataset "
-                  "specified/exists or no ObjectAttributesManager found for "
-                  "current active dataset "
-               << activeSceneDataset_ << ".";
-    return nullptr;
-  }
-  // do a substring search to find actual stage attributes and find first
-  // attributes found; if does not exist, name will be empty. return nullptr
-  auto fullStageName = getFullAttrNameFromStr(stageAttrName, dsStageAttrMgr);
-  // fullStageName will be empty if not found
-  if (fullStageName.compare("") == 0) {
-    return nullptr;
-  }
-  return dsStageAttrMgr->getObjectCopyByHandle(fullStageName);
-}  // MetadataMediator::getNamedStageAttributesCopy
-
-attributes::ObjectAttributes::ptr
-MetadataMediator::getNamedObjectAttributesCopy(const std::string& objAttrName) {
-  // get current dataset's object attributes manager
-  managers::ObjectAttributesManager::ptr dsObjAttrMgr =
-      getObjectAttributesManager();  // this should never happen
-  if (dsObjAttrMgr == nullptr) {
-    LOG(ERROR) << "MetadataMediator::getNamedObjectAttributesCopy : No dataset "
-                  "specified/exists or no ObjectAttributesManager found for "
-                  "current active dataset "
-               << activeSceneDataset_ << ".";
-    return nullptr;
-  }
-  // do a substring search to find actual object attributes and find first
-  // attributes found; if does not exist, name will be empty. return nullptr
-  auto fullObjName = getFullAttrNameFromStr(objAttrName, dsObjAttrMgr);
-  // fullObjName will be empty if not found
-  if (fullObjName.compare("") == 0) {
-    return nullptr;
-  }
-  return dsObjAttrMgr->getObjectCopyByHandle(fullObjName);
-}  // MetadataMediator::getNamedObjectAttributesCopy
 
 }  // namespace metadata
 }  // namespace esp

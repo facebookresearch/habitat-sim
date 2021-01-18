@@ -24,17 +24,19 @@ SceneDatasetAttributes::SceneDatasetAttributes(
 
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const attributes::SceneAttributes::ptr& sceneInstance) {
-  const std::string datasetName = getHandle();
+  // info display message prefix
+  const std::string infoPrefix(
+      "SceneDatasetAttributes::addNewSceneInstanceToDataset : Dataset : '" +
+      getHandle() + "' :");
+
   const std::string sceneInstanceName = sceneInstance->getHandle();
   // verify stage in sceneInstance (required) exists in SceneDatasetAttributes,
   // and if not, add it.
   const auto& stageInstance = sceneInstance->getStageInstance();
   const std::string stageHandle = stageInstance->getHandle();
-  // info display message prefix
-  const std::string infoPrefix(
-      "SceneDatasetAttributes::addNewSceneInstanceToDataset : Dataset : '" +
-      datasetName + "' :");
-  if (!stageAttributesManager_->getObjectLibHasHandle(stageHandle)) {
+  const std::string fullStageName =
+      getFullAttrNameFromStr(stageHandle, stageAttributesManager_);
+  if (fullStageName.compare("") == 0) {
     LOG(INFO)
         << infoPrefix << " Stage Attributes '" << stageHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
@@ -49,7 +51,9 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   auto objectInstances = sceneInstance->getObjectInstances();
   for (const auto& objInstance : objectInstances) {
     const std::string objHandle = objInstance->getHandle();
-    if (!objectAttributesManager_->getObjectLibHasHandle(objHandle)) {
+    const std::string fullObjHandle =
+        getFullAttrNameFromStr(objHandle, objectAttributesManager_);
+    if (fullObjHandle.compare("") == 0) {
       LOG(INFO) << infoPrefix << " Object Attributes '" << objHandle
                 << "' specified in Scene Attributes but does not exist in "
                    "dataset, so creating.";
@@ -69,7 +73,10 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   if (lightHandle.length() == 0) {
     lightHandle = sceneInstanceName;
   }
-  if (!lightLayoutAttributesManager_->getObjectLibHasHandle(lightHandle)) {
+
+  const std::string fullLightLayoutAttrName =
+      getFullAttrNameFromStr(lightHandle, lightLayoutAttributesManager_);
+  if (fullLightLayoutAttrName.compare("") == 0) {
     LOG(INFO)
         << infoPrefix << "Lighting Layout Attributes '" << lightHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
@@ -80,8 +87,11 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
               << " specified in Scene Attributes exists in dataset library.";
   }
 
+  const std::string fullSceneInstanceName =
+      getFullAttrNameFromStr(sceneInstanceName, sceneAttributesManager_);
+
   // add scene attributes to scene attributes manager
-  if (!sceneAttributesManager_->getObjectLibHasHandle(sceneInstanceName)) {
+  if (fullSceneInstanceName.compare("") == 0) {
     LOG(INFO) << infoPrefix << " Scene Attributes " << sceneInstanceName
               << " does not exist in dataset so adding.";
     sceneAttributesManager_->registerObject(sceneInstance);
@@ -133,6 +143,46 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
   map[newKey] = path;
   return *(map.find(newKey));
 }  // SceneDatasetAttributes::addNewValToMap
+
+esp::gfx::LightSetup SceneDatasetAttributes::getNamedLightSetup(
+    const std::string& lightSetupName) {
+  auto lightLayoutAttrName =
+      getFullAttrNameFromStr(lightSetupName, lightLayoutAttributesManager_);
+  if (lightLayoutAttrName.compare("") == 0) {
+    return esp::gfx::LightSetup{};
+  }
+  return lightLayoutAttributesManager_->createLightSetupFromAttributes(
+      lightLayoutAttrName);
+
+}  // SceneDatasetAttributes::getNamedLightSetup
+
+attributes::StageAttributes::ptr
+SceneDatasetAttributes::getNamedStageAttributesCopy(
+    const std::string& stageAttrName) {
+  // do a substring search to find actual stage attributes and find first
+  // attributes found; if does not exist, name will be empty. return nullptr
+  auto fullStageName =
+      getFullAttrNameFromStr(stageAttrName, stageAttributesManager_);
+  // fullStageName will be empty if not found
+  if (fullStageName.compare("") == 0) {
+    return nullptr;
+  }
+  return stageAttributesManager_->getObjectCopyByHandle(fullStageName);
+}  // SceneDatasetAttributes::getNamedStageAttributesCopy
+
+attributes::ObjectAttributes::ptr
+SceneDatasetAttributes::getNamedObjectAttributesCopy(
+    const std::string& objAttrName) {
+  // do a substring search to find actual object attributes and find first
+  // attributes found; if does not exist, name will be empty. return nullptr
+  auto fullObjName =
+      getFullAttrNameFromStr(objAttrName, objectAttributesManager_);
+  // fullObjName will be empty if not found
+  if (fullObjName.compare("") == 0) {
+    return nullptr;
+  }
+  return objectAttributesManager_->getObjectCopyByHandle(fullObjName);
+}  // SceneDatasetAttributes::getNamedObjectAttributesCopy
 
 }  // namespace attributes
 }  // namespace metadata
