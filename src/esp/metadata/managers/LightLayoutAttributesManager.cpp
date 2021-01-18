@@ -94,25 +94,52 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     const io::JsonGenericValue& jsonConfig) {
   // jsonConfig here holds the JSON description for a single light attributes.
   // set position
-  io::jsonIntoConstSetter<Magnum::Vector3>(
+  bool posIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "position",
       std::bind(&LightInstanceAttributes::setPosition, lightAttribs, _1));
+
   // set direction
-  io::jsonIntoConstSetter<Magnum::Vector3>(
+  bool dirIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "direction",
       std::bind(&LightInstanceAttributes::setDirection, lightAttribs, _1));
+
   // set color
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "color",
       std::bind(&LightInstanceAttributes::setColor, lightAttribs, _1));
+
   // set intensity
   io::jsonIntoSetter<double>(
       jsonConfig, "intensity",
       std::bind(&LightInstanceAttributes::setIntensity, lightAttribs, _1));
-  // type of light
-  io::jsonIntoSetter<std::string>(
-      jsonConfig, "type",
-      std::bind(&LightInstanceAttributes::setType, lightAttribs, _1));
+
+  // type of light - should map to enum values in esp::gfx::LightType
+  int typeVal = -1;
+  std::string tmpVal = "";
+  if (io::readMember<std::string>(jsonConfig, "type", tmpVal)) {
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
+    if (LightInstanceAttributes::LightTypeNamesMap.count(strToLookFor)) {
+      typeVal = static_cast<int>(
+          LightInstanceAttributes::LightTypeNamesMap.at(strToLookFor));
+    } else {
+      LOG(WARNING)
+          << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "
+             "Type Value in json : `"
+          << tmpVal
+          << "` does not map to a valid "
+             "LightInstanceAttributes::LightTypeNamesMap value, so "
+             "defaulting LightInfo type to esp::gfx::LightType::Point.";
+      typeVal = static_cast<int>(esp::gfx::LightType::Point);
+    }
+    lightAttribs->setType(typeVal);
+  } else if (posIsSet) {
+    // if no value found in attributes, attempt to infer desired type based on
+    // whether position or direction were set from JSON.
+    lightAttribs->setType(static_cast<int>(esp::gfx::LightType::Point));
+  } else if (dirIsSet) {
+    lightAttribs->setType(static_cast<int>(esp::gfx::LightType::Directional));
+  }  // if nothing set by here, will default to constructor defaults
+
   // read spotlight params
   if (jsonConfig.HasMember("spot")) {
     if (!jsonConfig["spot"].IsObject()) {
@@ -135,7 +162,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
                     _1));
     }
   }  // if member spot present
-}  // LightLayoutAttributesManager::setValsFromJSONDoc
+}  // namespace managers
 
 LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
     const std::string& handleName,
@@ -161,6 +188,57 @@ int LightLayoutAttributesManager::registerObjectFinalize(
 
   return LightLayoutAttributesID;
 }  // LightLayoutAttributesManager::registerObjectFinalize
+
+gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
+    const std::string& lightConfigName) {
+  gfx::LightSetup res{};
+  attributes::LightLayoutAttributes::ptr lightLayoutAttributes =
+      this->getObjectByHandle(lightConfigName);
+  if (lightLayoutAttributes != nullptr) {
+    int numLightInstances = lightLayoutAttributes->getNumLightInstances();
+    if (numLightInstances == 0) {
+      // setup default LightInfo instances - lifted from LightSetup.cpp.
+      // TODO create default attributes describing these lights?
+      return gfx::LightSetup{{{1.0, 1.0, 0.0, 0.0}, {0.75, 0.75, 0.75}},
+                             {{-0.5, 0.0, 1.0, 0.0}, {0.4, 0.4, 0.4}}};
+    } else {
+      const std::map<std::string, LightInstanceAttributes::ptr>&
+          lightInstances = lightLayoutAttributes->getLightInstances();
+      for (const std::pair<const std::string, LightInstanceAttributes::ptr>&
+               elem : lightInstances) {
+        const LightInstanceAttributes::ptr& lightAttr = elem.second;
+        const int type = lightAttr->getType();
+        const gfx::LightType typeEnum = static_cast<gfx::LightType>(type);
+        const Magnum::Color3 color = lightAttr->getColor();
+        // TODO How to handle this?
+        // const float intensity = lightAttr->getIntensity();
+        Magnum::Vector4 lightVector;
+        switch (typeEnum) {
+          case gfx::LightType::Point: {
+            lightVector = {lightAttr->getPosition(), 1.0f};
+            break;
+          }
+          case gfx::LightType::Directional: {
+            lightVector = {lightAttr->getDirection(), 0.0f};
+            break;
+          }
+          default: {
+            LOG(INFO)
+                << "LightLayoutAttributesManager::"
+                   "createLightSetupFromAttributes : Enum gfx::LightType with "
+                   "val "
+                << type
+                << " is not supported, so defaulting to gfx::LightType::Point";
+            lightVector = {lightAttr->getPosition(), 1.0f};
+          }
+        }  // switch on type
+        res.push_back({lightVector, color});
+      }  // for each light instance described
+    }    // if >0 light instances described
+  }      // lightLayoutAttributes of requested name exists
+  return res;
+
+}  // LightLayoutAttributesManager::createLightSetupFromAttributes
 
 }  // namespace managers
 }  // namespace metadata
