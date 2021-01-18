@@ -194,7 +194,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",
                              &SimulatorConfiguration::create<>)
-      .property("scene_id", &SimulatorConfiguration::activeSceneID)
+      .property("scene_id", &SimulatorConfiguration::activeSceneName)
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)

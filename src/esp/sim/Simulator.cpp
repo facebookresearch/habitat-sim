@@ -139,7 +139,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                                      config_.frustumCulling);
 
   // Build scene file name based on config specification
-  std::string stageFilename = config_.activeSceneID;
+  std::string stageFilename = config_.activeSceneName;
 
   // Create scene attributes with values based on sceneFilename
   auto stageAttributes = stageAttributesMgr->createObject(stageFilename, true);
