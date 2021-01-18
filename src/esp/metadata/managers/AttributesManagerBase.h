@@ -165,7 +165,7 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
 
-};  // namespace managers
+};  // class AttributesManager
 
 /////////////////////////////
 // Class Template Method Definitions
