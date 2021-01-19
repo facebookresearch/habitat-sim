@@ -879,19 +879,6 @@ class Simulator {
       const std::string& activeSceneName);
 
   /**
-   * @brief Load a @ref esp::scene::SemanticScene object that aggregates the
-   * semantic description of the scene, based on the current scene instance and
-   * the current stage's asset type.
-   * @param semanticSceneDescFilename The proposed file name for the semantic
-   * scene descriptor file.
-   * @param assetType The type of the stage, which will inform the mechanism for
-   * loading the semantic scene descriptor.
-   * @return Whether successful or not.
-   */
-  bool loadSemanticSceneDescriptor(const std::string& semanticSceneDescFilename,
-                                   const assets::AssetType& assetType);
-
-  /**
    * @brief sample a random valid AgentState in passed agentState
    * @param agentState [out] The placeholder for the sampled agent state.
    */

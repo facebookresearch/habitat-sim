@@ -182,14 +182,15 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
   if (Cr::Utility::Directory::exists(navmeshFileLoc)) {
-    LOG(INFO) << "Simulator::createPathfinder : Loading navmesh from "
+    LOG(INFO) << "Simulator::setSceneInstanceAttributes : Loading navmesh from "
               << navmeshFileLoc;
     pathfinder_->loadNavMesh(navmeshFileLoc);
-    LOG(INFO) << "Simulator::createPathfinder : Loaded.";
+    LOG(INFO) << "Simulator::setSceneInstanceAttributes : Loaded.";
   }
-  LOG(WARNING) << "Simulator::createPathfinder : Navmesh file not found, "
-                  "checked at filename : '"
-               << navmeshFileLoc << "'";
+  LOG(WARNING)
+      << "Simulator::setSceneInstanceAttributes : Navmesh file not found, "
+         "checked at filename : '"
+      << navmeshFileLoc << "'";
   // Calling to seeding needs to be done after the pathfinder creation but
   // before anything else.
   seed(config_.randomSeed);
@@ -214,7 +215,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
           curSceneInstanceAttributes->getSemanticSceneHandle());
   if (semanticSceneDescFilename.compare("") != 0) {
     // some candidate for SSD exists in scene instance attributes.
-    LOG(INFO) << "Simulator::loadSemanticSceneDescriptor : SceneInstance : "
+    LOG(INFO) << "Simulator::setSceneInstanceAttributes : SceneInstance : "
               << activeSceneName
               << " proposed Semantic Scene Descriptor filename : "
               << semanticSceneDescFilename;
@@ -226,7 +227,43 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       assets::AssetType assetType =
           static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
 
-      loadSemanticSceneDescriptor(semanticSceneDescFilename, assetType);
+      namespace FileUtil = Cr::Utility::Directory;
+
+      // semantic scene descriptor might not exist, so
+      semanticScene_ = nullptr;
+      semanticScene_ = scene::SemanticScene::create();
+      switch (assetType) {
+        case assets::AssetType::INSTANCE_MESH: {
+          const std::string tmpFName = FileUtil::join(
+              FileUtil::path(semanticSceneDescFilename), "info_semantic.json");
+          if (FileUtil::exists(tmpFName)) {
+            scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
+          }
+          break;
+        }
+        case assets::AssetType::MP3D_MESH: {
+          // TODO(msb) Fix AssetType determination logic.
+          if (FileUtil::exists(semanticSceneDescFilename)) {
+            using Corrade::Utility::String::endsWith;
+            if (endsWith(semanticSceneDescFilename, ".house")) {
+              scene::SemanticScene::loadMp3dHouse(semanticSceneDescFilename,
+                                                  *semanticScene_);
+            } else if (endsWith(semanticSceneDescFilename, ".scn")) {
+              scene::SemanticScene::loadGibsonHouse(semanticSceneDescFilename,
+                                                    *semanticScene_);
+            }
+          }
+          break;
+        }
+        case assets::AssetType::SUNCG_SCENE: {
+          // SUNCG is not handled anymore
+          // scene::SemanticScene::loadSuncgHouse(stageAttributesHandle,
+          // *semanticScene_);
+          break;
+        }
+        default:
+          break;
+      }  // end switch
     }
   }
   // return a const ptr to the cur scene instance attributes
@@ -459,61 +496,6 @@ bool Simulator::createSceneInstanceNoRenderer(
   reset();
   return true;
 }  // Simulator::createSceneInstanceNoRenderer
-
-bool Simulator::loadSemanticSceneDescriptor(
-    const std::string& semanticSceneDescFilename,
-    const assets::AssetType& assetType) {
-  namespace FileUtil = Cr::Utility::Directory;
-
-  // semantic scene descriptor might not exist, so
-  semanticScene_ = nullptr;
-  semanticScene_ = scene::SemanticScene::create();
-  bool present = false;
-  switch (assetType) {
-    case assets::AssetType::INSTANCE_MESH: {
-      const std::string tmpFName = FileUtil::join(
-          FileUtil::path(semanticSceneDescFilename), "info_semantic.json");
-      if (FileUtil::exists(tmpFName)) {
-        present =
-            scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
-      } else {
-        // Provide warning msgs for failures?
-        present = false;
-      }
-      break;
-    }
-    case assets::AssetType::MP3D_MESH: {
-      // TODO(msb) Fix AssetType determination logic.
-      if (FileUtil::exists(semanticSceneDescFilename)) {
-        using Corrade::Utility::String::endsWith;
-        if (endsWith(semanticSceneDescFilename, ".house")) {
-          present = scene::SemanticScene::loadMp3dHouse(
-              semanticSceneDescFilename, *semanticScene_);
-        } else if (endsWith(semanticSceneDescFilename, ".scn")) {
-          present = scene::SemanticScene::loadGibsonHouse(
-              semanticSceneDescFilename, *semanticScene_);
-        } else {
-          present = false;
-        }
-      } else {
-        present = false;
-      }
-      break;
-    }
-    case assets::AssetType::SUNCG_SCENE: {
-      // SUNCG is not handled anymore
-      // scene::SemanticScene::loadSuncgHouse(stageAttributesHandle,
-      // *semanticScene_);
-      present = false;
-      break;
-    }
-    default:
-      present = false;
-      break;
-  }  // end switch
-     // return whether SSD is present and loaded successfully
-  return present;
-}  // Simulator::loadSemanticSceneDescriptor
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
