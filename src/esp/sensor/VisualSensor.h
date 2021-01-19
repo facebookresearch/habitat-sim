@@ -89,6 +89,8 @@ class VisualSensor : public Sensor {
    */
   void bindRenderTarget(std::unique_ptr<gfx::RenderTarget>&& tgt);
 
+  void setRenderCamera();
+
   /**
    * @brief Returns a reference to the sensors render target
    */
