@@ -383,9 +383,11 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     const std::string objAttrFullHandle =
         metadataMediator_->getObjAttrFullHandle(objInst->getHandle());
     if (objAttrFullHandle == "") {
-      LOG(WARNING) << "Simulator::createSceneInstance : Unable to find "
+      LOG(WARNING) << "Simulator::createSceneInstance : Unable to find object "
                       "attributes whose handle contains "
-                   << objInst->getHandle() << " so skipping. ";
+                   << objInst->getHandle()
+                   << " as specified in object instance attributes, so unable "
+                      "to instance object; skipping. ";
       continue;
     }
     objID = physicsManager_->addObject(objAttrFullHandle, &drawables,
