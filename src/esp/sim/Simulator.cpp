@@ -178,13 +178,18 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       << "Simulator::setSceneInstanceAttributes : Navmesh file location in "
          "scene instance : "
       << navmeshFileLoc;
-
   // Get name of navmesh and use to create pathfinder and load navmesh
-  bool navMeshSuccess = createPathfinder(navmeshFileLoc);
-  if (!navMeshSuccess) {
-    LOG(INFO) << "Simulator::setSceneInstanceAttributes : Navmesh file "
-              << navmeshFileLoc << " unable to load.";
+  // create pathfinder and load navmesh if available
+  pathfinder_ = nav::PathFinder::create();
+  if (Cr::Utility::Directory::exists(navmeshFileLoc)) {
+    LOG(INFO) << "Simulator::createPathfinder : Loading navmesh from "
+              << navmeshFileLoc;
+    pathfinder_->loadNavMesh(navmeshFileLoc);
+    LOG(INFO) << "Simulator::createPathfinder : Loaded.";
   }
+  LOG(WARNING) << "Simulator::createPathfinder : Navmesh file not found, "
+                  "checked at filename : '"
+               << navmeshFileLoc << "'";
   // Calling to seeding needs to be done after the pathfinder creation but
   // before anything else.
   seed(config_.randomSeed);
@@ -454,22 +459,6 @@ bool Simulator::createSceneInstanceNoRenderer(
   reset();
   return true;
 }  // Simulator::createSceneInstanceNoRenderer
-
-bool Simulator::createPathfinder(const std::string& navmeshFilename) {
-  // create pathfinder and load navmesh if available
-  pathfinder_ = nav::PathFinder::create();
-  if (Cr::Utility::Directory::exists(navmeshFilename)) {
-    LOG(INFO) << "Simulator::createPathfinder : Loading navmesh from "
-              << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-    LOG(INFO) << "Simulator::createPathfinder : Loaded.";
-    return true;
-  }
-  LOG(WARNING) << "Simulator::createPathfinder : Navmesh file not found, "
-                  "checked at filename : '"
-               << navmeshFilename << "'";
-  return false;
-}  // Simulator::createPathfinder
 
 bool Simulator::loadSemanticSceneDescriptor(
     const std::string& semanticSceneDescFilename,

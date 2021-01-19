@@ -847,16 +847,6 @@ class Simulator {
 
  protected:
   Simulator(){};
-
-  /**
-   * @brief Creates a pathfinder and loads the navmesh from the specified
-   * location if it exists, otherwise returns a warning.
-   * @param navmeshFilename The filename of the navmesh to load when pathfinder
-   * is created
-   * @return Whether successful or not
-   */
-  bool createPathfinder(const std::string& navmeshFilename);
-
   /**
    * @brief Builds a scene instance and populates it with initial object layout,
    * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes
