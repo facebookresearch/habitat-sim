@@ -10,8 +10,7 @@
 namespace esp {
 namespace scene {
 
-SceneGraph::SceneGraph()
-    : rootNode_{world_} {
+SceneGraph::SceneGraph() : rootNode_{world_} {
   // For now, just create one drawable group with empty string uuid
   createDrawableGroup(std::string{});
 }

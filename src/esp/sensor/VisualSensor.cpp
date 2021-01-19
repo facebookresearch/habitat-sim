@@ -21,11 +21,11 @@ void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
 
   tgt_ = std::move(tgt);
 }
- // set transformation, projection matrix, viewport to the default camera
+// set transformation, projection matrix, viewport to the default camera
 void VisualSensor::setRenderCamera() {
-    setTransformationMatrix(renderCamera_);
-    setProjectionMatrix(renderCamera_);
-    setViewport(renderCamera_);
+  setTransformationMatrix(renderCamera_);
+  setProjectionMatrix(renderCamera_);
+  setViewport(renderCamera_);
 }
 
 }  // namespace sensor
