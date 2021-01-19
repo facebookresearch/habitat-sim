@@ -89,7 +89,7 @@ class VisualSensor : public Sensor {
    */
   void bindRenderTarget(std::unique_ptr<gfx::RenderTarget>&& tgt);
 
-  void setRenderCamera();
+  void setRenderCamera() {}
 
   /**
    * @brief Returns a reference to the sensors render target
@@ -113,14 +113,10 @@ class VisualSensor : public Sensor {
   /**
    * @brief Returns RenderCamera of CameraSensor
    */
-  gfx::RenderCamera& getRenderCamera() { return renderCamera_; }
+  gfx::RenderCamera& getRenderCamera();
 
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;
-
-  /** @brief RenderCamera for sensor
-   */
-  gfx::RenderCamera renderCamera_;
 
   ESP_SMART_POINTERS(VisualSensor)
 };

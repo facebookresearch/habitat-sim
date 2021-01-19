@@ -208,6 +208,9 @@ class RenderCamera : public MagnumCamera {
  protected:
   size_t previousNumVisibleDrawables_ = 0;
   bool useDrawableIds_ = false;
+  /** @brief RenderCamera for sensor
+   */
+  gfx::RenderCamera renderCamera_;
   ESP_SMART_POINTERS(RenderCamera)
 };
 

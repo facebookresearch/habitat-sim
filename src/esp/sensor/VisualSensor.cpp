@@ -11,7 +11,7 @@
 namespace esp {
 namespace sensor {
 VisualSensor::VisualSensor(scene::SceneNode& node, SensorSpec::ptr spec)
-    : Sensor{node, std::move(spec)}, tgt_{nullptr}, renderCamera_{node} {}
+    : Sensor{node, std::move(spec)}, tgt_{nullptr} {}
 
 VisualSensor::~VisualSensor() = default;
 
@@ -20,12 +20,6 @@ void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
     throw std::runtime_error("RenderTarget is not the correct size");
 
   tgt_ = std::move(tgt);
-}
-// set transformation, projection matrix, viewport to the default camera
-void VisualSensor::setRenderCamera() {
-  setTransformationMatrix(renderCamera_);
-  setProjectionMatrix(renderCamera_);
-  setViewport(renderCamera_);
 }
 
 }  // namespace sensor
