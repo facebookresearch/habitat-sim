@@ -108,8 +108,17 @@ class VisualSensor : public Sensor {
     return false;
   }
 
+  /**
+   * @brief Returns RenderCamera of CameraSensor
+   */
+  gfx::RenderCamera& getRenderCamera() { return renderCamera_; }
+
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;
+
+  /** @brief RenderCamera for sensor
+   */
+  gfx::RenderCamera renderCamera_;
 
   ESP_SMART_POINTERS(VisualSensor)
 };

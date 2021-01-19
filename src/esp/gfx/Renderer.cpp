@@ -50,9 +50,8 @@ struct Renderer::Impl {
     ASSERT(visualSensor.isVisualSensor());
 
     // set the modelview matrix, projection matrix of the render camera;
-    sceneGraph.setDefaultRenderCamera(visualSensor);
 
-    draw(sceneGraph.getDefaultRenderCamera(), sceneGraph, flags);
+    draw(visualSensor.getRenderCamera(), sceneGraph, flags);
   }
 
   void bindRenderTarget(sensor::VisualSensor& sensor) {

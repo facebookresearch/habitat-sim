@@ -11,7 +11,7 @@
 namespace esp {
 namespace sensor {
 VisualSensor::VisualSensor(scene::SceneNode& node, SensorSpec::ptr spec)
-    : Sensor{node, std::move(spec)}, tgt_{nullptr} {}
+    : Sensor{node, std::move(spec)}, tgt_{nullptr}, renderCamera_{node} {}
 
 VisualSensor::~VisualSensor() = default;
 
