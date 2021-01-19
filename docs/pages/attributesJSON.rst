@@ -203,12 +203,12 @@ Below are object-specific physical quantities.  These values will override simil
 	- The semantic id assigned to objects made with this configuration.
 
 `Light Setup Attributes`_
-====================
+=========================
 Light Setup Attributes templates hold descriptive information for light setups into Habitat-Sim.  These file names should be formatted as follows:
 
  	<lightingname>.lighting_config.json
 
-`An example of an appropriately configured Object Attributes file can be found below <../../data/test_assets/lights/test_lights.lighting_config.json>`_:
+`An example of an appropriately configured Light Setup Attributes file can be found below <../../../data/test_assets/lights/test_lights.lighting_config.json>`_:
 
 .. include:: ../../data/test_assets/lights/test_lights.lighting_config.json
     :code: json
