@@ -14,14 +14,12 @@ namespace metadata {
 namespace managers {
 
 /**
- * @brief This enum class describes whether a translation should   Depending on
- * this value, we may take certain actions when instantiating a scene described
- * by a scene instance. Scene instances created in blender will have no
- * conception of an object's COM, and so will require adjustment to translations
- * to account for COM location when the object is placed.  @p
- * SceneInstanceTranslationOrigin::Unknown will mean to use the specified
- * default (in the case of individual object instances), or to not correct for
- * COM location (in the case of the scene instance default setting).*/
+ * @brief This enum class describes whether an object instance position is
+ * relative to its COM or the asset's local origin.  Depending on this value, we
+ * may take certain actions when instantiating a scene described by a scene
+ * instance. For example, scene instances exported from Blender will have no
+ * conception of an object's configured COM, and so will require adjustment to
+ * translations to account for COM location when the object is placed*/
 enum class SceneInstanceTranslationOrigin {
   /**
    * @brief Default value - in the case of object instances, this means use the
@@ -32,12 +30,14 @@ enum class SceneInstanceTranslationOrigin {
   /**
    * @brief Indicates scene instance objects were placed without knowledge of
    * their COM location, and so need to be corrected when placed in scene in
-   * Habitat.
+   * Habitat. For example, they were exported from an external editor like
+   * Blender.
    */
   AssetLocal,
   /**
    * @brief Indicates scene instance objects' location were recorded at their
-   * COM location, and so do not need correction.
+   * COM location, and so do not need correction.  For example they were
+   * exported from Habitat-sim.
    */
   COM
 };

@@ -80,12 +80,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // set dataset upon creation or reconfigure
   if (!metadataMediator_) {
     metadataMediator_ = metadata::MetadataMediator::create(cfg);
-    LOG(WARNING) << "Simulator::reconfigure : create MM w/ cfg w/setting "
-                 << cfg.overrideSceneLightDefaults;
   } else {
     metadataMediator_->setSimulatorConfiguration(cfg);
-    LOG(WARNING) << "Simulator::reconfigure : set sim MM w/ cfg w/setting "
-                 << cfg.overrideSceneLightDefaults;
   }
 
   // assign MM to RM on create or reconfigure
@@ -226,7 +222,6 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       // assetType of stage is used to specify semanctic scene descriptor format
       assets::AssetType assetType =
           static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
-
       namespace FileUtil = Cr::Utility::Directory;
 
       // semantic scene descriptor might not exist, so
@@ -465,11 +460,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     // set object's motion type if different than set value
     const physics::MotionType attrObjMotionType =
         static_cast<physics::MotionType>(objInst->getMotionType());
-    const physics::MotionType objMotionType =
-        physicsManager_->getObjectMotionType(objID);
-
-    if ((attrObjMotionType != objMotionType) &&
-        (attrObjMotionType != physics::MotionType::UNDEFINED)) {
+    if (attrObjMotionType != physics::MotionType::UNDEFINED) {
       physicsManager_->setObjectMotionType(objID, attrObjMotionType);
     }
     objectsAdded.push_back(objID);

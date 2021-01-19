@@ -158,7 +158,7 @@ esp::gfx::LightSetup SceneDatasetAttributes::getNamedLightSetup(
 attributes::StageAttributes::ptr
 SceneDatasetAttributes::getNamedStageAttributesCopy(
     const std::string& stageAttrName) {
-  // do a substring search to find actual stage attributes and find first
+  // do a substring search to find actual stage attributes and return first
   // attributes found; if does not exist, name will be empty. return nullptr
   auto fullStageName =
       getFullAttrNameFromStr(stageAttrName, stageAttributesManager_);
@@ -172,7 +172,7 @@ SceneDatasetAttributes::getNamedStageAttributesCopy(
 attributes::ObjectAttributes::ptr
 SceneDatasetAttributes::getNamedObjectAttributesCopy(
     const std::string& objAttrName) {
-  // do a substring search to find actual object attributes and find first
+  // do a substring search to find actual object attributes and return first
   // attributes found; if does not exist, name will be empty. return nullptr
   auto fullObjName =
       getFullAttrNameFromStr(objAttrName, objectAttributesManager_);
