@@ -154,6 +154,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 metadata::attributes::SceneAttributes::cptr
 Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
+  namespace FileUtil = Cr::Utility::Directory;
+
   // This should always/only be called by either createSceneInstance or
   // createSceneInstanceNoRendere.
 
@@ -177,11 +179,12 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   // Get name of navmesh and use to create pathfinder and load navmesh
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
-  if (Cr::Utility::Directory::exists(navmeshFileLoc)) {
+  if (FileUtil::exists(navmeshFileLoc)) {
     LOG(INFO) << "Simulator::setSceneInstanceAttributes : Loading navmesh from "
               << navmeshFileLoc;
-    pathfinder_->loadNavMesh(navmeshFileLoc);
-    LOG(INFO) << "Simulator::setSceneInstanceAttributes : Loaded.";
+    bool pfSuccess = pathfinder_->loadNavMesh(navmeshFileLoc);
+    LOG(INFO) << "Simulator::setSceneInstanceAttributes : "
+              << (pfSuccess ? "Navmesh Loaded." : "Navmesh load error.");
   }
   LOG(WARNING)
       << "Simulator::setSceneInstanceAttributes : Navmesh file not found, "
@@ -222,8 +225,6 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       // assetType of stage is used to specify semanctic scene descriptor format
       assets::AssetType assetType =
           static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
-      namespace FileUtil = Cr::Utility::Directory;
-
       // semantic scene descriptor might not exist, so
       semanticScene_ = nullptr;
       semanticScene_ = scene::SemanticScene::create();
