@@ -525,18 +525,26 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Set up per frame profiler to be aware of bottlenecking in processing data
   Mn::DebugTools::GLFrameProfiler::Values profilerValues =
-      Mn::DebugTools::GLFrameProfiler::Value::FrameTime | // Time to render per frame frame
-      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration | // Time to process action (eg. physics, key presses) data per frame
-      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration; // Time to process graphics data per frame
+      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |  // Time to render per
+                                                           // frame frame
+      Mn::DebugTools::GLFrameProfiler::Value::
+          CpuDuration |  // Time to process action (eg. physics, key presses)
+                         // data per frame
+      Mn::DebugTools::GLFrameProfiler::Value::
+          GpuDuration;  // Time to process graphics data per frame
 
 // VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
 #ifndef MAGNUM_TARGET_GLES
   if (Mn::GL::Context::current()
           .isExtensionSupported<
               Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
-    profilerValues |=
-        Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio | // How many times the ver­tex shad­er executes per ver­tex
-        Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio; // Ratio of primitives discarded by the clipping stage to count of primitives submitted
+    profilerValues |= Mn::DebugTools::GLFrameProfiler::Value::
+                          VertexFetchRatio |  // How many times the ver­tex
+                                              // shad­er executes per ver­tex
+                      Mn::DebugTools::GLFrameProfiler::Value::
+                          PrimitiveClipRatio;  // Ratio of primitives discarded
+                                               // by the clipping stage to count
+                                               // of primitives submitted
   }
 #endif
 
@@ -711,7 +719,8 @@ void Viewer::wiggleLastObject() {
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
-  //Wrap profiler measurements around all methods to render images from RenderCamera
+  // Wrap profiler measurements around all methods to render images from
+  // RenderCamera
   profiler_.beginFrame();
 
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
@@ -789,7 +798,7 @@ void Viewer::drawEvent() {
 
   sensorRenderTarget->blitRgbaToDefault();
 
-  //Do not include ImGui content drawing in per frame profiler measurements
+  // Do not include ImGui content drawing in per frame profiler measurements
   profiler_.endFrame();
 
   // Immediately bind the main buffer back so that the "imgui" below can work
