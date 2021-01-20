@@ -89,7 +89,7 @@ class VisualSensor : public Sensor {
    */
   void bindRenderTarget(std::unique_ptr<gfx::RenderTarget>&& tgt);
 
-  void setRenderCamera() {}
+  virtual void setRenderCamera() {}
 
   /**
    * @brief Returns a reference to the sensors render target
@@ -111,9 +111,9 @@ class VisualSensor : public Sensor {
   }
 
   /**
-   * @brief Returns RenderCamera of CameraSensor
+   * @brief Returns RenderCamera
    */
-  gfx::RenderCamera& getRenderCamera();
+  gfx::RenderCamera* getRenderCamera();
 
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;

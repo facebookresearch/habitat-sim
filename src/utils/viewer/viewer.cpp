@@ -506,7 +506,7 @@ Viewer::Viewer(const Arguments& arguments)
   activeSceneGraph_ = &simulator_->getActiveSceneGraph();
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
-  renderCamera_ = &getAgentCamera().getRenderCamera();
+  renderCamera_ = getAgentCamera().getRenderCamera();
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
 

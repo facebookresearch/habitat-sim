@@ -8,7 +8,7 @@
 #include "esp/core/esp.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/scene/SceneGraph.h"
-#include "esp/sensor/VisualSensor.h"
+#include "esp/sensor/CameraSensor.h"
 
 namespace esp {
 namespace gfx {
@@ -33,7 +33,7 @@ class Renderer {
             RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling});
 
   // draw the scene graph with the visual sensor provided by user
-  void draw(sensor::VisualSensor& visualSensor,
+  void draw(esp::sensor::CameraSensor& cameraSensor,
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling});
 

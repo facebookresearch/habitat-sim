@@ -32,6 +32,10 @@ class CameraSensor : public VisualSensor {
   // set the view port to the given render camera
   virtual CameraSensor& setViewport(gfx::RenderCamera& targetCamera) override;
 
+  virtual void setRenderCamera() override;
+
+  virtual gfx::RenderCamera* getRenderCamera();
+
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
 
   virtual bool getObservationSpace(ObservationSpace& space) override;
@@ -211,6 +215,8 @@ class CameraSensor : public VisualSensor {
   /** @brief size of near plane
    */
   Mn::Vector2 nearPlaneSize_;
+
+  gfx::RenderCamera* renderCamera_;
 
  public:
   ESP_SMART_POINTERS(CameraSensor)

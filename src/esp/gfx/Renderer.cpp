@@ -20,6 +20,7 @@
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/magnum.h"
+#include "esp/sensor/CameraSensor.h"
 
 namespace Mn = Magnum;
 
@@ -44,14 +45,14 @@ struct Renderer::Impl {
     }
   }
 
-  void draw(sensor::VisualSensor& visualSensor,
+  void draw(esp::sensor::CameraSensor& cameraSensor,
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags) {
-    ASSERT(visualSensor.isVisualSensor());
+    ASSERT(cameraSensor.isVisualSensor());
 
     // set the modelview matrix, projection matrix of the render camera;
-    visualSensor.setRenderCamera();
-    draw(visualSensor.getRenderCamera(), sceneGraph, flags);
+    cameraSensor.setRenderCamera();
+    draw(*cameraSensor.getRenderCamera(), sceneGraph, flags);
   }
 
   void bindRenderTarget(sensor::VisualSensor& sensor) {
@@ -85,10 +86,10 @@ void Renderer::draw(RenderCamera& camera,
   pimpl_->draw(camera, sceneGraph, flags);
 }
 
-void Renderer::draw(sensor::VisualSensor& visualSensor,
+void Renderer::draw(esp::sensor::CameraSensor& cameraSensor,
                     scene::SceneGraph& sceneGraph,
                     RenderCamera::Flags flags) {
-  pimpl_->draw(visualSensor, sceneGraph, flags);
+  pimpl_->draw(cameraSensor, sceneGraph, flags);
 }
 
 void Renderer::bindRenderTarget(sensor::VisualSensor& sensor) {

@@ -20,6 +20,7 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit) {
   setProjectionParameters(spec);
+  renderCamera_ = new gfx::RenderCamera(cameraNode);
 }  // ctor
 
 void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
@@ -112,6 +113,12 @@ CameraSensor& CameraSensor::setViewport(gfx::RenderCamera& targetCamera) {
   return *this;
 }
 
+void CameraSensor::setRenderCamera() {
+  setProjectionMatrix(*renderCamera_);
+  setTransformationMatrix(*renderCamera_);
+  setViewport(*renderCamera_);
+}
+
 bool CameraSensor::getObservationSpace(ObservationSpace& space) {
   space.spaceType = ObservationSpaceType::Tensor;
   space.shape = {static_cast<size_t>(spec_->resolution[0]),
@@ -124,6 +131,10 @@ bool CameraSensor::getObservationSpace(ObservationSpace& space) {
     space.dataType = core::DataType::DT_FLOAT;
   }
   return true;
+}
+
+gfx::RenderCamera* CameraSensor::getRenderCamera() {
+  return renderCamera_;
 }
 
 bool CameraSensor::getObservation(sim::Simulator& sim, Observation& obs) {
