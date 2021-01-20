@@ -974,12 +974,15 @@ void Viewer::mouseReleaseEvent(MouseEvent& event) {
 }
 
 void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
-  if (!event.offset().y()) {
+  // shift+scroll is forced into x direction on mac, seemingly at OS level, so
+  // use both x and y offsets.
+  float scrollModVal = event.offset().y() + event.offset().x();
+  if (!(scrollModVal)) {
     return;
   }
   // Use shift for fine-grained zooming
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
-  float mod = event.offset().y() > 0 ? modVal : 1.0 / modVal;
+  float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
   auto& cam = getAgentCamera();
   cam.modZoom(mod);
   redraw();
