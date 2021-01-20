@@ -976,7 +976,9 @@ void Viewer::mouseReleaseEvent(MouseEvent& event) {
 void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   // shift+scroll is forced into x direction on mac, seemingly at OS level, so
   // use both x and y offsets.
-  float scrollModVal = event.offset().y() + event.offset().x();
+  float scrollModVal = abs(event.offset().y()) > abs(event.offset().x())
+                           ? event.offset().y()
+                           : event.offset().x();
   if (!(scrollModVal)) {
     return;
   }
