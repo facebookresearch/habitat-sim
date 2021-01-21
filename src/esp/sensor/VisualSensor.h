@@ -113,10 +113,7 @@ class VisualSensor : public Sensor {
   /**
    * @brief Returns RenderCamera
    */
-  virtual gfx::RenderCamera* getRenderCamera() {
-    LOG(ERROR) << "VisualSensor has no member RenderCamera";
-    return NULL;
-  }
+  virtual gfx::RenderCamera* getRenderCamera() = 0;
 
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;
