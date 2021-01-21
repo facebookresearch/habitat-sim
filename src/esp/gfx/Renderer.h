@@ -33,7 +33,7 @@ class Renderer {
             RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling});
 
   // draw the scene graph with the visual sensor provided by user
-  void draw(esp::sensor::CameraSensor& cameraSensor,
+  void draw(sensor::VisualSensor& visualSensor,
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling});
 

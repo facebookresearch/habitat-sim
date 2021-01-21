@@ -34,7 +34,7 @@ class CameraSensor : public VisualSensor {
 
   virtual void setRenderCamera() override;
 
-  virtual gfx::RenderCamera* getRenderCamera();
+  virtual gfx::RenderCamera* getRenderCamera() override;
 
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
 
