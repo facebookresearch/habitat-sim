@@ -16,6 +16,7 @@
 
 #include "configure.h"
 
+namespace {
 namespace Cr = Corrade;
 
 using Magnum::Math::Literals::operator""_radf;
@@ -905,3 +906,5 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
         dfltUVSphereAttribs, "segments", legalModValWF, &illegalModValWF);
   }
 }  // AttributesManagersTest::AsssetAttributesManagerGetAndModify test
+
+}  // namespace

@@ -1,4 +1,5 @@
 {
+	"translation_origin":"asset_local",
 	"stage_instance":{
 		"template_name":"modified_test_stage",
 		"translation":[1.1,2.2,3.3]
@@ -14,6 +15,7 @@
 	}
 	],
 	"default_lighting":"modified_test_lights",
+	"frustum_culling":true,
 	"navmesh_instance":"navmesh_path1",
 	"semantic_scene_instance":"semantic_descriptor_path1"
 }

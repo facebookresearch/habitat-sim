@@ -273,16 +273,16 @@ class StageAttributes : public AbstractObjectAttributes {
   }
   std::string getHouseFilename() const { return getString("houseFilename"); }
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
-    setString("semanticAssetHandle", semanticAssetHandle);
+    setString("semantic_asset", semanticAssetHandle);
     setIsDirty();
   }
   std::string getSemanticAssetHandle() const {
-    return getString("semanticAssetHandle");
+    return getString("semantic_asset");
   }
   void setSemanticAssetType(int semanticAssetType) {
-    setInt("semanticAssetType", semanticAssetType);
+    setInt("semantic_asset_type", semanticAssetType);
   }
-  int getSemanticAssetType() { return getInt("semanticAssetType"); }
+  int getSemanticAssetType() { return getInt("semantic_asset_type"); }
 
   void setLoadSemanticMesh(bool loadSemanticMesh) {
     setBool("loadSemanticMesh", loadSemanticMesh);
