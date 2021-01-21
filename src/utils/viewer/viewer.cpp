@@ -205,7 +205,7 @@ Key Commands:
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
-  'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.  
+  'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
   '[' save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt"
   ']' load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance
 
@@ -434,7 +434,7 @@ Viewer::Viewer(const Arguments& arguments)
     debugBullet_ = true;
   }
 
-  cameraLoadTimeString_ = args.value("camera");
+  cameraLoadPath_ = args.value("camera-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
 
   // configure and intialize Simulator
@@ -911,7 +911,6 @@ void Viewer::drawEvent() {
     Mn::GL::defaultFramebuffer.bind();
   }
 
-  sensorRenderTarget->blitRgbaToDefault();
   profiler_.endFrame();
   // Immediately bind the main buffer back so that the "imgui" below can work
   // properly
