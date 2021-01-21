@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <ctime>
+#include <fstream>
 
 #include <Magnum/configure.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
@@ -37,6 +38,7 @@
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
@@ -147,6 +149,13 @@ class Viewer : public Mn::Platform::Application {
   void switchCameraType();
   Mn::Vector3 randomDirection();
 
+  void saveCameraTransformToFile();
+  void saveNodeTransformToFile(esp::scene::SceneNode& node,
+                               const std::string& filename);
+  void loadCameraTransformFromFile();
+  void loadNodeTransformFromFile(esp::scene::SceneNode& node,
+                                 const std::string& filename);
+
   //! string rep of time when viewer application was started
   std::string viewerStartTimeString = getCurrentTimeString();
   void screenshot();
@@ -189,6 +198,7 @@ Key Commands:
   '2' build and display trajectory visualization.
   '+' increase trajectory diameter
   '-' decrease trajectory diameter
+  '3' toggle flying camera mode (user can apply camera transformation loaded from disk)
   '5' switch ortho/perspective camera.
   '6' reset ortho camera zoom/perspective camera FOV.
   'e' enable/disable frustum culling.
@@ -196,6 +206,8 @@ Key Commands:
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
   'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
+  '[' save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt"
+  ']' load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -326,10 +338,16 @@ Key Commands:
   bool drawObjectBBs = false;
   std::string gfxReplayRecordFilepath_;
 
+  std::string cameraLoadPath_;
+  // bool cameraSaved_ = false;
+  // Mn::Matrix4 lastCameraSave_;
+  Cr::Containers::Optional<Mn::Matrix4> lastCameraSave_;
+
   Mn::Timeline timeline_;
 
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = true;
+  bool flyingCameraMode_ = false;
 
   // NOTE: Mouse + shift is to select object on the screen!!
   void createPickedObjectVisualizer(unsigned int objectId);
@@ -386,6 +404,9 @@ Viewer::Viewer(const Arguments& arguments)
       .addBooleanOption("recompute-navmesh")
       .setHelp("recompute-navmesh",
                "Programmatically re-generate the scene navmesh.")
+      .addOption("camera-transform-filepath")
+      .setHelp("camera-transform-filepath",
+               "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -413,6 +434,7 @@ Viewer::Viewer(const Arguments& arguments)
     debugBullet_ = true;
   }
 
+  cameraLoadPath_ = args.value("camera-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
 
   // configure and intialize Simulator
@@ -523,28 +545,51 @@ Viewer::Viewer(const Arguments& arguments)
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
-  // Set up per frame profiler to be aware of bottlenecking in processing data
+  /**
+   * Set up per frame profiler to be aware of bottlenecking in processing data
+   * Interpretation: CpuDuration should be less than GpuDuration to avoid GPU
+   * idling, and CpuDuration and GpuDuration should be roughly equal for faster
+   * rendering times
+   *
+   * FrameTime: (Units::Nanoseconds) Time to render per frame, 1/FPS, 2 frame
+   * delay
+   *
+   * CpuDuration: (Units::Nanoseconds) CPU time spent processing events,
+   * physics, traversing SceneGraph, and submitting data to GPU/drivers per
+   * frame
+   * Measured using std::chrono::high_resolution_clock, 1 frame delay
+   *
+   * GpuDuration: (Units::Nanoseconds) GPU time spent rendering data submitted
+   * by CPU per frame
+   * Uses asynchronous querying to measure the amount of time
+   * to fully complete a set of GL commands without stalling rendering, 3 frame
+   * delay
+   * Asynchronous querying extensions: ARB_timer_query (OpenGL 3.3),
+   * EXT_disjoint_timer_query (OpenGL ES, WebGL), EXT_disjoint_timer_query
+   * (WebGL2)
+   * Requires an active OpenGL context
+   */
   Mn::DebugTools::GLFrameProfiler::Values profilerValues =
-      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |  // Time to render per
-                                                           // frame frame
-      Mn::DebugTools::GLFrameProfiler::Value::
-          CpuDuration |  // Time to process action (eg. physics, key presses)
-                         // data per frame
-      Mn::DebugTools::GLFrameProfiler::Value::
-          GpuDuration;  // Time to process graphics data per frame
+      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
+      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
+      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
 
-// VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
+/**
+ * VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
+ *
+ * VertexFetchRatio: (Units::RatioThousandths) Ratio of vertex shader
+ * invocations to count of vertices submitted
+ *
+ * PrimitiveClipRatio:  (Units::PercentageThousandths) Ratio of primitives
+ * discarded by the clipping stage to count of primitives submitted
+ */
 #ifndef MAGNUM_TARGET_GLES
   if (Mn::GL::Context::current()
           .isExtensionSupported<
               Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
-    profilerValues |= Mn::DebugTools::GLFrameProfiler::Value::
-                          VertexFetchRatio |  // How many times the ver­tex
-                                              // shad­er executes per ver­tex
-                      Mn::DebugTools::GLFrameProfiler::Value::
-                          PrimitiveClipRatio;  // Ratio of primitives discarded
-                                               // by the clipping stage to count
-                                               // of primitives submitted
+    profilerValues |=
+        Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
+        Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio;
   }
 #endif
 
@@ -568,6 +613,99 @@ void Viewer::switchCameraType() {
       return;
     }
   }
+}
+
+void Viewer::saveCameraTransformToFile() {
+  const char* saved_transformations_directory = "saved_transformations/";
+  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
+    Cr::Utility::Directory::mkpath(saved_transformations_directory);
+  }
+
+  // update temporary save
+  lastCameraSave_ = renderCamera_->node().absoluteTransformation();
+
+  // update save in file system
+  saveNodeTransformToFile(
+      renderCamera_->node(),
+      Cr::Utility::formatString("{}camera.{}.txt",
+                                saved_transformations_directory,
+                                getCurrentTimeString()));
+}
+
+void Viewer::loadCameraTransformFromFile() {
+  if (!cameraLoadPath_.empty()) {
+    // loading from file system
+    loadNodeTransformFromFile(renderCamera_->node(), cameraLoadPath_);
+  } else {
+    // attempting to load from last temporary save
+    LOG(WARNING)
+        << "Camera transform file not specified, attempting to load from "
+           "current instance. Use --camera-transform-filepath to specify file "
+           "to load from.";
+    if (!lastCameraSave_) {
+      LOG(ERROR) << "No transformation saved in current instance.";
+      return;
+    }
+
+    renderCamera_->node().setTransformation(*lastCameraSave_);
+    LOG(INFO) << "Transformation matrix loaded from current instance : "
+              << Eigen::Map<esp::mat4f>(lastCameraSave_->data());
+  }
+
+  if (!flyingCameraMode_) {
+    LOG(INFO) << "Note: The flying camera mode is currently OFF. You may not "
+                 "see any view change.";
+  }
+}
+
+void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
+                                     const std::string& filename) {
+  std::ofstream file(filename);
+  if (!file.good()) {
+    LOG(ERROR) << "Cannot open " << filename << " to output data.";
+    return;
+  }
+
+  // saving transformation into file system
+  Mn::Matrix4 transform = node.absoluteTransformation();
+  float* t = transform.data();
+  for (int i = 0; i < 16; ++i) {
+    file << t[i] << " ";
+  }
+  file.close();
+
+  LOG(INFO) << "Transformation matrix saved to " << filename << " : "
+            << Eigen::Map<esp::mat4f>(transform.data());
+}
+
+void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
+                                       const std::string& filename) {
+  std::ifstream file(filename);
+  if (!file.good()) {
+    LOG(ERROR) << "Cannot open " << filename << " to load data.";
+    return;
+  }
+
+  // reading file system data into matrix as transformation
+  Mn::Vector4 cols[4];
+  for (int col = 0; col < 4; ++col) {
+    for (int row = 0; row < 4; ++row) {
+      file >> cols[col][row];
+    }
+  }
+  Mn::Matrix4 transform{cols[0], cols[1], cols[2], cols[3]};
+  file.close();
+
+  // checking for corruption
+  if (!transform.isRigidTransformation()) {
+    LOG(WARNING) << "Data loaded from " << filename
+                 << " is not a valid transformation.";
+    return;
+  }
+
+  node.setTransformation(transform);
+  LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
+            << Eigen::Map<esp::mat4f>(transform.data());
 }
 
 int Viewer::addObject(int ID) {
@@ -747,56 +885,66 @@ void Viewer::drawEvent() {
     // reset timeSinceLastSimulation, accounting for potential overflow
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
-  // using polygon offset to increase mesh depth to a avoid z-fighting with
-  // debug draw (since lines will not respond to offset).
-  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-  Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
-
-  // ONLY draw the content to the frame buffer but not immediately blit the
-  // result to the default main buffer
-  // (this is the reason we do not call displayObservation)
-  simulator_->drawObservation(defaultAgentId_, "rgba_camera");
-  // TODO: enable other sensors to be displayed
-
-  Mn::GL::Renderer::setDepthFunction(
-      Mn::GL::Renderer::DepthFunction::LessOrEqual);
-  if (debugBullet_) {
-    Mn::Matrix4 camM(renderCamera_->cameraMatrix());
-    Mn::Matrix4 projM(renderCamera_->projectionMatrix());
-
-    simulator_->physicsDebugDraw(projM * camM);
-  }
-  Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
-  Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
-  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-
-  uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
-
-  esp::gfx::RenderTarget* sensorRenderTarget =
-      simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
-  CORRADE_ASSERT(sensorRenderTarget,
-                 "Error in Viewer::drawEvent: sensor's rendering target "
-                 "cannot be nullptr.", );
-  if (objectPickingHelper_->isObjectPicked()) {
-    // we need to immediately draw picked object to the SAME frame buffer
-    // so bind it first
-    // bind the framebuffer
-    sensorRenderTarget->renderReEnter();
-
-    // setup blending function
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
-
-    // render the picked object on top of the existing contents
-    esp::gfx::RenderCamera::Flags flags;
-    if (simulator_->isFrustumCullingEnabled()) {
-      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+  uint32_t visibles = 0;
+  if (flyingCameraMode_) {
+    Mn::GL::defaultFramebuffer.bind();
+    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
+      esp::gfx::RenderCamera::Flags flags =
+          esp::gfx::RenderCamera::Flag::FrustumCulling;
+      visibles += renderCamera_->draw(it.second, flags);
     }
-    renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+  } else {
+    // using polygon offset to increase mesh depth to a avoid z-fighting with
+    // debug draw (since lines will not respond to offset).
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+    Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
 
-    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+    // ONLY draw the content to the frame buffer but not immediately blit the
+    // result to the default main buffer
+    // (this is the reason we do not call displayObservation)
+    simulator_->drawObservation(defaultAgentId_, "rgba_camera");
+    // TODO: enable other sensors to be displayed
+
+    Mn::GL::Renderer::setDepthFunction(
+        Mn::GL::Renderer::DepthFunction::LessOrEqual);
+    if (debugBullet_) {
+      Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+      Mn::Matrix4 projM(renderCamera_->projectionMatrix());
+
+      simulator_->physicsDebugDraw(projM * camM);
+    }
+    Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
+    Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+
+    visibles = renderCamera_->getPreviousNumVisibileDrawables();
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    if (objectPickingHelper_->isObjectPicked()) {
+      // we need to immediately draw picked object to the SAME frame buffer
+      // so bind it first
+      // bind the framebuffer
+      sensorRenderTarget->renderReEnter();
+
+      // setup blending function
+      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+      // render the picked object on top of the existing contents
+      esp::gfx::RenderCamera::Flags flags;
+      if (simulator_->isFrustumCullingEnabled()) {
+        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      }
+      renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+    }
+    sensorRenderTarget->blitRgbaToDefault();
+    // Immediately bind the main buffer back so that the "imgui" below can work
+    // properly
+    Mn::GL::defaultFramebuffer.bind();
   }
-
-  sensorRenderTarget->blitRgbaToDefault();
 
   // Do not include ImGui content drawing in per frame profiler measurements
   profiler_.endFrame();
@@ -906,6 +1054,9 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     }
   }
   Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
+  if (flyingCameraMode_) {
+    renderCamera_->setViewport(event.windowSize());
+  }
 
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
@@ -989,12 +1140,17 @@ void Viewer::mouseReleaseEvent(MouseEvent& event) {
 }
 
 void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
-  if (!event.offset().y()) {
+  // shift+scroll is forced into x direction on mac, seemingly at OS level, so
+  // use both x and y offsets.
+  float scrollModVal = abs(event.offset().y()) > abs(event.offset().x())
+                           ? event.offset().y()
+                           : event.offset().x();
+  if (!(scrollModVal)) {
     return;
   }
   // Use shift for fine-grained zooming
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
-  float mod = event.offset().y() > 0 ? modVal : 1.0 / modVal;
+  float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
   auto& cam = getAgentCamera();
   cam.modZoom(mod);
   redraw();
@@ -1058,6 +1214,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // agent motion trajectory mesh synthesis with random color
       buildTrajectoryVis();
       break;
+    case KeyEvent::Key::Three:
+      // toggle flying camera mode
+      flyingCameraMode_ = !flyingCameraMode_;
+      LOG(INFO) << "Flying camera mode: " << (flyingCameraMode_ ? "ON" : "OFF");
+      break;
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
       switchCameraType();
@@ -1075,6 +1236,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
             simulator_->getPathFinder()->getRandomNavigablePoint();
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
+      break;
+    case KeyEvent::Key::LeftBracket:
+      saveCameraTransformToFile();
+      break;
+    case KeyEvent::Key::RightBracket:
+      loadCameraTransformFromFile();
       break;
 
     case KeyEvent::Key::Equal: {
