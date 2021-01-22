@@ -29,7 +29,15 @@ void initSimBindings(py::module& m) {
   py::class_<SimulatorConfiguration, SimulatorConfiguration::ptr>(
       m, "SimulatorConfiguration")
       .def(py::init(&SimulatorConfiguration::create<>))
-      .def_readwrite("scene_id", &SimulatorConfiguration::activeSceneID)
+      .def_readwrite(
+          "scene_dataset_config_file",
+          &SimulatorConfiguration::sceneDatasetConfigFile,
+          R"(The location of the scene dataset configuration file that describes the
+          dataset to be used.)")
+      .def_readwrite(
+          "scene_id", &SimulatorConfiguration::activeSceneName,
+          R"(Either the name of a stage asset or configuration file, or else the name of a scene
+          instance configuration, used to initialize the simulator world.)")
       .def_readwrite("random_seed", &SimulatorConfiguration::randomSeed)
       .def_readwrite("default_agent_id",
                      &SimulatorConfiguration::defaultAgentId)
@@ -46,6 +54,10 @@ void initSimBindings(py::module& m) {
           R"(Enable replay recording. See sim.gfx_replay.save_keyframe.)")
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile)
+      .def_readwrite(
+          "override_scene_ligh_defaults",
+          &SimulatorConfiguration::overrideSceneLightDefaults,
+          R"(Override scene lighting setup to use with value specified below.)")
       .def_readwrite("scene_light_setup",
                      &SimulatorConfiguration::sceneLightSetup)
       .def_readwrite("load_semantic_mesh",
@@ -53,7 +65,8 @@ void initSimBindings(py::module& m) {
       .def_readwrite(
           "force_separate_semantic_scene_graph",
           &SimulatorConfiguration::forceSeparateSemanticSceneGraph,
-          R"(Required to support playback of any gfx replay that includes a stage with a semantic mesh. Set to false otherwise.)")
+          R"(Required to support playback of any gfx replay that includes a
+          stage with a semantic mesh. Set to false otherwise.)")
       .def_readwrite("requires_textures",
                      &SimulatorConfiguration::requiresTextures)
       .def(py::self == py::self)

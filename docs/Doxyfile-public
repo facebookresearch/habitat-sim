@@ -4,14 +4,6 @@ OUTPUT_DIRECTORY       = ../build/docs-public/
 
 GENERATE_TAGFILE       = ../build/docs-public/habitat-cpp.tag
 
-##! M_HTML_HEADER = "<!-- Global site tag (gtag.js) - Google Analytics -->" \
-##!  "<script async src="https://www.googletagmanager.com/gtag/js?id=UA-66408458-4"></script>" \
-##!  "<script>" \
-##!  " window.dataLayer = window.dataLayer || [];" \
-##!  " function gtag(){dataLayer.push(arguments);}" \
-##!  " gtag('js', new Date());" \
-##!  " gtag('config', 'UA-66408458-4');" \
-##!  "</script>"
 ##! M_SEARCH_DOWNLOAD_BINARY = YES
 ##! M_SEARCH_BASE_URL = https://aihabitat.org/docs/habitat-sim/
 ##! M_SEARCH_EXTERNAL_URL = "https://google.com/search?q=site:aihabitat.org+{query}"

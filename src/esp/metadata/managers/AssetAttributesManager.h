@@ -509,7 +509,7 @@ class AssetAttributesManager
   void resetFinalize() override {
     // build default attributes::AbstractPrimitiveAttributes objects - reset
     // does not remove constructor mappings;
-    for (const std::pair<PrimObjTypes, const char*>& elem :
+    for (const std::pair<const PrimObjTypes, const char*>& elem :
          PrimitiveNames3DMap) {
       if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
         continue;

@@ -24,6 +24,14 @@ repos:
     -   id: mixed-line-ending
         args: ['--fix=lf']
 
+-   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.0.0
+    hooks:
+    -   id: pretty-format-ini
+        args: [--autofix]
+    -   id: pretty-format-toml
+        args: [--autofix]
+
 -   repo: https://github.com/timothycrosley/isort
     rev: 5.6.4
     hooks:
@@ -63,7 +71,7 @@ repos:
         pass_filenames: false
 
 -   repo: https://github.com/seddonym/import-linter
-    rev: v1.2
+    rev: 1ac62d58575235ada887e594819ed294c1b1d2b2
     hooks:
     -   id: import-linter
 
@@ -82,6 +90,7 @@ repos:
         pass_filenames: true
         additional_dependencies:
             - 'jupytext==1.6.0'
+            - 'nbformat<=5.0.8'
             - black
             - isort
         always_run: false

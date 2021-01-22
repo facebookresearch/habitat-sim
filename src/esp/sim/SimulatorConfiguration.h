@@ -17,7 +17,7 @@ struct SimulatorConfiguration {
   /**
    * @brief Name of scene or stage config or asset to load
    */
-  std::string activeSceneID;
+  std::string activeSceneName;
   int defaultAgentId = 0;
   int gpuDeviceId = 0;
   unsigned int randomSeed = 0;
@@ -59,6 +59,12 @@ struct SimulatorConfiguration {
    * @brief File location for initial scene dataset to use.
    */
   std::string sceneDatasetConfigFile = "default";
+
+  /**
+   * @brief allows for overriding any scene lighting setup specified in a scene
+   * instance file with the value specified below.
+   */
+  bool overrideSceneLightDefaults = false;
 
   /** @brief Light setup key for scene */
   std::string sceneLightSetup = esp::NO_LIGHT_KEY;

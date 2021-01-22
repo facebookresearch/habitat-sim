@@ -140,7 +140,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                                      config_.frustumCulling);
 
   // Build scene file name based on config specification
-  std::string stageFilename = config_.activeSceneID;
+  std::string stageFilename = config_.activeSceneName;
 
   // Create scene attributes with values based on sceneFilename
   auto stageAttributes = stageAttributesMgr->createObject(stageFilename, true);
@@ -941,7 +941,7 @@ int Simulator::getAgentObservations(
   if (ag != nullptr) {
     const std::map<std::string, sensor::Sensor::ptr>& sensors =
         ag->getSensorSuite().getSensors();
-    for (std::pair<std::string, sensor::Sensor::ptr> s : sensors) {
+    for (const std::pair<const std::string, sensor::Sensor::ptr>& s : sensors) {
       sensor::Observation obs;
       if (s.second->getObservation(*this, obs)) {
         observations[s.first] = obs;
@@ -972,7 +972,7 @@ int Simulator::getAgentObservationSpaces(
   if (ag != nullptr) {
     const std::map<std::string, sensor::Sensor::ptr>& sensors =
         ag->getSensorSuite().getSensors();
-    for (std::pair<std::string, sensor::Sensor::ptr> s : sensors) {
+    for (const std::pair<const std::string, sensor::Sensor::ptr>& s : sensors) {
       sensor::ObservationSpace space;
       if (s.second->getObservationSpace(space)) {
         spaces[s.first] = space;
