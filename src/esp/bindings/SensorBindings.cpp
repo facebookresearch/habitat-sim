@@ -119,7 +119,7 @@ void initSensorBindings(py::module& m) {
            Should be consumed by first querying this CameraSensor's SensorSpec
            and then modifying as necessary.)",
            "sensor_spec"_a)
-      .def("zoom", &CameraSensor::modZoom,
+      .def("zoom", &CameraSensor::modifyZoom,
            R"(Modify Orthographic Zoom or Perspective FOV multiplicatively by
           passed amount. User >1 to increase, 0<factor<1 to decrease.)",
            "factor"_a)

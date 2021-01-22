@@ -62,7 +62,7 @@ class CameraSensor : public VisualSensor {
    * @brief Modify the zoom matrix for perspective and ortho cameras
    * @param factor Modification amount.
    */
-  void modZoom(float factor) {
+  void modifyZoom(float factor) {
     zoomMatrix_ =
         Magnum::Matrix4::scaling({factor, factor, 1.0f}) * zoomMatrix_;
     recomputeProjectionMatrix();

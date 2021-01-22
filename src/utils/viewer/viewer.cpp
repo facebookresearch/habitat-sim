@@ -1115,7 +1115,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
   float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
   auto& cam = getAgentCamera();
-  cam.modZoom(mod);
+  cam.modifyZoom(mod);
   redraw();
 
   event.setAccepted();
