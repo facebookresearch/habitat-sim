@@ -409,7 +409,7 @@ struct MouseObjectGrabber : public MouseGrabber {
     sim_->setObjectMotionType(esp::physics::MotionType::DYNAMIC, objectId);
     Corrade::Utility::Debug()
         << "MouseObjectGrabber init: objectId=" << objectId;
-    p2pId = sim_->createRigidP2PConstraint(objectId, clickPos, true);
+    p2pId = sim_->createRigidP2PConstraint(objectId, clickPos, false);
   }
 };
 
