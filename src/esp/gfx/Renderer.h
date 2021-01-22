@@ -8,7 +8,7 @@
 #include "esp/core/esp.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/scene/SceneGraph.h"
-#include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/VisualSensor.h"
 
 namespace esp {
 namespace gfx {
