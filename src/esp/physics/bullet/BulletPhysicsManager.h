@@ -77,7 +77,8 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   virtual int addArticulatedObjectFromURDF(std::string filepath,
                                            DrawableGroup* drawables,
-                                           bool fixedBase = false) override;
+                                           bool fixedBase = false,
+                                           float globalScale = 1.0) override;
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref

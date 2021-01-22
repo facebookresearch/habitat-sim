@@ -1003,12 +1003,13 @@ void Simulator::setObjectLightSetup(const int objectID,
 // Articulated Object API (UNSTABLE!)
 
 int Simulator::addArticulatedObjectFromURDF(std::string filepath,
-                                            bool fixedBase) {
+                                            bool fixedBase,
+                                            float globalScale) {
   if (sceneHasPhysics(0)) {
     auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
-    return physicsManager_->addArticulatedObjectFromURDF(filepath, &drawables,
-                                                         fixedBase);
+    return physicsManager_->addArticulatedObjectFromURDF(
+        filepath, &drawables, fixedBase, globalScale);
   }
   Corrade::Utility::Debug()
       << "Simulator::loadURDF : failed - physics not enabled.";

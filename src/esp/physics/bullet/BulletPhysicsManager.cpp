@@ -76,11 +76,12 @@ bool BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
 
 int BulletPhysicsManager::addArticulatedObjectFromURDF(std::string filepath,
                                                        DrawableGroup* drawables,
-                                                       bool fixedBase) {
+                                                       bool fixedBase,
+                                                       float globalScale) {
   // import the URDF
   BulletURDFImporter urdfImporter_(resourceManager_);
 
-  if (!urdfImporter_.loadURDF(filepath)) {
+  if (!urdfImporter_.loadURDF(filepath, globalScale)) {
     Corrade::Utility::Debug() << "E - failed to parse URDF file";
     return ID_UNDEFINED;
   }

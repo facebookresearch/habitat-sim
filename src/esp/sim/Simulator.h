@@ -508,7 +508,8 @@ class Simulator {
    * NOT be reflected (e.g. modifying the geometry of a part between loads).
    */
   int addArticulatedObjectFromURDF(std::string filepath,
-                                   bool fixedBase = false);
+                                   bool fixedBase = false,
+                                   float globalScale = 1.0);
 
   void removeArticulatedObject(int objectId);
 

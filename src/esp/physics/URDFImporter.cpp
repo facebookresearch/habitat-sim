@@ -13,7 +13,7 @@ namespace Mn = Magnum;
 namespace esp {
 namespace physics {
 
-bool URDFImporter::loadURDF(const std::string& filename) {
+bool URDFImporter::loadURDF(const std::string& filename, float globalScale) {
   if (!Corrade::Utility::Directory::exists(filename) ||
       Corrade::Utility::Directory::isDirectory(filename)) {
     Corrade::Utility::Debug()
@@ -21,6 +21,7 @@ bool URDFImporter::loadURDF(const std::string& filename) {
     return false;
   }
 
+  urdfParser_.setGlobalScaling(globalScale);
   bool success = urdfParser_.parseURDF(filename);
 
   Corrade::Utility::Debug() << "Done loading";

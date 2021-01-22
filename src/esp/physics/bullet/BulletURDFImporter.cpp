@@ -98,6 +98,8 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
         auto convexShape = new btConvexHullShape();
         esp::physics::BulletBase::constructJoinedConvexShapeFromMeshes(
             Magnum::Matrix4{}, meshGroup, metaData.root, convexShape);
+        convexShape->setLocalScaling(
+            btVector3(collision->m_geometry.m_meshScale));
         convexShape->recalcLocalAabb();
         shape = convexShape;
         shape->setMargin(gUrdfDefaultCollisionMargin);

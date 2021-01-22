@@ -309,7 +309,8 @@ class PhysicsManager {
   virtual int addArticulatedObjectFromURDF(
       std::string filepath,
       CORRADE_UNUSED DrawableGroup* drawables,
-      CORRADE_UNUSED bool fixedBase = false) {
+      CORRADE_UNUSED bool fixedBase = false,
+      CORRADE_UNUSED float globalScale = 1.0) {
     return ID_UNDEFINED;
   };
 

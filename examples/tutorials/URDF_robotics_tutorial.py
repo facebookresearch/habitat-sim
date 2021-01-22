@@ -140,32 +140,37 @@ def main(make_video=True, show_video=True):
     # simulate
     observations += simulate(sim, dt=1.5, get_frames=make_video)
 
-    # remove the object
-    sim.remove_articulated_object(robot_id)
+    for iteration in range(1, 4):
+        # remove the object
+        sim.remove_articulated_object(robot_id)
 
-    # load a URDF file
-    robot_file = urdf_files["aliengo"]
-    robot_id = sim.add_articulated_object_from_urdf(robot_file)
+        # load a URDF file
+        robot_file = urdf_files["aliengo"]
+        urdf_global_scale = iteration / 2.0
+        robot_id = sim.add_articulated_object_from_urdf(
+            robot_file, False, urdf_global_scale
+        )
+        print("Scaled URDF by " + str(urdf_global_scale))
 
-    # place the robot root state relative to the agent
-    local_base_pos = np.array([0.0, 0.5, -2.0])
-    agent_transform = sim.agents[0].scene_node.transformation_matrix()
-    base_transform = mn.Matrix4.rotation(mn.Rad(-1.56), mn.Vector3(1.0, 0, 0))
-    base_transform.translation = agent_transform.transform_point(local_base_pos)
-    sim.set_articulated_object_root_state(robot_id, base_transform)
+        # place the robot root state relative to the agent
+        local_base_pos = np.array([0.0, 0.5, -2.0])
+        agent_transform = sim.agents[0].scene_node.transformation_matrix()
+        base_transform = mn.Matrix4.rotation(mn.Rad(-1.56), mn.Vector3(1.0, 0, 0))
+        base_transform.translation = agent_transform.transform_point(local_base_pos)
+        sim.set_articulated_object_root_state(robot_id, base_transform)
 
-    # set a better initial joint state for the aliengo
-    if robot_file == urdf_files["aliengo"]:
-        pose = sim.get_articulated_object_positions(robot_id)
-        calfDofs = [2, 5, 8, 11]
-        for dof in calfDofs:
-            pose[dof] = -1.0
-            pose[dof - 1] = 0.45
-            # also set a thigh
-        sim.set_articulated_object_positions(robot_id, pose)
+        # set a better initial joint state for the aliengo
+        if robot_file == urdf_files["aliengo"]:
+            pose = sim.get_articulated_object_positions(robot_id)
+            calfDofs = [2, 5, 8, 11]
+            for dof in calfDofs:
+                pose[dof] = -1.0
+                pose[dof - 1] = 0.45
+                # also set a thigh
+            sim.set_articulated_object_positions(robot_id, pose)
 
-    # simulate
-    observations += simulate(sim, dt=1.5, get_frames=make_video)
+        # simulate
+        observations += simulate(sim, dt=1.5, get_frames=make_video)
 
     # get/set forces and velocities
     tau = sim.get_articulated_object_forces(robot_id)

@@ -45,7 +45,7 @@ class URDFImporter {
       : resourceManager_(resourceManager){};
 
   // attempt to load a URDF file
-  bool loadURDF(const std::string& filename);
+  bool loadURDF(const std::string& filename, float globalScale = 1.0);
 
   virtual const io::URDF::Model& getModel() const;
 

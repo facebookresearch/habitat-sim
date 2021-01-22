@@ -314,8 +314,8 @@ void initSimBindings(py::module& m) {
 
       /* --- URDF and ArticualtedObject API functions --- */
       .def("add_articulated_object_from_urdf",
-           &Simulator::addArticulatedObjectFromURDF, "object_id"_a,
-           "fixed_base"_a = false)
+           &Simulator::addArticulatedObjectFromURDF, "urdf_file"_a,
+           "fixed_base"_a = false, "global_scale"_a = 1.0)
       .def("remove_articulated_object", &Simulator::removeArticulatedObject,
            "object_id"_a)
       .def("get_existing_articulated_object_ids",

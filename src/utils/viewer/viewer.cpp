@@ -524,7 +524,9 @@ class Viewer : public Mn::Platform::Application {
    */
   int addPrimitiveObject();
 
-  int addArticulatedObject(std::string urdfFilename, bool fixedBase = false);
+  int addArticulatedObject(std::string urdfFilename,
+                           bool fixedBase = false,
+                           float globalScale = 1.0);
 
   void clearAllObjects();
 
@@ -1160,9 +1162,11 @@ int Viewer::throwSphere(Mn::Vector3 direction) {
   return physObjectID;
 }
 
-int Viewer::addArticulatedObject(std::string urdfFilename, bool fixedBase) {
-  int articulatedObjectId =
-      simulator_->addArticulatedObjectFromURDF(urdfFilename, fixedBase);
+int Viewer::addArticulatedObject(std::string urdfFilename,
+                                 bool fixedBase,
+                                 float globalScale) {
+  int articulatedObjectId = simulator_->addArticulatedObjectFromURDF(
+      urdfFilename, fixedBase, globalScale);
   placeArticulatedObjectAgentFront(articulatedObjectId);
   return articulatedObjectId;
 }
@@ -1925,7 +1929,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Zero: {
       std::string urdfFilePath =
           "data/URDF_demo_assets/aliengo/urdf/aliengo.urdf";
-      int objectId = addArticulatedObject(urdfFilePath);
+      float URDFScaling = esp::core::Random().uniform_float_01() + 0.5;
+      int objectId = addArticulatedObject(urdfFilePath, false, URDFScaling);
+      Mn::Debug{} << "URDF Randomly scaled to " << URDFScaling;
       auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
       R.translation() =
           simulator_->getArticulatedObjectRootState(objectId).translation();
