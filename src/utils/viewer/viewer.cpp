@@ -551,45 +551,35 @@ Viewer::Viewer(const Arguments& arguments)
    * idling, and CpuDuration and GpuDuration should be roughly equal for faster
    * rendering times
    *
-   * FrameTime: (Units::Nanoseconds) Time to render per frame, 1/FPS, 2 frame
-   * delay
+   * FrameTime: (Units::Nanoseconds) Time to render per frame, 1/FPS
    *
    * CpuDuration: (Units::Nanoseconds) CPU time spent processing events,
    * physics, traversing SceneGraph, and submitting data to GPU/drivers per
    * frame
-   * Measured using std::chrono::high_resolution_clock, 1 frame delay
    *
-   * GpuDuration: (Units::Nanoseconds) GPU time spent rendering data submitted
-   * by CPU per frame
-   * Uses asynchronous querying to measure the amount of time
-   * to fully complete a set of GL commands without stalling rendering, 3 frame
-   * delay
-   * Asynchronous querying extensions: ARB_timer_query (OpenGL 3.3),
-   * EXT_disjoint_timer_query (OpenGL ES, WebGL), EXT_disjoint_timer_query
-   * (WebGL2)
-   * Requires an active OpenGL context
+   * GpuDuration: (Units::Nanoseconds) Measures how much time it takes for the
+   * GPU to process all work submitted by CPU Uses asynchronous querying to
+   * measure the amount of time to fully complete a set of GL commands without
+   * stalling rendering
    */
   Mn::DebugTools::GLFrameProfiler::Values profilerValues =
       Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
       Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
       Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
 
-/**
- * VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
- *
- * VertexFetchRatio: (Units::RatioThousandths) Ratio of vertex shader
- * invocations to count of vertices submitted
- *
- * PrimitiveClipRatio:  (Units::PercentageThousandths) Ratio of primitives
- * discarded by the clipping stage to count of primitives submitted
- */
+// VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
 #ifndef MAGNUM_TARGET_GLES
   if (Mn::GL::Context::current()
           .isExtensionSupported<
               Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
     profilerValues |=
-        Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
-        Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio;
+        Mn::DebugTools::GLFrameProfiler::Value::
+            VertexFetchRatio |  // Ratio of vertex shader invocations to count
+                                // of vertices submitted
+        Mn::DebugTools::GLFrameProfiler::Value::
+            PrimitiveClipRatio;  // Ratio of primitives discarded by the
+                                 // clipping stage to count of primitives
+                                 // submitted
   }
 #endif
 
