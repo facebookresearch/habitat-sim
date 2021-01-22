@@ -49,6 +49,7 @@ struct Renderer::Impl {
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags) {
     ASSERT(visualSensor.isVisualSensor());
+    visualSensor.setRenderCamera();
     draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
   }
 
@@ -83,7 +84,7 @@ void Renderer::draw(RenderCamera& camera,
   pimpl_->draw(camera, sceneGraph, flags);
 }
 
-void Renderer::draw(esp::sensor::VisualSensor& visualSensor,
+void Renderer::draw(sensor::VisualSensor& visualSensor,
                     scene::SceneGraph& sceneGraph,
                     RenderCamera::Flags flags) {
   pimpl_->draw(visualSensor, sceneGraph, flags);

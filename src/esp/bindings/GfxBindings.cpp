@@ -81,7 +81,7 @@ void initGfxBindings(py::module& m) {
       .def(py::init(&Renderer::create<>))
       .def(
           "draw",
-          [](Renderer& self, esp::sensor::VisualSensor& visualSensor,
+          [](Renderer& self, sensor::VisualSensor& visualSensor,
              scene::SceneGraph& sceneGraph, RenderCamera::Flag flags) {
             self.draw(visualSensor, sceneGraph, RenderCamera::Flags{flags});
           },

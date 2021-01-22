@@ -116,6 +116,12 @@ gfx::RenderCamera* CameraSensor::getRenderCamera() {
   return renderCamera_;
 }
 
+void CameraSensor::setRenderCamera() {
+  renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
+  renderCamera_->node().setTransformation(this->computeTransformationMatrix());
+  renderCamera_->setViewport(this->framebufferSize());
+}
+
 bool CameraSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
@@ -141,9 +147,7 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
 
   // Set projection matrix, transformation matrix, and viewport
-  renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
-  renderCamera_->node().setTransformation(this->computeTransformationMatrix());
-  renderCamera_->setViewport(this->framebufferSize());
+  setRenderCamera();
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::Semantic) {

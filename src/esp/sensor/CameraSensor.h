@@ -23,6 +23,8 @@ class CameraSensor : public VisualSensor {
 
   void setProjectionParameters(const SensorSpec::ptr& spec);
 
+  virtual void setRenderCamera() override;
+
   virtual gfx::RenderCamera* getRenderCamera() override;
 
   auto computeTransformationMatrix();

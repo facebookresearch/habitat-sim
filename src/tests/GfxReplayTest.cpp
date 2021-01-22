@@ -121,8 +121,8 @@ TEST(GfxReplayTest, player) {
   // retrieve last child of scene root node
   auto& rootNode = sceneGraph.getRootNode();
   const auto* lastRootChild = rootNode.children().first();
-  if (lastRootChild == NULL) {
-    lastRootChild = rootNode;
+  if (!lastRootChild) {
+    lastRootChild = &rootNode;
   } else {
     ASSERT(lastRootChild);
     while (lastRootChild->nextSibling()) {
