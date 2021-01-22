@@ -121,9 +121,13 @@ TEST(GfxReplayTest, player) {
   // retrieve last child of scene root node
   auto& rootNode = sceneGraph.getRootNode();
   const auto* lastRootChild = rootNode.children().first();
-  ASSERT(lastRootChild);
-  while (lastRootChild->nextSibling()) {
-    lastRootChild = lastRootChild->nextSibling();
+  if (lastRootChild == NULL) {
+    lastRootChild = rootNode;
+  } else {
+    ASSERT(lastRootChild);
+    while (lastRootChild->nextSibling()) {
+      lastRootChild = lastRootChild->nextSibling();
+    }
   }
 
   // Construct Player. Hook up ResourceManager::loadAndCreateRenderAssetInstance

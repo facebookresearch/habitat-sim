@@ -67,9 +67,8 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
   recomputeProjectionMatrix();
 }  // CameraSensor::recomputeNearPlaneSize
 
-
 auto CameraSensor::computeTransformationMatrix() {
-  //target camera cannot be on the root node of the scene graph"
+  // target camera cannot be on the root node of the scene graph"
   ASSERT(!scene::SceneGraph::isRootNode(renderCamera_->node()));
   Magnum::Matrix4 absTransform = this->node().absoluteTransformation();
   Magnum::Matrix3 rotation = absTransform.rotationScaling();
@@ -79,7 +78,9 @@ auto CameraSensor::computeTransformationMatrix() {
           << Eigen::Map<mat3f>((rotation - absTransform.rotationShear()).data())
                  .norm();
 
-  auto relativeTransform = Magnum::Matrix4::from(rotation, absTransform.translation()) * Magnum::Matrix4::scaling(absTransform.scaling());
+  auto relativeTransform =
+      Magnum::Matrix4::from(rotation, absTransform.translation()) *
+      Magnum::Matrix4::scaling(absTransform.scaling());
 
   // set the transformation to the camera
   // so that the camera has the correct modelview matrix for rendering;
@@ -91,7 +92,8 @@ auto CameraSensor::computeTransformationMatrix() {
   // if camera's parent is the root node, skip it!
   if (!scene::SceneGraph::isRootNode(
           *static_cast<scene::SceneNode*>(camParent))) {
-    relativeTransform = camParent->absoluteTransformation().inverted() * relativeTransform;
+    relativeTransform =
+        camParent->absoluteTransformation().inverted() * relativeTransform;
   }
   return relativeTransform;
 }
@@ -138,12 +140,10 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
   if (sim.isFrustumCullingEnabled())
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
 
-
-  //Set projection matrix, transformation matrix, and viewport
+  // Set projection matrix, transformation matrix, and viewport
   renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
   renderCamera_->node().setTransformation(this->computeTransformationMatrix());
   renderCamera_->setViewport(this->framebufferSize());
-
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::Semantic) {
