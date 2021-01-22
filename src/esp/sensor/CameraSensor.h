@@ -23,18 +23,9 @@ class CameraSensor : public VisualSensor {
 
   void setProjectionParameters(const SensorSpec::ptr& spec);
 
-  // set the projection matrix to the given render camera
-  virtual CameraSensor& setProjectionMatrix(
-      gfx::RenderCamera& targetCamera) override;
-  // set the transformation matrix to the given render camera
-  virtual CameraSensor& setTransformationMatrix(
-      gfx::RenderCamera& targetCamera) override;
-  // set the view port to the given render camera
-  virtual CameraSensor& setViewport(gfx::RenderCamera& targetCamera) override;
-
-  virtual void setRenderCamera() override;
-
   virtual gfx::RenderCamera* getRenderCamera() override;
+
+  auto computeTransformationMatrix();
 
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
 

@@ -67,18 +67,10 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
   recomputeProjectionMatrix();
 }  // CameraSensor::recomputeNearPlaneSize
 
-CameraSensor& CameraSensor::setProjectionMatrix(
-    gfx::RenderCamera& targetCamera) {
-  targetCamera.setProjectionMatrix(width_, height_, projectionMatrix_);
-  return *this;
-}
 
-CameraSensor& CameraSensor::setTransformationMatrix(
-    gfx::RenderCamera& targetCamera) {
-  CORRADE_ASSERT(!scene::SceneGraph::isRootNode(targetCamera.node()),
-                 "CameraSensor::setTransformationMatrix: target camera cannot "
-                 "be on the root node of the scene graph",
-                 *this);
+auto CameraSensor::computeTransformationMatrix() {
+  //target camera cannot be on the root node of the scene graph"
+  ASSERT(!scene::SceneGraph::isRootNode(renderCamera_->node()));
   Magnum::Matrix4 absTransform = this->node().absoluteTransformation();
   Magnum::Matrix3 rotation = absTransform.rotationScaling();
   Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(rotation);
@@ -87,9 +79,7 @@ CameraSensor& CameraSensor::setTransformationMatrix(
           << Eigen::Map<mat3f>((rotation - absTransform.rotationShear()).data())
                  .norm();
 
-  auto relativeTransform =
-      Magnum::Matrix4::from(rotation, absTransform.translation()) *
-      Magnum::Matrix4::scaling(absTransform.scaling());
+  auto relativeTransform = Magnum::Matrix4::from(rotation, absTransform.translation()) * Magnum::Matrix4::scaling(absTransform.scaling());
 
   // set the transformation to the camera
   // so that the camera has the correct modelview matrix for rendering;
@@ -97,26 +87,13 @@ CameraSensor& CameraSensor::setTransformationMatrix(
   // obtain the *absolute* transformation from the sensor node,
   // apply it as the *relative* transformation between the camera and
   // its parent
-  auto camParent = targetCamera.node().parent();
+  auto camParent = renderCamera_->node().parent();
   // if camera's parent is the root node, skip it!
   if (!scene::SceneGraph::isRootNode(
           *static_cast<scene::SceneNode*>(camParent))) {
-    relativeTransform =
-        camParent->absoluteTransformation().inverted() * relativeTransform;
+    relativeTransform = camParent->absoluteTransformation().inverted() * relativeTransform;
   }
-  targetCamera.node().setTransformation(relativeTransform);
-  return *this;
-}
-
-CameraSensor& CameraSensor::setViewport(gfx::RenderCamera& targetCamera) {
-  targetCamera.setViewport(this->framebufferSize());
-  return *this;
-}
-
-void CameraSensor::setRenderCamera() {
-  setProjectionMatrix(*renderCamera_);
-  setTransformationMatrix(*renderCamera_);
-  setViewport(*renderCamera_);
+  return relativeTransform;
 }
 
 bool CameraSensor::getObservationSpace(ObservationSpace& space) {
@@ -160,6 +137,13 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
   gfx::RenderCamera::Flags flags;
   if (sim.isFrustumCullingEnabled())
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
+
+
+  //Set projection matrix, transformation matrix, and viewport
+  renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
+  renderCamera_->node().setTransformation(this->computeTransformationMatrix());
+  renderCamera_->setViewport(this->framebufferSize());
+
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::Semantic) {
