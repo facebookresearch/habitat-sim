@@ -197,10 +197,10 @@ class ManagedContainerBase {
   const std::string& getObjectType() const { return objectType_; }
 
  protected:
-  //======== Internally accessed getter ================
+  //======== Internally accessed getter/setter ================
 
   /**
-   * @brief Retrieve shared pointer to object held in library
+   * @brief Retrieve shared pointer to object held in library, NOT a copy.
    * @param handle the name of the object held in the smart pointer
    */
   template <class U>

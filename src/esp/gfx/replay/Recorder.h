@@ -90,13 +90,13 @@ class Recorder {
                                   const Magnum::Quaternion& rotation);
 
   /**
-   * @brief write saved keyframes to file. Not implemented yet.
+   * @brief write saved keyframes to file.
    * @param filepath
    */
   void writeSavedKeyframesToFile(const std::string& filepath);
 
   /**
-   * @brief write saved keyframes to string. Not implemented yet.
+   * @brief write saved keyframes to string.
    */
   std::string writeSavedKeyframesToString();
 

@@ -43,12 +43,14 @@ void textureTypeSanityCheck(CubeMap::Flags& flag,
                      functionNameStr.c_str()
                          << "instance was not created with color "
                             "texture output enabled.", );
+      return;
       break;
     case CubeMap::TextureType::Depth:
       CORRADE_ASSERT(flag & CubeMap::Flag::DepthTexture,
                      functionNameStr.c_str()
                          << "instance was not created with depth "
                             "texture output enabled.", );
+      return;
       break;
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();

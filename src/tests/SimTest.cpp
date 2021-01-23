@@ -65,9 +65,10 @@ struct SimTest : Cr::TestSuite::Tester {
       const std::string& scene,
       const std::string& sceneLightingKey = esp::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
-    simConfig.activeSceneID = scene;
+    simConfig.activeSceneName = scene;
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
+    simConfig.overrideSceneLightDefaults = true;
     simConfig.sceneLightSetup = sceneLightingKey;
 
     auto sim = Simulator::create_unique(simConfig);
@@ -129,7 +130,7 @@ SimTest::SimTest() {
 
 void SimTest::basic() {
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = vangogh;
+  cfg.activeSceneName = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   CORRADE_VERIFY(pathfinder);
@@ -137,20 +138,20 @@ void SimTest::basic() {
 
 void SimTest::reconfigure() {
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = vangogh;
+  cfg.activeSceneName = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   simulator.reconfigure(cfg);
   CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
   SimulatorConfiguration cfg2;
-  cfg2.activeSceneID = skokloster;
+  cfg2.activeSceneName = skokloster;
   simulator.reconfigure(cfg2);
   CORRADE_VERIFY(pathfinder != simulator.getPathFinder());
 }
 
 void SimTest::reset() {
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = vangogh;
+  cfg.activeSceneName = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
 

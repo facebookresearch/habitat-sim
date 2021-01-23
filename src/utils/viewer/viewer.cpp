@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <ctime>
+#include <fstream>
 
 #include <Magnum/configure.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
@@ -13,19 +14,21 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
-#include <Magnum/PixelFormat.h>
-#include <Magnum/SceneGraph/Camera.h>
-#include <Magnum/Timeline.h>
-
+#include <Magnum/GL/Context.h>
+#include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/PixelFormat.h>
+#include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
-
+#include <Magnum/Timeline.h>
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/replay/Recorder.h"
+#include "esp/gfx/replay/ReplayManager.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneNode.h"
@@ -35,7 +38,9 @@
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
+#include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -148,6 +153,13 @@ class Viewer : public Mn::Platform::Application {
   void switchCameraType();
   Mn::Vector3 randomDirection();
 
+  void saveCameraTransformToFile();
+  void saveNodeTransformToFile(esp::scene::SceneNode& node,
+                               const std::string& filename);
+  void loadCameraTransformFromFile();
+  void loadNodeTransformFromFile(esp::scene::SceneNode& node,
+                                 const std::string& filename);
+
   //! string rep of time when viewer application was started
   std::string viewerStartTimeString = getCurrentTimeString();
   void screenshot();
@@ -190,12 +202,16 @@ Key Commands:
   '2' build and display trajectory visualization.
   '+' increase trajectory diameter
   '-' decrease trajectory diameter
+  '3' toggle flying camera mode (user can apply camera transformation loaded from disk)
   '5' switch ortho/perspective camera.
   '6' reset ortho camera zoom/perspective camera FOV.
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
+  'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
+  '[' save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt"
+  ']' load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -209,7 +225,7 @@ Key Commands:
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
-==================================================
+  ==================================================
   )";
 
   //! Print viewer help text to terminal output.
@@ -324,17 +340,25 @@ Key Commands:
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::scene::SceneGraph* activeSceneGraph_ = nullptr;
   bool drawObjectBBs = false;
+  std::string gfxReplayRecordFilepath_;
+
+  std::string cameraLoadPath_;
+  // bool cameraSaved_ = false;
+  // Mn::Matrix4 lastCameraSave_;
+  Cr::Containers::Optional<Mn::Matrix4> lastCameraSave_;
 
   Mn::Timeline timeline_;
 
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = true;
+  bool flyingCameraMode_ = false;
 
   // NOTE: Mouse + shift is to select object on the screen!!
   void createPickedObjectVisualizer(unsigned int objectId);
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
+  Mn::DebugTools::GLFrameProfiler profiler_{};
 
   std::unique_ptr<esp::gfx::CubeMapCamera> cubeMapCamera_ = nullptr;
   std::unique_ptr<esp::gfx::CubeMap> cubeMap_ = nullptr;
@@ -361,12 +385,17 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("scene", "scene/stage file to load")
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
+      .addOption("dataset", "default")
+      .setHelp("dataset", "dataset configuration file to use")
       .addBooleanOption("enable-physics")
       .addBooleanOption("stage-requires-lighting")
       .setHelp("stage-requires-lighting",
                "Stage asset should be lit with Phong shading.")
       .addBooleanOption("debug-bullet")
       .setHelp("debug-bullet", "Render Bullet physics debug wireframes.")
+      .addOption("gfx-replay-record-filepath")
+      .setHelp("gfx-replay-record-filepath",
+               "Enable replay recording with R key.")
       .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
@@ -385,6 +414,9 @@ Viewer::Viewer(const Arguments& arguments)
       .addBooleanOption("recompute-navmesh")
       .setHelp("recompute-navmesh",
                "Programmatically re-generate the scene navmesh.")
+      .addOption("camera-transform-filepath")
+      .setHelp("camera-transform-filepath",
+               "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -412,12 +444,18 @@ Viewer::Viewer(const Arguments& arguments)
     debugBullet_ = true;
   }
 
+  cameraLoadPath_ = args.value("camera-transform-filepath");
+  gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
+
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
-  simConfig.activeSceneID = sceneFileName;
+  simConfig.activeSceneName = sceneFileName;
+  simConfig.sceneDatasetConfigFile = args.value("dataset");
+  LOG(INFO) << "Dataset : " << simConfig.sceneDatasetConfigFile;
   simConfig.enablePhysics = useBullet;
   simConfig.frustumCulling = true;
   simConfig.requiresTextures = true;
+  simConfig.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
   if (args.isSet("stage-requires-lighting")) {
     Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
@@ -546,6 +584,46 @@ Viewer::Viewer(const Arguments& arguments)
     cubeMap_ = std::make_unique<esp::gfx::CubeMap>(imageSize);
     cubeMapCamera_->setProjectionMatrix(imageSize, 0.001, 1000);
   }
+  /**
+   * Set up per frame profiler to be aware of bottlenecking in processing data
+   * Interpretation: CpuDuration should be less than GpuDuration to avoid GPU
+   * idling, and CpuDuration and GpuDuration should be roughly equal for faster
+   * rendering times
+   *
+   * FrameTime: (Units::Nanoseconds) Time to render per frame, 1/FPS
+   *
+   * CpuDuration: (Units::Nanoseconds) CPU time spent processing events,
+   * physics, traversing SceneGraph, and submitting data to GPU/drivers per
+   * frame
+   *
+   * GpuDuration: (Units::Nanoseconds) Measures how much time it takes for the
+   * GPU to process all work submitted by CPU Uses asynchronous querying to
+   * measure the amount of time to fully complete a set of GL commands without
+   * stalling rendering
+   */
+  Mn::DebugTools::GLFrameProfiler::Values profilerValues =
+      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
+      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
+      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
+
+// VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
+#ifndef MAGNUM_TARGET_GLES
+  if (Mn::GL::Context::current()
+          .isExtensionSupported<
+              Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
+    profilerValues |=
+        Mn::DebugTools::GLFrameProfiler::Value::
+            VertexFetchRatio |  // Ratio of vertex shader invocations to count
+                                // of vertices submitted
+        Mn::DebugTools::GLFrameProfiler::Value::
+            PrimitiveClipRatio;  // Ratio of primitives discarded by the
+                                 // clipping stage to count of primitives
+                                 // submitted
+  }
+#endif
+
+  // Per frame profiler will average measurements taken over previous 50 frames
+  profiler_.setup(profilerValues, 50);
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -564,6 +642,99 @@ void Viewer::switchCameraType() {
       return;
     }
   }
+}
+
+void Viewer::saveCameraTransformToFile() {
+  const char* saved_transformations_directory = "saved_transformations/";
+  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
+    Cr::Utility::Directory::mkpath(saved_transformations_directory);
+  }
+
+  // update temporary save
+  lastCameraSave_ = renderCamera_->node().absoluteTransformation();
+
+  // update save in file system
+  saveNodeTransformToFile(
+      renderCamera_->node(),
+      Cr::Utility::formatString("{}camera.{}.txt",
+                                saved_transformations_directory,
+                                getCurrentTimeString()));
+}
+
+void Viewer::loadCameraTransformFromFile() {
+  if (!cameraLoadPath_.empty()) {
+    // loading from file system
+    loadNodeTransformFromFile(renderCamera_->node(), cameraLoadPath_);
+  } else {
+    // attempting to load from last temporary save
+    LOG(WARNING)
+        << "Camera transform file not specified, attempting to load from "
+           "current instance. Use --camera-transform-filepath to specify file "
+           "to load from.";
+    if (!lastCameraSave_) {
+      LOG(ERROR) << "No transformation saved in current instance.";
+      return;
+    }
+
+    renderCamera_->node().setTransformation(*lastCameraSave_);
+    LOG(INFO) << "Transformation matrix loaded from current instance : "
+              << Eigen::Map<esp::mat4f>(lastCameraSave_->data());
+  }
+
+  if (!flyingCameraMode_) {
+    LOG(INFO) << "Note: The flying camera mode is currently OFF. You may not "
+                 "see any view change.";
+  }
+}
+
+void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
+                                     const std::string& filename) {
+  std::ofstream file(filename);
+  if (!file.good()) {
+    LOG(ERROR) << "Cannot open " << filename << " to output data.";
+    return;
+  }
+
+  // saving transformation into file system
+  Mn::Matrix4 transform = node.absoluteTransformation();
+  float* t = transform.data();
+  for (int i = 0; i < 16; ++i) {
+    file << t[i] << " ";
+  }
+  file.close();
+
+  LOG(INFO) << "Transformation matrix saved to " << filename << " : "
+            << Eigen::Map<esp::mat4f>(transform.data());
+}
+
+void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
+                                       const std::string& filename) {
+  std::ifstream file(filename);
+  if (!file.good()) {
+    LOG(ERROR) << "Cannot open " << filename << " to load data.";
+    return;
+  }
+
+  // reading file system data into matrix as transformation
+  Mn::Vector4 cols[4];
+  for (int col = 0; col < 4; ++col) {
+    for (int row = 0; row < 4; ++row) {
+      file >> cols[col][row];
+    }
+  }
+  Mn::Matrix4 transform{cols[0], cols[1], cols[2], cols[3]};
+  file.close();
+
+  // checking for corruption
+  if (!transform.isRigidTransformation()) {
+    LOG(WARNING) << "Data loaded from " << filename
+                 << " is not a valid transformation.";
+    return;
+  }
+
+  node.setTransformation(transform);
+  LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
+            << Eigen::Map<esp::mat4f>(transform.data());
 }
 
 int Viewer::addObject(int ID) {
@@ -715,6 +886,9 @@ void Viewer::wiggleLastObject() {
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
+  // Wrap profiler measurements around all methods to render images from
+  // RenderCamera
+  profiler_.beginFrame();
   // test: create a cubemap and save the 6 images to the disk;
   if (cubeMapMode_) {
     esp::sensor::Sensor::ptr sensor = simulator_->getAgent(defaultAgentId_)
@@ -752,6 +926,10 @@ void Viewer::drawEvent() {
       // even if timeSinceLastSimulation is quite large
       simulator_->stepWorld(1.0 / 60.0);
       simulateSingleStep_ = false;
+      const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
+      if (recorder) {
+        recorder->saveKeyframe();
+      }
     }
     // reset timeSinceLastSimulation, accounting for potential overflow
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
@@ -766,6 +944,14 @@ void Viewer::drawEvent() {
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
     sensorRenderTarget->blitRgbaToDefault();
+  } else if (flyingCameraMode_) {
+    visibles = 0;
+    Mn::GL::defaultFramebuffer.bind();
+    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
+      esp::gfx::RenderCamera::Flags flags =
+          esp::gfx::RenderCamera::Flag::FrustumCulling;
+      visibles += renderCamera_->draw(it.second, flags);
+    }
   } else {
     // using polygon offset to increase mesh depth to avoid z-fighting with
     // debug draw (since lines will not respond to offset).
@@ -813,7 +999,6 @@ void Viewer::drawEvent() {
 
       Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
     }
-
     sensorRenderTarget->blitRgbaToDefault();
   }
 
@@ -821,8 +1006,10 @@ void Viewer::drawEvent() {
   // properly
   Mn::GL::defaultFramebuffer.bind();
 
-  imgui_.newFrame();
+  // Do not include ImGui content drawing in per frame profiler measurements
+  profiler_.endFrame();
 
+  imgui_.newFrame();
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("main", NULL,
@@ -845,6 +1032,7 @@ void Viewer::drawEvent() {
                     : cam.getCameraType() == esp::sensor::SensorSubType::Pinhole
                           ? "Pinhole"
                           : "Fisheye")));
+    ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
 
@@ -941,6 +1129,9 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     }
   }
   Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
+  if (flyingCameraMode_) {
+    renderCamera_->setViewport(event.windowSize());
+  }
 
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
@@ -1024,12 +1215,17 @@ void Viewer::mouseReleaseEvent(MouseEvent& event) {
 }
 
 void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
-  if (!event.offset().y()) {
+  // shift+scroll is forced into x direction on mac, seemingly at OS level, so
+  // use both x and y offsets.
+  float scrollModVal = abs(event.offset().y()) > abs(event.offset().x())
+                           ? event.offset().y()
+                           : event.offset().x();
+  if (!(scrollModVal)) {
     return;
   }
   // Use shift for fine-grained zooming
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
-  float mod = event.offset().y() > 0 ? modVal : 1.0 / modVal;
+  float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
   auto& cam = getAgentCamera();
   cam.modZoom(mod);
   redraw();
@@ -1062,6 +1258,12 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   switch (key) {
+    case KeyEvent::Key::R: {
+      const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
+      if (recorder) {
+        recorder->writeSavedKeyframesToFile(gfxReplayRecordFilepath_);
+      }
+    } break;
     case KeyEvent::Key::Esc:
       /* Using Application::exit(), which exits at the next iteration of the
          event loop (same as the window close button would do). Using
@@ -1087,15 +1289,22 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // agent motion trajectory mesh synthesis with random color
       buildTrajectoryVis();
       break;
-
     case KeyEvent::Key::Three:
+      // toggle flying camera mode
+      flyingCameraMode_ = !flyingCameraMode_;
+      LOG(INFO) << "Flying camera mode: " << (flyingCameraMode_ ? "ON" : "OFF");
+      break;
+
+    case KeyEvent::Key::Four:
       fisheyeMode_ = !fisheyeMode_;
       LOG(INFO) << "Fisheye sensor is " << (fisheyeMode_ ? "ON" : "OFF");
       break;
 
-    case KeyEvent::Key::Four:
-      cubeMapMode_ = !cubeMapMode_;
-      break;
+      /*
+      case KeyEvent::Key::Four:
+        cubeMapMode_ = !cubeMapMode_;
+        break;
+      */
 
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
@@ -1114,6 +1323,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
             simulator_->getPathFinder()->getRandomNavigablePoint();
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
+      break;
+    case KeyEvent::Key::LeftBracket:
+      saveCameraTransformToFile();
+      break;
+    case KeyEvent::Key::RightBracket:
+      loadCameraTransformFromFile();
       break;
 
     case KeyEvent::Key::Equal: {
@@ -1137,6 +1352,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
+      showFPS_ ? profiler_.enable() : profiler_.disable();
       break;
     case KeyEvent::Key::E:
       simulator_->setFrustumCullingEnabled(

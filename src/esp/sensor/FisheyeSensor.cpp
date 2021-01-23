@@ -57,7 +57,7 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   auto& res = actualSpec->resolution;
   int size = res[0] < res[1] ? res[0] : res[1];
   gfx::CubeMap::Flags cubeMapFlags = {};
-  if (fisheyeSensorSpec_->sensorType == SensorType::COLOR) {
+  if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
     cubeMapFlags |= gfx::CubeMap::Flag::ColorTexture;
   }
   // TODO: Depth, Semantic
@@ -69,7 +69,7 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
                                       fisheyeSensorSpec_->cubeMapCameraNear,
                                       fisheyeSensorSpec_->cubeMapCameraFar);
 
-  if (fisheyeSensorSpec_->sensorType == SensorType::COLOR) {
+  if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
     fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
   }
 
@@ -88,7 +88,6 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   // prepare a big triangle mesh to cover the screen
   mesh_ = Mn::GL::Mesh{};
   mesh_.setCount(3);
-  gfx::CubeMap::enableSeamlessCubeMapTexture();
 }
 
 Mn::ResourceKey FisheyeSensor::getShaderKey() {
@@ -174,7 +173,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
     }
-    if (fisheyeSensorSpec_->sensorType == SensorType::COLOR) {
+    if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
       shader_->bindColorTexture(
           cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
     }

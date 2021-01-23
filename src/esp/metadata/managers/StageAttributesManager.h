@@ -38,9 +38,10 @@ class StageAttributesManager
   void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
     physicsManagerAttributesHandle_ = handle;
   }
+
   /**
-   * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
-   * such as file paths, to make them available for stage attributes defaults.
+   * @brief copy current @ref esp::sim::SimulatorConfiguration driven values as
+   * defaults, to make them available for stage attributes initialization.
    *
    * @param lightSetup the config-specified light setup
    * @param frustumCulling whether or not (semantic) stage should be
@@ -51,6 +52,7 @@ class StageAttributesManager
     cfgLightSetup_ = lightSetup;
     // set frustum culling default from configuration
     cfgFrustumCulling_ = frustumCulling;
+
   }  // StageAttributesManager::setCurrCfgVals
 
   /**
