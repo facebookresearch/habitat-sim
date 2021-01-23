@@ -24,11 +24,17 @@ namespace esp {
 namespace gfx {
 class CubeMap {
  public:
-  static void enableSeamlessCubeMapTexture();
   enum class TextureType : int8_t {
+    /**
+     * rgba texture with 8 bits per channel
+     */
     Color = 0,
+    /**
+     * HDR depth texture
+     */
     Depth = 1,
     // TODO: ObjectId
+    // TODO: HDR color
   };
 
   enum class Flag : Magnum::UnsignedShort {
@@ -49,7 +55,7 @@ class CubeMap {
      * By turning on this option, it will build the mipmap for the color texture
      * if any.
      */
-    BuildMipMap = 1 << 3,
+    BuildMipmap = 1 << 3,
   };
 
   /**
@@ -75,7 +81,19 @@ class CubeMap {
    * @return Reference to the cubemap texture
    */
   Magnum::GL::CubeMapTexture& getTexture(TextureType type);
+
+#ifndef MAGNUM_TARGET_WEBGL
   /**
+   * ```
+   *           +----+
+   *           | -Y |
+   * +----+----+----+----+
+   * | -Z | -X | +Z | +X |
+   * +----+----+----+----+
+   *           | +Y |
+   *           +----+
+   * ```
+   * NOTE: +Y is top
    * @brief save the cubemap texture based on the texture type
    * @param type, texture type
    * @param imageFilePrefix, the filename prefix
@@ -87,7 +105,13 @@ class CubeMap {
    * {imageFilePrefix}.{texType}.+Z.png
    * {imageFilePrefix}.{texType}.-Z.png
    * @return true, if success, otherwise false
-   * NOTE: +Y is top
+   */
+  // TODO: color HDR textures
+  bool saveTexture(TextureType type, const std::string& imageFilePrefix);
+#endif
+
+  /**
+   * ```
    *           +----+
    *           | -Y |
    * +----+----+----+----+
@@ -95,11 +119,10 @@ class CubeMap {
    * +----+----+----+----+
    *           | +Y |
    *           +----+
-   */
-  bool saveTexture(TextureType type, const std::string& imageFilePrefix);
-
-  /**
+   * ```
+   * NOTE: +Y is top
    * @brief load cubemap texture from external images
+   * @param type can be "rgba", "depth", or "objectId" (TODO)
    * @param imageFilePrefix, the prefix of the image filename
    * @param imageFileExtension, the image filename extension (such as "png",
    * "jpg")
@@ -111,16 +134,6 @@ class CubeMap {
    * {imageFilePrefix}.{texType}.-Y.{imageFileExtension}
    * {imageFilePrefix}.{texType}.+Z.{imageFileExtension}
    * {imageFilePrefix}.{texType}.-Z.{imageFileExtension}
-   *
-   * texType can be "rgba", "depth", "objectId"
-   * NOTE: +Y is top
-   *           +----+
-   *           | -Y |
-   * +----+----+----+----+
-   * | -Z | -X | +Z | +X |
-   * +----+----+----+----+
-   *           | +Y |
-   *           +----+
    */
   void loadTexture(TextureType type,
                    const std::string& imageFilePrefix,
@@ -135,12 +148,10 @@ class CubeMap {
                        scene::SceneGraph& sceneGraph,
                        RenderCamera::Flags flags);
 
- protected:
+ private:
   Flags flags_;
   int imageSize_ = 0;
   std::map<TextureType, std::unique_ptr<Magnum::GL::CubeMapTexture>> textures_;
-
-  Magnum::ResourceManager<Magnum::Trade::AbstractImporter> imageImporterManger_;
 
   /**
    * @brief Recreate textures
@@ -167,29 +178,6 @@ class CubeMap {
    * @brief Map shader output to attachments.
    */
   void mapForDraw();
-
-  /**
-   * @brief check if the class instance is created with corresponding texture
-   * enabled
-   */
-  void textureTypeSanityCheck(TextureType type,
-                              const std::string& functionNameStr);
-
-  /**
-   * @brief convert cube face index to Magnum::GL::CubeMapCoordinate
-   */
-  Magnum::GL::CubeMapCoordinate convertFaceIndexToCubeMapCoordinate(
-      int faceIndex);
-
-  /**
-   * @brief get texture type string for texture filename
-   */
-  std::string getTextureTypeFilenameString(TextureType type);
-  /**
-   * @brief get the pixel format based on texture type (color, depth objectId
-   * etc.)
-   */
-  Magnum::PixelFormat getPixelFormat(TextureType type);
 };
 
 CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
