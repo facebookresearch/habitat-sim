@@ -27,8 +27,6 @@ class CameraSensor : public VisualSensor {
 
   virtual gfx::RenderCamera* getRenderCamera() override;
 
-  auto computeTransformationMatrix();
-
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
 
   virtual bool getObservationSpace(ObservationSpace& space) override;
@@ -164,6 +162,12 @@ class CameraSensor : public VisualSensor {
   }
 
   /**
+   * @brief Compute and return the transformation matrix so that the camera has
+   * the correct modelview matrix for rendering
+   */
+  Magnum::Matrix4 computeTransformationMatrix();
+
+  /**
    * @brief Read the observation that was rendered by the simulator
    * @param[in,out] obs Instance of Observation class in which the observation
    * will be stored
@@ -177,7 +181,7 @@ class CameraSensor : public VisualSensor {
   Magnum::Matrix4 projectionMatrix_;
 
   /**
-   * @Brief A base projection matrix based on camera's type and display size.
+   * @brief A base projection matrix based on camera's type and display size.
    */
   Magnum::Matrix4 baseProjMatrix_;
 

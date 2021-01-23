@@ -67,7 +67,7 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
   recomputeProjectionMatrix();
 }  // CameraSensor::recomputeNearPlaneSize
 
-auto CameraSensor::computeTransformationMatrix() {
+Magnum::Matrix4 CameraSensor::computeTransformationMatrix() {
   // target camera cannot be on the root node of the scene graph"
   ASSERT(!scene::SceneGraph::isRootNode(renderCamera_->node()));
   Magnum::Matrix4 absTransform = this->node().absoluteTransformation();
@@ -78,11 +78,11 @@ auto CameraSensor::computeTransformationMatrix() {
           << Eigen::Map<mat3f>((rotation - absTransform.rotationShear()).data())
                  .norm();
 
-  auto relativeTransform =
+  Magnum::Matrix4 relativeTransform =
       Magnum::Matrix4::from(rotation, absTransform.translation()) *
       Magnum::Matrix4::scaling(absTransform.scaling());
 
-  // set the transformation to the camera
+  // obtain the transformation
   // so that the camera has the correct modelview matrix for rendering;
   // to do it,
   // obtain the *absolute* transformation from the sensor node,
