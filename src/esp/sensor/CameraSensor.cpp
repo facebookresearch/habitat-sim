@@ -21,6 +21,8 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
       zoomMatrix_(Magnum::Math::IdentityInit) {
   setProjectionParameters(spec);
   renderCamera_ = new gfx::RenderCamera(cameraNode);
+  renderCamera_->setAspectRatioPolicy(
+      Mn::SceneGraph::AspectRatioPolicy::Extend);
   renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
   renderCamera_->setViewport(this->framebufferSize());
 }  // ctor
@@ -70,8 +72,8 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
 }  // CameraSensor::recomputeNearPlaneSize
 
 void CameraSensor::recomputeProjectionMatrix() {
-    projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
-    //renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
+  projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
+  // renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
 }
 
 bool CameraSensor::getObservationSpace(ObservationSpace& space) {

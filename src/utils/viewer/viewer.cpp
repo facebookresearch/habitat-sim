@@ -539,8 +539,6 @@ Viewer::Viewer(const Arguments& arguments)
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
   renderCamera_ = getAgentCamera().getRenderCamera();
-  renderCamera_->setAspectRatioPolicy(
-      Mn::SceneGraph::AspectRatioPolicy::Extend);
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
