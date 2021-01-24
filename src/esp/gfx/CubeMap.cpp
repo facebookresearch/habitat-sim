@@ -2,7 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree
 #include "CubeMap.h"
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/FormatStl.h>
@@ -13,6 +15,7 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Trade/AbstractImageConverter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -23,8 +26,14 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-const Mn::GL::Framebuffer::ColorAttachment colorAttachment =
-    Mn::GL::Framebuffer::ColorAttachment{0};
+const Mn::GL::Framebuffer::ColorAttachment colorAttachment[6] = {
+    Mn::GL::Framebuffer::ColorAttachment{0},
+    Mn::GL::Framebuffer::ColorAttachment{1},
+    Mn::GL::Framebuffer::ColorAttachment{2},
+    Mn::GL::Framebuffer::ColorAttachment{3},
+    Mn::GL::Framebuffer::ColorAttachment{4},
+    Mn::GL::Framebuffer::ColorAttachment{5},
+};
 
 // TODO:
 // const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
@@ -128,7 +137,26 @@ bool CubeMap::reset(int imageSize) {
   // prepare frame buffer and render buffer
   recreateFramebuffer();
 
+  // attach render buffer to frame buffer
+  attachFramebufferRenderbuffer();
+
   return true;
+}
+
+void CubeMap::attachFramebufferRenderbuffer() {
+  if (flags_ & Flag::ColorTexture) {
+    for (unsigned int index = 0; index < 6; ++index) {
+      Magnum::GL::CubeMapCoordinate cubeMapCoord =
+          convertFaceIndexToCubeMapCoordinate(index);
+      frameBuffer_.attachCubeMapTexture(colorAttachment[index],
+                                        *textures_[TextureType::Color],
+                                        cubeMapCoord, 0);
+    }
+  }
+  if (!(flags_ & Flag::DepthTexture)) {
+    frameBuffer_.attachRenderbuffer(
+        Mn::GL::Framebuffer::BufferAttachment::Depth, optionalDepthBuffer_);
+  }
 }
 
 void CubeMap::recreateTexture() {
@@ -175,25 +203,20 @@ void CubeMap::recreateFramebuffer() {
                                   viewportSize);
 }
 
-void CubeMap::prepareToDraw(int cubeSideIndex) {
-  Magnum::GL::CubeMapCoordinate cubeMapCoord =
-      convertFaceIndexToCubeMapCoordinate(cubeSideIndex);
+void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
+  mapForDraw(cubeSideIndex);
 
-  if (flags_ & Flag::ColorTexture) {
-    frameBuffer_.attachCubeMapTexture(
-        colorAttachment, *textures_[TextureType::Color], cubeMapCoord, 0);
-  }
-
+  // sorry, unlike color buffers, for depth buffer you have to reattach it every
+  // time
+  // however, if NOT using depth texture, we do not need to attach the depth
+  // buffer again and again
   if (flags_ & Flag::DepthTexture) {
+    Magnum::GL::CubeMapCoordinate cubeMapCoord =
+        convertFaceIndexToCubeMapCoordinate(cubeSideIndex);
     frameBuffer_.attachCubeMapTexture(
         Mn::GL::Framebuffer::BufferAttachment::Depth,
         *textures_[TextureType::Depth], cubeMapCoord, 0);
-  } else {
-    frameBuffer_.attachRenderbuffer(
-        Mn::GL::Framebuffer::BufferAttachment::Depth, optionalDepthBuffer_);
   }
-
-  mapForDraw();
 
   frameBuffer_.clearDepth(1.0f).clearColor(0,                // color attachment
                                            Mn::Vector4ui{0}  // clear color
@@ -204,9 +227,10 @@ void CubeMap::prepareToDraw(int cubeSideIndex) {
       Mn::GL::Framebuffer::Status::Complete);
 }
 
-void CubeMap::mapForDraw() {
+void CubeMap::mapForDraw(unsigned int colorAttachmentIndex) {
   frameBuffer_.mapForDraw({
-      {Mn::Shaders::Generic3D::ColorOutput, colorAttachment},
+      {Mn::Shaders::Generic3D::ColorOutput,
+       colorAttachment[colorAttachmentIndex]},
       // TODO:
       //{Mn::Shaders::Generic3D::ObjectIdOutput, objectIdAttachment}
   });
@@ -266,6 +290,8 @@ bool CubeMap::saveTexture(TextureType type,
 void CubeMap::loadTexture(TextureType type,
                           const std::string& imageFilePrefix,
                           const std::string& imageFileExtension) {
+  textureTypeSanityCheck(flags_, type, "CubeMap::loadTexture():");
+
   // plugin manager used to instantiate importers which in turn are used
   // to load image data
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
@@ -297,12 +323,12 @@ void CubeMap::loadTexture(TextureType type,
         coordStrings[iFace], imageFileExtension);
 
     importer->openFile(filename);
-    Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
+    Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
         importer->image2D(0);
 
     // sanity checks
-    CORRADE_INTERNAL_ASSERT(image);
-    Mn::Vector2i size = image->size();
+    CORRADE_INTERNAL_ASSERT(imageData);
+    Mn::Vector2i size = imageData->size();
     CORRADE_ASSERT(
         size.x() == size.y(),
         " CubeMap::loadTexture(): each texture image must be a square.", );
@@ -318,18 +344,29 @@ void CubeMap::loadTexture(TextureType type,
     switch (type) {
       case TextureType::Color:
         texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
-                             *image);
+                             *imageData);
         break;
 
       case TextureType::Depth: {
-        // R32F means 4 bytes per pixel
-        const int dim = static_cast<int>(std::sqrt(image->pixelSize() / 4));
-        CORRADE_ASSERT(
-            dim * dim * 4 == image->pixelSize(),
-            "CubeMap::loadTexture(): the depth texture is not a square.", );
-        // reinterpret the data as a R32F image
-        Mn::ImageView2D imageView(Mn::PixelFormat::R32F, {dim, dim},
-                                  image->data());
+        // The pixel format for depth texture is R32F. When it is saved as hdr,
+        // the single channel is expanded to three channels by repeating the R
+        // channel 3 times (and it becomes RGB32F).
+        // That means when it is loaded, we need to dedup by taking just the
+        // first component (R component) out of each pixel.
+        Cr::Containers::StridedArrayView2D<const Mn::Color3>
+            imageStridedArrayView = imageData->pixels<Mn::Color3>();
+
+        Cr::Containers::Array<float> depthImage{
+            static_cast<size_t>(size.x() * size.y())};
+        unsigned int idx = 0;
+        for (auto row : imageStridedArrayView) {
+          for (const Mn::Color3& pixel : row) {
+            depthImage[idx++] = pixel.r();
+          }
+        }
+
+        Mn::ImageView2D imageView(Mn::PixelFormat::R32F, imageData->size(),
+                                  depthImage);
         texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
                              imageView);
       } break;
@@ -339,7 +376,7 @@ void CubeMap::loadTexture(TextureType type,
   if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
     texture->generateMipmap();
   }
-}
+}  // namespace gfx
 
 void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,

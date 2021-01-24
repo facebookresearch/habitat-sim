@@ -165,19 +165,29 @@ class CubeMap {
   Magnum::GL::Renderbuffer optionalDepthBuffer_;
 
   /**
-   * @brief Recreate frame buffer
+   * @brief recreate the frame buffer
    */
   void recreateFramebuffer();
 
   /**
-   * @brief Prepare to draw to the texture
+   * @brief attach renderbuffers (color etc.) as logical buffers of the
+   * framebuffer object
    */
-  void prepareToDraw(int cubeSideIndex);
+  void attachFramebufferRenderbuffer();
+
+  /**
+   * @brief Prepare to draw to the texture
+   * @param cubeSideIndex, the index of the cube side, can be 0,
+   * 1, 2, 3, 4, or 5
+   */
+  void prepareToDraw(unsigned int cubeSideIndex);
 
   /**
    * @brief Map shader output to attachments.
+   * @param colorAttachmentIndex, the index of the color attachment, can be 0,
+   * 1, 2, 3, 4, or 5
    */
-  void mapForDraw();
+  void mapForDraw(unsigned int colorAttachmentIndex);
 };
 
 CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
