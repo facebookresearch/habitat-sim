@@ -20,6 +20,7 @@ from habitat_sim.utils.common import (
     quat_rotate_vector,
     quat_to_magnum,
 )
+from habitat_sim.utils.validators import all_is_finite
 
 from .controls import ActuationSpec, ObjectControls
 
@@ -46,6 +47,10 @@ def _default_action_space() -> Dict[str, ActionSpec]:
     )
 
 
+def _triple_zero() -> np.ndarray:
+    return np.zeros(3)
+
+
 @attr.s(auto_attribs=True, slots=True)
 class SixDOFPose(object):
     r"""Specifies a position with 6 degrees of freedom
@@ -60,12 +65,14 @@ class SixDOFPose(object):
 
 @attr.s(auto_attribs=True, slots=True)
 class AgentState(object):
-    position: np.ndarray = np.zeros(3)
+    position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
     rotation: Union[np.quaternion, List, np.ndarray] = np.quaternion(1, 0, 0, 0)
-    velocity: np.ndarray = np.zeros(3)
-    angular_velocity: np.ndarray = np.zeros(3)
-    force: np.ndarray = np.zeros(3)
-    torque: np.ndarray = np.zeros(3)
+    velocity: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    angular_velocity: np.ndarray = attr.ib(
+        factory=_triple_zero, validator=all_is_finite
+    )
+    force: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    torque: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
     sensor_states: Dict[str, SixDOFPose] = attr.Factory(dict)
 
 
@@ -227,6 +234,7 @@ class Agent(object):
         the state of a sensor instead of moving the agent.
 
         """
+        attr.validate(state)
         habitat_sim.errors.assert_obj_valid(self.body)
 
         if isinstance(state.rotation, (list, np.ndarray)):
