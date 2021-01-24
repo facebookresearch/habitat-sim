@@ -38,7 +38,6 @@ def test_unproject():
 
         # setup camera
         visual_sensor = sim._sensors["color_sensor"]
-        scene_graph = sim.get_active_scene_graph()
         render_camera = visual_sensor.get_render_camera()
 
         # test unproject
