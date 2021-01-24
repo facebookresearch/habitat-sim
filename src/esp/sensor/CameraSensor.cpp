@@ -43,6 +43,13 @@ void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
 
 }  // setProjectionParameters
 
+void CameraSensor::recomputeProjectionMatrix() {
+  projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
+  if (renderCamera_) {
+    renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
+  }
+}
+
 void CameraSensor::recomputeBaseProjectionMatrix() {
   // refresh size after relevant parameters have changed
   Mn::Vector2 nearPlaneSize_ =
@@ -70,11 +77,6 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
   // build projection matrix
   recomputeProjectionMatrix();
 }  // CameraSensor::recomputeNearPlaneSize
-
-void CameraSensor::recomputeProjectionMatrix() {
-  projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
-  // renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
-}
 
 bool CameraSensor::getObservationSpace(ObservationSpace& space) {
   space.spaceType = ObservationSpaceType::Tensor;
