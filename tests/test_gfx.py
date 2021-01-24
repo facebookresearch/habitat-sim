@@ -13,6 +13,7 @@ import quaternion  # noqa: F401
 
 import examples.settings
 import habitat_sim
+from habitat_sim.sensor import VisualSensor
 
 
 @pytest.mark.skipif(
@@ -38,6 +39,7 @@ def test_unproject():
 
         # setup camera
         visual_sensor = sim._sensors["color_sensor"]
+        assert isinstance(visual_sensor, VisualSensor)
         render_camera = visual_sensor.get_render_camera()
 
         # test unproject
