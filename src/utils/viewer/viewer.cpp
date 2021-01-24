@@ -1013,6 +1013,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     if (visualSensor != nullptr) {
       visualSensor->specification()->resolution = {event.windowSize()[1],
                                                    event.windowSize()[0]};
+      renderCamera_->setViewport(event.windowSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
     }
   }

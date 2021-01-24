@@ -23,8 +23,6 @@ class CameraSensor : public VisualSensor {
 
   void setProjectionParameters(const SensorSpec::ptr& spec);
 
-  virtual void setRenderCamera() override;
-
   virtual gfx::RenderCamera* getRenderCamera() override;
 
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
@@ -157,9 +155,7 @@ class CameraSensor : public VisualSensor {
    * which should be recomputeulated @ref zoomMatrix_ or @ref baseProjMatrix_
    * change.
    */
-  void recomputeProjectionMatrix() {
-    projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
-  }
+  void recomputeProjectionMatrix();
 
   /**
    * @brief Read the observation that was rendered by the simulator

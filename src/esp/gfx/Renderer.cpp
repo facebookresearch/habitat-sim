@@ -49,7 +49,6 @@ struct Renderer::Impl {
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags) {
     ASSERT(visualSensor.isVisualSensor());
-    visualSensor.setRenderCamera();
     draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
   }
 

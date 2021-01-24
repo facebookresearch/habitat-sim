@@ -21,6 +21,8 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
       zoomMatrix_(Magnum::Math::IdentityInit) {
   setProjectionParameters(spec);
   renderCamera_ = new gfx::RenderCamera(cameraNode);
+  renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
+  renderCamera_->setViewport(this->framebufferSize());
 }  // ctor
 
 void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
@@ -67,6 +69,11 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
   recomputeProjectionMatrix();
 }  // CameraSensor::recomputeNearPlaneSize
 
+void CameraSensor::recomputeProjectionMatrix() {
+    projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
+    //renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
+}
+
 bool CameraSensor::getObservationSpace(ObservationSpace& space) {
   space.spaceType = ObservationSpaceType::Tensor;
   space.shape = {static_cast<size_t>(spec_->resolution[0]),
@@ -83,11 +90,6 @@ bool CameraSensor::getObservationSpace(ObservationSpace& space) {
 
 gfx::RenderCamera* CameraSensor::getRenderCamera() {
   return renderCamera_;
-}
-
-void CameraSensor::setRenderCamera() {
-  renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
-  renderCamera_->setViewport(this->framebufferSize());
 }
 
 bool CameraSensor::getObservation(sim::Simulator& sim, Observation& obs) {
@@ -113,9 +115,6 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
   gfx::RenderCamera::Flags flags;
   if (sim.isFrustumCullingEnabled())
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
-
-  // Set projection matrix, transformation matrix, and viewport
-  setRenderCamera();
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::Semantic) {
