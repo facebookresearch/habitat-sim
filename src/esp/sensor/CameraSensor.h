@@ -162,12 +162,6 @@ class CameraSensor : public VisualSensor {
   }
 
   /**
-   * @brief Compute and return the transformation matrix so that the camera has
-   * the correct modelview matrix for rendering
-   */
-  Magnum::Matrix4 computeTransformationMatrix();
-
-  /**
    * @brief Read the observation that was rendered by the simulator
    * @param[in,out] obs Instance of Observation class in which the observation
    * will be stored
