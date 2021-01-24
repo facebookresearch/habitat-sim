@@ -107,7 +107,8 @@ void initSensorBindings(py::module& m) {
                                                                 "VisualSensor")
       .def(
           "get_render_camera", &VisualSensor::getRenderCamera,
-          R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)")
+          R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",
+          pybind11::return_value_policy::reference)
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 
