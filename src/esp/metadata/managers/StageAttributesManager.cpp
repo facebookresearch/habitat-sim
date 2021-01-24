@@ -345,12 +345,6 @@ void StageAttributesManager::setValsFromJSONDoc(
     stageAttributes->setHouseFilename(houseFName);
   }
 
-  if (io::readMember<std::string>(jsonConfig, "lighting_setup", lightSetup)) {
-    // if lighting is specified in stage json to non-empty value, set value
-    // (override default).
-    stageAttributes->setLightSetup(lightSetup);
-  }
-
   // load the rigid object library metadata (no physics init yet...)
   if (jsonConfig.HasMember("rigid object paths") &&
       jsonConfig["rigid object paths"].IsArray()) {

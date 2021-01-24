@@ -9,7 +9,6 @@ from typing import Union
 import attr
 import numpy as np
 from numpy import ndarray
-from torch import Tensor
 
 from habitat_sim.registry import registry
 from habitat_sim.sensor import SensorType
@@ -28,7 +27,9 @@ class NoSensorNoiseModel(SensorNoiseModel):
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return True
 
-    def apply(self, x: Union[ndarray, Tensor]) -> Union[ndarray, Tensor]:
+    def apply(
+        self, x: Union[ndarray, "torch.Tensor"]
+    ) -> Union[ndarray, "torch.Tensor"]:
         if isinstance(x, np.ndarray):
             return x.copy()
         elif torch is not None and torch.is_tensor(x):

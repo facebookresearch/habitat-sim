@@ -9,7 +9,11 @@ from typing import Optional, Union
 
 import attr
 from numpy import ndarray
-from torch import Tensor
+
+try:
+    from torch import Tensor
+except ImportError:
+    pass
 
 from habitat_sim.sensor import SensorType
 
@@ -39,7 +43,7 @@ class SensorNoiseModel(abc.ABC):
         """
 
     def __call__(
-        self, sensor_observation: Union[ndarray, Tensor]
-    ) -> Union[ndarray, Tensor]:
+        self, sensor_observation: Union[ndarray, "Tensor"]
+    ) -> Union[ndarray, "Tensor"]:
         r"""Alias of `apply()`"""
         return self.apply(sensor_observation)

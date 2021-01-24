@@ -58,7 +58,8 @@ def test_recompute_navmesh(test_scene):
 
         # compute shortest paths between these points on the loaded navmesh
         loaded_navmesh_path_results = get_shortest_path(sim, samples)
-
+        assert len(sim.pathfinder.build_navmesh_vertices()) > 0
+        assert len(sim.pathfinder.build_navmesh_vertex_indices()) > 0
         hab_cfg = examples.settings.make_cfg(cfg_settings)
         agent_config = hab_cfg.agents[hab_cfg.sim_cfg.default_agent_id]
         agent_config.radius *= 2.0
@@ -70,6 +71,8 @@ def test_recompute_navmesh(test_scene):
         navmesh_settings.set_defaults()
         assert sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
         assert sim.pathfinder.is_loaded
+        assert len(sim.pathfinder.build_navmesh_vertices()) > 0
+        assert len(sim.pathfinder.build_navmesh_vertex_indices()) > 0
 
         recomputed_navmesh_results = get_shortest_path(sim, samples)
 
