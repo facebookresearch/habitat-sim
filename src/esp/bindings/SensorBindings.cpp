@@ -105,6 +105,9 @@ void initSensorBindings(py::module& m) {
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
              Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(m,
                                                                 "VisualSensor")
+      .def(
+          "get_render_camera", &VisualSensor::getRenderCamera,
+          R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)")
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 
