@@ -23,7 +23,7 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
   renderCamera_ = new gfx::RenderCamera(cameraNode);
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
-  renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
+  recomputeProjectionMatrix();
   renderCamera_->setViewport(this->framebufferSize());
 }  // ctor
 
