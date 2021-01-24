@@ -889,7 +889,8 @@ void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
   // RenderCamera
   profiler_.beginFrame();
-  // test: create a cubemap and save the 6 images to the disk;
+// test: create a cubemap and save the 6 images to the disk;
+#ifndef MAGNUM_TARGET_WEBGL
   if (cubeMapMode_) {
     esp::sensor::Sensor::ptr sensor = simulator_->getAgent(defaultAgentId_)
                                           ->getSensorSuite()
@@ -909,6 +910,7 @@ void Viewer::drawEvent() {
     }
     cubeMapMode_ = !cubeMapMode_;
   }
+#endif
 
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
