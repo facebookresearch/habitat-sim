@@ -19,8 +19,8 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit) {
-  setProjectionParameters(spec);
   renderCamera_ = new gfx::RenderCamera(cameraNode);
+  setProjectionParameters(spec);
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
   recomputeProjectionMatrix();
