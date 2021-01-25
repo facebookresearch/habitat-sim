@@ -10,8 +10,6 @@ import magnum as mn
 import numpy as np
 import quaternion
 
-from habitat_sim.utils.common import quat_from_magnum
-
 
 def all_is_finite(instance, attribute, value) -> None:
     if not np.all(np.isfinite(value)):
@@ -22,11 +20,15 @@ def all_is_finite(instance, attribute, value) -> None:
 
 def is_unit_length(instance, attribute, value, tol=1e-5) -> None:
     if isinstance(value, mn.Quaternion):
-        value = quat_from_magnum(value)
-    if isinstance(value, (quaternion.quaternion)):
+        if not value.is_normalized():
+            raise ValueError(
+                f"""{value} is suppose to be a normalized quaternion but is not.
+                    This is not valid for an {attribute} of {instance} which requires a unit length"""
+            )
+    elif isinstance(value, (quaternion.quaternion)):
         if not np.isclose(value.norm(), 1.0, rtol=tol, atol=0):
             raise ValueError(
-                f"""{value} is a quaternion but the norm length is {value.norm()}.
+                f"""{value} is suppose to be a normalized quaternion but is not {value.norm()}.
                 This is not valid for an {attribute} of {instance} which requires a unit length"""
             )
     else:
