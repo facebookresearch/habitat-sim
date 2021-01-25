@@ -15,7 +15,6 @@ import examples.settings
 import habitat_sim
 from habitat_sim.sensor import VisualSensor
 
-
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"),
     reason="Requires the habitat-test-scenes",
@@ -33,14 +32,18 @@ def test_unproject():
     # loading the scene
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
+        # setup camera
+        sensor_spec = habitat_sim.SensorSpec()
+        sensor_spec.resolution = [cfg_settings["height"], cfg_settings["width"]]
+        sensor_spec.position = [0.0, cfg_settings["sensor_height"], 0.0]
+        camera_sensor = habitat_sim.sensor.CameraSensor(sim.agents[0].scene_node, sensor_spec)
+        render_camera = camera_sensor.get_render_camera()
+
         # position agent
         sim.agents[0].scene_node.rotation = mn.Quaternion()
         sim.agents[0].scene_node.translation = mn.Vector3(0.5, 0, 0)
 
-        # setup camera
-        visual_sensor = sim._sensors["color_sensor"]
-        assert isinstance(visual_sensor, VisualSensor)
-        render_camera = visual_sensor.get_render_camera()
+
 
         # test unproject
         center_ray = render_camera.unproject(
