@@ -113,7 +113,7 @@ def simulate(sim, dt=1.0, get_frames=True):
 
 # Define each test function & store in list
 
-def bowl_drop_test(objects = ["test_assets/objects/sphere", "test_assets/objects/chair"], num_objects = 100, object_speed = 2, post_throw_settling_time = 5, object_scale = 0.5): # take in parameters here
+def bowl_drop_test(objects = ["test_assets/objects/sphere", "test_assets/objects/chair", "test_assets/objects/cheezit", "test_assets/objects/skillet"], num_objects = 100, object_speed = 2, post_throw_settling_time = 5, object_scale = 0.5): # take in parameters here
     # start with bowl being bounding boxes
 
     cfg = make_configuration()
