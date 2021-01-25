@@ -14,6 +14,7 @@ import quaternion  # noqa: F401
 import examples.settings
 import habitat_sim
 
+
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"),
     reason="Requires the habitat-test-scenes",
