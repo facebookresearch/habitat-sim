@@ -1,12 +1,10 @@
 # [setup]
 import math
 import os
-import random
-import sys
 import time
 
-import git
 import magnum as mn
+import matplotlib.pyplot as plt
 import numpy as np
 
 import habitat_sim
@@ -39,10 +37,8 @@ def place_agent(sim, position, orientation):
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene_id = os.path.join(
-        data_path, "test_assets/scenes/stage_floor1.glb"
-    )
-    assert os.path.exists(backend_cfg.scene_id)
+    backend_cfg.scene_id = "NONE"
+
     backend_cfg.enable_physics = True
 
     # sensor configurations
@@ -55,18 +51,6 @@ def make_configuration():
             "resolution": camera_resolution,
             "position": [0.0, 0.6, 0.0],
             "orientation": [0.0, 0.0, 0.0],
-        },
-        "depth_camera_1stperson": {
-            "sensor_type": habitat_sim.SensorType.DEPTH,
-            "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
-            "orientation": [0.0, 0.0, 0.0],
-        },
-        "rgba_camera_3rdperson": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 1.0, 0.3],
-            "orientation": [-45, 0.0, 0.0],
         },
     }
 
@@ -103,17 +87,24 @@ def simulate(sim, dt=1.0, get_frames=True):
         if get_frames:
             observations.append(sim.get_sensor_observations())
         et = time.time()
-        physics_step_times.append(mt-st)
-        graphics_render_times.append(et-mt)
+        physics_step_times.append(mt - st)
+        graphics_render_times.append(et - mt)
         collisions.append(sim.get_num_active_contact_points())
-
 
     return observations, physics_step_times, graphics_render_times, collisions
 
 
 # Define each test function & store in list
 
-def bowl_drop_test(objects = ["test_assets/objects/sphere", "test_assets/objects/chair", "test_assets/objects/cheezit", "test_assets/objects/skillet"], num_objects = 100, object_speed = 2, post_throw_settling_time = 5, object_scale = 0.5): # take in parameters here
+
+def bowl_drop_test(
+    objects,
+    num_objects=30,
+    object_scale=0.5,
+    object_speed=2,
+    post_throw_settling_time=5,
+):  # take in parameters here
+    """Drops a specified number of objects into a bowl/box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame. """
     # start with bowl being bounding boxes
 
     cfg = make_configuration()
@@ -121,11 +112,9 @@ def bowl_drop_test(objects = ["test_assets/objects/sphere", "test_assets/objects
         sim.close()
     except NameError:
         pass
-    sim = habitat_sim.Simulator(cfg)
-    agent_transform = place_agent(sim, [5.45, 1.8, 1.2], np.quaternion(-0.83147, 0.2, -0.55557, -0.2))
 
-    # get the primitive assets attributes manager
-    prim_templates_mgr = sim.get_asset_template_manager()
+    sim = habitat_sim.Simulator(cfg)
+    place_agent(sim, [5.45, 1.8, 1.2], np.quaternion(-0.83147, 0.2, -0.55557, -0.2))
 
     # get the physics object attributes manager
     obj_templates_mgr = sim.get_object_template_manager()
@@ -136,7 +125,7 @@ def bowl_drop_test(objects = ["test_assets/objects/sphere", "test_assets/objects
 
     bowlParts = []
     bowlIDs = []
-    for i in range(5):
+    for _i in range(5):
         bowlParts += [obj_templates_mgr.get_template_by_handle(cube_handle)]
     bowlParts[0].scale = np.array([1.0, 0.1, 1.0])
     bowlParts[1].scale = np.array([1.0, 0.6, 0.1])
@@ -149,21 +138,28 @@ def bowl_drop_test(objects = ["test_assets/objects/sphere", "test_assets/objects
         obj_templates_mgr.register_template(bowlParts[i], part_name)
         bowlIDs += [sim.add_object_by_handle(part_name)]
         sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, bowlIDs[i])
-    sim.set_translation(np.array([2.50, .05, 0.4]), bowlIDs[0])
-    sim.set_translation(np.array([2.50, .35, 1.35]), bowlIDs[1])
-    sim.set_translation(np.array([2.50, .35, -0.55]), bowlIDs[2])
-    sim.set_translation(np.array([3.45, .35, 0.4]), bowlIDs[3])
-    sim.set_translation(np.array([1.55, .35, 0.4]), bowlIDs[4])
-
+    sim.set_translation(np.array([2.50, 0.05, 0.4]), bowlIDs[0])
+    sim.set_translation(np.array([2.50, 0.35, 1.35]), bowlIDs[1])
+    sim.set_translation(np.array([2.50, 0.35, -0.55]), bowlIDs[2])
+    sim.set_translation(np.array([3.45, 0.35, 0.4]), bowlIDs[3])
+    sim.set_translation(np.array([1.55, 0.35, 0.4]), bowlIDs[4])
 
     # load some object templates from configuration files
     object_ids = []
+    scales = {
+        "test_assets/objects/sphere": 1,
+        "test_assets/objects/chair": 0.9,
+        "test_assets/objects/donut": 2,
+        "test_assets/objects/nested_box": 0.5,
+    }
     for obj_path in objects:
-        object_ids += [obj_templates_mgr.load_configs(
-            str(os.path.join(data_path, obj_path))
-        )[0]]
+        object_ids += [
+            obj_templates_mgr.load_configs(str(os.path.join(data_path, obj_path)))[0]
+        ]
         obj_template = obj_templates_mgr.get_template_by_ID(object_ids[-1])
         obj_template.scale *= object_scale
+        if obj_path in scales.keys():
+            obj_template.scale *= scales[obj_path]
         obj_templates_mgr.register_template(obj_template)
 
     observations = []
@@ -177,9 +173,10 @@ def bowl_drop_test(objects = ["test_assets/objects/sphere", "test_assets/objects
 
         obj_node = sim.get_object_scene_node(cur_id)
         obj_bb = obj_node.cumulative_bb
-        diaganal_length = math.sqrt(obj_bb.size_x()**2 + obj_bb.size_y()**2 + obj_bb.size_z()**2)
-        time_til_next_obj = diaganal_length / 2 / object_speed
-        print(i, time_til_next_obj)
+        diaganal_length = math.sqrt(
+            obj_bb.size_x() ** 2 + obj_bb.size_y() ** 2 + obj_bb.size_z() ** 2
+        )
+        time_til_next_obj = diaganal_length / object_speed / 2
         # obj_node.scale(mn.Vector3(3,3,3))
 
         # set object position and velocity
@@ -189,17 +186,83 @@ def bowl_drop_test(objects = ["test_assets/objects/sphere", "test_assets/objects
         sim.set_linear_velocity(initial_linear_velocity, cur_id)
 
         # simulate half a second, then add next object
-        cur_observations, cur_physics_step_times, cur_graphics_render_times, cur_collisions = simulate(sim, dt=time_til_next_obj, get_frames=make_video)
+        (
+            cur_observations,
+            cur_physics_step_times,
+            cur_graphics_render_times,
+            cur_collisions,
+        ) = simulate(sim, dt=time_til_next_obj, get_frames=make_video)
         observations += cur_observations
         physics_step_times += cur_physics_step_times
         graphics_render_times += cur_graphics_render_times
         collisions += cur_collisions
 
-    cur_observations, cur_physics_step_times, cur_graphics_render_times, cur_collisions = simulate(sim, dt=post_throw_settling_time, get_frames=make_video)
+    (
+        cur_observations,
+        cur_physics_step_times,
+        cur_graphics_render_times,
+        cur_collisions,
+    ) = simulate(sim, dt=post_throw_settling_time, get_frames=make_video)
     observations += cur_observations
     physics_step_times += cur_physics_step_times
     graphics_render_times += cur_graphics_render_times
     collisions += cur_collisions
+
+    # [/basics]
+    # return total time to run, time to load, time to simulate physics, time for rendering
+    remove_all_objects(sim)
+    sim.close()
+    return physics_step_times, graphics_render_times, collisions, observations
+
+
+unit_tests = {
+    "bowl_drop_test_1": lambda: bowl_drop_test(
+        ["test_assets/objects/sphere"], 25, 0.5, 2, 5
+    ),
+    "bowl_drop_test_2": lambda: bowl_drop_test(
+        ["test_assets/objects/sphere", "test_assets/objects/chair"], 50, 0.5, 2, 5
+    ),
+    "bowl_drop_test_3": lambda: bowl_drop_test(
+        [
+            "test_assets/objects/sphere",
+            "test_assets/objects/chair",
+            "test_assets/objects/donut",
+            "test_assets/objects/nested_box",
+        ],
+        200,
+        0.5,
+        2,
+        5,
+    ),
+}  # specify parameters for each scenario
+
+test_sets = {
+    "bowl_drop_tests": ["bowl_drop_test_1", "bowl_drop_test_2", "bowl_drop_test_3"]
+}
+
+
+def runTest(testId):
+    print("----- Running %s -----" % testId)
+    start_time = time.time()
+    physics_step_times, graphics_render_times, collisions, observations = unit_tests[
+        testId
+    ]()
+    end_time = time.time()
+
+    print(" ========================= Performance ======================== ")
+    print("| Number of frames: " + str(len(physics_step_times)))
+    print(
+        "| Average time per physics step: "
+        + str(sum(physics_step_times) / len(physics_step_times))
+    )
+    print(
+        "| Average time per frame render: "
+        + str(sum(graphics_render_times) / len(graphics_render_times))
+    )
+    print("| Maximum Collisions: " + str(max(collisions)))
+    print("| Total time for test: " + str(end_time - start_time))
+    print("|----- END of %s -----" % testId)
+    print(" ============================================================== ")
 
     if make_video:
         vut.make_video(
@@ -210,30 +273,21 @@ def bowl_drop_test(objects = ["test_assets/objects/sphere", "test_assets/objects
             open_vid=show_video,
         )
 
-    # [/basics]
-    # return total time to run, time to load, time to simulate physics, time for rendering
-    return physics_step_times, graphics_render_times, collisions 
-    remove_all_objects(sim)
+    if display_graph:
+        plt.plot(physics_step_times)
+        plt.title("Time to simulate physics for a frame (%s)" % testId)
+        plt.xlabel("Frame #")
+        plt.ylabel("Time Taken (s)")
+        plt.show()
 
-unit_tests = { "bowl_drop_test": bowl_drop_test } # specify parameters for each scenario
-
-def runTest(testId):
-    print("----- Running %s -----" % testId)
-    start_time = time.time()
-    physics_step_times, graphics_render_times, collisions = unit_tests[testId]()
-    end_time = time.time()
-    print("Average time per physics step: " + str(sum(physics_step_times)/len(physics_step_times)))
-    print("Collisions per physics step: " + str(sum(collisions)/len(collisions)))
-    print("Average time per frame render: " + str(sum(graphics_render_times)/len(graphics_render_times)))
-    print("Total time for test: " + str(end_time - start_time))
-    print("----- END of %s -----" % testId)
     return end_time - start_time
-
 
 
 # Define Main driver function
 
+
 def main():
+    # runs all unit tests
     for testId in unit_tests:
         runTest(testId)
 
@@ -244,16 +298,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-show-video", dest="show_video", action="store_false")
     parser.add_argument("--no-make-video", dest="make_video", action="store_false")
+    parser.add_argument("--display-graph", dest="display_graph", action="store_true")
+
     parser.set_defaults(show_video=True, make_video=True)
     args, _ = parser.parse_known_args()
     show_video = args.show_video
     make_video = args.make_video
+    display_graph = args.display_graph
+
     if make_video and not os.path.exists(output_path):
         os.mkdir(output_path)
 
     main()
-
-
-# NOTES
-# Command line arguments should be high-level i.e. --bowl-test-resolution-1, --bowl-test-resolution-2, --bowl-test-suite
-
