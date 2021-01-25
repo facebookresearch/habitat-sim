@@ -5,11 +5,39 @@
 # LICENSE file in the root directory of this source tree.
 
 # contains validators for attrs
+import attr
+import magnum as mn
 import numpy as np
+import quaternion
+
+from habitat_sim.utils.common import quat_from_magnum
 
 
-def all_is_finite(instance, attribute, value):
+def all_is_finite(instance, attribute, value) -> None:
     if not np.all(np.isfinite(value)):
         raise ValueError(
-            f"{value} contains non-finite values which are not valid in this context for the {attribute} of {instance}"
+            f"{value} contains non-finite values which are forbidden in the {attribute} of {instance}"
         )
+
+
+def is_unit_length(instance, attribute, value, tol=1e-5) -> None:
+    if isinstance(value, mn.Quaternion):
+        value = quat_from_magnum(value)
+    if isinstance(value, (quaternion.quaternion)):
+        if not np.isclose(value.norm(), 1.0, rtol=tol, atol=0):
+            raise ValueError(
+                f"""{value} is a quaternion but the norm length is {value.norm()}.
+                This is not valid for an {attribute} of {instance} which requires a unit length"""
+            )
+    else:
+        print(value.type)
+        new_value = np.asarray(value)
+        assert new_value.ndim == 1
+        if not np.isclose(np.linalg.norm(new_value), 1.0, rtol=tol, atol=0):
+            raise ValueError(
+                f"{value} is not a unit length vector which is required for {attribute} of {instance}"
+            )
+
+
+def value_is_validated(instance, attribute, value) -> None:
+    attr.validate(value)

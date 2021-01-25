@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 import attr
 import magnum as mn
 import numpy as np
+import quaternion
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
@@ -20,7 +21,11 @@ from habitat_sim.utils.common import (
     quat_rotate_vector,
     quat_to_magnum,
 )
-from habitat_sim.utils.validators import all_is_finite
+from habitat_sim.utils.validators import (
+    all_is_finite,
+    is_unit_length,
+    value_is_validated,
+)
 
 from .controls import ActuationSpec, ObjectControls
 
@@ -51,6 +56,10 @@ def _triple_zero() -> np.ndarray:
     return np.zeros(3)
 
 
+def _default_quaternion() -> np.quaternion:
+    return quaternion.quaternion(1, 0, 0, 0)
+
+
 @attr.s(auto_attribs=True, slots=True)
 class SixDOFPose(object):
     r"""Specifies a position with 6 degrees of freedom
@@ -60,20 +69,31 @@ class SixDOFPose(object):
     """
 
     position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
+    rotation: Union[np.quaternion, List] = attr.ib(
+        factory=_default_quaternion, validator=is_unit_length
+    )
 
 
 @attr.s(auto_attribs=True, slots=True)
 class AgentState(object):
     position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    rotation: Union[np.quaternion, List, np.ndarray] = np.quaternion(1, 0, 0, 0)
+    rotation: Union[np.quaternion, List, np.ndarray] = attr.ib(
+        factory=_default_quaternion, validator=is_unit_length
+    )
     velocity: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
     angular_velocity: np.ndarray = attr.ib(
         factory=_triple_zero, validator=all_is_finite
     )
     force: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
     torque: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    sensor_states: Dict[str, SixDOFPose] = attr.Factory(dict)
+    sensor_states: Dict[str, SixDOFPose] = attr.ib(
+        factory=dict,
+        validator=attr.validators.deep_mapping(
+            key_validator=attr.validators.instance_of(str),
+            value_validator=value_is_validated,
+            mapping_validator=attr.validators.instance_of(dict),
+        ),
+    )
 
 
 @attr.s(auto_attribs=True, slots=True)
