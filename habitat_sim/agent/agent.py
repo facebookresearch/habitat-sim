@@ -59,7 +59,7 @@ class SixDOFPose(object):
     :property rotation: unit quaternion rotation
     """
 
-    position: np.ndarray = np.zeros(3)
+    position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
     rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
 
 
