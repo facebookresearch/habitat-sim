@@ -30,7 +30,6 @@ def is_unit_length(instance, attribute, value, tol=1e-5) -> None:
                 This is not valid for an {attribute} of {instance} which requires a unit length"""
             )
     else:
-        print(value.type)
         new_value = np.asarray(value)
         assert new_value.ndim == 1
         if not np.isclose(np.linalg.norm(new_value), 1.0, rtol=tol, atol=0):
