@@ -252,6 +252,7 @@ class Agent(object):
         if not infer_sensor_states:
             for k, v in state.sensor_states.items():
                 assert k in self._sensors
+                attr.validate(v)
                 if isinstance(v.rotation, list):
                     v.rotation = quat_from_coeffs(v.rotation)
 
