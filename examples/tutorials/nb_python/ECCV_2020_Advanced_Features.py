@@ -907,7 +907,7 @@ remove_all_objects(sim)
 # project a 3D point into 2D image space for a particular sensor
 def get_2d_point(sim, sensor_name, point_3d):
     # get the scene render camera and sensor object
-    render_camera = sim._sensors[sensor_name]._sensor_object.get_render_camera()
+    render_camera = sim._sensors[sensor_name]._sensor_object.get_render_camera
 
     # use the camera and projection matrices to transform the point onto the near plane
     projected_point_3d = render_camera.projection_matrix.transform_point(
