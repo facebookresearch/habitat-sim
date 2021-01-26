@@ -244,6 +244,10 @@ TEST_F(MetadataMediatorTest, testLoadLights) {
 TEST_F(MetadataMediatorTest, testLoadSceneInstances) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadSceneInstances";
+  //
+  // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
+  // instance should be acquired through MM.
+  //
   const auto sceneAttributesMgr = MM_->getSceneAttributesManager();
   // get # of loaded scene attributes.
   int numHandles = sceneAttributesMgr->getNumObjects();
@@ -255,14 +259,76 @@ TEST_F(MetadataMediatorTest, testLoadSceneInstances) {
   // make sure there is only 1 matching dataset_test_scene
   ASSERT_EQ(attrHandles.size(), 1);
 
-  const auto activeSceneName = attrHandles[0];
+  const std::string activeSceneName = attrHandles[0];
   LOG(WARNING) << "testLoadSceneInstances : Scene instance attr handle : "
                << activeSceneName;
   // get scene instance attributes ref
   // metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
   auto sceneAttrs = MM_->getSceneAttributesByName(activeSceneName);
   // this should be a scene instance attributes with specific stage and object
-  // instance attributes quantities.
+  ASSERT_NE(sceneAttrs, nullptr);
+  // verify default value for translation origin
+  ASSERT_EQ(sceneAttrs->getTranslationOrigin(),
+            static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
+  const int assetLocalInt =
+      static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::AssetLocal);
+
+  //
+  // miscellaneous scene instance attribute values
+  //
+  // default lighting name
+  const std::string lightHandle = sceneAttrs->getLightingHandle();
+  ASSERT_NE(lightHandle.find("modified_test_lights"), std::string::npos);
+  // navmesh
+  const std::string navmeshHandle = sceneAttrs->getNavmeshHandle();
+  ASSERT_NE(navmeshHandle.find("navmesh_path1"), std::string::npos);
+  // ssd
+  const std::string ssdHandle = sceneAttrs->getSemanticSceneHandle();
+  ASSERT_NE(ssdHandle.find("semantic_descriptor_path1"), std::string::npos);
+  // frustum culling
+  ASSERT_EQ(sceneAttrs->getFrustumCulling(), true);
+
+  //
+  // test stage instance
+  //
+  const auto stageInstanceAttrs = sceneAttrs->getStageInstance();
+  // verify name
+  const std::string stageName = stageInstanceAttrs->getHandle();
+  ASSERT_NE(stageName.find("modified_test_stage"), std::string::npos);
+  // verify translation origin to be asset_local
+  ASSERT_EQ(stageInstanceAttrs->getTranslationOrigin(), assetLocalInt);
+  // verify translation amount to be expected amount
+  ASSERT_EQ(stageInstanceAttrs->getTranslation(),
+            Magnum::Vector3(1.1, 2.2, 3.3));
+  //
+  // test object instances
+  //
+  // get all instances
+  const std::vector<Attrs::SceneObjectInstanceAttributes::ptr>
+      objInstanceAttrs = sceneAttrs->getObjectInstances();
+  ASSERT_EQ(objInstanceAttrs.size(), 2);
+
+  // first object instance
+  const Attrs::SceneObjectInstanceAttributes::ptr& objAttr0 =
+      objInstanceAttrs[0];
+  // name
+  std::string objName = objAttr0->getHandle();
+  ASSERT_NE(objName.find("dataset_test_object1"), std::string::npos);
+  // translation
+  ASSERT_EQ(objAttr0->getTranslation(), Magnum::Vector3(0.1, 0.2, 0.3));
+  // translation origin
+  ASSERT_EQ(objAttr0->getTranslationOrigin(), assetLocalInt);
+
+  // second object instance
+  const Attrs::SceneObjectInstanceAttributes::ptr& objAttr1 =
+      objInstanceAttrs[1];
+  // name
+  objName = objAttr1->getHandle();
+  ASSERT_NE(objName.find("dataset_test_object2"), std::string::npos);
+  // translation
+  ASSERT_EQ(objAttr1->getTranslation(), Magnum::Vector3(0.3, 0.4, 0.5));
+  // translation origin
+  ASSERT_EQ(objAttr1->getTranslationOrigin(), assetLocalInt);
 
 }  // testLoadSceneInstances
 
@@ -270,7 +336,8 @@ TEST_F(MetadataMediatorTest, testLoadNavmesh) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadNavmesh";
   // get map of navmeshes
-  const auto navmeshMap = MM_->getActiveNavmeshMap();
+  const std::map<std::string, std::string> navmeshMap =
+      MM_->getActiveNavmeshMap();
   // should have 2
   ASSERT_EQ(navmeshMap.size(), 2);
 
@@ -286,7 +353,8 @@ TEST_F(MetadataMediatorTest, testLoadSemanticScene) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadSemanticScene";
   // get map of semantic scene instances
-  const auto semanticMap = MM_->getActiveSemanticSceneDescriptorMap();
+  const std::map<std::string, std::string> semanticMap =
+      MM_->getActiveSemanticSceneDescriptorMap();
   // should have 2
   ASSERT_EQ(semanticMap.size(), 2);
   // should hold 2 keys

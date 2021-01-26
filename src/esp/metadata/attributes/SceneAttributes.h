@@ -164,6 +164,17 @@ class SceneAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief set frustum culling for scene instance.  Default value comes from
+   * scene instance configuration,
+   * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
+   * json, if exists.
+   */
+  void setFrustumCulling(bool frustumCulling) {
+    setBool("frustum_culling", frustumCulling);
+  }
+  bool getFrustumCulling() const { return getBool("frustum_culling"); }
+
+  /**
    * @brief Set the description of the stage placement for this scene instance.
    */
   void setStageInstance(SceneObjectInstanceAttributes::ptr _stageInstance) {
