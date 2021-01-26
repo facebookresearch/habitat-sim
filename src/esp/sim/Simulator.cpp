@@ -262,6 +262,10 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       }  // end switch
     }
   }
+  // 3. Specify frustumCulling based on value either from config (if override
+  // is specified) or from scene instance attributes.
+  frustumCulling_ = config_.frustumCulling;
+
   // return a const ptr to the cur scene instance attributes
   return curSceneInstanceAttributes;
 
@@ -290,13 +294,13 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   if (config_.overrideSceneLightDefaults) {
     lightSetupKey = config_.sceneLightSetup;
-    LOG(WARNING) << "Simulator::createSceneInstance : Using config-specified "
-                    "Light key : -"
-                 << lightSetupKey << "-";
+    LOG(INFO) << "Simulator::createSceneInstance : Using config-specified "
+                 "Light key : -"
+              << lightSetupKey << "-";
   } else {
     lightSetupKey = metadataMediator_->getLightSetupFullHandle(
         curSceneInstanceAttributes->getLightingHandle());
-    LOG(WARNING)
+    LOG(INFO)
         << "Simulator::createSceneInstance : Using scene instance-specified "
            "Light key : -"
         << lightSetupKey << "-";
@@ -320,6 +324,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   const SceneObjectInstanceAttributes::ptr stageInstanceAttributes =
       curSceneInstanceAttributes->getStageInstance();
+
   // Get full library name of StageAttributes
   const std::string stageAttributesHandle =
       metadataMediator_->getStageAttrFullHandle(
@@ -328,7 +333,11 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   auto stageAttributes =
       metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
           stageAttributesHandle);
+
+  // set defaults for stage creation
   stageAttributes->setLightSetup(lightSetupKey);
+  // set frustum culling from simulator config
+  stageAttributes->setFrustumCulling(frustumCulling_);
 
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage

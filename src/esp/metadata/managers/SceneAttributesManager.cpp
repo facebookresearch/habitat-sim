@@ -107,10 +107,6 @@ void SceneAttributesManager::setValsFromJSONDoc(
         << attribsDispName << ".";
   }
 
-  io::jsonIntoSetter<bool>(
-      jsonConfig, "frustum_culling",
-      std::bind(&SceneAttributes::setFrustumCulling, attribs, _1));
-
   std::string semanticDesc = "";
   if (io::readMember<std::string>(jsonConfig, "semantic_scene_instance",
                                   semanticDesc)) {

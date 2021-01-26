@@ -285,8 +285,6 @@ TEST_F(MetadataMediatorTest, testLoadSceneInstances) {
   // ssd
   const std::string ssdHandle = sceneAttrs->getSemanticSceneHandle();
   ASSERT_NE(ssdHandle.find("semantic_descriptor_path1"), std::string::npos);
-  // frustum culling
-  ASSERT_EQ(sceneAttrs->getFrustumCulling(), true);
 
   //
   // test stage instance
