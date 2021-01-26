@@ -19,6 +19,7 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit) {
+  // Initialize renderCamera_ first to avoid segfaults
   renderCamera_ = new gfx::RenderCamera(cameraNode);
   setProjectionParameters(spec);
   renderCamera_->setAspectRatioPolicy(
@@ -45,6 +46,8 @@ void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
 
 void CameraSensor::recomputeProjectionMatrix() {
   projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
+  // update renderCamera_'s projectionMatrix every time the sensor's
+  // projectionMatrix changes
   if (renderCamera_) {
     renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
   }

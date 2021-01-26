@@ -48,7 +48,6 @@ struct Renderer::Impl {
   void draw(sensor::VisualSensor& visualSensor,
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags) {
-    ASSERT(visualSensor.isVisualSensor());
     draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
   }
 

@@ -21,14 +21,45 @@ class CameraSensor : public VisualSensor {
                         const SensorSpec::ptr& spec);
   virtual ~CameraSensor() {}
 
+  /** @brief Updates this sensor's SensorSpec spec_ to reflect the passed new
+   * values
+   *  @param[in] spec Instance of SensorSpec that sensor will use to update its
+   * own SensorSpec
+   */
   void setProjectionParameters(const SensorSpec::ptr& spec);
 
+  /** @brief Returns pointer to member RenderCamera that CameraSensor will use
+   * for rendering
+   */
   virtual gfx::RenderCamera* getRenderCamera() override;
 
+  /**
+   * @brief Draws an observation to the frame buffer using simulator's renderer,
+   * then reads the observation to the sensor's memory buffer
+   * @return true if success, otherwise false (e.g., failed to draw or read
+   * observation)
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be drawn, obs Instance of Observation class in which the
+   * observation will be stored
+   */
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
 
+  /**
+   * @brief Updates ObservationSpace space with spaceType, shape, and dataType
+   * of this sensor. The information in space is later used to resize the
+   * sensor's memory buffer if sensor is resized.
+   * @return true if success, otherwise false
+   * @param[in] space Instance of ObservationSpace class which will be updated
+   * with information from this sensor
+   */
   virtual bool getObservationSpace(ObservationSpace& space) override;
 
+  /**
+   * @brief Display next observation from Simulator on default frame buffer
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be displayed
+   * @return Whether the display process was successful or not
+   */
   virtual bool displayObservation(sim::Simulator& sim) override;
 
   /**
@@ -86,6 +117,9 @@ class CameraSensor : public VisualSensor {
     recomputeBaseProjectionMatrix();
   }  // CameraSensor::setFOV
 
+  /**
+   * @brief Returns the FOV of this CameraSensor
+   */
   Mn::Deg getFOV() const {
     float fov = std::atof(spec_->parameters.at("hfov").c_str());
     return Mn::Deg{fov};
@@ -100,6 +134,9 @@ class CameraSensor : public VisualSensor {
     recomputeBaseProjectionMatrix();
   }  // CameraSensor::setCameraType
 
+  /**
+   * @brief Returns the camera type of this Sensor
+   */
   SensorSubType getCameraType() const { return spec_->sensorSubType; }
 
   /**
@@ -203,6 +240,9 @@ class CameraSensor : public VisualSensor {
    */
   Mn::Vector2 nearPlaneSize_;
 
+  /** @brief raw pointer to member RenderCamera that CameraSensor will use for
+   * rendering
+   */
   gfx::RenderCamera* renderCamera_;
 
  public:
