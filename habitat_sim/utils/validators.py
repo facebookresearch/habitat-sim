@@ -5,10 +5,30 @@
 # LICENSE file in the root directory of this source tree.
 
 # contains validators for attrs
+from contextlib import ContextDecorator
+from typing import Optional
+
 import attr
 import magnum as mn
 import numpy as np
 import quaternion
+
+
+@attr.s(auto_attribs=True)
+class NoAttrValidationContext(ContextDecorator):
+    r"""Ensures validators are not run within this context.
+    Useful for function where we generate an attr validated object.
+    """
+    original_state: Optional[bool] = None
+
+    def __enter__(self) -> "NoAttrValidationContext":
+        self.original_state = attr.get_run_validators()
+        attr.set_run_validators(False)
+        return self
+
+    def __exit__(self, *exc) -> None:
+        assert self.original_state is not None
+        attr.set_run_validators(self.original_state)
 
 
 def all_is_finite(instance, attribute, value) -> None:

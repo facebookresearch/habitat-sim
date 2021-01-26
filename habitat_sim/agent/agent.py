@@ -22,6 +22,7 @@ from habitat_sim.utils.common import (
     quat_to_magnum,
 )
 from habitat_sim.utils.validators import (
+    NoAttrValidationContext,
     all_is_finite,
     is_unit_length,
     value_is_validated,
@@ -210,6 +211,7 @@ class Agent(object):
 
         return did_collide
 
+    @NoAttrValidationContext()
     def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)
         state = AgentState(
