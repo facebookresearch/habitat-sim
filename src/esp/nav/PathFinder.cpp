@@ -931,9 +931,10 @@ vec3f PathFinder::Impl::getRandomNavigablePoint() {
         "NavMesh has no navigable area, this indicates an issue with the "
         "NavMesh");
 
-  int i = 0;
   vec3f pt;
-  for (int i = 0; i < MAX_TRIES; ++i) {
+
+  int i;
+  for (i = 0; i < MAX_TRIES; ++i) {
     dtPolyRef ref;
     dtStatus status =
         navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
