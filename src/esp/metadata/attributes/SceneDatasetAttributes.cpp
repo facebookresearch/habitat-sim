@@ -106,7 +106,7 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
     std::map<std::string, std::string>& map,
     const std::string& descString) {
   // see if key is in map - if so, this means key is pointing to a
-  // different value if not overwrite, modify key and add, returning
+  // different value if not overwrite, modify key and add, returning entry.
   std::string newKey(key);
   auto mapSearch = map.find(newKey);
   if (mapSearch != map.end()) {

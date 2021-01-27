@@ -319,7 +319,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
             << sceneName
             << " so loading/creating a new StageAttributes with this "
                "name, and then creating a SceneAttributes with the same name "
-               "that referneces this stage.";
+               "that references this stage.";
         // create and register stage
         auto stageAttributes = dsStageAttrMgr->createObject(sceneName, true);
         // create a new SceneAttributes, and give it a
@@ -364,8 +364,10 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   std::pair<std::string, std::string> navmeshEntry =
       datasetAttr->addNavmeshPathEntry(
           sceneName, stageAttributes->getNavmeshAssetHandle(), false);
-  // navmeshEntry holds the navmesh key in the dataset to use by this scene
-  // instance
+  // navmeshEntry holds the navmesh key-value in the dataset to use by this
+  // scene instance.  NOTE : the key may have changed from what was passed if a
+  // collision occurred with same key but different value, so we need to add
+  // this key to the scene instance attributes.
   sceneAttributes->setNavmeshHandle(navmeshEntry.first);
 
   // add a ref to semantic scene descriptor ("house file") from stage attributes
@@ -374,9 +376,12 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   // keyed by the ref that the scene attributes will use.
   std::pair<std::string, std::string> ssdEntry =
       datasetAttr->addSemanticSceneDescrPathEntry(
-          sceneName, stageAttributes->getSemanticAssetHandle(), false);
-  // ssdEntry holds the ssd key in the dataset to use by this scene
-  sceneAttributes->setSemanticSceneHandle(navmeshEntry.first);
+          sceneName, stageAttributes->getHouseFilename(), false);
+  // ssdEntry holds the ssd key in the dataset to use by this scene instance.
+  // NOTE : the key may have changed from what was passed if a collision
+  // occurred with same key but different value, so we need to add this key to
+  // the scene instance attributes.
+  sceneAttributes->setSemanticSceneHandle(ssdEntry.first);
 
   // register SceneAttributes object
   dsSceneAttrMgr->registerObject(sceneAttributes);

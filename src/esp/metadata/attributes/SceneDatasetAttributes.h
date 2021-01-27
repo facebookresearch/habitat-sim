@@ -282,7 +282,21 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }  // getFullAttrNameFromStr
 
   /**
-   * @brief
+   * @brief This will add a navmesh entry or a semantic scene descriptor entry
+   * to the appropriate map.  It checks if a value already exists at the
+   * specified @p key , and if not adds the @p path to the map at the given key
+   * value.  If a value does exist at the specified key, it checks if it is the
+   * same value as @p path . If so nothing is done, but if not, then it is
+   * either overwritten or the key is modified until an available key is found,
+   * which is then used to add the new entry, depending on @p overwrite .
+   *
+   * @param key The key to attempt to add the new value at.  This key may be
+   * modified if collisions are found and @p overwrite is false.
+   * @param path The location of the desired asset being added to the path.
+   * @param overwrite Whether to overwrite a found, existing entry at @p key .
+   * @param map The map to modify
+   * @param descString The calling method, to provide context for log messages.
+   * @return the key-value pair that is actually added to the map.
    */
   std::pair<std::string, std::string> addNewValToMap(
       const std::string& key,
