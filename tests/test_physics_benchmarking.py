@@ -20,13 +20,6 @@ def run_main(*args):
     runpy.run_path(target, run_name="__main__")
 
 
-def powerset(iterable):
-    s = list(iterable)
-    return itertools.chain.from_iterable(
-        itertools.combinations(s, r) for r in range(len(s) + 1)
-    )
-
-
 def run_main_subproc(args):
     # This test needs to be done in its own process as there is a potentially for
     # an OpenGL context clash otherwise
@@ -41,11 +34,13 @@ def run_main_subproc(args):
     "args",
     [
         (
-            "examples/tutorials/physics_unit_tests.py",
+            "examples/tutorials/physics_benchmarking.py",
             "--no-make-video",
             "--no-show-video",
         ),
     ],
 )
+
+
 def test_example_modules(args):
     run_main_subproc(args)

@@ -12,7 +12,7 @@ from habitat_sim.utils import viz_utils as vut
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
-output_path = os.path.join(dir_path, "physics_unit_tests_output/")
+output_path = os.path.join(dir_path, "physics_benchmarking_output/")
 
 save_index = 0
 
@@ -215,25 +215,25 @@ def bowl_drop_test(
     return physics_step_times, graphics_render_times, collisions, observations
 
 
-unit_tests = {
-    "bowl_drop_test_1": lambda: bowl_drop_test(
-        ["test_assets/objects/sphere"], 25, 0.5, 2, 5
-    ),
+benchmarks = {
+    #"bowl_drop_test_1": lambda: bowl_drop_test(
+    #    ["test_assets/objects/sphere"], 25, 0.5, 2, 5
+    #),
     "bowl_drop_test_2": lambda: bowl_drop_test(
         ["test_assets/objects/sphere", "test_assets/objects/chair"], 50, 0.5, 2, 5
     ),
-    "bowl_drop_test_3": lambda: bowl_drop_test(
-        [
-            "test_assets/objects/sphere",
-            "test_assets/objects/chair",
-            "test_assets/objects/donut",
-            "test_assets/objects/nested_box",
-        ],
-        200,
-        0.5,
-        2,
-        5,
-    ),
+    #"bowl_drop_test_3": lambda: bowl_drop_test(
+    #    [
+    #        "test_assets/objects/sphere",
+    #        "test_assets/objects/chair",
+    #        "test_assets/objects/donut",
+    #        "test_assets/objects/nested_box",
+    #    ],
+    #    200,
+    #    0.5,
+    #    2,
+    #    5,
+    #),
 }  # specify parameters for each scenario
 
 test_sets = {
@@ -244,7 +244,7 @@ test_sets = {
 def runTest(testId):
     print("----- Running %s -----" % testId)
     start_time = time.time()
-    physics_step_times, graphics_render_times, collisions, observations = unit_tests[
+    physics_step_times, graphics_render_times, collisions, observations = benchmarks[
         testId
     ]()
     end_time = time.time()
@@ -269,7 +269,7 @@ def runTest(testId):
             observations,
             "rgba_camera_1stperson",
             "color",
-            output_path + "sim_basics",
+            output_path + testId,
             open_vid=show_video,
         )
 
@@ -288,7 +288,7 @@ def runTest(testId):
 
 def main():
     # runs all unit tests
-    for testId in unit_tests:
+    for testId in benchmarks:
         runTest(testId)
 
 
