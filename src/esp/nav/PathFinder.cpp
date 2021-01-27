@@ -924,15 +924,29 @@ static float frand() {
 }
 
 vec3f PathFinder::Impl::getRandomNavigablePoint() {
-  dtPolyRef ref;
+  constexpr int MAX_TRIES = 1e3;
   constexpr float inf = std::numeric_limits<float>::infinity();
-  vec3f pt(inf, inf, inf);
-  dtStatus status =
-      navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
-  if (!dtStatusSucceed(status)) {
-    LOG(ERROR) << "Failed to getRandomNavigablePoint";
+  if (getNavigableArea() <= 0.0)
+    throw std::runtime_error(
+        "NavMesh has no navigable area, this indicates an issue with the "
+        "NavMesh");
+
+  int i = 0;
+  vec3f pt;
+  for (int i = 0; i < MAX_TRIES; ++i) {
+    dtPolyRef ref;
+    dtStatus status =
+        navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
+    if (dtStatusSucceed(status))
+      break;
   }
-  return pt;
+
+  if (i == MAX_TRIES) {
+    LOG(ERROR) << "Failed to getRandomNavigablePoint";
+    return {inf, inf, inf};
+  } else {
+    return pt;
+  }
 }
 
 namespace {
