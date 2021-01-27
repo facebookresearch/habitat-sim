@@ -23,7 +23,7 @@
 #
 # gfx replay is a feature that lets you save the visual state of the sim, restore the visual state later, and either reproduce earlier observations (from the same camera position) or produce new observations (from different camera positions).
 #
-# Note that restoring the visual state is not the same as restoring the full simulation state; you can't resume simulation from a replay.
+# Note that restoring the visual state is not the same as restoring the full simulation state. When playing a replay, no physics or other simulation is running. Object ids from the earlier recorded simulation aren't valid and you can't interact with objects in the scene. However, you can move your agent, sensor, or camera to produce new observations from different camera positions.
 #
 # The recording API:
 # - cfg.enable_gfx_replay_save
@@ -273,7 +273,7 @@ remove_all_objects(sim)
 
 # %% [markdown]
 # ## Reconfigure simulator for replay playback.
-# Note call to gfx_replay_utils.make_backend_configuration_for_playback. Note that we don't specify a scene or stage when reconfiguring for replay playback. need_separate_semantic_scene_graph is generally set to False, but must be set to True if you're replaying a scene that uses a separate semantic mesh.
+# Note call to gfx_replay_utils.make_backend_configuration_for_playback. Note that we don't specify a scene or stage when reconfiguring for replay playback. need_separate_semantic_scene_graph is generally set to False. If you're using a semantic sensor and replaying a scene that uses a separate semantic mesh (like an MP3D scene), set this to True. If in doubt, be aware there's a Habitat runtime warning that will always catch incorrect usage of this flag.
 # %%
 
 # use same agents/sensors from earlier, with different backend config
