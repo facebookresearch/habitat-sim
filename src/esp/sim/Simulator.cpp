@@ -218,50 +218,24 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
               << activeSceneName
               << " proposed Semantic Scene Descriptor filename : "
               << semanticSceneDescFilename;
-    // get stage attributes for current scene instance
-    auto stageAttributes = metadataMediator_->getNamedStageAttributesCopy(
-        curSceneInstanceAttributes->getStageInstance()->getHandle());
-    if (stageAttributes != nullptr) {
-      // assetType of stage is used to specify semanctic scene descriptor format
-      assets::AssetType assetType =
-          static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
-      // semantic scene descriptor might not exist, so
-      semanticScene_ = nullptr;
-      semanticScene_ = scene::SemanticScene::create();
-      switch (assetType) {
-        case assets::AssetType::INSTANCE_MESH: {
-          const std::string tmpFName = FileUtil::join(
-              FileUtil::path(semanticSceneDescFilename), "info_semantic.json");
-          if (FileUtil::exists(tmpFName)) {
-            scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
-          }
-          break;
+    bool fileExists = FileUtil::exists(semanticSceneDescFilename);
+    if (fileExists) {
+      // given SSD file exists
+      if (semanticSceneDescFilename.find("info_semantic.json")) {
+        scene::SemanticScene::loadReplicaHouse(semanticSceneDescFilename,
+                                               *semanticScene_);
+      } else {
+        using Corrade::Utility::String::endsWith;
+        if (endsWith(semanticSceneDescFilename, ".house")) {
+          scene::SemanticScene::loadMp3dHouse(semanticSceneDescFilename,
+                                              *semanticScene_);
+        } else if (endsWith(semanticSceneDescFilename, ".scn")) {
+          scene::SemanticScene::loadGibsonHouse(semanticSceneDescFilename,
+                                                *semanticScene_);
         }
-        case assets::AssetType::MP3D_MESH: {
-          // TODO(msb) Fix AssetType determination logic.
-          if (FileUtil::exists(semanticSceneDescFilename)) {
-            using Corrade::Utility::String::endsWith;
-            if (endsWith(semanticSceneDescFilename, ".house")) {
-              scene::SemanticScene::loadMp3dHouse(semanticSceneDescFilename,
-                                                  *semanticScene_);
-            } else if (endsWith(semanticSceneDescFilename, ".scn")) {
-              scene::SemanticScene::loadGibsonHouse(semanticSceneDescFilename,
-                                                    *semanticScene_);
-            }
-          }
-          break;
-        }
-        case assets::AssetType::SUNCG_SCENE: {
-          // SUNCG is not handled anymore
-          // scene::SemanticScene::loadSuncgHouse(stageAttributesHandle,
-          // *semanticScene_);
-          break;
-        }
-        default:
-          break;
-      }  // end switch
+      }
     }
-  }
+  }  // if semantic scene descriptor specified in scene instance
   // 3. Specify frustumCulling based on value either from config (if override
   // is specified) or from scene instance attributes.
   frustumCulling_ = config_.frustumCulling;
