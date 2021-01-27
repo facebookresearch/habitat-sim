@@ -20,6 +20,7 @@ requirements:
     - pip
     - setuptools
     - attrs>=19.1.0
+    - smmap<4.0,>=3.0.1
     - numba
     - numpy>=1.13
     - gitpython
@@ -43,6 +44,7 @@ requirements:
 
   run:
     - python x.x
+    - smmap<4.0,>=3.0.1
     - gitpython
     - attrs>=19.1.0
     - numba
