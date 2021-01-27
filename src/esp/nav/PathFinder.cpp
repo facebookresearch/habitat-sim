@@ -225,7 +225,7 @@ struct PathFinder::Impl {
              const float* bmax);
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
-  vec3f getRandomNavigablePoint();
+  vec3f getRandomNavigablePoint(const int maxTries);
 
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
@@ -923,9 +923,7 @@ static float frand() {
   return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 }
 
-vec3f PathFinder::Impl::getRandomNavigablePoint() {
-  constexpr int MAX_TRIES = 1e3;
-  constexpr float inf = std::numeric_limits<float>::infinity();
+vec3f PathFinder::Impl::getRandomNavigablePoint(const int maxTries /*= 10*/) {
   if (getNavigableArea() <= 0.0)
     throw std::runtime_error(
         "NavMesh has no navigable area, this indicates an issue with the "
@@ -934,7 +932,7 @@ vec3f PathFinder::Impl::getRandomNavigablePoint() {
   vec3f pt;
 
   int i;
-  for (i = 0; i < MAX_TRIES; ++i) {
+  for (i = 0; i < maxTries; ++i) {
     dtPolyRef ref;
     dtStatus status =
         navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
@@ -942,9 +940,10 @@ vec3f PathFinder::Impl::getRandomNavigablePoint() {
       break;
   }
 
-  if (i == MAX_TRIES) {
-    LOG(ERROR) << "Failed to getRandomNavigablePoint";
-    return {inf, inf, inf};
+  if (i == maxTries) {
+    LOG(ERROR) << "Failed to getRandomNavigablePoint.  Try increasing max "
+                  "tries if the navmesh is fine but just hard to sample from";
+    return {NAN, NAN, NAN};
   } else {
     return pt;
   }
@@ -1344,7 +1343,7 @@ bool PathFinder::build(const NavMeshSettings& bs,
   return pimpl_->build(bs, mesh);
 }
 
-vec3f PathFinder::getRandomNavigablePoint() {
+vec3f PathFinder::getRandomNavigablePoint(const int maxTries /*= 10*/) {
   return pimpl_->getRandomNavigablePoint();
 }
 
