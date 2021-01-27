@@ -79,7 +79,10 @@ target_link_libraries(
          MagnumPlugins::StbImageConverter
          MagnumPlugins::TinyGltfImporter
   PRIVATE geo io
+         vhacd
 )
+
+target_include_directories(vhacd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/v-hacd/src/VHACD_Lib/public)
 
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(
