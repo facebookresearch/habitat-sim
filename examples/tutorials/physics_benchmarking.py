@@ -25,15 +25,6 @@ def remove_all_objects(sim):
         sim.remove_object(id_)
 
 
-def place_agent(sim, position, orientation):
-    # place our agent in the scene
-    agent_state = habitat_sim.AgentState()
-    agent_state.position = position
-    agent_state.rotation = orientation
-    agent = sim.initialize_agent(0, agent_state)
-    return agent.scene_node.transformation_matrix()
-
-
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
@@ -114,7 +105,9 @@ def bowl_drop_test(
         pass
 
     sim = habitat_sim.Simulator(cfg)
-    place_agent(sim, [5.45, 1.8, 1.2], np.quaternion(-0.83147, 0.2, -0.55557, -0.2))
+    #place_agent(sim, [5.45, 1.8, 1.2], np.quaternion(-0.83147, 0.2, -0.55557, -0.2))
+    sim.initialize_agent(0, habitat_sim.AgentState([5.45, 1.8, 1.2], np.quaternion(-0.83147, 0.2, -0.55557, -0.2)))
+
 
     # get the physics object attributes manager
     obj_templates_mgr = sim.get_object_template_manager()
