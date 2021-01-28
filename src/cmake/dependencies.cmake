@@ -93,6 +93,7 @@ endif()
 # v-hacd
 set(NO_OPENCL ON CACHE BOOL "NO_OPENCL" FORCE)
 set(NO_OPENMP ON CACHE BOOL "NO_OPENMP" FORCE)
+# adding /src/VHACD_Lib instead of /src since /src contains unneccesary test files
 add_subdirectory("${DEPS_DIR}/v-hacd/src/VHACD_Lib")
 
 # recast

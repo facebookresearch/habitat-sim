@@ -47,7 +47,8 @@
 
 #include "esp/nav/PathFinder.h"
 
-#include "deps/v-hacd/src/VHACD_Lib/public/VHACD.h"
+// #include "deps/v-hacd/src/VHACD_Lib/public/VHACD.h"
+#include "VHACD.h"
 
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
@@ -91,7 +92,11 @@ ResourceManager::ResourceManager(
       importerManager_("nonexistent")
 #endif
 {
+
+  // TODO: For debugging, remove later
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
+  // TODO: end remove
+
   initDefaultLightSetups();
   initDefaultMaterials();
   buildImporters();

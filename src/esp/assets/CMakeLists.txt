@@ -82,7 +82,7 @@ target_link_libraries(
          vhacd
 )
 
-target_include_directories(vhacd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/v-hacd/src/VHACD_Lib/public)
+# target_include_directories(assets PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/v-hacd/src/VHACD_Lib/public)
 
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(
