@@ -188,7 +188,7 @@ class PathFinder {
    * @return A random navigable point.
    *
    * @note This method can fail.  If it does,
-   * the returned point will be {NAN, NAN, NAN}. Use @ref
+   * the returned point will be `{NAN, NAN, NAN}`. Use @ref
    * isNavigable to check if the point is navigable.
    */
   vec3f getRandomNavigablePoint(const int maxTries = 10);
@@ -244,7 +244,7 @@ class PathFinder {
    *
    * @param[in] pt The point to snap to the navigation mesh
    *
-   * @return The closest navigation point to @ref pt.  Will be {NAN, NAN, NAN}
+   * @return The closest navigation point to @ref pt.  Will be `{NAN, NAN, NAN}`
    * if no navigable point was within a reasonable distance
    */
   template <typename T>
