@@ -6,6 +6,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/PluginManager/Manager.h>
+#include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/DebugTools/TextureImage.h>
@@ -26,18 +27,11 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-const Mn::GL::Framebuffer::ColorAttachment colorAttachment[6] = {
-    Mn::GL::Framebuffer::ColorAttachment{0},
-    Mn::GL::Framebuffer::ColorAttachment{1},
-    Mn::GL::Framebuffer::ColorAttachment{2},
-    Mn::GL::Framebuffer::ColorAttachment{3},
-    Mn::GL::Framebuffer::ColorAttachment{4},
-    Mn::GL::Framebuffer::ColorAttachment{5},
-};
-
 // TODO:
+// Careful: objectIdAttachement will use ColorAttachment 6
+// since the first 6 (0 ~ 5) attachements are used for the 6 faces of the cube.
 // const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
-//    Mn::GL::Framebuffer::ColorAttachment{1};
+//    Mn::GL::Framebuffer::ColorAttachment{6};
 
 /**
  * @brief check if the class instance is created with corresponding texture
@@ -148,9 +142,9 @@ void CubeMap::attachFramebufferRenderbuffer() {
     for (unsigned int index = 0; index < 6; ++index) {
       Magnum::GL::CubeMapCoordinate cubeMapCoord =
           convertFaceIndexToCubeMapCoordinate(index);
-      frameBuffer_.attachCubeMapTexture(colorAttachment[index],
-                                        *textures_[TextureType::Color],
-                                        cubeMapCoord, 0);
+      frameBuffer_.attachCubeMapTexture(
+          Mn::GL::Framebuffer::ColorAttachment{index},
+          *textures_[TextureType::Color], cubeMapCoord, 0);
     }
   }
   if (!(flags_ & Flag::DepthTexture)) {
@@ -227,10 +221,10 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
       Mn::GL::Framebuffer::Status::Complete);
 }
 
-void CubeMap::mapForDraw(unsigned int colorAttachmentIndex) {
+void CubeMap::mapForDraw(unsigned int index) {
   frameBuffer_.mapForDraw({
       {Mn::Shaders::Generic3D::ColorOutput,
-       colorAttachment[colorAttachmentIndex]},
+       Mn::GL::Framebuffer::ColorAttachment{index}},
       // TODO:
       //{Mn::Shaders::Generic3D::ObjectIdOutput, objectIdAttachment}
   });
@@ -356,14 +350,20 @@ void CubeMap::loadTexture(TextureType type,
         Cr::Containers::StridedArrayView2D<const Mn::Color3>
             imageStridedArrayView = imageData->pixels<Mn::Color3>();
 
+        //  This casts the Color3 view to a float, which effectively uses only
+        //  four bytes of each element, which is the red channel
+        Cr::Containers::StridedArrayView2D<const float> red =
+            Cr::Containers::arrayCast<const float>(imageStridedArrayView);
+
         Cr::Containers::Array<float> depthImage{
-            static_cast<size_t>(size.x() * size.y())};
-        unsigned int idx = 0;
-        for (auto row : imageStridedArrayView) {
-          for (const Mn::Color3& pixel : row) {
-            depthImage[idx++] = pixel.r();
-          }
-        }
+            static_cast<size_t>(Cr::Containers::NoInit, size.product())};
+        // Turns the `depthImage` into a tightly packed 2D view of the same rows
+        // and pixels as `imageStridedArrayView`
+        Cr::Containers::StridedArrayView2D<float> output{
+            depthImage, {std::size_t(size.y()), std::size_t(size.x())}};
+
+        // copy the data
+        Cr::Utility::copy(red, output);
 
         Mn::ImageView2D imageView(Mn::PixelFormat::R32F, imageData->size(),
                                   depthImage);
