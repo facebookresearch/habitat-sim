@@ -10,6 +10,9 @@ import os
 from io import StringIO
 from unittest.mock import patch
 
+import pytest
+
+import habitat_sim
 from habitat_sim.utils import profiling_utils
 
 _ENV_VAR_NAME = "HABITAT_PROFILING"
@@ -17,7 +20,8 @@ _ENV_VAR_NAME = "HABITAT_PROFILING"
 # Based on the env var, reloading the profiling_utils module should set
 # profiling_utils._enable_profiling to True or False.
 def test_env_var_enable():
-
+    if not habitat_sim.cuda_enabled:
+        pytest.skip("No CUDA present so skipping test_env_var_enable test")
     # test with env var not set
     os.environ.pop(_ENV_VAR_NAME, None)
     importlib.reload(profiling_utils)
@@ -47,6 +51,8 @@ def test_env_var_enable():
 
 # Create nested ranges and verify the code runs without error.
 def test_nested_range_push_pop():
+    if not habitat_sim.cuda_enabled:
+        pytest.skip("No CUDA present so skipping test_nested_range_push_pop test")
 
     os.environ[_ENV_VAR_NAME] = "1"
     importlib.reload(profiling_utils)
@@ -64,6 +70,8 @@ def test_nested_range_push_pop():
 
 # Create ranges via RangeContext and verify the code runs without error.
 def test_range_context():
+    if not habitat_sim.cuda_enabled:
+        pytest.skip("No CUDA present so skipping test_range_context test")
 
     os.environ[_ENV_VAR_NAME] = "1"
     importlib.reload(profiling_utils)
@@ -92,6 +100,8 @@ def test_range_context():
 
 # Use configure() to capture a desired range of train steps.
 def test_configure_and_on_start_step():
+    if not habitat_sim.cuda_enabled:
+        pytest.skip("No CUDA present so skipping test_configure_and_on_start_step test")
 
     os.environ[_ENV_VAR_NAME] = "1"
     importlib.reload(profiling_utils)
