@@ -93,9 +93,9 @@ ResourceManager::ResourceManager(
 #endif
 {
 
-  // TODO: For debugging, remove later
+  // TODO: For debugging, remove later.
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
-  // TODO: end remove
+  // TODO: end remove.
 
   initDefaultLightSetups();
   initDefaultMaterials();
