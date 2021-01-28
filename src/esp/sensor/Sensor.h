@@ -48,7 +48,7 @@ struct SensorSpec {
   SensorType sensorType = SensorType::Color;
   SensorSubType sensorSubType = SensorSubType::Pinhole;
   std::map<std::string, std::string> parameters = {{"near", "0.01"},
-                                                   {"far", "1000"},
+                                                  {"far", "1000"},
                                                    {"hfov", "90"},
                                                    {"ortho_scale", ".1"}};
   vec3f position = {0, 1.5, 0};
@@ -66,6 +66,7 @@ struct SensorSpec {
 bool operator==(const SensorSpec& a, const SensorSpec& b);
 bool operator!=(const SensorSpec& a, const SensorSpec& b);
 
+using SensorSetup = std::vector<sensor::SensorSpec::ptr>;
 // Represents a particular sensor Observation
 struct Observation {
   // TODO: populate this struct with raw data

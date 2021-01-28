@@ -27,6 +27,7 @@
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/VisualSensor.h"
+#include "esp/sensor/SensorFactory.h"
 
 namespace Cr = Corrade;
 
