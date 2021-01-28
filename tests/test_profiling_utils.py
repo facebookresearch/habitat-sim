@@ -11,14 +11,17 @@ from io import StringIO
 from unittest.mock import patch
 
 import pytest
-from torch import cuda
 
 from habitat_sim.utils import profiling_utils
 
 _ENV_VAR_NAME = "HABITAT_PROFILING"
 
+# skip all tests if torch not installed
+torch = pytest.importorskip("torch")
+
+# skip specific tests if torch does not have cuda available
 test_requires_torch_cuda = pytest.mark.skipif(
-    not cuda.is_available(),
+    not torch.cuda.is_available(),
     reason="Torch not installed with CUDA support so skipping test",
 )
 
