@@ -356,7 +356,7 @@ void CubeMap::loadTexture(TextureType type,
             Cr::Containers::arrayCast<const float>(imageStridedArrayView);
 
         Cr::Containers::Array<float> depthImage{
-            static_cast<size_t>(Cr::Containers::NoInit, size.product())};
+            Cr::Containers::NoInit, static_cast<size_t>(size.product())};
         // Turns the `depthImage` into a tightly packed 2D view of the same rows
         // and pixels as `imageStridedArrayView`
         Cr::Containers::StridedArrayView2D<float> output{
