@@ -33,27 +33,12 @@ def make_configuration():
     backend_cfg.enable_physics = True
 
     # sensor configurations
-    # Note: all sensors must have the same resolution
-    # setup 2 rgb sensors for 1st and 3rd person views
-    camera_resolution = [544, 720]
-    sensors = {
-        "rgba_camera_1stperson": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
-            "orientation": [0.0, 0.0, 0.0],
-        },
-    }
-
     sensor_specs = []
-    for sensor_uuid, sensor_params in sensors.items():
-        sensor_spec = habitat_sim.SensorSpec()
-        sensor_spec.uuid = sensor_uuid
-        sensor_spec.sensor_type = sensor_params["sensor_type"]
-        sensor_spec.resolution = sensor_params["resolution"]
-        sensor_spec.position = sensor_params["position"]
-        sensor_spec.orientation = sensor_params["orientation"]
-        sensor_specs.append(sensor_spec)
+    sensor_spec = habitat_sim.SensorSpec()
+    sensor_spec.uuid = "rgba_camera_1stperson"
+    sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+    sensor_spec.resolution = [544, 720]
+    sensor_specs.append(sensor_spec)
 
     # agent configuration
     agent_cfg = habitat_sim.agent.AgentConfiguration()
@@ -62,7 +47,7 @@ def make_configuration():
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
 
-def simulate(sim, dt=1.0, get_frames=True):
+def simulate(sim, dt=1.0, get_frames=True, data={}):
     # simulate dt seconds at 60Hz to the nearest fixed timestep
     # print("Simulating " + str(dt) + " world seconds.")
     observations = []
@@ -82,7 +67,14 @@ def simulate(sim, dt=1.0, get_frames=True):
         graphics_render_times.append(et - mt)
         collisions.append(sim.get_num_active_contact_points())
 
-    return observations, physics_step_times, graphics_render_times, collisions
+    if "observations" in data:
+        data["observations"] += observations
+    if "physics_step_times" in data:
+        data["physics_step_times"] += physics_step_times
+    if "graphics_render_times" in data:
+        data["graphics_render_times"] += graphics_render_times
+    if "collisions" in data:
+        data["collisions"] += collisions
 
 
 # Define each test function & store in list
@@ -155,10 +147,8 @@ def bowl_drop_test(
             obj_template.scale *= scales[obj_path]
         obj_templates_mgr.register_template(obj_template)
 
-    observations = []
-    physics_step_times = []
-    graphics_render_times = []
-    collisions = []
+    data = {"observations":[], "physics_step_times":[], "graphics_render_times":[],"collisions":[]}
+
 
     # throw objects into bowl
     for i in range(num_objects):
@@ -179,33 +169,16 @@ def bowl_drop_test(
         sim.set_linear_velocity(initial_linear_velocity, cur_id)
 
         # simulate half a second, then add next object
-        (
-            cur_observations,
-            cur_physics_step_times,
-            cur_graphics_render_times,
-            cur_collisions,
-        ) = simulate(sim, dt=time_til_next_obj, get_frames=make_video)
-        observations += cur_observations
-        physics_step_times += cur_physics_step_times
-        graphics_render_times += cur_graphics_render_times
-        collisions += cur_collisions
+        simulate(sim, dt=time_til_next_obj, get_frames=make_video, data=data)
 
-    (
-        cur_observations,
-        cur_physics_step_times,
-        cur_graphics_render_times,
-        cur_collisions,
-    ) = simulate(sim, dt=post_throw_settling_time, get_frames=make_video)
-    observations += cur_observations
-    physics_step_times += cur_physics_step_times
-    graphics_render_times += cur_graphics_render_times
-    collisions += cur_collisions
+    simulate(sim, dt=post_throw_settling_time, get_frames=make_video, data=data)
+
 
     # [/basics]
     # return total time to run, time to load, time to simulate physics, time for rendering
     remove_all_objects(sim)
     sim.close()
-    return physics_step_times, graphics_render_times, collisions, observations
+    return data
 
 
 benchmarks = {
@@ -237,9 +210,13 @@ test_sets = {
 def runTest(testId):
     print("----- Running %s -----" % testId)
     start_time = time.time()
-    physics_step_times, graphics_render_times, collisions, observations = benchmarks[
+    data = benchmarks[
         testId
     ]()
+    physics_step_times = data["physics_step_times"]
+    graphics_render_times = data["graphics_render_times"]
+    collisions = data["collisions"]
+    observations = data["observations"]
     end_time = time.time()
 
     print(" ========================= Performance ======================== ")

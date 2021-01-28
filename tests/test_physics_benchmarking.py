@@ -1,9 +1,5 @@
-
 import pytest
 import utils
-
-
-
 
 
 @pytest.mark.parametrize(
