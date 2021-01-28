@@ -1344,7 +1344,7 @@ bool PathFinder::build(const NavMeshSettings& bs,
 }
 
 vec3f PathFinder::getRandomNavigablePoint(const int maxTries /*= 10*/) {
-  return pimpl_->getRandomNavigablePoint();
+  return pimpl_->getRandomNavigablePoint(maxTries);
 }
 
 bool PathFinder::findPath(ShortestPath& path) {
