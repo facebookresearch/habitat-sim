@@ -74,7 +74,7 @@ std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
   dtPolyRef polyRef;
   // Initialize with all NANs at dtStatusSucceed(status) == true does NOT mean
   // that it found a point to project to..........
-  vec3f polyXYZ{NAN, NAN, NAN};
+  vec3f polyXYZ = vec3f::Constant(Mn::Constants::nan());
   dtStatus status = navQuery->findNearestPoly(pt.data(), polyPickExt, filter,
                                               &polyRef, polyXYZ.data());
 
@@ -225,7 +225,7 @@ struct PathFinder::Impl {
              const float* bmax);
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
-  vec3f getRandomNavigablePoint(const int maxTries);
+  vec3f getRandomNavigablePoint(int maxTries);
 
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
@@ -943,7 +943,7 @@ vec3f PathFinder::Impl::getRandomNavigablePoint(const int maxTries /*= 10*/) {
   if (i == maxTries) {
     LOG(ERROR) << "Failed to getRandomNavigablePoint.  Try increasing max "
                   "tries if the navmesh is fine but just hard to sample from";
-    return {NAN, NAN, NAN};
+    return vec3f::Constant(Mn::Constants::nan());
   } else {
     return pt;
   }
@@ -1195,7 +1195,7 @@ T PathFinder::Impl::snapPoint(const T& pt) {
   if (dtStatusSucceed(status)) {
     return T{projectedPt};
   } else {
-    return {NAN, NAN, NAN};
+    return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
   }
 }
 

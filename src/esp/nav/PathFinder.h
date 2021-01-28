@@ -191,7 +191,7 @@ class PathFinder {
    * the returned point will be `{NAN, NAN, NAN}`. Use @ref
    * isNavigable to check if the point is navigable.
    */
-  vec3f getRandomNavigablePoint(const int maxTries = 10);
+  vec3f getRandomNavigablePoint(int maxTries = 10);
 
   /**
    * @brief Finds the shortest path between two points on the navigation mesh
