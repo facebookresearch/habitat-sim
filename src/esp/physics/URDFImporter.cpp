@@ -46,7 +46,7 @@ void URDFImporter::getLinkChildIndices(
 
   if (link != nullptr) {
     for (size_t i = 0; i < link->m_childLinks.size(); i++) {
-      int childIndex = link->m_childLinks[i]->m_linkIndex;
+      int childIndex = link->m_childLinks[i].lock()->m_linkIndex;
       childLinkIndices.push_back(childIndex);
     }
   }
@@ -74,8 +74,7 @@ bool URDFImporter::getJointInfo2(int linkIndex,
   if (link != nullptr) {
     linkTransformInWorld = link->m_linkTransformInWorld;
 
-    if (link->m_parentJoint) {
-      auto& pj = link->m_parentJoint;
+    if (auto pj = link->m_parentJoint.lock()) {
       parent2joint = pj->m_parentLinkToJointTransform;
       jointType = pj->m_type;
       jointAxisInJointSpace = pj->m_localJointAxis;
@@ -128,7 +127,7 @@ void URDFImporter::getMassAndInertia2(int linkIndex,
     auto link = urdfParser_.getModel().getLink(linkIndex);
     if (link != nullptr) {
       float linkMass;
-      if (link->m_parentJoint == nullptr &&
+      if (link->m_parentJoint.lock() &&
           urdfParser_.getModel().m_overrideFixedBase) {
         linkMass = 0.f;
       } else {
@@ -157,7 +156,7 @@ void URDFImporter::getMassAndInertia(int linkIndex,
   if (link != nullptr) {
     Mn::Matrix3 linkInertiaBasis;  // Identity
     float linkMass, principalInertiaX, principalInertiaY, principalInertiaZ;
-    if (link->m_parentJoint == nullptr &&
+    if (link->m_parentJoint.lock() &&
         urdfParser_.getModel().m_overrideFixedBase) {
       linkMass = 0.f;
       principalInertiaX = 0.f;

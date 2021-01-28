@@ -809,7 +809,7 @@ bool Parser::initTreeAndRoot(Model& model) {
     link->m_linkIndex = index;
     model.m_linkIndicesToNames[link->m_linkIndex] = link->m_name;
 
-    if (!link->m_parentLink) {
+    if (!link->m_parentLink.lock()) {
       model.m_rootLinks.push_back(link);
     }
     index++;
@@ -1051,16 +1051,16 @@ void printLinkChildrenHelper(Link& link, std::string printPrefix = "") {
   // Corrade::Utility::Debug() << printPrefix<<"link "<< link.m_name;
   int childIndex = 0;
   for (auto& child : link.m_childJoints) {
-    Corrade::Utility::Debug()
-        << printPrefix << " child J(" << childIndex << "): " << child->m_name
-        << " ->(" << child->m_childLinkName << ")";
+    Corrade::Utility::Debug() << printPrefix << " child J(" << childIndex
+                              << "): " << child.lock()->m_name << " ->("
+                              << child.lock()->m_childLinkName << ")";
     childIndex++;
   }
   childIndex = 0;
   for (auto& child : link.m_childLinks) {
-    Corrade::Utility::Debug()
-        << printPrefix << " child L(" << childIndex << "): " << child->m_name;
-    printLinkChildrenHelper(*child, printPrefix + "  ");
+    Corrade::Utility::Debug() << printPrefix << " child L(" << childIndex
+                              << "): " << child.lock()->m_name;
+    printLinkChildrenHelper(*(child.lock()), printPrefix + "  ");
     childIndex++;
   }
 }

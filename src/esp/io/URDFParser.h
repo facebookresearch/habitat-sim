@@ -206,17 +206,17 @@ struct Link {
   Magnum::Matrix4 m_linkTransformInWorld;
   std::vector<VisualShape> m_visualArray;
   std::vector<CollisionShape> m_collisionArray;
-  std::shared_ptr<Link> m_parentLink;
-  std::shared_ptr<Joint> m_parentJoint;
+  std::weak_ptr<Link> m_parentLink;
+  std::weak_ptr<Joint> m_parentJoint;
 
-  std::vector<std::shared_ptr<Joint>> m_childJoints;
-  std::vector<std::shared_ptr<Link>> m_childLinks;
+  std::vector<std::weak_ptr<Joint>> m_childJoints;
+  std::vector<std::weak_ptr<Link>> m_childLinks;
 
   int m_linkIndex;
 
   LinkContactInfo m_contactInfo;
 
-  Link() : m_parentLink(0), m_parentJoint(0), m_linkIndex(-2) {}
+  Link() : m_linkIndex(-2) {}
 };
 
 struct Model {
@@ -258,7 +258,7 @@ struct Model {
   //! get the parent joint of a link
   std::shared_ptr<Joint> getJoint(int linkIndex) const {
     if (m_linkIndicesToNames.count(linkIndex)) {
-      return getLink(m_linkIndicesToNames.at(linkIndex))->m_parentJoint;
+      return getLink(m_linkIndicesToNames.at(linkIndex))->m_parentJoint.lock();
     }
     return nullptr;
   }
