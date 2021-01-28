@@ -99,7 +99,7 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   }
 
   esp::sim::SimulatorConfiguration cfg;
-  cfg.activeSceneID =
+  cfg.activeSceneName =
       Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply");
 
   esp::sim::Simulator sim{cfg};

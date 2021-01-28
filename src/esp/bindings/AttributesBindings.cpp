@@ -40,6 +40,7 @@ namespace metadata {
 
 void initAttributesBindings(py::module& m) {
   // ==== AbstractManagedObject ====
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<AbstractManagedObject, AbstractManagedObject::ptr>(
       m, "AbstractManagedObject");
 
@@ -241,10 +242,6 @@ void initAttributesBindings(py::module& m) {
           &StageAttributes::setHouseFilename,
           R"(Handle for file containing semantic type maps and hierarchy for
           constructions built from this template.)")
-      .def_property(
-          "light_setup", &StageAttributes::getLightSetup,
-          &StageAttributes::setLightSetup,
-          R"(Habitat lighting setup to use for constructions built by this template.)")
       .def_property(
           "frustum_culling", &StageAttributes::getFrustumCulling,
           &StageAttributes::setFrustumCulling,

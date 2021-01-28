@@ -38,15 +38,16 @@ namespace sensor {
 
 void initSensorBindings(py::module& m) {
   // ==== Observation ====
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
   // TODO fill out other SensorTypes
   // ==== enum SensorType ====
   py::enum_<SensorType>(m, "SensorType")
-      .value("NONE", SensorType::NONE)
-      .value("COLOR", SensorType::COLOR)
-      .value("DEPTH", SensorType::DEPTH)
-      .value("SEMANTIC", SensorType::SEMANTIC);
+      .value("NONE", SensorType::None)
+      .value("COLOR", SensorType::Color)
+      .value("DEPTH", SensorType::Depth)
+      .value("SEMANTIC", SensorType::Semantic);
 
   py::enum_<SensorSubType>(m, "SensorSubType")
       .value("PINHOLE", SensorSubType::Pinhole)

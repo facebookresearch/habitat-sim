@@ -65,9 +65,10 @@ struct SimTest : Cr::TestSuite::Tester {
       const std::string& scene,
       const std::string& sceneLightingKey = esp::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
-    simConfig.activeSceneID = scene;
+    simConfig.activeSceneName = scene;
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
+    simConfig.overrideSceneLightDefaults = true;
     simConfig.sceneLightSetup = sceneLightingKey;
 
     auto sim = Simulator::create_unique(simConfig);
@@ -129,7 +130,7 @@ SimTest::SimTest() {
 
 void SimTest::basic() {
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = vangogh;
+  cfg.activeSceneName = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   CORRADE_VERIFY(pathfinder);
@@ -137,26 +138,26 @@ void SimTest::basic() {
 
 void SimTest::reconfigure() {
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = vangogh;
+  cfg.activeSceneName = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   simulator.reconfigure(cfg);
   CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
   SimulatorConfiguration cfg2;
-  cfg2.activeSceneID = skokloster;
+  cfg2.activeSceneName = skokloster;
   simulator.reconfigure(cfg2);
   CORRADE_VERIFY(pathfinder != simulator.getPathFinder());
 }
 
 void SimTest::reset() {
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = vangogh;
+  cfg.activeSceneName = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
 
   auto pinholeCameraSpec = SensorSpec::create();
   pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-  pinholeCameraSpec->sensorType = SensorType::COLOR;
+  pinholeCameraSpec->sensorType = SensorType::Color;
   pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
   pinholeCameraSpec->resolution = {100, 100};
   AgentConfiguration agentConfig{};
@@ -183,7 +184,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
   // do not rely on default SensorSpec default constructor to remain constant
   auto pinholeCameraSpec = SensorSpec::create();
   pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-  pinholeCameraSpec->sensorType = SensorType::COLOR;
+  pinholeCameraSpec->sensorType = SensorType::Color;
   pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
   pinholeCameraSpec->resolution = {128, 128};
 
@@ -203,7 +204,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
       {static_cast<size_t>(pinholeCameraSpec->resolution[0]),
        static_cast<size_t>(pinholeCameraSpec->resolution[1]), 4}};
 
-  CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::TENSOR);
+  CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::Tensor);
   CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
   CORRADE_COMPARE(obsSpace.shape, expectedShape);
   CORRADE_COMPARE(observation.buffer->shape, expectedShape);

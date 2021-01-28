@@ -163,16 +163,16 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("get", &SensorSuite::get);
 
   em::enum_<SensorType>("SensorType")
-      .value("NONE", SensorType::NONE)
-      .value("COLOR", SensorType::COLOR)
-      .value("DEPTH", SensorType::DEPTH)
-      .value("NORMAL", SensorType::NORMAL)
-      .value("SEMANTIC", SensorType::SEMANTIC)
-      .value("PATH", SensorType::PATH)
-      .value("GOAL", SensorType::GOAL)
-      .value("FORCE", SensorType::FORCE)
-      .value("TENSOR", SensorType::TENSOR)
-      .value("TEXT", SensorType::TEXT);
+      .value("NONE", SensorType::None)
+      .value("COLOR", SensorType::Color)
+      .value("DEPTH", SensorType::Depth)
+      .value("NORMAL", SensorType::Normal)
+      .value("SEMANTIC", SensorType::Semantic)
+      .value("PATH", SensorType::Path)
+      .value("GOAL", SensorType::Goal)
+      .value("FORCE", SensorType::Force)
+      .value("TENSOR", SensorType::Tensor)
+      .value("TEXT", SensorType::Text);
 
   em::class_<SensorSpec>("SensorSpec")
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
@@ -194,7 +194,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",
                              &SimulatorConfiguration::create<>)
-      .property("scene_id", &SimulatorConfiguration::activeSceneID)
+      .property("scene_id", &SimulatorConfiguration::activeSceneName)
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)

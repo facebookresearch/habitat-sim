@@ -209,16 +209,18 @@ def scene_graph():
     return habitat_sim.SceneGraph()
 
 
-@pytest.mark.parametrize(
-    "control_name,control_axis",
-    [("look_up", 0), ("look_down", 0), ("look_left", 1), ("look_right", 1)],
-)
 @hypothesis.given(
-    actuation_amount=st.floats(0, 60), actuation_constraint=st.floats(0, 60)
+    scene_graph=st.builds(habitat_sim.SceneGraph),
+    control_pairs=st.sampled_from(
+        [("look_up", 0), ("look_down", 0), ("look_left", 1), ("look_right", 1)]
+    ),
+    actuation_amount=st.floats(0, 60),
+    actuation_constraint=st.floats(0, 60),
 )
 def test_constrainted(
-    scene_graph, control_name, control_axis, actuation_amount, actuation_constraint
+    scene_graph, control_pairs, actuation_amount, actuation_constraint
 ):
+    control_name, control_axis = control_pairs
     initial_look_angle = mn.Deg(
         np.random.uniform(-actuation_constraint, actuation_constraint)
     )

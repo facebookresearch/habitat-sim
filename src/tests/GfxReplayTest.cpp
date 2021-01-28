@@ -266,4 +266,12 @@ TEST(GfxReplayTest, playerReadInvalidFile) {
 
   player.readKeyframesFromFile(testFilepath);
   EXPECT_EQ(player.getNumKeyframes(), 0);
+
+  // remove bogus file created for this test
+  bool success = Corrade::Utility::Directory::rm(testFilepath);
+  if (!success) {
+    LOG(WARNING) << "GfxReplayTest::playerReadInvalidFile : unable to remove "
+                    "temporary test JSON file "
+                 << testFilepath;
+  }
 }

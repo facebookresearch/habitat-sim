@@ -55,12 +55,16 @@ struct PhongMaterialData : public MaterialData {
 struct PbrMaterialData : public MaterialData {
   PbrMaterialData() : MaterialData(MaterialDataType::Pbr){};
 
-  // material with default magic values:
+  // TODO: Migrate the the Magnum built-in PBR material
+  // material with default values:
   // when both the material property and the texture (e.g., roughness and
-  // roughness texture) are NOT presented, use these default magic values;
-  Magnum::Color4 baseColor{0.7f};
-  Magnum::Float roughness = 0.9f;
-  Magnum::Float metallic = 0.1f;
+  // roughness texture) are NOT presented, use these default values;
+  // accoding to glTF 2.0:
+  // "If a texture is not given, all respective texture components within this
+  // material model are assumed to have a value of 1.0. "
+  Magnum::Color4 baseColor{1.0f};
+  Magnum::Float roughness = 1.0f;
+  Magnum::Float metallic = 1.0f;
   Magnum::Color3 emissiveColor{0.0f};
   Magnum::Float normalTextureScale = 1.0f;
 
@@ -69,22 +73,15 @@ struct PbrMaterialData : public MaterialData {
   Magnum::GL::Texture2D* emissiveTexture = nullptr;
 
   // Question:
-  // What if e.g., both metallicTexture and nonRoughnessMEtallicTexture exist?
+  // Why not just specify a MetallicRoughnessTexture as the glTF 2.0 spec
+  // suggested?
+  //
   // Answer:
-  // Such conflict will be handled in the PbrShader based on the priority of the
-  // textures. See generateCorrectFlags() in PbrShader for details.
+  // We need a mechanism to identify the case where either metallic or roughness
+  // texture exists, but not both.
 
-  // an independent, NOT packed texture to store "metallic" (in R
-  // channel)
   Magnum::GL::Texture2D* metallicTexture = nullptr;
-  // an independent, NOT packed texture to store "roughness" (in R channel)
   Magnum::GL::Texture2D* roughnessTexture = nullptr;
-  // a packed texture to store "roughness" (in G channel) and "metallic" (in B
-  // channel)
-  Magnum::GL::Texture2D* noneRoughnessMetallicTexture = nullptr;
-  // a packed texture to store "occlusion"(in R channel), "roughness" (in G
-  // channel) and "metallic" (in B channel)
-  Magnum::GL::Texture2D* occlusionRoughnessMetallicTexture = nullptr;
   // TODO:
   // AO texture
   ESP_SMART_POINTERS(PbrMaterialData)

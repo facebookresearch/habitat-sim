@@ -17,7 +17,7 @@ namespace core {
 /**
  * @brief Class template defining responsibilities and functionality for
  * managing @ref esp::core::AbstractManagedObject constructs.
- * @tparam ManagedPtr the type of managed object a particular specialization of
+ * @tparam T the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
  * esp::core::AbstractManagedObject.
  */
@@ -117,7 +117,7 @@ class ManagedContainer : public ManagedContainerBase {
    */
   template <typename U>
   ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
-                                       const U& config) {
+                                       CORRADE_UNUSED const U& config) {
     LOG(ERROR)
         << "ManagedContainer::buildManagedObjectFromDoc (" << this->objectType_
         << ") : Failure loading attributes from document of unknown type : "
@@ -231,11 +231,11 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::getObjectByID
 
   /**
-   * @brief Get a reference to the managed object for the asset
-   * identified by the passed objectHandle.  Should only be used
-   * internally. Users should only ever access copies of managed objects.
+   * @brief Get a reference to the managed object identified by the passed
+   * objectHandle.  Should only be used internally. Users should only ever
+   * access copies of managed objects.
    *
-   * @param objectHandle The key referencing the asset in @ref
+   * @param objectHandle The key referencing the managed object in @ref
    * objectLibrary_.
    * @return A reference to the managed object, or nullptr if does not
    * exist

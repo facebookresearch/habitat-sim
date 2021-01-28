@@ -149,7 +149,7 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
                     btVector3{transformFromLocalToWorld.translation()}};
     std::unique_ptr<btRigidBody> sceneCollisionObject =
         std::make_unique<btRigidBody>(cInfo);
-    ASSERT(sceneCollisionObject->isStaticObject());
+    CORRADE_INTERNAL_ASSERT(sceneCollisionObject->isStaticObject());
     bStageArrays_.emplace_back(std::move(indexedVertexArray));
     bStageShapes_.emplace_back(std::move(meshShape));
     bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
