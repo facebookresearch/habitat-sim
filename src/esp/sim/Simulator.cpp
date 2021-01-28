@@ -826,9 +826,9 @@ agent::Agent::ptr Simulator::addAgent(
   // attach each agent, each sensor to a scene node, set the local
   // transformation of the sensor w.r.t. the agent (done internally in the
   // constructor of Agent)
-
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
+  ag->setSensorSuite(SensorFactory::createSensors(agentNode, agentConfig.sensorSpecifications));
 
   agent::AgentState state;
   sampleRandomAgentState(state);
