@@ -10,14 +10,25 @@ import os
 from io import StringIO
 from unittest.mock import patch
 
+import pytest
+
 from habitat_sim.utils import profiling_utils
 
 _ENV_VAR_NAME = "HABITAT_PROFILING"
 
+# skip all tests if torch not installed
+torch = pytest.importorskip("torch")
+
+# skip specific tests if torch does not have cuda available
+test_requires_torch_cuda = pytest.mark.skipif(
+    not torch.cuda.is_available(),
+    reason="Torch not installed with CUDA support so skipping test",
+)
+
 # Based on the env var, reloading the profiling_utils module should set
 # profiling_utils._enable_profiling to True or False.
+@test_requires_torch_cuda
 def test_env_var_enable():
-
     # test with env var not set
     os.environ.pop(_ENV_VAR_NAME, None)
     importlib.reload(profiling_utils)
@@ -46,8 +57,8 @@ def test_env_var_enable():
 
 
 # Create nested ranges and verify the code runs without error.
+@test_requires_torch_cuda
 def test_nested_range_push_pop():
-
     os.environ[_ENV_VAR_NAME] = "1"
     importlib.reload(profiling_utils)
 
@@ -63,8 +74,8 @@ def test_nested_range_push_pop():
 
 
 # Create ranges via RangeContext and verify the code runs without error.
+@test_requires_torch_cuda
 def test_range_context():
-
     os.environ[_ENV_VAR_NAME] = "1"
     importlib.reload(profiling_utils)
 
@@ -92,7 +103,6 @@ def test_range_context():
 
 # Use configure() to capture a desired range of train steps.
 def test_configure_and_on_start_step():
-
     os.environ[_ENV_VAR_NAME] = "1"
     importlib.reload(profiling_utils)
 
