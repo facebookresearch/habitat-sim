@@ -366,6 +366,8 @@ Key Commands:
   bool cubeMapMode_ = false;
 
   bool fisheyeMode_ = false;
+
+  bool depthMode_ = false;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -558,6 +560,17 @@ Viewer::Viewer(const Arguments& arguments)
     spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+  }
+
+  // add the depth sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::SensorSpec::create());
+  {
+    auto spec = agentConfig.sensorSpecifications.back().get();
+    spec->uuid = "depth";
+    spec->sensorType = esp::sensor::SensorType::Depth;
+    spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
   }
 
   // add selects a random initial state and sets up the default controls and
@@ -938,7 +951,10 @@ void Viewer::drawEvent() {
   }
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
-  if (fisheyeMode_) {
+
+  if (depthMode_) {
+    simulator_->drawObservation(defaultAgentId_, "depth");
+  } else if (fisheyeMode_) {
     simulator_->drawObservation(defaultAgentId_, "fisheye");
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, "fisheye");
@@ -1316,6 +1332,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // reset camera zoom
       getAgentCamera().resetZoom();
       break;
+
+    case KeyEvent::Key::Seven:
+      depthMode_ = !depthMode_;
+      LOG(INFO) << "Depth sensor is " << (depthMode_ ? "ON" : "OFF");
+      break;
+
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
       break;
