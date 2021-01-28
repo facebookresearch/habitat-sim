@@ -47,7 +47,7 @@ def make_configuration():
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
 
-def simulate(sim, dt=1.0, get_frames=True, data={}):
+def simulate(sim, dt=1.0, get_frames=True, data=None):
     # simulate dt seconds at 60Hz to the nearest fixed timestep
     # print("Simulating " + str(dt) + " world seconds.")
     observations = []
@@ -80,15 +80,15 @@ def simulate(sim, dt=1.0, get_frames=True, data={}):
 # Define each test function & store in list
 
 
-def bowl_drop_test(
+def box_drop_test(
     objects,
     num_objects=30,
-    object_scale=0.5,
+    box_size=2,
     object_speed=2,
     post_throw_settling_time=5,
 ):  # take in parameters here
-    """Drops a specified number of objects into a bowl/box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame. """
-    # start with bowl being bounding boxes
+    """Drops a specified number of objects into a box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame. """
+    # start with box being bounding boxes
 
     cfg = make_configuration()
     try:  # Got to make initialization idiot proof
@@ -97,37 +97,42 @@ def bowl_drop_test(
         pass
 
     sim = habitat_sim.Simulator(cfg)
-    #place_agent(sim, [5.45, 1.8, 1.2], np.quaternion(-0.83147, 0.2, -0.55557, -0.2))
-    sim.initialize_agent(0, habitat_sim.AgentState([5.45, 1.8, 1.2], np.quaternion(-0.83147, 0.2, -0.55557, -0.2)))
-
+    # place_agent(sim, [5.45, 1.8, 1.2], np.quaternion(-0.83147, 0.2, -0.55557, -0.2))
+    sim.initialize_agent(
+        0,
+        habitat_sim.AgentState(
+            [5.45 * box_size, 2.4 * box_size, 1.2 * box_size],
+            np.quaternion(-0.83147, 0.2, -0.55557, -0.2),
+        ),
+    )
 
     # get the physics object attributes manager
     obj_templates_mgr = sim.get_object_template_manager()
     # [/initialize]
 
-    # build bowl
+    # build box
     cube_handle = obj_templates_mgr.get_template_handles("cube")[0]
 
-    bowlParts = []
-    bowlIDs = []
+    boxParts = []
+    boxIDs = []
     for _i in range(5):
-        bowlParts += [obj_templates_mgr.get_template_by_handle(cube_handle)]
-    bowlParts[0].scale = np.array([1.0, 0.1, 1.0])
-    bowlParts[1].scale = np.array([1.0, 0.6, 0.1])
-    bowlParts[2].scale = np.array([1.0, 0.6, 0.1])
-    bowlParts[3].scale = np.array([0.1, 0.6, 1.0])
-    bowlParts[4].scale = np.array([0.1, 0.6, 1.0])
+        boxParts += [obj_templates_mgr.get_template_by_handle(cube_handle)]
+    boxParts[0].scale = np.array([1.0, 0.1, 1.0]) * box_size
+    boxParts[1].scale = np.array([1.0, 0.6, 0.1]) * box_size
+    boxParts[2].scale = np.array([1.0, 0.6, 0.1]) * box_size
+    boxParts[3].scale = np.array([0.1, 0.6, 1.0]) * box_size
+    boxParts[4].scale = np.array([0.1, 0.6, 1.0]) * box_size
 
     for i in range(5):
-        part_name = "bowl_part_" + str(i)
-        obj_templates_mgr.register_template(bowlParts[i], part_name)
-        bowlIDs += [sim.add_object_by_handle(part_name)]
-        sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, bowlIDs[i])
-    sim.set_translation(np.array([2.50, 0.05, 0.4]), bowlIDs[0])
-    sim.set_translation(np.array([2.50, 0.35, 1.35]), bowlIDs[1])
-    sim.set_translation(np.array([2.50, 0.35, -0.55]), bowlIDs[2])
-    sim.set_translation(np.array([3.45, 0.35, 0.4]), bowlIDs[3])
-    sim.set_translation(np.array([1.55, 0.35, 0.4]), bowlIDs[4])
+        part_name = "box_part_" + str(i)
+        obj_templates_mgr.register_template(boxParts[i], part_name)
+        boxIDs += [sim.add_object_by_handle(part_name)]
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, boxIDs[i])
+    sim.set_translation(np.array([2.50, 0.05, 0.4]) * box_size, boxIDs[0])
+    sim.set_translation(np.array([2.50, 0.35, 1.30]) * box_size, boxIDs[1])
+    sim.set_translation(np.array([2.50, 0.35, -0.50]) * box_size, boxIDs[2])
+    sim.set_translation(np.array([3.40, 0.35, 0.4]) * box_size, boxIDs[3])
+    sim.set_translation(np.array([1.60, 0.35, 0.4]) * box_size, boxIDs[4])
 
     # load some object templates from configuration files
     object_ids = []
@@ -142,15 +147,18 @@ def bowl_drop_test(
             obj_templates_mgr.load_configs(str(os.path.join(data_path, obj_path)))[0]
         ]
         obj_template = obj_templates_mgr.get_template_by_ID(object_ids[-1])
-        obj_template.scale *= object_scale
         if obj_path in scales.keys():
             obj_template.scale *= scales[obj_path]
         obj_templates_mgr.register_template(obj_template)
 
-    data = {"observations":[], "physics_step_times":[], "graphics_render_times":[],"collisions":[]}
+    data = {
+        "observations": [],
+        "physics_step_times": [],
+        "graphics_render_times": [],
+        "collisions": [],
+    }
 
-
-    # throw objects into bowl
+    # throw objects into box
     for i in range(num_objects):
         cur_id = sim.add_object(object_ids[i % len(object_ids)])
 
@@ -159,20 +167,21 @@ def bowl_drop_test(
         diaganal_length = math.sqrt(
             obj_bb.size_x() ** 2 + obj_bb.size_y() ** 2 + obj_bb.size_z() ** 2
         )
-        time_til_next_obj = diaganal_length / object_speed / 2
+        time_til_next_obj = diaganal_length / (object_speed * box_size) / 2
         # obj_node.scale(mn.Vector3(3,3,3))
 
         # set object position and velocity
-        sim.set_translation(np.array([1.50, 2, 1.2]), cur_id)
+        sim.set_translation(np.multiply(np.array([1.50, 2, 1.2]), box_size), cur_id)
         initial_linear_velocity = mn.Vector3(1, 0, -1)
-        initial_linear_velocity = initial_linear_velocity.normalized() * object_speed
+        initial_linear_velocity = (
+            initial_linear_velocity.normalized() * object_speed * box_size
+        )
         sim.set_linear_velocity(initial_linear_velocity, cur_id)
 
         # simulate half a second, then add next object
         simulate(sim, dt=time_til_next_obj, get_frames=make_video, data=data)
 
     simulate(sim, dt=post_throw_settling_time, get_frames=make_video, data=data)
-
 
     # [/basics]
     # return total time to run, time to load, time to simulate physics, time for rendering
@@ -182,13 +191,13 @@ def bowl_drop_test(
 
 
 benchmarks = {
-    #"bowl_drop_test_1": lambda: bowl_drop_test(
-    #    ["test_assets/objects/sphere"], 25, 0.5, 2, 5
-    #),
-    "bowl_drop_test_2": lambda: bowl_drop_test(
-        ["test_assets/objects/sphere", "test_assets/objects/chair"], 50, 0.5, 2, 5
+    # "box_drop_test_1": lambda: box_drop_test(
+    #    ["test_assets/objects/sphere"], 25, 2, 2, 5
+    # ),
+    "box_drop_test_2": lambda: box_drop_test(
+        ["test_assets/objects/sphere", "test_assets/objects/chair"], 50, 2, 1.8, 5
     ),
-    #"bowl_drop_test_3": lambda: bowl_drop_test(
+    # "box_drop_test_3": lambda: box_drop_test(
     #    [
     #        "test_assets/objects/sphere",
     #        "test_assets/objects/chair",
@@ -196,23 +205,21 @@ benchmarks = {
     #        "test_assets/objects/nested_box",
     #    ],
     #    200,
-    #    0.5,
+    #    2,
     #    2,
     #    5,
-    #),
+    # ),
 }  # specify parameters for each scenario
 
 test_sets = {
-    "bowl_drop_tests": ["bowl_drop_test_1", "bowl_drop_test_2", "bowl_drop_test_3"]
+    "box_drop_tests": ["box_drop_test_1", "box_drop_test_2", "box_drop_test_3"]
 }
 
 
 def runTest(testId):
     print("----- Running %s -----" % testId)
     start_time = time.time()
-    data = benchmarks[
-        testId
-    ]()
+    data = benchmarks[testId]()
     physics_step_times = data["physics_step_times"]
     graphics_render_times = data["graphics_render_times"]
     collisions = data["collisions"]

@@ -1,4 +1,5 @@
 import pytest
+
 import utils
 
 
@@ -12,7 +13,5 @@ import utils
         ),
     ],
 )
-
-
 def test_example_modules(args):
     utils.run_main_subproc(args)
