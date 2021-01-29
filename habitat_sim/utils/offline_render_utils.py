@@ -5,7 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import magnum as mn
-from matplotlib import pyplot as plt
+import numpy as np
+from PIL import Image
 
 import habitat_sim
 import habitat_sim.agent
@@ -13,12 +14,31 @@ from habitat_sim.agent.agent import AgentConfiguration
 from habitat_sim.utils import gfx_replay_utils
 
 
-def save_img(data, filepath):
-    plt.figure(figsize=(12, 12))
-    plt.imshow(data, interpolation="nearest")
-    plt.axis("off")
-    # plt.show(block=False)
-    plt.savefig(filepath, bbox_inches="tight", pad_inches=0, format="png")
+def save_rgb_image(rgb_obs, filepath):
+
+    # plt.figure(figsize=(12, 12))
+    # plt.imshow(data, interpolation="nearest")
+    # plt.axis("off")
+    # # plt.show(block=False)
+    # plt.savefig(filepath, bbox_inches="tight", pad_inches=0, format="png")
+
+    colors = []
+    for row in rgb_obs:
+        for rgba in row:
+            colors.extend([rgba[0], rgba[1], rgba[2]])
+
+    resolution_x = len(rgb_obs[0])
+    resolution_y = len(rgb_obs)
+
+    colors = bytes(colors)
+    img = Image.frombytes("RGB", (resolution_x, resolution_y), colors)
+    img.save(filepath)
+
+
+def save_depth_image(depth_obs, filepath):
+
+    depth_img = Image.fromarray((depth_obs / 10 * 255).astype(np.uint8), mode="L")
+    depth_img.save(filepath)
 
 
 def write_replay_file(glb_filepath, camera_matrix_per_observation, output_filepath):
@@ -86,20 +106,29 @@ def write_replay_file(glb_filepath, camera_matrix_per_observation, output_filepa
         text_file.write(replay_json)
 
 
-def create_sim(resolution_x=1024, resolution_y=768, hfov=90):
+def create_sim(resolution_x=1024, resolution_y=768, hfov=90, do_depth=False):
 
-    sensor_cfg = habitat_sim.SensorSpec()
-    sensor_cfg.resolution = [resolution_y, resolution_x]
+    agent_cfg = AgentConfiguration()
+
+    rgbd_sensor_cfg = habitat_sim.SensorSpec()
+    rgbd_sensor_cfg.uuid = "rgba_camera"
+    rgbd_sensor_cfg.resolution = [resolution_y, resolution_x]
     assert resolution_y >= 1 and resolution_x >= 1
     assert hfov > 0 and hfov < 180.0
     params = habitat_sim.MapStringString()
     params["hfov"] = str(hfov)
     params["near"] = "0.01"  # matches default in Sensor.h
     params["far"] = "1000"  # matches default in Sensor.h
-    sensor_cfg.parameters = params
+    rgbd_sensor_cfg.parameters = params
+    agent_cfg.sensor_specifications = [rgbd_sensor_cfg]
 
-    agent_cfg = AgentConfiguration()
-    agent_cfg.sensor_specifications = [sensor_cfg]
+    if do_depth:
+        depth_sensor_cfg = habitat_sim.SensorSpec()
+        depth_sensor_cfg.uuid = "depth_sensor"
+        depth_sensor_cfg.sensor_type = habitat_sim.SensorType.DEPTH
+        depth_sensor_cfg.resolution = rgbd_sensor_cfg.resolution
+        depth_sensor_cfg.parameters = params
+        agent_cfg.sensor_specifications.append(depth_sensor_cfg)
 
     playback_cfg = habitat_sim.Configuration(
         gfx_replay_utils.make_backend_configuration_for_playback(
@@ -114,11 +143,14 @@ def create_sim(resolution_x=1024, resolution_y=768, hfov=90):
     return sim
 
 
-# todo: decide how to pass camera
-def render_observations_from_replay(sim, replay_filepath, output_base_filepath):
+def render_observations_from_replay(
+    sim, replay_filepath, output_base_filepath, do_depth
+):
 
     agent_node = sim.get_agent(0).body.object
     sensor_node = sim._sensors["rgba_camera"]._sensor_object.object
+    if do_depth:
+        depth_sensor_node = sim._sensors["depth_sensor"]._sensor_object.object
 
     # We place a dummy agent at the origin and then transform the sensor using the "camera" user transform stored in the replay.
     agent_node.translation = [0.0, 0.0, 0.0]
@@ -133,11 +165,21 @@ def render_observations_from_replay(sim, replay_filepath, output_base_filepath):
         user_transform_pair = player.get_user_transform("camera")
         if user_transform_pair:
             (sensor_node.translation, sensor_node.rotation) = user_transform_pair
+            depth_sensor_node.translation = sensor_node.translation
+            depth_sensor_node.rotation = sensor_node.rotation
             observation = sim.get_sensor_observations()
-            save_img(
+
+            save_rgb_image(
                 observation["rgba_camera"],
                 output_base_filepath + "." + str(num_renders) + ".png",
             )
+
+            if do_depth:
+                save_depth_image(
+                    observation["depth_sensor"],
+                    output_base_filepath + "." + str(num_renders) + ".depth.png",
+                )
+
             num_renders += 1
 
     if num_renders == 0:
@@ -158,9 +200,9 @@ def demo():
     # list of camera transform matrices (camera position/rotation), one per render
     camera_matrices = []
 
-    # camera transform #1: identity transform
+    # camera transform #1: camera looks along negative z direction at origin
     camera_matrices.append(
-        [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0]
     )
 
     # camera transform #2: 45-degree rotation about z axis and translation=[0.1, 0.2, 0.3]
@@ -216,16 +258,19 @@ def demo():
     # write a Habitat replay file. This format stores a reference to our model plus
     # camera transforms (stored as Vector3 translation plus Quaternion rotation).
     write_replay_file(
-        "/data/projects/habitat-sim3/data/scene_datasets/habitat-test-scenes/apartment_1.glb",
+        # "/data/projects/habitat-sim3/data/scene_datasets/habitat-test-scenes/apartment_1.glb",
+        "/data/projects/habitat-sim3/data/test_assets/objects/sphere.glb",
         camera_matrices,
-        "my_replay.json",
+        "sphere_replay.json",
     )
+
+    do_depth = True  # also write grayscale depth image?
 
     # camera intrinsics: resolution and horizontal FOV (aspect ratio and vertical FOV
     # are derived from resolution)
-    sim = create_sim(resolution_x=1024, resolution_y=768, hfov=90)
+    sim = create_sim(resolution_x=512, resolution_y=256, hfov=90, do_depth=do_depth)
 
-    render_observations_from_replay(sim, "my_replay.json", "my_render")
+    render_observations_from_replay(sim, "my_replay.json", "my_render", do_depth)
 
 
 if __name__ == "__main__":
