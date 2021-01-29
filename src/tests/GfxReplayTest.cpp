@@ -33,7 +33,6 @@ int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
   int numberOfChildrenOfRoot = 1;
   const auto* lastRootChild = rootNode.children().first();
   if (!lastRootChild) {
-    lastRootChild = &rootNode;
     return 0;
   } else {
     ASSERT(lastRootChild);
