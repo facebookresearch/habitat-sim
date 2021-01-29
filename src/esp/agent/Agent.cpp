@@ -27,7 +27,6 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
       sensors_(),
       controls_(scene::ObjectControls::create()) {
   agentNode.setType(scene::SceneNodeType::AGENT);
-  sensors_ = SensorFactory::createSensors(agentNode, cfg.sensorSpecifications);
 }  // Agent::Agent
 
 Agent::~Agent() {
