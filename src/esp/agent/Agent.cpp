@@ -8,9 +8,7 @@
 #include <Magnum/EigenIntegration/Integration.h>
 
 #include "esp/scene/ObjectControls.h"
-#include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/Sensor.h"
-#include "esp/sensor/SensorFactory.h"
 
 using Magnum::EigenIntegration::cast;
 
