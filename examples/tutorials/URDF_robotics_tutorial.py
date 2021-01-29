@@ -3,6 +3,7 @@
 import os
 
 import magnum as mn
+import matplotlib.pyplot as plt
 import numpy as np
 
 import habitat_sim
@@ -13,6 +14,14 @@ import habitat_sim.utils.viz_utils as vut
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
 output_path = os.path.join(dir_path, "URDF_robotics_tutorial_output/")
+
+
+def get_process_memory_usage():
+    import os
+
+    import psutil
+
+    return psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
 
 
 def remove_all_objects(sim):
@@ -93,7 +102,50 @@ def simulate(sim, dt=1.0, get_frames=True):
     return observations
 
 
-# [/setup]
+def test_urdf_memory():
+    # test for memory leaks related to adding/removing AO's from URDF
+    # process_memory_tracking = [get_process_memory_usage()]
+    process_memory_tracking = []
+
+    # create the simulator
+    cfg = make_configuration()
+    sim = habitat_sim.Simulator(cfg)
+
+    # process_memory_tracking.append(get_process_memory_usage())
+
+    urdf_files = {
+        "aliengo": os.path.join(
+            data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
+        ),
+        "iiwa": os.path.join(
+            data_path, "test_assets/urdf/kuka_iiwa/model_free_base.urdf"
+        ),
+        "locobot": os.path.join(
+            data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
+        ),
+        "locobot_light": os.path.join(
+            data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
+        ),
+        "fetch": "/Users/alexclegg/AndrewObjectRearrangement/p-viz-plan/orp/robots/opt_fetch/robots/fetch.urdf",
+    }
+
+    # load a URDF file
+    robot_key = "fetch"
+    robot_file = urdf_files[robot_key]
+    for _sample in range(1000):
+
+        robot_id = sim.add_articulated_object_from_urdf(robot_file)
+        process_memory_tracking.append(get_process_memory_usage())
+        sim.remove_articulated_object(robot_id)
+        process_memory_tracking.append(get_process_memory_usage())
+
+    # graph the results
+    plt.plot(process_memory_tracking)
+    plt.title("Memory (MB) at add/remove URDF. (" + str(robot_key) + ")")
+    plt.xlabel("Query #")
+    plt.ylabel("Process Memory (MB)")
+    plt.show()
+
 
 # This is wrapped such that it can be added to a unit test
 def main(make_video=True, show_video=True):
@@ -353,3 +405,4 @@ def main(make_video=True, show_video=True):
 
 if __name__ == "__main__":
     main(make_video=True, show_video=True)
+    # test_urdf_memory()

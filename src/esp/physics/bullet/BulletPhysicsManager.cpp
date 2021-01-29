@@ -327,7 +327,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
   btMultiBody* mb =
       static_cast<BulletArticulatedObject*>(
           existingArticulatedObjects_.at(articulatedObjectId).get())
-          ->btMultiBody_;
+          ->btMultiBody_.get();
   mb->setCanSleep(false);
   btMultiBodyPoint2Point* p2p = new btMultiBodyPoint2Point(
       mb, linkId, 0, btVector3(linkOffset), btVector3(pickPos));
@@ -348,7 +348,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
   btMultiBody* mb =
       static_cast<BulletArticulatedObject*>(
           existingArticulatedObjects_.at(articulatedObjectId).get())
-          ->btMultiBody_;
+          ->btMultiBody_.get();
   btVector3 pivotInA = mb->worldPosToLocal(linkId, btVector3(pickPos));
   return createArticulatedP2PConstraint(articulatedObjectId, linkId,
                                         Magnum::Vector3(pivotInA), pickPos);

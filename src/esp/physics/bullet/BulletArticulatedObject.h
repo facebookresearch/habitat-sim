@@ -16,6 +16,9 @@ namespace esp {
 
 namespace physics {
 
+// forward delcaration from BulletURDFImporter
+struct JointLimitConstraintInfo;
+
 ////////////////////////////////////
 // Link
 ////////////////////////////////////
@@ -123,7 +126,7 @@ class BulletArticulatedObject : public ArticulatedObject {
   bool supportsJointMotor(int linkIx);
 
   // TODO: should be stored in the link
-  std::map<int, btCollisionShape*> linkCollisionShapes_;
+  std::map<int, std::unique_ptr<btCollisionShape>> linkCollisionShapes_;
 
   // used to update raycast objectId checks (maps to link ids)
   std::shared_ptr<std::map<const btCollisionObject*, int>>
@@ -131,7 +134,7 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   // std::unique_ptr<btMultiBody> btMultiBody_; //TODO:
   // TODO: also protected? not due to p2p constraint system
-  btMultiBody* btMultiBody_;
+  std::unique_ptr<btMultiBody> btMultiBody_;
 
   //============ Joint Motor Constraints =============
 
@@ -156,7 +159,9 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   int nextJointMotorId_ = 0;
 
-  std::map<int, btMultiBodyJointMotor*> articulatedJointMotors;
+  std::map<int, std::unique_ptr<btMultiBodyJointMotor>> articulatedJointMotors;
+
+  std::map<int, JointLimitConstraintInfo> jointLimitConstraints;
 
  protected:
   virtual bool attachGeometry(

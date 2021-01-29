@@ -32,14 +32,46 @@ static void setRotationScalingFromBulletTransform(const btTransform& trans,
 
 BulletArticulatedObject::~BulletArticulatedObject() {
   Corrade::Utility::Debug() << "deconstructing ~BulletArticulatedObject";
-  bWorld_->removeMultiBody(btMultiBody_);
-  for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
-    bWorld_->removeCollisionObject(btMultiBody_->getLinkCollider(colIx));
-    collisionObjToObjIds_->erase(btMultiBody_->getLinkCollider(colIx));
+  if (motionType_ != MotionType::KINEMATIC) {
+    // KINEMATIC objects have already been removed from the world.
+    bWorld_->removeMultiBody(btMultiBody_.get());
   }
-  bWorld_->btCollisionWorld::removeCollisionObject(
-      btMultiBody_->getBaseCollider());
-  collisionObjToObjIds_->erase(btMultiBody_->getBaseCollider());
+  // remove link collision objects from world
+  for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
+    auto linkCollider = btMultiBody_->getLinkCollider(colIx);
+    bWorld_->removeCollisionObject(linkCollider);
+    collisionObjToObjIds_->erase(linkCollider);
+    delete linkCollider;
+  }
+  auto baseCollider = btMultiBody_->getBaseCollider();
+  bWorld_->btCollisionWorld::removeCollisionObject(baseCollider);
+  collisionObjToObjIds_->erase(baseCollider);
+  delete baseCollider;
+  // delete children of compound collisionShapes
+  std::map<int, std::unique_ptr<btCollisionShape>>::iterator csIter;
+  for (csIter = linkCollisionShapes_.begin();
+       csIter != linkCollisionShapes_.end(); csIter++) {
+    auto compoundShape = dynamic_cast<btCompoundShape*>(csIter->second.get());
+    if (compoundShape) {
+      for (int i = 0; i < compoundShape->getNumChildShapes(); ++i) {
+        auto childShape = compoundShape->getChildShape(i);
+        compoundShape->removeChildShape(childShape);
+        delete childShape;
+      }
+    }
+  }
+  // remove motors from the world
+  std::map<int, std::unique_ptr<btMultiBodyJointMotor>>::iterator jmIter;
+  for (jmIter = articulatedJointMotors.begin();
+       jmIter != articulatedJointMotors.end(); jmIter++) {
+    bWorld_->removeMultiBodyConstraint(jmIter->second.get());
+  }
+  std::map<int, JointLimitConstraintInfo>::iterator jlIter;
+  for (jlIter = jointLimitConstraints.begin();
+       jlIter != jointLimitConstraints.end(); jlIter++) {
+    bWorld_->removeMultiBodyConstraint(jlIter->second.con);
+    delete jlIter->second.con;
+  }
 }
 
 bool BulletArticulatedObject::initializeFromURDF(
@@ -81,6 +113,7 @@ bool BulletArticulatedObject::initializeFromURDF(
     Corrade::Utility::Debug() << "post process phase";
 
     btMultiBody* mb = cache.m_bulletMultiBody;
+    jointLimitConstraints = cache.m_jointLimitConstraints;
 
     mb->setHasSelfCollision((flags & CUF_USE_SELF_COLLISION) !=
                             0);  // NOTE: default no
@@ -101,8 +134,9 @@ bool BulletArticulatedObject::initializeFromURDF(
     mb->forwardKinematics(scratch_q, scratch_m);
     mb->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
 
-    bWorld_->addMultiBody(mb);
-    btMultiBody_ = bWorld_->getMultiBody(bWorld_->getNumMultibodies() - 1);
+    btMultiBody_.reset(
+        mb);  // take ownership of the object in the URDFImporter cache
+    bWorld_->addMultiBody(btMultiBody_.get());
     btMultiBody_->setCanSleep(true);
 
     // Attach SceneNode visual components
@@ -175,8 +209,7 @@ void BulletArticulatedObject::updateNodes() {
 bool BulletArticulatedObject::attachGeometry(
     scene::SceneNode& node,
     std::shared_ptr<io::URDF::Link> link,
-    const std::map<std::string, std::shared_ptr<io::URDF::Material> >&
-        materials,
+    const std::map<std::string, std::shared_ptr<io::URDF::Material>>& materials,
     gfx::DrawableGroup* drawables) {
   bool geomSuccess = false;
 
@@ -409,9 +442,9 @@ void BulletArticulatedObject::setMotionType(MotionType mt) {
   }
 
   if (mt == MotionType::DYNAMIC) {
-    bWorld_->addMultiBody(btMultiBody_);
+    bWorld_->addMultiBody(btMultiBody_.get());
   } else if (mt == MotionType::KINEMATIC) {
-    bWorld_->removeMultiBody(btMultiBody_);
+    bWorld_->removeMultiBody(btMultiBody_.get());
   } else {
     return;
   }
@@ -448,8 +481,7 @@ std::map<int, int> BulletArticulatedObject::createMotorsForAllDofs(
 
 float BulletArticulatedObject::getJointMotorMaxImpulse(int motorId) {
   CHECK(articulatedJointMotors.count(motorId));
-  btMultiBodyJointMotor* motor = articulatedJointMotors.at(motorId);
-  return motor->getMaxAppliedImpulse();
+  return articulatedJointMotors.at(motorId)->getMaxAppliedImpulse();
 }
 
 int BulletArticulatedObject::createJointMotor(
@@ -460,17 +492,18 @@ int BulletArticulatedObject::createJointMotor(
   auto motor = JointMotor::create_unique();
   motor->settings = settings;
   motor->dof = globalDof;
+  motor->motorId = nextJointMotorId_;
+  jointMotors_.emplace(nextJointMotorId_,
+                       std::move(motor));  // cache the Habitat structure
 
-  btMultiBodyJointMotor* btMotor =
-      new btMultiBodyJointMotor(btMultiBody_, linkIx, linkDof,
-                                settings.velocityTarget, settings.maxImpulse);
+  auto btMotor = std::make_unique<btMultiBodyJointMotor>(
+      btMultiBody_.get(), linkIx, linkDof, settings.velocityTarget,
+      settings.maxImpulse);
   btMotor->setPositionTarget(settings.positionTarget, settings.positionGain);
   btMotor->setVelocityTarget(settings.velocityTarget, settings.velocityGain);
-  bWorld_->addMultiBodyConstraint(btMotor);
-  articulatedJointMotors[nextJointMotorId_] = btMotor;
-  motor->motorId = nextJointMotorId_;
-  jointMotors_.emplace(motor->motorId, std::move(motor));
-
+  bWorld_->addMultiBodyConstraint(btMotor.get());
+  articulatedJointMotors.emplace(
+      nextJointMotorId_, std::move(btMotor));  // cache the Bullet structure
   return nextJointMotorId_++;
 }
 
@@ -516,10 +549,9 @@ int BulletArticulatedObject::createJointMotor(
 void BulletArticulatedObject::removeJointMotor(const int motorId) {
   CHECK(jointMotors_.count(motorId) > 0);
   CHECK(articulatedJointMotors.count(motorId));
-  btMultiBodyJointMotor* motor = articulatedJointMotors.at(motorId);
-  bWorld_->removeMultiBodyConstraint(motor);
-  delete motor;
+  bWorld_->removeMultiBodyConstraint(articulatedJointMotors.at(motorId).get());
   jointMotors_.erase(motorId);
+  articulatedJointMotors.erase(motorId);
 }
 
 void BulletArticulatedObject::updateJointMotor(
@@ -528,7 +560,7 @@ void BulletArticulatedObject::updateJointMotor(
   CHECK(jointMotors_.count(motorId) > 0);
   jointMotors_.at(motorId)->settings = settings;
   CHECK(articulatedJointMotors.count(motorId));
-  btMultiBodyJointMotor* motor = articulatedJointMotors.at(motorId);
+  auto& motor = articulatedJointMotors.at(motorId);
   motor->setPositionTarget(settings.positionTarget, settings.positionGain);
   motor->setVelocityTarget(settings.velocityTarget, settings.velocityGain);
   motor->setMaxAppliedImpulse(settings.maxImpulse);

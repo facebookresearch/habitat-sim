@@ -301,7 +301,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
     const Mn::Matrix4& parentTransformInWorldSpace,
     btMultiBodyDynamicsWorld* world1,
     int flags,
-    std::map<int, btCollisionShape*>& linkCollisionShapes) {
+    std::map<int, std::unique_ptr<btCollisionShape>>& linkCollisionShapes) {
   Corrade::Utility::Debug() << "++++++++++++++++++++++++++++++++++++++";
   Corrade::Utility::Debug() << "ConvertURDF2BulletInternal...";
 
@@ -502,6 +502,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
                 cache.m_bulletMultiBody, mbLinkIndex, jointLowerLimit,
                 jointUpperLimit);
             world1->addMultiBodyConstraint(con);
+            cache.m_jointLimitConstraints.emplace(
+                mbLinkIndex,
+                JointLimitConstraintInfo(mbLinkIndex, jointLowerLimit,
+                                         jointUpperLimit, con));
           }
 
           break;
@@ -524,6 +528,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
                 cache.m_bulletMultiBody, mbLinkIndex, jointLowerLimit,
                 jointUpperLimit);
             world1->addMultiBodyConstraint(con);
+            cache.m_jointLimitConstraints.emplace(
+                mbLinkIndex,
+                JointLimitConstraintInfo(mbLinkIndex, jointLowerLimit,
+                                         jointUpperLimit, con));
           }
 
           break;
@@ -547,7 +555,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       col->setCollisionShape(compoundShape);
 
       // TODO: better track the collision shapes
-      linkCollisionShapes[mbLinkIndex] = compoundShape;
+      linkCollisionShapes[mbLinkIndex].reset(compoundShape);
 
       if (compoundShape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE) {
         btBvhTriangleMeshShape* trimeshShape =

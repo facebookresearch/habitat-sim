@@ -14,6 +14,24 @@ namespace esp {
 namespace physics {
 
 /**
+ * @brief Structure to hold joint limit constraint info during construction.
+ */
+struct JointLimitConstraintInfo {
+  JointLimitConstraintInfo(int _dof,
+                           float _lowerLimit,
+                           float _upperLimit,
+                           btMultiBodyConstraint* _con) {
+    dof = _dof;
+    lowerLimit = _lowerLimit;
+    upperLimit = _upperLimit;
+    con = _con;
+  }
+  int dof;
+  float lowerLimit, upperLimit;
+  btMultiBodyConstraint* con;
+};
+
+/**
  * @brief Structure to hold construction time multi-body data.
  */
 struct URDF2BulletCached {
@@ -30,6 +48,8 @@ struct URDF2BulletCached {
   int m_currentMultiBodyLinkIndex;
 
   class btMultiBody* m_bulletMultiBody;
+
+  std::map<int, JointLimitConstraintInfo> m_jointLimitConstraints;
 
   // this will be initialized in the constructor
   int m_totalNumJoints1;
@@ -89,7 +109,7 @@ class BulletURDFImporter : public URDFImporter {
       const Magnum::Matrix4& parentTransformInWorldSpace,
       btMultiBodyDynamicsWorld* world1,
       int flags,
-      std::map<int, btCollisionShape*>& linkCollisionShapes);
+      std::map<int, std::unique_ptr<btCollisionShape>>& linkCollisionShapes);
 };
 
 void processContactParameters(const io::URDF::LinkContactInfo& contactInfo,
