@@ -48,9 +48,7 @@ void CameraSensor::recomputeProjectionMatrix() {
   projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
   // update renderCamera_'s projectionMatrix every time the sensor's
   // projectionMatrix changes
-  if (renderCamera_) {
-    renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
-  }
+  renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
 }
 
 void CameraSensor::recomputeBaseProjectionMatrix() {
