@@ -80,7 +80,7 @@ void SensorInfoVisualizer::draw(Mn::ResourceKey shaderKey) {
 Mn::ResourceKey SensorInfoVisualizer::getShaderKey(SensorInfoType type) {
   switch (type) {
     case SensorInfoType::Depth:
-      return "Depth";
+      return std::string("Depth");
       break;
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
