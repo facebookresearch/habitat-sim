@@ -336,7 +336,7 @@ jobs:
                 cd ..
               fi
       - run:
-          name: Build sim documentation
+          name: Build habitat sim and documentation
           no_output_timeout: 20m
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
@@ -360,7 +360,7 @@ jobs:
               git submodule update --init
               ./build-public.sh
       - run:
-          name: Install Habitat Lab
+          name: Install Habitat Sim and Habitat Lab
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
@@ -665,6 +665,12 @@ workflows:
 
   version_conda_release:
     jobs:
+      - build_and_test_habitat_lab_conda:
+          filters:
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
+            branches:
+              ignore: /.*/
       - install_and_test_ubuntu:
           filters:
             tags:
@@ -673,6 +679,7 @@ workflows:
               ignore: /.*/
       - update_docs:
           requires:
+            - build_and_test_habitat_lab_conda
             - install_and_test_ubuntu
           filters:
             tags:
@@ -681,6 +688,7 @@ workflows:
               ignore: /.*/
       - build_conda_binaries:
           requires:
+            - build_and_test_habitat_lab_conda
             - install_and_test_ubuntu
           filters:
             tags:
