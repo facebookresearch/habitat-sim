@@ -129,7 +129,6 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   //                      "png");
 
   // obtain shader based on fisheye model type
-  Mn::ResourceKey key = getShaderKey();
   shader_ = fisheyeShaderManager_.get<gfx::FisheyeShader>(getShaderKey());
 
   // if no shader with flags exists, create one

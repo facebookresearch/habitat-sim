@@ -116,6 +116,11 @@ class RenderTarget {
    */
   void blitRgbaToDefault();
 
+  /**
+   * @brief get the depth texture
+   */
+  Magnum::GL::Texture2D& getDepthTexture();
+
   // @brief Delete copy Constructor
   RenderTarget(const RenderTarget&) = delete;
   // @brief Delete copy operator

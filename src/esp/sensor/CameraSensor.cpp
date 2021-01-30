@@ -8,7 +8,9 @@
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/PixelFormat.h>
 #include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx/DepthVisualizerShader.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/SensorInfoVisualizer.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {
@@ -170,6 +172,31 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
 
   renderTarget().renderExit();
 
+  return true;
+}
+
+bool CameraSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer) {
+  auto sensorType = this->spec_->sensorType;
+  CORRADE_ASSERT(
+      sensorType == SensorType::Depth,
+      "CameraSensor::visualizeObservation: sensor type is not supported.",
+      false);
+
+  // prepare: setup and clear framebuffer
+  visualizer.prepareToDraw(framebufferSize());
+  switch (sensorType) {
+    case SensorType::Depth: {
+      // setup the shader
+      Mn::Resource<Mn::GL::AbstractShaderProgram, gfx::DepthVisualizerShader>
+          shader = visualizer.getShader<gfx::DepthVisualizerShader>(
+              gfx::SensorInfoType::Depth);
+      shader->bindDepthTexture(renderTarget().getDepthTexture())
+          .setDepthUnprojection(*depthUnprojection())
+          .setFar(far_ / 20.0);
+      visualizer.draw(shader.key());
+    } break;
+  }
+  // draw to the framebuffer
   return true;
 }
 

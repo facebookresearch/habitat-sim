@@ -27,6 +27,7 @@
 #include <Magnum/Timeline.h>
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/SensorInfoVisualizer.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/nav/PathFinder.h"
@@ -368,6 +369,8 @@ Key Commands:
   bool fisheyeMode_ = false;
 
   bool depthMode_ = false;
+
+  esp::gfx::SensorInfoVisualizer sensorInfoVisualizer_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -954,6 +957,9 @@ void Viewer::drawEvent() {
 
   if (depthMode_) {
     simulator_->drawObservation(defaultAgentId_, "depth");
+    simulator_->visualizeObservation(defaultAgentId_, "depth",
+                                     sensorInfoVisualizer_);
+    sensorInfoVisualizer_.blitRgbaToDefault();
   } else if (fisheyeMode_) {
     simulator_->drawObservation(defaultAgentId_, "fisheye");
     esp::gfx::RenderTarget* sensorRenderTarget =

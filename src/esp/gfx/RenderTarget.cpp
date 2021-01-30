@@ -166,6 +166,8 @@ struct RenderTarget::Impl {
     return framebuffer_.viewport().size();
   }
 
+  Magnum::GL::Texture2D& getDepthTexture() { return depthRenderTexture_; }
+
 #ifdef ESP_BUILD_WITH_CUDA
   void readFrameRgbaGPU(uint8_t* devPtr) {
     // TODO: Consider implementing the GPU read functions with EGLImage
@@ -306,6 +308,10 @@ void RenderTarget::blitRgbaToDefault() {
 
 Mn::Vector2i RenderTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
+}
+
+Magnum::GL::Texture2D& RenderTarget::getDepthTexture() {
+  return pimpl_->getDepthTexture();
 }
 
 #ifdef ESP_BUILD_WITH_CUDA

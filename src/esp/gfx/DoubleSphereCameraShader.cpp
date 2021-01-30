@@ -53,7 +53,7 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
   // Add macros
-  vert.addSource(rs.get("doubleSphereCamera.vert"));
+  vert.addSource(rs.get("bigTriangle.vert"));
 
   std::stringstream outputAttributeLocationsStream;
   outputAttributeLocationsStream << Cr::Utility::formatString(
