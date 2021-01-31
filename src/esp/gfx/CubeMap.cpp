@@ -8,6 +8,8 @@
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Assert.h>
+// XXX
+#include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/DebugTools/TextureImage.h>
 #include <Magnum/GL/Framebuffer.h>
@@ -20,6 +22,9 @@
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Trade/AbstractImageConverter.h>
 #include <Magnum/Trade/ImageData.h>
+
+// XXX
+#include <iostream>
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -259,12 +264,18 @@ bool CubeMap::saveTexture(TextureType type,
         filename = Cr::Utility::formatString("{}.{}.{}.png", imageFilePrefix,
                                              getTextureTypeFilenameString(type),
                                              coordStrings[iFace]);
+        // XXX
+        Mn::Debug{} << image.data().prefix(9);
       } break;
 
       case TextureType::Depth: {
         filename = Cr::Utility::formatString("{}.{}.{}.hdr", imageFilePrefix,
                                              getTextureTypeFilenameString(type),
                                              coordStrings[iFace]);
+        // XXX
+        // display 8 floats
+        Mn::Debug{} << Cr::Containers::arrayCast<float>(
+            image.data().prefix(120));
       } break;
     }
     CORRADE_ASSERT(!filename.empty(),
@@ -339,6 +350,8 @@ void CubeMap::loadTexture(TextureType type,
       case TextureType::Color:
         texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
                              *imageData);
+        // XXX
+        Mn::Debug{} << (*imageData).data().prefix(9);
         break;
 
       case TextureType::Depth: {
@@ -363,14 +376,27 @@ void CubeMap::loadTexture(TextureType type,
             depthImage, {std::size_t(size.y()), std::size_t(size.x())}};
 
         // copy the data
-        Cr::Utility::copy(red, output);
+        // XXX
+        // Cr::Utility::copy(red, output);
+
+        // XXX
+        unsigned int idx = 0;
+        for (auto row : imageStridedArrayView) {
+          for (const Mn::Color3& pixel : row) {
+            depthImage[idx++] = pixel.r();
+          }
+        }
 
         Mn::ImageView2D imageView(Mn::PixelFormat::R32F, imageData->size(),
                                   depthImage);
         texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
                              imageView);
+        // XXX
+        Mn::Debug{} << Cr::Containers::arrayCast<const float>(
+            imageView.data().prefix(32));
       } break;
-    }
+    }  // switch
+    LOG(INFO) << "Loaded image " << iFace << " from " << filename;
   }
   // Color texture ONLY, NOT for depth
   if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {

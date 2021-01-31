@@ -129,11 +129,18 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   // generate the cubemap texture
   cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), flags);
   // XXX debug
-  // cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color, "cubemap");
+  /*
+  if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
+    cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color, "cubemap");
+    cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "cubemap", "png");
+  }
+  */
   // XXX debug
-  // cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "cubemap", "png");
-  // cubeMap_->loadTexture(gfx::CubeMap::TextureType::Color, "cubemap_viewer",
-  //                      "png");
+  if (fisheyeSensorSpec_->sensorType == SensorType::Depth) {
+    cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Depth, "cubemap");
+    cubeMap_->loadTexture(gfx::CubeMap::TextureType::Depth, "cubemap", "hdr");
+    exit(0);
+  }
 
   // obtain shader based on fisheye model type
   shader_ = fisheyeShaderManager_.get<gfx::FisheyeShader>(getShaderKey());
