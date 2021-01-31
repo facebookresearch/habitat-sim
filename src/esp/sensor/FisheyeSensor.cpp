@@ -60,7 +60,10 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
     cubeMapFlags |= gfx::CubeMap::Flag::ColorTexture;
   }
-  // TODO: Depth, Semantic
+  if (fisheyeSensorSpec_->sensorType == SensorType::Depth) {
+    cubeMapFlags |= gfx::CubeMap::Flag::DepthTexture;
+  }
+  // TODO: Semantic
   cubeMap_ = std::make_unique<gfx::CubeMap>(size, cubeMapFlags);
 
   // initialize the cubemap camera, it attaches to the same node as the sensor
@@ -71,6 +74,10 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
 
   if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
     fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
+  }
+
+  if (fisheyeSensorSpec_->sensorType == SensorType::Depth) {
+    fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::DepthTexture;
   }
 
   // compute the depth unprojection parameters
@@ -152,30 +159,32 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   CORRADE_INTERNAL_ASSERT(shader_ && shader_->flags() == fisheyeShaderFlags_);
   // draw the observation to the render target
 
-  if (fisheyeShaderFlags_ & gfx::FisheyeShader::Flag::ColorTexture) {
-    switch (fisheyeSensorSpec_->fisheyeModelType) {
-      case FisheyeSensorModelType::DoubleSphere: {
-        auto& actualShader =
-            static_cast<gfx::DoubleSphereCameraShader&>(*shader_);
-        auto& actualSpec =
-            static_cast<FisheyeSensorDoubleSphereSpec&>(*fisheyeSensorSpec_);
-        actualShader.setFocalLength(actualSpec.focalLength)
-            .setPrincipalPointOffset(actualSpec.principalPointOffset)
-            .setAlpha(actualSpec.alpha)
-            .setXi(actualSpec.xi);
-      } break;
+  switch (fisheyeSensorSpec_->fisheyeModelType) {
+    case FisheyeSensorModelType::DoubleSphere: {
+      auto& actualShader =
+          static_cast<gfx::DoubleSphereCameraShader&>(*shader_);
+      auto& actualSpec =
+          static_cast<FisheyeSensorDoubleSphereSpec&>(*fisheyeSensorSpec_);
+      actualShader.setFocalLength(actualSpec.focalLength)
+          .setPrincipalPointOffset(actualSpec.principalPointOffset)
+          .setAlpha(actualSpec.alpha)
+          .setXi(actualSpec.xi);
+    } break;
 
-        // TODO:
-        // The other FisheyeSensorModelType
+      // TODO:
+      // The other FisheyeSensorModelType
 
-      default:
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-        break;
-    }
-    if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
-      shader_->bindColorTexture(
-          cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
-    }
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
+  if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
+    shader_->bindColorTexture(
+        cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
+  }
+  if (fisheyeSensorSpec_->sensorType == SensorType::Depth) {
+    shader_->bindDepthTexture(
+        cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
   }
   renderTarget().renderEnter();
   shader_->draw(mesh_);

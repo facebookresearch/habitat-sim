@@ -7,7 +7,7 @@ in highp vec2 textureCoordinates;
 in highp float depth;
 #endif
 #ifdef DEPTH_VISUALIZATER
-uniform highp float far;
+uniform highp float depthScaling;
 out highp vec4 fragmentColor;
 #else
 out highp float originalDepth;
@@ -33,6 +33,8 @@ void main() {
     originalDepth = depth;
   #endif
   #ifdef DEPTH_VISUALIZATER
-    fragmentColor = vec4(vec3(originalDepth / far), 0.0);
+    highp float r = originalDepth / depthScaling;
+    highp float b = 0.5 - 0.5 * r;
+    fragmentColor = vec4(r, r, b, 1.0);
   #endif
 }

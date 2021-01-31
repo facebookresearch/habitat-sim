@@ -124,14 +124,10 @@ class VisualSensor : public Sensor {
   /**
    * @brief visualize originally undisplayable info (such as depth, semantic
    * info) to the frame buffer using simulator's renderer
-   * @return true if success, otherwise false (e.g., frame buffer is not set)
    * @param[in] sim Instance of Simulator class for which the observation needs
    *                to be drawn
    */
-  virtual bool visualizeObservation(
-      CORRADE_UNUSED gfx::SensorInfoVisualizer& visualizer) {
-    return false;
-  }
+  virtual void visualizeObservation(gfx::SensorInfoVisualizer& visualizer);
 
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;

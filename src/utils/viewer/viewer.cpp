@@ -366,7 +366,7 @@ Key Commands:
   esp::scene::SceneNode* cubeMapCameraNode_ = nullptr;
   bool cubeMapMode_ = false;
 
-  bool fisheyeMode_ = false;
+  int fisheyeMode_ = 0;
 
   bool depthMode_ = false;
 
@@ -538,6 +538,8 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
+
+  // setup default sensor
   agentConfig.sensorSpecifications[0]->resolution =
       esp::vec2i(viewportSize[1], viewportSize[0]);
 
@@ -576,6 +578,26 @@ Viewer::Viewer(const Arguments& arguments)
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
   }
 
+  // add the fisheye depth sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::FisheyeSensorDoubleSphereSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "depth_fisheye";
+    spec->sensorType = esp::sensor::SensorType::Depth;
+    spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
+    spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->xi = -0.18;
+    spec->alpha = 0.59;
+    int size =
+        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
+    spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+    spec->principalPointOffset =
+        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+  }
+
   // add selects a random initial state and sets up the default controls and
   // step filter
   simulator_->addAgent(agentConfig);
@@ -596,8 +618,10 @@ Viewer::Viewer(const Arguments& arguments)
   cubeMapCamera_ =
       std::make_unique<esp::gfx::CubeMapCamera>(*cubeMapCameraNode_);
   {
-    int imageSize = 512;
-    cubeMap_ = std::make_unique<esp::gfx::CubeMap>(imageSize);
+    esp::gfx::CubeMap::Flags flags = esp::gfx::CubeMap::Flag::ColorTexture |
+                                     esp::gfx::CubeMap::Flag::DepthTexture;
+    int imageSize = 1024;
+    cubeMap_ = std::make_unique<esp::gfx::CubeMap>(imageSize, flags);
     cubeMapCamera_->setProjectionMatrix(imageSize, 0.001, 1000);
   }
   /**
@@ -919,7 +943,7 @@ void Viewer::drawEvent() {
         flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
       }
       cubeMap_->renderToTexture(*cubeMapCamera_, *activeSceneGraph_, flags);
-      if (cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Color,
+      if (cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Depth,
                                 std::string("cubemap_viewer"))) {
         LOG(INFO) << "CubeMap has been successfully saved.";
       }
@@ -960,14 +984,27 @@ void Viewer::drawEvent() {
     simulator_->visualizeObservation(defaultAgentId_, "depth",
                                      sensorInfoVisualizer_);
     sensorInfoVisualizer_.blitRgbaToDefault();
-  } else if (fisheyeMode_) {
-    simulator_->drawObservation(defaultAgentId_, "fisheye");
-    esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, "fisheye");
-    CORRADE_ASSERT(sensorRenderTarget,
-                   "Error in Viewer::drawEvent: sensor's rendering target "
-                   "cannot be nullptr.", );
-    sensorRenderTarget->blitRgbaToDefault();
+  } else if (fisheyeMode_ != 0) {
+    std::string sensorId = fisheyeMode_ == 1 ? "fisheye" : "depth_fisheye";
+    simulator_->drawObservation(defaultAgentId_, sensorId);
+
+    switch (fisheyeMode_) {
+      case 1: {
+        // color fisheye
+        esp::gfx::RenderTarget* sensorRenderTarget =
+            simulator_->getRenderTarget(defaultAgentId_, sensorId);
+        CORRADE_ASSERT(sensorRenderTarget,
+                       "Error in Viewer::drawEvent: sensor's rendering target "
+                       "cannot be nullptr.", );
+        sensorRenderTarget->blitRgbaToDefault();
+      } break;
+
+      case 2: {
+        simulator_->visualizeObservation(defaultAgentId_, "depth_fisheye",
+                                         sensorInfoVisualizer_);
+        sensorInfoVisualizer_.blitRgbaToDefault();
+      } break;
+    }  // switch
   } else if (flyingCameraMode_) {
     visibles = 0;
     Mn::GL::defaultFramebuffer.bind();
@@ -1043,13 +1080,13 @@ void Viewer::drawEvent() {
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
-    if (!fisheyeMode_) {
+    if (fisheyeMode_ == 0) {
       ImGui::Text("%u culled", total - visibles);
     }
     auto& cam = getAgentCamera();
     ImGui::Text(
         "%s camera",
-        (fisheyeMode_
+        (fisheyeMode_ != 0
              ? "Fisheye"
              : (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
                     ? "Orthographic"
@@ -1139,11 +1176,14 @@ void Viewer::viewportEvent(ViewportEvent& event) {
                                                    event.windowSize()[0]};
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
 
-      if (visualSensor->specification()->uuid == "fisheye") {
+      if ((visualSensor->specification()->uuid == "fisheye") ||
+          (visualSensor->specification()->uuid == "depth_fisheye")) {
         auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
             visualSensor->specification().get());
 
-        const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
+        // const auto viewportSize =
+        // Mn::GL::defaultFramebuffer.viewport().size();
+        const auto viewportSize = event.framebufferSize();
         int size = viewportSize[0] < viewportSize[1] ? viewportSize[0]
                                                      : viewportSize[1];
         spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
@@ -1161,7 +1201,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
                   event.windowSize(), event.framebufferSize());
 
   objectPickingHelper_->handleViewportChange(event.framebufferSize());
-}  // namespace
+}
 
 void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
   for (auto& it : activeSceneGraph_->getDrawableGroups()) {
@@ -1305,6 +1345,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       simulateSingleStep_ = true;
       break;
       // ==== Miscellaneous ====
+    case KeyEvent::Key::Zero:
+      cubeMapMode_ = !cubeMapMode_;
+      break;
     case KeyEvent::Key::One:
       // toggle agent location recording for trajectory
       setAgentLocationRecord(!agentLocRecordOn_);
@@ -1320,15 +1363,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
 
     case KeyEvent::Key::Four:
-      fisheyeMode_ = !fisheyeMode_;
-      LOG(INFO) << "Fisheye sensor is " << (fisheyeMode_ ? "ON" : "OFF");
+      fisheyeMode_ = (fisheyeMode_ + 1) % 3;
+      LOG(INFO) << "Fisheye sensor mode is " << fisheyeMode_;
       break;
-
-      /*
-      case KeyEvent::Key::Four:
-        cubeMapMode_ = !cubeMapMode_;
-        break;
-      */
 
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective

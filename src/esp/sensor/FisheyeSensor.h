@@ -100,8 +100,8 @@ class FisheyeSensor : public VisualSensor {
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
    *
-   * Will always be @ref Corrade::Containers::NullOpt for the base sensor class
-   * as it has no projection parameters
+   * Will always be @ref Corrade::Containers::NullOpt for the base sensor
+   * class as it has no projection parameters
    */
   virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
       const override;

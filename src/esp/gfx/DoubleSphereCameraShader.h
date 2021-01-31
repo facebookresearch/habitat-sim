@@ -71,7 +71,10 @@ class DoubleSphereCameraShader : public FisheyeShader {
   virtual ~DoubleSphereCameraShader(){};
 
   virtual DoubleSphereCameraShader& bindColorTexture(
-      Magnum::GL::CubeMapTexture& texture);
+      Magnum::GL::CubeMapTexture& texture) override;
+
+  virtual DoubleSphereCameraShader& bindDepthTexture(
+      Magnum::GL::CubeMapTexture& texture) override;
 
  protected:
   int focalLengthUniform_ = ID_UNDEFINED;

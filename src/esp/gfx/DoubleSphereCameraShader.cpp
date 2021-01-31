@@ -28,8 +28,8 @@ namespace gfx {
 namespace {
 enum TextureUnit : uint8_t {
   Color = 0,
+  Depth = 1,
   // TODO
-  // Depth = 1,
   // ObjectId = 2,
 };
 }  // namespace
@@ -56,8 +56,11 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
   vert.addSource(rs.get("bigTriangle.vert"));
 
   std::stringstream outputAttributeLocationsStream;
-  outputAttributeLocationsStream << Cr::Utility::formatString(
-      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
+
+  if (flags_ & FisheyeShader::Flag::ColorTexture) {
+    outputAttributeLocationsStream << Cr::Utility::formatString(
+        "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
+  }
   /* TODO:
   outputAttributeLocationsStream << Cr::Utility::formatString(
       "#define OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID {}\n", ObjectIdOutput);
@@ -67,8 +70,9 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
       .addSource(flags_ & FisheyeShader::Flag::ColorTexture
                      ? "#define COLOR_TEXTURE\n"
                      : "")
-      // TODO
-      //.addSource(flags_ & Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
+      .addSource(flags_ & FisheyeShader::Flag::DepthTexture
+                     ? "#define DEPTH_TEXTURE\n"
+                     : "")
       .addSource(rs.get("doubleSphereCamera.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
@@ -92,7 +96,10 @@ void DoubleSphereCameraShader::setTextureBindingPoints() {
   if (flags_ & FisheyeShader::Flag::ColorTexture) {
     setUniform(uniformLocation("ColorTexture"), TextureUnit::Color);
   }
-  // TODO: handle the other flags, DepthTexture, ObjectIdTexture
+  if (flags_ & FisheyeShader::Flag::DepthTexture) {
+    setUniform(uniformLocation("DepthTexture"), TextureUnit::Depth);
+  }
+  // TODO: handle the other flags, ObjectIdTexture
 }
 
 DoubleSphereCameraShader& DoubleSphereCameraShader::bindColorTexture(
@@ -103,6 +110,17 @@ DoubleSphereCameraShader& DoubleSphereCameraShader::bindColorTexture(
       "created with color texture enabled",
       *this);
   texture.bind(TextureUnit::Color);
+  return *this;
+}
+
+DoubleSphereCameraShader& DoubleSphereCameraShader::bindDepthTexture(
+    Mn::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(
+      flags_ & FisheyeShader::Flag::DepthTexture,
+      "DoubleSphereCameraShader::bindDepthTexture(): the shader was not "
+      "created with depth texture enabled",
+      *this);
+  texture.bind(TextureUnit::Depth);
   return *this;
 }
 

@@ -5,15 +5,21 @@
 // ------------ uniform ----------------------
 uniform highp vec2 FocalLength;
 uniform highp vec2 PrincipalPointOffset;
-uniform float Alpha;
-uniform float Xi;
+uniform highp float Alpha;
+uniform highp float Xi;
 
 #if defined(COLOR_TEXTURE)
 uniform samplerCube ColorTexture;
 #endif
 
+#if defined(DEPTH_TEXTURE)
+uniform samplerCube DepthTexture;
+#endif
+
 // ------------ output -----------------------
+#if defined(COLOR_TEXTURE)
 layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out vec4 fragmentColor;
+#endif
 
 void main(void) {
   vec3 m;
@@ -37,5 +43,8 @@ void main(void) {
 
 #if defined(COLOR_TEXTURE)
   fragmentColor = texture(ColorTexture, normalize(ray));
+#endif
+#if defined(DEPTH_TEXTURE)
+  gl_FragDepth = texture(DepthTexture, normalize(ray)).r;
 #endif
 }

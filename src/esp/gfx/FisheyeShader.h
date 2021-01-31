@@ -48,8 +48,10 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
      * cubemap color texture
      */
     ColorTexture = 1 << 0,
-    // TODO
-    // DepthTexture = 1 << 1,
+    /**
+     * cubemap depth texture
+     */
+    DepthTexture = 1 << 1,
     // ObjectIdTexture = 1 << 2,
   };
 
@@ -78,7 +80,10 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
       CORRADE_UNUSED Magnum::GL::CubeMapTexture& texture) {
     return *this;
   }
-  // virtual FisheyeShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
+  virtual FisheyeShader& bindDepthTexture(
+      CORRADE_UNUSED Magnum::GL::CubeMapTexture& texture) {
+    return *this;
+  }
   // virtual FisheyeShader& bindObjectIdTexture(Magnum::GL::Texture2D&
   // texture);
 

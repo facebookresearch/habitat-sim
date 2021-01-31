@@ -919,8 +919,9 @@ bool Simulator::visualizeObservation(int agentId,
   if (ag != nullptr) {
     sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
     if (sensor != nullptr) {
-      return std::static_pointer_cast<sensor::VisualSensor>(sensor)
+      std::static_pointer_cast<sensor::VisualSensor>(sensor)
           ->visualizeObservation(visualizer);
+      return true;
     }
   }
   return false;

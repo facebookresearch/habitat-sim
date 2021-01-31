@@ -33,14 +33,15 @@ class DepthVisualizerShader : public Magnum::GL::AbstractShaderProgram {
       const Magnum::Vector2& depthUnprojection);
 
   /**
-   * @brief Set the far parameters directly
+   * @brief Set the depth scaling to adjust overall intensity of the final
+   * visual result Note: the value should less than or equal to the far plane
    * @return Reference to self (for method chaining)
    */
-  DepthVisualizerShader& setFar(float far);
+  DepthVisualizerShader& setDepthScaling(float depthScaling);
 
  protected:
   GLint depthUnprojectionUniform_ = ID_UNDEFINED;
-  GLint farUniform_ = ID_UNDEFINED;
+  GLint depthScalingUniform_ = ID_UNDEFINED;
 };
 
 }  // namespace gfx

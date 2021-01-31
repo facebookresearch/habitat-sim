@@ -58,8 +58,8 @@ DepthVisualizerShader::DepthVisualizerShader() {
 
   depthUnprojectionUniform_ = uniformLocation("depthUnprojection");
   CORRADE_INTERNAL_ASSERT(depthUnprojectionUniform_ != ID_UNDEFINED);
-  farUniform_ = uniformLocation("far");
-  // CORRADE_INTERNAL_ASSERT(farUniform_ != ID_UNDEFINED);
+  depthScalingUniform_ = uniformLocation("depthScaling");
+  CORRADE_INTERNAL_ASSERT(depthScalingUniform_ != ID_UNDEFINED);
 }
 
 DepthVisualizerShader& DepthVisualizerShader::bindDepthTexture(
@@ -74,8 +74,9 @@ DepthVisualizerShader& DepthVisualizerShader::setDepthUnprojection(
   return *this;
 }
 
-DepthVisualizerShader& DepthVisualizerShader::setFar(float far) {
-  setUniform(farUniform_, far);
+DepthVisualizerShader& DepthVisualizerShader::setDepthScaling(
+    float depthScaling) {
+  setUniform(depthScalingUniform_, depthScaling);
   return *this;
 }
 
