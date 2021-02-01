@@ -37,15 +37,24 @@ class SensorInfoVisualizer {
    * @brief destructor
    */
   ~SensorInfoVisualizer(){};
-
+  /**
+   * @brief setup before drawing. e.g., recreate framebuffer when needed, bind
+   * buffer, clean color and depth buffer.
+   * @param[in] frambuffersize the size of the framebuffer
+   */
   void prepareToDraw(Magnum::Vector2i framebufferSize);
 
-  void draw();
-
+  /**
+   * @brief get correct shader, or create it when it does not exist
+   * class T must be a subclass of @ref Magnum::GL::AbstractShaderProgram
+   * @param type enum, the type of sensor info to be visualized
+   * @param args arguments required to initialize the requested shader
+   */
   template <typename T, typename... Targs>
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, T> getShader(
       SensorInfoType type,
       Targs&&... args);
+
   void draw(Magnum::ResourceKey shaderKey);
   void blitRgbaToDefault();
 
@@ -61,12 +70,17 @@ class SensorInfoVisualizer {
 
   Magnum::ResourceManager<Magnum::GL::AbstractShaderProgram> shaderManager_;
 
+  /**
+   * @brief compute the shader key based on the sensor info type
+   * @param type enum, the type of sensor info to be visualized
+   */
   Magnum::ResourceKey getShaderKey(SensorInfoType type);
 
   /**
    * @brief recreate the frame buffer and the render buffers,
    * attach renderbuffers (color, depth) as logical buffers of the
    * framebuffer object for visualization
+   * @param[in] frambuffersize the size of the framebuffer
    */
   void resetFramebufferRenderbuffer(Magnum::Vector2i framebufferSize);
 

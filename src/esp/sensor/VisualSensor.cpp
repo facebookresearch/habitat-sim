@@ -24,7 +24,8 @@ void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
   tgt_ = std::move(tgt);
 }
 
-void VisualSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer) {
+void VisualSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer,
+                                        float depthScaling) {
   auto sensorType = this->spec_->sensorType;
   CORRADE_ASSERT(
       sensorType == SensorType::Depth,
@@ -40,7 +41,7 @@ void VisualSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer) {
               gfx::SensorInfoType::Depth);
       shader->bindDepthTexture(renderTarget().getDepthTexture())
           .setDepthUnprojection(*depthUnprojection())
-          .setDepthScaling(50.0);
+          .setDepthScaling(depthScaling);
       // draw to the framebuffer
       visualizer.draw(shader.key());
     } break;

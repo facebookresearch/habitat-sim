@@ -114,8 +114,11 @@ class VisualSensor : public Sensor {
    * info) to the frame buffer using simulator's renderer
    * @param[in] sim Instance of Simulator class for which the observation needs
    *                to be drawn
+   * @param[in] depthScaling a scaling factor to adjust the intensity of the
+   * visualized result. It should *never* be larger than the 'far' plane value
    */
-  virtual void visualizeObservation(gfx::SensorInfoVisualizer& visualizer);
+  virtual void visualizeObservation(gfx::SensorInfoVisualizer& visualizer,
+                                    float depthScaling = 50.0f);
 
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;
