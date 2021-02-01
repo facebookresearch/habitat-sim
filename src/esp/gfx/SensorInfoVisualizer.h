@@ -65,7 +65,7 @@ class SensorInfoVisualizer {
   Magnum::GL::Renderbuffer colorBuffer_;
   Magnum::GL::Renderbuffer depthBuffer_;
 
-  // a big triangles that covers the whole screen
+  // a big triangle that covers the whole screen
   Magnum::GL::Mesh mesh_;
 
   Magnum::ResourceManager<Magnum::GL::AbstractShaderProgram> shaderManager_;
