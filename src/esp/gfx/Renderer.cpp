@@ -59,7 +59,8 @@ struct Renderer::Impl {
     auto depthUnprojection = sensor.depthUnprojection();
     if (!depthUnprojection) {
       throw std::runtime_error(
-          "Sensor does not have a depthUnprojection matrix");
+          "Renderer::Impl::bindRenderTarget(): Sensor does not have a "
+          "depthUnprojection matrix");
     }
 
     if (!depthShader_) {

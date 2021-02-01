@@ -32,6 +32,7 @@ class SemanticScene;
 }  // namespace scene
 namespace gfx {
 class Renderer;
+class SensorInfoVisualizer;
 namespace replay {
 class ReplayManager;
 }  // namespace replay
@@ -748,6 +749,21 @@ class Simulator {
    *                   be returned
    */
   bool drawObservation(int agentId, const std::string& sensorId);
+
+  /**
+   * @brief visualize the undisplayable observations such as depth, semantic, to
+   * the frame buffer stored in the @ref SensorInfoVisualizer
+   * Note: it will not display the observation on the default frame buffer
+   * @param agentId    Id of the agent for which the observation is to
+   *                   be returned
+   * @param sensorId   Id of the sensor for which the observation is to
+   *                   be returned
+   * @param visualizer an object of the helper class that provides and manages
+   * framebuffer, renderbuffer, shaders etc. necessary in the visualization
+   */
+  bool visualizeObservation(int agentId,
+                            const std::string& sensorId,
+                            gfx::SensorInfoVisualizer& visualizer);
 
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,

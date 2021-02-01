@@ -15,7 +15,8 @@
 namespace esp {
 namespace gfx {
 class RenderTarget;
-}
+class SensorInfoVisualizer;
+}  // namespace gfx
 
 namespace sensor {
 
@@ -107,6 +108,14 @@ class VisualSensor : public Sensor {
   virtual bool drawObservation(CORRADE_UNUSED sim::Simulator& sim) {
     return false;
   }
+
+  /**
+   * @brief visualize originally undisplayable info (such as depth, semantic
+   * info) to the frame buffer using simulator's renderer
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be drawn
+   */
+  virtual void visualizeObservation(gfx::SensorInfoVisualizer& visualizer);
 
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;

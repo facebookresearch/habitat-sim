@@ -27,6 +27,7 @@
 #include <Magnum/Timeline.h>
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/SensorInfoVisualizer.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/nav/PathFinder.h"
@@ -355,6 +356,9 @@ Key Commands:
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
 
+  bool depthMode_ = false;
+  esp::gfx::SensorInfoVisualizer sensorInfoVisualizer_;
+
   Mn::DebugTools::GLFrameProfiler profiler_{};
 };
 
@@ -529,6 +533,17 @@ Viewer::Viewer(const Arguments& arguments)
   agentConfig.sensorSpecifications[0]->sensorSubType =
       args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
                                  : esp::sensor::SensorSubType::Pinhole;
+
+  // add the depth sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::SensorSpec::create());
+  {
+    auto spec = agentConfig.sensorSpecifications.back().get();
+    spec->uuid = "depth";
+    spec->sensorType = esp::sensor::SensorType::Depth;
+    spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  }
 
   // add selects a random initial state and sets up the default controls and
   // step filter
@@ -875,8 +890,16 @@ void Viewer::drawEvent() {
     // reset timeSinceLastSimulation, accounting for potential overflow
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
-  uint32_t visibles = 0;
-  if (flyingCameraMode_) {
+
+  uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
+
+  if (depthMode_) {
+    simulator_->drawObservation(defaultAgentId_, "depth");
+    simulator_->visualizeObservation(defaultAgentId_, "depth",
+                                     sensorInfoVisualizer_);
+    sensorInfoVisualizer_.blitRgbaToDefault();
+  } else if (flyingCameraMode_) {
+    visibles = 0;
     Mn::GL::defaultFramebuffer.bind();
     for (auto& it : activeSceneGraph_->getDrawableGroups()) {
       esp::gfx::RenderCamera::Flags flags =
@@ -884,7 +907,7 @@ void Viewer::drawEvent() {
       visibles += renderCamera_->draw(it.second, flags);
     }
   } else {
-    // using polygon offset to increase mesh depth to a avoid z-fighting with
+    // using polygon offset to increase mesh depth to avoid z-fighting with
     // debug draw (since lines will not respond to offset).
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
     Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
@@ -931,9 +954,6 @@ void Viewer::drawEvent() {
       Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
     }
     sensorRenderTarget->blitRgbaToDefault();
-    // Immediately bind the main buffer back so that the "imgui" below can work
-    // properly
-    Mn::GL::defaultFramebuffer.bind();
   }
 
   // Do not include ImGui content drawing in per frame profiler measurements
@@ -950,6 +970,9 @@ void Viewer::drawEvent() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(1.5);
+    if (flyingCameraMode_) {
+      ImGui::Text("In flying Camera MODE. Press key '3' to EXIT.");
+    }
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
@@ -1216,6 +1239,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Six:
       // reset camera zoom
       getAgentCamera().resetZoom();
+      break;
+    case KeyEvent::Key::Seven:
+      depthMode_ = !depthMode_;
+      LOG(INFO) << "Depth sensor is " << (depthMode_ ? "ON" : "OFF");
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();

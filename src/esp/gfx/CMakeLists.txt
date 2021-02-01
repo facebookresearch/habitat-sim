@@ -39,6 +39,10 @@ set(
   PbrShader.h
   PbrDrawable.cpp
   PbrDrawable.h
+  DepthVisualizerShader.cpp
+  DepthVisualizerShader.h
+  SensorInfoVisualizer.cpp
+  SensorInfoVisualizer.h
 )
 
 # If ptex support is enabled add relevant source files

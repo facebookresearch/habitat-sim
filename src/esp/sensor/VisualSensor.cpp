@@ -6,7 +6,9 @@
 
 #include <utility>
 
+#include "esp/gfx/DepthVisualizerShader.h"
 #include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/SensorInfoVisualizer.h"
 
 namespace esp {
 namespace sensor {
@@ -20,6 +22,34 @@ void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
     throw std::runtime_error("RenderTarget is not the correct size");
 
   tgt_ = std::move(tgt);
+}
+
+void VisualSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer) {
+  auto sensorType = this->spec_->sensorType;
+  CORRADE_ASSERT(
+      sensorType == SensorType::Depth,
+      "CameraSensor::visualizeObservation: sensor type is not supported.", );
+
+  // prepare: setup and clear framebuffer
+  visualizer.prepareToDraw(framebufferSize());
+  switch (sensorType) {
+    case SensorType::Depth: {
+      // setup the shader
+      Mn::Resource<Mn::GL::AbstractShaderProgram, gfx::DepthVisualizerShader>
+          shader = visualizer.getShader<gfx::DepthVisualizerShader>(
+              gfx::SensorInfoType::Depth);
+      shader->bindDepthTexture(renderTarget().getDepthTexture())
+          .setDepthUnprojection(*depthUnprojection())
+          .setDepthScaling(50.0);
+      // draw to the framebuffer
+      visualizer.draw(shader.key());
+    } break;
+
+    default:
+      // Have to had this default, otherwise the clang-tidy will be pissed off,
+      // and will not let me pass
+      break;
+  }
 }
 
 }  // namespace sensor

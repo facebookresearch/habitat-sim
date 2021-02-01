@@ -833,7 +833,7 @@ agent::Agent::ptr Simulator::addAgent(
   sampleRandomAgentState(state);
   ag->setInitialState(state);
 
-  // Add a RenderTarget to each of the agent's sensors
+  // Add a RenderTarget to each of the agent's visual sensors
   for (auto& it : ag->getSensorSuite().getSensors()) {
     if (it.second->isVisualSensor()) {
       auto sensor = static_cast<sensor::VisualSensor*>(it.second.get());
@@ -906,6 +906,22 @@ bool Simulator::drawObservation(const int agentId,
     if (sensor != nullptr) {
       return std::static_pointer_cast<sensor::VisualSensor>(sensor)
           ->drawObservation(*this);
+    }
+  }
+  return false;
+}
+
+bool Simulator::visualizeObservation(int agentId,
+                                     const std::string& sensorId,
+                                     gfx::SensorInfoVisualizer& visualizer) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr) {
+      std::static_pointer_cast<sensor::VisualSensor>(sensor)
+          ->visualizeObservation(visualizer);
+      return true;
     }
   }
   return false;
