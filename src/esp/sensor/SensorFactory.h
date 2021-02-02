@@ -5,12 +5,8 @@
 namespace esp {
 class SensorFactory {
  public:
-  virtual ~SensorFactory();
   static sensor::SensorSuite createSensors(
       scene::SceneNode& node,
       const sensor::SensorSetup& sensorSetup);
-
- private:
-  ESP_SMART_POINTERS(SensorFactory)
 };
 }  // namespace esp

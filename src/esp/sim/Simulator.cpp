@@ -26,8 +26,8 @@
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
-#include "esp/sensor/VisualSensor.h"
 #include "esp/sensor/SensorFactory.h"
+#include "esp/sensor/VisualSensor.h"
 
 namespace Cr = Corrade;
 
@@ -828,7 +828,8 @@ agent::Agent::ptr Simulator::addAgent(
   // constructor of Agent)
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
-  ag->setSensorSuite(SensorFactory::createSensors(agentNode, agentConfig.sensorSpecifications));
+  ag->setSensorSuite(SensorFactory::createSensors(
+      agentNode, agentConfig.sensorSpecifications));
 
   agent::AgentState state;
   sampleRandomAgentState(state);
