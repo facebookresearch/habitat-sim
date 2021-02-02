@@ -13,8 +13,6 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
 output_path = os.path.join(dir_path, "physics_benchmarking_output/")
 
-save_index = 0
-
 
 # Define Helper Functions (Taken from rigid_object_tutorial.py)
 
@@ -210,7 +208,7 @@ benchmarks = {
                 "test_assets/objects/donut",
                 "test_assets/objects/nested_box",
             ],
-            20,
+            200,
             2,
             1.8,
             10,
@@ -340,7 +338,7 @@ if __name__ == "__main__":
     )
 
     parser.set_defaults(show_video=True, make_video=True, save_log=False)
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
     if not os.path.exists(output_path):
         os.mkdir(output_path)
