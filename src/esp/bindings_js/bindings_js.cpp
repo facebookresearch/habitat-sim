@@ -51,6 +51,20 @@ std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
   return spaces;
 }
 
+template <class T, typename... Targs>
+static inline auto create(Targs&&... args) {
+  return std::make_shared<T>(std::forward<Targs>(args)...);
+}
+
+Magnum::Quaternion Quaternion_fromVec4f(const vec4f& rot) {
+  return Magnum::Quaternion(quatf(rot)).normalized();
+}
+
+Magnum::Quaternion Quaternion_mul(const Magnum::Quaternion& q1,
+                                  const Magnum::Quaternion& q2) {
+  return q1 * q2;
+}
+
 Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
   Observation ret;
   if (CameraSensor * camera{dynamic_cast<CameraSensor*>(&sensor)})
@@ -66,6 +80,11 @@ void Sensor_setLocalTransform(Sensor& sensor,
   node.resetTransformation();
   node.translate(Magnum::Vector3(pos));
   node.setRotation(Magnum::Quaternion(quatf(rot)).normalized());
+}
+
+void Agent_setRotation(Agent& agent, const Magnum::Quaternion& rot) {
+  SceneNode& node{agent.node()};
+  node.setRotation(rot);
 }
 
 vec3f quaternionToEuler(const quatf& q) {
@@ -130,6 +149,31 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
+
+  em::class_<Magnum::Rad>("Rad").constructor<float>();
+
+  em::class_<Magnum::Matrix4>("Matrix4").smart_ptr_constructor(
+      "Matrix4", &create<Magnum::Matrix4>);
+
+  em::class_<Magnum::Vector3>("Vector3")
+      .constructor<Magnum::Vector3>()
+      .constructor<float, float, float>()
+      .function("x", em::select_overload<float&()>(&Magnum::Vector3::x))
+      .function("y", em::select_overload<float&()>(&Magnum::Vector3::y))
+      .function("z", em::select_overload<float&()>(&Magnum::Vector3::z))
+      .class_function("xAxis", &Magnum::Vector3::xAxis)
+      .class_function("yAxis", &Magnum::Vector3::yAxis)
+      .class_function("zAxis", &Magnum::Vector3::zAxis);
+
+  em::class_<Magnum::Quaternion>("Quaternion")
+      .constructor<Magnum::Vector3, float>()
+      .constructor<Magnum::Vector3>()
+      .function("normalized", &Magnum::Quaternion::normalized)
+      .function("inverted", &Magnum::Quaternion::inverted)
+      .function("transformVector", &Magnum::Quaternion::transformVector)
+      .function("mul", &Quaternion_mul)
+      .class_function("fromVec4f", &Quaternion_fromVec4f)
+      .class_function("rotation", &Magnum::Quaternion::rotation);
 
   em::class_<AgentConfiguration>("AgentConfiguration")
       .smart_ptr_constructor("AgentConfiguration",
@@ -231,6 +275,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                                    &Agent::getSensorSuite))
       .function("getState", &Agent::getState)
       .function("setState", &Agent::setState)
+      .function("setRotation", &Agent_setRotation)
       .function("hasAction", &Agent::hasAction)
       .function("act", &Agent::act);
 
