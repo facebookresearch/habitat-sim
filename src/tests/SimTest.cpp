@@ -104,10 +104,12 @@ struct SimTest : Cr::TestSuite::Tester {
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
-  LightSetup lightSetup1{{Magnum::Vector4{0.0f, 1.5f, -0.2f, 0.0f},
-                          0xffffff_rgbf, LightPositionModel::CAMERA}};
+  LightSetup lightSetup1{{Magnum::Vector4{1.0f, 1.5f, 0.5f, 0.0f},
+                          {5.0, 5.0, 0.0},
+                          LightPositionModel::CAMERA}};
   LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
-                          0xffffff_rgbf, LightPositionModel::CAMERA}};
+                          {0.0, 5.0, 5.0},
+                          LightPositionModel::CAMERA}};
 };
 
 SimTest::SimTest() {
@@ -234,9 +236,6 @@ void SimTest::getSceneWithLightingRGBAObservation() {
       << "Starting Test : getSceneWithLightingRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh, "custom_lighting_1");
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
 }
@@ -252,9 +251,6 @@ void SimTest::getDefaultLightingRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 }
@@ -271,9 +267,6 @@ void SimTest::getCustomLightingRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 }
@@ -290,9 +283,6 @@ void SimTest::updateLightSetupRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -325,9 +315,6 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -345,9 +332,6 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
 void SimTest::multipleLightingSetupsRGBAObservation() {
   Corrade::Utility::Debug()
       << "Starting Test : multipleLightingSetupsRGBAObservation ";
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   auto simulator = getSimulator(planeStage);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
