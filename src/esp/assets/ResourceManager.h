@@ -91,6 +91,8 @@ class ResourceManager {
     // VHACDParameters();
   };
 
+  VHACD::IVHACD* interfaceVHACD;
+
   /**
    * @brief Flag
    *
@@ -344,6 +346,14 @@ class ResourceManager {
                             std::vector<float>& points,
                             std::vector<uint32_t>& triangles);
 
+  /**
+   * @brief Runs convex hull decomposition on a specified file.
+   *
+   * @param filename The MeshMetaData filename to be converted.
+   */
+  void convexHullDecomposition(
+      const std::string& filename,
+      const VHACDParameters& params = VHACDParameters());
   /**
    * @brief Add an object from a specified object template handle to the
    * specified @ref DrawableGroup as a child of the specified @ref

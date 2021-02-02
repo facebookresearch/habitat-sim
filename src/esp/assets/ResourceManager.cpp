@@ -90,7 +90,7 @@ ResourceManager::ResourceManager(
       importerManager_("nonexistent")
 #endif
 {
-
+  interfaceVHACD = VHACD::CreateVHACD();
   initDefaultLightSetups();
   initDefaultMaterials();
   buildImporters();
@@ -2193,8 +2193,6 @@ void ResourceManager::getPrimitiveMeshData(const std::string& filename,
   joinedMesh = createJoinedCollisionMesh(filename);
 
   // Format into VHACD compatible vectors
-  // *** will go out of scope, fix later
-
   for (vec3f point : joinedMesh->vbo) {
     points.push_back(point[0]);
     points.push_back(point[1]);
@@ -2204,27 +2202,63 @@ void ResourceManager::getPrimitiveMeshData(const std::string& filename,
   for (uint32_t index : joinedMesh->ibo) {
     triangles.push_back(index);
   }
+}
 
-  // TODO: Remove
-  // Testing on VHACD
-  ResourceManager::VHACDParameters paramsVHACD;
-  // VHACD::IVHACD::Parameters paramsVHACD =
-  //    VHACD::IVHACD::Parameters();  // create struct for parameters within
-  // ResourceManager, ensures values are valid
-  // (resolution > 0, etc) & throws error if
-  // invalid
-  // ^ will be exposed to python.
-  VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
+void ResourceManager::convexHullDecomposition(const std::string& filename,
+                                              const VHACDParameters& params) {
+  // fill points and triangles with mesh data
+  std::vector<float> points = std::vector<float>();
+  std::vector<uint32_t> triangles = std::vector<uint32_t>();
+  getPrimitiveMeshData(filename, points, triangles);
+
+  // use VHACD
   bool res =
       interfaceVHACD->Compute(&points[0], (unsigned int)points.size() / 3,
                               (const uint32_t*)&triangles[0],
-                              (unsigned int)triangles.size() / 3, paramsVHACD);
+                              (unsigned int)triangles.size() / 3, params);
+
+  // convert convex hulls into MeshDatas
+  std::vector<std::unique_ptr<MeshData>> convexHulls =
+      std::vector<std::unique_ptr<MeshData>>();
+
   int nConvexHulls = interfaceVHACD->GetNConvexHulls();
   VHACD::IVHACD::ConvexHull ch;
   for (unsigned int p = 0; p < nConvexHulls; ++p) {
+    // for each convex hull, transfer the data to a newly created MeshData
     interfaceVHACD->GetConvexHull(p, ch);
-    std::cout << "CONVEX HULL NUMBER OF POINTS: " << ch.m_nPoints << std::endl;
+    std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
+
+    for (int i = 0; i < ch.m_nPoints / 3; i++) {
+      vec3f point = vec3f(ch.m_points[i * 3], ch.m_points[i * 3 + 1],
+                          ch.m_points[i * 3 + 2]);
+      mesh->vbo.push_back(point);
+    }
+
+    for (int i = 0; i < ch.m_nTriangles; i++) {
+      mesh->ibo.push_back(ch.m_triangles[i]);
+    }
+    convexHulls.push_back(std::make_unique<MeshData>());
+    convexHulls[p] = std::move(mesh);
   }
+
+  // Register each MeshData as a BaseMesh and register in meshes_ (** how to do
+  // this?), keeping track of ID range [start, end].
+  int start = nextMeshID_;
+  int end = nextMeshID_ + nConvexHulls - 1;
+  for (unsigned int p = 0; p < nConvexHulls; ++p) {
+  }
+
+  int index = nextMeshID_++;
+
+  // Create MeshMetaData based off this, register in resourceDict_
+  /*
+  MeshMetaData convexHullSetMesh;
+  convexHullSetMesh.meshIndex = std::make_pair(start,end);
+  LoadedAssetData convexHullSetData;
+  convexHullSetData.meshMetaData = convexHullSetMesh;
+  std::string identifier = filename + "CHD"; // ?? what to name this?
+  resourceDict_.emplace(identifier, convexHullSetData);
+  */
 }
 
 }  // namespace assets

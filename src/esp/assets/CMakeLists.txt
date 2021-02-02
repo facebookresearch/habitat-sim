@@ -81,6 +81,8 @@ target_link_libraries(
   PRIVATE geo io vhacd
 )
 
+# target_include_directories(vhacd PUBLIC "${DEPS_DIR}/v-hacd/src/VHACD_Lib/public")
+
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(
     assets PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
