@@ -47,7 +47,7 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
     gt = np.load(gt_obs_file)
 
     if gpu2gpu:
-        import torch
+        torch = pytest.importorskip("torch")
 
         for k, v in obs.items():
             if torch.is_tensor(v):

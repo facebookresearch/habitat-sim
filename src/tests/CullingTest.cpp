@@ -36,9 +36,18 @@ namespace Test {
 namespace {
 struct CullingTest : Cr::TestSuite::Tester {
   explicit CullingTest();
+
+  // init, returns ref to scene graph
+  int setupTests();
+
   // tests
   void computeAbsoluteAABB();
   void frustumCulling();
+
+ protected:
+  esp::gfx::WindowlessContext::uptr context_ = nullptr;
+  std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
+  SceneManager::uptr sceneManager_ = nullptr;
 };
 
 CullingTest::CullingTest() {
@@ -48,28 +57,38 @@ CullingTest::CullingTest() {
   // clang-format on
 }
 
-void CullingTest::computeAbsoluteAABB() {
-  // must create a GL context which will be used in the resource manager
-  esp::gfx::WindowlessContext::uptr context_ =
-      esp::gfx::WindowlessContext::create_unique(0);
-
+int CullingTest::setupTests() {
+  // set up a default simulation config to initialize MM
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  auto MM = MetadataMediator::create(cfg);
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
-  ResourceManager resourceManager(MM);
-  SceneManager sceneManager;
+  if (!resourceManager_) {
+    resourceManager_ = std::make_unique<ResourceManager>(MM);
+  }
+  if (!sceneManager_) {
+    sceneManager_ = SceneManager::create_unique();
+  }
+  if (!context_) {
+    context_ = esp::gfx::WindowlessContext::create_unique(0);
+  }
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
   auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
+  int sceneID = sceneManager_->initSceneGraph();
 
-  int sceneID = sceneManager.initSceneGraph();
-  auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
-  auto& drawables = sceneGraph.getDrawables();
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadStage(stageAttributes, nullptr,
-                                          &sceneManager, tempIDs, false);
+  bool result = resourceManager_->loadStage(
+      stageAttributes, nullptr, sceneManager_.get(), tempIDs, false);
   CORRADE_VERIFY(result);
+  return sceneID;
+}
+
+void CullingTest::computeAbsoluteAABB() {
+  int sceneID = setupTests();
+  auto& sceneGraph = sceneManager_->getSceneGraph(sceneID);
+  auto& drawables = sceneGraph.getDrawables();
 
   std::vector<Mn::Range3D> aabbs;
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
@@ -123,35 +142,16 @@ void CullingTest::computeAbsoluteAABB() {
 }
 
 void CullingTest::frustumCulling() {
-  // must create a GL context which will be used in the resource manager
-  esp::gfx::WindowlessContext::uptr context_ =
-      esp::gfx::WindowlessContext::create_unique(0);
-
-  // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
-  ResourceManager resourceManager(MM);
-  SceneManager sceneManager;
-  auto stageAttributesMgr = MM->getStageAttributesManager();
-  std::string stageFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
-  // create scene attributes file
-  auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
-
-  // load the scene
-  int sceneID = sceneManager.initSceneGraph();
-
-  auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
+  int sceneID = setupTests();
+  auto& sceneGraph = sceneManager_->getSceneGraph(sceneID);
   // esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
-  // const esp::assets::AssetInfo info =
-  //     esp::assets::AssetInfo::fromPath(stageFile);
 
-  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadStage(stageAttributes, nullptr,
-                                          &sceneManager, tempIDs, false);
-  CORRADE_VERIFY(result);
   // set the camera
-  esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
+  esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
+  esp::scene::SceneNode cameraNode = agentNode.createChild();
+  esp::gfx::RenderCamera& renderCamera =
+      *(new esp::gfx::RenderCamera(cameraNode));
 
   // The camera to be set:
   // pos: {7.3589f, -6.9258f,4.9583f}
@@ -171,8 +171,6 @@ void CullingTest::frustumCulling() {
                                    100.0f,               // zfar
                                    39.6_degf);           // hfov
 
-  esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
-  esp::scene::SceneNode cameraNode = agentNode.createChild();
   cameraNode.translate({7.3589f, -6.9258f, 4.9583f});
   const Mn::Vector3 axis{0.773, 0.334, 0.539};
   cameraNode.rotate(Mn::Math::Deg<float>(77.4f), axis.normalized());

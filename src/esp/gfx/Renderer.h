@@ -42,12 +42,6 @@ class Renderer {
    */
   void bindRenderTarget(sensor::VisualSensor& sensor);
 
-  // draw the scene graph with the default camera in scene graph
-  // user needs to set the default camera so that it has correct
-  // modelview matrix, projection matrix to render the scene
-  // See setDefaultRenderCamera(...) in SceneGraph for more details
-  // void draw(scene::SceneGraph& sceneGraph);
-
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(Renderer)
 };
 

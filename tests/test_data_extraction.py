@@ -2,6 +2,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import pytest
+
+# skip all tests if torch not installed
+torch = pytest.importorskip("torch")
 from torch import nn as nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset

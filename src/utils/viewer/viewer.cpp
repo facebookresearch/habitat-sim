@@ -536,16 +536,30 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Set up camera
   activeSceneGraph_ = &simulator_->getActiveSceneGraph();
-  renderCamera_ = &activeSceneGraph_->getDefaultRenderCamera();
-  renderCamera_->setAspectRatioPolicy(
-      Mn::SceneGraph::AspectRatioPolicy::Extend);
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
+  renderCamera_ = getAgentCamera().getRenderCamera();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
-  // Set up per frame profiler
+  /**
+   * Set up per frame profiler to be aware of bottlenecking in processing data
+   * Interpretation: CpuDuration should be less than GpuDuration to avoid GPU
+   * idling, and CpuDuration and GpuDuration should be roughly equal for faster
+   * rendering times
+   *
+   * FrameTime: (Units::Nanoseconds) Time to render per frame, 1/FPS
+   *
+   * CpuDuration: (Units::Nanoseconds) CPU time spent processing events,
+   * physics, traversing SceneGraph, and submitting data to GPU/drivers per
+   * frame
+   *
+   * GpuDuration: (Units::Nanoseconds) Measures how much time it takes for the
+   * GPU to process all work submitted by CPU Uses asynchronous querying to
+   * measure the amount of time to fully complete a set of GL commands without
+   * stalling rendering
+   */
   Mn::DebugTools::GLFrameProfiler::Values profilerValues =
       Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
       Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
@@ -557,11 +571,17 @@ Viewer::Viewer(const Arguments& arguments)
           .isExtensionSupported<
               Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
     profilerValues |=
-        Mn::DebugTools::GLFrameProfiler::Value::VertexFetchRatio |
-        Mn::DebugTools::GLFrameProfiler::Value::PrimitiveClipRatio;
+        Mn::DebugTools::GLFrameProfiler::Value::
+            VertexFetchRatio |  // Ratio of vertex shader invocations to count
+                                // of vertices submitted
+        Mn::DebugTools::GLFrameProfiler::Value::
+            PrimitiveClipRatio;  // Ratio of primitives discarded by the
+                                 // clipping stage to count of primitives
+                                 // submitted
   }
 #endif
 
+  // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
 
   printHelpText();
@@ -825,7 +845,10 @@ void Viewer::wiggleLastObject() {
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
+  // Wrap profiler measurements around all methods to render images from
+  // RenderCamera
   profiler_.beginFrame();
+
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
@@ -911,7 +934,9 @@ void Viewer::drawEvent() {
     Mn::GL::defaultFramebuffer.bind();
   }
 
+  // Do not include ImGui content drawing in per frame profiler measurements
   profiler_.endFrame();
+
   // Immediately bind the main buffer back so that the "imgui" below can work
   // properly
   Mn::GL::defaultFramebuffer.bind();
@@ -1011,14 +1036,16 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
     if (visualSensor != nullptr) {
-      visualSensor->specification()->resolution = {event.windowSize()[1],
-                                                   event.windowSize()[0]};
+      visualSensor->specification()->resolution = {event.framebufferSize()[1],
+                                                   event.framebufferSize()[0]};
+      renderCamera_->setViewport(visualSensor->framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
     }
   }
-  Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
+  Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
+
   if (flyingCameraMode_) {
-    renderCamera_->setViewport(event.windowSize());
+    renderCamera_->setViewport(event.framebufferSize());
   }
 
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
@@ -1115,7 +1142,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
   float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
   auto& cam = getAgentCamera();
-  cam.modZoom(mod);
+  cam.modifyZoom(mod);
   redraw();
 
   event.setAccepted();
