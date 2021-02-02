@@ -133,21 +133,16 @@ def box_drop_test(
 
         # load some object templates from configuration files
         object_ids = []
-        scales = {
-            "test_assets/objects/sphere": 1,
-            "test_assets/objects/chair": 0.9,
-            "test_assets/objects/donut": 2,
-            "test_assets/objects/nested_box": 0.5,
-        }
-        for obj_path in objects:
+        for obj in objects:
+            obj_path = obj["path"]
             object_ids += [
                 obj_templates_mgr.load_configs(str(os.path.join(data_path, obj_path)))[
                     0
                 ]
             ]
             obj_template = obj_templates_mgr.get_template_by_ID(object_ids[-1])
-            if obj_path in scales.keys():
-                obj_template.scale *= scales[obj_path]
+            if "scale" in obj.keys():
+                obj_template.scale *= obj["scale"]
             obj_templates_mgr.register_template(obj_template)
 
         # throw objects into box
@@ -161,13 +156,11 @@ def box_drop_test(
 
             # set object position and velocity
             sim.set_translation(np.multiply(np.array([1.50, 2, 1.2]), box_size), cur_id)
-            initial_linear_velocity = mn.Vector3(1, 0, -1)
-            initial_linear_velocity = (
-                initial_linear_velocity.normalized() * object_speed * box_size
+            sim.set_linear_velocity(
+                mn.Vector3(1, 0, -1).normalized() * object_speed * box_size, cur_id
             )
-            sim.set_linear_velocity(initial_linear_velocity, cur_id)
 
-            # simulate half a second, then add next object
+            # simulate a short amount of time, then add next object
             simulate(sim, dt=time_til_next_obj, get_frames=args.make_video, data=data)
 
         simulate(
@@ -184,14 +177,17 @@ benchmarks = {
     "box_drop_test_1": {
         "description": "Drop 25 spheres into a box.",
         "test": lambda: box_drop_test(
-            args, ["test_assets/objects/sphere"], 25, 2, 1.8, 10
+            args, [{"path": "test_assets/objects/sphere", "scale": 1}], 25, 2, 1.8, 10
         ),
     },
     "box_drop_test_2": {
         "description": "Drop 25 spheres and 25 chairs into a box.",
         "test": lambda: box_drop_test(
             args,
-            ["test_assets/objects/sphere", "test_assets/objects/chair"],
+            [
+                {"path": "test_assets/objects/sphere", "scale": 1},
+                {"path": "test_assets/objects/chair", "scale": 0.9},
+            ],
             50,
             2,
             1.8,
@@ -203,10 +199,10 @@ benchmarks = {
         "test": lambda: box_drop_test(
             args,
             [
-                "test_assets/objects/sphere",
-                "test_assets/objects/chair",
-                "test_assets/objects/donut",
-                "test_assets/objects/nested_box",
+                {"path": "test_assets/objects/sphere", "scale": 1},
+                {"path": "test_assets/objects/chair", "scale": 0.9},
+                {"path": "test_assets/objects/donut", "scale": 2},
+                {"path": "test_assets/objects/nested_box", "scale": 0.5},
             ],
             200,
             2,
