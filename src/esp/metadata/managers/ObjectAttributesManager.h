@@ -17,10 +17,11 @@ namespace managers {
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
-    : public AbstractObjectAttributesManager<attributes::ObjectAttributes> {
+    : public AbstractObjectAttributesManager<attributes::ObjectAttributes,
+                                             true> {
  public:
   ObjectAttributesManager()
-      : AbstractObjectAttributesManager<attributes::ObjectAttributes>::
+      : AbstractObjectAttributesManager<attributes::ObjectAttributes, true>::
             AbstractObjectAttributesManager(
                 "Object",
                 "object_config.json") {  // was phys_properties.json

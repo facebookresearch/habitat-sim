@@ -47,10 +47,10 @@ namespace managers {
  * @param classStrPrefix string prefix for python class name specification.
  */
 
-template <class T>
+template <class T, bool AccessViaCopies>
 void declareBaseAttributesManager(py::module& m,
                                   const std::string& classStrPrefix) {
-  using MgrClass = AttributesManager<T>;
+  using MgrClass = AttributesManager<T, AccessViaCopies>;
   using AttribsPtr = std::shared_ptr<T>;
   // Most, but not all, of these methods are from ManagedContainer class
   // template.  However, we use AttributesManager as the base class because we
@@ -191,9 +191,10 @@ void initAttributesManagersBindings(py::module& m) {
       .value("END_PRIM_OBJ_TYPE", metadata::PrimObjTypes::END_PRIM_OBJ_TYPES);
 
   // ==== Primitive Asset Attributes Template manager ====
-  declareBaseAttributesManager<AbstractPrimitiveAttributes>(m, "BaseAsset");
+  declareBaseAttributesManager<AbstractPrimitiveAttributes, true>(m,
+                                                                  "BaseAsset");
   py::class_<AssetAttributesManager,
-             AttributesManager<AbstractPrimitiveAttributes>,
+             AttributesManager<AbstractPrimitiveAttributes, true>,
              AssetAttributesManager::ptr>(m, "AssetAttributesManager")
       // AssetAttributesMangaer-specific bindings
       // return appropriately cast capsule templates
@@ -273,16 +274,17 @@ void initAttributesManagersBindings(py::module& m) {
            "handle"_a);
 
   // ==== Light Layout Attributes Template manager ====
-  declareBaseAttributesManager<LightLayoutAttributes>(m, "BaseLightLayout");
+  declareBaseAttributesManager<LightLayoutAttributes, true>(m,
+                                                            "BaseLightLayout");
   // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<LightLayoutAttributesManager,
-             AttributesManager<LightLayoutAttributes>,
+             AttributesManager<LightLayoutAttributes, true>,
              LightLayoutAttributesManager::ptr>(m,
                                                 "LightLayoutAttributesManager");
   // ==== Object Attributes Template manager ====
-  declareBaseAttributesManager<ObjectAttributes>(m, "BaseObject");
+  declareBaseAttributesManager<ObjectAttributes, true>(m, "BaseObject");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<ObjectAttributesManager, AttributesManager<ObjectAttributes>,
+  py::class_<ObjectAttributesManager, AttributesManager<ObjectAttributes, true>,
              ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
 
       // ObjectAttributesManager-specific bindings
@@ -334,17 +336,18 @@ void initAttributesManagersBindings(py::module& m) {
           template chosen from the existing templates being managed.)");
 
   // ==== Stage Attributes Template manager ====
-  declareBaseAttributesManager<StageAttributes>(m, "BaseStage");
+  declareBaseAttributesManager<StageAttributes, true>(m, "BaseStage");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<StageAttributesManager, AttributesManager<StageAttributes>,
+  py::class_<StageAttributesManager, AttributesManager<StageAttributes, true>,
              StageAttributesManager::ptr>(m, "StageAttributesManager");
 
   // ==== Physics World/Manager Template manager ====
 
-  declareBaseAttributesManager<PhysicsManagerAttributes>(m, "BasePhysics");
+  declareBaseAttributesManager<PhysicsManagerAttributes, true>(m,
+                                                               "BasePhysics");
   // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<PhysicsAttributesManager,
-             AttributesManager<PhysicsManagerAttributes>,
+             AttributesManager<PhysicsManagerAttributes, true>,
              PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
 
 }  // initAttributesManagersBindings

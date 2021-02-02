@@ -17,7 +17,8 @@ enum class AssetType;
 namespace metadata {
 namespace managers {
 class StageAttributesManager
-    : public AbstractObjectAttributesManager<attributes::StageAttributes> {
+    : public AbstractObjectAttributesManager<attributes::StageAttributes,
+                                             true> {
  public:
   StageAttributesManager(
       ObjectAttributesManager::ptr objectAttributesMgr,

@@ -43,10 +43,10 @@ enum class SceneInstanceTranslationOrigin {
 };
 
 class SceneAttributesManager
-    : public AttributesManager<attributes::SceneAttributes> {
+    : public AttributesManager<attributes::SceneAttributes, true> {
  public:
   SceneAttributesManager()
-      : AttributesManager<attributes::SceneAttributes>::AttributesManager(
+      : AttributesManager<attributes::SceneAttributes, true>::AttributesManager(
             "Scene Instance",
             "scene_instance.json") {
     buildCtorFuncPtrMaps();

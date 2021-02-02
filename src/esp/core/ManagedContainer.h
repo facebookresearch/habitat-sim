@@ -20,8 +20,11 @@ namespace core {
  * @tparam T the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
  * esp::core::AbstractManagedObject.
+ * @tparam AccessViaCopies Whether the default access (getters) for this
+ * container provides copies of the objects held, or the actual objects
+ * themselves.
  */
-template <class T>
+template <class T, bool AccessViaCopies>
 class ManagedContainer : public ManagedContainerBase {
  public:
   static_assert(std::is_base_of<AbstractManagedObject, T>::value,
@@ -336,7 +339,11 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
-    return this->copyObject(orig);
+    if (AccessViaCopies) {
+      return this->copyObject(orig);
+    } else {
+      return orig;
+    }
   }  // ManagedContainer::getObjectCopyByID
 
   /**
@@ -353,7 +360,11 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
-    return this->copyObject(orig);
+    if (AccessViaCopies) {
+      return this->copyObject(orig);
+    } else {
+      return orig;
+    }
   }  // ManagedContainer::getObjectCopyByHandle
 
   /**
@@ -488,7 +499,7 @@ class ManagedContainer : public ManagedContainerBase {
       return getObjectInternal<T>(objectHandle)->getID();
     } else {
       if (!getNext) {
-        LOG(ERROR) << "ManagedContainerBase::getObjectIDByHandleOrNew : No "
+        LOG(ERROR) << "ManagedContainer::getObjectIDByHandleOrNew : No "
                    << objectType_ << " managed object with handle "
                    << objectHandle << "exists. Aborting";
         return ID_UNDEFINED;
@@ -554,7 +565,7 @@ class ManagedContainer : public ManagedContainerBase {
     if (defaultObj_ == nullptr) {
       return nullptr;
     }
-    ManagedPtr res = this->copyObject(defaultObj_);
+    ManagedPtr res = copyObject(defaultObj_);
     if (nullptr != res) {
       res->setHandle(newHandle);
     }
@@ -595,7 +606,8 @@ class ManagedContainer : public ManagedContainerBase {
    * createObjectCopy keyed by string names of classes being instanced,
    */
   typedef std::map<std::string,
-                   ManagedPtr (ManagedContainer<T>::*)(ManagedPtr&)>
+                   ManagedPtr (ManagedContainer<T, AccessViaCopies>::*)(
+                       ManagedPtr&)>
       Map_Of_CopyCtors;
 
   /**
@@ -612,17 +624,17 @@ class ManagedContainer : public ManagedContainerBase {
   ManagedPtr defaultObj_ = nullptr;
 
  public:
-  ESP_SMART_POINTERS(ManagedContainer<T>)
+  ESP_SMART_POINTERS(ManagedContainer<T, AccessViaCopies>);
 
 };  // class ManagedContainer
 
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T>
-auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
-                                                   bool contains)
-    -> std::vector<ManagedPtr> {
+template <class T, bool AccessViaCopies>
+auto ManagedContainer<T, AccessViaCopies>::removeObjectsBySubstring(
+    const std::string& subStr,
+    bool contains) -> std::vector<ManagedPtr> {
   std::vector<ManagedPtr> res;
   // get all handles that match query elements first
   std::vector<std::string> handles =
@@ -635,12 +647,12 @@ auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
     }
   }
   return res;
-}  // ManagedContainer<T>::removeObjectsBySubstring
+}  // ManagedContainer<T, AccessViaCopies>::removeObjectsBySubstring
 
-template <class T>
-auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
-                                               const std::string& sourceStr)
-    -> ManagedPtr {
+template <class T, bool AccessViaCopies>
+auto ManagedContainer<T, AccessViaCopies>::removeObjectInternal(
+    const std::string& objectHandle,
+    const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
     LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
               << " managed object " << objectHandle << " : Does not exist.";

@@ -27,8 +27,9 @@ namespace managers {
  * of this class works with.  Must inherit from @ref
  * esp::metadata::attributes::AbstractObjectAttributes.
  */
-template <class T>
-class AbstractObjectAttributesManager : public AttributesManager<T> {
+template <class T, bool AccessViaCopies>
+class AbstractObjectAttributesManager
+    : public AttributesManager<T, AccessViaCopies> {
  public:
   static_assert(std::is_base_of<attributes::AbstractObjectAttributes, T>::value,
                 "AbstractObjectAttributesManager :: Managed object type must "
@@ -38,7 +39,8 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
 
   AbstractObjectAttributesManager(const std::string& attrType,
                                   const std::string& JSONTypeExt)
-      : AttributesManager<T>::AttributesManager(attrType, JSONTypeExt) {}
+      : AttributesManager<T, AccessViaCopies>::AttributesManager(attrType,
+                                                                 JSONTypeExt) {}
   virtual ~AbstractObjectAttributesManager() = default;
 
   /**
@@ -152,15 +154,15 @@ class AbstractObjectAttributesManager : public AttributesManager<T> {
   // ======== Typedefs and Instance Variables ========
 
  public:
-  ESP_SMART_POINTERS(AbstractObjectAttributesManager<AbsObjAttrPtr>)
+  ESP_SMART_POINTERS(AbstractObjectAttributesManager<T, AccessViaCopies>);
 
 };  // class AbstractObjectAttributesManager<T>
 
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T>
-auto AbstractObjectAttributesManager<T>::createObject(
+template <class T, bool AccessViaCopies>
+auto AbstractObjectAttributesManager<T, AccessViaCopies>::createObject(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) -> AbsObjAttrPtr {
   AbsObjAttrPtr attrs;
@@ -192,10 +194,11 @@ auto AbstractObjectAttributesManager<T>::createObject(
 
 }  // AbstractObjectAttributesManager<T>::createObject
 
-template <class T>
-auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
-    AbsObjAttrPtr attributes,
-    const io::JsonGenericValue& jsonDoc) -> AbsObjAttrPtr {
+template <class T, bool AccessViaCopies>
+auto AbstractObjectAttributesManager<T, AccessViaCopies>::
+    loadAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
+                                         const io::JsonGenericValue& jsonDoc)
+        -> AbsObjAttrPtr {
   using std::placeholders::_1;
 
   // scale
@@ -276,8 +279,9 @@ auto AbstractObjectAttributesManager<T>::loadAbstractObjectAttributesFromJson(
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
 
-template <class T>
-std::string AbstractObjectAttributesManager<T>::setJSONAssetHandleAndType(
+template <class T, bool AccessViaCopies>
+std::string
+AbstractObjectAttributesManager<T, AccessViaCopies>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,
     const io::JsonGenericValue& jsonDoc,
     const char* jsonMeshTypeTag,

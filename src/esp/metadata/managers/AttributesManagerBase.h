@@ -30,8 +30,9 @@ namespace managers {
  * of this class works with.  Must inherit from @ref
  * esp::metadata::attributes::AbstractAttributes.
  */
-template <class T>
-class AttributesManager : public esp::core::ManagedContainer<T> {
+template <class T, bool AccessViaCopies>
+class AttributesManager
+    : public esp::core::ManagedContainer<T, AccessViaCopies> {
  public:
   static_assert(std::is_base_of<attributes::AbstractAttributes, T>::value,
                 "AttributesManager :: Managed object type must be derived from "
@@ -40,7 +41,8 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
   typedef std::shared_ptr<T> AttribsPtr;
 
   AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
-      : esp::core::ManagedContainer<T>::ManagedContainer(attrType),
+      : esp::core::ManagedContainer<T, AccessViaCopies>::ManagedContainer(
+            attrType),
         JSONTypeExt_(JSONTypeExt) {}
   virtual ~AttributesManager() = default;
 
@@ -163,14 +165,15 @@ class AttributesManager : public esp::core::ManagedContainer<T> {
   const std::string JSONTypeExt_;
 
  public:
-  ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
+  ESP_SMART_POINTERS(AttributesManager<T, AccessViaCopies>);
 
 };  // class AttributesManager
 
 /////////////////////////////
 // Class Template Method Definitions
-template <class T>
-std::vector<int> AttributesManager<T>::loadAllFileBasedTemplates(
+template <class T, bool AccessViaCopies>
+std::vector<int>
+AttributesManager<T, AccessViaCopies>::loadAllFileBasedTemplates(
     const std::vector<std::string>& paths,
     bool saveAsDefaults) {
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
@@ -200,8 +203,8 @@ std::vector<int> AttributesManager<T>::loadAllFileBasedTemplates(
   return templateIndices;
 }  // AttributesManager<T>::loadAllObjectTemplates
 
-template <class T>
-std::vector<int> AttributesManager<T>::loadAllConfigsFromPath(
+template <class T, bool AccessViaCopies>
+std::vector<int> AttributesManager<T, AccessViaCopies>::loadAllConfigsFromPath(
     const std::string& path,
     bool saveAsDefaults) {
   std::vector<std::string> paths;
@@ -242,8 +245,8 @@ std::vector<int> AttributesManager<T>::loadAllConfigsFromPath(
   return templateIndices;
 }  // AttributesManager<T>::loadAllConfigsFromPath
 
-template <class T>
-void AttributesManager<T>::buildCfgPathsFromJSONAndLoad(
+template <class T, bool AccessViaCopies>
+void AttributesManager<T, AccessViaCopies>::buildCfgPathsFromJSONAndLoad(
     const std::string& configDir,
     const io::JsonGenericValue& jsonPaths) {
   for (rapidjson::SizeType i = 0; i < jsonPaths.Size(); ++i) {
@@ -265,8 +268,8 @@ void AttributesManager<T>::buildCfgPathsFromJSONAndLoad(
             << " templates.";
 }  // AttributesManager<T>::buildCfgPathsFromJSONAndLoad
 
-template <class T>
-auto AttributesManager<T>::createFromJsonOrDefaultInternal(
+template <class T, bool AccessViaCopies>
+auto AttributesManager<T, AccessViaCopies>::createFromJsonOrDefaultInternal(
     const std::string& filename,
     std::string& msg,
     bool registerObj) -> AttribsPtr {
