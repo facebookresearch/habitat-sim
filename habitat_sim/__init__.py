@@ -6,7 +6,7 @@
 
 import builtins
 
-__version__ = "0.1.6"
+__version__ = "0.1.7"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: kept only for compatibiliy with existing code. Please gradually remove
@@ -17,6 +17,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         geo,
         gfx,
         logging,
+        metadata,
         nav,
         physics,
         scene,
@@ -73,6 +74,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         "agent",
         "attributes",
         "attributes_managers",
+        "metadata",
         "nav",
         "sensors",
         "errors",

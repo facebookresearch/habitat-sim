@@ -105,6 +105,10 @@ void initSensorBindings(py::module& m) {
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
              Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(m,
                                                                 "VisualSensor")
+      .def_property_readonly(
+          "render_camera", &VisualSensor::getRenderCamera,
+          R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",
+          pybind11::return_value_policy::reference)
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 
@@ -119,7 +123,7 @@ void initSensorBindings(py::module& m) {
            Should be consumed by first querying this CameraSensor's SensorSpec
            and then modifying as necessary.)",
            "sensor_spec"_a)
-      .def("zoom", &CameraSensor::modZoom,
+      .def("zoom", &CameraSensor::modifyZoom,
            R"(Modify Orthographic Zoom or Perspective FOV multiplicatively by
           passed amount. User >1 to increase, 0<factor<1 to decrease.)",
            "factor"_a)

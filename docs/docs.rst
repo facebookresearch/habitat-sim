@@ -76,6 +76,14 @@
     :param end: The desired end location
     :return: The actual ending location, if such a location exists, or ``{NAN, NAN, NAN}``
 
+.. py:function:: habitat_sim.nav.PathFinder.get_random_navigable_point
+    :summary: Samples a navigable point uniformly at random from the navmesh
+
+    :param max_tries: The maximum number of times to retry sampling if it fails and the navmesh
+    seems fine.  Setting this higher can sometimes be warranted, but needing to typically
+    indicates an error with the navmesh.
+    :return: A navigable point or ``{NAN, NAN, NAN}`` if this fails
+
 .. py:function:: habitat_sim.nav.PathFinder.snap_point
     :summary: Snaps a point to the closet navigable location
 

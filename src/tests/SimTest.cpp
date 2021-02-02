@@ -28,7 +28,6 @@ using esp::assets::ResourceManager;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
-using esp::metadata::MetadataMediator;
 using esp::metadata::attributes::AbstractPrimitiveAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
@@ -65,9 +64,10 @@ struct SimTest : Cr::TestSuite::Tester {
       const std::string& scene,
       const std::string& sceneLightingKey = esp::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
-    simConfig.activeSceneID = scene;
+    simConfig.activeSceneName = scene;
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
+    simConfig.overrideSceneLightDefaults = true;
     simConfig.sceneLightSetup = sceneLightingKey;
 
     auto sim = Simulator::create_unique(simConfig);
@@ -103,10 +103,12 @@ struct SimTest : Cr::TestSuite::Tester {
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
-  LightSetup lightSetup1{{Magnum::Vector4{0.0f, 1.5f, -0.2f, 0.0f},
-                          0xffffff_rgbf, LightPositionModel::CAMERA}};
+  LightSetup lightSetup1{{Magnum::Vector4{1.0f, 1.5f, 0.5f, 0.0f},
+                          {5.0, 5.0, 0.0},
+                          LightPositionModel::CAMERA}};
   LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
-                          0xffffff_rgbf, LightPositionModel::CAMERA}};
+                          {0.0, 5.0, 5.0},
+                          LightPositionModel::CAMERA}};
 };
 
 SimTest::SimTest() {
@@ -129,7 +131,7 @@ SimTest::SimTest() {
 
 void SimTest::basic() {
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = vangogh;
+  cfg.activeSceneName = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   CORRADE_VERIFY(pathfinder);
@@ -137,20 +139,20 @@ void SimTest::basic() {
 
 void SimTest::reconfigure() {
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = vangogh;
+  cfg.activeSceneName = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   simulator.reconfigure(cfg);
   CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
   SimulatorConfiguration cfg2;
-  cfg2.activeSceneID = skokloster;
+  cfg2.activeSceneName = skokloster;
   simulator.reconfigure(cfg2);
   CORRADE_VERIFY(pathfinder != simulator.getPathFinder());
 }
 
 void SimTest::reset() {
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = vangogh;
+  cfg.activeSceneName = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
 
@@ -233,9 +235,6 @@ void SimTest::getSceneWithLightingRGBAObservation() {
       << "Starting Test : getSceneWithLightingRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh, "custom_lighting_1");
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
 }
@@ -251,9 +250,6 @@ void SimTest::getDefaultLightingRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 }
@@ -270,9 +266,6 @@ void SimTest::getCustomLightingRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 }
@@ -289,9 +282,6 @@ void SimTest::updateLightSetupRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -324,9 +314,6 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -344,9 +331,6 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
 void SimTest::multipleLightingSetupsRGBAObservation() {
   Corrade::Utility::Debug()
       << "Starting Test : multipleLightingSetupsRGBAObservation ";
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   auto simulator = getSimulator(planeStage);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();

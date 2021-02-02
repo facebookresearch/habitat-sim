@@ -74,7 +74,7 @@ std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
   dtPolyRef polyRef;
   // Initialize with all NANs at dtStatusSucceed(status) == true does NOT mean
   // that it found a point to project to..........
-  vec3f polyXYZ{NAN, NAN, NAN};
+  vec3f polyXYZ = vec3f::Constant(Mn::Constants::nan());
   dtStatus status = navQuery->findNearestPoly(pt.data(), polyPickExt, filter,
                                               &polyRef, polyXYZ.data());
 
@@ -225,7 +225,7 @@ struct PathFinder::Impl {
              const float* bmax);
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
-  vec3f getRandomNavigablePoint();
+  vec3f getRandomNavigablePoint(int maxTries);
 
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
@@ -923,16 +923,30 @@ static float frand() {
   return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 }
 
-vec3f PathFinder::Impl::getRandomNavigablePoint() {
-  dtPolyRef ref;
-  constexpr float inf = std::numeric_limits<float>::infinity();
-  vec3f pt(inf, inf, inf);
-  dtStatus status =
-      navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
-  if (!dtStatusSucceed(status)) {
-    LOG(ERROR) << "Failed to getRandomNavigablePoint";
+vec3f PathFinder::Impl::getRandomNavigablePoint(const int maxTries /*= 10*/) {
+  if (getNavigableArea() <= 0.0)
+    throw std::runtime_error(
+        "NavMesh has no navigable area, this indicates an issue with the "
+        "NavMesh");
+
+  vec3f pt;
+
+  int i;
+  for (i = 0; i < maxTries; ++i) {
+    dtPolyRef ref;
+    dtStatus status =
+        navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
+    if (dtStatusSucceed(status))
+      break;
   }
-  return pt;
+
+  if (i == maxTries) {
+    LOG(ERROR) << "Failed to getRandomNavigablePoint.  Try increasing max "
+                  "tries if the navmesh is fine but just hard to sample from";
+    return vec3f::Constant(Mn::Constants::nan());
+  } else {
+    return pt;
+  }
 }
 
 namespace {
@@ -1181,7 +1195,7 @@ T PathFinder::Impl::snapPoint(const T& pt) {
   if (dtStatusSucceed(status)) {
     return T{projectedPt};
   } else {
-    return {NAN, NAN, NAN};
+    return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
   }
 }
 
@@ -1329,8 +1343,8 @@ bool PathFinder::build(const NavMeshSettings& bs,
   return pimpl_->build(bs, mesh);
 }
 
-vec3f PathFinder::getRandomNavigablePoint() {
-  return pimpl_->getRandomNavigablePoint();
+vec3f PathFinder::getRandomNavigablePoint(const int maxTries /*= 10*/) {
+  return pimpl_->getRandomNavigablePoint(maxTries);
 }
 
 bool PathFinder::findPath(ShortestPath& path) {

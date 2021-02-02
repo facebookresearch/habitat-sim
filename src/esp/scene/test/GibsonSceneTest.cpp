@@ -47,7 +47,8 @@ TEST(GibsonSemanticSimTest, Basic) {
     GTEST_SKIP_(skip_message.c_str());
   }
   SimulatorConfiguration cfg;
-  cfg.activeSceneID = esp::io::changeExtension(gibsonSemanticFilename, ".glb");
+  cfg.activeSceneName =
+      esp::io::changeExtension(gibsonSemanticFilename, ".glb");
   Simulator simulator(cfg);
   const auto& semanticScene = simulator.getSemanticScene();
   ASSERT_EQ(semanticScene->objects().size(), 34);

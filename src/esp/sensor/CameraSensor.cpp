@@ -19,7 +19,13 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit) {
+  // Initialize renderCamera_ first to avoid segfaults
+  renderCamera_ = new gfx::RenderCamera(cameraNode);
   setProjectionParameters(spec);
+  renderCamera_->setAspectRatioPolicy(
+      Mn::SceneGraph::AspectRatioPolicy::Extend);
+  recomputeProjectionMatrix();
+  renderCamera_->setViewport(this->framebufferSize());
 }  // ctor
 
 void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
@@ -37,6 +43,13 @@ void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
   setCameraType(spec->sensorSubType);
 
 }  // setProjectionParameters
+
+void CameraSensor::recomputeProjectionMatrix() {
+  projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
+  // update renderCamera_'s projectionMatrix every time the sensor's
+  // projectionMatrix changes
+  renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
+}
 
 void CameraSensor::recomputeBaseProjectionMatrix() {
   // refresh size after relevant parameters have changed
@@ -66,52 +79,6 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
   recomputeProjectionMatrix();
 }  // CameraSensor::recomputeNearPlaneSize
 
-CameraSensor& CameraSensor::setProjectionMatrix(
-    gfx::RenderCamera& targetCamera) {
-  targetCamera.setProjectionMatrix(width_, height_, projectionMatrix_);
-  return *this;
-}
-
-CameraSensor& CameraSensor::setTransformationMatrix(
-    gfx::RenderCamera& targetCamera) {
-  CORRADE_ASSERT(!scene::SceneGraph::isRootNode(targetCamera.node()),
-                 "CameraSensor::setTransformationMatrix: target camera cannot "
-                 "be on the root node of the scene graph",
-                 *this);
-  Magnum::Matrix4 absTransform = this->node().absoluteTransformation();
-  Magnum::Matrix3 rotation = absTransform.rotationScaling();
-  Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(rotation);
-
-  VLOG(2) << "||R - GS(R)|| = "
-          << Eigen::Map<mat3f>((rotation - absTransform.rotationShear()).data())
-                 .norm();
-
-  auto relativeTransform =
-      Magnum::Matrix4::from(rotation, absTransform.translation()) *
-      Magnum::Matrix4::scaling(absTransform.scaling());
-
-  // set the transformation to the camera
-  // so that the camera has the correct modelview matrix for rendering;
-  // to do it,
-  // obtain the *absolute* transformation from the sensor node,
-  // apply it as the *relative* transformation between the camera and
-  // its parent
-  auto camParent = targetCamera.node().parent();
-  // if camera's parent is the root node, skip it!
-  if (!scene::SceneGraph::isRootNode(
-          *static_cast<scene::SceneNode*>(camParent))) {
-    relativeTransform =
-        camParent->absoluteTransformation().inverted() * relativeTransform;
-  }
-  targetCamera.node().setTransformation(relativeTransform);
-  return *this;
-}
-
-CameraSensor& CameraSensor::setViewport(gfx::RenderCamera& targetCamera) {
-  targetCamera.setViewport(this->framebufferSize());
-  return *this;
-}
-
 bool CameraSensor::getObservationSpace(ObservationSpace& space) {
   space.spaceType = ObservationSpaceType::Tensor;
   space.shape = {static_cast<size_t>(spec_->resolution[0]),
@@ -124,6 +91,10 @@ bool CameraSensor::getObservationSpace(ObservationSpace& space) {
     space.dataType = core::DataType::DT_FLOAT;
   }
   return true;
+}
+
+gfx::RenderCamera* CameraSensor::getRenderCamera() {
+  return renderCamera_;
 }
 
 bool CameraSensor::getObservation(sim::Simulator& sim, Observation& obs) {

@@ -10,16 +10,6 @@ from conf import *
 
 OUTPUT = "../build/docs-public/habitat-sim/"
 
-HTML_HEADER = """<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-66408458-4"></script>
-<script>
- window.dataLayer = window.dataLayer || [];
- function gtag(){dataLayer.push(arguments);}
- gtag('js', new Date());
- gtag('config', 'UA-66408458-4');
-</script>
-"""
-
 SEARCH_DOWNLOAD_BINARY = "searchdata-python-v1.bin"
 SEARCH_BASE_URL = "https://aihabitat.org/docs/habitat-sim/"
 SEARCH_EXTERNAL_URL = "https://google.com/search?q=site:aihabitat.org+{query}"

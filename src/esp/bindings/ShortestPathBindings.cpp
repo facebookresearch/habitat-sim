@@ -10,6 +10,7 @@
 
 #include <Magnum/Math/Vector3.h>
 
+#include "esp/assets/MeshData.h"
 #include "esp/core/esp.h"
 #include "esp/nav/GreedyFollower.h"
 #include "esp/nav/PathFinder.h"
@@ -77,7 +78,8 @@ void initShortestPathBindings(py::module& m) {
       .def("get_topdown_view", &PathFinder::getTopDownView,
            R"(Returns the topdown view of the PathFinder's navmesh.)",
            "meters_per_pixel"_a, "height"_a)
-      .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint)
+      .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint,
+           "max_tries"_a = 10)
       .def("find_path", py::overload_cast<ShortestPath&>(&PathFinder::findPath),
            "path"_a)
       .def("find_path",
@@ -95,6 +97,10 @@ void initShortestPathBindings(py::module& m) {
       .def("island_radius", &PathFinder::islandRadius, "pt"_a)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
       .def_property_readonly("navigable_area", &PathFinder::getNavigableArea)
+      .def("build_navmesh_vertices",
+           [](PathFinder& self) { return self.getNavMeshData()->vbo; })
+      .def("build_navmesh_vertex_indices",
+           [](PathFinder& self) { return self.getNavMeshData()->ibo; })
       .def("load_nav_mesh", &PathFinder::loadNavMesh)
       .def("save_nav_mesh", &PathFinder::saveNavMesh, "path"_a)
       .def("distance_to_closest_obstacle",
