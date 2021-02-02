@@ -1,8 +1,8 @@
 import os
-from os import path as osp
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), 'helpers'))
+from os import path as osp
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 
 import pytest
@@ -14,7 +14,7 @@ _test_scene = osp.abspath(
     )
 )
 
-
+# Testing configurations
 @pytest.fixture(scope="function")
 def make_cfg_settings():
     import examples.settings

@@ -1,9 +1,7 @@
-import itertools
 import multiprocessing
 import runpy
 import sys
 from os import path as osp
-
 
 
 def run_main(*args):
@@ -14,7 +12,7 @@ def run_main(*args):
     # run_path has one difference with invoking Python from command-line:
     # if the target is a file (rather than a directory), it does not add its
     # parent directory to sys.path. Thus, importing other modules from the
-    # same directory is broken unless sys.path is patched here.
+    # same directory is broken unless sys.path is patched here
     if osp.isfile(target):
         sys.path.insert(0, osp.dirname(target))
     runpy.run_path(target, run_name="__main__")
