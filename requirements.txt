@@ -1,11 +1,11 @@
 attrs>=19.1.0
+gitpython
+imageio
+imageio-ffmpeg
+matplotlib
 numba
 numpy
 numpy-quaternion
 pillow
 scipy>=1.3.0
 tqdm
-matplotlib
-gitpython
-imageio
-imageio-ffmpeg

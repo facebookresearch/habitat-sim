@@ -151,7 +151,10 @@ void CullingTest::frustumCulling() {
                                           &sceneManager, tempIDs, false);
   CORRADE_VERIFY(result);
   // set the camera
-  esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
+  esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
+  esp::scene::SceneNode cameraNode = agentNode.createChild();
+  esp::gfx::RenderCamera& renderCamera =
+      *(new esp::gfx::RenderCamera(cameraNode));
 
   // The camera to be set:
   // pos: {7.3589f, -6.9258f,4.9583f}
@@ -171,8 +174,6 @@ void CullingTest::frustumCulling() {
                                    100.0f,               // zfar
                                    39.6_degf);           // hfov
 
-  esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
-  esp::scene::SceneNode cameraNode = agentNode.createChild();
   cameraNode.translate({7.3589f, -6.9258f, 4.9583f});
   const Mn::Vector3 axis{0.773, 0.334, 0.539};
   cameraNode.rotate(Mn::Math::Deg<float>(77.4f), axis.normalized());
