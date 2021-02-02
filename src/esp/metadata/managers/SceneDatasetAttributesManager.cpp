@@ -63,20 +63,47 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
   readDatasetJSONCell(dsDir, "light_setups", jsonConfig,
                       dsAttribs->getLightLayoutAttributesManager());
 
-  // process scene instances - implement handling scene instances TODO
+  // process scene instances - implement handling scene instances
   readDatasetJSONCell(dsDir, "scene_instances", jsonConfig,
                       dsAttribs->getSceneAttributesManager());
 
   // process navmesh instances
-  io::readMember<std::map<std::string, std::string>>(
-      jsonConfig, "navmesh_instances", dsAttribs->editNavmeshMap());
+  loadAndValidateMap(dsDir, "navmesh_instances", jsonConfig,
+                     dsAttribs->editNavmeshMap());
 
   // process semantic scene descriptor instances
-  io::readMember<std::map<std::string, std::string>>(
-      jsonConfig, "semantic_scene_descriptor_instances",
-      dsAttribs->editSemanticSceneDescrMap());
+  loadAndValidateMap(dsDir, "semantic_scene_descriptor_instances", jsonConfig,
+                     dsAttribs->editSemanticSceneDescrMap());
 
 }  // SceneDatasetAttributesManager::setValsFromJSONDoc
+
+void SceneDatasetAttributesManager::loadAndValidateMap(
+    const std::string& dsDir,
+    const std::string& jsonTag,
+    const io::JsonGenericValue& jsonConfig,
+    std::map<std::string, std::string>& map) {
+  // load values into map
+  io::readMember<std::map<std::string, std::string>>(jsonConfig,
+                                                     jsonTag.c_str(), map);
+
+  // now verify that all entries in map exist.  If not replace entry with
+  // dsDir-prepended entry
+  for (std::pair<const std::string, std::string>& entry : map) {
+    const std::string loc = entry.second;
+    if (!Cr::Utility::Directory::exists(loc)) {
+      std::string newLoc = Cr::Utility::Directory::join(dsDir, loc);
+      if (!Cr::Utility::Directory::exists(newLoc)) {
+        LOG(WARNING) << "SceneDatasetAttributesManager::loadAndValidateMap : "
+                     << jsonTag << " Value : " << loc
+                     << " not found on disk as absolute path or relative to "
+                     << dsDir;
+      } else {
+        // replace value with dataset-augmented absolute path
+        map[entry.first] = newLoc;
+      }
+    }  // loc does not exist
+  }    // for each loc
+}  // SceneDatasetAttributesManager::loadAndValidateMap
 
 // using type deduction
 template <typename U>
@@ -294,7 +321,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // register object
     attrMgr->registerObject(attr, regHandle);
   }  // if original filename was specified else
-}  // namespace managers
+}  // SceneDatasetAttributesManager::readDatasetConfigsJSONCell
 
 int SceneDatasetAttributesManager::registerObjectFinalize(
     attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
