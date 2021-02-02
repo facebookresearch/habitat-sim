@@ -42,6 +42,9 @@
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 
+//#include <VHACD.h>
+#include "deps/v-hacd/src/VHACD_Lib/public/VHACD.h"
+
 // forward declarations
 namespace Magnum {
 namespace Trade {
@@ -83,6 +86,10 @@ class ResourceManager {
   using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
   using Importer = Mn::Trade::AbstractImporter;
+
+  struct VHACDParameters : VHACD::IVHACD::Parameters {
+    // VHACDParameters();
+  };
 
   /**
    * @brief Flag
@@ -322,6 +329,20 @@ class ResourceManager {
    */
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
       const std::string& filename);
+
+  /**
+   * @brief Get primitive mesh data (points and triangle arrays) from a
+   * MeshMetaData filename.
+   *
+   * @param filename The MeshMetaData filename to receive primitive attributes
+   * from.
+   * @param points The vector of points to be filled with the mesh vertices.
+   * @param indices The vector of indices to be filled with the mesh index
+   * buffer.
+   */
+  void getPrimitiveMeshData(const std::string& filename,
+                            std::vector<float>& points,
+                            std::vector<uint32_t>& triangles);
 
   /**
    * @brief Add an object from a specified object template handle to the

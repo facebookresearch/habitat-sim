@@ -34,6 +34,7 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
+#include <iostream>
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -46,9 +47,6 @@
 #include "esp/scene/SceneGraph.h"
 
 #include "esp/nav/PathFinder.h"
-
-// #include "deps/v-hacd/src/VHACD_Lib/public/VHACD.h"
-#include "VHACD.h"
 
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
@@ -92,10 +90,6 @@ ResourceManager::ResourceManager(
       importerManager_("nonexistent")
 #endif
 {
-
-  // TODO: For debugging, remove later.
-  VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
-  // TODO: end remove.
 
   initDefaultLightSetups();
   initDefaultMaterials();
@@ -2189,6 +2183,48 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
   joinHeirarchy(*mesh, metaData, metaData.root, identity);
 
   return mesh;
+}
+
+void ResourceManager::getPrimitiveMeshData(const std::string& filename,
+                                           std::vector<float>& points,
+                                           std::vector<uint32_t>& triangles) {
+  // Get MeshData from createJoinedCollisionMesh
+  assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
+  joinedMesh = createJoinedCollisionMesh(filename);
+
+  // Format into VHACD compatible vectors
+  // *** will go out of scope, fix later
+
+  for (vec3f point : joinedMesh->vbo) {
+    points.push_back(point[0]);
+    points.push_back(point[1]);
+    points.push_back(point[2]);
+  }
+
+  for (uint32_t index : joinedMesh->ibo) {
+    triangles.push_back(index);
+  }
+
+  // TODO: Remove
+  // Testing on VHACD
+  ResourceManager::VHACDParameters paramsVHACD;
+  // VHACD::IVHACD::Parameters paramsVHACD =
+  //    VHACD::IVHACD::Parameters();  // create struct for parameters within
+  // ResourceManager, ensures values are valid
+  // (resolution > 0, etc) & throws error if
+  // invalid
+  // ^ will be exposed to python.
+  VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
+  bool res =
+      interfaceVHACD->Compute(&points[0], (unsigned int)points.size() / 3,
+                              (const uint32_t*)&triangles[0],
+                              (unsigned int)triangles.size() / 3, paramsVHACD);
+  int nConvexHulls = interfaceVHACD->GetNConvexHulls();
+  VHACD::IVHACD::ConvexHull ch;
+  for (unsigned int p = 0; p < nConvexHulls; ++p) {
+    interfaceVHACD->GetConvexHull(p, ch);
+    std::cout << "CONVEX HULL NUMBER OF POINTS: " << ch.m_nPoints << std::endl;
+  }
 }
 
 }  // namespace assets

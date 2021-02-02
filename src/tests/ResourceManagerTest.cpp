@@ -86,6 +86,50 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   }
 }
 
+TEST(ResourceManagerTest, VHACDUsageTest) {
+  esp::gfx::WindowlessContext::uptr context_ =
+      esp::gfx::WindowlessContext::create_unique(0);
+
+  std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
+
+  // must declare these in this order due to avoid deallocation errors
+  auto MM = MetadataMediator::create();
+  ResourceManager resourceManager(MM);
+  SceneManager sceneManager_;
+  auto stageAttributesMgr = MM->getStageAttributesManager();
+  std::string donutFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/donut.glb");
+
+  // create stage attributes file
+  auto stageAttributes = stageAttributesMgr->createObject(donutFile, true);
+
+  int sceneID = sceneManager_.initSceneGraph();
+  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  const esp::assets::AssetInfo info =
+      esp::assets::AssetInfo::fromPath(donutFile);
+
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool result = resourceManager.loadStage(stageAttributes, nullptr,
+                                          &sceneManager_, tempIDs, false);
+
+  esp::assets::MeshData::uptr joinedBox =
+      resourceManager.createJoinedCollisionMesh(donutFile);
+
+  std::vector<float> points = std::vector<float>();
+  std::vector<uint32_t> triangles = std::vector<uint32_t>();
+  resourceManager.getPrimitiveMeshData(donutFile, points, triangles);
+
+  // transform_box.glb is composed of 6 identical triangulated plane meshes
+  // transformed into a cube via a transform heirarchy. Combined, the resulting
+  // mesh should have 24 vertices and 36 indices with corners at the unit corner
+  // coordinates as defined in the ground truth vectors below.
+  int numVerts = joinedBox->vbo.size();
+  int numIndices = joinedBox->ibo.size();
+
+  ASSERT(points.size() > 0);
+  ASSERT(triangles.size() > 0);
+}
+
 // Load and create a render asset instance and assert success
 TEST(ResourceManagerTest, loadAndCreateRenderAssetInstance) {
   esp::gfx::WindowlessContext::uptr context_ =
