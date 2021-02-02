@@ -1,5 +1,4 @@
 # [setup]
-import math
 import os
 import time
 
@@ -48,8 +47,7 @@ def make_configuration():
 
 
 def simulate(sim, dt=1.0, get_frames=True, data=None):
-    # simulate dt seconds at 60Hz to the nearest fixed timestep
-    # print("Simulating " + str(dt) + " world seconds.")
+    """Simulate dt seconds at 60Hz to the nearest fixed timestep"""
     observations = []
     physics_step_times = []
     graphics_render_times = []
@@ -77,10 +75,8 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
         data["collisions"] += collisions
 
 
-# Define each test function & store in list
-
-
 def box_drop_test(
+    args,
     objects,
     num_objects=30,
     box_size=2,
@@ -88,7 +84,6 @@ def box_drop_test(
     post_throw_settling_time=5,
 ):  # take in parameters here
     """Drops a specified number of objects into a box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame. """
-    # start with box being bounding boxes
 
     data = {
         "observations": [],
@@ -109,7 +104,6 @@ def box_drop_test(
 
         # get the physics object attributes manager
         obj_templates_mgr = sim.get_object_template_manager()
-        # [/initialize]
 
         # build box
         cube_handle = obj_templates_mgr.get_template_handles("cube")[0]
@@ -164,11 +158,8 @@ def box_drop_test(
 
             obj_node = sim.get_object_scene_node(cur_id)
             obj_bb = obj_node.cumulative_bb
-            diaganal_length = math.sqrt(
-                obj_bb.size_x() ** 2 + obj_bb.size_y() ** 2 + obj_bb.size_z() ** 2
-            )
-            time_til_next_obj = diaganal_length / (object_speed * box_size) / 2
-            # obj_node.scale(mn.Vector3(3,3,3))
+            diagonal_length = obj_bb.size().length()
+            time_til_next_obj = diagonal_length / (object_speed * box_size) / 2
 
             # set object position and velocity
             sim.set_translation(np.multiply(np.array([1.50, 2, 1.2]), box_size), cur_id)
@@ -179,9 +170,11 @@ def box_drop_test(
             sim.set_linear_velocity(initial_linear_velocity, cur_id)
 
             # simulate half a second, then add next object
-            simulate(sim, dt=time_til_next_obj, get_frames=make_video, data=data)
+            simulate(sim, dt=time_til_next_obj, get_frames=args.make_video, data=data)
 
-        simulate(sim, dt=post_throw_settling_time, get_frames=make_video, data=data)
+        simulate(
+            sim, dt=post_throw_settling_time, get_frames=args.make_video, data=data
+        )
 
         # [/basics]
         # return total time to run, time to load, time to simulate physics, time for rendering
@@ -192,24 +185,32 @@ def box_drop_test(
 benchmarks = {
     "box_drop_test_1": {
         "description": "Drop 25 spheres into a box.",
-        "test": lambda: box_drop_test(["test_assets/objects/sphere"], 25, 2, 1.8, 10),
+        "test": lambda: box_drop_test(
+            args, ["test_assets/objects/sphere"], 25, 2, 1.8, 10
+        ),
     },
     "box_drop_test_2": {
         "description": "Drop 25 spheres and 25 chairs into a box.",
         "test": lambda: box_drop_test(
-            ["test_assets/objects/sphere", "test_assets/objects/chair"], 50, 2, 1.8, 10
+            args,
+            ["test_assets/objects/sphere", "test_assets/objects/chair"],
+            50,
+            2,
+            1.8,
+            10,
         ),
     },
     "box_drop_test_3": {
         "description": "Drop 50 spheres, 5 chairs, 50 donuts, and 50 boxes into a box.",
         "test": lambda: box_drop_test(
+            args,
             [
                 "test_assets/objects/sphere",
                 "test_assets/objects/chair",
                 "test_assets/objects/donut",
                 "test_assets/objects/nested_box",
             ],
-            200,
+            20,
             2,
             1.8,
             10,
@@ -234,7 +235,7 @@ def create_frame_line_plot(test_id, y_axis, title):
     plt.cla()
 
 
-def run_test(test_id):
+def run_test(test_id, args):
     print("----- Running %s -----" % test_id)
     start_time = time.time()
     data = benchmarks[test_id]["test"]()
@@ -270,41 +271,41 @@ def run_test(test_id):
     test_log += "\n"
 
     print(test_log)
-    if make_video:
+    if args.make_video:
         vut.make_video(
             observations,
             "rgba_camera_1stperson",
             "color",
             output_path + test_id,
-            open_vid=show_video,
+            open_vid=args.show_video,
         )
 
-    for graph_name in graphs_to_produce:
+    for graph_name in args.graph:
         if graph_name in data:
             create_frame_line_plot(test_id, data[graph_name], graph_name)
 
     return test_log
 
 
-def main():
+def main(args):
     log_contents = ""
-    if len(tests_to_run) == 0:
+    if len(args.run) == 0:
         # runs all benchmarks when none are specified
         for test_id in benchmarks:
-            log_contents += run_test(test_id)
+            log_contents += run_test(test_id, args)
     else:
         # only runs the benchmark/benchmark_sets specified in commandline arguments
-        for test in tests_to_run:
+        for test in args.run:
             if test in benchmark_sets:
                 for sub_test in benchmark_sets[test]:
-                    log_contents += run_test(sub_test)
+                    log_contents += run_test(sub_test, args)
             elif test in benchmarks:
-                log_contents += run_test(test)
+                log_contents += run_test(test, args)
             else:
-                print(test, "done not exist.")
+                print(test + " does not exist.")
                 log_contents += test + " does not exist." + "\n" + "\n"
 
-    if save_log:
+    if args.save_log:
         with open(output_path + "benchmark_log_file.txt", "w") as log:
             log.write(log_contents)
 
@@ -315,20 +316,33 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-show-video", dest="show_video", action="store_false")
     parser.add_argument("--no-make-video", dest="make_video", action="store_false")
-    parser.add_argument("--save-to-log", dest="save_log", action="store_true")
-    parser.add_argument("--graph", default=[], nargs="*", type=str, metavar="N")
-    parser.add_argument("--run", default=[], nargs="*", type=str, metavar="N")
+    parser.add_argument(
+        "--save-to-log",
+        dest="save_log",
+        action="store_true",
+        help="Save benchmark results to a log file in the script output directory.",
+    )
+    parser.add_argument(
+        "--graph",
+        default=[],
+        nargs="*",
+        type=str,
+        metavar="N",
+        help="Save graphs of specified metrics (collisions, physics_step_times, graphics_render_times) to the script output directory.",
+    )
+    parser.add_argument(
+        "--run",
+        default=[],
+        nargs="*",
+        type=str,
+        metavar="N",
+        help="Specify which benchmarks or benchmark sets should be ran. All benchmarks are run by default.",
+    )
 
     parser.set_defaults(show_video=True, make_video=True, save_log=False)
     args, _ = parser.parse_known_args()
 
-    show_video = args.show_video
-    make_video = args.make_video
-    save_log = args.save_log
-    graphs_to_produce = args.graph
-    tests_to_run = args.run
-
-    if make_video and not os.path.exists(output_path):
+    if not os.path.exists(output_path):
         os.mkdir(output_path)
 
-    main()
+    main(args)
