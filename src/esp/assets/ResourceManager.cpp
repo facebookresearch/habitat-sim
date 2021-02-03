@@ -2205,6 +2205,7 @@ void ResourceManager::getPrimitiveMeshData(const std::string& filename,
 }
 
 void ResourceManager::convexHullDecomposition(const std::string& filename,
+                                              const std::string& CHDFilename,
                                               const VHACDParameters& params) {
   // fill points and triangles with mesh data
   std::vector<float> points = std::vector<float>();
@@ -2217,48 +2218,104 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
                               (const uint32_t*)&triangles[0],
                               (unsigned int)triangles.size() / 3, params);
 
-  // convert convex hulls into MeshDatas
-  std::vector<std::unique_ptr<MeshData>> convexHulls =
-      std::vector<std::unique_ptr<MeshData>>();
+  std::cout << "== VHACD ran ==" << std::endl;
 
+  // convert convex hulls into MeshDatas, CollisionMeshDatas
+  int meshStart = meshes_.size();
+  std::vector<CollisionMeshData> collisionMeshGroup;
   int nConvexHulls = interfaceVHACD->GetNConvexHulls();
   VHACD::IVHACD::ConvexHull ch;
   for (unsigned int p = 0; p < nConvexHulls; ++p) {
     // for each convex hull, transfer the data to a newly created MeshData
     interfaceVHACD->GetConvexHull(p, ch);
-    std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
 
-    for (int i = 0; i < ch.m_nPoints / 3; i++) {
-      vec3f point = vec3f(ch.m_points[i * 3], ch.m_points[i * 3 + 1],
-                          ch.m_points[i * 3 + 2]);
-      mesh->vbo.push_back(point);
+    std::vector<Magnum::UnsignedInt> indices;
+    std::vector<Magnum::Vector3> positions;
+
+    // add the vertices
+    positions.resize(ch.m_nPoints / 3);
+    for (size_t vix = 0; vix < ch.m_nPoints; vix += 3) {
+      positions[vix] = Magnum::Vector3(ch.m_points[vix], ch.m_points[vix + 1],
+                                       ch.m_points[vix] + 2);
     }
 
-    for (int i = 0; i < ch.m_nTriangles; i++) {
-      mesh->ibo.push_back(ch.m_triangles[i]);
+    // add indices
+    indices.resize(ch.m_nTriangles);
+    for (size_t ix = 0; ix < ch.m_nTriangles; ix += 3) {
+      indices[ix] = ch.m_triangles[ix];
     }
-    convexHulls.push_back(std::make_unique<MeshData>());
-    convexHulls[p] = std::move(mesh);
+    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::Trade::MeshData{
+        Mn::MeshPrimitive::Triangles,
+        {},
+        indices,
+        Mn::Trade::MeshIndexData{indices},
+        {},
+        positions,
+        {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
+                                      Cr::Containers::arrayView(positions)}}};
+    std::cout << "== MeshData created ==" << std::endl;
+    auto genCHMeshData = std::make_unique<GenericMeshData>(false);
+    genCHMeshData->setMeshData(*std::move(CHMesh));
+
+    // compute the mesh bounding box
+    genCHMeshData->BB = computeMeshBB(genCHMeshData.get());
+
+    genCHMeshData->uploadBuffersToGPU(false);
+
+    CollisionMeshData CHCollisionMesh = genCHMeshData->getCollisionMeshData();
+    collisionMeshGroup.push_back(CHCollisionMesh);
+    std::cout << "== CH completed ==" << std::endl;
+    // register in meshes_ dict
+    meshes_.emplace(meshes_.size(), std::move(genCHMeshData));
+
+    // add to collisionMeshGroup vector
   }
 
-  // Register each MeshData as a BaseMesh and register in meshes_ (** how to do
-  // this?), keeping track of ID range [start, end].
-  int start = nextMeshID_;
-  int end = nextMeshID_ + nConvexHulls - 1;
-  for (unsigned int p = 0; p < nConvexHulls; ++p) {
-  }
+  // make MeshMetaData
+  int meshEnd = meshes_.size() - 1;
+  MeshMetaData meshMetaData{meshStart, meshEnd};
 
-  int index = nextMeshID_++;
+  // default material for now
+  auto phongMaterial = gfx::PhongMaterialData::create_unique();
+  phongMaterial->specularColor = {1.0, 1.0, 1.0, 1.0};
+  phongMaterial->ambientColor = Magnum::Color4{1.0};
+  ;
+  phongMaterial->diffuseColor = Magnum::Color4{0.9};
+  ;
 
-  // Create MeshMetaData based off this, register in resourceDict_
-  /*
-  MeshMetaData convexHullSetMesh;
-  convexHullSetMesh.meshIndex = std::make_pair(start,end);
-  LoadedAssetData convexHullSetData;
-  convexHullSetData.meshMetaData = convexHullSetMesh;
-  std::string identifier = filename + "CHD"; // ?? what to name this?
-  resourceDict_.emplace(identifier, convexHullSetData);
-  */
+  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
+  shaderManager_.set(std::to_string(nextMaterialID_++),
+                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
+
+  meshMetaData.root.meshIDLocal = 0;
+  meshMetaData.root.componentID = 0;
+  meshMetaData.root.materialIDLocal = 0;
+
+  // make assetInfo
+  AssetInfo info{AssetType::PRIMITIVE};
+  info.requiresLighting = false;
+
+  // store the rotation to world frame upon load - currently superfluous
+  const quatf transform = info.frame.rotationFrameToWorld();
+  Magnum::Matrix4 R = Magnum::Matrix4::from(
+      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+  meshMetaData.root.transformFromLocalToParent =
+      R * meshMetaData.root.transformFromLocalToParent;
+
+  // make LoadedAssetData corresponding to this asset
+  LoadedAssetData loadedAssetData{info, meshMetaData};
+  // TODO : need to free render assets associated with this object if collision
+  // occurs, otherwise leak! (Currently unsupported).
+  // if (resourceDict_.count(trajVisName) != 0) {
+  //   resourceDict_.erase(trajVisName);
+  // }
+
+  // insert MeshMetaData into resourceDict_
+  auto insertedResourceDict =
+      resourceDict_.emplace(CHDFilename, std::move(loadedAssetData));
+  // Register collision mesh group
+  auto insertedCollisionMeshGroup =
+      collisionMeshGroups_.emplace(CHDFilename, collisionMeshGroup);
 }
 
 }  // namespace assets

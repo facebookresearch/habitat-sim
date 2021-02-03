@@ -339,7 +339,7 @@ class ResourceManager {
    * @param filename The MeshMetaData filename to receive primitive attributes
    * from.
    * @param points The vector of points to be filled with the mesh vertices.
-   * @param indices The vector of indices to be filled with the mesh index
+   * @param triangles The vector of indices to be filled with the mesh index
    * buffer.
    */
   void getPrimitiveMeshData(const std::string& filename,
@@ -350,9 +350,13 @@ class ResourceManager {
    * @brief Runs convex hull decomposition on a specified file.
    *
    * @param filename The MeshMetaData filename to be converted.
+   * @param CHDFilename The new filename for the CHD collision mesh.
+   * @param params VHACD params that specify resolution, vertices per convex
+   * hull, etc.
    */
   void convexHullDecomposition(
       const std::string& filename,
+      const std::string& CHDFilename,
       const VHACDParameters& params = VHACDParameters());
   /**
    * @brief Add an object from a specified object template handle to the

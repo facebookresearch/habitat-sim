@@ -99,6 +99,8 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string donutFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/donut.glb");
+  std::string CHdonutFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/CHdonut.glb");
 
   // create stage attributes file
   auto stageAttributes = stageAttributesMgr->createObject(donutFile, true);
@@ -116,7 +118,7 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
       resourceManager.createJoinedCollisionMesh(donutFile);
 
   esp::assets::ResourceManager::VHACDParameters params;
-  resourceManager.convexHullDecomposition(donutFile, params);
+  resourceManager.convexHullDecomposition(donutFile, CHdonutFile, params);
 
   // transform_box.glb is composed of 6 identical triangulated plane meshes
   // transformed into a cube via a transform heirarchy. Combined, the resulting
