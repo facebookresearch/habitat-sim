@@ -16,18 +16,18 @@ namespace esp {
 namespace core {
 
 /**
- * @brief This enum describes how objects held in the ManagedConatainers are
+ * @brief This enum describes how objects held in the @ref ManagedConatainer are
  * accessed.
  */
 enum class ManagedContainerAccess {
   /**
-   * @brief When an object is requested to be retrieved, a copy is made and
+   * When an object is requested to be retrieved, a copy is made and
    * returned.  Modifications to this object will only take place if the object
    * is registered.
    */
   Copy,
   /**
-   * @brief When an object is requested to be retrieved, a reference to the
+   * When an object is requested to be retrieved, a reference to the
    * object itself is returned, and all changes will be tracked without
    * registration.
    */
