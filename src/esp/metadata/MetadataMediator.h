@@ -475,8 +475,7 @@ class MetadataMediator {
    * internal use.
    */
   attributes::SceneDatasetAttributes::ptr getActiveDSAttribs() const {
-    // do not get copy of dataset attributes until SceneDatasetAttributes deep
-    // copy ctor implemented
+    // do not get copy of dataset attributes
     auto datasetAttr =
         sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
     if (datasetAttr == nullptr) {

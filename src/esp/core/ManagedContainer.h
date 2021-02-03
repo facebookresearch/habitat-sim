@@ -14,14 +14,37 @@
 
 namespace esp {
 namespace core {
+
+/**
+ * @brief This enum describes how objects held in the @ref ManagedConatainer are
+ * accessed.
+ */
+enum class ManagedContainerAccess {
+  /**
+   * When an object is requested to be retrieved, a copy is made and
+   * returned.  Modifications to this object will only take place if the object
+   * is registered.
+   */
+  Copy,
+  /**
+   * When an object is requested to be retrieved, a reference to the
+   * object itself is returned, and all changes will be tracked without
+   * registration.
+   */
+  Share
+};
+
 /**
  * @brief Class template defining responsibilities and functionality for
  * managing @ref esp::core::AbstractManagedObject constructs.
  * @tparam T the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
  * esp::core::AbstractManagedObject.
+ * @tparam Access Whether the default access (getters) for this
+ * container provides copies of the objects held, or the actual objects
+ * themselves.
  */
-template <class T>
+template <class T, ManagedContainerAccess Access>
 class ManagedContainer : public ManagedContainerBase {
  public:
   static_assert(std::is_base_of<AbstractManagedObject, T>::value,
@@ -336,7 +359,11 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
-    return this->copyObject(orig);
+    if (Access == ManagedContainerAccess::Copy) {
+      return this->copyObject(orig);
+    } else {
+      return orig;
+    }
   }  // ManagedContainer::getObjectCopyByID
 
   /**
@@ -353,7 +380,11 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
-    return this->copyObject(orig);
+    if (Access == ManagedContainerAccess::Copy) {
+      return this->copyObject(orig);
+    } else {
+      return orig;
+    }
   }  // ManagedContainer::getObjectCopyByHandle
 
   /**
@@ -488,7 +519,7 @@ class ManagedContainer : public ManagedContainerBase {
       return getObjectInternal<T>(objectHandle)->getID();
     } else {
       if (!getNext) {
-        LOG(ERROR) << "ManagedContainerBase::getObjectIDByHandleOrNew : No "
+        LOG(ERROR) << "ManagedContainer::getObjectIDByHandleOrNew : No "
                    << objectType_ << " managed object with handle "
                    << objectHandle << "exists. Aborting";
         return ID_UNDEFINED;
@@ -554,7 +585,7 @@ class ManagedContainer : public ManagedContainerBase {
     if (defaultObj_ == nullptr) {
       return nullptr;
     }
-    ManagedPtr res = this->copyObject(defaultObj_);
+    ManagedPtr res = copyObject(defaultObj_);
     if (nullptr != res) {
       res->setHandle(newHandle);
     }
@@ -595,7 +626,7 @@ class ManagedContainer : public ManagedContainerBase {
    * createObjectCopy keyed by string names of classes being instanced,
    */
   typedef std::map<std::string,
-                   ManagedPtr (ManagedContainer<T>::*)(ManagedPtr&)>
+                   ManagedPtr (ManagedContainer<T, Access>::*)(ManagedPtr&)>
       Map_Of_CopyCtors;
 
   /**
@@ -612,17 +643,17 @@ class ManagedContainer : public ManagedContainerBase {
   ManagedPtr defaultObj_ = nullptr;
 
  public:
-  ESP_SMART_POINTERS(ManagedContainer<T>)
+  ESP_SMART_POINTERS(ManagedContainer<T, Access>);
 
 };  // class ManagedContainer
 
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T>
-auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
-                                                   bool contains)
-    -> std::vector<ManagedPtr> {
+template <class T, ManagedContainerAccess Access>
+auto ManagedContainer<T, Access>::removeObjectsBySubstring(
+    const std::string& subStr,
+    bool contains) -> std::vector<ManagedPtr> {
   std::vector<ManagedPtr> res;
   // get all handles that match query elements first
   std::vector<std::string> handles =
@@ -635,12 +666,12 @@ auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
     }
   }
   return res;
-}  // ManagedContainer<T>::removeObjectsBySubstring
+}  // ManagedContainer<T, Access>::removeObjectsBySubstring
 
-template <class T>
-auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
-                                               const std::string& sourceStr)
-    -> ManagedPtr {
+template <class T, ManagedContainerAccess Access>
+auto ManagedContainer<T, Access>::removeObjectInternal(
+    const std::string& objectHandle,
+    const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
     LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
               << " managed object " << objectHandle << " : Does not exist.";

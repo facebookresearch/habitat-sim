@@ -16,12 +16,13 @@ namespace esp {
 namespace metadata {
 namespace managers {
 class LightLayoutAttributesManager
-    : public AttributesManager<attributes::LightLayoutAttributes> {
+    : public AttributesManager<attributes::LightLayoutAttributes,
+                               core::ManagedContainerAccess::Copy> {
  public:
   LightLayoutAttributesManager()
-      : AttributesManager<attributes::LightLayoutAttributes>::AttributesManager(
-            "Lighting Layout",
-            "lighting_config.json") {
+      : AttributesManager<attributes::LightLayoutAttributes,
+                          core::ManagedContainerAccess::Copy>::
+            AttributesManager("Lighting Layout", "lighting_config.json") {
     buildCtorFuncPtrMaps();
   }
 
