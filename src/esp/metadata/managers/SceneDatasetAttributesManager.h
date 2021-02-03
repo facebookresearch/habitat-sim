@@ -14,11 +14,13 @@ namespace esp {
 namespace metadata {
 namespace managers {
 class SceneDatasetAttributesManager
-    : public AttributesManager<attributes::SceneDatasetAttributes, false> {
+    : public AttributesManager<attributes::SceneDatasetAttributes,
+                               core::ManagedContainerAccess::Share> {
  public:
   SceneDatasetAttributesManager(
       PhysicsAttributesManager::ptr physicsAttributesMgr)
-      : AttributesManager<attributes::SceneDatasetAttributes, false>::
+      : AttributesManager<attributes::SceneDatasetAttributes,
+                          core::ManagedContainerAccess::Share>::
             AttributesManager("Dataset", "scene_dataset_config.json"),
         physicsAttributesManager_(physicsAttributesMgr) {
     buildCtorFuncPtrMaps();

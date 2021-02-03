@@ -43,12 +43,13 @@ enum class SceneInstanceTranslationOrigin {
 };
 
 class SceneAttributesManager
-    : public AttributesManager<attributes::SceneAttributes, true> {
+    : public AttributesManager<attributes::SceneAttributes,
+                               core::ManagedContainerAccess::Copy> {
  public:
   SceneAttributesManager()
-      : AttributesManager<attributes::SceneAttributes, true>::AttributesManager(
-            "Scene Instance",
-            "scene_instance.json") {
+      : AttributesManager<attributes::SceneAttributes,
+                          core::ManagedContainerAccess::Copy>::
+            AttributesManager("Scene Instance", "scene_instance.json") {
     buildCtorFuncPtrMaps();
   }
 

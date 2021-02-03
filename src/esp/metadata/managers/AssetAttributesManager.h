@@ -76,7 +76,8 @@ enum class PrimObjTypes : uint32_t {
 };
 namespace managers {
 class AssetAttributesManager
-    : public AttributesManager<attributes::AbstractPrimitiveAttributes, true> {
+    : public AttributesManager<attributes::AbstractPrimitiveAttributes,
+                               core::ManagedContainerAccess::Copy> {
  public:
   /**
    * @brief Constant Map holding names of all Magnum 3D primitive classes
@@ -87,8 +88,8 @@ class AssetAttributesManager
 
   AssetAttributesManager()
       : AttributesManager<attributes::AbstractPrimitiveAttributes,
-                          true>::AttributesManager("Primitive Asset",
-                                                   "prim_config.json") {
+                          core::ManagedContainerAccess::Copy>::
+            AttributesManager("Primitive Asset", "prim_config.json") {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
 

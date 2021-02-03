@@ -11,14 +11,17 @@
 #include "PhysicsAttributesManager.h"
 
 namespace esp {
+namespace core {
+enum class ManagedContainerAccess;
+}
 namespace assets {
 enum class AssetType;
 }  // namespace assets
 namespace metadata {
 namespace managers {
-class StageAttributesManager
-    : public AbstractObjectAttributesManager<attributes::StageAttributes,
-                                             true> {
+class StageAttributesManager : public AbstractObjectAttributesManager<
+                                   attributes::StageAttributes,
+                                   core::ManagedContainerAccess::Copy> {
  public:
   StageAttributesManager(
       ObjectAttributesManager::ptr objectAttributesMgr,

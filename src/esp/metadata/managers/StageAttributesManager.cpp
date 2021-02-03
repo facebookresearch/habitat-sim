@@ -26,7 +26,8 @@ namespace managers {
 StageAttributesManager::StageAttributesManager(
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
-    : AbstractObjectAttributesManager<StageAttributes, true>::
+    : AbstractObjectAttributesManager<StageAttributes,
+                                      core::ManagedContainerAccess::Copy>::
           AbstractObjectAttributesManager("Stage", "stage_config.json"),
       objectAttributesMgr_(std::move(objectAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),

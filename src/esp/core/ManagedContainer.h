@@ -14,17 +14,37 @@
 
 namespace esp {
 namespace core {
+
+/**
+ * @brief This enum describes how objects held in the ManagedConatainers are
+ * accessed.
+ */
+enum class ManagedContainerAccess {
+  /**
+   * @brief When an object is requested to be retrieved, a copy is made and
+   * returned.  Modifications to this object will only take place if the object
+   * is registered.
+   */
+  Copy,
+  /**
+   * @brief When an object is requested to be retrieved, a reference to the
+   * object itself is returned, and all changes will be tracked without
+   * registration.
+   */
+  Share
+};
+
 /**
  * @brief Class template defining responsibilities and functionality for
  * managing @ref esp::core::AbstractManagedObject constructs.
  * @tparam T the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
  * esp::core::AbstractManagedObject.
- * @tparam AccessViaCopies Whether the default access (getters) for this
+ * @tparam Access Whether the default access (getters) for this
  * container provides copies of the objects held, or the actual objects
  * themselves.
  */
-template <class T, bool AccessViaCopies>
+template <class T, ManagedContainerAccess Access>
 class ManagedContainer : public ManagedContainerBase {
  public:
   static_assert(std::is_base_of<AbstractManagedObject, T>::value,
@@ -339,7 +359,7 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
-    if (AccessViaCopies) {
+    if (Access == ManagedContainerAccess::Copy) {
       return this->copyObject(orig);
     } else {
       return orig;
@@ -360,7 +380,7 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
-    if (AccessViaCopies) {
+    if (Access == ManagedContainerAccess::Copy) {
       return this->copyObject(orig);
     } else {
       return orig;
@@ -606,8 +626,7 @@ class ManagedContainer : public ManagedContainerBase {
    * createObjectCopy keyed by string names of classes being instanced,
    */
   typedef std::map<std::string,
-                   ManagedPtr (ManagedContainer<T, AccessViaCopies>::*)(
-                       ManagedPtr&)>
+                   ManagedPtr (ManagedContainer<T, Access>::*)(ManagedPtr&)>
       Map_Of_CopyCtors;
 
   /**
@@ -624,15 +643,15 @@ class ManagedContainer : public ManagedContainerBase {
   ManagedPtr defaultObj_ = nullptr;
 
  public:
-  ESP_SMART_POINTERS(ManagedContainer<T, AccessViaCopies>);
+  ESP_SMART_POINTERS(ManagedContainer<T, Access>);
 
 };  // class ManagedContainer
 
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T, bool AccessViaCopies>
-auto ManagedContainer<T, AccessViaCopies>::removeObjectsBySubstring(
+template <class T, ManagedContainerAccess Access>
+auto ManagedContainer<T, Access>::removeObjectsBySubstring(
     const std::string& subStr,
     bool contains) -> std::vector<ManagedPtr> {
   std::vector<ManagedPtr> res;
@@ -647,10 +666,10 @@ auto ManagedContainer<T, AccessViaCopies>::removeObjectsBySubstring(
     }
   }
   return res;
-}  // ManagedContainer<T, AccessViaCopies>::removeObjectsBySubstring
+}  // ManagedContainer<T, Access>::removeObjectsBySubstring
 
-template <class T, bool AccessViaCopies>
-auto ManagedContainer<T, AccessViaCopies>::removeObjectInternal(
+template <class T, ManagedContainerAccess Access>
+auto ManagedContainer<T, Access>::removeObjectInternal(
     const std::string& objectHandle,
     const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
