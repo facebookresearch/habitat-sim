@@ -121,7 +121,7 @@ class LightLayoutAttributes : public AbstractAttributes {
   /**
    * @brief Get the lighting instances for this layout
    */
-  const std::map<std::string, LightInstanceAttributes::ptr> getLightInstances()
+  const std::map<std::string, LightInstanceAttributes::ptr>& getLightInstances()
       const {
     return lightInstances_;
   }
