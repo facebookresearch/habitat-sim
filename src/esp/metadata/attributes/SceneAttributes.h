@@ -185,7 +185,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneObjectInstanceAttributes::ptr> getObjectInstances()
+  const std::vector<SceneObjectInstanceAttributes::ptr>& getObjectInstances()
       const {
     return objectInstances_;
   }
