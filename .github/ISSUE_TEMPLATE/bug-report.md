@@ -8,10 +8,7 @@ about: Submit a bug report to help us improve Habitat
 
 <!-- A clear and concise description of what the bug is. -->
 
-## Command
-`# command that you run`
-
-## To Reproduce
+## Steps to Reproduce
 
 Steps to reproduce the behavior:
 
