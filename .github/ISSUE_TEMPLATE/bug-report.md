@@ -21,6 +21,8 @@ Steps to reproduce the behavior:
 2.
 3.
 
+Please note that without a minimal working example to reproduce the bug, we may not be able to help you. 
+
 <!-- If you have a code sample, error messages, stack traces, please provide it here as well -->
 
 ## Expected behavior
