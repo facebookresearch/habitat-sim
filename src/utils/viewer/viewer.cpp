@@ -337,6 +337,7 @@ Key Commands:
   esp::agent::Agent::ptr defaultAgent_ = nullptr;
   std::string currentCameraObject_ =
       "Agent";  // String of current Camera to display in viewer window
+  std::string lastAddedObjectName_ = "";
   esp::sensor::CameraSensor* cameraSensor_ =
       nullptr;  // handle to CameraSensor of current renderCamera
 
@@ -726,7 +727,13 @@ int Viewer::addObject(const std::string& objectAttrHandle) {
 int Viewer::addTemplateObject() {
   int numObjTemplates = objectAttrManager_->getNumFileTemplateObjects();
   if (numObjTemplates > 0) {
-    return addObject(objectAttrManager_->getRandomFileTemplateHandle());
+    std::string fileTemplateHandle =
+        objectAttrManager_->getRandomFileTemplateHandle();
+    // Get object name to display in imgui text
+    std::string fileName =
+        fileTemplateHandle.substr(fileTemplateHandle.find_last_of("/") + 1);
+    lastAddedObjectName_ = fileName.substr(0, fileName.find_first_of('.'));
+    return addObject(fileTemplateHandle);
   } else {
     LOG(WARNING) << "No objects loaded, can't add any";
     return esp::ID_UNDEFINED;
@@ -1012,7 +1019,11 @@ void Viewer::drawEvent() {
                                       esp::sensor::SensorSubType::Orthographic
                                   ? "Orthographic"
                                   : "Pinhole"));
-    ImGui::Text("Camera object: %s", currentCameraObject_.c_str());
+    ImGui::Text(
+        "Camera object: %s %s",
+        (currentCameraObject_.compare("Agent") == 0 ? "" : lastAddedObjectName_)
+            .c_str(),
+        currentCameraObject_.c_str());
     ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
