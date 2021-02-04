@@ -7,7 +7,6 @@ from os import path as osp
 def run_main(*args):
     # patch sys.args
     sys.argv = list(args)
-    print("Args", args)
     target = args[0]
     # run_path has one difference with invoking Python from command-line:
     # if the target is a file (rather than a directory), it does not add its
