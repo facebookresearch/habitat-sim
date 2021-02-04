@@ -34,7 +34,6 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
-#include <iostream>
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -2218,14 +2217,15 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
                               (const uint32_t*)&triangles[0],
                               (unsigned int)triangles.size() / 3, params);
 
-  std::cout << "== VHACD ran ==" << std::endl;
+  Cr::Utility::Debug() << "== VHACD ran ==";
 
   // convert convex hulls into MeshDatas, CollisionMeshDatas
   int meshStart = meshes_.size();
   std::vector<CollisionMeshData> collisionMeshGroup;
   int nConvexHulls = interfaceVHACD->GetNConvexHulls();
   VHACD::IVHACD::ConvexHull ch;
-  for (unsigned int p = 0; p < nConvexHulls; ++p) {
+  std::unique_ptr<GenericMeshData> genCHMeshData;
+  for (unsigned int p = 0; p < 1; ++p) {
     // for each convex hull, transfer the data to a newly created MeshData
     interfaceVHACD->GetConvexHull(p, ch);
 
@@ -2247,33 +2247,44 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
     Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::Trade::MeshData{
         Mn::MeshPrimitive::Triangles,
         {},
-        indices,
+        std::move(indices),
         Mn::Trade::MeshIndexData{indices},
         {},
-        positions,
+        std::move(positions),
         {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
                                       Cr::Containers::arrayView(positions)}}};
-    std::cout << "== MeshData created ==" << std::endl;
-    auto genCHMeshData = std::make_unique<GenericMeshData>(false);
+    Cr::Utility::Debug() << "ahh";
+    // Create a GenericMeshData
+    genCHMeshData = std::make_unique<GenericMeshData>(false);
     genCHMeshData->setMeshData(*std::move(CHMesh));
-
-    // compute the mesh bounding box
     genCHMeshData->BB = computeMeshBB(genCHMeshData.get());
-
     genCHMeshData->uploadBuffersToGPU(false);
 
+    // Create CollisionMeshData and add to collisionMeshGroup vector
     CollisionMeshData CHCollisionMesh = genCHMeshData->getCollisionMeshData();
     collisionMeshGroup.push_back(CHCollisionMesh);
-    std::cout << "== CH completed ==" << std::endl;
-    // register in meshes_ dict
+
+    // register GenericMeshData in meshes_ dict
     meshes_.emplace(meshes_.size(), std::move(genCHMeshData));
-
-    // add to collisionMeshGroup vector
+    Cr::Utility::Debug() << "loop";
   }
-
   // make MeshMetaData
   int meshEnd = meshes_.size() - 1;
   MeshMetaData meshMetaData{meshStart, meshEnd};
+
+  // get original componentID (REVISIT)
+  int componentID = getMeshMetaData(filename).root.componentID;
+
+  // populate MeshMetaData root children
+  for (unsigned int p = 0; p < nConvexHulls; ++p) {
+    MeshTransformNode transformNode;
+    transformNode.meshIDLocal = p;
+    transformNode.componentID = componentID;
+    transformNode.materialIDLocal = 0;
+    meshMetaData.root.children.push_back(transformNode);
+  }
+
+  Cr::Utility::Debug() << "transforms MADE";
 
   // default material for now
   auto phongMaterial = gfx::PhongMaterialData::create_unique();
@@ -2286,10 +2297,6 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
   meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
   shaderManager_.set(std::to_string(nextMaterialID_++),
                      static_cast<gfx::MaterialData*>(phongMaterial.release()));
-
-  meshMetaData.root.meshIDLocal = 0;
-  meshMetaData.root.componentID = 0;
-  meshMetaData.root.materialIDLocal = 0;
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
@@ -2310,12 +2317,13 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
   //   resourceDict_.erase(trajVisName);
   // }
 
+  Cr::Utility::Debug() << "END";
+  // Register collision mesh group
+  auto insertedCollisionMeshGroup =
+      collisionMeshGroups_.emplace(CHDFilename, std::move(collisionMeshGroup));
   // insert MeshMetaData into resourceDict_
   auto insertedResourceDict =
       resourceDict_.emplace(CHDFilename, std::move(loadedAssetData));
-  // Register collision mesh group
-  auto insertedCollisionMeshGroup =
-      collisionMeshGroups_.emplace(CHDFilename, collisionMeshGroup);
 }
 
 }  // namespace assets
