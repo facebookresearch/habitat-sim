@@ -24,6 +24,7 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Interleave.h>
+#include <Magnum/MeshTools/Reference.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
 #include <Magnum/Shaders/Flat.h>
@@ -2213,9 +2214,9 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
 
   // use VHACD
   bool res =
-      interfaceVHACD->Compute(&points[0], (unsigned int)points.size() / 3,
+      interfaceVHACD->Compute(&points[0], (unsigned int)(points.size() / 3),
                               (const uint32_t*)&triangles[0],
-                              (unsigned int)triangles.size() / 3, params);
+                              (unsigned int)(triangles.size() / 3), params);
 
   Cr::Utility::Debug() << "== VHACD ran ==";
 
@@ -2226,17 +2227,17 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
   VHACD::IVHACD::ConvexHull ch;
   std::unique_ptr<GenericMeshData> genCHMeshData;
   for (unsigned int p = 0; p < 1; ++p) {
-    // for each convex hull, transfer the data to a newly created MeshData
+    // for each convex hull, transfer the data to a newly created  MeshData
     interfaceVHACD->GetConvexHull(p, ch);
 
     std::vector<Magnum::UnsignedInt> indices;
     std::vector<Magnum::Vector3> positions;
 
     // add the vertices
-    positions.resize(ch.m_nPoints / 3);
+    positions.resize(ch.m_nPoints);
     for (size_t vix = 0; vix < ch.m_nPoints; vix += 3) {
-      positions[vix] = Magnum::Vector3(ch.m_points[vix], ch.m_points[vix + 1],
-                                       ch.m_points[vix] + 2);
+      positions[vix / 3] = Magnum::Vector3(
+          ch.m_points[vix], ch.m_points[vix + 1], ch.m_points[vix + 2]);
     }
 
     // add indices
@@ -2244,26 +2245,30 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
     for (size_t ix = 0; ix < ch.m_nTriangles; ix += 3) {
       indices[ix] = ch.m_triangles[ix];
     }
-    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::Trade::MeshData{
-        Mn::MeshPrimitive::Triangles,
-        {},
-        std::move(indices),
-        Mn::Trade::MeshIndexData{indices},
-        {},
-        std::move(positions),
-        {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
-                                      Cr::Containers::arrayView(positions)}}};
+    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::owned(
+        Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
+                            {},
+                            std::move(indices),
+                            Mn::Trade::MeshIndexData{indices},
+                            {},
+                            std::move(positions),
+                            {Mn::Trade::MeshAttributeData{
+                                Mn::Trade::MeshAttribute::Position,
+                                Cr::Containers::arrayView(positions)}}});
     Cr::Utility::Debug() << "ahh";
     // Create a GenericMeshData
     genCHMeshData = std::make_unique<GenericMeshData>(false);
+
     genCHMeshData->setMeshData(*std::move(CHMesh));
+    Cr::Utility::Debug() << "ahh2";
     genCHMeshData->BB = computeMeshBB(genCHMeshData.get());
+    Cr::Utility::Debug() << "ahh3";
     genCHMeshData->uploadBuffersToGPU(false);
 
     // Create CollisionMeshData and add to collisionMeshGroup vector
     CollisionMeshData CHCollisionMesh = genCHMeshData->getCollisionMeshData();
     collisionMeshGroup.push_back(CHCollisionMesh);
-
+    Cr::Utility::Debug() << "ahh2";
     // register GenericMeshData in meshes_ dict
     meshes_.emplace(meshes_.size(), std::move(genCHMeshData));
     Cr::Utility::Debug() << "loop";
@@ -2303,11 +2308,11 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
   info.requiresLighting = false;
 
   // store the rotation to world frame upon load - currently superfluous
-  const quatf transform = info.frame.rotationFrameToWorld();
+  /*const quatf transform = info.frame.rotationFrameToWorld();
   Magnum::Matrix4 R = Magnum::Matrix4::from(
       Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
   meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;
+      R * meshMetaData.root.transformFromLocalToParent;*/
 
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
