@@ -6,6 +6,7 @@
 #define ESP_METADATA_ATTRIBUTES_LIGHTLAYOUTATTRIBUTES_H_
 
 #include "AttributesBase.h"
+#include "esp/gfx/LightSetup.h"
 
 namespace esp {
 namespace metadata {
@@ -18,6 +19,12 @@ namespace attributes {
  */
 class LightInstanceAttributes : public AbstractAttributes {
  public:
+  /**
+   * @brief Constant static map to provide mappings from string tags to @ref
+   * esp::gfx::LightType values.  This will be used to map values set in json
+   * for light type to @ref esp::gfx::LightType.  Keys must be lowercase.
+   */
+  static const std::map<std::string, esp::gfx::LightType> LightTypeNamesMap;
   LightInstanceAttributes(const std::string& handle = "");
 
   /**
@@ -51,8 +58,8 @@ class LightInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Get/Set the type of the light
    */
-  void setType(const std::string& type) { setString("type", type); }
-  std::string getType() const { return getString("type"); }
+  void setType(int type) { setInt("type", type); }
+  int getType() const { return getInt("type"); }
 
   /**
    * @brief Get/Set inner cone angle for spotlights.  Should be ignored for
@@ -114,7 +121,7 @@ class LightLayoutAttributes : public AbstractAttributes {
   /**
    * @brief Get the lighting instances for this layout
    */
-  const std::map<std::string, LightInstanceAttributes::ptr> getLightInstances()
+  const std::map<std::string, LightInstanceAttributes::ptr>& getLightInstances()
       const {
     return lightInstances_;
   }
