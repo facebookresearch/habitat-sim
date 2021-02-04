@@ -56,6 +56,7 @@ void Simulator::close() {
   navMeshVisPrimID_ = esp::ID_UNDEFINED;
   navMeshVisNode_ = nullptr;
   agents_.clear();
+  sensorSuite_.clear();
 
   physicsManager_ = nullptr;
   gfxReplayMgr_ = nullptr;
@@ -388,6 +389,11 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
     return physicsManager_->getExistingObjectIDs();
   }
   return std::vector<int>();  // empty if no simulator exists
+}
+
+// return a pointer to a sceneNode of an existing object
+esp::scene::SceneNode& Simulator::getObjectNode(const int objectId) {
+  return physicsManager_->getObjectSceneNode(objectId);
 }
 
 // remove object objectID instance in sceneID
@@ -828,8 +834,12 @@ agent::Agent::ptr Simulator::addAgent(
   // constructor of Agent)
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
-  ag->setSensorSuite(SensorFactory::createSensors(
-      agentNode, agentConfig.sensorSpecifications));
+  esp::sensor::SensorSuite agentSensors =
+      esp::sensor::SensorFactory::createSensors(
+          agentNode, agentConfig.sensorSpecifications);
+  ag->setSensorSuite(agentSensors);
+  sensorSuite_.merge(agentSensors);
+  LOG(INFO) << sensorSuite_.getSensors().size();
 
   agent::AgentState state;
   sampleRandomAgentState(state);
@@ -863,6 +873,20 @@ agent::Agent::ptr Simulator::addAgent(
 agent::Agent::ptr Simulator::getAgent(const int agentId) {
   ASSERT(0 <= agentId && agentId < agents_.size());
   return agents_[agentId];
+}
+
+void Simulator::addSensorToObject(const int objectID) {
+  esp::sensor::SensorSpec::ptr objectSensorSpec =
+      esp::sensor::SensorSpec::create_unique();
+  objectSensorSpec->uuid = std::to_string(objectID);
+  objectSensorSpec->position = {0.0f, 0.0f, 0.0f};
+  esp::sensor::SensorSetup sensorSpecifications = {
+      objectSensorSpec};  // default SensorSpec
+  esp::scene::SceneNode& objectNode = getObjectNode(objectID);
+  esp::sensor::SensorSuite sensorSuite =
+      esp::sensor::SensorFactory::createSensors(objectNode,
+                                                sensorSpecifications);
+  sensorSuite_.merge(sensorSuite);
 }
 
 nav::PathFinder::ptr Simulator::getPathFinder() {
@@ -911,6 +935,10 @@ bool Simulator::drawObservation(const int agentId,
     }
   }
   return false;
+}
+
+bool Simulator::drawObservation(esp::sensor::VisualSensor* visualSensor) {
+  return visualSensor->drawObservation(*this);
 }
 
 bool Simulator::getAgentObservation(const int agentId,

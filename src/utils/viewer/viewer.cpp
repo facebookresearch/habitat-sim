@@ -52,6 +52,7 @@
 #include "esp/io/io.h"
 
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/SensorFactory.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
@@ -143,6 +144,8 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
+  void addCameraToLastObject();
+  void switchCameraSensor();
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -208,6 +211,7 @@ Key Commands:
   'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
   '[' save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt"
   ']' load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance
+  '\' switch between render cameras
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -217,6 +221,7 @@ Key Commands:
   'u': Remove most recently instanced object.
   'b': Toggle display of object bounding boxes.
   'k': Kinematically wiggle the most recently added object.
+  'm': Add sensor to most recently added object.
   'p': (physics) Poke the most recently added object.
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
@@ -330,6 +335,10 @@ Key Commands:
 
   const int defaultAgentId_ = 0;
   esp::agent::Agent::ptr defaultAgent_ = nullptr;
+  std::string currentCameraObject_ =
+      "Agent";  // String of current Camera to display in viewer window
+  esp::sensor::CameraSensor* cameraSensor_ =
+      nullptr;  // handle to CameraSensor of current renderCamera
 
   // Scene or stage file to load
   std::string sceneFileName;
@@ -538,6 +547,7 @@ Viewer::Viewer(const Arguments& arguments)
   activeSceneGraph_ = &simulator_->getActiveSceneGraph();
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
+  cameraSensor_ = &getAgentCamera();
   renderCamera_ = getAgentCamera().getRenderCamera();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
@@ -588,16 +598,14 @@ Viewer::Viewer(const Arguments& arguments)
 }  // end Viewer::Viewer
 
 void Viewer::switchCameraType() {
-  auto& cam = getAgentCamera();
-
-  auto oldCameraType = cam.getCameraType();
+  auto oldCameraType = cameraSensor_->getCameraType();
   switch (oldCameraType) {
     case esp::sensor::SensorSubType::Pinhole: {
-      cam.setCameraType(esp::sensor::SensorSubType::Orthographic);
+      cameraSensor_->setCameraType(esp::sensor::SensorSubType::Orthographic);
       return;
     }
     case esp::sensor::SensorSubType::Orthographic: {
-      cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
+      cameraSensor_->setCameraType(esp::sensor::SensorSubType::Pinhole);
       return;
     }
   }
@@ -814,6 +822,55 @@ void Viewer::torqueLastObject() {
   simulator_->applyTorque(torque, existingObjectIDs.back());
 }
 
+// Add a CameraSensor to an the last added object
+void Viewer::addCameraToLastObject() {
+  auto existingObjectIDs = simulator_->getExistingObjectIDs();
+  if (existingObjectIDs.size() == 0)
+    return;
+  simulator_->addSensorToObject(existingObjectIDs.back());
+  LOG(INFO) << simulator_->getSensorSuite().getSensors().size();
+  std::map<std::string, esp::sensor::Sensor::ptr>::iterator it;
+  for (it = simulator_->getSensorSuite().getSensors().begin();
+       it != simulator_->getSensorSuite().getSensors().end(); it++) {
+    LOG(INFO) << it->first;
+  }
+}
+
+// Switch renderCamera_ used for rendering between the agent and last added
+// camera, update cameraSensor_ and currentCameraObject
+void Viewer::switchCameraSensor() {
+  auto existingObjectIDs = simulator_->getExistingObjectIDs();
+  if (existingObjectIDs.size() == 0)
+    return;
+  flyingCameraMode_ = true;  // Needed for object camera to work
+  // If currentCameraObject is Agent, set renderCamera to the most recently
+  // added sensor
+  if (currentCameraObject_.compare("Agent") == 0) {
+    std::string lastCameraID =
+        std::to_string(simulator_->getSensorSuite().getSensors().size() -
+                       2);  // SensorSuite contains 0-indexed object sensors and
+                            // default agent's rgba-camera
+    esp::sensor::CameraSensor* cameraSensor =
+        dynamic_cast<esp::sensor::CameraSensor*>(
+            simulator_->getSensorSuite().getSensors()[lastCameraID].get());
+    renderCamera_ = cameraSensor->getRenderCamera();
+    simulator_->getRenderer()->bindRenderTarget(*cameraSensor);
+    cameraSensor_ = cameraSensor;
+    currentCameraObject_ = lastCameraID;
+
+  } else {  // If currentCameraObject is not an Agent, set renderCamera to that
+            // of Agent
+    esp::sensor::CameraSensor* cameraSensor =
+        dynamic_cast<esp::sensor::CameraSensor*>(
+            simulator_->getSensorSuite().getSensors()["rgba_camera"].get());
+    renderCamera_ = cameraSensor->getRenderCamera();
+    simulator_->getRenderer()->bindRenderTarget(*cameraSensor);
+    cameraSensor_ = cameraSensor;
+    currentCameraObject_ = "Agent";
+  }
+  redraw();
+}
+
 // generate random direction vectors:
 Mn::Vector3 Viewer::randomDirection() {
   Mn::Vector3 dir(1.0f, 1.0f, 1.0f);
@@ -890,7 +947,7 @@ void Viewer::drawEvent() {
     // ONLY draw the content to the frame buffer but not immediately blit the
     // result to the default main buffer
     // (this is the reason we do not call displayObservation)
-    simulator_->drawObservation(defaultAgentId_, "rgba_camera");
+    simulator_->drawObservation(cameraSensor_);
     // TODO: enable other sensors to be displayed
 
     Mn::GL::Renderer::setDepthFunction(
@@ -905,9 +962,8 @@ void Viewer::drawEvent() {
     Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
-    visibles = renderCamera_->getPreviousNumVisibileDrawables();
-    esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
+    visibles = renderCamera_->getPreviousNumVisibleDrawables();
+    esp::gfx::RenderTarget* sensorRenderTarget = &cameraSensor_->renderTarget();
     CORRADE_ASSERT(sensorRenderTarget,
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
@@ -952,11 +1008,11 @@ void Viewer::drawEvent() {
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
-    auto& cam = getAgentCamera();
-    ImGui::Text("%s camera",
-                (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
-                     ? "Orthographic"
-                     : "Pinhole"));
+    ImGui::Text("%s camera", (cameraSensor_->getCameraType() ==
+                                      esp::sensor::SensorSubType::Orthographic
+                                  ? "Orthographic"
+                                  : "Pinhole"));
+    ImGui::Text("Camera object: %s", currentCameraObject_.c_str());
     ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
@@ -1031,14 +1087,15 @@ void Viewer::moveAndLook(int repetitions) {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  auto& sensors = defaultAgent_->getSensorSuite();
+  auto& sensors = simulator_->getSensorSuite();
   for (auto entry : sensors.getSensors()) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
     if (visualSensor != nullptr) {
       visualSensor->specification()->resolution = {event.framebufferSize()[1],
                                                    event.framebufferSize()[0]};
-      renderCamera_->setViewport(visualSensor->framebufferSize());
+      visualSensor->getRenderCamera()->setViewport(
+          visualSensor->framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
     }
   }
@@ -1141,8 +1198,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   // Use shift for fine-grained zooming
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
   float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
-  auto& cam = getAgentCamera();
-  cam.modifyZoom(mod);
+  cameraSensor_->modifyZoom(mod);
   redraw();
 
   event.setAccepted();
@@ -1233,7 +1289,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::RightBracket:
       loadCameraTransformFromFile();
       break;
-
+    case KeyEvent::Key::Backslash:
+      switchCameraSensor();
+      break;
     case KeyEvent::Key::Equal: {
       // increase trajectory tube diameter
       LOG(INFO) << "Bigger";
@@ -1272,6 +1330,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::K:
       wiggleLastObject();
+      break;
+    case KeyEvent::Key::M:
+      addCameraToLastObject();
       break;
     case KeyEvent::Key::N:
       // toggle navmesh visualization

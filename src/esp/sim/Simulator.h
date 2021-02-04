@@ -18,6 +18,7 @@
 #include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+#include "esp/sensor/Sensor.h"
 
 #include "SimulatorConfiguration.h"
 
@@ -74,6 +75,8 @@ class Simulator {
   std::shared_ptr<gfx::replay::ReplayManager> getGfxReplayManager() {
     return gfxReplayMgr_;
   }
+
+  esp::sensor::SensorSuite& getSensorSuite() { return sensorSuite_; }
 
   void saveFrame(const std::string& filename);
 
@@ -250,6 +253,14 @@ class Simulator {
    * esp::physics::PhysicsManager::existingObjects_.
    */
   std::vector<int> getExistingObjectIDs(int sceneID = 0);
+
+  /**
+   * @brief Get the SceneNode of a physics object instanced in a physical scene.
+   * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
+   * @param objectID The ID of the object identifying it in @ref
+   * @return A reference to the SceneNode
+   */
+  esp::scene::SceneNode& getObjectNode(const int objectId);
 
   /**
    * @brief Get the @ref esp::physics::MotionType of an object.
@@ -717,6 +728,14 @@ class Simulator {
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
 
   /**
+   * @brief Initialize sensor and attach to sceneNode of a particular object
+   * @param agentId    Id of the object to which a sensor will be initialized at
+   * its node
+   *
+   */
+  void addSensorToObject(const int objectID);
+
+  /**
    * @brief Displays observations on default frame buffer for a
    * particular sensor of an agent
    * @param agentId    Id of the agent for which the observation is to
@@ -748,6 +767,14 @@ class Simulator {
    *                   be returned
    */
   bool drawObservation(int agentId, const std::string& sensorId);
+  /**
+   * @brief draw observations to the frame buffer stored in a
+   * particular sensor. Unlike the @displayObservation, it will
+   * not display the observation on the default frame buffer
+   * @param visualSensor    ptr to VisualSensor for which the observation is to
+   * be returned
+   */
+  bool drawObservation(esp::sensor::VisualSensor* visualSensor);
 
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,
@@ -888,6 +915,9 @@ class Simulator {
   SimulatorConfiguration config_;
 
   std::vector<agent::Agent::ptr> agents_;
+  // SensorSuite of all sensors available to the simulator
+  esp::sensor::SensorSuite sensorSuite_;
+
   nav::PathFinder::ptr pathfinder_;
   // state indicating frustum culling is enabled or not
   //
