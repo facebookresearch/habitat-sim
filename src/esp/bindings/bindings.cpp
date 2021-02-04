@@ -4,6 +4,7 @@
 
 #include "esp/bindings/bindings.h"
 
+#include "esp/assets/ResourceManager.h"
 #include "esp/core//random.h"
 #include "esp/core/Configuration.h"
 #include "esp/core/RigidState.h"
@@ -18,6 +19,10 @@ void initEspBindings(py::module& m) {
   py::class_<box3f>(m, "BBox")
       .def_property_readonly("sizes", &box3f::sizes)
       .def_property_readonly("center", &box3f::center);
+  py::class_<assets::ResourceManager::VHACDParameters,
+             assets::ResourceManager::VHACDParameters::ptr>(m,
+                                                            "VHACDParameters")
+      .def(py::init(&assets::ResourceManager::VHACDParameters::create<>));
 }
 
 namespace core {

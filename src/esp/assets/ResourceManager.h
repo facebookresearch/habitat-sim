@@ -89,6 +89,7 @@ class ResourceManager {
 
   struct VHACDParameters : VHACD::IVHACD::Parameters {
     // VHACDParameters();
+    ESP_SMART_POINTERS(VHACDParameters)
   };
 
   VHACD::IVHACD* interfaceVHACD;

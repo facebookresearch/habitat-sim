@@ -817,6 +817,13 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
 }
 
+void Simulator::convexHullDecomposition(
+    const std::string& filename,
+    const std::string& CHDFilename,
+    const assets::ResourceManager::VHACDParameters& params) {
+  resourceManager_->convexHullDecomposition(filename, CHDFilename, params);
+}
+
 agent::Agent::ptr Simulator::addAgent(
     const agent::AgentConfiguration& agentConfig,
     scene::SceneNode& agentParentNode) {

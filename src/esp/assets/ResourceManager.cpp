@@ -2255,23 +2255,18 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
                             {Mn::Trade::MeshAttributeData{
                                 Mn::Trade::MeshAttribute::Position,
                                 Cr::Containers::arrayView(positions)}}});
-    Cr::Utility::Debug() << "ahh";
     // Create a GenericMeshData
     genCHMeshData = std::make_unique<GenericMeshData>(false);
-
     genCHMeshData->setMeshData(*std::move(CHMesh));
-    Cr::Utility::Debug() << "ahh2";
     genCHMeshData->BB = computeMeshBB(genCHMeshData.get());
-    Cr::Utility::Debug() << "ahh3";
     genCHMeshData->uploadBuffersToGPU(false);
 
     // Create CollisionMeshData and add to collisionMeshGroup vector
     CollisionMeshData CHCollisionMesh = genCHMeshData->getCollisionMeshData();
     collisionMeshGroup.push_back(CHCollisionMesh);
-    Cr::Utility::Debug() << "ahh2";
+
     // register GenericMeshData in meshes_ dict
     meshes_.emplace(meshes_.size(), std::move(genCHMeshData));
-    Cr::Utility::Debug() << "loop";
   }
   // make MeshMetaData
   int meshEnd = meshes_.size() - 1;
@@ -2288,8 +2283,6 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
     transformNode.materialIDLocal = 0;
     meshMetaData.root.children.push_back(transformNode);
   }
-
-  Cr::Utility::Debug() << "transforms MADE";
 
   // default material for now
   auto phongMaterial = gfx::PhongMaterialData::create_unique();
@@ -2322,7 +2315,6 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
   //   resourceDict_.erase(trajVisName);
   // }
 
-  Cr::Utility::Debug() << "END";
   // Register collision mesh group
   auto insertedCollisionMeshGroup =
       collisionMeshGroups_.emplace(CHDFilename, std::move(collisionMeshGroup));
