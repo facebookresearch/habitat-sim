@@ -30,8 +30,6 @@ export const defaultEpisode = {
 export const defaultResolution = { height: 480, width: 640 };
 
 export const defaultScene =
-  window.location.href.indexOf("localhost") === -1
-    ? "https://dl.fbaipublicfiles.com/habitat/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
-    : "skokloster-castle.glb";
+  "https://www.ericundersander.com/habitat/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb";
 
 export const infoSemanticFileName = "info_semantic.json";
