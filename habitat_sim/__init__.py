@@ -27,7 +27,10 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         simulator,
         utils,
     )
-    from habitat_sim._ext.habitat_sim_bindings import MapStringString  # noqa: F401
+    from habitat_sim._ext.habitat_sim_bindings import (  # noqa: F401
+        MapStringString,
+        VHACDParameters,
+    )
     from habitat_sim.agent.agent import (  # noqa: F401
         ActionSpec,
         Agent,

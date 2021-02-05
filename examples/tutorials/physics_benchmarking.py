@@ -105,7 +105,6 @@ def box_drop_test(
 
         # build box
         cube_handle = obj_templates_mgr.get_template_handles("cube")[0]
-
         box_parts = []
         boxIDs = []
         for _i in range(5):
@@ -141,8 +140,17 @@ def box_drop_test(
                 ]
             ]
             obj_template = obj_templates_mgr.get_template_by_ID(object_ids[-1])
+
             if "scale" in obj.keys():
                 obj_template.scale *= obj["scale"]
+            obj_handle = obj_template.render_asset_handle
+            print("=== VHACD DECOMP ===")
+            print(obj_handle)
+            print(object_ids[-1])
+            # params = habitat_sim.VHACDParameters()
+            sim.convex_hull_decomposition(obj_handle, obj_handle + "CHD")
+            obj_template.collision_asset_handle = obj_handle + "CHD"
+            # obj_template.set_render_asset_handle(obj_handle + "CHD")
             obj_templates_mgr.register_template(obj_template)
 
         # throw objects into box
@@ -204,7 +212,7 @@ benchmarks = {
                 {"path": "test_assets/objects/donut", "scale": 2},
                 {"path": "test_assets/objects/nested_box", "scale": 0.5},
             ],
-            200,
+            20,
             2,
             1.8,
             10,

@@ -2207,6 +2207,13 @@ void ResourceManager::getPrimitiveMeshData(const std::string& filename,
 void ResourceManager::convexHullDecomposition(const std::string& filename,
                                               const std::string& CHDFilename,
                                               const VHACDParameters& params) {
+  if (resourceDict_.count(filename) == 0) {
+    // load/check_for render mesh metadata and load assets
+    bool renderMeshSuccess =
+        loadObjectMeshDataFromFile(filename, filename, "render", true);
+
+  }  // if no render asset exists
+
   // fill points and triangles with mesh data
   std::vector<float> points = std::vector<float>();
   std::vector<uint32_t> triangles = std::vector<uint32_t>();
