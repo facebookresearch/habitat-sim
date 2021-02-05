@@ -182,13 +182,16 @@ class PathFinder {
   /**
    * @brief Returns a random navigable point
    *
+   * @param maxTries[in] The maximum number of tries sampling will be retried if
+   * it fails.
+   *
    * @return A random navigable point.
    *
    * @note This method can fail.  If it does,
-   * the returned point will be arbitrary and may not be navigable. Use @ref
+   * the returned point will be `{NAN, NAN, NAN}`. Use @ref
    * isNavigable to check if the point is navigable.
    */
-  vec3f getRandomNavigablePoint();
+  vec3f getRandomNavigablePoint(int maxTries = 10);
 
   /**
    * @brief Finds the shortest path between two points on the navigation mesh
@@ -241,7 +244,7 @@ class PathFinder {
    *
    * @param[in] pt The point to snap to the navigation mesh
    *
-   * @return The closest navigation point to @ref pt.  Will be {inf, inf, inf}
+   * @return The closest navigation point to @ref pt.  Will be `{NAN, NAN, NAN}`
    * if no navigable point was within a reasonable distance
    */
   template <typename T>

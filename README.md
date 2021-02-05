@@ -247,7 +247,8 @@ Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim
    ```bash
-   ./build/viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
+   # ./build/viewer if compiling locally
+   habitat-viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    You should be able to control an agent in this test scene.
    Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
@@ -258,7 +259,8 @@ Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
    To run an interactive C++ example GUI application with physics enabled run
    ```bash
-   ./build/viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
+   # ./build/viewer if compiling locally
+   habitat-viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
    ```
    Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
    Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it.

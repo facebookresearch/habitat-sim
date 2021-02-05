@@ -212,11 +212,11 @@ class Simulator {
                         int sceneID = 0);
 
   /**
-   * @brief Get a static view of a physics object's template when the object was
-   * instanced.
+   * @brief Get a static view of a physics object's template when the object
+   * was instanced.
    *
-   * Use this to query the object's properties when it was initialized.  Object
-   * pointed at by pointer is const, and can not be modified.
+   * Use this to query the object's properties when it was initialized.
+   * Object pointed at by pointer is const, and can not be modified.
    */
   const metadata::attributes::ObjectAttributes::cptr
   getObjectInitializationTemplate(int objectId, int sceneID = 0) const;
@@ -1158,8 +1158,41 @@ class Simulator {
 
  protected:
   Simulator(){};
+  /**
+   * @brief Builds a scene instance and populates it with initial object layout,
+   * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes
+   * referenced by @p activeSceneName .
+   * @param activeSceneName The name of the desired SceneAttributes to use to
+   * instantiate a scene.
+   * @return Whether successful or not.
+   */
+  bool createSceneInstance(const std::string& activeSceneName);
 
-  //! sample a random valid AgentState in passed agentState
+  /**
+   * @brief Builds a scene instance based on @ref
+   * esp::metadata::attributes::SceneAttributes referenced by @p activeSceneName
+   * . This function is specifically for cases where no renderer is desired.
+   * @param activeSceneName The name of the desired SceneAttributes to use to
+   * instantiate a scene.
+   * @return Whether successful or not.
+   */
+  bool createSceneInstanceNoRenderer(const std::string& activeSceneName);
+
+  /**
+   * @brief Shared initial functionality for creating/setting the current scene
+   * instance attributes corresponding to activeSceneName, regardless of desired
+   * renderer state.
+   * @param activeSceneName The name of the desired active scene instance, as
+   * specified in Simulator Configuration.
+   * @return a constant pointer to the current scene instance attributes.
+   */
+  metadata::attributes::SceneAttributes::cptr setSceneInstanceAttributes(
+      const std::string& activeSceneName);
+
+  /**
+   * @brief sample a random valid AgentState in passed agentState
+   * @param agentState [out] The placeholder for the sampled agent state.
+   */
   void sampleRandomAgentState(agent::AgentState& agentState);
 
   bool isValidScene(int sceneID) const {
@@ -1182,9 +1215,12 @@ class Simulator {
   // during the deconstruction
   std::unique_ptr<assets::ResourceManager> resourceManager_ = nullptr;
 
-  // Owns and manages the metadata/attributes managers
+  /**
+   * @brief Owns and manages the metadata/attributes managers
+   */
   metadata::MetadataMediator::ptr metadataMediator_ = nullptr;
   scene::SceneManager::uptr sceneManager_ = nullptr;
+
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;

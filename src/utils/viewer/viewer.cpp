@@ -930,11 +930,9 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Set up camera
   activeSceneGraph_ = &simulator_->getActiveSceneGraph();
-  renderCamera_ = &activeSceneGraph_->getDefaultRenderCamera();
-  renderCamera_->setAspectRatioPolicy(
-      Mn::SceneGraph::AspectRatioPolicy::Extend);
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
+  renderCamera_ = getAgentCamera().getRenderCamera();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
@@ -1524,14 +1522,16 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
     if (visualSensor != nullptr) {
-      visualSensor->specification()->resolution = {event.windowSize()[1],
-                                                   event.windowSize()[0]};
+      visualSensor->specification()->resolution = {event.framebufferSize()[1],
+                                                   event.framebufferSize()[0]};
+      renderCamera_->setViewport(visualSensor->framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
     }
   }
-  Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
+  Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
+
   if (flyingCameraMode_) {
-    renderCamera_->setViewport(event.windowSize());
+    renderCamera_->setViewport(event.framebufferSize());
   }
 
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),

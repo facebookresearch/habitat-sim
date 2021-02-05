@@ -169,6 +169,7 @@ tests/17DRP5sb8fy
 /data/objects/
 /data/scene_datasets/
 *.zip
+*.mp4
 habitat_sim/_ext
 build_js/
 build_corrade-rc/
