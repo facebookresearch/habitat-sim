@@ -31,7 +31,7 @@ export const defaultResolution = { height: 480, width: 640 };
 
 export const defaultScene =
   window.location.href.indexOf("localhost") === -1
-    ? "https://habitat-resources.s3.amazonaws.com/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+    ? "https://dl.fbaipublicfiles.com/habitat/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     : "skokloster-castle.glb";
 
 export const infoSemanticFileName = "info_semantic.json";
