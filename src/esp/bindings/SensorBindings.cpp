@@ -17,6 +17,7 @@
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
 #include "esp/sensor/Sensor.h"
+#include "esp/sensor/SensorFactory.h"
 #include "esp/sim/Simulator.h"
 
 namespace py = pybind11;
@@ -156,7 +157,13 @@ void initSensorBindings(py::module& m) {
   py::class_<SensorSuite, SensorSuite::ptr>(m, "SensorSuite")
       .def(py::init(&SensorSuite::create<>))
       .def("add", &SensorSuite::add)
+      .def("merge", &SensorSuite::merge)
       .def("get", &SensorSuite::get, R"(get the sensor by id)");
+
+  // ==== SensorFactory ====
+  py::class_<SensorFactory>(m, "SensorFactory")
+      .def("create_sensors", &SensorFactory::createSensors,
+           R"(Initialize and return a SensorSuite of Sensors)");
 
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(

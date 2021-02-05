@@ -112,9 +112,9 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   void setState(const AgentState& state, const bool resetSensors = true);
 
-  // Set Agent's member sensors to reference sensorSuite
-  void setSensorSuite(const sensor::SensorSuite& sensorSuite) {
-    sensors_ = sensorSuite;
+  // Set Agent's member sensors to sensorSuite
+  void setSensorSuite(const sensor::SensorSuite&& sensorSuite) {
+    sensors_ = std::move(sensorSuite);
   }
 
   void setInitialState(const AgentState& state,

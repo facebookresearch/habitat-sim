@@ -93,10 +93,14 @@ void initSimBindings(py::module& m) {
       .def_property_readonly(
           "gfx_replay_manager", &Simulator::getGfxReplayManager,
           R"(Use gfx_replay_manager for replay recording and playback.)")
+      .def_property_read_only("sensor_suite", &Simulator::getSensorSuite)
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)
       .def("close", &Simulator::close)
+      .def(
+          "add_sensor_to_object", &Simulator::addSensorToObject,
+          R"(Initialize sensor and attach to sceneNode of a particular object)")
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
       .def_property(
@@ -153,6 +157,8 @@ void initSimBindings(py::module& m) {
           "object_lib_handle"_a, "attachment_node"_a = nullptr,
           "light_setup_key"_a = DEFAULT_LIGHTING_KEY, "scene_id"_a = 0,
           R"(Instance an object into the scene via a template referenced by its handle. Optionally attach the object to an existing SceneNode and assign its initial LightSetup key.)")
+      .def("get_object_node", &Simulator::getObjectNode,
+           R"(return a pointer to a sceneNode of an existing object)")
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
            "delete_object_node"_a = true, "delete_visual_node"_a = true,
            "scene_id"_a = 0, R"(
