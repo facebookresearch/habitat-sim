@@ -93,7 +93,7 @@ void initSimBindings(py::module& m) {
       .def_property_readonly(
           "gfx_replay_manager", &Simulator::getGfxReplayManager,
           R"(Use gfx_replay_manager for replay recording and playback.)")
-      .def_property_read_only("sensor_suite", &Simulator::getSensorSuite)
+
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)

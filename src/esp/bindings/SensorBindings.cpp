@@ -160,11 +160,6 @@ void initSensorBindings(py::module& m) {
       .def("merge", &SensorSuite::merge)
       .def("get", &SensorSuite::get, R"(get the sensor by id)");
 
-  // ==== SensorFactory ====
-  py::class_<SensorFactory>(m, "SensorFactory")
-      .def("create_sensors", &SensorFactory::createSensors,
-           R"(Initialize and return a SensorSuite of Sensors)");
-
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")
