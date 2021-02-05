@@ -837,7 +837,7 @@ agent::Agent::ptr Simulator::addAgent(
   esp::sensor::SensorSuite agentSensors =
       esp::sensor::SensorFactory::createSensors(
           agentNode, agentConfig.sensorSpecifications);
-  ag->setSensorSuite(std::move(agentSensors));
+  ag->setSensorSuite(static_cast<esp::sensor::SensorSuite&&>(agentSensors));
   sensorSuite_.merge(ag->getSensorSuite());
   LOG(INFO) << sensorSuite_.getSensors().size();
 

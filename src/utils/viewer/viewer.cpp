@@ -729,7 +729,7 @@ int Viewer::addTemplateObject() {
   if (numObjTemplates > 0) {
     std::string fileTemplateHandle =
         objectAttrManager_->getRandomFileTemplateHandle();
-    // Get object name to display in imgui text
+    // Get object name to display in logging text
     std::string fileName =
         fileTemplateHandle.substr(fileTemplateHandle.find_last_of("/") + 1);
     lastAddedObjectName_ = fileName.substr(0, fileName.find_first_of('.'));
@@ -835,12 +835,9 @@ void Viewer::addCameraToLastObject() {
   if (existingObjectIDs.size() == 0)
     return;
   simulator_->addSensorToObject(existingObjectIDs.back());
-  LOG(INFO) << simulator_->getSensorSuite().getSensors().size();
-  std::map<std::string, esp::sensor::Sensor::ptr>::iterator it;
-  for (it = simulator_->getSensorSuite().getSensors().begin();
-       it != simulator_->getSensorSuite().getSensors().end(); it++) {
-    LOG(INFO) << it->first;
-  }
+  LOG(INFO) << "Total number of cameras: "
+            << simulator_->getSensorSuite().getSensors().size();
+  LOG(INFO) << "Added camera to object " << lastAddedObjectName_;
 }
 
 // Switch renderCamera_ used for rendering between the agent and last added
@@ -875,7 +872,12 @@ void Viewer::switchCameraSensor() {
     cameraSensor_ = cameraSensor;
     currentCameraObject_ = "Agent";
   }
-  redraw();
+  LOG(INFO) << "Switched camera to camera object: "
+            << (currentCameraObject_.compare("Agent") == 0
+                    ? ""
+                    : lastAddedObjectName_)
+                   .c_str()
+            << currentCameraObject_.c_str();
 }
 
 // generate random direction vectors:
@@ -1019,11 +1021,6 @@ void Viewer::drawEvent() {
                                       esp::sensor::SensorSubType::Orthographic
                                   ? "Orthographic"
                                   : "Pinhole"));
-    ImGui::Text(
-        "Camera object: %s %s",
-        (currentCameraObject_.compare("Agent") == 0 ? "" : lastAddedObjectName_)
-            .c_str(),
-        currentCameraObject_.c_str());
     ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
