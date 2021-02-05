@@ -2204,6 +2204,58 @@ void ResourceManager::getPrimitiveMeshData(const std::string& filename,
   }
 }
 
+bool ResourceManager::outputMeshMetaDataToObj(
+    const std::string& MeshMetaDataFile,
+    const std::string& new_filename,
+    const std::string& filepath) {
+  bool success = Cr::Utility::Directory::mkpath(filepath);
+
+  const MeshMetaData& metaData = getMeshMetaData(MeshMetaDataFile);
+  Cr::Utility::Directory::writeString(filepath + "/" + new_filename,
+                                      "# CHD Mesh group \n");
+  // write vertex info to file
+  int numVertices = 0;
+  for (MeshTransformNode node : metaData.root.children) {
+    CollisionMeshData& meshData =
+        meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
+            ->getCollisionMeshData();
+    for (auto& pos : meshData.positions) {
+      Cr::Utility::Directory::appendString(filepath + "/" + new_filename,
+                                           "v " + std::to_string(pos[0]) + ' ' +
+                                               std::to_string(pos[1]) + ' ' +
+                                               std::to_string(pos[2]) + '\n');
+      numVertices++;
+    }
+  }
+  Cr::Utility::Directory::appendString(
+      filepath + "/" + new_filename,
+      "# Number of vertices: " + std::to_string(numVertices) + "\n\n");
+
+  // Now do second pass to write indices for each group (node)
+  int globalVertexNum = 1;
+  int numParts = 1;
+  for (MeshTransformNode node : metaData.root.children) {
+    CollisionMeshData& meshData =
+        meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
+            ->getCollisionMeshData();
+    Cr::Utility::Directory::appendString(
+        filepath + "/" + new_filename,
+        "g part_" + std::to_string(numParts) + " mesh\n");
+    for (int ix = 0; ix < meshData.indices.size(); ix += 3) {
+      Cr::Utility::Directory::appendString(
+          filepath + "/" + new_filename,
+          "f " + std::to_string(meshData.indices[ix] + globalVertexNum) + ' ' +
+              std::to_string(meshData.indices[ix + 1] + globalVertexNum) + ' ' +
+              std::to_string(meshData.indices[ix + 2] + globalVertexNum) +
+              '\n');
+    }
+    numParts++;
+    globalVertexNum += meshData.positions.size();
+  }
+
+  return success;
+}
+
 void ResourceManager::convexHullDecomposition(const std::string& filename,
                                               const std::string& CHDFilename,
                                               const VHACDParameters& params) {
@@ -2231,9 +2283,11 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
   int meshStart = meshes_.size();
   std::vector<CollisionMeshData> collisionMeshGroup;
   int nConvexHulls = interfaceVHACD->GetNConvexHulls();
+  Cr::Utility::Debug() << "Num Convex Hulls: " << nConvexHulls;
+  Cr::Utility::Debug() << "Resolution: " << params.m_resolution;
   VHACD::IVHACD::ConvexHull ch;
   std::unique_ptr<GenericMeshData> genCHMeshData;
-  for (unsigned int p = 0; p < 1; ++p) {
+  for (unsigned int p = 0; p < nConvexHulls; ++p) {
     // for each convex hull, transfer the data to a newly created  MeshData
     interfaceVHACD->GetConvexHull(p, ch);
 
@@ -2242,14 +2296,15 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
 
     // add the vertices
     positions.resize(ch.m_nPoints);
-    for (size_t vix = 0; vix < ch.m_nPoints; vix += 3) {
-      positions[vix / 3] = Magnum::Vector3(
-          ch.m_points[vix], ch.m_points[vix + 1], ch.m_points[vix + 2]);
+    for (size_t vix = 0; vix < ch.m_nPoints; vix++) {
+      positions[vix] =
+          Magnum::Vector3(ch.m_points[vix * 3], ch.m_points[vix * 3 + 1],
+                          ch.m_points[vix * 3 + 2]);
     }
 
     // add indices
-    indices.resize(ch.m_nTriangles);
-    for (size_t ix = 0; ix < ch.m_nTriangles; ix += 3) {
+    indices.resize(ch.m_nTriangles * 3);
+    for (size_t ix = 0; ix < ch.m_nTriangles * 3; ix++) {
       indices[ix] = ch.m_triangles[ix];
     }
     Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::owned(
@@ -2328,6 +2383,10 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
   // insert MeshMetaData into resourceDict_
   auto insertedResourceDict =
       resourceDict_.emplace(CHDFilename, std::move(loadedAssetData));
+  std::string objDirectory = Cr::Utility::Directory::join(
+      Corrade::Utility::Directory::current(), "data/VHACD_outputs");
+  bool fileCreated =
+      outputMeshMetaDataToObj(CHDFilename, "CHDTest.obj", objDirectory);
 }
 
 }  // namespace assets

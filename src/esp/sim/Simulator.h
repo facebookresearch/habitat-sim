@@ -853,7 +853,7 @@ class Simulator {
    * @param params VHACD params that specify resolution, vertices per convex
    * hull, etc.
    */
-  void convexHullDecomposition(
+  std::string convexHullDecomposition(
       const std::string& filename,
       const std::string& CHDFilename,
       const assets::ResourceManager::VHACDParameters& params =

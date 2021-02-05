@@ -1076,11 +1076,25 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
 }
 
-void Simulator::convexHullDecomposition(
+std::string Simulator::convexHullDecomposition(
     const std::string& filename,
     const std::string& CHDFilename,
     const assets::ResourceManager::VHACDParameters& params) {
+  Cr::Utility::Debug() << "VHACD PARAMS RESOLUTION: " << params.m_resolution;
   resourceManager_->convexHullDecomposition(filename, CHDFilename, params);
+  // 2. create object attributes for the trajectory
+  auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
+  auto CHDObjAttr = objAttrMgr->createObject(filename, false);
+  // turn off collisions
+  CHDObjAttr->setIsCollidable(true);
+  CHDObjAttr->setComputeCOMFromShape(false);
+  CHDObjAttr->setCollisionAssetIsPrimitive(false);
+  CHDObjAttr->setCollisionAssetHandle(CHDFilename);
+  Cr::Utility::Debug() << "== FILES ==";
+  Cr::Utility::Debug() << CHDObjAttr->getRenderAssetHandle();
+  Cr::Utility::Debug() << CHDObjAttr->getCollisionAssetHandle();
+  objAttrMgr->registerObject(CHDObjAttr, CHDFilename, true);
+  return CHDObjAttr->getHandle();
 }
 
 agent::Agent::ptr Simulator::addAgent(

@@ -22,7 +22,12 @@ void initEspBindings(py::module& m) {
   py::class_<assets::ResourceManager::VHACDParameters,
              assets::ResourceManager::VHACDParameters::ptr>(m,
                                                             "VHACDParameters")
-      .def(py::init(&assets::ResourceManager::VHACDParameters::create<>));
+      .def(py::init(&assets::ResourceManager::VHACDParameters::create<>))
+      .def_property("resolution",
+                    &assets::ResourceManager::VHACDParameters::getResolution,
+                    &assets::ResourceManager::VHACDParameters::setResolution,
+                    R"(Type of the mesh asset used to render constructions built
+          from this template.)");
 }
 
 namespace core {

@@ -88,7 +88,9 @@ class ResourceManager {
   using Importer = Mn::Trade::AbstractImporter;
 
   struct VHACDParameters : VHACD::IVHACD::Parameters {
-    // VHACDParameters();
+    VHACDParameters() { m_oclAcceleration = false; }
+    void setResolution(int resolution) { m_resolution = resolution; }
+    int getResolution() { return m_resolution; }
     ESP_SMART_POINTERS(VHACDParameters)
   };
 
@@ -346,6 +348,18 @@ class ResourceManager {
   void getPrimitiveMeshData(const std::string& filename,
                             std::vector<float>& points,
                             std::vector<uint32_t>& triangles);
+
+  /**
+   * @brief Converts a MeshMetaData into a obj file.
+   *
+   * @param filename The MeshMetaData filename to be converted to obj.
+   * @param filepath The file path, including new file name, for the obj file.
+   * @param params VHACD params that specify resolution, vertices per convex
+   * hull, etc.
+   */
+  bool outputMeshMetaDataToObj(const std::string& filename,
+                               const std::string& new_filename,
+                               const std::string& filepath);
 
   /**
    * @brief Runs convex hull decomposition on a specified file.
