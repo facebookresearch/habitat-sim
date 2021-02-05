@@ -34,7 +34,7 @@ def remove_all_objects(sim):
 def place_agent(sim):
     # place our agent in the scene
     agent_state = habitat_sim.AgentState()
-    agent_state.position = [-0.15, -0.7, 1.0]
+    agent_state.position = [-0.15, -0.1, 1.0]
     # agent_state.position = [-0.15, -1.6, 1.0]
     agent_state.rotation = np.quaternion(-0.83147, 0, 0.55557, 0)
     agent = sim.initialize_agent(0, agent_state)
@@ -55,20 +55,14 @@ def make_configuration():
         "rgba_camera_1stperson": {
             "sensor_type": habitat_sim.SensorType.COLOR,
             "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
+            "position": [0.0, 0.0, 0.0],
             "orientation": [0.0, 0.0, 0.0],
         },
         "depth_camera_1stperson": {
             "sensor_type": habitat_sim.SensorType.DEPTH,
             "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
+            "position": [0.0, 0.0, 0.0],
             "orientation": [0.0, 0.0, 0.0],
-        },
-        "rgba_camera_3rdperson": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 1.0, 0.3],
-            "orientation": [-45, 0.0, 0.0],
         },
     }
 
@@ -102,6 +96,33 @@ def simulate(sim, dt=1.0, get_frames=True):
     return observations
 
 
+def place_robot_from_agent(
+    sim,
+    robot_id,
+    angle_correction=-1.56,
+    local_base_pos=None,
+):
+    if local_base_pos is None:
+        local_base_pos = np.array([0.0, -0.1, -2.0])
+    # place the robot root state relative to the agent
+    agent_transform = sim.agents[0].scene_node.transformation_matrix()
+    base_transform = mn.Matrix4.rotation(
+        mn.Rad(angle_correction), mn.Vector3(1.0, 0, 0)
+    )
+    base_transform.translation = agent_transform.transform_point(local_base_pos)
+    sim.set_articulated_object_root_state(robot_id, base_transform)
+
+
+urdf_files = {
+    "aliengo": os.path.join(data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"),
+    "iiwa": os.path.join(data_path, "test_assets/urdf/kuka_iiwa/model_free_base.urdf"),
+    "locobot": os.path.join(data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"),
+    "locobot_light": os.path.join(
+        data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
+    ),
+}
+
+
 def test_urdf_memory():
     # test for memory leaks related to adding/removing AO's from URDF
     # process_memory_tracking = [get_process_memory_usage()]
@@ -112,22 +133,6 @@ def test_urdf_memory():
     sim = habitat_sim.Simulator(cfg)
 
     # process_memory_tracking.append(get_process_memory_usage())
-
-    urdf_files = {
-        "aliengo": os.path.join(
-            data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
-        ),
-        "iiwa": os.path.join(
-            data_path, "test_assets/urdf/kuka_iiwa/model_free_base.urdf"
-        ),
-        "locobot": os.path.join(
-            data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
-        ),
-        "locobot_light": os.path.join(
-            data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
-        ),
-        "fetch": "/Users/alexclegg/AndrewObjectRearrangement/p-viz-plan/orp/robots/opt_fetch/robots/fetch.urdf",
-    }
 
     # load a URDF file
     robot_key = "fetch"
@@ -147,47 +152,255 @@ def test_urdf_memory():
     plt.show()
 
 
+def test_constraints(make_video=True, show_video=True):
+    # [initialize]
+    # create the simulator
+    cfg = make_configuration()
+    sim = habitat_sim.Simulator(cfg)
+    place_agent(sim)
+    observations = []
+
+    # load a URDF file
+    robot_file = urdf_files["aliengo"]
+    robot_id = sim.add_articulated_object_from_urdf(robot_file)
+    ef_link_id = 16  # foot = 16, TODO: base = -1
+    ef_link2_id = 12
+    iiwa_ef_link = 6
+
+    # add a constraint vis object
+    obj_mgr = sim.get_object_template_manager()
+    sphere_id = sim.add_object_by_handle(obj_mgr.get_template_handles("sphere")[0])
+    sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, sphere_id)
+    sim.set_object_is_collidable(False, sphere_id)
+
+    for test_case in range(6):
+        sim.reset_articulated_object(robot_id)
+        place_robot_from_agent(sim, robot_id)
+
+        # Test constraint types:
+        if test_case == 0:
+            # - AO -> world
+            # should constrain to the center of the sphere
+            link_rigid_state = sim.get_articulated_link_rigid_state(
+                robot_id, ef_link_id
+            )
+            sim.set_translation(link_rigid_state.translation, sphere_id)
+            constraint_id = sim.create_articulated_p2p_constraint(
+                object_id=robot_id,
+                link_id=ef_link_id,
+                global_constraint_point=link_rigid_state.translation,
+            )
+            observations += simulate(sim, dt=3.0, get_frames=make_video)
+            sim.remove_constraint(constraint_id)
+        elif test_case == 1:
+            # - AO -> world w/ offset
+            # should constrain to the boundary of the sphere
+            link_rigid_state = sim.get_articulated_link_rigid_state(
+                robot_id, ef_link_id
+            )
+            link_offset = mn.Vector3(0, 0, -0.1)
+            global_constraint_position = link_rigid_state.translation
+            sim.set_translation(global_constraint_position, sphere_id)
+            constraint_id = sim.create_articulated_p2p_constraint(
+                object_id=robot_id,
+                link_id=ef_link_id,
+                link_offset=link_offset,
+                global_constraint_point=global_constraint_position,
+            )
+            observations += simulate(sim, dt=3.0, get_frames=make_video)
+            sim.remove_constraint(constraint_id)
+        elif test_case == 2:
+            # - AO -> AO (w/ offsets)
+            robot_id2 = sim.add_articulated_object_from_urdf(robot_file)
+            place_robot_from_agent(
+                sim=sim, robot_id=robot_id2, local_base_pos=np.array([0.35, -0.1, -2.0])
+            )
+            # attach the agents' feet together
+            link_b_rigid_state = sim.get_articulated_link_rigid_state(
+                robot_id2, ef_link_id
+            )
+            constraint_id = sim.create_articulated_p2p_constraint(
+                object_id_a=robot_id,
+                link_id_a=ef_link_id,
+                offset_a=mn.Vector3(),
+                object_id_b=robot_id2,
+                link_id_b=ef_link_id,
+                offset_b=mn.Vector3(),
+            )
+
+            # constrain 1st robot in the air by other foot
+            link_a2_rigid_state = sim.get_articulated_link_rigid_state(
+                robot_id, ef_link2_id
+            )
+            global_constraint_position = link_a2_rigid_state.translation + mn.Vector3(
+                0, 1.5, 0
+            )
+            sim.set_translation(global_constraint_position, sphere_id)
+            # note: increase max impulse: the combined weight of the robots is greater than the default impulse correction (2)
+            constraint_id2 = sim.create_articulated_p2p_constraint(
+                object_id=robot_id,
+                link_id=ef_link2_id,
+                link_offset=mn.Vector3(),
+                global_constraint_point=global_constraint_position,
+                max_impulse=6,
+            )
+
+            observations += simulate(sim, dt=3.0, get_frames=make_video)
+            sim.remove_constraint(constraint_id)
+            sim.remove_constraint(constraint_id2)
+            sim.remove_articulated_object(robot_id2)
+        elif test_case == 3:
+            # - AO -> AO (global)
+            robot_id2 = sim.add_articulated_object_from_urdf(urdf_files["iiwa"], True)
+            place_robot_from_agent(
+                sim=sim, robot_id=robot_id2, local_base_pos=np.array([0.35, -0.4, -2.0])
+            )
+            jm_settings = habitat_sim.physics.JointMotorSettings()
+            jm_settings.position_gain = 2.0
+            sim.create_motors_for_all_dofs(robot_id2, jm_settings)
+            # TODO: not a great test, could be a better setup
+            # attach two agent feet to the iiwa end effector
+            link_b_rigid_state = sim.get_articulated_link_rigid_state(
+                robot_id2, iiwa_ef_link
+            )
+            global_constraint_position = link_b_rigid_state.translation
+            sim.set_translation(global_constraint_position, sphere_id)
+            constraint_id = sim.create_articulated_p2p_constraint(
+                object_id_a=robot_id,
+                link_id_a=ef_link_id,
+                object_id_b=robot_id2,
+                link_id_b=iiwa_ef_link,
+                global_constraint_point=global_constraint_position,
+                max_impulse=4,
+            )
+            constraint_id2 = sim.create_articulated_p2p_constraint(
+                object_id_a=robot_id,
+                link_id_a=ef_link2_id,
+                object_id_b=robot_id2,
+                link_id_b=iiwa_ef_link,
+                global_constraint_point=global_constraint_position,
+                max_impulse=4,
+            )
+
+            observations += simulate(sim, dt=3.0, get_frames=make_video)
+            sim.remove_constraint(constraint_id)
+            sim.remove_constraint(constraint_id2)
+            sim.remove_articulated_object(robot_id2)
+        elif test_case == 4:
+            # - AO -> rigid
+
+            # tilt the camera down
+            prev_state = sim.get_agent(0).scene_node.rotation
+            sim.get_agent(0).scene_node.rotation = (
+                mn.Quaternion.rotation(
+                    mn.Rad(-0.4), prev_state.transform_vector(mn.Vector3(1.0, 0, 0))
+                )
+                * prev_state
+            )
+
+            # attach an active sphere to one robot foot w/ pivot at the object center
+            active_sphere_id = sim.add_object_by_handle(
+                obj_mgr.get_template_handles("sphere")[0]
+            )
+            link_rigid_state = sim.get_articulated_link_rigid_state(
+                robot_id, ef_link_id
+            )
+            link2_rigid_state = sim.get_articulated_link_rigid_state(
+                robot_id, ef_link2_id
+            )
+            sim.set_translation(
+                link2_rigid_state.translation + mn.Vector3(0, -0.1, 0), active_sphere_id
+            )
+            constraint_id = sim.create_articulated_p2p_constraint(
+                object_id_a=robot_id,
+                link_id=ef_link2_id,
+                object_id_b=active_sphere_id,
+                max_impulse=4,
+            )
+            # attach the visual sphere to another robot foot w/ pivots
+            sim.set_object_motion_type(
+                habitat_sim.physics.MotionType.DYNAMIC, sphere_id
+            )
+            constraint_id2 = sim.create_articulated_p2p_constraint(
+                object_id_a=robot_id,
+                link_id=ef_link_id,
+                object_id_b=sphere_id,
+                pivot_a=mn.Vector3(0.1, 0, 0),
+                pivot_b=mn.Vector3(-0.1, 0, 0),
+                max_impulse=4,
+            )
+
+            observations += simulate(sim, dt=3.0, get_frames=make_video)
+            sim.remove_constraint(constraint_id)
+            sim.remove_constraint(constraint_id2)
+            sim.set_object_motion_type(
+                habitat_sim.physics.MotionType.KINEMATIC, sphere_id
+            )
+            sim.remove_object(active_sphere_id)
+
+            sim.get_agent(0).scene_node.rotation = prev_state
+        elif test_case == 5:
+            # - AO -> rigid (fixed) TODO: not working as expected
+
+            # tilt the camera down
+            prev_state = sim.get_agent(0).scene_node.rotation
+            sim.get_agent(0).scene_node.rotation = (
+                mn.Quaternion.rotation(
+                    mn.Rad(-0.4), prev_state.transform_vector(mn.Vector3(1.0, 0, 0))
+                )
+                * prev_state
+            )
+
+            # attach an active sphere to one robot foot w/ pivot at the object center
+            active_sphere_id = sim.add_object_by_handle(
+                obj_mgr.get_template_handles("sphere")[0]
+            )
+            link2_rigid_state = sim.get_articulated_link_rigid_state(
+                robot_id, ef_link2_id
+            )
+            sim.set_translation(
+                link2_rigid_state.translation + mn.Vector3(0, -0.15, 0),
+                active_sphere_id,
+            )
+            constraint_id = sim.create_articulated_fixed_constraint(
+                object_id_a=robot_id,
+                link_id=ef_link2_id,
+                object_id_b=active_sphere_id,
+                max_impulse=4,
+            )
+
+            observations += simulate(sim, dt=3.0, get_frames=make_video)
+            sim.remove_constraint(constraint_id)
+            sim.remove_object(active_sphere_id)
+
+            sim.get_agent(0).scene_node.rotation = prev_state
+
+    if make_video:
+        vut.make_video(
+            observations,
+            "rgba_camera_1stperson",
+            "color",
+            output_path + "test_constraints",
+            open_vid=show_video,
+        )
+
+
 # This is wrapped such that it can be added to a unit test
 def main(make_video=True, show_video=True):
-    if make_video and not os.path.exists(output_path):
-        os.mkdir(output_path)
 
     # [initialize]
     # create the simulator
     cfg = make_configuration()
     sim = habitat_sim.Simulator(cfg)
-    agent_transform = place_agent(sim)
+    place_agent(sim)
     observations = []
-
-    # [/initialize]
-
-    urdf_files = {
-        "aliengo": os.path.join(
-            data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
-        ),
-        "iiwa": os.path.join(
-            data_path, "test_assets/urdf/kuka_iiwa/model_free_base.urdf"
-        ),
-        "locobot": os.path.join(
-            data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
-        ),
-        "locobot_light": os.path.join(
-            data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
-        ),
-    }
-
-    # [basics]
 
     # load a URDF file
     robot_file = urdf_files["iiwa"]
     robot_id = sim.add_articulated_object_from_urdf(robot_file)
 
     # place the robot root state relative to the agent
-    local_base_pos = np.array([0.0, 0.5, -2.0])
-    agent_transform = sim.agents[0].scene_node.transformation_matrix()
-    base_transform = mn.Matrix4.rotation(mn.Rad(-1.56), mn.Vector3(1.0, 0, 0))
-    base_transform.translation = agent_transform.transform_point(local_base_pos)
-    sim.set_articulated_object_root_state(robot_id, base_transform)
+    place_robot_from_agent(sim, robot_id)
 
     # simulate
     observations += simulate(sim, dt=1.5, get_frames=make_video)
@@ -205,11 +418,7 @@ def main(make_video=True, show_video=True):
         print("Scaled URDF by " + str(urdf_global_scale))
 
         # place the robot root state relative to the agent
-        local_base_pos = np.array([0.0, 0.5, -2.0])
-        agent_transform = sim.agents[0].scene_node.transformation_matrix()
-        base_transform = mn.Matrix4.rotation(mn.Rad(-1.56), mn.Vector3(1.0, 0, 0))
-        base_transform.translation = agent_transform.transform_point(local_base_pos)
-        sim.set_articulated_object_root_state(robot_id, base_transform)
+        place_robot_from_agent(sim, robot_id)
 
         # set a better initial joint state for the aliengo
         if robot_file == urdf_files["aliengo"]:
@@ -234,7 +443,7 @@ def main(make_video=True, show_video=True):
     # reset the object state (sets dof positions/velocities/forces to 0, recomputes forward kinematics, udpate collision state)
     sim.reset_articulated_object(robot_id)
     # note: reset does not change the robot base state, do this manually
-    sim.set_articulated_object_root_state(robot_id, base_transform)
+    place_robot_from_agent(sim, robot_id)
 
     # set sleeping ON
     sim.set_articulated_object_sleep(robot_id, True)
@@ -260,7 +469,7 @@ def main(make_video=True, show_video=True):
     # reset the object state (sets dof positions/velocities/forces to 0, recomputes forward kinematics, udpate collision state)
     sim.reset_articulated_object(robot_id)
     # note: reset does not change the robot base state, do this manually
-    sim.set_articulated_object_root_state(robot_id, base_transform)
+    place_robot_from_agent(sim, robot_id)
 
     # get rigid state of robot links and show proxy object at each link COM
     obj_mgr = sim.get_object_template_manager()
@@ -313,11 +522,7 @@ def main(make_video=True, show_video=True):
     robot_id = sim.add_articulated_object_from_urdf(robot_file, True)
 
     # place the robot root state relative to the agent
-    local_base_pos = np.array([0.0, 0.5, -2.0])
-    agent_transform = sim.agents[0].scene_node.transformation_matrix()
-    base_transform = mn.Matrix4.rotation(mn.Rad(-3.14), mn.Vector3(1.0, 0, 0))
-    base_transform.translation = agent_transform.transform_point(local_base_pos)
-    sim.set_articulated_object_root_state(robot_id, base_transform)
+    place_robot_from_agent(sim, robot_id, -3.14)
 
     # query any damping motors created by default
     existing_joint_motors = sim.get_existing_joint_motors(robot_id)
@@ -404,5 +609,20 @@ def main(make_video=True, show_video=True):
 
 
 if __name__ == "__main__":
-    main(make_video=True, show_video=True)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-display", dest="display", action="store_false")
+    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
+    parser.set_defaults(show_video=True, make_video=True)
+    args, _ = parser.parse_known_args()
+    show_video = args.display
+    display = args.display
+    make_video = args.make_video
+
+    if make_video and not os.path.exists(output_path):
+        os.mkdir(output_path)
+
+    # main(make_video, show_video)
+    test_constraints(make_video, show_video)
     # test_urdf_memory()

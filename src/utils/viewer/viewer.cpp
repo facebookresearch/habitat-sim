@@ -339,7 +339,7 @@ struct MouseGrabber {
     gripDepth = _gripDepth;
   }
 
-  virtual ~MouseGrabber() { sim_->removeP2PConstraint(p2pId); }
+  virtual ~MouseGrabber() { sim_->removeConstraint(p2pId); }
 
   virtual void updatePivotB(Magnum::Vector3 pos) {
     sim_->updateP2PConstraintPivot(p2pId, pos);

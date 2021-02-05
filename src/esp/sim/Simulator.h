@@ -639,6 +639,98 @@ class Simulator {
                                                      positionLocal);
   };
 
+  // TODO: document (AO -> rigid)
+  int createArticulatedP2PConstraint(int articulatedObjectId,
+                                     int linkId,
+                                     int objectId,
+                                     float maxImpulse = 2.0) {
+    return physicsManager_->createArticulatedP2PConstraint(
+        articulatedObjectId, linkId, objectId, maxImpulse,
+        Corrade::Containers::NullOpt, Corrade::Containers::NullOpt);
+  }
+  int createArticulatedP2PConstraint(int articulatedObjectId,
+                                     int linkId,
+                                     int objectId,
+                                     const Magnum::Vector3& pivotA,
+                                     const Magnum::Vector3& pivotB,
+                                     float maxImpulse = 2.0) {
+    return physicsManager_->createArticulatedP2PConstraint(
+        articulatedObjectId, linkId, objectId, maxImpulse, pivotA, pivotB);
+  }
+
+  // TODO: document (AO -> rigid fixed)
+  int createArticulatedFixedConstraint(int articulatedObjectId,
+                                       int linkId,
+                                       int objectId,
+                                       float maxImpulse = 2.0) {
+    return physicsManager_->createArticulatedFixedConstraint(
+        articulatedObjectId, linkId, objectId, maxImpulse,
+        Corrade::Containers::NullOpt, Corrade::Containers::NullOpt);
+  }
+  int createArticulatedFixedConstraint(int articulatedObjectId,
+                                       int linkId,
+                                       int objectId,
+                                       const Magnum::Vector3& pivotA,
+                                       const Magnum::Vector3& pivotB,
+                                       float maxImpulse = 2.0) {
+    return physicsManager_->createArticulatedFixedConstraint(
+        articulatedObjectId, linkId, objectId, maxImpulse, pivotA, pivotB);
+  }
+
+  /**
+   * @brief Create a ball&socket joint to constrain two links of two
+   * ArticulatedObjects to one another with local offsets for each.
+   * Note: Method not implemented for base PhysicsManager.
+   * @param articulatedObjectIdA The id of the first ArticulatedObject to
+   * constrain.
+   * @param linkIdA The local id of the first ArticulatedLink to constrain.
+   * @param linkOffsetA The position of the first ball and socket joint pivot in
+   * link A local space.
+   * @param articulatedObjectIdB The id of the second ArticulatedObject to
+   * constrain.
+   * @param linkIdB The local id of the second ArticulatedLink to constrain.
+   * @param linkOffsetB The position of the ball and socket joint pivot in link
+   * B local space.
+   * @return The unique id of the new constraint.
+   */
+  int createArticulatedP2PConstraint(int articulatedObjectIdA,
+                                     int linkIdA,
+                                     const Magnum::Vector3& linkOffsetA,
+                                     int articulatedObjectIdB,
+                                     int linkIdB,
+                                     const Magnum::Vector3& linkOffsetB,
+                                     float maxImpulse = 2.0) {
+    return physicsManager_->createArticulatedP2PConstraint(
+        articulatedObjectIdA, linkIdA, linkOffsetA, articulatedObjectIdB,
+        linkIdB, linkOffsetB, maxImpulse);
+  };
+
+  /**
+   * @brief Create a ball&socket joint to constrain two links of two
+   * ArticulatedObjects to one another at some global point.
+   * Note: Method not implemented for base PhysicsManager.
+   * @param articulatedObjectIdA The id of the first ArticulatedObject to
+   * constrain.
+   * @param linkIdA The local id of the first ArticulatedLink to constrain.
+   * @param articulatedObjectIdB The id of the second ArticulatedObject to
+   * constrain.
+   * @param linkIdB The local id of the second ArticulatedLink to constrain.
+   * @param globalConstraintPoint The position of the ball and socket joint
+   * pivot in global space.
+   * @return The unique id of the new constraint.
+   */
+  int createArticulatedP2PConstraint(
+      int articulatedObjectIdA,
+      int linkIdA,
+      int articulatedObjectIdB,
+      int linkIdB,
+      const Magnum::Vector3& globalConstraintPoint,
+      float maxImpulse = 2.0) {
+    return physicsManager_->createArticulatedP2PConstraint(
+        articulatedObjectIdA, linkIdA, articulatedObjectIdB, linkIdB,
+        globalConstraintPoint, maxImpulse);
+  };
+
   /**
    * @brief Create a ball&socket joint to constrain a single link of an
    * ArticulatedObject provided a position in global coordinates and a local
@@ -653,9 +745,10 @@ class Simulator {
   int createArticulatedP2PConstraint(int articulatedObjectId,
                                      int linkId,
                                      const Magnum::Vector3& linkOffset,
-                                     const Magnum::Vector3& pickPos) {
+                                     const Magnum::Vector3& pickPos,
+                                     float maxImpulse = 2.0) {
     return physicsManager_->createArticulatedP2PConstraint(
-        articulatedObjectId, linkId, linkOffset, pickPos);
+        articulatedObjectId, linkId, linkOffset, pickPos, maxImpulse);
   };
 
   /**
@@ -669,9 +762,10 @@ class Simulator {
    */
   int createArticulatedP2PConstraint(int articulatedObjectId,
                                      int linkId,
-                                     const Magnum::Vector3& pickPos) {
-    return physicsManager_->createArticulatedP2PConstraint(articulatedObjectId,
-                                                           linkId, pickPos);
+                                     const Magnum::Vector3& pickPos,
+                                     float maxImpulse = 2.0) {
+    return physicsManager_->createArticulatedP2PConstraint(
+        articulatedObjectId, linkId, pickPos, maxImpulse);
   };
 
   /**
@@ -687,10 +781,10 @@ class Simulator {
   /**
    * @brief Remove a constraint by id.
    * Note: Method not implemented for base PhysicsManager.
-   * @param p2pId The id of the constraint to remove.
+   * @param constraintId The id of the constraint to remove.
    */
-  void removeP2PConstraint(int p2pId) {
-    physicsManager_->removeP2PConstraint(p2pId);
+  void removeConstraint(int constraintId) {
+    physicsManager_->removeConstraint(constraintId);
   };
 
   // END: Articulated Object API (UNSTABLE!)
@@ -719,6 +813,13 @@ class Simulator {
    * enabled objects.
    */
   bool contactTest(int objectID, int sceneID = 0);
+
+  // TODO: document
+  void overrideCollisionGroup(int objectID, int group) {
+    // todo: find a safe way to convert int to enum
+    physicsManager_->overrideCollisionGroup(
+        objectID, esp::physics::CollisionGroup(group));
+  }
 
   std::vector<esp::physics::ContactPointData> getPhysicsContactPoints(
       const int sceneID);

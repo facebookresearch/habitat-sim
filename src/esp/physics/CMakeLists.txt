@@ -11,6 +11,8 @@ configure_file(
 add_library(
   physics STATIC
   ArticulatedObject.h
+  CollisionGroupHelper.cpp
+  CollisionGroupHelper.h
   PhysicsManager.cpp
   PhysicsManager.h
   RigidBase.h

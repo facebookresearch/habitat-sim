@@ -280,7 +280,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <sphere radius="0.2"/>
+        <mesh filename="meshes/link_7.stl"/>
       </geometry>
     </collision>
   </link>

@@ -18,6 +18,7 @@
 /* Bullet Physics Integration */
 
 #include "ArticulatedObject.h"
+#include "CollisionGroupHelper.h"
 #include "RigidObject.h"
 #include "RigidStage.h"
 #include "esp/assets/Asset.h"
@@ -426,6 +427,83 @@ class PhysicsManager {
     return ID_UNDEFINED;
   };
 
+  // TODO: document AO->rigid
+  virtual int createArticulatedP2PConstraint(
+      int articulatedObjectId,
+      int linkId,
+      int objectId,
+      float maxImpulse,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+    return -1;
+  }
+
+  // TODO: document AO->rigid
+  virtual int createArticulatedFixedConstraint(
+      int articulatedObjectId,
+      int linkId,
+      int objectId,
+      float maxImpulse,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+    return -1;
+  }
+
+  /**
+   * @brief Create a ball&socket joint to constrain two links of two
+   * ArticulatedObjects to one another with local offsets for each.
+   * Note: Method not implemented for base PhysicsManager.
+   * @param articulatedObjectIdA The id of the first ArticulatedObject to
+   * constrain.
+   * @param linkIdA The local id of the first ArticulatedLink to constrain.
+   * @param linkOffsetA The position of the first ball and socket joint pivot in
+   * link A local space.
+   * @param articulatedObjectIdB The id of the second ArticulatedObject to
+   * constrain.
+   * @param linkIdB The local id of the second ArticulatedLink to constrain.
+   * @param linkOffsetB The position of the ball and socket joint pivot in link
+   * B local space.
+   * @return The unique id of the new constraint.
+   */
+  virtual int createArticulatedP2PConstraint(
+      CORRADE_UNUSED int articulatedObjectIdA,
+      CORRADE_UNUSED int linkIdA,
+      CORRADE_UNUSED const Magnum::Vector3& linkOffsetA,
+      CORRADE_UNUSED int articulatedObjectIdB,
+      CORRADE_UNUSED int linkIdB,
+      CORRADE_UNUSED const Magnum::Vector3& linkOffsetB,
+      CORRADE_UNUSED float maxImpulse = 2.0) {
+    Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
+                       "PhysicsManager.";
+    return ID_UNDEFINED;
+  };
+
+  /**
+   * @brief Create a ball&socket joint to constrain two links of two
+   * ArticulatedObjects to one another at some global point.
+   * Note: Method not implemented for base PhysicsManager.
+   * @param articulatedObjectIdA The id of the first ArticulatedObject to
+   * constrain.
+   * @param linkIdA The local id of the first ArticulatedLink to constrain.
+   * @param articulatedObjectIdB The id of the second ArticulatedObject to
+   * constrain.
+   * @param linkIdB The local id of the second ArticulatedLink to constrain.
+   * @param globalConstraintPoint The position of the ball and socket joint
+   * pivot in global space.
+   * @return The unique id of the new constraint.
+   */
+  virtual int createArticulatedP2PConstraint(
+      CORRADE_UNUSED int articulatedObjectIdA,
+      CORRADE_UNUSED int linkIdA,
+      CORRADE_UNUSED int articulatedObjectIdB,
+      CORRADE_UNUSED int linkIdB,
+      CORRADE_UNUSED const Magnum::Vector3& globalConstraintPoint,
+      CORRADE_UNUSED float maxImpulse = 2.0) {
+    Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
+                       "PhysicsManager.";
+    return ID_UNDEFINED;
+  };
+
   /**
    * @brief Create a ball&socket joint to constrain a single link of an
    * ArticulatedObject provided a position in global coordinates and a local
@@ -441,7 +519,8 @@ class PhysicsManager {
       CORRADE_UNUSED int articulatedObjectId,
       CORRADE_UNUSED int linkId,
       CORRADE_UNUSED const Magnum::Vector3& linkOffset,
-      CORRADE_UNUSED const Magnum::Vector3& pickPos) {
+      CORRADE_UNUSED const Magnum::Vector3& pickPos,
+      CORRADE_UNUSED float maxImpulse = 2.0) {
     Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
                        "PhysicsManager.";
     return ID_UNDEFINED;
@@ -459,7 +538,8 @@ class PhysicsManager {
   virtual int createArticulatedP2PConstraint(
       CORRADE_UNUSED int articulatedObjectId,
       CORRADE_UNUSED int linkId,
-      CORRADE_UNUSED const Magnum::Vector3& pickPos) {
+      CORRADE_UNUSED const Magnum::Vector3& pickPos,
+      CORRADE_UNUSED float maxImpulse = 2.0) {
     Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
                        "PhysicsManager.";
     return ID_UNDEFINED;
@@ -481,11 +561,11 @@ class PhysicsManager {
   /**
    * @brief Remove a constraint by id.
    * Note: Method not implemented for base PhysicsManager.
-   * @param p2pId The id of the constraint to remove.
+   * @param constraintId The id of the constraint to remove.
    */
-  virtual void removeP2PConstraint(CORRADE_UNUSED int p2pId) {
+  virtual void removeConstraint(CORRADE_UNUSED int constraintId) {
     Magnum::Debug{}
-        << "removeP2PConstraint not implemented in base PhysicsManager.";
+        << "removeConstraint not implemented in base PhysicsManager.";
   };
 
   //============ Simulator functions =============
@@ -1081,6 +1161,12 @@ class PhysicsManager {
   };
 
   virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
+
+  /**
+   * @brief Manually set the collision group for an object.
+   */
+  virtual void overrideCollisionGroup(const int physObjectID,
+                                      CollisionGroup group) const {}
 
   /**
    * @brief Set an object to collidable or not.

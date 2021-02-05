@@ -288,6 +288,8 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
   btAlignedObjectArray<btVector3> scratch_m;
   btMultiBody_->forwardKinematics(scratch_q, scratch_m);
   btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+  // sync visual shapes
+  updateNodes();
 }
 
 void BulletArticulatedObject::setForces(std::vector<float> forces) {
@@ -372,6 +374,8 @@ void BulletArticulatedObject::setPositions(std::vector<float> positions) {
   btAlignedObjectArray<btVector3> scratch_m;
   btMultiBody_->forwardKinematics(scratch_q, scratch_m);
   btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+  // sync visual shapes
+  updateNodes();
 }
 
 std::vector<float> BulletArticulatedObject::getPositions() {
@@ -418,6 +422,8 @@ void BulletArticulatedObject::reset() {
   btMultiBody_->clearConstraintForces();
   btMultiBody_->clearVelocities();
   btMultiBody_->clearForcesAndTorques();
+  // sync visual shapes
+  updateNodes();
 }
 
 void BulletArticulatedObject::setSleep(bool sleep) {

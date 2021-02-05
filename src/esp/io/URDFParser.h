@@ -308,6 +308,8 @@ class Parser {
   const Model& getModel() const { return m_urdfModel; }
 
   Model& getModel() { return m_urdfModel; }
+
+  bool logMessages = false;
 };
 
 }  // namespace URDF

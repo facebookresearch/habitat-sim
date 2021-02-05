@@ -40,12 +40,10 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   // currently GLB meshes are y-up
   bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
 
-  Corrade::Utility::Debug() << "creating staticStageObject_";
   //! Create new scene node
   staticStageObject_ = physics::BulletRigidStage::create_unique(
       &physicsNode_->createChild(), resourceManager_, bWorld_,
       collisionObjToObjIds_);
-  Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
 
   m_recentNumSubStepsTaken = -1;
 
@@ -285,6 +283,13 @@ bool BulletPhysicsManager::contactTest(const int physObjectID) {
       ->contactTest();
 }
 
+void BulletPhysicsManager::overrideCollisionGroup(const int physObjectID,
+                                                  CollisionGroup group) const {
+  assertIDValidity(physObjectID);
+  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
+      ->overrideCollisionGroup(group);
+}
+
 int BulletPhysicsManager::createRigidP2PConstraint(
     int objectId,
     const Magnum::Vector3& position,
@@ -295,6 +300,7 @@ int BulletPhysicsManager::createRigidP2PConstraint(
         static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
             ->bObjectRigidBody_.get();
     rb->setActivationState(DISABLE_DEACTIVATION);
+    // TODO: need to reactivate sleeping at some point
 
     Magnum::Vector3 localOffset = position;
     if (!positionLocal) {
@@ -306,8 +312,8 @@ int BulletPhysicsManager::createRigidP2PConstraint(
     btPoint2PointConstraint* p2p =
         new btPoint2PointConstraint(*rb, btVector3(localOffset));
     bWorld_->addConstraint(p2p);
-    rigidP2ps.emplace(nextP2PId_, p2p);
-    return nextP2PId_++;
+    rigidP2ps.emplace(nextConstraintId_, p2p);
+    return nextConstraintId_++;
   } else {
     Corrade::Utility::Debug()
         << "Cannot create a dynamic point-2-point constraint for object with "
@@ -319,8 +325,187 @@ int BulletPhysicsManager::createRigidP2PConstraint(
 int BulletPhysicsManager::createArticulatedP2PConstraint(
     int articulatedObjectId,
     int linkId,
+    int objectId,
+    float maxImpulse,
+    const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+    const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectId));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
+        linkId);
+  CHECK(existingObjects_.count(objectId));
+
+  btRigidBody* rb = nullptr;
+  if (existingObjects_.at(objectId)->getMotionType() == MotionType::DYNAMIC) {
+    rb = static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
+             ->bObjectRigidBody_.get();
+  } else {
+    Corrade::Utility::Debug()
+        << "Cannot create a dynamic P2P constraint for object with "
+           "MotionType != DYNAMIC";
+    return ID_UNDEFINED;
+  }
+
+  btMultiBody* mb =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectId).get())
+          ->btMultiBody_.get();
+  mb->setCanSleep(false);
+
+  // use origin if not specified
+  btVector3 pivotInB = pivotB ? btVector3(*pivotB) : btVector3(0.f, 0.f, 0.f);
+
+  btVector3 pivotInA;
+  if (pivotA) {
+    pivotInA = btVector3(*pivotA);
+  } else {
+    // hold object at it's current position relative to link
+    btVector3 pivotWorld = rb->getCenterOfMassTransform() * pivotInB;
+    pivotInA = mb->worldPosToLocal(linkId, pivotWorld);
+  }
+
+  btMultiBodyPoint2Point* p2p =
+      new btMultiBodyPoint2Point(mb, linkId, rb, pivotInA, pivotInB);
+  p2p->setMaxAppliedImpulse(maxImpulse);
+  bWorld_->addMultiBodyConstraint(p2p);
+  articulatedP2ps.emplace(nextConstraintId_, p2p);
+  return nextConstraintId_++;
+}
+
+int BulletPhysicsManager::createArticulatedFixedConstraint(
+    int articulatedObjectId,
+    int linkId,
+    int objectId,
+    float maxImpulse,
+    const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+    const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectId));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
+        linkId);
+  CHECK(existingObjects_.count(objectId));
+
+  btRigidBody* rb = nullptr;
+  if (existingObjects_.at(objectId)->getMotionType() == MotionType::DYNAMIC) {
+    rb = static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
+             ->bObjectRigidBody_.get();
+  } else {
+    Corrade::Utility::Debug()
+        << "Cannot create a dynamic fixed constraint for object with "
+           "MotionType != DYNAMIC";
+    return ID_UNDEFINED;
+  }
+
+  btMultiBody* mb =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectId).get())
+          ->btMultiBody_.get();
+  mb->setCanSleep(false);
+
+  // use origin if not specified
+  // todo: avoid code duplication here and in createArticulatedP2PConstraint
+  btVector3 pivotInB = pivotB ? btVector3(*pivotB) : btVector3(0.f, 0.f, 0.f);
+  btVector3 pivotInA;
+  if (pivotA) {
+    pivotInA = btVector3(*pivotA);
+  } else {
+    // hold object at it's current position relative to link
+    btVector3 pivotWorld = rb->getCenterOfMassTransform() * pivotInB;
+    btVector3 pivotInA = mb->worldPosToLocal(linkId, pivotWorld);
+  }
+
+  // We constrain the relative orientation of the link and object to match their
+  // current relative orientation.
+  btMatrix3x3 frameInA = btMatrix3x3::getIdentity();
+  btMatrix3x3 frameWorld = mb->localFrameToWorld(linkId, frameInA);
+  // note btMatrix3x3 tranpose() equivalent to inverse because mat is
+  // orthonormal
+  btMatrix3x3 frameInB =
+      (frameWorld * rb->getCenterOfMassTransform().getBasis().transpose())
+          .transpose();
+
+  auto* constraint = new btMultiBodyFixedConstraint(
+      mb, linkId, rb, pivotInA, pivotInB, frameInA, frameInB);
+  constraint->setMaxAppliedImpulse(maxImpulse);
+  bWorld_->addMultiBodyConstraint(constraint);
+  articulatedFixedConstraints.emplace(nextConstraintId_, constraint);
+  return nextConstraintId_++;
+}
+
+int BulletPhysicsManager::createArticulatedP2PConstraint(
+    int articulatedObjectIdA,
+    int linkIdA,
+    const Magnum::Vector3& linkOffsetA,
+    int articulatedObjectIdB,
+    int linkIdB,
+    const Magnum::Vector3& linkOffsetB,
+    float maxImpulse) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectIdA));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectIdA)->getNumLinks() >
+        linkIdA);
+  CHECK(existingArticulatedObjects_.count(articulatedObjectIdB));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectIdB)->getNumLinks() >
+        linkIdB);
+
+  btMultiBody* mbA =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectIdA).get())
+          ->btMultiBody_.get();
+  btMultiBody* mbB =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectIdB).get())
+          ->btMultiBody_.get();
+
+  // TODO: need to reactivate sleeping at some point
+  mbA->setCanSleep(false);
+  mbB->setCanSleep(false);
+
+  btMultiBodyPoint2Point* p2p = new btMultiBodyPoint2Point(
+      mbA, linkIdA, mbB, linkIdB, btVector3(linkOffsetA),
+      btVector3(linkOffsetB));
+  p2p->setMaxAppliedImpulse(maxImpulse);
+  bWorld_->addMultiBodyConstraint(p2p);
+  articulatedP2ps.emplace(nextConstraintId_, p2p);
+  return nextConstraintId_++;
+}
+
+int BulletPhysicsManager::createArticulatedP2PConstraint(
+    int articulatedObjectIdA,
+    int linkIdA,
+    int articulatedObjectIdB,
+    int linkIdB,
+    const Magnum::Vector3& globalConstraintPoint,
+    float maxImpulse) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectIdA));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectIdA)->getNumLinks() >
+        linkIdA);
+  CHECK(existingArticulatedObjects_.count(articulatedObjectIdB));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectIdB)->getNumLinks() >
+        linkIdB);
+
+  // convert the global point in to local pivots
+  Mn::Vector3 pivotA = existingArticulatedObjects_.at(articulatedObjectIdA)
+                           ->getLink(linkIdA)
+                           .node()
+                           .transformation()
+                           .inverted()
+                           .transformPoint(globalConstraintPoint);
+  Mn::Vector3 pivotB = existingArticulatedObjects_.at(articulatedObjectIdB)
+                           ->getLink(linkIdB)
+                           .node()
+                           .transformation()
+                           .inverted()
+                           .transformPoint(globalConstraintPoint);
+
+  return createArticulatedP2PConstraint(articulatedObjectIdA, linkIdA, pivotA,
+                                        articulatedObjectIdB, linkIdB, pivotB,
+                                        maxImpulse);
+}
+
+int BulletPhysicsManager::createArticulatedP2PConstraint(
+    int articulatedObjectId,
+    int linkId,
     const Magnum::Vector3& linkOffset,
-    const Magnum::Vector3& pickPos) {
+    const Magnum::Vector3& pickPos,
+    float maxImpulse) {
   CHECK(existingArticulatedObjects_.count(articulatedObjectId));
   CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
         linkId);
@@ -329,19 +514,20 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
           existingArticulatedObjects_.at(articulatedObjectId).get())
           ->btMultiBody_.get();
   mb->setCanSleep(false);
+  // TODO: need to reactivate sleeping at some point
   btMultiBodyPoint2Point* p2p = new btMultiBodyPoint2Point(
       mb, linkId, 0, btVector3(linkOffset), btVector3(pickPos));
-  btScalar scaling = 1;
-  p2p->setMaxAppliedImpulse(2 * scaling);
+  p2p->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(p2p);
-  articulatedP2ps.emplace(nextP2PId_, p2p);
-  return nextP2PId_++;
+  articulatedP2ps.emplace(nextConstraintId_, p2p);
+  return nextConstraintId_++;
 }
 
 int BulletPhysicsManager::createArticulatedP2PConstraint(
     int articulatedObjectId,
     int linkId,
-    const Magnum::Vector3& pickPos) {
+    const Magnum::Vector3& pickPos,
+    float maxImpulse) {
   CHECK(existingArticulatedObjects_.count(articulatedObjectId));
   CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
         linkId);
@@ -351,7 +537,8 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
           ->btMultiBody_.get();
   btVector3 pivotInA = mb->worldPosToLocal(linkId, btVector3(pickPos));
   return createArticulatedP2PConstraint(articulatedObjectId, linkId,
-                                        Magnum::Vector3(pivotInA), pickPos);
+                                        Magnum::Vector3(pivotInA), pickPos,
+                                        maxImpulse);
 }
 
 void BulletPhysicsManager::updateP2PConstraintPivot(
@@ -366,19 +553,26 @@ void BulletPhysicsManager::updateP2PConstraintPivot(
   }
 }
 
-void BulletPhysicsManager::removeP2PConstraint(int p2pId) {
-  if (articulatedP2ps.count(p2pId)) {
-    articulatedP2ps.at(p2pId)->getMultiBodyA()->setCanSleep(true);
-    bWorld_->removeMultiBodyConstraint(articulatedP2ps.at(p2pId));
-    delete articulatedP2ps.at(p2pId);
-    articulatedP2ps.erase(p2pId);
-  } else if (rigidP2ps.count(p2pId)) {
-    rigidP2ps.at(p2pId)->getRigidBodyA().setActivationState(WANTS_DEACTIVATION);
-    bWorld_->removeConstraint(rigidP2ps.at(p2pId));
-    delete rigidP2ps.at(p2pId);
-    rigidP2ps.erase(p2pId);
+void BulletPhysicsManager::removeConstraint(int constraintId) {
+  if (articulatedP2ps.count(constraintId)) {
+    articulatedP2ps.at(constraintId)->getMultiBodyA()->setCanSleep(true);
+    bWorld_->removeMultiBodyConstraint(articulatedP2ps.at(constraintId));
+    delete articulatedP2ps.at(constraintId);
+    articulatedP2ps.erase(constraintId);
+  } else if (rigidP2ps.count(constraintId)) {
+    rigidP2ps.at(constraintId)
+        ->getRigidBodyA()
+        .setActivationState(WANTS_DEACTIVATION);
+    bWorld_->removeConstraint(rigidP2ps.at(constraintId));
+    delete rigidP2ps.at(constraintId);
+    rigidP2ps.erase(constraintId);
+  } else if (articulatedFixedConstraints.count(constraintId)) {
+    bWorld_->removeMultiBodyConstraint(
+        articulatedFixedConstraints.at(constraintId));
+    delete articulatedFixedConstraints.at(constraintId);
+    articulatedFixedConstraints.erase(constraintId);
   } else {
-    Corrade::Utility::Debug() << "No P2P constraint with ID: " << p2pId;
+    Corrade::Utility::Debug() << "No constraint with ID: " << constraintId;
   }
 };
 
