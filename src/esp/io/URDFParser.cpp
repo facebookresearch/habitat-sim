@@ -8,6 +8,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/Math/Quaternion.h>
+#include <iostream>
 
 #include "URDFParser.h"
 
@@ -25,6 +26,8 @@ namespace io {
 namespace URDF {
 
 bool Parser::parseURDF(const std::string& filename) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
+
   Model newURDFModel = Model();
   sourceFilePath_ = filename;
   newURDFModel.m_sourceFile = filename;
@@ -34,23 +37,22 @@ bool Parser::parseURDF(const std::string& filename) {
   XMLDocument xml_doc;
   xml_doc.Parse(xmlString.c_str());
   if (xml_doc.Error()) {
-    Corrade::Utility::Debug()
+    Mn::Debug{}
         << "Parser::parseURDF - XML parse error, aborting URDF parse/load.";
     return false;
   }
-  Corrade::Utility::Debug()
-      << "Parser::parseURDF - XML parsed starting URDF parse/load.";
+  Mn::Debug{} << "Parser::parseURDF - XML parsed starting URDF parse/load.";
 
   XMLElement* robot_xml = xml_doc.FirstChildElement("robot");
   if (!robot_xml) {
-    Corrade::Utility::Debug() << "E - expected a robot element";
+    Mn::Debug{} << "E - expected a robot element";
     return false;
   }
 
   // Get robot name
   const char* name = robot_xml->Attribute("name");
   if (!name) {
-    Corrade::Utility::Debug() << "E - expected a name for robot";
+    Mn::Debug{} << "E - expected a name for robot";
     return false;
   }
   newURDFModel.m_name = name;
@@ -66,7 +68,7 @@ bool Parser::parseURDF(const std::string& filename) {
     if (newURDFModel.m_materials.count(material->m_name) == 0) {
       newURDFModel.m_materials[material->m_name] = material;
     } else {
-      Corrade::Utility::Debug() << "W - Duplicate material";
+      Mn::Debug{} << "W - Duplicate material";
     }
   }
 
@@ -77,9 +79,9 @@ bool Parser::parseURDF(const std::string& filename) {
 
     if (parseLink(newURDFModel, *link.get(), link_xml)) {
       if (newURDFModel.m_links.count(link->m_name)) {
-        Corrade::Utility::Debug() << "E - Link name is not unique, link names "
-                                     "in the same model have to be unique";
-        Corrade::Utility::Debug() << "E - " << link->m_name;
+        Mn::Debug{} << "E - Link name is not unique, link names "
+                       "in the same model have to be unique";
+        Mn::Debug{} << "E - " << link->m_name;
         return false;
       } else {
         // copy model material into link material, if link has no local material
@@ -91,9 +93,8 @@ bool Parser::parseURDF(const std::string& filename) {
             if (mat_itr != newURDFModel.m_materials.end()) {
               vis.m_geometry.m_localMaterial = mat_itr->second;
             } else {
-              Corrade::Utility::Debug()
-                  << "E - Cannot find material with name: "
-                  << vis.m_materialName;
+              Mn::Debug{} << "E - Cannot find material with name: "
+                          << vis.m_materialName;
             }
           }
         }
@@ -102,12 +103,12 @@ bool Parser::parseURDF(const std::string& filename) {
         newURDFModel.m_links[link->m_name] = link;
       }
     } else {
-      Corrade::Utility::Debug() << "E - failed to parse link";
+      Mn::Debug{} << "E - failed to parse link";
       return false;
     }
   }
   if (newURDFModel.m_links.size() == 0) {
-    Corrade::Utility::Debug() << "W - No links found in URDF file.";
+    Mn::Debug{} << "W - No links found in URDF file.";
     return false;
   }
 
@@ -118,14 +119,13 @@ bool Parser::parseURDF(const std::string& filename) {
 
     if (parseJoint(*joint.get(), joint_xml)) {
       if (newURDFModel.m_joints.count(joint->m_name)) {
-        Corrade::Utility::Debug()
-            << "E - joint " << joint->m_name << " is not unique";
+        Mn::Debug{} << "E - joint " << joint->m_name << " is not unique";
         return false;
       } else {
         newURDFModel.m_joints[joint->m_name] = joint;
       }
     } else {
-      Corrade::Utility::Debug() << "E - joint xml is not initialized correctly";
+      Mn::Debug{} << "E - joint xml is not initialized correctly";
       return false;
     }
   }
@@ -137,7 +137,7 @@ bool Parser::parseURDF(const std::string& filename) {
   }
   m_urdfModel = newURDFModel;
 
-  Corrade::Utility::Debug() << "Done parsing URDF";
+  Mn::Debug{} << "Done parsing URDF";
 
   return true;
 }
@@ -185,8 +185,9 @@ static bool parseVector3(Mn::Vector3& vec3,
 }
 
 bool Parser::parseMaterial(Material& material, XMLElement* config) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   if (!config->Attribute("name")) {
-    Corrade::Utility::Debug() << "E - Material must contain a name attribute";
+    Mn::Debug{} << "E - Material must contain a name attribute";
     return false;
   }
   material.m_name = config->Attribute("name");
@@ -206,8 +207,7 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) {
       if (c->Attribute("rgba")) {
         if (!parseColor4(material.m_matColor.m_rgbaColor,
                          c->Attribute("rgba"))) {
-          Corrade::Utility::Debug()
-              << "W - " << material.m_name << " has no rgba";
+          Mn::Debug{} << "W - " << material.m_name << " has no rgba";
         }
       }
     }
@@ -228,13 +228,14 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) {
 }
 
 bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   const char* linkName = config->Attribute("name");
   if (!linkName) {
-    Corrade::Utility::Debug() << "E - Link with no name";
+    Mn::Debug{} << "E - Link with no name";
     return false;
   }
-  Corrade::Utility::Debug() << "------------------------------------";
-  Corrade::Utility::Debug() << "Parser::parseLink: " << linkName;
+  Mn::Debug{} << "------------------------------------";
+  Mn::Debug{} << "Parser::parseLink: " << linkName;
   link.m_name = linkName;
 
   {
@@ -244,7 +245,7 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
       XMLElement* damping_xml = ci->FirstChildElement("inertia_scaling");
       if (damping_xml) {
         if (!damping_xml->Attribute("value")) {
-          Corrade::Utility::Debug()
+          Mn::Debug{}
               << "E - Link/contact: damping element must have value attribute";
           return false;
         }
@@ -257,8 +258,8 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
         XMLElement* friction_xml = ci->FirstChildElement("lateral_friction");
         if (friction_xml) {
           if (!friction_xml->Attribute("value")) {
-            Corrade::Utility::Debug() << "E - Link/contact: lateral_friction "
-                                         "element must have value attribute";
+            Mn::Debug{} << "E - Link/contact: lateral_friction "
+                           "element must have value attribute";
             return false;
           }
 
@@ -271,8 +272,8 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
         XMLElement* rolling_xml = ci->FirstChildElement("rolling_friction");
         if (rolling_xml) {
           if (!rolling_xml->Attribute("value")) {
-            Corrade::Utility::Debug() << "E - Link/contact: rolling friction "
-                                         "element must have value attribute";
+            Mn::Debug{} << "E - Link/contact: rolling friction "
+                           "element must have value attribute";
             return false;
           }
 
@@ -286,8 +287,8 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
         XMLElement* restitution_xml = ci->FirstChildElement("restitution");
         if (restitution_xml) {
           if (!restitution_xml->Attribute("value")) {
-            Corrade::Utility::Debug() << "E - Link/contact: restitution "
-                                         "element must have value attribute";
+            Mn::Debug{} << "E - Link/contact: restitution "
+                           "element must have value attribute";
             return false;
           }
 
@@ -301,8 +302,8 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
         XMLElement* spinning_xml = ci->FirstChildElement("spinning_friction");
         if (spinning_xml) {
           if (!spinning_xml->Attribute("value")) {
-            Corrade::Utility::Debug() << "E - Link/contact: spinning friction "
-                                         "element must have value attribute";
+            Mn::Debug{} << "E - Link/contact: spinning friction "
+                           "element must have value attribute";
             return false;
           }
 
@@ -321,8 +322,8 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
         XMLElement* stiffness_xml = ci->FirstChildElement("stiffness");
         if (stiffness_xml) {
           if (!stiffness_xml->Attribute("value")) {
-            Corrade::Utility::Debug() << "E - Link/contact: stiffness element "
-                                         "must have value attribute";
+            Mn::Debug{} << "E - Link/contact: stiffness element "
+                           "must have value attribute";
             return false;
           }
 
@@ -335,8 +336,8 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
         XMLElement* damping_xml = ci->FirstChildElement("damping");
         if (damping_xml) {
           if (!damping_xml->Attribute("value")) {
-            Corrade::Utility::Debug() << "E - Link/contact: damping element "
-                                         "must have value attribute";
+            Mn::Debug{} << "E - Link/contact: damping element "
+                           "must have value attribute";
             return false;
           }
 
@@ -352,9 +353,8 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
   XMLElement* i = config->FirstChildElement("inertial");
   if (i) {
     if (!parseInertia(link.m_inertia, i)) {
-      Corrade::Utility::Debug()
-          << "E - Could not parse inertial element for Link:";
-      Corrade::Utility::Debug() << link.m_name;
+      Mn::Debug{} << "E - Could not parse inertial element for Link:";
+      Mn::Debug{} << link.m_name;
       return false;
     }
   } else {
@@ -365,7 +365,7 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
       link.m_inertia.m_iyy = 0.f;
       link.m_inertia.m_izz = 0.f;
     } else {
-      Corrade::Utility::Debug()
+      Mn::Debug{}
           << "W - No inertial data for link: " << link.m_name
           << ", using mass=1, localinertiadiagonal = 1,1,1, identity local "
              "inertial frame";
@@ -385,8 +385,8 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
     if (parseVisual(model, visual, vis_xml)) {
       link.m_visualArray.push_back(visual);
     } else {
-      Corrade::Utility::Debug()
-          << "E - Could not parse visual element for Link:" << link.m_name;
+      Mn::Debug{} << "E - Could not parse visual element for Link:"
+                  << link.m_name;
       return false;
     }
   }
@@ -399,9 +399,8 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
     if (parseCollision(col, col_xml)) {
       link.m_collisionArray.push_back(col);
     } else {
-      Corrade::Utility::Debug()
-          << "E - Could not parse collision element for Link:"
-          << link.m_name.c_str();
+      Mn::Debug{} << "E - Could not parse collision element for Link:"
+                  << link.m_name.c_str();
       return false;
     }
   }
@@ -453,6 +452,7 @@ bool Parser::parseCollision(CollisionShape& collision, XMLElement* config) {
 bool Parser::parseVisual(Model& model,
                          VisualShape& visual,
                          XMLElement* config) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   visual.m_linkLocalFrame = Mn::Matrix4();  // Identity
 
   // Origin
@@ -479,8 +479,7 @@ bool Parser::parseVisual(Model& model,
   if (mat) {
     // get material name
     if (!mat->Attribute("name")) {
-      Corrade::Utility::Debug()
-          << "E - Visual material must contain a name attribute";
+      Mn::Debug{} << "E - Visual material must contain a name attribute";
       return false;
     }
     visual.m_materialName = mat->Attribute("name");
@@ -556,12 +555,13 @@ bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
 }
 
 bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   if (g == 0)
     return false;
 
   XMLElement* shape = g->FirstChildElement();
   if (!shape) {
-    Corrade::Utility::Debug() << "E - Geometry tag contains no child element.";
+    Mn::Debug{} << "E - Geometry tag contains no child element.";
     return false;
   }
 
@@ -571,8 +571,7 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
     geom.m_type = GEOM_SPHERE;
 
     if (!shape->Attribute("radius")) {
-      Corrade::Utility::Debug()
-          << "E - Sphere shape must have a radius attribute";
+      Mn::Debug{} << "E - Sphere shape must have a radius attribute";
       return false;
     } else {
       geom.m_sphereRadius =
@@ -581,7 +580,7 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
   } else if (type_name == "box") {
     geom.m_type = GEOM_BOX;
     if (!shape->Attribute("size")) {
-      Corrade::Utility::Debug() << "E - box requires a size attribute";
+      Mn::Debug{} << "E - box requires a size attribute";
       return false;
     } else {
       parseVector3(geom.m_boxSize, shape->Attribute("size"));
@@ -594,7 +593,7 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
     geom.m_capsuleHeight = 0.1;
 
     if (!shape->Attribute("length") || !shape->Attribute("radius")) {
-      Corrade::Utility::Debug()
+      Mn::Debug{}
           << "E - Cylinder shape must have both length and radius attributes";
       return false;
     }
@@ -608,7 +607,7 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
     geom.m_hasFromTo = false;
 
     if (!shape->Attribute("length") || !shape->Attribute("radius")) {
-      Corrade::Utility::Debug()
+      Mn::Debug{}
           << "E - Capsule shape must have both length and radius attributes";
       return false;
     }
@@ -627,8 +626,8 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
     }
     if (shape->Attribute("scale")) {
       if (!parseVector3(geom.m_meshScale, shape->Attribute("scale"))) {
-        Corrade::Utility::Debug() << "W - Scale should be a vector3, not "
-                                     "single scalar. Workaround activated.";
+        Mn::Debug{} << "W - Scale should be a vector3, not "
+                       "single scalar. Workaround activated.";
         std::string scalar_str = shape->Attribute("scale");
         double scaleFactor = std::stod(scalar_str.c_str());
         if (scaleFactor) {
@@ -640,7 +639,7 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
     geom.m_meshScale *= m_urdfScaling;
 
     if (fn.empty()) {
-      Corrade::Utility::Debug() << "E - Mesh filename is empty";
+      Mn::Debug{} << "E - Mesh filename is empty";
       return false;
     }
 
@@ -659,13 +658,13 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
       geom.m_type = GEOM_PLANE;
 
       if (!shape->Attribute("normal")) {
-        Corrade::Utility::Debug() << "E - Plane requires a normal attribute";
+        Mn::Debug{} << "E - Plane requires a normal attribute";
         return false;
       } else {
         parseVector3(geom.m_planeNormal, shape->Attribute("normal"));
       }
     } else {
-      Corrade::Utility::Debug() << "E - Unknown geometry type: " << type_name;
+      Mn::Debug{} << "E - Unknown geometry type: " << type_name;
       return false;
     }
   }
@@ -674,6 +673,7 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
 }
 
 bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   inertia.m_linkLocalFrame = Mn::Matrix4();  // Identity
   inertia.m_mass = 0.f;
 
@@ -687,14 +687,12 @@ bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
 
   XMLElement* mass_xml = config->FirstChildElement("mass");
   if (!mass_xml) {
-    Corrade::Utility::Debug()
-        << "E - Inertial element must have a mass element";
+    Mn::Debug{} << "E - Inertial element must have a mass element";
     return false;
   }
 
   if (!mass_xml->Attribute("value")) {
-    Corrade::Utility::Debug()
-        << "E - Inertial: mass element must have value attribute";
+    Mn::Debug{} << "E - Inertial: mass element must have value attribute";
     return false;
   }
 
@@ -702,8 +700,7 @@ bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
 
   XMLElement* inertia_xml = config->FirstChildElement("inertia");
   if (!inertia_xml) {
-    Corrade::Utility::Debug()
-        << "E - Inertial element must have inertia element";
+    Mn::Debug{} << "E - Inertial element must have inertia element";
     return false;
   }
 
@@ -719,8 +716,8 @@ bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
       inertia.m_iyz = 0;
       inertia.m_izz = std::stod(inertia_xml->Attribute("izz"));
     } else {
-      Corrade::Utility::Debug() << "E - Inertial: inertia element must have "
-                                   "ixx,ixy,ixz,iyy,iyz,izz attributes";
+      Mn::Debug{} << "E - Inertial: inertia element must have "
+                     "ixx,ixy,ixz,iyy,iyz,izz attributes";
       return false;
     }
   } else {
@@ -736,6 +733,7 @@ bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
 }
 
 bool Parser::validateMeshFile(std::string& meshFilename) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   std::string urdfDirectory =
       sourceFilePath_.substr(0, sourceFilePath_.find_last_of("/"));
 
@@ -751,14 +749,14 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
     // ResourceManager assets later.
     meshFilename = meshFilePath;
   } else {
-    Corrade::Utility::Debug()
-        << "Mesh file \"" << meshFilePath << "\"does not exist.";
+    Mn::Debug{} << "Mesh file \"" << meshFilePath << "\"does not exist.";
   }
 
   return meshSuccess;
 }
 
 bool Parser::initTreeAndRoot(Model& model) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
   std::map<std::string, std::string> parentLinkTree;
@@ -771,24 +769,21 @@ bool Parser::initTreeAndRoot(Model& model) {
     std::string parent_link_name = joint->m_parentLinkName;
     std::string child_link_name = joint->m_childLinkName;
     if (parent_link_name.empty() || child_link_name.empty()) {
-      Corrade::Utility::Debug()
-          << "E - parent link or child link is empty for joint: "
-          << joint->m_name;
+      Mn::Debug{} << "E - parent link or child link is empty for joint: "
+                  << joint->m_name;
       return false;
     }
 
     if (!model.m_links.count(joint->m_childLinkName)) {
-      Corrade::Utility::Debug()
-          << "E - Cannot find child link for joint: " << joint->m_name
-          << ", child: " << joint->m_childLinkName;
+      Mn::Debug{} << "E - Cannot find child link for joint: " << joint->m_name
+                  << ", child: " << joint->m_childLinkName;
       return false;
     }
     auto childLink = model.m_links.at(joint->m_childLinkName);
 
     if (!model.m_links.count(joint->m_parentLinkName)) {
-      Corrade::Utility::Debug()
-          << "E - Cannot find parent link for joint: " << joint->m_name
-          << ", parent: " << joint->m_parentLinkName;
+      Mn::Debug{} << "E - Cannot find parent link for joint: " << joint->m_name
+                  << ", parent: " << joint->m_parentLinkName;
       return false;
     }
     auto parentLink = model.m_links.at(joint->m_parentLinkName);
@@ -816,16 +811,15 @@ bool Parser::initTreeAndRoot(Model& model) {
   }
 
   if (model.m_rootLinks.size() > 1) {
-    Corrade::Utility::Debug()
-        << "W - URDF file with multiple root links found:";
+    Mn::Debug{} << "W - URDF file with multiple root links found:";
 
     for (size_t i = 0; i < model.m_rootLinks.size(); i++) {
-      Corrade::Utility::Debug() << model.m_rootLinks[i]->m_name;
+      Mn::Debug{} << model.m_rootLinks[i]->m_name;
     }
   }
 
   if (model.m_rootLinks.size() == 0) {
-    Corrade::Utility::Debug() << "E - URDF without root link found.";
+    Mn::Debug{} << "E - URDF without root link found.";
     return false;
   }
   return true;
@@ -870,6 +864,7 @@ bool Parser::parseJointLimits(Joint& joint, tinyxml2::XMLElement* config) {
 }
 
 bool Parser::parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   joint.m_jointDamping = 0;
   joint.m_jointFriction = 0;
 
@@ -886,8 +881,8 @@ bool Parser::parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) {
   }
 
   if (damping_str == NULL && friction_str == NULL) {
-    Corrade::Utility::Debug() << "E - joint dynamics element specified with no "
-                                 "damping and no friction";
+    Mn::Debug{} << "E - joint dynamics element specified with no "
+                   "damping and no friction";
     return false;
   }
 
@@ -895,10 +890,11 @@ bool Parser::parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) {
 }
 
 bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
+  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // Get Joint Name
   const char* name = config->Attribute("name");
   if (!name) {
-    Corrade::Utility::Debug() << "E - unnamed joint found";
+    Mn::Debug{} << "E - unnamed joint found";
     return false;
   }
   joint.m_name = name;
@@ -908,8 +904,8 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   XMLElement* origin_xml = config->FirstChildElement("origin");
   if (origin_xml) {
     if (!parseTransform(joint.m_parentLinkToJointTransform, origin_xml)) {
-      Corrade::Utility::Debug()
-          << "E - Malformed parent origin element for joint: " << joint.m_name;
+      Mn::Debug{} << "E - Malformed parent origin element for joint: "
+                  << joint.m_name;
       return false;
     }
   }
@@ -919,9 +915,9 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   if (parent_xml) {
     const char* pname = parent_xml->Attribute("link");
     if (!pname) {
-      Corrade::Utility::Debug() << "E - no parent link name specified for "
-                                   "Joint link. this might be the root? "
-                                << joint.m_name;
+      Mn::Debug{} << "E - no parent link name specified for "
+                     "Joint link. this might be the root? "
+                  << joint.m_name;
       return false;
     } else {
       joint.m_parentLinkName = std::string(pname);
@@ -933,8 +929,8 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   if (child_xml) {
     const char* pname = child_xml->Attribute("link");
     if (!pname) {
-      Corrade::Utility::Debug()
-          << "E - no child link name specified for Joint link " << joint.m_name;
+      Mn::Debug{} << "E - no child link name specified for Joint link "
+                  << joint.m_name;
       return false;
     } else {
       joint.m_childLinkName = std::string(pname);
@@ -944,9 +940,8 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   // Get Joint type
   const char* type_char = config->Attribute("type");
   if (!type_char) {
-    Corrade::Utility::Debug()
-        << "E - joint " << joint.m_name
-        << " has no type, check to see if it's a reference.";
+    Mn::Debug{} << "E - joint " << joint.m_name
+                << " has no type, check to see if it's a reference.";
     return false;
   }
 
@@ -966,8 +961,8 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   else if (type_str == "fixed")
     joint.m_type = FixedJoint;
   else {
-    Corrade::Utility::Debug()
-        << "E - Joint " << joint.m_name << " has unkown type: " << type_str;
+    Mn::Debug{} << "E - Joint " << joint.m_name
+                << " has unkown type: " << type_str;
     return false;
   }
 
@@ -976,16 +971,16 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
     // axis
     XMLElement* axis_xml = config->FirstChildElement("axis");
     if (!axis_xml) {
-      Corrade::Utility::Debug() << "W - urdfdom: no axis elemement for Joint, "
-                                   "defaulting to (1,0,0) axis "
-                                << joint.m_name;
+      Mn::Debug{} << "W - urdfdom: no axis elemement for Joint, "
+                     "defaulting to (1,0,0) axis "
+                  << joint.m_name;
       joint.m_localJointAxis = Mn::Vector3(1, 0, 0);
     } else {
       if (axis_xml->Attribute("xyz")) {
         if (!parseVector3(joint.m_localJointAxis, axis_xml->Attribute("xyz"))) {
-          Corrade::Utility::Debug()
-              << "E - Malformed axis element: " << axis_xml->Attribute("xyz")
-              << " for joint: " << joint.m_name;
+          Mn::Debug{} << "E - Malformed axis element: "
+                      << axis_xml->Attribute("xyz")
+                      << " for joint: " << joint.m_name;
           return false;
         }
       }
@@ -996,18 +991,18 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   XMLElement* limit_xml = config->FirstChildElement("limit");
   if (limit_xml) {
     if (!parseJointLimits(joint, limit_xml)) {
-      Corrade::Utility::Debug()
-          << "E - Could not parse limit element for joint:" << joint.m_name;
+      Mn::Debug{} << "E - Could not parse limit element for joint:"
+                  << joint.m_name;
       return false;
     }
   } else if (joint.m_type == RevoluteJoint) {
-    Corrade::Utility::Debug()
+    Mn::Debug{}
         << "E - Joint is of type REVOLUTE but it does not specify limits: "
         << joint.m_name;
     return false;
   } else if (joint.m_type == PrismaticJoint) {
-    Corrade::Utility::Debug()
-        << "E - Joint is of type PRISMATIC without limits: " << joint.m_name;
+    Mn::Debug{} << "E - Joint is of type PRISMATIC without limits: "
+                << joint.m_name;
     return false;
   }
 
@@ -1030,8 +1025,8 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
     }
 
     if (damping_str == NULL && friction_str == NULL) {
-      Corrade::Utility::Debug() << "E - joint dynamics element specified with "
-                                   "no damping and no friction";
+      Mn::Debug{} << "E - joint dynamics element specified with "
+                     "no damping and no friction";
       return false;
     }
   }
@@ -1048,36 +1043,33 @@ bool Parser::parseSensor(Model& model,
 }
 
 void printLinkChildrenHelper(Link& link, std::string printPrefix = "") {
-  // Corrade::Utility::Debug() << printPrefix<<"link "<< link.m_name;
+  // Mn::Debug{} << printPrefix<<"link "<< link.m_name;
   int childIndex = 0;
   for (auto& child : link.m_childJoints) {
-    Corrade::Utility::Debug() << printPrefix << " child J(" << childIndex
-                              << "): " << child.lock()->m_name << " ->("
-                              << child.lock()->m_childLinkName << ")";
+    Mn::Debug{} << printPrefix << " child J(" << childIndex
+                << "): " << child.lock()->m_name << " ->("
+                << child.lock()->m_childLinkName << ")";
     childIndex++;
   }
   childIndex = 0;
   for (auto& child : link.m_childLinks) {
-    Corrade::Utility::Debug() << printPrefix << " child L(" << childIndex
-                              << "): " << child.lock()->m_name;
+    Mn::Debug{} << printPrefix << " child L(" << childIndex
+                << "): " << child.lock()->m_name;
     printLinkChildrenHelper(*(child.lock()), printPrefix + "  ");
     childIndex++;
   }
 }
 
 void Model::printKinematicChain() const {
-  Corrade::Utility::Debug()
-      << "------------------------------------------------------";
-  Corrade::Utility::Debug() << "Model::printKinematicChain: model = " << m_name;
+  Mn::Debug{} << "------------------------------------------------------";
+  Mn::Debug{} << "Model::printKinematicChain: model = " << m_name;
   int rootIndex = 0;
   for (auto& root : m_rootLinks) {
-    Corrade::Utility::Debug()
-        << "root L(" << rootIndex << "): " << root->m_name;
+    Mn::Debug{} << "root L(" << rootIndex << "): " << root->m_name;
     printLinkChildrenHelper(*root);
     rootIndex++;
   }
-  Corrade::Utility::Debug()
-      << "------------------------------------------------------";
+  Mn::Debug{} << "------------------------------------------------------";
 }
 
 }  // namespace URDF

@@ -99,6 +99,8 @@ class URDFImporter {
                                   Magnum::Matrix4& inertialFrame,
                                   int flags) const;
 
+  bool logMessages = false;
+
  protected:
   // parses the URDF file into general, simulation platform invariant
   // datastructures

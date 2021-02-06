@@ -623,6 +623,6 @@ if __name__ == "__main__":
     if make_video and not os.path.exists(output_path):
         os.mkdir(output_path)
 
-    # main(make_video, show_video)
+    main(make_video, show_video)
     test_constraints(make_video, show_video)
     # test_urdf_memory()
