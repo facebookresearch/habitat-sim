@@ -99,6 +99,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void recomputeNavmeshWithStaticObjects();
   void loadingObjectTemplates();
   void buildingPrimAssetObjectTemplates();
+  void addingCameraToObject();
 
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
@@ -627,6 +628,54 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 
 }  // SimTest::buildingPrimAssetObjectTemplates
 
+void SimTest::addingCameraToObject() {
+  Corrade::Utility::Debug() << "Starting Test : addingCameraToObject ";
+  auto simulator = getSimulator(vangogh);
+  // manager of object attributes
+  auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("sphere");
+  int objectID = simulator->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+
+  // Add sensor to sphere object
+  simulator->addSensorToObject(objectID, "sphere");
+  std::string expectedUUID = "sphere_" + std::to_string(objectID);
+  CORRADE_VERIFY(simulator->getSensorSuite().get(
+      expectedUUID));  // Verify that Sensor exists with uuid
+  auto cameraSensor = simulator->getSensorSuite().get(expectedUUID);
+  simulator->setTranslation({0.0f, 1.5f, 5.0f},
+                            objectID);  // Move camera to same place as agent
+
+  auto objs2 = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
+  int objectID2 = simulator->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
+  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
+
+  Observation observation;
+  ObservationSpace obsSpace;
+
+  CORRADE_VERIFY(cameraSensor->getObservation(*simulator, observation));
+  CORRADE_VERIFY(cameraSensor->getObservationSpace(obsSpace));
+
+  esp::vec2i defaultResolution = {84, 84};
+  std::vector<size_t> expectedShape{{static_cast<size_t>(defaultResolution[0]),
+                                     static_cast<size_t>(defaultResolution[1]),
+                                     4}};
+
+  CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::Tensor);
+  CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
+  CORRADE_COMPARE(obsSpace.shape, expectedShape);
+  CORRADE_COMPARE(observation.buffer->shape, expectedShape);
+
+  // Compare with previously rendered ground truth
+  // Object camera at same location as agent camera should render similar image
+  CORRADE_COMPARE_WITH(
+      (Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
+                       {defaultResolution[0], defaultResolution[1]},
+                       observation.buffer->data}),
+      Cr::Utility::Directory::join(screenshotDir, "SimTestExpectedScene.png"),
+      (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.75f}));
+}
 }  // namespace
 
 CORRADE_TEST_MAIN(SimTest)
