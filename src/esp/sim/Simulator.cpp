@@ -1134,7 +1134,8 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
   return agents_[agentId];
 }
 
-void Simulator::addSensorToObject(const int objectId, std::string objectName) {
+void Simulator::addSensorToObject(const int objectId,
+                                  const std::string& objectName) {
   esp::sensor::SensorSpec::ptr objectSensorSpec =
       esp::sensor::SensorSpec::create_unique();
   objectSensorSpec->uuid = objectName + "_" + std::to_string(objectId);

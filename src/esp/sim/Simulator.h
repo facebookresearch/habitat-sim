@@ -735,7 +735,7 @@ class Simulator {
    * @param objectName Name of the object which will be used in sensor's uuid
    *
    */
-  void addSensorToObject(const int objectId, std::string objectName);
+  void addSensorToObject(const int objectId, const std::string& objectName);
 
   /**
    * @brief Displays observations on default frame buffer for a
