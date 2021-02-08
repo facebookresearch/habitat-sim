@@ -335,11 +335,10 @@ Key Commands:
 
   const int defaultAgentId_ = 0;
   esp::agent::Agent::ptr defaultAgent_ = nullptr;
-  std::string currentCameraObject_ =
-      "Agent";  // String of current Camera to display in viewer window
   std::string lastAddedObjectName_ = "";
   esp::sensor::CameraSensor* cameraSensor_ =
       nullptr;  // handle to CameraSensor of current renderCamera
+  std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorIterator_;
 
   // Scene or stage file to load
   std::string sceneFileName;
@@ -549,6 +548,7 @@ Viewer::Viewer(const Arguments& arguments)
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
   cameraSensor_ = &getAgentCamera();
+  sensorIterator_ = simulator_->getSensorSuite().getSensors().begin();
   renderCamera_ = getAgentCamera().getRenderCamera();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
@@ -834,50 +834,30 @@ void Viewer::addCameraToLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0)
     return;
-  simulator_->addSensorToObject(existingObjectIDs.back());
+  simulator_->addSensorToObject(existingObjectIDs.back(), lastAddedObjectName_);
   LOG(INFO) << "Total number of cameras: "
             << simulator_->getSensorSuite().getSensors().size();
-  LOG(INFO) << "Added camera to object " << lastAddedObjectName_;
+  LOG(INFO) << "Added camera to object " << lastAddedObjectName_
+            << " with uuid " << std::to_string(existingObjectIDs.back());
 }
 
-// Switch renderCamera_ used for rendering between the agent and last added
-// camera, update cameraSensor_ and currentCameraObject
+// Switch renderCamera_ used for rendering, cycling through available cameras,
+// update cameraSensor_ and renderCamera_
 void Viewer::switchCameraSensor() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0)
     return;
   flyingCameraMode_ = true;  // Needed for object camera to work
-  // If currentCameraObject is Agent, set renderCamera to the most recently
-  // added sensor
-  if (currentCameraObject_.compare("Agent") == 0) {
-    std::string lastCameraID =
-        std::to_string(simulator_->getSensorSuite().getSensors().size() -
-                       2);  // SensorSuite contains 0-indexed object sensors and
-                            // default agent's rgba-camera
-    esp::sensor::CameraSensor* cameraSensor =
-        dynamic_cast<esp::sensor::CameraSensor*>(
-            simulator_->getSensorSuite().getSensors()[lastCameraID].get());
-    renderCamera_ = cameraSensor->getRenderCamera();
-    simulator_->getRenderer()->bindRenderTarget(*cameraSensor);
-    cameraSensor_ = cameraSensor;
-    currentCameraObject_ = lastCameraID;
-
-  } else {  // If currentCameraObject is not an Agent, set renderCamera to that
-            // of Agent
-    esp::sensor::CameraSensor* cameraSensor =
-        dynamic_cast<esp::sensor::CameraSensor*>(
-            simulator_->getSensorSuite().getSensors()["rgba_camera"].get());
-    renderCamera_ = cameraSensor->getRenderCamera();
-    simulator_->getRenderer()->bindRenderTarget(*cameraSensor);
-    cameraSensor_ = cameraSensor;
-    currentCameraObject_ = "Agent";
+  sensorIterator_++;
+  // If sensorIterator_ is at the end, set iterator to first item
+  if (sensorIterator_ == simulator_->getSensorSuite().getSensors().end()) {
+    sensorIterator_ = simulator_->getSensorSuite().getSensors().begin();
   }
-  LOG(INFO) << "Switched camera to camera object: "
-            << (currentCameraObject_.compare("Agent") == 0
-                    ? ""
-                    : lastAddedObjectName_)
-                   .c_str()
-            << currentCameraObject_.c_str();
+  cameraSensor_ =
+      dynamic_cast<esp::sensor::CameraSensor*>(sensorIterator_->second.get());
+  renderCamera_ = cameraSensor_->getRenderCamera();
+  simulator_->getRenderer()->bindRenderTarget(*cameraSensor_);
+  LOG(INFO) << "Switched camera to camera: " << sensorIterator_->first.c_str();
 }
 
 // generate random direction vectors:
@@ -1349,6 +1329,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::O:
       addTemplateObject();
+      LOG(INFO) << "Adding object " << lastAddedObjectName_ << " with ObjectID "
+                << std::to_string(simulator_->getExistingObjectIDs().back());
       break;
     case KeyEvent::Key::P:
       pokeLastObject();

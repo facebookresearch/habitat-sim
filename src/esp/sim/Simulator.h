@@ -729,11 +729,13 @@ class Simulator {
 
   /**
    * @brief Initialize sensor and attach to sceneNode of a particular object
-   * @param agentId    Id of the object to which a sensor will be initialized at
-   * its node
+   * with uuid objectName_objectId
+   * @param objectId    Id of the object to which a sensor will be initialized
+   * at its node
+   * @param objectName Name of the object which will be used in sensor's uuid
    *
    */
-  void addSensorToObject(const int objectID);
+  void addSensorToObject(const int objectId, std::string objectName);
 
   /**
    * @brief Displays observations on default frame buffer for a

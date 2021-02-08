@@ -1134,14 +1134,14 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
   return agents_[agentId];
 }
 
-void Simulator::addSensorToObject(const int objectID) {
+void Simulator::addSensorToObject(const int objectId, std::string objectName) {
   esp::sensor::SensorSpec::ptr objectSensorSpec =
       esp::sensor::SensorSpec::create_unique();
-  objectSensorSpec->uuid = std::to_string(objectID);
+  objectSensorSpec->uuid = objectName + "_" + std::to_string(objectId);
   objectSensorSpec->position = {0.0f, 0.0f, 0.0f};
   esp::sensor::SensorSetup sensorSpecifications = {
       objectSensorSpec};  // default SensorSpec
-  esp::scene::SceneNode& objectNode = getObjectNode(objectID);
+  esp::scene::SceneNode& objectNode = getObjectNode(objectId);
   esp::sensor::SensorSuite sensorSuite =
       esp::sensor::SensorFactory::createSensors(objectNode,
                                                 sensorSpecifications);
