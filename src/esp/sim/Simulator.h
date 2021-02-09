@@ -730,9 +730,9 @@ class Simulator {
    *
    */
   void addSensorToObject(const int objectId,
-                         const vec3f position = {0, 0, 0},
-                         const vec3f orientation = {0, 0, 0},
-                         const vec2i resolution = {128, 128});
+                         const vec3f& position = {0, 0, 0},
+                         const vec3f& orientation = {0, 0, 0},
+                         const vec2i& resolution = {128, 128});
 
   /**
    * @brief Displays observations on default frame buffer for a
