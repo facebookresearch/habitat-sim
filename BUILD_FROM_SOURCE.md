@@ -58,21 +58,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    ```
 
    With physics simulation via [Bullet Physics SDK](https://github.com/bulletphysics/bullet3/):
-   First, install Bullet Physics using your system's package manager.
-
-    Mac
-
-   ```bash
-   brew install bullet
-   ```
-
-    Linux
-
-   ```bash
-   sudo apt-get install libbullet-dev
-   ```
-
-    Next, enable bullet physics build via:
+   To use Bullet, enable bullet physics build via:
 
    ```bash
    python setup.py install --bullet    # build habitat with bullet physics
