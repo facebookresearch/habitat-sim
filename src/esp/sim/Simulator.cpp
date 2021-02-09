@@ -656,6 +656,13 @@ void Simulator::removeObject(const int objectID,
                              bool deleteVisualNode,
                              const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
+    // delete sensor at ObjectNode if there is one
+    std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorIterator =
+        getSensorSuite().getSensors().find(std::to_string(objectID));
+    if (sensorIterator != getSensorSuite().getSensors().end()) {
+      // erasing sensor from SensorSuite
+      getSensorSuite().getSensors().erase(sensorIterator);
+    }
     physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
     if (trajVisNameByID.count(objectID) > 0) {
       std::string trajVisAssetName = trajVisNameByID[objectID];
@@ -666,21 +673,6 @@ void Simulator::removeObject(const int objectID,
       // resourceManager_->removeResourceByName(trajVisAssetName);
     }
   }
-  // if (deleteObjectNode) {
-  //   // delete sensor at ObjectNode if there is one
-  //   std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorIterator
-  //   =
-  //       getSensorSuite().getSensors().find(std::to_string(objectID));
-  //   if (sensorIterator != getSensorSuite().getSensors().end()) {
-  //     //freeing memory at pointer to sensor
-  //     delete sensorIterator->second.get();
-  //     //erasing sensor from SensorSuite
-  //     getSensorSuite().getSensors().erase(sensorIterator);
-  //   }
-  //   //deleting scene node to delete sensor
-  //   scene::SceneNode* sceneNode = getObjectSceneNode(objectID);
-  //   delete sceneNode;
-  // }
 }
 
 esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
@@ -1149,7 +1141,7 @@ void Simulator::addSensorToObject(const int objectId,
                                   const vec3f& orientation,
                                   const vec2i& resolution) {
   esp::sensor::SensorSpec::ptr objectSensorSpec =
-      esp::sensor::SensorSpec::create_unique();
+      esp::sensor::SensorSpec::create();
   objectSensorSpec->uuid = std::to_string(objectId);
   objectSensorSpec->position = position;
   objectSensorSpec->orientation = orientation;

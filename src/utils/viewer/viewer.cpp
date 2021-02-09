@@ -787,6 +787,11 @@ void Viewer::removeLastObject() {
   if (existingObjectIDs.size() == 0) {
     return;
   }
+  // if renderCamera_ is toggled to the object which will be removed, switch to
+  // another camera first
+  if (sensorIterator_->first == std::to_string(existingObjectIDs.back())) {
+    switchCameraSensor();
+  }
   simulator_->removeObject(existingObjectIDs.back());
 }
 
