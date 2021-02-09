@@ -119,19 +119,19 @@ TEST(IOTest, parseURDF) {
 
   // load the iiwa test asset
   parser.parseURDF(iiwaURDF);
-  auto& model = parser.getModel();
-  Cr::Utility::Debug() << "name: " << model.m_name;
-  EXPECT_EQ(model.m_name, "lbr_iiwa");
-  Cr::Utility::Debug() << "file: " << model.m_sourceFile;
-  EXPECT_EQ(model.m_sourceFile, iiwaURDF);
-  Cr::Utility::Debug() << "links: " << model.m_links;
-  EXPECT_EQ(model.m_links.size(), 8);
-  Cr::Utility::Debug() << "root links: " << model.m_rootLinks;
-  EXPECT_EQ(model.m_rootLinks.size(), 1);
-  Cr::Utility::Debug() << "joints: " << model.m_joints;
-  EXPECT_EQ(model.m_joints.size(), 7);
-  Cr::Utility::Debug() << "materials: " << model.m_materials;
-  EXPECT_EQ(model.m_materials.size(), 3);
+  auto model = parser.getModel();
+  Cr::Utility::Debug() << "name: " << model->m_name;
+  EXPECT_EQ(model->m_name, "lbr_iiwa");
+  Cr::Utility::Debug() << "file: " << model->m_sourceFile;
+  EXPECT_EQ(model->m_sourceFile, iiwaURDF);
+  Cr::Utility::Debug() << "links: " << model->m_links;
+  EXPECT_EQ(model->m_links.size(), 8);
+  Cr::Utility::Debug() << "root links: " << model->m_rootLinks;
+  EXPECT_EQ(model->m_rootLinks.size(), 1);
+  Cr::Utility::Debug() << "joints: " << model->m_joints;
+  EXPECT_EQ(model->m_joints.size(), 7);
+  Cr::Utility::Debug() << "materials: " << model->m_materials;
+  EXPECT_EQ(model->m_materials.size(), 3);
 
   // test overwrite re-load
   parser.parseURDF(iiwaURDF);

@@ -21,6 +21,7 @@
 #include "CollisionGroupHelper.h"
 #include "RigidObject.h"
 #include "RigidStage.h"
+#include "URDFImporter.h"
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/CollisionMeshData.h"
@@ -311,7 +312,9 @@ class PhysicsManager {
       std::string filepath,
       CORRADE_UNUSED DrawableGroup* drawables,
       CORRADE_UNUSED bool fixedBase = false,
-      CORRADE_UNUSED float globalScale = 1.0) {
+      CORRADE_UNUSED float globalScale = 1.0,
+      CORRADE_UNUSED float massScale = 1.0,
+      CORRADE_UNUSED bool forceReload = false) {
     return ID_UNDEFINED;
   };
 
@@ -1445,6 +1448,9 @@ class PhysicsManager {
   /** @brief A reference to a @ref esp::assets::ResourceManager which holds
    * assets that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager& resourceManager_;
+
+  //! URDF importer implementation and model cache.
+  std::unique_ptr<URDFImporter> urdfImporter_;
 
   /** @brief A pointer to the @ref
    * esp::metadata::attributes::PhysicsManagerAttributes describing

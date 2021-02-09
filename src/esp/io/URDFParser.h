@@ -219,7 +219,8 @@ struct Link {
   Link() : m_linkIndex(-2) {}
 };
 
-struct Model {
+class Model {
+ public:
   std::string m_name;
   std::string m_sourceFile;
   Magnum::Matrix4 m_rootTransformInWorld(Magnum::Math::IdentityInitT);
@@ -264,11 +265,102 @@ struct Model {
   }
 
   Model() : m_overrideFixedBase(false) {}
+
+  //! Set global scaling and re-scale an existing model if already parsed.
+  void setGlobalScaling(float scaling) {
+    if (scaling == m_globalScaling) {
+      // do nothing
+      return;
+    }
+
+    // Need to re-scale model, so use the ratio of new to current scale
+    float scaleCorrection = scaling / m_globalScaling;
+
+    // scale all transforms' translations
+    for (auto link : m_links) {
+      // scale inertial offsets
+      link.second->m_inertia.m_linkLocalFrame.translation() *= scaleCorrection;
+      // scale visual shape parameters
+      for (auto& visual : link.second->m_visualArray) {
+        scaleShape(visual, scaleCorrection);
+      }
+      // scale collision shapes
+      for (auto& collision : link.second->m_collisionArray) {
+        scaleShape(collision, scaleCorrection);
+      }
+    }
+    for (auto joint : m_joints) {
+      // scale joint offsets
+      joint.second->m_parentLinkToJointTransform.translation() *=
+          scaleCorrection;
+      // scale prismatic joint limits
+      if (joint.second->m_type == PrismaticJoint) {
+        joint.second->m_lowerLimit *= scaleCorrection;
+        joint.second->m_upperLimit *= scaleCorrection;
+      }
+    }
+
+    m_globalScaling = scaling;
+  }
+  float getGlobalScaling() { return m_globalScaling; }
+
+  //! Set scaling for mass from initial values configured in URDF. Modifies the
+  //! cached model if already parsed.
+  void setMassScaling(float massScaling) {
+    if (massScaling == m_massScaling) {
+      // do nothing
+      return;
+    }
+    float massScaleCorrection = massScaling / m_massScaling;
+
+    // Only need to scale the per-link mass values. These will be further
+    // processed during import.
+    for (auto link : m_links) {
+      Inertia& linkInertia = link.second->m_inertia;
+      linkInertia.m_mass *= massScaleCorrection;
+    }
+
+    m_massScaling = massScaling;
+  }
+
+  float getMassScaling() { return m_massScaling; }
+
+ protected:
+  // scaling values which can be applied to the model after parsing
+  //! Global euclidean scaling applied to the model's transforms, asset scales,
+  //! and prismatic joint limits. Does not affect mass.
+  float m_globalScaling = 1.0;
+
+  //! Mass scaling of the model's Link inertias.
+  float m_massScaling = 1.0;
+
+  //! Scale the transformation and parameters of a Shape
+  void scaleShape(Shape& shape, float scale) {
+    shape.m_linkLocalFrame.translation() *= scale;
+    switch (shape.m_geometry.m_type) {
+      case GEOM_MESH: {
+        shape.m_geometry.m_meshScale *= scale;
+      } break;
+      case GEOM_BOX: {
+        shape.m_geometry.m_boxSize *= scale;
+      } break;
+      case GEOM_SPHERE: {
+        shape.m_geometry.m_sphereRadius *= scale;
+      } break;
+      case GEOM_CAPSULE:
+      case GEOM_CYLINDER: {
+        shape.m_geometry.m_capsuleRadius *= scale;
+        shape.m_geometry.m_capsuleHeight *= scale;
+      } break;
+      default:
+        break;
+    }
+  };
 };
 
 class Parser {
   // datastructures
-  Model m_urdfModel;
+  std::shared_ptr<Model> m_urdfModel;
   float m_urdfScaling = 1.0;
 
   // URDF file path of last load call
@@ -278,17 +370,19 @@ class Parser {
   bool parseTransform(Magnum::Matrix4& tr, tinyxml2::XMLElement* xml);
   bool parseInertia(Inertia& inertia, tinyxml2::XMLElement* config);
   bool parseGeometry(Geometry& geom, tinyxml2::XMLElement* g);
-  bool parseVisual(Model& model,
+  bool parseVisual(std::shared_ptr<Model> model,
                    VisualShape& visual,
                    tinyxml2::XMLElement* config);
   bool parseCollision(CollisionShape& collision, tinyxml2::XMLElement* config);
-  bool initTreeAndRoot(Model& model);
+  bool initTreeAndRoot(std::shared_ptr<Model> model);
   bool parseMaterial(Material& material, tinyxml2::XMLElement* config);
   bool parseJointLimits(Joint& joint, tinyxml2::XMLElement* config);
   bool parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config);
   bool parseJoint(Joint& joint, tinyxml2::XMLElement* config);
-  bool parseLink(Model& model, Link& link, tinyxml2::XMLElement* config);
-  bool parseSensor(Model& model,
+  bool parseLink(std::shared_ptr<Model>,
+                 Link& link,
+                 tinyxml2::XMLElement* config);
+  bool parseSensor(std::shared_ptr<Model>,
                    Link& link,
                    Joint& joint,
                    tinyxml2::XMLElement* config);
@@ -302,12 +396,17 @@ class Parser {
   // return false if the string is not a valid urdf or other error causes abort
   bool parseURDF(const std::string& meshFilename);
 
-  void setGlobalScaling(float scaling) { m_urdfScaling = scaling; }
+  //! Set the global scale for future parsing and modify the cached model if
+  //! applicable.
+  void setGlobalScaling(float scaling) {
+    m_urdfScaling = scaling;
+    m_urdfModel->setGlobalScaling(m_urdfScaling);
+  }
   float getGlobalScaling() { return m_urdfScaling; }
 
-  const Model& getModel() const { return m_urdfModel; }
+  const std::shared_ptr<Model> getModel() const { return m_urdfModel; }
 
-  Model& getModel() { return m_urdfModel; }
+  std::shared_ptr<Model> getModel() { return m_urdfModel; }
 
   bool logMessages = false;
 };

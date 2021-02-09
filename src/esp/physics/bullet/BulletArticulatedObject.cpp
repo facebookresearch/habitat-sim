@@ -31,7 +31,7 @@ static void setRotationScalingFromBulletTransform(const btTransform& trans,
 ///////////////////////////////////
 
 BulletArticulatedObject::~BulletArticulatedObject() {
-  Corrade::Utility::Debug() << "deconstructing ~BulletArticulatedObject";
+  // Corrade::Utility::Debug() << "deconstructing ~BulletArticulatedObject";
   if (motionType_ != MotionType::KINEMATIC) {
     // KINEMATIC objects have already been removed from the world.
     bWorld_->removeMultiBody(btMultiBody_.get());
@@ -88,7 +88,7 @@ bool BulletArticulatedObject::initializeFromURDF(
   BulletURDFImporter& u2b = *(static_cast<BulletURDFImporter*>(&urdfImporter));
   u2b.setFixedBase(fixedBase);
 
-  const io::URDF::Model& urdfModel = u2b.getModel();
+  auto urdfModel = u2b.getModel();
 
   // TODO: are these needed? Not used in examples.
   int flags = 0;
@@ -134,7 +134,7 @@ bool BulletArticulatedObject::initializeFromURDF(
 
     // Attach SceneNode visual components
     int urdfLinkIx = 0;
-    for (auto& link : urdfModel.m_links) {
+    for (auto& link : urdfModel->m_links) {
       int bulletLinkIx = cache.m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
       /*
       Corrade::Utility::Debug()
@@ -153,7 +153,7 @@ bool BulletArticulatedObject::initializeFromURDF(
 
       bool success =
           attachGeometry(*linkNode, link.second,
-                         urdfImporter.getModel().m_materials, drawables);
+                         urdfImporter.getModel()->m_materials, drawables);
       // Corrade::Utility::Debug() << "geomSuccess: " << success;
 
       urdfLinkIx++;

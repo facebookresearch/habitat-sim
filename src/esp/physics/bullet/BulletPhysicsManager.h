@@ -58,11 +58,7 @@ class BulletPhysicsManager : public PhysicsManager {
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
       const metadata::attributes::PhysicsManagerAttributes::cptr
-          _physicsManagerAttributes)
-      : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
-    collisionObjToObjIds_ =
-        std::make_shared<std::map<const btCollisionObject*, int>>();
-  };
+          _physicsManagerAttributes);
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
   virtual ~BulletPhysicsManager();
@@ -79,7 +75,9 @@ class BulletPhysicsManager : public PhysicsManager {
   virtual int addArticulatedObjectFromURDF(std::string filepath,
                                            DrawableGroup* drawables,
                                            bool fixedBase = false,
-                                           float globalScale = 1.0) override;
+                                           float globalScale = 1.0,
+                                           float massScale = 1.0,
+                                           bool forceReload = false) override;
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref

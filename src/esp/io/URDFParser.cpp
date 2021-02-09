@@ -28,9 +28,9 @@ namespace URDF {
 bool Parser::parseURDF(const std::string& filename) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
 
-  Model newURDFModel = Model();
+  auto newURDFModel = std::make_shared<Model>();
   sourceFilePath_ = filename;
-  newURDFModel.m_sourceFile = filename;
+  newURDFModel->m_sourceFile = filename;
 
   std::string xmlString = Corrade::Utility::Directory::readString(filename);
 
@@ -55,7 +55,7 @@ bool Parser::parseURDF(const std::string& filename) {
     Mn::Debug{} << "E - expected a name for robot";
     return false;
   }
-  newURDFModel.m_name = name;
+  newURDFModel->m_name = name;
 
   // Get all Material elements
   for (XMLElement* material_xml = robot_xml->FirstChildElement("material");
@@ -65,8 +65,8 @@ bool Parser::parseURDF(const std::string& filename) {
 
     parseMaterial(*material.get(), material_xml);
 
-    if (newURDFModel.m_materials.count(material->m_name) == 0) {
-      newURDFModel.m_materials[material->m_name] = material;
+    if (newURDFModel->m_materials.count(material->m_name) == 0) {
+      newURDFModel->m_materials[material->m_name] = material;
     } else {
       Mn::Debug{} << "W - Duplicate material";
     }
@@ -78,7 +78,7 @@ bool Parser::parseURDF(const std::string& filename) {
     std::shared_ptr<Link> link = std::make_shared<Link>();
 
     if (parseLink(newURDFModel, *link.get(), link_xml)) {
-      if (newURDFModel.m_links.count(link->m_name)) {
+      if (newURDFModel->m_links.count(link->m_name)) {
         Mn::Debug{} << "E - Link name is not unique, link names "
                        "in the same model have to be unique";
         Mn::Debug{} << "E - " << link->m_name;
@@ -89,8 +89,8 @@ bool Parser::parseURDF(const std::string& filename) {
           VisualShape& vis = link->m_visualArray.at(i);
           if (!vis.m_geometry.m_hasLocalMaterial &&
               !vis.m_materialName.empty()) {
-            auto mat_itr = newURDFModel.m_materials.find(vis.m_materialName);
-            if (mat_itr != newURDFModel.m_materials.end()) {
+            auto mat_itr = newURDFModel->m_materials.find(vis.m_materialName);
+            if (mat_itr != newURDFModel->m_materials.end()) {
               vis.m_geometry.m_localMaterial = mat_itr->second;
             } else {
               Mn::Debug{} << "E - Cannot find material with name: "
@@ -100,14 +100,14 @@ bool Parser::parseURDF(const std::string& filename) {
         }
 
         // register the new link
-        newURDFModel.m_links[link->m_name] = link;
+        newURDFModel->m_links[link->m_name] = link;
       }
     } else {
       Mn::Debug{} << "E - failed to parse link";
       return false;
     }
   }
-  if (newURDFModel.m_links.size() == 0) {
+  if (newURDFModel->m_links.size() == 0) {
     Mn::Debug{} << "W - No links found in URDF file.";
     return false;
   }
@@ -118,11 +118,11 @@ bool Parser::parseURDF(const std::string& filename) {
     std::shared_ptr<Joint> joint = std::make_shared<Joint>();
 
     if (parseJoint(*joint.get(), joint_xml)) {
-      if (newURDFModel.m_joints.count(joint->m_name)) {
+      if (newURDFModel->m_joints.count(joint->m_name)) {
         Mn::Debug{} << "E - joint " << joint->m_name << " is not unique";
         return false;
       } else {
-        newURDFModel.m_joints[joint->m_name] = joint;
+        newURDFModel->m_joints[joint->m_name] = joint;
       }
     } else {
       Mn::Debug{} << "E - joint xml is not initialized correctly";
@@ -227,7 +227,9 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) {
   return true;
 }
 
-bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
+bool Parser::parseLink(std::shared_ptr<Model> model,
+                       Link& link,
+                       XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   const char* linkName = config->Attribute("name");
   if (!linkName) {
@@ -357,6 +359,7 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
       Mn::Debug{} << link.m_name;
       return false;
     }
+    link.m_inertia.m_mass *= model->getGlobalScaling();
   } else {
     if ((strlen(linkName) == 5) && (strncmp(linkName, "world", 5)) == 0) {
       link.m_inertia.m_mass = 0.f;
@@ -369,7 +372,7 @@ bool Parser::parseLink(Model& model, Link& link, XMLElement* config) {
           << "W - No inertial data for link: " << link.m_name
           << ", using mass=1, localinertiadiagonal = 1,1,1, identity local "
              "inertial frame";
-      link.m_inertia.m_mass = 1.f;
+      link.m_inertia.m_mass = 1.f * model->getMassScaling();
       link.m_inertia.m_linkLocalFrame = Mn::Matrix4();  // Identity
       link.m_inertia.m_ixx = 1.f;
       link.m_inertia.m_iyy = 1.f;
@@ -449,7 +452,7 @@ bool Parser::parseCollision(CollisionShape& collision, XMLElement* config) {
   return true;
 }
 
-bool Parser::parseVisual(Model& model,
+bool Parser::parseVisual(std::shared_ptr<Model> model,
                          VisualShape& visual,
                          XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
@@ -495,15 +498,15 @@ bool Parser::parseVisual(Model& model,
       }
       if (parseMaterial(*visual.m_geometry.m_localMaterial.get(), mat)) {
         // override if not new
-        model.m_materials[visual.m_materialName] =
+        model->m_materials[visual.m_materialName] =
             visual.m_geometry.m_localMaterial;
         visual.m_geometry.m_hasLocalMaterial = true;
       }
-    } else if (model.m_materials.count(visual.m_materialName) > 0) {
+    } else if (model->m_materials.count(visual.m_materialName) > 0) {
       // need this to handle possible overwriting of this material name in a
       // later call.
       visual.m_geometry.m_localMaterial =
-          model.m_materials.at(visual.m_materialName);
+          model->m_materials.at(visual.m_materialName);
       visual.m_geometry.m_hasLocalMaterial = true;
     } else {
       Mn::Debug{} << "Warning: Parser::parseVisual : visual element \""
@@ -683,6 +686,7 @@ bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
     if (!parseTransform(inertia.m_linkLocalFrame, o)) {
       return false;
     }
+    inertia.m_hasLinkLocalFrame = true;
   }
 
   XMLElement* mass_xml = config->FirstChildElement("mass");
@@ -755,7 +759,7 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
   return meshSuccess;
 }
 
-bool Parser::initTreeAndRoot(Model& model) {
+bool Parser::initTreeAndRoot(std::shared_ptr<Model> model) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
@@ -763,7 +767,8 @@ bool Parser::initTreeAndRoot(Model& model) {
 
   // loop through all joints, for every link, assign children links and children
   // joints
-  for (auto itr = model.m_joints.begin(); itr != model.m_joints.end(); itr++) {
+  for (auto itr = model->m_joints.begin(); itr != model->m_joints.end();
+       itr++) {
     auto joint = itr->second;
 
     std::string parent_link_name = joint->m_parentLinkName;
@@ -774,19 +779,19 @@ bool Parser::initTreeAndRoot(Model& model) {
       return false;
     }
 
-    if (!model.m_links.count(joint->m_childLinkName)) {
+    if (!model->m_links.count(joint->m_childLinkName)) {
       Mn::Debug{} << "E - Cannot find child link for joint: " << joint->m_name
                   << ", child: " << joint->m_childLinkName;
       return false;
     }
-    auto childLink = model.m_links.at(joint->m_childLinkName);
+    auto childLink = model->m_links.at(joint->m_childLinkName);
 
-    if (!model.m_links.count(joint->m_parentLinkName)) {
+    if (!model->m_links.count(joint->m_parentLinkName)) {
       Mn::Debug{} << "E - Cannot find parent link for joint: " << joint->m_name
                   << ", parent: " << joint->m_parentLinkName;
       return false;
     }
-    auto parentLink = model.m_links.at(joint->m_parentLinkName);
+    auto parentLink = model->m_links.at(joint->m_parentLinkName);
 
     childLink->m_parentLink = parentLink;
 
@@ -798,27 +803,27 @@ bool Parser::initTreeAndRoot(Model& model) {
 
   // search for children that have no parent, those are 'root'
   int index = 0;
-  for (auto itr = model.m_links.begin(); itr != model.m_links.end(); itr++) {
+  for (auto itr = model->m_links.begin(); itr != model->m_links.end(); itr++) {
     auto link = itr->second;
 
     link->m_linkIndex = index;
-    model.m_linkIndicesToNames[link->m_linkIndex] = link->m_name;
+    model->m_linkIndicesToNames[link->m_linkIndex] = link->m_name;
 
     if (!link->m_parentLink.lock()) {
-      model.m_rootLinks.push_back(link);
+      model->m_rootLinks.push_back(link);
     }
     index++;
   }
 
-  if (model.m_rootLinks.size() > 1) {
+  if (model->m_rootLinks.size() > 1) {
     Mn::Debug{} << "W - URDF file with multiple root links found:";
 
-    for (size_t i = 0; i < model.m_rootLinks.size(); i++) {
-      Mn::Debug{} << model.m_rootLinks[i]->m_name;
+    for (size_t i = 0; i < model->m_rootLinks.size(); i++) {
+      Mn::Debug{} << model->m_rootLinks[i]->m_name;
     }
   }
 
-  if (model.m_rootLinks.size() == 0) {
+  if (model->m_rootLinks.size() == 0) {
     Mn::Debug{} << "E - URDF without root link found.";
     return false;
   }
@@ -1034,7 +1039,7 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   return true;
 }
 
-bool Parser::parseSensor(Model& model,
+bool Parser::parseSensor(std::shared_ptr<Model> model,
                          Link& link,
                          Joint& joint,
                          tinyxml2::XMLElement* config) {

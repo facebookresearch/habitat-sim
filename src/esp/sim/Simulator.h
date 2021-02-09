@@ -503,13 +503,26 @@ class Simulator {
   /**
    * @brief Parse a URDF and instantiate the defined robot if successful.
    *
-   * This will always re-parse the URDF. Edits to URDF parameters between calls
-   * will be reflected. Edits to linked and imported assets between calls will
-   * NOT be reflected (e.g. modifying the geometry of a part between loads).
+   * URDF models are cached after first parse. Setting forceReload true will
+   * re-parse the URDF file, allowing edits to URDF parameters between calls to
+   * be reflected. Edits to linked and imported assets between calls will NOT be
+   * reflected (e.g. modifying the geometry of a part between loads).
+   *
+   * @param filepath The URDF filepath and chaced model key.
+   * @param fixedBase Whether or not the base link should be 0 mass and fixed to
+   * the world.
+   * @param globalScale A uniform scale of all transforms and geometry in the
+   * model. Does not affect mass.
+   * @param massScale A scaling factor for all link masses. Consider
+   * globalScale^3 for uniform density.
+   * @param forceReload If true, re-parse the URDF file and override the cached
+   * model.
    */
   int addArticulatedObjectFromURDF(std::string filepath,
                                    bool fixedBase = false,
-                                   float globalScale = 1.0);
+                                   float globalScale = 1.0,
+                                   float massScale = 1.0,
+                                   bool forceReload = false);
 
   void removeArticulatedObject(int objectId);
 

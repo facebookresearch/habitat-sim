@@ -15,6 +15,16 @@
 namespace esp {
 namespace physics {
 
+BulletPhysicsManager::BulletPhysicsManager(
+    assets::ResourceManager& _resourceManager,
+    const metadata::attributes::PhysicsManagerAttributes::cptr
+        _physicsManagerAttributes)
+    : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
+  collisionObjToObjIds_ =
+      std::make_shared<std::map<const btCollisionObject*, int>>();
+  urdfImporter_ = std::make_unique<BulletURDFImporter>(_resourceManager);
+};
+
 BulletPhysicsManager::~BulletPhysicsManager() {
   LOG(INFO) << "Deconstructing BulletPhysicsManager";
 
@@ -75,12 +85,11 @@ bool BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
 int BulletPhysicsManager::addArticulatedObjectFromURDF(std::string filepath,
                                                        DrawableGroup* drawables,
                                                        bool fixedBase,
-                                                       float globalScale) {
-  // import the URDF
-  BulletURDFImporter urdfImporter_(resourceManager_);
-
-  if (!urdfImporter_.loadURDF(filepath, globalScale)) {
-    Corrade::Utility::Debug() << "E - failed to parse URDF file";
+                                                       float globalScale,
+                                                       float massScale,
+                                                       bool forceReload) {
+  if (!urdfImporter_->loadURDF(filepath, globalScale, massScale, forceReload)) {
+    Corrade::Utility::Debug() << "E - failed to parse/load URDF file";
     return ID_UNDEFINED;
   }
 
@@ -91,7 +100,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(std::string filepath,
                                              bWorld_, collisionObjToObjIds_);
 
   bool objectSuccess = articulatedObject->initializeFromURDF(
-      urdfImporter_, {}, drawables, physicsNode_, fixedBase);
+      *urdfImporter_.get(), {}, drawables, physicsNode_, fixedBase);
 
   if (!objectSuccess) {
     delete objectNode;

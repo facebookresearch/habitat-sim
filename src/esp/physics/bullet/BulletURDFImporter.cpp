@@ -141,14 +141,13 @@ btCompoundShape* BulletURDFImporter::convertLinkCollisionShapes(
 
   compoundShape->setMargin(gUrdfDefaultCollisionMargin);
 
-  Mn::Debug{} << " num links = " << urdfParser_.getModel().m_links.size();
+  Mn::Debug{} << " num links = " << activeModel_->m_links.size();
 
-  auto itr = urdfParser_.getModel().m_links.begin();
-  for (int i = 0;
-       (i < linkIndex && itr != urdfParser_.getModel().m_links.end()); i++) {
+  auto itr = activeModel_->m_links.begin();
+  for (int i = 0; (i < linkIndex && itr != activeModel_->m_links.end()); i++) {
     itr++;
   }
-  if (itr != urdfParser_.getModel().m_links.end()) {
+  if (itr != activeModel_->m_links.end()) {
     std::shared_ptr<io::URDF::Link> link = itr->second;
 
     for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
@@ -184,12 +183,11 @@ int BulletURDFImporter::getCollisionGroupAndMask(int linkIndex,
                                                  int& colGroup,
                                                  int& colMask) const {
   int result = 0;
-  auto itr = urdfParser_.getModel().m_links.begin();
-  for (int i = 0;
-       (i < linkIndex && itr != urdfParser_.getModel().m_links.end()); i++) {
+  auto itr = activeModel_->m_links.begin();
+  for (int i = 0; (i < linkIndex && itr != activeModel_->m_links.end()); i++) {
     itr++;
   }
-  if (itr != urdfParser_.getModel().m_links.end()) {
+  if (itr != activeModel_->m_links.end()) {
     std::shared_ptr<io::URDF::Link> link = itr->second;
     for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
       const io::URDF::CollisionShape& col = link->m_collisionArray[v];
@@ -663,8 +661,8 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
       // TODO: include the articulated object id here
       const auto& debugModel = getModel();
-      std::string linkDebugName = "URDF, " + debugModel.m_name + ", link " +
-                                  debugModel.getLink(urdfLinkIndex)->m_name;
+      std::string linkDebugName = "URDF, " + debugModel->m_name + ", link " +
+                                  debugModel->getLink(urdfLinkIndex)->m_name;
       BulletDebugManager::get().mapCollisionObjectTo(col, linkDebugName);
     }
   }

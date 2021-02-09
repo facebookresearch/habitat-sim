@@ -44,19 +44,42 @@ class URDFImporter {
   URDFImporter(esp::assets::ResourceManager& resourceManager)
       : resourceManager_(resourceManager){};
 
-  // attempt to load a URDF file
-  bool loadURDF(const std::string& filename, float globalScale = 1.0);
+  /**
+   * @brief Sets the activeModel_ for the importer. If new or forceReload, parse
+   * a URDF file and cache the resulting model. Note: when applying uniform
+   * scaling to a 3D model consider scale^3 mass scaling to approximate uniform
+   * density.
+   * @param filename The filepath for the URDF and key for the cached model.
+   * @param globalScale A global, uniform 3D scale. Does not affect mass. Can be
+   * applied to update cached models.
+   * @param massScale A uniform scaling of link masses. Can be applied to update
+   * cached models.
+   * @param forceReload If true, reload the URDF from file, replacing the cached
+   * model.
+   */
+  bool loadURDF(const std::string& filename,
+                float globalScale = 1.0,
+                float massScale = 1.0,
+                bool forceReload = false);
 
-  virtual const io::URDF::Model& getModel() const;
+  // NOTE: all of these getter/setters act on the current "activeModel_"
+  virtual const std::shared_ptr<io::URDF::Model> getModel() const {
+    return activeModel_;
+  };
 
   void setFixedBase(bool fixedBase) {
-    urdfParser_.getModel().m_overrideFixedBase = fixedBase;
+    CORRADE_ASSERT(activeModel_, "No model is currently loaded.", );
+    activeModel_->m_overrideFixedBase = fixedBase;
   }
 
-  bool getFixedBase() { return urdfParser_.getModel().m_overrideFixedBase; }
+  bool getFixedBase() {
+    CORRADE_ASSERT(activeModel_, "No model is currently loaded.", false);
+    return activeModel_->m_overrideFixedBase;
+  }
 
   virtual std::string getBodyName() const {
-    return urdfParser_.getModel().m_name;
+    CORRADE_ASSERT(activeModel_, "No model is currently loaded.", "");
+    return activeModel_->m_name;
   };
 
   virtual int getRootLinkIndex() const;
@@ -101,12 +124,30 @@ class URDFImporter {
 
   bool logMessages = false;
 
+  //! collect and return a list of cached model keys (filepaths)
+  std::vector<std::string> getCachedModelKeys() {
+    std::vector<std::string> keys;
+    for (std::map<std::string, std::shared_ptr<io::URDF::Model>>::iterator it =
+             modelCache_.begin();
+         it != modelCache_.end(); ++it) {
+      keys.push_back(it->first);
+    }
+    return keys;
+  };
+
  protected:
   // parses the URDF file into general, simulation platform invariant
   // datastructures
   io::URDF::Parser urdfParser_;
 
   esp::assets::ResourceManager& resourceManager_;
+
+  //! cache parsed URDF models by filename
+  std::map<std::string, std::shared_ptr<io::URDF::Model>> modelCache_;
+
+  //! which model is being actively manipulated. Changed by calling
+  //! loadURDF(filename).
+  std::shared_ptr<io::URDF::Model> activeModel_ = nullptr;
 };
 
 }  // namespace physics

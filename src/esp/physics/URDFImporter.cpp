@@ -15,28 +15,45 @@ namespace Mn = Magnum;
 namespace esp {
 namespace physics {
 
-bool URDFImporter::loadURDF(const std::string& filename, float globalScale) {
-  if (!Corrade::Utility::Directory::exists(filename) ||
-      Corrade::Utility::Directory::isDirectory(filename)) {
-    Mn::Debug{} << "File does not exist: " << filename
-                << ". Aborting URDF parse/load.";
-    return false;
+bool URDFImporter::loadURDF(const std::string& filename,
+                            float globalScale,
+                            float massScale,
+                            bool forceReload) {
+  if (!modelCache_.count(filename) || forceReload) {
+    if (!Corrade::Utility::Directory::exists(filename) ||
+        Corrade::Utility::Directory::isDirectory(filename)) {
+      Mn::Debug{} << "File does not exist: " << filename
+                  << ". Aborting URDF parse/load.";
+      return false;
+    }
+
+    // parse the URDF from file
+    bool success = urdfParser_.parseURDF(filename);
+    if (!success) {
+      Mn::Debug{} << "Failed to parse URDF: " << filename << ", aborting.";
+      return false;
+    }
+
+    if (logMessages) {
+      Mn::Debug{} << "Done parsing URDF model: ";
+      urdfParser_.getModel()->printKinematicChain();
+    }
+
+    // register the new model
+    modelCache_.emplace(filename, urdfParser_.getModel());
   }
+  activeModel_ = modelCache_.at(filename);
 
-  urdfParser_.setGlobalScaling(globalScale);
-  bool success = urdfParser_.parseURDF(filename);
+  // re-scale the cached model
+  activeModel_->setGlobalScaling(globalScale);
+  activeModel_->setMassScaling(massScale);
 
-  if (logMessages) {
-    Mn::Debug{} << "Done parsing model:";
-    getModel().printKinematicChain();
-  }
-
-  return success;
+  return true;
 }
 
 int URDFImporter::getRootLinkIndex() const {
-  if (urdfParser_.getModel().m_rootLinks.size() == 1) {
-    return urdfParser_.getModel().m_rootLinks[0]->m_linkIndex;
+  if (activeModel_->m_rootLinks.size() == 1) {
+    return activeModel_->m_rootLinks[0]->m_linkIndex;
   }
   return ID_UNDEFINED;
 }
@@ -45,7 +62,7 @@ void URDFImporter::getLinkChildIndices(
     int linkIndex,
     std::vector<int>& childLinkIndices) const {
   childLinkIndices.resize(0);
-  auto link = urdfParser_.getModel().getLink(linkIndex);
+  auto link = activeModel_->getLink(linkIndex);
 
   if (link != nullptr) {
     for (size_t i = 0; i < link->m_childLinks.size(); i++) {
@@ -73,7 +90,7 @@ bool URDFImporter::getJointInfo2(int linkIndex,
   jointMaxForce = 0.f;
   jointMaxVelocity = 0.f;
 
-  auto link = urdfParser_.getModel().getLink(linkIndex);
+  auto link = activeModel_->getLink(linkIndex);
   if (link != nullptr) {
     linkTransformInWorld = link->m_linkTransformInWorld;
 
@@ -124,11 +141,10 @@ void URDFImporter::getMassAndInertia2(int linkIndex,
   } else {
     // the link->m_inertia is NOT necessarily aligned with the inertial frame
     // so an additional transform might need to be computed
-    auto link = urdfParser_.getModel().getLink(linkIndex);
+    auto link = activeModel_->getLink(linkIndex);
     if (link != nullptr) {
       float linkMass;
-      if (!link->m_parentJoint.lock() &&
-          urdfParser_.getModel().m_overrideFixedBase) {
+      if (!link->m_parentJoint.lock() && activeModel_->m_overrideFixedBase) {
         linkMass = 0.f;
       } else {
         linkMass = link->m_inertia.m_mass;
@@ -153,12 +169,11 @@ void URDFImporter::getMassAndInertia(int linkIndex,
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // the link->m_inertia is NOT necessarily aligned with the inertial frame
   // so an additional transform might need to be computed
-  auto link = urdfParser_.getModel().getLink(linkIndex);
+  auto link = activeModel_->getLink(linkIndex);
   if (link != nullptr) {
     Mn::Matrix3 linkInertiaBasis;  // Identity
     float linkMass, principalInertiaX, principalInertiaY, principalInertiaZ;
-    if (!link->m_parentJoint.lock() &&
-        urdfParser_.getModel().m_overrideFixedBase) {
+    if (!link->m_parentJoint.lock() && activeModel_->m_overrideFixedBase) {
       linkMass = 0.f;
       principalInertiaX = 0.f;
       principalInertiaY = 0.f;
@@ -225,7 +240,7 @@ void URDFImporter::getMassAndInertia(int linkIndex,
 bool URDFImporter::getLinkContactInfo(
     int linkIndex,
     io::URDF::LinkContactInfo& contactInfo) const {
-  auto link = urdfParser_.getModel().getLink(linkIndex);
+  auto link = activeModel_->getLink(linkIndex);
   if (link == nullptr) {
     Mn::Debug{} << "E - No link with index = " << linkIndex;
     return false;
@@ -233,10 +248,6 @@ bool URDFImporter::getLinkContactInfo(
 
   contactInfo = link->m_contactInfo;
   return true;
-}
-
-const io::URDF::Model& URDFImporter::getModel() const {
-  return urdfParser_.getModel();
 }
 
 }  // namespace physics
