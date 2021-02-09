@@ -657,11 +657,13 @@ void Simulator::removeObject(const int objectID,
                              const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     // delete sensor at ObjectNode if there is one
+    std::map<std::string, esp::sensor::Sensor::ptr>& sensors =
+        getSensorSuite().getSensors();
     std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorIterator =
-        getSensorSuite().getSensors().find(std::to_string(objectID));
-    if (sensorIterator != getSensorSuite().getSensors().end()) {
+        sensors.find(std::to_string(objectID));
+    if (sensorIterator != sensors.end()) {
       // erasing sensor from SensorSuite
-      getSensorSuite().getSensors().erase(sensorIterator);
+      sensors.erase(sensorIterator);
     }
     physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
     if (trajVisNameByID.count(objectID) > 0) {
@@ -1095,12 +1097,9 @@ agent::Agent::ptr Simulator::addAgent(
   // constructor of Agent)
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
-  esp::sensor::SensorSuite agentSensors =
-      esp::sensor::SensorFactory::createSensors(
-          agentNode, agentConfig.sensorSpecifications);
-  ag->setSensorSuite(std::move(agentSensors));
+  ag->setSensorSuite(esp::sensor::SensorFactory::createSensors(
+      agentNode, agentConfig.sensorSpecifications));
   sensorSuite_.merge(ag->getSensorSuite());
-  LOG(INFO) << sensorSuite_.getSensors().size();
 
   agent::AgentState state;
   sampleRandomAgentState(state);

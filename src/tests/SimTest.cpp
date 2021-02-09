@@ -101,7 +101,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void recomputeNavmeshWithStaticObjects();
   void loadingObjectTemplates();
   void buildingPrimAssetObjectTemplates();
-  void addingCameraToObject();
+  void addingSensorToObject();
 
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
@@ -129,7 +129,7 @@ SimTest::SimTest() {
             &SimTest::recomputeNavmeshWithStaticObjects,
             &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates,
-            &SimTest::addingCameraToObject});
+            &SimTest::addingSensorToObject});
   // clang-format on
 }
 
@@ -631,8 +631,8 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 
 }  // SimTest::buildingPrimAssetObjectTemplates
 
-void SimTest::addingCameraToObject() {
-  Corrade::Utility::Debug() << "Starting Test : addingCameraToObject ";
+void SimTest::addingSensorToObject() {
+  Corrade::Utility::Debug() << "Starting Test : addingSensorToObject ";
   auto simulator = getSimulator(vangogh);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
