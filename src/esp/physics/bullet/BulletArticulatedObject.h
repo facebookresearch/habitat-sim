@@ -81,15 +81,15 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   virtual void setRootState(const Magnum::Matrix4& state) override;
 
-  virtual void setForces(std::vector<float> forces) override;
+  virtual void setForces(const std::vector<float>& forces) override;
 
   virtual std::vector<float> getForces() override;
 
-  virtual void setVelocities(std::vector<float> vels) override;
+  virtual void setVelocities(const std::vector<float>& vels) override;
 
   virtual std::vector<float> getVelocities() override;
 
-  virtual void setPositions(std::vector<float> positions) override;
+  virtual void setPositions(const std::vector<float>& positions) override;
 
   virtual std::vector<float> getPositions() override;
 

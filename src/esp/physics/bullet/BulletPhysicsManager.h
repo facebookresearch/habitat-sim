@@ -72,7 +72,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return A unique id for the @ref BulletArticulatedObject, allocated from
    * the same id set as rigid objects.
    */
-  virtual int addArticulatedObjectFromURDF(std::string filepath,
+  virtual int addArticulatedObjectFromURDF(const std::string& filepath,
                                            DrawableGroup* drawables,
                                            bool fixedBase = false,
                                            float globalScale = 1.0,

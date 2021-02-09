@@ -443,7 +443,7 @@ class ResourceManager {
    */
   std::string setupMaterialModifiedAsset(
       const std::string& filename,
-      std::shared_ptr<esp::io::URDF::Material> material = nullptr);
+      const std::shared_ptr<esp::io::URDF::Material>& material = nullptr);
 
   // TODO: refactor this to use current pipeline
   //! Attach a visual asset to a SceneNode as part of a DrawableGroup

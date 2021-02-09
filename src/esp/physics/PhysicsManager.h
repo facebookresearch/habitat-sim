@@ -309,7 +309,7 @@ class PhysicsManager {
    * id set as rigid objects.
    */
   virtual int addArticulatedObjectFromURDF(
-      std::string filepath,
+      const std::string& filepath,
       CORRADE_UNUSED DrawableGroup* drawables,
       CORRADE_UNUSED bool fixedBase = false,
       CORRADE_UNUSED float globalScale = 1.0,
@@ -1319,18 +1319,20 @@ class PhysicsManager {
     return existingArticulatedObjects_.at(objectId)->getRootState();
   };
 
-  void setArticulatedObjectForces(int objectId, std::vector<float> forces) {
+  void setArticulatedObjectForces(int objectId,
+                                  const std::vector<float>& forces) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setForces(forces);
   };
 
-  void setArticulatedObjectVelocities(int objectId, std::vector<float> vels) {
+  void setArticulatedObjectVelocities(int objectId,
+                                      const std::vector<float>& vels) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setVelocities(vels);
   };
 
   void setArticulatedObjectPositions(int objectId,
-                                     std::vector<float> positions) {
+                                     const std::vector<float>& positions) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setPositions(positions);
   };

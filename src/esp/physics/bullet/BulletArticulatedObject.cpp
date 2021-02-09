@@ -289,7 +289,7 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
   updateNodes();
 }
 
-void BulletArticulatedObject::setForces(std::vector<float> forces) {
+void BulletArticulatedObject::setForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
         << "setForces - Force vector size mis-match (input: " << forces.size()
@@ -319,7 +319,7 @@ std::vector<float> BulletArticulatedObject::getForces() {
   return forces;
 }
 
-void BulletArticulatedObject::setVelocities(std::vector<float> vels) {
+void BulletArticulatedObject::setVelocities(const std::vector<float>& vels) {
   if (vels.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
         << "setVelocities - Velocity vector size mis-match (input: "
@@ -349,7 +349,8 @@ std::vector<float> BulletArticulatedObject::getVelocities() {
   return vels;
 }
 
-void BulletArticulatedObject::setPositions(std::vector<float> positions) {
+void BulletArticulatedObject::setPositions(
+    const std::vector<float>& positions) {
   if (positions.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
         << "setPositions - Position vector size mis-match (input: "

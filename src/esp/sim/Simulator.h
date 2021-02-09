@@ -518,7 +518,7 @@ class Simulator {
    * @param forceReload If true, re-parse the URDF file and override the cached
    * model.
    */
-  int addArticulatedObjectFromURDF(std::string filepath,
+  int addArticulatedObjectFromURDF(const std::string& filepath,
                                    bool fixedBase = false,
                                    float globalScale = 1.0,
                                    float massScale = 1.0,
@@ -536,12 +536,14 @@ class Simulator {
 
   const Magnum::Matrix4 getArticulatedObjectRootState(int objectId);
 
-  void setArticulatedObjectForces(int objectId, std::vector<float> forces);
+  void setArticulatedObjectForces(int objectId,
+                                  const std::vector<float>& forces);
 
-  void setArticulatedObjectVelocities(int objectId, std::vector<float> vels);
+  void setArticulatedObjectVelocities(int objectId,
+                                      const std::vector<float>& vels);
 
   void setArticulatedObjectPositions(int objectId,
-                                     std::vector<float> positions);
+                                     const std::vector<float>& positions);
 
   std::vector<float> getArticulatedObjectPositions(int objectId);
 

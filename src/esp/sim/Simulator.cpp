@@ -1261,7 +1261,7 @@ void Simulator::setObjectLightSetup(const int objectID,
 //===============================================================================//
 // Articulated Object API (UNSTABLE!)
 
-int Simulator::addArticulatedObjectFromURDF(std::string filepath,
+int Simulator::addArticulatedObjectFromURDF(const std::string& filepath,
                                             bool fixedBase,
                                             float globalScale,
                                             float massScale,
@@ -1283,7 +1283,8 @@ void Simulator::removeArticulatedObject(int objectId) {
   }
 }
 
-std::vector<int> Simulator::getExistingArticulatedObjectIDs(const int sceneID) {
+std::vector<int> Simulator::getExistingArticulatedObjectIDs(
+    CORRADE_UNUSED const int sceneID) {
   if (sceneHasPhysics(0)) {
     return physicsManager_->getExistingArticulatedObjectIDs();
   }
@@ -1305,21 +1306,22 @@ const Magnum::Matrix4 Simulator::getArticulatedObjectRootState(int objectId) {
 };
 
 void Simulator::setArticulatedObjectForces(int objectId,
-                                           std::vector<float> forces) {
+                                           const std::vector<float>& forces) {
   if (sceneHasPhysics(0)) {
     physicsManager_->setArticulatedObjectForces(objectId, forces);
   }
 };
 
 void Simulator::setArticulatedObjectVelocities(int objectId,
-                                               std::vector<float> vels) {
+                                               const std::vector<float>& vels) {
   if (sceneHasPhysics(0)) {
     physicsManager_->setArticulatedObjectVelocities(objectId, vels);
   }
 };
 
-void Simulator::setArticulatedObjectPositions(int objectId,
-                                              std::vector<float> positions) {
+void Simulator::setArticulatedObjectPositions(
+    int objectId,
+    const std::vector<float>& positions) {
   if (sceneHasPhysics(0)) {
     physicsManager_->setArticulatedObjectPositions(objectId, positions);
   }

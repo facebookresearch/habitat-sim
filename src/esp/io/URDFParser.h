@@ -370,7 +370,7 @@ class Parser {
   bool parseTransform(Magnum::Matrix4& tr, tinyxml2::XMLElement* xml);
   bool parseInertia(Inertia& inertia, tinyxml2::XMLElement* config);
   bool parseGeometry(Geometry& geom, tinyxml2::XMLElement* g);
-  bool parseVisual(std::shared_ptr<Model> model,
+  bool parseVisual(std::shared_ptr<Model>& model,
                    VisualShape& visual,
                    tinyxml2::XMLElement* config);
   bool parseCollision(CollisionShape& collision, tinyxml2::XMLElement* config);
@@ -379,13 +379,16 @@ class Parser {
   bool parseJointLimits(Joint& joint, tinyxml2::XMLElement* config);
   bool parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config);
   bool parseJoint(Joint& joint, tinyxml2::XMLElement* config);
-  bool parseLink(std::shared_ptr<Model>,
+  bool parseLink(std::shared_ptr<Model>&,
                  Link& link,
                  tinyxml2::XMLElement* config);
-  bool parseSensor(std::shared_ptr<Model>,
-                   Link& link,
-                   Joint& joint,
-                   tinyxml2::XMLElement* config);
+  bool parseSensor(CORRADE_UNUSED std::shared_ptr<Model>&,
+                   CORRADE_UNUSED Link& link,
+                   CORRADE_UNUSED Joint& joint,
+                   CORRADE_UNUSED tinyxml2::XMLElement* config) {
+    // TODO: this
+    return false;
+  };
 
   bool validateMeshFile(std::string& filename);
 

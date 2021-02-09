@@ -2018,7 +2018,7 @@ bool ResourceManager::importAsset(const std::string& filename) {
 
 std::string ResourceManager::setupMaterialModifiedAsset(
     const std::string& filename,
-    std::shared_ptr<esp::io::URDF::Material> material) {
+    const std::shared_ptr<esp::io::URDF::Material>& material) {
   std::string modifiedAssetName = "";
 
   if (resourceDict_.count(filename) == 0 || material == nullptr) {

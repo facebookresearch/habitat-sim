@@ -227,7 +227,7 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) {
   return true;
 }
 
-bool Parser::parseLink(std::shared_ptr<Model> model,
+bool Parser::parseLink(std::shared_ptr<Model>& model,
                        Link& link,
                        XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
@@ -452,7 +452,7 @@ bool Parser::parseCollision(CollisionShape& collision, XMLElement* config) {
   return true;
 }
 
-bool Parser::parseVisual(std::shared_ptr<Model> model,
+bool Parser::parseVisual(std::shared_ptr<Model>& model,
                          VisualShape& visual,
                          XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
@@ -739,7 +739,7 @@ bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
 bool Parser::validateMeshFile(std::string& meshFilename) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   std::string urdfDirectory =
-      sourceFilePath_.substr(0, sourceFilePath_.find_last_of("/"));
+      sourceFilePath_.substr(0, sourceFilePath_.find_last_of('/'));
 
   std::string meshFilePath =
       Corrade::Utility::Directory::join(urdfDirectory, meshFilename);
@@ -885,7 +885,7 @@ bool Parser::parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) {
     joint.m_jointFriction = std::stod(friction_str);
   }
 
-  if (damping_str == NULL && friction_str == NULL) {
+  if (damping_str == nullptr && friction_str == nullptr) {
     Mn::Debug{} << "E - joint dynamics element specified with no "
                    "damping and no friction";
     return false;
@@ -1029,7 +1029,7 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
       joint.m_jointFriction = std::stod(friction_str);
     }
 
-    if (damping_str == NULL && friction_str == NULL) {
+    if (damping_str == nullptr && friction_str == nullptr) {
       Mn::Debug{} << "E - joint dynamics element specified with "
                      "no damping and no friction";
       return false;
@@ -1039,15 +1039,7 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   return true;
 }
 
-bool Parser::parseSensor(std::shared_ptr<Model> model,
-                         Link& link,
-                         Joint& joint,
-                         tinyxml2::XMLElement* config) {
-  // TODO: this
-  return false;
-}
-
-void printLinkChildrenHelper(Link& link, std::string printPrefix = "") {
+void printLinkChildrenHelper(Link& link, const std::string& printPrefix = "") {
   // Mn::Debug{} << printPrefix<<"link "<< link.m_name;
   int childIndex = 0;
   for (auto& child : link.m_childJoints) {

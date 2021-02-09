@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "CollisionGroupHelper.h"
-
+#include <Corrade/Utility/Assert.h>
 #include "esp/core/logging.h"
 
 namespace esp {
@@ -58,7 +58,9 @@ int CollisionGroupHelper::getMaskForGroup(CollisionGroup group) {
       return int(-1) & ~(int(CollisionGroup::EeMargin));
 
     default:
-      ASSERT(false);
+      CORRADE_ASSERT(
+          false,
+          "Collision group specified does not exist or no mask configured.", 0);
       return 0;
   }
 }

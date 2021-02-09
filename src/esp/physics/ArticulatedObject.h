@@ -293,15 +293,16 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state){};
 
-  virtual void setForces(CORRADE_UNUSED std::vector<float> forces){};
+  virtual void setForces(CORRADE_UNUSED const std::vector<float>& forces){};
 
   virtual std::vector<float> getForces() { return {}; };
 
-  virtual void setVelocities(CORRADE_UNUSED std::vector<float> vels){};
+  virtual void setVelocities(CORRADE_UNUSED const std::vector<float>& vels){};
 
   virtual std::vector<float> getVelocities() { return {}; };
 
-  virtual void setPositions(CORRADE_UNUSED std::vector<float> positions){};
+  virtual void setPositions(
+      CORRADE_UNUSED const std::vector<float>& positions){};
 
   virtual std::vector<float> getPositions() { return {}; };
 
