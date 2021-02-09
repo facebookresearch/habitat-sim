@@ -122,7 +122,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                     "initialized with True.  Call close() to change this.";
   }
 
-  bool success;
+  bool success = 0;
   // (re) create scene instance based on whether or not a renderer is requested.
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
@@ -459,7 +459,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   scene::SceneNode* attachmentNode = nullptr;
   // vector holding all objects added
   std::vector<int> objectsAdded;
-  int objID;
+  int objID = 0;
 
   // whether or not to correct for COM shift - only do for blender-sourced
   // scene attributes
@@ -573,9 +573,10 @@ void Simulator::reconfigureReplayManager() {
   resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
 
   // provide Player callback to replay manager
-  gfxReplayMgr_->setPlayerCallback(
-      std::bind(&esp::sim::Simulator::loadAndCreateRenderAssetInstance, this,
-                std::placeholders::_1, std::placeholders::_2));
+  gfxReplayMgr_->setPlayerCallback([this](auto&& PH1, auto&& PH2) {
+    loadAndCreateRenderAssetInstance(std::forward<decltype(PH1)>(PH1),
+                                     std::forward<decltype(PH2)>(PH2));
+  });
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
@@ -1078,21 +1079,50 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
 
 std::string Simulator::convexHullDecomposition(
     const std::string& filename,
-    const std::string& CHDFilename,
-    const assets::ResourceManager::VHACDParameters& params) {
+    const assets::ResourceManager::VHACDParameters& params,
+    const bool renderCHD) {
   Cr::Utility::Debug() << "VHACD PARAMS RESOLUTION: " << params.m_resolution;
+
+  std::string CHDFilename =
+      filename.substr(0, filename.find_last_of('.')) + "CHD";
+  if (resourceManager_->getNumberOfResource(CHDFilename) > 0) {
+    int nameAttempt = 1;
+    CHDFilename += "_";
+    while (resourceManager_->getNumberOfResource(
+               CHDFilename + std::to_string(nameAttempt)) > 0) {
+      nameAttempt++;
+    }
+    CHDFilename += std::to_string(nameAttempt);
+  }
+
   resourceManager_->convexHullDecomposition(filename, CHDFilename, params);
-  // 2. create object attributes for the trajectory
+
+  // create object attributes for the new CHD object
   auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
-  auto CHDObjAttr = objAttrMgr->createObject(filename, false);
-  // turn off collisions
+  auto CHDObjAttr = objAttrMgr->createObject(CHDFilename, false);
+
+  // specify collision asset handle & other attributes
+  CHDObjAttr->setCollisionAssetHandle(CHDFilename);
   CHDObjAttr->setIsCollidable(true);
   CHDObjAttr->setComputeCOMFromShape(false);
   CHDObjAttr->setCollisionAssetIsPrimitive(false);
-  CHDObjAttr->setCollisionAssetHandle(CHDFilename);
+  CHDObjAttr->setJoinCollisionMeshes(false);
+
+  // if the renderCHD flag is set to true, set the convex hull decomposition to
+  // be the render asset (useful for testing)
+  if (renderCHD) {
+    CHDObjAttr->setRenderAssetHandle(CHDFilename);
+    CHDObjAttr->setRenderAssetIsPrimitive(false);
+  } else {
+    CHDObjAttr->setRenderAssetHandle(filename);
+    CHDObjAttr->setRenderAssetIsPrimitive(false);
+  }
+
   Cr::Utility::Debug() << "== FILES ==";
   Cr::Utility::Debug() << CHDObjAttr->getRenderAssetHandle();
   Cr::Utility::Debug() << CHDObjAttr->getCollisionAssetHandle();
+
+  // register object and return handle
   objAttrMgr->registerObject(CHDObjAttr, CHDFilename, true);
   return CHDObjAttr->getHandle();
 }

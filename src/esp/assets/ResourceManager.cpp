@@ -2256,6 +2256,10 @@ bool ResourceManager::outputMeshMetaDataToObj(
   return success;
 }
 
+u_int ResourceManager::getNumberOfResource(const std::string& resourceName) {
+  return resourceDict_.count(resourceName);
+}
+
 void ResourceManager::convexHullDecomposition(const std::string& filename,
                                               const std::string& CHDFilename,
                                               const VHACDParameters& params) {
@@ -2318,10 +2322,10 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
                                 Mn::Trade::MeshAttribute::Position,
                                 Cr::Containers::arrayView(positions)}}});
     // Create a GenericMeshData
-    genCHMeshData = std::make_unique<GenericMeshData>(false);
+    genCHMeshData = std::make_unique<GenericMeshData>(true);
     genCHMeshData->setMeshData(*std::move(CHMesh));
     genCHMeshData->BB = computeMeshBB(genCHMeshData.get());
-    genCHMeshData->uploadBuffersToGPU(false);
+    genCHMeshData->uploadBuffersToGPU(true);
 
     // Create CollisionMeshData and add to collisionMeshGroup vector
     CollisionMeshData CHCollisionMesh = genCHMeshData->getCollisionMeshData();
@@ -2360,7 +2364,7 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
-  info.requiresLighting = false;
+  info.requiresLighting = true;
 
   // store the rotation to world frame upon load - currently superfluous
   /*const quatf transform = info.frame.rotationFrameToWorld();

@@ -855,9 +855,9 @@ class Simulator {
    */
   std::string convexHullDecomposition(
       const std::string& filename,
-      const std::string& CHDFilename,
       const assets::ResourceManager::VHACDParameters& params =
-          assets::ResourceManager::VHACDParameters());
+          assets::ResourceManager::VHACDParameters(),
+      const bool renderCHD = false);
 
  protected:
   Simulator(){};

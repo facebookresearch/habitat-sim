@@ -73,6 +73,10 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
         data["collisions"] += collisions
 
 
+def test_VHACD_with_box_drop_test():
+    pass
+
+
 def box_drop_test(
     args,
     objects,
@@ -80,6 +84,8 @@ def box_drop_test(
     box_size=2,
     object_speed=2,
     post_throw_settling_time=5,
+    useVHACD=False,
+    VHACDParams=habitat_sim.VHACDParameters,
 ):  # take in parameters here
     """Drops a specified number of objects into a box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame. """
 
@@ -132,7 +138,6 @@ def box_drop_test(
 
         # load some object templates from configuration files
         object_ids = []
-        new_objects = []
         for obj in objects:
             obj_path = obj["path"]
             object_ids += [
@@ -145,28 +150,31 @@ def box_drop_test(
             if "scale" in obj.keys():
                 obj_template.scale *= obj["scale"]
             obj_handle = obj_template.render_asset_handle
-            print("=== VHACD DECOMP ===")
-            print(obj_handle)
-            print(object_ids[-1])
-            params = habitat_sim.VHACDParameters()
-            params.resolution = 0
-            new_handle = sim.convex_hull_decomposition(obj_handle, "CHD", params)
-            new_obj_template = obj_templates_mgr.get_template_by_handle(new_handle)
-            new_objects += [new_obj_template.ID]
-            if "scale" in obj.keys():
-                new_obj_template.scale *= obj["scale"]
-            # obj_template.collision_asset_handle = obj_handle + "CHD"
-            # obj_template.collision_asset_is_primitive = False
-            # print(obj_template.collision_asset_is_primitive, "@@@@@")
-            # obj_template.set_render_asset_handle(obj_handle + "CHD")
-            obj_templates_mgr.register_template(
-                new_obj_template, force_registration=True
-            )
-            print("Template Registered")
+
+            if useVHACD:
+                params = VHACDParams
+                new_handle = sim.apply_convex_hull_decomposition(
+                    obj_handle, params, True
+                )
+
+                new_obj_template = obj_templates_mgr.get_template_by_handle(new_handle)
+
+                if "scale" in obj.keys():
+                    new_obj_template.scale *= obj["scale"]
+
+                obj_templates_mgr.register_template(
+                    new_obj_template, force_registration=True
+                )
+                object_ids[-1] = new_obj_template.ID
+                print("Template Registered")
+            else:
+                obj_templates_mgr.register_template(
+                    obj_template, force_registration=True
+                )
 
         # throw objects into box
         for i in range(num_objects):
-            cur_id = sim.add_object(new_objects[i % len(new_objects)])
+            cur_id = sim.add_object(object_ids[i % len(object_ids)])
 
             obj_node = sim.get_object_scene_node(cur_id)
             obj_bb = obj_node.cumulative_bb
@@ -196,7 +204,7 @@ benchmarks = {
     "box_drop_test_1": {
         "description": "Drop 25 spheres into a box.",
         "test": lambda: box_drop_test(
-            args, [{"path": "test_assets/objects/donut", "scale": 3}], 25, 2, 1.8, 10
+            args, [{"path": "test_assets/objects/chair", "scale": 0.7}], 100, 2, 1.8, 10
         ),
     },
     "box_drop_test_2": {

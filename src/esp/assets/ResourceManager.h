@@ -89,8 +89,6 @@ class ResourceManager {
 
   struct VHACDParameters : VHACD::IVHACD::Parameters {
     VHACDParameters() { m_oclAcceleration = false; }
-    void setResolution(int resolution) { m_resolution = resolution; }
-    int getResolution() { return m_resolution; }
     ESP_SMART_POINTERS(VHACDParameters)
   };
 
@@ -360,6 +358,14 @@ class ResourceManager {
   bool outputMeshMetaDataToObj(const std::string& filename,
                                const std::string& new_filename,
                                const std::string& filepath);
+
+  /**
+   * @brief Returns the number of resources registered under a given resource
+   * name.
+   *
+   * @param resourceName The name of the resource.
+   */
+  u_int getNumberOfResource(const std::string& resourceName);
 
   /**
    * @brief Runs convex hull decomposition on a specified file.

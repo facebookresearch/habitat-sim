@@ -286,9 +286,10 @@ void initSimBindings(py::module& m) {
           "navmesh_settings"_a, "include_static_objects"_a = false,
           R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings. Optionally include all MotionType::STATIC objects in the navigability constraints.)")
       .def(
-          "convex_hull_decomposition", &Simulator::convexHullDecomposition,
-          "filename"_a, "chd_filename"_a,
+          "apply_convex_hull_decomposition",
+          &Simulator::convexHullDecomposition, "filename"_a,
           "vhacd_params"_a = assets::ResourceManager::VHACDParameters(),
+          "render_chd_result"_a = false,
           R"(Decomposite an object into its constituent convex hulls with specified VHACD parameters.)")
       .def("add_trajectory_object", &Simulator::addTrajectoryObject,
            "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,

@@ -118,6 +118,9 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
       resourceManager.createJoinedCollisionMesh(donutFile);
 
   esp::assets::ResourceManager::VHACDParameters params;
+  // params.setMaxNumVerticesPerCH(10);
+  params.m_resolution = 1000000;
+
   resourceManager.convexHullDecomposition(donutFile, CHdonutFile, params);
   std::cout << "Nope :/" << std::endl;
   // transform_box.glb is composed of 6 identical triangulated plane meshes
