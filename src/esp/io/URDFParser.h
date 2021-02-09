@@ -374,7 +374,7 @@ class Parser {
                    VisualShape& visual,
                    tinyxml2::XMLElement* config);
   bool parseCollision(CollisionShape& collision, tinyxml2::XMLElement* config);
-  bool initTreeAndRoot(std::shared_ptr<Model> model);
+  bool initTreeAndRoot(std::shared_ptr<Model>& model);
   bool parseMaterial(Material& material, tinyxml2::XMLElement* config);
   bool parseJointLimits(Joint& joint, tinyxml2::XMLElement* config);
   bool parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config);

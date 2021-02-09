@@ -531,7 +531,7 @@ bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
   tr.translation() = (vec * m_urdfScaling);
 
   const char* rpy_str = xml->Attribute("rpy");
-  if (rpy_str != NULL) {
+  if (rpy_str != nullptr) {
     Mn::Vector3 rpy;
     if (parseVector3(rpy, std::string(rpy_str))) {
       double phi, the, psi;
@@ -559,7 +559,7 @@ bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
 
 bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
-  if (g == 0)
+  if (g == nullptr)
     return false;
 
   XMLElement* shape = g->FirstChildElement();
@@ -759,7 +759,7 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
   return meshSuccess;
 }
 
-bool Parser::initTreeAndRoot(std::shared_ptr<Model> model) {
+bool Parser::initTreeAndRoot(std::shared_ptr<Model>& model) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
