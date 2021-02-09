@@ -2260,11 +2260,13 @@ u_int ResourceManager::getNumberOfResource(const std::string& resourceName) {
   return resourceDict_.count(resourceName);
 }
 
-void ResourceManager::convexHullDecomposition(const std::string& filename,
-                                              const std::string& CHDFilename,
-                                              const VHACDParameters& params) {
+void ResourceManager::createConvexHullDecomposition(
+    const std::string& filename,
+    const std::string& CHDFilename,
+    const VHACDParameters& params,
+    const bool saveCHDToObj) {
   if (resourceDict_.count(filename) == 0) {
-    // load/check_for render mesh metadata and load assets
+    // load/check for render MeshMetaData and load assets
     bool renderMeshSuccess =
         loadObjectMeshDataFromFile(filename, filename, "render", true);
 
@@ -2311,6 +2313,8 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
     for (size_t ix = 0; ix < ch.m_nTriangles * 3; ix++) {
       indices[ix] = ch.m_triangles[ix];
     }
+
+    // create an owned MeshData
     Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::owned(
         Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
                             {},
@@ -2321,7 +2325,8 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
                             {Mn::Trade::MeshAttributeData{
                                 Mn::Trade::MeshAttribute::Position,
                                 Cr::Containers::arrayView(positions)}}});
-    // Create a GenericMeshData
+    // Create a GenericMeshData (needsNormals_ = true and uploadBuffersToGPU in
+    // order to render the collision asset)
     genCHMeshData = std::make_unique<GenericMeshData>(true);
     genCHMeshData->setMeshData(*std::move(CHMesh));
     genCHMeshData->BB = computeMeshBB(genCHMeshData.get());
@@ -2366,20 +2371,8 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
   AssetInfo info{AssetType::PRIMITIVE};
   info.requiresLighting = true;
 
-  // store the rotation to world frame upon load - currently superfluous
-  /*const quatf transform = info.frame.rotationFrameToWorld();
-  Magnum::Matrix4 R = Magnum::Matrix4::from(
-      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-  meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;*/
-
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
-  // TODO : need to free render assets associated with this object if collision
-  // occurs, otherwise leak! (Currently unsupported).
-  // if (resourceDict_.count(trajVisName) != 0) {
-  //   resourceDict_.erase(trajVisName);
-  // }
 
   // Register collision mesh group
   auto insertedCollisionMeshGroup =
@@ -2387,10 +2380,12 @@ void ResourceManager::convexHullDecomposition(const std::string& filename,
   // insert MeshMetaData into resourceDict_
   auto insertedResourceDict =
       resourceDict_.emplace(CHDFilename, std::move(loadedAssetData));
-  std::string objDirectory = Cr::Utility::Directory::join(
-      Corrade::Utility::Directory::current(), "data/VHACD_outputs");
-  bool fileCreated =
-      outputMeshMetaDataToObj(CHDFilename, "CHDTest.obj", objDirectory);
+  if (saveCHDToObj) {
+    std::string objDirectory = Cr::Utility::Directory::join(
+        Corrade::Utility::Directory::current(), "data/VHACD_outputs");
+    bool fileCreated =
+        outputMeshMetaDataToObj(CHDFilename, "CHDTest.obj", objDirectory);
+  }
 }
 
 }  // namespace assets

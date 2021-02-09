@@ -374,11 +374,14 @@ class ResourceManager {
    * @param CHDFilename The new filename for the CHD collision mesh.
    * @param params VHACD params that specify resolution, vertices per convex
    * hull, etc.
+   * @param saveCHDToObj Specifies whether or not to save the newly created
+   * convex hull asset to an obj file.
    */
-  void convexHullDecomposition(
+  void createConvexHullDecomposition(
       const std::string& filename,
       const std::string& CHDFilename,
-      const VHACDParameters& params = VHACDParameters());
+      const VHACDParameters& params = VHACDParameters(),
+      const bool saveCHDToObj = false);
   /**
    * @brief Add an object from a specified object template handle to the
    * specified @ref DrawableGroup as a child of the specified @ref

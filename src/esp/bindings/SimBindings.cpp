@@ -289,7 +289,7 @@ void initSimBindings(py::module& m) {
           "apply_convex_hull_decomposition",
           &Simulator::convexHullDecomposition, "filename"_a,
           "vhacd_params"_a = assets::ResourceManager::VHACDParameters(),
-          "render_chd_result"_a = false,
+          "render_chd_result"_a = false, "save_chd_to_obj"_a = false,
           R"(Decomposite an object into its constituent convex hulls with specified VHACD parameters.)")
       .def("add_trajectory_object", &Simulator::addTrajectoryObject,
            "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,

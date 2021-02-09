@@ -846,18 +846,25 @@ class Simulator {
       const assets::RenderAssetInstanceCreationInfo& creation);
 
   /**
-   * @brief Runs convex hull decomposition on a specified file.
+   * @brief Runs convex hull decomposition on a specified file. Creates an
+   * object attributes referencing a newly created convex hull asset, and
+   * returns the attribute's handle.
    *
    * @param filename The MeshMetaData filename to be converted.
-   * @param CHDFilename The new filename for the CHD collision mesh.
    * @param params VHACD params that specify resolution, vertices per convex
    * hull, etc.
+   * @param renderCHD Specifies whether or not to render the coinvex hull asset,
+   * or to render the original render asset.
+   * @param saveCHDToObj Specifies whether or not to save the newly created
+   * convex hull asset to an obj file.
+   * @returns The handle of the newly created object attributes.
    */
   std::string convexHullDecomposition(
       const std::string& filename,
       const assets::ResourceManager::VHACDParameters& params =
           assets::ResourceManager::VHACDParameters(),
-      const bool renderCHD = false);
+      const bool renderCHD = false,
+      const bool saveCHDToObj = false);
 
  protected:
   Simulator(){};

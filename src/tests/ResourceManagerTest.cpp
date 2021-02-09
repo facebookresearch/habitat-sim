@@ -121,7 +121,7 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
   // params.setMaxNumVerticesPerCH(10);
   params.m_resolution = 1000000;
 
-  resourceManager.convexHullDecomposition(donutFile, CHdonutFile, params);
+  resourceManager.createConvexHullDecomposition(donutFile, CHdonutFile, params);
   std::cout << "Nope :/" << std::endl;
   // transform_box.glb is composed of 6 identical triangulated plane meshes
   // transformed into a cube via a transform heirarchy. Combined, the resulting

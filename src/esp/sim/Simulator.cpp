@@ -573,10 +573,9 @@ void Simulator::reconfigureReplayManager() {
   resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
 
   // provide Player callback to replay manager
-  gfxReplayMgr_->setPlayerCallback([this](auto&& PH1, auto&& PH2) {
-    loadAndCreateRenderAssetInstance(std::forward<decltype(PH1)>(PH1),
-                                     std::forward<decltype(PH2)>(PH2));
-  });
+  gfxReplayMgr_->setPlayerCallback(
+      std::bind(&esp::sim::Simulator::loadAndCreateRenderAssetInstance, this,
+                std::placeholders::_1, std::placeholders::_2));
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
@@ -1080,14 +1079,17 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
 std::string Simulator::convexHullDecomposition(
     const std::string& filename,
     const assets::ResourceManager::VHACDParameters& params,
-    const bool renderCHD) {
+    const bool renderCHD,
+    const bool saveCHDToObj) {
   Cr::Utility::Debug() << "VHACD PARAMS RESOLUTION: " << params.m_resolution;
 
+  // generate a unique filename
   std::string CHDFilename =
       filename.substr(0, filename.find_last_of('.')) + "CHD";
   if (resourceManager_->getNumberOfResource(CHDFilename) > 0) {
     int nameAttempt = 1;
     CHDFilename += "_";
+    // Iterate until a unique filename is found.
     while (resourceManager_->getNumberOfResource(
                CHDFilename + std::to_string(nameAttempt)) > 0) {
       nameAttempt++;
@@ -1095,7 +1097,10 @@ std::string Simulator::convexHullDecomposition(
     CHDFilename += std::to_string(nameAttempt);
   }
 
-  resourceManager_->convexHullDecomposition(filename, CHDFilename, params);
+  // run VHACD on the given filename mesh with the given params, store the
+  // results in the resourceDict_ registered under CHDFilename
+  resourceManager_->createConvexHullDecomposition(filename, CHDFilename, params,
+                                                  saveCHDToObj);
 
   // create object attributes for the new CHD object
   auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
@@ -1117,10 +1122,6 @@ std::string Simulator::convexHullDecomposition(
     CHDObjAttr->setRenderAssetHandle(filename);
     CHDObjAttr->setRenderAssetIsPrimitive(false);
   }
-
-  Cr::Utility::Debug() << "== FILES ==";
-  Cr::Utility::Debug() << CHDObjAttr->getRenderAssetHandle();
-  Cr::Utility::Debug() << CHDObjAttr->getCollisionAssetHandle();
 
   // register object and return handle
   objAttrMgr->registerObject(CHDObjAttr, CHDFilename, true);
