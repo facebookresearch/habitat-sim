@@ -14,6 +14,7 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/physics/RigidObject.h"
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "configure.h"
@@ -31,6 +32,7 @@ using esp::gfx::LightSetup;
 using esp::metadata::attributes::AbstractPrimitiveAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
+using esp::sensor::CameraSensor;
 using esp::sensor::Observation;
 using esp::sensor::ObservationSpace;
 using esp::sensor::ObservationSpaceType;
@@ -126,7 +128,8 @@ SimTest::SimTest() {
             &SimTest::multipleLightingSetupsRGBAObservation,
             &SimTest::recomputeNavmeshWithStaticObjects,
             &SimTest::loadingObjectTemplates,
-            &SimTest::buildingPrimAssetObjectTemplates});
+            &SimTest::buildingPrimAssetObjectTemplates,
+            &SimTest::addingCameraToObject});
   // clang-format on
 }
 
@@ -638,12 +641,15 @@ void SimTest::addingCameraToObject() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
 
   // Add sensor to sphere object
-  simulator->addSensorToObject(objectID, "sphere");
-  std::string expectedUUID = "sphere_" + std::to_string(objectID);
+  simulator->addSensorToObject(objectID);
+  std::string expectedUUID = std::to_string(objectID);
   CORRADE_VERIFY(simulator->getSensorSuite().get(
       expectedUUID));  // Verify that Sensor exists with uuid
-  auto cameraSensor = simulator->getSensorSuite().get(expectedUUID);
-  simulator->setTranslation({0.0f, 1.5f, 5.0f},
+  CameraSensor* cameraSensor = dynamic_cast<CameraSensor*>(
+      simulator->getSensorSuite().get(expectedUUID).get());
+  cameraSensor->setTransformationFromSpec();
+
+  simulator->setTranslation({1.0f, 1.5f, 1.0f},
                             objectID);  // Move camera to same place as agent
 
   auto objs2 = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
@@ -653,11 +659,11 @@ void SimTest::addingCameraToObject() {
 
   Observation observation;
   ObservationSpace obsSpace;
-
+  simulator->getRenderer()->bindRenderTarget(*cameraSensor);
   CORRADE_VERIFY(cameraSensor->getObservation(*simulator, observation));
   CORRADE_VERIFY(cameraSensor->getObservationSpace(obsSpace));
 
-  esp::vec2i defaultResolution = {84, 84};
+  esp::vec2i defaultResolution = {128, 128};
   std::vector<size_t> expectedShape{{static_cast<size_t>(defaultResolution[0]),
                                      static_cast<size_t>(defaultResolution[1]),
                                      4}};

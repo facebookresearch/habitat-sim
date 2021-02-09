@@ -255,14 +255,6 @@ class Simulator {
   std::vector<int> getExistingObjectIDs(int sceneID = 0);
 
   /**
-   * @brief Get the SceneNode of a physics object instanced in a physical scene.
-   * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
-   * @param objectID The ID of the object identifying it in @ref
-   * @return A reference to the SceneNode
-   */
-  esp::scene::SceneNode& getObjectNode(const int objectId);
-
-  /**
    * @brief Get the @ref esp::physics::MotionType of an object.
    * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
    * @param objectID The ID of the object identifying it in @ref
@@ -729,13 +721,18 @@ class Simulator {
 
   /**
    * @brief Initialize sensor and attach to sceneNode of a particular object
-   * with uuid objectName_objectId
+   * with uuid objectId
    * @param objectId    Id of the object to which a sensor will be initialized
    * at its node
-   * @param objectName Name of the object which will be used in sensor's uuid
+   * @param position  vec3f of position to set spec to
+   * @param orientation vec3f or orientation to set spec to
+   * @param resolution vec2i of resolution to set spec to
    *
    */
-  void addSensorToObject(const int objectId, const std::string& objectName);
+  void addSensorToObject(const int objectId,
+                         const vec3f position = {0, 0, 0},
+                         const vec3f orientation = {0, 0, 0},
+                         const vec2i resolution = {128, 128});
 
   /**
    * @brief Displays observations on default frame buffer for a
@@ -769,14 +766,6 @@ class Simulator {
    *                   be returned
    */
   bool drawObservation(int agentId, const std::string& sensorId);
-  /**
-   * @brief draw observations to the frame buffer stored in a
-   * particular sensor. Unlike the @displayObservation, it will
-   * not display the observation on the default frame buffer
-   * @param visualSensor    ptr to VisualSensor for which the observation is to
-   * be returned
-   */
-  bool drawObservation(esp::sensor::VisualSensor* visualSensor);
 
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,

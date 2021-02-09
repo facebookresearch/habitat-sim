@@ -834,11 +834,11 @@ void Viewer::addCameraToLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0)
     return;
-  simulator_->addSensorToObject(existingObjectIDs.back(), lastAddedObjectName_);
+  simulator_->addSensorToObject(existingObjectIDs.back());
   LOG(INFO) << "Total number of cameras: "
             << simulator_->getSensorSuite().getSensors().size();
-  LOG(INFO) << "Added camera to object " << lastAddedObjectName_
-            << " with uuid " << std::to_string(existingObjectIDs.back());
+  LOG(INFO) << "Added camera to objectID "
+            << std::to_string(existingObjectIDs.back());
 }
 
 // Switch renderCamera_ used for rendering, cycling through available cameras,
@@ -936,7 +936,7 @@ void Viewer::drawEvent() {
     // ONLY draw the content to the frame buffer but not immediately blit the
     // result to the default main buffer
     // (this is the reason we do not call displayObservation)
-    simulator_->drawObservation(cameraSensor_);
+    cameraSensor_->drawObservation(*simulator_);
     // TODO: enable other sensors to be displayed
 
     Mn::GL::Renderer::setDepthFunction(

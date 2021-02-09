@@ -157,8 +157,6 @@ void initSimBindings(py::module& m) {
           "object_lib_handle"_a, "attachment_node"_a = nullptr,
           "light_setup_key"_a = DEFAULT_LIGHTING_KEY, "scene_id"_a = 0,
           R"(Instance an object into the scene via a template referenced by its handle. Optionally attach the object to an existing SceneNode and assign its initial LightSetup key.)")
-      .def("get_object_node", &Simulator::getObjectNode,
-           R"(return a pointer to a sceneNode of an existing object)")
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
            "delete_object_node"_a = true, "delete_visual_node"_a = true,
            "scene_id"_a = 0, R"(

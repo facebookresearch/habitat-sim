@@ -650,11 +650,6 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
   return std::vector<int>();  // empty if no simulator exists
 }
 
-// return a pointer to a sceneNode of an existing object
-esp::scene::SceneNode& Simulator::getObjectNode(const int objectId) {
-  return physicsManager_->getObjectSceneNode(objectId);
-}
-
 // remove object objectID instance in sceneID
 void Simulator::removeObject(const int objectID,
                              bool deleteObjectNode,
@@ -671,6 +666,21 @@ void Simulator::removeObject(const int objectID,
       // resourceManager_->removeResourceByName(trajVisAssetName);
     }
   }
+  // if (deleteObjectNode) {
+  //   // delete sensor at ObjectNode if there is one
+  //   std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorIterator
+  //   =
+  //       getSensorSuite().getSensors().find(std::to_string(objectID));
+  //   if (sensorIterator != getSensorSuite().getSensors().end()) {
+  //     //freeing memory at pointer to sensor
+  //     delete sensorIterator->second.get();
+  //     //erasing sensor from SensorSuite
+  //     getSensorSuite().getSensors().erase(sensorIterator);
+  //   }
+  //   //deleting scene node to delete sensor
+  //   scene::SceneNode* sceneNode = getObjectSceneNode(objectID);
+  //   delete sceneNode;
+  // }
 }
 
 esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
@@ -1135,14 +1145,18 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
 }
 
 void Simulator::addSensorToObject(const int objectId,
-                                  const std::string& objectName) {
+                                  const vec3f position,
+                                  const vec3f orientation,
+                                  const vec2i resolution) {
   esp::sensor::SensorSpec::ptr objectSensorSpec =
       esp::sensor::SensorSpec::create_unique();
-  objectSensorSpec->uuid = objectName + "_" + std::to_string(objectId);
-  objectSensorSpec->position = {0.0f, 0.0f, 0.0f};
+  objectSensorSpec->uuid = std::to_string(objectId);
+  objectSensorSpec->position = position;
+  objectSensorSpec->orientation = orientation;
+  objectSensorSpec->resolution = resolution;
   esp::sensor::SensorSetup sensorSpecifications = {
       objectSensorSpec};  // default SensorSpec
-  esp::scene::SceneNode& objectNode = getObjectNode(objectId);
+  esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
   esp::sensor::SensorSuite sensorSuite =
       esp::sensor::SensorFactory::createSensors(objectNode,
                                                 sensorSpecifications);
@@ -1195,10 +1209,6 @@ bool Simulator::drawObservation(const int agentId,
     }
   }
   return false;
-}
-
-bool Simulator::drawObservation(esp::sensor::VisualSensor* visualSensor) {
-  return visualSensor->drawObservation(*this);
 }
 
 bool Simulator::getAgentObservation(const int agentId,
