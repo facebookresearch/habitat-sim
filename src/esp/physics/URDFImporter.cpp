@@ -28,6 +28,7 @@ bool URDFImporter::loadURDF(const std::string& filename,
     }
 
     // parse the URDF from file
+    urdfParser_.logMessages = logMessages;
     bool success = urdfParser_.parseURDF(filename);
     if (!success) {
       Mn::Debug{} << "Failed to parse URDF: " << filename << ", aborting.";
