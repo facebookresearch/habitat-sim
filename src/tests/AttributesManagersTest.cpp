@@ -16,6 +16,7 @@
 
 #include "configure.h"
 
+namespace {
 namespace Cr = Corrade;
 
 using Magnum::Math::Literals::operator""_radf;
@@ -47,7 +48,9 @@ const std::string physicsConfigFile =
 class AttributesManagersTest : public testing::Test {
  protected:
   void SetUp() override {
-    auto MM = MetadataMediator::create();
+    // set up a default simulation config to initialize MM
+    auto cfg = esp::sim::SimulatorConfiguration{};
+    auto MM = MetadataMediator::create(cfg);
     // get attributes managers for default dataset
     assetAttributesManager_ = MM->getAssetAttributesManager();
     lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
@@ -455,7 +458,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
         "direction": [1.0,-1.0,1.0],
         "intensity": -0.1,
         "color": [2,1,-1],
-        "type": "spot",
+        "type": "directional",
         "spot": {
           "innerConeAngle": -0.75,
           "outerConeAngle": -1.57
@@ -481,7 +484,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
   ASSERT_EQ(lightAttr->getDirection(), Magnum::Vector3(1.0, -1.0, 1.0));
   ASSERT_EQ(lightAttr->getColor(), Magnum::Vector3(2, 1, -1));
   ASSERT_EQ(lightAttr->getIntensity(), -0.1);
-  ASSERT_EQ(lightAttr->getType(), "spot");
+  ASSERT_EQ(lightAttr->getType(),
+            static_cast<int>(esp::gfx::LightType::Directional));
   ASSERT_EQ(lightAttr->getInnerConeAngle(), -0.75_radf);
   ASSERT_EQ(lightAttr->getOuterConeAngle(), -1.57_radf);
 }  // AttributesManagers_LightJSONLoadTest
@@ -496,6 +500,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   // build JSON sample config
   const std::string& jsonString =
       R"({
+      "translation_origin" : "Asset_Local",
       "stage_instance":{
           "template_name": "test_stage_template",
           "translation": [1,2,3],
@@ -504,6 +509,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
       "object_instances": [
           {
               "template_name": "test_object_template0",
+              "translation_origin": "COM",
               "translation": [0,1,2],
               "rotation": [0.2, 0.3, 0.4, 0.5],
               "motion_type": "KINEMATIC"
@@ -530,6 +536,9 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
 
   // match values set in test JSON
   // TODO : get these values programmatically?
+  ASSERT_EQ(
+      sceneAttr->getTranslationOrigin(),
+      static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::AssetLocal));
   ASSERT_EQ(sceneAttr->getLightingHandle(), "test_lighting_configuration");
   ASSERT_EQ(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
   ASSERT_EQ(sceneAttr->getSemanticSceneHandle(),
@@ -543,6 +552,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   ASSERT_EQ(objectInstanceList.size(), 2);
   auto objInstance = objectInstanceList[0];
   ASSERT_EQ(objInstance->getHandle(), "test_object_template0");
+  ASSERT_EQ(objInstance->getTranslationOrigin(),
+            static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
   ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, 1, 2));
   ASSERT_EQ(objInstance->getMotionType(),
             static_cast<int>(esp::physics::MotionType::KINEMATIC));
@@ -895,3 +906,5 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
         dfltUVSphereAttribs, "segments", legalModValWF, &illegalModValWF);
   }
 }  // AttributesManagersTest::AsssetAttributesManagerGetAndModify test
+
+}  // namespace
