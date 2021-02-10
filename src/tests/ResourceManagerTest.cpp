@@ -123,7 +123,6 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
 
   resourceManager.createConvexHullDecomposition(donutFile, CHdonutFile, params,
                                                 true);
-  std::cout << "Nope :/" << std::endl;
   // transform_box.glb is composed of 6 identical triangulated plane meshes
   // transformed into a cube via a transform heirarchy. Combined, the resulting
   // mesh should have 24 vertices and 36 indices with corners at the unit corner

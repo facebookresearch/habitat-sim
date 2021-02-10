@@ -122,7 +122,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                     "initialized with True.  Call close() to change this.";
   }
 
-  bool success = 0;
+  bool success = false;
   // (re) create scene instance based on whether or not a renderer is requested.
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
@@ -1085,7 +1085,7 @@ std::string Simulator::convexHullDecomposition(
 
   // generate a unique filename
   std::string CHDFilename =
-      filename.substr(0, filename.find_last_of('.')) + "CHD";
+      Cr::Utility::Directory::splitExtension(filename).first + "CHD";
   if (resourceManager_->getNumberOfResource(CHDFilename) > 0) {
     int nameAttempt = 1;
     CHDFilename += "_";
@@ -1116,11 +1116,11 @@ std::string Simulator::convexHullDecomposition(
   // be the render asset (useful for testing)
   if (renderCHD) {
     CHDObjAttr->setRenderAssetHandle(CHDFilename);
-    CHDObjAttr->setRenderAssetIsPrimitive(false);
   } else {
     CHDObjAttr->setRenderAssetHandle(filename);
-    CHDObjAttr->setRenderAssetIsPrimitive(false);
   }
+
+  CHDObjAttr->setRenderAssetIsPrimitive(false);
 
   // register object and return handle
   objAttrMgr->registerObject(CHDObjAttr, CHDFilename, true);

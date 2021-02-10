@@ -2186,25 +2186,6 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
   return mesh;
 }
 
-void ResourceManager::getPrimitiveMeshData(const std::string& filename,
-                                           std::vector<float>& points,
-                                           std::vector<uint32_t>& triangles) {
-  // Get MeshData from createJoinedCollisionMesh
-  assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
-  joinedMesh = createJoinedCollisionMesh(filename);
-
-  // Format into VHACD compatible vectors
-  for (vec3f point : joinedMesh->vbo) {
-    points.push_back(point[0]);
-    points.push_back(point[1]);
-    points.push_back(point[2]);
-  }
-
-  for (uint32_t index : joinedMesh->ibo) {
-    triangles.push_back(index);
-  }
-}
-
 bool ResourceManager::outputMeshMetaDataToObj(
     const std::string& MeshMetaDataFile,
     const std::string& new_filename,
@@ -2270,16 +2251,14 @@ void ResourceManager::createConvexHullDecomposition(
 
   }  // if no render asset exists
 
-  // fill points and triangles with mesh data
-  std::vector<float> points = std::vector<float>();
-  std::vector<uint32_t> triangles = std::vector<uint32_t>();
-  getPrimitiveMeshData(filename, points, triangles);
+  // get joined mesh data
+  assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
+  joinedMesh = createJoinedCollisionMesh(filename);
 
   // use VHACD
-  bool res =
-      interfaceVHACD->Compute(&points[0], (unsigned int)(points.size() / 3),
-                              (const uint32_t*)&triangles[0],
-                              (unsigned int)(triangles.size() / 3), params);
+  bool res = interfaceVHACD->Compute(
+      &joinedMesh->vbo[0][0], joinedMesh->vbo.size(), &joinedMesh->ibo[0],
+      joinedMesh->ibo.size() / 3, params);
 
   Cr::Utility::Debug() << "== VHACD ran ==";
 

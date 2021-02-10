@@ -88,8 +88,8 @@ class ResourceManager {
 
   struct VHACDParameters : VHACD::IVHACD::Parameters {
     VHACDParameters() {
-      m_oclAcceleration = false;
-    }  // OCL Acceleration does not work on VHACD
+      m_oclAcceleration = false;  // OCL Acceleration does not work on VHACD
+    }
     ESP_SMART_POINTERS(VHACDParameters)
   };
 
@@ -333,20 +333,6 @@ class ResourceManager {
    */
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
       const std::string& filename);
-
-  /**
-   * @brief Get primitive mesh data (points and triangle arrays) from a
-   * MeshMetaData filename.
-   *
-   * @param filename The MeshMetaData filename to receive primitive attributes
-   * from.
-   * @param points The vector of points to be filled with the mesh vertices.
-   * @param triangles The vector of indices to be filled with the mesh index
-   * buffer.
-   */
-  void getPrimitiveMeshData(const std::string& filename,
-                            std::vector<float>& points,
-                            std::vector<uint32_t>& triangles);
 
   /**
    * @brief Converts a MeshMetaData into a obj file.

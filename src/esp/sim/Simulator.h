@@ -857,7 +857,7 @@ class Simulator {
    * or to render the original render asset.
    * @param saveCHDToObj Specifies whether or not to save the newly created
    * convex hull asset to an obj file.
-   * @returns The handle of the newly created object attributes.
+   * @return The handle of the newly created object attributes.
    */
   std::string convexHullDecomposition(
       const std::string& filename,

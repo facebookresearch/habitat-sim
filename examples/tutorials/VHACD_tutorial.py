@@ -129,7 +129,7 @@ def runVHACDSimulation(obj_path):
         # specify parameters for running CHD
 
         # high resolution
-        params = habitat_sim.VHACDParameters()
+        params = habitat_sim._ext.habitat_sim_bindings.VHACDParameters()
         params.resolution = 200000
         params.max_convex_hulls = 32
 
