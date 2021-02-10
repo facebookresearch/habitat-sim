@@ -19,7 +19,7 @@ namespace core {
  * @brief This enum describes how objects held in the @ref ManagedConatainer are
  * accessed.
  */
-enum class ManagedContainerAccess {
+enum class ManagedObjectAccess {
   /**
    * When an object is requested to be retrieved, a copy is made and
    * returned.  Modifications to this object will only take place if the object
@@ -44,7 +44,7 @@ enum class ManagedContainerAccess {
  * container provides copies of the objects held, or the actual objects
  * themselves.
  */
-template <class T, ManagedContainerAccess Access>
+template <class T, ManagedObjectAccess Access>
 class ManagedContainer : public ManagedContainerBase {
  public:
   static_assert(std::is_base_of<AbstractManagedObject, T>::value,
@@ -314,7 +314,7 @@ class ManagedContainer : public ManagedContainerBase {
   }  // removeAllObjects
 
   /**
-   * @brief remove managed objects that contain passed substring and that have
+   * @brief Remove managed objects that contain passed substring and that have
    * not been marked as default/non-removable, and return a vector of the
    * managed objects removed.
    * @param subStr substring to search for within existing primitive object
@@ -359,7 +359,7 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
-    if (Access == ManagedContainerAccess::Copy) {
+    if (Access == ManagedObjectAccess::Copy) {
       return this->copyObject(orig);
     } else {
       return orig;
@@ -380,7 +380,7 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
-    if (Access == ManagedContainerAccess::Copy) {
+    if (Access == ManagedObjectAccess::Copy) {
       return this->copyObject(orig);
     } else {
       return orig;
@@ -650,7 +650,7 @@ class ManagedContainer : public ManagedContainerBase {
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T, ManagedContainerAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto ManagedContainer<T, Access>::removeObjectsBySubstring(
     const std::string& subStr,
     bool contains) -> std::vector<ManagedPtr> {
@@ -668,7 +668,7 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
   return res;
 }  // ManagedContainer<T, Access>::removeObjectsBySubstring
 
-template <class T, ManagedContainerAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto ManagedContainer<T, Access>::removeObjectInternal(
     const std::string& objectHandle,
     const std::string& sourceStr) -> ManagedPtr {

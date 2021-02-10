@@ -27,7 +27,7 @@ namespace managers {
  * of this class works with.  Must inherit from @ref
  * esp::metadata::attributes::AbstractObjectAttributes.
  */
-template <class T, core::ManagedContainerAccess Access>
+template <class T, core::ManagedObjectAccess Access>
 class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractObjectAttributes, T>::value,
@@ -160,7 +160,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T, core::ManagedContainerAccess Access>
+template <class T, core::ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::createObject(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) -> AbsObjAttrPtr {
@@ -193,7 +193,7 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
 }  // AbstractObjectAttributesManager<T>::createObject
 
-template <class T, core::ManagedContainerAccess Access>
+template <class T, core::ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::
     loadAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
                                          const io::JsonGenericValue& jsonDoc)
@@ -278,7 +278,7 @@ auto AbstractObjectAttributesManager<T, Access>::
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
 
-template <class T, core::ManagedContainerAccess Access>
+template <class T, core::ManagedObjectAccess Access>
 std::string
 AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,
