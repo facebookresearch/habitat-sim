@@ -1109,7 +1109,6 @@ std::string Simulator::convexHullDecomposition(
   // specify collision asset handle & other attributes
   CHDObjAttr->setCollisionAssetHandle(CHDFilename);
   CHDObjAttr->setIsCollidable(true);
-  CHDObjAttr->setComputeCOMFromShape(false);
   CHDObjAttr->setCollisionAssetIsPrimitive(false);
   CHDObjAttr->setJoinCollisionMeshes(false);
 

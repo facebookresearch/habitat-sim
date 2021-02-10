@@ -42,8 +42,7 @@
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 
-//#include <VHACD.h>
-#include "deps/v-hacd/src/VHACD_Lib/public/VHACD.h"
+#include <VHACD.h>
 
 // forward declarations
 namespace Magnum {
@@ -88,7 +87,9 @@ class ResourceManager {
   using Importer = Mn::Trade::AbstractImporter;
 
   struct VHACDParameters : VHACD::IVHACD::Parameters {
-    VHACDParameters() { m_oclAcceleration = false; }
+    VHACDParameters() {
+      m_oclAcceleration = false;
+    }  // OCL Acceleration does not work on VHACD
     ESP_SMART_POINTERS(VHACDParameters)
   };
 
@@ -266,8 +267,8 @@ class ResourceManager {
    * initialization that may be required when @ref metadataMediator_ is changed.
    * @param _MM a reference to the new @ref metadataMediator_.
    */
-  void setMetadataMediator(metadata::MetadataMediator::ptr _MM) {
-    metadataMediator_ = _MM;
+  void setMetadataMediator(metadata::MetadataMediator::ptr MM) {
+    metadataMediator_ = std::move(MM);
   }
 
   /**

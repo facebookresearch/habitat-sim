@@ -73,8 +73,7 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
         data["collisions"] += collisions
 
 
-def test_VHACD_with_box_drop_test():
-    pass
+def_params = habitat_sim.VHACDParameters()
 
 
 def box_drop_test(
@@ -85,7 +84,7 @@ def box_drop_test(
     object_speed=2,
     post_throw_settling_time=5,
     useVHACD=False,
-    VHACDParams=habitat_sim.VHACDParameters,
+    VHACDParams=def_params,
 ):  # take in parameters here
     """Drops a specified number of objects into a box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame. """
 
@@ -152,9 +151,8 @@ def box_drop_test(
             obj_handle = obj_template.render_asset_handle
 
             if useVHACD:
-                params = VHACDParams
                 new_handle = sim.apply_convex_hull_decomposition(
-                    obj_handle, params, True
+                    obj_handle, VHACDParams, True, False
                 )
 
                 new_obj_template = obj_templates_mgr.get_template_by_handle(new_handle)
@@ -204,7 +202,7 @@ benchmarks = {
     "box_drop_test_1": {
         "description": "Drop 25 spheres into a box.",
         "test": lambda: box_drop_test(
-            args, [{"path": "test_assets/objects/chair", "scale": 0.7}], 100, 2, 1.8, 10
+            args, [{"path": "test_assets/objects/sphere", "scale": 1}], 25, 2, 1.8, 10
         ),
     },
     "box_drop_test_2": {

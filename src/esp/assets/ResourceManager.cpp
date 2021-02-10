@@ -13,6 +13,7 @@
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -2215,21 +2216,20 @@ bool ResourceManager::outputMeshMetaDataToObj(
                                       "# CHD Mesh group \n");
   // write vertex info to file
   int numVertices = 0;
+  std::string out = "";
   for (MeshTransformNode node : metaData.root.children) {
     CollisionMeshData& meshData =
         meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
             ->getCollisionMeshData();
     for (auto& pos : meshData.positions) {
-      Cr::Utility::Directory::appendString(filepath + "/" + new_filename,
-                                           "v " + std::to_string(pos[0]) + ' ' +
-                                               std::to_string(pos[1]) + ' ' +
-                                               std::to_string(pos[2]) + '\n');
+      Mn::Utility::formatInto(out, out.size(), "{0} {1} {2} {3}{4}", "v",
+                              pos[0], pos[1], pos[2], "\n");
       numVertices++;
     }
   }
-  Cr::Utility::Directory::appendString(
-      filepath + "/" + new_filename,
-      "# Number of vertices: " + std::to_string(numVertices) + "\n\n");
+
+  Mn::Utility::formatInto(out, out.size(), "{0} {1} {2}",
+                          "# Number of vertices", numVertices, "\n\n");
 
   // Now do second pass to write indices for each group (node)
   int globalVertexNum = 1;
@@ -2238,20 +2238,18 @@ bool ResourceManager::outputMeshMetaDataToObj(
     CollisionMeshData& meshData =
         meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
             ->getCollisionMeshData();
-    Cr::Utility::Directory::appendString(
-        filepath + "/" + new_filename,
-        "g part_" + std::to_string(numParts) + " mesh\n");
+    Mn::Utility::formatInto(out, out.size(), "{0}{1} {2}", "g part_", numParts,
+                            "mesh\n");
     for (int ix = 0; ix < meshData.indices.size(); ix += 3) {
-      Cr::Utility::Directory::appendString(
-          filepath + "/" + new_filename,
-          "f " + std::to_string(meshData.indices[ix] + globalVertexNum) + ' ' +
-              std::to_string(meshData.indices[ix + 1] + globalVertexNum) + ' ' +
-              std::to_string(meshData.indices[ix + 2] + globalVertexNum) +
-              '\n');
+      Mn::Utility::formatInto(out, out.size(), "{0} {1} {2} {3}{4}", "f",
+                              meshData.indices[ix] + globalVertexNum,
+                              meshData.indices[ix + 1] + globalVertexNum,
+                              meshData.indices[ix + 2] + globalVertexNum, "\n");
     }
     numParts++;
     globalVertexNum += meshData.positions.size();
   }
+  Cr::Utility::Directory::appendString(filepath + "/" + new_filename, out);
 
   return success;
 }
@@ -2383,6 +2381,8 @@ void ResourceManager::createConvexHullDecomposition(
   if (saveCHDToObj) {
     std::string objDirectory = Cr::Utility::Directory::join(
         Corrade::Utility::Directory::current(), "data/VHACD_outputs");
+    Mn::Debug() << CHDFilename;
+    Mn::Debug() << "Check ^";
     bool fileCreated =
         outputMeshMetaDataToObj(CHDFilename, "CHDTest.obj", objDirectory);
   }
