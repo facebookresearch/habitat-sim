@@ -161,13 +161,13 @@ void declareBaseAttributesManager(py::module& m,
            "force_registration"_a = false)
       .def("get_template_by_ID",
            static_cast<AttribsPtr (MgrClass::*)(int)>(
-               &MgrClass::getObjectCopyByID),
+               &MgrClass::getObjectOrCopyByID),
            R"(This returns a copy of the template specified by the passed
              ID if it exists, and NULL if it does not.)",
            "ID"_a)
       .def("get_template_by_handle",
            static_cast<AttribsPtr (MgrClass::*)(const std::string&)>(
-               &MgrClass::getObjectCopyByHandle),
+               &MgrClass::getObjectOrCopyByHandle),
            R"(This returns a copy of the template specified by the passed
              handle if it exists, and NULL if it does not.)",
            "handle"_a);
