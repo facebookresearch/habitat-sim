@@ -175,7 +175,7 @@ class MetadataMediator {
   }  // MetadataMediator::getStageAttributesManager
 
   /**
-   * @brief Return current physics manager attributes.
+   * @brief Return a copy of the current physics manager attributes.
    */
   attributes::PhysicsManagerAttributes::ptr
   getCurrentPhysicsManagerAttributes() {

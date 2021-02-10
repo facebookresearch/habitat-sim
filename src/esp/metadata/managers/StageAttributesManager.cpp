@@ -27,7 +27,7 @@ StageAttributesManager::StageAttributesManager(
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
     : AbstractObjectAttributesManager<StageAttributes,
-                                      core::ManagedContainerAccess::Copy>::
+                                      core::ManagedObjectAccess::Copy>::
           AbstractObjectAttributesManager("Stage", "stage_config.json"),
       objectAttributesMgr_(std::move(objectAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),

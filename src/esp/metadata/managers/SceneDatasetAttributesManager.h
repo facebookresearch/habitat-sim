@@ -15,12 +15,12 @@ namespace metadata {
 namespace managers {
 class SceneDatasetAttributesManager
     : public AttributesManager<attributes::SceneDatasetAttributes,
-                               core::ManagedContainerAccess::Share> {
+                               core::ManagedObjectAccess::Share> {
  public:
   SceneDatasetAttributesManager(
       PhysicsAttributesManager::ptr physicsAttributesMgr)
       : AttributesManager<attributes::SceneDatasetAttributes,
-                          core::ManagedContainerAccess::Share>::
+                          core::ManagedObjectAccess::Share>::
             AttributesManager("Dataset", "scene_dataset_config.json"),
         physicsAttributesManager_(physicsAttributesMgr) {
     buildCtorFuncPtrMaps();
