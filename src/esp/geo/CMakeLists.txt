@@ -6,6 +6,7 @@ add_library(
   geo.h
   OBB.cpp
   OBB.h
+  VoxelGrid.h
 )
 
 target_link_libraries(
