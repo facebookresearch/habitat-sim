@@ -18,13 +18,17 @@ TOOL_PATH = osp.realpath(
     )
 )
 
+IMAGE_CONVERTER = "build/utils/imageconverter/magnum-imageconverter"
+
 
 def build_parser(
     parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
     if parser is None:
         parser = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            description="Tool to convert all glbs in a given directory to basis compressed glbs."
+            "  This allows them to be loaded faster onto the GPU and use between 4x and 6x less GPU memory.",
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
 
     parser.add_argument(
@@ -74,7 +78,7 @@ def convert_image_to_basis(img: str) -> None:
 
     _ = subprocess.check_output(
         shlex.split(
-            f"build/utils/imageconverter/magnum-imageconverter {img} {basis_img} --converter BasisImageConverter -c {settings}"
+            f"{IMAGE_CONVERTER} {img} {basis_img} --converter BasisImageConverter -c {settings}"
         )
     )
 
@@ -86,14 +90,14 @@ def package_meshes(mesh_name: str) -> None:
     tool = osp.join(TOOL_PATH, "gltf2basis.py")
     tool = osp.relpath(tool, output_dir)
 
-    subprocess.check_output(
+    _ = subprocess.check_output(
         shlex.split(f"{tool} {base_mesh_name}.gltf {base_mesh_name}.basis.gltf"),
         cwd=output_dir,
     )
 
     tool = osp.join(TOOL_PATH, "gltf2glb.py")
     tool = osp.relpath(tool, output_dir)
-    subprocess.check_output(
+    _ = subprocess.check_output(
         shlex.split(f"{tool} {base_mesh_name}.basis.gltf --bundle-images"),
         cwd=output_dir,
     )
@@ -151,6 +155,14 @@ def clean_up(folder: str) -> None:
 
 def main():
     args = build_parser().parse_args()
+    if not osp.exists(IMAGE_CONVERTER):
+        raise RuntimeError(
+            "Could not find imageconverter.  "
+            "Habitat needs to be built with '--build-basis-compressor' to use this tool."
+        )
+
+    if not osp.exists(TOOL_PATH):
+        raise RuntimeError("Could not find magnum tools we use to convert meshes")
 
     files = glob.glob(osp.join(args.basedir, "**", "*.glb"), recursive=True)
     files = [f for f in files if ".basis." not in f]
