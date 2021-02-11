@@ -2200,7 +2200,7 @@ bool ResourceManager::outputMeshMetaDataToObj(
   // write vertex info to file
   int numVertices = 0;
   std::string out = "";
-  for (MeshTransformNode node : metaData.root.children) {
+  for (const MeshTransformNode& node : metaData.root.children) {
     CollisionMeshData& meshData =
         meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
             ->getCollisionMeshData();
@@ -2217,7 +2217,7 @@ bool ResourceManager::outputMeshMetaDataToObj(
   // Now do second pass to write indices for each group (node)
   int globalVertexNum = 1;
   int numParts = 1;
-  for (MeshTransformNode node : metaData.root.children) {
+  for (const MeshTransformNode& node : metaData.root.children) {
     CollisionMeshData& meshData =
         meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
             ->getCollisionMeshData();
@@ -2249,8 +2249,7 @@ void ResourceManager::createConvexHullDecomposition(
     const bool saveCHDToObj) {
   if (resourceDict_.count(filename) == 0) {
     // load/check for render MeshMetaData and load assets
-    bool renderMeshSuccess =
-        loadObjectMeshDataFromFile(filename, filename, "render", true);
+    loadObjectMeshDataFromFile(filename, filename, "render", true);
 
   }  // if no render asset exists
 
@@ -2259,9 +2258,9 @@ void ResourceManager::createConvexHullDecomposition(
   joinedMesh = createJoinedCollisionMesh(filename);
 
   // use VHACD
-  bool res = interfaceVHACD->Compute(
-      &joinedMesh->vbo[0][0], joinedMesh->vbo.size(), &joinedMesh->ibo[0],
-      joinedMesh->ibo.size() / 3, params);
+  interfaceVHACD->Compute(&joinedMesh->vbo[0][0], joinedMesh->vbo.size(),
+                          &joinedMesh->ibo[0], joinedMesh->ibo.size() / 3,
+                          params);
 
   Cr::Utility::Debug() << "== VHACD ran ==";
 
@@ -2271,7 +2270,7 @@ void ResourceManager::createConvexHullDecomposition(
   int nConvexHulls = interfaceVHACD->GetNConvexHulls();
   Cr::Utility::Debug() << "Num Convex Hulls: " << nConvexHulls;
   Cr::Utility::Debug() << "Resolution: " << params.m_resolution;
-  VHACD::IVHACD::ConvexHull ch;
+  VHACD::IVHACD::ConvexHull ch{};
   std::unique_ptr<GenericMeshData> genCHMeshData;
   for (unsigned int p = 0; p < nConvexHulls; ++p) {
     // for each convex hull, transfer the data to a newly created  MeshData
@@ -2298,10 +2297,10 @@ void ResourceManager::createConvexHullDecomposition(
     Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::owned(
         Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
                             {},
-                            std::move(indices),
+                            indices,
                             Mn::Trade::MeshIndexData{indices},
                             {},
-                            std::move(positions),
+                            positions,
                             {Mn::Trade::MeshAttributeData{
                                 Mn::Trade::MeshAttribute::Position,
                                 Cr::Containers::arrayView(positions)}}});
@@ -2367,8 +2366,7 @@ void ResourceManager::createConvexHullDecomposition(
         Cr::Utility::Directory::filename(
             Cr::Utility::Directory::splitExtension(CHDFilename).first) +
         ".obj";
-    bool fileCreated =
-        outputMeshMetaDataToObj(CHDFilename, new_filename, objDirectory);
+    outputMeshMetaDataToObj(CHDFilename, new_filename, objDirectory);
   }
 }
 #endif
