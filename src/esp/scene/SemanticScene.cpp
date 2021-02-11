@@ -55,6 +55,7 @@ bool SemanticScene::
       }
     } catch (...) {
       // if error thrown, assume it is because file load attempt fails
+      success = false;
     }
   }
   // should only reach here if not successfully loaded
