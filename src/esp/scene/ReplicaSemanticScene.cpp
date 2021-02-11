@@ -9,8 +9,6 @@
 #include <sophus/se3.hpp>
 #include <string>
 
-#include <Corrade/Utility/String.h>
-
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -26,8 +24,7 @@ bool SemanticScene::loadReplicaHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
     const quatf& worldRotation /* = quatf::Identity() */) {
-  if (!io::exists(houseFilename)) {
-    LOG(ERROR) << "Could not load file " << houseFilename;
+  if (!checkFileExists(houseFilename, "loadReplicaHouse")) {
     return false;
   }
 
@@ -35,9 +32,9 @@ bool SemanticScene::loadReplicaHouse(
   scene.objects_.clear();
 
   // top-level scene
-  VLOG(1) << "Parsing " << houseFilename;
+  VLOG(1) << "loadReplicaHouse::Parsing " << houseFilename;
   const auto& json = io::parseJsonFile(houseFilename);
-  VLOG(1) << "Parsed.";
+  VLOG(1) << "loadReplicaHouse::Parsed.";
 
   // categories
   const auto& categories = json["classes"].GetArray();

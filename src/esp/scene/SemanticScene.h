@@ -5,6 +5,7 @@
 #ifndef ESP_SCENE_SEMANTICSCENE_H_
 #define ESP_SCENE_SEMANTICSCENE_H_
 
+#include <Corrade/Utility/Directory.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -81,21 +82,54 @@ class SemanticScene {
     }
   }
 
-  //! load SemanticScene from a Gibson house format file
-  static bool loadGibsonHouse(
+  /**
+   * @brief Attempt to load SemanticScene descriptor from an unknown file type.
+   * @param filename the name of the house file to attempt to load
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scen up on load.
+   * @return successfully loaded
+   */
+  static bool loadSemanticSceneDescriptor(
       const std::string& filename,
       SemanticScene& scene,
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
 
-  //! load SemanticScene from a Matterport3D House format filename
+  /**
+   * @brief Attempt to load SemanticScene from a Gibson dataset house format
+   * file
+   * @param filename the name of the house file to attempt to load
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scen up on load.
+   * @return successfully loaded
+   */
+  static bool loadGibsonHouse(
+      const std::string& filename,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
+  /**
+   * @brief Attempt to load SemanticScene from a Matterport3D dataset house
+   * format file
+   * @param filename the name of the house file to attempt to load
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scen up on load.
+   * @return successfully loaded
+   */
   static bool loadMp3dHouse(
       const std::string& filename,
       SemanticScene& scene,
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
 
-  //! load SemanticScene from a SUNCG house format file
+  /**
+   * @brief Attempt to load SemanticScene from a Replica dataset house format
+   * file
+   * @param filename the name of the house file to attempt to load
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scen up on load.
+   * @return successfully loaded
+   */
   static bool loadReplicaHouse(
       const std::string& filename,
       SemanticScene& scene,
@@ -108,6 +142,22 @@ class SemanticScene {
                              const quatf& rotation = quatf::Identity());
 
  protected:
+  /**
+   * @brief Verify a requested file exists.
+   * @param houseFile the file to attempt to load
+   * @param srcFunc calling function name to be displayed in failure message
+   * @return whether found or not
+   */
+  static bool checkFileExists(const std::string& filename,
+                              const std::string& srcFunc) {
+    if (!Cr::Utility::Directory::exists(filename)) {
+      LOG(ERROR) << "SemanticScene::" << srcFunc << " : File " << filename
+                 << " does not exist.  Aborting load.";
+      return false;
+    }
+    return true;
+  }  // checkFileExists
+
   std::string name_;
   std::string label_;
   box3f bbox_;

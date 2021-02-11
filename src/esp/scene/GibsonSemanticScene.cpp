@@ -8,8 +8,6 @@
 #include <map>
 #include <string>
 
-#include <Corrade/Utility/Directory.h>
-
 #include "esp/io/json.h"
 
 namespace Cr = Corrade;
@@ -21,8 +19,7 @@ constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
 bool SemanticScene::
     loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
-  if (!Cr::Utility::Directory::exists(houseFilename)) {
-    LOG(ERROR) << "Could not load file " << houseFilename;
+  if (!checkFileExists(houseFilename, "loadGibsonHouse")) {
     return false;
   }
 
@@ -30,9 +27,9 @@ bool SemanticScene::
   scene.objects_.clear();
 
   // top-level scene
-  VLOG(1) << "Parsing " << houseFilename;
+  VLOG(1) << "loadGibsonHouse::Parsing " << houseFilename;
   const auto& json = io::parseJsonFile(houseFilename);
-  VLOG(1) << "Parsed.";
+  VLOG(1) << "loadGibsonHouse::Parsed.";
 
   std::unordered_map<std::string, int> categories;
 

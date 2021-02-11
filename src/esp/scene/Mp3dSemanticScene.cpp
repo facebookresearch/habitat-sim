@@ -87,8 +87,7 @@ bool SemanticScene::loadMp3dHouse(
     SemanticScene& scene,
     const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                        geo::ESP_GRAVITY) */ ) {
-  if (!io::exists(houseFilename)) {
-    LOG(ERROR) << "Could not load file " << houseFilename;
+  if (!checkFileExists(houseFilename, "loadMp3dHouse")) {
     return false;
   }
 
@@ -143,7 +142,9 @@ bool SemanticScene::loadMp3dHouse(
   std::string header;
   std::getline(ifs, header);
   if (header != "ASCII 1.1") {
-    LOG(ERROR) << "Unsupported House format header " << header;
+    LOG(ERROR) << "SemanticScene::loadMp3dHouse : Unsupported Mp3d House "
+                  "format header "
+               << header << " in file name " << houseFilename;
     return false;
   }
 
