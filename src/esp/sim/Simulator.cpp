@@ -1076,6 +1076,7 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
 std::string Simulator::convexHullDecomposition(
     const std::string& filename,
     const assets::ResourceManager::VHACDParameters& params,
@@ -1126,6 +1127,7 @@ std::string Simulator::convexHullDecomposition(
   objAttrMgr->registerObject(CHDObjAttr, CHDFilename, true);
   return CHDObjAttr->getHandle();
 }
+#endif
 
 agent::Agent::ptr Simulator::addAgent(
     const agent::AgentConfiguration& agentConfig,

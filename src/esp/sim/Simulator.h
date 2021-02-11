@@ -845,6 +845,7 @@ class Simulator {
       const assets::AssetInfo& assetInfo,
       const assets::RenderAssetInstanceCreationInfo& creation);
 
+#ifdef ESP_BUILD_WITH_VHACD
   /**
    * @brief Runs convex hull decomposition on a specified file. Creates an
    * object attributes referencing a newly created convex hull asset, and
@@ -865,6 +866,7 @@ class Simulator {
           assets::ResourceManager::VHACDParameters(),
       const bool renderCHD = false,
       const bool saveCHDToObj = false);
+#endif
 
  protected:
   Simulator(){};

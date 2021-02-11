@@ -42,7 +42,9 @@
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 
+#ifdef ESP_BUILD_WITH_VHACD
 #include <VHACD.h>
+#endif
 
 // forward declarations
 namespace Magnum {
@@ -86,6 +88,7 @@ class ResourceManager {
   /** @brief Convenience typedef for Importer class */
   using Importer = Mn::Trade::AbstractImporter;
 
+#ifdef ESP_BUILD_WITH_VHACD
   struct VHACDParameters : VHACD::IVHACD::Parameters {
     VHACDParameters() {
       m_oclAcceleration = false;  // OCL Acceleration does not work on VHACD
@@ -94,6 +97,7 @@ class ResourceManager {
   };
 
   VHACD::IVHACD* interfaceVHACD;
+#endif
 
   /**
    * @brief Flag
@@ -338,9 +342,8 @@ class ResourceManager {
    * @brief Converts a MeshMetaData into a obj file.
    *
    * @param filename The MeshMetaData filename to be converted to obj.
+   * @param new_filename The name of the file that will be created.
    * @param filepath The file path, including new file name, for the obj file.
-   * @param params VHACD params that specify resolution, vertices per convex
-   * hull, etc.
    */
   bool outputMeshMetaDataToObj(const std::string& filename,
                                const std::string& new_filename,
@@ -354,6 +357,7 @@ class ResourceManager {
    */
   u_int getNumberOfResource(const std::string& resourceName);
 
+#ifdef ESP_BUILD_WITH_VHACD
   /**
    * @brief Runs convex hull decomposition on a specified file.
    *
@@ -369,6 +373,7 @@ class ResourceManager {
       const std::string& CHDFilename,
       const VHACDParameters& params = VHACDParameters(),
       const bool saveCHDToObj = false);
+#endif
   /**
    * @brief Add an object from a specified object template handle to the
    * specified @ref DrawableGroup as a child of the specified @ref

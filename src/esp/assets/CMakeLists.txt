@@ -78,11 +78,12 @@ target_link_libraries(
          MagnumPlugins::StbImageImporter
          MagnumPlugins::StbImageConverter
          MagnumPlugins::TinyGltfImporter
-         vhacd
   PRIVATE geo io
 )
 
-#target_include_directories(vhacd PUBLIC "${DEPS_DIR}/v-hacd/src/VHACD_Lib/public")
+if(BUILD_WITH_VHACD)
+  target_link_libraries(assets PUBLIC vhacd)
+endif()
 
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(

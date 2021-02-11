@@ -91,7 +91,9 @@ ResourceManager::ResourceManager(
       importerManager_("nonexistent")
 #endif
 {
+#ifdef ESP_BUILD_WITH_VHACD
   interfaceVHACD = VHACD::CreateVHACD();
+#endif
   initDefaultLightSetups();
   initDefaultMaterials();
   buildImporters();
@@ -2239,6 +2241,7 @@ u_int ResourceManager::getNumberOfResource(const std::string& resourceName) {
   return resourceDict_.count(resourceName);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
 void ResourceManager::createConvexHullDecomposition(
     const std::string& filename,
     const std::string& CHDFilename,
@@ -2368,6 +2371,6 @@ void ResourceManager::createConvexHullDecomposition(
         outputMeshMetaDataToObj(CHDFilename, new_filename, objDirectory);
   }
 }
-
+#endif
 }  // namespace assets
 }  // namespace esp

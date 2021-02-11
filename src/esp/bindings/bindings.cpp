@@ -19,6 +19,7 @@ void initEspBindings(py::module& m) {
   py::class_<box3f>(m, "BBox")
       .def_property_readonly("sizes", &box3f::sizes)
       .def_property_readonly("center", &box3f::center);
+#ifdef ESP_BUILD_WITH_VHACD
   py::class_<assets::ResourceManager::VHACDParameters,
              assets::ResourceManager::VHACDParameters::ptr>(m,
                                                             "VHACDParameters")
@@ -65,6 +66,7 @@ void initEspBindings(py::module& m) {
           "convex_hull_approximation",
           &assets::ResourceManager::VHACDParameters::m_convexhullApproximation,
           R"(Enable/disable approximation when computing convex-hulls (default=1, range={0,1}.)");
+#endif
 }
 
 namespace core {
