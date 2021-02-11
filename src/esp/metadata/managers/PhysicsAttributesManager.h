@@ -19,11 +19,11 @@ namespace metadata {
 namespace managers {
 class PhysicsAttributesManager
     : public AttributesManager<attributes::PhysicsManagerAttributes,
-                               core::ManagedContainerAccess::Copy> {
+                               core::ManagedObjectAccess::Copy> {
  public:
   PhysicsAttributesManager()
       : AttributesManager<attributes::PhysicsManagerAttributes,
-                          core::ManagedContainerAccess::Copy>::
+                          core::ManagedObjectAccess::Copy>::
             AttributesManager("Physics Manager", "physics_config.json") {
     buildCtorFuncPtrMaps();
   }
