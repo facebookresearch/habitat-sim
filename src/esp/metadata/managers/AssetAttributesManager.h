@@ -76,7 +76,8 @@ enum class PrimObjTypes : uint32_t {
 };
 namespace managers {
 class AssetAttributesManager
-    : public AttributesManager<attributes::AbstractPrimitiveAttributes> {
+    : public AttributesManager<attributes::AbstractPrimitiveAttributes,
+                               core::ManagedObjectAccess::Copy> {
  public:
   /**
    * @brief Constant Map holding names of all Magnum 3D primitive classes
@@ -86,7 +87,8 @@ class AssetAttributesManager
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
 
   AssetAttributesManager()
-      : AttributesManager<attributes::AbstractPrimitiveAttributes>::
+      : AttributesManager<attributes::AbstractPrimitiveAttributes,
+                          core::ManagedObjectAccess::Copy>::
             AttributesManager("Primitive Asset", "prim_config.json") {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
@@ -186,7 +188,8 @@ class AssetAttributesManager
   }  // AssetAttributeManager::getTemplateHandlesByPrimType
 
   /**
-   * @brief Return the default capsule template, either solid or wireframe.
+   * @brief Return a copy of the default capsule template, either solid or
+   * wireframe.
    * @param isWireFrame whether should be wireframe or solid template
    * @return appropriately cast template
    */

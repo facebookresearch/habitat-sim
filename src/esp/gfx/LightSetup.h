@@ -24,6 +24,14 @@ enum class LightPositionModel {
   OBJECT = 2,
 };
 
+enum class LightType {
+  /** @brief The type of light described by a light info*/
+  Point = 0,
+  Directional = 1,
+  Spot = 2,
+
+};
+
 /** @brief Contains a single light's information. */
 struct LightInfo {
   // Vector4 homogeneous-coordinate position

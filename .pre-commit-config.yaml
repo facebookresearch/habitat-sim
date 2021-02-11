@@ -5,7 +5,7 @@ default_language_version:
 
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.3.0
+    rev: v3.4.0
     hooks:
     -   id: trailing-whitespace
     -   id: check-added-large-files
@@ -23,6 +23,7 @@ repos:
     -   id: debug-statements
     -   id: mixed-line-ending
         args: ['--fix=lf']
+    -   id: requirements-txt-fixer
 
 -   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
     rev: v2.0.0
@@ -33,7 +34,7 @@ repos:
         args: [--autofix]
 
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.6.4
+    rev: 5.7.0
     hooks:
     -   id: isort
         exclude: docs/
@@ -62,16 +63,16 @@ repos:
         - flake8-builtins==1.5.3
         - flake8-comprehensions==3.3.0
         - flake8-return==1.1.2
-        - flake8-simplify==0.11.0
+        - flake8-simplify==0.13.0
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.790'
+    rev: 'v0.800'
     hooks:
     -   id: mypy
         pass_filenames: false
 
 -   repo: https://github.com/seddonym/import-linter
-    rev: 1ac62d58575235ada887e594819ed294c1b1d2b2
+    rev: v1.2.1
     hooks:
     -   id: import-linter
 
@@ -114,7 +115,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v7.11.0
+    rev: v7.18.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]

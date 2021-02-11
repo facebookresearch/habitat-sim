@@ -12,13 +12,44 @@ namespace esp {
 namespace metadata {
 
 namespace managers {
+
+/**
+ * @brief This enum class describes whether an object instance position is
+ * relative to its COM or the asset's local origin.  Depending on this value, we
+ * may take certain actions when instantiating a scene described by a scene
+ * instance. For example, scene instances exported from Blender will have no
+ * conception of an object's configured COM, and so will require adjustment to
+ * translations to account for COM location when the object is placed*/
+enum class SceneInstanceTranslationOrigin {
+  /**
+   * @brief Default value - in the case of object instances, this means use the
+   * specified scene instance default; in the case of a scene instance, this
+   * means do not correct for COM.
+   */
+  Unknown = -1,
+  /**
+   * @brief Indicates scene instance objects were placed without knowledge of
+   * their COM location, and so need to be corrected when placed in scene in
+   * Habitat. For example, they were exported from an external editor like
+   * Blender.
+   */
+  AssetLocal,
+  /**
+   * @brief Indicates scene instance objects' location were recorded at their
+   * COM location, and so do not need correction.  For example they were
+   * exported from Habitat-sim.
+   */
+  COM
+};
+
 class SceneAttributesManager
-    : public AttributesManager<attributes::SceneAttributes> {
+    : public AttributesManager<attributes::SceneAttributes,
+                               core::ManagedObjectAccess::Copy> {
  public:
   SceneAttributesManager()
-      : AttributesManager<attributes::SceneAttributes>::AttributesManager(
-            "Scene Instance",
-            "scene_instance.json") {
+      : AttributesManager<attributes::SceneAttributes,
+                          core::ManagedObjectAccess::Copy>::
+            AttributesManager("Scene Instance", "scene_instance.json") {
     buildCtorFuncPtrMaps();
   }
 
@@ -51,7 +82,26 @@ class SceneAttributesManager
   void setValsFromJSONDoc(attributes::SceneAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
+  /**
+   * @brief This will return a @ref
+   * attributes::SceneObjectInstanceAttributes object with passed handle.
+   */
+  attributes::SceneObjectInstanceAttributes::ptr createEmptyInstanceAttributes(
+      const std::string& handle) {
+    return attributes::SceneObjectInstanceAttributes::create(handle);
+  }
+
  protected:
+  /**
+   * @brief Gets the int value of the appropriate enum corresponding to the
+   * desired Translation Origin used to determine the location of the asset in
+   * the scene instance.  The purpose of this value is to know whether to
+   * correct placement by location of COM of object when instance is created.
+   * @param jsonDoc document where value may be specified.
+   * @return the int value to set for translation_origin in instance attributes.
+   */
+  int getTranslationOriginVal(const io::JsonGenericValue& jsonDoc);
+
   /**
    * @brief Used Internally.  Create a @ref
    * esp::metadata::attributes::SceneObjectInstanceAttributes object from the
@@ -120,6 +170,9 @@ class SceneAttributesManager
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as required by
    * AttributesManager<PhysicsSceneAttributes::ptr>
+   *
+   * NOTE : currently this will only perform a shallow copy of the
+   * SceneAttributes.
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["SceneAttributes"] =
