@@ -38,34 +38,41 @@ class VoxelGrid {
   VoxelGrid(vec3f voxelSize, vec3f voxelGridDimensions);
 
   // Gets a voxel pointer based on local coords (coords.y * x.size * z.size +
-  // coords.z * x.size + coords.x) O(1) access
+  // coords.z * x.size + coords.x) O(1) access. Returns nullptr if invalid
+  // coordinates.
   Voxel* getVoxelByLocalCoords(vec3i coords);
 
   // First convert coords to integer voxel coordinates, then apply globalOffset
+  // * rotation
   vec3i convertGlobalCoordsToLocal(vec3f coords);
 
   // Apply globalOffset, multiply each
-  vec3i convertLocalCoordsToGlobal(vec3i coords);
+  vec3i convertLocalCoordsToGlobal(vec3i& coords);
 
-  // just converts coords to local coords, then getVoxelByLocalCoords
-  Voxel* getVoxelByGlobalCoords(vec3f);
+  // just converts coords to local coords, then getVoxelByLocalCoords. Returns
+  // nullptr if invalid coordinates.
+  Voxel* getVoxelByGlobalCoords(vec3f& coords);
 
   // iterates through each voxel of smaller VoxelGrid, applies relevant offset,
   // and returns true if the VoxelGrids have a shared filled voxel. (Q: Should
   // this work if the VoxelGrids have different voxelSizes?) O(N^3) <-- Q: can
   // we do better?
-  bool checkForCollision(VoxelGrid);
+  bool checkForCollision(VoxelGrid v_grid);
 
   vec3i getVoxelGridDimensions();
   // The unit lengths for each voxel dimension
   vec3f getVoxelSize();
+
   // The relative positioning of the voxel grid to the simulation (May not
   // need). VoxelGrid corner is anchored to the world origin, so grid[0] is at
   // global position VoxelSize/2 + offset.dot(VoxelSize)
   vec3i getGlobalOffset();
 
   // Convert coords to voxel coordinates
-  void setGlobalOffset(vec3f coords);
+  void setGlobalOffset(const vec3f& coords);
+
+  // found file format: svx - https://abfab3d.com/svx-format/
+  bool saveToSVXFile(const std::string& filepath, const std::string& filename);
 
  private:
   // The number of voxels on the x, y, and z dimensions of the grid
@@ -77,12 +84,15 @@ class VoxelGrid {
   // global position VoxelSize/2 + offset.dot(VoxelSize)
   vec3i globalOffset;
 
+  // The rotation of the Object.
+  quatf rotation;
+
   /* a pointer to an array of pointers to Voxels.
   Alternatives:
     Octtree: Pros - memory efficient. Voxels can possibly be of varying sizes?
-  Cons - can't represent SDF well, complicated Bitmask: Pros - maybe very fast
-  collision detection? Cons - Can't represent any other info, complicated
-  implementation
+  Cons - can't represent SDF well, complicated
+  Bitmask: Pros - maybe very fast collision detection? Cons - Can't represent
+  any other info, complicated implementation
 */
   Voxel** grid[];
 };
@@ -91,6 +101,13 @@ class VoxelGrid {
 }  // namespace esp
 
 #endif
+
+// OPEN QUESTIONS
+// How will this be consumed in the Simulator (Could make this a property of
+// MeshMetaData? Could make a voxelgridDict_ where each VoxelGrid is registered
+// under it's corresponding MeshMetaData key in resourceDict_) How to represent
+// rotations of a voxel field? If given some rotation, I suppose it just rotates
+// around the voxel field center? If this is the case, I need to make sure
 
 // Pseudo code for running in python
 // obj_template
