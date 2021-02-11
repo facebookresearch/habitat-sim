@@ -211,6 +211,9 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   const std::string semanticSceneDescFilename =
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(
           curSceneInstanceAttributes->getSemanticSceneHandle());
+
+  bool fileExists = false;
+  bool success = false;
   if (semanticSceneDescFilename.compare("") != 0) {
     // semantic scene descriptor might not exist, so
     semanticScene_ = nullptr;
@@ -228,83 +231,54 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
     // the scene instance.
 
     // first we will check if the explicitly specified ssd
-    bool fileExists = FileUtil::exists(semanticSceneDescFilename);
-    bool success = false;
+    fileExists = FileUtil::exists(semanticSceneDescFilename);
     using Corrade::Utility::String::endsWith;
     const std::string msgPrefix =
         "Simulator::setSceneInstanceAttributes : Attempt to load ";
     if (fileExists) {
       // given SSD file exists
-      if (endsWith(semanticSceneDescFilename, "info_semantic.json")) {
+      if (endsWith(semanticSceneDescFilename, ".house")) {
+        success = scene::SemanticScene::loadMp3dHouse(semanticSceneDescFilename,
+                                                      *semanticScene_);
+        LOG(INFO) << msgPrefix
+                  << "Mp3d w/existing file : " << semanticSceneDescFilename
+                  << " : " << (success ? "" : "not ") << "successful";
+
+      } else if (endsWith(semanticSceneDescFilename, ".scn")) {
+        success = scene::SemanticScene::loadGibsonHouse(
+            semanticSceneDescFilename, *semanticScene_);
+        LOG(INFO) << msgPrefix
+                  << "Gibson w/existing file : " << semanticSceneDescFilename
+                  << " : " << (success ? "" : "not ") << "successful";
+      } else if (endsWith(semanticSceneDescFilename, "info_semantic.json")) {
         success = scene::SemanticScene::loadReplicaHouse(
             semanticSceneDescFilename, *semanticScene_);
         LOG(INFO) << msgPrefix
                   << "Replica w/existing file : " << semanticSceneDescFilename
                   << " : " << (success ? "" : "not ") << "successful";
-      } else {
-        if (endsWith(semanticSceneDescFilename, ".house")) {
-          success = scene::SemanticScene::loadMp3dHouse(
-              semanticSceneDescFilename, *semanticScene_);
-          LOG(INFO) << msgPrefix
-                    << "Mp3d w/existing file : " << semanticSceneDescFilename
-                    << " : " << (success ? "" : "not ") << "successful";
-
-        } else if (endsWith(semanticSceneDescFilename, ".scn")) {
-          success = scene::SemanticScene::loadGibsonHouse(
-              semanticSceneDescFilename, *semanticScene_);
-          LOG(INFO) << msgPrefix
-                    << "Gibson w/existing file : " << semanticSceneDescFilename
-                    << " : " << (success ? "" : "not ") << "successful";
-        }
       }
-    }
-
-    if (!fileExists || !success) {
-      // get stage attributes for current scene instance
-      auto stageAttributes = metadataMediator_->getNamedStageAttributesCopy(
-          curSceneInstanceAttributes->getStageInstance()->getHandle());
-      if (stageAttributes != nullptr) {
-        // assetType of stage is used to specify semanctic scene descriptor
-        // format
-        assets::AssetType assetType = static_cast<assets::AssetType>(
-            stageAttributes->getRenderAssetType());
-        // semantic scene descriptor might not exist, so
-        semanticScene_ = nullptr;
-        semanticScene_ = scene::SemanticScene::create();
-        switch (assetType) {
-          case assets::AssetType::INSTANCE_MESH: {
-            const std::string tmpFName =
-                FileUtil::join(FileUtil::path(semanticSceneDescFilename),
-                               "info_semantic.json");
-            if (FileUtil::exists(tmpFName)) {
-              scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
-            }
-            break;
-          }
-          case assets::AssetType::MP3D_MESH: {
-            if (FileUtil::exists(semanticSceneDescFilename)) {
-              if (endsWith(semanticSceneDescFilename, ".house")) {
-                scene::SemanticScene::loadMp3dHouse(semanticSceneDescFilename,
-                                                    *semanticScene_);
-              } else if (endsWith(semanticSceneDescFilename, ".scn")) {
-                scene::SemanticScene::loadGibsonHouse(semanticSceneDescFilename,
-                                                      *semanticScene_);
-              }
-            }
-            break;
-          }
-          case assets::AssetType::SUNCG_SCENE: {
-            // SUNCG is not handled anymore
-            // scene::SemanticScene::loadSuncgHouse(stageAttributesHandle,
-            // *semanticScene_);
-            break;
-          }
-          default:
-            break;
-        }  // end switch
-      }    // stage attributes != nullptr
-    }  // if semantic scene descriptor file name specified has unknown extension
+    } else {
+      // attempt to look for specified file failed, attempt to build new file.
+      // attempt old method of searching in path specified for
+      // info_semantic.json file for replica dataset
+      const std::string tmpFName = FileUtil::join(
+          FileUtil::path(semanticSceneDescFilename), "info_semantic.json");
+      if (FileUtil::exists(tmpFName)) {
+        success =
+            scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
+        LOG(INFO) << msgPrefix
+                  << "Replica w/existing constructed file : " << tmpFName
+                  << " in directory with " << semanticSceneDescFilename << " : "
+                  << (success ? "" : "not ") << "successful";
+      }
+    }  // if given SSD file name specifiedd exists
   }    // if semantic scene descriptor specified in scene instance
+  LOG(WARNING)
+      << "Simulator::setSceneInstanceAttributes : All attempts to load "
+         "SSD with SceneAttributes-provided name "
+      << semanticSceneDescFilename << " : exist : " << fileExists
+      << " : loaded as expected type : " << success;
+
   // 3. Specify frustumCulling based on value either from config (if override
   // is specified) or from scene instance attributes.
   frustumCulling_ = config_.frustumCulling;
