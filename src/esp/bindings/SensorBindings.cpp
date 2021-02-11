@@ -17,7 +17,6 @@
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
 #include "esp/sensor/Sensor.h"
-#include "esp/sensor/SensorFactory.h"
 #include "esp/sim/Simulator.h"
 
 namespace py = pybind11;

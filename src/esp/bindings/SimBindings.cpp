@@ -93,14 +93,10 @@ void initSimBindings(py::module& m) {
       .def_property_readonly(
           "gfx_replay_manager", &Simulator::getGfxReplayManager,
           R"(Use gfx_replay_manager for replay recording and playback.)")
-
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)
       .def("close", &Simulator::close)
-      .def(
-          "add_sensor_to_object", &Simulator::addSensorToObject,
-          R"(Initialize sensor and attach to sceneNode of a particular object)")
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
       .def_property(
