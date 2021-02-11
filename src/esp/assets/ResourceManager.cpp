@@ -2360,10 +2360,12 @@ void ResourceManager::createConvexHullDecomposition(
   if (saveCHDToObj) {
     std::string objDirectory = Cr::Utility::Directory::join(
         Corrade::Utility::Directory::current(), "data/VHACD_outputs");
-    Mn::Debug() << CHDFilename;
-    Mn::Debug() << "Check ^";
+    std::string new_filename =
+        Cr::Utility::Directory::filename(
+            Cr::Utility::Directory::splitExtension(CHDFilename).first) +
+        ".obj";
     bool fileCreated =
-        outputMeshMetaDataToObj(CHDFilename, "CHDTest.obj", objDirectory);
+        outputMeshMetaDataToObj(CHDFilename, new_filename, objDirectory);
   }
 }
 

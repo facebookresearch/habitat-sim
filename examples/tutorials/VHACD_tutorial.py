@@ -135,7 +135,7 @@ def runVHACDSimulation(obj_path):
 
         # run VHACD, with params passed in and render
         new_handle_1 = sim.apply_convex_hull_decomposition(
-            obj_handle, params, True, False
+            obj_handle, params, True, True
         )
         new_obj_template_1 = obj_templates_mgr.get_template_by_handle(new_handle_1)
 
@@ -148,7 +148,9 @@ def runVHACDSimulation(obj_path):
         params.max_convex_hulls = 4
 
         # run VHACD, with params passed in and render
-        new_handle_2 = sim.apply_convex_hull_decomposition(obj_handle, params, True)
+        new_handle_2 = sim.apply_convex_hull_decomposition(
+            obj_handle, params, True, True
+        )
         new_obj_template_2 = obj_templates_mgr.get_template_by_handle(new_handle_2)
 
         obj_templates_mgr.register_template(new_obj_template_2, force_registration=True)
@@ -160,7 +162,9 @@ def runVHACDSimulation(obj_path):
         params.max_convex_hulls = 1
 
         # run VHACD, with params passed in and render
-        new_handle_3 = sim.apply_convex_hull_decomposition(obj_handle, params, True)
+        new_handle_3 = sim.apply_convex_hull_decomposition(
+            obj_handle, params, True, True
+        )
         new_obj_template_3 = obj_templates_mgr.get_template_by_handle(new_handle_3)
 
         obj_templates_mgr.register_template(new_obj_template_3, force_registration=True)
@@ -212,10 +216,10 @@ if __name__ == "__main__":
     # List of objects you want to execute the VHACD tests on.
     obj_paths = [
         "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_chair_01.glb",
-        "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_bowl_02.glb",
-        "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_lamp_01.glb",
-        "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_refrigerator.glb",
-        "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_shoe_01.glb",
+        # "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_bowl_02.glb",
+        # "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_lamp_01.glb",
+        # "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_refrigerator.glb",
+        # "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_shoe_01.glb",
     ]
     # create and show the video
     observations = []
