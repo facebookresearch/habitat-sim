@@ -1,6 +1,6 @@
 function install_92 {
     # Install MAGMA for CUDA 9.2
-    pushd /tmp
+    pushd /tmp || exit
     wget -q https://anaconda.org/pytorch/magma-cuda92/2.5.1/download/linux-64/magma-cuda92-2.5.1-1.tar.bz2
     tar -xvf magma-cuda92-2.5.1-1.tar.bz2
     mkdir -p /usr/local/cuda-9.2/magma
@@ -11,7 +11,7 @@ function install_92 {
 
 function install_100 {
     # Install MAGMA for CUDA 10.0
-    pushd /tmp
+    pushd /tmp || exit
     wget -q https://anaconda.org/pytorch/magma-cuda100/2.5.1/download/linux-64/magma-cuda100-2.5.1-1.tar.bz2
     tar -xvf magma-cuda100-2.5.1-1.tar.bz2
     mkdir -p /usr/local/cuda-10.0/magma
@@ -22,7 +22,7 @@ function install_100 {
 
 function install_101 {
     # Install MAGMA for CUDA 10.1
-    pushd /tmp
+    pushd /tmp || exit
     wget -q https://anaconda.org/pytorch/magma-cuda101/2.5.1/download/linux-64/magma-cuda101-2.5.1-1.tar.bz2
     tar -xvf magma-cuda101-2.5.1-1.tar.bz2
     mkdir -p /usr/local/cuda-10.1/magma
@@ -46,4 +46,3 @@ do
     esac
     shift
 done
-
