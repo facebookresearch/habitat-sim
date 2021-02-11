@@ -732,9 +732,10 @@ int Viewer::addTemplateObject() {
     std::string fileTemplateHandle =
         objectAttrManager_->getRandomFileTemplateHandle();
     // Get object name to display in logging text
-    std::string fileName =
-        fileTemplateHandle.substr(fileTemplateHandle.find_last_of("/") + 1);
-    lastAddedObjectName_ = fileName.substr(0, fileName.find_first_of('.'));
+    lastAddedObjectName_ =
+        Cr::Utility::Directory::splitExtension(
+            Cr::Utility::Directory::filename(fileTemplateHandle))
+            .first;
     return addObject(fileTemplateHandle);
   } else {
     LOG(WARNING) << "No objects loaded, can't add any";
