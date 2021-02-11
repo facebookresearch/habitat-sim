@@ -641,12 +641,19 @@ void SimTest::addingSensorToObject() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
 
   // Add sensor to sphere object
-  simulator->addSensorToObject(objectID);
+  esp::sensor::SensorSuite sensorSuite;
+  esp::sensor::SensorSpec::ptr objectSensorSpec =
+      esp::sensor::SensorSpec::create();
+  objectSensorSpec->uuid = std::to_string(objectID);
+  objectSensorSpec->position = {0, 0, 0};
+  objectSensorSpec->orientation = {0, 0, 0};
+  objectSensorSpec->resolution = {128, 128};
+  sensorSuite.add(simulator->addSensorToObject(objectID, objectSensorSpec));
   std::string expectedUUID = std::to_string(objectID);
-  CORRADE_VERIFY(simulator->getSensorSuite().get(
-      expectedUUID));  // Verify that Sensor exists with uuid
-  CameraSensor* cameraSensor = dynamic_cast<CameraSensor*>(
-      simulator->getSensorSuite().get(expectedUUID).get());
+  CORRADE_VERIFY(
+      sensorSuite.get(expectedUUID));  // Verify that Sensor exists with uuid
+  CameraSensor* cameraSensor =
+      dynamic_cast<CameraSensor*>(sensorSuite.get(expectedUUID).get());
   cameraSensor->setTransformationFromSpec();
 
   simulator->setTranslation({1.0f, 1.5f, 1.0f},

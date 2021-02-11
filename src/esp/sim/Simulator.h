@@ -76,8 +76,6 @@ class Simulator {
     return gfxReplayMgr_;
   }
 
-  esp::sensor::SensorSuite& getSensorSuite() { return sensorSuite_; }
-
   void saveFrame(const std::string& filename);
 
   /**
@@ -721,18 +719,15 @@ class Simulator {
 
   /**
    * @brief Initialize sensor and attach to sceneNode of a particular object
-   * with uuid objectId
    * @param objectId    Id of the object to which a sensor will be initialized
    * at its node
-   * @param position  vec3f of position to set spec to
-   * @param orientation vec3f or orientation to set spec to
-   * @param resolution vec2i of resolution to set spec to
+   * @param sensorSpec  SensorSpec of sensor to be initialized
+   * @return            handle to sensor initialized
    *
    */
-  void addSensorToObject(const int objectId,
-                         const vec3f& position = {0, 0, 0},
-                         const vec3f& orientation = {0, 0, 0},
-                         const vec2i& resolution = {128, 128});
+  esp::sensor::Sensor::ptr addSensorToObject(
+      const int objectId,
+      esp::sensor::SensorSpec::ptr sensorSpec);
 
   /**
    * @brief Displays observations on default frame buffer for a
@@ -942,8 +937,6 @@ class Simulator {
   SimulatorConfiguration config_;
 
   std::vector<agent::Agent::ptr> agents_;
-  // SensorSuite of all sensors available to the simulator
-  esp::sensor::SensorSuite sensorSuite_;
 
   nav::PathFinder::ptr pathfinder_;
   // state indicating frustum culling is enabled or not

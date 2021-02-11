@@ -338,6 +338,7 @@ Key Commands:
   std::string lastAddedObjectName_ = "";
   esp::sensor::CameraSensor* cameraSensor_ =
       nullptr;  // handle to CameraSensor of current renderCamera
+  esp::sensor::SensorSuite sensorSuite_;
   std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorIterator_;
 
   // Scene or stage file to load
@@ -548,7 +549,8 @@ Viewer::Viewer(const Arguments& arguments)
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
   cameraSensor_ = &getAgentCamera();
-  sensorIterator_ = simulator_->getSensorSuite().getSensors().begin();
+  sensorSuite_.merge(defaultAgent_->getSensorSuite());
+  sensorIterator_ = sensorSuite_.getSensors().begin();
   renderCamera_ = getAgentCamera().getRenderCamera();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
@@ -792,6 +794,12 @@ void Viewer::removeLastObject() {
   if (sensorIterator_->first == std::to_string(existingObjectIDs.back())) {
     switchCameraSensor();
   }
+  // Delete reference to sensor in sensorSuite_ if it exists
+  std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorToDelete =
+      sensorSuite_.getSensors().find(std::to_string(existingObjectIDs.back()));
+  if (sensorToDelete != sensorSuite_.getSensors().end()) {
+    sensorSuite_.getSensors().erase(sensorToDelete);
+  }
   simulator_->removeObject(existingObjectIDs.back());
 }
 
@@ -839,9 +847,15 @@ void Viewer::addCameraToLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0)
     return;
-  simulator_->addSensorToObject(existingObjectIDs.back());
-  LOG(INFO) << "Total number of cameras: "
-            << simulator_->getSensorSuite().getSensors().size();
+  esp::sensor::SensorSpec::ptr objectSensorSpec =
+      esp::sensor::SensorSpec::create();
+  objectSensorSpec->uuid = std::to_string(existingObjectIDs.back());
+  objectSensorSpec->position = {0, 0, 0};
+  objectSensorSpec->orientation = {0, 0, 0};
+  objectSensorSpec->resolution = {128, 128};
+  sensorSuite_.add(simulator_->addSensorToObject(existingObjectIDs.back(),
+                                                 objectSensorSpec));
+  LOG(INFO) << "Total number of cameras: " << sensorSuite_.getSensors().size();
   LOG(INFO) << "Added camera to objectID "
             << std::to_string(existingObjectIDs.back());
 }
@@ -855,8 +869,8 @@ void Viewer::switchCameraSensor() {
   flyingCameraMode_ = true;  // Needed for object camera to work
   sensorIterator_++;
   // If sensorIterator_ is at the end, set iterator to first item
-  if (sensorIterator_ == simulator_->getSensorSuite().getSensors().end()) {
-    sensorIterator_ = simulator_->getSensorSuite().getSensors().begin();
+  if (sensorIterator_ == sensorSuite_.getSensors().end()) {
+    sensorIterator_ = sensorSuite_.getSensors().begin();
   }
   cameraSensor_ =
       dynamic_cast<esp::sensor::CameraSensor*>(sensorIterator_->second.get());
@@ -1080,7 +1094,7 @@ void Viewer::moveAndLook(int repetitions) {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  auto& sensors = simulator_->getSensorSuite();
+  auto& sensors = sensorSuite_;
   for (auto entry : sensors.getSensors()) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());

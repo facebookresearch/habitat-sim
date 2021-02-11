@@ -56,7 +56,6 @@ void Simulator::close() {
   navMeshVisPrimID_ = esp::ID_UNDEFINED;
   navMeshVisNode_ = nullptr;
   agents_.clear();
-  sensorSuite_.clear();
 
   physicsManager_ = nullptr;
   gfxReplayMgr_ = nullptr;
@@ -656,15 +655,6 @@ void Simulator::removeObject(const int objectID,
                              bool deleteVisualNode,
                              const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    // delete sensor at ObjectNode if there is one
-    std::map<std::string, esp::sensor::Sensor::ptr>& sensors =
-        getSensorSuite().getSensors();
-    std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorIterator =
-        sensors.find(std::to_string(objectID));
-    if (sensorIterator != sensors.end()) {
-      // erasing sensor from SensorSuite
-      sensors.erase(sensorIterator);
-    }
     physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
     if (trajVisNameByID.count(objectID) > 0) {
       std::string trajVisAssetName = trajVisNameByID[objectID];
@@ -1099,7 +1089,6 @@ agent::Agent::ptr Simulator::addAgent(
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
   ag->setSensorSuite(esp::sensor::SensorFactory::createSensors(
       agentNode, agentConfig.sensorSpecifications));
-  sensorSuite_.merge(ag->getSensorSuite());
 
   agent::AgentState state;
   sampleRandomAgentState(state);
@@ -1135,23 +1124,16 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
   return agents_[agentId];
 }
 
-void Simulator::addSensorToObject(const int objectId,
-                                  const vec3f& position,
-                                  const vec3f& orientation,
-                                  const vec2i& resolution) {
-  esp::sensor::SensorSpec::ptr objectSensorSpec =
-      esp::sensor::SensorSpec::create();
-  objectSensorSpec->uuid = std::to_string(objectId);
-  objectSensorSpec->position = position;
-  objectSensorSpec->orientation = orientation;
-  objectSensorSpec->resolution = resolution;
+esp::sensor::Sensor::ptr Simulator::addSensorToObject(
+    const int objectId,
+    esp::sensor::SensorSpec::ptr sensorSpec) {
   esp::sensor::SensorSetup sensorSpecifications = {
-      objectSensorSpec};  // default SensorSpec
+      sensorSpec};  // default SensorSpec
   esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
   esp::sensor::SensorSuite sensorSuite =
       esp::sensor::SensorFactory::createSensors(objectNode,
                                                 sensorSpecifications);
-  sensorSuite_.merge(sensorSuite);
+  return sensorSuite.get(sensorSpec->uuid);
 }
 
 nav::PathFinder::ptr Simulator::getPathFinder() {
