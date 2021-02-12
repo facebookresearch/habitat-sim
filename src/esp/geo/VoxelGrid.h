@@ -21,7 +21,8 @@ namespace esp {
 namespace geo {
 
 struct Voxel {
-  int m_distance_field;
+  float m_distance;
+  bool is_filled;
 };
 
 class VoxelGrid {
@@ -32,60 +33,68 @@ class VoxelGrid {
 
   // computes the meshMetaData's bounding box size and creates a Voxel Grid
   // large enough to fit the mesh. O( (bb.size()/voxelSize)^3 )
-  VoxelGrid(const assets::MeshMetaData& meshMetaData, vec3f voxelSize);
+  VoxelGrid(const assets::MeshMetaData& meshMetaData, Mn::Vector3 voxelSize);
 
   // Creates an empty voxel grid with specified voxel size and dimensions.
-  VoxelGrid(vec3f voxelSize, vec3f voxelGridDimensions);
+  VoxelGrid(const Mn::Vector3& voxelSize,
+            const Mn::Vector3i& voxelGridDimensions);
+
+  // Loads a voxel grid from an existing file.
+  VoxelGrid(const std::string filepath);
+
+  // (coords.y * x.size * z.size + coords.z * x.size + coords.x)
+  int hashVoxelIndex(const Mn::Vector3i& coords);
 
   // Gets a voxel pointer based on local coords (coords.y * x.size * z.size +
   // coords.z * x.size + coords.x) O(1) access. Returns nullptr if invalid
   // coordinates.
-  Voxel* getVoxelByLocalCoords(vec3i coords);
+  Voxel* getVoxelByLocalCoords(const Mn::Vector3i& coords);
 
   // First convert coords to integer voxel coordinates, then apply globalOffset
   // * rotation
-  vec3i convertGlobalCoordsToLocal(vec3f coords);
+  Mn::Vector3i getVoxelIndex(const Mn::Vector3& coords);
 
   // Apply globalOffset, multiply each
-  vec3i convertLocalCoordsToGlobal(vec3i& coords);
+  Mn::Vector3 getGlobalCoords(const Mn::Vector3i& coords);
 
   // just converts coords to local coords, then getVoxelByLocalCoords. Returns
   // nullptr if invalid coordinates.
-  Voxel* getVoxelByGlobalCoords(vec3f& coords);
+  Voxel* getVoxelByGlobalCoords(const Mn::Vector3& coords);
+
+  void setVoxelByIndex(const Mn::Vector3i& coords, Voxel* voxel);
 
   // iterates through each voxel of smaller VoxelGrid, applies relevant offset,
   // and returns true if the VoxelGrids have a shared filled voxel. (Q: Should
   // this work if the VoxelGrids have different voxelSizes?) O(N^3) <-- Q: can
   // we do better?
-  bool checkForCollision(VoxelGrid v_grid);
+  bool checkForCollision(const VoxelGrid& v_grid);
 
-  vec3i getVoxelGridDimensions();
+  Mn::Vector3i getVoxelGridDimensions();
   // The unit lengths for each voxel dimension
-  vec3f getVoxelSize();
+  Mn::Vector3 getVoxelSize();
 
   // The relative positioning of the voxel grid to the simulation (May not
   // need). VoxelGrid corner is anchored to the world origin, so grid[0] is at
   // global position VoxelSize/2 + offset.dot(VoxelSize)
-  vec3i getGlobalOffset();
+  Mn::Vector3i getGlobalOffset();
 
   // Convert coords to voxel coordinates
-  void setGlobalOffset(const vec3f& coords);
+  void setGlobalOffset(const Mn::Vector3& coords);
 
   // found file format: svx - https://abfab3d.com/svx-format/
   bool saveToSVXFile(const std::string& filepath, const std::string& filename);
 
  private:
   // The number of voxels on the x, y, and z dimensions of the grid
-  vec3i voxelGridDimensions;
+  Mn::Vector3i m_voxelGridDimensions;
   // The unit lengths for each voxel dimension
-  vec3f voxelSize;
+  Mn::Vector3 m_voxelSize;
+
   // The relative positioning of the voxel grid to the simulation (May not
   // need). VoxelGrid corner is anchored to the world origin, so grid[0] is at
-  // global position VoxelSize/2 + offset.dot(VoxelSize)
-  vec3i globalOffset;
-
-  // The rotation of the Object.
-  quatf rotation;
+  // global position VoxelSize/2 + offset.dot(VoxelSize). m_globalOffset is in
+  // world coordinates (not voxel).
+  Mn::Vector3 m_globalOffset;
 
   /* a pointer to an array of pointers to Voxels.
   Alternatives:
@@ -94,7 +103,7 @@ class VoxelGrid {
   Bitmask: Pros - maybe very fast collision detection? Cons - Can't represent
   any other info, complicated implementation
 */
-  Voxel** grid[];
+  Voxel** m_grid;
 };
 
 }  // namespace geo
