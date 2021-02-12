@@ -32,8 +32,10 @@ VoxelGrid::VoxelGrid(const std::string filepath) {}
 
 // (coords.y * x.size * z.size + coords.z * x.size + coords.x)
 int VoxelGrid::hashVoxelIndex(const Mn::Vector3i& coords) {
-  return coords[0] + coords[2] * m_voxelGridDimensions[0] +
-         coords[1] * m_voxelGridDimensions[0] * m_voxelGridDimensions[2];
+  int hashed_voxel =
+      coords[0] + coords[2] * m_voxelGridDimensions[0] +
+      coords[1] * m_voxelGridDimensions[0] * m_voxelGridDimensions[2];
+  return hashed_voxel;
 }
 
 // Gets a voxel pointer based on local coords (coords.y * x.size * z.size +
@@ -124,6 +126,8 @@ void VoxelGrid::fillVoxelMeshData(
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
         Mn::Vector3i local_coords(i, j, k);
         Voxel* vox = getVoxelByIndex(local_coords);
+        if (vox == nullptr)
+          continue;
         if (vox->is_filled) {
           addVoxelToMeshPrimitives(positions, indices, local_coords);
         }

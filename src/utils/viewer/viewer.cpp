@@ -792,19 +792,23 @@ esp::geo::VoxelGrid Viewer::createVoxelField() {
   for (int i = 0; i < 100; i++) {
     for (int j = 0; j < 100; j++) {
       for (int k = 0; k < 100; k++) {
-        esp::geo::Voxel* vox;
+        esp::geo::Voxel* vox = new esp::geo::Voxel(false);
         if (k % 10 == 0)
-          esp::geo::Voxel* vox = new esp::geo::Voxel(true);
-        else
-          esp::geo::Voxel* vox = new esp::geo::Voxel(false);
+          (*vox).is_filled = true;
         v.setVoxelByIndex(Mn::Vector3i(i, j, k), vox);
       }
     }
   }
+  for (int i = 0; i <= 20; i += 2) {
+    esp::geo::Voxel* vox = v.getVoxelByIndex(Mn::Vector3i(0, 0, i));
+  }
+
   return v;
 }
 
 void Viewer::displayVoxelField(esp::geo::VoxelGrid& v) {
+  Cr::Containers::Optional<Mn::Trade::MeshData> mesh;
+  v.fillVoxelMeshData(mesh);
   !Mn::Debug();
 }
 

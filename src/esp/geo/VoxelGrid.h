@@ -24,7 +24,7 @@ namespace geo {
 
 struct Voxel {
   float m_distance;
-  bool is_filled;
+  bool is_filled = false;
   Voxel(bool filled) { is_filled = filled; }
 };
 
