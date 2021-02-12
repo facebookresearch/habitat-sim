@@ -18,7 +18,14 @@ class RenderTarget;
 }
 
 namespace sensor {
-
+struct VisualSensorSpec : public SensorSpec {
+  VisualSensorSpec() : SensorSpec() {
+    sensorType = SensorType::Color;
+    orientation = {0, 0, 0};
+    resolution = {84, 84};
+  };
+  ESP_SMART_POINTERS(VisualSensorSpec)
+};
 // Represents a sensor that provides visual data from the environment to an
 // agent
 class VisualSensor : public Sensor {

@@ -12,6 +12,19 @@
 namespace esp {
 namespace sensor {
 
+struct CameraSensorSpec : public VisualSensorSpec {
+  CameraSensorSpec() : VisualSensorSpec() {
+    uuid = "rgba_camera";
+    sensorSubType = SensorSubType::Pinhole;
+    parameters = {{"near", "0.01"},
+                  {"far", "1000"},
+                  {"hfov", "90"},
+                  {"ortho_scale", ".1"}};
+    channels = 4;
+  };
+  ESP_SMART_POINTERS(CameraSensorSpec)
+};
+
 class CameraSensor : public VisualSensor {
  public:
   // constructor: the status of the camera sensor is "valid" after

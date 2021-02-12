@@ -59,10 +59,8 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("uuid", &SensorSpec::uuid)
       .def_readwrite("sensor_type", &SensorSpec::sensorType)
       .def_readwrite("sensor_subtype", &SensorSpec::sensorSubType)
-      .def_readwrite("parameters", &SensorSpec::parameters)
       .def_readwrite("position", &SensorSpec::position)
       .def_readwrite("orientation", &SensorSpec::orientation)
-      .def_readwrite("resolution", &SensorSpec::resolution)
       .def_readwrite("channels", &SensorSpec::channels)
       .def_readwrite("encoding", &SensorSpec::encoding)
       .def_readwrite("gpu2gpu_transfer", &SensorSpec::gpu2gpuTransfer)
@@ -117,7 +115,7 @@ void initSensorBindings(py::module& m) {
              VisualSensor, Magnum::SceneGraph::PyFeatureHolder<CameraSensor>>(
       m, "CameraSensor")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
-                          const SensorSpec::ptr&>())
+                          const CameraSensorSpec::ptr&>())
       .def("set_projection_params", &CameraSensor::setProjectionParameters,
            R"(Specify the projection parameters this CameraSensor should use.
            Should be consumed by first querying this CameraSensor's SensorSpec
@@ -151,12 +149,6 @@ void initSensorBindings(py::module& m) {
       .def_property(
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
           R"(The distance to the far clipping plane for this CameraSensor uses.)");
-
-  // ==== SensorSuite ====
-  py::class_<SensorSuite, SensorSuite::ptr>(m, "SensorSuite")
-      .def(py::init(&SensorSuite::create<>))
-      .def("add", &SensorSuite::add)
-      .def("get", &SensorSuite::get, R"(get the sensor by id)");
 
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(

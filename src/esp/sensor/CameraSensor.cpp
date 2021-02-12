@@ -19,6 +19,17 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit) {
+  // Sanity check
+  CORRADE_ASSERT(std::static_pointer_cast<VisualSensorSpec>(spec) != nullptr,
+                 "Spec given is of type VisualSensor", );
+  CORRADE_ASSERT(spec->sensorType == SensorType::Color,
+                 "Spec given has SensorType Color", );
+  CORRADE_ASSERT(std::static_pointer_cast<CameraSensorSpec>(spec) != nullptr,
+                 "Spec given is of type CameraSensor", );
+  CORRADE_ASSERT(
+      spec->sensorSubType == SensorSubType::Pinhole ||
+          spec->sensorSubType == SensorSubType::Orthographic,
+      "CameraSensorSpec given has SensorSubType Pinhole or Orthographic", );
   // Initialize renderCamera_ first to avoid segfaults
   renderCamera_ = new gfx::RenderCamera(cameraNode);
   setProjectionParameters(spec);
@@ -32,10 +43,7 @@ void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
   // update this sensor's sensor spec to reflect the passed new values
   spec_->resolution = spec->resolution;
-  for (const auto& elem : spec->parameters) {
-    spec_->parameters.at(elem.first) = elem.second;
-  }
-
+  spec_->parameters = spec->parameters;
   width_ = spec_->resolution[1];
   height_ = spec_->resolution[0];
   near_ = std::atof(spec_->parameters.at("near").c_str());

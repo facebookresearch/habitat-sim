@@ -12,6 +12,7 @@
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/Sensor.h"
+#include "esp/sensor/CameraSensor.h"
 
 namespace esp {
 namespace agent {
@@ -60,7 +61,7 @@ struct AgentConfiguration {
   float coefficientOfRestitution = 0.0;
 
   std::vector<sensor::SensorSpec::ptr> sensorSpecifications = {
-      sensor::SensorSpec::create()  // default SensorSpec
+      sensor::CameraSensorSpec::create()  // default CameraSensorSpec
   };
   ActionSpace actionSpace = {  // default ActionSpace
       {"moveForward",
@@ -111,6 +112,11 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
   void getState(const AgentState::ptr& state) const;
 
   void setState(const AgentState& state, const bool resetSensors = true);
+
+  // Set Agent's member sensors to sensorSuite
+  void setSensorSuite(sensor::SensorSuite&& sensorSuite) {
+    sensors_ = std::move(sensorSuite);
+  }
 
   void setInitialState(const AgentState& state,
                        const bool resetSensors = true) {
