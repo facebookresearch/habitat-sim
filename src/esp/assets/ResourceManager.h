@@ -355,7 +355,7 @@ class ResourceManager {
    *
    * @param resourceName The name of the resource.
    */
-  u_int getNumberOfResource(const std::string& resourceName);
+  unsigned int getNumberOfResource(const std::string& resourceName);
 
 #ifdef ESP_BUILD_WITH_VHACD
   /**

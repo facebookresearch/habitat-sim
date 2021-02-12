@@ -2237,7 +2237,8 @@ bool ResourceManager::outputMeshMetaDataToObj(
   return success;
 }
 
-u_int ResourceManager::getNumberOfResource(const std::string& resourceName) {
+unsigned int ResourceManager::getNumberOfResource(
+    const std::string& resourceName) {
   return resourceDict_.count(resourceName);
 }
 
