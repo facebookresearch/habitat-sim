@@ -52,7 +52,6 @@
 #include "esp/io/io.h"
 
 #include "esp/sensor/CameraSensor.h"
-#include "esp/sensor/SensorFactory.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
@@ -144,8 +143,6 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
-  void addCameraToLastObject();
-  void switchCameraSensor();
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -211,7 +208,6 @@ Key Commands:
   'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
   '[' save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt"
   ']' load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance
-  '\' switch between render cameras
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -221,7 +217,6 @@ Key Commands:
   'u': Remove most recently instanced object.
   'b': Toggle display of object bounding boxes.
   'k': Kinematically wiggle the most recently added object.
-  'm': Add sensor to most recently added object.
   'p': (physics) Poke the most recently added object.
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
@@ -335,11 +330,6 @@ Key Commands:
 
   const int defaultAgentId_ = 0;
   esp::agent::Agent::ptr defaultAgent_ = nullptr;
-  std::string lastAddedObjectName_ = "";
-  esp::sensor::CameraSensor* cameraSensor_ =
-      nullptr;  // handle to CameraSensor of current renderCamera
-  esp::sensor::SensorSuite sensorSuite_;
-  std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorIterator_;
 
   // Scene or stage file to load
   std::string sceneFileName;
@@ -548,9 +538,6 @@ Viewer::Viewer(const Arguments& arguments)
   activeSceneGraph_ = &simulator_->getActiveSceneGraph();
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
-  cameraSensor_ = &getAgentCamera();
-  sensorSuite_.merge(defaultAgent_->getSensorSuite());
-  sensorIterator_ = sensorSuite_.getSensors().begin();
   renderCamera_ = getAgentCamera().getRenderCamera();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
@@ -601,14 +588,16 @@ Viewer::Viewer(const Arguments& arguments)
 }  // end Viewer::Viewer
 
 void Viewer::switchCameraType() {
-  auto oldCameraType = cameraSensor_->getCameraType();
+  auto& cam = getAgentCamera();
+
+  auto oldCameraType = cam.getCameraType();
   switch (oldCameraType) {
     case esp::sensor::SensorSubType::Pinhole: {
-      cameraSensor_->setCameraType(esp::sensor::SensorSubType::Orthographic);
+      cam.setCameraType(esp::sensor::SensorSubType::Orthographic);
       return;
     }
     case esp::sensor::SensorSubType::Orthographic: {
-      cameraSensor_->setCameraType(esp::sensor::SensorSubType::Pinhole);
+      cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
       return;
     }
   }
@@ -729,14 +718,7 @@ int Viewer::addObject(const std::string& objectAttrHandle) {
 int Viewer::addTemplateObject() {
   int numObjTemplates = objectAttrManager_->getNumFileTemplateObjects();
   if (numObjTemplates > 0) {
-    std::string fileTemplateHandle =
-        objectAttrManager_->getRandomFileTemplateHandle();
-    // Get object name to display in logging text
-    lastAddedObjectName_ =
-        Cr::Utility::Directory::splitExtension(
-            Cr::Utility::Directory::filename(fileTemplateHandle))
-            .first;
-    return addObject(fileTemplateHandle);
+    return addObject(objectAttrManager_->getRandomFileTemplateHandle());
   } else {
     LOG(WARNING) << "No objects loaded, can't add any";
     return esp::ID_UNDEFINED;
@@ -790,17 +772,6 @@ void Viewer::removeLastObject() {
   if (existingObjectIDs.size() == 0) {
     return;
   }
-  // if renderCamera_ is toggled to the object which will be removed, switch to
-  // another camera first
-  if (sensorIterator_->first == std::to_string(existingObjectIDs.back())) {
-    switchCameraSensor();
-  }
-  // Delete reference to sensor in sensorSuite_ if it exists
-  std::map<std::string, esp::sensor::Sensor::ptr>::iterator sensorToDelete =
-      sensorSuite_.getSensors().find(std::to_string(existingObjectIDs.back()));
-  if (sensorToDelete != sensorSuite_.getSensors().end()) {
-    sensorSuite_.getSensors().erase(sensorToDelete);
-  }
   simulator_->removeObject(existingObjectIDs.back());
 }
 
@@ -841,43 +812,6 @@ void Viewer::torqueLastObject() {
     return;
   Mn::Vector3 torque = randomDirection() * 30;
   simulator_->applyTorque(torque, existingObjectIDs.back());
-}
-
-// Add a CameraSensor to an the last added object
-void Viewer::addCameraToLastObject() {
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
-  esp::sensor::SensorSpec::ptr objectSensorSpec =
-      esp::sensor::SensorSpec::create();
-  objectSensorSpec->uuid = std::to_string(existingObjectIDs.back());
-  objectSensorSpec->position = {0, 0, 0};
-  objectSensorSpec->orientation = {0, 0, 0};
-  objectSensorSpec->resolution = {128, 128};
-  sensorSuite_.add(simulator_->addSensorToObject(existingObjectIDs.back(),
-                                                 objectSensorSpec));
-  LOG(INFO) << "Total number of cameras: " << sensorSuite_.getSensors().size();
-  LOG(INFO) << "Added camera to objectID "
-            << std::to_string(existingObjectIDs.back());
-}
-
-// Switch renderCamera_ used for rendering, cycling through available cameras,
-// update cameraSensor_ and renderCamera_
-void Viewer::switchCameraSensor() {
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
-  flyingCameraMode_ = true;  // Needed for object camera to work
-  sensorIterator_++;
-  // If sensorIterator_ is at the end, set iterator to first item
-  if (sensorIterator_ == sensorSuite_.getSensors().end()) {
-    sensorIterator_ = sensorSuite_.getSensors().begin();
-  }
-  cameraSensor_ =
-      dynamic_cast<esp::sensor::CameraSensor*>(sensorIterator_->second.get());
-  renderCamera_ = cameraSensor_->getRenderCamera();
-  simulator_->getRenderer()->bindRenderTarget(*cameraSensor_);
-  LOG(INFO) << "Switched camera to camera: " << sensorIterator_->first.c_str();
 }
 
 // generate random direction vectors:
@@ -956,7 +890,7 @@ void Viewer::drawEvent() {
     // ONLY draw the content to the frame buffer but not immediately blit the
     // result to the default main buffer
     // (this is the reason we do not call displayObservation)
-    cameraSensor_->drawObservation(*simulator_);
+    simulator_->drawObservation(defaultAgentId_, "rgba_camera");
     // TODO: enable other sensors to be displayed
 
     Mn::GL::Renderer::setDepthFunction(
@@ -971,8 +905,9 @@ void Viewer::drawEvent() {
     Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
-    visibles = renderCamera_->getPreviousNumVisibleDrawables();
-    esp::gfx::RenderTarget* sensorRenderTarget = &cameraSensor_->renderTarget();
+    visibles = renderCamera_->getPreviousNumVisibileDrawables();
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
     CORRADE_ASSERT(sensorRenderTarget,
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
@@ -1017,10 +952,11 @@ void Viewer::drawEvent() {
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
-    ImGui::Text("%s camera", (cameraSensor_->getCameraType() ==
-                                      esp::sensor::SensorSubType::Orthographic
-                                  ? "Orthographic"
-                                  : "Pinhole"));
+    auto& cam = getAgentCamera();
+    ImGui::Text("%s camera",
+                (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
+                     ? "Orthographic"
+                     : "Pinhole"));
     ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
@@ -1095,15 +1031,14 @@ void Viewer::moveAndLook(int repetitions) {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  auto& sensors = sensorSuite_;
+  auto& sensors = defaultAgent_->getSensorSuite();
   for (auto entry : sensors.getSensors()) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
     if (visualSensor != nullptr) {
       visualSensor->specification()->resolution = {event.framebufferSize()[1],
                                                    event.framebufferSize()[0]};
-      visualSensor->getRenderCamera()->setViewport(
-          visualSensor->framebufferSize());
+      renderCamera_->setViewport(visualSensor->framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
     }
   }
@@ -1206,7 +1141,8 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   // Use shift for fine-grained zooming
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
   float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
-  cameraSensor_->modifyZoom(mod);
+  auto& cam = getAgentCamera();
+  cam.modifyZoom(mod);
   redraw();
 
   event.setAccepted();
@@ -1297,9 +1233,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::RightBracket:
       loadCameraTransformFromFile();
       break;
-    case KeyEvent::Key::Backslash:
-      switchCameraSensor();
-      break;
+
     case KeyEvent::Key::Equal: {
       // increase trajectory tube diameter
       LOG(INFO) << "Bigger";
@@ -1339,9 +1273,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::K:
       wiggleLastObject();
       break;
-    case KeyEvent::Key::M:
-      addCameraToLastObject();
-      break;
     case KeyEvent::Key::N:
       // toggle navmesh visualization
       simulator_->setNavMeshVisualization(
@@ -1349,8 +1280,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::O:
       addTemplateObject();
-      LOG(INFO) << "Adding object " << lastAddedObjectName_ << " with ObjectID "
-                << std::to_string(simulator_->getExistingObjectIDs().back());
       break;
     case KeyEvent::Key::P:
       pokeLastObject();
