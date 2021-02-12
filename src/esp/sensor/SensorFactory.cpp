@@ -22,6 +22,7 @@ sensor::SensorSuite SensorFactory::createSensors(
       //   sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
       // }
     }
+
   }
   return sensorSuite;
 }
