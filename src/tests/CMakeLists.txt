@@ -66,7 +66,7 @@ target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 test(SceneGraphTest scene)
 target_include_directories(SceneGraphTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(SensorTest sensor sim)
+corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
 target_include_directories(SensorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Some tests are LOUD, we don't want to include their full log (but OTOH we

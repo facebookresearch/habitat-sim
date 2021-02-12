@@ -1,22 +1,32 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-#include <Corrade/Utility/Directory.h>
-#include <gtest/gtest.h>
+#include <Corrade/TestSuite/Tester.h>
+#include <Magnum/Magnum.h>
 
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/Sensor.h"
 #include "esp/sensor/SensorFactory.h"
 
-#include "configure.h"
-
+namespace Cr = Corrade;
 using namespace esp::sensor;
 using namespace esp::scene;
 
 // TODO: Add tests for different Sensors
+struct SensorTest : Cr::TestSuite::Tester {
+  explicit SensorTest();
 
-TEST(SensorTest, SensorFactory) {
+  void testSensorFactory();
+};
+
+SensorTest::SensorTest() {
+  // clang-format off
+  addTests({&SensorTest::testSensorFactory});
+  // clang-format on
+}
+
+void SensorTest::testSensorFactory() {
   SceneManager sceneManager_;
   SensorSuite sensorSuite_;
 
@@ -27,10 +37,10 @@ TEST(SensorTest, SensorFactory) {
   auto& rootNode = sceneGraph.getRootNode();
   SceneNode sceneNode1 = rootNode.createChild();
   sceneNode1.setId(1);
-  ASSERT(sceneNode1.getId() == 1);
+  CORRADE_VERIFY(sceneNode1.getId() == 1);
   SceneNode sceneNode2 = rootNode.createChild();
   sceneNode2.setId(2);
-  ASSERT(sceneNode2.getId() == 2);
+  CORRADE_VERIFY(sceneNode2.getId() == 2);
 
   // Add different uuid sensors to same node and assert increase
   SensorSpec::ptr sensorSpecA = SensorSpec::create();
@@ -41,7 +51,7 @@ TEST(SensorTest, SensorFactory) {
   SensorSuite sensorSuiteAB =
       SensorFactory::createSensors(sceneNode1, sensorSpecificationsAB);
   sensorSuite_.merge(sensorSuiteAB);
-  ASSERT(sensorSuite_.getSensors().size() == 2);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 2);
 
   // Add different uuid sensors to different nodes and assert increase
   SensorSpec::ptr sensorSpecC = SensorSpec::create();
@@ -50,7 +60,7 @@ TEST(SensorTest, SensorFactory) {
   SensorSuite sensorSuiteC =
       SensorFactory::createSensors(sceneNode1, sensorSpecificationsC);
   sensorSuite_.merge(sensorSuiteC);
-  ASSERT(sensorSuite_.getSensors().size() == 3);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 3);
 
   SensorSpec::ptr sensorSpecD = SensorSpec::create();
   sensorSpecD->uuid = "D";
@@ -58,7 +68,7 @@ TEST(SensorTest, SensorFactory) {
   SensorSuite sensorSuiteD =
       SensorFactory::createSensors(sceneNode2, sensorSpecificationsD);
   sensorSuite_.merge(sensorSuiteD);
-  ASSERT(sensorSuite_.getSensors().size() == 4);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 4);
   // Add same uuid sensor to same node and assert that only one sensor was added
   SensorSpec::ptr sensorSpecE = SensorSpec::create();
   sensorSpecE->uuid = "E";
@@ -66,7 +76,7 @@ TEST(SensorTest, SensorFactory) {
   SensorSuite sensorSuiteEE =
       SensorFactory::createSensors(sceneNode1, sensorSpecificationsEE);
   sensorSuite_.merge(sensorSuiteEE);
-  ASSERT(sensorSuite_.getSensors().size() == 5);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 5);
 
   // Add same uuid sensors to different nodes and assert only one sensor was
   // added
@@ -76,14 +86,16 @@ TEST(SensorTest, SensorFactory) {
   SensorSuite sensorSuiteF1 =
       SensorFactory::createSensors(sceneNode1, sensorSpecificationsF);
   sensorSuite_.merge(sensorSuiteF1);
-  ASSERT(sensorSuite_.getSensors().size() == 6);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 6);
 
   SensorSuite sensorSuiteF2 =
       SensorFactory::createSensors(sceneNode2, sensorSpecificationsF);
   sensorSuite_.merge(sensorSuiteF2);
-  ASSERT(sensorSuite_.getSensors().size() == 6);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 6);
 
   // Remove sensors and assert that sensorSuite_ is empty
   sensorSuite_.clear();
-  ASSERT(sensorSuite_.getSensors().size() == 0);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 0);
 }
+
+CORRADE_TEST_MAIN(SensorTest)
