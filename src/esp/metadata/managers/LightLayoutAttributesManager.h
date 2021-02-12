@@ -17,11 +17,11 @@ namespace metadata {
 namespace managers {
 class LightLayoutAttributesManager
     : public AttributesManager<attributes::LightLayoutAttributes,
-                               core::ManagedContainerAccess::Copy> {
+                               core::ManagedObjectAccess::Copy> {
  public:
   LightLayoutAttributesManager()
       : AttributesManager<attributes::LightLayoutAttributes,
-                          core::ManagedContainerAccess::Copy>::
+                          core::ManagedObjectAccess::Copy>::
             AttributesManager("Lighting Layout", "lighting_config.json") {
     buildCtorFuncPtrMaps();
   }
