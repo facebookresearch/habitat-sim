@@ -14,6 +14,8 @@
 #include <Magnum/Math/Range.h>
 #include "esp/gfx/magnum.h"
 
+#include "VHACD.h"
+
 namespace Mn = Magnum;
 namespace Cr = Corrade;
 
@@ -23,17 +25,21 @@ namespace geo {
 struct Voxel {
   float m_distance;
   bool is_filled;
+  Voxel(bool filled) { is_filled = filled; }
 };
 
 class VoxelGrid {
  public:
+  // default constructor
+  VoxelGrid();
   // computes a voxel grid for a meshMetaData based on a given resolution (# of
   // voxels) and returns result directly from VHACD O(resolution)
   VoxelGrid(const assets::MeshMetaData& meshMetaData, int resolution);
 
   // computes the meshMetaData's bounding box size and creates a Voxel Grid
   // large enough to fit the mesh. O( (bb.size()/voxelSize)^3 )
-  VoxelGrid(const assets::MeshMetaData& meshMetaData, Mn::Vector3 voxelSize);
+  VoxelGrid(const assets::MeshMetaData& meshMetaData,
+            const Mn::Vector3 voxelSize);
 
   // Creates an empty voxel grid with specified voxel size and dimensions.
   VoxelGrid(const Mn::Vector3& voxelSize,
@@ -48,19 +54,20 @@ class VoxelGrid {
   // Gets a voxel pointer based on local coords (coords.y * x.size * z.size +
   // coords.z * x.size + coords.x) O(1) access. Returns nullptr if invalid
   // coordinates.
-  Voxel* getVoxelByLocalCoords(const Mn::Vector3i& coords);
+  Voxel* getVoxelByIndex(const Mn::Vector3i& coords);
 
   // First convert coords to integer voxel coordinates, then apply globalOffset
   // * rotation
   Mn::Vector3i getVoxelIndex(const Mn::Vector3& coords);
 
-  // Apply globalOffset, multiply each
+  // multiply coords by m_voxelSize, apply globalOffset
   Mn::Vector3 getGlobalCoords(const Mn::Vector3i& coords);
 
   // just converts coords to local coords, then getVoxelByLocalCoords. Returns
   // nullptr if invalid coordinates.
   Voxel* getVoxelByGlobalCoords(const Mn::Vector3& coords);
 
+  // Sets voxel by local voxel index.
   void setVoxelByIndex(const Mn::Vector3i& coords, Voxel* voxel);
 
   // iterates through each voxel of smaller VoxelGrid, applies relevant offset,
@@ -83,6 +90,13 @@ class VoxelGrid {
 
   // found file format: svx - https://abfab3d.com/svx-format/
   bool saveToSVXFile(const std::string& filepath, const std::string& filename);
+
+  void addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
+                                std::vector<Mn::UnsignedInt>& indices,
+                                Mn::Vector3i local_coords);
+
+  // insert voxel information into a mesh.
+  void fillVoxelMeshData(Cr::Containers::Optional<Mn::Trade::MeshData>& mesh);
 
  private:
   // The number of voxels on the x, y, and z dimensions of the grid

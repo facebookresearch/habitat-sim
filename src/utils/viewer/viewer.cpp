@@ -25,6 +25,7 @@
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
+#include "esp/geo/VoxelGrid.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -143,6 +144,8 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
+  esp::geo::VoxelGrid createVoxelField();
+  void displayVoxelField(esp::geo::VoxelGrid& v);
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -781,6 +784,30 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
+esp::geo::VoxelGrid Viewer::createVoxelField() {
+  const Mn::Vector3 v_size = Mn::Vector3(1, 1, 1);
+  const Mn::Vector3i v_dim = Mn::Vector3i(100, 100, 100);
+
+  esp::geo::VoxelGrid v(v_size, v_dim);  // = esp::geo::VoxelGrid();
+  for (int i = 0; i < 100; i++) {
+    for (int j = 0; j < 100; j++) {
+      for (int k = 0; k < 100; k++) {
+        esp::geo::Voxel* vox;
+        if (k % 10 == 0)
+          esp::geo::Voxel* vox = new esp::geo::Voxel(true);
+        else
+          esp::geo::Voxel* vox = new esp::geo::Voxel(false);
+        v.setVoxelByIndex(Mn::Vector3i(i, j, k), vox);
+      }
+    }
+  }
+  return v;
+}
+
+void Viewer::displayVoxelField(esp::geo::VoxelGrid& v) {
+  !Mn::Debug();
+}
+
 void Viewer::pokeLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0)
@@ -1084,7 +1111,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     // Read the object Id
     unsigned int pickedObject =
         objectPickingHelper_->getObjectId(event.position(), windowSize());
-
+    !Mn::Debug();
     // if an object is selected, create a visualizer
     createPickedObjectVisualizer(pickedObject);
     return;
@@ -1297,6 +1324,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
+    case KeyEvent::Key::Y: {
+      esp::geo::VoxelGrid v = createVoxelField();
+      displayVoxelField(v);
+    } break;
     default:
       break;
   }

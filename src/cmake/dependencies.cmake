@@ -90,6 +90,12 @@ if(BUILD_ASSIMP_SUPPORT)
   find_package(Assimp REQUIRED)
 endif()
 
+# v-hacd (temporary; get master version of this later (once VHACD_Integration has been pushed))
+set(NO_OPENCL ON CACHE BOOL "NO_OPENCL" FORCE)
+set(NO_OPENMP ON CACHE BOOL "NO_OPENMP" FORCE)
+# adding /src/VHACD_Lib instead of /src since /src contains unneccesary test files
+add_subdirectory("${DEPS_DIR}/v-hacd/src/VHACD_Lib")
+
 # recast
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
 set(RECASTNAVIGATION_TESTS OFF CACHE BOOL "RECASTNAVIGATION_TESTS" FORCE)
