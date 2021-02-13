@@ -13,12 +13,19 @@ namespace esp {
 namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
-  CameraSensorSpec() : VisualSensorSpec() {
-    uuid = "rgba_camera";
-    sensorType = SensorType::Color;
-    sensorSubType = SensorSubType::Pinhole;
-  }
+  CameraSensorSpec();
+  SensorSubType sensorSubType = SensorSubType::Pinhole;
   int channels = 4;
+  // description of Sensor observation space as gym.spaces.Dict()
+  std::string observationSpace = "";
+  void sanityCheck() {
+    if (sensorSubType != SensorSubType::Pinhole &&
+        sensorSubType != SensorSubType::Orthographic) {
+      throw std::runtime_error(
+          "CameraSensor::CameraSensorSpec() does not have SensorSubType "
+          "Pinhole or Orthographic");
+    }
+  }
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
 

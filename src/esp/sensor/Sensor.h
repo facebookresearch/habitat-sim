@@ -44,14 +44,11 @@ enum class SensorSubType {
 
 // Specifies the configuration parameters of a sensor
 struct SensorSpec {
+  SensorSpec() {}
   std::string uuid;
-  SensorType sensorType;
-  SensorSubType sensorSubType;
-  std::string encoding = "rgba_uint8";
-  // description of Sensor observation space as gym.spaces.Dict()
-  std::string observationSpace = "";
+  vec3f position = {0, 1.5, 0};
+  vec3f orientation = {0, 0, 0};
   std::string noiseModel = "None";
-  bool gpu2gpuTransfer = false;
   virtual ~SensorSpec();
   ESP_SMART_POINTERS(SensorSpec)
 };
@@ -97,6 +94,9 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   SensorSpec::ptr specification() const { return spec_; }
 
   virtual bool isVisualSensor() { return false; }
+
+  // can be called ONLY when it is attached to a scene node
+  void setTransformationFromSpec();
 
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) = 0;
   virtual bool getObservationSpace(ObservationSpace& space) = 0;

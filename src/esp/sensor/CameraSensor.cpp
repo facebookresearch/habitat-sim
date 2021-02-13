@@ -14,12 +14,17 @@
 namespace esp {
 namespace sensor {
 
+CameraSensorSpec::CameraSensorSpec() : VisualSensorSpec() {
+  sanityCheck();
+  uuid = "rgba_camera";
+}
+
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
                            const CameraSensorSpec::ptr& spec)
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit),
-      spec_{spec} {
+      spec_(spec) {
   // Sanity check
   CORRADE_ASSERT(spec->sensorSubType == SensorSubType::Pinhole ||
                      spec->sensorSubType == SensorSubType::Orthographic,
