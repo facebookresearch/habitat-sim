@@ -47,16 +47,12 @@ struct SensorSpec {
   std::string uuid;
   SensorType sensorType;
   SensorSubType sensorSubType;
-  vec3f position;
-  vec3f orientation;
-  vec2i resolution;
-  std::map<std::string, std::string> parameters;
-  int channels;
   std::string encoding = "rgba_uint8";
   // description of Sensor observation space as gym.spaces.Dict()
   std::string observationSpace = "";
   std::string noiseModel = "None";
   bool gpu2gpuTransfer = false;
+  virtual ~SensorSpec();
   ESP_SMART_POINTERS(SensorSpec)
 };
 
@@ -82,7 +78,7 @@ struct ObservationSpace {
 class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);
-  virtual ~Sensor() { LOG(INFO) << "Deconstructing Sensor"; }
+  virtual ~Sensor();
 
   // Get the scene node being attached to.
   scene::SceneNode& node() { return object(); }
@@ -99,9 +95,6 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   SensorSpec::ptr specification() const { return spec_; }
-
-  // can be called ONLY when it is attached to a scene node
-  virtual void setTransformationFromSpec();
 
   virtual bool isVisualSensor() { return false; }
 

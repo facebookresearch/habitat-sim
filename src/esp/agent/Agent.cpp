@@ -80,7 +80,10 @@ void Agent::setState(const AgentState& state,
 
   if (resetSensors) {
     for (const auto& p : sensors_.getSensors()) {
-      p.second->setTransformationFromSpec();
+      if (p.second->isVisualSensor()) {
+        std::dynamic_pointer_cast<esp::sensor::VisualSensor>(p.second)
+            ->setTransformationFromSpec();
+      }
     }
   }
   // TODO other state members when implemented

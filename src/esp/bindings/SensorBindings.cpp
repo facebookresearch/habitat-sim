@@ -59,9 +59,6 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("uuid", &SensorSpec::uuid)
       .def_readwrite("sensor_type", &SensorSpec::sensorType)
       .def_readwrite("sensor_subtype", &SensorSpec::sensorSubType)
-      .def_readwrite("position", &SensorSpec::position)
-      .def_readwrite("orientation", &SensorSpec::orientation)
-      .def_readwrite("channels", &SensorSpec::channels)
       .def_readwrite("encoding", &SensorSpec::encoding)
       .def_readwrite("gpu2gpu_transfer", &SensorSpec::gpu2gpuTransfer)
       .def_readwrite("observation_space", &SensorSpec::observationSpace)
@@ -92,7 +89,6 @@ void initSensorBindings(py::module& m) {
              Magnum::SceneGraph::AbstractFeature3D,
              Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
       .def("specification", &Sensor::specification)
-      .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
       .def("is_visual_sensor", &Sensor::isVisualSensor)
       .def("get_observation", &Sensor::getObservation)
       .def_property_readonly("node", nodeGetter<Sensor>,
@@ -103,6 +99,9 @@ void initSensorBindings(py::module& m) {
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
              Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(m,
                                                                 "VisualSensor")
+
+      .def("set_transformation_from_spec",
+           &VisualSensor::setTransformationFromSpec)
       .def_property_readonly(
           "render_camera", &VisualSensor::getRenderCamera,
           R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",

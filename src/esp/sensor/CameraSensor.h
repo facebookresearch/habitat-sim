@@ -15,13 +15,10 @@ namespace sensor {
 struct CameraSensorSpec : public VisualSensorSpec {
   CameraSensorSpec() : VisualSensorSpec() {
     uuid = "rgba_camera";
+    sensorType = SensorType::Color;
     sensorSubType = SensorSubType::Pinhole;
-    parameters = {{"near", "0.01"},
-                  {"far", "1000"},
-                  {"hfov", "90"},
-                  {"ortho_scale", ".1"}};
-    channels = 4;
-  };
+  }
+  int channels = 4;
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
 
@@ -31,15 +28,15 @@ class CameraSensor : public VisualSensor {
   // construction;
   // user can use them immediately
   explicit CameraSensor(scene::SceneNode& cameraNode,
-                        const SensorSpec::ptr& spec);
+                        const CameraSensorSpec::ptr& spec);
   virtual ~CameraSensor() {}
 
-  /** @brief Updates this sensor's SensorSpec spec_ to reflect the passed new
-   * values
-   *  @param[in] spec Instance of SensorSpec that sensor will use to update its
-   * own SensorSpec
+  /** @brief Updates this sensor's CameraSensorSpec spec_ to reflect the passed
+   * new values
+   *  @param[in] spec Instance of CameraSensorSpec that sensor will use to
+   * update its own SensorSpec
    */
-  void setProjectionParameters(const SensorSpec::ptr& spec);
+  void setProjectionParameters(const CameraSensorSpec::ptr& spec);
 
   /** @brief Returns pointer to member RenderCamera that CameraSensor will use
    * for rendering
@@ -118,9 +115,7 @@ class CameraSensor : public VisualSensor {
    * @param FOV desired FOV to set.
    */
   void setFOV(Mn::Deg FOV) {
-    spec_->parameters.at("hfov") =
-        Corrade::Utility::ConfigurationValue<Mn::Deg>::toString(
-            FOV, Corrade::Utility::ConfigurationValueFlags());
+    spec_->hfov = FOV;
     if (spec_->sensorSubType != SensorSubType::Pinhole) {
       LOG(INFO)
           << "CameraSensor::setFOV : Only Perspective-base CameraSensors use "
@@ -133,10 +128,7 @@ class CameraSensor : public VisualSensor {
   /**
    * @brief Returns the FOV of this CameraSensor
    */
-  Mn::Deg getFOV() const {
-    float fov = std::atof(spec_->parameters.at("hfov").c_str());
-    return Mn::Deg{fov};
-  }
+  Mn::Deg getFOV() const { return spec_->hfov; }
 
   /**
    * @brief Sets camera type and calculates appropriate size vector for
@@ -176,7 +168,7 @@ class CameraSensor : public VisualSensor {
    * @brief Sets near plane distance.
    */
   void setNear(float _near) {
-    spec_->parameters.at("near") = std::to_string(_near);
+    spec_->near = _near;
     near_ = _near;
     recomputeBaseProjectionMatrix();
   }
@@ -186,7 +178,7 @@ class CameraSensor : public VisualSensor {
    * @brief Sets far plane distance.
    */
   void setFar(float _far) {
-    spec_->parameters.at("far") = std::to_string(_far);
+    spec_->far = _far;
     far_ = _far;
     recomputeBaseProjectionMatrix();
   }
@@ -257,6 +249,9 @@ class CameraSensor : public VisualSensor {
    * rendering
    */
   gfx::RenderCamera* renderCamera_;
+
+  CameraSensorSpec::ptr spec_ =
+      std::dynamic_pointer_cast<CameraSensorSpec>(spec_);
 
  public:
   ESP_SMART_POINTERS(CameraSensor)

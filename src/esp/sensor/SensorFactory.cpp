@@ -12,16 +12,15 @@ sensor::SensorSuite SensorFactory::createSensors(
   sensor::SensorSuite sensorSuite = sensor::SensorSuite();
   for (const sensor::SensorSpec::ptr& spec : sensorSetup) {
     scene::SceneNode& sensorNode = node.createChild();
-    if (spec->sensorType == SensorType::Color) {
-      if (spec->sensorSubType == SensorSubType::Pinhole ||
-          spec->sensorSubType == SensorSubType::Orthographic) {
-        sensorSuite.add(sensor::CameraSensor::create(sensorNode, spec));
-      }
-      // TODO: Implement fisheye sensor, Equirectangle sensor, Panorama sensor
-      // else if (spec->sensorSubType == SensorSubType::Fisheye) {
-      //   sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
-      // }
+    if (spec->sensorSubType == SensorSubType::Pinhole ||
+        spec->sensorSubType == SensorSubType::Orthographic) {
+      sensorSuite.add(sensor::CameraSensor::create(
+          sensorNode, std::dynamic_pointer_cast<CameraSensorSpec>(spec)));
     }
+    // TODO: Implement fisheye sensor, Equirectangle sensor, Panorama sensor
+    // else if (spec->sensorSubType == SensorSubType::Fisheye) {
+    //   sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
+    // }
   }
   return sensorSuite;
 }

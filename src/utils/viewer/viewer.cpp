@@ -523,8 +523,9 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
-  agentConfig.sensorSpecifications[0]->resolution =
-      esp::vec2i(viewportSize[1], viewportSize[0]);
+  std::dynamic_pointer_cast<esp::sensor::CameraSensorSpec>(
+      agentConfig.sensorSpecifications[0])
+      ->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
 
   agentConfig.sensorSpecifications[0]->sensorSubType =
       args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
@@ -1036,8 +1037,8 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
     if (visualSensor != nullptr) {
-      visualSensor->specification()->resolution = {event.framebufferSize()[1],
-                                                   event.framebufferSize()[0]};
+      visualSensor->updateResolution(event.framebufferSize()[1],
+                                     event.framebufferSize()[0]);
       renderCamera_->setViewport(visualSensor->framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
     }

@@ -15,21 +15,16 @@ namespace esp {
 namespace sensor {
 
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
-                           const SensorSpec::ptr& spec)
+                           const CameraSensorSpec::ptr& spec)
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
-      zoomMatrix_(Magnum::Math::IdentityInit) {
+      zoomMatrix_(Magnum::Math::IdentityInit),
+      spec_{spec} {
   // Sanity check
-  CORRADE_ASSERT(std::static_pointer_cast<VisualSensorSpec>(spec) != nullptr,
-                 "Spec given is of type VisualSensor", );
-  CORRADE_ASSERT(spec->sensorType == SensorType::Color,
-                 "Spec given has SensorType Color", );
-  CORRADE_ASSERT(std::static_pointer_cast<CameraSensorSpec>(spec) != nullptr,
-                 "Spec given is of type CameraSensor", );
-  CORRADE_ASSERT(
-      spec->sensorSubType == SensorSubType::Pinhole ||
-          spec->sensorSubType == SensorSubType::Orthographic,
-      "CameraSensorSpec given has SensorSubType Pinhole or Orthographic", );
+  CORRADE_ASSERT(spec->sensorSubType == SensorSubType::Pinhole ||
+                     spec->sensorSubType == SensorSubType::Orthographic,
+                 "CameraSensor::CameraSensor() CameraSensorSpec given has "
+                 "SensorSubType Pinhole or Orthographic", );
   // Initialize renderCamera_ first to avoid segfaults
   renderCamera_ = new gfx::RenderCamera(cameraNode);
   setProjectionParameters(spec);
@@ -39,15 +34,17 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
   renderCamera_->setViewport(this->framebufferSize());
 }  // ctor
 
-void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
+void CameraSensor::setProjectionParameters(const CameraSensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
   // update this sensor's sensor spec to reflect the passed new values
   spec_->resolution = spec->resolution;
-  spec_->parameters = spec->parameters;
+  spec_->near = spec->near;
+  spec_->far = spec->far;
+
   width_ = spec_->resolution[1];
   height_ = spec_->resolution[0];
-  near_ = std::atof(spec_->parameters.at("near").c_str());
-  far_ = std::atof(spec_->parameters.at("far").c_str());
+  near_ = spec_->near;
+  far_ = spec_->far;
   setCameraType(spec->sensorSubType);
 
 }  // setProjectionParameters
@@ -65,7 +62,7 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
       Mn::Vector2{1.0f, static_cast<float>(height_) / width_};
   float scale;
   if (spec_->sensorSubType == SensorSubType::Orthographic) {
-    scale = std::atof(spec_->parameters.at("ortho_scale").c_str());
+    scale = spec_->ortho_scale;
     nearPlaneSize_ /= scale;
     baseProjMatrix_ =
         Mn::Matrix4::orthographicProjection(nearPlaneSize_, near_, far_);
@@ -76,7 +73,7 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
                 << " so defaulting to Pinhole.";
       spec_->sensorSubType = SensorSubType::Pinhole;
     }
-    float fov = std::atof(spec_->parameters.at("hfov").c_str());
+    Magnum::Deg fov = spec_->hfov;
     Magnum::Deg halfHFovRad{Magnum::Deg(.5 * fov)};
     scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
     nearPlaneSize_ /= scale;
@@ -183,6 +180,16 @@ bool CameraSensor::displayObservation(sim::Simulator& sim) {
   renderTarget().blitRgbaToDefault();
 
   return true;
+}
+
+bool operator==(const CameraSensorSpec& a, const CameraSensorSpec& b) {
+  return a.uuid == b.uuid && a.sensorType == b.sensorType &&
+         a.sensorSubType == b.sensorSubType && a.near == b.near &&
+         a.far == b.far && a.hfov == b.hfov && a.ortho_scale == b.ortho_scale &&
+         a.position == b.position && a.orientation == b.orientation &&
+         a.resolution == b.resolution && a.channels == b.channels &&
+         a.encoding == b.encoding && a.observationSpace == b.observationSpace &&
+         a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 
 Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()

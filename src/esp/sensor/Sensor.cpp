@@ -11,29 +11,19 @@
 namespace esp {
 namespace sensor {
 
+SensorSpec::~SensorSpec() {}
+
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
-    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
+    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(spec) {
   node.setType(scene::SceneNodeType::SENSOR);
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. The specification is null.";
   }
   ASSERT(spec_ != nullptr);
-
-  setTransformationFromSpec();
 }
 
-void Sensor::setTransformationFromSpec() {
-  if (spec_ == nullptr) {
-    LOG(ERROR) << "Cannot initialize sensor. the specification is null.";
-    return;
-  }
-
-  node().resetTransformation();
-
-  node().translate(Magnum::Vector3(spec_->position));
-  node().rotateX(Magnum::Rad(spec_->orientation[0]));
-  node().rotateY(Magnum::Rad(spec_->orientation[1]));
-  node().rotateZ(Magnum::Rad(spec_->orientation[2]));
+Sensor::~Sensor() {
+  LOG(INFO) << "Deconstructing Sensor";
 }
 
 void SensorSuite::add(const Sensor::ptr& sensor) {
@@ -56,10 +46,8 @@ void SensorSuite::clear() {
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubType == b.sensorSubType && a.parameters == b.parameters &&
-         a.position == b.position && a.orientation == b.orientation &&
-         a.resolution == b.resolution && a.channels == b.channels &&
-         a.encoding == b.encoding && a.observationSpace == b.observationSpace &&
+         a.sensorSubType == b.sensorSubType && a.encoding == b.encoding &&
+         a.observationSpace == b.observationSpace &&
          a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 bool operator!=(const SensorSpec& a, const SensorSpec& b) {

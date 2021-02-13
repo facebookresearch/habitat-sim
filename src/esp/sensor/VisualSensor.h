@@ -6,6 +6,7 @@
 #define ESP_SENSOR_VISUALSENSOR_H_
 
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/Math/ConfigurationValue.h>
 
 #include "esp/core/esp.h"
 
@@ -19,18 +20,21 @@ class RenderTarget;
 
 namespace sensor {
 struct VisualSensorSpec : public SensorSpec {
-  VisualSensorSpec() : SensorSpec() {
-    sensorType = SensorType::Color;
-    orientation = {0, 0, 0};
-    resolution = {84, 84};
-  };
+  VisualSensorSpec() : SensorSpec() {}
+  vec3f position = {0, 1.5, 0};
+  vec3f orientation = {0, 0, 0};
+  vec2i resolution = {84, 84};
+  float near = 0.01f;
+  float far = 1000.f;
+  Mn::Deg hfov = Mn::Deg{90.f};
+  float ortho_scale = 0.1f;
   ESP_SMART_POINTERS(VisualSensorSpec)
 };
 // Represents a sensor that provides visual data from the environment to an
 // agent
 class VisualSensor : public Sensor {
  public:
-  explicit VisualSensor(scene::SceneNode& node, SensorSpec::ptr spec);
+  explicit VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec);
   virtual ~VisualSensor();
 
   /**
@@ -87,6 +91,10 @@ class VisualSensor : public Sensor {
   virtual bool drawObservation(CORRADE_UNUSED sim::Simulator& sim) {
     return false;
   }
+  // can be called ONLY when it is attached to a scene node
+  void setTransformationFromSpec();
+
+  void updateResolution(float x_res, float y_res);
 
   /**
    * @brief Returns RenderCamera
@@ -95,6 +103,8 @@ class VisualSensor : public Sensor {
 
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;
+  VisualSensorSpec::ptr spec_ =
+      std::dynamic_pointer_cast<VisualSensorSpec>(spec_);
 
   ESP_SMART_POINTERS(VisualSensor)
 };
