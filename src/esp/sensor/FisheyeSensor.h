@@ -109,6 +109,8 @@ class FisheyeSensor : public VisualSensor {
   static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
       "fisheye-model-type={}-flags={}";
 
+  gfx::RenderCamera* getRenderCamera() { return nullptr; }
+
  protected:
   FisheyeSensorSpec::ptr fisheyeSensorSpec_ = nullptr;
   // raw pointer only, we can create it but let magnum to handle the memory

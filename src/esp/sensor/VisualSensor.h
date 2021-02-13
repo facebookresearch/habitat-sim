@@ -41,33 +41,6 @@ class VisualSensor : public Sensor {
 
   virtual bool isVisualSensor() override { return true; }
 
-  // visual sensor should implement and override the following functions
-  /**
-   * @brief set the projection matrix from sensor to the render camera
-   * @return Reference to self (for method chaining)
-   */
-  virtual VisualSensor& setProjectionMatrix(
-      CORRADE_UNUSED gfx::RenderCamera& targetCamera) {
-    return *this;
-  }
-  /**
-   * @brief set the transform matrix (modelview) from sensor to the render
-   * camera
-   * @return Reference to self (for method chaining)
-   */
-  virtual VisualSensor& setTransformationMatrix(
-      CORRADE_UNUSED gfx::RenderCamera& targetCamera) {
-    return *this;
-  }
-  /**
-   * @brief set the viewport from sensor to the render camera
-   * @return Reference to self (for method chaining)
-   */
-  virtual VisualSensor& setViewport(
-      CORRADE_UNUSED gfx::RenderCamera& targetCamera) {
-    return *this;
-  }
-
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
    *
@@ -128,6 +101,10 @@ class VisualSensor : public Sensor {
    *                to be drawn
    */
   virtual void visualizeObservation(gfx::SensorInfoVisualizer& visualizer);
+  /**
+   * @brief Returns RenderCamera
+   */
+  virtual gfx::RenderCamera* getRenderCamera() = 0;
 
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;

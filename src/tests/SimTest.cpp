@@ -14,6 +14,7 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/physics/RigidObject.h"
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "configure.h"
@@ -28,10 +29,10 @@ using esp::assets::ResourceManager;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
-using esp::metadata::MetadataMediator;
 using esp::metadata::attributes::AbstractPrimitiveAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
+using esp::sensor::CameraSensor;
 using esp::sensor::Observation;
 using esp::sensor::ObservationSpace;
 using esp::sensor::ObservationSpaceType;
@@ -100,14 +101,17 @@ struct SimTest : Cr::TestSuite::Tester {
   void recomputeNavmeshWithStaticObjects();
   void loadingObjectTemplates();
   void buildingPrimAssetObjectTemplates();
+  void addSensorToObject();
 
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
-  LightSetup lightSetup1{{Magnum::Vector4{0.0f, 1.5f, -0.2f, 0.0f},
-                          0xffffff_rgbf, LightPositionModel::CAMERA}};
+  LightSetup lightSetup1{{Magnum::Vector4{1.0f, 1.5f, 0.5f, 0.0f},
+                          {5.0, 5.0, 0.0},
+                          LightPositionModel::CAMERA}};
   LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
-                          0xffffff_rgbf, LightPositionModel::CAMERA}};
+                          {0.0, 5.0, 5.0},
+                          LightPositionModel::CAMERA}};
 };
 
 SimTest::SimTest() {
@@ -124,7 +128,8 @@ SimTest::SimTest() {
             &SimTest::multipleLightingSetupsRGBAObservation,
             &SimTest::recomputeNavmeshWithStaticObjects,
             &SimTest::loadingObjectTemplates,
-            &SimTest::buildingPrimAssetObjectTemplates});
+            &SimTest::buildingPrimAssetObjectTemplates,
+            &SimTest::addSensorToObject});
   // clang-format on
 }
 
@@ -234,9 +239,6 @@ void SimTest::getSceneWithLightingRGBAObservation() {
       << "Starting Test : getSceneWithLightingRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh, "custom_lighting_1");
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
 }
@@ -252,9 +254,6 @@ void SimTest::getDefaultLightingRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 }
@@ -271,9 +270,6 @@ void SimTest::getCustomLightingRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 }
@@ -290,9 +286,6 @@ void SimTest::updateLightSetupRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -325,9 +318,6 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
@@ -345,9 +335,6 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
 void SimTest::multipleLightingSetupsRGBAObservation() {
   Corrade::Utility::Debug()
       << "Starting Test : multipleLightingSetupsRGBAObservation ";
-  CORRADE_SKIP(
-      "We are iterating on lighting as of Sep 2020, so the expected behavior "
-      "isn't finalized.");
   auto simulator = getSimulator(planeStage);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
@@ -644,6 +631,64 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 
 }  // SimTest::buildingPrimAssetObjectTemplates
 
+void SimTest::addSensorToObject() {
+  Corrade::Utility::Debug() << "Starting Test : addSensorToObject ";
+  auto simulator = getSimulator(vangogh);
+  // manager of object attributes
+  auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("sphere");
+  int objectID = simulator->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+
+  // Add sensor to sphere object
+  esp::sensor::SensorSuite sensorSuite;
+  esp::sensor::SensorSpec::ptr objectSensorSpec =
+      esp::sensor::SensorSpec::create();
+  objectSensorSpec->uuid = std::to_string(objectID);
+  objectSensorSpec->position = {0, 0, 0};
+  objectSensorSpec->orientation = {0, 0, 0};
+  objectSensorSpec->resolution = {128, 128};
+  sensorSuite.add(simulator->addSensorToObject(objectID, objectSensorSpec));
+  std::string expectedUUID = std::to_string(objectID);
+  CORRADE_VERIFY(
+      sensorSuite.get(expectedUUID));  // Verify that Sensor exists with uuid
+  CameraSensor* cameraSensor =
+      dynamic_cast<CameraSensor*>(sensorSuite.get(expectedUUID).get());
+  cameraSensor->setTransformationFromSpec();
+
+  simulator->setTranslation({1.0f, 1.5f, 1.0f},
+                            objectID);  // Move camera to same place as agent
+
+  auto objs2 = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
+  int objectID2 = simulator->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
+  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
+
+  Observation observation;
+  ObservationSpace obsSpace;
+  simulator->getRenderer()->bindRenderTarget(*cameraSensor);
+  CORRADE_VERIFY(cameraSensor->getObservation(*simulator, observation));
+  CORRADE_VERIFY(cameraSensor->getObservationSpace(obsSpace));
+
+  esp::vec2i defaultResolution = {128, 128};
+  std::vector<size_t> expectedShape{{static_cast<size_t>(defaultResolution[0]),
+                                     static_cast<size_t>(defaultResolution[1]),
+                                     4}};
+
+  CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::Tensor);
+  CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
+  CORRADE_COMPARE(obsSpace.shape, expectedShape);
+  CORRADE_COMPARE(observation.buffer->shape, expectedShape);
+
+  // Compare with previously rendered ground truth
+  // Object camera at same location as agent camera should render similar image
+  CORRADE_COMPARE_WITH(
+      (Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
+                       {defaultResolution[0], defaultResolution[1]},
+                       observation.buffer->data}),
+      Cr::Utility::Directory::join(screenshotDir, "SimTestExpectedScene.png"),
+      (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.75f}));
+}
 }  // namespace
 
 CORRADE_TEST_MAIN(SimTest)

@@ -604,11 +604,9 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Set up camera
   activeSceneGraph_ = &simulator_->getActiveSceneGraph();
-  renderCamera_ = &activeSceneGraph_->getDefaultRenderCamera();
-  renderCamera_->setAspectRatioPolicy(
-      Mn::SceneGraph::AspectRatioPolicy::Extend);
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
+  renderCamera_ = getAgentCamera().getRenderCamera();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
@@ -977,7 +975,7 @@ void Viewer::drawEvent() {
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
 
-  uint32_t visibles = renderCamera_->getPreviousNumVisibileDrawables();
+  uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
   if (depthMode_) {
     simulator_->drawObservation(defaultAgentId_, "depth");
@@ -1037,6 +1035,7 @@ void Viewer::drawEvent() {
     Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
+    visibles = renderCamera_->getPreviousNumVisibleDrawables();
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
     CORRADE_ASSERT(sensorRenderTarget,
@@ -1172,8 +1171,9 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
     if (visualSensor != nullptr) {
-      visualSensor->specification()->resolution = {event.windowSize()[1],
-                                                   event.windowSize()[0]};
+      visualSensor->specification()->resolution = {event.framebufferSize()[1],
+                                                   event.framebufferSize()[0]};
+      renderCamera_->setViewport(visualSensor->framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
 
       if ((visualSensor->specification()->uuid == "fisheye") ||
@@ -1192,9 +1192,10 @@ void Viewer::viewportEvent(ViewportEvent& event) {
       }
     }
   }
-  Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
+  Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
+
   if (flyingCameraMode_) {
-    renderCamera_->setViewport(event.windowSize());
+    renderCamera_->setViewport(event.framebufferSize());
   }
 
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
@@ -1291,7 +1292,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
   float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
   auto& cam = getAgentCamera();
-  cam.modZoom(mod);
+  cam.modifyZoom(mod);
   redraw();
 
   event.setAccepted();

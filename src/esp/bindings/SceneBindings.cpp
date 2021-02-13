@@ -86,20 +86,6 @@ void initSceneBindings(py::module& m) {
 
             User can specify transformation of the root node w.r.t. the world
             frame. PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference)
-      .def("set_default_render_camera_parameters",
-           &SceneGraph::setDefaultRenderCamera,
-           R"(
-            Set transformation and the projection matrix to the default render camera.
-
-            The camera will have the same absolute transformation as the target
-            scene node after the operation.)",
-           "targetSceneNode"_a)
-      .def("get_default_render_camera", &SceneGraph::getDefaultRenderCamera,
-           R"(
-            Get the default camera stored in scene graph for rendering.
-
-            PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference);
 
   // ==== SceneManager ====

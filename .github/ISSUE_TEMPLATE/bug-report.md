@@ -8,10 +8,7 @@ about: Submit a bug report to help us improve Habitat
 
 <!-- A clear and concise description of what the bug is. -->
 
-## Command
-`# command that you run`
-
-## To Reproduce
+## Steps to Reproduce
 
 Steps to reproduce the behavior:
 
@@ -20,6 +17,8 @@ Steps to reproduce the behavior:
 1.
 2.
 3.
+
+ Please note that without a minimal working example to reproduce the bug, we may not be able to help you.
 
 <!-- If you have a code sample, error messages, stack traces, please provide it here as well -->
 

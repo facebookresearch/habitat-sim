@@ -14,14 +14,37 @@
 
 namespace esp {
 namespace core {
+
+/**
+ * @brief This enum describes how objects held in the @ref ManagedConatainer are
+ * accessed.
+ */
+enum class ManagedObjectAccess {
+  /**
+   * When an object is requested to be retrieved, a copy is made and
+   * returned.  Modifications to this object will only take place if the object
+   * is registered.
+   */
+  Copy,
+  /**
+   * When an object is requested to be retrieved, a reference to the
+   * object itself is returned, and all changes will be tracked without
+   * registration.
+   */
+  Share
+};
+
 /**
  * @brief Class template defining responsibilities and functionality for
  * managing @ref esp::core::AbstractManagedObject constructs.
  * @tparam T the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
  * esp::core::AbstractManagedObject.
+ * @tparam Access Whether the default access (getters) for this
+ * container provides copies of the objects held, or the actual objects
+ * themselves.
  */
-template <class T>
+template <class T, ManagedObjectAccess Access>
 class ManagedContainer : public ManagedContainerBase {
  public:
   static_assert(std::is_base_of<AbstractManagedObject, T>::value,
@@ -153,8 +176,8 @@ class ManagedContainer : public ManagedContainerBase {
    *
    * @param managedObject The managed object.
    * @param objectHandle The key for referencing the managed object in
-   * the @ref objectLibrary_. Will be set as origin handle for managed
-   * object. If empty string, use existing origin handle.
+   * the @ref ManagedContainerBase::objectLibrary_. Will be set as origin handle
+   * for managed object. If empty string, use existing origin handle.
    * @param forceRegistration Will register object even if conditional
    * registration checks fail in registerObjectFinalize.
    *
@@ -216,8 +239,7 @@ class ManagedContainer : public ManagedContainerBase {
    *
    * Can be used to manipulate a managed object before instancing new objects.
    * @param managedObjectID The ID of the managed object. Is mapped to the key
-   * referencing the asset in @ref objectLibrary_ by @ref
-   * objectLibKeyByID_.
+   * referencing the asset in @ref ManagedContainerBase::objectLibrary_ .
    * @return A mutable reference to the object managed object, or nullptr if
    * does not exist
    */
@@ -291,7 +313,7 @@ class ManagedContainer : public ManagedContainerBase {
   }  // removeAllObjects
 
   /**
-   * @brief remove managed objects that contain passed substring and that have
+   * @brief Remove managed objects that contain passed substring and that have
    * not been marked as default/non-removable, and return a vector of the
    * managed objects removed.
    * @param subStr substring to search for within existing primitive object
@@ -306,11 +328,12 @@ class ManagedContainer : public ManagedContainerBase {
       bool contains = true);
 
   /**
-   * @brief Get the ID of the managed object in @ref objectLibrary_ for
-   * the given managed object Handle, if exists.
+   * @brief Get the ID of the managed object in @ref
+   * ManagedContainerBase::objectLibrary_ for the given managed object Handle,
+   * if exists.
    *
    * @param objectHandle The string key referencing the managed object in
-   * @ref objectLibrary_. Usually the origin handle.
+   * @ref ManagedContainerBase::objectLibrary_. Usually the origin handle.
    * @return The object ID for the managed object with the passed handle, or
    * ID_UNDEFINED if none exists.
    */
@@ -319,14 +342,84 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::getObjectIDByHandle
 
   /**
-   * @brief Get a copy of the managed object identified by the
-   * managedObjectID.
+   * @brief Get a reference to, or a copy of, the managed object identified by
+   * the @p managedObjectID, depending on @ref Access value.  This is the
+   * function that should be be accessed by the user for general object
+   * consumption by ID.
    *
-   * Can be used to manipulate a managed object before instancing new objects.
    * @param managedObjectID The ID of the managed object. Is mapped to the key
-   * referencing the asset in @ref objectLibrary_ by @ref
-   * objectLibKeyByID_.
-   * @return A mutable reference to the object managed object, or nullptr if
+   * referencing the asset in @ref ManagedContainerBase::objectLibrary_ .
+   * @return A mutable reference to the managed object, or a copy, or nullptr if
+   * does not exist
+   */
+  ManagedPtr getObjectOrCopyByID(int managedObjectID) {
+    std::string objectHandle = getObjectHandleByID(managedObjectID);
+    return this->getObjectOrCopyByHandle(objectHandle);
+  }  // ManagedContainer::getObjectOrCopyByID
+
+  /**
+   * @brief Get a reference to, or a copy of, the managed object identified by
+   * the @p objectHandle, depending on @ref Access value.  This is the function
+   * that should be be accessed by the user for general object consumption by
+   * Handle.
+   *
+   * @param objectHandle the string key of the managed object desired.
+   * @return A mutable reference to the managed object, or a copy, or nullptr if
+   * does not exist
+   */
+  ManagedPtr getObjectOrCopyByHandle(const std::string& objectHandle) {
+    if (Access == ManagedObjectAccess::Copy) {
+      return this->getObjectCopyByHandle(objectHandle);
+    } else {
+      return this->getObjectByHandle(objectHandle);
+    }
+  }  // ManagedContainer::getObjectOrCopyByHandle
+
+  /**
+   * @brief Get a reference to, or a copy of, the managed object identified by
+   * the @p managedObjectID, depending on @ref Access value, and casted to the
+   * appropriate derived managed object class. This is the version that should
+   * be accessed by the user for type-casted object consumption by ID.
+   *
+   * @param managedObjectID The ID of the managed object. Is mapped to the key
+   * referencing the asset in @ref ManagedContainerBase::objectLibrary_.
+   * @return A mutable reference to the managed object, or a copy, casted to
+   * requested type, or nullptr if does not exist
+   */
+  template <class U>
+  std::shared_ptr<U> getObjectOrCopyByID(int managedObjectID) {
+    std::string objectHandle = getObjectHandleByID(managedObjectID);
+    return this->getObjectOrCopyByHandle<U>(objectHandle);
+  }  // ManagedContainer::getObjectOrCopyByID
+
+  /**
+   * @brief Get a reference to, or a copy of, the managed object identified by
+   * the @p managedObjectID, depending on @ref Access value, and casted to the
+   * appropriate derived managed object class. This is the version that should
+   * be accessed by the user for type-casted object consumption by
+   * Handle.
+   *
+   * @param objectHandle the string key of the managed object desired.
+   * @return A mutable reference to the managed object, or a copy, casted to
+   * requested type, or nullptr if does not exist
+   */
+  template <class U>
+  std::shared_ptr<U> getObjectOrCopyByHandle(const std::string& objectHandle) {
+    // call non-template version
+    auto res = getObjectOrCopyByHandle(objectHandle);
+    if (nullptr == res) {
+      return nullptr;
+    }
+    return std::dynamic_pointer_cast<U>(res);
+  }  // ManagedContainer::getObjectOrCopyByHandle
+
+  /**
+   * @brief Get a reference to a copy of the managed object identified
+   * by the @p managedObjectID.
+   *
+   * @param managedObjectID The ID of the managed object. Is mapped to the key
+   * referencing the asset in @ref ManagedContainerBase::objectLibrary_ .
+   * @return A mutable reference to a copy of the managed object, or nullptr if
    * does not exist
    */
   ManagedPtr getObjectCopyByID(int managedObjectID) {
@@ -340,12 +433,11 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::getObjectCopyByID
 
   /**
-   * @brief Return a reference to a copy of the object specified
-   * by passed handle. This is the version that should be accessed by the
-   * user.
+   * @brief Get a reference to a copy of the object specified
+   * by @p objectHandle
    * @param objectHandle the string key of the managed object desired.
-   * @return a copy of the desired managed object, or nullptr if does
-   * not exist
+   * @return A mutable reference to a copy of the managed object, or nullptr if
+   * does not exist
    */
   ManagedPtr getObjectCopyByHandle(const std::string& objectHandle) {
     if (!checkExistsWithMessage(objectHandle,
@@ -357,20 +449,18 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::getObjectCopyByHandle
 
   /**
-   * @brief Get a copy of the managed object identified by the
-   * managedObjectID, casted to the appropriate derived managed object class.
+   * @brief Get a reference to a copy of the managed object identified
+   * by the @p managedObjectID, casted to the appropriate derived managed object
+   * class.
    *
-   * Can be used to manipulate a managed object before instancing new objects.
    * @param managedObjectID The ID of the managed object. Is mapped to the key
-   * referencing the asset in @ref objectLibrary_ by @ref
-   * objectLibKeyByID_.
-   * @return A mutable reference to the object managed object, or nullptr if
-   * does not exist
+   * referencing the asset in @ref ManagedContainerBase::objectLibrary_.
+   * @return A mutable reference to a copy of the managed object casted to the
+   * requested type, or nullptr if does not exist
    */
   template <class U>
   std::shared_ptr<U> getObjectCopyByID(int managedObjectID) {
     // call non-template version
-    std::string objectHandle = getObjectHandleByID(managedObjectID);
     auto res = getObjectCopyByID(managedObjectID);
     if (nullptr == res) {
       return nullptr;
@@ -379,12 +469,13 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::getObjectCopyByID
 
   /**
-   * @brief Return a reference to a copy of the object specified
-   * by passed handle, casted to the appropriate derived managed object class.
-   * This is the version that should be accessed by the user
+   * @brief Get a reference to a copy of the object specified
+   * by @p objectHandle , casted to the appropriate derived managed object
+   * class.
+   *
    * @param objectHandle the string key of the managed object desired.
-   * @return a copy of the desired managed object, or nullptr if does
-   * not exist
+   * @return A mutable reference to a copy of the managed object casted to the
+   * requested type, or nullptr if does not exist
    */
   template <class U>
   std::shared_ptr<U> getObjectCopyByHandle(const std::string& objectHandle) {
@@ -477,7 +568,7 @@ class ManagedContainer : public ManagedContainerBase {
    * next available id, otherwise throws assertion and returns ID_UNDEFINED
    *
    * @param objectHandle The string key referencing the managed object in
-   * @ref objectLibrary_. Usually the origin handle.
+   * @ref ManagedContainerBase::objectLibrary_. Usually the origin handle.
    * @param getNext Whether to get the next available ID if not found, or to
    * throw an assertion. Defaults to false
    * @return The managed object's ID if found. The next available ID if not
@@ -488,7 +579,7 @@ class ManagedContainer : public ManagedContainerBase {
       return getObjectInternal<T>(objectHandle)->getID();
     } else {
       if (!getNext) {
-        LOG(ERROR) << "ManagedContainerBase::getObjectIDByHandleOrNew : No "
+        LOG(ERROR) << "ManagedContainer::getObjectIDByHandleOrNew : No "
                    << objectType_ << " managed object with handle "
                    << objectHandle << "exists. Aborting";
         return ID_UNDEFINED;
@@ -554,7 +645,7 @@ class ManagedContainer : public ManagedContainerBase {
     if (defaultObj_ == nullptr) {
       return nullptr;
     }
-    ManagedPtr res = this->copyObject(defaultObj_);
+    ManagedPtr res = copyObject(defaultObj_);
     if (nullptr != res) {
       res->setHandle(newHandle);
     }
@@ -595,7 +686,7 @@ class ManagedContainer : public ManagedContainerBase {
    * createObjectCopy keyed by string names of classes being instanced,
    */
   typedef std::map<std::string,
-                   ManagedPtr (ManagedContainer<T>::*)(ManagedPtr&)>
+                   ManagedPtr (ManagedContainer<T, Access>::*)(ManagedPtr&)>
       Map_Of_CopyCtors;
 
   /**
@@ -612,17 +703,17 @@ class ManagedContainer : public ManagedContainerBase {
   ManagedPtr defaultObj_ = nullptr;
 
  public:
-  ESP_SMART_POINTERS(ManagedContainer<T>)
+  ESP_SMART_POINTERS(ManagedContainer<T, Access>);
 
 };  // class ManagedContainer
 
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T>
-auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
-                                                   bool contains)
-    -> std::vector<ManagedPtr> {
+template <class T, ManagedObjectAccess Access>
+auto ManagedContainer<T, Access>::removeObjectsBySubstring(
+    const std::string& subStr,
+    bool contains) -> std::vector<ManagedPtr> {
   std::vector<ManagedPtr> res;
   // get all handles that match query elements first
   std::vector<std::string> handles =
@@ -635,12 +726,12 @@ auto ManagedContainer<T>::removeObjectsBySubstring(const std::string& subStr,
     }
   }
   return res;
-}  // ManagedContainer<T>::removeObjectsBySubstring
+}  // ManagedContainer<T, Access>::removeObjectsBySubstring
 
-template <class T>
-auto ManagedContainer<T>::removeObjectInternal(const std::string& objectHandle,
-                                               const std::string& sourceStr)
-    -> ManagedPtr {
+template <class T, ManagedObjectAccess Access>
+auto ManagedContainer<T, Access>::removeObjectInternal(
+    const std::string& objectHandle,
+    const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
     LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
               << " managed object " << objectHandle << " : Does not exist.";
