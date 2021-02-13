@@ -20,14 +20,49 @@ class RenderTarget;
 
 namespace sensor {
 struct VisualSensorSpec : public SensorSpec {
-  VisualSensorSpec() : SensorSpec() {}
-  vec3f position = {0, 1.5, 0};
-  vec3f orientation = {0, 0, 0};
-  vec2i resolution = {84, 84};
+  VisualSensorSpec();
+  SensorType sensorType = SensorType::Color;
   float near = 0.01f;
   float far = 1000.f;
   Mn::Deg hfov = Mn::Deg{90.f};
   float ortho_scale = 0.1f;
+  vec2i resolution = {84, 84};
+  std::string encoding = "rgba_uint8";  // For rendering colors in images
+  bool gpu2gpuTransfer = false;         // True for pytorch tensor support
+  void sanityCheck() {
+    if (sensorType != SensorType::Color && sensorType != SensorType::Depth &&
+        sensorType != SensorType::Normal &&
+        sensorType != SensorType::Semantic) {
+      throw std::runtime_error(
+          "VisualSensor::VisualSensorSpec() sensorType must be Color, Depth, "
+          "Normal, or Semantic");
+    }
+    if (noiseModel == "Gaussian" && sensorType != SensorType::Color) {
+      throw std::runtime_error(
+          "VisualSensor::VisualSensorSpec() sensorType must be Color if "
+          "noiseModel is Gaussian");
+    }
+    if (noiseModel == "Poisson" && sensorType != SensorType::Color) {
+      throw std::runtime_error(
+          "VisualSensor::VisualSensorSpec() sensorType must be Color if "
+          "noiseModel is Poisson");
+    }
+    if (noiseModel == "Redwood" && sensorType != SensorType::Depth) {
+      throw std::runtime_error(
+          "VisualSensor::VisualSensorSpec() sensorType must be Depth if "
+          "noiseModel is Redwood");
+    }
+    if (noiseModel == "SaltAndPepper" && sensorType != SensorType::Color) {
+      throw std::runtime_error(
+          "VisualSensor::VisualSensorSpec() sensorType must be Color if "
+          "noiseModel is SaltAndPepper");
+    }
+    if (noiseModel == "Speckle" && sensorType != SensorType::Color) {
+      throw std::runtime_error(
+          "VisualSensor::VisualSensorSpec() sensorType must be Color if "
+          "noiseModel is Speckle");
+    }
+  }
   ESP_SMART_POINTERS(VisualSensorSpec)
 };
 // Represents a sensor that provides visual data from the environment to an
@@ -91,10 +126,10 @@ class VisualSensor : public Sensor {
   virtual bool drawObservation(CORRADE_UNUSED sim::Simulator& sim) {
     return false;
   }
-  // can be called ONLY when it is attached to a scene node
-  void setTransformationFromSpec();
 
-  void updateResolution(float x_res, float y_res);
+  // Update SensorSpec's resolution
+  void updateResolution(int height, int width);
+  void updateResolution(vec2i resolution);
 
   /**
    * @brief Returns RenderCamera

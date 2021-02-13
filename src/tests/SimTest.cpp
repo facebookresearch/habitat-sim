@@ -638,8 +638,7 @@ void SimTest::addSensorToObject() {
 
   // Add sensor to sphere object
   esp::sensor::SensorSuite sensorSuite;
-  esp::sensor::SensorSpec::ptr objectSensorSpec =
-      esp::sensor::CameraSensorSpec::create();
+  auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
   objectSensorSpec->uuid = std::to_string(objectID);
   objectSensorSpec->position = {0, 0, 0};
   objectSensorSpec->orientation = {0, 0, 0};

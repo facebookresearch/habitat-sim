@@ -57,11 +57,6 @@ void initSensorBindings(py::module& m) {
   py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())
       .def(py::init(&SensorSpec::create<>))
       .def_readwrite("uuid", &SensorSpec::uuid)
-      .def_readwrite("sensor_type", &SensorSpec::sensorType)
-      .def_readwrite("sensor_subtype", &SensorSpec::sensorSubType)
-      .def_readwrite("encoding", &SensorSpec::encoding)
-      .def_readwrite("gpu2gpu_transfer", &SensorSpec::gpu2gpuTransfer)
-      .def_readwrite("observation_space", &SensorSpec::observationSpace)
       .def_readwrite("noise_model", &SensorSpec::noiseModel)
       .def_property(
           "noise_model_kwargs",
@@ -84,11 +79,34 @@ void initSensorBindings(py::module& m) {
              return self != other;
            });
 
+  // ==== VisualSensorSpec ====
+  py::class_<VisualSensorSpec, VisualSensorSpec::ptr>(m, "VisualSensorSpec",
+                                                      py::dynamic_attr())
+      .def(py::init(&VisualSensorSpec::create<>))
+      .def_readwrite("uuid", &VisualSensorSpec::uuid)
+      .def_readwrite("sensor_type", &VisualSensorSpec::sensorType)
+      .def_readwrite("encoding", &VisualSensorSpec::encoding)
+      .def_readwrite("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer)
+      .def_readwrite("noise_model", &VisualSensorSpec::noiseModel);
+
+  // ====CameraSensorSpec ====
+  py::class_<CameraSensorSpec, CameraSensorSpec::ptr>(m, "CameraSensorSpec",
+                                                      py::dynamic_attr())
+      .def(py::init(&CameraSensorSpec::create<>))
+      .def_readwrite("uuid", &CameraSensorSpec::uuid)
+      .def_readwrite("sensor_type", &CameraSensorSpec::sensorType)
+      .def_readwrite("sensor_subtype", &CameraSensorSpec::sensorSubType)
+      .def_readwrite("encoding", &CameraSensorSpec::encoding)
+      .def_readwrite("gpu2gpu_transfer", &CameraSensorSpec::gpu2gpuTransfer)
+      .def_readwrite("observation_space", &CameraSensorSpec::observationSpace)
+      .def_readwrite("noise_model", &CameraSensorSpec::noiseModel);
+
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
              Magnum::SceneGraph::AbstractFeature3D,
              Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
       .def("specification", &Sensor::specification)
+      .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
       .def("is_visual_sensor", &Sensor::isVisualSensor)
       .def("get_observation", &Sensor::getObservation)
       .def_property_readonly("node", nodeGetter<Sensor>,
@@ -99,9 +117,6 @@ void initSensorBindings(py::module& m) {
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
              Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(m,
                                                                 "VisualSensor")
-
-      .def("set_transformation_from_spec",
-           &VisualSensor::setTransformationFromSpec)
       .def_property_readonly(
           "render_camera", &VisualSensor::getRenderCamera,
           R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",

@@ -527,9 +527,11 @@ Viewer::Viewer(const Arguments& arguments)
       agentConfig.sensorSpecifications[0])
       ->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
 
-  agentConfig.sensorSpecifications[0]->sensorSubType =
-      args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
-                                 : esp::sensor::SensorSubType::Pinhole;
+  std::dynamic_pointer_cast<esp::sensor::CameraSensorSpec>(
+      agentConfig.sensorSpecifications[0])
+      ->sensorSubType = args.isSet("orthographic")
+                            ? esp::sensor::SensorSubType::Orthographic
+                            : esp::sensor::SensorSubType::Pinhole;
 
   // add selects a random initial state and sets up the default controls and
   // step filter

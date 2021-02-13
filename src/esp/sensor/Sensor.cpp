@@ -20,10 +20,25 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
     LOG(ERROR) << "Cannot initialize sensor. The specification is null.";
   }
   ASSERT(spec_ != nullptr);
+  setTransformationFromSpec();
 }
 
 Sensor::~Sensor() {
   LOG(INFO) << "Deconstructing Sensor";
+}
+
+void Sensor::setTransformationFromSpec() {
+  if (spec_ == nullptr) {
+    LOG(ERROR) << "Cannot initialize sensor. the specification is null.";
+    return;
+  }
+
+  node().resetTransformation();
+
+  node().translate(Magnum::Vector3(spec_->position));
+  node().rotateX(Magnum::Rad(spec_->orientation[0]));
+  node().rotateY(Magnum::Rad(spec_->orientation[1]));
+  node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
 void SensorSuite::add(const Sensor::ptr& sensor) {
@@ -45,10 +60,8 @@ void SensorSuite::clear() {
 }
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {
-  return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubType == b.sensorSubType && a.encoding == b.encoding &&
-         a.observationSpace == b.observationSpace &&
-         a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
+  return a.uuid == b.uuid && a.position == b.position &&
+         a.orientation == b.orientation && a.noiseModel == b.noiseModel;
 }
 bool operator!=(const SensorSpec& a, const SensorSpec& b) {
   return !(a == b);
