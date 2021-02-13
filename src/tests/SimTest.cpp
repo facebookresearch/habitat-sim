@@ -16,7 +16,6 @@
 #include "esp/physics/RigidObject.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
-#include "esp/sensor/CameraSensor.h"
 
 #include "configure.h"
 
@@ -34,10 +33,10 @@ using esp::metadata::attributes::AbstractPrimitiveAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
 using esp::sensor::CameraSensor;
+using esp::sensor::CameraSensorSpec;
 using esp::sensor::Observation;
 using esp::sensor::ObservationSpace;
 using esp::sensor::ObservationSpaceType;
-using esp::sensor::CameraSensorSpec;
 using esp::sensor::SensorType;
 using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;

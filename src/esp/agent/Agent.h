@@ -11,8 +11,8 @@
 #include "esp/core/esp.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneNode.h"
-#include "esp/sensor/Sensor.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/Sensor.h"
 
 namespace esp {
 namespace agent {
