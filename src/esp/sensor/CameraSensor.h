@@ -14,18 +14,10 @@ namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
   CameraSensorSpec();
-  SensorSubType sensorSubType = SensorSubType::Pinhole;
   int channels = 4;
   // description of Sensor observation space as gym.spaces.Dict()
   std::string observationSpace = "";
-  void sanityCheck() {
-    if (sensorSubType != SensorSubType::Pinhole &&
-        sensorSubType != SensorSubType::Orthographic) {
-      throw std::runtime_error(
-          "CameraSensor::CameraSensorSpec() does not have SensorSubType "
-          "Pinhole or Orthographic");
-    }
-  }
+  void sanityCheck();
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
 
@@ -38,8 +30,8 @@ class CameraSensor : public VisualSensor {
                         const CameraSensorSpec::ptr& spec);
   virtual ~CameraSensor() {}
 
-  /** @brief Updates this sensor's CameraSensorSpec spec_ to reflect the passed
-   * new values
+  /** @brief Updates this sensor's CameraSensorSpec cameraSensorSpec_ to reflect
+   * the passed new values
    *  @param[in] spec Instance of CameraSensorSpec that sensor will use to
    * update its own SensorSpec
    */
@@ -122,8 +114,8 @@ class CameraSensor : public VisualSensor {
    * @param FOV desired FOV to set.
    */
   void setFOV(Mn::Deg FOV) {
-    spec_->hfov = FOV;
-    if (spec_->sensorSubType != SensorSubType::Pinhole) {
+    cameraSensorSpec_->hfov = FOV;
+    if (cameraSensorSpec_->sensorSubType != SensorSubType::Pinhole) {
       LOG(INFO)
           << "CameraSensor::setFOV : Only Perspective-base CameraSensors use "
              "FOV. Specified value saved but will not be consumed by this "
@@ -135,27 +127,29 @@ class CameraSensor : public VisualSensor {
   /**
    * @brief Returns the FOV of this CameraSensor
    */
-  Mn::Deg getFOV() const { return spec_->hfov; }
+  Mn::Deg getFOV() const { return cameraSensorSpec_->hfov; }
 
   /**
    * @brief Sets camera type and calculates appropriate size vector for
    * display.
    */
   void setCameraType(const SensorSubType& _cameraType) {
-    spec_->sensorSubType = _cameraType;
+    cameraSensorSpec_->sensorSubType = _cameraType;
     recomputeBaseProjectionMatrix();
   }  // CameraSensor::setCameraType
 
   /**
    * @brief Returns the camera type of this Sensor
    */
-  SensorSubType getCameraType() const { return spec_->sensorSubType; }
+  SensorSubType getCameraType() const {
+    return cameraSensorSpec_->sensorSubType;
+  }
 
   /**
    * @brief Sets width of this sensor's view port
    */
   void setWidth(int _width) {
-    spec_->resolution[1] = _width;
+    cameraSensorSpec_->resolution[1] = _width;
     width_ = _width;
     recomputeBaseProjectionMatrix();
   }
@@ -165,7 +159,7 @@ class CameraSensor : public VisualSensor {
    * @brief Sets height of this sensor's view port
    */
   void setHeight(int _height) {
-    spec_->resolution[0] = _height;
+    cameraSensorSpec_->resolution[0] = _height;
     height_ = _height;
     recomputeBaseProjectionMatrix();
   }
@@ -175,7 +169,7 @@ class CameraSensor : public VisualSensor {
    * @brief Sets near plane distance.
    */
   void setNear(float _near) {
-    spec_->near = _near;
+    cameraSensorSpec_->near = _near;
     near_ = _near;
     recomputeBaseProjectionMatrix();
   }
@@ -185,7 +179,7 @@ class CameraSensor : public VisualSensor {
    * @brief Sets far plane distance.
    */
   void setFar(float _far) {
-    spec_->far = _far;
+    cameraSensorSpec_->far = _far;
     far_ = _far;
     recomputeBaseProjectionMatrix();
   }
@@ -257,7 +251,7 @@ class CameraSensor : public VisualSensor {
    */
   gfx::RenderCamera* renderCamera_;
 
-  CameraSensorSpec::ptr spec_ =
+  CameraSensorSpec::ptr cameraSensorSpec_ =
       std::dynamic_pointer_cast<CameraSensorSpec>(spec_);
 
  public:

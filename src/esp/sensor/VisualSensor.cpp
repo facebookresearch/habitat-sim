@@ -12,12 +12,36 @@
 namespace esp {
 namespace sensor {
 
+void VisualSensorSpec::sanityCheck() {
+  bool isVisualSensor =
+      (sensorType == SensorType::Color || sensorType == SensorType::Depth ||
+       sensorType == SensorType::Normal || sensorType == SensorType::Semantic);
+  CORRADE_ASSERT(
+      isVisualSensor,
+      "VisualSensor::VisualSensorSpec() sensorType must be Color, Depth, "
+      "Normal, or Semantic", );
+  if (noiseModel == "Gaussian" || noiseModel == "Poisson" ||
+      noiseModel == "SaltAndPepper" || noiseModel == "Speckle") {
+    CORRADE_ASSERT(
+        sensorType == SensorType::Color,
+        "VisualSensor::VisualSensorSpec() sensorType must be Color if "
+        "noiseModel is Gaussian, Poisson, SaltAndPepper, or Speckle", );
+  }
+  if (noiseModel == "Redwood") {
+    CORRADE_ASSERT(
+        sensorType == SensorType::Depth,
+        "VisualSensor::VisualSensorSpec() sensorType must be Depth if "
+        "noiseModel is Redwood", );
+  }
+}
+
 VisualSensorSpec::VisualSensorSpec() : SensorSpec() {
+  sensorType = SensorType::Color;
   sanityCheck();
 }
 
 VisualSensor::VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec)
-    : Sensor{node, spec}, tgt_{nullptr}, spec_(spec) {}
+    : Sensor{node, std::move(spec)}, tgt_{nullptr} {}
 
 VisualSensor::~VisualSensor() = default;
 
@@ -28,16 +52,17 @@ void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
   tgt_ = std::move(tgt);
 }
 
-void VisualSensor::updateResolution(int height, int width) {
-  spec_->resolution = {height, width};
+void VisualSensor::setResolution(int height, int width) {
+  visualSensorSpec_->resolution = {height, width};
 }
 
-void VisualSensor::updateResolution(vec2i resolution) {
-  spec_->resolution = resolution;
+void VisualSensor::setResolution(vec2i resolution) {
+  visualSensorSpec_->resolution = resolution;
 }
 
 bool operator==(const VisualSensorSpec& a, const VisualSensorSpec& b) {
-  return a.uuid == b.uuid && a.sensorType == b.sensorType && a.near == b.near &&
+  return a.uuid == b.uuid && a.sensorType == b.sensorType &&
+         a.sensorSubType == b.sensorSubType && a.near == b.near &&
          a.far == b.far && a.hfov == b.hfov && a.ortho_scale == b.ortho_scale &&
          a.position == b.position && a.orientation == b.orientation &&
          a.resolution == b.resolution && a.encoding == b.encoding &&

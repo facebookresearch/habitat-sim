@@ -46,6 +46,8 @@ enum class SensorSubType {
 struct SensorSpec {
   SensorSpec() {}
   std::string uuid;
+  SensorType sensorType;
+  SensorSubType sensorSubType;
   vec3f position = {0, 1.5, 0};
   vec3f orientation = {0, 0, 0};
   std::string noiseModel = "None";

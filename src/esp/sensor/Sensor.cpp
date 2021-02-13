@@ -14,7 +14,7 @@ namespace sensor {
 SensorSpec::~SensorSpec() {}
 
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
-    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(spec) {
+    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
   node.setType(scene::SceneNodeType::SENSOR);
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. The specification is null.";
@@ -60,7 +60,8 @@ void SensorSuite::clear() {
 }
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {
-  return a.uuid == b.uuid && a.position == b.position &&
+  return a.uuid == b.uuid && a.sensorType == b.sensorType &&
+         a.sensorSubType == b.sensorSubType && a.position == b.position &&
          a.orientation == b.orientation && a.noiseModel == b.noiseModel;
 }
 bool operator!=(const SensorSpec& a, const SensorSpec& b) {

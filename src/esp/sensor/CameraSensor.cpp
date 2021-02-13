@@ -14,17 +14,24 @@
 namespace esp {
 namespace sensor {
 
+void CameraSensorSpec::sanityCheck() {
+  CORRADE_ASSERT(sensorSubType == SensorSubType::Pinhole ||
+                     sensorSubType == SensorSubType::Orthographic,
+                 "CameraSensor::CameraSensorSpec() does not have SensorSubType "
+                 "Pinhole or Orthographic", );
+}
+
 CameraSensorSpec::CameraSensorSpec() : VisualSensorSpec() {
-  sanityCheck();
   uuid = "rgba_camera";
+  sensorSubType = SensorSubType::Pinhole;
+  sanityCheck();
 }
 
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
                            const CameraSensorSpec::ptr& spec)
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
-      zoomMatrix_(Magnum::Math::IdentityInit),
-      spec_(spec) {
+      zoomMatrix_(Magnum::Math::IdentityInit) {
   // Sanity check
   CORRADE_ASSERT(spec->sensorSubType == SensorSubType::Pinhole ||
                      spec->sensorSubType == SensorSubType::Orthographic,
@@ -42,14 +49,14 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
 void CameraSensor::setProjectionParameters(const CameraSensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
   // update this sensor's sensor spec to reflect the passed new values
-  spec_->resolution = spec->resolution;
-  spec_->near = spec->near;
-  spec_->far = spec->far;
+  cameraSensorSpec_->resolution = spec->resolution;
+  cameraSensorSpec_->near = spec->near;
+  cameraSensorSpec_->far = spec->far;
 
-  width_ = spec_->resolution[1];
-  height_ = spec_->resolution[0];
-  near_ = spec_->near;
-  far_ = spec_->far;
+  width_ = cameraSensorSpec_->resolution[1];
+  height_ = cameraSensorSpec_->resolution[0];
+  near_ = cameraSensorSpec_->near;
+  far_ = cameraSensorSpec_->far;
   setCameraType(spec->sensorSubType);
 
 }  // setProjectionParameters
@@ -66,19 +73,19 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
   Mn::Vector2 nearPlaneSize_ =
       Mn::Vector2{1.0f, static_cast<float>(height_) / width_};
   float scale;
-  if (spec_->sensorSubType == SensorSubType::Orthographic) {
-    scale = spec_->ortho_scale;
+  if (cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic) {
+    scale = cameraSensorSpec_->ortho_scale;
     nearPlaneSize_ /= scale;
     baseProjMatrix_ =
         Mn::Matrix4::orthographicProjection(nearPlaneSize_, near_, far_);
   } else {
-    if (spec_->sensorSubType != SensorSubType::Pinhole) {
+    if (cameraSensorSpec_->sensorSubType != SensorSubType::Pinhole) {
       LOG(INFO) << "CameraSensor::setCameraType : Unsupported Camera type val :"
-                << static_cast<int>(spec_->sensorSubType)
+                << static_cast<int>(cameraSensorSpec_->sensorSubType)
                 << " so defaulting to Pinhole.";
-      spec_->sensorSubType = SensorSubType::Pinhole;
+      cameraSensorSpec_->sensorSubType = SensorSubType::Pinhole;
     }
-    Magnum::Deg fov = spec_->hfov;
+    Magnum::Deg fov = cameraSensorSpec_->hfov;
     Magnum::Deg halfHFovRad{Magnum::Deg(.5 * fov)};
     scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
     nearPlaneSize_ /= scale;
@@ -91,13 +98,13 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
 
 bool CameraSensor::getObservationSpace(ObservationSpace& space) {
   space.spaceType = ObservationSpaceType::Tensor;
-  space.shape = {static_cast<size_t>(spec_->resolution[0]),
-                 static_cast<size_t>(spec_->resolution[1]),
-                 static_cast<size_t>(spec_->channels)};
+  space.shape = {static_cast<size_t>(cameraSensorSpec_->resolution[0]),
+                 static_cast<size_t>(cameraSensorSpec_->resolution[1]),
+                 static_cast<size_t>(cameraSensorSpec_->channels)};
   space.dataType = core::DataType::DT_UINT8;
-  if (spec_->sensorType == SensorType::Semantic) {
+  if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
     space.dataType = core::DataType::DT_UINT32;
-  } else if (spec_->sensorType == SensorType::Depth) {
+  } else if (cameraSensorSpec_->sensorType == SensorType::Depth) {
     space.dataType = core::DataType::DT_FLOAT;
   }
   return true;
@@ -132,7 +139,7 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
-  if (spec_->sensorType == SensorType::Semantic) {
+  if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
     // TODO: check sim has semantic scene graph
     renderer->draw(*this, sim.getActiveSemanticSceneGraph(), flags);
     if (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph()) {
@@ -161,11 +168,11 @@ void CameraSensor::readObservation(Observation& obs) {
 
   // TODO: have different classes for the different types of sensors
   // TODO: do we need to flip axis?
-  if (spec_->sensorType == SensorType::Semantic) {
+  if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
     renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
         obs.buffer->data});
-  } else if (spec_->sensorType == SensorType::Depth) {
+  } else if (cameraSensorSpec_->sensorType == SensorType::Depth) {
     renderTarget().readFrameDepth(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
         obs.buffer->data});

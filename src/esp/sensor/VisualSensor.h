@@ -21,7 +21,6 @@ class RenderTarget;
 namespace sensor {
 struct VisualSensorSpec : public SensorSpec {
   VisualSensorSpec();
-  SensorType sensorType = SensorType::Color;
   float near = 0.01f;
   float far = 1000.f;
   Mn::Deg hfov = Mn::Deg{90.f};
@@ -29,40 +28,7 @@ struct VisualSensorSpec : public SensorSpec {
   vec2i resolution = {84, 84};
   std::string encoding = "rgba_uint8";  // For rendering colors in images
   bool gpu2gpuTransfer = false;         // True for pytorch tensor support
-  void sanityCheck() {
-    if (sensorType != SensorType::Color && sensorType != SensorType::Depth &&
-        sensorType != SensorType::Normal &&
-        sensorType != SensorType::Semantic) {
-      throw std::runtime_error(
-          "VisualSensor::VisualSensorSpec() sensorType must be Color, Depth, "
-          "Normal, or Semantic");
-    }
-    if (noiseModel == "Gaussian" && sensorType != SensorType::Color) {
-      throw std::runtime_error(
-          "VisualSensor::VisualSensorSpec() sensorType must be Color if "
-          "noiseModel is Gaussian");
-    }
-    if (noiseModel == "Poisson" && sensorType != SensorType::Color) {
-      throw std::runtime_error(
-          "VisualSensor::VisualSensorSpec() sensorType must be Color if "
-          "noiseModel is Poisson");
-    }
-    if (noiseModel == "Redwood" && sensorType != SensorType::Depth) {
-      throw std::runtime_error(
-          "VisualSensor::VisualSensorSpec() sensorType must be Depth if "
-          "noiseModel is Redwood");
-    }
-    if (noiseModel == "SaltAndPepper" && sensorType != SensorType::Color) {
-      throw std::runtime_error(
-          "VisualSensor::VisualSensorSpec() sensorType must be Color if "
-          "noiseModel is SaltAndPepper");
-    }
-    if (noiseModel == "Speckle" && sensorType != SensorType::Color) {
-      throw std::runtime_error(
-          "VisualSensor::VisualSensorSpec() sensorType must be Color if "
-          "noiseModel is Speckle");
-    }
-  }
+  void sanityCheck();
   ESP_SMART_POINTERS(VisualSensorSpec)
 };
 // Represents a sensor that provides visual data from the environment to an
@@ -81,7 +47,7 @@ class VisualSensor : public Sensor {
     // corresponds to the practice of treating images as arrays that is used in
     // modern CV and DL. However, graphics frameworks expect W x H format for
     // frame buffer sizes
-    return {spec_->resolution[1], spec_->resolution[0]};
+    return {visualSensorSpec_->resolution[1], visualSensorSpec_->resolution[0]};
   }
 
   virtual bool isVisualSensor() override { return true; }
@@ -128,8 +94,8 @@ class VisualSensor : public Sensor {
   }
 
   // Update SensorSpec's resolution
-  void updateResolution(int height, int width);
-  void updateResolution(vec2i resolution);
+  void setResolution(int height, int width);
+  void setResolution(vec2i resolution);
 
   /**
    * @brief Returns RenderCamera
@@ -138,7 +104,7 @@ class VisualSensor : public Sensor {
 
  protected:
   std::unique_ptr<gfx::RenderTarget> tgt_;
-  VisualSensorSpec::ptr spec_ =
+  VisualSensorSpec::ptr visualSensorSpec_ =
       std::dynamic_pointer_cast<VisualSensorSpec>(spec_);
 
   ESP_SMART_POINTERS(VisualSensor)
