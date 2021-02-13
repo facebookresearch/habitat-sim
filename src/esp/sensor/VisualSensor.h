@@ -20,14 +20,14 @@ class RenderTarget;
 
 namespace sensor {
 struct VisualSensorSpec : public SensorSpec {
-  VisualSensorSpec();
   float near = 0.01f;
   float far = 1000.f;
-  Mn::Deg hfov = Mn::Deg{90.f};
-  float ortho_scale = 0.1f;
-  vec2i resolution = {84, 84};
-  std::string encoding = "rgba_uint8";  // For rendering colors in images
-  bool gpu2gpuTransfer = false;         // True for pytorch tensor support
+  Mn::Deg hfov;
+  float ortho_scale;
+  vec2i resolution;
+  std::string encoding;  // For rendering colors in images
+  bool gpu2gpuTransfer;  // True for pytorch tensor support
+  VisualSensorSpec();
   void sanityCheck();
   ESP_SMART_POINTERS(VisualSensorSpec)
 };

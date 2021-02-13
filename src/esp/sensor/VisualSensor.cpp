@@ -35,7 +35,13 @@ void VisualSensorSpec::sanityCheck() {
   }
 }
 
-VisualSensorSpec::VisualSensorSpec() : SensorSpec() {
+VisualSensorSpec::VisualSensorSpec()
+    : SensorSpec(),
+      hfov(Mn::Deg{90.f}),
+      ortho_scale(0.1f),
+      resolution({84, 84}),
+      encoding("rgba_uint8"),
+      gpu2gpuTransfer(false) {
   sensorType = SensorType::Color;
   sanityCheck();
 }

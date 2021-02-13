@@ -13,10 +13,10 @@ namespace esp {
 namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
-  CameraSensorSpec();
-  int channels = 4;
+  int channels;
   // description of Sensor observation space as gym.spaces.Dict()
-  std::string observationSpace = "";
+  std::string observationSpace;
+  CameraSensorSpec();
   void sanityCheck();
   ESP_SMART_POINTERS(CameraSensorSpec)
 };

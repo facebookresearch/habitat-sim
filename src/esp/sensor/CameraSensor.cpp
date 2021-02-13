@@ -21,7 +21,8 @@ void CameraSensorSpec::sanityCheck() {
                  "Pinhole or Orthographic", );
 }
 
-CameraSensorSpec::CameraSensorSpec() : VisualSensorSpec() {
+CameraSensorSpec::CameraSensorSpec()
+    : VisualSensorSpec(), channels(4), observationSpace("") {
   uuid = "rgba_camera";
   sensorSubType = SensorSubType::Pinhole;
   sanityCheck();
