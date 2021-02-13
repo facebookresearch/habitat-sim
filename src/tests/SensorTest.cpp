@@ -6,6 +6,7 @@
 
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/Sensor.h"
 #include "esp/sensor/SensorFactory.h"
 
@@ -43,9 +44,9 @@ void SensorTest::testSensorFactory() {
   CORRADE_VERIFY(sceneNode2.getId() == 2);
 
   // Add different uuid sensors to same node and assert increase
-  SensorSpec::ptr sensorSpecA = SensorSpec::create();
+  auto sensorSpecA = CameraSensorSpec::create();
   sensorSpecA->uuid = "A";
-  SensorSpec::ptr sensorSpecB = SensorSpec::create();
+  auto sensorSpecB = CameraSensorSpec::create();
   sensorSpecB->uuid = "B";
   SensorSetup sensorSpecificationsAB = {sensorSpecA, sensorSpecB};
   SensorSuite sensorSuiteAB =
@@ -54,7 +55,7 @@ void SensorTest::testSensorFactory() {
   CORRADE_VERIFY(sensorSuite_.getSensors().size() == 2);
 
   // Add different uuid sensors to different nodes and assert increase
-  SensorSpec::ptr sensorSpecC = SensorSpec::create();
+  auto sensorSpecC = CameraSensorSpec::create();
   sensorSpecC->uuid = "C";
   SensorSetup sensorSpecificationsC = {sensorSpecC};
   SensorSuite sensorSuiteC =
@@ -62,7 +63,7 @@ void SensorTest::testSensorFactory() {
   sensorSuite_.merge(sensorSuiteC);
   CORRADE_VERIFY(sensorSuite_.getSensors().size() == 3);
 
-  SensorSpec::ptr sensorSpecD = SensorSpec::create();
+  auto sensorSpecD = CameraSensorSpec::create();
   sensorSpecD->uuid = "D";
   SensorSetup sensorSpecificationsD = {sensorSpecD};
   SensorSuite sensorSuiteD =
@@ -70,7 +71,7 @@ void SensorTest::testSensorFactory() {
   sensorSuite_.merge(sensorSuiteD);
   CORRADE_VERIFY(sensorSuite_.getSensors().size() == 4);
   // Add same uuid sensor to same node and assert that only one sensor was added
-  SensorSpec::ptr sensorSpecE = SensorSpec::create();
+  auto sensorSpecE = CameraSensorSpec::create();
   sensorSpecE->uuid = "E";
   SensorSetup sensorSpecificationsEE = {sensorSpecE, sensorSpecE};
   SensorSuite sensorSuiteEE =
@@ -80,7 +81,7 @@ void SensorTest::testSensorFactory() {
 
   // Add same uuid sensors to different nodes and assert only one sensor was
   // added
-  SensorSpec::ptr sensorSpecF = SensorSpec::create();
+  auto sensorSpecF = CameraSensorSpec::create();
   sensorSpecF->uuid = "F";
   SensorSetup sensorSpecificationsF = {sensorSpecF};
   SensorSuite sensorSuiteF1 =

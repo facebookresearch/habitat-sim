@@ -68,11 +68,11 @@ void VisualSensor::setResolution(vec2i resolution) {
 
 bool operator==(const VisualSensorSpec& a, const VisualSensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubType == b.sensorSubType && a.near == b.near &&
-         a.far == b.far && a.hfov == b.hfov && a.ortho_scale == b.ortho_scale &&
-         a.position == b.position && a.orientation == b.orientation &&
-         a.resolution == b.resolution && a.encoding == b.encoding &&
-         a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
+         a.sensorSubType == b.sensorSubType && a.hfov == b.hfov &&
+         a.ortho_scale == b.ortho_scale && a.position == b.position &&
+         a.orientation == b.orientation && a.resolution == b.resolution &&
+         a.encoding == b.encoding && a.noiseModel == b.noiseModel &&
+         a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 
 }  // namespace sensor

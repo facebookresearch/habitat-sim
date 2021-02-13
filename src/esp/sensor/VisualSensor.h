@@ -20,8 +20,6 @@ class RenderTarget;
 
 namespace sensor {
 struct VisualSensorSpec : public SensorSpec {
-  float near = 0.01f;
-  float far = 1000.f;
   Mn::Deg hfov;
   float ortho_scale;
   vec2i resolution;

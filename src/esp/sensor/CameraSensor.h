@@ -169,7 +169,6 @@ class CameraSensor : public VisualSensor {
    * @brief Sets near plane distance.
    */
   void setNear(float _near) {
-    cameraSensorSpec_->near = _near;
     near_ = _near;
     recomputeBaseProjectionMatrix();
   }
@@ -179,7 +178,6 @@ class CameraSensor : public VisualSensor {
    * @brief Sets far plane distance.
    */
   void setFar(float _far) {
-    cameraSensorSpec_->far = _far;
     far_ = _far;
     recomputeBaseProjectionMatrix();
   }

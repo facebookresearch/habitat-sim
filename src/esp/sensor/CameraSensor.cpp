@@ -51,13 +51,9 @@ void CameraSensor::setProjectionParameters(const CameraSensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
   // update this sensor's sensor spec to reflect the passed new values
   cameraSensorSpec_->resolution = spec->resolution;
-  cameraSensorSpec_->near = spec->near;
-  cameraSensorSpec_->far = spec->far;
 
   width_ = cameraSensorSpec_->resolution[1];
   height_ = cameraSensorSpec_->resolution[0];
-  near_ = cameraSensorSpec_->near;
-  far_ = cameraSensorSpec_->far;
   setCameraType(spec->sensorSubType);
 
 }  // setProjectionParameters
@@ -197,11 +193,11 @@ bool CameraSensor::displayObservation(sim::Simulator& sim) {
 
 bool operator==(const CameraSensorSpec& a, const CameraSensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubType == b.sensorSubType && a.near == b.near &&
-         a.far == b.far && a.hfov == b.hfov && a.ortho_scale == b.ortho_scale &&
-         a.position == b.position && a.orientation == b.orientation &&
-         a.resolution == b.resolution && a.channels == b.channels &&
-         a.encoding == b.encoding && a.observationSpace == b.observationSpace &&
+         a.sensorSubType == b.sensorSubType && a.hfov == b.hfov &&
+         a.ortho_scale == b.ortho_scale && a.position == b.position &&
+         a.orientation == b.orientation && a.resolution == b.resolution &&
+         a.channels == b.channels && a.encoding == b.encoding &&
+         a.observationSpace == b.observationSpace &&
          a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 
