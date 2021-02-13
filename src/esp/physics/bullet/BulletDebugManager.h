@@ -53,6 +53,16 @@ class BulletDebugManager {
   std::string getStepCollisionSummary(btMultiBodyDynamicsWorld* bWorld);
 
   /**
+   * @brief Describe collision-filtering for all known collision objects (see
+   * also mapCollisionObjectTo).
+   *
+   * Unfortunately, this will cause a crash if you have added and then removed
+   * physics objects, because we don't yet have unmapCollisionObject. So don't
+   * use this in that case!
+   */
+  std::string getCollisionFilteringSummary(bool doVerbose = true);
+
+  /**
    * @brief Get the object's debug name plus some useful Bullet collision state.
    */
   std::string getDebugStringForCollisionObject(const btCollisionObject* colObj);
