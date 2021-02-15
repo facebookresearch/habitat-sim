@@ -217,17 +217,6 @@ class CameraSensor : public VisualSensor {
    */
   Magnum::Matrix4 zoomMatrix_;
 
-  /** @brief projection parameters
-   */
-
-  /** @brief near clipping plane
-   */
-  float near_ = 0.001f;
-
-  /** @brief far clipping plane
-   */
-  float far_ = 1000.0f;
-
   /** @brief size of near plane
    */
   Mn::Vector2 nearPlaneSize_;

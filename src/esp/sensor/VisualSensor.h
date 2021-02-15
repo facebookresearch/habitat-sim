@@ -102,11 +102,31 @@ class VisualSensor : public Sensor {
    */
   virtual gfx::RenderCamera* getRenderCamera() = 0;
 
+  /**
+   * @brief Gets near plane distance.
+   */
+  float getNear() { return near_; }
+
+  /**
+   * @brief Gets far plane distance.
+   */
+  float getFar() { return far_; }
+
  protected:
+  /** @brief projection parameters
+   */
+
+  /** @brief near clipping plane
+   */
+  float near_ = 0.001f;
+
+  /** @brief far clipping plane
+   */
+  float far_ = 1000.0f;
+
   std::unique_ptr<gfx::RenderTarget> tgt_;
   VisualSensorSpec::ptr visualSensorSpec_ =
       std::dynamic_pointer_cast<VisualSensorSpec>(spec_);
-
   ESP_SMART_POINTERS(VisualSensor)
 };
 
