@@ -36,37 +36,44 @@ void PhysicsAttributesManager::setValsFromJSONDoc(
         jsonConfig) {  // load the simulator preference - default is "none"
                        // simulator, set in
   // attributes ctor.
-  io::jsonIntoConstSetter<std::string>(
-      jsonConfig, "physics_simulator",
-      std::bind(&PhysicsManagerAttributes::setSimulator,
-                physicsManagerAttributes, _1));
+  io::jsonIntoConstSetter<std::string>(jsonConfig, "physics_simulator",
+                                       [physicsManagerAttributes](auto&& PH1) {
+                                         physicsManagerAttributes->setSimulator(
+                                             std::forward<decltype(PH1)>(PH1));
+                                       });
 
   // load the physics timestep
-  io::jsonIntoSetter<double>(jsonConfig, "timestep",
-                             std::bind(&PhysicsManagerAttributes::setTimestep,
-                                       physicsManagerAttributes, _1));
+  io::jsonIntoSetter<double>(
+      jsonConfig, "timestep", [physicsManagerAttributes](auto&& PH1) {
+        physicsManagerAttributes->setTimestep(std::forward<decltype(PH1)>(PH1));
+      });
 
   // load the max substeps between time step
   io::jsonIntoSetter<int>(jsonConfig, "max_substeps",
-                          std::bind(&PhysicsManagerAttributes::setMaxSubsteps,
-                                    physicsManagerAttributes, _1));
+                          [physicsManagerAttributes](auto&& PH1) {
+                            physicsManagerAttributes->setMaxSubsteps(
+                                std::forward<decltype(PH1)>(PH1));
+                          });
   // load the friction coefficient
-  io::jsonIntoSetter<double>(
-      jsonConfig, "friction_coefficient",
-      std::bind(&PhysicsManagerAttributes::setFrictionCoefficient,
-                physicsManagerAttributes, _1));
+  io::jsonIntoSetter<double>(jsonConfig, "friction_coefficient",
+                             [physicsManagerAttributes](auto&& PH1) {
+                               physicsManagerAttributes->setFrictionCoefficient(
+                                   std::forward<decltype(PH1)>(PH1));
+                             });
 
   // load the restitution coefficient
   io::jsonIntoSetter<double>(
       jsonConfig, "restitution_coefficient",
-      std::bind(&PhysicsManagerAttributes::setRestitutionCoefficient,
-                physicsManagerAttributes, _1));
+      [physicsManagerAttributes](auto&& PH1) {
+        physicsManagerAttributes->setRestitutionCoefficient(
+            std::forward<decltype(PH1)>(PH1));
+      });
 
   // load world gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "gravity",
-      std::bind(&PhysicsManagerAttributes::setGravity, physicsManagerAttributes,
-                _1));
+      jsonConfig, "gravity", [physicsManagerAttributes](auto&& PH1) {
+        physicsManagerAttributes->setGravity(std::forward<decltype(PH1)>(PH1));
+      });
 
 }  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 

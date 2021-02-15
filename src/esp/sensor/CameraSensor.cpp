@@ -5,6 +5,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/PixelFormat.h>
+#include <math.h>
 
 #include "CameraSensor.h"
 #include "esp/gfx/DepthUnprojection.h"
@@ -59,7 +60,7 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
   // refresh size after relevant parameters have changed
   Mn::Vector2 nearPlaneSize_ =
       Mn::Vector2{1.0f, static_cast<float>(height_) / width_};
-  float scale;
+  float scale = NAN;
   if (spec_->sensorSubType == SensorSubType::Orthographic) {
     scale = std::atof(spec_->parameters.at("ortho_scale").c_str());
     nearPlaneSize_ /= scale;

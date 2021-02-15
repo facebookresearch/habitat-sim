@@ -44,4 +44,6 @@ WarningsAsErrors:
 '*,
 -bugprone-narrowing-conversions,
 -bugprone-unused-raii,
--clang-diagnostic-deprecated-declarations'
+-clang-diagnostic-deprecated-declarations,
+-modernize-avoid-bind,
+' # TODO fix std::binds later
