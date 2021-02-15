@@ -5,7 +5,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/PixelFormat.h>
-#include <math.h>
+#include <cmath>
 
 #include "CameraSensor.h"
 #include "esp/gfx/DepthUnprojection.h"
