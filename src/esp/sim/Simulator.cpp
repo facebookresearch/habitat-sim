@@ -575,9 +575,11 @@ void Simulator::reconfigureReplayManager() {
 
   // provide Player callback to replay manager
   gfxReplayMgr_->setPlayerCallback(
-      std::bind(&esp::sim::Simulator::loadAndCreateRenderAssetInstance, this,
-                std::placeholders::_1, std::placeholders::_2));
-  // TODO: Is there a betterway than std::bind ?
+      [this](const assets::AssetInfo& assetInfo,
+             const assets::RenderAssetInstanceCreationInfo& creation)
+          -> scene::SceneNode* {
+        return loadAndCreateRenderAssetInstance(assetInfo, creation);
+      });
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
