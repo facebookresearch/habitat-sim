@@ -32,20 +32,30 @@ bool SemanticScene::
     try {
       // only returns false if file does not exist, or attempting to open it
       // fails
-      success = loadMp3dHouse(houseFilename, scene, rotation);
+      // open stream and determine house format version
+      try {
+        std::ifstream ifs = std::ifstream(houseFilename);
+        std::string header;
+        std::getline(ifs, header);
+        if (header == "ASCII 1.1") {
+          success = buildMp3dHouse(ifs, scene, rotation);
+        }
+      } catch (...) {
+        success = false;
+      }
       if (!success) {
         // if not successful then attempt to load known json files
-        const auto& jsonDoc = io::parseJsonFile(houseFilename);
+        const io::JsonDocument& jsonDoc = io::parseJsonFile(houseFilename);
         // if no error thrown, then we loaded a json file of given name
         if (jsonDoc.HasMember("objects") && jsonDoc["objects"].IsArray()) {
           // check if also has "classes" tag, otherwise will assume it is a
           // gibson file
           if (jsonDoc.HasMember("classes") && jsonDoc["classes"].IsArray()) {
             // load replica
-            success = loadReplicaHouse(houseFilename, scene, rotation);
+            success = buildReplicaHouse(jsonDoc, scene, rotation);
           } else {
             // load gibson
-            success = loadGibsonHouse(houseFilename, scene, rotation);
+            success = buildGibsonHouse(jsonDoc, scene, rotation);
           }
         }
       }

@@ -91,6 +91,23 @@ bool SemanticScene::loadMp3dHouse(
     return false;
   }
 
+  // open stream and determine house format version
+  std::ifstream ifs = std::ifstream(houseFilename);
+  std::string header;
+  std::getline(ifs, header);
+  if (header != "ASCII 1.1") {
+    LOG(ERROR) << "SemanticScene::loadMp3dHouse : Unsupported Mp3d House "
+                  "format header "
+               << header << " in file name " << houseFilename;
+    return false;
+  }
+
+  return buildMp3dHouse(ifs, scene, rotation);
+}  // SemanticScene::loadMp3dHouse
+
+bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
+                                   SemanticScene& scene,
+                                   const quatf& rotation) {
   const bool hasWorldRotation = !rotation.isApprox(quatf::Identity());
 
   auto getVec3f = [&](const std::vector<std::string>& tokens, int offset,
@@ -136,17 +153,6 @@ bool SemanticScene::loadMp3dHouse(
 
     return geo::OBB(center, 2 * radius, quatf(boxRotation));
   };
-
-  // open stream and determine house format version
-  std::ifstream ifs = std::ifstream(houseFilename);
-  std::string header;
-  std::getline(ifs, header);
-  if (header != "ASCII 1.1") {
-    LOG(ERROR) << "SemanticScene::loadMp3dHouse : Unsupported Mp3d House "
-                  "format header "
-               << header << " in file name " << houseFilename;
-    return false;
-  }
 
   scene.categories_.clear();
   scene.levels_.clear();
@@ -284,7 +290,8 @@ bool SemanticScene::loadMp3dHouse(
   }
 
   return true;
-}
+
+}  // SemanticScene::buildMp3dHouse
 
 }  // namespace scene
 }  // namespace esp

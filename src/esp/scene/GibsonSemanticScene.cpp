@@ -23,18 +23,24 @@ bool SemanticScene::
     return false;
   }
 
-  scene.categories_.clear();
-  scene.objects_.clear();
-
   // top-level scene
   VLOG(1) << "loadGibsonHouse::Parsing " << houseFilename;
-  const auto& json = io::parseJsonFile(houseFilename);
+  const io::JsonDocument& json = io::parseJsonFile(houseFilename);
   VLOG(1) << "loadGibsonHouse::Parsed.";
+
+  return buildGibsonHouse(json, scene, rotation);
+}  // SemanticScene::loadGibsonHouse
+
+bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
+                                     SemanticScene& scene,
+                                     const quatf& rotation) {
+  scene.categories_.clear();
+  scene.objects_.clear();
 
   std::unordered_map<std::string, int> categories;
 
   // objects
-  const auto& objects = json["objects"].GetArray();
+  const auto& objects = jsonDoc["objects"].GetArray();
   scene.elementCounts_["objects"] = objects.Size();
   for (const auto& jsonObject : objects) {
     SemanticObject::ptr object = SemanticObject::create();
@@ -84,7 +90,7 @@ bool SemanticScene::
   }
 
   return true;
-}
+}  // SemanticScene::buildGibsonHouse
 
 }  // namespace scene
 }  // namespace esp

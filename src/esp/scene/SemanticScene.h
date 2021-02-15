@@ -14,6 +14,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/geo/OBB.h"
+#include "esp/io/json.h"
 
 namespace esp {
 namespace scene {
@@ -86,7 +87,7 @@ class SemanticScene {
    * @brief Attempt to load SemanticScene descriptor from an unknown file type.
    * @param filename the name of the house file to attempt to load
    * @param scene reference to sceneNode to assign semantic scene to
-   * @param rotation rotation to apply to semantic scen up on load.
+   * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
    */
   static bool loadSemanticSceneDescriptor(
@@ -100,7 +101,7 @@ class SemanticScene {
    * file
    * @param filename the name of the house file to attempt to load
    * @param scene reference to sceneNode to assign semantic scene to
-   * @param rotation rotation to apply to semantic scen up on load.
+   * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
    */
   static bool loadGibsonHouse(
@@ -113,7 +114,7 @@ class SemanticScene {
    * format file
    * @param filename the name of the house file to attempt to load
    * @param scene reference to sceneNode to assign semantic scene to
-   * @param rotation rotation to apply to semantic scen up on load.
+   * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
    */
   static bool loadMp3dHouse(
@@ -127,7 +128,7 @@ class SemanticScene {
    * file
    * @param filename the name of the house file to attempt to load
    * @param scene reference to sceneNode to assign semantic scene to
-   * @param rotation rotation to apply to semantic scen up on load.
+   * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
    */
   static bool loadReplicaHouse(
@@ -157,6 +158,51 @@ class SemanticScene {
     }
     return true;
   }  // checkFileExists
+
+  /**
+   * @brief Build the mp3 semantic data from the passed file stream. File being
+   * streamed is expected to be appropriate format.
+   * @param ifs The opened file stream describing the Mp3d semantic annotations.
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully built. Currently only returns true, but retaining
+   * return value for future support.
+   */
+  static bool buildMp3dHouse(
+      std::ifstream& ifs,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
+
+  /**
+   * @brief Build SemanticScene from a Gibson dataset house JSON. JSON is
+   * expected to have been verified already.
+   * @param jsonDoc the JSON document describing the semantic annotations.
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully built. Currently only returns true, but retaining
+   * return value for future support.
+   */
+  static bool buildGibsonHouse(
+      const io::JsonDocument& jsonDoc,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
+
+  /**
+   * @brief Build SemanticScene from a Replica dataset house JSON. JSON is
+   * expected to have been verified already.
+   * @param jsonDoc the JSON document describing the semantic annotations.
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully built. Currently only returns true, but retaining
+   * return value for future support.
+   */
+  static bool buildReplicaHouse(
+      const io::JsonDocument& jsonDoc,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
 
   std::string name_;
   std::string label_;

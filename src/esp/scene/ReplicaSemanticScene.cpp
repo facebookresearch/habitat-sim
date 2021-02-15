@@ -28,16 +28,23 @@ bool SemanticScene::loadReplicaHouse(
     return false;
   }
 
-  scene.categories_.clear();
-  scene.objects_.clear();
-
   // top-level scene
   VLOG(1) << "loadReplicaHouse::Parsing " << houseFilename;
   const auto& json = io::parseJsonFile(houseFilename);
   VLOG(1) << "loadReplicaHouse::Parsed.";
 
+  return buildReplicaHouse(json, scene, worldRotation);
+
+}  // SemanticScene::loadReplicaHouse
+
+bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
+                                      SemanticScene& scene,
+                                      const quatf& worldRotation) {
+  scene.categories_.clear();
+  scene.objects_.clear();
+
   // categories
-  const auto& categories = json["classes"].GetArray();
+  const auto& categories = jsonDoc["classes"].GetArray();
   scene.elementCounts_["categories"] = categories.Size();
   for (const auto& category : categories) {
     int id = category["id"].GetInt();
@@ -58,7 +65,7 @@ bool SemanticScene::loadReplicaHouse(
   }
 
   // objects
-  const auto& objects = json["objects"].GetArray();
+  const auto& objects = jsonDoc["objects"].GetArray();
   scene.elementCounts_["objects"] = objects.Size();
   for (const auto& jsonObject : objects) {
     SemanticObject::ptr object = SemanticObject::create();
