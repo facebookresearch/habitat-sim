@@ -152,11 +152,10 @@ void initSensorBindings(py::module& m) {
           "camera_type", &CameraSensor::getCameraType,
           &CameraSensor::setCameraType,
           R"(The type of projection (ORTHOGRAPHIC or PINHOLE) this CameraSensor uses.)")
-      .def_property("width", &CameraSensor::getWidth, &CameraSensor::setWidth,
-                    R"(The width of the viewport for this CameraSensor.)")
-      .def_property("height", &CameraSensor::getHeight,
-                    &CameraSensor::setHeight,
-                    R"(The height of the viewport for this CameraSensor.)")
+      .def("width", &CameraSensor::setWidth,
+           R"(The width of the viewport for this CameraSensor.)")
+      .def("height", &CameraSensor::setHeight,
+           R"(The height of the viewport for this CameraSensor.)")
       .def_property(
           "near_plane_dist", &CameraSensor::getNear, &CameraSensor::setNear,
           R"(The distance to the near clipping plane for this CameraSensor uses.)")

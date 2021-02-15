@@ -35,7 +35,7 @@ class CameraSensor : public VisualSensor {
    *  @param[in] spec Instance of CameraSensorSpec that sensor will use to
    * update its own SensorSpec
    */
-  void setProjectionParameters(const CameraSensorSpec::ptr& spec);
+  void setProjectionParameters(const CameraSensorSpec& spec);
 
   /** @brief Returns pointer to member RenderCamera that CameraSensor will use
    * for rendering
@@ -148,22 +148,18 @@ class CameraSensor : public VisualSensor {
   /**
    * @brief Sets width of this sensor's view port
    */
-  void setWidth(int _width) {
-    cameraSensorSpec_->resolution[1] = _width;
-    width_ = _width;
+  void setWidth(int width) {
+    cameraSensorSpec_->resolution[1] = width;
     recomputeBaseProjectionMatrix();
   }
-  int getWidth() const { return width_; }
 
   /**
    * @brief Sets height of this sensor's view port
    */
-  void setHeight(int _height) {
-    cameraSensorSpec_->resolution[0] = _height;
-    height_ = _height;
+  void setHeight(int height) {
+    cameraSensorSpec_->resolution[0] = height;
     recomputeBaseProjectionMatrix();
   }
-  int getHeight() const { return height_; }
 
   /**
    * @brief Sets near plane distance.
@@ -223,14 +219,6 @@ class CameraSensor : public VisualSensor {
 
   /** @brief projection parameters
    */
-
-  /** @brief canvas width
-   */
-  int width_ = 640;
-
-  /** @brief canvas height
-   */
-  int height_ = 480;
 
   /** @brief near clipping plane
    */

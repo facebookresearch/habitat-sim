@@ -526,7 +526,8 @@ Viewer::Viewer(const Arguments& arguments)
   auto pinholeCameraSpec = esp::sensor::CameraSensorSpec::create();
   pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
   pinholeCameraSpec->sensorType = esp::sensor::SensorType::Color;
-  pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
+  pinholeCameraSpec->position = {0.0f, 1.5f, 0.0f};
+  pinholeCameraSpec->orientation = {0, 0, 0};
   pinholeCameraSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
   agentConfig.sensorSpecifications = {pinholeCameraSpec};
 

@@ -91,7 +91,9 @@ class VisualSensor : public Sensor {
     return false;
   }
 
-  // Update SensorSpec's resolution
+  /**
+   * @brief Sets resolution of Sensor's sensorSpec
+   */
   void setResolution(int height, int width);
   void setResolution(vec2i resolution);
 

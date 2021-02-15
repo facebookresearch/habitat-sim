@@ -40,21 +40,17 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
                  "SensorSubType Pinhole or Orthographic", );
   // Initialize renderCamera_ first to avoid segfaults
   renderCamera_ = new gfx::RenderCamera(cameraNode);
-  setProjectionParameters(spec);
+  setProjectionParameters(*spec);
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);
   recomputeProjectionMatrix();
   renderCamera_->setViewport(this->framebufferSize());
 }  // ctor
 
-void CameraSensor::setProjectionParameters(const CameraSensorSpec::ptr& spec) {
-  ASSERT(spec != nullptr);
+void CameraSensor::setProjectionParameters(const CameraSensorSpec& spec) {
   // update this sensor's sensor spec to reflect the passed new values
-  cameraSensorSpec_->resolution = spec->resolution;
-
-  width_ = cameraSensorSpec_->resolution[1];
-  height_ = cameraSensorSpec_->resolution[0];
-  setCameraType(spec->sensorSubType);
+  cameraSensorSpec_->resolution = spec.resolution;
+  setCameraType(spec.sensorSubType);
 
 }  // setProjectionParameters
 
@@ -62,13 +58,16 @@ void CameraSensor::recomputeProjectionMatrix() {
   projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
   // update renderCamera_'s projectionMatrix every time the sensor's
   // projectionMatrix changes
-  renderCamera_->setProjectionMatrix(width_, height_, projectionMatrix_);
+  renderCamera_->setProjectionMatrix(cameraSensorSpec_->resolution[1],
+                                     cameraSensorSpec_->resolution[0],
+                                     projectionMatrix_);
 }
 
 void CameraSensor::recomputeBaseProjectionMatrix() {
   // refresh size after relevant parameters have changed
   Mn::Vector2 nearPlaneSize_ =
-      Mn::Vector2{1.0f, static_cast<float>(height_) / width_};
+      Mn::Vector2{1.0f, static_cast<float>(cameraSensorSpec_->resolution[1] /
+                                           cameraSensorSpec_->resolution[0])};
   float scale;
   if (cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic) {
     scale = cameraSensorSpec_->ortho_scale;
