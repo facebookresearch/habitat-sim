@@ -1,5 +1,6 @@
 Checks: '
 bugprone-*,
+clang-analyzer-cplusplus-*,
 cppcoreguidelines-init-variables,
 cppcoreguidelines-pro-type-member-init,
 google-*,
