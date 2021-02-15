@@ -19,7 +19,7 @@ class CameraSensor : public VisualSensor {
   // user can use them immediately
   explicit CameraSensor(scene::SceneNode& cameraNode,
                         const SensorSpec::ptr& spec);
-  virtual ~CameraSensor();
+  virtual ~CameraSensor() = default;
 
   /** @brief Updates this sensor's SensorSpec spec_ to reflect the passed new
    * values
