@@ -28,6 +28,10 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
   renderCamera_->setViewport(this->framebufferSize());
 }  // ctor
 
+CameraSensor::~CameraSensor() {
+  delete renderCamera_;
+}
+
 void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
   ASSERT(spec != nullptr);
   // update this sensor's sensor spec to reflect the passed new values
