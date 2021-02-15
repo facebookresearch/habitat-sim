@@ -45,5 +45,7 @@ WarningsAsErrors:
 -bugprone-narrowing-conversions,
 -bugprone-unused-raii,
 -clang-diagnostic-deprecated-declarations,
+-clang-analyzer-cplusplus.PlacementNew,
 -modernize-avoid-bind,
 ' # TODO fix std::binds later
+# TODO Figure out if PlacementNew is a false positive
