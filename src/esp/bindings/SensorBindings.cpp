@@ -121,6 +121,14 @@ void initSensorBindings(py::module& m) {
           "render_camera", &VisualSensor::getRenderCamera,
           R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",
           pybind11::return_value_policy::reference)
+      .def_property_readonly(
+          "near", &VisualSensor::getNear,
+          R"(The distance to the near clipping plane this VisualSensor uses.)")
+      .def_property_readonly(
+          "far", &VisualSensor::getFar,
+          R"(The distance to the far clipping plane this VisualSensor uses.)")
+      .def_property_readonly("hfov", &VisualSensor::getFOV,
+                             R"(The FOV this VisualSensor uses.)")
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 
@@ -140,8 +148,11 @@ void initSensorBindings(py::module& m) {
           passed amount. User >1 to increase, 0<factor<1 to decrease.)",
            "factor"_a)
       .def("reset_zoom", &CameraSensor::resetZoom,
-           R"(Reset Orthographic Zoom or Perspective FOV to values
-          specified in current sensor spec for this CameraSensor.)")
+           R"(Reset Orthographic Zoom or Perspective FOV.)")
+      .def("set_width", &CameraSensor::setWidth,
+           R"(The width of the viewport for this CameraSensor.)")
+      .def("set_height", &CameraSensor::setHeight,
+           R"(The height of the viewport for this CameraSensor.)")
       .def_property(
           "fov",
           static_cast<Mn::Deg (CameraSensor::*)() const>(&CameraSensor::getFOV),
@@ -152,10 +163,6 @@ void initSensorBindings(py::module& m) {
           "camera_type", &CameraSensor::getCameraType,
           &CameraSensor::setCameraType,
           R"(The type of projection (ORTHOGRAPHIC or PINHOLE) this CameraSensor uses.)")
-      .def("width", &CameraSensor::setWidth,
-           R"(The width of the viewport for this CameraSensor.)")
-      .def("height", &CameraSensor::setHeight,
-           R"(The height of the viewport for this CameraSensor.)")
       .def_property(
           "near_plane_dist", &CameraSensor::getNear, &CameraSensor::setNear,
           R"(The distance to the near clipping plane for this CameraSensor uses.)")

@@ -114,7 +114,7 @@ class CameraSensor : public VisualSensor {
    * @param FOV desired FOV to set.
    */
   void setFOV(Mn::Deg FOV) {
-    cameraSensorSpec_->hfov = FOV;
+    hfov = FOV;
     if (cameraSensorSpec_->sensorSubType != SensorSubType::Pinhole) {
       LOG(INFO)
           << "CameraSensor::setFOV : Only Perspective-base CameraSensors use "
@@ -123,11 +123,6 @@ class CameraSensor : public VisualSensor {
     }
     recomputeBaseProjectionMatrix();
   }  // CameraSensor::setFOV
-
-  /**
-   * @brief Returns the FOV of this CameraSensor
-   */
-  Mn::Deg getFOV() const { return cameraSensorSpec_->hfov; }
 
   /**
    * @brief Sets camera type and calculates appropriate size vector for

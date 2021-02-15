@@ -20,7 +20,6 @@ class RenderTarget;
 
 namespace sensor {
 struct VisualSensorSpec : public SensorSpec {
-  Mn::Deg hfov;
   float ortho_scale;
   vec2i resolution;
   std::string encoding;  // For rendering colors in images
@@ -112,6 +111,11 @@ class VisualSensor : public Sensor {
    */
   float getFar() { return far_; }
 
+  /**
+   * @brief Returns the FOV of this Sensor
+   */
+  Mn::Deg getFOV() const { return hfov; }
+
  protected:
   /** @brief projection parameters
    */
@@ -123,6 +127,10 @@ class VisualSensor : public Sensor {
   /** @brief far clipping plane
    */
   float far_ = 1000.0f;
+
+  /** @brief field of view
+   */
+  Mn::Deg hfov = Mn::Deg{90.f};
 
   std::unique_ptr<gfx::RenderTarget> tgt_;
   VisualSensorSpec::ptr visualSensorSpec_ =

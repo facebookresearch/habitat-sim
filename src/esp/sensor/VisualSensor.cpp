@@ -37,7 +37,6 @@ void VisualSensorSpec::sanityCheck() {
 
 VisualSensorSpec::VisualSensorSpec()
     : SensorSpec(),
-      hfov(Mn::Deg{90.f}),
       ortho_scale(0.1f),
       resolution({84, 84}),
       encoding("rgba_uint8"),
@@ -68,11 +67,10 @@ void VisualSensor::setResolution(vec2i resolution) {
 
 bool operator==(const VisualSensorSpec& a, const VisualSensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubType == b.sensorSubType && a.hfov == b.hfov &&
-         a.ortho_scale == b.ortho_scale && a.position == b.position &&
-         a.orientation == b.orientation && a.resolution == b.resolution &&
-         a.encoding == b.encoding && a.noiseModel == b.noiseModel &&
-         a.gpu2gpuTransfer == b.gpu2gpuTransfer;
+         a.sensorSubType == b.sensorSubType && a.ortho_scale == b.ortho_scale &&
+         a.position == b.position && a.orientation == b.orientation &&
+         a.resolution == b.resolution && a.encoding == b.encoding &&
+         a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 
 }  // namespace sensor

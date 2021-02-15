@@ -81,8 +81,7 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
                 << " so defaulting to Pinhole.";
       cameraSensorSpec_->sensorSubType = SensorSubType::Pinhole;
     }
-    Magnum::Deg fov = cameraSensorSpec_->hfov;
-    Magnum::Deg halfHFovRad{Magnum::Deg(.5 * fov)};
+    Magnum::Deg halfHFovRad{Magnum::Deg(.5 * hfov)};
     scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
     nearPlaneSize_ /= scale;
     baseProjMatrix_ =
@@ -192,11 +191,10 @@ bool CameraSensor::displayObservation(sim::Simulator& sim) {
 
 bool operator==(const CameraSensorSpec& a, const CameraSensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubType == b.sensorSubType && a.hfov == b.hfov &&
-         a.ortho_scale == b.ortho_scale && a.position == b.position &&
-         a.orientation == b.orientation && a.resolution == b.resolution &&
-         a.channels == b.channels && a.encoding == b.encoding &&
-         a.observationSpace == b.observationSpace &&
+         a.sensorSubType == b.sensorSubType && a.ortho_scale == b.ortho_scale &&
+         a.position == b.position && a.orientation == b.orientation &&
+         a.resolution == b.resolution && a.channels == b.channels &&
+         a.encoding == b.encoding && a.observationSpace == b.observationSpace &&
          a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 
