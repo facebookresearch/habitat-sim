@@ -180,10 +180,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("sensorType", &SensorSpec::sensorType)
       .property("sensorSubtype", &SensorSpec::sensorSubType)
       .property("position", &SensorSpec::position)
-      .property("orientation", &SensorSpec::orientation)
-      .property("resolution", &SensorSpec::resolution)
-      .property("channels", &SensorSpec::channels)
-      .property("parameters", &SensorSpec::parameters);
+      .property("orientation", &SensorSpec::orientation);
 
   em::class_<Sensor>("Sensor")
       .smart_ptr<Sensor::ptr>("Sensor::ptr")
