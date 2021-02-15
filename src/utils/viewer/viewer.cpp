@@ -523,16 +523,13 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
-  std::dynamic_pointer_cast<esp::sensor::VisualSensorSpec>(
-      agentConfig.sensorSpecifications[0])
-      ->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  auto pinholeCameraSpec = esp::sensor::CameraSensorSpec::create();
+  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+  pinholeCameraSpec->sensorType = esp::sensor::SensorType::Color;
+  pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
+  pinholeCameraSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
 
-  agentConfig.sensorSpecifications[0]->sensorSubType =
-      args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
-                                 : esp::sensor::SensorSubType::Pinhole;
-
-  // add selects a random initial state and sets up the default controls and
-  // step filter
   simulator_->addAgent(agentConfig);
 
   // Set up camera

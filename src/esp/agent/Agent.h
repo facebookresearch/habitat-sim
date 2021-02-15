@@ -60,9 +60,8 @@ struct AgentConfiguration {
   float angularFriction = 1.0;
   float coefficientOfRestitution = 0.0;
 
-  std::vector<sensor::SensorSpec::ptr> sensorSpecifications = {
-      sensor::CameraSensorSpec::create()  // default CameraSensorSpec
-  };
+  std::vector<sensor::SensorSpec::ptr> sensorSpecifications = {};
+
   ActionSpace actionSpace = {  // default ActionSpace
       {"moveForward",
        ActionSpec::create("moveForward", ActuationMap{{"amount", 0.25f}})},
