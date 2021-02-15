@@ -28,7 +28,7 @@ sensor::SensorSuite SensorFactory::createSensors(
       //
     }
     // TODO: Implement NonVisualSensorSpecs
-    // else if (!spec.isVisualSensor()) {
+    // else if (!spec.isVisualSensor()) {}
     //   //NonVisualSensor Setup
     // }
   }

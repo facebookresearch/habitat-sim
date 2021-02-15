@@ -599,6 +599,9 @@ void Viewer::switchCameraType() {
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
       return;
     }
+    case esp::sensor::SensorSubType::None: {
+      return;
+    }
   }
 }
 

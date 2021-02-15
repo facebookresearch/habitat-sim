@@ -18,21 +18,24 @@ void VisualSensorSpec::sanityCheck() {
        sensorType == SensorType::Normal || sensorType == SensorType::Semantic);
   CORRADE_ASSERT(
       isVisualSensor,
-      "VisualSensor::VisualSensorSpec() sensorType must be Color, Depth, "
+      "VisualSensor::VisualSensorSpec(): sensorType must be Color, Depth, "
       "Normal, or Semantic", );
   if (noiseModel == "Gaussian" || noiseModel == "Poisson" ||
       noiseModel == "SaltAndPepper" || noiseModel == "Speckle") {
     CORRADE_ASSERT(
         sensorType == SensorType::Color,
-        "VisualSensor::VisualSensorSpec() sensorType must be Color if "
+        "VisualSensor::VisualSensorSpec(): sensorType must be Color if "
         "noiseModel is Gaussian, Poisson, SaltAndPepper, or Speckle", );
   }
   if (noiseModel == "Redwood") {
     CORRADE_ASSERT(
         sensorType == SensorType::Depth,
-        "VisualSensor::VisualSensorSpec() sensorType must be Depth if "
+        "VisualSensor::VisualSensorSpec(): sensorType must be Depth if "
         "noiseModel is Redwood", );
   }
+  CORRADE_ASSERT(resolution[0] > 0 && resolution[1] > 0,
+                 "VisualSensor::VisualSensorSpec(): resolution height and "
+                 "width must be greater than 0", );
 }
 
 VisualSensorSpec::VisualSensorSpec()
@@ -46,7 +49,9 @@ VisualSensorSpec::VisualSensorSpec()
 }
 
 VisualSensor::VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec)
-    : Sensor{node, std::move(spec)}, tgt_{nullptr} {}
+    : Sensor{node, std::move(spec)}, tgt_{nullptr} {
+  visualSensorSpec_->sanityCheck();
+}
 
 VisualSensor::~VisualSensor() = default;
 
@@ -62,7 +67,7 @@ void VisualSensor::setResolution(int height, int width) {
 }
 
 void VisualSensor::setResolution(vec2i resolution) {
-  visualSensorSpec_->resolution = resolution;
+  visualSensorSpec_->resolution = {resolution[0], resolution[1]};
 }
 
 bool operator==(const VisualSensorSpec& a, const VisualSensorSpec& b) {

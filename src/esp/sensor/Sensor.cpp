@@ -14,7 +14,12 @@ namespace sensor {
 SensorSpec::~SensorSpec() {}
 
 SensorSpec::SensorSpec()
-    : position({0, 1.5, 0}), orientation({0, 0, 0}), noiseModel("None") {}
+    : uuid(""),
+      sensorType(SensorType::None),
+      sensorSubType(SensorSubType::None),
+      position({0, 1.5, 0}),
+      orientation({0, 0, 0}),
+      noiseModel("None") {}
 
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
     : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {

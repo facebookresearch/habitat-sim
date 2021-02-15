@@ -17,7 +17,8 @@ namespace sensor {
 void CameraSensorSpec::sanityCheck() {
   CORRADE_ASSERT(sensorSubType == SensorSubType::Pinhole ||
                      sensorSubType == SensorSubType::Orthographic,
-                 "CameraSensor::CameraSensorSpec() does not have SensorSubType "
+                 "CameraSensor::CameraSensorSpec(): sensorSpec does not have "
+                 "SensorSubType "
                  "Pinhole or Orthographic", );
 }
 
@@ -34,10 +35,11 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit) {
   // Sanity check
-  CORRADE_ASSERT(spec->sensorSubType == SensorSubType::Pinhole ||
-                     spec->sensorSubType == SensorSubType::Orthographic,
-                 "CameraSensor::CameraSensor() CameraSensorSpec given has "
-                 "SensorSubType Pinhole or Orthographic", );
+  cameraSensorSpec_->sanityCheck();
+  CORRADE_ASSERT(
+      spec->sensorSubType == SensorSubType::Pinhole ||
+          spec->sensorSubType == SensorSubType::Orthographic,
+      "CameraSensor::CameraSensor(): The sensor sub-type is unknown", );
   // Initialize renderCamera_ first to avoid segfaults
   renderCamera_ = new gfx::RenderCamera(cameraNode);
   setProjectionParameters(*spec);
@@ -66,8 +68,8 @@ void CameraSensor::recomputeProjectionMatrix() {
 void CameraSensor::recomputeBaseProjectionMatrix() {
   // refresh size after relevant parameters have changed
   Mn::Vector2 nearPlaneSize_ =
-      Mn::Vector2{1.0f, static_cast<float>(cameraSensorSpec_->resolution[1] /
-                                           cameraSensorSpec_->resolution[0])};
+      Mn::Vector2{1.0f, static_cast<float>(cameraSensorSpec_->resolution[1]) /
+                            cameraSensorSpec_->resolution[0]};
   float scale;
   if (cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic) {
     scale = cameraSensorSpec_->ortho_scale;
