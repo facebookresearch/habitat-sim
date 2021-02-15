@@ -10,15 +10,20 @@ namespace Mn = Magnum;
 namespace esp {
 namespace scene {
 
-SceneNode::SceneNode(SceneNode& parent) {
+SceneNode::SceneNode(SceneNode& parent)
+    : Mn::SceneGraph::AbstractFeature3D{*this} {
   setParent(&parent);
   setId(parent.getId());
+  setCachedTransformations(Mn::SceneGraph::CachedTransformation::Absolute);
+  absoluteTranslation_ = absoluteTransformation().translation();
 }
 
-SceneNode::SceneNode(MagnumScene& parentNode) {
+SceneNode::SceneNode(MagnumScene& parentNode)
+    : Mn::SceneGraph::AbstractFeature3D{*this} {
   setParent(&parentNode);
+  setCachedTransformations(Mn::SceneGraph::CachedTransformation::Absolute);
+  absoluteTranslation_ = absoluteTransformation().translation();
 }
-
 SceneNode& SceneNode::createChild() {
   // will set the parent to *this
   SceneNode* node = new SceneNode(*this);
@@ -45,6 +50,28 @@ const Mn::Range3D& SceneNode::computeCumulativeBB() {
     child = child->nextSibling();
   }
   return cumulativeBB_;
+}
+
+void SceneNode::clean(const Magnum::Matrix4& absoluteTransformation) {
+  if (!aabb_)
+    worldCumulativeBB_ =
+        geo::getTransformedBB(getCumulativeBB(), absoluteTransformation);
+
+  absoluteTranslation_ = absoluteTransformation.translation();
+}
+
+Mn::Vector3 SceneNode::absoluteTranslation() const {
+  if (isDirty())
+    return absoluteTransformation().translation();
+  else
+    return absoluteTranslation_;
+}
+
+const Mn::Range3D& SceneNode::getAbsoluteAABB() const {
+  if (aabb_)
+    return *aabb_;
+  else
+    return worldCumulativeBB_;
 }
 
 }  // namespace scene
