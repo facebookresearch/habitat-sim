@@ -43,6 +43,7 @@ performance-*,
 WarningsAsErrors:
 '*,
 -bugprone-narrowing-conversions,
+-bugprone-reserved-identifier,
 -bugprone-unused-raii,
 -clang-diagnostic-deprecated-declarations,
 -clang-analyzer-cplusplus.PlacementNew,
