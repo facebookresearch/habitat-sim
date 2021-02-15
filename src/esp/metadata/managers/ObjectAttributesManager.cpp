@@ -80,48 +80,49 @@ void ObjectAttributesManager::setValsFromJSONDoc(
 
   // Populate with object-specific fields found in json, if any are there.
   // object mass
-  io::jsonIntoSetter<double>(jsonConfig, "mass", [objAttributes](auto&& PH1) {
-    objAttributes->setMass(std::forward<decltype(PH1)>(PH1));
+  io::jsonIntoSetter<double>(jsonConfig, "mass", [objAttributes](double mass) {
+    objAttributes->setMass(mass);
   });
   // linear damping
-  io::jsonIntoSetter<double>(
-      jsonConfig, "linear_damping", [objAttributes](auto&& PH1) {
-        objAttributes->setLinearDamping(std::forward<decltype(PH1)>(PH1));
-      });
+  io::jsonIntoSetter<double>(jsonConfig, "linear_damping",
+                             [objAttributes](double linear_damping) {
+                               objAttributes->setLinearDamping(linear_damping);
+                             });
   // angular damping
   io::jsonIntoSetter<double>(
-      jsonConfig, "angular_damping", [objAttributes](auto&& PH1) {
-        objAttributes->setAngularDamping(std::forward<decltype(PH1)>(PH1));
+      jsonConfig, "angular_damping", [objAttributes](double angular_damping) {
+        objAttributes->setAngularDamping(angular_damping);
       });
   // Use bounding box as collision object
-  io::jsonIntoSetter<bool>(jsonConfig, "use_bounding_box_for_collision",
-                           [objAttributes](auto&& PH1) {
-                             objAttributes->setBoundingBoxCollisions(
-                                 std::forward<decltype(PH1)>(PH1));
-                           });
+  io::jsonIntoSetter<bool>(
+      jsonConfig, "use_bounding_box_for_collision",
+      [objAttributes](bool use_bounding_box_for_collision) {
+        objAttributes->setBoundingBoxCollisions(use_bounding_box_for_collision);
+      });
   // Join collision meshes if specified
   io::jsonIntoSetter<bool>(
-      jsonConfig, "join_collision_meshes", [objAttributes](auto&& PH1) {
-        objAttributes->setJoinCollisionMeshes(std::forward<decltype(PH1)>(PH1));
+      jsonConfig, "join_collision_meshes",
+      [objAttributes](bool join_collision_meshes) {
+        objAttributes->setJoinCollisionMeshes(join_collision_meshes);
       });
 
   // The object's interia matrix diagonal
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "inertia", [objAttributes](auto&& PH1) {
-        objAttributes->setInertia(std::forward<decltype(PH1)>(PH1));
+      jsonConfig, "inertia", [objAttributes](const Magnum::Vector3& inertia) {
+        objAttributes->setInertia(inertia);
       });
 
   // The object's semantic ID
-  io::jsonIntoSetter<int>(
-      jsonConfig, "semantic_id", [objAttributes](auto&& PH1) {
-        objAttributes->setSemanticId(std::forward<decltype(PH1)>(PH1));
-      });
+  io::jsonIntoSetter<int>(jsonConfig, "semantic_id",
+                          [objAttributes](int semantic_id) {
+                            objAttributes->setSemanticId(semantic_id);
+                          });
 
   // The center of mass (in the local frame of the object)
   // if COM is provided, use it for mesh shift
   bool comIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "COM", [objAttributes](auto&& PH1) {
-        objAttributes->setCOM(std::forward<decltype(PH1)>(PH1));
+      jsonConfig, "COM", [objAttributes](const Magnum::Vector3& COM) {
+        objAttributes->setCOM(COM);
       });
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
@@ -148,15 +149,14 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     // set defaults for passed render asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, true, newAttributes->getRenderAssetHandle(),
-        [newAttributes](auto&& PH1) {
-          newAttributes->setRenderAssetType(std::forward<decltype(PH1)>(PH1));
+        [newAttributes](int render_asset_type) {
+          newAttributes->setRenderAssetType(render_asset_type);
         });
     // set defaults for passed collision asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
-        [newAttributes](auto&& PH1) {
-          newAttributes->setCollisionAssetType(
-              std::forward<decltype(PH1)>(PH1));
+        [newAttributes](int collision_asset_type) {
+          newAttributes->setCollisionAssetType(collision_asset_type);
         });
   }
   return newAttributes;

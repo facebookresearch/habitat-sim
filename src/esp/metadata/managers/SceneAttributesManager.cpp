@@ -126,8 +126,9 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
       createEmptyInstanceAttributes("");
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
-      jCell, "template_name", [instanceAttrs](auto&& PH1) {
-        instanceAttrs->setHandle(std::forward<decltype(PH1)>(PH1));
+      jCell, "template_name",
+      [instanceAttrs](const std::string& template_name) {
+        instanceAttrs->setHandle(template_name);
       });
 
   // Check for translation origin override for a particular instance.  Default
@@ -159,14 +160,15 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
 
   // translation from origin
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jCell, "translation", [instanceAttrs](auto&& PH1) {
-        instanceAttrs->setTranslation(std::forward<decltype(PH1)>(PH1));
+      jCell, "translation",
+      [instanceAttrs](const Magnum::Vector3& translation) {
+        instanceAttrs->setTranslation(translation);
       });
 
   // orientation TODO : support euler angles too?
   io::jsonIntoConstSetter<Magnum::Quaternion>(
-      jCell, "rotation", [instanceAttrs](auto&& PH1) {
-        instanceAttrs->setRotation(std::forward<decltype(PH1)>(PH1));
+      jCell, "rotation", [instanceAttrs](const Magnum::Quaternion& rotation) {
+        instanceAttrs->setRotation(rotation);
       });
 
   return instanceAttrs;
