@@ -30,7 +30,7 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
 }  // ctor
 
 CameraSensor::~CameraSensor() {
-  delete renderCamera_;
+  renderCamera_ = nullptr;
 }
 
 void CameraSensor::setProjectionParameters(const SensorSpec::ptr& spec) {
