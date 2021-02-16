@@ -13,6 +13,7 @@
 #include <utility>
 
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/VisualSensor.h"
 #ifdef ESP_BUILD_WITH_CUDA
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
@@ -85,8 +86,8 @@ void initSensorBindings(py::module& m) {
            });
 
   // ==== VisualSensorSpec ====
-  py::class_<VisualSensorSpec, VisualSensorSpec::ptr>(m, "VisualSensorSpec",
-                                                      py::dynamic_attr())
+  py::class_<VisualSensorSpec, VisualSensorSpec::ptr, SensorSpec>(
+      m, "VisualSensorSpec", py::dynamic_attr())
       .def(py::init(&VisualSensorSpec::create<>))
       .def_readwrite("ortho_scale", &VisualSensorSpec::ortho_scale)
       .def_readwrite("resolution", &VisualSensorSpec::resolution)
@@ -94,8 +95,8 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer);
 
   // ====CameraSensorSpec ====
-  py::class_<CameraSensorSpec, CameraSensorSpec::ptr>(m, "CameraSensorSpec",
-                                                      py::dynamic_attr())
+  py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec,
+             SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
       .def_readwrite("channels", &CameraSensorSpec::channels)
       .def_readwrite("observation_space", &CameraSensorSpec::observationSpace);
