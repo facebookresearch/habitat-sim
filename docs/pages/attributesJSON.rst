@@ -15,7 +15,7 @@ Attributes templates provide a mechanism by which the various constructions in H
 
 `Physics Manager Attributes`_
 =============================
-Physics Manager Attributes templates describe quantities pertinent to building the simulation world. Any source configuration JSON files used to build these attributes should be formatted as follows:
+Physics Manager Attributes templates describe quantities, such as timestep and what physics engine to use, pertinent to building the simulation world. Any source configuration JSON files used to build these attributes should be formatted as follows:
 
  	<worldname>.physics_config.json
 
@@ -29,7 +29,7 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 
 "physics_simulator"
 	- string
-	- What physics engine should be used for dynamics simulation. Currently supports "bullet" for Bullet physics simulation, and "none", meaning kinematic motion is to be used.
+	- What physics engine should be used for dynamics simulation. Currently supports "bullet" for Bullet physics simulation, and "none", meaning kinematic motion is to be used, where collisions will still occur but forces are not applied.
 "gravity"
 	- 3-vector
 	- The default gravity to use for physical modeling. This can be overridden by Stage attributes.
@@ -112,7 +112,7 @@ These file names should be formatted as follows:
 
 "translation_origin"
   - string
-  - Specifies scene instance default for translation origin. Values are case-insensitive. Supports "asset_local", where the origin is defined in the individual asset's local frame, "com", where the asset's com is the origin for transformations, or "unknown" if the value is unknown. This value can be overridden for the stage and any object instances in the scene.
+  - Specifies scene instance default for translation origin. Values are case-insensitive. Supports "asset_local", where the origin is defined in the individual asset's local frame, "com", where the asset's center of mass is the origin for transformations, or "unknown" if the value is unknown. This value can be overridden for the stage and any object instances in the scene.
 
 "default_lighting"
   - string
@@ -147,7 +147,7 @@ The JSON tags the Scene Object Instance Attributes support are as follows:
 
 "translation_origin"
   - string
-  - Specifies the translation origin to use for the instantiation of the specified object. Values are case-insensitive. Supports "asset_local", where the origin is defined in the individual asset's local frame, "com", where the asset's com is the origin for transformations, or "unknown" if the value is unknown. If this value is specified, and not set to "unknown", it will override the top-level default, if any exists. Currently stages do not support instantiation transformations.
+  - Specifies the translation origin to use for the instantiation of the specified object. Values are case-insensitive. Supports "asset_local", where the origin is defined in the individual asset's local frame, "com", where the asset's center of mass is the origin for transformations, or "unknown" if the value is unknown. If this value is specified, and not set to "unknown", it will override the top-level default, if any exists. Currently stages do not support instantiation transformations.
 
 "motion_type"
   - string
@@ -266,7 +266,7 @@ Below are the handles and descriptors for various mesh assets used by an object.
 Object Frame
 ------------
 
-The tags below are used to build a coordinate frame for the object, and will override any default values set based on render mesh file name/extension. If either **"up"** or **"front"** are specified, both must be provided and they must be orthogonal. The object's COM is used as its origin.
+The tags below are used to build a coordinate frame for the object, and will override any default values set based on render mesh file name/extension. If either **"up"** or **"front"** are specified, both must be provided and they must be orthogonal. The object's center of mass is used as its origin.
 
 "up"
 	- 3-vector
