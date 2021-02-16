@@ -159,13 +159,19 @@ class CubeMap {
   void recreateTexture();
 
   // framebuffer for drawable selection
-  Magnum::GL::Framebuffer frameBuffer_{Magnum::NoCreate};
+  Magnum::GL::Framebuffer frameBuffer_[6]{
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate}};
 
   // in case there is no need to output depth texture, we need a depth buffer
-  Magnum::GL::Renderbuffer optionalDepthBuffer_;
+  Magnum::GL::Renderbuffer optionalDepthBuffer_[6];
 
   // in case there is no need to output color texture, we need a color buffer
-  Magnum::GL::Renderbuffer optionalColorBuffer_;
+  Magnum::GL::Renderbuffer optionalColorBuffer_[6];
 
   /**
    * @brief recreate the frame buffer

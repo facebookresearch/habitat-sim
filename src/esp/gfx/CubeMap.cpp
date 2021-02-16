@@ -146,18 +146,23 @@ void CubeMap::attachFramebufferRenderbuffer() {
     for (unsigned int index = 0; index < 6; ++index) {
       Magnum::GL::CubeMapCoordinate cubeMapCoord =
           convertFaceIndexToCubeMapCoordinate(index);
-      frameBuffer_.attachCubeMapTexture(
-          Mn::GL::Framebuffer::ColorAttachment{index},
+      frameBuffer_[index].attachCubeMapTexture(
+          Mn::GL::Framebuffer::ColorAttachment{0},
           *textures_[TextureType::Color], cubeMapCoord, 0);
     }
   }
   if (!(flags_ & Flag::DepthTexture)) {
-    frameBuffer_.attachRenderbuffer(
-        Mn::GL::Framebuffer::BufferAttachment::Depth, optionalDepthBuffer_);
+    for (unsigned int index = 0; index < 6; ++index) {
+      frameBuffer_[index].attachRenderbuffer(
+          Mn::GL::Framebuffer::BufferAttachment::Depth,
+          optionalDepthBuffer_[index]);
+    }
   }
   if (!(flags_ & Flag::ColorTexture)) {
-    frameBuffer_.attachRenderbuffer(Mn::GL::Framebuffer::ColorAttachment{0},
-                                    optionalColorBuffer_);
+    for (unsigned int index = 0; index < 6; ++index) {
+      frameBuffer_[index].attachRenderbuffer(
+          Mn::GL::Framebuffer::ColorAttachment{0}, optionalColorBuffer_[index]);
+    }
   }
 }
 
@@ -198,16 +203,24 @@ void CubeMap::recreateTexture() {
 
 void CubeMap::recreateFramebuffer() {
   Mn::Vector2i viewportSize{imageSize_, imageSize_};
-  frameBuffer_ = Mn::GL::Framebuffer{{{}, viewportSize}};
+
+  for (int iFbo = 0; iFbo < 6; ++iFbo) {
+    frameBuffer_[iFbo] = Mn::GL::Framebuffer{{{}, viewportSize}};
+  }
+
   // optional depth buffer is 24-bit integer pixel, which is different from the
   // depth texture (32-bit float)
   if (!(flags_ & CubeMap::Flag::DepthTexture)) {
-    optionalDepthBuffer_.setStorage(
-        Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
+    for (int index = 0; index < 6; ++index) {
+      optionalDepthBuffer_[index].setStorage(
+          Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
+    }
   }
   if (!(flags_ & CubeMap::Flag::ColorTexture)) {
-    optionalColorBuffer_.setStorage(Mn::GL::RenderbufferFormat::RGBA8,
-                                    viewportSize);
+    for (int index = 0; index < 6; ++index) {
+      optionalColorBuffer_[index].setStorage(Mn::GL::RenderbufferFormat::RGBA8,
+                                             viewportSize);
+    }
   }
 }
 
@@ -222,20 +235,21 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
   // buffer again and again
   if (flags_ & Flag::DepthTexture) {
     // use the optional color buffer which is bound to color attachment 0
-    frameBuffer_.mapForDraw({
+    frameBuffer_[cubeSideIndex].mapForDraw({
         {Mn::Shaders::Generic3D::ColorOutput,
          Mn::GL::Framebuffer::ColorAttachment{0}},
     });
 
     Magnum::GL::CubeMapCoordinate cubeMapCoord =
         convertFaceIndexToCubeMapCoordinate(cubeSideIndex);
-    frameBuffer_.attachCubeMapTexture(
+    frameBuffer_[cubeSideIndex].attachCubeMapTexture(
         Mn::GL::Framebuffer::BufferAttachment::Depth,
         *textures_[TextureType::Depth], cubeMapCoord, 0);
   }
 
-  frameBuffer_.clearDepth(1.0f).clearColor(0,                // color attachment
-                                           Mn::Vector4ui{0}  // clear color
+  frameBuffer_[cubeSideIndex].clearDepth(1.0f).clearColor(
+      0,                // color attachment
+      Mn::Vector4ui{0}  // clear color
   );
 
   CORRADE_INTERNAL_ASSERT(
@@ -244,9 +258,9 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
 }
 
 void CubeMap::mapForDraw(unsigned int index) {
-  frameBuffer_.mapForDraw({
+  frameBuffer_[index].mapForDraw({
       {Mn::Shaders::Generic3D::ColorOutput,
-       Mn::GL::Framebuffer::ColorAttachment{index}},
+       Mn::GL::Framebuffer::ColorAttachment{0}},
       // TODO:
       //{Mn::Shaders::Generic3D::ObjectIdOutput, objectIdAttachment}
   });
@@ -469,8 +483,8 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // the camera node before calling this function, original viewing matrix of
   // the camera MUST be updated as well.
   camera.updateOriginalViewingMatrix();
-  frameBuffer_.bind();
   for (int iFace = 0; iFace < 6; ++iFace) {
+    frameBuffer_[iFace].bind();
     camera.switchToFace(iFace);
     prepareToDraw(iFace);
 
