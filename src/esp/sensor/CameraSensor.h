@@ -114,7 +114,7 @@ class CameraSensor : public VisualSensor {
    * @param FOV desired FOV to set.
    */
   void setFOV(Mn::Deg FOV) {
-    hfov = FOV;
+    hfov_ = FOV;
     if (cameraSensorSpec_->sensorSubType != SensorSubType::Pinhole) {
       LOG(INFO)
           << "CameraSensor::setFOV : Only Perspective-base CameraSensors use "

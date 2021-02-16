@@ -13,6 +13,8 @@
 #include "esp/gfx/RenderCamera.h"
 #include "esp/sensor/Sensor.h"
 
+using Mn::Math::Literals::operator""_degf;
+
 namespace esp {
 namespace gfx {
 class RenderTarget;
@@ -114,7 +116,7 @@ class VisualSensor : public Sensor {
   /**
    * @brief Returns the FOV of this Sensor
    */
-  Mn::Deg getFOV() const { return hfov; }
+  Mn::Deg getFOV() const { return hfov_; }
 
  protected:
   /** @brief projection parameters
@@ -122,7 +124,7 @@ class VisualSensor : public Sensor {
 
   /** @brief near clipping plane
    */
-  float near_ = 0.001f;
+  float near_ = 0.01f;
 
   /** @brief far clipping plane
    */
@@ -130,7 +132,7 @@ class VisualSensor : public Sensor {
 
   /** @brief field of view
    */
-  Mn::Deg hfov = Mn::Deg{90.f};
+  Mn::Deg hfov_ = 90.0_degf;
 
   std::unique_ptr<gfx::RenderTarget> tgt_;
   VisualSensorSpec::ptr visualSensorSpec_ =

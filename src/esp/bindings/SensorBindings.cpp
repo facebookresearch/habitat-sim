@@ -128,7 +128,7 @@ void initSensorBindings(py::module& m) {
           "far", &VisualSensor::getFar,
           R"(The distance to the far clipping plane this VisualSensor uses.)")
       .def_property_readonly("hfov", &VisualSensor::getFOV,
-                             R"(The FOV this VisualSensor uses.)")
+                             R"(The Field of View this VisualSensor uses.)")
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 

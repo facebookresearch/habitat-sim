@@ -45,7 +45,6 @@ VisualSensorSpec::VisualSensorSpec()
       encoding("rgba_uint8"),
       gpu2gpuTransfer(false) {
   sensorType = SensorType::Color;
-  sanityCheck();
 }
 
 VisualSensor::VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec)

@@ -15,6 +15,7 @@ namespace esp {
 namespace sensor {
 
 void CameraSensorSpec::sanityCheck() {
+  VisualSensorSpec::sanityCheck();
   CORRADE_ASSERT(sensorSubType == SensorSubType::Pinhole ||
                      sensorSubType == SensorSubType::Orthographic,
                  "CameraSensor::CameraSensorSpec(): sensorSpec does not have "
@@ -26,7 +27,6 @@ CameraSensorSpec::CameraSensorSpec()
     : VisualSensorSpec(), channels(4), observationSpace("") {
   uuid = "rgba_camera";
   sensorSubType = SensorSubType::Pinhole;
-  sanityCheck();
 }
 
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
@@ -83,7 +83,7 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
                 << " so defaulting to Pinhole.";
       cameraSensorSpec_->sensorSubType = SensorSubType::Pinhole;
     }
-    Magnum::Deg halfHFovRad{Magnum::Deg(.5 * hfov)};
+    Magnum::Deg halfHFovRad{Magnum::Deg(.5 * hfov_)};
     scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
     nearPlaneSize_ /= scale;
     baseProjMatrix_ =
