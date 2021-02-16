@@ -63,6 +63,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         SensorType,
         SimulatorConfiguration,
         cuda_enabled,
+        vhacd_enabled,
     )
     from habitat_sim.nav import (  # noqa: F401
         GreedyFollowerCodes,

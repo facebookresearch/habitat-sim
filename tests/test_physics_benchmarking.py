@@ -1,14 +1,10 @@
-from os import path as osp
-
 import pytest
 
 import utils
+from habitat_sim.bindings import vhacd_enabled
 
 
-@pytest.mark.skipif(
-    not osp.exists("src/deps/v-hacd"),
-    reason="Requires VHACD to be built (try building with --vhacd)",
-)
+@pytest.mark.skipif(not vhacd_enabled, reason="Test requires vhacd")
 @pytest.mark.parametrize(
     "args",
     [

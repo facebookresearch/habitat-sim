@@ -120,6 +120,13 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       false;
 #endif
 
+  m.attr("vhacd_enabled") =
+#ifdef ESP_BUILD_WITH_VHACD
+      true;
+#else
+      false;
+#endif
+
   m.import("magnum.scenegraph");
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
