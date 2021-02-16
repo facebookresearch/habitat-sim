@@ -98,23 +98,27 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   // jsonConfig here holds the JSON description for a single light attributes.
   // set position
   bool posIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "position",
-      std::bind(&LightInstanceAttributes::setPosition, lightAttribs, _1));
+      jsonConfig, "position", [lightAttribs](auto&& PH1) {
+        lightAttribs->setPosition(std::forward<decltype(PH1)>(PH1));
+      });
 
   // set direction
   bool dirIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "direction",
-      std::bind(&LightInstanceAttributes::setDirection, lightAttribs, _1));
+      jsonConfig, "direction", [lightAttribs](auto&& PH1) {
+        lightAttribs->setDirection(std::forward<decltype(PH1)>(PH1));
+      });
 
   // set color
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "color",
-      std::bind(&LightInstanceAttributes::setColor, lightAttribs, _1));
+      jsonConfig, "color", [lightAttribs](auto&& PH1) {
+        lightAttribs->setColor(std::forward<decltype(PH1)>(PH1));
+      });
 
   // set intensity
   io::jsonIntoSetter<double>(
-      jsonConfig, "intensity",
-      std::bind(&LightInstanceAttributes::setIntensity, lightAttribs, _1));
+      jsonConfig, "intensity", [lightAttribs](auto&& PH1) {
+        lightAttribs->setIntensity(std::forward<decltype(PH1)>(PH1));
+      });
 
   // type of light - should map to enum values in esp::gfx::LightType
   int typeVal = -1;
@@ -154,15 +158,15 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
       const auto& spotArea = jsonConfig["spot"];
       // set inner cone angle
       io::jsonIntoSetter<Magnum::Rad>(
-          spotArea, "innerConeAngle",
-          std::bind(&LightInstanceAttributes::setInnerConeAngle, lightAttribs,
-                    _1));
+          spotArea, "innerConeAngle", [lightAttribs](auto&& PH1) {
+            lightAttribs->setInnerConeAngle(std::forward<decltype(PH1)>(PH1));
+          });
 
       // set outer cone angle
       io::jsonIntoSetter<Magnum::Rad>(
-          spotArea, "outerConeAngle",
-          std::bind(&LightInstanceAttributes::setOuterConeAngle, lightAttribs,
-                    _1));
+          spotArea, "outerConeAngle", [lightAttribs](auto&& PH1) {
+            lightAttribs->setOuterConeAngle(std::forward<decltype(PH1)>(PH1));
+          });
     }
   }  // if member spot present
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
