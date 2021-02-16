@@ -28,6 +28,7 @@ struct VisualSensorSpec : public SensorSpec {
   bool gpu2gpuTransfer;  // True for pytorch tensor support
   VisualSensorSpec();
   void sanityCheck();
+  bool operator==(const VisualSensorSpec& a);
   ESP_SMART_POINTERS(VisualSensorSpec)
 };
 // Represents a sensor that provides visual data from the environment to an

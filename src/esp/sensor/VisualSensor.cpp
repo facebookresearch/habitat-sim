@@ -12,6 +12,15 @@
 namespace esp {
 namespace sensor {
 
+VisualSensorSpec::VisualSensorSpec()
+    : SensorSpec(),
+      ortho_scale(0.1f),
+      resolution({84, 84}),
+      encoding("rgba_uint8"),
+      gpu2gpuTransfer(false) {
+  sensorType = SensorType::Color;
+}
+
 void VisualSensorSpec::sanityCheck() {
   bool isVisualSensor =
       (sensorType == SensorType::Color || sensorType == SensorType::Depth ||
@@ -38,13 +47,10 @@ void VisualSensorSpec::sanityCheck() {
                  "width must be greater than 0", );
 }
 
-VisualSensorSpec::VisualSensorSpec()
-    : SensorSpec(),
-      ortho_scale(0.1f),
-      resolution({84, 84}),
-      encoding("rgba_uint8"),
-      gpu2gpuTransfer(false) {
-  sensorType = SensorType::Color;
+bool VisualSensorSpec::operator==(const VisualSensorSpec& a) {
+  return SensorSpec::operator==(a) && ortho_scale == a.ortho_scale &&
+         resolution == a.resolution && encoding == a.encoding &&
+         gpu2gpuTransfer == a.gpu2gpuTransfer;
 }
 
 VisualSensor::VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec)
@@ -67,14 +73,6 @@ void VisualSensor::setResolution(int height, int width) {
 
 void VisualSensor::setResolution(vec2i resolution) {
   visualSensorSpec_->resolution = {resolution[0], resolution[1]};
-}
-
-bool operator==(const VisualSensorSpec& a, const VisualSensorSpec& b) {
-  return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubType == b.sensorSubType && a.ortho_scale == b.ortho_scale &&
-         a.position == b.position && a.orientation == b.orientation &&
-         a.resolution == b.resolution && a.encoding == b.encoding &&
-         a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 
 }  // namespace sensor

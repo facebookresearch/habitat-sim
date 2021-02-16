@@ -76,14 +76,8 @@ void initSensorBindings(py::module& m) {
           [](SensorSpec& self, py::dict v) {
             py::setattr(py::cast(self), "__noise_model_kwargs", std::move(v));
           })
-      .def("__eq__",
-           [](const SensorSpec& self, const SensorSpec& other) -> bool {
-             return self == other;
-           })
-      .def("__neq__",
-           [](const SensorSpec& self, const SensorSpec& other) -> bool {
-             return self != other;
-           });
+      .def("__eq__", &SensorSpec::operator==)
+      .def("__neq__", &SensorSpec::operator!=);
 
   // ==== VisualSensorSpec ====
   py::class_<VisualSensorSpec, VisualSensorSpec::ptr, SensorSpec>(

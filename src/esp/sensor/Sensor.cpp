@@ -13,6 +13,16 @@ namespace sensor {
 
 SensorSpec::~SensorSpec() {}
 
+bool SensorSpec::operator==(const SensorSpec& a) {
+  return uuid == a.uuid && sensorType == a.sensorType &&
+         sensorSubType == a.sensorSubType && position == a.position &&
+         orientation == a.orientation && noiseModel == a.noiseModel;
+}
+
+bool SensorSpec::operator!=(const SensorSpec& a) {
+  return !(*this == a);
+}
+
 SensorSpec::SensorSpec()
     : uuid(""),
       sensorType(SensorType::None),
@@ -65,15 +75,6 @@ Sensor::ptr SensorSuite::get(const std::string& uuid) const {
 
 void SensorSuite::clear() {
   sensors_.clear();
-}
-
-bool operator==(const SensorSpec& a, const SensorSpec& b) {
-  return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubType == b.sensorSubType && a.position == b.position &&
-         a.orientation == b.orientation && a.noiseModel == b.noiseModel;
-}
-bool operator!=(const SensorSpec& a, const SensorSpec& b) {
-  return !(a == b);
 }
 
 }  // namespace sensor

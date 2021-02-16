@@ -53,11 +53,10 @@ struct SensorSpec {
   std::string noiseModel;
   SensorSpec();
   virtual ~SensorSpec();
+  bool operator==(const SensorSpec& a);
+  bool operator!=(const SensorSpec& a);
   ESP_SMART_POINTERS(SensorSpec)
 };
-
-bool operator==(const SensorSpec& a, const SensorSpec& b);
-bool operator!=(const SensorSpec& a, const SensorSpec& b);
 
 using SensorSetup = std::vector<sensor::SensorSpec::ptr>;
 // Represents a particular sensor Observation
