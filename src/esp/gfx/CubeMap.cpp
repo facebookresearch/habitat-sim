@@ -234,7 +234,7 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
         *textures_[TextureType::Depth], cubeMapCoord, 0);
   }
 
-  frameBuffer_.clearDepth(1.0f).clearColor(0,                // color attachment
+  frameBuffer_.clearDepth(1.0f).clearColor(cubeSideIndex,    // color attachment
                                            Mn::Vector4ui{0}  // clear color
   );
 
