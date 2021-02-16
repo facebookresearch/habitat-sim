@@ -20,12 +20,14 @@
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
 #include "esp/geo/VoxelGrid.h"
+#include "esp/gfx/MeshVisualizerDrawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -256,6 +258,14 @@ Key Commands:
   std::vector<Magnum::Vector3> agentLocs_;
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
+
+  //! tracks primitive mesh ids
+  int nextVoxelGridMeshId = 0;
+  /**
+   * @brief Primitive meshes available for instancing via @ref
+   * addPrimitiveToDrawables for debugging or visualization purposes.
+   */
+  std::map<int, std::unique_ptr<Mn::GL::Mesh>> voxel_grids_;
 
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
@@ -809,6 +819,36 @@ esp::geo::VoxelGrid Viewer::createVoxelField() {
 void Viewer::displayVoxelField(esp::geo::VoxelGrid& v) {
   Cr::Containers::Optional<Mn::Trade::MeshData> mesh;
   v.fillVoxelMeshData(mesh);
+  voxel_grids_[nextVoxelGridMeshId++] =
+      std::make_unique<Magnum::GL::Mesh>(Mn::MeshTools::compile(*mesh));
+
+  // custom shader for voxel grid
+  Magnum::Shaders::MeshVisualizer3D shader_{
+      Magnum::Shaders::MeshVisualizer3D::Flag::Wireframe};
+  const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
+  shader_.setViewportSize(Mn::Vector2{viewportSize});
+  shader_.setColor(0x2f83cc7f_rgbaf)
+      .setWireframeColor(0xdcdcdc_rgbf)
+      .setWireframeWidth(2.0);
+
+  objectPickingHelper_->prepareToDraw();
+
+  // redraw the scene on the object picking framebuffer
+  esp::gfx::RenderCamera::Flags flags =
+      esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
+  if (simulator_->isFrustumCullingEnabled())
+    flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+  for (auto& it : activeSceneGraph_->getDrawableGroups()) {
+    renderCamera_->draw(it.second, flags);
+  }
+
+  // Attach to root node for now
+  auto& rootNode = activeSceneGraph_->getRootNode();
+
+  auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
+      rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId],
+      &objectPickingHelper_->getDrawables());
+
   !Mn::Debug();
 }
 
@@ -1115,7 +1155,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     // Read the object Id
     unsigned int pickedObject =
         objectPickingHelper_->getObjectId(event.position(), windowSize());
-    !Mn::Debug();
     // if an object is selected, create a visualizer
     createPickedObjectVisualizer(pickedObject);
     return;

@@ -1,6 +1,8 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/MeshTools/Reference.h>
+#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/Phong.h>
 
 #include "VoxelGrid.h"
 
@@ -59,9 +61,10 @@ void VoxelGrid::setVoxelByIndex(const Mn::Vector3i& coords, Voxel* voxel) {
   m_grid[hashedVoxelIndex] = voxel;
 }
 
-void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
-                                         std::vector<Mn::UnsignedInt>& indices,
-                                         Mn::Vector3i local_coords) {
+void VoxelGrid::addVoxelToMeshPrimitives(
+    std::vector<Mn::Vector3>& positions,
+    std::vector<Mn::UnsignedShort>& indices,
+    Mn::Vector3i local_coords) {
   // add cube to mesh
   Mn::Vector3 mid = getGlobalCoords(local_coords);
   // add vertices
@@ -119,7 +122,7 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
 
 void VoxelGrid::fillVoxelMeshData(
     Cr::Containers::Optional<Mn::Trade::MeshData>& mesh) {
-  std::vector<Mn::UnsignedInt> indices;
+  std::vector<Mn::UnsignedShort> indices;
   std::vector<Mn::Vector3> positions;
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
@@ -134,6 +137,7 @@ void VoxelGrid::fillVoxelMeshData(
       }
     }
   }
+
   mesh = Mn::MeshTools::owned(Mn::Trade::MeshData{
       Mn::MeshPrimitive::Triangles,
       {},

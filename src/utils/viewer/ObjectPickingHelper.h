@@ -55,6 +55,15 @@ class ObjectPickingHelper {
   void createPickedObjectVisualizer(esp::gfx::Drawable* pickedObject);
 
   /**
+   * @brief create a mesh visualizer (a drawable) for the picked object (a
+   * drawable), if there is any
+   * @param pickedObject, the picked object (drawable), if nullptr is passed,
+   * function will delete any previously created visualizer object
+   */
+  void createPickedObjectVoxelGridVisualizer(Mn::GL::Mesh* mesh,
+                                             esp::scene::SceneNode* node);
+
+  /**
    * @brief return true if an object is picked at the moment
    */
   bool isObjectPicked() const { return meshVisualizerDrawable_ != nullptr; }

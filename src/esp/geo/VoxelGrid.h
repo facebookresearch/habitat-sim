@@ -92,7 +92,7 @@ class VoxelGrid {
   bool saveToSVXFile(const std::string& filepath, const std::string& filename);
 
   void addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
-                                std::vector<Mn::UnsignedInt>& indices,
+                                std::vector<Mn::UnsignedShort>& indices,
                                 Mn::Vector3i local_coords);
 
   // insert voxel information into a mesh.
