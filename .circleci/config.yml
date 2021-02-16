@@ -507,6 +507,7 @@ jobs:
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
                 --bullet \
+                --vhacd \
                 --with-cuda \
                 --build-datatool \
                 --run-tests \
