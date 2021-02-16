@@ -43,6 +43,12 @@ namespace esp {
 namespace sim {
 class Simulator {
  public:
+  /**
+   * @brief This constructor will build a Simulator using the config that is
+   * held in the passed MetadataMediator
+   */
+  explicit Simulator(metadata::MetadataMediator::ptr _metadataMediator);
+
   explicit Simulator(const SimulatorConfiguration& cfg);
   virtual ~Simulator();
 
@@ -847,6 +853,8 @@ class Simulator {
    */
   void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
     metadataMediator_ = _metadataMediator;
+    // set newly added MM to have current Simulator Config
+    metadataMediator_->setSimulatorConfiguration(this->config_);
   }
 
   /**

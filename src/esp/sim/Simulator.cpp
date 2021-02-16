@@ -37,6 +37,15 @@ using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
+Simulator::Simulator(metadata::MetadataMediator::ptr _metadataMediator)
+    : metadataMediator_{_metadataMediator},
+      random_{core::Random::create(
+          metadataMediator_->getSimulatorConfiguration().randomSeed)},
+      requiresTextures_{Cr::Containers::NullOpt} {
+  // initalize members according to MM's configuration
+  reconfigure(metadataMediator_->getSimulatorConfiguration());
+}
+
 Simulator::Simulator(const SimulatorConfiguration& cfg)
     : random_{core::Random::create(cfg.randomSeed)},
       requiresTextures_{Cr::Containers::NullOpt} {

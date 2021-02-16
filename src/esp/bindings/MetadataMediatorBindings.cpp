@@ -17,6 +17,8 @@ namespace metadata {
 
 void initMetadataMediatorBindings(py::module& m) {
   py::class_<MetadataMediator, MetadataMediator::ptr>(m, "MetadataMediator")
+      .def(py::init(&MetadataMediator::create<>))
+      .def(py::init<const sim::SimulatorConfiguration&>())
       .def_property(
           "active_dataset", &MetadataMediator::getActiveSceneDatasetName,
           &MetadataMediator::setActiveSceneDatasetName,
