@@ -71,7 +71,7 @@ void PhysicsAttributesManager::setValsFromJSONDoc(
   // load world gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "gravity",
-      [physicsManagerAttributes](const Magnum::Vector3 gravity) {
+      [physicsManagerAttributes](const Magnum::Vector3& gravity) {
         physicsManagerAttributes->setGravity(gravity);
       });
 
