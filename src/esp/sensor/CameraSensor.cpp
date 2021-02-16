@@ -14,6 +14,12 @@
 namespace esp {
 namespace sensor {
 
+CameraSensorSpec::CameraSensorSpec()
+    : VisualSensorSpec(), channels(4), observationSpace("") {
+  uuid = "rgba_camera";
+  sensorSubType = SensorSubType::Pinhole;
+}
+
 void CameraSensorSpec::sanityCheck() {
   VisualSensorSpec::sanityCheck();
   CORRADE_ASSERT(sensorSubType == SensorSubType::Pinhole ||
@@ -23,10 +29,9 @@ void CameraSensorSpec::sanityCheck() {
                  "Pinhole or Orthographic", );
 }
 
-CameraSensorSpec::CameraSensorSpec()
-    : VisualSensorSpec(), channels(4), observationSpace("") {
-  uuid = "rgba_camera";
-  sensorSubType = SensorSubType::Pinhole;
+bool CameraSensorSpec::operator==(const CameraSensorSpec& a) {
+  return VisualSensorSpec::operator==(a) && channels == a.channels &&
+         observationSpace == a.observationSpace;
 }
 
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
@@ -189,15 +194,6 @@ bool CameraSensor::displayObservation(sim::Simulator& sim) {
   renderTarget().blitRgbaToDefault();
 
   return true;
-}
-
-bool operator==(const CameraSensorSpec& a, const CameraSensorSpec& b) {
-  return a.uuid == b.uuid && a.sensorType == b.sensorType &&
-         a.sensorSubType == b.sensorSubType && a.ortho_scale == b.ortho_scale &&
-         a.position == b.position && a.orientation == b.orientation &&
-         a.resolution == b.resolution && a.channels == b.channels &&
-         a.encoding == b.encoding && a.observationSpace == b.observationSpace &&
-         a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 
 Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()

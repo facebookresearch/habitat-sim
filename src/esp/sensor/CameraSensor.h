@@ -18,6 +18,7 @@ struct CameraSensorSpec : public VisualSensorSpec {
   std::string observationSpace;
   CameraSensorSpec();
   void sanityCheck();
+  bool operator==(const CameraSensorSpec& a);
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
 
