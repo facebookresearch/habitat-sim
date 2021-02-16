@@ -86,7 +86,7 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   }
 }
 
-//#ifdef ESP_BUILD_WITH_VHACD
+#ifdef ESP_BUILD_WITH_VHACD
 TEST(ResourceManagerTest, VHACDUsageTest) {
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
@@ -127,7 +127,7 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
 
   ASSERT(resourceManager.getNumberOfResource(CHdonutFile) > 0);
 }
-//#endif
+#endif
 
 // Load and create a render asset instance and assert success
 TEST(ResourceManagerTest, loadAndCreateRenderAssetInstance) {
