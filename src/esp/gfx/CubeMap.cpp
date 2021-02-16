@@ -142,26 +142,28 @@ bool CubeMap::reset(int imageSize) {
 }
 
 void CubeMap::attachFramebufferRenderbuffer() {
-  if (flags_ & Flag::ColorTexture) {
-    for (unsigned int index = 0; index < 6; ++index) {
+  for (unsigned int index = 0; index < 6; ++index) {
+    if (flags_ & Flag::ColorTexture) {
       Magnum::GL::CubeMapCoordinate cubeMapCoord =
           convertFaceIndexToCubeMapCoordinate(index);
       frameBuffer_[index].attachCubeMapTexture(
           Mn::GL::Framebuffer::ColorAttachment{0},
           *textures_[TextureType::Color], cubeMapCoord, 0);
+    } else {
+      frameBuffer_[index].attachRenderbuffer(
+          Mn::GL::Framebuffer::ColorAttachment{0}, optionalColorBuffer_[index]);
     }
-  }
-  if (!(flags_ & Flag::DepthTexture)) {
-    for (unsigned int index = 0; index < 6; ++index) {
+
+    if (flags_ & Flag::DepthTexture) {
+      Magnum::GL::CubeMapCoordinate cubeMapCoord =
+          convertFaceIndexToCubeMapCoordinate(index);
+      frameBuffer_[index].attachCubeMapTexture(
+          Mn::GL::Framebuffer::BufferAttachment::Depth,
+          *textures_[TextureType::Depth], cubeMapCoord, 0);
+    } else {
       frameBuffer_[index].attachRenderbuffer(
           Mn::GL::Framebuffer::BufferAttachment::Depth,
           optionalDepthBuffer_[index]);
-    }
-  }
-  if (!(flags_ & Flag::ColorTexture)) {
-    for (unsigned int index = 0; index < 6; ++index) {
-      frameBuffer_[index].attachRenderbuffer(
-          Mn::GL::Framebuffer::ColorAttachment{0}, optionalColorBuffer_[index]);
     }
   }
 }
@@ -225,36 +227,16 @@ void CubeMap::recreateFramebuffer() {
 }
 
 void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
-  if (flags_ & Flag::ColorTexture) {
-    mapForDraw(cubeSideIndex);
-  }
-
-  // sorry, unlike color buffers, for depth buffer you have to reattach it every
-  // time
-  // however, if NOT using depth texture, we do not need to attach the depth
-  // buffer again and again
-  if (flags_ & Flag::DepthTexture) {
-    // use the optional color buffer which is bound to color attachment 0
-    frameBuffer_[cubeSideIndex].mapForDraw({
-        {Mn::Shaders::Generic3D::ColorOutput,
-         Mn::GL::Framebuffer::ColorAttachment{0}},
-    });
-
-    Magnum::GL::CubeMapCoordinate cubeMapCoord =
-        convertFaceIndexToCubeMapCoordinate(cubeSideIndex);
-    frameBuffer_[cubeSideIndex].attachCubeMapTexture(
-        Mn::GL::Framebuffer::BufferAttachment::Depth,
-        *textures_[TextureType::Depth], cubeMapCoord, 0);
-  }
+  mapForDraw(cubeSideIndex);
 
   frameBuffer_[cubeSideIndex].clearDepth(1.0f).clearColor(
       0,                // color attachment
       Mn::Vector4ui{0}  // clear color
   );
 
-  CORRADE_INTERNAL_ASSERT(
-      frameBuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
-      Mn::GL::Framebuffer::Status::Complete);
+  CORRADE_INTERNAL_ASSERT(frameBuffer_[cubeSideIndex].checkStatus(
+                              Mn::GL::FramebufferTarget::Draw) ==
+                          Mn::GL::Framebuffer::Status::Complete);
 }
 
 void CubeMap::mapForDraw(unsigned int index) {
