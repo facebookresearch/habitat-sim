@@ -86,7 +86,7 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   }
 }
 
-#ifdef ESP_BUILD_WITH_VHACD
+//#ifdef ESP_BUILD_WITH_VHACD
 TEST(ResourceManagerTest, VHACDUsageTest) {
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
@@ -121,16 +121,13 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
   esp::assets::ResourceManager::VHACDParameters params;
   // params.setMaxNumVerticesPerCH(10);
   params.m_resolution = 1000000;
-
+  ASSERT(resourceManager.getNumberOfResource(CHdonutFile) == 0);
   resourceManager.createConvexHullDecomposition(donutFile, CHdonutFile, params,
                                                 true);
-  // transform_box.glb is composed of 6 identical triangulated plane meshes
-  // transformed into a cube via a transform heirarchy. Combined, the resulting
-  // mesh should have 24 vertices and 36 indices with corners at the unit corner
-  // coordinates as defined in the ground truth vectors below.
-  ASSERT(1 > 0);
+
+  ASSERT(resourceManager.getNumberOfResource(CHdonutFile) > 0);
 }
-#endif
+//#endif
 
 // Load and create a render asset instance and assert success
 TEST(ResourceManagerTest, loadAndCreateRenderAssetInstance) {
