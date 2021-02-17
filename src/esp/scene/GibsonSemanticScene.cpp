@@ -8,8 +8,6 @@
 #include <map>
 #include <string>
 
-#include <Corrade/Utility/Directory.h>
-
 #include "esp/io/json.h"
 
 namespace Cr = Corrade;
@@ -21,23 +19,28 @@ constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
 bool SemanticScene::
     loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
-  if (!Cr::Utility::Directory::exists(houseFilename)) {
-    LOG(ERROR) << "Could not load file " << houseFilename;
+  if (!checkFileExists(houseFilename, "loadGibsonHouse")) {
     return false;
   }
 
+  // top-level scene
+  VLOG(1) << "loadGibsonHouse::Parsing " << houseFilename;
+  const io::JsonDocument& json = io::parseJsonFile(houseFilename);
+  VLOG(1) << "loadGibsonHouse::Parsed.";
+
+  return buildGibsonHouse(json, scene, rotation);
+}  // SemanticScene::loadGibsonHouse
+
+bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
+                                     SemanticScene& scene,
+                                     const quatf& rotation) {
   scene.categories_.clear();
   scene.objects_.clear();
-
-  // top-level scene
-  VLOG(1) << "Parsing " << houseFilename;
-  const auto& json = io::parseJsonFile(houseFilename);
-  VLOG(1) << "Parsed.";
 
   std::unordered_map<std::string, int> categories;
 
   // objects
-  const auto& objects = json["objects"].GetArray();
+  const auto& objects = jsonDoc["objects"].GetArray();
   scene.elementCounts_["objects"] = objects.Size();
   for (const auto& jsonObject : objects) {
     SemanticObject::ptr object = SemanticObject::create();
@@ -87,7 +90,7 @@ bool SemanticScene::
   }
 
   return true;
-}
+}  // SemanticScene::buildGibsonHouse
 
 }  // namespace scene
 }  // namespace esp
