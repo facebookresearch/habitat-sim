@@ -170,9 +170,6 @@ class CubeMap {
   // in case there is no need to output depth texture, we need a depth buffer
   Magnum::GL::Renderbuffer optionalDepthBuffer_[6];
 
-  // in case there is no need to output color texture, we need a color buffer
-  // Magnum::GL::Renderbuffer optionalColorBuffer_[6];
-
   /**
    * @brief recreate the frame buffer
    */

@@ -141,30 +141,6 @@ bool CubeMap::reset(int imageSize) {
   return true;
 }
 
-void CubeMap::attachFramebufferRenderbuffer() {
-  for (unsigned int index = 0; index < 6; ++index) {
-    if (flags_ & Flag::ColorTexture) {
-      Magnum::GL::CubeMapCoordinate cubeMapCoord =
-          convertFaceIndexToCubeMapCoordinate(index);
-      frameBuffer_[index].attachCubeMapTexture(
-          Mn::GL::Framebuffer::ColorAttachment{0},
-          *textures_[TextureType::Color], cubeMapCoord, 0);
-    }
-
-    if (flags_ & Flag::DepthTexture) {
-      Magnum::GL::CubeMapCoordinate cubeMapCoord =
-          convertFaceIndexToCubeMapCoordinate(index);
-      frameBuffer_[index].attachCubeMapTexture(
-          Mn::GL::Framebuffer::BufferAttachment::Depth,
-          *textures_[TextureType::Depth], cubeMapCoord, 0);
-    } else {
-      frameBuffer_[index].attachRenderbuffer(
-          Mn::GL::Framebuffer::BufferAttachment::Depth,
-          optionalDepthBuffer_[index]);
-    }
-  }
-}
-
 void CubeMap::recreateTexture() {
   Mn::Vector2i size{imageSize_, imageSize_};
 
@@ -217,7 +193,33 @@ void CubeMap::recreateFramebuffer() {
   }
 }
 
+void CubeMap::attachFramebufferRenderbuffer() {
+  for (unsigned int index = 0; index < 6; ++index) {
+    if (flags_ & Flag::ColorTexture) {
+      Magnum::GL::CubeMapCoordinate cubeMapCoord =
+          convertFaceIndexToCubeMapCoordinate(index);
+      frameBuffer_[index].attachCubeMapTexture(
+          Mn::GL::Framebuffer::ColorAttachment{0},
+          *textures_[TextureType::Color], cubeMapCoord, 0);
+    }
+
+    if (flags_ & Flag::DepthTexture) {
+      Magnum::GL::CubeMapCoordinate cubeMapCoord =
+          convertFaceIndexToCubeMapCoordinate(index);
+      frameBuffer_[index].attachCubeMapTexture(
+          Mn::GL::Framebuffer::BufferAttachment::Depth,
+          *textures_[TextureType::Depth], cubeMapCoord, 0);
+    } else {
+      frameBuffer_[index].attachRenderbuffer(
+          Mn::GL::Framebuffer::BufferAttachment::Depth,
+          optionalDepthBuffer_[index]);
+    }
+  }
+}
+
 void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
+  // Note: we ONLY need to map shader output to color attachment when necessary,
+  // which means in depth texture mode, we do NOT need to do this
   if (flags_ & CubeMap::Flag::ColorTexture) {
     mapForDraw(cubeSideIndex);
     frameBuffer_[cubeSideIndex].clearColor(0,                // color attachment
