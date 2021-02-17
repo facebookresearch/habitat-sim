@@ -97,7 +97,7 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.sceneLightSetup = sceneLightingKey;
 
     MetadataMediator::ptr MM = MetadataMediator::create(simConfig);
-    auto sim = Simulator::create_unique(MM);
+    auto sim = Simulator::create_unique(simConfig, MM);
     auto objAttrMgr = sim->getObjectAttributesManager();
     objAttrMgr->loadAllConfigsFromPath(
         Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
@@ -179,7 +179,7 @@ void SimTest::basic() {
   SimulatorConfiguration cfg_mm;
   cfg_mm.activeSceneName = vangogh;
   MetadataMediator::ptr MM = MetadataMediator::create(cfg_mm);
-  Simulator simulator_mm(MM);
+  Simulator simulator_mm(cfg_mm, MM);
   PathFinder::ptr pathfinder_mm = simulator_mm.getPathFinder();
   CORRADE_VERIFY(pathfinder_mm);
 }
@@ -200,7 +200,7 @@ void SimTest::reconfigure() {
   SimulatorConfiguration cfg_mm;
   cfg_mm.activeSceneName = vangogh;
   MetadataMediator::ptr MM = MetadataMediator::create(cfg_mm);
-  Simulator simulator_mm(MM);
+  Simulator simulator_mm(cfg_mm, MM);
   PathFinder::ptr pathfinder_mm = simulator_mm.getPathFinder();
   simulator_mm.reconfigure(cfg_mm);
   CORRADE_VERIFY(pathfinder_mm == simulator_mm.getPathFinder());
@@ -244,7 +244,7 @@ void SimTest::reset() {
   SimulatorConfiguration cfg_mm;
   cfg_mm.activeSceneName = vangogh;
   MetadataMediator::ptr MM = MetadataMediator::create(cfg_mm);
-  Simulator simulator_mm(MM);
+  Simulator simulator_mm(cfg_mm, MM);
   testReset(simulator_mm);
 }
 

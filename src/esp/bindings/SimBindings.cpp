@@ -74,9 +74,9 @@ void initSimBindings(py::module& m) {
 
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")
-      // add constructor to build Simulator from existing MetadataMediator
-      .def(py::init<esp::metadata::MetadataMediator::ptr>())
-      .def(py::init<const SimulatorConfiguration&>())
+      // modify constructor to pass MetadataMediator
+      .def(py::init<const SimulatorConfiguration&,
+                    esp::metadata::MetadataMediator::ptr>())
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)

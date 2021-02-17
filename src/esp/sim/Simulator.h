@@ -43,13 +43,9 @@ namespace esp {
 namespace sim {
 class Simulator {
  public:
-  /**
-   * @brief This constructor will build a Simulator using the config that is
-   * held in the passed MetadataMediator
-   */
-  explicit Simulator(metadata::MetadataMediator::ptr _metadataMediator);
-
-  explicit Simulator(const SimulatorConfiguration& cfg);
+  explicit Simulator(
+      const SimulatorConfiguration& cfg,
+      metadata::MetadataMediator::ptr _metadataMediator = nullptr);
   virtual ~Simulator();
 
   /**

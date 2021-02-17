@@ -188,10 +188,7 @@ class Simulator(SimulatorBackend):
 
     def _config_backend(self, config: Configuration) -> None:
         if not self._initialized:
-            if config.metadata_mediator is not None:
-                super().__init__(config.metadata_mediator)
-            else:
-                super().__init__(config.sim_cfg)
+            super().__init__(config.sim_cfg, config.metadata_mediator)
             self._initialized = True
         else:
             super().reconfigure(config.sim_cfg)
