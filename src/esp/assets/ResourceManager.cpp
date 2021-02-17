@@ -1532,8 +1532,6 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     finalMaterial->specularTexture =
         textures_.at(textureBaseIndex + material.specularTexture()).get();
   }
-  // TODO: remove this de-shining hack once materials are converted properly
-  finalMaterial->specularColor *= 0.1;
 
   // normal mapping
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
