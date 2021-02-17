@@ -338,16 +338,24 @@ class BulletPhysicsManager : public PhysicsManager {
   std::map<int, btMultiBodyFixedConstraint*> articulatedFixedConstraints;
   std::map<int, btPoint2PointConstraint*> rigidP2ps;
 
-  int getNumActiveContactPoints() {
+  int getNumActiveContactPoints() override {
     return BulletDebugManager::get().getNumActiveContactPoints(bWorld_.get());
   }
-  int getNumActiveOverlappingPairs() {
+  int getNumActiveOverlappingPairs() override {
     return BulletDebugManager::get().getNumActiveOverlappingPairs(
         bWorld_.get());
   }
-  std::string getStepCollisionSummary() {
+  std::string getStepCollisionSummary() override {
     return BulletDebugManager::get().getStepCollisionSummary(bWorld_.get());
   }
+
+  /**
+   * @brief Perform discrete collision detection for the scene.
+   */
+  virtual void performDiscreteCollisionDetection() override {
+    bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+    m_recentNumSubStepsTaken = -1;  // TODO: handle this more gracefully
+  };
 
  protected:
   //============ Initialization =============

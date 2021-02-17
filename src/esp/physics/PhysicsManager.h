@@ -1163,6 +1163,14 @@ class PhysicsManager {
     return false;
   };
 
+  /**
+   * @brief Perform discrete collision detection for the scene with the derived
+   * PhysicsManager implementation. Not implemented for default @ref
+   * PhysicsManager. See @ref BulletPhysicsManager.
+   */
+  virtual void performDiscreteCollisionDetection(){
+      /*Does nothing in base PhysicsManager.*/};
+
   virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
 
   /**

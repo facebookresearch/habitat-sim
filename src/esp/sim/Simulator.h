@@ -830,6 +830,13 @@ class Simulator {
    */
   bool contactTest(int objectID, int sceneID = 0);
 
+  /**
+   * @brief Perform discrete collision detection for the scene.
+   */
+  void performDiscreteCollisionDetection() {
+    physicsManager_->performDiscreteCollisionDetection();
+  };
+
   // TODO: document
   void overrideCollisionGroup(int objectID, int group) {
     // todo: find a safe way to convert int to enum

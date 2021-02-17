@@ -152,6 +152,82 @@ def test_urdf_memory():
     plt.show()
 
 
+def demo_contact_profile():
+    cfg = make_configuration()
+    with habitat_sim.Simulator(cfg) as sim:
+        place_agent(sim)
+        observations = []
+
+        # add a robot to the scene
+        robot_file = urdf_files["aliengo"]
+        robot_id = sim.add_articulated_object_from_urdf(robot_file)
+
+        # gets nothing because physics has not stepped yet
+        print(sim.get_physics_step_collision_summary())
+
+        # gets nothing because no active collisions yet
+        sim.step_physics(0.1)
+        print(sim.get_physics_step_collision_summary())
+
+        # give time for the robot to hit the ground then check contacts
+        sim.step_physics(1.0)
+        print("Step Collision Summary:")
+        print(sim.get_physics_step_collision_summary())
+
+        # now add two colliding robots and run discrete collision detection
+        sim.remove_articulated_object(robot_id)
+        robot_id1 = sim.add_articulated_object_from_urdf(robot_file)
+        robot_id2 = sim.add_articulated_object_from_urdf(robot_file)
+        place_robot_from_agent(sim, robot_id1)
+        place_robot_from_agent(
+            sim, robot_id2, local_base_pos=np.array([0.15, -0.1, -2.0])
+        )
+        sim.perform_discrete_collision_detection()
+        print("Step Collision Summary:")
+        print(sim.get_physics_step_collision_summary())
+        print(
+            "Num overlapping pairs: "
+            + str(sim.get_physics_num_active_overlapping_pairs())
+        )
+        print(
+            "Num active contact points: "
+            + str(sim.get_physics_num_active_contact_points())
+        )
+        contact_points = sim.get_physics_contact_points()
+        print("Active contact points: ")
+        for cp_ix, cp in enumerate(contact_points):
+            print(" Contact Point " + str(cp_ix) + ":")
+            print("     object_id_a = " + str(cp.object_id_a))
+            print("     object_id_b = " + str(cp.object_id_b))
+            print("     link_id_a = " + str(cp.link_id_a))
+            print("     link_id_b = " + str(cp.link_id_b))
+            print("     position_on_a_in_ws = " + str(cp.position_on_a_in_ws))
+            print("     position_on_b_in_ws = " + str(cp.position_on_b_in_ws))
+            print(
+                "     contact_normal_on_b_in_ws = " + str(cp.contact_normal_on_b_in_ws)
+            )
+            print("     contact_distance = " + str(cp.contact_distance))
+            print("     normal_force = " + str(cp.normal_force))
+            print("     linear_friction_force1 = " + str(cp.linear_friction_force1))
+            print("     linear_friction_force2 = " + str(cp.linear_friction_force2))
+            print(
+                "     linear_friction_direction1 = "
+                + str(cp.linear_friction_direction1)
+            )
+            print(
+                "     linear_friction_direction2 = "
+                + str(cp.linear_friction_direction2)
+            )
+            print("     is_active = " + str(cp.is_active))
+
+        observations.append(sim.get_sensor_observations())
+        # TODO: visualize the contact points
+        im = vut.observation_to_image(
+            observations[-1]["rgba_camera_1stperson"], "color"
+        )
+        im.show()
+
+
 def test_constraints(make_video=True, show_video=True):
     # [initialize]
     # create the simulator
@@ -638,3 +714,4 @@ if __name__ == "__main__":
     main(make_video, show_video)
     test_constraints(make_video, show_video)
     # test_urdf_memory()
+    # demo_contact_profile()
