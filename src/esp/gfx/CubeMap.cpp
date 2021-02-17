@@ -141,26 +141,6 @@ bool CubeMap::reset(int imageSize) {
   return true;
 }
 
-void CubeMap::attachFramebufferRenderbuffer() {
-  if (flags_ & Flag::ColorTexture) {
-    for (unsigned int index = 0; index < 6; ++index) {
-      Magnum::GL::CubeMapCoordinate cubeMapCoord =
-          convertFaceIndexToCubeMapCoordinate(index);
-      frameBuffer_.attachCubeMapTexture(
-          Mn::GL::Framebuffer::ColorAttachment{index},
-          *textures_[TextureType::Color], cubeMapCoord, 0);
-    }
-  }
-  if (!(flags_ & Flag::DepthTexture)) {
-    frameBuffer_.attachRenderbuffer(
-        Mn::GL::Framebuffer::BufferAttachment::Depth, optionalDepthBuffer_);
-  }
-  if (!(flags_ & Flag::ColorTexture)) {
-    frameBuffer_.attachRenderbuffer(Mn::GL::Framebuffer::ColorAttachment{0},
-                                    optionalColorBuffer_);
-  }
-}
-
 void CubeMap::recreateTexture() {
   Mn::Vector2i size{imageSize_, imageSize_};
 
@@ -198,55 +178,66 @@ void CubeMap::recreateTexture() {
 
 void CubeMap::recreateFramebuffer() {
   Mn::Vector2i viewportSize{imageSize_, imageSize_};
-  frameBuffer_ = Mn::GL::Framebuffer{{{}, viewportSize}};
+
+  for (int iFbo = 0; iFbo < 6; ++iFbo) {
+    frameBuffer_[iFbo] = Mn::GL::Framebuffer{{{}, viewportSize}};
+  }
+
   // optional depth buffer is 24-bit integer pixel, which is different from the
   // depth texture (32-bit float)
   if (!(flags_ & CubeMap::Flag::DepthTexture)) {
-    optionalDepthBuffer_.setStorage(
-        Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
+    for (int index = 0; index < 6; ++index) {
+      optionalDepthBuffer_[index].setStorage(
+          Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
+    }
   }
-  if (!(flags_ & CubeMap::Flag::ColorTexture)) {
-    optionalColorBuffer_.setStorage(Mn::GL::RenderbufferFormat::RGBA8,
-                                    viewportSize);
+}
+
+void CubeMap::attachFramebufferRenderbuffer() {
+  for (unsigned int index = 0; index < 6; ++index) {
+    if (flags_ & Flag::ColorTexture) {
+      Magnum::GL::CubeMapCoordinate cubeMapCoord =
+          convertFaceIndexToCubeMapCoordinate(index);
+      frameBuffer_[index].attachCubeMapTexture(
+          Mn::GL::Framebuffer::ColorAttachment{0},
+          *textures_[TextureType::Color], cubeMapCoord, 0);
+    }
+
+    if (flags_ & Flag::DepthTexture) {
+      Magnum::GL::CubeMapCoordinate cubeMapCoord =
+          convertFaceIndexToCubeMapCoordinate(index);
+      frameBuffer_[index].attachCubeMapTexture(
+          Mn::GL::Framebuffer::BufferAttachment::Depth,
+          *textures_[TextureType::Depth], cubeMapCoord, 0);
+    } else {
+      frameBuffer_[index].attachRenderbuffer(
+          Mn::GL::Framebuffer::BufferAttachment::Depth,
+          optionalDepthBuffer_[index]);
+    }
   }
 }
 
 void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
-  if (flags_ & Flag::ColorTexture) {
+  // Note: we ONLY need to map shader output to color attachment when necessary,
+  // which means in depth texture mode, we do NOT need to do this
+  if (flags_ & CubeMap::Flag::ColorTexture) {
     mapForDraw(cubeSideIndex);
-  }
-
-  // sorry, unlike color buffers, for depth buffer you have to reattach it every
-  // time
-  // however, if NOT using depth texture, we do not need to attach the depth
-  // buffer again and again
-  if (flags_ & Flag::DepthTexture) {
-    // use the optional color buffer which is bound to color attachment 0
-    frameBuffer_.mapForDraw({
-        {Mn::Shaders::Generic3D::ColorOutput,
-         Mn::GL::Framebuffer::ColorAttachment{0}},
-    });
-
-    Magnum::GL::CubeMapCoordinate cubeMapCoord =
-        convertFaceIndexToCubeMapCoordinate(cubeSideIndex);
-    frameBuffer_.attachCubeMapTexture(
-        Mn::GL::Framebuffer::BufferAttachment::Depth,
-        *textures_[TextureType::Depth], cubeMapCoord, 0);
-  }
-
-  frameBuffer_.clearDepth(1.0f).clearColor(0,                // color attachment
+    frameBuffer_[cubeSideIndex].clearColor(0,                // color attachment
                                            Mn::Vector4ui{0}  // clear color
-  );
+    );
+  }
 
-  CORRADE_INTERNAL_ASSERT(
-      frameBuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
-      Mn::GL::Framebuffer::Status::Complete);
+  frameBuffer_[cubeSideIndex].clearDepth(1.0f);
+
+  CORRADE_INTERNAL_ASSERT(frameBuffer_[cubeSideIndex].checkStatus(
+                              Mn::GL::FramebufferTarget::Draw) ==
+                          Mn::GL::Framebuffer::Status::Complete);
 }
 
 void CubeMap::mapForDraw(unsigned int index) {
-  frameBuffer_.mapForDraw({
+  frameBuffer_[index].mapForDraw({
       {Mn::Shaders::Generic3D::ColorOutput,
-       Mn::GL::Framebuffer::ColorAttachment{index}},
+       Mn::GL::Framebuffer::ColorAttachment{0}},
       // TODO:
       //{Mn::Shaders::Generic3D::ObjectIdOutput, objectIdAttachment}
   });
@@ -358,14 +349,12 @@ void CubeMap::loadTexture(TextureType type,
         importer->image2D(0);
 
     // XXX
-    /*
     Mn::Debug{} << "imagedata raw data size = " << (*imageData).data().size();
     {
       auto view = Cr::Containers::arrayCast<const float>((*imageData).data());
       Mn::Debug{} << "first 4 rgbs from imagedata"
                   << view.prefix(12);  // first 12 floats --> 4 Rgbs
     }
-    */
 
     // sanity checks
     CORRADE_INTERNAL_ASSERT(imageData);
@@ -397,6 +386,10 @@ void CubeMap::loadTexture(TextureType type,
         Cr::Containers::StridedArrayView2D<const Mn::Color3>
             imageStridedArrayView = imageData->pixels<Mn::Color3>();
 
+        // XXX
+        // Mn::Debug{} << "imageStridedArrayView" <<
+        // imageStridedArrayView.size();
+
         //  This casts the Color3 view to a float, which effectively uses only
         //  four bytes of each element, which is the red channel
         Cr::Containers::StridedArrayView2D<const float> red =
@@ -410,33 +403,29 @@ void CubeMap::loadTexture(TextureType type,
             depthImage, {std::size_t(size.y()), std::size_t(size.x())}};
 
         // copy the data
-        Cr::Utility::copy(red, output);
+        // Cr::Utility::copy(red, output);
 
         // XXX
-        /*
         unsigned int idx = 0;
         for (auto row : imageStridedArrayView) {
           for (const Mn::Color3& pixel : row) {
             depthImage[idx++] = pixel.r();
           }
         }
-        */
-        // Mn::Debug{} << "depthImage (top 9) = " << depthImage.prefix(9);
-        // Mn::Debug{} << "imageData size: " << imageData->size();
+        Mn::Debug{} << "depthImage (top 9) = " << depthImage.prefix(9);
+        Mn::Debug{} << "imageData size: " << imageData->size();
         Mn::ImageView2D imageView(Mn::GL::PixelFormat::DepthComponent,
                                   Mn::GL::PixelType::Float, imageData->size(),
                                   depthImage);
         texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
                              imageView);
         // XXX
-        /*
         Mn::Debug{} << Cr::Containers::arrayCast<const float>(
             imageView.data().prefix(32));
         // XXX first 4 RGB, which is 4 bytes
         Mn::Debug{} << "1st 4 RGB"
                     << Cr::Containers::arrayCast<const float>(
                            (*imageData).data().prefix(4 * 3 * 4));
-        */
       } break;
     }  // switch
     LOG(INFO) << "Loaded image " << iFace << " from " << filename;
@@ -471,8 +460,8 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // the camera node before calling this function, original viewing matrix of
   // the camera MUST be updated as well.
   camera.updateOriginalViewingMatrix();
-  frameBuffer_.bind();
   for (int iFace = 0; iFace < 6; ++iFace) {
+    frameBuffer_[iFace].bind();
     camera.switchToFace(iFace);
     prepareToDraw(iFace);
 
