@@ -845,9 +845,11 @@ void Viewer::displayVoxelField(esp::geo::VoxelGrid& v) {
   // Attach to root node for now
   auto& rootNode = activeSceneGraph_->getRootNode();
 
-  auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
-      rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId],
-      &objectPickingHelper_->getDrawables());
+  objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
+      voxel_grids_[nextVoxelGridMeshId - 1], &rootNode);
+  /*auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
+      rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId - 1],
+      &objectPickingHelper_->getDrawables());*/
 
   !Mn::Debug();
 }

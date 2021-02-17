@@ -126,7 +126,7 @@ void ObjectPickingHelper::createPickedObjectVisualizer(
 }
 
 void ObjectPickingHelper::createPickedObjectVoxelGridVisualizer(
-    Mn::GL::Mesh* mesh,
+    std::unique_ptr<Mn::GL::Mesh>& mesh,
     esp::scene::SceneNode* node) {
   if (meshVisualizerDrawable_) {
     delete meshVisualizerDrawable_;
