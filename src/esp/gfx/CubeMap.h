@@ -158,14 +158,20 @@ class CubeMap {
    */
   void recreateTexture();
 
-  // framebuffer for drawable selection
-  Magnum::GL::Framebuffer frameBuffer_{Magnum::NoCreate};
+  // framebuffers (one for every cube side)
+  Magnum::GL::Framebuffer frameBuffer_[6]{
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate},
+      Magnum::GL::Framebuffer{Magnum::NoCreate}};
 
   // in case there is no need to output depth texture, we need a depth buffer
-  Magnum::GL::Renderbuffer optionalDepthBuffer_;
+  Magnum::GL::Renderbuffer optionalDepthBuffer_[6];
 
   // in case there is no need to output color texture, we need a color buffer
-  Magnum::GL::Renderbuffer optionalColorBuffer_;
+  Magnum::GL::Renderbuffer optionalColorBuffer_[6];
 
   /**
    * @brief recreate the frame buffer
@@ -187,10 +193,10 @@ class CubeMap {
 
   /**
    * @brief Map shader output to attachments.
-   * @param colorAttachmentIndex, the index of the color attachment, can be 0,
+   * @param cubeSideIndex, the index of the cube side, can be 0,
    * 1, 2, 3, 4, or 5
    */
-  void mapForDraw(unsigned int colorAttachmentIndex);
+  void mapForDraw(unsigned int cubeSideIndex);
 };
 
 CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
