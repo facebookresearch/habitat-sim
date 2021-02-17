@@ -54,7 +54,7 @@ class Configuration(object):
     sim_cfg: SimulatorConfiguration
     agents: List[AgentConfiguration]
     # An existing Metadata Mediator can also be used to construct a SimulatorBackend
-    metadata_mediator: MetadataMediator = attr.ib(default=None)
+    metadata_mediator: Optional[MetadataMediator] = None
 
 
 @attr.s(auto_attribs=True)
