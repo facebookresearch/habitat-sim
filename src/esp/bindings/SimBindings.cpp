@@ -116,6 +116,8 @@ void initSimBindings(py::module& m) {
           R"(The currently active dataset being used.  Will attempt to load
             configuration files specified if does not already exist.)")
       /* --- Template Manager accessors --- */
+      // We wish a copy of the metadata mediator smart poitner so that we
+      // increment its ref counter
       .def_property(
           "metadata_mediator", &Simulator::getMetadataMediator,
           &Simulator::setMetadataMediator, py::return_value_policy::copy,

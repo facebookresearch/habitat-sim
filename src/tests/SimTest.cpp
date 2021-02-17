@@ -137,8 +137,6 @@ struct SimTest : Cr::TestSuite::Tester {
                           {0.0, 5.0, 5.0},
                           LightPositionModel::CAMERA}};
 };
-
-enum : std::size_t { NumSims = 2 };
 struct {
   // display name for sim being tested
   const char* name;
@@ -147,9 +145,8 @@ struct {
                              const std::string& scene,
                              const std::string& sceneLightingKey);
 
-} SimulatorBuilder[NumSims]{
-    {"built with SimConfig", &SimTest::getSimulator},
-    {"built with MetadataMediator", &SimTest::getSimulatorMM}};
+} SimulatorBuilder[]{{"built with SimConfig", &SimTest::getSimulator},
+                     {"built with MetadataMediator", &SimTest::getSimulatorMM}};
 SimTest::SimTest() {
   // clang-format off
   addTests({&SimTest::basic,
@@ -167,7 +164,7 @@ SimTest::SimTest() {
             &SimTest::recomputeNavmeshWithStaticObjects,
             &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates,
-            &SimTest::addSensorToObject}, NumSims );
+            &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
   // clang-format on
 }
 
@@ -214,6 +211,7 @@ void SimTest::reconfigure() {
 }
 
 void SimTest::reset() {
+  CORRADE_VERIFY(true);
   auto testReset = [&](Simulator& simulator) {
     PathFinder::ptr pathfinder = simulator.getPathFinder();
     auto pinholeCameraSpec = SensorSpec::create();
