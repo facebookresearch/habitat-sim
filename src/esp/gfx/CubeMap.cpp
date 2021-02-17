@@ -149,9 +149,6 @@ void CubeMap::attachFramebufferRenderbuffer() {
       frameBuffer_[index].attachCubeMapTexture(
           Mn::GL::Framebuffer::ColorAttachment{0},
           *textures_[TextureType::Color], cubeMapCoord, 0);
-    } else {
-      frameBuffer_[index].attachRenderbuffer(
-          Mn::GL::Framebuffer::ColorAttachment{0}, optionalColorBuffer_[index]);
     }
 
     if (flags_ & Flag::DepthTexture) {
@@ -218,21 +215,17 @@ void CubeMap::recreateFramebuffer() {
           Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
     }
   }
-  if (!(flags_ & CubeMap::Flag::ColorTexture)) {
-    for (int index = 0; index < 6; ++index) {
-      optionalColorBuffer_[index].setStorage(Mn::GL::RenderbufferFormat::RGBA8,
-                                             viewportSize);
-    }
-  }
 }
 
 void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
-  mapForDraw(cubeSideIndex);
+  if (flags_ & CubeMap::Flag::ColorTexture) {
+    mapForDraw(cubeSideIndex);
+    frameBuffer_[cubeSideIndex].clearColor(0,                // color attachment
+                                           Mn::Vector4ui{0}  // clear color
+    );
+  }
 
-  frameBuffer_[cubeSideIndex].clearDepth(1.0f).clearColor(
-      0,                // color attachment
-      Mn::Vector4ui{0}  // clear color
-  );
+  frameBuffer_[cubeSideIndex].clearDepth(1.0f);
 
   CORRADE_INTERNAL_ASSERT(frameBuffer_[cubeSideIndex].checkStatus(
                               Mn::GL::FramebufferTarget::Draw) ==
