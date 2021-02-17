@@ -123,7 +123,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                     "initialized with True.  Call close() to change this.";
   }
 
-  bool success;
+  bool success = false;
   // (re) create scene instance based on whether or not a renderer is requested.
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
@@ -407,7 +407,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   scene::SceneNode* attachmentNode = nullptr;
   // vector holding all objects added
   std::vector<int> objectsAdded;
-  int objID;
+  int objID = 0;
 
   // whether or not to correct for COM shift - only do for blender-sourced
   // scene attributes
@@ -522,8 +522,11 @@ void Simulator::reconfigureReplayManager() {
 
   // provide Player callback to replay manager
   gfxReplayMgr_->setPlayerCallback(
-      std::bind(&esp::sim::Simulator::loadAndCreateRenderAssetInstance, this,
-                std::placeholders::_1, std::placeholders::_2));
+      [this](const assets::AssetInfo& assetInfo,
+             const assets::RenderAssetInstanceCreationInfo& creation)
+          -> scene::SceneNode* {
+        return loadAndCreateRenderAssetInstance(assetInfo, creation);
+      });
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {

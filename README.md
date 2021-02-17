@@ -305,9 +305,9 @@ To reproduce the benchmark table from above run `examples/benchmark.py --scene /
 
 ## Code Style
 
-We use `clang-format-8` for linting and code style enforcement of c++ code.
+We use `clang-format-12` for linting and code style enforcement of c++ code.
 Code style follows the [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html).
-Install `clang-format-8` through `brew install clang-format` on macOS.  For other systems, `clang-format-8` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
+Install `clang-format-12` through `brew install clang-format` on macOS.  For other systems, `clang-format-12` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
 For vim integration add to your .vimrc file `map <C-K> :%!clang-format<cr>` and use Ctrl+K to format entire file.
 Integration plugin for [vscode](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format).
 

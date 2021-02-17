@@ -2022,6 +2022,7 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   std::string houseFile = Cr::Utility::Directory::join(
       Cr::Utility::Directory::current(), houseInfo.filepath);
   const auto& json = io::parseJsonFile(houseFile);
+  // TODO Double check if this is actually a false positive or not.
   const auto& levels = json["levels"].GetArray();
   std::vector<std::string> pathTokens = io::tokenize(houseFile, "/", 0, true);
   ASSERT(pathTokens.size() >= 3);
