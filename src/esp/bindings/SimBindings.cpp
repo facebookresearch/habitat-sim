@@ -55,7 +55,7 @@ void initSimBindings(py::module& m) {
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile)
       .def_readwrite(
-          "override_scene_ligh_defaults",
+          "override_scene_light_defaults",
           &SimulatorConfiguration::overrideSceneLightDefaults,
           R"(Override scene lighting setup to use with value specified below.)")
       .def_readwrite("scene_light_setup",

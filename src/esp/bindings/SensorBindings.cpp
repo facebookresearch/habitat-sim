@@ -152,12 +152,6 @@ void initSensorBindings(py::module& m) {
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
           R"(The distance to the far clipping plane for this CameraSensor uses.)");
 
-  // ==== SensorSuite ====
-  py::class_<SensorSuite, SensorSuite::ptr>(m, "SensorSuite")
-      .def(py::init(&SensorSuite::create<>))
-      .def("add", &SensorSuite::add)
-      .def("get", &SensorSuite::get, R"(get the sensor by id)");
-
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")

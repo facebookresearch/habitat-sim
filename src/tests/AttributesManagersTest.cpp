@@ -113,7 +113,7 @@ class AttributesManagersTest : public testing::Test {
     // verify it exists
     ASSERT_NE(nullptr, attrTemplate1);
     // retrieve a copy of the named attributes template
-    auto attrTemplate2 = mgr->getObjectCopyByHandle(handle);
+    auto attrTemplate2 = mgr->getObjectOrCopyByHandle(handle);
     // verify copy has same quantities and values as original
     ASSERT_EQ(attrTemplate1->getHandle(), attrTemplate2->getHandle());
 
@@ -133,7 +133,7 @@ class AttributesManagersTest : public testing::Test {
     ASSERT_EQ(oldID, newID);
 
     // get another copy
-    auto attrTemplate3 = mgr->getObjectCopyByHandle(handle);
+    auto attrTemplate3 = mgr->getObjectOrCopyByHandle(handle);
     // verify added field is present and the same
     ASSERT_EQ(attrTemplate3->getString(keyStr),
               attrTemplate2->getString(keyStr));
@@ -242,7 +242,7 @@ class AttributesManagersTest : public testing::Test {
       int tmpltID = mgr->registerObject(attrTemplate1, newHandleIter);
       // verify template added
       ASSERT_NE(tmpltID, -1);
-      auto attrTemplate2 = mgr->getObjectCopyByHandle(newHandleIter);
+      auto attrTemplate2 = mgr->getObjectOrCopyByHandle(newHandleIter);
       // verify added template  exists
       ASSERT_NE(nullptr, attrTemplate2);
     }
@@ -259,7 +259,7 @@ class AttributesManagersTest : public testing::Test {
       int tmpltID = mgr->registerObject(tmplt);
       // verify template added
       ASSERT_NE(tmpltID, -1);
-      auto attrTemplate2 = mgr->getObjectCopyByHandle(tmplt->getHandle());
+      auto attrTemplate2 = mgr->getObjectOrCopyByHandle(tmplt->getHandle());
       // verify added template  exists
       ASSERT_NE(nullptr, attrTemplate2);
     }
@@ -319,7 +319,7 @@ class AttributesManagersTest : public testing::Test {
     int newID = mgr->registerObject(newAttrTemplate0, newHandle);
 
     // get a copy of added template
-    auto attrTemplate3 = mgr->getObjectCopyByHandle(newHandle);
+    auto attrTemplate3 = mgr->getObjectOrCopyByHandle(newHandle);
 
     // remove new template by name
     auto newAttrTemplate1 = mgr->removeObjectByHandle(newHandle);
@@ -389,7 +389,7 @@ class AttributesManagersTest : public testing::Test {
 
     // get new template
     std::shared_ptr<T> newAttribs =
-        assetAttributesManager_->getObjectCopyByHandle<T>(newHandle);
+        assetAttributesManager_->getObjectOrCopyByHandle<T>(newHandle);
     // verify template has modified values
     int newValue = newAttribs->template get<int>(ctorModField);
     ASSERT_EQ(legalVal, newValue);

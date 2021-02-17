@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 import attr
 import magnum as mn
 import numpy as np
+import quaternion
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
@@ -19,6 +20,12 @@ from habitat_sim.utils.common import (
     quat_from_magnum,
     quat_rotate_vector,
     quat_to_magnum,
+)
+from habitat_sim.utils.validators import (
+    NoAttrValidationContext,
+    all_is_finite,
+    is_unit_length,
+    value_is_validated,
 )
 
 from .controls import ActuationSpec, ObjectControls
@@ -46,6 +53,14 @@ def _default_action_space() -> Dict[str, ActionSpec]:
     )
 
 
+def _triple_zero() -> np.ndarray:
+    return np.zeros(3)
+
+
+def _default_quaternion() -> np.quaternion:
+    return quaternion.quaternion(1, 0, 0, 0)
+
+
 @attr.s(auto_attribs=True, slots=True)
 class SixDOFPose(object):
     r"""Specifies a position with 6 degrees of freedom
@@ -54,19 +69,32 @@ class SixDOFPose(object):
     :property rotation: unit quaternion rotation
     """
 
-    position: np.ndarray = np.zeros(3)
-    rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
+    position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    rotation: Union[np.quaternion, List] = attr.ib(
+        factory=_default_quaternion, validator=is_unit_length
+    )
 
 
 @attr.s(auto_attribs=True, slots=True)
 class AgentState(object):
-    position: np.ndarray = np.zeros(3)
-    rotation: Union[np.quaternion, List, np.ndarray] = np.quaternion(1, 0, 0, 0)
-    velocity: np.ndarray = np.zeros(3)
-    angular_velocity: np.ndarray = np.zeros(3)
-    force: np.ndarray = np.zeros(3)
-    torque: np.ndarray = np.zeros(3)
-    sensor_states: Dict[str, SixDOFPose] = attr.Factory(dict)
+    position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    rotation: Union[np.quaternion, List, np.ndarray] = attr.ib(
+        factory=_default_quaternion, validator=is_unit_length
+    )
+    velocity: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    angular_velocity: np.ndarray = attr.ib(
+        factory=_triple_zero, validator=all_is_finite
+    )
+    force: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    torque: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    sensor_states: Dict[str, SixDOFPose] = attr.ib(
+        factory=dict,
+        validator=attr.validators.deep_mapping(
+            key_validator=attr.validators.instance_of(str),
+            value_validator=value_is_validated,
+            mapping_validator=attr.validators.instance_of(dict),
+        ),
+    )
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -183,6 +211,7 @@ class Agent(object):
 
         return did_collide
 
+    @NoAttrValidationContext()
     def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)
         state = AgentState(
@@ -227,6 +256,7 @@ class Agent(object):
         the state of a sensor instead of moving the agent.
 
         """
+        attr.validate(state)
         habitat_sim.errors.assert_obj_valid(self.body)
 
         if isinstance(state.rotation, (list, np.ndarray)):

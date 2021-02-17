@@ -18,7 +18,7 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace core {
-enum class ManagedContainerAccess;
+enum class ManagedObjectAccess;
 class ManagedContainerBase;
 }  // namespace core
 namespace metadata {
@@ -34,7 +34,7 @@ namespace managers {
  * container provides copies of the objects held, or the actual objects
  * themselves.
  */
-template <class T, core::ManagedContainerAccess Access>
+template <class T, core::ManagedObjectAccess Access>
 class AttributesManager : public esp::core::ManagedContainer<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractAttributes, T>::value,
@@ -173,7 +173,7 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
 
 /////////////////////////////
 // Class Template Method Definitions
-template <class T, core::ManagedContainerAccess Access>
+template <class T, core::ManagedObjectAccess Access>
 std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
     const std::vector<std::string>& paths,
     bool saveAsDefaults) {
@@ -204,7 +204,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
   return templateIndices;
 }  // AttributesManager<T>::loadAllObjectTemplates
 
-template <class T, core::ManagedContainerAccess Access>
+template <class T, core::ManagedObjectAccess Access>
 std::vector<int> AttributesManager<T, Access>::loadAllConfigsFromPath(
     const std::string& path,
     bool saveAsDefaults) {
@@ -246,7 +246,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllConfigsFromPath(
   return templateIndices;
 }  // AttributesManager<T>::loadAllConfigsFromPath
 
-template <class T, core::ManagedContainerAccess Access>
+template <class T, core::ManagedObjectAccess Access>
 void AttributesManager<T, Access>::buildCfgPathsFromJSONAndLoad(
     const std::string& configDir,
     const io::JsonGenericValue& jsonPaths) {
@@ -269,7 +269,7 @@ void AttributesManager<T, Access>::buildCfgPathsFromJSONAndLoad(
             << " templates.";
 }  // AttributesManager<T>::buildCfgPathsFromJSONAndLoad
 
-template <class T, core::ManagedContainerAccess Access>
+template <class T, core::ManagedObjectAccess Access>
 auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     const std::string& filename,
     std::string& msg,

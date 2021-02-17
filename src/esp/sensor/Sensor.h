@@ -66,6 +66,7 @@ struct SensorSpec {
 bool operator==(const SensorSpec& a, const SensorSpec& b);
 bool operator!=(const SensorSpec& a, const SensorSpec& b);
 
+using SensorSetup = std::vector<sensor::SensorSpec::ptr>;
 // Represents a particular sensor Observation
 struct Observation {
   // TODO: populate this struct with raw data
@@ -131,6 +132,14 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 class SensorSuite {
  public:
   void add(const Sensor::ptr& sensor);
+
+  /**
+   * @brief Concatenate sensorSuite's sensors to existing sensors_
+   * @param[in] sensorSuite Instance of SensorSuite class from which to copy
+   * Sensors
+   * Note: it does not update any element whose key already exists.
+   */
+  void merge(SensorSuite& sensorSuite);
   void clear();
   ~SensorSuite() { LOG(INFO) << "Deconstructing SensorSuite"; }
 
