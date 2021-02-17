@@ -387,59 +387,6 @@ void initSimBindings(py::module& m) {
           "create_rigid_p2p_constraint", &Simulator::createRigidP2PConstraint,
           "object_id"_a, "position"_a, "position_is_local"_a = true,
           R"(add p2p constraint between a rigid object and world point in local coordinates (or global if position_is_local is false)")
-      // define variations of articulated p2p constraint creation
-      /*
-      .def(
-          "create_articulated_p2p_constraint",
-          [](Simulator& self, int articulatedObjectId, int linkId, int
-      objectId, float maxImpulse) { return
-      self.createArticulatedP2PConstraint( articulatedObjectId, linkId,
-      objectId, maxImpulse);
-          },
-          "object_id_a"_a, "link_id"_a, "object_id_b"_a, "max_impulse"_a
-      = 2.0, R"(add p2p constraint between articulated object a link and an
-      object; the pivot is at the object's origin)") .def(
-          "create_articulated_p2p_constraint",
-          [](Simulator& self, int articulatedObjectIdA, int linkIdA, const
-      Magnum::Vector3& linkOffsetA, int articulatedObjectIdB, int linkIdB,
-      const Magnum::Vector3& linkOffsetB, float maxImpulse) { return
-      self.createArticulatedP2PConstraint( articulatedObjectIdA, linkIdA,
-      linkOffsetA, articulatedObjectIdB, linkIdB, linkOffsetB, maxImpulse);
-          },
-          "object_id_a"_a, "link_id_a"_a, "offset_a"_a, "object_id_b"_a,
-      "link_id_b"_a, "offset_b"_a, "max_impulse"_a = 2.0, R"(add p2p
-      constraint between two articulated objects at two links with local
-      offsets)") .def( "create_articulated_p2p_constraint",
-          [](Simulator& self, int articulatedObjectIdA, int linkIdA, int
-      articulatedObjectIdB, int linkIdB, const Magnum::Vector3&
-      globalConstraintPoint, float maxImpulse) { return
-      self.createArticulatedP2PConstraint( articulatedObjectIdA, linkIdA,
-      articulatedObjectIdB, linkIdB, globalConstraintPoint, maxImpulse);
-          },
-          "object_id"_a, "link_id"_a, "link_offset"_a, "pick_pos"_a,
-      "max_impulse"_a = 2.0, R"(add p2p constraint between an articulated
-      object link at some local offset and a global point.)") .def(
-          "create_articulated_p2p_constraint",
-          [](Simulator& self, int articulatedObjectIdA, int linkIdA, const
-      Magnum::Vector3& linkOffset, const Magnum::Vector3& pickPos, float
-      maxImpulse) { return self.createArticulatedP2PConstraint(
-                articulatedObjectIdA, linkIdA, linkOffset, pickPos,
-      maxImpulse);
-          },
-          "object_id"_a, "link_id"_a, "link_offset"_a, "pick_pos"_a,
-      "max_impulse"_a = 2.0, R"(add p2p constraint between an articulated
-      object link at some offset and a global point.)") .def(
-          "create_articulated_p2p_constraint",
-          [](Simulator& self, int articulatedObjectIdA, int linkIdA, const
-      Magnum::Vector3& pickPos, float maxImpulse) { return
-      self.createArticulatedP2PConstraint( articulatedObjectIdA, linkIdA,
-      pickPos, maxImpulse);
-          },
-          "object_id"_a, "link_id"_a, "pick_pos"_a, "max_impulse"_a = 2.0,
-          R"(add p2p constraint between an articulated object link and a
-      global point.)")
-       */
-
       .def(
           "create_articulated_p2p_constraint",
           py::overload_cast<int, int, int, float>(
@@ -499,25 +446,6 @@ void initSimBindings(py::module& m) {
           "object_id_a"_a, "link_id"_a, "object_id_b"_a, "pivot_a"_a,
           "pivot_b"_a, "max_impulse"_a = 2.0,
           R"(add fixed constraint between articulated object link and rigid object; pivots are specified in the link/object's local space; the current relative orientation of the link and the object will be fixed)")
-
-      /*.def(
-          "create_articulated_fixed_constraint",
-          &Simulator::createArticulatedFixedConstraint, "object_id_a"_a,
-          "link_id"_a, "object_id_b"_a, "max_impulse"_a = 2.0,
-          R"(add fixed constraint between articulated object a link and an
-      object; the pivot is at the object's origin; the current relative
-      orientation of the link and the object will be fixed)")
-
-      .def(
-          "create_articulated_fixed_constraint_with_pivots",
-          &Simulator::createArticulatedFixedConstraintWithPivots,
-          "object_id_a"_a, "link_id"_a, "object_id_b"_a, "pivot_a"_a,
-          "pivot_b"_a, "max_impulse"_a = 2.0,
-          R"(add fixed constraint between articulated object link and rigid
-      object; pivots are specified in the link/object's local space; the
-      current relative orientation of the link and the object will be
-      fixed)")
-     */
       .def("remove_constraint", &Simulator::removeConstraint, "constraint_id"_a,
            R"(Remove a point-2-point or fixed constraint by id.)")
       /* --- Collision information queries --- */
