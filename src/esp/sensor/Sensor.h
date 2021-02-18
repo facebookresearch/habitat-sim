@@ -53,6 +53,7 @@ struct SensorSpec {
   std::string noiseModel;
   SensorSpec();
   virtual ~SensorSpec();
+  virtual bool isVisualSensorSpec() { return false; }
   bool operator==(const SensorSpec& a);
   bool operator!=(const SensorSpec& a);
   ESP_SMART_POINTERS(SensorSpec)

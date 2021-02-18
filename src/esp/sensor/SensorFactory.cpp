@@ -13,10 +13,7 @@ sensor::SensorSuite SensorFactory::createSensors(
   for (const SensorSpec::ptr& spec : sensorSetup) {
     scene::SceneNode& sensorNode = node.createChild();
     // VisualSensor Setup
-    if (spec->sensorType == SensorType::Color ||
-        spec->sensorType == SensorType::Depth ||
-        spec->sensorType == SensorType::Normal ||
-        spec->sensorType == SensorType::Semantic) {
+    if (spec->isVisualSensorSpec()) {
       if (spec->sensorSubType == SensorSubType::Orthographic ||
           spec->sensorSubType == SensorSubType::Pinhole) {
         sensorSuite.add(CameraSensor::create(
@@ -28,7 +25,7 @@ sensor::SensorSuite SensorFactory::createSensors(
       //
     }
     // TODO: Implement NonVisualSensorSpecs
-    // else if (!spec.isVisualSensor()) {}
+    // else if (!spec->isVisualSensorSpec()) {}
     //   //NonVisualSensor Setup
     // }
   }

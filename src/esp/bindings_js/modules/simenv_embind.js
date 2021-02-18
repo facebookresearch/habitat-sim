@@ -160,12 +160,23 @@ class SimEnv {
   }
 
   createSensorSpec(config) {
-    const converted = new Module.SensorSpec();
-    for (let key in config) {
-      let value = config[key];
-      converted[key] = value;
+    //Check if VisualSensor
+    if (
+      config["sensorType"] == Module.SensorType.COLOR ||
+      config["sensorType"] == Module.SensorType.DEPTH ||
+      config["sensorType"] == Module.SensorType.SEMANTIC ||
+      config["sensorType"] == Module.SensorType.NORMAL
+    ) {
+      //TODO: Check SensorSubType for different sensors
+      //Currently, SensorSubType is not defined for sensors and all sensors in JS are CameraSensors
+      const converted = new Module.CameraSensorSpec();
+      for (let key in config) {
+        let value = config[key];
+        converted[key] = value;
+      }
+      return converted;
     }
-    return converted;
+    return null;
   }
 
   createAgentConfig(config) {
