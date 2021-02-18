@@ -54,6 +54,14 @@ class VisualSensor : public Sensor {
   virtual bool isVisualSensor() override { return true; }
 
   /**
+   * @brief Display next observation from Simulator on default frame buffer
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be displayed
+   * @return Whether the display process was successful or not
+   */
+  virtual bool displayObservation(sim::Simulator& sim) override;
+
+  /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
    *
    * Will always be @ref Corrade::Containers::NullOpt for the base sensor class

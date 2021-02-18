@@ -31,7 +31,6 @@ class CameraSensor : public VisualSensor {
                         const CameraSensorSpec::ptr& spec);
   virtual ~CameraSensor() {}
 
-
   /** @brief Updates this sensor's CameraSensorSpec cameraSensorSpec_ to reflect
    * the passed new values
    *  @param[in] spec Instance of CameraSensorSpec that sensor will use to

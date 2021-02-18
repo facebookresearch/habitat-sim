@@ -67,6 +67,15 @@ void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
   tgt_ = std::move(tgt);
 }
 
+bool VisualSensor::displayObservation(sim::Simulator& sim) {
+  if (!hasRenderTarget()) {
+    return false;
+  }
+  drawObservation(sim);
+  renderTarget().blitRgbaToDefault();
+  return true;
+}
+
 void VisualSensor::setResolution(int height, int width) {
   visualSensorSpec_->resolution = {height, width};
 }
