@@ -2,7 +2,6 @@
 
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/CameraSensor.h"
-#include "esp/sensor/Sensor.h"
 
 namespace esp {
 namespace sensor {
