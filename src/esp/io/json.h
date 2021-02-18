@@ -44,8 +44,7 @@ esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
  * @brief Check passed json doc for existence of passed jsonTag as value of
  * type T. If present, populate passed setter with value. Returns
  * whether tag is found and successfully populated, or not. Logs an error if
- * @p tag is found but is inappropriate type.  Should use explicit type cast
- * on function call if setter is specified using std::bind()
+ * @p tag is found but is inappropriate type.
  *
  * @tparam T type of destination variable - must be supported type.
  * @param d json document to parse
@@ -71,8 +70,7 @@ bool jsonIntoSetter(const JsonGenericValue& d,
  * type T, where the consuming setter will treat the value as const. If
  * present, populate passed setter with value. Returns whether @p tag is found
  * and successfully populated, or not. Logs an error if tag is found but is
- * inappropriate type.  Should use explicit type cast on function call if
- * setter is specified using std::bind()
+ * inappropriate type.
  *
  * @tparam T type of destination variable - must be supported type.
  * @param d json document to parse

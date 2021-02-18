@@ -5,6 +5,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/PixelFormat.h>
+#include <cmath>
 
 #include "CameraSensor.h"
 #include "esp/gfx/DepthUnprojection.h"
@@ -46,6 +47,7 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
           spec->sensorSubType == SensorSubType::Orthographic,
       "CameraSensor::CameraSensor(): The sensor sub-type is unknown", );
   // Initialize renderCamera_ first to avoid segfaults
+  // NOLINTNEXTLINE(cplusplus.NewDeleteLeaks)
   renderCamera_ = new gfx::RenderCamera(cameraNode);
   setProjectionParameters(*spec);
   renderCamera_->setAspectRatioPolicy(
@@ -183,17 +185,6 @@ void CameraSensor::readObservation(Observation& obs) {
         Magnum::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
         obs.buffer->data});
   }
-}
-
-bool CameraSensor::displayObservation(sim::Simulator& sim) {
-  if (!hasRenderTarget()) {
-    return false;
-  }
-
-  drawObservation(sim);
-  renderTarget().blitRgbaToDefault();
-
-  return true;
 }
 
 Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()

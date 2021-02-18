@@ -130,7 +130,7 @@ TEST(IOTest, JsonTest) {
   // test basic attributes populating
 
   std::string attr_str =
-      "{\"render mesh\": \"banana.glb\",\"join collision "
+      "{\"render asset\": \"banana.glb\",\"join collision "
       "meshes\":false,\"mass\": 0.066,\"scale\": [2.0,2.0,2]}";
 
   // io::JsonGenericValue :
@@ -138,34 +138,38 @@ TEST(IOTest, JsonTest) {
   // io::JsonGenericValue :
   const esp::io::JsonGenericValue jsonDoc = tmpJSON.GetObject();
 
-  // for function ptr placeholder
-  using std::placeholders::_1;
   ObjectAttributes::ptr attributes = ObjectAttributes::create("temp");
 
   bool success = false;
   // test vector
   success = esp::io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonDoc, "scale", std::bind(&ObjectAttributes::setScale, attributes, _1));
+      jsonDoc, "scale", [attributes](const Magnum::Vector3& scale) {
+        attributes->setScale(scale);
+      });
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getScale()[1], 2);
 
   // test double
   success = esp::io::jsonIntoSetter<double>(
-      jsonDoc, "mass", std::bind(&ObjectAttributes::setMass, attributes, _1));
+      jsonDoc, "mass",
+      [attributes](double mass) { attributes->setMass(mass); });
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getMass(), 0.066);
 
   // test bool
   success = esp::io::jsonIntoSetter<bool>(
       jsonDoc, "join collision meshes",
-      std::bind(&ObjectAttributes::setJoinCollisionMeshes, attributes, _1));
+      [attributes](bool join_collision_meshes) {
+        attributes->setJoinCollisionMeshes(join_collision_meshes);
+      });
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getJoinCollisionMeshes(), false);
 
   // test string
-  success = esp::io::jsonIntoSetter<std::string>(
-      jsonDoc, "render mesh",
-      std::bind(&ObjectAttributes::setRenderAssetHandle, attributes, _1));
+  success = esp::io::jsonIntoConstSetter<std::string>(
+      jsonDoc, "render asset", [attributes](const std::string& render_asset) {
+        attributes->setRenderAssetHandle(render_asset);
+      });
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getRenderAssetHandle(), "banana.glb");
 }

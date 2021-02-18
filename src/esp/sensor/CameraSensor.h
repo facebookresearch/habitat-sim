@@ -31,6 +31,7 @@ class CameraSensor : public VisualSensor {
                         const CameraSensorSpec::ptr& spec);
   virtual ~CameraSensor() {}
 
+
   /** @brief Updates this sensor's CameraSensorSpec cameraSensorSpec_ to reflect
    * the passed new values
    *  @param[in] spec Instance of CameraSensorSpec that sensor will use to
@@ -63,14 +64,6 @@ class CameraSensor : public VisualSensor {
    * with information from this sensor
    */
   virtual bool getObservationSpace(ObservationSpace& space) override;
-
-  /**
-   * @brief Display next observation from Simulator on default frame buffer
-   * @param[in] sim Instance of Simulator class for which the observation needs
-   *                to be displayed
-   * @return Whether the display process was successful or not
-   */
-  virtual bool displayObservation(sim::Simulator& sim) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's
