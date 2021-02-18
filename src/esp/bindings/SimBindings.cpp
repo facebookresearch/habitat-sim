@@ -319,6 +319,18 @@ void initSimBindings(py::module& m) {
           R"(Register a LightSetup with a specific key. If a LightSetup is already registered with
           this key, it will be overridden. All Drawables referencing the key will use the newly
           registered LightSetup.)")
+      .def("get_vertices",
+           &Simulator::getVertices,
+           pybind11::return_value_policy::reference,
+           R"()")
+      .def("get_object_ids",
+           &Simulator::getObjectIds,
+           pybind11::return_value_policy::reference,
+           R"()")
+      .def("get_mesh_keys",
+           &Simulator::getMeshKeys,
+           pybind11::return_value_policy::reference,
+           R"()")
       /* --- P2P/Fixed Constraints API --- */
       .def(
           "create_rigid_constraint", &Simulator::createRigidConstraint,
