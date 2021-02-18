@@ -1080,52 +1080,49 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
 std::string Simulator::convexHullDecomposition(
     const std::string& filename,
     const assets::ResourceManager::VHACDParameters& params,
-    const bool renderCHD,
-    const bool saveCHDToObj) {
+    const bool renderChd,
+    const bool saveChdToObj) {
   Cr::Utility::Debug() << "VHACD PARAMS RESOLUTION: " << params.m_resolution;
 
   // generate a unique filename
-  std::string CHDFilename =
-      Cr::Utility::Directory::splitExtension(filename).first + "CHD";
-  if (resourceManager_->getNumberOfResource(CHDFilename) > 0) {
+  std::string chdFilename =
+      Cr::Utility::Directory::splitExtension(filename).first + ".chd";
+  if (resourceManager_->getNumberOfResource(chdFilename) > 0) {
     int nameAttempt = 1;
-    CHDFilename += "_";
+    chdFilename += "_";
     // Iterate until a unique filename is found.
     while (resourceManager_->getNumberOfResource(
-               CHDFilename + std::to_string(nameAttempt)) > 0) {
+               chdFilename + std::to_string(nameAttempt)) > 0) {
       nameAttempt++;
     }
-    CHDFilename += std::to_string(nameAttempt);
+    chdFilename += std::to_string(nameAttempt);
   }
 
   // run VHACD on the given filename mesh with the given params, store the
-  // results in the resourceDict_ registered under CHDFilename
-  resourceManager_->createConvexHullDecomposition(filename, CHDFilename, params,
-                                                  saveCHDToObj);
+  // results in the resourceDict_ registered under chdFilename
+  resourceManager_->createConvexHullDecomposition(filename, chdFilename, params,
+                                                  saveChdToObj);
 
-  // create object attributes for the new CHD object
+  // create object attributes for the new chd object
   auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
-  auto CHDObjAttr = objAttrMgr->createObject(CHDFilename, false);
+  auto chdObjAttr = objAttrMgr->createObject(chdFilename, false);
 
   // specify collision asset handle & other attributes
-  CHDObjAttr->setCollisionAssetHandle(CHDFilename);
-  CHDObjAttr->setIsCollidable(true);
-  CHDObjAttr->setCollisionAssetIsPrimitive(false);
-  CHDObjAttr->setJoinCollisionMeshes(false);
+  chdObjAttr->setCollisionAssetHandle(chdFilename);
+  chdObjAttr->setIsCollidable(true);
+  chdObjAttr->setCollisionAssetIsPrimitive(false);
+  chdObjAttr->setJoinCollisionMeshes(false);
 
-  // if the renderCHD flag is set to true, set the convex hull decomposition to
+  // if the renderChd flag is set to true, set the convex hull decomposition to
   // be the render asset (useful for testing)
-  if (renderCHD) {
-    CHDObjAttr->setRenderAssetHandle(CHDFilename);
-  } else {
-    CHDObjAttr->setRenderAssetHandle(filename);
-  }
 
-  CHDObjAttr->setRenderAssetIsPrimitive(false);
+  chdObjAttr->setRenderAssetHandle(renderChd ? chdFilename : filename);
+
+  chdObjAttr->setRenderAssetIsPrimitive(false);
 
   // register object and return handle
-  objAttrMgr->registerObject(CHDObjAttr, CHDFilename, true);
-  return CHDObjAttr->getHandle();
+  objAttrMgr->registerObject(chdObjAttr, chdFilename, true);
+  return chdObjAttr->getHandle();
 }
 #endif
 

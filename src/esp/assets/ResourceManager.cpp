@@ -99,6 +99,8 @@ ResourceManager::ResourceManager(
   buildImporters();
 }
 
+ResourceManager::~ResourceManager() {}
+
 void ResourceManager::buildImporters() {
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
@@ -1236,7 +1238,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   if (creation.scale) {
     // need a new node for scaling because motion state will override scale
     // set at the physical node
-    // perf todo: avoid this if unit scale
+    // perf etgebgutecgfeucdluivtrrtruvrgunc: avoid this if unit scale
     newNode.setScaling(*creation.scale);
 
     // legacy quirky behavior: only add this node to viscache if using scaling
@@ -2195,11 +2197,10 @@ bool ResourceManager::outputMeshMetaDataToObj(
   bool success = Cr::Utility::Directory::mkpath(filepath);
 
   const MeshMetaData& metaData = getMeshMetaData(MeshMetaDataFile);
-  Cr::Utility::Directory::writeString(filepath + "/" + new_filename,
-                                      "# CHD Mesh group \n");
+  std::string out = "# chd Mesh group \n";
+
   // write vertex info to file
   int numVertices = 0;
-  std::string out = "";
   for (const MeshTransformNode& node : metaData.root.children) {
     CollisionMeshData& meshData =
         meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
@@ -2232,7 +2233,7 @@ bool ResourceManager::outputMeshMetaDataToObj(
     numParts++;
     globalVertexNum += meshData.positions.size();
   }
-  Cr::Utility::Directory::appendString(filepath + "/" + new_filename, out);
+  Cr::Utility::Directory::writeString(filepath + "/" + new_filename, out);
 
   return success;
 }
@@ -2245,9 +2246,9 @@ unsigned int ResourceManager::getNumberOfResource(
 #ifdef ESP_BUILD_WITH_VHACD
 void ResourceManager::createConvexHullDecomposition(
     const std::string& filename,
-    const std::string& CHDFilename,
+    const std::string& chdFilename,
     const VHACDParameters& params,
-    const bool saveCHDToObj) {
+    const bool saveChdToObj) {
   if (resourceDict_.count(filename) == 0) {
     // load/check for render MeshMetaData and load assets
     loadObjectMeshDataFromFile(filename, filename, "render", true);
@@ -2337,11 +2338,6 @@ void ResourceManager::createConvexHullDecomposition(
 
   // default material for now
   auto phongMaterial = gfx::PhongMaterialData::create_unique();
-  phongMaterial->specularColor = {1.0, 1.0, 1.0, 1.0};
-  phongMaterial->ambientColor = Magnum::Color4{1.0};
-  ;
-  phongMaterial->diffuseColor = Magnum::Color4{0.9};
-  ;
 
   meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
   shaderManager_.set(std::to_string(nextMaterialID_++),
@@ -2356,18 +2352,18 @@ void ResourceManager::createConvexHullDecomposition(
 
   // Register collision mesh group
   auto insertedCollisionMeshGroup =
-      collisionMeshGroups_.emplace(CHDFilename, std::move(collisionMeshGroup));
+      collisionMeshGroups_.emplace(chdFilename, std::move(collisionMeshGroup));
   // insert MeshMetaData into resourceDict_
   auto insertedResourceDict =
-      resourceDict_.emplace(CHDFilename, std::move(loadedAssetData));
-  if (saveCHDToObj) {
+      resourceDict_.emplace(chdFilename, std::move(loadedAssetData));
+  if (saveChdToObj) {
     std::string objDirectory = Cr::Utility::Directory::join(
         Corrade::Utility::Directory::current(), "data/VHACD_outputs");
     std::string new_filename =
         Cr::Utility::Directory::filename(
-            Cr::Utility::Directory::splitExtension(CHDFilename).first) +
+            Cr::Utility::Directory::splitExtension(chdFilename).first) +
         ".obj";
-    outputMeshMetaDataToObj(CHDFilename, new_filename, objDirectory);
+    outputMeshMetaDataToObj(chdFilename, new_filename, objDirectory);
   }
 }
 #endif

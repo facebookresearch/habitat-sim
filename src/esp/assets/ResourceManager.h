@@ -89,6 +89,11 @@ class ResourceManager {
   using Importer = Mn::Trade::AbstractImporter;
 
 #ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Simple struct interface for creating and managing VHACD parameters.
+   * These parameters are passed into VHACD and specify how convex hull
+   * decomposition is ran.
+   */
   struct VHACDParameters : VHACD::IVHACD::Parameters {
     VHACDParameters() {
       m_oclAcceleration = false;  // OCL Acceleration does not work on VHACD
@@ -121,7 +126,7 @@ class ResourceManager {
                            Flags flags = {});
 
   /** @brief Destructor */
-  ~ResourceManager() {}
+  ~ResourceManager();
 
   /**
    * @brief This function will build the various @ref Importers used by the
@@ -362,17 +367,17 @@ class ResourceManager {
    * @brief Runs convex hull decomposition on a specified file.
    *
    * @param filename The MeshMetaData filename to be converted.
-   * @param CHDFilename The new filename for the CHD collision mesh.
+   * @param chdFilename The new filename for the chd collision mesh.
    * @param params VHACD params that specify resolution, vertices per convex
    * hull, etc.
-   * @param saveCHDToObj Specifies whether or not to save the newly created
+   * @param saveChdToObj Specifies whether or not to save the newly created
    * convex hull asset to an obj file.
    */
   void createConvexHullDecomposition(
       const std::string& filename,
-      const std::string& CHDFilename,
+      const std::string& chdFilename,
       const VHACDParameters& params = VHACDParameters(),
-      const bool saveCHDToObj = false);
+      const bool saveChdToObj = false);
 #endif
   /**
    * @brief Add an object from a specified object template handle to the

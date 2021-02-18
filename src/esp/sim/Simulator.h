@@ -854,9 +854,9 @@ class Simulator {
    * @param filename The MeshMetaData filename to be converted.
    * @param params VHACD params that specify resolution, vertices per convex
    * hull, etc.
-   * @param renderCHD Specifies whether or not to render the coinvex hull asset,
+   * @param renderChd Specifies whether or not to render the coinvex hull asset,
    * or to render the original render asset.
-   * @param saveCHDToObj Specifies whether or not to save the newly created
+   * @param saveChdToObj Specifies whether or not to save the newly created
    * convex hull asset to an obj file.
    * @return The handle of the newly created object attributes.
    */
@@ -864,8 +864,8 @@ class Simulator {
       const std::string& filename,
       const assets::ResourceManager::VHACDParameters& params =
           assets::ResourceManager::VHACDParameters(),
-      const bool renderCHD = false,
-      const bool saveCHDToObj = false);
+      bool renderChd = false,
+      bool saveChdToObj = false);
 #endif
 
  protected:
