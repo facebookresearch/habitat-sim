@@ -18,6 +18,8 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
 
 [Habitat-Lab](https://github.com/facebookresearch/habitat-lab) uses [Habitat-Sim](https://github.com/facebookresearch/habitat-sim) as the core simulator and is a modular high-level library for end-to-end experiments in embodied AI -- defining embodied AI tasks (e.g. navigation, instruction following, question answering), training agents (via imitation or reinforcement learning, or no learning at all as in classical SLAM), and benchmarking their performance on the defined tasks using standard metrics.
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/facebookresearch/habitat-sim/)
+
 [![Habitat Demo](https://img.shields.io/static/v1?label=WebGL&message=Try%20AI%20Habitat%20In%20Your%20Browser%20&color=blue&logo=webgl&labelColor=%23990000&style=for-the-badge&link=https://aihabitat.org/demo)](https://aihabitat.org/demo)
 <p align="center">
   <img src="docs/images/habitat_compressed.gif" height="400">

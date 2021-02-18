@@ -82,6 +82,14 @@ class VisualSensor : public Sensor {
   }
 
   /**
+   * @brief Display next observation from Simulator on default frame buffer
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be displayed
+   * @return Whether the display process was successful or not
+   */
+  virtual bool displayObservation(sim::Simulator& sim) override;
+
+  /**
    * @brief Returns RenderCamera
    */
   virtual gfx::RenderCamera* getRenderCamera() = 0;
