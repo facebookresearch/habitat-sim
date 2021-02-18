@@ -181,7 +181,15 @@ class Agent(object):
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        self._sensors.add(hsim.CameraSensor(self.scene_node.create_child(), spec))
+        if spec.is_visual_sensor_spec:
+            if (
+                spec.sensor_subtype == habitat_sim.SensorSubType.PINHOLE
+                or spec.sensor_subtype == habitat_sim.SensorSubType.ORTHOGRAPHIC
+            ):
+                self._sensors.add(
+                    hsim.CameraSensor(self.scene_node.create_child(), spec)
+                )
+        # TODO: Add more checks for NonVisualSensorSpec, Other types of sensors
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
