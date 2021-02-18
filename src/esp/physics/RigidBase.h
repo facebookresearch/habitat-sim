@@ -158,11 +158,10 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   virtual bool isActive() { return false; }
 
   /**
-   * @brief Set an object as being actively simulated rather than sleeping.
-   * Kinematic objects are always active, but derived dynamics implementations
-   * may not be.
+   * @brief Set the object to sleep or wake.
+   *
    */
-  virtual void setActive() {}
+  virtual void setSleep(CORRADE_UNUSED bool sleep) {}
 
   /**
    * @brief Get the @ref MotionType of the object. See @ref setMotionType.

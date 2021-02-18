@@ -180,6 +180,10 @@ void initSimBindings(py::module& m) {
       .def("set_object_motion_type", &Simulator::setObjectMotionType,
            "motion_type"_a, "object_id"_a, "scene_id"_a = 0,
            R"(Set the MotionType of an object.)")
+      .def("is_object_awake", &Simulator::isObjectAwake, "object_id"_a,
+           R"(Get whether an object is being actively simulated or sleeping.)")
+      .def("set_object_sleep", &Simulator::setObjectSleep, "object_id"_a,
+           "sleep"_a, R"(Get an object to be actively simulated or sleep.)")
       .def(
           "get_existing_object_ids", &Simulator::getExistingObjectIDs,
           "scene_id"_a = 0,

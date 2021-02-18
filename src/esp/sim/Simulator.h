@@ -279,6 +279,23 @@ class Simulator {
                            int objectID,
                            int sceneID = 0);
 
+  /** @brief True if the object is considered active by the simulator physics
+   * simulator currently in use.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return  Whether or not the object is active.
+   */
+  bool isObjectAwake(const int objectID) const {
+    return physicsManager_->isObjectAwake(objectID);
+  };
+
+  /**
+   * @brief Set the object to sleep or wake.
+   */
+  void setObjectSleep(const int objectID, bool sleep) {
+    physicsManager_->setObjectSleep(objectID, sleep);
+  };
+
   /**@brief Retrieves a shared pointer to the VelocityControl struct for this
    * object.
    */
