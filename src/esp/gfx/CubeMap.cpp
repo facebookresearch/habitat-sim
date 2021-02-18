@@ -11,6 +11,7 @@
 // XXX
 #include <Corrade/Utility/Debug.h>
 
+#include <Corrade/Utility/ConfigurationGroup.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/DebugTools/TextureImage.h>
 #include <Magnum/GL/Framebuffer.h>
@@ -289,13 +290,10 @@ bool CubeMap::saveTexture(TextureType type,
           return false;
         }
         // XXX
-        // display 8 floats
-        /*
-        Mn::Debug{} << "========"
+        // display 1st 4 rgbs
+        Mn::Debug{} << "1st 4 rgb ==== SAVE"
                     << Cr::Containers::arrayCast<float>(
-                           image.data().prefix(32));
-        Mn::Debug{} << "image size in bytes: " << image.data().size();
-        */
+                           image.data().prefix(4 * 3 * 4));
       } break;
     }
     CORRADE_ASSERT(!filename.empty(),
@@ -313,17 +311,7 @@ void CubeMap::loadTexture(TextureType type,
                           const std::string& imageFileExtension) {
   textureTypeSanityCheck(flags_, type, "CubeMap::loadTexture():");
 
-  // plugin manager used to instantiate importers which in turn are used
-  // to load image data
-  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
-  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
-      manager.loadAndInstantiate("AnyImageImporter");
-  CORRADE_INTERNAL_ASSERT(importer);
-
-  const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
-  int imageSize = 0;
-
-  // set images
+  // set the alias of the texture
   Mn::GL::CubeMapTexture* texture = nullptr;
   switch (type) {
     case TextureType::Color:
@@ -336,6 +324,24 @@ void CubeMap::loadTexture(TextureType type,
   }
   CORRADE_ASSERT(texture, "CubeMap::loadTexture(): Unknown texture type.", );
 
+  // plugin manager used to instantiate importers which in turn are used
+  // to load image data
+  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
+  std::string importerName{"AnyImageImporter"};
+  if (type == TextureType::Depth) {
+    importerName = "StbImageImporter";
+  }
+  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
+      manager.loadAndInstantiate(importerName);
+  CORRADE_INTERNAL_ASSERT(importer);
+  if (type == TextureType::Depth) {
+    // Override image channel count. Because depth info should be R32F
+    importer->configuration().setValue("forceChannelCount", 1);
+  }
+
+  const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
+  int imageSize = 0;
+
   for (int iFace = 0; iFace < 6; ++iFace) {
     // open image file
 
@@ -346,16 +352,6 @@ void CubeMap::loadTexture(TextureType type,
     importer->openFile(filename);
     Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
         importer->image2D(0);
-
-    // XXX
-    /*
-    Mn::Debug{} << "imagedata raw data size = " << (*imageData).data().size();
-    {
-      auto view = Cr::Containers::arrayCast<const float>((*imageData).data());
-      Mn::Debug{} << "first 4 rgbs from imagedata"
-                  << view.prefix(12);  // first 12 floats --> 4 Rgbs
-    }
-    */
 
     // sanity checks
     CORRADE_INTERNAL_ASSERT(imageData);
@@ -379,54 +375,19 @@ void CubeMap::loadTexture(TextureType type,
         break;
 
       case TextureType::Depth: {
-        // The pixel format for depth texture is R32F. When it is saved as hdr,
-        // the single channel is expanded to three channels by repeating the R
-        // channel 3 times (and it becomes RGB32F).
-        // That means when it is loaded, we need to dedup by taking just the
-        // first component (R component) out of each pixel.
-        Cr::Containers::StridedArrayView2D<const Mn::Color3>
-            imageStridedArrayView = imageData->pixels<Mn::Color3>();
-
-        //  This casts the Color3 view to a float, which effectively uses only
-        //  four bytes of each element, which is the red channel
-        Cr::Containers::StridedArrayView2D<const float> red =
-            Cr::Containers::arrayCast<const float>(imageStridedArrayView);
-
-        Cr::Containers::Array<float> depthImage{
-            Cr::Containers::NoInit, static_cast<size_t>(size.product())};
-        // Turns the `depthImage` into a tightly packed 2D view of the same rows
-        // and pixels as `imageStridedArrayView`
-        Cr::Containers::StridedArrayView2D<float> output{
-            depthImage, {std::size_t(size.y()), std::size_t(size.x())}};
-
-        // copy the data
-        Cr::Utility::copy(red, output);
-
-        // XXX
-        /*
-        unsigned int idx = 0;
-        for (auto row : imageStridedArrayView) {
-          for (const Mn::Color3& pixel : row) {
-            depthImage[idx++] = pixel.r();
-          }
-        }
-        */
-        // Mn::Debug{} << "depthImage (top 9) = " << depthImage.prefix(9);
-        // Mn::Debug{} << "imageData size: " << imageData->size();
+        CORRADE_INTERNAL_ASSERT(imageData->format() == Mn::PixelFormat::R32F);
         Mn::ImageView2D imageView(Mn::GL::PixelFormat::DepthComponent,
                                   Mn::GL::PixelType::Float, imageData->size(),
-                                  depthImage);
+                                  imageData->data());
         texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
                              imageView);
         // XXX
-        /*
         Mn::Debug{} << Cr::Containers::arrayCast<const float>(
             imageView.data().prefix(32));
         // XXX first 4 RGB, which is 4 bytes
-        Mn::Debug{} << "1st 4 RGB"
+        Mn::Debug{} << "1st 4 RGB >>>>>>>>>>>>>>>>>>>> load texture"
                     << Cr::Containers::arrayCast<const float>(
                            (*imageData).data().prefix(4 * 3 * 4));
-        */
       } break;
     }  // switch
     LOG(INFO) << "Loaded image " << iFace << " from " << filename;
