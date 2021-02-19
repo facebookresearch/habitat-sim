@@ -83,7 +83,7 @@ def make_configuration(scene_file):
 
     sensor_specs = []
     for sensor_uuid, sensor_params in sensors.items():
-        sensor_spec = habitat_sim.SensorSpec()
+        sensor_spec = habitat_sim.CameraSensorSpec()
         sensor_spec.uuid = sensor_uuid
         sensor_spec.sensor_type = sensor_params["sensor_type"]
         sensor_spec.resolution = sensor_params["resolution"]

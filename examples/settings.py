@@ -89,33 +89,31 @@ def make_cfg(settings):
     sensor_specs = []
     for sensor_uuid, sensor_params in sensors.items():
         if settings[sensor_uuid]:
-            # Check if type VisualSensorSpec
+            # Check if type VisualSensorSpec and CameraSensorSpec
             if (
                 sensor_params["sensor_type"] == habitat_sim.SensorType.COLOR
                 or sensor_params["sensor_type"] == habitat_sim.SensorType.DEPTH
                 or sensor_params["sensor_type"] == habitat_sim.SensorType.SEMANTIC
+            ) and (
+                sensor_params["sensor_subtype"] == habitat_sim.SensorSubType.PINHOLE
+                or sensor_params["sensor_subtype"]
+                == habitat_sim.SensorSubType.ORTHOGRAPHIC
             ):
-                # Check if type CameraSensorSpec
-                if (
-                    sensor_params["sensor_subtype"] == habitat_sim.SensorSubType.PINHOLE
-                    or sensor_params["sensor_subtype"]
-                    == habitat_sim.SensorSubType.ORTHOGRAPHIC
-                ):
-                    sensor_spec = habitat_sim.CameraSensorSpec()
-                    sensor_spec.uuid = sensor_uuid
-                    sensor_spec.sensor_type = sensor_params["sensor_type"]
-                    sensor_spec.sensor_subtype = sensor_params["sensor_subtype"]
-                    sensor_spec.resolution = sensor_params["resolution"]
-                    sensor_spec.position = sensor_params["position"]
-                    sensor_spec.gpu2gpu_transfer = False
-                    if not settings["silent"]:
-                        print("==== Initialized Sensor Spec: =====")
-                        print("Sensor uuid: ", sensor_spec.uuid)
-                        print("Sensor type: ", sensor_spec.sensor_type)
-                        print("Sensor position: ", sensor_spec.position)
-                        print("===================================")
-                    sensor_specs.append(sensor_spec)
-                # TODO: Add more checks for NonVisualSensorSpec, Other types of sensors
+                sensor_spec = habitat_sim.CameraSensorSpec()
+                sensor_spec.uuid = sensor_uuid
+                sensor_spec.sensor_type = sensor_params["sensor_type"]
+                sensor_spec.sensor_subtype = sensor_params["sensor_subtype"]
+                sensor_spec.resolution = sensor_params["resolution"]
+                sensor_spec.position = sensor_params["position"]
+                sensor_spec.gpu2gpu_transfer = False
+                if not settings["silent"]:
+                    print("==== Initialized Sensor Spec: =====")
+                    print("Sensor uuid: ", sensor_spec.uuid)
+                    print("Sensor type: ", sensor_spec.sensor_type)
+                    print("Sensor position: ", sensor_spec.position)
+                    print("===================================")
+                sensor_specs.append(sensor_spec)
+            # TODO: Add more checks for NonVisualSensorSpec, Other types of sensors
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()

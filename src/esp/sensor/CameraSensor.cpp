@@ -79,8 +79,7 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
                             cameraSensorSpec_->resolution[1]};
   float scale;
   if (cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic) {
-    scale = cameraSensorSpec_->ortho_scale;
-    nearPlaneSize_ /= scale;
+    nearPlaneSize_ /= cameraSensorSpec_->ortho_scale;
     baseProjMatrix_ =
         Mn::Matrix4::orthographicProjection(nearPlaneSize_, near_, far_);
   } else {
@@ -114,7 +113,7 @@ bool CameraSensor::getObservationSpace(ObservationSpace& space) {
   return true;
 }
 
-gfx::RenderCamera* CameraSensor::getRenderCamera() {
+gfx::RenderCamera* CameraSensor::getRenderCamera() const {
   return renderCamera_;
 }
 

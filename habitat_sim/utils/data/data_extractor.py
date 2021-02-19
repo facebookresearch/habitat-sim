@@ -293,7 +293,7 @@ class ImageExtractor:
         sensor_specs = []
         for sensor_uuid, sensor_params in sensors.items():
             if settings[sensor_uuid]:
-                sensor_spec = hsim.SensorSpec()
+                sensor_spec = hsim.CameraSensorSpec()
                 sensor_spec.uuid = sensor_uuid
                 sensor_spec.sensor_type = sensor_params["sensor_type"]
                 sensor_spec.resolution = sensor_params["resolution"]

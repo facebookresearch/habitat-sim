@@ -193,7 +193,7 @@ def make_simple_cfg(settings):
 
     # In the 1st example, we attach only one sensor,
     # a RGB visual sensor, to the agent
-    rgb_sensor_spec = habitat_sim.SensorSpec()
+    rgb_sensor_spec = habitat_sim.CameraSensorSpec()
     rgb_sensor_spec.uuid = "color_sensor"
     rgb_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
     rgb_sensor_spec.resolution = [settings["height"], settings["width"]]
@@ -331,7 +331,7 @@ def make_cfg(settings):
     sensor_specs = []
     for sensor_uuid, sensor_params in sensors.items():
         if settings[sensor_uuid]:
-            sensor_spec = habitat_sim.SensorSpec()
+            sensor_spec = habitat_sim.CameraSensorSpec()
             sensor_spec.uuid = sensor_uuid
             sensor_spec.sensor_type = sensor_params["sensor_type"]
             sensor_spec.resolution = sensor_params["resolution"]

@@ -64,7 +64,7 @@ def make_configuration():
     backend_cfg.enable_physics = True
 
     # agent configuration
-    sensor_cfg = habitat_sim.SensorSpec()
+    sensor_cfg = habitat_sim.CameraSensorSpec()
     sensor_cfg.resolution = [1080, 960]
     agent_cfg = habitat_sim.agent.AgentConfiguration()
     agent_cfg.sensor_specifications = [sensor_cfg]

@@ -53,9 +53,9 @@ struct SensorSpec {
   std::string noiseModel;
   SensorSpec();
   virtual ~SensorSpec();
-  virtual bool isVisualSensorSpec() { return false; }
-  bool operator==(const SensorSpec& a);
-  bool operator!=(const SensorSpec& a);
+  virtual bool isVisualSensorSpec() const { return false; }
+  bool operator==(const SensorSpec& a) const;
+  bool operator!=(const SensorSpec& a) const;
   ESP_SMART_POINTERS(SensorSpec)
 };
 
@@ -94,9 +94,9 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
 
-  SensorSpec::ptr specification() const { return spec_; }
+  const SensorSpec::ptr specification() const { return spec_; }
 
-  virtual bool isVisualSensor() { return false; }
+  virtual const bool isVisualSensor() const { return false; }
 
   // can be called ONLY when it is attached to a scene node
   void setTransformationFromSpec();

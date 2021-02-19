@@ -28,8 +28,8 @@ struct VisualSensorSpec : public SensorSpec {
   bool gpu2gpuTransfer;  // True for pytorch tensor support
   VisualSensorSpec();
   void sanityCheck();
-  virtual bool isVisualSensorSpec() override { return true; }
-  bool operator==(const VisualSensorSpec& a);
+  virtual bool isVisualSensorSpec() const override { return true; }
+  bool operator==(const VisualSensorSpec& a) const;
   ESP_SMART_POINTERS(VisualSensorSpec)
 };
 // Represents a sensor that provides visual data from the environment to an
@@ -51,7 +51,7 @@ class VisualSensor : public Sensor {
     return {visualSensorSpec_->resolution[1], visualSensorSpec_->resolution[0]};
   }
 
-  virtual bool isVisualSensor() override { return true; }
+  virtual const bool isVisualSensor() const override { return true; }
 
   /**
    * @brief Display next observation from Simulator on default frame buffer
@@ -111,22 +111,22 @@ class VisualSensor : public Sensor {
   /**
    * @brief Returns RenderCamera
    */
-  virtual gfx::RenderCamera* getRenderCamera() = 0;
+  virtual gfx::RenderCamera* getRenderCamera() const = 0;
 
   /**
    * @brief Gets near plane distance.
    */
-  float getNear() { return near_; }
+  const float getNear() const { return near_; }
 
   /**
    * @brief Gets far plane distance.
    */
-  float getFar() { return far_; }
+  const float getFar() const { return far_; }
 
   /**
    * @brief Returns the FOV of this Sensor
    */
-  Mn::Deg getFOV() const { return hfov_; }
+  const Mn::Deg getFOV() const { return hfov_; }
 
  protected:
   /** @brief projection parameters

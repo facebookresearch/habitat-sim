@@ -47,7 +47,7 @@ void VisualSensorSpec::sanityCheck() {
                  "width must be greater than 0", );
 }
 
-bool VisualSensorSpec::operator==(const VisualSensorSpec& a) {
+bool VisualSensorSpec::operator==(const VisualSensorSpec& a) const {
   return SensorSpec::operator==(a) && ortho_scale == a.ortho_scale &&
          resolution == a.resolution && encoding == a.encoding &&
          gpu2gpuTransfer == a.gpu2gpuTransfer;

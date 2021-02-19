@@ -31,7 +31,7 @@ def make_configuration():
 
     # sensor configurations
     sensor_specs = []
-    sensor_spec = habitat_sim.SensorSpec()
+    sensor_spec = habitat_sim.CameraSensorSpec()
     sensor_spec.uuid = "rgba_camera_1stperson"
     sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
     sensor_spec.resolution = [544, 720]

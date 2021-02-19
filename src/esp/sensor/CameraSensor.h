@@ -18,7 +18,7 @@ struct CameraSensorSpec : public VisualSensorSpec {
   std::string observationSpace;
   CameraSensorSpec();
   void sanityCheck();
-  bool operator==(const CameraSensorSpec& a);
+  bool operator==(const CameraSensorSpec& a) const;
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
 
@@ -41,7 +41,7 @@ class CameraSensor : public VisualSensor {
   /** @brief Returns pointer to member RenderCamera that CameraSensor will use
    * for rendering
    */
-  virtual gfx::RenderCamera* getRenderCamera() override;
+  virtual gfx::RenderCamera* getRenderCamera() const override;
 
   /**
    * @brief Draws an observation to the frame buffer using simulator's renderer,
@@ -129,7 +129,7 @@ class CameraSensor : public VisualSensor {
   /**
    * @brief Returns the camera type of this Sensor
    */
-  SensorSubType getCameraType() const {
+  const SensorSubType getCameraType() const {
     return cameraSensorSpec_->sensorSubType;
   }
 
@@ -156,7 +156,7 @@ class CameraSensor : public VisualSensor {
     near_ = _near;
     recomputeBaseProjectionMatrix();
   }
-  float getNear() { return near_; }
+  const float getNear() const { return near_; }
 
   /**
    * @brief Sets far plane distance.
@@ -165,7 +165,7 @@ class CameraSensor : public VisualSensor {
     far_ = _far;
     recomputeBaseProjectionMatrix();
   }
-  float getFar() { return far_; }
+  const float getFar() const { return far_; }
 
  protected:
   /**
