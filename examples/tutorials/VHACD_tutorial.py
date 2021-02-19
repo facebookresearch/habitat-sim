@@ -105,7 +105,7 @@ def runVHACDSimulation(obj_path):
             0,
             habitat_sim.AgentState(
                 [5.45, 2.4, 1.2],
-                np.quaternion(0, 0, 0, 0),
+                np.quaternion(1, 0, 0, 0),
             ),
         )
 

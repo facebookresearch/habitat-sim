@@ -19,7 +19,7 @@ class CameraSensor : public VisualSensor {
   // user can use them immediately
   explicit CameraSensor(scene::SceneNode& cameraNode,
                         const SensorSpec::ptr& spec);
-  virtual ~CameraSensor() {}
+  virtual ~CameraSensor() = default;
 
   /** @brief Updates this sensor's SensorSpec spec_ to reflect the passed new
    * values
@@ -53,14 +53,6 @@ class CameraSensor : public VisualSensor {
    * with information from this sensor
    */
   virtual bool getObservationSpace(ObservationSpace& space) override;
-
-  /**
-   * @brief Display next observation from Simulator on default frame buffer
-   * @param[in] sim Instance of Simulator class for which the observation needs
-   *                to be displayed
-   * @return Whether the display process was successful or not
-   */
-  virtual bool displayObservation(sim::Simulator& sim) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's

@@ -36,6 +36,7 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
+#include <Magnum/VertexFormat.h>
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -99,7 +100,10 @@ ResourceManager::ResourceManager(
   buildImporters();
 }
 
-ResourceManager::~ResourceManager() {}
+ResourceManager::~ResourceManager() {
+  interfaceVHACD->Clean();
+  interfaceVHACD->Release();
+}
 
 void ResourceManager::buildImporters() {
   // instantiate a primitive importer
@@ -2278,7 +2282,7 @@ void ResourceManager::createConvexHullDecomposition(
     // for each convex hull, transfer the data to a newly created  MeshData
     interfaceVHACD->GetConvexHull(p, ch);
 
-    std::vector<Magnum::UnsignedInt> indices;
+    // std::vector<Magnum::UnsignedInt> indices;
     std::vector<Magnum::Vector3> positions;
 
     // add the vertices
@@ -2290,10 +2294,16 @@ void ResourceManager::createConvexHullDecomposition(
     }
 
     // add indices
-    indices.resize(ch.m_nTriangles * 3);
+    /*indices.resize(ch.m_nTriangles * 3);
     for (size_t ix = 0; ix < ch.m_nTriangles * 3; ix++) {
       indices[ix] = ch.m_triangles[ix];
-    }
+    }*/
+    Cr::Containers::ArrayView<const Mn::UnsignedInt> indices{
+        ch.m_triangles, ch.m_nTriangles * 3};
+    // Cr::Containers::ArrayView<const Mn::Vector3>
+    // positions{std::dynamic_cast<Mn::Vector3>(ch.m_points), ch.m_nPoints};
+    // auto positions = Cr::Containers::arrayCast<Mn::Vector3>(
+    //    Cr::Containers::arrayView(ch.m_points, ch.m_nPoints));
 
     // create an owned MeshData
     Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::owned(

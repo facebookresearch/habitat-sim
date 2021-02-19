@@ -16,13 +16,13 @@ namespace managers {
 /**
  * @brief single instance class managing templates describing physical objects
  */
-class ObjectAttributesManager : public AbstractObjectAttributesManager<
-                                    attributes::ObjectAttributes,
-                                    core::ManagedContainerAccess::Copy> {
+class ObjectAttributesManager
+    : public AbstractObjectAttributesManager<attributes::ObjectAttributes,
+                                             core::ManagedObjectAccess::Copy> {
  public:
   ObjectAttributesManager()
       : AbstractObjectAttributesManager<attributes::ObjectAttributes,
-                                        core::ManagedContainerAccess::Copy>::
+                                        core::ManagedObjectAccess::Copy>::
             AbstractObjectAttributesManager(
                 "Object",
                 "object_config.json") {  // was phys_properties.json
