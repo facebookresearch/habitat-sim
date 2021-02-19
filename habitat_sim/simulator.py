@@ -30,6 +30,7 @@ import habitat_sim.errors
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import logger
+from habitat_sim.metadata import MetadataMediator
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
 from habitat_sim.sensor import SensorSpec, SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
@@ -45,13 +46,15 @@ class Configuration(object):
 
     :property sim_cfg: The configuration of the backend of the simulator
     :property agents: A list of agent configurations
-
+    :property metadata_mediator: (optional) The metadata mediator to build the simulator from
     Ties together a backend config, `sim_cfg` and a list of agent
     configurations `agents`.
     """
 
     sim_cfg: SimulatorConfiguration
     agents: List[AgentConfiguration]
+    # An existing Metadata Mediator can also be used to construct a SimulatorBackend
+    metadata_mediator: Optional[MetadataMediator] = None
 
 
 @attr.s(auto_attribs=True)
@@ -185,7 +188,7 @@ class Simulator(SimulatorBackend):
 
     def _config_backend(self, config: Configuration) -> None:
         if not self._initialized:
-            super().__init__(config.sim_cfg)
+            super().__init__(config.sim_cfg, config.metadata_mediator)
             self._initialized = True
         else:
             super().reconfigure(config.sim_cfg)

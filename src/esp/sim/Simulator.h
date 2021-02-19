@@ -43,7 +43,9 @@ namespace esp {
 namespace sim {
 class Simulator {
  public:
-  explicit Simulator(const SimulatorConfiguration& cfg);
+  explicit Simulator(
+      const SimulatorConfiguration& cfg,
+      metadata::MetadataMediator::ptr _metadataMediator = nullptr);
   virtual ~Simulator();
 
   /**
@@ -847,6 +849,8 @@ class Simulator {
    */
   void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
     metadataMediator_ = _metadataMediator;
+    // set newly added MM to have current Simulator Config
+    metadataMediator_->setSimulatorConfiguration(this->config_);
   }
 
   /**

@@ -42,6 +42,14 @@ class MetadataMediator {
   bool setSimulatorConfiguration(const sim::SimulatorConfiguration& cfg);
 
   /**
+   * @brief Return the current @ref esp::sim::SimulatorConfiguration this
+   * MetadataMediator is using.  Used to build Simulator from existing MM.
+   */
+  const sim::SimulatorConfiguration& getSimulatorConfiguration() const {
+    return this->simConfig_;
+  }
+
+  /**
    * @brief Creates a dataset attributes using @p sceneDatasetName, and
    * registers it. NOTE If an existing dataset attributes exists with this
    * handle, then this will exit with a message unless @p overwrite is true.
