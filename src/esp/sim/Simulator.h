@@ -935,8 +935,6 @@ class Simulator {
    */
   double stepWorld(double dt = 1.0 / 60.0);
 
-  void updateRenderingFromPhysics(bool force = true);
-
   /**
    * @brief Get the current time in the simulated world. This is always 0 if no
    * @ref esp::physics::PhysicsManager is initialized. See @ref stepWorld. See

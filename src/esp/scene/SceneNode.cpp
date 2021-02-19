@@ -60,10 +60,8 @@ void SceneNode::clean(const Magnum::Matrix4& absoluteTransformation) {
 }
 
 Mn::Vector3 SceneNode::absoluteTranslation() const {
-  if (isDirty())
-    return absoluteTransformation().translation();
-  else
-    return absoluteTransformation_.translation();
+  const_cast<SceneNode*>(this)->setClean();
+  return absoluteTransformation_.translation();
 }
 
 const Mn::Range3D& SceneNode::getAbsoluteAABB() const {

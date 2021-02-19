@@ -164,8 +164,6 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void setSleep(CORRADE_UNUSED bool sleep) {}
 
-  virtual void updateNodes(CORRADE_UNUSED bool force = false) {}
-
   /**
    * @brief Get the @ref MotionType of the object. See @ref setMotionType.
    * @return The object's current @ref MotionType.

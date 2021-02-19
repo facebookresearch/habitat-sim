@@ -346,8 +346,11 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
     }
   }
 
+  //! Bullet rigid body setup
+  auto motionState = (mt == MotionType::STATIC) ? nullptr : this;
+
   btRigidBody::btRigidBodyConstructionInfo info =
-      btRigidBody::btRigidBodyConstructionInfo(mass, nullptr,
+      btRigidBody::btRigidBodyConstructionInfo(mass, motionState,
                                                bObjectShape_.get(), bInertia);
 
   if (!isCollidable_) {
@@ -397,8 +400,6 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
         CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject));
     setSleep(false);
   }
-
-  updateNodes(true);
 }
 
 void BulletRigidObject::activateCollisionIsland() {
@@ -493,11 +494,51 @@ void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
                         CollisionGroupHelper::getMaskForGroup(group));
 }
 
-void BulletRigidObject::updateNodes(bool force) {
-  if (force || isActive()) {
-    node().setTransformation(
-        Mn::Matrix4{bObjectRigidBody_->getWorldTransform()});
+void BulletRigidObject::updateNodes() {
+  isDeferingUpdate_ = false;
+
+  if (deferredUpdate_) {
+    setWorldTransform(*deferredUpdate_);
+    deferredUpdate_ = Corrade::Containers::NullOpt;
   }
+}
+
+void BulletRigidObject::getWorldTransform(btTransform& worldTrans) const {
+  const Mn::Math::Matrix4<btScalar> transformation =
+      node().transformationMatrix();
+  worldTrans.setOrigin(btVector3(transformation.translation()));
+  worldTrans.setBasis(btMatrix3x3(transformation.rotationScaling()));
+}
+void BulletRigidObject::setWorldTransform(const btTransform& worldTrans) {
+  if (isDeferingUpdate_)
+    deferredUpdate_ = {worldTrans};
+  else
+    setWorldTransformImpl(worldTrans);
+}
+
+void BulletRigidObject::setWorldTransformImpl(const btTransform& worldTrans) {
+  const auto position = Mn::Vector3{worldTrans.getOrigin()};
+  const auto axis = Mn::Vector3{worldTrans.getRotation().getAxis()};
+  const auto rotation = Mn::Rad{worldTrans.getRotation().getAngle()};
+
+  /* Bullet sometimes reports NaNs for all the parameters and nobody is sure
+     why: https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=12080. The body
+     gets stuck in that state, so print the warning just once. */
+  if (Mn::Math::isNan(position).any() || Mn::Math::isNan(axis).any() ||
+      Mn::Math::isNan(rotation)) {
+    if (!broken_) {
+      Mn::Warning{}
+          << "BulletIntegration::MotionState: Bullet reported NaN transform for"
+          << this << Mn::Debug::nospace << ", ignoring";
+      broken_ = true;
+    }
+    return;
+  }
+
+  /** @todo Verify that all objects have common parent */
+  node()
+      .setRotation(Mn::Quaternion::rotation(rotation, axis.normalized()))
+      .setTranslation(position);
 }
 
 }  // namespace physics

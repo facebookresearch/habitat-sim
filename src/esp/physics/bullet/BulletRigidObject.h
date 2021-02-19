@@ -36,7 +36,8 @@ namespace physics {
  * state with internal btRigidBody states
  */
 class BulletRigidObject : public BulletBase,
-                          public RigidObject {
+                          public RigidObject,
+                          protected btMotionState {
  public:
   /**
    * @brief Constructor for a @ref BulletRigidObject.
@@ -98,12 +99,10 @@ class BulletRigidObject : public BulletBase,
    *
    */
   virtual void setSleep(bool sleep) override {
-    if (sleep)
-      updateNodes(true);
     bObjectRigidBody_->activate(!sleep);
   }
 
-  virtual void updateNodes(bool force = false) override;
+  virtual void updateNodes() override;
 
   /**
    * @brief Set the @ref MotionType of the object. The object can be set to @ref
@@ -475,6 +474,13 @@ class BulletRigidObject : public BulletBase,
    */
   void activateCollisionIsland();
 
+  virtual void getWorldTransform(btTransform&worldTrans) const override;
+  virtual void setWorldTransform(const btTransform&worldTrans) override;
+  virtual void setWorldTransformImpl(const btTransform&worldTrans);
+
+
+
+
  private:
   // === Physical object ===
   //! If true, the object's bounding box will be used for collision once
@@ -489,6 +495,9 @@ class BulletRigidObject : public BulletBase,
   std::unique_ptr<btCompoundShape> bObjectShape_;
 
   std::unique_ptr<btCompoundShape> bEmptyShape_;
+
+  Corrade::Containers::Optional<btTransform> deferredUpdate_ = Corrade::Containers::NullOpt;
+  bool broken_ = false;
 
   ESP_SMART_POINTERS(BulletRigidObject)
 };

@@ -579,7 +579,13 @@ class PhysicsManager {
    */
   virtual void stepPhysics(double dt = 0.0);
 
-  virtual void updateNodes(bool force = false);
+  // Defers the update of the scene graph nodes until updateNodes is called
+  // This is needed to do ownership transfer of the scene graph to a
+  // background thread
+  virtual void deferNodesUpdate();
+
+  // Syncs the state of the bullet scene graph to the rendering scene graph
+  virtual void updateNodes();
 
   // =========== Global Setter functions ===========
 

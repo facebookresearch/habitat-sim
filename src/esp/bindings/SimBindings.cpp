@@ -193,8 +193,6 @@ void initSimBindings(py::module& m) {
       .def(
           "step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0,
           R"(Step the physics simulation by a desired timestep (dt). Note that resulting world time after step may not be exactly t+dt. Use get_world_time to query current simulation time.)")
-      .def("update_rendering_from_physics",
-           &Simulator::updateRenderingFromPhysics, "force"_a = true)
       .def("get_world_time", &Simulator::getWorldTime,
            R"(Query the current simualtion world time.)")
       .def("get_gravity", &Simulator::getGravity, "scene_id"_a = 0,
