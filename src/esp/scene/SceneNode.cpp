@@ -66,6 +66,11 @@ Mn::Vector3 SceneNode::absoluteTranslation() const {
     return absoluteTransformation_.translation();
 }
 
+Mn::Vector3 SceneNode::absoluteTranslation() {
+  setClean();
+  return absoluteTransformation_.translation();
+}
+
 const Mn::Range3D& SceneNode::getAbsoluteAABB() const {
   if (aabb_)
     return *aabb_;
