@@ -132,8 +132,8 @@ class RigidObject : public RigidBase {
         metadata::attributes::ObjectAttributes>();
   };
 
-  virtual void deferUpdate() { isDeferingUpdate_ = true; }
-  virtual void updateNodes() { isDeferingUpdate_ = false; }
+  virtual void deferUpdate() { isDeferringUpdate_ = true; }
+  virtual void updateNodes() { isDeferringUpdate_ = false; }
 
  private:
   /**
@@ -181,7 +181,7 @@ class RigidObject : public RigidBase {
    */
   VelocityControl::ptr velControl_;
 
-  bool isDeferingUpdate_ = false;
+  bool isDeferringUpdate_ = false;
 
  public:
   ESP_SMART_POINTERS(RigidObject)

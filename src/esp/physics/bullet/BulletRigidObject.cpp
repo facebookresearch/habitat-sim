@@ -495,7 +495,7 @@ void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
 }
 
 void BulletRigidObject::updateNodes() {
-  isDeferingUpdate_ = false;
+  isDeferringUpdate_ = false;
 
   if (deferredUpdate_) {
     setWorldTransform(*deferredUpdate_);
@@ -510,7 +510,7 @@ void BulletRigidObject::getWorldTransform(btTransform& worldTrans) const {
   worldTrans.setBasis(btMatrix3x3(transformation.rotationScaling()));
 }
 void BulletRigidObject::setWorldTransform(const btTransform& worldTrans) {
-  if (isDeferingUpdate_)
+  if (isDeferringUpdate_)
     deferredUpdate_ = {worldTrans};
   else
     setWorldTransformImpl(worldTrans);
