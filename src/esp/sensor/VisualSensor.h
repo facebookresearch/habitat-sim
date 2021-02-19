@@ -27,7 +27,7 @@ struct VisualSensorSpec : public SensorSpec {
   std::string encoding;  // For rendering colors in images
   bool gpu2gpuTransfer;  // True for pytorch tensor support
   VisualSensorSpec();
-  void sanityCheck();
+  void sanityCheck() override;
   virtual bool isVisualSensorSpec() const override { return true; }
   bool operator==(const VisualSensorSpec& a) const;
   ESP_SMART_POINTERS(VisualSensorSpec)
@@ -51,7 +51,7 @@ class VisualSensor : public Sensor {
     return {visualSensorSpec_->resolution[1], visualSensorSpec_->resolution[0]};
   }
 
-  virtual const bool isVisualSensor() const override { return true; }
+  virtual bool isVisualSensor() const override { return true; }
 
   /**
    * @brief Display next observation from Simulator on default frame buffer
@@ -105,8 +105,19 @@ class VisualSensor : public Sensor {
   /**
    * @brief Sets resolution of Sensor's sensorSpec
    */
-  void setResolution(int height, int width);
-  void setResolution(vec2i resolution);
+  void setResolution(int height, int width) {
+    CORRADE_ASSERT(height > 0 && width > 0,
+                   "VisualSensorSpec::setResolution(): resolution height and "
+                   "width must be greater than 0", );
+    visualSensorSpec_->resolution = {height, width};
+  }
+
+  void setResolution(vec2i resolution) {
+    CORRADE_ASSERT(resolution[0] > 0 && resolution[1] > 0,
+                   "VisualSensorSpec::setResolution(): resolution height and "
+                   "width must be greater than 0", );
+    visualSensorSpec_->resolution = {resolution[0], resolution[1]};
+  }
 
   /**
    * @brief Returns RenderCamera
@@ -116,17 +127,17 @@ class VisualSensor : public Sensor {
   /**
    * @brief Gets near plane distance.
    */
-  const float getNear() const { return near_; }
+  float getNear() const { return near_; }
 
   /**
    * @brief Gets far plane distance.
    */
-  const float getFar() const { return far_; }
+  float getFar() const { return far_; }
 
   /**
    * @brief Returns the FOV of this Sensor
    */
-  const Mn::Deg getFOV() const { return hfov_; }
+  Mn::Deg getFOV() const { return hfov_; }
 
  protected:
   /** @brief projection parameters

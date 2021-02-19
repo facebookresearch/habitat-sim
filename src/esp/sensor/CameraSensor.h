@@ -17,7 +17,7 @@ struct CameraSensorSpec : public VisualSensorSpec {
   // description of Sensor observation space as gym.spaces.Dict()
   std::string observationSpace;
   CameraSensorSpec();
-  void sanityCheck();
+  void sanityCheck() override;
   bool operator==(const CameraSensorSpec& a) const;
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
@@ -122,6 +122,11 @@ class CameraSensor : public VisualSensor {
    * display.
    */
   void setCameraType(const SensorSubType& _cameraType) {
+    CORRADE_ASSERT(_cameraType == SensorSubType::Pinhole ||
+                       _cameraType == SensorSubType::Orthographic,
+                   "CameraSensor::setCameraType(): _cameraType is not "
+                   "SensorSubType "
+                   "Pinhole or Orthographic", );
     cameraSensorSpec_->sensorSubType = _cameraType;
     recomputeBaseProjectionMatrix();
   }  // CameraSensor::setCameraType
@@ -129,7 +134,7 @@ class CameraSensor : public VisualSensor {
   /**
    * @brief Returns the camera type of this Sensor
    */
-  const SensorSubType getCameraType() const {
+  SensorSubType getCameraType() const {
     return cameraSensorSpec_->sensorSubType;
   }
 
@@ -137,6 +142,9 @@ class CameraSensor : public VisualSensor {
    * @brief Sets width of this sensor's view port
    */
   void setWidth(int width) {
+    CORRADE_ASSERT(width > 0,
+                   "CameraSensor::setWidth(): resolution height and "
+                   "width must be greater than 0", );
     cameraSensorSpec_->resolution[1] = width;
     recomputeBaseProjectionMatrix();
   }
@@ -145,6 +153,9 @@ class CameraSensor : public VisualSensor {
    * @brief Sets height of this sensor's view port
    */
   void setHeight(int height) {
+    CORRADE_ASSERT(height > 0,
+                   "CameraSensor::setHeight(): resolution height and "
+                   "width must be greater than 0", );
     cameraSensorSpec_->resolution[0] = height;
     recomputeBaseProjectionMatrix();
   }
@@ -153,19 +164,25 @@ class CameraSensor : public VisualSensor {
    * @brief Sets near plane distance.
    */
   void setNear(float _near) {
+    CORRADE_ASSERT(_near > 0,
+                   "CameraSensor::setNear(): near plane distance must be "
+                   "greater than 0", );
     near_ = _near;
     recomputeBaseProjectionMatrix();
   }
-  const float getNear() const { return near_; }
+  float getNear() const { return near_; }
 
   /**
    * @brief Sets far plane distance.
    */
   void setFar(float _far) {
+    CORRADE_ASSERT(
+        _far > 0,
+        "CameraSensor::setFar(): Far plane distance must be greater than 0", );
     far_ = _far;
     recomputeBaseProjectionMatrix();
   }
-  const float getFar() const { return far_; }
+  float getFar() const { return far_; }
 
  protected:
   /**

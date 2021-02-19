@@ -30,7 +30,7 @@ void CameraSensorSpec::sanityCheck() {
                  "Pinhole or Orthographic", );
 }
 
-bool CameraSensorSpec::operator==(const CameraSensorSpec& a) {
+bool CameraSensorSpec::operator==(const CameraSensorSpec& a) const {
   return VisualSensorSpec::operator==(a) && channels == a.channels &&
          observationSpace == a.observationSpace;
 }
@@ -41,11 +41,10 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit) {
   // Sanity check
-  cameraSensorSpec_->sanityCheck();
   CORRADE_ASSERT(
-      spec->sensorSubType == SensorSubType::Pinhole ||
-          spec->sensorSubType == SensorSubType::Orthographic,
-      "CameraSensor::CameraSensor(): The sensor sub-type is unknown", );
+      cameraSensorSpec_,
+      "CameraSensor::CameraSensor(): The input sensorSpec is illegal", );
+  cameraSensorSpec_->sanityCheck();
   // Initialize renderCamera_ first to avoid segfaults
   // NOLINTNEXTLINE(cplusplus.NewDeleteLeaks)
   renderCamera_ = new gfx::RenderCamera(cameraNode);
@@ -74,23 +73,23 @@ void CameraSensor::recomputeProjectionMatrix() {
 
 void CameraSensor::recomputeBaseProjectionMatrix() {
   // refresh size after relevant parameters have changed
+  CORRADE_ASSERT(
+      cameraSensorSpec_->sensorSubType == SensorSubType::Pinhole ||
+          cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic,
+      "CameraSensor::recomputeBaseProjectionMatrix(): sensorSpec does not have "
+      "SensorSubType "
+      "Pinhole or Orthographic", );
   Mn::Vector2 nearPlaneSize_ =
       Mn::Vector2{1.0f, static_cast<float>(cameraSensorSpec_->resolution[0]) /
                             cameraSensorSpec_->resolution[1]};
-  float scale;
   if (cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic) {
     nearPlaneSize_ /= cameraSensorSpec_->ortho_scale;
     baseProjMatrix_ =
         Mn::Matrix4::orthographicProjection(nearPlaneSize_, near_, far_);
   } else {
-    if (cameraSensorSpec_->sensorSubType != SensorSubType::Pinhole) {
-      LOG(INFO) << "CameraSensor::setCameraType : Unsupported Camera type val :"
-                << static_cast<int>(cameraSensorSpec_->sensorSubType)
-                << " so defaulting to Pinhole.";
-      cameraSensorSpec_->sensorSubType = SensorSubType::Pinhole;
-    }
+    // cameraSensorSpec_ is subtype Pinhole
     Magnum::Deg halfHFovRad{Magnum::Deg(.5 * hfov_)};
-    scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
+    float scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
     nearPlaneSize_ /= scale;
     baseProjMatrix_ =
         Mn::Matrix4::perspectiveProjection(nearPlaneSize_, near_, far_);

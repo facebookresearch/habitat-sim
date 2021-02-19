@@ -23,6 +23,25 @@ bool SensorSpec::operator!=(const SensorSpec& a) const {
   return !(*this == a);
 }
 
+void SensorSpec::sanityCheck() {
+  CORRADE_ASSERT(this, "SensorSpec::sanityCheck(): sensorSpec is illegal", );
+  // Check that all parameters are initalized to legal values
+  CORRADE_ASSERT(!uuid.empty(),
+                 "SensorSpec::sanityCheck(): uuid is unitialized", );
+  CORRADE_ASSERT(
+      sensorType >= SensorType::None && sensorType <= SensorType::Text,
+      "SensorSpec::sanityCheck(): sensorType is illegal", );
+  CORRADE_ASSERT(sensorSubType >= SensorSubType::None &&
+                     sensorSubType <= SensorSubType::Orthographic,
+                 "SensorSpec::sanityCheck(): sensorSubType is illegal", );
+  CORRADE_ASSERT((abs(position.array()) >= 0).any(),
+                 "SensorSpec::sanityCheck(): position is illegal", );
+  CORRADE_ASSERT((abs(orientation.array()) >= 0).any(),
+                 "SensorSpec::sanityCheck(): orientation is illegal", );
+  CORRADE_ASSERT(!noiseModel.empty(),
+                 "SensorSpec::sanityCheck(): noiseModel is unitialized", );
+}
+
 SensorSpec::SensorSpec()
     : uuid(""),
       sensorType(SensorType::None),
@@ -34,10 +53,10 @@ SensorSpec::SensorSpec()
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
     : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
   node.setType(scene::SceneNodeType::SENSOR);
-  if (spec_ == nullptr) {
-    LOG(ERROR) << "Cannot initialize sensor. The specification is null.";
-  }
-  ASSERT(spec_ != nullptr);
+  CORRADE_ASSERT(spec_,
+                 "Sensor::Sensor(): Cannot initialize sensor. The "
+                 "specification is null.", );
+  spec_->sanityCheck();
   setTransformationFromSpec();
 }
 
@@ -46,10 +65,9 @@ Sensor::~Sensor() {
 }
 
 void Sensor::setTransformationFromSpec() {
-  if (spec_ == nullptr) {
-    LOG(ERROR) << "Cannot initialize sensor. the specification is null.";
-    return;
-  }
+  CORRADE_ASSERT(spec_,
+                 "Sensor::setTransformationFromSpec: Cannot set "
+                 "transformation, the specification is null.", );
 
   node().resetTransformation();
 

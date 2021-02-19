@@ -54,6 +54,7 @@ struct SensorSpec {
   SensorSpec();
   virtual ~SensorSpec();
   virtual bool isVisualSensorSpec() const { return false; }
+  virtual void sanityCheck();
   bool operator==(const SensorSpec& a) const;
   bool operator!=(const SensorSpec& a) const;
   ESP_SMART_POINTERS(SensorSpec)
@@ -94,9 +95,9 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
 
-  const SensorSpec::ptr specification() const { return spec_; }
+  SensorSpec::ptr specification() const { return spec_; }
 
-  virtual const bool isVisualSensor() const { return false; }
+  virtual bool isVisualSensor() const { return false; }
 
   // can be called ONLY when it is attached to a scene node
   void setTransformationFromSpec();

@@ -22,29 +22,35 @@ VisualSensorSpec::VisualSensorSpec()
 }
 
 void VisualSensorSpec::sanityCheck() {
+  SensorSpec::sanityCheck();
   bool isVisualSensor =
       (sensorType == SensorType::Color || sensorType == SensorType::Depth ||
        sensorType == SensorType::Normal || sensorType == SensorType::Semantic);
   CORRADE_ASSERT(
       isVisualSensor,
-      "VisualSensor::VisualSensorSpec(): sensorType must be Color, Depth, "
+      "VisualSensorSpec::sanityCheck(): sensorType must be Color, Depth, "
       "Normal, or Semantic", );
   if (noiseModel == "Gaussian" || noiseModel == "Poisson" ||
       noiseModel == "SaltAndPepper" || noiseModel == "Speckle") {
     CORRADE_ASSERT(
         sensorType == SensorType::Color,
-        "VisualSensor::VisualSensorSpec(): sensorType must be Color if "
+        "VisualSensorSpec::sanityCheck(): sensorType must be Color if "
         "noiseModel is Gaussian, Poisson, SaltAndPepper, or Speckle", );
   }
   if (noiseModel == "Redwood") {
     CORRADE_ASSERT(
         sensorType == SensorType::Depth,
-        "VisualSensor::VisualSensorSpec(): sensorType must be Depth if "
+        "VisualSensorSpec::sanityCheck(): sensorType must be Depth if "
         "noiseModel is Redwood", );
   }
+  CORRADE_ASSERT(
+      ortho_scale > 0,
+      "VisualSensorSpec::sanityCheck(): ortho_scale must be greater than 0", );
   CORRADE_ASSERT(resolution[0] > 0 && resolution[1] > 0,
-                 "VisualSensor::VisualSensorSpec(): resolution height and "
+                 "VisualSensorSpec::sanityCheck(): resolution height and "
                  "width must be greater than 0", );
+  CORRADE_ASSERT(!encoding.empty(),
+                 "VisualSensorSpec::sanityCheck(): encoding is unitialized", );
 }
 
 bool VisualSensorSpec::operator==(const VisualSensorSpec& a) const {
@@ -55,6 +61,9 @@ bool VisualSensorSpec::operator==(const VisualSensorSpec& a) const {
 
 VisualSensor::VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec)
     : Sensor{node, std::move(spec)}, tgt_{nullptr} {
+  CORRADE_ASSERT(
+      visualSensorSpec_,
+      "VisualSensor::VisualSensor(): The input sensorSpec is illegal", );
   visualSensorSpec_->sanityCheck();
 }
 
@@ -74,14 +83,6 @@ bool VisualSensor::displayObservation(sim::Simulator& sim) {
   drawObservation(sim);
   renderTarget().blitRgbaToDefault();
   return true;
-}
-
-void VisualSensor::setResolution(int height, int width) {
-  visualSensorSpec_->resolution = {height, width};
-}
-
-void VisualSensor::setResolution(vec2i resolution) {
-  visualSensorSpec_->resolution = {resolution[0], resolution[1]};
 }
 
 }  // namespace sensor

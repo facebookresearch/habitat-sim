@@ -11,10 +11,13 @@ sensor::SensorSuite SensorFactory::createSensors(
   sensor::SensorSuite sensorSuite = sensor::SensorSuite();
   for (const SensorSpec::ptr& spec : sensorSetup) {
     scene::SceneNode& sensorNode = node.createChild();
+    spec->sanityCheck();
     // VisualSensor Setup
     if (spec->isVisualSensorSpec()) {
+      std::dynamic_pointer_cast<VisualSensorSpec>(spec)->sanityCheck();
       if (spec->sensorSubType == SensorSubType::Orthographic ||
           spec->sensorSubType == SensorSubType::Pinhole) {
+        std::dynamic_pointer_cast<CameraSensorSpec>(spec)->sanityCheck();
         sensorSuite.add(CameraSensor::create(
             sensorNode, std::dynamic_pointer_cast<CameraSensorSpec>(spec)));
       }
