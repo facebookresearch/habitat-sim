@@ -102,7 +102,7 @@ class BulletRigidObject : public BulletBase,
     bObjectRigidBody_->activate(!sleep);
   }
 
-  virtual void updateNodes() override;
+  virtual void updateNodes(bool force = false) override;
 
   /**
    * @brief Set the @ref MotionType of the object. The object can be set to @ref

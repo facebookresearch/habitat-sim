@@ -133,7 +133,7 @@ class RigidObject : public RigidBase {
   };
 
   virtual void deferUpdate() { isDeferringUpdate_ = true; }
-  virtual void updateNodes() { isDeferringUpdate_ = false; }
+  virtual void updateNodes(CORRADE_UNUSED bool force = false) { isDeferringUpdate_ = false; }
 
  private:
   /**

@@ -494,13 +494,15 @@ void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
                         CollisionGroupHelper::getMaskForGroup(group));
 }
 
-void BulletRigidObject::updateNodes() {
+void BulletRigidObject::updateNodes(bool force) {
   isDeferringUpdate_ = false;
 
-  if (deferredUpdate_) {
+  if (force)
+    setWorldTransform(bObjectRigidBody_->getWorldTransform());
+  else if (deferredUpdate_)
     setWorldTransform(*deferredUpdate_);
-    deferredUpdate_ = Corrade::Containers::NullOpt;
-  }
+
+  deferredUpdate_ = Corrade::Containers::NullOpt;
 }
 
 void BulletRigidObject::getWorldTransform(btTransform& worldTrans) const {
