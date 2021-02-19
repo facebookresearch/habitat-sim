@@ -678,8 +678,8 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
           while (physicsManager_->getWorldTime() < 6.0) {
             physicsManager_->stepPhysics(0.1);
           }
-          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[0]));
-          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
+          ASSERT_FALSE(physicsManager_->isObjectAwake(instancedObjects[0]));
+          ASSERT_FALSE(physicsManager_->isObjectAwake(instancedObjects[1]));
           ASSERT_LE(
               (physicsManager_->getTranslation(instancedObjects[0]) -
                Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent, 0.0})
@@ -703,7 +703,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
           while (physicsManager_->getWorldTime() < 6.0) {
             physicsManager_->stepPhysics(0.1);
           }
-          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
+          ASSERT_FALSE(physicsManager_->isObjectAwake(instancedObjects[1]));
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
                      Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
                         .length(),
@@ -859,7 +859,7 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
 
       // cubes should be sleeping
       for (auto id : cubeIds) {
-        ASSERT(!physicsManager_->isActive(id));
+        ASSERT(!physicsManager_->isObjectAwake(id));
       }
 
       // no active contact points
@@ -880,7 +880,7 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
       for (auto id : cubeIds) {
         if (physicsManager_->getObjectMotionType(id) !=
             esp::physics::MotionType::STATIC) {
-          ASSERT(physicsManager_->isActive(id));
+          ASSERT(physicsManager_->isObjectAwake(id));
         }
       }
 
