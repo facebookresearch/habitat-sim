@@ -36,8 +36,7 @@ namespace physics {
  * state with internal btRigidBody states
  */
 class BulletRigidObject : public BulletBase,
-                          public RigidObject,
-                          public Magnum::BulletIntegration::MotionState {
+                          public RigidObject {
  public:
   /**
    * @brief Constructor for a @ref BulletRigidObject.
@@ -99,8 +98,12 @@ class BulletRigidObject : public BulletBase,
    *
    */
   virtual void setSleep(bool sleep) override {
+    if (sleep)
+      updateNodes(true);
     bObjectRigidBody_->activate(!sleep);
   }
+
+  virtual void updateNodes(bool force = false) override;
 
   /**
    * @brief Set the @ref MotionType of the object. The object can be set to @ref

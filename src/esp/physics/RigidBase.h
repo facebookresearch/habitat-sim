@@ -112,6 +112,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual bool finalizeObject() = 0;
 
+
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidBase. This is
@@ -162,6 +163,8 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    *
    */
   virtual void setSleep(CORRADE_UNUSED bool sleep) {}
+
+  virtual void updateNodes(CORRADE_UNUSED bool force = false) {}
 
   /**
    * @brief Get the @ref MotionType of the object. See @ref setMotionType.

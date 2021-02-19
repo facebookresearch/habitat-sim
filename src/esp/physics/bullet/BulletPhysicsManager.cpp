@@ -227,12 +227,6 @@ void BulletPhysicsManager::stepPhysics(double dt) {
       bWorld_->stepSimulation(dt, /*maxSubSteps*/ 10000, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
   m_recentNumSubStepsTaken = numSubStepsTaken;
-
-  // update the multi-body SceneNodes TODO: could the be wrapped into some
-  // automated update?
-  for (auto& ao : existingArticulatedObjects_) {
-    ao.second->updateNodes();
-  }
 }
 
 void BulletPhysicsManager::setMargin(const int physObjectID,

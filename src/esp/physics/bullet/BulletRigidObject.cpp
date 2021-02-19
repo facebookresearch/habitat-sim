@@ -41,8 +41,7 @@ BulletRigidObject::BulletRigidObject(
     std::shared_ptr<std::map<const btCollisionObject*, int> >
         collisionObjToObjIds)
     : BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)),
-      RigidObject(rigidBodyNode, objectId, resMgr),
-      MotionState(*rigidBodyNode) {}
+      RigidObject(rigidBodyNode, objectId, resMgr) {}
 
 BulletRigidObject::~BulletRigidObject() {
   if (!isActive()) {
@@ -347,12 +346,8 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
     }
   }
 
-  //! Bullet rigid body setup
-  auto motionState =
-      (mt == MotionType::STATIC) ? nullptr : &(this->btMotionState());
-
   btRigidBody::btRigidBodyConstructionInfo info =
-      btRigidBody::btRigidBodyConstructionInfo(mass, motionState,
+      btRigidBody::btRigidBodyConstructionInfo(mass, nullptr,
                                                bObjectShape_.get(), bInertia);
 
   if (!isCollidable_) {
@@ -402,6 +397,8 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
         CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject));
     setSleep(false);
   }
+
+  updateNodes(true);
 }
 
 void BulletRigidObject::activateCollisionIsland() {
@@ -494,6 +491,13 @@ void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
   bWorld_->addRigidBody(bObjectRigidBody_.get(), int(group),
                         CollisionGroupHelper::getMaskForGroup(group));
+}
+
+void BulletRigidObject::updateNodes(bool force) {
+  if (force || isActive()) {
+    node().setTransformation(
+        Mn::Matrix4{bObjectRigidBody_->getWorldTransform()});
+  }
 }
 
 }  // namespace physics

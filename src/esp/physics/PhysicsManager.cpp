@@ -242,6 +242,14 @@ void PhysicsManager::stepPhysics(double dt) {
   }
 }
 
+void PhysicsManager::updateNodes(bool force) {
+  for (auto &o : existingObjects_)
+    o.second->updateNodes(force);
+
+  for (auto &ao : existingArticulatedObjects_)
+    ao.second->updateNodes(force);
+}
+
 //! Profile function. In BulletPhysics stationary objects are
 //! marked as inactive to speed up simulation. This function
 //! helps checking how many objects are active/inactive at any
