@@ -146,7 +146,7 @@ def box_drop_test(
             ]
             obj_template = obj_templates_mgr.get_template_by_ID(object_ids[-1])
 
-            if "scale" in obj.keys():
+            if "scale" in obj:
                 obj_template.scale *= obj["scale"]
             obj_handle = obj_template.render_asset_handle
 
@@ -157,7 +157,7 @@ def box_drop_test(
 
                 new_obj_template = obj_templates_mgr.get_template_by_handle(new_handle)
 
-                if "scale" in obj.keys():
+                if "scale" in obj:
                     new_obj_template.scale *= obj["scale"]
 
                 obj_templates_mgr.register_template(

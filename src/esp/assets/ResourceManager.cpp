@@ -93,6 +93,8 @@ ResourceManager::ResourceManager(
 #endif
 {
 #ifdef ESP_BUILD_WITH_VHACD
+  // Destructor is protected, using Clean() and Release() to destruct interface
+  // (this is how it is used VHACD examples.)
   interfaceVHACD = VHACD::CreateVHACD();
 #endif
   initDefaultLightSetups();
@@ -101,8 +103,10 @@ ResourceManager::ResourceManager(
 }
 
 ResourceManager::~ResourceManager() {
+#ifdef ESP_BUILD_WITH_VHACD
   interfaceVHACD->Clean();
   interfaceVHACD->Release();
+#endif
 }
 
 void ResourceManager::buildImporters() {
@@ -1242,7 +1246,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   if (creation.scale) {
     // need a new node for scaling because motion state will override scale
     // set at the physical node
-    // perf etgebgutecgfeucdluivtrrtruvrgunc: avoid this if unit scale
+    // perf todo: avoid this if unit scale
     newNode.setScaling(*creation.scale);
 
     // legacy quirky behavior: only add this node to viscache if using scaling
@@ -2282,7 +2286,6 @@ void ResourceManager::createConvexHullDecomposition(
     // for each convex hull, transfer the data to a newly created  MeshData
     interfaceVHACD->GetConvexHull(p, ch);
 
-    // std::vector<Magnum::UnsignedInt> indices;
     std::vector<Magnum::Vector3> positions;
 
     // add the vertices
@@ -2294,16 +2297,8 @@ void ResourceManager::createConvexHullDecomposition(
     }
 
     // add indices
-    /*indices.resize(ch.m_nTriangles * 3);
-    for (size_t ix = 0; ix < ch.m_nTriangles * 3; ix++) {
-      indices[ix] = ch.m_triangles[ix];
-    }*/
     Cr::Containers::ArrayView<const Mn::UnsignedInt> indices{
         ch.m_triangles, ch.m_nTriangles * 3};
-    // Cr::Containers::ArrayView<const Mn::Vector3>
-    // positions{std::dynamic_cast<Mn::Vector3>(ch.m_points), ch.m_nPoints};
-    // auto positions = Cr::Containers::arrayCast<Mn::Vector3>(
-    //    Cr::Containers::arrayView(ch.m_points, ch.m_nPoints));
 
     // create an owned MeshData
     Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::owned(
@@ -2316,6 +2311,7 @@ void ResourceManager::createConvexHullDecomposition(
                             {Mn::Trade::MeshAttributeData{
                                 Mn::Trade::MeshAttribute::Position,
                                 Cr::Containers::arrayView(positions)}}});
+
     // Create a GenericMeshData (needsNormals_ = true and uploadBuffersToGPU in
     // order to render the collision asset)
     genCHMeshData = std::make_unique<GenericMeshData>(true);
