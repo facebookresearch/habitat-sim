@@ -36,7 +36,8 @@ namespace physics {
  * body. */
 struct VelocityControl {
  public:
-  virtual ~VelocityControl(){};
+  virtual ~VelocityControl() = default;
+  ;
 
   /**@brief Constant linear velocity. */
   Magnum::Vector3 linVel;
@@ -102,7 +103,7 @@ class RigidObject : public RigidBase {
   /**
    * @brief Virtual destructor for a @ref RigidObject.
    */
-  virtual ~RigidObject() {}
+  ~RigidObject() override = default;
 
   /**
    * @brief Initializes the @ref RigidObject that inherits from this class

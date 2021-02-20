@@ -42,7 +42,8 @@ class CubeMapCamera : public RenderCamera {
                          const Magnum::Vector3& eye,
                          const Magnum::Vector3& target,
                          const Magnum::Vector3& up);
-  virtual ~CubeMapCamera(){};
+  ~CubeMapCamera() override = default;
+  ;
   /**
    * @brief Move the camera towards a specified cube face
    * ```

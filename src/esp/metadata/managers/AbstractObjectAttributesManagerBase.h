@@ -40,7 +40,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
                                   const std::string& JSONTypeExt)
       : AttributesManager<T, Access>::AttributesManager(attrType, JSONTypeExt) {
   }
-  virtual ~AbstractObjectAttributesManager() = default;
+  ~AbstractObjectAttributesManager() override = default;
 
   /**
    * @brief Creates an instance of an object or stage template. The passed

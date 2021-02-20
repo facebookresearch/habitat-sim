@@ -25,13 +25,13 @@ class PTexMeshDrawable : public Drawable {
                             DrawableGroup* group = nullptr);
 
   static constexpr char SHADER_KEY[] = "PTexMeshShader";
-  virtual Magnum::GL::Mesh& getVisualizerMesh() override {
+  Magnum::GL::Mesh& getVisualizerMesh() override {
     return visualizerTriangleMesh_;
   }
 
  protected:
-  virtual void draw(const Magnum::Matrix4& transformationMatrix,
-                    Magnum::SceneGraph::Camera3D& camera) override;
+  void draw(const Magnum::Matrix4& transformationMatrix,
+            Magnum::SceneGraph::Camera3D& camera) override;
 
   Magnum::GL::Texture2D& atlasTexture_;
 #ifndef CORRADE_TARGET_APPLE

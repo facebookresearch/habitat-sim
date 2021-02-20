@@ -5,6 +5,8 @@
 #ifndef ESP_METADATA_ATTRIBUTES_PRIMITIVEASSETATTRIBUTES_H_
 #define ESP_METADATA_ATTRIBUTES_PRIMITIVEASSETATTRIBUTES_H_
 
+#include <utility>
+
 #include "AttributesBase.h"
 
 namespace esp {
@@ -40,7 +42,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   }  // ctor
 
   // necessary since abstract
-  virtual ~AbstractPrimitiveAttributes() = default;
+  ~AbstractPrimitiveAttributes() override = default;
 
   // handle is set internally based on attributes configuration
   // setting externally is prohibited
@@ -135,7 +137,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
  private:
   // Should never change, only set by ctor
   void setPrimObjClassName(std::string primObjClassName) {
-    setString("primObjClassName", primObjClassName);
+    setString("primObjClassName", std::move(primObjClassName));
   }
 
   // Should never change, only set by ctor

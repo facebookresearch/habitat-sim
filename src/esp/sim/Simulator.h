@@ -6,6 +6,8 @@
 #define ESP_SIM_SIMULATOR_H_
 
 #include <Corrade/Utility/Assert.h>
+
+#include <utility>
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
@@ -848,7 +850,7 @@ class Simulator {
    * @brief Set this simulator's MetadataMediator
    */
   void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
-    metadataMediator_ = _metadataMediator;
+    metadataMediator_ = std::move(_metadataMediator);
     // set newly added MM to have current Simulator Config
     metadataMediator_->setSimulatorConfiguration(this->config_);
   }
@@ -863,7 +865,8 @@ class Simulator {
       const assets::RenderAssetInstanceCreationInfo& creation);
 
  protected:
-  Simulator(){};
+  Simulator() = default;
+  ;
   /**
    * @brief Builds a scene instance and populates it with initial object layout,
    * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes

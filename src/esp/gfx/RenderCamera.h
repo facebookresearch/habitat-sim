@@ -47,7 +47,7 @@ class RenderCamera : public MagnumCamera {
    * @brief Constructor
    * @param node, the scene node to which the camera is attached
    */
-  RenderCamera(scene::SceneNode& node);
+  explicit RenderCamera(scene::SceneNode& node);
   /**
    * @brief Constructor
    * @param node, the scene node to which the camera is attached
@@ -92,7 +92,7 @@ class RenderCamera : public MagnumCamera {
   /**
    * @brief destructor
    */
-  virtual ~RenderCamera() {
+  ~RenderCamera() override {
     // do nothing, let magnum handle the camera
   }
 

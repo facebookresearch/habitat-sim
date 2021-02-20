@@ -86,7 +86,8 @@ struct MeshMetaData {
   MeshTransformNode root;
 
   /** @brief Default constructor. */
-  MeshMetaData(){};
+  MeshMetaData() = default;
+  ;
 
   /** @brief  Constructor. */
   MeshMetaData(int meshStart,

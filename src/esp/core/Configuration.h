@@ -31,7 +31,7 @@ class Configuration {
     return set(key, value);
   }
   bool setInt(const std::string& key, int value) { return set(key, value); }
-  bool setString(const std::string& key, std::string value) {
+  bool setString(const std::string& key, const std::string& value) {
     return set(key, value);
   }
   bool setVec3(const std::string& key, const Magnum::Vector3& value) {

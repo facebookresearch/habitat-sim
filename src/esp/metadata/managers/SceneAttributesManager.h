@@ -184,7 +184,7 @@ class SceneAttributesManager
    * @param handle Ignored.
    * @return false
    */
-  virtual bool isValidPrimitiveAttributes(
+  bool isValidPrimitiveAttributes(
       CORRADE_UNUSED const std::string& handle) override {
     return false;
   }

@@ -104,7 +104,7 @@ class impl_ptr {
   static_assert(!std::is_array<T>::value,
                 "impl_ptr specialization for arrays is not implemented");
   struct dummy_t_ {
-    int dummy__;
+    int dummy_;
   };
 
  public:
@@ -122,7 +122,8 @@ class impl_ptr {
   SPIMPL_CONSTEXPR impl_ptr() SPIMPL_NOEXCEPT : ptr_(nullptr, deleter_type{}),
                                                 copier_(copier_type{}) {}
 
-  SPIMPL_CONSTEXPR impl_ptr(std::nullptr_t) SPIMPL_NOEXCEPT : impl_ptr() {}
+  SPIMPL_CONSTEXPR explicit impl_ptr(std::nullptr_t) SPIMPL_NOEXCEPT
+      : impl_ptr() {}
 
   template <class D, class C>
   impl_ptr(
@@ -136,10 +137,11 @@ class impl_ptr {
         copier_(std::forward<C>(c)) {}
 
   template <class U>
-  impl_ptr(U* u,
-           typename std::enable_if<std::is_convertible<U*, pointer>::value &&
-                                       is_default_manageable::value,
-                                   dummy_t_>::type = dummy_t_()) SPIMPL_NOEXCEPT
+  explicit impl_ptr(
+      U* u,
+      typename std::enable_if<std::is_convertible<U*, pointer>::value &&
+                                  is_default_manageable::value,
+                              dummy_t_>::type = dummy_t_()) SPIMPL_NOEXCEPT
       : impl_ptr(u, &details::default_delete<T>, &details::default_copy<T>) {}
 
   impl_ptr(const impl_ptr& r) : impl_ptr(r.clone()) {}
@@ -162,10 +164,11 @@ class impl_ptr {
 #endif
 
   template <class U>
-  impl_ptr(std::unique_ptr<U>&& u,
-           typename std::enable_if<std::is_convertible<U*, pointer>::value &&
-                                       is_default_manageable::value,
-                                   dummy_t_>::type = dummy_t_()) SPIMPL_NOEXCEPT
+  explicit impl_ptr(
+      std::unique_ptr<U>&& u,
+      typename std::enable_if<std::is_convertible<U*, pointer>::value &&
+                                  is_default_manageable::value,
+                              dummy_t_>::type = dummy_t_()) SPIMPL_NOEXCEPT
       : ptr_(u.release(), &details::default_delete<T>),
         copier_(&details::default_copy<T>) {}
 
@@ -181,7 +184,7 @@ class impl_ptr {
         copier_(std::forward<C>(c)) {}
 
   template <class U, class D, class C>
-  impl_ptr(
+  explicit impl_ptr(
       impl_ptr<U, D, C>&& u,
       typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                                   std::is_convertible<D, deleter_type>::value &&

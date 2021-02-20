@@ -273,7 +273,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    */
   inline const std::string getFullAttrNameFromStr(
       const std::string& attrName,
-      const esp::core::ManagedContainerBase::ptr attrMgr) {
+      const esp::core::ManagedContainerBase::ptr& attrMgr) {
     auto handleList = attrMgr->getObjectHandlesBySubstring(attrName);
     if (handleList.size() > 0) {
       return handleList[0];

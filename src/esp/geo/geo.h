@@ -138,7 +138,8 @@ struct Ray {
   Mn::Vector3 origin;
   Mn::Vector3 direction;
 
-  Ray(){};
+  Ray() = default;
+  ;
 
   Ray(Mn::Vector3 _origin, Mn::Vector3 _direction)
       : origin(_origin), direction(_direction){};

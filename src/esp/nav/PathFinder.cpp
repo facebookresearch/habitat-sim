@@ -16,7 +16,7 @@
 #include <Corrade/Containers/Optional.h>
 
 #include <cstdio>
-#define _USE_MATH_DEFINES
+#define USE_MATH_DEFINES
 #include <cmath>
 #include <limits>
 

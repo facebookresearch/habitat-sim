@@ -90,10 +90,10 @@ class SceneNode : public MagnumObject {
   const Magnum::Range3D& getCumulativeBB() const { return cumulativeBB_; };
 
   //! set local bounding box for meshes stored at this node
-  void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = std::move(meshBB); };
+  void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = meshBB; };
 
   //! set the global bounding box for mesh stored in this node
-  void setAbsoluteAABB(Magnum::Range3D aabb) { aabb_ = std::move(aabb); };
+  void setAbsoluteAABB(Magnum::Range3D aabb) { aabb_ = aabb; };
 
   //! return the frustum plane in last frame that culls this node
   int getFrustumPlaneIndex() const { return frustumPlaneIndex; };
@@ -105,7 +105,7 @@ class SceneNode : public MagnumObject {
   // DO not make the following constructor public!
   // it can ONLY be called from SceneGraph class to initialize the scene graph
   friend class SceneGraph;
-  SceneNode(MagnumScene& parentNode);
+  explicit SceneNode(MagnumScene& parentNode);
 
   // the type of the attached object (e.g., sensor, agent etc.)
   SceneNodeType type_ = SceneNodeType::EMPTY;
