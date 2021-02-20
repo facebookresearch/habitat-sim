@@ -866,7 +866,6 @@ class Simulator {
 
  protected:
   Simulator() = default;
-  ;
   /**
    * @brief Builds a scene instance and populates it with initial object layout,
    * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes

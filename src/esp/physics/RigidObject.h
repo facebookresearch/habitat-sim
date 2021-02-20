@@ -37,7 +37,6 @@ namespace physics {
 struct VelocityControl {
  public:
   virtual ~VelocityControl() = default;
-  ;
 
   /**@brief Constant linear velocity. */
   Magnum::Vector3 linVel;

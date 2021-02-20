@@ -83,7 +83,6 @@ class BaseMesh {
 
   /** @brief Destructor */
   virtual ~BaseMesh() = default;
-  ;
 
   /**
    * @brief Set the @ref SupportedMeshType, @ref type_, of this object.
