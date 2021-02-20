@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import habitat_sim
+from habitat_sim.utils import common as ut
+from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils import viz_utils as vut
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -17,11 +19,6 @@ output_path = os.path.join(dir_path, "physics_benchmarking_output/")
 # Define Helper Functions (Taken from rigid_object_tutorial.py)
 
 
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
-
-
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
@@ -30,16 +27,18 @@ def make_configuration():
     backend_cfg.enable_physics = True
 
     # sensor configurations
-    sensor_specs = []
-    sensor_spec = habitat_sim.CameraSensorSpec()
-    sensor_spec.uuid = "rgba_camera_1stperson"
-    sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-    sensor_spec.resolution = [544, 720]
-    sensor_specs.append(sensor_spec)
+    sensors = {
+        "rgba_camera_1stperson": {
+            "sensor_type": habitat_sim.SensorType.COLOR,
+            "resolution": [544, 720],
+            "position": [0.0, 1.5, 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
+        }
+    }
 
-    # agent configuration
+    # agent configurations
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sensor_specs
+    agent_cfg.sensor_specifications = sut.make_sensor_specs(sensors)
 
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
@@ -169,7 +168,7 @@ def box_drop_test(
 
         # [/basics]
         # return total time to run, time to load, time to simulate physics, time for rendering
-        remove_all_objects(sim)
+        sut.remove_all_objects(sim)
     return data
 
 

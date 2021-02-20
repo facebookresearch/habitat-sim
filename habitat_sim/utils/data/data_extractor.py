@@ -6,6 +6,7 @@ import habitat_sim
 from habitat_sim import bindings as hsim
 from habitat_sim import registry as registry
 from habitat_sim.agent.agent import AgentConfiguration, AgentState
+from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor, TopdownView
 
@@ -276,33 +277,26 @@ class ImageExtractor:
                 "sensor_type": hsim.SensorType.COLOR,
                 "resolution": [settings["height"], settings["width"]],
                 "position": [0.0, settings["sensor_height"], 0.0],
+                "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
             },
             "depth_sensor": {  # active if sim_settings["depth_sensor"]
                 "sensor_type": hsim.SensorType.DEPTH,
                 "resolution": [settings["height"], settings["width"]],
                 "position": [0.0, settings["sensor_height"], 0.0],
+                "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
             },
             "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
                 "sensor_type": hsim.SensorType.SEMANTIC,
                 "resolution": [settings["height"], settings["width"]],
                 "position": [0.0, settings["sensor_height"], 0.0],
+                "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
             },
         }
 
-        # create sensor specifications
-        sensor_specs = []
-        for sensor_uuid, sensor_params in sensors.items():
-            if settings[sensor_uuid]:
-                sensor_spec = hsim.CameraSensorSpec()
-                sensor_spec.uuid = sensor_uuid
-                sensor_spec.sensor_type = sensor_params["sensor_type"]
-                sensor_spec.resolution = sensor_params["resolution"]
-                sensor_spec.position = sensor_params["position"]
-                sensor_spec.gpu2gpu_transfer = False
-                sensor_specs.append(sensor_spec)
-
         # create agent specifications
         agent_cfg = AgentConfiguration()
-        agent_cfg.sensor_specifications = sensor_specs
+        agent_cfg.sensor_specifications = sut.make_sensor_specs_from_settings(
+            sensors, settings
+        )
 
         return habitat_sim.Configuration(sim_cfg, [agent_cfg])

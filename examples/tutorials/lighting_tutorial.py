@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 
 import habitat_sim
 from habitat_sim.gfx import LightInfo, LightPositionModel
+from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils.common import quat_from_angle_axis
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -39,11 +40,6 @@ def get_obs(sim, show, save):
     if show:
         show_img(obs, save)
     return obs
-
-
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
 
 
 def place_agent(sim):
@@ -172,7 +168,7 @@ def main(show_imgs=True, save_imgs=False):
 
     # [/example 5]
 
-    remove_all_objects(sim)
+    sut.remove_all_objects(sim)
 
     # [example 6]
 

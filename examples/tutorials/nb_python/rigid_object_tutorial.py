@@ -34,6 +34,7 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
+from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils import viz_utils as vut
 
 if "google.colab" in sys.modules:
@@ -44,11 +45,6 @@ dir_path = repo.working_tree_dir
 # %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(dir_path, "examples/tutorials/rigid_object_tutorial_output/")
-
-
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
 
 
 def place_agent(sim):
@@ -79,34 +75,27 @@ def make_configuration():
             "resolution": camera_resolution,
             "position": [0.0, 0.6, 0.0],
             "orientation": [0.0, 0.0, 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
         "depth_camera_1stperson": {
             "sensor_type": habitat_sim.SensorType.DEPTH,
             "resolution": camera_resolution,
             "position": [0.0, 0.6, 0.0],
             "orientation": [0.0, 0.0, 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
         "rgba_camera_3rdperson": {
             "sensor_type": habitat_sim.SensorType.COLOR,
             "resolution": camera_resolution,
             "position": [0.0, 1.0, 0.3],
             "orientation": [-45, 0.0, 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
     }
 
-    sensor_specs = []
-    for sensor_uuid, sensor_params in sensors.items():
-        sensor_spec = habitat_sim.CameraSensorSpec()
-        sensor_spec.uuid = sensor_uuid
-        sensor_spec.sensor_type = sensor_params["sensor_type"]
-        sensor_spec.resolution = sensor_params["resolution"]
-        sensor_spec.position = sensor_params["position"]
-        sensor_spec.orientation = sensor_params["orientation"]
-        sensor_specs.append(sensor_spec)
-
     # agent configuration
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sensor_specs
+    agent_cfg.sensor_specifications = sut.make_sensor_specs(sensors)
 
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
@@ -183,7 +172,7 @@ if __name__ == "__main__":
 
     # [/basics]
 
-    remove_all_objects(sim)
+    sut.remove_all_objects(sim)
     # %%
     # [dynamic_control]
 
@@ -250,7 +239,7 @@ if __name__ == "__main__":
         )
 
     # [/dynamic_control]
-    remove_all_objects(sim)
+    sut.remove_all_objects(sim)
     # %%
     # [kinematic_interactions]
 
@@ -284,7 +273,7 @@ if __name__ == "__main__":
 
     # [/kinematic_interactions]
 
-    remove_all_objects(sim)
+    sut.remove_all_objects(sim)
     # %%
     # [kinematic_update]
     observations = []
@@ -367,7 +356,7 @@ if __name__ == "__main__":
         )
 
     # [/local_velocity_control]
-    remove_all_objects(sim)
+    sut.remove_all_objects(sim)
     # %%
     # [embodied_agent]
 
