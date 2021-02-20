@@ -153,7 +153,6 @@ def make_cfg(settings):
     agent_cfg.sensor_specifications = sut.make_sensor_specs_from_settings(
         sensors, settings
     )
-
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
 
