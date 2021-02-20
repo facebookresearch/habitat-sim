@@ -1,0 +1,134 @@
+:root {
+  /* Text properties */
+  --font: 'Source Sans Pro', sans-serif;
+  --code-font: 'Source Code Pro', monospace;
+  --font-size: 16px;
+  --code-font-size: 0.9em; /* *not* rem, so it follows surrounding font size */
+  --line-height: normal;
+  --paragraph-indent: 0.0rem;
+  --paragraph-align: justify;
+  --link-decoration: underline;
+  --link-decoration-nav: none;
+  --link-decoration-heading: none;
+  --nav-brand-case: uppercase;
+  --nav-menu-case: none;
+  --nav-heading-case: uppercase;
+  --nav-categories-case: lowercase;
+  --landing-header-case: lowercase;
+  --heading-font-weight: 600;
+
+  /* Shapes */
+  --border-radius: 0.2rem;
+
+  /* Basics */
+  --background-color: #ffffff;
+  --color: #171717;
+  --line-color: #ededed;
+  --link-color: #478cc3;
+  --link-active-color: #73afdf;
+  --mark-color: #2f83cc;
+  --mark-background-color: #c7cf2f;
+  --code-color: #000000;
+  --code-inverted-color: rgba(0, 0, 0, 0.33);
+  --console-color: #e6e6e6;
+  --console-inverted-color: rgba(230, 230, 230, 0.33);
+  /* This is simply color-picked --code-note-background-color on top of
+     --background-color */
+  --code-background-color: #ededed;
+  --code-note-background-color: rgba(237, 237, 237, 0.5);
+  --console-background-color: #161616;
+  --button-background-color: #ffffff;
+
+  /* Header */
+  --header-border-width: 0 0 0.25rem 0;
+  --header-color: #ffffff;
+  --header-breadcrumb-color: #94bfed;
+  --header-background-color: #478cc3;
+  --header-background-color-landing: rgba(99, 161, 228, 0.75);
+  --header-background-color-jumbo: rgba(99, 161, 228, 0.25);
+  --header-link-color: #f6f6f6;
+  --header-link-active-color: #cee7f9;
+  --header-link-current-color: #ffffff;
+  --header-link-active-background-color: #579dd5;
+  --header-link-active-background-color-semi: rgba(122, 175, 232, 0.5);
+
+  /* Footer */
+  --footer-font-size: 0.85rem;
+  --footer-color: #000000;
+  --footer-background-color: #ededed;
+  --footer-link-color: #478cc3;
+  --footer-link-active-color: #73afdf;
+
+  /* Cover image */
+  --cover-image-background-color: #0f1217;
+
+  /* Search (used only by m-documentation.css) */
+  --search-overlay-color: rgba(255, 255, 255, 0.75);
+  --search-background-color: #d8e3ec;
+
+  /* Article */
+  --article-header-color: #0f0f0f;
+  --article-footer-color: #5c5c5c;
+  --article-heading-color: #478cc3;
+  --article-heading-active-color: #73afdf;
+
+  /* Right navigation panel */
+  --navpanel-link-color: #333333;
+  --navpanel-link-active-color: #000000;
+
+  /* Plots */
+  --plot-background-color: #f6f6f6;
+  --plot-error-color: #000000;
+
+  /* Colored components */
+  --default-color: #171717;
+  --default-link-active-color: #73afdf;
+  --default-filled-color: #171717;
+  --default-filled-background-color: #f6f6f6;
+  --default-filled-link-color: #478cc3;
+  --default-filled-link-active-color: #73afdf;
+
+  --primary-color: #478cc3;
+  --primary-link-active-color: #579dd5;
+  --primary-filled-color: #2f363f;
+  --primary-filled-background-color: #a5c2db;
+  --primary-filled-link-color: #2a75b6;
+  --primary-filled-link-active-color: #2f363f;
+
+  --success-color: #3bd267;
+  --success-link-active-color: #acecbe;
+  --success-filled-color: #acecbe;
+  --success-filled-background-color: #2a703f;
+  --success-filled-link-color: #3bd267;
+  --success-filled-link-active-color: #acecbe;
+
+  --warning-color: #6d7207;
+  --warning-link-active-color: #e9ecae;
+  --warning-filled-color: #6d7207;
+  --warning-filled-background-color: #f2f3d4;
+  --warning-filled-link-color: #b8bf2b;
+  --warning-filled-link-active-color: #e9ecae;
+
+  --danger-color: #cd3431;
+  --danger-link-active-color: #ff9391;
+  --danger-filled-color: #ff9391;
+  --danger-filled-background-color: #702b2a;
+  --danger-filled-link-color: #d85c59;
+  --danger-filled-link-active-color: #ff9391;
+
+  --info-color: #2f83cc;
+  --info-link-active-color: #5297d7;
+  --info-filled-color: #a5caeb;
+  --info-filled-background-color: #2a4f70;
+  --info-filled-link-color: #5297d7;
+  --info-filled-link-active-color: #a5caeb;
+
+  --dim-color: #6b6b6b;
+  --dim-link-color: #505b7d;
+  --dim-link-active-color: #a4acc4;
+  --dim-filled-color: #6b6b6b;
+  --dim-filled-background-color: #2d3236;
+  --dim-filled-link-color: #505b7d;
+  --dim-filled-link-active-color: #a4acc4;
+  --dim-button-active-color: #505b7d;
+}

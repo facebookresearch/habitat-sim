@@ -449,7 +449,7 @@ def make_cfg(settings):
 
     # Here you can specify the amount of displacement in a forward action and the turn angle
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sut.make_sensor_specs(sensors)
+    agent_cfg.sensor_specifications = make_sensor_specs(sensors)
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])
 

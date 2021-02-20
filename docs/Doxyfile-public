@@ -1,0 +1,11 @@
+@INCLUDE = Doxyfile-mcss
+
+OUTPUT_DIRECTORY       = ../build/docs-public/
+
+GENERATE_TAGFILE       = ../build/docs-public/habitat-cpp.tag
+
+##! M_SEARCH_DOWNLOAD_BINARY = YES
+##! M_SEARCH_BASE_URL = https://aihabitat.org/docs/habitat-sim/
+##! M_SEARCH_EXTERNAL_URL = "https://google.com/search?q=site:aihabitat.org+{query}"
+
+# kate: hl Doxyfile
