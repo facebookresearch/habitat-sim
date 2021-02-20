@@ -51,6 +51,7 @@ import numpy as np
 
 import habitat_sim
 from habitat_sim.utils import gfx_replay_utils
+from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils import viz_utils as vut
 
 if "google.colab" in sys.modules:
@@ -61,12 +62,6 @@ dir_path = repo.working_tree_dir
 # %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(dir_path, "examples/tutorials/replay_tutorial_output/")
-
-
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
-
 
 # %% [markdown]
 # ## Configure sim, including enable_gfx_replay_save flag.
@@ -270,7 +265,7 @@ if make_video:
 
 sim.gfx_replay_manager.write_saved_keyframes_to_file(replay_filepath)
 
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 
 # %% [markdown]
 # ## Reconfigure simulator for replay playback.

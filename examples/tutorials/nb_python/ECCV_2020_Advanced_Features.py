@@ -65,6 +65,7 @@ from PIL import Image
 
 import habitat_sim
 from habitat_sim.utils import common as ut
+from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils import viz_utils as vut
 
 try:
@@ -420,18 +421,21 @@ def make_cfg(settings):
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
             "orientation": [settings["sensor_pitch"], 0.0, 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
         "depth_sensor_1st_person": {
             "sensor_type": habitat_sim.SensorType.DEPTH,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
             "orientation": [settings["sensor_pitch"], 0.0, 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
         "semantic_sensor_1st_person": {
             "sensor_type": habitat_sim.SensorType.SEMANTIC,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
             "orientation": [settings["sensor_pitch"], 0.0, 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
         # configure the 3rd person cam specifically:
         "color_sensor_3rd_person": {
@@ -439,24 +443,13 @@ def make_cfg(settings):
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"] + 0.2, 0.2],
             "orientation": np.array([-math.pi / 4, 0, 0]),
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
     }
 
-    sensor_specs = []
-    for sensor_uuid, sensor_params in sensors.items():
-        if settings[sensor_uuid]:
-            sensor_spec = habitat_sim.CameraSensorSpec()
-            sensor_spec.uuid = sensor_uuid
-            sensor_spec.sensor_type = sensor_params["sensor_type"]
-            sensor_spec.resolution = sensor_params["resolution"]
-            sensor_spec.position = sensor_params["position"]
-            sensor_spec.orientation = sensor_params["orientation"]
-
-            sensor_specs.append(sensor_spec)
-
     # Here you can specify the amount of displacement in a forward action and the turn angle
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sensor_specs
+    agent_cfg.sensor_specifications = sut.make_sensor_specs(sensors)
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
@@ -512,16 +505,10 @@ def make_simulator_from_settings(sim_settings):
 # @title Define Simulation Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
-# @markdown - remove_all_objects
 # @markdown - simulate
 # @markdown - init_camera_track_config
 # @markdown - restore_camera_track_config
 # @markdown - camera_track_simulate
-
-
-def remove_all_objects(sim):
-    for obj_id in sim.get_existing_object_ids():
-        sim.remove_object(obj_id)
 
 
 def simulate(sim, dt=1.0, get_frames=True):
@@ -751,7 +738,7 @@ def make_clear_all_objects_button():
         return
 
     def on_clear_click(b):
-        remove_all_objects(sim)
+        sut.remove_all_objects(sim)
 
     clear_objs_button = set_button_launcher("Clear all objects")
     clear_objs_button.on_click(on_clear_click)
@@ -833,7 +820,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # %%
 # @markdown This example demonstrates updating the agent state to follow the motion of an object during simulation.
 
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 visual_sensor = sim._sensors["color_sensor_1st_person"]
 initial_sensor_position = np.array(visual_sensor._spec.position)
 initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
@@ -891,7 +878,7 @@ visual_sensor._spec.orientation = initial_sensor_orientation
 visual_sensor._sensor_object.set_transformation_from_spec()
 # put the agent back
 sim.reset()
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 
 
 # %% [markdown]
@@ -931,7 +918,7 @@ random.seed(seed)
 sim.seed(seed)
 np.random.seed(seed)
 
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 
 # add an object and plot the COM on the image
 obj_id_1 = sim.add_object_by_handle(sel_file_obj_handle)
@@ -947,7 +934,7 @@ com_2d = get_2d_point(
 )
 if display:
     display_sample(obs["color_sensor_1st_person"], key_points=[com_2d])
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 
 # %% [markdown]
 # ## Advanced Topic: Configurable Semantic IDs
@@ -980,7 +967,7 @@ make_simulator_from_settings(sim_settings)
 # @markdown In this example, we load a box asset with each face as a separate component with its own SceneNode. We demonstrate the result of modiyfing the associated semantic ids via object templates, the Simulator API, and the SceneNode property.
 # fmt: on
 
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 observations = []
 
 # @markdown Set the initial object orientation via local Euler angle (degrees):
@@ -1038,7 +1025,7 @@ if display:
             obs["color_sensor_1st_person"],
             semantic_obs=obs["semantic_sensor_1st_person"],
         )
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 
 # %% [markdown]
 # ## Advanced Topic : Object and Primitive Asset Customization
@@ -1082,7 +1069,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # @markdown Running this will demonstrate how to create objects of varying size from a file-based template by iteratively modifying the template's scale value.  This will also demonstrate how to delete unwanted templates from the library.
 
 # clear all objects and observations
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 observations = []
 # save initial camera state
 init_config = init_camera_track_config(sim)
@@ -1173,7 +1160,7 @@ make_clear_all_objects_button()
 # @markdown Two objects will be created in this cell, one to the left with the original template and one to the right with the edited configuration.
 
 # clear all objects and observations
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 observations = []
 # save initial camera state for tracking
 init_config = init_camera_track_config(sim)
@@ -1303,7 +1290,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # @markdown This example shows the primitives that are available.  One of each type is instanced with default values and simulated.
 
 # clear all objects and observations
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 observations = []
 # save initial camera state for tracking
 init_config = init_camera_track_config(sim)
@@ -1715,7 +1702,7 @@ edit_wireframe_UVSphere(UVSphere_wireframe_template)
 # %%
 # @title ####Using the modifications set in the previous cells, instantiate examples of all available solid and wireframe primitives.{ display-mode: "form" }
 # clear all objects and observations
-remove_all_objects(sim)
+sut.remove_all_objects(sim)
 observations = []
 # save initial camera state for tracking
 init_config = init_camera_track_config(sim)

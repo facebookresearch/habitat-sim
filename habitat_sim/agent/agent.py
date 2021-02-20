@@ -107,9 +107,7 @@ class AgentConfiguration(object):
     linear_friction: float = 0.5
     angular_friction: float = 1.0
     coefficient_of_restitution: float = 0.0
-    sensor_specifications: List[hsim.SensorSpec] = attr.Factory(
-        lambda: [hsim.CameraSensorSpec()]
-    )
+    sensor_specifications: List[hsim.SensorSpec] = []
     action_space: Dict[Any, ActionSpec] = attr.Factory(_default_action_space)
     body_type: str = "cylinder"
 
@@ -173,7 +171,7 @@ class Agent(object):
                 self._add_sensor(spec, modify_agent_config=False)
 
     def _add_sensor(
-        self, spec: hsim.CameraSensorSpec, modify_agent_config: bool = True
+        self, spec: hsim.SensorSpec, modify_agent_config: bool = True
     ) -> None:
         assert (
             spec.uuid not in self._sensors

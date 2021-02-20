@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import habitat_sim
+from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils.common import quat_from_angle_axis
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -73,26 +74,19 @@ def make_configuration(scene_file):
             "sensor_type": habitat_sim.SensorType.COLOR,
             "resolution": camera_resolution,
             "position": [0.0, 1.5, 0.0],  # ::: fix y to be 0 later
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
         "semantic_camera": {
             "sensor_type": habitat_sim.SensorType.SEMANTIC,
             "resolution": camera_resolution,
             "position": [0.0, 1.5, 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
     }
 
-    sensor_specs = []
-    for sensor_uuid, sensor_params in sensors.items():
-        sensor_spec = habitat_sim.CameraSensorSpec()
-        sensor_spec.uuid = sensor_uuid
-        sensor_spec.sensor_type = sensor_params["sensor_type"]
-        sensor_spec.resolution = sensor_params["resolution"]
-        sensor_spec.position = sensor_params["position"]
-        sensor_specs.append(sensor_spec)
-
     # agent configuration
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sensor_specs
+    agent_cfg.sensor_specifications = sut.make_sensor_specs(sensors)
 
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 

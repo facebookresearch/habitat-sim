@@ -63,6 +63,7 @@ from PIL import Image
 
 import habitat_sim
 from habitat_sim.utils import common as utils
+from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils import viz_utils as vut
 
 # %cd /content/habitat-sim
@@ -315,33 +316,27 @@ def make_cfg(settings):
             "sensor_type": habitat_sim.SensorType.COLOR,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
         "depth_sensor": {
             "sensor_type": habitat_sim.SensorType.DEPTH,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
         "semantic_sensor": {
             "sensor_type": habitat_sim.SensorType.SEMANTIC,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
         },
     }
 
-    sensor_specs = []
-    for sensor_uuid, sensor_params in sensors.items():
-        if settings[sensor_uuid]:
-            sensor_spec = habitat_sim.CameraSensorSpec()
-            sensor_spec.uuid = sensor_uuid
-            sensor_spec.sensor_type = sensor_params["sensor_type"]
-            sensor_spec.resolution = sensor_params["resolution"]
-            sensor_spec.position = sensor_params["position"]
-
-            sensor_specs.append(sensor_spec)
-
     # Here you can specify the amount of displacement in a forward action and the turn angle
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sensor_specs
+    agent_cfg.sensor_specifications = sut.make_sensor_specs_from_settings(
+        sensors, settings
+    )
     agent_cfg.action_space = {
         "move_forward": habitat_sim.agent.ActionSpec(
             "move_forward", habitat_sim.agent.ActuationSpec(amount=0.25)
