@@ -9,7 +9,6 @@ import habitat_sim
 
 def remove_all_objects(sim):
     r"""Removes all objects in simulator instance
-
     :param sim: Instance of Simulator
     """
     for obj_id in sim.get_existing_object_ids():
@@ -18,7 +17,6 @@ def remove_all_objects(sim):
 
 def make_sensor_specs_from_settings(sensors, settings):
     r"""Creates and returns a list of initialized SensorSpecs
-
     :param sensors: Dictionary of sensors to initialize and relevant parameters, sensor_type and sensor_subtype are mandatory for each sensor
     :param settings: Dictionary modifying parameters and toggling sensors as true/false
     :return: List[hsim.SensorSpec] of initialized SensorSpecs
@@ -67,7 +65,6 @@ def make_sensor_specs_from_settings(sensors, settings):
 
 def make_sensor_specs(sensors):
     r"""Creates and returns a list of initialized SensorSpecs
-
     :param sensors: Dictionary of sensors to initialize and relevant parameters, sensor_type and sensor_subtype are mandatory for each sensor
     :return: List[hsim.SensorSpec] of initialized SensorSpecs
     """
