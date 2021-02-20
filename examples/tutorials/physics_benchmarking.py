@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import habitat_sim
-from habitat_sim.utils import common as ut
 from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils import viz_utils as vut
 
