@@ -37,7 +37,7 @@ performance-*,
 
 CheckOptions:
 - key:             cppcoreguidelines-pro-type-member-init.IgnoreArrays
-  value:	   True
+  value:           True
 
 # Let deprecation warnings through. From time to time, Magnum annotates APIs
 # with deprecation warnings, suggesting people to upgrade to newer / better
