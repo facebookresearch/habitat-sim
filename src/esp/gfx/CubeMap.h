@@ -8,6 +8,7 @@
 #include <map>
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Containers/StaticArray.h>
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
@@ -105,8 +106,16 @@ class CubeMap {
    * {imageFilePrefix}.{texType}.+Z.png
    * {imageFilePrefix}.{texType}.-Z.png
    * @return true, if success, otherwise false
+   *
+   * NOTE:
+   * In this version, it will lose precision when depth texture is saved to the
+   * disk. This is because the pixel format for depth texture is R32F with 1 bit
+   * of sign, 23 bits of mantissa and 8 bits of exponent while the radiance HDR
+   * is 8 bits of mantissa and 8 bits of exponent. So when it is saved, only 8
+   * bits is saved to the R channel (GB channels just repeat the R channel
+   * twice).
    */
-  // TODO: color HDR textures
+  // TODO: save HDR textures in EXR format
   bool saveTexture(TextureType type, const std::string& imageFilePrefix);
 #endif
 
@@ -159,13 +168,8 @@ class CubeMap {
   void recreateTexture();
 
   // framebuffers (one for every cube side)
-  Magnum::GL::Framebuffer frameBuffer_[6]{
-      Magnum::GL::Framebuffer{Magnum::NoCreate},
-      Magnum::GL::Framebuffer{Magnum::NoCreate},
-      Magnum::GL::Framebuffer{Magnum::NoCreate},
-      Magnum::GL::Framebuffer{Magnum::NoCreate},
-      Magnum::GL::Framebuffer{Magnum::NoCreate},
-      Magnum::GL::Framebuffer{Magnum::NoCreate}};
+  Corrade::Containers::StaticArray<6, Magnum::GL::Framebuffer> frameBuffer_{
+      Corrade::Containers::DirectInit, Magnum::NoCreate};
 
   // in case there is no need to output depth texture, we need a depth buffer
   Magnum::GL::Renderbuffer optionalDepthBuffer_[6];

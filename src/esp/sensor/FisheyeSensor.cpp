@@ -136,11 +136,13 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   }
   */
   // XXX debug
+  /*
   if (fisheyeSensorSpec_->sensorType == SensorType::Depth) {
     cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Depth, "cubemap");
     cubeMap_->loadTexture(gfx::CubeMap::TextureType::Depth, "cubemap", "hdr");
     exit(0);
   }
+  */
 
   // obtain shader based on fisheye model type
   shader_ = fisheyeShaderManager_.get<gfx::FisheyeShader>(getShaderKey());

@@ -8,9 +8,6 @@
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Assert.h>
-// XXX
-#include <Corrade/Utility/Debug.h>
-
 #include <Corrade/Utility/ConfigurationGroup.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/DebugTools/TextureImage.h>
@@ -33,10 +30,8 @@ namespace esp {
 namespace gfx {
 
 // TODO:
-// Careful: objectIdAttachement will use ColorAttachment 6
-// since the first 6 (0 ~ 5) attachements are used for the 6 faces of the cube.
 // const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
-//    Mn::GL::Framebuffer::ColorAttachment{6};
+//    Mn::GL::Framebuffer::ColorAttachment{1};
 
 /**
  * @brief check if the class instance is created with corresponding texture
@@ -289,11 +284,6 @@ bool CubeMap::saveTexture(TextureType type,
         if (!converter->exportToFile(depthAsRedChannel, filename)) {
           return false;
         }
-        // XXX
-        // display 1st 4 rgbs
-        Mn::Debug{} << "1st 4 rgb ==== SAVE"
-                    << Cr::Containers::arrayCast<float>(
-                           image.data().prefix(4 * 3 * 4));
       } break;
     }
     CORRADE_ASSERT(!filename.empty(),
@@ -381,13 +371,6 @@ void CubeMap::loadTexture(TextureType type,
                                   imageData->data());
         texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
                              imageView);
-        // XXX
-        Mn::Debug{} << Cr::Containers::arrayCast<const float>(
-            imageView.data().prefix(32));
-        // XXX first 4 RGB, which is 4 bytes
-        Mn::Debug{} << "1st 4 RGB >>>>>>>>>>>>>>>>>>>> load texture"
-                    << Cr::Containers::arrayCast<const float>(
-                           (*imageData).data().prefix(4 * 3 * 4));
       } break;
     }  // switch
     LOG(INFO) << "Loaded image " << iFace << " from " << filename;
