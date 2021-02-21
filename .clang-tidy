@@ -35,6 +35,10 @@ performance-*,
 -modernize-use-trailing-return-type,
 '
 
+CheckOptions:
+- key:             cppcoreguidelines-pro-type-member-init.IgnoreArrays
+  value:	   True
+
 # Let deprecation warnings through. From time to time, Magnum annotates APIs
 # with deprecation warnings, suggesting people to upgrade to newer / better
 # designed / more flexible APIs. Treating such warnings as error is
