@@ -30,7 +30,6 @@ class GenericInstanceMeshData : public BaseMesh {
       : GenericInstanceMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
   ~GenericInstanceMeshData() override = default;
-  ;
 
   /**
    * @brief Split a .ply file by objectIDs into different meshes

@@ -46,7 +46,6 @@ class PTexMeshData : public BaseMesh {
 
   PTexMeshData() : BaseMesh(SupportedMeshType::PTEX_MESH) {}
   ~PTexMeshData() override = default;
-  ;
 
   // ==== geometry ====
   void load(const std::string& meshFile, const std::string& atlasFolder);

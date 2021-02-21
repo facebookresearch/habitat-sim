@@ -22,7 +22,6 @@ namespace scene {
 class SceneManager {
  public:
   SceneManager() = default;
-  ;
   ~SceneManager() { LOG(INFO) << "Deconstructing SceneManager"; }
 
   // returns the scene ID

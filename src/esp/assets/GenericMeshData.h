@@ -44,7 +44,6 @@ class GenericMeshData : public BaseMesh {
 
   /** @brief Destructor */
   ~GenericMeshData() override = default;
-  ;
 
   /**
    * @brief Compile the @ref renderingBuffer_ if first upload or forceReload is

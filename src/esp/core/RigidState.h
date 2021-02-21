@@ -18,7 +18,6 @@ namespace core {
  */
 struct RigidState {
   RigidState() = default;
-  ;
   RigidState(const Magnum::Quaternion& _rotation,
              const Magnum::Vector3& _translation)
       : rotation(_rotation), translation(_translation){};

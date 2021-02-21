@@ -87,7 +87,6 @@ struct MeshMetaData {
 
   /** @brief Default constructor. */
   MeshMetaData() = default;
-  ;
 
   /** @brief  Constructor. */
   MeshMetaData(int meshStart,
