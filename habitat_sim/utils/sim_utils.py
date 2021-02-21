@@ -47,7 +47,7 @@ def make_sensor_specs_from_settings(sensors, settings):
                     if "orientation" in sensor_params:
                         sensor_spec.position = sensor_params["orientation"]
                     sensor_spec.gpu2gpu_transfer = False
-                    if not settings["silent"]:
+                    if "silent" in settings and not settings["silent"]:
                         print("==== Initialized Sensor Spec: =====")
                         print("Sensor uuid: ", sensor_spec.uuid)
                         print("Sensor type: ", sensor_spec.sensor_type)
