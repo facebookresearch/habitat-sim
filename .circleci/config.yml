@@ -12,10 +12,10 @@ commands:
       - run:
           name: Install clang-tidy
           command: |
-              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
+              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
               sudo apt-get update -y || true
-              sudo apt-get install -y clang-tidy-9
-              sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
+              sudo apt-get install -y clang-tidy-12
+              sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
               clang-tidy --version
       - run:
           name: Install cmake
@@ -202,7 +202,7 @@ jobs:
               sudo rm  llvm-config
               sudo ln -s llvm-config-10 llvm-config
               cd ~/project/
-              pip install -U black flake8 flake8-bugbear flake8-comprehensions "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
+              pip install -U black flake8 flake8-bugbear flake8-builtins flake8-comprehensions flake8-return flake8-simplify "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
               pip install -r requirements.txt --progress-bar off
       - run:
           name: run black

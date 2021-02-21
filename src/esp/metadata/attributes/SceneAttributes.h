@@ -12,11 +12,14 @@ namespace physics {
 enum class MotionType;
 }
 namespace metadata {
+namespace managers {
+enum class SceneInstanceTranslationOrigin;
+}
 namespace attributes {
 
 /**
  * @brief This class describes an instance of a stage or object in a scene -
- * it's template name, translation from the origin, rotation, and (if
+ * its template name, translation from the origin, rotation, and (if
  * appropriate) motiontype
  */
 class SceneObjectInstanceAttributes : public AbstractAttributes {
@@ -28,6 +31,11 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    */
   static const std::map<std::string, esp::physics::MotionType>
       MotionTypeNamesMap;
+
+  /**
+   * @brief SceneObjectInstanceAttributes handle is also the handle of the
+   * underlying @ref AbstractObjectAttributes for the object being instanced.
+   */
   SceneObjectInstanceAttributes(const std::string& handle);
 
   /**
@@ -42,6 +50,24 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * stage/object instance.
    */
   Magnum::Vector3 getTranslation() const { return getVec3("translation"); }
+
+  /**
+   * @brief Set a value representing the mechanism used to create this scene
+   * instance - should map to an enum value in @InstanceTranslationOriginMap.
+   * This acts as an instance-specific override to the scene-instance-wide
+   * setting.
+   */
+  void setTranslationOrigin(int translation_origin) {
+    setInt("translation_origin", translation_origin);
+  }
+
+  /**
+   * @brief Get the value representing the mechanism used to create this scene
+   * instance - should map to an enum value in @InstanceTranslationOriginMap.
+   * This acts as an instance-specific override to the scene-instance-wide
+   * setting.
+   */
+  int getTranslationOrigin() const { return getInt("translation_origin"); }
 
   /**
    * @brief Set the rotation of the object
@@ -70,16 +96,43 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
 
 class SceneAttributes : public AbstractAttributes {
  public:
+  /**
+   * @brief Constant static map to provide mappings from string tags to @ref
+   * metadata::managers::SceneInstanceTranslationOrigin values.  This will be
+   * used to map values set in json for translation origin to @ref
+   * metadata::managers::SceneInstanceTranslationOrigin.  Keys must be
+   * lowercase.
+   */
+  static const std::map<std::string,
+                        metadata::managers::SceneInstanceTranslationOrigin>
+      InstanceTranslationOriginMap;
+
   SceneAttributes(const std::string& handle);
 
   /**
-   * @brief Set the name of the template that describes the scene's stage
+   * @brief Set a value representing the mechanism used to create this scene
+   * instance - should map to an enum value in @InstanceTranslationOriginMap.
+   */
+  void setTranslationOrigin(int translation_origin) {
+    setInt("translation_origin", translation_origin);
+  }
+
+  /**
+   * @brief Get the value representing the mechanism used to create this scene
+   * instance - should map to an enum value in @InstanceTranslationOriginMap.
+   */
+  int getTranslationOrigin() const { return getInt("translation_origin"); }
+
+  /**
+   * @brief Set the name of the template that describes the scene's default
+   * lighting
    */
   void setLightingHandle(const std::string& lightingHandle) {
     setString("default_lighting", lightingHandle);
   }
   /**
-   * @brief Get the name of the template that describes the scene's stage
+   * @brief Get the name of the template that describes the scene's default
+   * lighting
    */
   std::string getLightingHandle() const {
     return getString("default_lighting");
@@ -102,6 +155,7 @@ class SceneAttributes : public AbstractAttributes {
   void setSemanticSceneHandle(const std::string& semanticSceneDesc) {
     setString("semantic_scene_instance", semanticSceneDesc);
   }
+
   /**
    * @brief Get the name of the semantic scene descriptor
    */
@@ -131,7 +185,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneObjectInstanceAttributes::ptr> getObjectInstances()
+  const std::vector<SceneObjectInstanceAttributes::ptr>& getObjectInstances()
       const {
     return objectInstances_;
   }

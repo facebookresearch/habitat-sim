@@ -18,10 +18,12 @@ namespace esp {
 namespace metadata {
 namespace managers {
 class PhysicsAttributesManager
-    : public AttributesManager<attributes::PhysicsManagerAttributes> {
+    : public AttributesManager<attributes::PhysicsManagerAttributes,
+                               core::ManagedObjectAccess::Copy> {
  public:
   PhysicsAttributesManager()
-      : AttributesManager<attributes::PhysicsManagerAttributes>::
+      : AttributesManager<attributes::PhysicsManagerAttributes,
+                          core::ManagedObjectAccess::Copy>::
             AttributesManager("Physics Manager", "physics_config.json") {
     buildCtorFuncPtrMaps();
   }

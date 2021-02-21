@@ -14,39 +14,17 @@ namespace esp {
 namespace metadata {
 namespace managers {
 class SceneDatasetAttributesManager
-    : public AttributesManager<attributes::SceneDatasetAttributes> {
+    : public AttributesManager<attributes::SceneDatasetAttributes,
+                               core::ManagedObjectAccess::Share> {
  public:
   SceneDatasetAttributesManager(
       PhysicsAttributesManager::ptr physicsAttributesMgr)
-      : AttributesManager<attributes::SceneDatasetAttributes>::
+      : AttributesManager<attributes::SceneDatasetAttributes,
+                          core::ManagedObjectAccess::Share>::
             AttributesManager("Dataset", "scene_dataset_config.json"),
         physicsAttributesManager_(physicsAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
-
-  /**
-   * @brief copy current @ref esp::sim::SimulatorConfiguration driven values,
-   * such as file paths, to make them available for stage attributes defaults.
-   *
-   * @param datasetName the name of the dataset to apply these to.
-   * @param lightSetup the config-specified light setup
-   * @param frustumCulling whether or not (semantic) stage should be
-   * partitioned for culling.
-   */
-  void setCurrCfgVals(const std::string& datasetName,
-                      const std::string& lightSetup,
-                      bool frustumCulling) {
-    if (this->getObjectLibHasHandle(datasetName)) {
-      auto dataset =
-          this->getObjectInternal<attributes::SceneDatasetAttributes>(
-              datasetName);
-      dataset->setCurrCfgVals(lightSetup, frustumCulling);
-    } else {
-      LOG(ERROR) << "SceneDatasetAttributesManager::setCurrCfgVals : No "
-                 << objectType_ << " managed object with handle " << datasetName
-                 << "exists. Aborting";
-    }
-  }  // StageAttributesManager::setCurrCfgVals
 
   /**
    * @brief Creates an instance of a dataset template described by passed
@@ -92,24 +70,37 @@ class SceneDatasetAttributesManager
    */
   void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
     physicsManagerAttributesHandle_ = handle;
-    for (auto& val : this->objectLibrary_) {
-      auto dataset =
-          this->getObjectInternal<attributes::SceneDatasetAttributes>(
-              val.first);
-      dataset->setPhysicsManagerHandle(handle);
+    for (const auto& val : this->objectLibrary_) {
+      this->getObjectByHandle(val.first)->setPhysicsManagerHandle(handle);
     }
   }  // SceneDatasetAttributesManager::setCurrPhysicsManagerAttributesHandle
 
  protected:
   /**
-   * @brief Verify a particular subcell exists within the dataset_config.JSON
-   * file, and if so, handle reading the possible JSON sub-cells it might hold.
-   * using the passed attributesManager for the dataset being processed.
+   * @brief This will load a dataset map with file location values from the
+   * dataset config.  It will also attempt to either verify those locations are
+   * valid files, or else prefix the given location with the dataset root
+   * directory.
+   * @param dsDir the dataset's root directory
+   * @param jsonTag the appropriate tag for the map being read
+   * @param jsonConfig the json configuration file being read
+   * @param map A ref to the dataset's map that is being populated.
+   */
+  void loadAndValidateMap(const std::string& dsDir,
+                          const std::string& jsonTag,
+                          const io::JsonGenericValue& jsonConfig,
+                          std::map<std::string, std::string>& map);
+
+  /**
+   * @brief Verify a particular subcell exists within the
+   * dataset_config.JSON file, and if so, handle reading the possible JSON
+   * sub-cells it might hold. using the passed attributesManager for the
+   * dataset being processed.
    * @tparam the type of the attributes manager.
    * @param dsDir The root directory of the dataset attributes being built.
-   * @param tag The name of the JSON cell being processed - corresponds to what
-   * type of data is being loaded from dataset configuration (i.e. stages,
-   * objects, etc)
+   * @param tag The name of the JSON cell being processed - corresponds to
+   * what type of data is being loaded from dataset configuration (i.e.
+   * stages, objects, etc)
    * @param jsonConfig The sub cell in the json document being processed.
    * @param attrMgr The dataset's attributes manager for @p tag 's data.
    */

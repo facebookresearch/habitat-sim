@@ -54,7 +54,8 @@ struct DrawableTest : Cr::TestSuite::Tester {
 };
 
 DrawableTest::DrawableTest() {
-  auto MM = MetadataMediator::create();
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  auto MM = MetadataMediator::create(cfg);
   resourceManager_ = std::make_unique<ResourceManagerExtended>(MM);
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});

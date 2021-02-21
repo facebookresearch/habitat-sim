@@ -19,24 +19,40 @@ class CameraSensor : public VisualSensor {
   // user can use them immediately
   explicit CameraSensor(scene::SceneNode& cameraNode,
                         const SensorSpec::ptr& spec);
-  virtual ~CameraSensor() {}
+  virtual ~CameraSensor() = default;
 
+  /** @brief Updates this sensor's SensorSpec spec_ to reflect the passed new
+   * values
+   *  @param[in] spec Instance of SensorSpec that sensor will use to update its
+   * own SensorSpec
+   */
   void setProjectionParameters(const SensorSpec::ptr& spec);
 
-  // set the projection matrix to the given render camera
-  virtual CameraSensor& setProjectionMatrix(
-      gfx::RenderCamera& targetCamera) override;
-  // set the transformation matrix to the given render camera
-  virtual CameraSensor& setTransformationMatrix(
-      gfx::RenderCamera& targetCamera) override;
-  // set the view port to the given render camera
-  virtual CameraSensor& setViewport(gfx::RenderCamera& targetCamera) override;
+  /** @brief Returns pointer to member RenderCamera that CameraSensor will use
+   * for rendering
+   */
+  virtual gfx::RenderCamera* getRenderCamera() override;
 
+  /**
+   * @brief Draws an observation to the frame buffer using simulator's renderer,
+   * then reads the observation to the sensor's memory buffer
+   * @return true if success, otherwise false (e.g., failed to draw or read
+   * observation)
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be drawn, obs Instance of Observation class in which the
+   * observation will be stored
+   */
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
 
+  /**
+   * @brief Updates ObservationSpace space with spaceType, shape, and dataType
+   * of this sensor. The information in space is later used to resize the
+   * sensor's memory buffer if sensor is resized.
+   * @return true if success, otherwise false
+   * @param[in] space Instance of ObservationSpace class which will be updated
+   * with information from this sensor
+   */
   virtual bool getObservationSpace(ObservationSpace& space) override;
-
-  virtual bool displayObservation(sim::Simulator& sim) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's
@@ -58,7 +74,7 @@ class CameraSensor : public VisualSensor {
    * @brief Modify the zoom matrix for perspective and ortho cameras
    * @param factor Modification amount.
    */
-  void modZoom(float factor) {
+  void modifyZoom(float factor) {
     zoomMatrix_ =
         Magnum::Matrix4::scaling({factor, factor, 1.0f}) * zoomMatrix_;
     recomputeProjectionMatrix();
@@ -93,6 +109,9 @@ class CameraSensor : public VisualSensor {
     recomputeBaseProjectionMatrix();
   }  // CameraSensor::setFOV
 
+  /**
+   * @brief Returns the FOV of this CameraSensor
+   */
   Mn::Deg getFOV() const {
     float fov = std::atof(spec_->parameters.at("hfov").c_str());
     return Mn::Deg{fov};
@@ -107,6 +126,9 @@ class CameraSensor : public VisualSensor {
     recomputeBaseProjectionMatrix();
   }  // CameraSensor::setCameraType
 
+  /**
+   * @brief Returns the camera type of this Sensor
+   */
   SensorSubType getCameraType() const { return spec_->sensorSubType; }
 
   /**
@@ -162,9 +184,7 @@ class CameraSensor : public VisualSensor {
    * which should be recomputeulated @ref zoomMatrix_ or @ref baseProjMatrix_
    * change.
    */
-  void recomputeProjectionMatrix() {
-    projectionMatrix_ = zoomMatrix_ * baseProjMatrix_;
-  }
+  void recomputeProjectionMatrix();
 
   /**
    * @brief Read the observation that was rendered by the simulator
@@ -180,7 +200,7 @@ class CameraSensor : public VisualSensor {
   Magnum::Matrix4 projectionMatrix_;
 
   /**
-   * @Brief A base projection matrix based on camera's type and display size.
+   * @brief A base projection matrix based on camera's type and display size.
    */
   Magnum::Matrix4 baseProjMatrix_;
 
@@ -211,6 +231,11 @@ class CameraSensor : public VisualSensor {
   /** @brief size of near plane
    */
   Mn::Vector2 nearPlaneSize_;
+
+  /** @brief raw pointer to member RenderCamera that CameraSensor will use for
+   * rendering
+   */
+  gfx::RenderCamera* renderCamera_;
 
  public:
   ESP_SMART_POINTERS(CameraSensor)

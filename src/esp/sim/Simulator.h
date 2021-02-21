@@ -18,6 +18,7 @@
 #include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+#include "esp/sensor/Sensor.h"
 
 #include "SimulatorConfiguration.h"
 
@@ -43,7 +44,9 @@ namespace esp {
 namespace sim {
 class Simulator {
  public:
-  explicit Simulator(const SimulatorConfiguration& cfg);
+  explicit Simulator(
+      const SimulatorConfiguration& cfg,
+      metadata::MetadataMediator::ptr _metadataMediator = nullptr);
   virtual ~Simulator();
 
   /**
@@ -212,11 +215,11 @@ class Simulator {
                         int sceneID = 0);
 
   /**
-   * @brief Get a static view of a physics object's template when the object was
-   * instanced.
+   * @brief Get a static view of a physics object's template when the object
+   * was instanced.
    *
-   * Use this to query the object's properties when it was initialized.  Object
-   * pointed at by pointer is const, and can not be modified.
+   * Use this to query the object's properties when it was initialized.
+   * Object pointed at by pointer is const, and can not be modified.
    */
   const metadata::attributes::ObjectAttributes::cptr
   getObjectInitializationTemplate(int objectId, int sceneID = 0) const;
@@ -718,6 +721,18 @@ class Simulator {
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
 
   /**
+   * @brief Initialize sensor and attach to sceneNode of a particular object
+   * @param objectId    Id of the object to which a sensor will be initialized
+   * at its node
+   * @param sensorSpec  SensorSpec of sensor to be initialized
+   * @return            handle to sensor initialized
+   *
+   */
+  esp::sensor::Sensor::ptr addSensorToObject(
+      const int objectId,
+      esp::sensor::SensorSpec::ptr& sensorSpec);
+
+  /**
    * @brief Displays observations on default frame buffer for a
    * particular sensor of an agent
    * @param agentId    Id of the agent for which the observation is to
@@ -850,6 +865,8 @@ class Simulator {
    */
   void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
     metadataMediator_ = _metadataMediator;
+    // set newly added MM to have current Simulator Config
+    metadataMediator_->setSimulatorConfiguration(this->config_);
   }
 
   /**
@@ -863,8 +880,41 @@ class Simulator {
 
  protected:
   Simulator(){};
+  /**
+   * @brief Builds a scene instance and populates it with initial object layout,
+   * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes
+   * referenced by @p activeSceneName .
+   * @param activeSceneName The name of the desired SceneAttributes to use to
+   * instantiate a scene.
+   * @return Whether successful or not.
+   */
+  bool createSceneInstance(const std::string& activeSceneName);
 
-  //! sample a random valid AgentState in passed agentState
+  /**
+   * @brief Builds a scene instance based on @ref
+   * esp::metadata::attributes::SceneAttributes referenced by @p activeSceneName
+   * . This function is specifically for cases where no renderer is desired.
+   * @param activeSceneName The name of the desired SceneAttributes to use to
+   * instantiate a scene.
+   * @return Whether successful or not.
+   */
+  bool createSceneInstanceNoRenderer(const std::string& activeSceneName);
+
+  /**
+   * @brief Shared initial functionality for creating/setting the current scene
+   * instance attributes corresponding to activeSceneName, regardless of desired
+   * renderer state.
+   * @param activeSceneName The name of the desired active scene instance, as
+   * specified in Simulator Configuration.
+   * @return a constant pointer to the current scene instance attributes.
+   */
+  metadata::attributes::SceneAttributes::cptr setSceneInstanceAttributes(
+      const std::string& activeSceneName);
+
+  /**
+   * @brief sample a random valid AgentState in passed agentState
+   * @param agentState [out] The placeholder for the sampled agent state.
+   */
   void sampleRandomAgentState(agent::AgentState& agentState);
 
   bool isValidScene(int sceneID) const {
@@ -887,9 +937,12 @@ class Simulator {
   // during the deconstruction
   std::unique_ptr<assets::ResourceManager> resourceManager_ = nullptr;
 
-  // Owns and manages the metadata/attributes managers
+  /**
+   * @brief Owns and manages the metadata/attributes managers
+   */
   metadata::MetadataMediator::ptr metadataMediator_ = nullptr;
   scene::SceneManager::uptr sceneManager_ = nullptr;
+
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;
@@ -904,6 +957,7 @@ class Simulator {
   SimulatorConfiguration config_;
 
   std::vector<agent::Agent::ptr> agents_;
+
   nav::PathFinder::ptr pathfinder_;
   // state indicating frustum culling is enabled or not
   //

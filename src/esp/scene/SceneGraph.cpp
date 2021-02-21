@@ -10,21 +10,9 @@
 namespace esp {
 namespace scene {
 
-SceneGraph::SceneGraph()
-    : rootNode_{world_},
-      defaultRenderCameraNode_{rootNode_},
-      defaultRenderCamera_{defaultRenderCameraNode_} {
+SceneGraph::SceneGraph() : rootNode_{world_} {
   // For now, just create one drawable group with empty string uuid
   createDrawableGroup(std::string{});
-}
-
-// set transformation, projection matrix, viewport to the default camera
-void SceneGraph::setDefaultRenderCamera(sensor::VisualSensor& sensor) {
-  ASSERT(sensor.isVisualSensor());
-
-  sensor.setTransformationMatrix(defaultRenderCamera_)
-      .setProjectionMatrix(defaultRenderCamera_)
-      .setViewport(defaultRenderCamera_);
 }
 
 bool SceneGraph::isRootNode(SceneNode& node) {

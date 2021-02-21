@@ -7,6 +7,7 @@
 
 #include "AttributesManagerBase.h"
 
+#include "esp/gfx/LightSetup.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 
 namespace Cr = Corrade;
@@ -15,12 +16,13 @@ namespace esp {
 namespace metadata {
 namespace managers {
 class LightLayoutAttributesManager
-    : public AttributesManager<attributes::LightLayoutAttributes> {
+    : public AttributesManager<attributes::LightLayoutAttributes,
+                               core::ManagedObjectAccess::Copy> {
  public:
   LightLayoutAttributesManager()
-      : AttributesManager<attributes::LightLayoutAttributes>::AttributesManager(
-            "Lighting Layout",
-            "lighting_config.json") {
+      : AttributesManager<attributes::LightLayoutAttributes,
+                          core::ManagedObjectAccess::Copy>::
+            AttributesManager("Lighting Layout", "lighting_config.json") {
     buildCtorFuncPtrMaps();
   }
 
@@ -64,17 +66,27 @@ class LightLayoutAttributesManager
       const attributes::LightInstanceAttributes::ptr& lightInstAttribs,
       const io::JsonGenericValue& jsonConfig);
 
+  /**
+   * @brief This will create a @ref gfx::LightSetup object based on the
+   * LightLayoutAttributes referenced by the passed name.
+   * @param lightConfigName the name of the LightLayoutAttributes to be used to
+   * create the LightSetup.
+   * @return The lightSetup defined by the attributes, or an empty LightSetup.
+   */
+  gfx::LightSetup createLightSetupFromAttributes(
+      const std::string& lightConfigName);
+
  protected:
   /**
-   * @brief Used Internally.  Create and configure newly-created attributes with
-   * any default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes
+   * with any default values, before any specific values are set.
    *
    * @param handleName handle name to be assigned to attributes\
-   * @param builtFromConfig whether this LightLayoutAttributes is being built
-   * from a config file, or from some other source (i.e. handleName contains
-   * config file name)
-   * @return Newly created but unregistered LightLayoutAttributes pointer, with
-   * only default values set.
+   * @param builtFromConfig whether this LightLayoutAttributes is being
+   * built from a config file, or from some other source (i.e. handleName
+   * contains config file name)
+   * @return Newly created but unregistered LightLayoutAttributes pointer,
+   * with only default values set.
    */
   attributes::LightLayoutAttributes::ptr initNewObjectInternal(
       const std::string& handleName,

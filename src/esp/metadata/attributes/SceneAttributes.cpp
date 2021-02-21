@@ -18,10 +18,28 @@ const std::map<std::string, esp::physics::MotionType>
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle)
     : AbstractAttributes("SceneObjectInstanceAttributes", handle) {
-  setMotionType(-1);  // defaults to unknown
+  // defaults to unknown/undefined
+  setMotionType(static_cast<int>(esp::physics::MotionType::UNDEFINED));
+  // set to no rotation
+  setQuat("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
+  // defaults to unknown so that obj instances use scene instance setting
+  setTranslationOrigin(
+      static_cast<int>(managers::SceneInstanceTranslationOrigin::Unknown));
 }
+
+const std::map<std::string, managers::SceneInstanceTranslationOrigin>
+    SceneAttributes::InstanceTranslationOriginMap = {
+        {"asset_local", managers::SceneInstanceTranslationOrigin::AssetLocal},
+        {"com", managers::SceneInstanceTranslationOrigin::COM},
+};
 SceneAttributes::SceneAttributes(const std::string& handle)
-    : AbstractAttributes("SceneAttributes", handle) {}
+    : AbstractAttributes("SceneAttributes", handle) {
+  // defaults to no lights
+  setLightingHandle(NO_LIGHT_KEY);
+  // defaults to asset local
+  setTranslationOrigin(
+      static_cast<int>(managers::SceneInstanceTranslationOrigin::AssetLocal));
+}
 
 }  // namespace attributes
 }  // namespace metadata

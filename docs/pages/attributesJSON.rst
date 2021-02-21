@@ -48,7 +48,7 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 
 `Stage Attributes`_
 ===================
-A stage in Habitat-Sim is a static object consisting of static background scenery wherein an agent acts.  Stage Attributes templates hold relevant information describing a stage's render and collision assets and physical properties.  Any source configuration files used to build these attributes should be formatted as follows:
+A stage in Habitat-Sim is a static object consisting of static background scenery wherein an agent acts.  Stage Attributes templates hold relevant information describing a stage's render and collision assets and physical properties.  Any source configuration files used to build these attributes should be named using the following format:
 
  	<stagename>.stage_config.json
 
@@ -126,7 +126,7 @@ Below are stage-specific physical and object-related quantities.  These values w
 
 `Object Attributes`_
 ====================
-Object Attributes templates hold descriptive information for instancing rigid objects into Habitat-Sim.  These files should be formatted as follows:
+Object Attributes templates hold descriptive information for instancing rigid objects into Habitat-Sim.  These file names should be formatted as follows:
 
  	<objectname>.object_config.json
 
@@ -201,3 +201,32 @@ Below are object-specific physical quantities.  These values will override simil
 "semantic_id"
     - integer
 	- The semantic id assigned to objects made with this configuration.
+
+`Light Setup Attributes`_
+=========================
+Light Setup Attributes templates hold descriptive information for light setups into Habitat-Sim.  These file names should be formatted as follows:
+
+ 	<lightingname>.lighting_config.json
+
+`An example of an appropriately configured Light Setup Attributes file can be found below <../../../data/test_assets/lights/test_lights.lighting_config.json>`_:
+
+.. include:: ../../data/test_assets/lights/test_lights.lighting_config.json
+    :code: json
+
+The Light Setup attributes JSON should contain a single cell named "lights" that references a JSON object consisting of key-value pairs, where each key is a string ID that is unique to the lighting layout and the value is a JSON object containing appropriate combinations of the following data for the light type being described.
+
+"position"
+	- 3-vector
+	- The position of the light, if the light is a point light.
+"direction"
+	- 3-vector
+	- The direction of the light, if the light is a directional light.
+"color"
+	- 3-vector [R,G,B; each value 0->1]
+	- RGB value for the light's color in linear space.
+"intensity"
+	- float
+	- The intensity of the light. This color is multiplied by this value to account for rolloff.  Negative values are allowed and can be used to simulate shadows.
+"type"
+	- string
+	- The type of the light.  "point" and "directional" are currently supported.

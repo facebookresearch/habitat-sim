@@ -33,10 +33,19 @@ def call(cmd, env=None):
 
 def build_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ci_test', help="Test package conda build during continues integration test.", action='store_true')
-    parser.add_argument('--nightly', help="Make conda nightly build.", action='store_true')
-    parser.add_argument('--conda_upload', help="Upload conda binaries as package to authenticated Anaconda cloud account.",
-                        action='store_true')
+    parser.add_argument(
+        "--ci_test",
+        help="Test package conda build during continues integration test.",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--nightly", help="Make conda nightly build.", action="store_true"
+    )
+    parser.add_argument(
+        "--conda_upload",
+        help="Upload conda binaries as package to authenticated Anaconda cloud account.",
+        action="store_true",
+    )
 
     return parser
 
@@ -55,11 +64,13 @@ def main():
         py_vers = ["3.6"]
 
     # TODO: Remove filter bullet_modes = True, headless_modes = False as failing
-    filter_bullet_with_display = lambda product: itertools.filterfalse(lambda op: op[1:3] == (True, False), product)
+    filter_bullet_with_display = lambda product: itertools.filterfalse(
+        lambda op: op[1:3] == (True, False), product
+    )
 
-    for py_ver, use_bullet, headless, cuda_ver in  filter_bullet_with_display(itertools.product(
-        py_vers, bullet_modes, headless_modes, cuda_vers
-    )):
+    for py_ver, use_bullet, headless, cuda_ver in filter_bullet_with_display(
+        itertools.product(py_vers, bullet_modes, headless_modes, cuda_vers)
+    ):
         env = os.environ.copy()
 
         env["VERSION"] = habitat_sim.__version__
@@ -107,7 +118,13 @@ def main():
         env["HSIM_BUILD_STRING"] = build_string
 
         call(
-            build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-linux", ANACONDA_UPLOAD_MODE="" if args.conda_upload else "--no-anaconda-upload"),
+            build_cmd_template.format(
+                PY_VER=py_ver,
+                OUTPUT_FOLDER="hsim-linux",
+                ANACONDA_UPLOAD_MODE=""
+                if args.conda_upload
+                else "--no-anaconda-upload",
+            ),
             env=env,
         )
 

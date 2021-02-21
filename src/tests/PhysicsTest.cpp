@@ -37,7 +37,9 @@ const std::string physicsConfigFile =
 class PhysicsManagerTest : public testing::Test {
  protected:
   void SetUp() override {
-    metadataMediator_ = MetadataMediator::create();
+    // set up a default simulation config to initialize MM
+    auto cfg = esp::sim::SimulatorConfiguration{};
+    metadataMediator_ = MetadataMediator::create(cfg);
     resourceManager_ = std::make_unique<ResourceManager>(metadataMediator_);
     context_ = esp::gfx::WindowlessContext::create_unique(0);
 

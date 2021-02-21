@@ -554,7 +554,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
                        "in little endian byte order", );
       } else if (token == "element") {
         std::string name;
-        size_t size;
+        size_t size = 0;
         ls >> name >> size;
 
         if (name == "vertex") {

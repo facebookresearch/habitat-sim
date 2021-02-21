@@ -53,5 +53,16 @@ void VisualSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer,
   }
 }
 
+bool VisualSensor::displayObservation(sim::Simulator& sim) {
+  if (!hasRenderTarget()) {
+    return false;
+  }
+
+  drawObservation(sim);
+  renderTarget().blitRgbaToDefault();
+
+  return true;
+}
+
 }  // namespace sensor
 }  // namespace esp

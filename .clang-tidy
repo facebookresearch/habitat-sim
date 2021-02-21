@@ -1,5 +1,6 @@
 Checks: '
 bugprone-*,
+clang-analyzer-cplusplus-*,
 cppcoreguidelines-init-variables,
 cppcoreguidelines-pro-type-member-init,
 google-*,
@@ -14,6 +15,7 @@ modernize-shrink-to-fit,
 modernize-unary-static-assert,
 modernize-use-bool-literals,
 modernize-use-default-member-init,
+modernize-use-equals-default,
 modernize-use-noexcept,
 modernize-use-nullptr,
 modernize-use-override,
@@ -42,5 +44,9 @@ performance-*,
 WarningsAsErrors:
 '*,
 -bugprone-narrowing-conversions,
+-bugprone-reserved-identifier,
 -bugprone-unused-raii,
--clang-diagnostic-deprecated-declarations'
+-clang-diagnostic-deprecated-declarations,
+-clang-analyzer-cplusplus.PlacementNew,
+'
+# TODO Figure out if PlacementNew is a false positive

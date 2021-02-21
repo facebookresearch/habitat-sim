@@ -27,7 +27,7 @@ Profiling and Optimization                          `Video <https://youtu.be/I4M
 
 New Actions                                         :ref:`Page <std:doc:new-actions>`
 
-Attributes Templates JSON Tags 						:ref:`Page <std:doc:attributesJSON>`
+Attributes Templates JSON Tags                      :ref:`Page <std:doc:attributesJSON>`
 
 Creating a stereo agent                             :ref:`Page <std:doc:stereo-agent>`
 

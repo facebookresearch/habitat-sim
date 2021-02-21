@@ -12,7 +12,6 @@
 
 #include "SceneNode.h"
 #include "esp/gfx/DrawableGroup.h"
-#include "esp/gfx/RenderCamera.h"
 
 #include "esp/sensor/VisualSensor.h"
 
@@ -35,13 +34,6 @@ class SceneGraph {
   const gfx::DrawableGroup& getDrawables() const {
     return drawableGroups_.at(std::string{});
   }
-
-  // set the transformation, projection matrix to the default camera
-  // TODO:
-  // in the future, the parameter should be VisualSensor
-  void setDefaultRenderCamera(sensor::VisualSensor& sensor);
-
-  gfx::RenderCamera& getDefaultRenderCamera() { return defaultRenderCamera_; }
 
   /* @brief check if the scene node is the root node of the scene graph.
    */
@@ -117,14 +109,6 @@ class SceneGraph {
   // is ALWAYS an IDENTITY matrix.
   // DO NOT add any other transformation in between!!
   SceneNode rootNode_{world_};
-
-  // Again, order matters! do not change the sequence!!
-  // CANNOT make defaultRenderCameraNode_ specified BEFORE rootNode_.
-  SceneNode defaultRenderCameraNode_{rootNode_};
-
-  // a default camera to render the scene
-  // user can of course define her own RenderCamera for rendering
-  gfx::RenderCamera defaultRenderCamera_;
 
   // ==== Drawables ====
   // for each scene node in a scene graph,

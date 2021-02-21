@@ -28,6 +28,22 @@ using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
+// Helper function to get numberOfChildrenOfRoot
+int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
+  int numberOfChildrenOfRoot = 1;
+  const auto* lastRootChild = rootNode.children().first();
+  if (!lastRootChild) {
+    return 0;
+  } else {
+    ASSERT(lastRootChild);
+    while (lastRootChild->nextSibling()) {
+      lastRootChild = lastRootChild->nextSibling();
+      numberOfChildrenOfRoot++;
+    }
+  }
+  return numberOfChildrenOfRoot;
+}
+
 // Manipulate the scene and save some keyframes using replay::Recorder
 TEST(GfxReplayTest, recorder) {
   esp::gfx::WindowlessContext::uptr context_ =
@@ -35,8 +51,9 @@ TEST(GfxReplayTest, recorder) {
 
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  auto MM = MetadataMediator::create(cfg);
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   std::string boxFile =
@@ -108,8 +125,9 @@ TEST(GfxReplayTest, player) {
 
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  auto MM = MetadataMediator::create(cfg);
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   std::string boxFile =
@@ -120,11 +138,7 @@ TEST(GfxReplayTest, player) {
 
   // retrieve last child of scene root node
   auto& rootNode = sceneGraph.getRootNode();
-  const auto* lastRootChild = rootNode.children().first();
-  ASSERT(lastRootChild);
-  while (lastRootChild->nextSibling()) {
-    lastRootChild = lastRootChild->nextSibling();
-  }
+  int numberOfChildren = getNumberOfChildrenOfRoot(rootNode);
 
   // Construct Player. Hook up ResourceManager::loadAndCreateRenderAssetInstance
   // to Player via callback.
@@ -201,32 +215,53 @@ TEST(GfxReplayTest, player) {
 
   for (const auto keyframeIndex : keyframeIndicesToTest) {
     player.setKeyframeIndex(keyframeIndex);
+    int updatedNumberOfChildren = getNumberOfChildrenOfRoot(rootNode);
 
     if (keyframeIndex == -1) {
-      // assert that lastRootChild doesn't have a sibling
-      ASSERT(!lastRootChild->nextSibling());
+      // assert that no new nodes were created
+      ASSERT(updatedNumberOfChildren == numberOfChildren);
     } else if (keyframeIndex == 0) {
       // assert that a new node was created under root
-      ASSERT(lastRootChild->nextSibling());
+      ASSERT(updatedNumberOfChildren > numberOfChildren);
     } else if (keyframeIndex == 1) {
-      // assert that our stateUpdate was applied
-      ASSERT(lastRootChild->nextSibling());
-      const esp::scene::SceneNode* instanceNode =
-          static_cast<const esp::scene::SceneNode*>(
-              lastRootChild->nextSibling());
-      ASSERT(instanceNode->translation() == Mn::Vector3(1.f, 2.f, 3.f));
-      ASSERT(instanceNode->getSemanticId() == semanticId);
+      // assert that our stateUpdate was applied and a new node was created
+      // under root
+      ASSERT(updatedNumberOfChildren > numberOfChildren);
+      if (numberOfChildren ==
+          0) {  // if rootNode had no children to begin with, then stateUpdate
+                // was applied to a new child node
+        const auto* rootChild = rootNode.children().first();
+        ASSERT(rootChild);
+        const esp::scene::SceneNode* instanceNode =
+            static_cast<const esp::scene::SceneNode*>(rootChild);
+        ASSERT(instanceNode->translation() == Mn::Vector3(1.f, 2.f, 3.f));
+        ASSERT(instanceNode->getSemanticId() == semanticId);
+      } else {  // if rootNode had children originally, then stateUpdate was
+                // applied to a sibling of the lastRootChild
+        // get the lastRootChild before the stateUpdate
+        const auto* rootChild = rootNode.children().first();
+        for (int i = 1; i < numberOfChildren; i++) {
+          ASSERT(rootChild);
+          rootChild = rootChild->nextSibling();
+        }
+        // Check that stateUpdate was applied to the sibling of lastRootChild
+        ASSERT(rootChild->nextSibling());
+        const esp::scene::SceneNode* instanceNode =
+            static_cast<const esp::scene::SceneNode*>(rootChild->nextSibling());
+        ASSERT(instanceNode->translation() == Mn::Vector3(1.f, 2.f, 3.f));
+        ASSERT(instanceNode->getSemanticId() == semanticId);
+      }
     } else if (keyframeIndex == 2) {
-      // assert that lastRootChild doesn't have a sibling
-      ASSERT(!lastRootChild->nextSibling());
+      // assert that no new nodes were created
+      ASSERT(updatedNumberOfChildren == numberOfChildren);
       // assert that there's no user transform
       Mn::Vector3 userTranslation;
       Mn::Quaternion userRotation;
       ASSERT(!player.getUserTransform("my_user_transform", &userTranslation,
                                       &userRotation));
     } else if (keyframeIndex == 3) {
-      // assert that lastRootChild doesn't have a sibling
-      ASSERT(!lastRootChild->nextSibling());
+      // assert that no new nodes were created
+      ASSERT(updatedNumberOfChildren == numberOfChildren);
       // assert on expected user transform
       Mn::Vector3 userTranslation;
       Mn::Quaternion userRotation;

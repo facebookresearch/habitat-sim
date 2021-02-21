@@ -50,7 +50,10 @@ SceneAttributes::ptr SceneAttributesManager::initNewObjectInternal(
 void SceneAttributesManager::setValsFromJSONDoc(
     SceneAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
-  const std::string attribsName = attribs->getHandle();
+  const std::string attribsDispName = attribs->getSimplifiedHandle();
+  // Check for translation origin.  Default to unknown.
+  attribs->setTranslationOrigin(getTranslationOriginVal(jsonConfig));
+
   // Check for stage instance existance
   if ((jsonConfig.HasMember("stage_instance")) &&
       (jsonConfig["stage_instance"].IsObject())) {
@@ -59,7 +62,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
   } else {
     LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No Stage "
                     "specified for scene "
-                 << attribsName << ", or specification error.";
+                 << attribsDispName << ", or specification error.";
   }
   // Check for object instances existance
   if ((jsonConfig.HasMember("object_instances")) &&
@@ -72,13 +75,13 @@ void SceneAttributesManager::setValsFromJSONDoc(
       } else {
         LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : Object "
                         "specification error in scene "
-                     << attribsName << " at idx : " << i << ".";
+                     << attribsDispName << " at idx : " << i << ".";
       }
     }
   } else {
     LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No Objects "
                     "specified for scene "
-                 << attribsName << ", or specification error.";
+                 << attribsDispName << ", or specification error.";
   }
   std::string dfltLighting = "";
   if (io::readMember<std::string>(jsonConfig, "default_lighting",
@@ -89,7 +92,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     LOG(WARNING)
         << "SceneAttributesManager::setValsFromJSONDoc : No default_lighting "
            "specified for scene "
-        << attribsName << ".";
+        << attribsDispName << ".";
   }
 
   std::string navmeshName = "";
@@ -101,7 +104,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     LOG(WARNING)
         << "SceneAttributesManager::setValsFromJSONDoc : No navmesh_instance "
            "specified for scene "
-        << attribsName << ".";
+        << attribsDispName << ".";
   }
 
   std::string semanticDesc = "";
@@ -112,7 +115,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
   } else {
     LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No "
                     "semantic_scene_instance specified for scene "
-                 << attribsName << ".";
+                 << attribsDispName << ".";
   }
 }  // SceneAttributesManager::setValsFromJSONDoc
 
@@ -120,13 +123,19 @@ SceneObjectInstanceAttributes::ptr
 SceneAttributesManager::createInstanceAttributesFromJSON(
     const io::JsonGenericValue& jCell) {
   SceneObjectInstanceAttributes::ptr instanceAttrs =
-      SceneObjectInstanceAttributes::create("");
+      createEmptyInstanceAttributes("");
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
       jCell, "template_name",
-      std::bind(&SceneObjectInstanceAttributes::setHandle, instanceAttrs, _1));
+      [instanceAttrs](const std::string& template_name) {
+        instanceAttrs->setHandle(template_name);
+      });
 
-  // motion type of object.  Ignored for stage.  TODO : veify is valid motion
+  // Check for translation origin override for a particular instance.  Default
+  // to unknown, which will mean use scene instance-level default.
+  instanceAttrs->setTranslationOrigin(getTranslationOriginVal(jCell));
+
+  // motion type of object.  Ignored for stage.  TODO : verify is valid motion
   // type using standard mechanism of static map comparison.
 
   int motionTypeVal = static_cast<int>(physics::MotionType::UNDEFINED);
@@ -152,18 +161,46 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
   // translation from origin
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jCell, "translation",
-      std::bind(&SceneObjectInstanceAttributes::setTranslation, instanceAttrs,
-                _1));
+      [instanceAttrs](const Magnum::Vector3& translation) {
+        instanceAttrs->setTranslation(translation);
+      });
 
   // orientation TODO : support euler angles too?
   io::jsonIntoConstSetter<Magnum::Quaternion>(
-      jCell, "rotation",
-      std::bind(&SceneObjectInstanceAttributes::setRotation, instanceAttrs,
-                _1));
+      jCell, "rotation", [instanceAttrs](const Magnum::Quaternion& rotation) {
+        instanceAttrs->setRotation(rotation);
+      });
 
   return instanceAttrs;
 
 }  // SceneAttributesManager::createInstanceAttributesFromJSON
+
+int SceneAttributesManager::getTranslationOriginVal(
+    const io::JsonGenericValue& jsonDoc) {
+  // Check for translation origin.  Default to unknown.
+  int transOrigin = static_cast<int>(SceneInstanceTranslationOrigin::Unknown);
+  std::string tmpTransOriginVal = "";
+  if (io::readMember<std::string>(jsonDoc, "translation_origin",
+                                  tmpTransOriginVal)) {
+    // translation_origin tag was found, perform check - first convert to
+    // lowercase
+    std::string strToLookFor =
+        Cr::Utility::String::lowercase(tmpTransOriginVal);
+    auto found =
+        SceneAttributes::InstanceTranslationOriginMap.find(strToLookFor);
+    if (found != SceneAttributes::InstanceTranslationOriginMap.end()) {
+      transOrigin = static_cast<int>(found->second);
+    } else {
+      LOG(WARNING) << "SceneAttributesManager::getTranslationOriginVal : "
+                      "motion_type value in json  : `"
+                   << tmpTransOriginVal << "|" << strToLookFor
+                   << "` does not map to a valid "
+                      "SceneInstanceTranslationOrigin value, so defaulting "
+                      "motion type to SceneInstanceTranslationOrigin::Unknown.";
+    }
+  }
+  return transOrigin;
+}  // SceneAttributesManager::getTranslationOriginVal
 
 int SceneAttributesManager::registerObjectFinalize(
     SceneAttributes::ptr sceneAttributes,

@@ -151,6 +151,11 @@ void initGfxBindings(py::module& m) {
       .value("GLOBAL", LightPositionModel::GLOBAL)
       .value("OBJECT", LightPositionModel::OBJECT);
 
+  py::enum_<LightType>(
+      m, "LightType", R"(Defines the type of light described by the LightInfo)")
+      .value("Point", LightType::Point)
+      .value("Directional", LightType::Directional);
+
   py::class_<LightInfo>(
       m, "LightInfo",
       R"(Defines the vector, color and LightPositionModel of a single light source.
