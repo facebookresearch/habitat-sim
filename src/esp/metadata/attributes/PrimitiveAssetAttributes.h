@@ -136,8 +136,8 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
 
  private:
   // Should never change, only set by ctor
-  void setPrimObjClassName(std::string primObjClassName) {
-    setString("primObjClassName", std::move(primObjClassName));
+  void setPrimObjClassName(const std::string& primObjClassName) {
+    setString("primObjClassName", primObjClassName);
   }
 
   // Should never change, only set by ctor

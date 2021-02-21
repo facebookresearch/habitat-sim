@@ -75,7 +75,7 @@ class SceneGraph {
   gfx::DrawableGroup* createDrawableGroup(const std::string& id,
                                           DrawableGroupArgs&&... args) {
     auto inserted = drawableGroups_.emplace(
-        std::piecewise_construct, std::forward_as_tuple(std::move(id)),
+        std::piecewise_construct, std::forward_as_tuple(id),
         std::forward_as_tuple(std::forward<DrawableGroupArgs>(args)...));
     if (!inserted.second) {
       LOG(ERROR) << "DrawableGroup with ID: " << inserted.first->first
