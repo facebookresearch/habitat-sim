@@ -91,10 +91,9 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief destructor
+   * do nothing, let magnum handle the camera
    */
-  ~RenderCamera() override {
-    // do nothing, let magnum handle the camera
-  }
+  ~RenderCamera() override = default;
 
   // Get the scene node being attached to.
   scene::SceneNode& node() { return object(); }
