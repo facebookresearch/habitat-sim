@@ -32,7 +32,8 @@ enum class SceneNodeType {
   OBJECT = 4,  // objects added via physics api
 };
 
-class SceneNode : public MagnumObject {
+class SceneNode : public MagnumObject,
+                  public Magnum::SceneGraph::AbstractFeature3D {
  public:
   // creating a scene node "in the air" is not allowed.
   // it must set an existing node as its parent node.
@@ -69,9 +70,7 @@ class SceneNode : public MagnumObject {
   //! Sets node semanticId
   virtual void setSemanticId(int semanticId) { semanticId_ = semanticId; }
 
-  Magnum::Vector3 absoluteTranslation() const {
-    return this->absoluteTransformation().translation();
-  }
+  Magnum::Vector3 absoluteTranslation() const;
 
   //! recursively compute the cumulative bounding box of the full scene graph
   //! tree for which this node is the root
@@ -81,9 +80,7 @@ class SceneNode : public MagnumObject {
   const Magnum::Range3D& getMeshBB() const { return meshBB_; };
 
   //! return the global bounding box for the mesh stored at this node
-  Corrade::Containers::Optional<Magnum::Range3D> getAbsoluteAABB() const {
-    return aabb_;
-  };
+  const Magnum::Range3D& getAbsoluteAABB() const;
 
   //! return the cumulative bounding box of the full scene graph tree for which
   //! this node is the root
@@ -107,6 +104,8 @@ class SceneNode : public MagnumObject {
   friend class SceneGraph;
   SceneNode(MagnumScene& parentNode);
 
+  void clean(const Magnum::Matrix4& absoluteTransformation) override;
+
   // the type of the attached object (e.g., sensor, agent etc.)
   SceneNodeType type_ = SceneNodeType::EMPTY;
   int id_ = ID_UNDEFINED;
@@ -120,7 +119,16 @@ class SceneNode : public MagnumObject {
 
   //! the cumulative bounding box of the full scene graph tree for which this
   //! node is the root
-  Magnum::Range3D cumulativeBB_;
+  Magnum::Range3D cumulativeBB_ = {{0.0, 0.0, 0.0}, {1e5, 1e5, 1e5}};
+
+  //! The cumulativeBB in world coordinates
+  //! This is returned instead of aabb_ if that doesn't exist
+  //! due to this being a node that is part of a dynamic object
+  mutable Corrade::Containers::Optional<Magnum::Range3D> worldCumulativeBB_ =
+      Corrade::Containers::NullOpt;
+
+  //! The absolute translation of this node, updated in clean
+  Magnum::Matrix4 absoluteTransformation_;
 
   //! the global bounding box for *static* meshes stored at this node
   //  NOTE: this is different from the local bounding box meshBB_ defined above:

@@ -182,15 +182,18 @@ Magnum::Matrix4 BulletArticulatedObject::getRootState() {
   return Magnum::Matrix4{btMultiBody_->getBaseWorldTransform()};
 }
 
-void BulletArticulatedObject::updateNodes() {
-  setRotationScalingFromBulletTransform(btMultiBody_->getBaseWorldTransform(),
-                                        &node());
+void BulletArticulatedObject::updateNodes(bool force) {
+  if (force || !getSleep()) {
+    setRotationScalingFromBulletTransform(btMultiBody_->getBaseWorldTransform(),
+                                          &node());
 
-  // update link transforms
-  for (auto& link : links_) {
-    setRotationScalingFromBulletTransform(
-        btMultiBody_->getLink(link.first).m_cachedWorldTransform,
-        &link.second->node());
+    // update link transforms
+    for (auto& link : links_) {
+      if (force || btMultiBody_->getLinkCollider(link.first)->isActive())
+        setRotationScalingFromBulletTransform(
+            btMultiBody_->getLink(link.first).m_cachedWorldTransform,
+            &link.second->node());
+    }
   }
 }
 
@@ -286,7 +289,7 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
   btMultiBody_->forwardKinematics(scratch_q, scratch_m);
   btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
   // sync visual shapes
-  updateNodes();
+  updateNodes(true);
 }
 
 void BulletArticulatedObject::setForces(const std::vector<float>& forces) {
@@ -372,8 +375,9 @@ void BulletArticulatedObject::setPositions(
   btAlignedObjectArray<btVector3> scratch_m;
   btMultiBody_->forwardKinematics(scratch_q, scratch_m);
   btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+
   // sync visual shapes
-  updateNodes();
+  updateNodes(true);
 }
 
 std::vector<float> BulletArticulatedObject::getPositions() {
@@ -421,7 +425,7 @@ void BulletArticulatedObject::reset() {
   btMultiBody_->clearVelocities();
   btMultiBody_->clearForcesAndTorques();
   // sync visual shapes
-  updateNodes();
+  updateNodes(true);
 }
 
 void BulletArticulatedObject::setSleep(bool sleep) {

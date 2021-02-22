@@ -42,7 +42,7 @@ BulletRigidObject::BulletRigidObject(
         collisionObjToObjIds)
     : BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)),
       RigidObject(rigidBodyNode, objectId, resMgr),
-      MotionState(*rigidBodyNode) {}
+      MotionState{*rigidBodyNode} {}
 
 BulletRigidObject::~BulletRigidObject() {
   if (!isActive()) {
@@ -494,6 +494,34 @@ void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
   bWorld_->addRigidBody(bObjectRigidBody_.get(), int(group),
                         CollisionGroupHelper::getMaskForGroup(group));
+}
+
+void BulletRigidObject::updateNodes(bool force) {
+  isDeferringUpdate_ = false;
+
+  if (force) {
+    setWorldTransform(bObjectRigidBody_->getWorldTransform());
+  } else if (deferredUpdate_) {
+    setWorldTransform(*deferredUpdate_);
+  }
+
+  deferredUpdate_ = Corrade::Containers::NullOpt;
+}
+
+void BulletRigidObject::setWorldTransform(const btTransform& worldTrans) {
+  if (isDeferringUpdate_) {
+    deferredUpdate_ = {worldTrans};
+  } else {
+    MotionState::setWorldTransform(worldTrans);
+  }
+}
+
+void BulletRigidObject::getWorldTransform(btTransform& worldTrans) const {
+  if (deferredUpdate_) {
+    worldTrans = *deferredUpdate_;
+  } else {
+    MotionState::getWorldTransform(worldTrans);
+  }
 }
 
 }  // namespace physics

@@ -112,6 +112,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual bool finalizeObject() = 0;
 
+
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidBase. This is

@@ -274,7 +274,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual Magnum::Matrix4 getRootState() { return {}; };
 
   // update the SceneNode state to match the simulation state
-  virtual void updateNodes(){};
+  virtual void updateNodes(CORRADE_UNUSED bool force = false){};
 
   ArticulatedLink& getLink(int id) {
     CHECK(links_.count(id));

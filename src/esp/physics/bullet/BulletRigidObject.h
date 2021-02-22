@@ -102,6 +102,8 @@ class BulletRigidObject : public BulletBase,
     bObjectRigidBody_->activate(!sleep);
   }
 
+  virtual void updateNodes(bool force = false) override;
+
   /**
    * @brief Set the @ref MotionType of the object. The object can be set to @ref
    * MotionType::STATIC, @ref MotionType::KINEMATIC or @ref MotionType::DYNAMIC.
@@ -486,6 +488,13 @@ class BulletRigidObject : public BulletBase,
   std::unique_ptr<btCompoundShape> bObjectShape_;
 
   std::unique_ptr<btCompoundShape> bEmptyShape_;
+
+  void setWorldTransform(const btTransform& worldTrans) override;
+
+  void getWorldTransform(btTransform& worldTrans) const override;
+
+  Corrade::Containers::Optional<btTransform> deferredUpdate_ =
+      Corrade::Containers::NullOpt;
 
   ESP_SMART_POINTERS(BulletRigidObject)
 };

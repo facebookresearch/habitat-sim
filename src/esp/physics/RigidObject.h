@@ -132,6 +132,9 @@ class RigidObject : public RigidBase {
         metadata::attributes::ObjectAttributes>();
   };
 
+  virtual void deferUpdate() { isDeferringUpdate_ = true; }
+  virtual void updateNodes(CORRADE_UNUSED bool force = false) { isDeferringUpdate_ = false; }
+
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidScene
@@ -152,6 +155,7 @@ class RigidObject : public RigidBase {
    * @return whether successful finalization.
    */
   bool finalizeObject_LibSpecific() override { return true; }
+
 
  public:
   /**
@@ -176,6 +180,8 @@ class RigidObject : public RigidBase {
    * | angular) applied to the rigid body before each step.
    */
   VelocityControl::ptr velControl_;
+
+  bool isDeferringUpdate_ = false;
 
  public:
   ESP_SMART_POINTERS(RigidObject)
