@@ -52,4 +52,5 @@ WarningsAsErrors: '
 -bugprone-unused-raii,
 -clang-diagnostic-deprecated-declarations,
 -clang-analyzer-cplusplus.PlacementNew,
+-cppcoreguidelines-pro-type-member-init,
 '

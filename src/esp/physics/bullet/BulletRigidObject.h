@@ -59,6 +59,9 @@ class BulletRigidObject : public BulletBase,
   /**
    * @brief Destructor cleans up simulation structures for the object.
    */
+  // clang-tidy assumes that the set insert in activateCollisionIsland() may
+  // potentially throw an exception
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~BulletRigidObject() override;
 
   /**
