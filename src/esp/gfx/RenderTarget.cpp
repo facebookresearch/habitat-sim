@@ -63,43 +63,35 @@ struct RenderTarget::Impl {
 
     if (!(flags_ & Flag::NoRgbaBuffer)) {
       colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::SRGB8Alpha8, size);
-      LOG(INFO) << "Has rgba buffer";
     }
     if (!(flags_ & Flag::NoObjectIdBuffer)) {
       objectIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32UI, size);
-      LOG(INFO) << "Has objectid buffer";
     }
     if (!(flags_ & Flag::NoDepthTexture)) {
       depthRenderTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
           .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
           .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
           .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, size);
-      LOG(INFO) << "Has depth texture";
     } else {
       // we use the unprojectedDepth_ as the depth buffer
       unprojectedDepth_ = Mn::GL::Renderbuffer{};
       unprojectedDepth_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
                                    size);
-      LOG(INFO) << "Has depth buffer";
     }
 
     framebuffer_ = Mn::GL::Framebuffer{{{}, size}};
     if (!(flags_ & Flag::NoRgbaBuffer)) {
       framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_);
-      LOG(INFO) << "Attached rgba buffer";
     }
     if (!(flags_ & Flag::NoObjectIdBuffer)) {
       framebuffer_.attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_);
-      LOG(INFO) << "Attached objectId buffer";
     }
     if (!(flags_ & Flag::NoDepthTexture)) {
       framebuffer_.attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
                                  depthRenderTexture_, 0);
-      LOG(INFO) << "Attached depth texture";
     } else {
       framebuffer_.attachRenderbuffer(
           Mn::GL::Framebuffer::BufferAttachment::Depth, unprojectedDepth_);
-      LOG(INFO) << "Attached depth buffer";
     }
     if (!(flags_ & Flag::NoRgbaBuffer)) {
       framebuffer_.mapForDraw({{0, RgbaBuffer}});
@@ -108,9 +100,6 @@ struct RenderTarget::Impl {
     if (!(flags_ & Flag::NoObjectIdBuffer)) {
       framebuffer_.mapForDraw({{1, ObjectIdBuffer}});
     }
-    // XXX
-    LOG(INFO) << static_cast<int>(
-        framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw));
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
