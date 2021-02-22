@@ -126,7 +126,7 @@ class ResourceManager {
                            Flags flags = {});
 
   /** @brief Destructor */
-  ~ResourceManager() = default;
+  ~ResourceManager();
 
   /**
    * @brief This function will build the various @ref Importers used by the
