@@ -43,13 +43,15 @@ BulletRigidObject::BulletRigidObject(
       RigidObject(rigidBodyNode, objectId, resMgr),
       MotionState(*rigidBodyNode) {}
 
+// clang-tidy assumes that the set insert in activateCollisionIsland() may
+// potentially throw an exception
+// NOLINTNEXTLINE(bugprone-exception-escape)
 BulletRigidObject::~BulletRigidObject() {
   if (!isActive()) {
-    // This object may be supporting other sleeping objects, so wake them before
-    // removing.
+    // This object may be supporting other sleeping objects, so wake them
+    // before removing.
     activateCollisionIsland();
   }
-
   // remove rigid body from the world
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
 
@@ -456,10 +458,10 @@ void BulletRigidObject::activateCollisionIsland() {
 
   // first query overlapping pairs of the current object from the most recent
   // broadphase to collect relevant simulation islands.
-  std::set<int> overlappingSimulationIslands = {thisColObj->getIslandTag()};
-  auto& pairCache =
-      bWorld_->getCollisionWorld()->getPairCache()->getOverlappingPairArray();
 
+  std::set<int> overlappingSimulationIslands = {thisColObj->getIslandTag()};
+  auto* bColWorld = bWorld_->getCollisionWorld();
+  auto& pairCache = bColWorld->getPairCache()->getOverlappingPairArray();
   for (int i = 0; i < pairCache.size(); ++i) {
     if (pairCache.at(i).m_pProxy0->m_clientObject == thisColObj) {
       overlappingSimulationIslands.insert(
@@ -476,14 +478,15 @@ void BulletRigidObject::activateCollisionIsland() {
 
   // activate nearby objects in the simulation island as computed on the
   // previous collision detection pass
-  auto& colObjs = bWorld_->getCollisionWorld()->getCollisionObjectArray();
+  auto& colObjs = bColWorld->getCollisionObjectArray();
   for (auto objIx = 0; objIx < colObjs.size(); ++objIx) {
     if (overlappingSimulationIslands.count(colObjs[objIx]->getIslandTag()) >
         0) {
       colObjs[objIx]->activate();
     }
   }
-}
+
+}  // BulletRigidObject::activateCollisionIsland
 
 void BulletRigidObject::setCOM(const Magnum::Vector3&) {
   // Current not supported
