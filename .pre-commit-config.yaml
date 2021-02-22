@@ -64,10 +64,10 @@ repos:
         - flake8-builtins==1.5.3
         - flake8-comprehensions==3.3.0
         - flake8-return==1.1.2
-        - flake8-simplify==0.13.0
+        - flake8-simplify==0.14.0
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.800'
+    rev: 'v0.812'
     hooks:
     -   id: mypy
         pass_filenames: false
@@ -116,7 +116,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v7.18.0
+    rev: v7.20.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]

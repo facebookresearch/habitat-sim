@@ -35,7 +35,7 @@ namespace core {
  */
 class ManagedContainerBase {
  public:
-  ManagedContainerBase(const std::string& metadataType)
+  explicit ManagedContainerBase(const std::string& metadataType)
       : objectType_(metadataType) {}
   virtual ~ManagedContainerBase() = default;
   /**
@@ -69,7 +69,7 @@ class ManagedContainerBase {
       const std::vector<std::string>& objectHandles,
       bool lock) {
     std::vector<std::string> res;
-    for (std::string objectHandle : objectHandles) {
+    for (const std::string& objectHandle : objectHandles) {
       if (setLock(objectHandle, lock)) {
         res.push_back(objectHandle);
       }

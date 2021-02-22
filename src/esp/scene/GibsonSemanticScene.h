@@ -14,7 +14,7 @@ struct GibsonObjectCategory : public SemanticCategory {
   GibsonObjectCategory(const int id, const std::string& name)
       : id_(id), name_(name) {}
 
-  int index(const std::string& mapping) const override { return id_; }
+  int index(const std::string& /*mapping*/) const override { return id_; }
 
   std::string name(const std::string& mapping) const override {
     if (mapping == "category" || mapping == "") {

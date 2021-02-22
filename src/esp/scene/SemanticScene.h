@@ -235,7 +235,7 @@ class SemanticLevel {
   box3f aabb() const { return bbox_; }
 
  protected:
-  int index_;
+  int index_{};
   std::string labelCode_;
   vec3f position_;
   box3f bbox_;
@@ -268,8 +268,8 @@ class SemanticRegion {
   const SemanticCategory::ptr category() const { return category_; }
 
  protected:
-  int index_;
-  int parentIndex_;
+  int index_{};
+  int parentIndex_{};
   std::shared_ptr<SemanticCategory> category_;
   vec3f position_;
   box3f bbox_;
@@ -302,8 +302,8 @@ class SemanticObject {
   const SemanticCategory::ptr category() const { return category_; }
 
  protected:
-  int index_;
-  int parentIndex_;
+  int index_{};
+  int parentIndex_{};
   std::shared_ptr<SemanticCategory> category_;
   geo::OBB obb_;
   std::shared_ptr<SemanticRegion> region_;
