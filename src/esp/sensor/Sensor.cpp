@@ -62,10 +62,6 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   setTransformationFromSpec();
 }
 
-Sensor::~Sensor() {
-  LOG(INFO) << "Deconstructing Sensor";
-}
-
 void Sensor::setTransformationFromSpec() {
   CORRADE_ASSERT(spec_,
                  "Sensor::setTransformationFromSpec: Cannot set "
