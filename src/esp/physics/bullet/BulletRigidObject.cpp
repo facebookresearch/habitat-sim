@@ -49,12 +49,13 @@ BulletRigidObject::~BulletRigidObject() {
     // removing.
     activateCollisionIsland();
   }
+  try {
+    // remove rigid body from the world
+    bWorld_->removeRigidBody(bObjectRigidBody_.get());
 
-  // remove rigid body from the world
-  bWorld_->removeRigidBody(bObjectRigidBody_.get());
-
-  collisionObjToObjIds_->erase(bObjectRigidBody_.get());
-
+    collisionObjToObjIds_->erase(bObjectRigidBody_.get());
+  } catch (...) {
+  }
 }  //~BulletRigidObject
 
 bool BulletRigidObject::initialization_LibSpecific() {
