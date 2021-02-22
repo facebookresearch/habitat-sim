@@ -15,6 +15,11 @@ namespace geo {
 VoxelGrid::VoxelGrid() {}
 VoxelGrid::VoxelGrid(const assets::MeshData& meshData, int resolution) {
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
+  VHACD::IVHACD::Parameters params;
+  params.m_resolution = resolution;
+  interfaceVHACD->computeVoxelField(&meshData.vbo[0][0], meshData.vbo.size(),
+                                    &meshData.ibo[0], meshData.ibo.size() / 3,
+                                    params);
 }
 
 VoxelGrid::VoxelGrid(const assets::MeshMetaData& meshMetaData,
