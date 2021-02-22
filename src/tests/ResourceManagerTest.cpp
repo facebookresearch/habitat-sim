@@ -121,11 +121,11 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
   esp::assets::ResourceManager::VHACDParameters params;
   // params.setMaxNumVerticesPerCH(10);
   params.m_resolution = 1000000;
-  ASSERT(resourceManager.getNumberOfResource(CHdonutFile) == 0);
+  ASSERT(!resourceManager.isAssetDataRegistered(CHdonutFile));
   resourceManager.createConvexHullDecomposition(donutFile, CHdonutFile, params,
                                                 true);
 
-  ASSERT(resourceManager.getNumberOfResource(CHdonutFile) > 0);
+  ASSERT(resourceManager.isAssetDataRegistered(CHdonutFile));
 }
 #endif
 
