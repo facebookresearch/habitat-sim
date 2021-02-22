@@ -7,6 +7,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/gfx/RenderCamera.h"
+#include "esp/gfx/WindowlessContext.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/sensor/VisualSensor.h"
 
@@ -15,8 +16,9 @@ namespace gfx {
 
 class Renderer {
  public:
-  enum class Flag {
+  enum class Flag : unsigned int {
     NoTextures = 1 << 0,
+    BackgroundThread = 1 << 1
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -25,7 +27,7 @@ class Renderer {
   /**
    * @brief Constructor
    */
-  explicit Renderer(Flags flags = {});
+  explicit Renderer(WindowlessContext* context, Flags flags = {});
 
   // draw the scene graph with the camera specified by user
   void draw(RenderCamera& camera,
@@ -37,6 +39,20 @@ class Renderer {
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling});
 
+  // draw the scene graph with the visual sensor provided by user
+  // async
+  void drawAsync(sensor::VisualSensor& visualSensor,
+                 scene::SceneGraph& sceneGraph,
+                 const Mn::MutableImageView2D& view,
+                 RenderCamera::Flags flags = {
+                     RenderCamera::Flag::FrustumCulling});
+
+  void drawWait();
+  void waitSG();
+
+  void startDrawJobs();
+
+  void acquireGlContext();
   /**
    * @brief Binds a @ref RenderTarget to the sensor
    */
