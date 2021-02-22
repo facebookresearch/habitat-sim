@@ -1,7 +1,6 @@
 # [setup]
 import math
 import os
-import time
 
 import magnum as mn
 import numpy as np
@@ -47,30 +46,13 @@ def make_configuration():
 def simulate(sim, dt=1.0, get_frames=True, data=None):
     """Simulate dt seconds at 60Hz to the nearest fixed timestep"""
     observations = []
-    physics_step_times = []
-    graphics_render_times = []
-    collisions = []
-
     start_time = sim.get_world_time()
     while sim.get_world_time() < start_time + dt:
-        st = time.time()
         sim.step_physics(1.0 / 60.0)
-        mt = time.time()
         if get_frames:
             observations.append(sim.get_sensor_observations())
-        et = time.time()
-        physics_step_times.append(mt - st)
-        graphics_render_times.append(et - mt)
-        collisions.append(sim.get_num_active_contact_points())
-
     if "observations" in data:
         data["observations"] += observations
-    if "physics_step_times" in data:
-        data["physics_step_times"] += physics_step_times
-    if "graphics_render_times" in data:
-        data["graphics_render_times"] += graphics_render_times
-    if "collisions" in data:
-        data["collisions"] += collisions
 
 
 def_offset = np.array([0, 1, -1.5])
@@ -199,7 +181,7 @@ def runVHACDSimulation(obj_path):
             vel_control.controlling_ang_vel = True
             vel_control.angular_velocity = np.array([0, -1.56, 0])
 
-        # simulate for 3 seconds
+        # simulate for 4 seconds
         simulate(sim, dt=4, get_frames=True, data=data)
 
         for cur_id in cur_ids:
@@ -215,11 +197,8 @@ def runVHACDSimulation(obj_path):
 if __name__ == "__main__":
     # List of objects you want to execute the VHACD tests on.
     obj_paths = [
-        "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_chair_01.glb",
-        # "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_bowl_02.glb",
-        # "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_lamp_01.glb",
-        # "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_refrigerator.glb",
-        # "replicaCAD_dataset_v1_5/objects/configs_convex/frl_apartment_shoe_01.glb",
+        "test_assets/objects/chair.glb",
+        "test_assets/objects/donut.glb",
     ]
     # create and show the video
     observations = []

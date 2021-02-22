@@ -360,7 +360,7 @@ class ResourceManager {
    *
    * @param resourceName The name of the resource.
    */
-  unsigned int getNumberOfResource(const std::string& resourceName);
+  bool isAssetDataRegistered(const std::string& resourceName);
 
 #ifdef ESP_BUILD_WITH_VHACD
   /**

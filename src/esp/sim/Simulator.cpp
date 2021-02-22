@@ -1040,12 +1040,12 @@ std::string Simulator::convexHullDecomposition(
   // generate a unique filename
   std::string chdFilename =
       Cr::Utility::Directory::splitExtension(filename).first + ".chd";
-  if (resourceManager_->getNumberOfResource(chdFilename) > 0) {
+  if (resourceManager_->isAssetDataRegistered(chdFilename)) {
     int nameAttempt = 1;
     chdFilename += "_";
     // Iterate until a unique filename is found.
-    while (resourceManager_->getNumberOfResource(
-               chdFilename + std::to_string(nameAttempt)) > 0) {
+    while (resourceManager_->isAssetDataRegistered(
+        chdFilename + std::to_string(nameAttempt))) {
       nameAttempt++;
     }
     chdFilename += std::to_string(nameAttempt);

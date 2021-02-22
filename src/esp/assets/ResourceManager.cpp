@@ -2246,9 +2246,8 @@ bool ResourceManager::outputMeshMetaDataToObj(
   return success;
 }
 
-unsigned int ResourceManager::getNumberOfResource(
-    const std::string& resourceName) {
-  return resourceDict_.count(resourceName);
+bool ResourceManager::isAssetDataRegistered(const std::string& resourceName) {
+  return (resourceDict_.count(resourceName) > 0);
 }
 
 #ifdef ESP_BUILD_WITH_VHACD
