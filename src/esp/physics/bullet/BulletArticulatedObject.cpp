@@ -175,7 +175,6 @@ bool BulletArticulatedObject::initializeFromURDF(
       }
     }
   }
-  updateNodes(true);
   return true;
 }
 
@@ -184,7 +183,7 @@ Magnum::Matrix4 BulletArticulatedObject::getRootState() {
 }
 
 void BulletArticulatedObject::updateNodes(bool force) {
-  if (force || btMultiBody_->isAwake()) {
+  if (force || !getSleep()) {
     setRotationScalingFromBulletTransform(btMultiBody_->getBaseWorldTransform(),
                                           &node());
 

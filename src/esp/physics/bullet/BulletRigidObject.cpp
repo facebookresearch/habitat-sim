@@ -499,10 +499,11 @@ void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
 void BulletRigidObject::updateNodes(bool force) {
   isDeferringUpdate_ = false;
 
-  if (force)
+  if (force) {
     setWorldTransform(bObjectRigidBody_->getWorldTransform());
-  else if (deferredUpdate_)
+  } else if (deferredUpdate_) {
     setWorldTransform(*deferredUpdate_);
+  }
 
   deferredUpdate_ = Corrade::Containers::NullOpt;
 }
@@ -512,6 +513,14 @@ void BulletRigidObject::setWorldTransform(const btTransform& worldTrans) {
     deferredUpdate_ = {worldTrans};
   } else {
     MotionState::setWorldTransform(worldTrans);
+  }
+}
+
+void BulletRigidObject::getWorldTransform(btTransform& worldTrans) const {
+  if (deferredUpdate_) {
+    worldTrans = *deferredUpdate_;
+  } else {
+    MotionState::getWorldTransform(worldTrans);
   }
 }
 

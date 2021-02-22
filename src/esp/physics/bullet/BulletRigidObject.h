@@ -490,6 +490,9 @@ class BulletRigidObject : public BulletBase,
   std::unique_ptr<btCompoundShape> bEmptyShape_;
 
   void setWorldTransform(const btTransform& worldTrans) override;
+
+  void getWorldTransform(btTransform& worldTrans) const override;
+
   Corrade::Containers::Optional<btTransform> deferredUpdate_ =
       Corrade::Containers::NullOpt;
 
