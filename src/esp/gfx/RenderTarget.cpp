@@ -45,7 +45,7 @@ struct RenderTarget::Impl {
   Impl(const Mn::Vector2i& size,
        const Mn::Vector2& depthUnprojection,
        DepthShader* depthShader,
-       Renderer::Flags flags)
+       Flags flags)
       : colorBuffer_{},
         objectIdBuffer_{},
         depthRenderTexture_{},
@@ -55,31 +55,73 @@ struct RenderTarget::Impl {
         unprojectedDepth_{Mn::NoCreate},
         depthUnprojectionMesh_{Mn::NoCreate},
         depthUnprojectionFrameBuffer_{Mn::NoCreate},
-        rendererFlags_{flags} {
+        flags_{flags} {
     if (depthShader_) {
       CORRADE_INTERNAL_ASSERT(depthShader_->flags() &
                               DepthShader::Flag::UnprojectExistingDepth);
     }
 
-    colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::SRGB8Alpha8, size);
-    objectIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32UI, size);
-    depthRenderTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
-        .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
-        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-        .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, size);
+    if (!(flags_ & Flag::NoRgbaBuffer)) {
+      colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::SRGB8Alpha8, size);
+      LOG(INFO) << "Has rgba buffer";
+    }
+    if (!(flags_ & Flag::NoObjectIdBuffer)) {
+      objectIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32UI, size);
+      LOG(INFO) << "Has objectid buffer";
+    }
+    if (!(flags_ & Flag::NoDepthTexture)) {
+      depthRenderTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+          .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+          .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+          .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, size);
+      LOG(INFO) << "Has depth texture";
+    } else {
+      // we use the unprojectedDepth_ as the depth buffer
+      unprojectedDepth_ = Mn::GL::Renderbuffer{};
+      unprojectedDepth_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
+                                   size);
+      LOG(INFO) << "Has depth buffer";
+    }
 
     framebuffer_ = Mn::GL::Framebuffer{{{}, size}};
-    framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_)
-        .attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_)
-        .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
-                       depthRenderTexture_, 0)
-        .mapForDraw({{0, RgbaBuffer}, {1, ObjectIdBuffer}});
+    if (!(flags_ & Flag::NoRgbaBuffer)) {
+      framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_);
+      LOG(INFO) << "Attached rgba buffer";
+    }
+    if (!(flags_ & Flag::NoObjectIdBuffer)) {
+      framebuffer_.attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_);
+      LOG(INFO) << "Attached objectId buffer";
+    }
+    if (!(flags_ & Flag::NoDepthTexture)) {
+      framebuffer_.attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
+                                 depthRenderTexture_, 0);
+      LOG(INFO) << "Attached depth texture";
+    } else {
+      framebuffer_.attachRenderbuffer(
+          Mn::GL::Framebuffer::BufferAttachment::Depth, unprojectedDepth_);
+      LOG(INFO) << "Attached depth buffer";
+    }
+    if (!(flags_ & Flag::NoRgbaBuffer)) {
+      framebuffer_.mapForDraw({{0, RgbaBuffer}});
+    }
+
+    if (!(flags_ & Flag::NoObjectIdBuffer)) {
+      framebuffer_.mapForDraw({{1, ObjectIdBuffer}});
+    }
+    // XXX
+    LOG(INFO) << static_cast<int>(
+        framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw));
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
   }
 
   void initDepthUnprojector() {
+    CORRADE_ASSERT(
+        !(flags_ & Flag::NoDepthTexture),
+        "RenderTarget::Impl::initDepthUnprojector(): this render target "
+        "was not created with depth texture enabled.", );
+
     if (depthUnprojectionMesh_.id() == 0) {
       unprojectedDepth_ = Mn::GL::Renderbuffer{};
       unprojectedDepth_.setStorage(Mn::GL::RenderbufferFormat::R32F,
@@ -101,6 +143,10 @@ struct RenderTarget::Impl {
 
   void unprojectDepthGPU() {
     CORRADE_INTERNAL_ASSERT(depthShader_ != nullptr);
+    CORRADE_ASSERT(
+        !(flags_ & Flag::NoDepthTexture),
+        "RenderTarget::Impl::unporojectDepthGPU(): this render target "
+        "was not created with depth texture enabled.", );
     initDepthUnprojector();
 
     depthUnprojectionFrameBuffer_.bind();
@@ -112,8 +158,12 @@ struct RenderTarget::Impl {
 
   void renderEnter() {
     framebuffer_.clearDepth(1.0);
-    framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
-    framebuffer_.clearColor(1, Mn::Vector4ui{});
+    if (!(flags_ & Flag::NoRgbaBuffer)) {
+      framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
+    }
+    if (!(flags_ & Flag::NoObjectIdBuffer)) {
+      framebuffer_.clearColor(1, Mn::Vector4ui{});
+    }
     framebuffer_.bind();
   }
 
@@ -122,13 +172,20 @@ struct RenderTarget::Impl {
   void renderExit() {}
 
   void blitRgbaToDefault() {
-    if (rendererFlags_ & Renderer::Flag::NoTextures)
-      throw std::runtime_error(
-          "Simulator was initialized with requiresTextures = false");
+    CORRADE_ASSERT(!(flags_ & Flag::NoTextures),
+                   "RenderTarget::Impl::blitRgbaToDefault(): Simulator was "
+                   "initialized with requiresTextures = false", );
+    CORRADE_ASSERT(
+        !(flags_ & Flag::NoRgbaBuffer),
+        "RenderTarget::Impl::blitRgbaToDefault(): this render target "
+        "was not created with rgba render buffer enabled.", );
+    CORRADE_ASSERT(
+        framebuffer_.viewport() == Mn::GL::defaultFramebuffer.viewport(),
+        "RenderTarget::Impl::blitRgbaToDefault(): the viewport size does not "
+        "match "
+        "between the internal frame buffer and the default frame buffer", );
 
     framebuffer_.mapForRead(RgbaBuffer);
-    ASSERT(framebuffer_.viewport() == Mn::GL::defaultFramebuffer.viewport());
-
     Mn::GL::AbstractFramebuffer::blit(
         framebuffer_, Mn::GL::defaultFramebuffer, framebuffer_.viewport(),
         Mn::GL::defaultFramebuffer.viewport(), Mn::GL::FramebufferBlit::Color,
@@ -136,14 +193,20 @@ struct RenderTarget::Impl {
   }
 
   void readFrameRgba(const Mn::MutableImageView2D& view) {
-    if (rendererFlags_ & Renderer::Flag::NoTextures)
-      throw std::runtime_error(
-          "Simulator was initialized with requiresTextures = false");
+    CORRADE_ASSERT(!(flags_ & Flag::NoTextures),
+                   "RenderTarget::Impl::readFrameRgba(): Simulator was "
+                   "initialized with requiresTextures = false", );
+    CORRADE_ASSERT(!(flags_ & Flag::NoRgbaBuffer),
+                   "RenderTarget::Impl::readFrameRgba(): this render target "
+                   "was not created with rgba render buffer enabled.", );
 
     framebuffer_.mapForRead(RgbaBuffer).read(framebuffer_.viewport(), view);
   }
 
   void readFrameDepth(const Mn::MutableImageView2D& view) {
+    CORRADE_ASSERT(!(flags_ & Flag::NoDepthTexture),
+                   "RenderTarget::Impl::readFrameDepth(): this render target "
+                   "was not created with depth texture enabled.", );
     if (depthShader_) {
       unprojectDepthGPU();
       depthUnprojectionFrameBuffer_.mapForRead(UnprojectedDepthBuffer)
@@ -159,6 +222,11 @@ struct RenderTarget::Impl {
   }
 
   void readFrameObjectId(const Mn::MutableImageView2D& view) {
+    CORRADE_ASSERT(
+        !(flags_ & Flag::NoObjectIdBuffer),
+        "RenderTarget::Impl::readFrameObjectId(): this render target "
+        "was not created with objectId render buffer enabled.", );
+
     framebuffer_.mapForRead(ObjectIdBuffer).read(framebuffer_.viewport(), view);
   }
 
@@ -171,10 +239,13 @@ struct RenderTarget::Impl {
     // TODO: Consider implementing the GPU read functions with EGLImage
     // See discussion here:
     // https://github.com/facebookresearch/habitat-sim/pull/114#discussion_r312718502
+    CORRADE_ASSERT(!(flags_ & Flag::NoTextures),
+                   "RenderTarget::Impl::readFrameRgbaGPU(): Simulator was "
+                   "initialized with requiresTextures = false", );
 
-    if (rendererFlags_ & Renderer::Flag::NoTextures)
-      throw std::runtime_error(
-          "Simulator was initialized with requiresTextures = false");
+    CORRADE_ASSERT(!(flags_ & Flag::NoRgbaBuffer),
+                   "RenderTarget::Impl::readFrameRgbaGPU(): this render target "
+                   "was not created with rgba render buffer enabled.", );
 
     if (colorBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
@@ -195,6 +266,10 @@ struct RenderTarget::Impl {
   }
 
   void readFrameDepthGPU(float* devPtr) {
+    CORRADE_ASSERT(
+        !(flags_ & Flag::NoDepthTexture),
+        "RenderTarget::Impl::readFrameDepthGPU(): this render target "
+        "was not created with depth texture enabled.", );
     unprojectDepthGPU();
 
     if (depthBufferCugl_ == nullptr)
@@ -216,6 +291,11 @@ struct RenderTarget::Impl {
   }
 
   void readFrameObjectIdGPU(int32_t* devPtr) {
+    CORRADE_ASSERT(
+        !(flags_ & Flag::NoObjectIdBuffer),
+        "RenderTarget::Impl::readFrameObjectIdGPU(): this render target "
+        "was not created with objectId render buffer enabled.", );
+
     if (objecIdBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
           &objecIdBufferCugl_, objectIdBuffer_.id(), GL_RENDERBUFFER,
@@ -260,7 +340,7 @@ struct RenderTarget::Impl {
   Mn::GL::Mesh depthUnprojectionMesh_;
   Mn::GL::Framebuffer depthUnprojectionFrameBuffer_;
 
-  const Renderer::Flags rendererFlags_;
+  Flags flags_;
 
 #ifdef ESP_BUILD_WITH_CUDA
   cudaGraphicsResource_t colorBufferCugl_ = nullptr;
@@ -272,7 +352,7 @@ struct RenderTarget::Impl {
 RenderTarget::RenderTarget(const Mn::Vector2i& size,
                            const Mn::Vector2& depthUnprojection,
                            DepthShader* depthShader,
-                           Renderer::Flags flags)
+                           Flags flags)
     : pimpl_(spimpl::make_unique_impl<Impl>(size,
                                             depthUnprojection,
                                             depthShader,

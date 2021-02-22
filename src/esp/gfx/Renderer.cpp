@@ -63,9 +63,36 @@ struct Renderer::Impl {
           DepthShader::Flag::UnprojectExistingDepth);
     }
 
+    RenderTarget::Flags renderTargetFlags_ = {};
+    if (flags_ & Flag::NoTextures) {
+      renderTargetFlags_ |= RenderTarget::Flag::NoTextures;
+    }
+
+    switch (sensor.specification()->sensorType) {
+      case sensor::SensorType::Color:
+        renderTargetFlags_ |= (RenderTarget::Flag::NoObjectIdBuffer |
+                               RenderTarget::Flag::NoDepthTexture);
+        break;
+
+      case sensor::SensorType::Depth:
+        renderTargetFlags_ |= (RenderTarget::Flag::NoRgbaBuffer |
+                               RenderTarget::Flag::NoObjectIdBuffer);
+        break;
+
+      case sensor::SensorType::Semantic:
+        renderTargetFlags_ |= (RenderTarget::Flag::NoRgbaBuffer |
+                               RenderTarget::Flag::NoDepthTexture);
+        break;
+
+      default:
+        // I need this default, since sensor type list is long, and without
+        // default clang-tidy will complain
+        break;
+    }
+
     sensor.bindRenderTarget(RenderTarget::create_unique(
         sensor.framebufferSize(), *depthUnprojection, depthShader_.get(),
-        flags_));
+        renderTargetFlags_));
   }
 
  private:

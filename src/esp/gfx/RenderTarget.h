@@ -5,6 +5,7 @@
 #ifndef ESP_GFX_RENDERTARGET_H_
 #define ESP_GFX_RENDERTARGET_H_
 
+#include <Corrade/Containers/EnumSet.h>
 #include <Magnum/Magnum.h>
 
 #include "esp/core/esp.h"
@@ -24,6 +25,36 @@ namespace gfx {
  */
 class RenderTarget {
  public:
+  enum class Flag {
+    /**
+     * @brief No textures for the meshes.
+     * Textures take a lot of GPU memory but they are not needed unless we are
+     * doing RGB rendering.
+     * Note: Do NOT set this flag when doing RGB rendering
+     * Currently it is just used to track whether or not @ref readFrameRgba,
+     * @ref blitRgbaToDefault, and @readFrameRgbaGPU are valid calls.
+     */
+    NoTextures = 1 << 0,
+    /**
+     * @brief Do not create rgba buffer
+     * This can make the rendering faster for depth sensor, semantic sensor
+     */
+    NoRgbaBuffer = 1 << 1,
+    /**
+     * @brief Do not create rgba buffer
+     * This can make the rendering faster for color sensor, depth sensor
+     */
+    NoObjectIdBuffer = 1 << 2,
+    /**
+     * @brief Do not create depth texture, it will use depth buffer instead
+     * This can make the rendering faster for color sensor, semantic sensor
+     * Note: Do NOT set this flag when being used in depth sensor
+     */
+    NoDepthTexture = 1 << 3,
+  };
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+  CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
+
   /**
    * @brief Constructor
    * @param size               The size of the underlying framebuffers in WxH
@@ -33,16 +64,12 @@ class RenderTarget {
    *                           Unprojects the depth on the CPU if nullptr.
    *                           Must be not nullptr to use @ref
    *                           readFrameDepthGPU()
-   * @param flags              The flags of the renderer that constructed this
-   *                           render target.  Currently just used to track
-   *                           whether or not @ref readFrameRgba,
-   *                           @ref blitRgbaToDefault, and @readFrameRgbaGPU
-   *                           are valid calls.
+   * @param flags              The flags of the renderer target
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
                DepthShader* depthShader,
-               Renderer::Flags flags);
+               Flags flags);
 
   /**
    * @brief Constructor
