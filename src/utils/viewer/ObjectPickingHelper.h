@@ -62,7 +62,8 @@ class ObjectPickingHelper {
    */
   void createPickedObjectVoxelGridVisualizer(
       std::unique_ptr<Mn::GL::Mesh>& mesh,
-      esp::scene::SceneNode* node);
+      esp::scene::SceneNode* node,
+      Magnum::Shaders::MeshVisualizer3D* customShader_);
 
   /**
    * @brief return true if an object is picked at the moment

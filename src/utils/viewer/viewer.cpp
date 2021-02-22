@@ -795,7 +795,7 @@ void Viewer::invertGravity() {
 }
 
 esp::geo::VoxelGrid Viewer::createVoxelField() {
-  const Mn::Vector3 v_size = Mn::Vector3(1, 1, 1);
+  const Mn::Vector3 v_size = Mn::Vector3(0.5, 0.5, 0.5);
   const Mn::Vector3i v_dim = Mn::Vector3i(100, 100, 100);
 
   esp::geo::VoxelGrid v(v_size, v_dim);  // = esp::geo::VoxelGrid();
@@ -846,7 +846,7 @@ void Viewer::displayVoxelField(esp::geo::VoxelGrid& v) {
   auto& rootNode = activeSceneGraph_->getRootNode();
 
   objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
-      voxel_grids_[nextVoxelGridMeshId - 1], &rootNode);
+      voxel_grids_[nextVoxelGridMeshId - 1], &rootNode, &shader_);
   /*auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId - 1],
       &objectPickingHelper_->getDrawables());*/

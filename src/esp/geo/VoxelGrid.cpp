@@ -13,8 +13,8 @@ namespace esp {
 namespace geo {
 
 VoxelGrid::VoxelGrid() {}
-VoxelGrid::VoxelGrid(const assets::MeshMetaData& meshMetaData, int resolution) {
-
+VoxelGrid::VoxelGrid(const assets::MeshData& meshData, int resolution) {
+  VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
 }
 
 VoxelGrid::VoxelGrid(const assets::MeshMetaData& meshMetaData,
