@@ -37,7 +37,7 @@ namespace physics {
  */
 class BulletRigidObject : public BulletBase,
                           public RigidObject,
-                          protected btMotionState {
+                          private Magnum::BulletIntegration::MotionState {
  public:
   /**
    * @brief Constructor for a @ref BulletRigidObject.
@@ -474,13 +474,6 @@ class BulletRigidObject : public BulletBase,
    */
   void activateCollisionIsland();
 
-  virtual void getWorldTransform(btTransform&worldTrans) const override;
-  virtual void setWorldTransform(const btTransform&worldTrans) override;
-  virtual void setWorldTransformImpl(const btTransform&worldTrans);
-
-
-
-
  private:
   // === Physical object ===
   //! If true, the object's bounding box will be used for collision once
@@ -496,8 +489,9 @@ class BulletRigidObject : public BulletBase,
 
   std::unique_ptr<btCompoundShape> bEmptyShape_;
 
-  Corrade::Containers::Optional<btTransform> deferredUpdate_ = Corrade::Containers::NullOpt;
-  bool broken_ = false;
+  void setWorldTransform(const btTransform& worldTrans) override;
+  Corrade::Containers::Optional<btTransform> deferredUpdate_ =
+      Corrade::Containers::NullOpt;
 
   ESP_SMART_POINTERS(BulletRigidObject)
 };
