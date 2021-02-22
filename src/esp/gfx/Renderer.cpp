@@ -5,6 +5,8 @@
 #include "Renderer.h"
 
 #include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include <thread>
 
 #include <Corrade/Containers/StridedArrayView.h>
@@ -29,134 +31,12 @@
 
 namespace Mn = Magnum;
 
-#if defined(CORRADE_TARGET_APPLE)
-namespace {
-#include <pthread.h>
-
-#ifndef PTHREAD_BARRIER_SERIAL_THREAD
-#define PTHREAD_BARRIER_SERIAL_THREAD -1
-#endif
-
-typedef pthread_mutexattr_t pthread_barrierattr_t;
-
-/* structure for internal use that should be considered opaque */
-typedef struct {
-  pthread_mutex_t mutex;
-  pthread_cond_t cond;
-  unsigned count;
-  unsigned left;
-  unsigned round;
-} pthread_barrier_t;
-int pthread_barrier_init(pthread_barrier_t* __restrict barrier,
-                         const pthread_barrierattr_t* __restrict attr,
-                         unsigned count);
-int pthread_barrier_destroy(pthread_barrier_t* barrier);
-
-int pthread_barrier_wait(pthread_barrier_t* barrier);
-
-int pthread_barrierattr_init(pthread_barrierattr_t* attr);
-int pthread_barrierattr_destroy(pthread_barrierattr_t* attr);
-int pthread_barrierattr_getpshared(const pthread_barrierattr_t* __restrict attr,
-                                   int* __restrict pshared);
-int pthread_barrierattr_setpshared(pthread_barrierattr_t* attr, int pshared);
-
-int pthread_barrier_init(pthread_barrier_t* __restrict barrier,
-                         const pthread_barrierattr_t* __restrict attr,
-                         unsigned count) {
-  if (count == 0) {
-    return EINVAL;
-  }
-
-  int ret;
-
-  pthread_condattr_t condattr;
-  pthread_condattr_init(&condattr);
-  if (attr) {
-    int pshared;
-    ret = pthread_barrierattr_getpshared(attr, &pshared);
-    if (ret) {
-      return ret;
-    }
-    ret = pthread_condattr_setpshared(&condattr, pshared);
-    if (ret) {
-      return ret;
-    }
-  }
-
-  ret = pthread_mutex_init(&barrier->mutex, attr);
-  if (ret) {
-    return ret;
-  }
-
-  ret = pthread_cond_init(&barrier->cond, &condattr);
-  if (ret) {
-    pthread_mutex_destroy(&barrier->mutex);
-    return ret;
-  }
-
-  barrier->count = count;
-  barrier->left = count;
-  barrier->round = 0;
-
-  return 0;
-}
-
-int pthread_barrier_destroy(pthread_barrier_t* barrier) {
-  if (barrier->count == 0) {
-    return EINVAL;
-  }
-
-  barrier->count = 0;
-  int rm = pthread_mutex_destroy(&barrier->mutex);
-  int rc = pthread_cond_destroy(&barrier->cond);
-  return rm ? rm : rc;
-}
-
-int pthread_barrier_wait(pthread_barrier_t* barrier) {
-  pthread_mutex_lock(&barrier->mutex);
-  if (--barrier->left) {
-    unsigned round = barrier->round;
-    do {
-      pthread_cond_wait(&barrier->cond, &barrier->mutex);
-    } while (round == barrier->round);
-    pthread_mutex_unlock(&barrier->mutex);
-    return 0;
-  } else {
-    barrier->round += 1;
-    barrier->left = barrier->count;
-    pthread_cond_broadcast(&barrier->cond);
-    pthread_mutex_unlock(&barrier->mutex);
-    return PTHREAD_BARRIER_SERIAL_THREAD;
-  }
-}
-
-int pthread_barrierattr_init(pthread_barrierattr_t* attr) {
-  return pthread_mutexattr_init(attr);
-}
-
-int pthread_barrierattr_destroy(pthread_barrierattr_t* attr) {
-  return pthread_mutexattr_destroy(attr);
-}
-
-int pthread_barrierattr_getpshared(const pthread_barrierattr_t* __restrict attr,
-                                   int* __restrict pshared) {
-  return pthread_mutexattr_getpshared(attr, pshared);
-}
-
-int pthread_barrierattr_setpshared(pthread_barrierattr_t* attr, int pshared) {
-  return pthread_mutexattr_setpshared(attr, pshared);
-}
-
-}  // namespace
-#endif
-
 namespace esp {
 namespace gfx {
 
 struct BackgroundRenderThread {
   BackgroundRenderThread(WindowlessContext* context)
-      : context_{context}, done_{0}, sgLock_{0} {
-    pthread_barrier_init(&startBarrier_, nullptr, 2);
+      : context_{context}, done_{0}, sgLock_{0}, barrierVal_{0} {
     context_->release();
     t = std::thread(&BackgroundRenderThread::run, this);
 
@@ -165,12 +45,16 @@ struct BackgroundRenderThread {
     context_->makeCurrent();
   }
 
+  void startThread() {
+    barrierVal_.fetch_xor(1, std::memory_order_relaxed);
+    std::atomic_thread_fence(std::memory_order_release);
+    cv_.notify_all();
+  }
+
   ~BackgroundRenderThread() {
     task_ = Task::Exit;
-    std::atomic_thread_fence(std::memory_order_release);
-    pthread_barrier_wait(&startBarrier_);
+    startThread();
     t.join();
-    pthread_barrier_destroy(&startBarrier_);
   }
 
   static void spinLock(std::atomic<int>& lk, int val) {
@@ -199,16 +83,13 @@ struct BackgroundRenderThread {
   void startJobs() {
     task_ = Task::Render;
     sgLock_.store(1, std::memory_order_relaxed);
-    std::atomic_thread_fence(std::memory_order_release);
-
-    pthread_barrier_wait(&startBarrier_);
+    startThread();
   }
 
   void releaseContext() {
     task_ = Task::ReleaseContext;
-    std::atomic_thread_fence(std::memory_order_release);
 
-    pthread_barrier_wait(&startBarrier_);
+    startThread();
 
     jobsWaiting_ = 1;
     waitThread();
@@ -310,12 +191,22 @@ struct BackgroundRenderThread {
     threadReleaseContext();
     done_.store(1, std::memory_order_release);
 
-    while (true) {
-      pthread_barrier_wait(&startBarrier_);
-      std::atomic_thread_fence(std::memory_order_acquire);
+    int waitVal = 0;
+    bool done = false;
+    while (!done) {
+      waitVal ^= 1;
+      {
+        std::unique_lock<std::mutex> lk{mutex_};
+        cv_.wait(lk, [this, waitVal] {
+          return barrierVal_.load(std::memory_order_acquire) == waitVal;
+        });
+      }
 
       switch (task_) {
         case Task::Exit:
+          threadReleaseContext();
+          delete threadContext_;
+          done = true;
           break;
         case Task::ReleaseContext:
           threadReleaseContext();
@@ -328,19 +219,14 @@ struct BackgroundRenderThread {
       }
 
       std::atomic_thread_fence(std::memory_order_release);
-
-      if (task_ == Task::Exit)
-        break;
     };
-
-    threadReleaseContext();
-
-    delete threadContext_;
   }
 
   WindowlessContext* context_;
 
-  std::atomic<int> done_, sgLock_;
+  std::atomic<int> done_, sgLock_, barrierVal_;
+  std::condition_variable cv_;
+  std::mutex mutex_;
   std::thread t;
   pthread_barrier_t startBarrier_;
 
