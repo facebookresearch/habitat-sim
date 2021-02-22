@@ -6,6 +6,16 @@
 
 import habitat_sim
 
+VisualSensorTypeSet = {
+    habitat_sim.SensorType.COLOR,
+    habitat_sim.SensorType.DEPTH,
+    habitat_sim.SensorType.SEMANTIC,
+}
+CameraSensorSubTypeSet = {
+    habitat_sim.SensorSubType.PINHOLE,
+    habitat_sim.SensorSubType.ORTHOGRAPHIC,
+}
+
 
 def remove_all_objects(sim):
     r"""Removes all objects in simulator instance
@@ -25,17 +35,19 @@ def make_sensor_specs_from_settings(sensors, settings):
     for sensor_uuid, sensor_params in sensors.items():
         if settings[sensor_uuid]:
             # Check if type VisualSensorSpec
-            if (
-                sensor_params["sensor_type"] == habitat_sim.SensorType.COLOR
-                or sensor_params["sensor_type"] == habitat_sim.SensorType.DEPTH
-                or sensor_params["sensor_type"] == habitat_sim.SensorType.SEMANTIC
-            ):
+            if sensor_params["sensor_type"] not in VisualSensorTypeSet:
+                # TODO: Add more checks for NonVisualSensorSpec
+                raise ValueError(
+                    f"""{sensor_params["sensor_type"]} is an illegal sensorType that is not implemented yet"""
+                )
+            else:
                 # Check if type CameraSensorSpec
-                if (
-                    sensor_params["sensor_subtype"] == habitat_sim.SensorSubType.PINHOLE
-                    or sensor_params["sensor_subtype"]
-                    == habitat_sim.SensorSubType.ORTHOGRAPHIC
-                ):
+                if sensor_params["sensor_subtype"] not in CameraSensorSubTypeSet:
+                    # TODO: Add more checks for other types of sensors
+                    raise ValueError(
+                        f"""{sensor_params["sensor_subtype"]} is an illegal sensorSubType for a VisualSensor"""
+                    )
+                else:
                     sensor_spec = habitat_sim.CameraSensorSpec()
                     sensor_spec.uuid = sensor_uuid
                     sensor_spec.sensor_type = sensor_params["sensor_type"]
@@ -54,12 +66,6 @@ def make_sensor_specs_from_settings(sensors, settings):
                         print("Sensor position: ", sensor_spec.position)
                         print("===================================")
                     sensor_specs.append(sensor_spec)
-                else:
-                    # TODO: Add more checks for other types of sensors
-                    continue
-            else:
-                # TODO: Add more checks for NonVisualSensorSpec
-                continue
     return sensor_specs
 
 
@@ -71,17 +77,19 @@ def make_sensor_specs(sensors):
     sensor_specs = []
     for sensor_uuid, sensor_params in sensors.items():
         # Check if type VisualSensorSpec
-        if (
-            sensor_params["sensor_type"] == habitat_sim.SensorType.COLOR
-            or sensor_params["sensor_type"] == habitat_sim.SensorType.DEPTH
-            or sensor_params["sensor_type"] == habitat_sim.SensorType.SEMANTIC
-        ):
+        if sensor_params["sensor_type"] not in VisualSensorTypeSet:
+            # TODO: Add more checks for NonVisualSensorSpec
+            raise ValueError(
+                f"""{sensor_params["sensor_type"]} is an illegal sensorType that is not implemented yet"""
+            )
+        else:
             # Check if type CameraSensorSpec
-            if (
-                sensor_params["sensor_subtype"] == habitat_sim.SensorSubType.PINHOLE
-                or sensor_params["sensor_subtype"]
-                == habitat_sim.SensorSubType.ORTHOGRAPHIC
-            ):
+            if sensor_params["sensor_subtype"] not in CameraSensorSubTypeSet:
+                # TODO: Add more checks for other types of sensors
+                raise ValueError(
+                    f"""{sensor_params["sensor_subtype"]} is an illegal sensorSubType for a VisualSensor"""
+                )
+            else:
                 sensor_spec = habitat_sim.CameraSensorSpec()
                 sensor_spec.uuid = sensor_uuid
                 sensor_spec.sensor_type = sensor_params["sensor_type"]
@@ -94,10 +102,4 @@ def make_sensor_specs(sensors):
                     sensor_spec.position = sensor_params["orientation"]
                 sensor_spec.gpu2gpu_transfer = False
                 sensor_specs.append(sensor_spec)
-            else:
-                # TODO: Add more checks for other types of sensors
-                continue
-        else:
-            # TODO: Add more checks for NonVisualSensorSpec
-            continue
     return sensor_specs

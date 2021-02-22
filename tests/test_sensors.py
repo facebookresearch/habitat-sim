@@ -16,6 +16,7 @@ import habitat_sim
 import habitat_sim.errors
 from examples.settings import make_cfg
 from habitat_sim.utils.common import quat_from_coeffs
+from habitat_sim.utils.sim_utils import make_sensor_specs
 
 
 def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
@@ -267,3 +268,27 @@ def test_rgb_noise(scene, model_name, make_cfg_settings):
         ) > 1.5e-2 * np.linalg.norm(
             gt.astype(np.float)
         ), "Incorrect color_sensor output"
+
+
+@pytest.mark.gfxtest
+def test_sensor_spec_unimplemented_type():
+    sensors = {
+        "color_sensor": {  # active if sim_settings["color_sensor"]
+            "sensor_type": habitat_sim.SensorType.NONE,
+            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
+        }
+    }
+    with pytest.raises(ValueError):
+        make_sensor_specs(sensors)
+
+
+@pytest.mark.gfxtest
+def test_sensor_spec_mismatch_subtype():
+    sensors = {
+        "color_sensor": {  # active if sim_settings["color_sensor"]
+            "sensor_type": habitat_sim.SensorType.COLOR,
+            "sensor_subtype": habitat_sim.SensorSubType.NONE,
+        }
+    }
+    with pytest.raises(ValueError):
+        make_sensor_specs(sensors)
