@@ -25,7 +25,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    * for light type to @ref esp::gfx::LightType.  Keys must be lowercase.
    */
   static const std::map<std::string, esp::gfx::LightType> LightTypeNamesMap;
-  LightInstanceAttributes(const std::string& handle = "");
+  explicit LightInstanceAttributes(const std::string& handle = "");
 
   /**
    * @brief Get/Set the position of the light.
@@ -90,12 +90,12 @@ class LightInstanceAttributes : public AbstractAttributes {
  */
 class LightLayoutAttributes : public AbstractAttributes {
  public:
-  LightLayoutAttributes(const std::string& handle = "");
+  explicit LightLayoutAttributes(const std::string& handle = "");
 
   /**
    * @brief Add a light instance to this lighting layout
    */
-  void addLightInstance(LightInstanceAttributes::ptr _lightInstance) {
+  void addLightInstance(const LightInstanceAttributes::ptr& _lightInstance) {
     lightInstances_.emplace(_lightInstance->getHandle(), _lightInstance);
   }
 

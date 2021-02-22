@@ -40,7 +40,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   }  // ctor
 
   // necessary since abstract
-  virtual ~AbstractPrimitiveAttributes() = default;
+  ~AbstractPrimitiveAttributes() override = default;
 
   // handle is set internally based on attributes configuration
   // setting externally is prohibited
@@ -134,7 +134,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
 
  private:
   // Should never change, only set by ctor
-  void setPrimObjClassName(std::string primObjClassName) {
+  void setPrimObjClassName(const std::string& primObjClassName) {
     setString("primObjClassName", primObjClassName);
   }
 

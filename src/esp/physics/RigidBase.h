@@ -78,7 +78,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Virtual destructor for a @ref RigidBase.
    */
-  virtual ~RigidBase() {}
+  ~RigidBase() override = default;
 
   /**
    * @brief Get the scene node being attached to.

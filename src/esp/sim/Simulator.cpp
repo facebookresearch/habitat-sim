@@ -39,7 +39,7 @@ using metadata::attributes::StageAttributes;
 
 Simulator::Simulator(const SimulatorConfiguration& cfg,
                      metadata::MetadataMediator::ptr _metadataMediator)
-    : metadataMediator_{_metadataMediator},
+    : metadataMediator_{std::move(_metadataMediator)},
       random_{core::Random::create(cfg.randomSeed)},
       requiresTextures_{Cr::Containers::NullOpt} {
   // initalize members according to cfg

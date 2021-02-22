@@ -5,6 +5,7 @@
 #include "Asset.h"
 
 #include <Corrade/Utility/String.h>
+#include "esp/geo/CoordinateFrame.h"
 
 namespace esp {
 namespace assets {
@@ -17,7 +18,7 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
     info.type = AssetType::INSTANCE_MESH;
   } else if (endsWith(path, "mesh.ply")) {
     info.type = AssetType::FRL_PTEX_MESH;
-    info.frame = {geo::ESP_BACK, geo::ESP_UP};
+    info.frame = geo::CoordinateFrame(geo::ESP_BACK, geo::ESP_UP);
   } else if (endsWith(path, "house.json")) {
     info.type = AssetType::SUNCG_SCENE;
   } else if (endsWith(path, ".glb")) {
@@ -25,7 +26,7 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
     info.type = AssetType::MP3D_MESH;
     // Create a coordinate for the mesh by rotating the default ESP
     // coordinate frame to -Z gravity
-    info.frame = {geo::ESP_BACK, geo::ESP_UP};
+    info.frame = geo::CoordinateFrame(geo::ESP_BACK, geo::ESP_UP);
   }
 
   return info;

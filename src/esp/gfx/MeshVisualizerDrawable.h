@@ -36,8 +36,8 @@ class MeshVisualizerDrawable : public Drawable {
    * @param camera                Camera to draw from.
    *
    */
-  virtual void draw(const Magnum::Matrix4& transformationMatrix,
-                    Magnum::SceneGraph::Camera3D& camera) override;
+  void draw(const Magnum::Matrix4& transformationMatrix,
+            Magnum::SceneGraph::Camera3D& camera) override;
   Magnum::Shaders::MeshVisualizer3D& shader_;
 };
 

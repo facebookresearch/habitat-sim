@@ -36,14 +36,14 @@ namespace physics {
 //! Holds information about one ray hit instance.
 struct RayHitInfo {
   //! The id of the object hit by this ray. Stage hits are -1.
-  int objectId;
+  int objectId{};
   //! The first impact point of the ray in world space.
   Magnum::Vector3 point;
   //! The collision object normal at the point of impact.
   Magnum::Vector3 normal;
   //! Distance along the ray direction from the ray origin (in units of ray
   //! length).
-  double rayDistance;
+  double rayDistance{};
 
   ESP_SMART_POINTERS(RayHitInfo)
 };
@@ -123,7 +123,7 @@ class PhysicsManager {
    */
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const metadata::attributes::PhysicsManagerAttributes::cptr
+      const metadata::attributes::PhysicsManagerAttributes::cptr&
           _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
         physicsManagerAttributes_(_physicsManagerAttributes){};
