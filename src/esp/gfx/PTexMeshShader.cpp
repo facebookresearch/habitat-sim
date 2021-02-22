@@ -91,6 +91,7 @@ PTexMeshShader& PTexMeshShader::bindAtlasTexture(Mn::GL::Texture2D& texture) {
 }
 
 PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
+    // NOLINTNEXTLINE(misc-unused-parameters)
     Mn::GL::BufferTexture& texture) {
 #ifndef CORRADE_TARGET_APPLE
   texture.bind(TextureBindingPointIndex::adjFaces);

@@ -28,7 +28,7 @@ class AbstractAttributes : public esp::core::AbstractManagedObject,
     AbstractAttributes::setHandle(handle);
   }
 
-  virtual ~AbstractAttributes() = default;
+  ~AbstractAttributes() override = default;
   /**
    * @brief Get this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.
@@ -43,7 +43,7 @@ class AbstractAttributes : public esp::core::AbstractManagedObject,
    * such cases this should be overridden with NOP.
    * @param handle the handle to set.
    */
-  virtual void setHandle(const std::string& handle) override {
+  void setHandle(const std::string& handle) override {
     setString("handle", handle);
   }
   std::string getHandle() const override { return getString("handle"); }
@@ -66,7 +66,7 @@ class AbstractAttributes : public esp::core::AbstractManagedObject,
   /**
    * @brief directory where files used to construct attributes can be found.
    */
-  virtual void setFileDirectory(const std::string& fileDirectory) override {
+  void setFileDirectory(const std::string& fileDirectory) override {
     setString("fileDirectory", fileDirectory);
   }
   std::string getFileDirectory() const override {

@@ -20,7 +20,7 @@ class RigidStage : public RigidBase {
   /**
    * @brief Virtual destructor for a @ref RigidStage.
    */
-  virtual ~RigidStage() {}
+  ~RigidStage() override = default;
 
   /**
    * @brief Initializes the @ref RigidStage that inherits
