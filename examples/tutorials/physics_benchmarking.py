@@ -139,7 +139,7 @@ def box_drop_test(
                 ]
             ]
             obj_template = obj_templates_mgr.get_template_by_ID(object_ids[-1])
-            if "scale" in obj.keys():
+            if "scale" in obj:
                 obj_template.scale *= obj["scale"]
             obj_templates_mgr.register_template(obj_template)
 
