@@ -797,6 +797,14 @@ void Viewer::invertGravity() {
 esp::geo::VoxelGrid Viewer::createVoxelField() {
   const Mn::Vector3 v_size = Mn::Vector3(0.5, 0.5, 0.5);
   const Mn::Vector3i v_dim = Mn::Vector3i(100, 100, 100);
+  !Mn::Debug();
+  auto& rootNode = activeSceneGraph_->getRootNode();
+  for (auto& child : rootNode.children()) {
+    !Mn::Debug();
+    for (auto& feature : child.features()) {
+      !Mn::Debug();
+    }
+  }
 
   esp::geo::VoxelGrid v(v_size, v_dim);  // = esp::geo::VoxelGrid();
   for (int i = 0; i < 100; i++) {
