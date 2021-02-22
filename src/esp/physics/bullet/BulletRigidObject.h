@@ -37,7 +37,7 @@ namespace physics {
  */
 class BulletRigidObject : public BulletBase,
                           public RigidObject,
-                          private Magnum::BulletIntegration::MotionState {
+                          public Magnum::BulletIntegration::MotionState {
  public:
   /**
    * @brief Constructor for a @ref BulletRigidObject.
