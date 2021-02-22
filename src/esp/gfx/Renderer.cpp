@@ -41,6 +41,7 @@ struct BackgroundRenderThread {
     t = std::thread(&BackgroundRenderThread::run, this);
 
     jobsWaiting_ = 1;
+    threadStarted_ = true;
     waitThread();
     context_->makeCurrent();
   }
@@ -49,6 +50,7 @@ struct BackgroundRenderThread {
     barrierVal_.fetch_xor(1, std::memory_order_relaxed);
     std::atomic_thread_fence(std::memory_order_release);
     cv_.notify_all();
+    threadStarted_ = true;
   }
 
   ~BackgroundRenderThread() {
@@ -57,16 +59,18 @@ struct BackgroundRenderThread {
     t.join();
   }
 
-  static void spinLock(std::atomic<int>& lk, int val) {
+  static void spinLock(const std::atomic<int>& lk, int val) {
     while (lk.load(std::memory_order_acquire) != val)
       asm volatile("pause" ::: "memory");
   }
 
   void waitThread() {
+    CORRADE_INTERNAL_ASSERT(threadStarted_ || jobsWaiting_ == 0);
     spinLock(done_, jobsWaiting_);
 
     done_.store(0);
     jobsWaiting_ = 0;
+    threadStarted_ = false;
   }
 
   void waitSG() { spinLock(sgLock_, 0); }
@@ -228,7 +232,7 @@ struct BackgroundRenderThread {
   std::condition_variable cv_;
   std::mutex mutex_;
   std::thread t;
-  pthread_barrier_t startBarrier_;
+  bool threadStarted_ = false;
 
   bool threadOwnsContext_;
   Mn::Platform::GLContext* threadContext_;
