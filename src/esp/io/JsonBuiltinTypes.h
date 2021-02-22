@@ -226,7 +226,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, float& val) {
 
 template <typename T>
 void addMemberAsUint32(JsonGenericValue& value,
-                       rapidjson::GenericStringRef<char> name,
+                       const rapidjson::GenericStringRef<char>& name,
                        const T& x,
                        JsonAllocator& allocator) {
   static_assert(sizeof(T) == sizeof(uint32_t), "size match");
@@ -237,7 +237,7 @@ void addMemberAsUint32(JsonGenericValue& value,
 template <typename T>
 bool readMemberAsUint32(const JsonGenericValue& value, const char* name, T& x) {
   static_assert(sizeof(T) == sizeof(uint32_t), "size match");
-  uint32_t xAsUint32;
+  uint32_t xAsUint32 = 0;
   if (readMember(value, name, xAsUint32)) {
     x = static_cast<T>(xAsUint32);
     return true;
@@ -267,14 +267,14 @@ inline JsonGenericValue toJsonArrayHelper(const T* objects,
 // wrappers for rapidjson's standard Value type
 
 inline void addMember(JsonGenericValue& value,
-                      rapidjson::GenericStringRef<char> name,
+                      const rapidjson::GenericStringRef<char>& name,
                       JsonGenericValue& child,
                       JsonAllocator& allocator) {
   value.AddMember(name, child, allocator);
 }
 
 inline void addMember(JsonGenericValue& value,
-                      rapidjson::GenericStringRef<char> name,
+                      const rapidjson::GenericStringRef<char>& name,
                       JsonGenericValue&& child,
                       JsonAllocator& allocator) {
   value.AddMember(name, child, allocator);

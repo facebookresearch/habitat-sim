@@ -26,7 +26,7 @@ struct Mp3dObjectCategory : public SemanticCategory {
 };
 
 struct Mp3dRegionCategory : public SemanticCategory {
-  Mp3dRegionCategory(const char labelCode) : labelCode_(labelCode) {}
+  explicit Mp3dRegionCategory(const char labelCode) : labelCode_(labelCode) {}
 
   int index(const std::string& mapping) const override;
 

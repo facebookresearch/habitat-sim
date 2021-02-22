@@ -86,7 +86,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
   // construction; user can use them immediately
   explicit Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg);
 
-  virtual ~Agent();
+  ~Agent() override;
 
   // Get the scene node being attached to.
   scene::SceneNode& node() { return object(); }
@@ -114,7 +114,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   // Set Agent's member sensors to sensorSuite
   void setSensorSuite(sensor::SensorSuite&& sensorSuite) {
-    sensors_ = std::move(sensorSuite);
+    sensors_ = sensorSuite;
   }
 
   void setInitialState(const AgentState& state,
