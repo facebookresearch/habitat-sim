@@ -201,7 +201,7 @@ class RenderCamera : public MagnumCamera {
    * @brief Query the cached number of Drawables visible after frustum culling
    * for the most recent render pass.
    */
-  size_t getPreviousNumVisibileDrawables() const {
+  size_t getPreviousNumVisibleDrawables() const {
     return previousNumVisibleDrawables_;
   }
 

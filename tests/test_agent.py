@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import pytest
 import quaternion  # noqa: F401
 
 import habitat_sim
@@ -47,6 +48,15 @@ def test_set_state():
     for k, v in state.sensor_states.items():
         assert k in new_state.sensor_states
         _check_state_same(v, new_state.sensor_states[k])
+
+
+def test_set_state_error():
+    scene_graph = habitat_sim.SceneGraph()
+    agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
+    state = agent.state
+    state.position = np.array([float("NaN")] * 3)
+    with pytest.raises(ValueError):
+        agent.set_state(state)
 
 
 def test_change_state():

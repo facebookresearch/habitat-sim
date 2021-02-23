@@ -25,6 +25,7 @@
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/SensorFactory.h"
 #include "esp/sensor/VisualSensor.h"
 
 namespace Cr = Corrade;
@@ -1084,9 +1085,10 @@ agent::Agent::ptr Simulator::addAgent(
   // attach each agent, each sensor to a scene node, set the local
   // transformation of the sensor w.r.t. the agent (done internally in the
   // constructor of Agent)
-
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
+  ag->setSensorSuite(esp::sensor::SensorFactory::createSensors(
+      agentNode, agentConfig.sensorSpecifications));
 
   agent::AgentState state;
   sampleRandomAgentState(state);
@@ -1120,6 +1122,17 @@ agent::Agent::ptr Simulator::addAgent(
 agent::Agent::ptr Simulator::getAgent(const int agentId) {
   ASSERT(0 <= agentId && agentId < agents_.size());
   return agents_[agentId];
+}
+
+esp::sensor::Sensor::ptr Simulator::addSensorToObject(
+    const int objectId,
+    esp::sensor::SensorSpec::ptr& sensorSpec) {
+  esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
+  esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
+  esp::sensor::SensorSuite sensorSuite =
+      esp::sensor::SensorFactory::createSensors(objectNode,
+                                                sensorSpecifications);
+  return sensorSuite.get(sensorSpec->uuid);
 }
 
 nav::PathFinder::ptr Simulator::getPathFinder() {

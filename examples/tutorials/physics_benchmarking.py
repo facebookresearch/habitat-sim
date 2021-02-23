@@ -96,7 +96,7 @@ def box_drop_test(
             0,
             habitat_sim.AgentState(
                 [5.45 * box_size, 2.4 * box_size, 1.2 * box_size],
-                np.quaternion(-0.83147, 0.2, -0.55557, -0.2),
+                np.quaternion(-0.8000822, 0.1924500, -0.5345973, -0.1924500),
             ),
         )
 

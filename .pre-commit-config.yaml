@@ -1,4 +1,4 @@
-exclude: 'build|data/datasets|data/scene_datasets|node_modules/|src/deps|src/obsolete'
+exclude: '^(build|data/datasets|data/scene_datasets|node_modules/|src/deps|src/obsolete)'
 
 default_language_version:
     python: python3
@@ -20,6 +20,7 @@ repos:
     -   id: check-merge-conflict
     -   id: check-toml
     -   id: check-yaml
+        exclude: ^conda-build/habitat-sim/meta.yaml
     -   id: debug-statements
     -   id: mixed-line-ending
         args: ['--fix=lf']
@@ -130,3 +131,4 @@ repos:
     rev: v0.7.1.1
     hooks:
     -   id: shellcheck
+        exclude: ^conda-build/ #TODO fix these scripts
