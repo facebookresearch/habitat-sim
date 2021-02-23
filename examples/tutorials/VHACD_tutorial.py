@@ -189,7 +189,7 @@ def runVHACDSimulation(obj_path):
             vel_control.controlling_ang_vel = True
             vel_control.angular_velocity = np.array([-1.56, 0, 0])
 
-        # simulate for 3 seconds
+        # simulate for 4 seconds
         simulate(sim, dt=4, get_frames=True, data=data)
     return data
 
