@@ -38,8 +38,10 @@ using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
-Simulator::Simulator(const SimulatorConfiguration& cfg)
-    : random_{core::Random::create(cfg.randomSeed)},
+Simulator::Simulator(const SimulatorConfiguration& cfg,
+                     metadata::MetadataMediator::ptr _metadataMediator)
+    : metadataMediator_{std::move(_metadataMediator)},
+      random_{core::Random::create(cfg.randomSeed)},
       requiresTextures_{Cr::Containers::NullOpt} {
   // initalize members according to cfg
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions

@@ -53,7 +53,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   typedef std::shared_ptr<T> ManagedPtr;
 
-  ManagedContainer(const std::string& metadataType)
+  explicit ManagedContainer(const std::string& metadataType)
       : ManagedContainerBase(metadataType) {}
 
   /**
@@ -529,7 +529,7 @@ class ManagedContainer : public ManagedContainerBase {
    */
   void setFileDirectoryFromHandle(ManagedPtr object) {
     std::string handleName = object->getHandle();
-    auto loc = handleName.find_last_of("/");
+    auto loc = handleName.find_last_of('/');
     if (loc != std::string::npos) {
       object->setFileDirectory(handleName.substr(0, loc));
     }
@@ -718,7 +718,7 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
   // get all handles that match query elements first
   std::vector<std::string> handles =
       getObjectHandlesBySubstring(subStr, contains);
-  for (std::string objectHandle : handles) {
+  for (const std::string& objectHandle : handles) {
     ManagedPtr ptr = removeObjectInternal(
         objectHandle, "ManagedContainer::removeObjectsBySubstring");
     if (nullptr != ptr) {

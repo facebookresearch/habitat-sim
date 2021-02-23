@@ -61,7 +61,7 @@ class BulletPhysicsManager : public PhysicsManager {
           _physicsManagerAttributes);
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
-  virtual ~BulletPhysicsManager();
+  ~BulletPhysicsManager() override;
 
   //============ Simulator functions =============
 
@@ -174,7 +174,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param projTrans The composed projection and transformation matrix for the
    * render camera.
    */
-  virtual void debugDraw(const Magnum::Matrix4& projTrans) const override;
+  void debugDraw(const Magnum::Matrix4& projTrans) const override;
 
   /**
    * @brief Check whether an object is in contact with any other objects or the
@@ -208,8 +208,8 @@ class BulletPhysicsManager : public PhysicsManager {
    * In units of ray length.
    * @return The raycast results sorted by distance.
    */
-  virtual RaycastResults castRay(const esp::geo::Ray& ray,
-                                 double maxDistance = 100.0) override;
+  RaycastResults castRay(const esp::geo::Ray& ray,
+                         double maxDistance = 100.0) override;
 
   //============ Point To Point Constraints =============
 

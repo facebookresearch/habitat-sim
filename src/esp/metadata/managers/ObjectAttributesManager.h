@@ -7,6 +7,8 @@
 
 #include <Corrade/Utility/Assert.h>
 
+#include <utility>
+
 #include "AbstractObjectAttributesManagerBase.h"
 #include "AssetAttributesManager.h"
 
@@ -31,7 +33,7 @@ class ObjectAttributesManager
 
   void setAssetAttributesManager(
       AssetAttributesManager::cptr assetAttributesMgr) {
-    assetAttributesMgr_ = assetAttributesMgr;
+    assetAttributesMgr_ = std::move(assetAttributesMgr);
     // Create default primitive-based object attributess
     createDefaultPrimBasedAttributesTemplates();
   }

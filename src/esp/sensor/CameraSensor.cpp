@@ -168,17 +168,6 @@ void CameraSensor::readObservation(Observation& obs) {
   }
 }
 
-bool CameraSensor::displayObservation(sim::Simulator& sim) {
-  if (!hasRenderTarget()) {
-    return false;
-  }
-
-  drawObservation(sim);
-  renderTarget().blitRgbaToDefault();
-
-  return true;
-}
-
 Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()
     const {
   // projectionMatrix_ is managed by implementation class and is set whenever

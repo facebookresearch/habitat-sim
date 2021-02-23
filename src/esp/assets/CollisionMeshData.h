@@ -28,7 +28,7 @@ struct CollisionMeshData {
    *
    * See @ref BulletRigidObject::constructConvexShapesFromMeshes.
    */
-  Magnum::MeshPrimitive primitive;
+  Magnum::MeshPrimitive primitive{};
 
   /**
    * @brief Reference to vertex positions.

@@ -74,7 +74,9 @@ void initSimBindings(py::module& m) {
 
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")
-      .def(py::init<const SimulatorConfiguration&>())
+      // modify constructor to pass MetadataMediator
+      .def(py::init<const SimulatorConfiguration&,
+                    esp::metadata::MetadataMediator::ptr>())
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
@@ -114,8 +116,14 @@ void initSimBindings(py::module& m) {
           &Simulator::setActiveSceneDatasetName,
           R"(The currently active dataset being used.  Will attempt to load
             configuration files specified if does not already exist.)")
-      /* --- Physics functions --- */
       /* --- Template Manager accessors --- */
+      // We wish a copy of the metadata mediator smart pointer so that we
+      // increment its ref counter
+      .def_property(
+          "metadata_mediator", &Simulator::getMetadataMediator,
+          &Simulator::setMetadataMediator, py::return_value_policy::copy,
+          R"(This construct manages all configuration template managers
+          and the Scene Dataset Configurations)")
       .def("get_asset_template_manager", &Simulator::getAssetAttributesManager,
            pybind11::return_value_policy::reference,
            R"(Get the current dataset's AssetAttributesManager instance

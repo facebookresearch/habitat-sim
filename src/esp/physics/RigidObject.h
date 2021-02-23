@@ -36,7 +36,7 @@ namespace physics {
  * body. */
 struct VelocityControl {
  public:
-  virtual ~VelocityControl(){};
+  virtual ~VelocityControl() = default;
 
   /**@brief Constant linear velocity. */
   Magnum::Vector3 linVel;
@@ -102,7 +102,7 @@ class RigidObject : public RigidBase {
   /**
    * @brief Virtual destructor for a @ref RigidObject.
    */
-  virtual ~RigidObject() {}
+  ~RigidObject() override = default;
 
   /**
    * @brief Initializes the @ref RigidObject that inherits from this class
@@ -133,7 +133,9 @@ class RigidObject : public RigidBase {
   };
 
   virtual void deferUpdate() { isDeferringUpdate_ = true; }
-  virtual void updateNodes(CORRADE_UNUSED bool force = false) { isDeferringUpdate_ = false; }
+  virtual void updateNodes(CORRADE_UNUSED bool force = false) {
+    isDeferringUpdate_ = false;
+  }
 
  private:
   /**
@@ -155,7 +157,6 @@ class RigidObject : public RigidBase {
    * @return whether successful finalization.
    */
   bool finalizeObject_LibSpecific() override { return true; }
-
 
  public:
   /**

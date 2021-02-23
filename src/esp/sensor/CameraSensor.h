@@ -19,7 +19,7 @@ class CameraSensor : public VisualSensor {
   // user can use them immediately
   explicit CameraSensor(scene::SceneNode& cameraNode,
                         const SensorSpec::ptr& spec);
-  virtual ~CameraSensor() = default;
+  ~CameraSensor() override = default;
 
   /** @brief Updates this sensor's SensorSpec spec_ to reflect the passed new
    * values
@@ -31,7 +31,7 @@ class CameraSensor : public VisualSensor {
   /** @brief Returns pointer to member RenderCamera that CameraSensor will use
    * for rendering
    */
-  virtual gfx::RenderCamera* getRenderCamera() override;
+  gfx::RenderCamera* getRenderCamera() override;
 
   /**
    * @brief Draws an observation to the frame buffer using simulator's renderer,
@@ -42,7 +42,7 @@ class CameraSensor : public VisualSensor {
    *                to be drawn, obs Instance of Observation class in which the
    * observation will be stored
    */
-  virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
+  bool getObservation(sim::Simulator& sim, Observation& obs) override;
 
   /**
    * @brief Updates ObservationSpace space with spaceType, shape, and dataType
@@ -52,22 +52,14 @@ class CameraSensor : public VisualSensor {
    * @param[in] space Instance of ObservationSpace class which will be updated
    * with information from this sensor
    */
-  virtual bool getObservationSpace(ObservationSpace& space) override;
-
-  /**
-   * @brief Display next observation from Simulator on default frame buffer
-   * @param[in] sim Instance of Simulator class for which the observation needs
-   *                to be displayed
-   * @return Whether the display process was successful or not
-   */
-  virtual bool displayObservation(sim::Simulator& sim) override;
+  bool getObservationSpace(ObservationSpace& space) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's
    * perspective projection model.
    * See @ref gfx::calculateDepthUnprojection
    */
-  virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
+  Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
       const override;
 
   /**
@@ -76,7 +68,7 @@ class CameraSensor : public VisualSensor {
    * @param[in] sim Instance of Simulator class for which the observation needs
    *                to be drawn
    */
-  virtual bool drawObservation(sim::Simulator& sim) override;
+  bool drawObservation(sim::Simulator& sim) override;
 
   /**
    * @brief Modify the zoom matrix for perspective and ortho cameras

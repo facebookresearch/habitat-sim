@@ -60,7 +60,7 @@ class BulletRigidObject : public BulletBase,
   /**
    * @brief Destructor cleans up simulation structures for the object.
    */
-  virtual ~BulletRigidObject();
+  ~BulletRigidObject() override;
 
   /**
    * @brief Finalize this object with any necessary post-creation processes.
@@ -218,7 +218,7 @@ class BulletRigidObject : public BulletBase,
   /** @brief Get the mass of the object. See @ref btRigidBody::getInvMass.
    * @return The mass of the object.
    */
-  virtual double getMass() const override {
+  double getMass() const override {
     return 1.0 / bObjectRigidBody_->getInvMass();
   }
 

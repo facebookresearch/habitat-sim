@@ -23,6 +23,7 @@
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
+#include <Magnum/Trade/Trade.h>
 
 #include "Asset.h"
 #include "BaseMesh.h"
@@ -47,7 +48,6 @@
 namespace Magnum {
 namespace Trade {
 class AbstractImporter;
-class AbstractShaderProgram;
 class PhongMaterialData;
 }  // namespace Trade
 }  // namespace Magnum
@@ -107,7 +107,7 @@ class ResourceManager {
                            Flags flags = {});
 
   /** @brief Destructor */
-  ~ResourceManager() {}
+  ~ResourceManager() = default;
 
   /**
    * @brief This function will build the various @ref Importers used by the
@@ -255,10 +255,10 @@ class ResourceManager {
   /**
    * @brief Set a reference to the current @ref metadataMediator_.  Perform any
    * initialization that may be required when @ref metadataMediator_ is changed.
-   * @param _MM a reference to the new @ref metadataMediator_.
+   * @param MM a reference to the new @ref metadataMediator_.
    */
-  void setMetadataMediator(metadata::MetadataMediator::ptr _MM) {
-    metadataMediator_ = _MM;
+  void setMetadataMediator(metadata::MetadataMediator::ptr MM) {
+    metadataMediator_ = std::move(MM);
   }
 
   /**

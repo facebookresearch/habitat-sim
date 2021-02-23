@@ -35,7 +35,7 @@ static const std::string EMPTY_SCENE = "NONE";
 struct AssetInfo {
   AssetType type = AssetType::UNKNOWN;
   std::string filepath = EMPTY_SCENE;  // empty scene
-  geo::CoordinateFrame frame;
+  geo::CoordinateFrame frame{};
   float virtualUnitToMeters = 1.0f;
   bool requiresLighting = false;
   bool splitInstanceMesh = true;  // only applies to AssetType::INSTANCE_MESH
