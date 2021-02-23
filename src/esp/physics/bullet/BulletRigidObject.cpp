@@ -459,23 +459,25 @@ void BulletRigidObject::activateCollisionIsland() {
   // bitset template argument specifies reasonable allocation size at compile
   // time - it is not expected that we would require more than 65536 different
   // islands; if we do, this number should be increased.
-  std::bitset<65536> overlappingSimIslands;
+  Magnum::Math::BoolVector<65536> overlappingSimIslands;
   // each index represents an island tag present - default in bullet is -1, so
   // add one.
-  overlappingSimIslands[thisColObj->getIslandTag() + 1] = true;
+  overlappingSimIslands.set(thisColObj->getIslandTag() + 1, true);
   auto* bColWorld = bWorld_->getCollisionWorld();
   auto& pairCache = bColWorld->getPairCache()->getOverlappingPairArray();
   for (int i = 0; i < pairCache.size(); ++i) {
     if (pairCache.at(i).m_pProxy0->m_clientObject == thisColObj) {
-      overlappingSimIslands[static_cast<btCollisionObject*>(
-                                pairCache.at(i).m_pProxy1->m_clientObject)
-                                ->getIslandTag() +
-                            1] = true;
+      overlappingSimIslands.set(static_cast<btCollisionObject*>(
+                                    pairCache.at(i).m_pProxy1->m_clientObject)
+                                        ->getIslandTag() +
+                                    1,
+                                true);
     } else if (pairCache.at(i).m_pProxy1->m_clientObject == thisColObj) {
-      overlappingSimIslands[static_cast<btCollisionObject*>(
-                                pairCache.at(i).m_pProxy0->m_clientObject)
-                                ->getIslandTag() +
-                            1] = true;
+      overlappingSimIslands.set(static_cast<btCollisionObject*>(
+                                    pairCache.at(i).m_pProxy0->m_clientObject)
+                                        ->getIslandTag() +
+                                    1,
+                                true);
     }
   }
 
