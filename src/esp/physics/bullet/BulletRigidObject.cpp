@@ -45,11 +45,10 @@ BulletRigidObject::BulletRigidObject(
 
 BulletRigidObject::~BulletRigidObject() {
   if (!isActive()) {
-    // This object may be supporting other sleeping objects, so wake them before
-    // removing.
+    // This object may be supporting other sleeping objects, so wake them
+    // before removing.
     activateCollisionIsland();
   }
-
   // remove rigid body from the world
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
 
@@ -456,34 +455,42 @@ void BulletRigidObject::activateCollisionIsland() {
 
   // first query overlapping pairs of the current object from the most recent
   // broadphase to collect relevant simulation islands.
-  std::set<int> overlappingSimulationIslands = {thisColObj->getIslandTag()};
-  auto& pairCache =
-      bWorld_->getCollisionWorld()->getPairCache()->getOverlappingPairArray();
 
+  // bitset template argument specifies reasonable allocation size at compile
+  // time - it is not expected that we would require more than 65536 different
+  // islands; if we do, this number should be increased.
+  Magnum::Math::BoolVector<65536> overlappingSimIslands;
+  // each index represents an island tag present - default in bullet is -1, so
+  // add one.
+  overlappingSimIslands.set(thisColObj->getIslandTag() + 1, true);
+  auto* bColWorld = bWorld_->getCollisionWorld();
+  auto& pairCache = bColWorld->getPairCache()->getOverlappingPairArray();
   for (int i = 0; i < pairCache.size(); ++i) {
     if (pairCache.at(i).m_pProxy0->m_clientObject == thisColObj) {
-      overlappingSimulationIslands.insert(
-          static_cast<btCollisionObject*>(
-              pairCache.at(i).m_pProxy1->m_clientObject)
-              ->getIslandTag());
+      overlappingSimIslands.set(static_cast<btCollisionObject*>(
+                                    pairCache.at(i).m_pProxy1->m_clientObject)
+                                        ->getIslandTag() +
+                                    1,
+                                true);
     } else if (pairCache.at(i).m_pProxy1->m_clientObject == thisColObj) {
-      overlappingSimulationIslands.insert(
-          static_cast<btCollisionObject*>(
-              pairCache.at(i).m_pProxy0->m_clientObject)
-              ->getIslandTag());
+      overlappingSimIslands.set(static_cast<btCollisionObject*>(
+                                    pairCache.at(i).m_pProxy0->m_clientObject)
+                                        ->getIslandTag() +
+                                    1,
+                                true);
     }
   }
 
   // activate nearby objects in the simulation island as computed on the
   // previous collision detection pass
-  auto& colObjs = bWorld_->getCollisionWorld()->getCollisionObjectArray();
+  auto& colObjs = bColWorld->getCollisionObjectArray();
   for (auto objIx = 0; objIx < colObjs.size(); ++objIx) {
-    if (overlappingSimulationIslands.count(colObjs[objIx]->getIslandTag()) >
-        0) {
+    if (overlappingSimIslands[colObjs[objIx]->getIslandTag() + 1]) {
       colObjs[objIx]->activate();
     }
   }
-}
+
+}  // BulletRigidObject::activateCollisionIsland
 
 void BulletRigidObject::setCOM(const Magnum::Vector3&) {
   // Current not supported

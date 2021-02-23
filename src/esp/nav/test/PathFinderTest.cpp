@@ -100,6 +100,7 @@ void PathFinderTest::multiGoalPath() {
 
   for (int __j = 0; __j < 1000; ++__j) {
     std::vector<esp::vec3f> points;
+    points.reserve(10);
     for (int i = 0; i < 10; ++i) {
       points.emplace_back(pathFinder.getRandomNavigablePoint());
     }
@@ -133,6 +134,7 @@ void PathFinderTest::testCaching() {
   esp::nav::MultiGoalShortestPath cachePath;
   {
     std::vector<esp::vec3f> rqEnds;
+    rqEnds.reserve(25);
     for (int i = 0; i < 25; ++i) {
       rqEnds.emplace_back(pathFinder.getRandomNavigablePoint());
     }
@@ -166,7 +168,7 @@ void PathFinderTest::benchmarkSingleGoal() {
   } while (pathFinder.islandRadius(path.requestedStart) < 10.0);
   path.requestedEnd = pathFinder.getRandomNavigablePoint();
 
-  bool status;
+  bool status = false;
   CORRADE_BENCHMARK(5) { status = pathFinder.findPath(path); };
   CORRADE_VERIFY(status);
 }
@@ -185,6 +187,7 @@ void PathFinderTest::benchmarkMultiGoal() {
   } while (pathFinder.islandRadius(path.requestedStart) < 10.0);
 
   std::vector<esp::vec3f> rqEnds;
+  rqEnds.reserve(1000);
   for (int i = 0; i < 1000; ++i) {
     rqEnds.emplace_back(pathFinder.getRandomNavigablePoint());
   }
@@ -194,7 +197,7 @@ void PathFinderTest::benchmarkMultiGoal() {
     pathFinder.findPath(path);
   }
 
-  bool status;
+  bool status = false;
   CORRADE_BENCHMARK(1) { status = pathFinder.findPath(path); };
   CORRADE_VERIFY(status);
 }

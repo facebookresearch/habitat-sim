@@ -74,7 +74,7 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
       continue;
 
     const auto& stringId = obj->id();
-    const int id = std::stoi(stringId.substr(stringId.find_last_of("_") + 1));
+    const int id = std::stoi(stringId.substr(stringId.find_last_of('_') + 1));
     CORRADE_ITERATION(stringId);
 
     for (uint64_t fid = 0; fid < ibo.size(); fid += 6) {
