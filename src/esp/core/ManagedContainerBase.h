@@ -170,7 +170,7 @@ class ManagedContainerBase {
                  << objectType_ << " managed object ID:" << objectID
                  << ". Aborting";
       // never will have registered object with registration handle == ""
-	  return "";
+      return "";
     }
     return objectLibKeyByID_.at(objectID);
   }  // ManagedContainer::getObjectHandleByID
