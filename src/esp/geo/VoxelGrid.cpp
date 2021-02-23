@@ -13,13 +13,13 @@ namespace esp {
 namespace geo {
 
 VoxelGrid::VoxelGrid() {}
-VoxelGrid::VoxelGrid(const assets::MeshData& meshData, int resolution) {
+VoxelGrid::VoxelGrid(const Mn::Trade::MeshData& meshData, int resolution) {
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
   VHACD::IVHACD::Parameters params;
   params.m_resolution = resolution;
-  interfaceVHACD->computeVoxelField(&meshData.vbo[0][0], meshData.vbo.size(),
-                                    &meshData.ibo[0], meshData.ibo.size() / 3,
-                                    params);
+  /*interfaceVHACD->computeVoxelField(
+      &meshData.vertexData(), meshData.vertexData().size(),
+      &meshData.indexData(), meshData.indexData().size() / 3, params);*/
 }
 
 VoxelGrid::VoxelGrid(const assets::MeshMetaData& meshMetaData,

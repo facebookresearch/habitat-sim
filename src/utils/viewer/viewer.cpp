@@ -146,8 +146,8 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
-  esp::geo::VoxelGrid createVoxelField();
-  void displayVoxelField(esp::geo::VoxelGrid& v);
+  esp::geo::VoxelGrid createVoxelField(unsigned int objectID);
+  void displayVoxelField(unsigned int objectID);
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -794,18 +794,16 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
-esp::geo::VoxelGrid Viewer::createVoxelField() {
+esp::geo::VoxelGrid Viewer::createVoxelField(unsigned int objectId) {
   const Mn::Vector3 v_size = Mn::Vector3(0.5, 0.5, 0.5);
   const Mn::Vector3i v_dim = Mn::Vector3i(100, 100, 100);
   !Mn::Debug();
-  auto& rootNode = activeSceneGraph_->getRootNode();
-  for (auto& child : rootNode.children()) {
-    !Mn::Debug();
-    for (auto& feature : child.features()) {
-      !Mn::Debug();
-    }
-  }
+  unsigned int resolution = 1000;
 
+  Mn::GL::Mesh* objectRenderMesh;
+  auto object = assetAttrManager_->getObjectByID(objectId);
+
+  // esp::geo::VoxelGrid v();
   esp::geo::VoxelGrid v(v_size, v_dim);  // = esp::geo::VoxelGrid();
   for (int i = 0; i < 100; i++) {
     for (int j = 0; j < 100; j++) {
@@ -824,7 +822,9 @@ esp::geo::VoxelGrid Viewer::createVoxelField() {
   return v;
 }
 
-void Viewer::displayVoxelField(esp::geo::VoxelGrid& v) {
+void Viewer::displayVoxelField(unsigned int objectID) {
+  Mn::Debug() << objectID;
+  auto v = createVoxelField(objectID);
   Cr::Containers::Optional<Mn::Trade::MeshData> mesh;
   v.fillVoxelMeshData(mesh);
   voxel_grids_[nextVoxelGridMeshId++] =
@@ -1152,7 +1152,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     // also, setup the color attachment for rendering, and remove the
     // visualizer for the previously picked object
     objectPickingHelper_->prepareToDraw();
-
+    !Mn::Debug();
     // redraw the scene on the object picking framebuffer
     esp::gfx::RenderCamera::Flags flags =
         esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
@@ -1169,7 +1169,30 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     createPickedObjectVisualizer(pickedObject);
     return;
   }  // drawable selection
+  // Ctrl + Right click will visualize the voxel mesh of an object.
+  else if (event.button() == MouseEvent::Button::Right &&
+           event.modifiers() & MouseEvent::Modifier::Ctrl) {
+    /*unsigned int pickedObject =
+        objectPickingHelper_->getObjectId(event.position(), windowSize());
+    displayVoxelField(pickedObject);*/
+    // Raycasting not giving correct IDs, don't use for now. TODO: Return to
+    // this (Fix or remove)
+    if (simulator_->getPhysicsSimulationLibrary() !=
+        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      auto viewportPoint = event.position();
+      auto ray = renderCamera_->unproject(viewportPoint);
+      esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
+      if (raycastResults.hasHits()) {
+        for (auto res : raycastResults.hits) {
+          Mn::Debug() << res.objectId;
+        }
+        Mn::Debug() << "___";
+        auto objID = raycastResults.hits[0].objectId;
+        Mn::Debug() << objID;
+      }
+    }
+  }
   // add primitive w/ right click if a collision object is hit by a raycast
   else if (event.button() == MouseEvent::Button::Right) {
     if (simulator_->getPhysicsSimulationLibrary() !=
@@ -1378,8 +1401,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       invertGravity();
       break;
     case KeyEvent::Key::Y: {
-      esp::geo::VoxelGrid v = createVoxelField();
-      displayVoxelField(v);
+      displayVoxelField(0);
     } break;
     default:
       break;

@@ -34,7 +34,7 @@ class VoxelGrid {
   VoxelGrid();
   // computes a voxel grid for a meshMetaData based on a given resolution (# of
   // voxels) and returns result directly from VHACD O(resolution)
-  VoxelGrid(const assets::MeshData& meshData, int resolution);
+  VoxelGrid(const Mn::Trade::MeshData& meshData, int resolution);
 
   // computes the meshMetaData's bounding box size and creates a Voxel Grid
   // large enough to fit the mesh. O( (bb.size()/voxelSize)^3 )
