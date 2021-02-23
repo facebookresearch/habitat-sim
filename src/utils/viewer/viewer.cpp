@@ -1635,13 +1635,13 @@ void Viewer::mousePressEvent(MouseEvent& event) {
             if (event.button() == MouseEvent::Button::Right) {
               mouseGrabber_ = std::make_unique<MouseArticulatedBaseGrabber>(
                   hitInfo.point,
-                  (hitInfo.point - renderCamera_->node().translation())
+                  (hitInfo.point - renderCamera_->node().absoluteTranslation())
                       .length(),
                   hitArticulatedObjectId, simulator_.get());
             } else if (event.button() == MouseEvent::Button::Left) {
               mouseGrabber_ = std::make_unique<MouseLinkGrabber>(
                   hitInfo.point,
-                  (hitInfo.point - renderCamera_->node().translation())
+                  (hitInfo.point - renderCamera_->node().absoluteTranslation())
                       .length(),
                   hitArticulatedObjectId, hitArticulatedLinkIndex,
                   simulator_.get());
@@ -1650,13 +1650,13 @@ void Viewer::mousePressEvent(MouseEvent& event) {
             if (event.button() == MouseEvent::Button::Right) {
               mouseGrabber_ = std::make_unique<MouseObjectKinematicGrabber>(
                   hitInfo.point,
-                  (hitInfo.point - renderCamera_->node().translation())
+                  (hitInfo.point - renderCamera_->node().absoluteTranslation())
                       .length(),
                   hitInfo.objectId, simulator_.get());
             } else if (event.button() == MouseEvent::Button::Left) {
               mouseGrabber_ = std::make_unique<MouseObjectGrabber>(
                   hitInfo.point,
-                  (hitInfo.point - renderCamera_->node().translation())
+                  (hitInfo.point - renderCamera_->node().absoluteTranslation())
                       .length(),
                   hitInfo.objectId, simulator_.get());
             }
@@ -2046,6 +2046,15 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         }
         simulator_->removeArticulatedObject(
             simulator_->getExistingArticulatedObjectIDs().back());
+      }
+    } break;
+    case KeyEvent::Key::Equal: {
+      if (simulator_->getPhysicsSimulationLibrary() ==
+          esp::physics::PhysicsManager::BULLET) {
+        debugBullet_ = !debugBullet_;
+        Mn::Debug{} << "debugBullet_ = " << debugBullet_;
+      } else {
+        Mn::Debug{} << "Bullet not enabled, cannot toggle Bullet debug view.";
       }
     } break;
     case KeyEvent::Key::H:
