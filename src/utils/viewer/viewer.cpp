@@ -146,8 +146,8 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
-  esp::geo::VoxelGrid createVoxelField(unsigned int objectID);
-  void displayVoxelField(unsigned int objectID);
+  esp::geo::VoxelGrid createVoxelField(int objectID);
+  void displayVoxelField(int objectID);
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -794,16 +794,21 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
-esp::geo::VoxelGrid Viewer::createVoxelField(unsigned int objectId) {
+esp::geo::VoxelGrid Viewer::createVoxelField(int objectId) {
   const Mn::Vector3 v_size = Mn::Vector3(0.5, 0.5, 0.5);
   const Mn::Vector3i v_dim = Mn::Vector3i(100, 100, 100);
   !Mn::Debug();
   unsigned int resolution = 1000;
 
   Mn::GL::Mesh* objectRenderMesh;
-  auto object = assetAttrManager_->getObjectByID(objectId);
 
-  // esp::geo::VoxelGrid v();
+  // auto object = assetAttrManager_->getObjectByID(objectId);
+  // auto objectAttr = simulator_->getObjectInitializationTemplate(objectId,0);
+  std::unique_ptr<esp::assets::MeshData> objMesh =
+      esp::assets::MeshData::create_unique();
+  objMesh = simulator_->getObjectMeshData(objectId);
+
+  esp::geo::VoxelGrid v2(objMesh, resolution);
   esp::geo::VoxelGrid v(v_size, v_dim);  // = esp::geo::VoxelGrid();
   for (int i = 0; i < 100; i++) {
     for (int j = 0; j < 100; j++) {
@@ -815,14 +820,11 @@ esp::geo::VoxelGrid Viewer::createVoxelField(unsigned int objectId) {
       }
     }
   }
-  for (int i = 0; i <= 20; i += 2) {
-    esp::geo::Voxel* vox = v.getVoxelByIndex(Mn::Vector3i(0, 0, i));
-  }
 
   return v;
 }
 
-void Viewer::displayVoxelField(unsigned int objectID) {
+void Viewer::displayVoxelField(int objectID) {
   Mn::Debug() << objectID;
   auto v = createVoxelField(objectID);
   Cr::Containers::Optional<Mn::Trade::MeshData> mesh;
@@ -1184,12 +1186,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
       if (raycastResults.hasHits()) {
-        for (auto res : raycastResults.hits) {
-          Mn::Debug() << res.objectId;
-        }
-        Mn::Debug() << "___";
         auto objID = raycastResults.hits[0].objectId;
-        Mn::Debug() << objID;
+        displayVoxelField(objID);
       }
     }
   }
@@ -1401,7 +1399,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       invertGravity();
       break;
     case KeyEvent::Key::Y: {
-      displayVoxelField(0);
+      displayVoxelField(-1);
     } break;
     default:
       break;

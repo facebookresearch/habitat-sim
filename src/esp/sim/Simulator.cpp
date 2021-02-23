@@ -837,6 +837,22 @@ Magnum::Vector3 Simulator::getAngularVelocity(const int objectID,
   return Magnum::Vector3();
 }
 
+std::unique_ptr<assets::MeshData> Simulator::getObjectMeshData(
+    const int objectId) {
+  // get object render handle
+  auto assetAttrManager_ = getAssetAttributesManager();
+
+  // If the objectId > 0, then pull from the Object template. Otherwise, return
+  // the scene handle.
+  auto objHandle =
+      objectId >= 0
+          ? getObjectInitializationTemplate(objectId)->getRenderAssetHandle()
+          : getStageInitializationTemplate()->getRenderAssetHandle();
+
+  // get and return mesh
+  return resourceManager_->createJoinedCollisionMesh(objHandle);
+}
+
 bool Simulator::contactTest(const int objectID, const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->contactTest(objectID);

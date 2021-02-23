@@ -481,6 +481,14 @@ class Simulator {
   Magnum::Vector3 getAngularVelocity(int objectID, int sceneID = 0);
 
   /**
+   * @brief Get a joined mesh for an object from it's ID.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @return A unique ptr to a MeshData object.
+   */
+  std::unique_ptr<assets::MeshData> getObjectMeshData(const int objectID);
+
+  /**
    * @brief Turn on/off rendering for the bounding box of the object's visual
    * component.
    *
