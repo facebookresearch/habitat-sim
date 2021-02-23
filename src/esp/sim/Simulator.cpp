@@ -141,8 +141,11 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       gfx::Renderer::Flags flags;
       if (!(*requiresTextures_))
         flags |= gfx::Renderer::Flag::NoTextures;
+
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
       if (context_)
         flags |= gfx::Renderer::Flag::BackgroundThread;
+#endif
 
       renderer_ = gfx::Renderer::create(context_.get(), flags);
     }
@@ -851,8 +854,10 @@ double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->deferNodesUpdate();
     physicsManager_->stepPhysics(dt);
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
     if (renderer_)
       renderer_->waitSG();
+#endif
     physicsManager_->updateNodes();
   }
   return getWorldTime();

@@ -39,6 +39,7 @@ class Renderer {
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling});
 
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
   // draw the scene graph with the visual sensor provided by user
   // async
   void drawAsync(sensor::VisualSensor& visualSensor,
@@ -51,6 +52,7 @@ class Renderer {
   void waitSG();
 
   void startDrawJobs();
+#endif
 
   void acquireGlContext();
   /**

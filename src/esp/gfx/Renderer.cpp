@@ -33,6 +33,7 @@ namespace Mn = Magnum;
 
 namespace esp {
 namespace gfx {
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
 
 struct BackgroundRenderThread {
   BackgroundRenderThread(WindowlessContext* context)
@@ -60,11 +61,8 @@ struct BackgroundRenderThread {
   }
 
   static void spinLock(const std::atomic<int>& lk, int val) {
-    while (lk.load(std::memory_order_acquire) != val) {
-#if !defined(CORRADE_TARGET_EMSCRIPTEN)
+    while (lk.load(std::memory_order_acquire) != val)
       asm volatile("pause" ::: "memory");
-#endif
-    }
   }
 
   void waitThread() {
@@ -247,6 +245,7 @@ struct BackgroundRenderThread {
       jobs_;
   int jobsWaiting_ = 0;
 };
+#endif
 
 struct Renderer::Impl {
   explicit Impl(WindowlessContext* context, Flags flags)
@@ -254,8 +253,10 @@ struct Renderer::Impl {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
 
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
     if (flags & Flag::BackgroundThread)
       backgroundRenderer_ = std::make_unique<BackgroundRenderThread>(context_);
+#endif
   }
 
   ~Impl() {
@@ -281,6 +282,7 @@ struct Renderer::Impl {
     draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
   }
 
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
   void drawAsync(sensor::VisualSensor& visualSensor,
                  scene::SceneGraph& sceneGraph,
                  const Mn::MutableImageView2D& view,
@@ -318,6 +320,9 @@ struct Renderer::Impl {
       contextIsOwned_ = true;
     }
   }
+#else
+  void acquireGlContext(){};
+#endif
 
   void bindRenderTarget(sensor::VisualSensor& sensor) {
     acquireGlContext();
@@ -343,7 +348,9 @@ struct Renderer::Impl {
   std::unique_ptr<DepthShader> depthShader_ = nullptr;
   const Flags flags_;
 
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
   std::unique_ptr<BackgroundRenderThread> backgroundRenderer_ = nullptr;
+#endif
 };
 
 Renderer::Renderer(WindowlessContext* context, Flags flags)
@@ -361,6 +368,7 @@ void Renderer::draw(sensor::VisualSensor& visualSensor,
   pimpl_->draw(visualSensor, sceneGraph, flags);
 }
 
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
 void Renderer::drawAsync(sensor::VisualSensor& visualSensor,
                          scene::SceneGraph& sceneGraph,
                          const Mn::MutableImageView2D& view,
@@ -379,6 +387,7 @@ void Renderer::waitSG() {
 void Renderer::startDrawJobs() {
   pimpl_->startDrawJobs();
 }
+#endif
 
 void Renderer::acquireGlContext() {
   pimpl_->acquireGlContext();
