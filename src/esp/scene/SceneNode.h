@@ -72,6 +72,8 @@ class SceneNode : public MagnumObject,
 
   Magnum::Vector3 absoluteTranslation() const;
 
+  Magnum::Vector3 absoluteTranslation();
+
   //! recursively compute the cumulative bounding box of the full scene graph
   //! tree for which this node is the root
   const Magnum::Range3D& computeCumulativeBB();

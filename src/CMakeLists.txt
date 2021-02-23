@@ -28,7 +28,7 @@ endif()
 # include(CheckCXXCompilerFlag)
 # CHECK_CXX_COMPILER_FLAG("-march=broadwell" COMPILER_SUPPORTS_MARCH_BROADWELL)
 # if(COMPILER_SUPPORTS_MARCH_BROADWELL)
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=broadwell")
+#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=broadwell")
 # endif()
 
 set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../data)
