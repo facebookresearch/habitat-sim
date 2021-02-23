@@ -450,7 +450,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
-              python tools/run-clang-tidy.py src/esp
+              python tools/run-clang-tidy.py -header-filter=src/esp src/esp
       - run:
           name: Ccache stats
           when: always
