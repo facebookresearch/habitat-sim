@@ -58,6 +58,7 @@ namespace spimpl {
 namespace details {
 template <class T>
 T* default_copy(T* src) {
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   static_assert(sizeof(T) > 0, "default_copy cannot copy incomplete type");
   static_assert(!std::is_void<T>::value,
                 "default_copy cannot copy incomplete type");
@@ -66,6 +67,7 @@ T* default_copy(T* src) {
 
 template <class T>
 void default_delete(T* p) SPIMPL_NOEXCEPT {
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   static_assert(sizeof(T) > 0, "default_delete cannot delete incomplete type");
   static_assert(!std::is_void<T>::value,
                 "default_delete cannot delete incomplete type");
@@ -196,7 +198,7 @@ class impl_ptr {
   impl_ptr& operator=(const impl_ptr& r) {
     if (this == &r)
       return *this;
-
+    // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     return operator=(r.clone());
   }
 
@@ -211,6 +213,7 @@ class impl_ptr {
 #endif
 
   template <class U, class D, class C>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                               std::is_convertible<D, deleter_type>::value &&
                               std::is_convertible<C, copier_type>::value,
@@ -222,6 +225,7 @@ class impl_ptr {
   }
 
   template <class U, class D, class C>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                               std::is_convertible<D, deleter_type>::value &&
                               std::is_convertible<C, copier_type>::value,
@@ -234,6 +238,7 @@ class impl_ptr {
 
 #ifdef SPIMPL_HAS_AUTO_PTR
   template <class U>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                               is_default_manageable::value,
                           impl_ptr&>::type
@@ -243,6 +248,7 @@ class impl_ptr {
 #endif
 
   template <class U>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                               is_default_manageable::value,
                           impl_ptr&>::type

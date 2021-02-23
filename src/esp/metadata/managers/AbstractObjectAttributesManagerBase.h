@@ -128,7 +128,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const char* jsonMeshTypeTag,
       const char* jsonMeshHandleTag,
       std::string& assetName,
-      std::function<void(int)> meshTypeSetter);
+      const std::function<void(int)>& meshTypeSetter);
 
   /**
    * @brief Perform asset-name-based attributes initialization. This is to
@@ -306,10 +306,10 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     const char* jsonMeshTypeTag,
     const char* jsonMeshHandleTag,
     std::string& assetName,
-    std::function<void(int)> meshTypeSetter) {
+    const std::function<void(int)>& meshTypeSetter) {
   std::string propertiesFileDirectory = attributes->getFileDirectory();
   // save current file name
-  const std::string oldFName(assetName);
+  std::string oldFName(assetName);
   // clear var to get new value - if returns true use this as new value
   assetName = "";
   // Map a json string value to its corresponding AssetType if found and cast to
