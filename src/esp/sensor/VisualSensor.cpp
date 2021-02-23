@@ -12,12 +12,7 @@
 namespace esp {
 namespace sensor {
 
-VisualSensorSpec::VisualSensorSpec()
-    : SensorSpec(),
-      ortho_scale(0.1f),
-      resolution({84, 84}),
-      encoding("rgba_uint8"),
-      gpu2gpuTransfer(false) {
+VisualSensorSpec::VisualSensorSpec() : SensorSpec() {
   sensorType = SensorType::Color;
 }
 

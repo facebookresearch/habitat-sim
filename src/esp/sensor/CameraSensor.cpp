@@ -15,8 +15,7 @@
 namespace esp {
 namespace sensor {
 
-CameraSensorSpec::CameraSensorSpec()
-    : VisualSensorSpec(), channels(4), observationSpace("") {
+CameraSensorSpec::CameraSensorSpec() : VisualSensorSpec() {
   uuid = "rgba_camera";
   sensorSubType = SensorSubType::Pinhole;
 }

@@ -45,13 +45,13 @@ enum class SensorSubType {
 
 // Specifies the configuration parameters of a sensor
 struct SensorSpec {
-  std::string uuid;
-  SensorType sensorType;
-  SensorSubType sensorSubType;
-  vec3f position;
-  vec3f orientation;
-  std::string noiseModel;
-  SensorSpec();
+  std::string uuid = "";
+  SensorType sensorType = SensorType::None;
+  SensorSubType sensorSubType = SensorSubType::None;
+  vec3f position = {0, 1.5, 0};
+  vec3f orientation = {0, 0, 0};
+  std::string noiseModel = "None";
+  SensorSpec() = default;
   virtual ~SensorSpec();
   virtual bool isVisualSensorSpec() const { return false; }
   virtual void sanityCheck();

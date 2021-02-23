@@ -13,22 +13,23 @@
 #include "esp/gfx/RenderCamera.h"
 #include "esp/sensor/Sensor.h"
 
-using Mn::Math::Literals::operator""_degf;
-
 namespace esp {
 namespace gfx {
 class RenderTarget;
 }
 
 namespace sensor {
+
+using Mn::Math::Literals::operator""_degf;
+
 struct VisualSensorSpec : public SensorSpec {
-  float ortho_scale;
-  vec2i resolution;
-  std::string encoding;  // For rendering colors in images
-  bool gpu2gpuTransfer;  // True for pytorch tensor support
+  float ortho_scale = 0.1f;
+  vec2i resolution = {84, 84};
+  std::string encoding = "rgba_uint8";  // For rendering colors in images
+  bool gpu2gpuTransfer = false;         // True for pytorch tensor support
   VisualSensorSpec();
   void sanityCheck() override;
-  virtual bool isVisualSensorSpec() const override { return true; }
+  bool isVisualSensorSpec() const override { return true; }
   bool operator==(const VisualSensorSpec& a) const;
   ESP_SMART_POINTERS(VisualSensorSpec)
 };
@@ -51,7 +52,7 @@ class VisualSensor : public Sensor {
     return {visualSensorSpec_->resolution[1], visualSensorSpec_->resolution[0]};
   }
 
-  virtual bool isVisualSensor() const override { return true; }
+  bool isVisualSensor() const override { return true; }
 
   /**
    * @brief Display next observation from Simulator on default frame buffer
@@ -59,7 +60,7 @@ class VisualSensor : public Sensor {
    *                to be displayed
    * @return Whether the display process was successful or not
    */
-  virtual bool displayObservation(sim::Simulator& sim) override;
+  bool displayObservation(sim::Simulator& sim) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.

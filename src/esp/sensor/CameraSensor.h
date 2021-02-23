@@ -13,9 +13,9 @@ namespace esp {
 namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
-  int channels;
+  int channels = 4;
   // description of Sensor observation space as gym.spaces.Dict()
-  std::string observationSpace;
+  std::string observationSpace = "";
   CameraSensorSpec();
   void sanityCheck() override;
   bool operator==(const CameraSensorSpec& a) const;
