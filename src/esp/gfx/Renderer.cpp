@@ -60,8 +60,11 @@ struct BackgroundRenderThread {
   }
 
   static void spinLock(const std::atomic<int>& lk, int val) {
-    while (lk.load(std::memory_order_acquire) != val)
+    while (lk.load(std::memory_order_acquire) != val) {
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
       asm volatile("pause" ::: "memory");
+#endif
+    }
   }
 
   void waitThread() {
