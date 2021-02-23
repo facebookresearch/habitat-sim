@@ -27,6 +27,11 @@ class Renderer {
   /**
    * @brief Constructor
    */
+  explicit Renderer(Flags flags = {});
+
+  /**
+   * @brief Constructor for when creating a background thread
+   */
   explicit Renderer(WindowlessContext* context, Flags flags = {});
 
   // draw the scene graph with the camera specified by user
