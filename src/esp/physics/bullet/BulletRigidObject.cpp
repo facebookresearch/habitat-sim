@@ -456,8 +456,12 @@ void BulletRigidObject::activateCollisionIsland() {
   // first query overlapping pairs of the current object from the most recent
   // broadphase to collect relevant simulation islands.
 
-  // each index represents an island tag present - default is -1, so add one.
+  // bitset template argument specifies reasonable allocation size at compile
+  // time - it is not expected that we would require more than 65536 different
+  // islands; if we do, this number should be increased.
   std::bitset<65536> overlappingSimIslands;
+  // each index represents an island tag present - default in bullet is -1, so
+  // add one.
   overlappingSimIslands[thisColObj->getIslandTag() + 1] = true;
   auto* bColWorld = bWorld_->getCollisionWorld();
   auto& pairCache = bColWorld->getPairCache()->getOverlappingPairArray();
