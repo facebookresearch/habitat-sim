@@ -169,7 +169,8 @@ class ManagedContainerBase {
       LOG(ERROR) << "ManagedContainerBase::getObjectHandleByID : Unknown "
                  << objectType_ << " managed object ID:" << objectID
                  << ". Aborting";
-      return "";
+      // never will have registered object with registration handle == ""
+	  return "";
     }
     return objectLibKeyByID_.at(objectID);
   }  // ManagedContainer::getObjectHandleByID
