@@ -797,8 +797,7 @@ void Viewer::invertGravity() {
 esp::geo::VoxelGrid Viewer::createVoxelField(int objectId) {
   const Mn::Vector3 v_size = Mn::Vector3(0.5, 0.5, 0.5);
   const Mn::Vector3i v_dim = Mn::Vector3i(100, 100, 100);
-  !Mn::Debug();
-  unsigned int resolution = 1000;
+  unsigned int resolution = 600000;
 
   Mn::GL::Mesh* objectRenderMesh;
 
@@ -808,24 +807,12 @@ esp::geo::VoxelGrid Viewer::createVoxelField(int objectId) {
       esp::assets::MeshData::create_unique();
   objMesh = simulator_->getObjectMeshData(objectId);
 
-  esp::geo::VoxelGrid v2(objMesh, resolution);
-  esp::geo::VoxelGrid v(v_size, v_dim);  // = esp::geo::VoxelGrid();
-  for (int i = 0; i < 100; i++) {
-    for (int j = 0; j < 100; j++) {
-      for (int k = 0; k < 100; k++) {
-        esp::geo::Voxel* vox = new esp::geo::Voxel(false);
-        if (k % 10 == 0)
-          (*vox).is_filled = true;
-        v.setVoxelByIndex(Mn::Vector3i(i, j, k), vox);
-      }
-    }
-  }
+  esp::geo::VoxelGrid v(objMesh, resolution);
 
   return v;
 }
 
 void Viewer::displayVoxelField(int objectID) {
-  Mn::Debug() << objectID;
   auto v = createVoxelField(objectID);
   Cr::Containers::Optional<Mn::Trade::MeshData> mesh;
   v.fillVoxelMeshData(mesh);
@@ -853,10 +840,16 @@ void Viewer::displayVoxelField(int objectID) {
   }
 
   // Attach to root node for now
-  auto& rootNode = activeSceneGraph_->getRootNode();
+  // Add directly to object's visual scene node
+  esp::scene::SceneNode* objectNode;
+  if (objectID == -1)
+    objectNode = &activeSceneGraph_->getRootNode();
+  else {
+    objectNode = simulator_->getObjectVisualSceneNodes(objectID)[0];
+  }
 
   objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
-      voxel_grids_[nextVoxelGridMeshId - 1], &rootNode, &shader_);
+      voxel_grids_[nextVoxelGridMeshId - 1], objectNode, &shader_);
   /*auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId - 1],
       &objectPickingHelper_->getDrawables());*/
@@ -1186,6 +1179,9 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
       if (raycastResults.hasHits()) {
+        for (auto& res : raycastResults.hits) {
+          Mn::Debug() << res.objectId;
+        }
         auto objID = raycastResults.hits[0].objectId;
         displayVoxelField(objID);
       }
