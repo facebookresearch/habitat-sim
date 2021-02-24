@@ -259,8 +259,10 @@ struct Renderer::Impl {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
 
 #if !defined(CORRADE_TARGET_EMSCRIPTEN)
-    if (flags & Flag::BackgroundThread)
+    if (flags & Flag::BackgroundThread) {
+      CORRADE_INTERNAL_ASSERT(context_ != nullptr);
       backgroundRenderer_ = std::make_unique<BackgroundRenderThread>(context_);
+    }
 #endif
   }
 
@@ -357,6 +359,8 @@ struct Renderer::Impl {
   std::unique_ptr<BackgroundRenderThread> backgroundRenderer_ = nullptr;
 #endif
 };
+
+Renderer::Renderer(Flags flags) : Renderer{nullptr, flags} {}
 
 Renderer::Renderer(WindowlessContext* context, Flags flags)
     : pimpl_(spimpl::make_unique_impl<Impl>(context, flags)) {}

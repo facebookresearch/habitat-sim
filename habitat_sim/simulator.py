@@ -611,6 +611,7 @@ class Sensor:
                 and self._sim.get_active_scene_graph()
                 is not self._sim.get_active_semantic_scene_graph()
             ):
+                agent_node = self._agent.scene_node
                 agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
                 render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
                 self._sim.renderer.draw(
@@ -642,14 +643,16 @@ class Sensor:
             and self._sim.get_active_scene_graph()
             is not self._sim.get_active_semantic_scene_graph()
         ):
-            agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
-            render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
-            self._sim.renderer.draw_async(
-                self._sensor_object,
-                self._sim.get_active_scene_graph(),
-                self.view,
-                render_flags,
-            )
+            raise RuntimeError("This isn't gonna work here")
+            #  agent_node = self._agent.scene_node
+            #  agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
+            #  render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
+            #  self._sim.renderer.draw_async(
+            #  self._sensor_object,
+            #  self._sim.get_active_scene_graph(),
+            #  self.view,
+            #  render_flags,
+            #  )
 
     def draw_observation_setup(self) -> None:
         # sanity check:
