@@ -92,8 +92,6 @@ class VisualSensor : public Sensor {
     return false;
   }
 
-  virtual bool displayObservation(sim::Simulator& sim) override;
-
   /**
    * @brief visualize originally undisplayable info (such as depth, semantic
    * info) to the frame buffer using simulator's renderer
@@ -107,7 +105,7 @@ class VisualSensor : public Sensor {
    *                to be displayed
    * @return Whether the display process was successful or not
    */
-  bool displayObservation(sim::Simulator& sim) override;
+  virtual bool displayObservation(sim::Simulator& sim) override;
 
   /**
    * @brief Returns RenderCamera

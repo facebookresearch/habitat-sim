@@ -63,6 +63,7 @@ class CubeMap {
    * @brief Flags
    */
   typedef Corrade::Containers::EnumSet<Flag> Flags;
+  CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
 
   /**
    * @brief, Constructor
@@ -172,36 +173,36 @@ class CubeMap {
       Corrade::Containers::DirectInit, Magnum::NoCreate};
 
   // in case there is no need to output depth texture, we need a depth buffer
-  Magnum::GL::Renderbuffer optionalDepthBuffer_[6];
-
-  /**
-   * @brief recreate the frame buffer
-   */
-  void recreateFramebuffer();
-
-  /**
-   * @brief attach renderbuffers (color etc.) as logical buffers of the
-   * framebuffer object
-   */
-  void attachFramebufferRenderbuffer();
-
-  /**
-   * @brief Prepare to draw to the texture
-   * @param cubeSideIndex, the index of the cube side, can be 0,
-   * 1, 2, 3, 4, or 5
-   */
-  void prepareToDraw(unsigned int cubeSideIndex);
-
-  /**
-   * @brief Map shader output to attachments.
-   * @param cubeSideIndex, the index of the cube side, can be 0,
-   * 1, 2, 3, 4, or 5
-   */
-  void mapForDraw(unsigned int cubeSideIndex);
+  Corrade::Containers::StaticArray<6, Magnum::GL::Renderbuffer>
+      optionalDepthBuffer_{Corrade::Containers::DirectInit, Magnum::NoCreate};
 };
 
-CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
+/**
+ * @brief recreate the frame buffer
+ */
+void recreateFramebuffer();
 
-}  // namespace gfx
+/**
+ * @brief attach renderbuffers (color etc.) as logical buffers of the
+ * framebuffer object
+ */
+void attachFramebufferRenderbuffer();
+
+/**
+ * @brief Prepare to draw to the texture
+ * @param cubeSideIndex, the index of the cube side, can be 0,
+ * 1, 2, 3, 4, or 5
+ */
+void prepareToDraw(unsigned int cubeSideIndex);
+
+/**
+ * @brief Map shader output to attachments.
+ * @param cubeSideIndex, the index of the cube side, can be 0,
+ * 1, 2, 3, 4, or 5
+ */
+void mapForDraw(unsigned int cubeSideIndex);
+};  // namespace gfx
+
+}  // namespace esp
 }  // namespace esp
 #endif
