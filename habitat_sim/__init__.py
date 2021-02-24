@@ -28,6 +28,13 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         utils,
     )
     from habitat_sim._ext.habitat_sim_bindings import MapStringString  # noqa: F401
+
+    try:
+        from habitat_sim._ext.habitat_sim_bindings import VHACDParameters  # noqa: F401
+    except Exception:
+        pass
+
+    # if getattr()
     from habitat_sim.agent.agent import (  # noqa: F401
         ActionSpec,
         Agent,
@@ -56,6 +63,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         SensorType,
         SimulatorConfiguration,
         cuda_enabled,
+        vhacd_enabled,
     )
     from habitat_sim.nav import (  # noqa: F401
         GreedyFollowerCodes,
