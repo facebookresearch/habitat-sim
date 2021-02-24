@@ -24,10 +24,11 @@ from habitat_sim._ext.habitat_sim_bindings import (
     SensorSubType,
     SensorType,
     ShortestPath,
+    VisualSensorSpec,
 )
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
 from habitat_sim._ext.habitat_sim_bindings import (
     SimulatorConfiguration,
-    VisualSensorSpec,
     cuda_enabled,
+    vhacd_enabled,
 )
