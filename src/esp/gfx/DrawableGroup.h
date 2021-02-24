@@ -24,7 +24,7 @@ class Drawable;
  */
 class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
  public:
-  virtual ~DrawableGroup();
+  ~DrawableGroup() override;
 
   /**
    * @brief Add a drawable to the group.

@@ -38,12 +38,12 @@ class GenericMeshData : public BaseMesh {
 
   /** @brief Constructor. Sets @ref SupportedMeshType::GENERIC_MESH to identify
    * the asset type.*/
-  GenericMeshData(bool needsNormals = true)
+  explicit GenericMeshData(bool needsNormals = true)
       : BaseMesh(SupportedMeshType::GENERIC_MESH),
         needsNormals_{needsNormals} {};
 
   /** @brief Destructor */
-  virtual ~GenericMeshData(){};
+  ~GenericMeshData() override = default;
 
   /**
    * @brief Compile the @ref renderingBuffer_ if first upload or forceReload is
@@ -51,7 +51,7 @@ class GenericMeshData : public BaseMesh {
    * @param forceReload If true, recompiles the @ref renderingBuffer_ (e.g. in
    * the case of data change after initial compilation).
    */
-  virtual void uploadBuffersToGPU(bool forceReload = false) override;
+  void uploadBuffersToGPU(bool forceReload = false) override;
 
   /**
    * @brief Set mesh data from external source, and sets the @ref collisionMesh_
@@ -95,7 +95,7 @@ class GenericMeshData : public BaseMesh {
    * @ref renderingBuffer_.
    * @return Pointer to the compiled render mesh data.
    */
-  virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
+  Magnum::GL::Mesh* getMagnumGLMesh() override;
 
  protected:
   /**

@@ -30,7 +30,7 @@ class BulletRigidStage : public BulletBase, public RigidStage {
   /**
    * @brief Destructor cleans up simulation structures for the stage object.
    */
-  virtual ~BulletRigidStage();
+  ~BulletRigidStage() override;
 
  private:
   /**
@@ -74,19 +74,19 @@ class BulletRigidStage : public BulletBase, public RigidStage {
    * the rigid body in its local space. See @ref btCompoundShape::getAabb.
    * @return The Aabb.
    */
-  virtual const Magnum::Range3D getCollisionShapeAabb() const override;
+  const Magnum::Range3D getCollisionShapeAabb() const override;
 
   /** @brief Get the scalar friction coefficient of the stage object. Only
    * used for dervied dynamic implementations of @ref RigidStage.
    * @return The scalar friction coefficient of the stage object.
    */
-  virtual double getFrictionCoefficient() const override;
+  double getFrictionCoefficient() const override;
 
   /** @brief Get the scalar coefficient of restitution  of the stage object.
    * Only used for dervied dynamic implementations of @ref RigidStage.
    * @return The scalar coefficient of restitution  of the stage object.
    */
-  virtual double getRestitutionCoefficient() const override;
+  double getRestitutionCoefficient() const override;
 
   /** @brief Set the scalar friction coefficient of the stage object.
    * See @ref btCollisionObject::setFriction.

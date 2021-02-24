@@ -78,7 +78,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Virtual destructor for a @ref RigidBase.
    */
-  virtual ~RigidBase() {}
+  ~RigidBase() override = default;
 
   /**
    * @brief Get the scene node being attached to.
@@ -639,7 +639,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */
-  MotionType objectMotionType_;
+  MotionType objectMotionType_{MotionType::UNDEFINED};
 
   /** @brief Flag sepcifying whether or not the object has an active collision
    * shape.

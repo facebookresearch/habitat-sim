@@ -120,21 +120,17 @@ size_t RenderCamera::cull(
                           Mn::Matrix4>& a) {
         // obtain the absolute aabb
         auto& node = static_cast<scene::SceneNode&>(a.first.get().object());
-        Corrade::Containers::Optional<Mn::Range3D> aabb =
-            node.getAbsoluteAABB();
-        if (aabb) {
-          // if it has an absolute aabb, it is a static mesh
-          Cr::Containers::Optional<int> culledPlane =
-              rangeFrustum(*aabb, frustum, node.getFrustumPlaneIndex());
-          if (culledPlane) {
-            node.setFrustumPlaneIndex(*culledPlane);
-          }
-          // if it has value, it means the aabb is culled
-          return (culledPlane != Cr::Containers::NullOpt);
-        } else {
-          // keep the drawable if its node does not have an absolute AABB
-          return false;
+        // This updates the AABB for dynamic objects if needed
+        node.setClean();
+        const Mn::Range3D& aabb = node.getAbsoluteAABB();
+
+        Cr::Containers::Optional<int> culledPlane =
+            rangeFrustum(aabb, frustum, node.getFrustumPlaneIndex());
+        if (culledPlane) {
+          node.setFrustumPlaneIndex(*culledPlane);
         }
+        // if it has value, it means the aabb is culled
+        return (culledPlane != Cr::Containers::NullOpt);
       });
 
   return (newEndIter - drawableTransforms.begin());

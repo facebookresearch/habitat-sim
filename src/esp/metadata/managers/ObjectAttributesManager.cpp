@@ -11,7 +11,6 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
-using std::placeholders::_1;
 namespace Cr = Corrade;
 
 namespace esp {
