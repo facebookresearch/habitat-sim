@@ -8,6 +8,8 @@
  * @brief Class @ref esp::physics::BulletArticulatedObject
  */
 
+#include <utility>
+
 #include "../ArticulatedObject.h"
 #include "BulletBase.h"
 #include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
@@ -32,7 +34,7 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
                         std::shared_ptr<std::map<const btCollisionObject*, int>>
                             collisionObjToObjIds)
       : ArticulatedLink(bodyNode, index, resMgr),
-        BulletBase(bWorld, collisionObjToObjIds){};
+        BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)){};
 
   virtual const Magnum::Range3D getCollisionShapeAabb() const override {
     // TODO: collision object should be linked here
@@ -61,9 +63,9 @@ class BulletArticulatedObject : public ArticulatedObject {
       std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
       std::shared_ptr<std::map<const btCollisionObject*, int>>
           collisionObjToObjIds)
-      : bWorld_(bWorld), ArticulatedObject(rootNode, resMgr) {
+      : bWorld_(std::move(bWorld)), ArticulatedObject(rootNode, resMgr) {
     motionType_ = MotionType::DYNAMIC;
-    collisionObjToObjIds_ = collisionObjToObjIds;
+    collisionObjToObjIds_ = std::move(collisionObjToObjIds);
   };
 
   virtual ~BulletArticulatedObject();

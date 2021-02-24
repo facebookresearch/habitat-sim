@@ -17,7 +17,7 @@ namespace physics {
 
 BulletPhysicsManager::BulletPhysicsManager(
     assets::ResourceManager& _resourceManager,
-    const metadata::attributes::PhysicsManagerAttributes::cptr
+    const metadata::attributes::PhysicsManagerAttributes::cptr&
         _physicsManagerAttributes)
     : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
   collisionObjToObjIds_ =

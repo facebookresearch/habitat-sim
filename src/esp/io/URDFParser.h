@@ -243,7 +243,7 @@ class Model {
 
   void printKinematicChain() const;
 
-  std::shared_ptr<Link> getLink(std::string linkName) const {
+  std::shared_ptr<Link> getLink(const std::string& linkName) const {
     if (m_links.count(linkName)) {
       return m_links.at(linkName);
     }
@@ -277,7 +277,7 @@ class Model {
     float scaleCorrection = scaling / m_globalScaling;
 
     // scale all transforms' translations
-    for (auto link : m_links) {
+    for (const auto& link : m_links) {
       // scale inertial offsets
       link.second->m_inertia.m_linkLocalFrame.translation() *= scaleCorrection;
       // scale visual shape parameters
@@ -289,7 +289,7 @@ class Model {
         scaleShape(collision, scaleCorrection);
       }
     }
-    for (auto joint : m_joints) {
+    for (const auto& joint : m_joints) {
       // scale joint offsets
       joint.second->m_parentLinkToJointTransform.translation() *=
           scaleCorrection;
@@ -315,7 +315,7 @@ class Model {
 
     // Only need to scale the per-link mass values. These will be further
     // processed during import.
-    for (auto link : m_links) {
+    for (const auto& link : m_links) {
       Inertia& linkInertia = link.second->m_inertia;
       linkInertia.m_mass *= massScaleCorrection;
     }
