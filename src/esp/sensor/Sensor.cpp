@@ -38,7 +38,7 @@ void Sensor::setTransformationFromSpec() {
 
 void SensorSuite::add(const Sensor::ptr& sensor) {
   const std::string uuid = sensor->specification()->uuid;
-  sensors_[uuid] = sensor;
+  sensors_.emplace(uuid, std::cref(sensor));
 }
 
 void SensorSuite::merge(SensorSuite& sensorSuite) {
@@ -46,8 +46,8 @@ void SensorSuite::merge(SensorSuite& sensorSuite) {
                   sensorSuite.getSensors().end());
 }
 
-Sensor::ptr SensorSuite::get(const std::string& uuid) const {
-  return (sensors_.at(uuid));
+Sensor& SensorSuite::get(const std::string& uuid) const {
+  return (sensors_.at(uuid)).get();
 }
 
 void SensorSuite::clear() {

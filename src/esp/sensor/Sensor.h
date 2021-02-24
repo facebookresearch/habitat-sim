@@ -143,11 +143,11 @@ class SensorSuite {
   void clear();
   ~SensorSuite() { LOG(INFO) << "Deconstructing SensorSuite"; }
 
-  Sensor::ptr get(const std::string& uuid) const;
-  std::map<std::string, Sensor::ptr>& getSensors() { return sensors_; }
+  Sensor& get(const std::string& uuid) const;
+  std::map<std::string, std::reference_wrapper<Sensor>>& getSensors() { return sensors_; }
 
  protected:
-  std::map<std::string, Sensor::ptr> sensors_;
+  std::map<std::string, std::reference_wrapper<Sensor>> sensors_;
 
   ESP_SMART_POINTERS(SensorSuite)
 };
