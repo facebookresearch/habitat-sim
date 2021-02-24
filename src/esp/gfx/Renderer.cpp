@@ -29,6 +29,10 @@
 #include "esp/gfx/magnum.h"
 #include "esp/sensor/VisualSensor.h"
 
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
+#include <atomic_wait.h>
+#endif
+
 namespace Mn = Magnum;
 
 namespace esp {
@@ -37,7 +41,7 @@ namespace gfx {
 
 struct BackgroundRenderThread {
   BackgroundRenderThread(WindowlessContext* context)
-      : context_{context}, done_{0}, sgLock_{0}, barrierVal_{0} {
+      : context_{context}, done_{0}, sgLock_{0}, start_{0} {
     context_->release();
     t = std::thread(&BackgroundRenderThread::run, this);
 
@@ -48,9 +52,10 @@ struct BackgroundRenderThread {
   }
 
   void startThread() {
-    barrierVal_.fetch_xor(1, std::memory_order_relaxed);
     std::atomic_thread_fence(std::memory_order_release);
-    cv_.notify_all();
+    start_.fetch_xor(1, std::memory_order_release);
+    std::atomic_notify_all(&start_);
+
     threadStarted_ = true;
   }
 
@@ -60,21 +65,23 @@ struct BackgroundRenderThread {
     t.join();
   }
 
-  static void spinLock(const std::atomic<int>& lk, int val) {
-    while (lk.load(std::memory_order_acquire) != val)
-      asm volatile("pause" ::: "memory");
-  }
-
   void waitThread() {
     CORRADE_INTERNAL_ASSERT(threadStarted_ || jobsWaiting_ == 0);
-    spinLock(done_, jobsWaiting_);
+    if (jobsWaiting_ != 0) {
+      std::atomic_wait_explicit(&done_, 0, std::memory_order_acquire);
+
+      CORRADE_INTERNAL_ASSERT(done_.load(std::memory_order_relaxed) ==
+                              jobsWaiting_);
+    }
 
     done_.store(0);
     jobsWaiting_ = 0;
     threadStarted_ = false;
   }
 
-  void waitSG() { spinLock(sgLock_, 0); }
+  void waitSG() {
+    std::atomic_wait_explicit(&sgLock_, 1, std::memory_order_acquire);
+  }
 
   void submitJob(sensor::VisualSensor& sensor,
                  scene::SceneGraph& sceneGraph,
@@ -130,6 +137,7 @@ struct BackgroundRenderThread {
     }
 
     sgLock_.store(0, std::memory_order_release);
+    std::atomic_notify_all(&sgLock_);
 
     for (int i = 0; i < jobs_.size(); ++i) {
       auto& job = jobs_[i];
@@ -195,17 +203,15 @@ struct BackgroundRenderThread {
 
     threadReleaseContext();
     done_.store(1, std::memory_order_release);
+    std::atomic_notify_all(&done_);
 
-    int waitVal = 0;
+    int oldStartVal = 0;
     bool done = false;
     while (!done) {
-      waitVal ^= 1;
-      {
-        std::unique_lock<std::mutex> lk{mutex_};
-        cv_.wait(lk, [this, waitVal] {
-          return barrierVal_.load(std::memory_order_acquire) == waitVal;
-        });
-      }
+      std::atomic_wait_explicit(&start_, oldStartVal,
+                                std::memory_order_acquire);
+
+      oldStartVal ^= 1;
 
       switch (task_) {
         case Task::Exit:
@@ -215,23 +221,22 @@ struct BackgroundRenderThread {
           break;
         case Task::ReleaseContext:
           threadReleaseContext();
-          done_.store(1, std::memory_order_relaxed);
+          done_.store(1, std::memory_order_acq_rel);
           break;
         case Task::Render:
           const int jobsDone = threadRender();
-          done_.store(jobsDone, std::memory_order_relaxed);
+          done_.store(jobsDone, std::memory_order_acq_rel);
           break;
       }
 
       std::atomic_thread_fence(std::memory_order_release);
+      std::atomic_notify_all(&done_);
     };
   }
 
   WindowlessContext* context_;
 
-  std::atomic<int> done_, sgLock_, barrierVal_;
-  std::condition_variable cv_;
-  std::mutex mutex_;
+  std::atomic<int> done_, sgLock_, start_;
   std::thread t;
   bool threadStarted_ = false;
 
