@@ -52,3 +52,6 @@
 [submodule "src/deps/bullet3"]
 	path = src/deps/bullet3
 	url = https://github.com/bulletphysics/bullet3
+[submodule "src/deps/v-hacd"]
+	path = src/deps/v-hacd
+	url = https://github.com/ScottCSteinhauser/v-hacd.git

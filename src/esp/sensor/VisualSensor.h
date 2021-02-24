@@ -25,7 +25,7 @@ namespace sensor {
 class VisualSensor : public Sensor {
  public:
   explicit VisualSensor(scene::SceneNode& node, SensorSpec::ptr spec);
-  virtual ~VisualSensor();
+  ~VisualSensor() override;
 
   /**
    * @brief Return the size of the framebuffer corresponding to the sensor's
@@ -39,7 +39,7 @@ class VisualSensor : public Sensor {
     return {spec_->resolution[1], spec_->resolution[0]};
   }
 
-  virtual bool isVisualSensor() override { return true; }
+  bool isVisualSensor() override { return true; }
 
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
@@ -101,6 +101,14 @@ class VisualSensor : public Sensor {
    *                to be drawn
    */
   virtual void visualizeObservation(gfx::SensorInfoVisualizer& visualizer);
+  /**
+   * @brief Display next observation from Simulator on default frame buffer
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be displayed
+   * @return Whether the display process was successful or not
+   */
+  bool displayObservation(sim::Simulator& sim) override;
+
   /**
    * @brief Returns RenderCamera
    */

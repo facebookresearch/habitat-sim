@@ -37,6 +37,11 @@ option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" OFF)
 option(BUILD_WITH_BULLET
        "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF
 )
+option(
+  BUILD_WITH_VHACD
+  "Build Habitat-Sim with VHACD convex hull decomposition and voxelization engine enabled -- Requires VHACD"
+  OFF
+)
 option(BUILD_TEST "Build test binaries" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)

@@ -51,6 +51,12 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         help="""Build with Bullet simulation engine.""",
     )
     parser.add_argument(
+        "--vhacd",
+        dest="with_vhacd",
+        action="store_true",
+        help="""Build with VHACD convex hull decomposition and voxelization engine.""",
+    )
+    parser.add_argument(
         "--cmake",
         "--force-cmake",
         dest="force_cmake",
@@ -253,6 +259,9 @@ class CMakeBuild(build_ext):
         cmake_args += ["-DBUILD_TEST={}".format("ON" if args.build_tests else "OFF")]
         cmake_args += [
             "-DBUILD_WITH_BULLET={}".format("ON" if args.with_bullet else "OFF")
+        ]
+        cmake_args += [
+            "-DBUILD_WITH_VHACD={}".format("ON" if args.with_vhacd else "OFF")
         ]
         cmake_args += [
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")

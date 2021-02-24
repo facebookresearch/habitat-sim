@@ -5,6 +5,8 @@
 #ifndef ESP_METADATA_ATTRIBUTES_SCENEATTRIBUTES_H_
 #define ESP_METADATA_ATTRIBUTES_SCENEATTRIBUTES_H_
 
+#include <utility>
+
 #include "AttributesBase.h"
 
 namespace esp {
@@ -36,7 +38,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief SceneObjectInstanceAttributes handle is also the handle of the
    * underlying @ref AbstractObjectAttributes for the object being instanced.
    */
-  SceneObjectInstanceAttributes(const std::string& handle);
+  explicit SceneObjectInstanceAttributes(const std::string& handle);
 
   /**
    * @brief Set the translation from the origin of the described
@@ -107,7 +109,7 @@ class SceneAttributes : public AbstractAttributes {
                         metadata::managers::SceneInstanceTranslationOrigin>
       InstanceTranslationOriginMap;
 
-  SceneAttributes(const std::string& handle);
+  explicit SceneAttributes(const std::string& handle);
 
   /**
    * @brief Set a value representing the mechanism used to create this scene
@@ -167,7 +169,7 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Set the description of the stage placement for this scene instance.
    */
   void setStageInstance(SceneObjectInstanceAttributes::ptr _stageInstance) {
-    stageInstance_ = _stageInstance;
+    stageInstance_ = std::move(_stageInstance);
   }
   /**
    * @brief Get the description of the stage placement for this scene instance.
@@ -179,7 +181,8 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Add a description of an object instance to this scene instance
    */
-  void addObjectInstance(SceneObjectInstanceAttributes::ptr _objInstance) {
+  void addObjectInstance(
+      const SceneObjectInstanceAttributes::ptr& _objInstance) {
     objectInstances_.push_back(_objInstance);
   }
   /**

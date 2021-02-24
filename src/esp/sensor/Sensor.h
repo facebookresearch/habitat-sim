@@ -88,7 +88,7 @@ struct ObservationSpace {
 class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);
-  virtual ~Sensor() { LOG(INFO) << "Deconstructing Sensor"; }
+  ~Sensor() override { LOG(INFO) << "Deconstructing Sensor"; }
 
   // Get the scene node being attached to.
   scene::SceneNode& node() { return object(); }

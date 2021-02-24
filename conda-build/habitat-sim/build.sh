@@ -2,6 +2,7 @@
 
 
 build_args=(--skip-install-magnum)
+build_args+=("--vhacd")
 if [ "${HEADLESS}" == "1" ]; then
   build_args+=("--headless")
 fi
