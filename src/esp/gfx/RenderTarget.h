@@ -84,7 +84,7 @@ class RenderTarget {
                const Magnum::Vector2& depthUnprojection)
       : RenderTarget{size, depthUnprojection, nullptr, {}} {}
 
-  ~RenderTarget() {}
+  ~RenderTarget() = default;
 
   /**
    * @brief Called before any draw calls that target this RenderTarget

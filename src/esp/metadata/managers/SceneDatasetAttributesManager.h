@@ -5,6 +5,8 @@
 #ifndef ESP_METADATA_MANAGERS_SCENEDATASETATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_SCENEDATASETATTRIBUTEMANAGER_H_
 
+#include <utility>
+
 #include "PhysicsAttributesManager.h"
 
 #include "AttributesManagerBase.h"
@@ -17,12 +19,12 @@ class SceneDatasetAttributesManager
     : public AttributesManager<attributes::SceneDatasetAttributes,
                                core::ManagedObjectAccess::Share> {
  public:
-  SceneDatasetAttributesManager(
+  explicit SceneDatasetAttributesManager(
       PhysicsAttributesManager::ptr physicsAttributesMgr)
       : AttributesManager<attributes::SceneDatasetAttributes,
                           core::ManagedObjectAccess::Share>::
             AttributesManager("Dataset", "scene_dataset_config.json"),
-        physicsAttributesManager_(physicsAttributesMgr) {
+        physicsAttributesManager_(std::move(physicsAttributesMgr)) {
     buildCtorFuncPtrMaps();
   }
 
@@ -207,7 +209,7 @@ class SceneDatasetAttributesManager
    * @param handle Ignored.
    * @return false
    */
-  virtual bool isValidPrimitiveAttributes(
+  bool isValidPrimitiveAttributes(
       CORRADE_UNUSED const std::string& handle) override {
     return false;
   }
