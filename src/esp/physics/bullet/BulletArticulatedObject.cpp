@@ -183,7 +183,7 @@ Magnum::Matrix4 BulletArticulatedObject::getRootState() {
 }
 
 void BulletArticulatedObject::updateNodes(bool force) {
-  if (force || btMultiBody_->getBaseCollider->isActive()) {
+  if (force || btMultiBody_->getBaseCollider()->isActive()) {
     setRotationScalingFromBulletTransform(btMultiBody_->getBaseWorldTransform(),
                                           &node());
   }
