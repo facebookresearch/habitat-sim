@@ -40,28 +40,30 @@ def make_sensor_specs_from_settings(sensors, settings):
                 raise ValueError(
                     f"""{sensor_params["sensor_type"]} is an illegal sensorType that is not implemented yet"""
                 )
-            else:
-                # Check if type CameraSensorSpec
-                if sensor_params["sensor_subtype"] in CameraSensorSubTypeSet:
-                    sensor_spec = habitat_sim.CameraSensorSpec()
-                    sensor_spec.uuid = sensor_uuid
-                    sensor_spec.sensor_type = sensor_params["sensor_type"]
-                    sensor_spec.sensor_subtype = sensor_params["sensor_subtype"]
-                    if "resolution" in sensor_params:
-                        sensor_spec.resolution = sensor_params["resolution"]
-                    if "position" in sensor_params:
-                        sensor_spec.position = sensor_params["position"]
-                    if "orientation" in sensor_params:
-                        sensor_spec.position = sensor_params["orientation"]
-                    sensor_spec.gpu2gpu_transfer = False
-                    if "silent" in settings and not settings["silent"]:
-                        print("==== Initialized Sensor Spec: =====")
-                        print("Sensor uuid: ", sensor_spec.uuid)
-                        print("Sensor type: ", sensor_spec.sensor_type)
-                        print("Sensor position: ", sensor_spec.position)
-                        print("===================================")
-                    sensor_specs.append(sensor_spec)
-                # TODO: Add checks to initialize other types of SensorSpecs
+            # Check if type CameraSensorSpec
+            if sensor_params["sensor_subtype"] not in CameraSensorSubTypeSet:
+                # TODO: Add more checks for other types of sensors
+                raise ValueError(
+                    f"""{sensor_params["sensor_subtype"]} is an illegal sensorSubType for a VisualSensor"""
+                )
+            sensor_spec = habitat_sim.CameraSensorSpec()
+            sensor_spec.uuid = sensor_uuid
+            sensor_spec.sensor_type = sensor_params["sensor_type"]
+            sensor_spec.sensor_subtype = sensor_params["sensor_subtype"]
+            if "resolution" in sensor_params:
+                sensor_spec.resolution = sensor_params["resolution"]
+            if "position" in sensor_params:
+                sensor_spec.position = sensor_params["position"]
+            if "orientation" in sensor_params:
+                sensor_spec.position = sensor_params["orientation"]
+            sensor_spec.gpu2gpu_transfer = False
+            if "silent" in settings and not settings["silent"]:
+                print("==== Initialized Sensor Spec: =====")
+                print("Sensor uuid: ", sensor_spec.uuid)
+                print("Sensor type: ", sensor_spec.sensor_type)
+                print("Sensor position: ", sensor_spec.position)
+                print("===================================")
+            sensor_specs.append(sensor_spec)
     return sensor_specs
 
 
@@ -78,20 +80,22 @@ def make_sensor_specs(sensors):
             raise ValueError(
                 f"""{sensor_params["sensor_type"]} is an illegal sensorType that is not implemented yet"""
             )
-        else:
-            # Check if type CameraSensorSpec
-            if sensor_params["sensor_subtype"] in CameraSensorSubTypeSet:
-                sensor_spec = habitat_sim.CameraSensorSpec()
-                sensor_spec.uuid = sensor_uuid
-                sensor_spec.sensor_type = sensor_params["sensor_type"]
-                sensor_spec.sensor_subtype = sensor_params["sensor_subtype"]
-                if "resolution" in sensor_params:
-                    sensor_spec.resolution = sensor_params["resolution"]
-                if "position" in sensor_params:
-                    sensor_spec.position = sensor_params["position"]
-                if "orientation" in sensor_params:
-                    sensor_spec.position = sensor_params["orientation"]
-                sensor_spec.gpu2gpu_transfer = False
-                sensor_specs.append(sensor_spec)
-            # TODO: Add checks to initialize other types of SensorSpecs
+        # Check if type CameraSensorSpec
+        if sensor_params["sensor_subtype"] not in CameraSensorSubTypeSet:
+            # TODO: Add more checks for other types of sensors
+            raise ValueError(
+                f"""{sensor_params["sensor_subtype"]} is an illegal sensorSubType for a VisualSensor"""
+            )
+        sensor_spec = habitat_sim.CameraSensorSpec()
+        sensor_spec.uuid = sensor_uuid
+        sensor_spec.sensor_type = sensor_params["sensor_type"]
+        sensor_spec.sensor_subtype = sensor_params["sensor_subtype"]
+        if "resolution" in sensor_params:
+            sensor_spec.resolution = sensor_params["resolution"]
+        if "position" in sensor_params:
+            sensor_spec.position = sensor_params["position"]
+        if "orientation" in sensor_params:
+            sensor_spec.position = sensor_params["orientation"]
+        sensor_spec.gpu2gpu_transfer = False
+        sensor_specs.append(sensor_spec)
     return sensor_specs
