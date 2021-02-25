@@ -174,6 +174,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .value("TENSOR", SensorType::Tensor)
       .value("TEXT", SensorType::Text);
 
+    em::enum_<SensorSubType>("SensorSubType")
+        .value("NONE", SensorSubType::None)
+        .value("PINHOLE", SensorSubType::Pinhole)
+      .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
   em::class_<SensorSpec>("SensorSpec")
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
       .property("uuid", &SensorSpec::uuid)

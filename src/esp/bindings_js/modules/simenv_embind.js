@@ -161,14 +161,21 @@ class SimEnv {
 
   createSensorSpec(config) {
     //Check if VisualSensor
+    const VisualSensorTypeSet = new Set([
+      Module.SensorType.COLOR,
+      Module.SensorType.DEPTH,
+      Module.SensorType.SEMANTIC,
+      Module.SensorType.NORMAL
+    ]);
+    const CameraSensorSubTypeSet = new Set([
+      Module.SensorSubType.PINHOLE,
+      Module.SensorSubType.ORTHOGRAPHIC
+    ]);
     if (
-      config["sensorType"] == Module.SensorType.COLOR ||
-      config["sensorType"] == Module.SensorType.DEPTH ||
-      config["sensorType"] == Module.SensorType.SEMANTIC ||
-      config["sensorType"] == Module.SensorType.NORMAL
+      VisualSensorTypeSet.has(config["sensorType"]) &&
+      CameraSensorSubTypeSet.has(config["sensorSubType"])
     ) {
-      //TODO: Check SensorSubType for different sensors
-      //Currently, SensorSubType is not defined for sensors and all sensors in JS are CameraSensors
+      //TODO: Implement checks for different sensors
       const converted = new Module.CameraSensorSpec();
       for (let key in config) {
         let value = config[key];

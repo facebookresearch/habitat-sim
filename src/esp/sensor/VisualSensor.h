@@ -24,7 +24,7 @@ using Mn::Math::Literals::operator""_degf;
 
 struct VisualSensorSpec : public SensorSpec {
   float ortho_scale = 0.1f;
-  vec2i resolution = {84, 84};          // height x width
+  vec2i resolution = {128, 128};          // height x width
   std::string encoding = "rgba_uint8";  // For rendering colors in images
   bool gpu2gpuTransfer = false;         // True for pytorch tensor support
   VisualSensorSpec();
