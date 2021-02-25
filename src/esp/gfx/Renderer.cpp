@@ -64,30 +64,27 @@ struct Renderer::Impl {
     }
 
     RenderTarget::Flags renderTargetFlags_ = {};
-    if (flags_ & Flag::NoTextures) {
-      renderTargetFlags_ |= RenderTarget::Flag::NoTextures;
-    }
-
     switch (sensor.specification()->sensorType) {
       case sensor::SensorType::Color:
-        renderTargetFlags_ |= (RenderTarget::Flag::NoObjectIdBuffer |
-                               RenderTarget::Flag::NoDepthTexture);
+        renderTargetFlags_ |= RenderTarget::Flag::RgbaBuffer;
         break;
 
       case sensor::SensorType::Depth:
-        renderTargetFlags_ |= (RenderTarget::Flag::NoRgbaBuffer |
-                               RenderTarget::Flag::NoObjectIdBuffer);
+        renderTargetFlags_ |= RenderTarget::Flag::DepthTexture;
         break;
 
       case sensor::SensorType::Semantic:
-        renderTargetFlags_ |= (RenderTarget::Flag::NoRgbaBuffer |
-                               RenderTarget::Flag::NoDepthTexture);
+        renderTargetFlags_ |= RenderTarget::Flag::ObjectIdBuffer;
         break;
 
       default:
         // I need this default, since sensor type list is long, and without
         // default clang-tidy will complain
         break;
+    }
+    if (flags_ & Flag::NoTextures) {
+      // it means no rgba render buffer
+      renderTargetFlags_ &= ~RenderTarget::Flag::RgbaBuffer;
     }
 
     sensor.bindRenderTarget(RenderTarget::create_unique(

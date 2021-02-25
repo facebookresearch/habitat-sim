@@ -27,31 +27,25 @@ class RenderTarget {
  public:
   enum class Flag {
     /**
-     * @brief No textures for the meshes.
-     * Textures take a lot of GPU memory but they are not needed unless we are
-     * doing RGB rendering.
-     * Note: Do NOT set this flag when doing RGB rendering
-     * Currently it is just used to track whether or not @ref readFrameRgba,
-     * @ref blitRgbaToDefault, and @readFrameRgbaGPU are valid calls.
+     * create rgba buffer
+     * No need to set it for depth sensor, semantic sensor etc. as it makes
+     * the rendering slower
      */
-    NoTextures = 1 << 0,
+    RgbaBuffer = 1 << 0,
     /**
-     * @brief Do not create rgba buffer
-     * This can make the rendering faster for depth sensor, semantic sensor
+     * create objectId buffer
+     * No need to set it for color sensor, depth sensor etc. as it makes the
+     * rendering slower
      */
-    NoRgbaBuffer = 1 << 1,
+    ObjectIdBuffer = 1 << 1,
     /**
-     * @brief Do not create rgba buffer
-     * This can make the rendering faster for color sensor, depth sensor
+     * @brief use depth texture, it must be set for the depth sensor.
+     * No need to set it for color sensor, objectId sensor etc. as it makes the
+     * rendering slower
      */
-    NoObjectIdBuffer = 1 << 2,
-    /**
-     * @brief Do not create depth texture, it will use depth buffer instead
-     * This can make the rendering faster for color sensor, semantic sensor
-     * Note: Do NOT set this flag when being used in depth sensor
-     */
-    NoDepthTexture = 1 << 3,
+    DepthTexture = 1 << 2,
   };
+
   typedef Corrade::Containers::EnumSet<Flag> Flags;
   CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
 
@@ -69,7 +63,8 @@ class RenderTarget {
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
                DepthShader* depthShader,
-               Flags flags);
+               Flags flags = {Flag::RgbaBuffer | Flag::ObjectIdBuffer |
+                              Flag::DepthTexture});
 
   /**
    * @brief Constructor

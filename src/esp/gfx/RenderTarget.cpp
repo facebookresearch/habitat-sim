@@ -61,13 +61,13 @@ struct RenderTarget::Impl {
                               DepthShader::Flag::UnprojectExistingDepth);
     }
 
-    if (!(flags_ & Flag::NoRgbaBuffer)) {
+    if (flags_ & Flag::RgbaBuffer) {
       colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::SRGB8Alpha8, size);
     }
-    if (!(flags_ & Flag::NoObjectIdBuffer)) {
+    if (flags_ & Flag::ObjectIdBuffer) {
       objectIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32UI, size);
     }
-    if (!(flags_ & Flag::NoDepthTexture)) {
+    if (flags_ & Flag::DepthTexture) {
       depthRenderTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
           .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
           .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
@@ -80,24 +80,24 @@ struct RenderTarget::Impl {
     }
 
     framebuffer_ = Mn::GL::Framebuffer{{{}, size}};
-    if (!(flags_ & Flag::NoRgbaBuffer)) {
+    if (flags_ & Flag::RgbaBuffer) {
       framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_);
     }
-    if (!(flags_ & Flag::NoObjectIdBuffer)) {
+    if (flags_ & Flag::ObjectIdBuffer) {
       framebuffer_.attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_);
     }
-    if (!(flags_ & Flag::NoDepthTexture)) {
+    if (flags_ & Flag::DepthTexture) {
       framebuffer_.attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
                                  depthRenderTexture_, 0);
     } else {
       framebuffer_.attachRenderbuffer(
           Mn::GL::Framebuffer::BufferAttachment::Depth, unprojectedDepth_);
     }
-    if (!(flags_ & Flag::NoRgbaBuffer)) {
+    if (flags_ & Flag::RgbaBuffer) {
       framebuffer_.mapForDraw({{0, RgbaBuffer}});
     }
 
-    if (!(flags_ & Flag::NoObjectIdBuffer)) {
+    if (flags_ & Flag::ObjectIdBuffer) {
       framebuffer_.mapForDraw({{1, ObjectIdBuffer}});
     }
     CORRADE_INTERNAL_ASSERT(
@@ -107,7 +107,7 @@ struct RenderTarget::Impl {
 
   void initDepthUnprojector() {
     CORRADE_ASSERT(
-        !(flags_ & Flag::NoDepthTexture),
+        flags_ & Flag::DepthTexture,
         "RenderTarget::Impl::initDepthUnprojector(): this render target "
         "was not created with depth texture enabled.", );
 
@@ -133,7 +133,7 @@ struct RenderTarget::Impl {
   void unprojectDepthGPU() {
     CORRADE_INTERNAL_ASSERT(depthShader_ != nullptr);
     CORRADE_ASSERT(
-        !(flags_ & Flag::NoDepthTexture),
+        flags_ & Flag::DepthTexture,
         "RenderTarget::Impl::unporojectDepthGPU(): this render target "
         "was not created with depth texture enabled.", );
     initDepthUnprojector();
@@ -147,10 +147,10 @@ struct RenderTarget::Impl {
 
   void renderEnter() {
     framebuffer_.clearDepth(1.0);
-    if (!(flags_ & Flag::NoRgbaBuffer)) {
+    if (flags_ & Flag::RgbaBuffer) {
       framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
     }
-    if (!(flags_ & Flag::NoObjectIdBuffer)) {
+    if (flags_ & Flag::ObjectIdBuffer) {
       framebuffer_.clearColor(1, Mn::Vector4ui{});
     }
     framebuffer_.bind();
@@ -161,11 +161,8 @@ struct RenderTarget::Impl {
   void renderExit() {}
 
   void blitRgbaToDefault() {
-    CORRADE_ASSERT(!(flags_ & Flag::NoTextures),
-                   "RenderTarget::Impl::blitRgbaToDefault(): Simulator was "
-                   "initialized with requiresTextures = false", );
     CORRADE_ASSERT(
-        !(flags_ & Flag::NoRgbaBuffer),
+        flags_ & Flag::RgbaBuffer,
         "RenderTarget::Impl::blitRgbaToDefault(): this render target "
         "was not created with rgba render buffer enabled.", );
     CORRADE_ASSERT(
@@ -182,10 +179,7 @@ struct RenderTarget::Impl {
   }
 
   void readFrameRgba(const Mn::MutableImageView2D& view) {
-    CORRADE_ASSERT(!(flags_ & Flag::NoTextures),
-                   "RenderTarget::Impl::readFrameRgba(): Simulator was "
-                   "initialized with requiresTextures = false", );
-    CORRADE_ASSERT(!(flags_ & Flag::NoRgbaBuffer),
+    CORRADE_ASSERT(flags_ & Flag::RgbaBuffer,
                    "RenderTarget::Impl::readFrameRgba(): this render target "
                    "was not created with rgba render buffer enabled.", );
 
@@ -193,7 +187,7 @@ struct RenderTarget::Impl {
   }
 
   void readFrameDepth(const Mn::MutableImageView2D& view) {
-    CORRADE_ASSERT(!(flags_ & Flag::NoDepthTexture),
+    CORRADE_ASSERT(flags_ & Flag::DepthTexture,
                    "RenderTarget::Impl::readFrameDepth(): this render target "
                    "was not created with depth texture enabled.", );
     if (depthShader_) {
@@ -212,7 +206,7 @@ struct RenderTarget::Impl {
 
   void readFrameObjectId(const Mn::MutableImageView2D& view) {
     CORRADE_ASSERT(
-        !(flags_ & Flag::NoObjectIdBuffer),
+        flags_ & Flag::ObjectIdBuffer,
         "RenderTarget::Impl::readFrameObjectId(): this render target "
         "was not created with objectId render buffer enabled.", );
 
@@ -228,11 +222,7 @@ struct RenderTarget::Impl {
     // TODO: Consider implementing the GPU read functions with EGLImage
     // See discussion here:
     // https://github.com/facebookresearch/habitat-sim/pull/114#discussion_r312718502
-    CORRADE_ASSERT(!(flags_ & Flag::NoTextures),
-                   "RenderTarget::Impl::readFrameRgbaGPU(): Simulator was "
-                   "initialized with requiresTextures = false", );
-
-    CORRADE_ASSERT(!(flags_ & Flag::NoRgbaBuffer),
+    CORRADE_ASSERT(flags_ & Flag::RgbaBuffer,
                    "RenderTarget::Impl::readFrameRgbaGPU(): this render target "
                    "was not created with rgba render buffer enabled.", );
 
@@ -256,7 +246,7 @@ struct RenderTarget::Impl {
 
   void readFrameDepthGPU(float* devPtr) {
     CORRADE_ASSERT(
-        !(flags_ & Flag::NoDepthTexture),
+        flags_ & Flag::DepthTexture,
         "RenderTarget::Impl::readFrameDepthGPU(): this render target "
         "was not created with depth texture enabled.", );
     unprojectDepthGPU();
@@ -281,7 +271,7 @@ struct RenderTarget::Impl {
 
   void readFrameObjectIdGPU(int32_t* devPtr) {
     CORRADE_ASSERT(
-        !(flags_ & Flag::NoObjectIdBuffer),
+        flags_ & Flag::ObjectIdBuffer,
         "RenderTarget::Impl::readFrameObjectIdGPU(): this render target "
         "was not created with objectId render buffer enabled.", );
 
