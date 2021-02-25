@@ -55,3 +55,4 @@
 [submodule "src/deps/v-hacd"]
 	path = src/deps/v-hacd
 	url = https://github.com/ScottCSteinhauser/v-hacd.git
+	branch = master
