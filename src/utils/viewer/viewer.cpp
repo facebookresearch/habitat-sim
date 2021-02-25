@@ -600,6 +600,7 @@ void Viewer::switchCameraType() {
       return;
     }
     case esp::sensor::SensorSubType::None: {
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       return;
     }
   }

@@ -29,7 +29,7 @@ void SensorSpec::sanityCheck() {
   CORRADE_ASSERT(this, "SensorSpec::sanityCheck(): sensorSpec is illegal", );
   // Check that all parameters are initalized to legal values
   CORRADE_ASSERT(!uuid.empty(),
-                 "SensorSpec::sanityCheck(): uuid is unitialized", );
+                 "SensorSpec::sanityCheck(): uuid cannot be an empty string", );
   CORRADE_ASSERT(
       sensorType >= SensorType::None && sensorType <= SensorType::Text,
       "SensorSpec::sanityCheck(): sensorType is illegal", );
