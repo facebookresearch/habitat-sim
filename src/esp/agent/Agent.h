@@ -14,6 +14,10 @@
 #include "esp/sensor/Sensor.h"
 
 namespace esp {
+
+namespace sensor {
+  class SensorSuite;
+}
 namespace agent {
 
 // Represents the physical state of an agent
@@ -112,11 +116,6 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   void setState(const AgentState& state, const bool resetSensors = true);
 
-  // Set Agent's member sensors to sensorSuite
-  void setSensorSuite(sensor::SensorSuite&& sensorSuite) {
-    sensors_ = sensorSuite;
-  }
-
   void setInitialState(const AgentState& state,
                        const bool resetSensors = true) {
     initialState_ = state;
@@ -125,8 +124,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   scene::ObjectControls::ptr getControls() { return controls_; }
 
-  const sensor::SensorSuite& getSensorSuite() const { return sensors_; }
-  sensor::SensorSuite& getSensorSuite() { return sensors_; }
+  sensor::SensorSuite& getSensorSuite() { return node().getNodeSensorSuite(); }
 
   const AgentConfiguration& getConfig() const { return configuration_; }
   AgentConfiguration& getConfig() { return configuration_; }
@@ -139,7 +137,6 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
  private:
   AgentConfiguration configuration_;
-  sensor::SensorSuite sensors_;
   scene::ObjectControls::ptr controls_;
   AgentState initialState_;
 

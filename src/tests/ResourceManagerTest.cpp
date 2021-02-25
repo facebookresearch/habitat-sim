@@ -86,6 +86,49 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   }
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
+TEST(ResourceManagerTest, VHACDUsageTest) {
+  esp::gfx::WindowlessContext::uptr context_ =
+      esp::gfx::WindowlessContext::create_unique(0);
+
+  std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
+
+  // must declare these in this order due to avoid deallocation errors
+  auto MM = MetadataMediator::create();
+  ResourceManager resourceManager(MM);
+  SceneManager sceneManager_;
+  auto stageAttributesMgr = MM->getStageAttributesManager();
+  std::string donutFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/donut.glb");
+  std::string CHdonutFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/CHdonut.glb");
+
+  // create stage attributes file
+  auto stageAttributes = stageAttributesMgr->createObject(donutFile, true);
+
+  int sceneID = sceneManager_.initSceneGraph();
+  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  const esp::assets::AssetInfo info =
+      esp::assets::AssetInfo::fromPath(donutFile);
+
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool result = resourceManager.loadStage(stageAttributes, nullptr,
+                                          &sceneManager_, tempIDs, false);
+
+  esp::assets::MeshData::uptr joinedBox =
+      resourceManager.createJoinedCollisionMesh(donutFile);
+
+  esp::assets::ResourceManager::VHACDParameters params;
+  // params.setMaxNumVerticesPerCH(10);
+  params.m_resolution = 1000000;
+  ASSERT(!resourceManager.isAssetDataRegistered(CHdonutFile));
+  resourceManager.createConvexHullDecomposition(donutFile, CHdonutFile, params,
+                                                true);
+
+  ASSERT(resourceManager.isAssetDataRegistered(CHdonutFile));
+}
+#endif
+
 // Load and create a render asset instance and assert success
 TEST(ResourceManagerTest, loadAndCreateRenderAssetInstance) {
   esp::gfx::WindowlessContext::uptr context_ =

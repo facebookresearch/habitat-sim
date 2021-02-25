@@ -22,14 +22,14 @@ const std::set<std::string> Agent::BodyActions = {"moveRight",   "moveLeft",
 Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
     : Magnum::SceneGraph::AbstractFeature3D(agentNode),
       configuration_(cfg),
-      sensors_(),
       controls_(scene::ObjectControls::create()) {
   agentNode.setType(scene::SceneNodeType::AGENT);
 }  // Agent::Agent
 
 Agent::~Agent() {
   LOG(INFO) << "Deconstructing Agent";
-  sensors_.clear();
+  //TODO: Clear sensors
+
 }
 
 bool Agent::act(const std::string& actionName) {
@@ -40,8 +40,8 @@ bool Agent::act(const std::string& actionName) {
                         actionSpec.actuation.at("amount"),
                         /*applyFilter=*/true);
     } else {
-      for (const auto& p : sensors_.getSensors()) {
-        controls_->action(p.second->object(), actionSpec.name,
+      for (const auto& p : node().getNodeSensorSuite().getSensors()) {
+        controls_->action(p.second.get().object(), actionSpec.name,
                           actionSpec.actuation.at("amount"),
                           /*applyFilter=*/false);
       }
@@ -79,8 +79,8 @@ void Agent::setState(const AgentState& state,
   node().setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 
   if (resetSensors) {
-    for (const auto& p : sensors_.getSensors()) {
-      p.second->setTransformationFromSpec();
+    for (auto& p : node().getNodeSensorSuite().getSensors()) {
+      p.second.get().setTransformationFromSpec();
     }
   }
   // TODO other state members when implemented

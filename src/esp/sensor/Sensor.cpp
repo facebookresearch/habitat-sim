@@ -3,7 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Sensor.h"
-
 #include <Magnum/EigenIntegration/Integration.h>
 
 #include <utility>
@@ -19,7 +18,27 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   }
   ASSERT(spec_ != nullptr);
 
+  node.getNodeSensorSuite().add(*this);
+  node.getSubtreeSensorSuite().add(*this);
+  // Traverse up to root node and add sensor to every subtreeSensorSuite
+  auto parent = node.parent();
+  while(parent != nullptr) {
+    static_cast<scene::SceneNode&>(*parent).getSubtreeSensorSuite().add(*this);
+    parent = parent->parent();
+  }
   setTransformationFromSpec();
+}
+
+Sensor::~Sensor() {
+  LOG(INFO) << "Deconstructing SensorSuite";
+  node().getNodeSensorSuite().remove(*this);
+  node().getSubtreeSensorSuite().remove(*this);
+  // Traverse up to root node and remove sensor from every subtreeSensorSuite
+  auto parent = node().parent();
+  while(parent != nullptr) {
+    static_cast<scene::SceneNode&>(*parent).getSubtreeSensorSuite().remove(*this);
+    parent = parent->parent();
+  }
 }
 
 void Sensor::setTransformationFromSpec() {
@@ -36,9 +55,14 @@ void Sensor::setTransformationFromSpec() {
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
-void SensorSuite::add(const Sensor::ptr& sensor) {
-  const std::string uuid = sensor->specification()->uuid;
-  sensors_.emplace(uuid, std::cref(sensor));
+SensorSuite::SensorSuite(scene::SceneNode& node)
+    : Magnum::SceneGraph::AbstractFeature3D{node} {
+  node.setType(scene::SceneNodeType::SUITE);
+}
+
+void SensorSuite::add(sensor::Sensor& sensor) {
+  const std::string uuid = sensor.specification()->uuid;
+  sensors_.emplace(uuid, std::ref(sensor));
 }
 
 void SensorSuite::merge(SensorSuite& sensorSuite) {
@@ -46,13 +70,19 @@ void SensorSuite::merge(SensorSuite& sensorSuite) {
                   sensorSuite.getSensors().end());
 }
 
-Sensor& SensorSuite::get(const std::string& uuid) const {
-  return (sensors_.at(uuid)).get();
+void SensorSuite::remove(sensor::Sensor& sensor) {
+  const std::string uuid = sensor.specification()->uuid;
+  sensors_.erase(uuid);
+}
+
+sensor::Sensor& SensorSuite::get(const std::string& uuid) const{
+  return sensors_.at(uuid).get();
 }
 
 void SensorSuite::clear() {
   sensors_.clear();
 }
+
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
@@ -65,6 +95,8 @@ bool operator==(const SensorSpec& a, const SensorSpec& b) {
 bool operator!=(const SensorSpec& a, const SensorSpec& b) {
   return !(a == b);
 }
+
+
 
 }  // namespace sensor
 }  // namespace esp

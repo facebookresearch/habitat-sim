@@ -729,7 +729,7 @@ class Simulator {
    * @return            handle to sensor initialized
    *
    */
-  esp::sensor::Sensor::ptr addSensorToObject(
+  esp::sensor::Sensor& addSensorToObject(
       const int objectId,
       esp::sensor::SensorSpec::ptr& sensorSpec);
 
@@ -863,6 +863,29 @@ class Simulator {
   scene::SceneNode* loadAndCreateRenderAssetInstance(
       const assets::AssetInfo& assetInfo,
       const assets::RenderAssetInstanceCreationInfo& creation);
+
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Runs convex hull decomposition on a specified file. Creates an
+   * object attributes referencing a newly created convex hull asset, and
+   * returns the attribute's handle.
+   *
+   * @param filename The MeshMetaData filename to be converted.
+   * @param params VHACD params that specify resolution, vertices per convex
+   * hull, etc.
+   * @param renderChd Specifies whether or not to render the coinvex hull asset,
+   * or to render the original render asset.
+   * @param saveChdToObj Specifies whether or not to save the newly created
+   * convex hull asset to an obj file.
+   * @return The handle of the newly created object attributes.
+   */
+  std::string convexHullDecomposition(
+      const std::string& filename,
+      const assets::ResourceManager::VHACDParameters& params =
+          assets::ResourceManager::VHACDParameters(),
+      bool renderChd = false,
+      bool saveChdToObj = false);
+#endif
 
  protected:
   Simulator() = default;

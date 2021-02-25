@@ -1,3 +1,7 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/Sensor.h"
 
@@ -6,14 +10,13 @@ namespace sensor {
 class SensorFactory {
  public:
   /**
-   * @brief Static method to initialize and return a SensorSuite of Sensors
-   * @param[in] node SceneNode to create child SceneNodes and attach sensors to,
-   * sensorSetup SensorSetup a vector of SensorSpec::ptr defining specs for each
+   * @brief Static method to initialize SensorSuite of Sensors
+   * @param[in] node SceneNode of SensorSuite to create child SceneNodes and attach sensors to
+   * @param[in] sensorSetup SensorSetup a vector of SensorSpec::ptr defining specs for each
    * sensor
-   * @return SensorSuite of specified Sensors attached to children SceneNodes of
-   * node
+   *
    */
-  static sensor::SensorSuite createSensors(
+  static void createSensors(
       scene::SceneNode& node,
       const sensor::SensorSetup& sensorSetup);
 };

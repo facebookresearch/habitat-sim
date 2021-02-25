@@ -5,18 +5,19 @@
 #ifndef ESP_SENSOR_SENSOR_H_
 #define ESP_SENSOR_SENSOR_H_
 
-#include "esp/core/esp.h"
 
-#include "esp/core/Buffer.h"
 #include "esp/scene/SceneNode.h"
 
+#include "esp/core/esp.h"
+#include "esp/core/Buffer.h"
+
 namespace esp {
+
 namespace sim {
 class Simulator;
 }
 
 namespace sensor {
-
 // Enumeration of types of sensors
 enum class SensorType {
   None = 0,
@@ -41,6 +42,7 @@ enum class SensorSubType {
   Pinhole = 0,
   Orthographic = 1,
 };
+
 
 // Specifies the configuration parameters of a sensor
 struct SensorSpec {
@@ -85,7 +87,7 @@ struct ObservationSpace {
 class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);
-  ~Sensor() override { LOG(INFO) << "Deconstructing Sensor"; }
+  ~Sensor() override;
 
   // Get the scene node being attached to.
   scene::SceneNode& node() { return object(); }
@@ -126,12 +128,26 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   ESP_SMART_POINTERS(Sensor)
 };
 
-// Represents a set of sensors, with each sensor being identified through a
-// unique id
-
-class SensorSuite {
+class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  void add(const Sensor::ptr& sensor);
+  explicit SensorSuite(scene::SceneNode& node);
+  ~SensorSuite() override { LOG(INFO) << "Deconstructing SensorSuite"; }
+
+  // Get the scene node being attached to.
+  scene::SceneNode& node() { return object(); }
+  const scene::SceneNode& node() const { return object(); }
+
+  // Overloads to avoid confusion
+  scene::SceneNode& object() {
+    return static_cast<scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
+  const scene::SceneNode& object() const {
+    return static_cast<const scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
+
+  void add(Sensor& sensor);
 
   /**
    * @brief Concatenate sensorSuite's sensors to existing sensors_
@@ -140,14 +156,16 @@ class SensorSuite {
    * Note: it does not update any element whose key already exists.
    */
   void merge(SensorSuite& sensorSuite);
-  void clear();
-  ~SensorSuite() { LOG(INFO) << "Deconstructing SensorSuite"; }
 
-  Sensor& get(const std::string& uuid) const;
-  std::map<std::string, std::reference_wrapper<Sensor>>& getSensors() { return sensors_; }
+  void remove(Sensor& sensor);
+
+  void clear();
+
+  sensor::Sensor& get(const std::string& uuid) const;
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>>& getSensors() { return sensors_; }
 
  protected:
-  std::map<std::string, std::reference_wrapper<Sensor>> sensors_;
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>> sensors_;
 
   ESP_SMART_POINTERS(SensorSuite)
 };
