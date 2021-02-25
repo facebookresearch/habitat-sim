@@ -73,7 +73,7 @@ class CubeMap {
    * @brief, Constructor
    * @param size, the size of the cubemap texture (each face is size x size)
    */
-  CubeMap(int imageSize, Flags flags = Flags{Flag::ColorTexture});
+  explicit CubeMap(int imageSize, Flags flags = Flags{Flag::ColorTexture});
 
   /**
    * @brief, reset the image size
