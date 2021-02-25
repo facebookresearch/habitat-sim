@@ -108,14 +108,14 @@ class VisualSensor : public Sensor {
    */
   void setResolution(int height, int width) {
     CORRADE_ASSERT(height > 0 && width > 0,
-                   "VisualSensorSpec::setResolution(): resolution height and "
+                   "VisualSensor::setResolution(): resolution height and "
                    "width must be greater than 0", );
     visualSensorSpec_->resolution = {height, width};
   }
 
   void setResolution(vec2i resolution) {
     CORRADE_ASSERT(resolution[0] > 0 && resolution[1] > 0,
-                   "VisualSensorSpec::setResolution(): resolution height and "
+                   "VisualSensor::setResolution(): resolution height and "
                    "width must be greater than 0", );
     visualSensorSpec_->resolution = {resolution[0], resolution[1]};
   }

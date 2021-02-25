@@ -24,7 +24,7 @@ void CameraSensorSpec::sanityCheck() {
   VisualSensorSpec::sanityCheck();
   CORRADE_ASSERT(sensorSubType == SensorSubType::Pinhole ||
                      sensorSubType == SensorSubType::Orthographic,
-                 "CameraSensor::CameraSensorSpec(): sensorSpec does not have "
+                 "CameraSensorSpec::sanityCheck(): sensorSpec does not have "
                  "SensorSubType "
                  "Pinhole or Orthographic", );
 }
