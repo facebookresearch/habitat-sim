@@ -60,13 +60,30 @@ struct WindowlessContext::Impl {
     if (!windowlessGLContext_.isCreated())
       Mn::Fatal{} << "WindowlessContext: Unable to create windowless context";
 
-    makeCurrent();
+    makeCurrentPlatform();
 
     if (!magnumGLContext_.tryCreate())
       Mn::Fatal{} << "WindowlessContext: Failed to create OpenGL context";
   }
 
-  void makeCurrent() { windowlessGLContext_.makeCurrent(); }
+  void makeCurrent() {
+    makeCurrentPlatform();
+    Mn::GL::Context::makeCurrent(&magnumGLContext_);
+  }
+
+  bool makeCurrentPlatform() {
+    if (!windowlessGLContext_.makeCurrent())
+      Mn::Fatal{} << "Failed to make platform current";
+
+    return true;
+  }
+
+  void release() {
+    Mn::GL::Context::makeCurrent(nullptr);
+    releasePlatform();
+  }
+
+  void releasePlatform() { windowlessGLContext_.release(); }
 
   int gpuDevice() const { return device_; }
 
@@ -81,6 +98,18 @@ WindowlessContext::WindowlessContext(int device /* = 0 */)
 
 void WindowlessContext::makeCurrent() {
   pimpl_->makeCurrent();
+}
+
+void WindowlessContext::makeCurrentPlatform() {
+  pimpl_->makeCurrentPlatform();
+}
+
+void WindowlessContext::release() {
+  pimpl_->release();
+}
+
+void WindowlessContext::releasePlatform() {
+  pimpl_->releasePlatform();
 }
 
 int WindowlessContext::gpuDevice() const {
