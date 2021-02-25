@@ -25,7 +25,7 @@ namespace esp {
 namespace gfx {
 class CubeMap {
  public:
-  enum class TextureType : int8_t {
+  enum class TextureType : uint8_t {
     /**
      * rgba texture with 8 bits per channel
      */
@@ -36,7 +36,12 @@ class CubeMap {
     Depth = 1,
     // TODO: ObjectId
     // TODO: HDR color
+
+    // you will have to update it when new type is added
+    Count = 2,
   };
+  static const uint8_t numTextureTypes =
+      static_cast<uint8_t>(TextureType::Count);
 
   enum class Flag : Magnum::UnsignedShort {
     /**
@@ -63,7 +68,6 @@ class CubeMap {
    * @brief Flags
    */
   typedef Corrade::Containers::EnumSet<Flag> Flags;
-  CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
 
   /**
    * @brief, Constructor
@@ -161,7 +165,8 @@ class CubeMap {
  private:
   Flags flags_;
   int imageSize_ = 0;
-  std::map<TextureType, std::unique_ptr<Magnum::GL::CubeMapTexture>> textures_;
+
+  Magnum::GL::CubeMapTexture textures_[numTextureTypes];
 
   /**
    * @brief Recreate textures
@@ -175,34 +180,34 @@ class CubeMap {
   // in case there is no need to output depth texture, we need a depth buffer
   Corrade::Containers::StaticArray<6, Magnum::GL::Renderbuffer>
       optionalDepthBuffer_{Corrade::Containers::DirectInit, Magnum::NoCreate};
-};
 
-/**
- * @brief recreate the frame buffer
- */
-void recreateFramebuffer();
+  /**
+   * @brief recreate the frame buffer
+   */
+  void recreateFramebuffer();
 
-/**
- * @brief attach renderbuffers (color etc.) as logical buffers of the
- * framebuffer object
- */
-void attachFramebufferRenderbuffer();
+  /**
+   * @brief attach renderbuffers (color etc.) as logical buffers of the
+   * framebuffer object
+   */
+  void attachFramebufferRenderbuffer();
 
-/**
- * @brief Prepare to draw to the texture
- * @param cubeSideIndex, the index of the cube side, can be 0,
- * 1, 2, 3, 4, or 5
- */
-void prepareToDraw(unsigned int cubeSideIndex);
+  /**
+   * @brief Prepare to draw to the texture
+   * @param cubeSideIndex, the index of the cube side, can be 0,
+   * 1, 2, 3, 4, or 5
+   */
+  void prepareToDraw(unsigned int cubeSideIndex);
 
-/**
- * @brief Map shader output to attachments.
- * @param cubeSideIndex, the index of the cube side, can be 0,
- * 1, 2, 3, 4, or 5
- */
-void mapForDraw(unsigned int cubeSideIndex);
+  /**
+   * @brief Map shader output to attachments.
+   * @param cubeSideIndex, the index of the cube side, can be 0,
+   * 1, 2, 3, 4, or 5
+   */
+  void mapForDraw(unsigned int cubeSideIndex);
 };  // namespace gfx
+CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
 
-}  // namespace esp
+}  // namespace gfx
 }  // namespace esp
 #endif

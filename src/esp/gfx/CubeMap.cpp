@@ -109,6 +109,12 @@ Mn::PixelFormat getPixelFormat(CubeMap::TextureType type) {
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
+uint8_t textureIndex(CubeMap::TextureType type) {
+  uint8_t idx = static_cast<uint8_t>(type);
+  CORRADE_INTERNAL_ASSERT(idx < CubeMap::numTextureTypes);
+  return idx;
+}
+
 CubeMap::CubeMap(int imageSize, Flags flags) : flags_(flags) {
 #ifndef MAGNUM_TARGET_WEBGL
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::SeamlessCubeMapTexture);
@@ -142,30 +148,25 @@ void CubeMap::recreateTexture() {
 
   // color texture
   if (flags_ & Flag::ColorTexture) {
-    auto& colorTexture = textures_[TextureType::Color];
-    colorTexture = std::make_unique<Mn::GL::CubeMapTexture>();
-    (*colorTexture)
-        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+    auto& colorTexture = textures_[textureIndex(TextureType::Color)];
+    colorTexture.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
                                Mn::GL::SamplerMipmap::Linear)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Linear);
 
     if (flags_ & Flag::BuildMipmap) {
       // RGBA8 is for the LDR. Use RGBA16F for the HDR (TODO)
-      (*colorTexture)
-          .setStorage(Mn::Math::log2(imageSize_) + 1,
-                      Mn::GL::TextureFormat::RGBA8, size);
+      colorTexture.setStorage(Mn::Math::log2(imageSize_) + 1,
+                              Mn::GL::TextureFormat::RGBA8, size);
     } else {
-      (*colorTexture).setStorage(1, Mn::GL::TextureFormat::RGBA8, size);
+      colorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, size);
     }
   }
 
   // depth texture
   if (flags_ & Flag::DepthTexture) {
-    auto& depthTexture = textures_[TextureType::Depth];
-    depthTexture = std::make_unique<Mn::GL::CubeMapTexture>();
-    (*depthTexture)
-        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+    auto& depthTexture = textures_[textureIndex(TextureType::Depth)];
+    depthTexture.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, size);
@@ -182,6 +183,7 @@ void CubeMap::recreateFramebuffer() {
   // depth texture (32-bit float)
   if (!(flags_ & CubeMap::Flag::DepthTexture)) {
     for (int index = 0; index < 6; ++index) {
+      optionalDepthBuffer_[index] = Mn::GL::Renderbuffer{};
       optionalDepthBuffer_[index].setStorage(
           Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
     }
@@ -195,7 +197,7 @@ void CubeMap::attachFramebufferRenderbuffer() {
           convertFaceIndexToCubeMapCoordinate(index);
       frameBuffer_[index].attachCubeMapTexture(
           Mn::GL::Framebuffer::ColorAttachment{0},
-          *textures_[TextureType::Color], cubeMapCoord, 0);
+          textures_[textureIndex(TextureType::Color)], cubeMapCoord, 0);
     }
 
     if (flags_ & Flag::DepthTexture) {
@@ -203,7 +205,7 @@ void CubeMap::attachFramebufferRenderbuffer() {
           convertFaceIndexToCubeMapCoordinate(index);
       frameBuffer_[index].attachCubeMapTexture(
           Mn::GL::Framebuffer::BufferAttachment::Depth,
-          *textures_[TextureType::Depth], cubeMapCoord, 0);
+          textures_[textureIndex(TextureType::Depth)], cubeMapCoord, 0);
     } else {
       frameBuffer_[index].attachRenderbuffer(
           Mn::GL::Framebuffer::BufferAttachment::Depth,
@@ -240,7 +242,7 @@ void CubeMap::mapForDraw(unsigned int index) {
 
 Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
   textureTypeSanityCheck(flags_, type, "CubeMap::getTexture():");
-  return *textures_[type];
+  return textures_[static_cast<uint8_t>(type)];
 }
 
 #ifndef MAGNUM_TARGET_WEBGL
@@ -261,9 +263,9 @@ bool CubeMap::saveTexture(TextureType type,
     std::string filename = "";
     switch (type) {
       case TextureType::Color: {
-        Mn::Image2D image =
-            textures_[type]->image(convertFaceIndexToCubeMapCoordinate(iFace),
-                                   0, {getPixelFormat(type)});
+        Mn::Image2D image = textures_[textureIndex(type)].image(
+            convertFaceIndexToCubeMapCoordinate(iFace), 0,
+            {getPixelFormat(type)});
         filename = Cr::Utility::formatString("{}.{}.{}.png", imageFilePrefix,
                                              getTextureTypeFilenameString(type),
                                              coordStrings[iFace]);
@@ -276,7 +278,7 @@ bool CubeMap::saveTexture(TextureType type,
         filename = Cr::Utility::formatString("{}.{}.{}.hdr", imageFilePrefix,
                                              getTextureTypeFilenameString(type),
                                              coordStrings[iFace]);
-        Mn::Image2D image = textures_[type]->image(
+        Mn::Image2D image = textures_[textureIndex(type)].image(
             convertFaceIndexToCubeMapCoordinate(iFace), 0,
             {Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float});
         Mn::ImageView2D depthAsRedChannel{
@@ -302,17 +304,7 @@ void CubeMap::loadTexture(TextureType type,
   textureTypeSanityCheck(flags_, type, "CubeMap::loadTexture():");
 
   // set the alias of the texture
-  Mn::GL::CubeMapTexture* texture = nullptr;
-  switch (type) {
-    case TextureType::Color:
-      texture = textures_[TextureType::Color].get();
-      break;
-
-    case TextureType::Depth:
-      texture = textures_[TextureType::Depth].get();
-      break;
-  }
-  CORRADE_ASSERT(texture, "CubeMap::loadTexture(): Unknown texture type.", );
+  Mn::GL::CubeMapTexture& texture = textures_[textureIndex(type)];
 
   // plugin manager used to instantiate importers which in turn are used
   // to load image data
@@ -360,8 +352,8 @@ void CubeMap::loadTexture(TextureType type,
 
     switch (type) {
       case TextureType::Color:
-        texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
-                             *imageData);
+        texture.setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
+                            *imageData);
         break;
 
       case TextureType::Depth: {
@@ -369,17 +361,17 @@ void CubeMap::loadTexture(TextureType type,
         Mn::ImageView2D imageView(Mn::GL::PixelFormat::DepthComponent,
                                   Mn::GL::PixelType::Float, imageData->size(),
                                   imageData->data());
-        texture->setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
-                             imageView);
+        texture.setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
+                            imageView);
       } break;
     }  // switch
     LOG(INFO) << "Loaded image " << iFace << " from " << filename;
   }
   // Color texture ONLY, NOT for depth
   if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
-    texture->generateMipmap();
+    texture.generateMipmap();
   }
-}  // namespace gfx
+}
 
 void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,
@@ -433,7 +425,7 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
 
   // Color texture ONLY, NOT for depth
   if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
-    textures_[TextureType::Color]->generateMipmap();
+    textures_[textureIndex(TextureType::Color)].generateMipmap();
   }
 }
 
