@@ -55,6 +55,9 @@ void textureTypeSanityCheck(CubeMap::Flags& flag,
                             "texture output enabled.", );
       return;
       break;
+
+    case CubeMap::TextureType::Count:
+      break;
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
@@ -85,6 +88,8 @@ const char* getTextureTypeFilenameString(CubeMap::TextureType type) {
     case CubeMap::TextureType::Depth:
       return "depth";
       break;
+    case CubeMap::TextureType::Count:
+      break;
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
@@ -105,6 +110,8 @@ Mn::PixelFormat getPixelFormat(CubeMap::TextureType type) {
       case CubeMap::TextureType::ObjectId:
       return Mn::PixelFormat::R32UI;
       */
+    case CubeMap::TextureType::Count:
+      break;
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
@@ -287,6 +294,9 @@ bool CubeMap::saveTexture(TextureType type,
           return false;
         }
       } break;
+
+      case CubeMap::TextureType::Count:
+        break;
     }
     CORRADE_ASSERT(!filename.empty(),
                    "CubeMap::saveTexture(): Unknown texture type.", false);
@@ -364,6 +374,10 @@ void CubeMap::loadTexture(TextureType type,
         texture.setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
                             imageView);
       } break;
+
+      case TextureType::Count:
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        break;
     }  // switch
     LOG(INFO) << "Loaded image " << iFace << " from " << filename;
   }
