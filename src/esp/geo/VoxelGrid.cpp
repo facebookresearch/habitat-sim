@@ -16,15 +16,15 @@ VoxelGrid::VoxelGrid() {}
 VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
                      int resolution) {
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
-  VHACD::IVHACD::Parameters params;
+  /*VHACD::IVHACD::Parameters params;
   params.m_resolution = resolution;
-  params.m_oclAcceleration = false;
+  params.m_oclAcceleration = false;*/
   Mn::Debug() << "Voxelizing mesh..";
 
   // run VHACD
   interfaceVHACD->computeVoxelField(&meshData->vbo[0][0], meshData->vbo.size(),
                                     &meshData->ibo[0], meshData->ibo.size() / 3,
-                                    params);
+                                    resolution);
 
   // get VHACD volume, set scale and dimensions
   VHACD::Volume* vhacdVolume = interfaceVHACD->getVoxelField();
@@ -34,8 +34,12 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
   m_voxelGridDimensions = Mn::Vector3i(dims[0], dims[1], dims[2]);
 
   VHACD::Vec3<double> center = vhacdVolume->getCenter();
-  // Mn::Debug() << center[0] << ' ' << center[1] << ' ' << center[2];
-  m_globalOffset = Mn::Vector3(0.0, 0.0, 0.0);
+  Mn::Debug() << "Barycenter" << center[0] << center[1] << center[2];
+
+  // VHACD computes a axis-aligned bounding box; we need to offset the voxelgrid
+  // by the minimum corner of the AABB
+  VHACD::Vec3<double> minBB = vhacdVolume->getMinBB();
+  m_offset = Mn::Vector3(minBB[0], minBB[1], minBB[2]);
 
   // create empty VoxelGrid
   const int gridSize = dims[0] * dims[1] * dims[2];
@@ -65,7 +69,7 @@ VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
                      const Mn::Vector3i& voxelGridDimensions) {
   m_voxelSize = voxelSize;
   m_voxelGridDimensions = voxelGridDimensions;
-  m_globalOffset = Mn::Vector3(0.0, 0.0, 0.0);
+  m_offset = Mn::Vector3(0.0, 0.0, 0.0);
   const int gridSize =
       voxelGridDimensions[0] * voxelGridDimensions[1] * voxelGridDimensions[2];
   m_grid = new Voxel*[gridSize];
@@ -93,7 +97,7 @@ Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
   Mn::Vector3 global_coords((coords[0]) * m_voxelSize[0],
                             (coords[1]) * m_voxelSize[1],
                             (coords[2]) * m_voxelSize[2]);
-  global_coords += m_voxelSize;
+  global_coords += m_offset;
   return global_coords;
 }
 

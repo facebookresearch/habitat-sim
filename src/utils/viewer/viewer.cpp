@@ -20,6 +20,7 @@
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/Math/Functions.h>  //TODO: Remove when transfering Voxel framework.
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
@@ -797,12 +798,12 @@ void Viewer::invertGravity() {
 esp::geo::VoxelGrid Viewer::createVoxelField(int objectId) {
   const Mn::Vector3 v_size = Mn::Vector3(0.5, 0.5, 0.5);
   const Mn::Vector3i v_dim = Mn::Vector3i(100, 100, 100);
-  unsigned int resolution = 600000;
+  unsigned int resolution =
+      1000000;  // right now this has to be 1mil + for the scene for the
+                // voxelization to work (Not yet sure why..) TODO: Fix this.
 
   Mn::GL::Mesh* objectRenderMesh;
 
-  // auto object = assetAttrManager_->getObjectByID(objectId);
-  // auto objectAttr = simulator_->getObjectInitializationTemplate(objectId,0);
   std::unique_ptr<esp::assets::MeshData> objMesh =
       esp::assets::MeshData::create_unique();
   objMesh = simulator_->getObjectMeshData(objectId);
@@ -839,22 +840,38 @@ void Viewer::displayVoxelField(int objectID) {
     renderCamera_->draw(it.second, flags);
   }
 
-  // Attach to root node for now
-  // Add directly to object's visual scene node
-  esp::scene::SceneNode* objectNode;
-  if (objectID == -1)
-    objectNode = &activeSceneGraph_->getRootNode();
-  else {
-    objectNode = simulator_->getObjectVisualSceneNodes(objectID)[0];
+  // Get visualSceneNode.
+  esp::scene::SceneNode* objectVisNode =
+      objectID == -1 ? &activeSceneGraph_->getRootNode()
+                     : simulator_->getObjectVisualSceneNodes(objectID)[0];
+
+  // get BB of scene node
+  /*Mn::Vector3 min;
+
+  if (mesh->attributeFormat(Mn::Trade::MeshAttribute::Position) ==
+      Mn::VertexFormat::Vector3)
+    minmax = Mn::Math::min(
+        mesh->attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Position));
+  else
+    minmax = Mn::Math::min(mesh->positions3DAsArray());*/
+
+  // print out translations of objectvisnodes
+  for (auto& node : objectVisNode->children()) {
+    Mn::Debug() << node.scaling();
+    !Mn::Debug();
   }
 
+  esp::scene::SceneNode* visualVoxelNode = &(objectVisNode->createChild());
+
+  // visualVoxelNode->setTranslation(translation);
+
   objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
-      voxel_grids_[nextVoxelGridMeshId - 1], objectNode, &shader_);
+      voxel_grids_[nextVoxelGridMeshId - 1], visualVoxelNode, &shader_);
   /*auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId - 1],
       &objectPickingHelper_->getDrawables());*/
 
-  !Mn::Debug();
+  // objectVisNode->setScaling(Mn::Vector3(2, 2, 2));
 }
 
 void Viewer::pokeLastObject() {

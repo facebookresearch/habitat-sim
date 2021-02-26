@@ -56,11 +56,11 @@ class VoxelGrid {
   // coordinates.
   Voxel* getVoxelByIndex(const Mn::Vector3i& coords);
 
-  // First convert coords to integer voxel coordinates, then apply globalOffset
+  // First convert coords to integer voxel coordinates, then apply offset
   // * rotation
   Mn::Vector3i getVoxelIndex(const Mn::Vector3& coords);
 
-  // multiply coords by m_voxelSize, apply globalOffset
+  // multiply coords by m_voxelSize, apply offset
   Mn::Vector3 getGlobalCoords(const Mn::Vector3i& coords);
 
   // just converts coords to local coords, then getVoxelByLocalCoords. Returns
@@ -83,10 +83,10 @@ class VoxelGrid {
   // The relative positioning of the voxel grid to the simulation (May not
   // need). VoxelGrid corner is anchored to the world origin, so grid[0] is at
   // global position VoxelSize/2 + offset.dot(VoxelSize)
-  Mn::Vector3i getGlobalOffset();
+  Mn::Vector3i getOffset();
 
   // Convert coords to voxel coordinates
-  void setGlobalOffset(const Mn::Vector3& coords);
+  void setOffset(const Mn::Vector3& coords);
 
   // found file format: svx - https://abfab3d.com/svx-format/
   bool saveToSVXFile(const std::string& filepath, const std::string& filename);
@@ -106,9 +106,9 @@ class VoxelGrid {
 
   // The relative positioning of the voxel grid to the simulation (May not
   // need). VoxelGrid corner is anchored to the world origin, so grid[0] is at
-  // global position VoxelSize/2 + offset.dot(VoxelSize). m_globalOffset is in
+  // global position VoxelSize/2 + offset.dot(VoxelSize). m_offset is in
   // world coordinates (not voxel).
-  Mn::Vector3 m_globalOffset;
+  Mn::Vector3 m_offset;
 
   /* a pointer to an array of pointers to Voxels.
   Alternatives:
