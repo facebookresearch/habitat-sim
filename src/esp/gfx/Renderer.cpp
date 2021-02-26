@@ -53,10 +53,9 @@ struct Renderer::Impl {
 
   void bindRenderTarget(sensor::VisualSensor& sensor) {
     auto depthUnprojection = sensor.depthUnprojection();
-    if (!depthUnprojection) {
-      throw std::runtime_error(
-          "Sensor does not have a depthUnprojection matrix");
-    }
+    CORRADE_ASSERT(depthUnprojection,
+                   "Renderer::Impl::bindRenderTarget(): Sensor does not have a "
+                   "depthUnprojection matrix", );
 
     if (!depthShader_) {
       depthShader_ = std::make_unique<DepthShader>(
@@ -66,6 +65,11 @@ struct Renderer::Impl {
     RenderTarget::Flags renderTargetFlags_ = {};
     switch (sensor.specification()->sensorType) {
       case sensor::SensorType::Color:
+        CORRADE_ASSERT(
+            !(flags_ & Flag::NoTextures),
+            "Renderer::Impl::bindRenderTarget(): Tried to setup a color "
+            "render buffer while the simulator was initialized with "
+            "requiresTextures = false", );
         renderTargetFlags_ |= RenderTarget::Flag::RgbaBuffer;
         break;
 
@@ -81,10 +85,6 @@ struct Renderer::Impl {
         // I need this default, since sensor type list is long, and without
         // default clang-tidy will complain
         break;
-    }
-    if (flags_ & Flag::NoTextures) {
-      // it means no rgba render buffer
-      renderTargetFlags_ &= ~RenderTarget::Flag::RgbaBuffer;
     }
 
     sensor.bindRenderTarget(RenderTarget::create_unique(
