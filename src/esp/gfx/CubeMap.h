@@ -29,19 +29,17 @@ class CubeMap {
     /**
      * rgba texture with 8 bits per channel
      */
-    Color = 0,
+    Color,
     /**
      * HDR depth texture
      */
-    Depth = 1,
+    Depth,
     // TODO: ObjectId
     // TODO: HDR color
 
     // you will have to update it when new type is added
-    Count = 2,
+    Count,
   };
-  static const uint8_t numTextureTypes =
-      static_cast<uint8_t>(TextureType::Count);
 
   enum class Flag : Magnum::UnsignedShort {
     /**
@@ -166,7 +164,9 @@ class CubeMap {
   Flags flags_;
   int imageSize_ = 0;
 
-  Magnum::GL::CubeMapTexture textures_[numTextureTypes];
+  Magnum::GL::CubeMapTexture textures_[uint8_t(TextureType::Count)];
+
+  Magnum::GL::CubeMapTexture& texture(TextureType type);
 
   /**
    * @brief Recreate textures

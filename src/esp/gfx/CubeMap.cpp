@@ -116,10 +116,9 @@ Mn::PixelFormat getPixelFormat(CubeMap::TextureType type) {
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
-uint8_t textureIndex(CubeMap::TextureType type) {
-  uint8_t idx = static_cast<uint8_t>(type);
-  CORRADE_INTERNAL_ASSERT(idx < CubeMap::numTextureTypes);
-  return idx;
+Magnum::GL::CubeMapTexture& CubeMap::texture(TextureType type) {
+  CORRADE_INTERNAL_ASSERT(uint8_t(type) < Cr::Containers::arraySize(textures_));
+  return textures_[uint8_t(type)];
 }
 
 CubeMap::CubeMap(int imageSize, Flags flags) : flags_(flags) {
@@ -155,7 +154,7 @@ void CubeMap::recreateTexture() {
 
   // color texture
   if (flags_ & Flag::ColorTexture) {
-    auto& colorTexture = textures_[textureIndex(TextureType::Color)];
+    auto& colorTexture = texture(TextureType::Color);
     colorTexture.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
                                Mn::GL::SamplerMipmap::Linear)
@@ -172,7 +171,7 @@ void CubeMap::recreateTexture() {
 
   // depth texture
   if (flags_ & Flag::DepthTexture) {
-    auto& depthTexture = textures_[textureIndex(TextureType::Depth)];
+    auto& depthTexture = texture(TextureType::Depth);
     depthTexture.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
@@ -203,8 +202,8 @@ void CubeMap::attachFramebufferRenderbuffer() {
       Magnum::GL::CubeMapCoordinate cubeMapCoord =
           convertFaceIndexToCubeMapCoordinate(index);
       frameBuffer_[index].attachCubeMapTexture(
-          Mn::GL::Framebuffer::ColorAttachment{0},
-          textures_[textureIndex(TextureType::Color)], cubeMapCoord, 0);
+          Mn::GL::Framebuffer::ColorAttachment{0}, texture(TextureType::Color),
+          cubeMapCoord, 0);
     }
 
     if (flags_ & Flag::DepthTexture) {
@@ -212,7 +211,7 @@ void CubeMap::attachFramebufferRenderbuffer() {
           convertFaceIndexToCubeMapCoordinate(index);
       frameBuffer_[index].attachCubeMapTexture(
           Mn::GL::Framebuffer::BufferAttachment::Depth,
-          textures_[textureIndex(TextureType::Depth)], cubeMapCoord, 0);
+          texture(TextureType::Depth), cubeMapCoord, 0);
     } else {
       frameBuffer_[index].attachRenderbuffer(
           Mn::GL::Framebuffer::BufferAttachment::Depth,
@@ -268,11 +267,12 @@ bool CubeMap::saveTexture(TextureType type,
   const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
   for (int iFace = 0; iFace < 6; ++iFace) {
     std::string filename = "";
+    auto& tex = texture(type);
     switch (type) {
       case TextureType::Color: {
-        Mn::Image2D image = textures_[textureIndex(type)].image(
-            convertFaceIndexToCubeMapCoordinate(iFace), 0,
-            {getPixelFormat(type)});
+        Mn::Image2D image =
+            tex.image(convertFaceIndexToCubeMapCoordinate(iFace), 0,
+                      {getPixelFormat(type)});
         filename = Cr::Utility::formatString("{}.{}.{}.png", imageFilePrefix,
                                              getTextureTypeFilenameString(type),
                                              coordStrings[iFace]);
@@ -285,7 +285,7 @@ bool CubeMap::saveTexture(TextureType type,
         filename = Cr::Utility::formatString("{}.{}.{}.hdr", imageFilePrefix,
                                              getTextureTypeFilenameString(type),
                                              coordStrings[iFace]);
-        Mn::Image2D image = textures_[textureIndex(type)].image(
+        Mn::Image2D image = tex.image(
             convertFaceIndexToCubeMapCoordinate(iFace), 0,
             {Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float});
         Mn::ImageView2D depthAsRedChannel{
@@ -314,7 +314,7 @@ void CubeMap::loadTexture(TextureType type,
   textureTypeSanityCheck(flags_, type, "CubeMap::loadTexture():");
 
   // set the alias of the texture
-  Mn::GL::CubeMapTexture& texture = textures_[textureIndex(type)];
+  Mn::GL::CubeMapTexture& tex = texture(type);
 
   // plugin manager used to instantiate importers which in turn are used
   // to load image data
@@ -362,8 +362,8 @@ void CubeMap::loadTexture(TextureType type,
 
     switch (type) {
       case TextureType::Color:
-        texture.setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
-                            *imageData);
+        tex.setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
+                        *imageData);
         break;
 
       case TextureType::Depth: {
@@ -371,8 +371,8 @@ void CubeMap::loadTexture(TextureType type,
         Mn::ImageView2D imageView(Mn::GL::PixelFormat::DepthComponent,
                                   Mn::GL::PixelType::Float, imageData->size(),
                                   imageData->data());
-        texture.setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
-                            imageView);
+        tex.setSubImage(convertFaceIndexToCubeMapCoordinate(iFace), 0, {},
+                        imageView);
       } break;
 
       case TextureType::Count:
@@ -383,7 +383,7 @@ void CubeMap::loadTexture(TextureType type,
   }
   // Color texture ONLY, NOT for depth
   if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
-    texture.generateMipmap();
+    tex.generateMipmap();
   }
 }
 
@@ -439,7 +439,7 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
 
   // Color texture ONLY, NOT for depth
   if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
-    textures_[textureIndex(TextureType::Color)].generateMipmap();
+    texture(TextureType::Color).generateMipmap();
   }
 }
 
