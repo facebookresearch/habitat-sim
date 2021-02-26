@@ -4,7 +4,6 @@
 
 import habitat_sim
 import habitat_sim.agent
-from habitat_sim.utils import sim_utils as sut
 
 default_sim_settings = {
     # settings shared by example.py and benchmark.py
@@ -59,38 +58,42 @@ def make_cfg(settings):
     sim_cfg.scene_id = settings["scene"]
 
     # define default sensor parameters (see src/esp/Sensor/Sensor.h)
-    sensors = {
-        "color_sensor": {  # active if sim_settings["color_sensor"]
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"], 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-        "depth_sensor": {  # active if sim_settings["depth_sensor"]
-            "sensor_type": habitat_sim.SensorType.DEPTH,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"], 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-        "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
-            "sensor_type": habitat_sim.SensorType.SEMANTIC,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"], 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-        "ortho_sensor": {  # active if sim_settings["ortho_sensor"]
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"], 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.ORTHOGRAPHIC,
-        },
-    }
+    sensor_specs = []
+    if settings["color_sensor"]:
+        color_sensor_spec = habitat_sim.CameraSensorSpec()
+        color_sensor_spec.uuid = "color_sensor"
+        color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        color_sensor_spec.resolution = [settings["height"], settings["width"]]
+        color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_specs.append(color_sensor_spec)
+
+    if settings["depth_sensor"]:
+        depth_sensor_spec = habitat_sim.CameraSensorSpec()
+        depth_sensor_spec.uuid = "depth_sensor"
+        depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
+        depth_sensor_spec.resolution = [settings["height"], settings["width"]]
+        depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_specs.append(depth_sensor_spec)
+
+    if settings["semantic_sensor"]:
+        semantic_sensor_spec = habitat_sim.CameraSensorSpec()
+        semantic_sensor_spec.uuid = "semantic_sensor"
+        semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
+        semantic_sensor_spec.resolution = [settings["height"], settings["width"]]
+        semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_specs.append(semantic_sensor_spec)
+
+    if settings["ortho_sensor"]:
+        ortho_sensor_spec = habitat_sim.CameraSensorSpec()
+        ortho_sensor_spec.uuid = "ortho_sensor"
+        ortho_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
+        ortho_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
+        sensor_specs.append(ortho_sensor_spec)
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sut.make_sensor_specs_from_settings(
-        sensors, settings
-    )
+    agent_cfg.sensor_specifications = sensor_specs
     agent_cfg.action_space = {
         "move_forward": habitat_sim.agent.ActionSpec(
             "move_forward", habitat_sim.agent.ActuationSpec(amount=0.25)

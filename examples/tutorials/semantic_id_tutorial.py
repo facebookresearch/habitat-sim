@@ -7,7 +7,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import habitat_sim
-from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils.common import quat_from_angle_axis
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -69,24 +68,27 @@ def make_configuration(scene_file):
     # Note: all sensors must have the same resolution
     # setup rgb and semantic sensors
     camera_resolution = [1080, 960]
-    sensors = {
-        "rgba_camera": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 1.5, 0.0],  # ::: fix y to be 0 later
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-        "semantic_camera": {
-            "sensor_type": habitat_sim.SensorType.SEMANTIC,
-            "resolution": camera_resolution,
-            "position": [0.0, 1.5, 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-    }
+    sensor_specs = []
+
+    rgba_camera_spec = habitat_sim.CameraSensorSpec()
+    rgba_camera_spec.uuid = "rgba_camera"
+    rgba_camera_spec.sensor_type = habitat_sim.SensorType.COLOR
+    rgba_camera_spec.resolution = camera_resolution
+    rgba_camera_spec.postition = [0.0, 1.5, 0.0]  # ::: fix y to be 0 later
+    rgba_camera_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(rgba_camera_spec)
+
+    semantic_camera_spec = habitat_sim.CameraSensorSpec()
+    semantic_camera_spec.uuid = "semantic_camera"
+    semantic_camera_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
+    semantic_camera_spec.resolution = camera_resolution
+    semantic_camera_spec.postition = [0.0, 1.5, 0.0]
+    semantic_camera_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(semantic_camera_spec)
 
     # agent configuration
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sut.make_sensor_specs(sensors)
+    agent_cfg.sensor_specifications = sensor_specs
 
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 

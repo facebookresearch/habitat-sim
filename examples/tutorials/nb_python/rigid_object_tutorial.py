@@ -34,7 +34,6 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
-from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils import viz_utils as vut
 
 if "google.colab" in sys.modules:
@@ -45,6 +44,11 @@ dir_path = repo.working_tree_dir
 # %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(dir_path, "examples/tutorials/rigid_object_tutorial_output/")
+
+
+def remove_all_objects(sim):
+    for id_ in sim.get_existing_object_ids():
+        sim.remove_object(id_)
 
 
 def place_agent(sim):
@@ -69,33 +73,38 @@ def make_configuration():
     # Note: all sensors must have the same resolution
     # setup 2 rgb sensors for 1st and 3rd person views
     camera_resolution = [544, 720]
-    sensors = {
-        "rgba_camera_1stperson": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
-            "orientation": [0.0, 0.0, 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-        "depth_camera_1stperson": {
-            "sensor_type": habitat_sim.SensorType.DEPTH,
-            "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
-            "orientation": [0.0, 0.0, 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-        "rgba_camera_3rdperson": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 1.0, 0.3],
-            "orientation": [-45, 0.0, 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-    }
+    sensor_specs = []
+
+    rgba_camera_1stperson_spec = habitat_sim.CameraSensorSpec()
+    rgba_camera_1stperson_spec.uuid = "rgba_camera_1stperson"
+    rgba_camera_1stperson_spec.sensor_type = habitat_sim.SensorType.COLOR
+    rgba_camera_1stperson_spec.resolution = camera_resolution
+    rgba_camera_1stperson_spec.postition = [0.0, 0.6, 0.0]
+    rgba_camera_1stperson_spec.orientation = [0.0, 0.0, 0.0]
+    rgba_camera_1stperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(rgba_camera_1stperson_spec)
+
+    depth_camera_1stperson_spec = habitat_sim.CameraSensorSpec()
+    depth_camera_1stperson_spec.uuid = "depth_camera_1stperson"
+    depth_camera_1stperson_spec.sensor_type = habitat_sim.SensorType.DEPTH
+    depth_camera_1stperson_spec.resolution = camera_resolution
+    depth_camera_1stperson_spec.postition = [0.0, 0.6, 0.0]
+    depth_camera_1stperson_spec.orientation = [0.0, 0.0, 0.0]
+    depth_camera_1stperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(depth_camera_1stperson_spec)
+
+    rgba_camera_3rdperson_spec = habitat_sim.CameraSensorSpec()
+    rgba_camera_3rdperson_spec.uuid = "rgba_camera_3rdperson"
+    rgba_camera_3rdperson_spec.sensor_type = habitat_sim.SensorType.COLOR
+    rgba_camera_3rdperson_spec.resolution = camera_resolution
+    rgba_camera_3rdperson_spec.postition = [0.0, 1.0, 0.3]
+    rgba_camera_3rdperson_spec.orientation = [-45, 0.0, 0.0]
+    rgba_camera_3rdperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(rgba_camera_3rdperson_spec)
 
     # agent configuration
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sut.make_sensor_specs(sensors)
+    agent_cfg.sensor_specifications = sensor_specs
 
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
@@ -172,7 +181,7 @@ if __name__ == "__main__":
 
     # [/basics]
 
-    sut.remove_all_objects(sim)
+    remove_all_objects(sim)
     # %%
     # [dynamic_control]
 
@@ -239,7 +248,7 @@ if __name__ == "__main__":
         )
 
     # [/dynamic_control]
-    sut.remove_all_objects(sim)
+    remove_all_objects(sim)
     # %%
     # [kinematic_interactions]
 
@@ -273,7 +282,7 @@ if __name__ == "__main__":
 
     # [/kinematic_interactions]
 
-    sut.remove_all_objects(sim)
+    remove_all_objects(sim)
     # %%
     # [kinematic_update]
     observations = []
@@ -356,7 +365,7 @@ if __name__ == "__main__":
         )
 
     # [/local_velocity_control]
-    sut.remove_all_objects(sim)
+    remove_all_objects(sim)
     # %%
     # [embodied_agent]
 

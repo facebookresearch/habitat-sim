@@ -61,7 +61,6 @@ from PIL import Image
 
 import habitat_sim
 from habitat_sim.utils import common as ut
-from habitat_sim.utils import sim_utils as sut
 from habitat_sim.utils import viz_utils as vut
 
 try:
@@ -116,43 +115,81 @@ def make_cfg(settings):
     sim_cfg.enable_physics = settings["enable_physics"]
 
     # Note: all sensors must have the same resolution
-    sensors = {
-        "color_sensor_1st_person": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"], 0.0],
-            "orientation": [settings["sensor_pitch"], 0.0, 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-        "depth_sensor_1st_person": {
-            "sensor_type": habitat_sim.SensorType.DEPTH,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"], 0.0],
-            "orientation": [settings["sensor_pitch"], 0.0, 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-        "semantic_sensor_1st_person": {
-            "sensor_type": habitat_sim.SensorType.SEMANTIC,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"], 0.0],
-            "orientation": [settings["sensor_pitch"], 0.0, 0.0],
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-        # configure the 3rd person cam specifically:
-        "color_sensor_3rd_person": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"] + 0.2, 0.2],
-            "orientation": np.array([-math.pi / 4, 0, 0]),
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-        },
-    }
+    sensor_specs = []
+    if settings["color_sensor_1st_person"]:
+        color_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
+        color_sensor_1st_person_spec.uuid = "color_sensor_1st_person"
+        color_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.COLOR
+        color_sensor_1st_person_spec.resolution = [
+            settings["height"],
+            settings["width"],
+        ]
+        color_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        color_sensor_1st_person_spec.postition.orientation = [
+            settings["sensor_pitch"],
+            0.0,
+            0.0,
+        ]
+        color_sensor_1st_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_specs.append(color_sensor_1st_person_spec)
+    if settings["depth_sensor_1st_person"]:
+        depth_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
+        depth_sensor_1st_person_spec.uuid = "depth_sensor_1st_person"
+        depth_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.DEPTH
+        depth_sensor_1st_person_spec.resolution = [
+            settings["height"],
+            settings["width"],
+        ]
+        depth_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        depth_sensor_1st_person_spec.postition.orientation = [
+            settings["sensor_pitch"],
+            0.0,
+            0.0,
+        ]
+        depth_sensor_1st_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_specs.append(depth_sensor_1st_person_spec)
+    if settings["semantic_sensor_1st_person"]:
+        semantic_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
+        semantic_sensor_1st_person_spec.uuid = "semantic_sensor_1st_person"
+        semantic_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
+        semantic_sensor_1st_person_spec.resolution = [
+            settings["height"],
+            settings["width"],
+        ]
+        semantic_sensor_1st_person_spec.postition = [
+            0.0,
+            settings["sensor_height"],
+            0.0,
+        ]
+        semantic_sensor_1st_person_spec.postition.orientation = [
+            settings["sensor_pitch"],
+            0.0,
+            0.0,
+        ]
+        semantic_sensor_1st_person_spec.sensor_subtype = (
+            habitat_sim.SensorSubType.PINHOLE
+        )
+        sensor_specs.append(semantic_sensor_1st_person_spec)
+    if settings["color_sensor_3rd_person"]:
+        color_sensor_3rd_person_spec = habitat_sim.CameraSensorSpec()
+        color_sensor_3rd_person_spec.uuid = "color_sensor_3rd_person"
+        color_sensor_3rd_person_spec.sensor_type = habitat_sim.SensorType.COLOR
+        color_sensor_3rd_person_spec.resolution = [
+            settings["height"],
+            settings["width"],
+        ]
+        color_sensor_3rd_person_spec.postition = [
+            0.0,
+            settings["sensor_height"] + 0.2,
+            0.2,
+        ]
+        color_sensor_3rd_person_spec.postition.orientation = [-math.pi / 4, 0, 0]
+        color_sensor_3rd_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_specs.append(color_sensor_3rd_person_spec)
 
     # Here you can specify the amount of displacement in a forward action and the turn angle
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sut.make_sensor_specs_from_settings(
-        sensors, settings
-    )
+    agent_cfg.sensor_specifications = sensor_specs
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
 
@@ -196,8 +233,14 @@ def make_simulator_from_settings(sim_settings):
 # @title Define Simulation Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
+# @markdown - remove_all_objects
 # @markdown - simulate
 # @markdown - sample_object_state
+
+
+def remove_all_objects(sim):
+    for obj_id in sim.get_existing_object_ids():
+        sim.remove_object(obj_id)
 
 
 def simulate(sim, dt=1.0, get_frames=True):
@@ -419,7 +462,7 @@ def make_clear_all_objects_button():
         return
 
     def on_clear_click(b):
-        sut.remove_all_objects(sim)
+        remove_all_objects(sim)
 
     clear_objs_button = set_button_launcher("Clear all objects")
     clear_objs_button.on_click(on_clear_click)
@@ -591,7 +634,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # %%
 # @title Scripted vs. Dynamic Motion { display-mode: "form" }
 # @markdown A quick script to generate video data for AI classification of dynamically dropping vs. kinematically moving objects.
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 # @markdown Set the scene as dynamic or kinematic:
 scenario_is_kinematic = True  # @param {type:"boolean"}
 
@@ -622,14 +665,14 @@ if make_video:
         open_vid=show_video,
     )
 
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 
 
 # %%
 # @title Object Permanence { display-mode: "form" }
 # @markdown This example script demonstrates a possible object permanence task.
 # @markdown Two objects are dropped behind an occluder. One is removed while occluded.
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 
 # @markdown 1. Add the two dynamic objects.
 # add the selected objects
@@ -688,7 +731,7 @@ if make_video:
         output_path + example_type,
         open_vid=show_video,
     )
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 
 
 # %%
@@ -700,7 +743,7 @@ sut.remove_all_objects(sim)
 
 introduce_surface = True  # @param{type:"boolean"}
 
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 
 # add a rolling object
 obj_attr_mgr = sim.get_object_template_manager()
@@ -735,7 +778,7 @@ if make_video:
         output_path + example_type,
         open_vid=show_video,
     )
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 
 
 # %%
@@ -748,7 +791,7 @@ sut.remove_all_objects(sim)
 # @markdown Configure Parameters:
 
 obj_attr_mgr = sim.get_object_template_manager()
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 
 seed = 2  # @param{type:"integer"}
 random.seed(seed)
@@ -830,7 +873,7 @@ if make_video:
         output_path + example_type,
         open_vid=show_video,
     )
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 
 # %% [markdown]
 # ## Generating Scene Clutter on the NavMesh
@@ -885,7 +928,7 @@ obj_attr_mgr.register_template(sel_obj_template_cpy, "scaled_sel_obj")
 
 # add the selected object
 sim.navmesh_visualization = True
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 fails = 0
 for _obj in range(num_objects):
     obj_id_1 = sim.add_object_by_handle("scaled_sel_obj")
@@ -921,7 +964,7 @@ if make_video:
         output_path + example_type,
         open_vid=show_video,
     )
-sut.remove_all_objects(sim)
+remove_all_objects(sim)
 sim.navmesh_visualization = False
 
 # %% [markdown]
@@ -1351,4 +1394,4 @@ if make_video:
 
 # remove locobot while leaving the agent node for later use
 sim.remove_object(locobot_id, delete_object_node=False)
-sut.remove_all_objects(sim)
+remove_all_objects(sim)

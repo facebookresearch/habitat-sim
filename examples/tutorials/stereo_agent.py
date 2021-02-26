@@ -52,7 +52,7 @@ def main(display=True):
     )
 
     # First, let's create a stereo RGB agent
-    left_rgb_sensor = habitat_sim.CameraSensorSpec()
+    left_rgb_sensor = habitat_sim.bindings.CameraSensorSpec()
     # Give it the uuid of left_sensor, this will also be how we
     # index the observations to retrieve the rendering from this sensor
     left_rgb_sensor.uuid = "left_sensor"
