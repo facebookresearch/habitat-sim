@@ -4,6 +4,8 @@
 
 #include "LightSetup.h"
 
+#include "esp/core/Check.h"
+
 namespace esp {
 namespace gfx {
 
@@ -19,12 +21,11 @@ Magnum::Vector4 getLightPositionRelativeToCamera(
     const LightInfo& light,
     const Magnum::Matrix4& transformationMatrix,
     const Magnum::Matrix4& cameraMatrix) {
-  CORRADE_ASSERT(light.vector.w() == 1 || light.vector.w() == 0,
-                 "Light vector"
-                     << light.vector
+  ESP_CHECK(
+      light.vector.w() == 1 || light.vector.w() == 0,
+      "Light vector" << light.vector
                      << "is expected to have w == 0 for a directional light or "
-                        "w == 1 for a point light",
-                 {});
+                        "w == 1 for a point light");
 
   switch (light.model) {
     case LightPositionModel::OBJECT:
