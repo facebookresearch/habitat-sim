@@ -730,7 +730,7 @@ class Simulator {
    *
    */
   esp::sensor::Sensor::ptr addSensorToObject(
-      int objectId,
+      const int objectId,
       const esp::sensor::SensorSpec::ptr& sensorSpec);
 
   /**
