@@ -355,7 +355,7 @@ jobs:
                   texlive-fonts-recommended
 
               # Rebuild with all options enabled
-              ./build.sh --with-cuda --with-bullet
+              ./build.sh --with-cuda --with-bullet --vhacd
               cd docs
               git submodule update --init
               ./build-public.sh
@@ -366,7 +366,7 @@ jobs:
               . activate habitat;
               cd habitat-sim
               #Rebuild headless
-              python setup.py install --headless --with-bullet --with-cuda
+              python setup.py install --headless --with-bullet --with-cuda --vhacd
               cd ..
               if [ ! -d ./habitat-lab ]
               then
@@ -443,14 +443,14 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 4
-              python -u setup.py install --headless
+              python -u setup.py install --headless --vhacd
       - run:
           name: run clang-tidy
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
-              python tools/run-clang-tidy.py src/esp
+              python tools/run-clang-tidy.py -header-filter=src/esp src/esp
       - run:
           name: Ccache stats
           when: always
@@ -507,6 +507,7 @@ jobs:
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
                 --bullet \
+                --vhacd \
                 --with-cuda \
                 --build-datatool \
                 --run-tests \

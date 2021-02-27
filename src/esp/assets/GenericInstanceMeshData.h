@@ -29,7 +29,7 @@ class GenericInstanceMeshData : public BaseMesh {
   explicit GenericInstanceMeshData()
       : GenericInstanceMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
-  virtual ~GenericInstanceMeshData(){};
+  ~GenericInstanceMeshData() override = default;
 
   /**
    * @brief Split a .ply file by objectIDs into different meshes
@@ -51,10 +51,10 @@ class GenericInstanceMeshData : public BaseMesh {
       const std::string& plyFile);
 
   // ==== rendering ====
-  virtual void uploadBuffersToGPU(bool forceReload = false) override;
+  void uploadBuffersToGPU(bool forceReload = false) override;
   RenderingBuffer* getRenderingBuffer() { return renderingBuffer_.get(); }
 
-  virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
+  Magnum::GL::Mesh* getMagnumGLMesh() override;
 
   const std::vector<vec3f>& getVertexBufferObjectCPU() const {
     return cpu_vbo_;

@@ -25,4 +25,8 @@ from habitat_sim._ext.habitat_sim_bindings import (
     ShortestPath,
 )
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
-from habitat_sim._ext.habitat_sim_bindings import SimulatorConfiguration, cuda_enabled
+from habitat_sim._ext.habitat_sim_bindings import (
+    SimulatorConfiguration,
+    cuda_enabled,
+    vhacd_enabled,
+)

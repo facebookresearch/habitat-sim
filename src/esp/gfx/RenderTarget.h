@@ -5,6 +5,7 @@
 #ifndef ESP_GFX_RENDERTARGET_H_
 #define ESP_GFX_RENDERTARGET_H_
 
+#include <Corrade/Containers/EnumSet.h>
 #include <Magnum/Magnum.h>
 
 #include "esp/core/esp.h"
@@ -24,6 +25,30 @@ namespace gfx {
  */
 class RenderTarget {
  public:
+  enum class Flag {
+    /**
+     * create rgba buffer
+     * No need to set it for depth sensor, semantic sensor etc. as it makes
+     * the rendering slower
+     */
+    RgbaBuffer = 1 << 0,
+    /**
+     * create objectId buffer
+     * No need to set it for color sensor, depth sensor etc. as it makes the
+     * rendering slower
+     */
+    ObjectIdBuffer = 1 << 1,
+    /**
+     * @brief use depth texture, it must be set for the depth sensor.
+     * No need to set it for color sensor, objectId sensor etc. as it makes the
+     * rendering slower
+     */
+    DepthTexture = 1 << 2,
+  };
+
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+  CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
+
   /**
    * @brief Constructor
    * @param size               The size of the underlying framebuffers in WxH
@@ -33,16 +58,13 @@ class RenderTarget {
    *                           Unprojects the depth on the CPU if nullptr.
    *                           Must be not nullptr to use @ref
    *                           readFrameDepthGPU()
-   * @param flags              The flags of the renderer that constructed this
-   *                           render target.  Currently just used to track
-   *                           whether or not @ref readFrameRgba,
-   *                           @ref blitRgbaToDefault, and @readFrameRgbaGPU
-   *                           are valid calls.
+   * @param flags              The flags of the renderer target
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
                DepthShader* depthShader,
-               Renderer::Flags flags);
+               Flags flags = {Flag::RgbaBuffer | Flag::ObjectIdBuffer |
+                              Flag::DepthTexture});
 
   /**
    * @brief Constructor
@@ -57,7 +79,7 @@ class RenderTarget {
                const Magnum::Vector2& depthUnprojection)
       : RenderTarget{size, depthUnprojection, nullptr, {}} {}
 
-  ~RenderTarget() {}
+  ~RenderTarget() = default;
 
   /**
    * @brief Called before any draw calls that target this RenderTarget

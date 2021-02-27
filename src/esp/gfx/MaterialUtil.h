@@ -5,13 +5,12 @@
 
 #pragma once
 
+#include <Magnum/Trade/Trade.h>
 #include "esp/gfx/MaterialData.h"
-
 // forward declarations
 namespace Magnum {
 namespace Trade {
 class AbstractImporter;
-class AbstractShaderProgram;
 class PhongMaterialData;
 class PbrMetallicRoughnessMaterialData;
 }  // namespace Trade

@@ -16,6 +16,7 @@
 #include <Corrade/Containers/Optional.h>
 
 #include <cstdio>
+// NOLINTNEXTLINE
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <limits>

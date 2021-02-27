@@ -6,6 +6,8 @@
 #define ESP_SIM_SIMULATOR_H_
 
 #include <Corrade/Utility/Assert.h>
+
+#include <utility>
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
@@ -864,7 +866,7 @@ class Simulator {
    * @brief Set this simulator's MetadataMediator
    */
   void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
-    metadataMediator_ = _metadataMediator;
+    metadataMediator_ = std::move(_metadataMediator);
     // set newly added MM to have current Simulator Config
     metadataMediator_->setSimulatorConfiguration(this->config_);
   }
@@ -878,8 +880,31 @@ class Simulator {
       const assets::AssetInfo& assetInfo,
       const assets::RenderAssetInstanceCreationInfo& creation);
 
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Runs convex hull decomposition on a specified file. Creates an
+   * object attributes referencing a newly created convex hull asset, and
+   * returns the attribute's handle.
+   *
+   * @param filename The MeshMetaData filename to be converted.
+   * @param params VHACD params that specify resolution, vertices per convex
+   * hull, etc.
+   * @param renderChd Specifies whether or not to render the coinvex hull asset,
+   * or to render the original render asset.
+   * @param saveChdToObj Specifies whether or not to save the newly created
+   * convex hull asset to an obj file.
+   * @return The handle of the newly created object attributes.
+   */
+  std::string convexHullDecomposition(
+      const std::string& filename,
+      const assets::ResourceManager::VHACDParameters& params =
+          assets::ResourceManager::VHACDParameters(),
+      bool renderChd = false,
+      bool saveChdToObj = false);
+#endif
+
  protected:
-  Simulator(){};
+  Simulator() = default;
   /**
    * @brief Builds a scene instance and populates it with initial object layout,
    * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes

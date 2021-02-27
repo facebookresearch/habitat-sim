@@ -29,10 +29,10 @@ namespace metadata {
 
 class MetadataMediator {
  public:
-  MetadataMediator(const sim::SimulatorConfiguration& cfg);
+  explicit MetadataMediator(const sim::SimulatorConfiguration& cfg);
 
   MetadataMediator() : MetadataMediator(sim::SimulatorConfiguration{}) {}
-  ~MetadataMediator() {}
+  ~MetadataMediator() = default;
 
   /**
    * @brief Set current @ref esp::sim::SimulatorConfiguration to be used.

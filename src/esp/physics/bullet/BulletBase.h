@@ -8,6 +8,8 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
 
+#include <utility>
+
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
@@ -66,7 +68,8 @@ class BulletBase {
   BulletBase(std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
              std::shared_ptr<std::map<const btCollisionObject*, int>>
                  collisionObjToObjIds)
-      : bWorld_(bWorld), collisionObjToObjIds_(collisionObjToObjIds) {}
+      : bWorld_(std::move(bWorld)),
+        collisionObjToObjIds_(std::move(collisionObjToObjIds)) {}
 
   /**
    * @brief Destructor cleans up simulation structures for the object.
