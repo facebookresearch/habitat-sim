@@ -424,7 +424,7 @@ def make_cfg(settings):
             settings["width"],
         ]
         color_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
-        color_sensor_1st_person_spec.postition.orientation = [
+        color_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
             0.0,
@@ -440,7 +440,7 @@ def make_cfg(settings):
             settings["width"],
         ]
         depth_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
-        depth_sensor_1st_person_spec.postition.orientation = [
+        depth_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
             0.0,
@@ -460,7 +460,7 @@ def make_cfg(settings):
             settings["sensor_height"],
             0.0,
         ]
-        semantic_sensor_1st_person_spec.postition.orientation = [
+        semantic_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
             0.0,
@@ -482,7 +482,7 @@ def make_cfg(settings):
             settings["sensor_height"] + 0.2,
             0.2,
         ]
-        color_sensor_3rd_person_spec.postition.orientation = [-math.pi / 4, 0, 0]
+        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0, 0]
         color_sensor_3rd_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(color_sensor_3rd_person_spec)
 
