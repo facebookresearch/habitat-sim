@@ -27,10 +27,9 @@ namespace io {
 namespace URDF {
 
 struct MaterialColor {
-  Magnum::Color4 m_rgbaColor;
-  Magnum::Color3 m_specularColor;
-  MaterialColor()
-      : m_rgbaColor(0.8, 0.8, 0.8, 1), m_specularColor(0.4, 0.4, 0.4) {}
+  Magnum::Color4 m_rgbaColor{0.8, 0.8, 0.8, 1};
+  Magnum::Color3 m_specularColor{0.4, 0.4, 0.4};
+  MaterialColor() = default;
 };
 
 struct Material {
@@ -38,7 +37,7 @@ struct Material {
   std::string m_textureFilename;
   MaterialColor m_matColor;
 
-  Material() {}
+  Material() = default;
 };
 
 enum JointTypes {
@@ -63,37 +62,26 @@ enum GeomTypes {
 };
 
 struct Geometry {
-  GeomTypes m_type;
+  GeomTypes m_type{GEOM_UNKNOWN};
 
-  double m_sphereRadius;
+  double m_sphereRadius{1};
 
-  Magnum::Vector3 m_boxSize;
+  Magnum::Vector3 m_boxSize{1, 1, 1};
 
-  double m_capsuleRadius;
-  double m_capsuleHeight;
-  int m_hasFromTo;
-  Magnum::Vector3 m_capsuleFrom;
-  Magnum::Vector3 m_capsuleTo;
+  double m_capsuleRadius{1};
+  double m_capsuleHeight{1};
+  int m_hasFromTo{0};
+  Magnum::Vector3 m_capsuleFrom{0, 1, 0};
+  Magnum::Vector3 m_capsuleTo{1, 0, 0};
 
-  Magnum::Vector3 m_planeNormal;
+  Magnum::Vector3 m_planeNormal{0, 0, 1};
   std::string m_meshFileName;
-  Magnum::Vector3 m_meshScale;
+  Magnum::Vector3 m_meshScale{1, 1, 1};
 
   std::shared_ptr<Material> m_localMaterial;
-  bool m_hasLocalMaterial;
+  bool m_hasLocalMaterial{false};
 
-  Geometry()
-      : m_type(GEOM_UNKNOWN),
-        m_sphereRadius(1),
-        m_boxSize(1, 1, 1),
-        m_capsuleRadius(1),
-        m_capsuleHeight(1),
-        m_hasFromTo(0),
-        m_capsuleFrom(0, 1, 0),
-        m_capsuleTo(1, 0, 0),
-        m_planeNormal(0, 0, 1),
-        m_meshScale(1, 1, 1),
-        m_hasLocalMaterial(false) {}
+  Geometry() = default;
 };
 
 struct Shape {
@@ -115,24 +103,20 @@ enum CollisionFlags {
 };
 
 struct CollisionShape : Shape {
-  int m_flags;
+  int m_flags{0};
   int m_collisionGroup;
   int m_collisionMask;
-  CollisionShape() : m_flags(0) {}
+  CollisionShape() = default;
 };
 
 struct Inertia {
-  Magnum::Matrix4 m_linkLocalFrame;
+  Magnum::Matrix4 m_linkLocalFrame{false};
   bool m_hasLinkLocalFrame;
 
-  double m_mass;
-  double m_ixx, m_ixy, m_ixz, m_iyy, m_iyz, m_izz;
+  double m_mass{0.f};
+  double m_ixx, m_ixy, m_ixz, m_iyy, m_iyz, m_izz = 0.f;
 
-  Inertia() {
-    m_hasLinkLocalFrame = false;
-    m_mass = 0.f;
-    m_ixx = m_ixy = m_ixz = m_iyy = m_iyz = m_izz = 0.f;
-  }
+  Inertia() = default;
 };
 
 struct Joint {
@@ -143,21 +127,15 @@ struct Joint {
   std::string m_childLinkName;
   Magnum::Vector3 m_localJointAxis;
 
-  double m_lowerLimit;
-  double m_upperLimit;
+  double m_lowerLimit{0};
+  double m_upperLimit{-1};
 
-  double m_effortLimit;
-  double m_velocityLimit;
+  double m_effortLimit{0};
+  double m_velocityLimit{0};
 
-  double m_jointDamping;
-  double m_jointFriction;
-  Joint()
-      : m_lowerLimit(0),
-        m_upperLimit(-1),
-        m_effortLimit(0),
-        m_velocityLimit(0),
-        m_jointDamping(0),
-        m_jointFriction(0) {}
+  double m_jointDamping{0};
+  double m_jointFriction{0};
+  Joint() = default;
 };
 
 // TODO: need this?
@@ -174,30 +152,19 @@ enum LinkContactFlags {
 };
 
 struct LinkContactInfo {
-  float m_lateralFriction;
-  float m_rollingFriction;
-  float m_spinningFriction;
-  float m_restitution;
-  float m_inertiaScaling;
-  float m_contactCfm;
-  float m_contactErp;
-  float m_contactStiffness;
-  float m_contactDamping;
+  float m_lateralFriction{0.5};
+  float m_rollingFriction{0};
+  float m_spinningFriction{0};
+  float m_restitution{0};
+  float m_inertiaScaling{1};
+  float m_contactCfm{0};
+  float m_contactErp{0};
+  float m_contactStiffness{1e4};
+  float m_contactDamping{1};
 
   int m_flags;
 
-  LinkContactInfo()
-      : m_lateralFriction(0.5),
-        m_rollingFriction(0),
-        m_spinningFriction(0),
-        m_restitution(0),
-        m_inertiaScaling(1),
-        m_contactCfm(0),
-        m_contactErp(0),
-        m_contactStiffness(1e4),
-        m_contactDamping(1) {
-    m_flags = CONTACT_HAS_LATERAL_FRICTION;
-  }
+  LinkContactInfo() { m_flags = CONTACT_HAS_LATERAL_FRICTION; }
 };
 
 struct Link {
@@ -212,11 +179,11 @@ struct Link {
   std::vector<std::weak_ptr<Joint>> m_childJoints;
   std::vector<std::weak_ptr<Link>> m_childLinks;
 
-  int m_linkIndex;
+  int m_linkIndex{-2};
 
   LinkContactInfo m_contactInfo;
 
-  Link() : m_linkIndex(-2) {}
+  Link() = default;
 };
 
 class Model {
@@ -239,7 +206,7 @@ class Model {
 
   //! list of root links (usually 1)
   std::vector<std::shared_ptr<Link>> m_rootLinks;
-  bool m_overrideFixedBase;
+  bool m_overrideFixedBase{false};
 
   void printKinematicChain() const;
 
@@ -393,7 +360,7 @@ class Parser {
   bool validateMeshFile(std::string& filename);
 
  public:
-  Parser(){};
+  Parser() = default;
 
   // parse a loaded URDF string into relevant general data structures
   // return false if the string is not a valid urdf or other error causes abort

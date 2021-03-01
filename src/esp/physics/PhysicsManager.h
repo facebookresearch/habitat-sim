@@ -309,7 +309,7 @@ class PhysicsManager {
    * id set as rigid objects.
    */
   virtual int addArticulatedObjectFromURDF(
-      const std::string& filepath,
+      CORRADE_UNUSED const std::string& filepath,
       CORRADE_UNUSED DrawableGroup* drawables,
       CORRADE_UNUSED bool fixedBase = false,
       CORRADE_UNUSED float globalScale = 1.0,
@@ -432,23 +432,27 @@ class PhysicsManager {
 
   // TODO: document AO->rigid
   virtual int createArticulatedP2PConstraint(
-      int articulatedObjectId,
-      int linkId,
-      int objectId,
-      float maxImpulse,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+      CORRADE_UNUSED int articulatedObjectId,
+      CORRADE_UNUSED int linkId,
+      CORRADE_UNUSED int objectId,
+      CORRADE_UNUSED float maxImpulse,
+      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
+          pivotA,
+      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
+          pivotB) {
     return -1;
   }
 
   // TODO: document AO->rigid
   virtual int createArticulatedFixedConstraint(
-      int articulatedObjectId,
-      int linkId,
-      int objectId,
-      float maxImpulse,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+      CORRADE_UNUSED int articulatedObjectId,
+      CORRADE_UNUSED int linkId,
+      CORRADE_UNUSED int objectId,
+      CORRADE_UNUSED float maxImpulse,
+      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
+          pivotA,
+      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
+          pivotB) {
     return -1;
   }
 

@@ -41,7 +41,7 @@ enum ConvertURDFFlags {
  */
 class URDFImporter {
  public:
-  URDFImporter(esp::assets::ResourceManager& resourceManager)
+  explicit URDFImporter(esp::assets::ResourceManager& resourceManager)
       : resourceManager_(resourceManager){};
 
   /**
