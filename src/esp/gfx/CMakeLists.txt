@@ -20,6 +20,8 @@ set(
   RenderCamera.h
   CubeMapCamera.cpp
   CubeMapCamera.h
+  CubeMap.cpp
+  CubeMap.h
   Renderer.cpp
   Renderer.h
   replay/Keyframe.h

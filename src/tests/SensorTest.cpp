@@ -6,6 +6,7 @@
 
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+#include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/Sensor.h"
 #include "esp/sensor/SensorFactory.h"
 
@@ -42,51 +43,51 @@ void SensorTest::testSensorFactory() {
   // sceneNode2.setId(2);
   // CORRADE_VERIFY(sceneNode2.getId() == 2);
 
-  // // Add different uuid sensors to same node and assert increase
-  // SensorSpec::ptr sensorSpecA = SensorSpec::create();
-  // sensorSpecA->uuid = "A";
-  // SensorSpec::ptr sensorSpecB = SensorSpec::create();
-  // sensorSpecB->uuid = "B";
-  // SensorSetup sensorSpecificationsAB = {sensorSpecA, sensorSpecB};
-  // SensorSuite sensorSuiteAB =
-  //     SensorFactory::createSensors(sceneNode1, sensorSpecificationsAB);
-  // sensorSuite_.merge(sensorSuiteAB);
-  // CORRADE_VERIFY(sensorSuite_.getSensors().size() == 2);
+  // Add different uuid sensors to same node and assert increase
+  auto sensorSpecA = CameraSensorSpec::create();
+  sensorSpecA->uuid = "A";
+  auto sensorSpecB = CameraSensorSpec::create();
+  sensorSpecB->uuid = "B";
+  SensorSetup sensorSpecificationsAB = {sensorSpecA, sensorSpecB};
+  SensorSuite sensorSuiteAB =
+      SensorFactory::createSensors(sceneNode1, sensorSpecificationsAB);
+  sensorSuite_.merge(sensorSuiteAB);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 2);
 
-  // // Add different uuid sensors to different nodes and assert increase
-  // SensorSpec::ptr sensorSpecC = SensorSpec::create();
-  // sensorSpecC->uuid = "C";
-  // SensorSetup sensorSpecificationsC = {sensorSpecC};
-  // SensorSuite sensorSuiteC =
-  //     SensorFactory::createSensors(sceneNode1, sensorSpecificationsC);
-  // sensorSuite_.merge(sensorSuiteC);
-  // CORRADE_VERIFY(sensorSuite_.getSensors().size() == 3);
+  // Add different uuid sensors to different nodes and assert increase
+  auto sensorSpecC = CameraSensorSpec::create();
+  sensorSpecC->uuid = "C";
+  SensorSetup sensorSpecificationsC = {sensorSpecC};
+  SensorSuite sensorSuiteC =
+      SensorFactory::createSensors(sceneNode1, sensorSpecificationsC);
+  sensorSuite_.merge(sensorSuiteC);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 3);
 
-  // SensorSpec::ptr sensorSpecD = SensorSpec::create();
-  // sensorSpecD->uuid = "D";
-  // SensorSetup sensorSpecificationsD = {sensorSpecD};
-  // SensorSuite sensorSuiteD =
-  //     SensorFactory::createSensors(sceneNode2, sensorSpecificationsD);
-  // sensorSuite_.merge(sensorSuiteD);
-  // CORRADE_VERIFY(sensorSuite_.getSensors().size() == 4);
-  // // Add same uuid sensor to same node and assert that only one sensor was added
-  // SensorSpec::ptr sensorSpecE = SensorSpec::create();
-  // sensorSpecE->uuid = "E";
-  // SensorSetup sensorSpecificationsEE = {sensorSpecE, sensorSpecE};
-  // SensorSuite sensorSuiteEE =
-  //     SensorFactory::createSensors(sceneNode1, sensorSpecificationsEE);
-  // sensorSuite_.merge(sensorSuiteEE);
-  // CORRADE_VERIFY(sensorSuite_.getSensors().size() == 5);
+  auto sensorSpecD = CameraSensorSpec::create();
+  sensorSpecD->uuid = "D";
+  SensorSetup sensorSpecificationsD = {sensorSpecD};
+  SensorSuite sensorSuiteD =
+      SensorFactory::createSensors(sceneNode2, sensorSpecificationsD);
+  sensorSuite_.merge(sensorSuiteD);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 4);
+  // Add same uuid sensor to same node and assert that only one sensor was added
+  auto sensorSpecE = CameraSensorSpec::create();
+  sensorSpecE->uuid = "E";
+  SensorSetup sensorSpecificationsEE = {sensorSpecE, sensorSpecE};
+  SensorSuite sensorSuiteEE =
+      SensorFactory::createSensors(sceneNode1, sensorSpecificationsEE);
+  sensorSuite_.merge(sensorSuiteEE);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 5);
 
-  // // Add same uuid sensors to different nodes and assert only one sensor was
-  // // added
-  // SensorSpec::ptr sensorSpecF = SensorSpec::create();
-  // sensorSpecF->uuid = "F";
-  // SensorSetup sensorSpecificationsF = {sensorSpecF};
-  // SensorSuite sensorSuiteF1 =
-  //     SensorFactory::createSensors(sceneNode1, sensorSpecificationsF);
-  // sensorSuite_.merge(sensorSuiteF1);
-  // CORRADE_VERIFY(sensorSuite_.getSensors().size() == 6);
+  // Add same uuid sensors to different nodes and assert only one sensor was
+  // added
+  auto sensorSpecF = CameraSensorSpec::create();
+  sensorSpecF->uuid = "F";
+  SensorSetup sensorSpecificationsF = {sensorSpecF};
+  SensorSuite sensorSuiteF1 =
+      SensorFactory::createSensors(sceneNode1, sensorSpecificationsF);
+  sensorSuite_.merge(sensorSuiteF1);
+  CORRADE_VERIFY(sensorSuite_.getSensors().size() == 6);
 
   // SensorSuite sensorSuiteF2 =
   //     SensorFactory::createSensors(sceneNode2, sensorSpecificationsF);

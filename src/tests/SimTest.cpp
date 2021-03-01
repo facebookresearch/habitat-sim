@@ -34,10 +34,10 @@ using esp::metadata::attributes::AbstractPrimitiveAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
 using esp::sensor::CameraSensor;
+using esp::sensor::CameraSensorSpec;
 using esp::sensor::Observation;
 using esp::sensor::ObservationSpace;
 using esp::sensor::ObservationSpaceType;
-using esp::sensor::SensorSpec;
 using esp::sensor::SensorType;
 using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
@@ -214,7 +214,7 @@ void SimTest::reset() {
   CORRADE_VERIFY(true);
   auto testReset = [&](Simulator& simulator) {
     PathFinder::ptr pathfinder = simulator.getPathFinder();
-    auto pinholeCameraSpec = SensorSpec::create();
+    auto pinholeCameraSpec = CameraSensorSpec::create();
     pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
     pinholeCameraSpec->sensorType = SensorType::Color;
     pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
@@ -254,7 +254,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
     Magnum::Float maxThreshold,
     Magnum::Float meanThreshold) {
   // do not rely on default SensorSpec default constructor to remain constant
-  auto pinholeCameraSpec = SensorSpec::create();
+  auto pinholeCameraSpec = CameraSensorSpec::create();
   pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
   pinholeCameraSpec->sensorType = SensorType::Color;
   pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
@@ -731,8 +731,7 @@ void SimTest::addSensorToObject() {
 
   // Add sensor to sphere object
   esp::sensor::SensorSuite sensorSuite;
-  esp::sensor::SensorSpec::ptr objectSensorSpec =
-      esp::sensor::SensorSpec::create();
+  auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
   objectSensorSpec->uuid = std::to_string(objectID);
   objectSensorSpec->position = {0, 0, 0};
   objectSensorSpec->orientation = {0, 0, 0};

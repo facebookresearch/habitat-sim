@@ -91,10 +91,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   if (!resourceManager_) {
     resourceManager_ =
         std::make_unique<assets::ResourceManager>(metadataMediator_);
-    if (config_.createRenderer) {
+    if (cfg.createRenderer) {
       // needs to be called after ResourceManager exists but before any assets
       // have been loaded
-      reconfigureReplayManager();
+      reconfigureReplayManager(cfg.enableGfxReplaySave);
     }
   } else {
     resourceManager_->setMetadataMediator(metadataMediator_);
@@ -511,11 +511,11 @@ void Simulator::seed(uint32_t newSeed) {
   pathfinder_->seed(newSeed);
 }
 
-void Simulator::reconfigureReplayManager() {
+void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   gfxReplayMgr_ = std::make_shared<gfx::replay::ReplayManager>();
 
   // construct Recorder instance if requested
-  gfxReplayMgr_->setRecorder(config_.enableGfxReplaySave
+  gfxReplayMgr_->setRecorder(enableGfxReplaySave
                                  ? std::make_shared<gfx::replay::Recorder>()
                                  : nullptr);
   // assign Recorder to ResourceManager
@@ -1089,7 +1089,8 @@ agent::Agent::ptr Simulator::addAgent(
   // constructor of Agent)
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
-  esp::sensor::SensorFactory::createSensors(agentNode, agentConfig.sensorSpecifications);
+  esp::sensor::CameraSensor::create(agentNode, std::dynamic_pointer_cast<CameraSensorSpec>(agentConfig.sensorSpecifications[0]));
+  //esp::sensor::SensorFactory::createSensors(agentNode, agentConfig.sensorSpecifications);
   agent::AgentState state;
   sampleRandomAgentState(state);
   ag->setInitialState(state);
@@ -1126,7 +1127,7 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
 
 esp::sensor::Sensor& Simulator::addSensorToObject(
     const int objectId,
-    esp::sensor::SensorSpec::ptr& sensorSpec) {
+    const esp::sensor::SensorSpec::ptr& sensorSpec) {
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
   esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
   esp::sensor::SensorFactory::createSensors(objectNode,

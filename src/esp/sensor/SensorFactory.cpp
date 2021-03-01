@@ -13,9 +13,23 @@ namespace sensor {
 void SensorFactory::createSensors(
     scene::SceneNode& node,
     const sensor::SensorSetup& sensorSetup) {
-  for (const sensor::SensorSpec::ptr& spec : sensorSetup) {
+  for (const SensorSpec::ptr& spec : sensorSetup) {
     scene::SceneNode& sensorNode = node.createChild();
-    sensorNode.setSensor(sensor::CameraSensor::create(sensorNode, spec).get());
+    // VisualSensor Setup
+    if (spec->isVisualSensorSpec()) {
+      if (spec->sensorSubType == SensorSubType::Orthographic ||
+          spec->sensorSubType == SensorSubType::Pinhole) {
+        CameraSensor::create(sensorNode, std::dynamic_pointer_cast<CameraSensorSpec>(spec));
+      }
+      // TODO: Implement fisheye sensor, Equirectangle sensor, Panorama sensor
+      // else if(spec->sensorSubType == SensorSubType::Fisheye) {
+      //   sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
+      //
+    }
+    // TODO: Implement NonVisualSensorSpecs
+    // else if (!spec->isVisualSensorSpec()) {}
+    //   //NonVisualSensor Setup
+    // }
   }
 }
 }  // namespace sensor
