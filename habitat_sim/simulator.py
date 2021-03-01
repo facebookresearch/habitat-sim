@@ -117,7 +117,7 @@ class Simulator(SimulatorBackend):
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 
-    def close(self) -> None:
+    def close(self, destroy: bool = False) -> None:
         if self.renderer is not None:
             self.renderer.acquire_gl_context()
 
@@ -136,7 +136,7 @@ class Simulator(SimulatorBackend):
 
         self.__last_state.clear()
 
-        super().close()
+        super().close(destroy)
 
     def __enter__(self) -> "Simulator":
         return self
@@ -506,7 +506,7 @@ class Simulator(SimulatorBackend):
         return end_pos
 
     def __del__(self) -> None:
-        self.close()
+        self.close(destroy=True)
 
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
