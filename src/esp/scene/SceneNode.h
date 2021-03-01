@@ -46,7 +46,6 @@ class SceneNode : public MagnumObject,
   // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
   SceneNode() = delete;
   SceneNode(SceneNode& parent);
-  ~SceneNode() { LOG(INFO) << "Deconstructing sceneNode"; };
 
   // get the type of the attached object
   SceneNodeType getType() const { return type_; }

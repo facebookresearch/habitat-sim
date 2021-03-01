@@ -123,7 +123,6 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   explicit SensorSuite(scene::SceneNode& node);
-  ~SensorSuite() override { LOG(INFO) << "Deconstructing SensorSuite"; }
 
   // Get the scene node being attached to.
   scene::SceneNode& node() { return object(); }
@@ -147,14 +146,19 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
    * Sensors
    * Note: it does not update any element whose key already exists.
    */
-  void merge(SensorSuite& sensorSuite);
+  void merge(const SensorSuite& sensorSuite);
 
-  void remove(Sensor& sensor);
+  void remove(const Sensor& sensor);
 
   void clear();
 
   sensor::Sensor& get(const std::string& uuid) const;
+
   std::map<std::string, std::reference_wrapper<sensor::Sensor>>& getSensors() {
+    return sensors_;
+  }
+
+  const std::map<std::string, std::reference_wrapper<sensor::Sensor>>& getSensors() const {
     return sensors_;
   }
 

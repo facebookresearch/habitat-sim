@@ -162,7 +162,7 @@ class Viewer : public Mn::Platform::Application {
 
   esp::sensor::CameraSensor& getAgentCamera() {
     esp::sensor::Sensor& cameraSensor =
-        agentBodyNode_->getNodeSensorSuite().get("rgba_camera");
+        agentBodyNode_->getSubtreeSensorSuite().get("rgba_camera");
     return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
   }
 

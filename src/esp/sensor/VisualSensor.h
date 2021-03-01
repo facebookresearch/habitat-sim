@@ -38,7 +38,6 @@ struct VisualSensorSpec : public SensorSpec {
 class VisualSensor : public Sensor {
  public:
   explicit VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec);
-  ~VisualSensor() override;
 
   /**
    * @brief Return the size of the framebuffer corresponding to the sensor's
