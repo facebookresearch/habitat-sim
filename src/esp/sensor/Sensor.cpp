@@ -30,7 +30,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
 }
 
 Sensor::~Sensor() {
-  LOG(INFO) << "Deconstructing SensorSuite";
+  LOG(INFO) << "Deconstructing Sensor";
   node().getNodeSensorSuite().remove(*this);
   node().getSubtreeSensorSuite().remove(*this);
   // Traverse up to root node and remove sensor from every subtreeSensorSuite

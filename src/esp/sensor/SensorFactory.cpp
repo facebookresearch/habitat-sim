@@ -14,7 +14,7 @@ void SensorFactory::createSensors(
     scene::SceneNode& node,
     const sensor::SensorSetup& sensorSetup) {
   for (const sensor::SensorSpec::ptr& spec : sensorSetup) {
-    scene::SceneNode& sensorNode = node.createChild();
+    scene::SceneNode sensorNode = node.createChild();
     sensor::CameraSensor::create(sensorNode, spec);
   }
 }
