@@ -344,6 +344,10 @@ TEST(GfxReplayTest, simulatorIntegration) {
   EXPECT_EQ(getNumberOfChildrenOfRoot(rootNode),
             prevNumberOfChildrenOfRoot + 1);
 
+  player = nullptr;
+  // second copy of box removed when Player is deleted
+  EXPECT_EQ(getNumberOfChildrenOfRoot(rootNode), prevNumberOfChildrenOfRoot);
+
   // remove file created for this test
   bool success = Corrade::Utility::Directory::rm(testFilepath);
   if (!success) {
