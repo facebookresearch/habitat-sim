@@ -4,6 +4,11 @@ about: Submit a bug report to help us improve Habitat
 
 ---
 
+## Habitat-Sim version
+vX or master?
+
+Have you tried the latest [release version](https://github.com/facebookresearch/habitat-sim/releases)? If not, why not?
+
 ## 🐛 Bug
 
 <!-- A clear and concise description of what the bug is. -->
