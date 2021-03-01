@@ -51,10 +51,10 @@ Simulator::Simulator(const SimulatorConfiguration& cfg,
 
 Simulator::~Simulator() {
   LOG(INFO) << "Deconstructing Simulator";
-  close();
+  close(true);
 }
 
-void Simulator::close() {
+void Simulator::close(const bool destroy) {
   if (renderer_)
     renderer_->acquireGlContext();
 
@@ -72,8 +72,10 @@ void Simulator::close() {
 
   resourceManager_ = nullptr;
 
-  renderer_ = nullptr;
-  context_ = nullptr;
+  if (destroy) {
+    renderer_ = nullptr;
+    context_ = nullptr;
+  }
 
   activeSceneID_ = ID_UNDEFINED;
   activeSemanticSceneID_ = ID_UNDEFINED;
