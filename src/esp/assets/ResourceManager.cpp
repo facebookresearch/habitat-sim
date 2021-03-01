@@ -2161,7 +2161,7 @@ void ResourceManager::joinHeirarchy(
     MeshData& mesh,
     const MeshMetaData& metaData,
     const MeshTransformNode& node,
-    const Magnum::Matrix4& transformFromParentToWorld) {
+    const Magnum::Matrix4& transformFromParentToWorld) const {
   Magnum::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
 
@@ -2185,7 +2185,7 @@ void ResourceManager::joinHeirarchy(
 }
 
 std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
-    const std::string& filename) {
+    const std::string& filename) const {
   std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
 
   CHECK(resourceDict_.count(filename) > 0);

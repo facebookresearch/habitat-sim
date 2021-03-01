@@ -341,7 +341,7 @@ class ResourceManager {
    * @return The unified @ref MeshData object for the asset.
    */
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
-      const std::string& filename);
+      const std::string& filename) const;
 
   /**
    * @brief Converts a MeshMetaData into a obj file.
@@ -657,7 +657,7 @@ class ResourceManager {
   void joinHeirarchy(MeshData& mesh,
                      const MeshMetaData& metaData,
                      const MeshTransformNode& node,
-                     const Mn::Matrix4& transformFromParentToWorld);
+                     const Mn::Matrix4& transformFromParentToWorld) const;
 
   /**
    * @brief Load materials from importer into assets, and update metaData for
