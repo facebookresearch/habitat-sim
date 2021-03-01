@@ -309,6 +309,14 @@ void initSimBindings(py::module& m) {
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
           "navmesh_settings"_a, "include_static_objects"_a = false,
           R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings. Optionally include all MotionType::STATIC objects in the navigability constraints.)")
+#ifdef ESP_BUILD_WITH_VHACD
+      .def(
+          "apply_convex_hull_decomposition",
+          &Simulator::convexHullDecomposition, "filename"_a,
+          "vhacd_params"_a = assets::ResourceManager::VHACDParameters(),
+          "render_chd_result"_a = false, "save_chd_to_obj"_a = false,
+          R"(Decomposite an object into its constituent convex hulls with specified VHACD parameters.)")
+#endif
       .def("add_trajectory_object", &Simulator::addTrajectoryObject,
            "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,
            "radius"_a = .001, "color"_a = Mn::Color4{0.9, 0.1, 0.1, 1.0},
@@ -462,7 +470,8 @@ void initSimBindings(py::module& m) {
            R"(Remove a point-2-point or fixed constraint by id.)")
       /* --- Collision information queries --- */
       .def("get_physics_num_active_contact_points",
-           &Simulator::getPhysicsNumActiveContactPoints, R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
+           &Simulator::getPhysicsNumActiveContactPoints,
+           R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
       .def(
           "get_physics_num_active_overlapping_pairs",
           &Simulator::getPhysicsNumActiveOverlappingPairs,

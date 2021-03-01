@@ -68,27 +68,23 @@ def make_configuration(scene_file):
     # Note: all sensors must have the same resolution
     # setup rgb and semantic sensors
     camera_resolution = [1080, 960]
-    sensors = {
-        "rgba_camera": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 1.5, 0.0],  # ::: fix y to be 0 later
-        },
-        "semantic_camera": {
-            "sensor_type": habitat_sim.SensorType.SEMANTIC,
-            "resolution": camera_resolution,
-            "position": [0.0, 1.5, 0.0],
-        },
-    }
-
     sensor_specs = []
-    for sensor_uuid, sensor_params in sensors.items():
-        sensor_spec = habitat_sim.SensorSpec()
-        sensor_spec.uuid = sensor_uuid
-        sensor_spec.sensor_type = sensor_params["sensor_type"]
-        sensor_spec.resolution = sensor_params["resolution"]
-        sensor_spec.position = sensor_params["position"]
-        sensor_specs.append(sensor_spec)
+
+    rgba_camera_spec = habitat_sim.CameraSensorSpec()
+    rgba_camera_spec.uuid = "rgba_camera"
+    rgba_camera_spec.sensor_type = habitat_sim.SensorType.COLOR
+    rgba_camera_spec.resolution = camera_resolution
+    rgba_camera_spec.postition = [0.0, 1.5, 0.0]  # ::: fix y to be 0 later
+    rgba_camera_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(rgba_camera_spec)
+
+    semantic_camera_spec = habitat_sim.CameraSensorSpec()
+    semantic_camera_spec.uuid = "semantic_camera"
+    semantic_camera_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
+    semantic_camera_spec.resolution = camera_resolution
+    semantic_camera_spec.postition = [0.0, 1.5, 0.0]
+    semantic_camera_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(semantic_camera_spec)
 
     # agent configuration
     agent_cfg = habitat_sim.agent.AgentConfiguration()

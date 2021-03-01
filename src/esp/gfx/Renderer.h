@@ -16,7 +16,13 @@ namespace gfx {
 
 class Renderer {
  public:
-  enum class Flag : unsigned int {
+  enum class Flag {
+    /**
+     * No textures for the meshes.
+     * Textures take a lot of GPU memory but they are not needed unless we are
+     * doing RGB rendering.
+     * Note: Cannot set this flag when doing RGB rendering
+     */
     NoTextures = 1 << 0,
     BackgroundThread = 1 << 1
   };

@@ -94,6 +94,14 @@ if(BUILD_ASSIMP_SUPPORT)
   find_package(Assimp REQUIRED)
 endif()
 
+# v-hacd
+if(BUILD_WITH_VHACD)
+  set(NO_OPENCL ON CACHE BOOL "NO_OPENCL" FORCE)
+  set(NO_OPENMP ON CACHE BOOL "NO_OPENMP" FORCE)
+  # adding /src/VHACD_Lib instead of /src since /src contains unneccesary test files
+  add_subdirectory("${DEPS_DIR}/v-hacd/src/VHACD_Lib")
+endif()
+
 # recast
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
 set(RECASTNAVIGATION_TESTS OFF CACHE BOOL "RECASTNAVIGATION_TESTS" FORCE)
@@ -273,8 +281,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   endif()
 endif()
 
-
-if (NOT CORRADE_TARGET_EMSCRIPTEN)
+if(NOT CORRADE_TARGET_EMSCRIPTEN)
   add_library(atomic_wait STATIC ${DEPS_DIR}/atomic_wait/atomic_wait.cpp)
   target_include_directories(atomic_wait PUBLIC ${DEPS_DIR}/atomic_wait)
 endif()

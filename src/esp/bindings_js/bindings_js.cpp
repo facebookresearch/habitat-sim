@@ -174,16 +174,29 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .value("TENSOR", SensorType::Tensor)
       .value("TEXT", SensorType::Text);
 
+  em::enum_<SensorSubType>("SensorSubType")
+      .value("NONE", SensorSubType::None)
+      .value("PINHOLE", SensorSubType::Pinhole)
+      .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
   em::class_<SensorSpec>("SensorSpec")
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
       .property("uuid", &SensorSpec::uuid)
       .property("sensorType", &SensorSpec::sensorType)
       .property("sensorSubtype", &SensorSpec::sensorSubType)
       .property("position", &SensorSpec::position)
-      .property("orientation", &SensorSpec::orientation)
-      .property("resolution", &SensorSpec::resolution)
-      .property("channels", &SensorSpec::channels)
-      .property("parameters", &SensorSpec::parameters);
+      .property("orientation", &SensorSpec::orientation);
+
+  em::class_<VisualSensorSpec, em::base<SensorSpec>>("VisualSensorSpec")
+      .smart_ptr_constructor("VisualSensorSpec", &VisualSensorSpec::create<>)
+      .property("ortho_scale", &VisualSensorSpec::ortho_scale)
+      .property("resolution", &VisualSensorSpec::resolution)
+      .property("encoding", &VisualSensorSpec::encoding)
+      .property("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer);
+
+  em::class_<CameraSensorSpec, em::base<VisualSensorSpec>>("CameraSensorSpec")
+      .smart_ptr_constructor("CameraSensorSpec", &CameraSensorSpec::create<>)
+      .property("channels", &CameraSensorSpec::channels)
+      .property("observation_space", &CameraSensorSpec::observationSpace);
 
   em::class_<Sensor>("Sensor")
       .smart_ptr<Sensor::ptr>("Sensor::ptr")

@@ -20,6 +20,8 @@ set(
   RenderCamera.h
   CubeMapCamera.cpp
   CubeMapCamera.h
+  CubeMap.cpp
+  CubeMap.h
   Renderer.cpp
   Renderer.h
   replay/Keyframe.h
@@ -112,7 +114,7 @@ target_link_libraries(
          Magnum::AnyImageConverter
 )
 
-if (NOT CORRADE_TARGET_EMSCRIPTEN)
+if(NOT CORRADE_TARGET_EMSCRIPTEN)
   target_link_libraries(gfx PUBLIC atomic_wait)
 endif()
 

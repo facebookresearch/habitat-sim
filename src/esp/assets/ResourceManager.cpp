@@ -13,6 +13,7 @@
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -24,6 +25,7 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Interleave.h>
+#include <Magnum/MeshTools/Reference.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
 #include <Magnum/Shaders/Flat.h>
@@ -34,6 +36,7 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
+#include <Magnum/VertexFormat.h>
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -89,10 +92,21 @@ ResourceManager::ResourceManager(
       importerManager_("nonexistent")
 #endif
 {
-
+#ifdef ESP_BUILD_WITH_VHACD
+  // Destructor is protected, using Clean() and Release() to destruct interface
+  // (this is how it is used VHACD examples.)
+  interfaceVHACD = VHACD::CreateVHACD();
+#endif
   initDefaultLightSetups();
   initDefaultMaterials();
   buildImporters();
+}
+
+ResourceManager::~ResourceManager() {
+#ifdef ESP_BUILD_WITH_VHACD
+  interfaceVHACD->Clean();
+  interfaceVHACD->Release();
+#endif
 }
 
 void ResourceManager::buildImporters() {
@@ -2131,7 +2145,6 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   std::string houseFile = Cr::Utility::Directory::join(
       Cr::Utility::Directory::current(), houseInfo.filepath);
   const auto& json = io::parseJsonFile(houseFile);
-  // TODO Double check if this is actually a false positive or not.
   const auto& levels = json["levels"].GetArray();
   std::vector<std::string> pathTokens = io::tokenize(houseFile, "/", 0, true);
   ASSERT(pathTokens.size() >= 3);
@@ -2294,5 +2307,179 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
   return mesh;
 }
 
+bool ResourceManager::outputMeshMetaDataToObj(
+    const std::string& MeshMetaDataFile,
+    const std::string& new_filename,
+    const std::string& filepath) {
+  bool success = Cr::Utility::Directory::mkpath(filepath);
+
+  const MeshMetaData& metaData = getMeshMetaData(MeshMetaDataFile);
+  std::string out = "# chd Mesh group \n";
+
+  // write vertex info to file
+  int numVertices = 0;
+  for (const MeshTransformNode& node : metaData.root.children) {
+    CollisionMeshData& meshData =
+        meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
+            ->getCollisionMeshData();
+    for (auto& pos : meshData.positions) {
+      Mn::Utility::formatInto(out, out.size(), "{0} {1} {2} {3}{4}", "v",
+                              pos[0], pos[1], pos[2], "\n");
+      numVertices++;
+    }
+  }
+
+  Mn::Utility::formatInto(out, out.size(), "{0} {1} {2}",
+                          "# Number of vertices", numVertices, "\n\n");
+
+  // Now do second pass to write indices for each group (node)
+  int globalVertexNum = 1;
+  int numParts = 1;
+  for (const MeshTransformNode& node : metaData.root.children) {
+    CollisionMeshData& meshData =
+        meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
+            ->getCollisionMeshData();
+    Mn::Utility::formatInto(out, out.size(), "{0}{1} {2}", "g part_", numParts,
+                            "mesh\n");
+    for (int ix = 0; ix < meshData.indices.size(); ix += 3) {
+      Mn::Utility::formatInto(out, out.size(), "{0} {1} {2} {3}{4}", "f",
+                              meshData.indices[ix] + globalVertexNum,
+                              meshData.indices[ix + 1] + globalVertexNum,
+                              meshData.indices[ix + 2] + globalVertexNum, "\n");
+    }
+    numParts++;
+    globalVertexNum += meshData.positions.size();
+  }
+  Cr::Utility::Directory::writeString(filepath + "/" + new_filename, out);
+
+  return success;
+}
+
+bool ResourceManager::isAssetDataRegistered(const std::string& resourceName) {
+  return (resourceDict_.count(resourceName) > 0);
+}
+
+#ifdef ESP_BUILD_WITH_VHACD
+void ResourceManager::createConvexHullDecomposition(
+    const std::string& filename,
+    const std::string& chdFilename,
+    const VHACDParameters& params,
+    const bool saveChdToObj) {
+  if (resourceDict_.count(filename) == 0) {
+    // load/check for render MeshMetaData and load assets
+    loadObjectMeshDataFromFile(filename, filename, "render", true);
+
+  }  // if no render asset exists
+
+  // get joined mesh data
+  assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
+  joinedMesh = createJoinedCollisionMesh(filename);
+
+  // use VHACD
+  interfaceVHACD->Compute(&joinedMesh->vbo[0][0], joinedMesh->vbo.size(),
+                          &joinedMesh->ibo[0], joinedMesh->ibo.size() / 3,
+                          params);
+
+  Cr::Utility::Debug() << "== VHACD ran ==";
+
+  // convert convex hulls into MeshDatas, CollisionMeshDatas
+  int meshStart = meshes_.size();
+  std::vector<CollisionMeshData> collisionMeshGroup;
+  int nConvexHulls = interfaceVHACD->GetNConvexHulls();
+  Cr::Utility::Debug() << "Num Convex Hulls: " << nConvexHulls;
+  Cr::Utility::Debug() << "Resolution: " << params.m_resolution;
+  VHACD::IVHACD::ConvexHull ch{};
+  std::unique_ptr<GenericMeshData> genCHMeshData;
+  for (unsigned int p = 0; p < nConvexHulls; ++p) {
+    // for each convex hull, transfer the data to a newly created  MeshData
+    interfaceVHACD->GetConvexHull(p, ch);
+
+    std::vector<Magnum::Vector3> positions;
+
+    // add the vertices
+    positions.resize(ch.m_nPoints);
+    for (size_t vix = 0; vix < ch.m_nPoints; vix++) {
+      positions[vix] =
+          Magnum::Vector3(ch.m_points[vix * 3], ch.m_points[vix * 3 + 1],
+                          ch.m_points[vix * 3 + 2]);
+    }
+
+    // add indices
+    Cr::Containers::ArrayView<const Mn::UnsignedInt> indices{
+        ch.m_triangles, ch.m_nTriangles * 3};
+
+    // create an owned MeshData
+    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::owned(
+        Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
+                            {},
+                            indices,
+                            Mn::Trade::MeshIndexData{indices},
+                            {},
+                            positions,
+                            {Mn::Trade::MeshAttributeData{
+                                Mn::Trade::MeshAttribute::Position,
+                                Cr::Containers::arrayView(positions)}}});
+
+    // Create a GenericMeshData (needsNormals_ = true and uploadBuffersToGPU in
+    // order to render the collision asset)
+    genCHMeshData = std::make_unique<GenericMeshData>(true);
+    genCHMeshData->setMeshData(*std::move(CHMesh));
+    genCHMeshData->BB = computeMeshBB(genCHMeshData.get());
+    genCHMeshData->uploadBuffersToGPU(true);
+
+    // Create CollisionMeshData and add to collisionMeshGroup vector
+    CollisionMeshData CHCollisionMesh = genCHMeshData->getCollisionMeshData();
+    collisionMeshGroup.push_back(CHCollisionMesh);
+
+    // register GenericMeshData in meshes_ dict
+    meshes_.emplace(meshes_.size(), std::move(genCHMeshData));
+  }
+  // make MeshMetaData
+  int meshEnd = meshes_.size() - 1;
+  MeshMetaData meshMetaData{meshStart, meshEnd};
+
+  // get original componentID (REVISIT)
+  int componentID = getMeshMetaData(filename).root.componentID;
+
+  // populate MeshMetaData root children
+  for (unsigned int p = 0; p < nConvexHulls; ++p) {
+    MeshTransformNode transformNode;
+    transformNode.meshIDLocal = p;
+    transformNode.componentID = componentID;
+    transformNode.materialIDLocal = 0;
+    meshMetaData.root.children.push_back(transformNode);
+  }
+
+  // default material for now
+  auto phongMaterial = gfx::PhongMaterialData::create_unique();
+
+  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
+  shaderManager_.set(std::to_string(nextMaterialID_++),
+                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
+
+  // make assetInfo
+  AssetInfo info{AssetType::PRIMITIVE};
+  info.requiresLighting = true;
+
+  // make LoadedAssetData corresponding to this asset
+  LoadedAssetData loadedAssetData{info, meshMetaData};
+
+  // Register collision mesh group
+  auto insertedCollisionMeshGroup =
+      collisionMeshGroups_.emplace(chdFilename, std::move(collisionMeshGroup));
+  // insert MeshMetaData into resourceDict_
+  auto insertedResourceDict =
+      resourceDict_.emplace(chdFilename, std::move(loadedAssetData));
+  if (saveChdToObj) {
+    std::string objDirectory = Cr::Utility::Directory::join(
+        Corrade::Utility::Directory::current(), "data/VHACD_outputs");
+    std::string new_filename =
+        Cr::Utility::Directory::filename(
+            Cr::Utility::Directory::splitExtension(chdFilename).first) +
+        ".obj";
+    outputMeshMetaDataToObj(chdFilename, new_filename, objDirectory);
+  }
+}
+#endif
 }  // namespace assets
 }  // namespace esp
