@@ -6,6 +6,7 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/core//random.h"
+#include "esp/core/Check.h"
 #include "esp/core/Configuration.h"
 #include "esp/core/RigidState.h"
 
@@ -126,6 +127,13 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 #else
       false;
 #endif
+
+  /* This function pointer is used by ESP_CHECK(). If it's null, it
+     std::abort()s, if not, it calls it to cause a Python AssertionError */
+  esp::core::throwInPython = [](const char* const message) {
+    PyErr_SetString(PyExc_AssertionError, message);
+    throw pybind11::error_already_set{};
+  };
 
   m.import("magnum.scenegraph");
 
