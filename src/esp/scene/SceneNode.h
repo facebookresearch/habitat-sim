@@ -21,6 +21,7 @@
 namespace esp {
 
 namespace sensor {
+  class Sensor;
   class SensorSuite;
 }
 
@@ -46,6 +47,7 @@ class SceneNode : public MagnumObject,
   // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
   SceneNode() = delete;
   SceneNode(SceneNode& parent);
+  ~SceneNode() {LOG(INFO) << "Deconstructing sceneNode"; };
 
   // get the type of the attached object
   SceneNodeType getType() const { return type_; }
@@ -97,6 +99,10 @@ class SceneNode : public MagnumObject,
 
   esp::sensor::SensorSuite& getSubtreeSensorSuite() {
     return *subtreeSensorSuite_;
+  }
+
+  void setSensor(esp::sensor::Sensor* sensor) {
+    sensor_ = sensor;
   }
 
   //! set local bounding box for meshes stored at this node
@@ -157,6 +163,7 @@ class SceneNode : public MagnumObject,
 
   esp::sensor::SensorSuite* nodeSensorSuite_;
   esp::sensor::SensorSuite* subtreeSensorSuite_;
+  esp::sensor::Sensor* sensor_;
 };
 
 // Traversal Helpers
