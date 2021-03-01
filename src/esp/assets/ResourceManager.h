@@ -647,7 +647,7 @@ class ResourceManager {
    * @brief Recursively build a unified @ref MeshData from loaded assets via a
    * tree of @ref MeshTransformNode.
    *
-   * @param mesh The @ref MeshData being constructed.
+   * @param[in,out] mesh The @ref MeshData being constructed.
    * @param metaData The @ref MeshMetaData for the object heirarchy being
    * joined.
    * @param node The current @ref MeshTransformNode in the recursion.
