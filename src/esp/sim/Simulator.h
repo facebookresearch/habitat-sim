@@ -934,7 +934,7 @@ class Simulator {
     return isValidScene(sceneID) && physicsManager_ != nullptr;
   }
 
-  void reconfigureReplayManager();
+  void reconfigureReplayManager(bool enableGfxReplaySave);
 
   gfx::WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<gfx::Renderer> renderer_ = nullptr;
