@@ -28,8 +28,6 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
 
 Agent::~Agent() {
   LOG(INFO) << "Deconstructing Agent";
-  //TODO: Clear sensors
-
 }
 
 bool Agent::act(const std::string& actionName) {

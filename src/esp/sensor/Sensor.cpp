@@ -46,7 +46,7 @@ void SensorSpec::sanityCheck() {
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
     : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
   node.setType(scene::SceneNodeType::SENSOR);
- CORRADE_ASSERT(spec_,
+  CORRADE_ASSERT(spec_,
                  "Sensor::Sensor(): Cannot initialize sensor. The "
                  "specification is null.", );
   spec_->sanityCheck();
@@ -55,7 +55,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   node.getSubtreeSensorSuite().add(*this);
   // Traverse up to root node and add sensor to every subtreeSensorSuite
   auto parent = node.parent();
-  while(parent->parent() != nullptr) {
+  while (parent->parent() != nullptr) {
     static_cast<scene::SceneNode&>(*parent).getSubtreeSensorSuite().add(*this);
     parent = parent->parent();
   }
@@ -68,8 +68,9 @@ Sensor::~Sensor() {
   node().getSubtreeSensorSuite().remove(*this);
   // Traverse up to root node and remove sensor from every subtreeSensorSuite
   auto parent = node().parent();
-  while(parent->parent() != nullptr) {
-    static_cast<scene::SceneNode&>(*parent).getSubtreeSensorSuite().remove(*this);
+  while (parent->parent() != nullptr) {
+    static_cast<scene::SceneNode&>(*parent).getSubtreeSensorSuite().remove(
+        *this);
     parent = parent->parent();
   }
 }
@@ -102,11 +103,12 @@ void SensorSuite::merge(SensorSuite& sensorSuite) {
 
 void SensorSuite::remove(sensor::Sensor& sensor) {
   const std::string uuid = sensor.specification()->uuid;
-  std::map<std::string, std::reference_wrapper<sensor::Sensor>>::iterator it = sensors_.find(uuid);
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>>::iterator it =
+      sensors_.find(uuid);
   sensors_.erase(it);
 }
 
-sensor::Sensor& SensorSuite::get(const std::string& uuid) const{
+sensor::Sensor& SensorSuite::get(const std::string& uuid) const {
   return sensors_.at(uuid).get();
 }
 

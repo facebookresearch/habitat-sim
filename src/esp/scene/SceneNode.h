@@ -21,8 +21,7 @@
 namespace esp {
 
 namespace sensor {
-  class Sensor;
-  class SensorSuite;
+class SensorSuite;
 }
 
 namespace scene {
@@ -47,7 +46,7 @@ class SceneNode : public MagnumObject,
   // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
   SceneNode() = delete;
   SceneNode(SceneNode& parent);
-  ~SceneNode() {LOG(INFO) << "Deconstructing sceneNode"; };
+  ~SceneNode() { LOG(INFO) << "Deconstructing sceneNode"; };
 
   // get the type of the attached object
   SceneNodeType getType() const { return type_; }
@@ -101,10 +100,6 @@ class SceneNode : public MagnumObject,
     return *subtreeSensorSuite_;
   }
 
-  void setSensor(esp::sensor::Sensor* sensor) {
-    sensor_ = sensor;
-  }
-
   //! set local bounding box for meshes stored at this node
   void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = meshBB; };
 
@@ -116,7 +111,6 @@ class SceneNode : public MagnumObject,
 
   //! set frustum plane in last frame that culls this node
   void setFrustumPlaneIndex(int index) { frustumPlaneIndex = index; };
-
 
  protected:
   // DO not make the following constructor public!
@@ -163,7 +157,6 @@ class SceneNode : public MagnumObject,
 
   esp::sensor::SensorSuite* nodeSensorSuite_;
   esp::sensor::SensorSuite* subtreeSensorSuite_;
-  esp::sensor::Sensor* sensor_;
 };
 
 // Traversal Helpers

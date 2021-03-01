@@ -162,7 +162,7 @@ class Viewer : public Mn::Platform::Application {
 
   esp::sensor::CameraSensor& getAgentCamera() {
     esp::sensor::Sensor& cameraSensor =
-       agentBodyNode_->getNodeSensorSuite().get("rgba_camera");
+        agentBodyNode_->getNodeSensorSuite().get("rgba_camera");
     return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
   }
 
@@ -1036,9 +1036,10 @@ void Viewer::moveAndLook(int repetitions) {
 void Viewer::viewportEvent(ViewportEvent& event) {
   for (auto& it : defaultAgent_->getSensorSuite().getSensors()) {
     if (it.second.get().isVisualSensor()) {
-      esp::sensor::VisualSensor& visualSensor = static_cast<esp::sensor::VisualSensor&>(it.second.get());
+      esp::sensor::VisualSensor& visualSensor =
+          static_cast<esp::sensor::VisualSensor&>(it.second.get());
       visualSensor.setResolution(event.framebufferSize()[1],
-                                  event.framebufferSize()[0]);
+                                 event.framebufferSize()[0]);
       renderCamera_->setViewport(visualSensor.framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(visualSensor);
     }
@@ -1160,9 +1161,9 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   // apply the transformation to all sensors
   for (auto& p : defaultAgent_->getSensorSuite().getSensors()) {
     controls(p.second.get().object(),  // SceneNode
-             "lookDown",          // action name
-             delta.y(),           // amount
-             false);              // applyFilter
+             "lookDown",               // action name
+             delta.y(),                // amount
+             false);                   // applyFilter
   }
 
   redraw();

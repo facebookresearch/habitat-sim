@@ -5,21 +5,22 @@
 #include "esp/sensor/SensorFactory.h"
 
 #include "esp/scene/SceneNode.h"
-#include "esp/sensor/Sensor.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/Sensor.h"
 
 namespace esp {
 namespace sensor {
-void SensorFactory::createSensors(
-    scene::SceneNode& node,
-    const sensor::SensorSetup& sensorSetup) {
+void SensorFactory::createSensors(scene::SceneNode& node,
+                                  const sensor::SensorSetup& sensorSetup) {
   for (const SensorSpec::ptr& spec : sensorSetup) {
     scene::SceneNode& sensorNode = node.createChild();
     // VisualSensor Setup
     if (spec->isVisualSensorSpec()) {
       if (spec->sensorSubType == SensorSubType::Orthographic ||
           spec->sensorSubType == SensorSubType::Pinhole) {
-        CameraSensor::create(sensorNode, std::dynamic_pointer_cast<CameraSensorSpec>(spec));
+        sensor::CameraSensor::create(
+            sensorNode,
+            std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
       }
       // TODO: Implement fisheye sensor, Equirectangle sensor, Panorama sensor
       // else if(spec->sensorSubType == SensorSubType::Fisheye) {

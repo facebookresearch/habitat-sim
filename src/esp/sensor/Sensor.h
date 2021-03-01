@@ -5,11 +5,10 @@
 #ifndef ESP_SENSOR_SENSOR_H_
 #define ESP_SENSOR_SENSOR_H_
 
-
 #include "esp/scene/SceneNode.h"
 
-#include "esp/core/esp.h"
 #include "esp/core/Buffer.h"
+#include "esp/core/esp.h"
 
 namespace esp {
 
@@ -43,7 +42,6 @@ enum class SensorSubType {
   Pinhole = 1,
   Orthographic = 2,
 };
-
 
 // Specifies the configuration parameters of a sensor
 struct SensorSpec {
@@ -156,7 +154,9 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
   void clear();
 
   sensor::Sensor& get(const std::string& uuid) const;
-  std::map<std::string, std::reference_wrapper<sensor::Sensor>>& getSensors() { return sensors_; }
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>>& getSensors() {
+    return sensors_;
+  }
 
  protected:
   std::map<std::string, std::reference_wrapper<sensor::Sensor>> sensors_;

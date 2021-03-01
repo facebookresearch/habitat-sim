@@ -1089,8 +1089,8 @@ agent::Agent::ptr Simulator::addAgent(
   // constructor of Agent)
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
-  esp::sensor::CameraSensor::create(agentNode, std::dynamic_pointer_cast<CameraSensorSpec>(agentConfig.sensorSpecifications[0]));
-  //esp::sensor::SensorFactory::createSensors(agentNode, agentConfig.sensorSpecifications);
+  esp::sensor::SensorFactory::createSensors(agentNode,
+                                            agentConfig.sensorSpecifications);
   agent::AgentState state;
   sampleRandomAgentState(state);
   ag->setInitialState(state);
@@ -1098,7 +1098,8 @@ agent::Agent::ptr Simulator::addAgent(
   // Add a RenderTarget to each of the agent's sensors
   for (auto& it : ag->getSensorSuite().getSensors()) {
     if (it.second.get().isVisualSensor()) {
-      sensor::VisualSensor& sensor = static_cast<sensor::VisualSensor&>(it.second.get());
+      sensor::VisualSensor& sensor =
+          static_cast<sensor::VisualSensor&>(it.second.get());
       renderer_->bindRenderTarget(sensor);
     }
   }
@@ -1130,8 +1131,7 @@ esp::sensor::Sensor& Simulator::addSensorToObject(
     const esp::sensor::SensorSpec::ptr& sensorSpec) {
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
   esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
-  esp::sensor::SensorFactory::createSensors(objectNode,
-                                                sensorSpecifications);
+  esp::sensor::SensorFactory::createSensors(objectNode, sensorSpecifications);
   return objectNode.getNodeSensorSuite().get(sensorSpec->uuid);
 }
 
@@ -1172,8 +1172,7 @@ bool Simulator::drawObservation(const int agentId,
 
   if (ag != nullptr) {
     sensor::Sensor& sensor = ag->getSensorSuite().get(sensorId);
-      return static_cast<sensor::VisualSensor&>(sensor)
-          .drawObservation(*this);
+    return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
   }
   return false;
 }
@@ -1183,7 +1182,8 @@ bool Simulator::getAgentObservation(const int agentId,
                                     sensor::Observation& observation) {
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    return ag->getSensorSuite().get(sensorId).getObservation(*this, observation);
+    return ag->getSensorSuite().get(sensorId).getObservation(*this,
+                                                             observation);
   }
   return false;
 }

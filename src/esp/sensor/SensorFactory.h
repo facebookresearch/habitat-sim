@@ -11,14 +11,14 @@ class SensorFactory {
  public:
   /**
    * @brief Static method to initialize SensorSuite of Sensors
-   * @param[in] node SceneNode of SensorSuite to create child SceneNodes and attach sensors to
-   * @param[in] sensorSetup SensorSetup a vector of SensorSpec::ptr defining specs for each
-   * sensor
+   * @param[in] node SceneNode of SensorSuite to create child SceneNodes and
+   * attach sensors to
+   * @param[in] sensorSetup SensorSetup a vector of SensorSpec::ptr defining
+   * specs for each sensor
    *
    */
-  static void createSensors(
-      scene::SceneNode& node,
-      const sensor::SensorSetup& sensorSetup);
+  static void createSensors(scene::SceneNode& node,
+                            const sensor::SensorSetup& sensorSetup);
 };
 }  // namespace sensor
 }  // namespace esp

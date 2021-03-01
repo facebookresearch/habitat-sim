@@ -12,7 +12,7 @@ namespace esp {
 namespace scene {
 
 SceneNode::SceneNode(SceneNode& parent)
-    : Mn::SceneGraph::AbstractFeature3D{*this}{
+    : Mn::SceneGraph::AbstractFeature3D{*this} {
   setParent(&parent);
   setId(parent.getId());
   setCachedTransformations(Mn::SceneGraph::CachedTransformation::Absolute);
