@@ -1516,7 +1516,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
 
 gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
-    int textureBaseIndex) {
+    int textureBaseIndex) const {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -1557,7 +1557,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
 
 gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
-    int textureBaseIndex) {
+    int textureBaseIndex) const {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -2201,7 +2201,7 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
 bool ResourceManager::outputMeshMetaDataToObj(
     const std::string& MeshMetaDataFile,
     const std::string& new_filename,
-    const std::string& filepath) {
+    const std::string& filepath) const {
   bool success = Cr::Utility::Directory::mkpath(filepath);
 
   const MeshMetaData& metaData = getMeshMetaData(MeshMetaDataFile);
@@ -2246,7 +2246,8 @@ bool ResourceManager::outputMeshMetaDataToObj(
   return success;
 }
 
-bool ResourceManager::isAssetDataRegistered(const std::string& resourceName) {
+bool ResourceManager::isAssetDataRegistered(
+    const std::string& resourceName) const {
   return (resourceDict_.count(resourceName) > 0);
 }
 

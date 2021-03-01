@@ -352,7 +352,7 @@ class ResourceManager {
    */
   bool outputMeshMetaDataToObj(const std::string& filename,
                                const std::string& new_filename,
-                               const std::string& filepath);
+                               const std::string& filepath) const;
 
   /**
    * @brief Returns the number of resources registered under a given resource
@@ -360,7 +360,7 @@ class ResourceManager {
    *
    * @param resourceName The name of the resource.
    */
-  bool isAssetDataRegistered(const std::string& resourceName);
+  bool isAssetDataRegistered(const std::string& resourceName) const;
 
 #ifdef ESP_BUILD_WITH_VHACD
   /**
@@ -692,7 +692,7 @@ class ResourceManager {
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
       const Mn::Trade::PhongMaterialData& material,
-      int textureBaseIndex);
+      int textureBaseIndex) const;
 
   /**
    * @brief Build a @ref PbrMaterialData for use with PBR shading
@@ -704,7 +704,7 @@ class ResourceManager {
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
       const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
-      int textureBaseIndex);
+      int textureBaseIndex) const;
 
   /**
    * @brief Load a mesh describing some scene asset based on the passed
