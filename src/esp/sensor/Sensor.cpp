@@ -22,7 +22,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   node.getSubtreeSensorSuite().add(*this);
   // Traverse up to root node and add sensor to every subtreeSensorSuite
   auto parent = node.parent();
-  while(parent != nullptr) {
+  while(parent->parent() != nullptr) {
     static_cast<scene::SceneNode&>(*parent).getSubtreeSensorSuite().add(*this);
     parent = parent->parent();
   }
@@ -35,7 +35,7 @@ Sensor::~Sensor() {
   node().getSubtreeSensorSuite().remove(*this);
   // Traverse up to root node and remove sensor from every subtreeSensorSuite
   auto parent = node().parent();
-  while(parent != nullptr) {
+  while(parent->parent() != nullptr) {
     static_cast<scene::SceneNode&>(*parent).getSubtreeSensorSuite().remove(*this);
     parent = parent->parent();
   }
@@ -56,9 +56,7 @@ void Sensor::setTransformationFromSpec() {
 }
 
 SensorSuite::SensorSuite(scene::SceneNode& node)
-    : Magnum::SceneGraph::AbstractFeature3D{node} {
-  node.setType(scene::SceneNodeType::SUITE);
-}
+    : Magnum::SceneGraph::AbstractFeature3D{node} {}
 
 void SensorSuite::add(sensor::Sensor& sensor) {
   const std::string uuid = sensor.specification()->uuid;
@@ -72,7 +70,8 @@ void SensorSuite::merge(SensorSuite& sensorSuite) {
 
 void SensorSuite::remove(sensor::Sensor& sensor) {
   const std::string uuid = sensor.specification()->uuid;
-  sensors_.erase(uuid);
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>>::iterator it = sensors_.find(uuid);
+  sensors_.erase(it);
 }
 
 sensor::Sensor& SensorSuite::get(const std::string& uuid) const{

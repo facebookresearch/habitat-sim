@@ -124,7 +124,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   scene::ObjectControls::ptr getControls() { return controls_; }
 
-  sensor::SensorSuite& getSensorSuite() { return node().getNodeSensorSuite(); }
+  sensor::SensorSuite& getSensorSuite() { return node().getSubtreeSensorSuite(); }
 
   const AgentConfiguration& getConfig() const { return configuration_; }
   AgentConfiguration& getConfig() { return configuration_; }
