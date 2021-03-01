@@ -170,23 +170,21 @@ conda create -n habitat python=3.6 cmake=3.14.0
 conda activate habitat
 pip install -r requirements.txt
 ```
-
+ 
 Next, pick one of the options below depending on your system/needs: 
 
 1. To install habitat-sim on machines with an attached display:
-  ```bash
-  conda install habitat-sim -c conda-forge -c aihabitat
-  ```
-
-1. To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs:
-  ```
-  conda install habitat-sim headless -c conda-forge -c aihabitat
-  ```
-
-1. To install habitat-sim with bullet physics [on a headless system]
-  ```
-  conda install habitat-sim withbullet [headless] -c conda-forge -c aihabitat
-  ```
+   ```bash
+     conda install habitat-sim -c conda-forge -c aihabitat
+   ```
+2. To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs:
+   ```
+   conda install habitat-sim headless -c conda-forge -c aihabitat
+   ```
+3. To install habitat-sim with bullet physics [on a headless system]
+   ```
+   conda install habitat-sim withbullet [headless] -c conda-forge -c aihabitat
+   ```
   
 Done. 
 
