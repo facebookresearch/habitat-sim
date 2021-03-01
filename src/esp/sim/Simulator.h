@@ -731,7 +731,7 @@ class Simulator {
    */
   esp::sensor::Sensor::ptr addSensorToObject(
       const int objectId,
-      esp::sensor::SensorSpec::ptr& sensorSpec);
+      const esp::sensor::SensorSpec::ptr& sensorSpec);
 
   /**
    * @brief Displays observations on default frame buffer for a

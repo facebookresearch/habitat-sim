@@ -1128,7 +1128,7 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
 
 esp::sensor::Sensor::ptr Simulator::addSensorToObject(
     const int objectId,
-    esp::sensor::SensorSpec::ptr& sensorSpec) {
+    const esp::sensor::SensorSpec::ptr& sensorSpec) {
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
   esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
   esp::sensor::SensorSuite sensorSuite =
