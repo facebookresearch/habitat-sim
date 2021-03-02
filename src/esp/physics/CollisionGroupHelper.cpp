@@ -29,10 +29,6 @@ int CollisionGroupHelper::getMaskForGroup(CollisionGroup group) {
       return -1 & ~int(CollisionGroup::Noncollidable);
 
     case CollisionGroup::Static:
-      // everything but [kinematic, static]
-      return int(-1) & ~int(CollisionGroup::Kinematic) &
-             ~int(CollisionGroup::Static) & ~int(CollisionGroup::Noncollidable);
-
     case CollisionGroup::Kinematic:
       // everything but [kinematic, static]
       return int(-1) & ~int(CollisionGroup::Kinematic) &
