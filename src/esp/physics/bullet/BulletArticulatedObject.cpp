@@ -153,7 +153,10 @@ bool BulletArticulatedObject::initializeFromURDF(
       auto* col = mb->getBaseCollider();
       if (col->getBroadphaseHandle()->m_collisionFilterGroup ==
           int(CollisionGroup::Noncollidable)) {
-        bFixedObjectShape_.get()->addChildShape(col->getWorldTransform(),
+        // The collider child is an aligned compound or single shape
+        btTransform identity;
+        identity.setIdentity();
+        bFixedObjectShape_.get()->addChildShape(identity,
                                                 col->getCollisionShape());
       }
 
@@ -507,14 +510,9 @@ void BulletArticulatedObject::setMotionType(MotionType mt) {
   if (mt == motionType_) {
     return;
   }
-
   if (mt == MotionType::DYNAMIC) {
-    // TODO: add support for adding/removing the fixed rigid body here if/when
-    // this API is needed.
-    ASSERT(!bFixedObjectRigidBody_);
     bWorld_->addMultiBody(btMultiBody_.get());
   } else if (mt == MotionType::KINEMATIC) {
-    ASSERT(!bFixedObjectRigidBody_);
     bWorld_->removeMultiBody(btMultiBody_.get());
   } else {
     return;
