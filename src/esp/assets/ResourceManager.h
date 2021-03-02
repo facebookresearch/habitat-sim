@@ -342,7 +342,7 @@ class ResourceManager {
    * @return The unified @ref MeshData object for the asset.
    */
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
-      const std::string& filename);
+      const std::string& filename) const;
 
   /**
    * @brief Converts a MeshMetaData into a obj file.
@@ -353,7 +353,7 @@ class ResourceManager {
    */
   bool outputMeshMetaDataToObj(const std::string& filename,
                                const std::string& new_filename,
-                               const std::string& filepath);
+                               const std::string& filepath) const;
 
   /**
    * @brief Returns the number of resources registered under a given resource
@@ -361,7 +361,7 @@ class ResourceManager {
    *
    * @param resourceName The name of the resource.
    */
-  bool isAssetDataRegistered(const std::string& resourceName);
+  bool isAssetDataRegistered(const std::string& resourceName) const;
 
 #ifdef ESP_BUILD_WITH_VHACD
   /**
@@ -668,7 +668,7 @@ class ResourceManager {
    * @brief Recursively build a unified @ref MeshData from loaded assets via a
    * tree of @ref MeshTransformNode.
    *
-   * @param mesh The @ref MeshData being constructed.
+   * @param[in,out] mesh The @ref MeshData being constructed.
    * @param metaData The @ref MeshMetaData for the object heirarchy being
    * joined.
    * @param node The current @ref MeshTransformNode in the recursion.
@@ -678,7 +678,7 @@ class ResourceManager {
   void joinHeirarchy(MeshData& mesh,
                      const MeshMetaData& metaData,
                      const MeshTransformNode& node,
-                     const Mn::Matrix4& transformFromParentToWorld);
+                     const Mn::Matrix4& transformFromParentToWorld) const;
 
   /**
    * @brief Load materials from importer into assets, and update metaData for
@@ -713,7 +713,7 @@ class ResourceManager {
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
       const Mn::Trade::PhongMaterialData& material,
-      int textureBaseIndex);
+      int textureBaseIndex) const;
 
   /**
    * @brief Build a @ref PbrMaterialData for use with PBR shading
@@ -725,7 +725,7 @@ class ResourceManager {
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
       const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
-      int textureBaseIndex);
+      int textureBaseIndex) const;
 
   /**
    * @brief Load a mesh describing some scene asset based on the passed
