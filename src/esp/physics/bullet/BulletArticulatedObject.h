@@ -175,6 +175,9 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
+  std::unique_ptr<btCompoundShape> bFixedObjectShape_;
+  std::unique_ptr<btRigidBody> bFixedObjectRigidBody_;
+
   ESP_SMART_POINTERS(BulletArticulatedObject)
 };
 

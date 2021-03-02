@@ -317,8 +317,22 @@ void BulletRigidObject::syncPose() {
 }  // syncPose
 
 std::string BulletRigidObject::getCollisionDebugName() {
-  return "RigidObject, " + initializationAttributes_->getHandle() + ", id " +
-         std::to_string(objectId_);
+  // extract a concise name from the handle by trimming directories and file
+  // extensions
+  // TODO: test this for missing '/' or '.'
+  const auto& handle = initializationAttributes_->getHandle();
+  auto start = handle.rfind('/');
+  if (start == std::string::npos) {
+    start = 0;
+  } else {
+    start++;
+  }
+  auto end = handle.find('.', start);
+  if (end == std::string::npos) {
+    end = handle.length();
+  }
+  auto adjustedHandle = handle.substr(start, end - start);
+  return "RigidObject, " + adjustedHandle + ", id " + std::to_string(objectId_);
 }
 
 void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
@@ -381,6 +395,8 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
+  BulletDebugManager::get().mapCollisionObjectTo(bObjectRigidBody_.get(),
+                                                 getCollisionDebugName());
 
   if (mt == MotionType::KINEMATIC) {
     bObjectRigidBody_->setCollisionFlags(

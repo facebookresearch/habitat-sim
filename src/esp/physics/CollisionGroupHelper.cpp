@@ -26,36 +26,45 @@ int CollisionGroupHelper::getMaskForGroup(CollisionGroup group) {
   switch (group) {
     case CollisionGroup::Default:
       // everything
-      return -1;
+      return -1 & ~int(CollisionGroup::Noncollidable);
 
     case CollisionGroup::Static:
-      // everything but kinematic
-      return int(-1) & ~int(CollisionGroup::Kinematic);
+      // everything but [kinematic, static]
+      return int(-1) & ~int(CollisionGroup::Kinematic) &
+             ~int(CollisionGroup::Static) & ~int(CollisionGroup::Noncollidable);
 
     case CollisionGroup::Kinematic:
-      // everything but static
-      return int(-1) & ~int(CollisionGroup::Static);
+      // everything but [kinematic, static]
+      return int(-1) & ~int(CollisionGroup::Kinematic) &
+             ~int(CollisionGroup::Static) & ~int(CollisionGroup::Noncollidable);
 
     case CollisionGroup::FreeObject:
       // everything
-      return int(-1);
+      return int(-1) & ~int(CollisionGroup::Noncollidable);
 
     case CollisionGroup::GraspedObject:
       // everything but robot
-      return int(-1) & ~int(CollisionGroup::Robot);
+      return int(-1) & ~int(CollisionGroup::Robot) &
+             ~int(CollisionGroup::Noncollidable);
 
     case CollisionGroup::Robot:
       // everything but grasped object
-      return int(-1) & ~int(CollisionGroup::GraspedObject);
+      return int(-1) & ~int(CollisionGroup::GraspedObject) &
+             ~int(CollisionGroup::Noncollidable);
 
     case CollisionGroup::EeMargin:
       // everything but grasped object or the robot
-      return int(-1) &
-             ~(int(CollisionGroup::GraspedObject) | int(CollisionGroup::Robot));
+      return int(-1) & ~int(CollisionGroup::GraspedObject) &
+             ~int(CollisionGroup::Robot) & ~int(CollisionGroup::Noncollidable);
 
     case CollisionGroup::SelObj:
       // everything but the ee margin
-      return int(-1) & ~(int(CollisionGroup::EeMargin));
+      return int(-1) & ~(int(CollisionGroup::EeMargin)) &
+             ~int(CollisionGroup::Noncollidable);
+
+    case CollisionGroup::Noncollidable:
+      // nothing
+      return 0;
 
     default:
       CORRADE_ASSERT(

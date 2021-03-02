@@ -6,6 +6,8 @@
 
 #include "BulletDebugManager.h"
 
+#include "esp/core/logging.h"
+
 #include <sstream>
 
 namespace esp {
@@ -76,19 +78,35 @@ std::string BulletDebugManager::getDebugStringForCollisionObject(
   //  name = name.substr(name.size() - maxLen, maxLen);
   //}
 
-  std::string result =
-      name + ", act state " + std::to_string(colObj->getActivationState());
+  /*
+  #define ACTIVE_TAG 1
+  #define ISLAND_SLEEPING 2
+  #define WANTS_DEACTIVATION 3
+  #define DISABLE_DEACTIVATION 4
+  #define DISABLE_SIMULATION 5
+  */
+  const char* activationStateNames[] = {"invalid",
+                                        "active",
+                                        "sleeping",
+                                        "wants_deactivation",
+                                        "disable_deactivation",
+                                        "disable_simulation"};
+  std::stringstream result;
+
+  result << static_cast<const void*>(colObj) << " " << name << ", "
+         << activationStateNames[colObj->getActivationState()];
 
   const auto* broadphaseHandle = colObj->getBroadphaseHandle();
   if (broadphaseHandle) {
-    result +=
-        ", group " + std::to_string(broadphaseHandle->m_collisionFilterGroup) +
-        ", mask " + std::to_string(broadphaseHandle->m_collisionFilterMask);
+    result << ", group "
+           << std::to_string(broadphaseHandle->m_collisionFilterGroup) +
+                  ", mask "
+           << std::to_string(broadphaseHandle->m_collisionFilterMask);
   } else {
     // this probably means the object hasn't been added to the bullet world
-    result += ", no broadphase handle";
+    result << ", no broadphase handle";
   }
-  return result;
+  return result.str();
 }
 
 std::string BulletDebugManager::getStepCollisionSummary(
@@ -112,6 +130,56 @@ std::string BulletDebugManager::getStepCollisionSummary(
   }
 
   return s.str();
+}
+
+std::string BulletDebugManager::getCollisionFilteringSummary(bool doVerbose) {
+  std::stringstream s2;
+  for (const auto& pair0 : collisionObjectToDebugName_) {
+    const btCollisionObject* colObj0 = pair0.first;
+    s2 << getDebugStringForCollisionObject(colObj0) << std::endl;
+  }
+
+  if (doVerbose) {
+    for (const auto& pair0 : collisionObjectToDebugName_) {
+      std::stringstream s;
+      const btCollisionObject* colObj0 = pair0.first;
+      s << getDebugStringForCollisionObject(colObj0)
+        << " may collide with:" << std::endl;
+
+      bool foundAny = false;
+      for (const auto& pair1 : collisionObjectToDebugName_) {
+        const btCollisionObject* colObj1 = pair1.first;
+        const std::string& name1 = pair1.second;
+        if (colObj1 == colObj0) {
+          continue;
+        }
+
+        const auto* broadphaseHandle0 = colObj0->getBroadphaseHandle();
+        const auto* broadphaseHandle1 = colObj1->getBroadphaseHandle();
+
+        // logic copied from
+        // btHashedOverlappingPairCache::needsBroadphaseCollision
+        bool collides = (broadphaseHandle0->m_collisionFilterGroup &
+                         broadphaseHandle1->m_collisionFilterMask) != 0;
+        collides = collides && (broadphaseHandle1->m_collisionFilterGroup &
+                                broadphaseHandle0->m_collisionFilterMask);
+
+        if (collides) {
+          s << "  " << name1 << std::endl;
+          foundAny = true;
+        }
+      }
+
+      if (!foundAny) {
+        s << "  (none)" << std::endl;
+      }
+
+      LOG(INFO) << s.str();
+    }
+  }
+
+  std::string tmp = s2.str();
+  return tmp;
 }
 
 }  // namespace physics
