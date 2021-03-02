@@ -44,6 +44,8 @@ class URDFImporter {
   explicit URDFImporter(esp::assets::ResourceManager& resourceManager)
       : resourceManager_(resourceManager){};
 
+  virtual ~URDFImporter() = default;
+
   /**
    * @brief Sets the activeModel_ for the importer. If new or forceReload, parse
    * a URDF file and cache the resulting model. Note: when applying uniform

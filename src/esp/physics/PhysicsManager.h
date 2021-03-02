@@ -1193,8 +1193,9 @@ class PhysicsManager {
   /**
    * @brief Manually set the collision group for an object.
    */
-  virtual void overrideCollisionGroup(const int physObjectID,
-                                      CollisionGroup group) const {}
+  virtual void overrideCollisionGroup(CORRADE_UNUSED const int physObjectID,
+                                      CORRADE_UNUSED CollisionGroup
+                                          group) const {}
 
   /**
    * @brief Set an object to collidable or not.

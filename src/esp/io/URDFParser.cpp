@@ -534,7 +534,7 @@ bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
   if (rpy_str != nullptr) {
     Mn::Vector3 rpy;
     if (parseVector3(rpy, std::string(rpy_str))) {
-      double phi, the, psi;
+      double phi, the, psi = 0.0;
       double roll = rpy[0];
       double pitch = rpy[1];
       double yaw = rpy[2];

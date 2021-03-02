@@ -81,7 +81,7 @@ class ArticulatedLink : public RigidBase {
   ArticulatedLink(scene::SceneNode* bodyNode,
                   int index,
                   const assets::ResourceManager& resMgr)
-      : mbIndex_(index), RigidBase(bodyNode, resMgr){};
+      : RigidBase(bodyNode, resMgr), mbIndex_(index){};
 
   ~ArticulatedLink() override = default;
 

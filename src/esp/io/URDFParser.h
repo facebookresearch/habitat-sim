@@ -113,8 +113,8 @@ struct Inertia {
   Magnum::Matrix4 m_linkLocalFrame{false};
   bool m_hasLinkLocalFrame;
 
-  double m_mass{0.f};
-  double m_ixx, m_ixy, m_ixz, m_iyy, m_iyz, m_izz = 0.f;
+  double m_mass{0.0};
+  double m_ixx, m_ixy, m_ixz, m_iyy, m_iyz, m_izz = 0.0;
 
   Inertia() = default;
 };
@@ -262,8 +262,8 @@ class Model {
           scaleCorrection;
       // scale prismatic joint limits
       if (joint.second->m_type == PrismaticJoint) {
-        joint.second->m_lowerLimit *= scaleCorrection;
-        joint.second->m_upperLimit *= scaleCorrection;
+        joint.second->m_lowerLimit *= double(scaleCorrection);
+        joint.second->m_upperLimit *= double(scaleCorrection);
       }
     }
 
@@ -278,7 +278,7 @@ class Model {
       // do nothing
       return;
     }
-    float massScaleCorrection = massScaling / m_massScaling;
+    double massScaleCorrection = massScaling / m_massScaling;
 
     // Only need to scale the per-link mass values. These will be further
     // processed during import.
@@ -312,12 +312,12 @@ class Model {
         shape.m_geometry.m_boxSize *= scale;
       } break;
       case GEOM_SPHERE: {
-        shape.m_geometry.m_sphereRadius *= scale;
+        shape.m_geometry.m_sphereRadius *= double(scale);
       } break;
       case GEOM_CAPSULE:
       case GEOM_CYLINDER: {
-        shape.m_geometry.m_capsuleRadius *= scale;
-        shape.m_geometry.m_capsuleHeight *= scale;
+        shape.m_geometry.m_capsuleRadius *= double(scale);
+        shape.m_geometry.m_capsuleHeight *= double(scale);
       } break;
       default:
         break;

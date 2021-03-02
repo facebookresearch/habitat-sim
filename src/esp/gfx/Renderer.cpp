@@ -40,7 +40,7 @@ namespace gfx {
 #if !defined(CORRADE_TARGET_EMSCRIPTEN)
 
 struct BackgroundRenderThread {
-  BackgroundRenderThread(WindowlessContext* context)
+  explicit BackgroundRenderThread(WindowlessContext* context)
       : context_{context}, done_{0}, sgLock_{0}, start_{0} {
     context_->release();
     t = std::thread(&BackgroundRenderThread::run, this);
