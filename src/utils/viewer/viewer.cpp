@@ -1623,7 +1623,9 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         // TODO: get this info from link?
         for (auto aoId : simulator_->getExistingArticulatedObjectIDs()) {
           if (aoId == hitInfo.objectId) {
-            // TODO: grabbed the base link, do something with this
+            // grabbed the base link
+            hitArticulatedObject = true;
+            hitArticulatedObjectId = aoId;
           } else if (simulator_->getObjectIdsToLinkIds(aoId).count(
                          hitInfo.objectId) > 0) {
             hitArticulatedObject = true;
@@ -1642,12 +1644,16 @@ void Viewer::mousePressEvent(MouseEvent& event) {
                       .length(),
                   hitArticulatedObjectId, simulator_.get());
             } else if (event.button() == MouseEvent::Button::Left) {
-              mouseGrabber_ = std::make_unique<MouseLinkGrabber>(
-                  hitInfo.point,
-                  (hitInfo.point - renderCamera_->node().absoluteTranslation())
-                      .length(),
-                  hitArticulatedObjectId, hitArticulatedLinkIndex,
-                  simulator_.get());
+              if (hitArticulatedLinkIndex != esp::ID_UNDEFINED) {
+                // TODO: handle constraint to base link
+                mouseGrabber_ = std::make_unique<MouseLinkGrabber>(
+                    hitInfo.point,
+                    (hitInfo.point -
+                     renderCamera_->node().absoluteTranslation())
+                        .length(),
+                    hitArticulatedObjectId, hitArticulatedLinkIndex,
+                    simulator_.get());
+              }
             }
           } else {
             if (event.button() == MouseEvent::Button::Right) {
