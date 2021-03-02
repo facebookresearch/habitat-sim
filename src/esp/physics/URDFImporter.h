@@ -41,8 +41,10 @@ enum ConvertURDFFlags {
  */
 class URDFImporter {
  public:
-  URDFImporter(esp::assets::ResourceManager& resourceManager)
+  explicit URDFImporter(esp::assets::ResourceManager& resourceManager)
       : resourceManager_(resourceManager){};
+
+  virtual ~URDFImporter() = default;
 
   /**
    * @brief Sets the activeModel_ for the importer. If new or forceReload, parse
