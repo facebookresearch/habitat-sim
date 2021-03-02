@@ -231,7 +231,7 @@ class Model {
     return nullptr;
   }
 
-  Model() : m_overrideFixedBase(false) {}
+  Model() = default;
 
   //! Set global scaling and re-scale an existing model if already parsed.
   void setGlobalScaling(float scaling) {

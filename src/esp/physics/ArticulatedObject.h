@@ -83,7 +83,7 @@ class ArticulatedLink : public RigidBase {
                   const assets::ResourceManager& resMgr)
       : mbIndex_(index), RigidBase(bodyNode, resMgr){};
 
-  virtual ~ArticulatedLink() override = default;
+  ~ArticulatedLink() override = default;
 
   /**
    * @brief Get the scene node being attached to.
@@ -227,7 +227,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   ArticulatedObject(scene::SceneNode* rootNode, assets::ResourceManager& resMgr)
       : Magnum::SceneGraph::AbstractFeature3D(*rootNode), resMgr_(resMgr){};
 
-  virtual ~ArticulatedObject() override {
+  ~ArticulatedObject() override {
     // clear links and delete their SceneNodes
     std::vector<scene::SceneNode*> linkNodes;
     for (auto& link : links_) {
