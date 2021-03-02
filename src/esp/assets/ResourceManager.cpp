@@ -81,6 +81,8 @@ using metadata::managers::StageAttributesManager;
 
 namespace assets {
 
+int ResourceManager::mipLevelsToSkip = 0;
+
 ResourceManager::ResourceManager(
     metadata::MetadataMediator::ptr& _metadataMediator,
     Flags _flags)
@@ -1756,22 +1758,32 @@ void ResourceManager::loadTextures(Importer& importer,
         format = Mn::GL::textureFormat(image->format());
       }
 
+      int adjustedLevel = level - mipLevelsToSkip;
+      int adjustedLevelCount = levelCount - mipLevelsToSkip;
+
       // For the very first level, allocate the texture
       if (level == 0) {
         // If there is just one level and the image is not compressed, we'll
         // generate mips ourselves
         if (levelCount == 1 && !image->isCompressed()) {
+          ASSERT(mipLevelsToSkip == 0);
           texture.setStorage(Mn::Math::log2(image->size().max()) + 1, format,
                              image->size());
           generateMipmap = true;
-        } else
-          texture.setStorage(levelCount, format, image->size());
+        } else {
+          auto adjustedSize = image->size() / (1 << mipLevelsToSkip);
+          texture.setStorage(adjustedLevelCount, format, adjustedSize);
+        }
+      }
+
+      if (adjustedLevel < 0) {
+        continue;
       }
 
       if (image->isCompressed())
-        texture.setCompressedSubImage(level, {}, *image);
+        texture.setCompressedSubImage(adjustedLevel, {}, *image);
       else
-        texture.setSubImage(level, {}, *image);
+        texture.setSubImage(adjustedLevel, {}, *image);
     }
 
     // Mip level loading failed, fail the whole texture

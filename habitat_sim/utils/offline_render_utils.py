@@ -106,7 +106,13 @@ def write_replay_file(glb_filepath, camera_matrix_per_observation, output_filepa
         text_file.write(replay_json)
 
 
-def create_sim(resolution_x=1024, resolution_y=768, hfov=90, do_depth=False):
+def create_sim(
+    resolution_x=1024,
+    resolution_y=768,
+    hfov=90,
+    do_depth=False,
+    texture_downsample_factor=0,
+):
 
     agent_cfg = AgentConfiguration()
 
@@ -137,6 +143,8 @@ def create_sim(resolution_x=1024, resolution_y=768, hfov=90, do_depth=False):
         [agent_cfg],
     )
 
+    playback_cfg.sim_cfg.texture_downsample_factor = texture_downsample_factor
+
     sim = habitat_sim.Simulator(playback_cfg)
     agent_state = habitat_sim.AgentState()
     sim.initialize_agent(0, agent_state)
@@ -165,8 +173,9 @@ def render_observations_from_replay(
         user_transform_pair = player.get_user_transform("camera")
         if user_transform_pair:
             (sensor_node.translation, sensor_node.rotation) = user_transform_pair
-            depth_sensor_node.translation = sensor_node.translation
-            depth_sensor_node.rotation = sensor_node.rotation
+            if do_depth:
+                depth_sensor_node.translation = sensor_node.translation
+                depth_sensor_node.rotation = sensor_node.rotation
             observation = sim.get_sensor_observations()
 
             save_rgb_image(
@@ -197,44 +206,35 @@ def demo():
     #
     # The use of a Habitat replay file is slightly overkill, but it'll help us extend to more complex scenes (multiple models) and other renderers (Unity, Blender) in the future.
 
+    # scene_filepath = "/data/projects/matterport/v1/tasks/mp3d_habitat/mp3d/2t7WUuJeko7/2t7WUuJeko7.glb"
+    mp3d_scene_name = "Z6MFQCViBuw"
+    scene_filepath = (
+        "/data/projects/matterport/v1/tasks/mp3d_habitat/mp3d/"
+        + mp3d_scene_name
+        + "/"
+        + mp3d_scene_name
+        + ".glb"
+    )
+    resolution_x = 600
+    resolution_y = 600
+    hfov = 90
+    rotation_quat = mn.Quaternion(
+        mn.Vector3(-0.965926, 1.58481e-17, -0.258819), -5.91459e-17
+    )
+    translation = [8.38665, 1.442450000000001, -13.7832]
+    # 0 = default
+    # 1 = 2x downsample (e.g. 256x256 gets downsampled to 128x128)
+    # 2 = 4x downsample
+    texture_downsample_factor = 4
+
+    output_image_name = mp3d_scene_name + "_downsample" + str(texture_downsample_factor)
+
+    do_depth = False  # also write grayscale depth image?
+
     # list of camera transform matrices (camera position/rotation), one per render
     camera_matrices = []
 
-    # camera transform #1: camera looks along negative z direction at origin
-    camera_matrices.append(
-        [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0]
-    )
-
-    # camera transform #2: 45-degree rotation about z axis and translation=[0.1, 0.2, 0.3]
-    sqrt_of_2 = 0.70710678118
-    camera_matrices.append(
-        [
-            sqrt_of_2,
-            sqrt_of_2,
-            0.0,
-            0.0,
-            -sqrt_of_2,
-            sqrt_of_2,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.1,
-            0.2,
-            0.3,
-            1.0,
-        ]
-    )
-
-    # camera transform #3: derived from a hard-coded rotation quaternion and translation
-    rotation_quat = mn.Quaternion(
-        mn.Vector3(0.786937415599823, -0.10069267451763153, -0.603838324546814),
-        -0.0772642120718956,
-    )
     rotation_mat33 = rotation_quat.to_matrix()
-    translation = [-0.14166666567325593, -0.0, 1.0]
     mat44_as_list = [
         rotation_mat33[0][0],
         rotation_mat33[0][1],
@@ -255,22 +255,30 @@ def demo():
     ]
     camera_matrices.append(mat44_as_list)
 
+    replay_filepath = "temp.replay.json"
+
     # write a Habitat replay file. This format stores a reference to our model plus
     # camera transforms (stored as Vector3 translation plus Quaternion rotation).
     write_replay_file(
         # "/data/projects/habitat-sim3/data/scene_datasets/habitat-test-scenes/apartment_1.glb",
-        "/data/projects/habitat-sim3/data/test_assets/objects/sphere.glb",
+        scene_filepath,
+        # "/data/projects/p-viz-plan/orp/start_data/frl_apartment_stage_pvizplan_full.glb",
+        # "/data/projects/habitat-sim3/data/test_assets/objects/sphere.glb",
         camera_matrices,
-        "sphere_replay.json",
+        replay_filepath,
     )
-
-    do_depth = True  # also write grayscale depth image?
 
     # camera intrinsics: resolution and horizontal FOV (aspect ratio and vertical FOV
     # are derived from resolution)
-    sim = create_sim(resolution_x=512, resolution_y=256, hfov=90, do_depth=do_depth)
+    sim = create_sim(
+        resolution_x=resolution_x,
+        resolution_y=resolution_y,
+        hfov=hfov,
+        do_depth=do_depth,
+        texture_downsample_factor=texture_downsample_factor,
+    )
 
-    render_observations_from_replay(sim, "my_replay.json", "my_render", do_depth)
+    render_observations_from_replay(sim, replay_filepath, output_image_name, do_depth)
 
 
 if __name__ == "__main__":

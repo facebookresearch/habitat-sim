@@ -37,6 +37,8 @@ struct SimulatorConfiguration {
    * @brief todo
    */
   bool enableGfxReplaySave = false;
+
+  int textureDownsampleFactor = 0;
   /**
    * @brief Whether or not to load the semantic mesh
    */

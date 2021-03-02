@@ -52,6 +52,10 @@ void initSimBindings(py::module& m) {
           "enable_gfx_replay_save",
           &SimulatorConfiguration::enableGfxReplaySave,
           R"(Enable replay recording. See sim.gfx_replay.save_keyframe.)")
+      .def_readwrite(
+          "texture_downsample_factor",
+          &SimulatorConfiguration::textureDownsampleFactor,
+          R"(Set to 0 by default. Set to 1 to get 2x downsampled textures. 2 for 4x, etc.)")
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile)
       .def_readwrite(

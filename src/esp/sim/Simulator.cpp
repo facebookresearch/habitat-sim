@@ -100,6 +100,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     resourceManager_->setMetadataMediator(metadataMediator_);
   }
 
+  resourceManager_->mipLevelsToSkip = cfg.textureDownsampleFactor;
+
   if (!sceneManager_) {
     sceneManager_ = scene::SceneManager::create_unique();
   }
