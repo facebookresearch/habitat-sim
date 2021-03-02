@@ -94,24 +94,26 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     return ID_UNDEFINED;
   }
 
+  int articulatedObjectID_ = allocateObjectID();
+
   // parse succeeded, attempt to create the articulated object
   scene::SceneNode* objectNode = &staticStageObject_->node().createChild();
   BulletArticulatedObject::uptr articulatedObject =
       BulletArticulatedObject::create_unique(objectNode, resourceManager_,
-                                             bWorld_, collisionObjToObjIds_);
+                                             articulatedObjectID_, bWorld_,
+                                             collisionObjToObjIds_);
 
   bool objectSuccess = articulatedObject->initializeFromURDF(
       *urdfImporter_.get(), {}, drawables, physicsNode_, fixedBase);
 
   if (!objectSuccess) {
     delete objectNode;
+    deallocateObjectID(articulatedObjectID_);
     return ID_UNDEFINED;
   }
 
   // Cr::Utility::Debug() << "Articulated Link Indices: "
   //                     << articulatedObject->getLinkIds();
-
-  int articulatedObjectID_ = allocateObjectID();
 
   // allocate ids for links
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();

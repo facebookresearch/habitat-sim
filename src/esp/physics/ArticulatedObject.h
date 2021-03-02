@@ -231,8 +231,12 @@ class ArticulatedLink : public RigidBase {
  */
 class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  ArticulatedObject(scene::SceneNode* rootNode, assets::ResourceManager& resMgr)
-      : Magnum::SceneGraph::AbstractFeature3D(*rootNode), resMgr_(resMgr){};
+  ArticulatedObject(scene::SceneNode* rootNode,
+                    assets::ResourceManager& resMgr,
+                    int objectId)
+      : Magnum::SceneGraph::AbstractFeature3D(*rootNode),
+        resMgr_(resMgr),
+        objectId_(objectId){};
 
   virtual ~ArticulatedObject() {
     // clear links and delete their SceneNodes
@@ -430,6 +434,9 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   //! Reference to the ResourceManager for internal access to the object's asset
   //! data.
   assets::ResourceManager& resMgr_;
+
+  //! This ArticulatedObject's id in PhysicsManager::existingArticulatedObjects
+  int objectId_;
 
   ESP_SMART_POINTERS(ArticulatedObject)
 };

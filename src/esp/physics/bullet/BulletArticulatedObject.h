@@ -60,10 +60,12 @@ class BulletArticulatedObject : public ArticulatedObject {
   BulletArticulatedObject(
       scene::SceneNode* rootNode,
       assets::ResourceManager& resMgr,
+      int objectId,
       std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
       std::shared_ptr<std::map<const btCollisionObject*, int>>
           collisionObjToObjIds)
-      : bWorld_(std::move(bWorld)), ArticulatedObject(rootNode, resMgr) {
+      : bWorld_(std::move(bWorld)),
+        ArticulatedObject(rootNode, resMgr, objectId) {
     motionType_ = MotionType::DYNAMIC;
     collisionObjToObjIds_ = std::move(collisionObjToObjIds);
   };
