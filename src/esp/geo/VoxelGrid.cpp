@@ -1,10 +1,10 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/MeshTools/Reference.h>
-#include <Magnum/Shaders/Generic.h>
-#include <Magnum/Shaders/Phong.h>
 
 #include "VoxelGrid.h"
+#include "esp/assets/ResourceManager.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -184,6 +184,7 @@ void VoxelGrid::fillVoxelMeshData(
       }
     }
   }
+
   Mn::Debug() << "Number of filled voxels for the visual mesh: " << num_filled;
   mesh = Mn::MeshTools::owned(Mn::Trade::MeshData{
       Mn::MeshPrimitive::Triangles,
@@ -194,6 +195,39 @@ void VoxelGrid::fillVoxelMeshData(
       positions,
       {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
                                     Cr::Containers::arrayView(positions)}}});
+}
+
+void VoxelGrid::generateMeshData() {
+  std::vector<Mn::UnsignedInt> indices;
+  std::vector<Mn::Vector3> positions;
+  int num_filled = 0;
+  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+        Mn::Vector3i local_coords(i, j, k);
+        Voxel* vox = getVoxelByIndex(local_coords);
+        if (vox == nullptr)
+          continue;
+        if (vox->is_filled) {
+          num_filled++;
+          addVoxelToMeshPrimitives(positions, indices, local_coords);
+        }
+      }
+    }
+  }
+
+  Mn::Debug() << "Number of filled voxels for the visual mesh: " << num_filled;
+  mesh_ = std::make_unique<Mn::GL::Mesh>(
+      Mn::MeshTools::compile(Mn::MeshTools::owned(
+          Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
+                              {},
+                              indices,
+                              Mn::Trade::MeshIndexData{indices},
+                              {},
+                              positions,
+                              {Mn::Trade::MeshAttributeData{
+                                  Mn::Trade::MeshAttribute::Position,
+                                  Cr::Containers::arrayView(positions)}}})));
 }
 
 }  // namespace geo

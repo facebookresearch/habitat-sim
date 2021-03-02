@@ -5,7 +5,14 @@
 #include "PhysicsManager.h"
 #include "esp/assets/CollisionMeshData.h"
 
+#include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/Math/Range.h>
+#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/Shaders.h>
+#include "esp/gfx/MeshVisualizerDrawable.h"
+
+using namespace Mn::Math::Literals;
+using Magnum::Math::Literals::operator""_degf;
 
 namespace esp {
 namespace physics {
@@ -453,6 +460,27 @@ void PhysicsManager::setAngularDamping(const int physObjectID,
   existingObjects_.at(physObjectID)->setAngularDamping(angDamping);
 }
 
+void PhysicsManager::generateVoxelization(const int physObjectID,
+                                          const int resolution) {
+  /*std::string renderAssetHandle = existingObjects_.at(physObjectID)
+                                      ->getInitializationAttributes()
+                                      ->getRenderAssetHandle();
+  // std::unique_ptr<esp::assets::MeshData> objMesh =
+  //   esp::assets::MeshData::create_unique();
+  // objMesh = resourceManager_.createJoinedCollisionMesh(renderAssetHandle);
+  esp::geo::VoxelWrapper* voxelWrapper = new esp::geo::VoxelWrapper(
+      renderAssetHandle, existingObjects_.at(physObjectID)->node(),
+      resourceManager_, resolution);
+  existingObjects_.at(physObjectID)->setVoxelWrapper(voxelWrapper);*/
+  if (physObjectID == -1) {
+    staticStageObject_->generateVoxelization(resourceManager_, resolution);
+  } else {
+    assertIDValidity(physObjectID);
+    existingObjects_.at(physObjectID)
+        ->generateVoxelization(resourceManager_, resolution);
+  }
+}
+
 //============ Object Getter functions =============
 double PhysicsManager::getMass(const int physObjectID) const {
   assertIDValidity(physObjectID);
@@ -498,6 +526,15 @@ double PhysicsManager::getAngularDamping(const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getAngularDamping();
 }
+esp::geo::VoxelWrapper* PhysicsManager::getVoxelization(
+    const int physObjectID) const {
+  if (physObjectID > 0) {
+    assertIDValidity(physObjectID);
+    return existingObjects_.at(physObjectID)->getVoxelization();
+  } else {
+    return staticStageObject_->getVoxelization();
+  }
+}
 
 void PhysicsManager::setObjectBBDraw(int physObjectID,
                                      DrawableGroup* drawables,
@@ -523,6 +560,40 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
                 .center());
     resourceManager_.addPrimitiveToDrawables(
         0, *existingObjects_.at(physObjectID)->BBNode_, drawables);
+  }
+}
+
+void PhysicsManager::setObjectVoxelixationDraw(int physObjectID,
+                                               DrawableGroup* drawables,
+                                               bool drawVoxelization) {
+  assertIDValidity(physObjectID);
+  if (existingObjects_.at(physObjectID)->VoxelNode_ && !drawVoxelization) {
+    // destroy the node
+    delete existingObjects_.at(physObjectID)->VoxelNode_;
+    existingObjects_.at(physObjectID)->VoxelNode_ = nullptr;
+  } else if (drawVoxelization &&
+             existingObjects_.at(physObjectID)->visualNode_) {
+    // add a new VoxelNode_
+    existingObjects_.at(physObjectID)->VoxelNode_ =
+        &existingObjects_.at(physObjectID)->visualNode_->createChild();
+    /*existingObjects_.at(physObjectID)
+        ->VoxelNode_->MagnumObject::setTranslation(
+            existingObjects_[physObjectID]
+                ->visualNode_->getCumulativeBB()
+                .center());*/
+
+    // custom shader for voxel grid
+    Magnum::Shaders::MeshVisualizer3D shader_{
+        Magnum::Shaders::MeshVisualizer3D::Flag::Wireframe};
+    const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
+    shader_.setViewportSize(Mn::Vector2{viewportSize});
+    shader_.setColor(0x2f83cc7f_rgbaf)
+        .setWireframeColor(0xdcdcdc_rgbf)
+        .setWireframeWidth(2.0);
+
+    // get the voxel grid mesh
+    resourceManager_.addPrimitiveToDrawables(
+        0, *existingObjects_.at(physObjectID)->VoxelNode_, drawables);
   }
 }
 

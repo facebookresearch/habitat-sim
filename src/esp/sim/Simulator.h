@@ -505,6 +505,34 @@ class Simulator {
   void setObjectBBDraw(bool drawBB, int objectID, int sceneID = 0);
 
   /**
+   * @brief Turn on/off rendering for the voxel grid of the object's visual
+   * component.
+   *
+   * If a voxel grid for the object has not been created, it will make one with
+   * default arguments using createObjectVisualization().
+   *
+   * @param drawVG Whether or not the render the voxel grid.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void setObjectVoxelGridDraw(bool drawVG, int objectID, int sceneID = 0);
+
+  /**
+   * @brief Creates a voxelization for a particular object.
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param resolution The resolution of the voxel grid to be created.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void createObjectVoxelization(int objectID,
+                                int resolution = 1000000,
+                                int sceneID = 0);
+
+  /**
    * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
    * belonging to an object.
    *

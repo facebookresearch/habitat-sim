@@ -7,11 +7,14 @@
 
 #include <vector>
 
-#include "esp/assets/ResourceManager.h"
+#include "esp/assets/MeshData.h"
+#include "esp/assets/MeshMetaData.h"
 #include "esp/core/esp.h"
+#include "esp/geo/geo.h"
 
 #include <Magnum/Math/CubicHermite.h>
 #include <Magnum/Math/Range.h>
+#include "esp/gfx/Drawable.h"
 #include "esp/gfx/magnum.h"
 
 #include "VHACD.h"
@@ -98,6 +101,10 @@ class VoxelGrid {
   // insert voxel information into a mesh.
   void fillVoxelMeshData(Cr::Containers::Optional<Mn::Trade::MeshData>& mesh);
 
+  void generateMeshData();
+
+  ESP_SMART_POINTERS(VoxelGrid)
+
  private:
   // The number of voxels on the x, y, and z dimensions of the grid
   Mn::Vector3i m_voxelGridDimensions;
@@ -109,6 +116,9 @@ class VoxelGrid {
   // global position VoxelSize/2 + offset.dot(VoxelSize). m_offset is in
   // world coordinates (not voxel).
   Mn::Vector3 m_offset;
+
+  // The mesh for visualizing the voxel.
+  std::unique_ptr<Mn::GL::Mesh> mesh_;
 
   /* a pointer to an array of pointers to Voxels.
   Alternatives:

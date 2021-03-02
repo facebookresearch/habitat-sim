@@ -569,6 +569,17 @@ class PhysicsManager {
    */
   void setAngularDamping(const int physObjectID, const double angDamping);
 
+  /** @brief Initializes a new VoxelWrapper with a specified resolution and
+   * assigns it to a rigid body.
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param resolution Represents the approximate number of voxels in the new
+   * voxelization.
+   * @todo necessary for @ref MotionType::KINEMATIC?
+   */
+  void generateVoxelization(const int physObjectID,
+                            const int resolution = 1000000);
+
   // ============ Object Getter functions =============
 
   /** @brief Get the mass of an object.
@@ -642,6 +653,13 @@ class PhysicsManager {
    * @return The scalar angular damping coefficient of the object
    */
   double getAngularDamping(const int physObjectID) const;
+
+  /** @brief Gets the VoxelWrapper associated with a rigid object or the stage
+   * (-1).
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   */
+  esp::geo::VoxelWrapper* getVoxelization(const int physObjectID) const;
 
   // ============= Platform dependent function =============
 
@@ -785,6 +803,16 @@ class PhysicsManager {
    * @param drawBB Set rendering of the bounding box to true or false.
    */
   void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
+
+  /** @brief Set the voxelization visualization for the object true or false.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param drawables The drawables group with which to render the voxelization.
+   * @param drawBB Set rendering of the bounding box to true or false.
+   */
+  void setObjectVoxelixationDraw(int physObjectID,
+                                 DrawableGroup* drawables,
+                                 bool drawBB);
 
   /**
    * @brief Get a const reference to the specified object's SceneNode for info

@@ -14,6 +14,7 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/RigidState.h"
 #include "esp/core/esp.h"
+#include "esp/geo/VoxelWrapper.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/scene/SceneNode.h"
 
@@ -483,6 +484,11 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
     return initializationAttributes_->getScale();
   }
 
+  /** @brief Get the VoxelWrapper for the object.
+   * @return The voxel wrapper for the object.
+   */
+  esp::geo::VoxelWrapper* getVoxelization() const { return voxelWrapper; }
+
   /** @brief Get the scalar friction coefficient of the object. Only used for
    * dervied dynamic implementations of @ref RigidObject.
    * @return The scalar friction coefficient of the object.
@@ -548,6 +554,20 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @todo necessary for @ref MotionType::KINEMATIC?
    */
   virtual void setCOM(CORRADE_UNUSED const Magnum::Vector3& COM) {}
+
+  /** @brief Initializes a new VoxelWrapper with a specified resolution.
+   * @param resolution Represents the approximate number of voxels in the new
+   * voxelization.
+   * @todo necessary for @ref MotionType::KINEMATIC?
+   */
+  void generateVoxelization(esp::assets::ResourceManager& resourceManager_,
+                            int resolution = 1000000) {
+    std::string renderAssetHandle =
+        initializationAttributes_->getRenderAssetHandle();
+    esp::geo::VoxelWrapper* VoxelWrapper = new esp::geo::VoxelWrapper(
+        renderAssetHandle, &node(), resourceManager_, resolution);
+    voxelWrapper = VoxelWrapper;
+  }
 
   /** @brief Set the diagonal of the inertia matrix for the object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
@@ -616,8 +636,12 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   esp::core::Configuration attributes_;
 
   //! The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
-  //! drawing is off. See @ref toggleBBDraw().
+  //! drawing is off. See @ref setObjectBBDraw().
   scene::SceneNode* BBNode_ = nullptr;
+
+  //! The @ref SceneNode of the voxel drawable. If nullptr, Voxel
+  //! drawing is off. See @ref setObjectVoxelizationDraw().
+  scene::SceneNode* VoxelNode_ = nullptr;
 
   /**
    * @brief All Drawable components are children of this node.
@@ -630,6 +654,9 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   //! all nodes created when this object's render asset was added to the
   //! SceneGraph
   std::vector<esp::scene::SceneNode*> visualNodes_;
+
+  // ptr to the VoxelWrapper associated with this RigidBase
+  esp::geo::VoxelWrapper* voxelWrapper = nullptr;
 
  protected:
   /** @brief Used to synchronize other simulator's notion of the object state

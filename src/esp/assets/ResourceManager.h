@@ -31,6 +31,7 @@
 #include "MeshData.h"
 #include "MeshMetaData.h"
 #include "RenderAssetInstanceCreationInfo.h"
+#include "esp/geo/VoxelGrid.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
@@ -288,6 +289,46 @@ class ResourceManager {
   }
 
   /**
+   * @brief check to see if a particular voxel grid has been created &
+   * registered or not.
+   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
+   * Typically the filepath of file-based assets.
+   * @return The asset's @ref MeshMetaData object.
+   */
+  bool voxelGridExists(const std::string& voxelGridName) const {
+    return voxelGridDict_.count(voxelGridName) > 0;
+  }
+
+  /**
+   * @brief Retrieve a VoxelGrid given a particular voxel grid handle.
+   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
+   * Typically the filepath of file-based assets.
+   * @return The asset's @ref MeshMetaData object.
+   */
+  std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
+      const std::string& voxelGridName) const {
+    CHECK(voxelGridDict_.count(voxelGridName) > 0);
+    return voxelGridDict_.at(voxelGridName);
+  }
+
+  /**
+   * @brief Registers a given VoxelGrid pointer under the given handle in the
+   * voxelGridDict_ if no such VoxelGrid has been registered.
+   * @param VoxelGrid The pointer to the VoxelGrid
+   * @param voxelGridHandle The key to register the VoxelGrid under.
+   */
+  bool registerVoxelGrid(
+      const std::string& voxelGridHandle,
+      const std::shared_ptr<esp::geo::VoxelGrid> VoxelGridPtr) {
+    if (voxelGridDict_.count(voxelGridHandle) > 0)
+      return false;
+    else {
+      voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
+      return true;
+    }
+  }
+
+  /**
    * @brief Get a named @ref LightSetup
    */
   Mn::Resource<gfx::LightSetup> getLightSetup(
@@ -321,7 +362,7 @@ class ResourceManager {
    * @return The unified @ref MeshData object for the asset.
    */
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
-      const std::string& filename);
+      const std::string& filename) const;
 
   /**
    * @brief Add an object from a specified object template handle to the
@@ -601,7 +642,7 @@ class ResourceManager {
   void joinHeirarchy(MeshData& mesh,
                      const MeshMetaData& metaData,
                      const MeshTransformNode& node,
-                     const Mn::Matrix4& transformFromParentToWorld);
+                     const Mn::Matrix4& transformFromParentToWorld) const;
 
   /**
    * @brief Load materials from importer into assets, and update metaData for
@@ -909,6 +950,14 @@ class ResourceManager {
    * @brief The next available unique ID for loaded materials
    */
   int nextMaterialID_ = 0;
+
+  /**
+   * @brief Storage for precomuted voxel grids. Useful for when multiple objects
+   * in a scene are using the same VoxelGrid.
+   *
+   * Maps absolute path keys to VoxelGrid.
+   */
+  std::map<std::string, std::shared_ptr<esp::geo::VoxelGrid>> voxelGridDict_;
 
   /**
    * @brief Asset metadata linking meshes, textures, materials, and the

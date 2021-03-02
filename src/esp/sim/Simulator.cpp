@@ -879,6 +879,12 @@ void Simulator::setObjectBBDraw(bool drawBB,
   }
 }
 
+void Simulator::createObjectVoxelization(int objectID,
+                                         int resolution,
+                                         int sceneID) {
+  physicsManager_->generateVoxelization(objectID, resolution);
+}
+
 void Simulator::setObjectSemanticId(uint32_t semanticId,
                                     const int objectID,
                                     const int sceneID) {

@@ -262,6 +262,9 @@ Key Commands:
 
   //! tracks primitive mesh ids
   int nextVoxelGridMeshId = 0;
+
+  int resolutionInd = 0;
+
   /**
    * @brief Primitive meshes available for instancing via @ref
    * addPrimitiveToDrawables for debugging or visualization purposes.
@@ -798,11 +801,11 @@ void Viewer::invertGravity() {
 esp::geo::VoxelGrid Viewer::createVoxelField(int objectId) {
   const Mn::Vector3 v_size = Mn::Vector3(0.5, 0.5, 0.5);
   const Mn::Vector3i v_dim = Mn::Vector3i(100, 100, 100);
+  int resolutions[3] = {3000000, 100000, 1000};
   unsigned int resolution =
-      1000000;  // right now this has to be 1mil + for the scene for the
-                // voxelization to work (Not yet sure why..) TODO: Fix this.
-
-  Mn::GL::Mesh* objectRenderMesh;
+      resolutions[resolutionInd % 3];  // right now this has to be 1mil + for
+                                       // the scene for the voxelization to work
+                                       // (Not yet sure why..) TODO: Fix this.
 
   std::unique_ptr<esp::assets::MeshData> objMesh =
       esp::assets::MeshData::create_unique();
@@ -814,7 +817,10 @@ esp::geo::VoxelGrid Viewer::createVoxelField(int objectId) {
 }
 
 void Viewer::displayVoxelField(int objectID) {
+  // simulator_->createObjectVoxelization(objectID);
+  !Mn::Debug();
   auto v = createVoxelField(objectID);
+
   Cr::Containers::Optional<Mn::Trade::MeshData> mesh;
   v.fillVoxelMeshData(mesh);
   voxel_grids_[nextVoxelGridMeshId++] =
@@ -839,6 +845,7 @@ void Viewer::displayVoxelField(int objectID) {
   for (auto& it : activeSceneGraph_->getDrawableGroups()) {
     renderCamera_->draw(it.second, flags);
   }
+  !Mn::Debug();
 
   // Get visualSceneNode.
   esp::scene::SceneNode* objectVisNode =
@@ -1411,9 +1418,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
-    case KeyEvent::Key::Y: {
+    case KeyEvent::Key::Y:
       displayVoxelField(-1);
-    } break;
+      break;
+    case KeyEvent::Key::L:
+      resolutionInd++;
+      break;
     default:
       break;
   }
