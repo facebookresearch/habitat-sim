@@ -634,10 +634,18 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
         cache.m_bulletMultiBody->setBaseCollider(col);
       }
 
-      int collisionFilterGroup =
-          isDynamic ? int(CollisionGroup::Robot) : int(CollisionGroup::Static);
-      int collisionFilterMask = CollisionGroupHelper::getMaskForGroup(
-          CollisionGroup(collisionFilterGroup));
+      ASSERT(isDynamic != col->isStaticOrKinematicObject());
+
+      // This group-selection logic isn't very useful. We can't distinguish
+      // between articulated objects here, e.g. cabinets versus robots. Users
+      // will generally have to override the group in their URDFs (see
+      // getCollisionGroupAndMask below). Note use of Noncollidable. By
+      // convention, fixed links should be authored in the URDF as
+      // Noncollidable. Then, we will create fixed rigid bodies, separate from
+      // the multibody, which will be collidable (CollisionGroup::Static) (see
+      // BulletArticulatedObject.cpp).
+      int collisionFilterGroup = isDynamic ? int(CollisionGroup::Robot)
+                                           : int(CollisionGroup::Noncollidable);
 
       int colGroup = 0, colMask = 0;
       int collisionFlags =
@@ -646,9 +654,17 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       if (collisionFlags & io::URDF::HAS_COLLISION_GROUP) {
         collisionFilterGroup = colGroup;
       }
+
+      int collisionFilterMask = CollisionGroupHelper::getMaskForGroup(
+          CollisionGroup(collisionFilterGroup));
+// We don't like overriding the mask in the URDF; we disable support for this.
+// We prefer to only override the group, while still using getMaskForGroup
+// (above) for mask computation.
+#if 0
       if (collisionFlags & io::URDF::HAS_COLLISION_MASK) {
         collisionFilterMask = colMask;
       }
+#endif
 
       // Mn::Debug{}
       //    << "addCollisionObject: " << collisionFilterGroup << " , "

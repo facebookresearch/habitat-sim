@@ -218,8 +218,10 @@ const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
 }  // getCollisionShapeAabb
 
 std::string BulletRigidStage::getCollisionDebugName(int subpartId) {
-  return "Stage, " + initializationAttributes_->getHandle() + ", subpart " +
-         std::to_string(subpartId);
+  return "Stage, subpart " + std::to_string(subpartId);
+  // this is reference code to print the full stage handle (filename)
+  // return "Stage, " + initializationAttributes_->getHandle() + ", subpart " +
+  //        std::to_string(subpartId);
 }
 
 }  // namespace physics

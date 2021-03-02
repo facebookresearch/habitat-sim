@@ -34,6 +34,13 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   // Corrade::Utility::Debug() << "deconstructing ~BulletArticulatedObject";
   if (motionType_ != MotionType::KINEMATIC) {
     // KINEMATIC objects have already been removed from the world.
+
+    if (bFixedObjectRigidBody_) {
+      bWorld_->removeRigidBody(bFixedObjectRigidBody_.get());
+      bFixedObjectRigidBody_ = nullptr;
+      bFixedObjectShape_ = nullptr;
+    }
+
     bWorld_->removeMultiBody(btMultiBody_.get());
   }
   // remove link collision objects from world
@@ -131,6 +138,47 @@ bool BulletArticulatedObject::initializeFromURDF(
         mb);  // take ownership of the object in the URDFImporter cache
     bWorld_->addMultiBody(btMultiBody_.get());
     btMultiBody_->setCanSleep(true);
+
+    bFixedObjectShape_ = std::make_unique<btCompoundShape>();
+
+    // By convention, fixed links in the URDF are assigned Noncollidable, and we
+    // then insert corresponding fixed rigid bodies with group Static.
+    // Collisions with a fixed rigid body are cheaper than collisions with a
+    // fixed link, due to problems with multibody sleeping behavior.
+    {
+      auto* col = mb->getBaseCollider();
+      if (col->getBroadphaseHandle()->m_collisionFilterGroup ==
+          int(CollisionGroup::Noncollidable)) {
+        bFixedObjectShape_.get()->addChildShape(col->getWorldTransform(),
+                                                col->getCollisionShape());
+      }
+
+      for (int m = 0; m < mb->getNumLinks(); m++) {
+        btMultiBodyLinkCollider* col = mb->getLink(m).m_collider;
+        if (col) {
+          if (col->getBroadphaseHandle()->m_collisionFilterGroup ==
+              int(CollisionGroup::Noncollidable)) {
+            bFixedObjectShape_.get()->addChildShape(col->getWorldTransform(),
+                                                    col->getCollisionShape());
+          }
+        }
+      }
+
+      if (bFixedObjectShape_.get()->getNumChildShapes()) {
+        btRigidBody::btRigidBodyConstructionInfo info =
+            btRigidBody::btRigidBodyConstructionInfo(0.f, nullptr,
+                                                     bFixedObjectShape_.get());
+        bFixedObjectRigidBody_ = std::make_unique<btRigidBody>(info);
+        BulletDebugManager::get().mapCollisionObjectTo(
+            bFixedObjectRigidBody_.get(),
+            "URDF, " + u2b.getModel()->m_name + ", fixed body");
+        bWorld_->addRigidBody(
+            bFixedObjectRigidBody_.get(), int(CollisionGroup::Static),
+            CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static));
+      } else {
+        bFixedObjectShape_ = nullptr;
+      }
+    }
 
     // Attach SceneNode visual components
     int urdfLinkIx = 0;
@@ -280,7 +328,11 @@ bool BulletArticulatedObject::attachGeometry(
 }
 
 void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
-  btMultiBody_->setBaseWorldTransform(btTransform{state});
+  btTransform tr{state};
+  btMultiBody_->setBaseWorldTransform(tr);
+  if (bFixedObjectRigidBody_) {
+    bFixedObjectRigidBody_.get()->setWorldTransform(tr);
+  }
   // update the simulation state
   // TODO: make this optional?
   btAlignedObjectArray<btQuaternion> scratch_q;
@@ -332,7 +384,9 @@ void BulletArticulatedObject::setVelocities(const std::vector<float>& vels) {
   int dofCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
     if (btMultiBody_->getLink(i).m_dofCount > 0) {
-      btMultiBody_->setJointVelMultiDof(i, &vels[dofCount]);
+      // this const_cast is only needed for Bullet 2.87. It is harmless in any
+      // case.
+      btMultiBody_->setJointVelMultiDof(i, const_cast<float*>(&vels[dofCount]));
       dofCount += btMultiBody_->getLink(i).m_dofCount;
     }
   }
@@ -363,7 +417,8 @@ void BulletArticulatedObject::setPositions(
   int dofCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
     if (btMultiBody_->getLink(i).m_dofCount > 0) {
-      btMultiBody_->setJointPosMultiDof(i, &positions[dofCount]);
+      btMultiBody_->setJointPosMultiDof(
+          i, const_cast<float*>(&positions[dofCount]));
       dofCount += btMultiBody_->getLink(i).m_dofCount;
     }
   }
@@ -449,8 +504,12 @@ void BulletArticulatedObject::setMotionType(MotionType mt) {
   }
 
   if (mt == MotionType::DYNAMIC) {
+    // TODO: add support for adding/removing the fixed rigid body here if/when
+    // this API is needed.
+    ASSERT(!bFixedObjectRigidBody_);
     bWorld_->addMultiBody(btMultiBody_.get());
   } else if (mt == MotionType::KINEMATIC) {
+    ASSERT(!bFixedObjectRigidBody_);
     bWorld_->removeMultiBody(btMultiBody_.get());
   } else {
     return;

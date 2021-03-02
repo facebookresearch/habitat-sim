@@ -32,6 +32,7 @@ enum class CollisionGroup {
   Robot = 32,
   EeMargin = 64,
   SelObj = 128,
+  Noncollidable = 256
 };
 
 class CollisionGroupHelper {
