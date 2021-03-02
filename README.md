@@ -186,7 +186,6 @@ Next, pick one of the options below depending on your system/needs:
    conda install habitat-sim withbullet [headless] -c conda-forge -c aihabitat
    ```
 
-Done.
 
 We also provide a [nightly conda build for the master branch](https://anaconda.org/aihabitat-nightly). However, this should only be used if you need a specific feature not yet in the latest release version. To get the nightly build of the latest master, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
 
