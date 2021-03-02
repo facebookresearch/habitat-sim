@@ -174,12 +174,11 @@ void URDFImporter::getMassAndInertia(int linkIndex,
   if (link != nullptr) {
     Mn::Matrix3 linkInertiaBasis;  // Identity
     float linkMass = 0.f;
-    float principalInertiaX, principalInertiaY, principalInertiaZ = 0.f;
+    float principalInertiaX = 0.f;
+    float principalInertiaY = 0.f;
+    float principalInertiaZ = 0.f;
     if (!link->m_parentJoint.lock() && activeModel_->m_overrideFixedBase) {
-      linkMass = 0.f;
-      principalInertiaX = 0.f;
-      principalInertiaY = 0.f;
-      principalInertiaZ = 0.f;
+      // no change
     } else {
       linkMass = link->m_inertia.m_mass;
       if (link->m_inertia.m_ixy == 0.0 && link->m_inertia.m_ixz == 0.0 &&
