@@ -34,13 +34,6 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   // Corrade::Utility::Debug() << "deconstructing ~BulletArticulatedObject";
   if (motionType_ != MotionType::KINEMATIC) {
     // KINEMATIC objects have already been removed from the world.
-
-    if (bFixedObjectRigidBody_) {
-      bWorld_->removeRigidBody(bFixedObjectRigidBody_.get());
-      bFixedObjectRigidBody_ = nullptr;
-      bFixedObjectShape_ = nullptr;
-    }
-
     bWorld_->removeMultiBody(btMultiBody_.get());
   }
   // remove link collision objects from world
@@ -50,10 +43,21 @@ BulletArticulatedObject::~BulletArticulatedObject() {
     collisionObjToObjIds_->erase(linkCollider);
     delete linkCollider;
   }
+
+  // remove fixed base rigid body
+  if (bFixedObjectRigidBody_) {
+    bWorld_->removeRigidBody(bFixedObjectRigidBody_.get());
+    collisionObjToObjIds_->erase(bFixedObjectRigidBody_.get());
+    bFixedObjectRigidBody_ = nullptr;
+    bFixedObjectShape_ = nullptr;
+  }
+
+  // remove base collider
   auto baseCollider = btMultiBody_->getBaseCollider();
   bWorld_->btCollisionWorld::removeCollisionObject(baseCollider);
   collisionObjToObjIds_->erase(baseCollider);
   delete baseCollider;
+
   // delete children of compound collisionShapes
   std::map<int, std::unique_ptr<btCollisionShape>>::iterator csIter;
   for (csIter = linkCollisionShapes_.begin();
@@ -149,7 +153,10 @@ bool BulletArticulatedObject::initializeFromURDF(
       auto* col = mb->getBaseCollider();
       if (col->getBroadphaseHandle()->m_collisionFilterGroup ==
           int(CollisionGroup::Noncollidable)) {
-        bFixedObjectShape_.get()->addChildShape(col->getWorldTransform(),
+        // The collider child is an aligned compound or single shape
+        btTransform identity;
+        identity.setIdentity();
+        bFixedObjectShape_.get()->addChildShape(identity,
                                                 col->getCollisionShape());
       }
 
@@ -175,6 +182,7 @@ bool BulletArticulatedObject::initializeFromURDF(
         bWorld_->addRigidBody(
             bFixedObjectRigidBody_.get(), int(CollisionGroup::Static),
             CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static));
+        collisionObjToObjIds_->emplace(bFixedObjectRigidBody_.get(), objectId_);
       } else {
         bFixedObjectShape_ = nullptr;
       }
@@ -502,14 +510,9 @@ void BulletArticulatedObject::setMotionType(MotionType mt) {
   if (mt == motionType_) {
     return;
   }
-
   if (mt == MotionType::DYNAMIC) {
-    // TODO: add support for adding/removing the fixed rigid body here if/when
-    // this API is needed.
-    ASSERT(!bFixedObjectRigidBody_);
     bWorld_->addMultiBody(btMultiBody_.get());
   } else if (mt == MotionType::KINEMATIC) {
-    ASSERT(!bFixedObjectRigidBody_);
     bWorld_->removeMultiBody(btMultiBody_.get());
   } else {
     return;
