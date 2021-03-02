@@ -534,14 +534,13 @@ bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
   if (rpy_str != nullptr) {
     Mn::Vector3 rpy;
     if (parseVector3(rpy, std::string(rpy_str))) {
-      double phi, the, psi;
       double roll = rpy[0];
       double pitch = rpy[1];
       double yaw = rpy[2];
 
-      phi = roll / 2.0;
-      the = pitch / 2.0;
-      psi = yaw / 2.0;
+      double phi = roll / 2.0;
+      double the = pitch / 2.0;
+      double psi = yaw / 2.0;
 
       Mn::Quaternion orn(
           Mn::Vector3(

@@ -309,7 +309,7 @@ class PhysicsManager {
    * id set as rigid objects.
    */
   virtual int addArticulatedObjectFromURDF(
-      const std::string& filepath,
+      CORRADE_UNUSED const std::string& filepath,
       CORRADE_UNUSED DrawableGroup* drawables,
       CORRADE_UNUSED bool fixedBase = false,
       CORRADE_UNUSED float globalScale = 1.0,
@@ -432,23 +432,27 @@ class PhysicsManager {
 
   // TODO: document AO->rigid
   virtual int createArticulatedP2PConstraint(
-      int articulatedObjectId,
-      int linkId,
-      int objectId,
-      float maxImpulse,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+      CORRADE_UNUSED int articulatedObjectId,
+      CORRADE_UNUSED int linkId,
+      CORRADE_UNUSED int objectId,
+      CORRADE_UNUSED float maxImpulse,
+      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
+          pivotA,
+      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
+          pivotB) {
     return -1;
   }
 
   // TODO: document AO->rigid
   virtual int createArticulatedFixedConstraint(
-      int articulatedObjectId,
-      int linkId,
-      int objectId,
-      float maxImpulse,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+      CORRADE_UNUSED int articulatedObjectId,
+      CORRADE_UNUSED int linkId,
+      CORRADE_UNUSED int objectId,
+      CORRADE_UNUSED float maxImpulse,
+      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
+          pivotA,
+      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
+          pivotB) {
     return -1;
   }
 
@@ -1189,8 +1193,9 @@ class PhysicsManager {
   /**
    * @brief Manually set the collision group for an object.
    */
-  virtual void overrideCollisionGroup(const int physObjectID,
-                                      CollisionGroup group) const {}
+  virtual void overrideCollisionGroup(CORRADE_UNUSED const int physObjectID,
+                                      CORRADE_UNUSED CollisionGroup
+                                          group) const {}
 
   /**
    * @brief Set an object to collidable or not.

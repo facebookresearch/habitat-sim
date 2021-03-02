@@ -124,8 +124,8 @@ bool URDFImporter::getJointInfo(int linkIndex,
                                 float& jointUpperLimit,
                                 float& jointDamping,
                                 float& jointFriction) const {
-  float jointMaxForce;
-  float jointMaxVelocity;
+  float jointMaxForce{0.f};
+  float jointMaxVelocity{0.f};
   return getJointInfo2(linkIndex, parent2joint, linkTransformInWorld,
                        jointAxisInJointSpace, jointType, jointLowerLimit,
                        jointUpperLimit, jointDamping, jointFriction,
@@ -144,7 +144,7 @@ void URDFImporter::getMassAndInertia2(int linkIndex,
     // so an additional transform might need to be computed
     auto link = activeModel_->getLink(linkIndex);
     if (link != nullptr) {
-      float linkMass;
+      float linkMass{0.f};
       if (!link->m_parentJoint.lock() && activeModel_->m_overrideFixedBase) {
         linkMass = 0.f;
       } else {
@@ -173,12 +173,12 @@ void URDFImporter::getMassAndInertia(int linkIndex,
   auto link = activeModel_->getLink(linkIndex);
   if (link != nullptr) {
     Mn::Matrix3 linkInertiaBasis;  // Identity
-    float linkMass, principalInertiaX, principalInertiaY, principalInertiaZ;
+    float linkMass = 0.f;
+    float principalInertiaX = 0.f;
+    float principalInertiaY = 0.f;
+    float principalInertiaZ = 0.f;
     if (!link->m_parentJoint.lock() && activeModel_->m_overrideFixedBase) {
-      linkMass = 0.f;
-      principalInertiaX = 0.f;
-      principalInertiaY = 0.f;
-      principalInertiaZ = 0.f;
+      // no change
     } else {
       linkMass = link->m_inertia.m_mass;
       if (link->m_inertia.m_ixy == 0.0 && link->m_inertia.m_ixz == 0.0 &&

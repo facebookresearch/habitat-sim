@@ -37,7 +37,7 @@ class URDFImporter;
 
 struct JointMotorSettings {
  public:
-  JointMotorSettings(){};
+  JointMotorSettings() = default;
 
   JointMotorSettings(double _positionTarget,
                      double _positionGain,
@@ -81,9 +81,9 @@ class ArticulatedLink : public RigidBase {
   ArticulatedLink(scene::SceneNode* bodyNode,
                   int index,
                   const assets::ResourceManager& resMgr)
-      : mbIndex_(index), RigidBase(bodyNode, resMgr){};
+      : RigidBase(bodyNode, resMgr), mbIndex_(index){};
 
-  virtual ~ArticulatedLink(){};
+  ~ArticulatedLink() override = default;
 
   /**
    * @brief Get the scene node being attached to.
@@ -112,7 +112,7 @@ class ArticulatedLink : public RigidBase {
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialize(CORRADE_UNUSED const std::string& handle) override {
+  bool initialize(CORRADE_UNUSED const std::string& handle) override {
     return true;
   };
 
@@ -120,82 +120,75 @@ class ArticulatedLink : public RigidBase {
    * @brief Finalize the creation of the link.
    * @return whether successful finalization.
    */
-  virtual bool finalizeObject() override { return true; };
+  bool finalizeObject() override { return true; };
 
-  virtual void setTransformation(
+  void setTransformation(
       CORRADE_UNUSED const Magnum::Matrix4& transformation) override {
     Corrade::Utility::Debug()
         << "(setTransformation) - ArticulatedLink can't do this.";
   };
 
-  virtual void setTranslation(
-      CORRADE_UNUSED const Magnum::Vector3& vector) override {
+  void setTranslation(CORRADE_UNUSED const Magnum::Vector3& vector) override {
     Corrade::Utility::Debug()
         << "(setTranslation) - ArticulatedLink can't do this.";
   };
 
-  virtual void setRotation(
+  void setRotation(
       CORRADE_UNUSED const Magnum::Quaternion& quaternion) override {
     Corrade::Utility::Debug()
         << "(setRotation) - ArticulatedLink can't do this.";
   };
 
-  virtual void setRigidState(
+  void setRigidState(
       CORRADE_UNUSED const core::RigidState& rigidState) override {
     Corrade::Utility::Debug()
         << "(setRigidState) - ArticulatedLink can't do this.";
   };
 
-  virtual void resetTransformation() override {
+  void resetTransformation() override {
     Corrade::Utility::Debug()
         << "(resetTransformation) - ArticulatedLink can't do this.";
   }
 
-  virtual void translate(
-      CORRADE_UNUSED const Magnum::Vector3& vector) override {
+  void translate(CORRADE_UNUSED const Magnum::Vector3& vector) override {
     Corrade::Utility::Debug() << "(translate) - ArticulatedLink can't do this.";
   }
 
-  virtual void translateLocal(
-      CORRADE_UNUSED const Magnum::Vector3& vector) override {
+  void translateLocal(CORRADE_UNUSED const Magnum::Vector3& vector) override {
     Corrade::Utility::Debug()
         << "(translateLocal) - ArticulatedLink can't do this.";
   }
 
-  virtual void rotate(
-      CORRADE_UNUSED const Magnum::Rad angleInRad,
-      CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
+  void rotate(CORRADE_UNUSED const Magnum::Rad angleInRad,
+              CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
     Corrade::Utility::Debug() << "(rotate) - ArticulatedLink can't do this.";
   }
 
-  virtual void rotateLocal(
+  void rotateLocal(
       CORRADE_UNUSED const Magnum::Rad angleInRad,
       CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
     Corrade::Utility::Debug()
         << "(rotateLocal) - ArticulatedLink can't do this.";
   }
 
-  virtual void rotateX(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+  void rotateX(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
     Corrade::Utility::Debug() << "(rotateX) - ArticulatedLink can't do this.";
   }
-  virtual void rotateY(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+  void rotateY(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
     Corrade::Utility::Debug() << "(rotateY) - ArticulatedLink can't do this.";
   }
-  virtual void rotateZ(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+  void rotateZ(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
     Corrade::Utility::Debug() << "(rotateZ) - ArticulatedLink can't do this.";
   }
-  virtual void rotateXLocal(
-      CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+  void rotateXLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
     Corrade::Utility::Debug()
         << "(rotateXLocal) - ArticulatedLink can't do this.";
   }
-  virtual void rotateYLocal(
-      CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+  void rotateYLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
     Corrade::Utility::Debug()
         << "(rotateYLocal) - ArticulatedLink can't do this.";
   }
-  virtual void rotateZLocal(
-      CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+  void rotateZLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
     Corrade::Utility::Debug()
         << "(rotateZLocal) - ArticulatedLink can't do this.";
   }
@@ -205,13 +198,13 @@ class ArticulatedLink : public RigidBase {
    * @brief Finalize the initialization of this link.
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialization_LibSpecific() override { return true; };
+  bool initialization_LibSpecific() override { return true; };
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
    * after creation.
    * @return whether successful finalization.
    */
-  virtual bool finalizeObject_LibSpecific() override { return true; };
+  bool finalizeObject_LibSpecific() override { return true; };
 
   // end RigidBase overrides
 
@@ -238,7 +231,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
         resMgr_(resMgr),
         objectId_(objectId){};
 
-  virtual ~ArticulatedObject() {
+  ~ArticulatedObject() override {
     // clear links and delete their SceneNodes
     std::vector<scene::SceneNode*> linkNodes;
     for (auto& link : links_) {
@@ -349,8 +342,9 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
    *
    * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
    */
-  virtual int createJointMotor(const int dof,
-                               const JointMotorSettings& settings) {
+  virtual int createJointMotor(
+      CORRADE_UNUSED const int dof,
+      CORRADE_UNUSED const JointMotorSettings& settings) {
     Magnum::Debug{} << "No base implementation of \"createJointMotor\". "
                        "Requires a physics simulator implementation.";
     return ID_UNDEFINED;
@@ -401,7 +395,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @return A map of dofs -> motorIds for the new motors.
    */
   virtual std::map<int, int> createMotorsForAllDofs(
-      JointMotorSettings settings = JointMotorSettings()) {
+      CORRADE_UNUSED JointMotorSettings settings = JointMotorSettings()) {
     Magnum::Debug{} << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
                        "SHOULD NOT BE CALLED WITH BULLET ";
     return std::map<int, int>();
@@ -415,7 +409,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
  protected:
   virtual bool attachGeometry(
       CORRADE_UNUSED scene::SceneNode& node,
-      CORRADE_UNUSED std::shared_ptr<io::URDF::Link> link,
+      CORRADE_UNUSED const std::shared_ptr<io::URDF::Link>& link,
       CORRADE_UNUSED const
           std::map<std::string, std::shared_ptr<io::URDF::Material> >&
               materials,

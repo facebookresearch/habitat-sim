@@ -82,6 +82,8 @@ class BulletURDFImporter : public URDFImporter {
   BulletURDFImporter(esp::assets::ResourceManager& resourceManager)
       : URDFImporter(resourceManager){};
 
+  ~BulletURDFImporter() override = default;
+
   btCollisionShape* convertURDFToCollisionShape(
       const struct io::URDF::CollisionShape* collision);
 
