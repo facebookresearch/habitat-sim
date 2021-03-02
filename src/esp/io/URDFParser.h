@@ -278,13 +278,13 @@ class Model {
       // do nothing
       return;
     }
-    double massScaleCorrection = massScaling / m_massScaling;
+    float massScaleCorrection = massScaling / m_massScaling;
 
     // Only need to scale the per-link mass values. These will be further
     // processed during import.
     for (const auto& link : m_links) {
       Inertia& linkInertia = link.second->m_inertia;
-      linkInertia.m_mass *= massScaleCorrection;
+      linkInertia.m_mass *= double(massScaleCorrection);
     }
 
     m_massScaling = massScaling;
