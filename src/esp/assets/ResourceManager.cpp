@@ -1540,6 +1540,11 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
         textures_.at(textureBaseIndex + material.diffuseTexture()).get();
   }
 
+  // temp hack for better Fetch lighting; see
+  // https://cvmlp.slack.com/archives/CFN5TAUSD/p1604448841393900
+  finalMaterial->ambientColor = finalMaterial->diffuseColor;
+  finalMaterial->ambientTexture = finalMaterial->diffuseTexture;
+
   // specular material properties
   finalMaterial->specularColor = material.specularColor();
   if (material.hasSpecularTexture()) {
@@ -2053,8 +2058,8 @@ std::string ResourceManager::setupMaterialModifiedAsset(
   gfx::PhongMaterialData::uptr phongMaterial =
       gfx::PhongMaterialData::create_unique();
   io::URDF::MaterialColor& color = material->m_matColor;
-  phongMaterial->ambientColor = color.m_rgbaColor * 0.2;
-  phongMaterial->diffuseColor = color.m_rgbaColor * 0.8;
+  phongMaterial->ambientColor = color.m_rgbaColor;
+  phongMaterial->diffuseColor = color.m_rgbaColor;
   phongMaterial->specularColor = color.m_specularColor;
 
   std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
