@@ -363,10 +363,17 @@ void BulletRigidObject::shiftObjectCollisionShape(
 
 //! Synchronize Physics transformations
 //! Needed after changing the pose from Magnum side
-void BulletRigidObject::syncPose() {
+void BulletRigidObject::syncPose(bool from) {
   //! For syncing objects
-  bObjectRigidBody_->setWorldTransform(
-      btTransform(node().transformationMatrix()));
+  if (!from) {
+    // render to simulation
+    bObjectRigidBody_->setWorldTransform(
+        btTransform(node().transformationMatrix()));
+  } else {
+    // render from simulation
+    bObjectRigidBody_->getMotionState()->setWorldTransform(
+        bObjectRigidBody_->getWorldTransform());
+  }
 }  // syncPose
 
 void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
