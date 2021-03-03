@@ -9,7 +9,7 @@ vx.x.x or master?
 
 Habitat is under active development, and we advise users to restrict themselves to stable releases. Are you using the latest [release version](https://github.com/facebookresearch/habitat-sim/releases) of Habitat-Sim? The bug you are about to report may already be fixed there. 
 
-Master branch contains 'bleeding edge' code, but we do appreciate bug reports in it!
+Master branch contains 'bleeding edge' code, but we do appreciate bug reports for it!
 
 ## 🐛 Bug
 
