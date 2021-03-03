@@ -50,7 +50,6 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
                  "Sensor::Sensor(): Cannot initialize sensor. The "
                  "specification is null.", );
   spec_->sanityCheck();
-
   node.getNodeSensorSuite().add(*this);
   static_cast<scene::SceneNode&>(*node.parent())
       .getNodeSensorSuite()
@@ -66,13 +65,6 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
 }
 
 Sensor::~Sensor() {
-  // Traverse up to root node and remove sensor from every subtreeSensorSuite
-  auto current = node().parent();
-  while (current->parent() != nullptr) {
-    static_cast<scene::SceneNode&>(*current).getSubtreeSensorSuite().remove(
-        *this);
-    current = current->parent();
-  }
   LOG(INFO) << "Deconstructing Sensor";
 }
 
@@ -87,6 +79,23 @@ void Sensor::setTransformationFromSpec() {
   node().rotateX(Magnum::Rad(spec_->orientation[0]));
   node().rotateY(Magnum::Rad(spec_->orientation[1]));
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
+}
+
+void Sensor::deleteSensor() {
+  // Traverse up to root node and remove sensor from every subtreeSensorSuite,
+  // if only the sensor is deleted and the sceneNode still exists
+  node().getNodeSensorSuite().remove(*this);
+  node().getSubtreeSensorSuite().remove(*this);
+  if (node().parent() != nullptr) {
+    auto current = node().parent();
+    static_cast<scene::SceneNode&>(*current).getNodeSensorSuite().remove(*this);
+    while (current->parent() != nullptr) {
+      static_cast<scene::SceneNode&>(*current).getSubtreeSensorSuite().remove(
+          *this);
+      current = current->parent();
+    }
+  }
+  delete this;
 }
 
 SensorSuite::SensorSuite(scene::SceneNode& node)

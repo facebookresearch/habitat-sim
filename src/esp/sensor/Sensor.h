@@ -44,6 +44,7 @@ enum class SensorSubType {
 };
 
 // Specifies the configuration parameters of a sensor
+// User should make sure all uuids are unique
 struct SensorSpec {
   std::string uuid = "";
   SensorType sensorType = SensorType::None;
@@ -101,6 +102,8 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   // can be called ONLY when it is attached to a scene node
   void setTransformationFromSpec();
+
+  void deleteSensor();
 
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) = 0;
   virtual bool getObservationSpace(ObservationSpace& space) = 0;

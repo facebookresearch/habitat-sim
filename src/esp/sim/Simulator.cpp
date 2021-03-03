@@ -1132,7 +1132,7 @@ esp::sensor::Sensor& Simulator::addSensorToObject(
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
   esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
   esp::sensor::SensorFactory::createSensors(objectNode, sensorSpecifications);
-  return objectNode.getSubtreeSensorSuite().get(sensorSpec->uuid);
+  return objectNode.getNodeSensorSuite().get(sensorSpec->uuid);
 }
 
 nav::PathFinder::ptr Simulator::getPathFinder() {

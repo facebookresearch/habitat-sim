@@ -48,68 +48,54 @@ void SensorTest::testSensorFactory() {
   auto sensorSpecB = CameraSensorSpec::create();
   sensorSpecB->uuid = "B";
   SensorFactory::createSensors(parentNode, {sensorSpecA, sensorSpecB});
+  CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 2);
 
   // Add different uuid sensors to different nodes and assert increase
   auto sensorSpecC = CameraSensorSpec::create();
   sensorSpecC->uuid = "C";
   SensorFactory::createSensors(parentNode, {sensorSpecC});
+  CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 3);
   CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 3);
 
   auto sensorSpecD = CameraSensorSpec::create();
   sensorSpecD->uuid = "D";
-  SensorFactory::createSensors(childNode, {sensorSpecD});
-  CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 4);
-  CORRADE_VERIFY(childNode.getSubtreeSensorSuite().getSensors().size() == 1);
-
-  // Add same uuid sensor to same node and assert that only one sensor was added
   auto sensorSpecE = CameraSensorSpec::create();
   sensorSpecE->uuid = "E";
-  SensorFactory::createSensors(parentNode, {sensorSpecE, sensorSpecE});
+  SensorFactory::createSensors(childNode, {sensorSpecD, sensorSpecE});
+  CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 3);
   CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 5);
-
-  // Add same uuid sensors to parent, then child nodes and assert that
-  // parentNode subtreeSensorSuite does not increase, but child
-  // subtreeSensorSuite does
-  auto sensorSpecF = CameraSensorSpec::create();
-  sensorSpecF->uuid = "F";
-  SensorFactory::createSensors(parentNode, {sensorSpecF});
-  CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 6);
-  SensorFactory::createSensors(childNode, {sensorSpecF});
-  CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 6);
+  CORRADE_VERIFY(childNode.getNodeSensorSuite().getSensors().size() == 2);
   CORRADE_VERIFY(childNode.getSubtreeSensorSuite().getSensors().size() == 2);
 
-  // Add same uuid sensors to child, then parent nodes and assert that
-  // parentNode subtreeSensorSuite only increases once
-  auto sensorSpecG = CameraSensorSpec::create();
-  sensorSpecG->uuid = "G";
-  SensorFactory::createSensors(childNode, {sensorSpecG});
-  CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 7);
-  CORRADE_VERIFY(childNode.getSubtreeSensorSuite().getSensors().size() == 3);
-  SensorFactory::createSensors(parentNode, {sensorSpecG});
-  CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 7);
-  CORRADE_VERIFY(childNode.getSubtreeSensorSuite().getSensors().size() == 3);
+  // Add same uuid sensor to same node and assert that only one sensor was added
+  auto sensorSpecF = CameraSensorSpec::create();
+  sensorSpecF->uuid = "F";
+  SensorFactory::createSensors(parentNode, {sensorSpecF, sensorSpecF});
+  CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 4);
+  CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 6);
 
   // Remove sensor from parent node and assert that it is no longer in parent
   // subtreeSensorSuite
-  // parentNode.getSubtreeSensorSuite().get("A").~Sensor();
-  // delete parentNode.getSubtreeSensorSuite().get("A").node();
-  // CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() ==
-  //                7);  // should be 6
+  parentNode.getSubtreeSensorSuite().get("A").deleteSensor();
+  CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 3);
+  CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 5);
 
   // // Remove sensor from child node and assert that it is no longer in parent
   // and
   // // child subtreeSensorSuite
-  // //childNode.getSubtreeSensorSuite().get("D").~Sensor();
-  // CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() ==
-  //                7);  // should be 5
-  // CORRADE_VERIFY(childNode.getSubtreeSensorSuite().getSensors().size() ==
-  //                3);  // should be 2
+  childNode.getSubtreeSensorSuite().get("D").deleteSensor();
+  CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 3);
+  CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 4);
+  CORRADE_VERIFY(childNode.getNodeSensorSuite().getSensors().size() == 1);
+  CORRADE_VERIFY(childNode.getSubtreeSensorSuite().getSensors().size() == 1);
 
-  // // Delete child node and assert that sensors are no longer in parentNode
-  // delete childNode;
-  // CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() ==
-  //                7);  // should be 3
+  // Delete child node and assert that sensors are no longer in parentNode
+  childNode.~SceneNode();
+  CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 3);
+  CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 3);
+
+  LOG(INFO) << "ALL DONE";
 }
 
 CORRADE_TEST_MAIN(SensorTest)

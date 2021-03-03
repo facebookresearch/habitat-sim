@@ -30,6 +30,16 @@ SceneNode::SceneNode(MagnumScene& parentNode)
   subtreeSensorSuite_ = new esp::sensor::SensorSuite(*this);
 }
 
+SceneNode::~SceneNode() {
+  for (auto& entry : getNodeSensorSuite().getSensors()) {
+    entry.second.get().deleteSensor();
+    if (getNodeSensorSuite().getSensors().size() == 0) {
+      break;
+    }
+  }
+  LOG(INFO) << "Deconstructing SceneNode";
+}
+
 SceneNode& SceneNode::createChild() {
   // will set the parent to *this
   SceneNode* node = new SceneNode(*this);

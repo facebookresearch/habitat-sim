@@ -739,7 +739,7 @@ void SimTest::addSensorToObject() {
   simulator->addSensorToObject(objectID, objectSensorSpec);
   std::string expectedUUID = std::to_string(objectID);
   CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
-      objectNode.getSubtreeSensorSuite().get(expectedUUID));
+      objectNode.getNodeSensorSuite().get(expectedUUID));
   cameraSensor.setTransformationFromSpec();
 
   simulator->setTranslation({1.0f, 1.5f, 1.0f},
