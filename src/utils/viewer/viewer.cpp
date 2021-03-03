@@ -538,14 +538,15 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
-
-  // setup default sensor
-  agentConfig.sensorSpecifications[0]->resolution =
-      esp::vec2i(viewportSize[1], viewportSize[0]);
-
-  agentConfig.sensorSpecifications[0]->sensorSubType =
+  auto pinholeCameraSpec = esp::sensor::CameraSensorSpec::create();
+  pinholeCameraSpec->sensorSubType =
       args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
                                  : esp::sensor::SensorSubType::Pinhole;
+  pinholeCameraSpec->sensorType = esp::sensor::SensorType::Color;
+  pinholeCameraSpec->position = {0.0f, 1.5f, 0.0f};
+  pinholeCameraSpec->orientation = {0, 0, 0};
+  pinholeCameraSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
 
   // add the new fisheye sensor
   agentConfig.sensorSpecifications.emplace_back(
@@ -677,6 +678,10 @@ void Viewer::switchCameraType() {
     }
     case esp::sensor::SensorSubType::Orthographic: {
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
+      return;
+    }
+    case esp::sensor::SensorSubType::None: {
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       return;
     }
   }
@@ -1171,8 +1176,8 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
     if (visualSensor != nullptr) {
-      visualSensor->specification()->resolution = {event.framebufferSize()[1],
-                                                   event.framebufferSize()[0]};
+      visualSensor->setResolution(event.framebufferSize()[1],
+                                  event.framebufferSize()[0]);
       renderCamera_->setViewport(visualSensor->framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
 

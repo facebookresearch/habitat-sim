@@ -10,15 +10,28 @@ sensor::SensorSuite SensorFactory::createSensors(
     scene::SceneNode& node,
     const sensor::SensorSetup& sensorSetup) {
   sensor::SensorSuite sensorSuite = sensor::SensorSuite();
-  for (const sensor::SensorSpec::ptr& spec : sensorSetup) {
+  for (const SensorSpec::ptr& spec : sensorSetup) {
     scene::SceneNode& sensorNode = node.createChild();
-
-    if (spec->sensorSubType == sensor::SensorSubType::Fisheye) {
-      sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
-    } else if (spec->sensorSubType == sensor::SensorSubType::Orthographic ||
-               spec->sensorSubType == sensor::SensorSubType::Pinhole) {
-      sensorSuite.add(sensor::CameraSensor::create(sensorNode, spec));
+    // VisualSensor Setup
+    if (spec->isVisualSensorSpec()) {
+      if (spec->sensorSubType == sensor::SensorSubType::Fisheye) {
+        // XXX
+        // TODO: must fix the spec here!!!
+        sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
+      } else if (spec->sensorSubType == SensorSubType::Orthographic ||
+                 spec->sensorSubType == SensorSubType::Pinhole) {
+        sensorSuite.add(CameraSensor::create(
+            sensorNode, std::dynamic_pointer_cast<CameraSensorSpec>(spec)));
+      }
+      // TODO: Implement fisheye sensor, Equirectangle sensor, Panorama sensor
+      // else if(spec->sensorSubType == SensorSubType::Fisheye) {
+      //   sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
+      //
     }
+    // TODO: Implement NonVisualSensorSpecs
+    // else if (!spec->isVisualSensorSpec()) {}
+    //   //NonVisualSensor Setup
+    // }
   }
 
   return sensorSuite;

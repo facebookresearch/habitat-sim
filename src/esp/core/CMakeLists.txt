@@ -37,6 +37,8 @@ add_library(
   AbstractManagedObject.h
   Buffer.cpp
   Buffer.h
+  Check.cpp
+  Check.h
   Configuration.h
   esp.cpp
   esp.h

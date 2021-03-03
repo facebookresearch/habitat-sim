@@ -53,6 +53,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         pyrobot_noisy_controls,
     )
     from habitat_sim.bindings import (  # noqa: F401
+        CameraSensorSpec,
         RigidState,
         SceneGraph,
         SceneNode,
@@ -62,6 +63,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         SensorSubType,
         SensorType,
         SimulatorConfiguration,
+        VisualSensorSpec,
         cuda_enabled,
         vhacd_enabled,
     )
