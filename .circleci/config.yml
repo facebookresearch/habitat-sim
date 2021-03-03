@@ -51,6 +51,7 @@ commands:
                   zip \
                   libbullet-dev\
                   lcov\
+                  libhdf5-dev \
                   unzip || true
       - run:
           name: Install Headless Chrome dependencies
