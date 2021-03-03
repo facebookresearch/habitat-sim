@@ -63,15 +63,17 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
 }
 
 Sensor::~Sensor() {
+
+  LOG(INFO) << node().getId();
+  // Traverse up to root node and remove sensor from every subtreeSensorSuite
+  auto current = node().parent();
+  while (current->parent() != nullptr) {
+    static_cast<scene::SceneNode&>(*current).getSubtreeSensorSuite().remove(
+        *this);
+    current = current->parent();
+  }
   LOG(INFO) << "Deconstructing Sensor";
   LOG(INFO) << spec_->uuid;
-  // // Traverse up to root node and remove sensor from every subtreeSensorSuite
-  // auto current = node().parent();
-  // while (current->parent() != nullptr) {
-  //   static_cast<scene::SceneNode&>(*current).getSubtreeSensorSuite().remove(
-  //       *this);
-  //   current = current->parent();
-  // }
 }
 
 void Sensor::setTransformationFromSpec() {
