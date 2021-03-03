@@ -25,24 +25,11 @@ namespace Cr = Corrade;
 namespace esp {
 namespace geo {
 
-struct Voxel {
-  float m_distance;
-  bool is_filled = false;
-  Voxel(bool filled) { is_filled = filled; }
-};
-
 class VoxelGrid {
  public:
-  // default constructor
-  VoxelGrid();
   // computes a voxel grid for a meshMetaData based on a given resolution (# of
   // voxels) and returns result directly from VHACD O(resolution)
   VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData, int resolution);
-
-  // computes the meshMetaData's bounding box size and creates a Voxel Grid
-  // large enough to fit the mesh. O( (bb.size()/voxelSize)^3 )
-  VoxelGrid(const assets::MeshMetaData& meshMetaData,
-            const Mn::Vector3 voxelSize);
 
   // Creates an empty voxel grid with specified voxel size and dimensions.
   VoxelGrid(const Mn::Vector3& voxelSize,
@@ -51,42 +38,71 @@ class VoxelGrid {
   // Loads a voxel grid from an existing file.
   VoxelGrid(const std::string filepath);
 
+  void addBoolGrid(std::string name);
+
+  void addIntGrid(std::string name);
+
+  void addFloatGrid(std::string name);
+
+  void addVector3Grid(std::string name);
+
   // (coords.y * x.size * z.size + coords.z * x.size + coords.x)
   int hashVoxelIndex(const Mn::Vector3i& coords);
 
-  // Gets a voxel pointer based on local coords (coords.y * x.size * z.size +
-  // coords.z * x.size + coords.x) O(1) access. Returns nullptr if invalid
-  // coordinates.
-  Voxel* getVoxelByIndex(const Mn::Vector3i& coords);
+  //  --== GETTERS AND SETTERS FOR VOXELS ==--
 
-  // First convert coords to integer voxel coordinates, then apply offset
-  // * rotation
-  Mn::Vector3i getVoxelIndex(const Mn::Vector3& coords);
+  // Getter and setter for bool value voxel grids
+  bool getBoolVoxelByIndex(const Mn::Vector3i& coords,
+                           std::string gridName = "boundary");
 
-  // multiply coords by m_voxelSize, apply offset
-  Mn::Vector3 getGlobalCoords(const Mn::Vector3i& coords);
+  void setBoolVoxelByIndex(const Mn::Vector3i& coords,
+                           bool val,
+                           std::string gridName = "boundary");
+  // Getter and setter for int value voxel grids
+  int getIntVoxelByIndex(const Mn::Vector3i& coords, std::string gridName);
 
-  // just converts coords to local coords, then getVoxelByLocalCoords. Returns
-  // nullptr if invalid coordinates.
-  Voxel* getVoxelByGlobalCoords(const Mn::Vector3& coords);
+  void setIntVoxelByIndex(const Mn::Vector3i& coords,
+                          int val,
+                          std::string gridName);
 
-  // Sets voxel by local voxel index.
-  void setVoxelByIndex(const Mn::Vector3i& coords, Voxel* voxel);
+  // Getter and setter for Float value voxel grids
+  float getFloatVoxelByIndex(const Mn::Vector3i& coords, std::string gridName);
 
-  // iterates through each voxel of smaller VoxelGrid, applies relevant offset,
-  // and returns true if the VoxelGrids have a shared filled voxel. (Q: Should
-  // this work if the VoxelGrids have different voxelSizes?) O(N^3) <-- Q: can
-  // we do better?
-  bool checkForCollision(const VoxelGrid& v_grid);
+  void setFloatVoxelByIndex(const Mn::Vector3i& coords,
+                            float val,
+                            std::string gridName);
 
-  Mn::Vector3i getVoxelGridDimensions();
+  // Getter and setter for Vector3 value voxel grids
+  Mn::Vector3 getVector3VoxelByIndex(const Mn::Vector3i& coords,
+                                     std::string gridName);
+
+  void setVector3VoxelByIndex(const Mn::Vector3i& coords,
+                              Mn::Vector3 val,
+                              std::string gridName);
+
+  Mn::Vector3i getVoxelGridDimensions() { return m_voxelGridDimensions; }
   // The unit lengths for each voxel dimension
-  Mn::Vector3 getVoxelSize();
+  Mn::Vector3 getVoxelSize() { return m_voxelSize; }
 
   // The relative positioning of the voxel grid to the simulation (May not
   // need). VoxelGrid corner is anchored to the world origin, so grid[0] is at
   // global position VoxelSize/2 + offset.dot(VoxelSize)
-  Mn::Vector3i getOffset();
+  Mn::Vector3 getOffset() { return m_offset; }
+
+  std::shared_ptr<Mn::Trade::MeshData> getMeshData() {
+    if (meshData_ == nullptr)
+      generateMesh();
+    return meshData_;
+  }
+
+  // The GL Mesh for visualizing the voxel.
+  std::unique_ptr<Mn::GL::Mesh>& getMeshGL() {
+    if (meshData_ == nullptr)
+      generateMesh();
+    return meshGL_;
+  }
+
+  Mn::Vector3 getGlobalCoords(const Mn::Vector3i& coords);
 
   // Convert coords to voxel coordinates
   void setOffset(const Mn::Vector3& coords);
@@ -98,10 +114,8 @@ class VoxelGrid {
                                 std::vector<Mn::UnsignedInt>& indices,
                                 Mn::Vector3i local_coords);
 
-  // insert voxel information into a mesh.
-  void fillVoxelMeshData(Cr::Containers::Optional<Mn::Trade::MeshData>& mesh);
-
-  void generateMeshData();
+  // insert voxel information into a mesh which will be used for visualization.
+  void generateMesh();
 
   ESP_SMART_POINTERS(VoxelGrid)
 
@@ -117,8 +131,11 @@ class VoxelGrid {
   // world coordinates (not voxel).
   Mn::Vector3 m_offset;
 
-  // The mesh for visualizing the voxel.
-  std::unique_ptr<Mn::GL::Mesh> mesh_;
+  // The MeshData of the voxelization, used for visualization
+  std::shared_ptr<Mn::Trade::MeshData> meshData_;
+
+  // The GL Mesh for visualizing the voxel.
+  std::unique_ptr<Mn::GL::Mesh> meshGL_;
 
   /* a pointer to an array of pointers to Voxels.
   Alternatives:
@@ -127,7 +144,17 @@ class VoxelGrid {
   Bitmask: Pros - maybe very fast collision detection? Cons - Can't represent
   any other info, complicated implementation
 */
-  Voxel** m_grid;
+
+  std::map<std::string, std::shared_ptr<bool> > boolGrids_;
+
+  std::map<std::string, std::shared_ptr<int> > intGrids_;
+
+  std::map<std::string, std::shared_ptr<float> > floatGrids_;
+
+  std::map<std::string, std::shared_ptr<Mn::Vector3> > vector3Grids_;
+
+  // std::map<std::string, std::shared_ptr<bool> > boolGrids_;
+  // Voxel** m_grid;
 };
 
 }  // namespace geo

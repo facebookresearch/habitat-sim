@@ -27,5 +27,9 @@ VoxelWrapper::VoxelWrapper(std::string renderAssetHandle,
   }
 }
 
+std::shared_ptr<VoxelGrid> VoxelWrapper::getVoxelGrid() {
+  return voxelGrid;
+}
+
 }  // namespace geo
 }  // namespace esp

@@ -487,7 +487,9 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /** @brief Get the VoxelWrapper for the object.
    * @return The voxel wrapper for the object.
    */
-  esp::geo::VoxelWrapper* getVoxelization() const { return voxelWrapper; }
+  std::shared_ptr<esp::geo::VoxelWrapper> getVoxelization() const {
+    return voxelWrapper;
+  }
 
   /** @brief Get the scalar friction coefficient of the object. Only used for
    * dervied dynamic implementations of @ref RigidObject.
@@ -564,9 +566,9 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
                             int resolution = 1000000) {
     std::string renderAssetHandle =
         initializationAttributes_->getRenderAssetHandle();
-    esp::geo::VoxelWrapper* VoxelWrapper = new esp::geo::VoxelWrapper(
-        renderAssetHandle, &node(), resourceManager_, resolution);
-    voxelWrapper = VoxelWrapper;
+    voxelWrapper =
+        std::make_shared<esp::geo::VoxelWrapper>(esp::geo::VoxelWrapper(
+            renderAssetHandle, &node(), resourceManager_, resolution));
   }
 
   /** @brief Set the diagonal of the inertia matrix for the object.
@@ -656,7 +658,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   std::vector<esp::scene::SceneNode*> visualNodes_;
 
   // ptr to the VoxelWrapper associated with this RigidBase
-  esp::geo::VoxelWrapper* voxelWrapper = nullptr;
+  std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper = nullptr;
 
  protected:
   /** @brief Used to synchronize other simulator's notion of the object state

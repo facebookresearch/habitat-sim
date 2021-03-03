@@ -526,9 +526,9 @@ double PhysicsManager::getAngularDamping(const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getAngularDamping();
 }
-esp::geo::VoxelWrapper* PhysicsManager::getVoxelization(
+std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getObjectVoxelization(
     const int physObjectID) const {
-  if (physObjectID > 0) {
+  if (physObjectID >= 0) {
     assertIDValidity(physObjectID);
     return existingObjects_.at(physObjectID)->getVoxelization();
   } else {

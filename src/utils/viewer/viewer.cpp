@@ -147,7 +147,6 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
-  esp::geo::VoxelGrid createVoxelField(int objectID);
   void displayVoxelField(int objectID);
   /**
    * @brief Toggle between ortho and perspective camera
@@ -260,16 +259,8 @@ Key Commands:
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
 
-  //! tracks primitive mesh ids
-  int nextVoxelGridMeshId = 0;
-
+  //! Resolution selection for voxelization.
   int resolutionInd = 0;
-
-  /**
-   * @brief Primitive meshes available for instancing via @ref
-   * addPrimitiveToDrawables for debugging or visualization purposes.
-   */
-  std::map<int, std::unique_ptr<Mn::GL::Mesh>> voxel_grids_;
 
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
@@ -798,33 +789,14 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
-esp::geo::VoxelGrid Viewer::createVoxelField(int objectId) {
-  const Mn::Vector3 v_size = Mn::Vector3(0.5, 0.5, 0.5);
-  const Mn::Vector3i v_dim = Mn::Vector3i(100, 100, 100);
-  int resolutions[3] = {3000000, 100000, 1000};
-  unsigned int resolution =
-      resolutions[resolutionInd % 3];  // right now this has to be 1mil + for
-                                       // the scene for the voxelization to work
-                                       // (Not yet sure why..) TODO: Fix this.
-
-  std::unique_ptr<esp::assets::MeshData> objMesh =
-      esp::assets::MeshData::create_unique();
-  objMesh = simulator_->getObjectMeshData(objectId);
-
-  esp::geo::VoxelGrid v(objMesh, resolution);
-
-  return v;
-}
-
 void Viewer::displayVoxelField(int objectID) {
-  // simulator_->createObjectVoxelization(objectID);
-  !Mn::Debug();
-  auto v = createVoxelField(objectID);
+  int resolutions[3] = {2000000, 100000, 1000};
+  unsigned int resolution = resolutions[resolutionInd % 3];
+  simulator_->createObjectVoxelization(objectID, resolution);
+  std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization =
+      simulator_->getObjectVoxelication(objectID);
 
-  Cr::Containers::Optional<Mn::Trade::MeshData> mesh;
-  v.fillVoxelMeshData(mesh);
-  voxel_grids_[nextVoxelGridMeshId++] =
-      std::make_unique<Magnum::GL::Mesh>(Mn::MeshTools::compile(*mesh));
+  auto voxelGrid = objectVoxelization->getVoxelGrid();
 
   // custom shader for voxel grid
   Magnum::Shaders::MeshVisualizer3D shader_{
@@ -852,28 +824,12 @@ void Viewer::displayVoxelField(int objectID) {
       objectID == -1 ? &activeSceneGraph_->getRootNode()
                      : simulator_->getObjectVisualSceneNodes(objectID)[0];
 
-  // get BB of scene node
-  /*Mn::Vector3 min;
-
-  if (mesh->attributeFormat(Mn::Trade::MeshAttribute::Position) ==
-      Mn::VertexFormat::Vector3)
-    minmax = Mn::Math::min(
-        mesh->attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Position));
-  else
-    minmax = Mn::Math::min(mesh->positions3DAsArray());*/
-
-  // print out translations of objectvisnodes
-  for (auto& node : objectVisNode->children()) {
-    Mn::Debug() << node.scaling();
-    !Mn::Debug();
-  }
-
   esp::scene::SceneNode* visualVoxelNode = &(objectVisNode->createChild());
 
   // visualVoxelNode->setTranslation(translation);
 
   objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
-      voxel_grids_[nextVoxelGridMeshId - 1], visualVoxelNode, &shader_);
+      voxelGrid->getMeshGL(), visualVoxelNode, &shader_);
   /*auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId - 1],
       &objectPickingHelper_->getDrawables());*/

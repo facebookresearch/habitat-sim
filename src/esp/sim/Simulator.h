@@ -533,6 +533,15 @@ class Simulator {
                                 int sceneID = 0);
 
   /**
+   * @brief Returns the VoxelWrapper for a particular object.
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @return A shared ptr to the object's VoxelWrapper .
+   */
+  std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelication(int objectID);
+
+  /**
    * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
    * belonging to an object.
    *

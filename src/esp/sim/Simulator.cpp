@@ -885,6 +885,11 @@ void Simulator::createObjectVoxelization(int objectID,
   physicsManager_->generateVoxelization(objectID, resolution);
 }
 
+std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getObjectVoxelication(
+    int objectID) {
+  return physicsManager_->getObjectVoxelization(objectID);
+}
+
 void Simulator::setObjectSemanticId(uint32_t semanticId,
                                     const int objectID,
                                     const int sceneID) {

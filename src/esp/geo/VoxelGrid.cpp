@@ -12,7 +12,6 @@ namespace Cr = Corrade;
 namespace esp {
 namespace geo {
 
-VoxelGrid::VoxelGrid() {}
 VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
                      int resolution) {
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
@@ -43,27 +42,26 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
 
   // create empty VoxelGrid
   const int gridSize = dims[0] * dims[1] * dims[2];
-  m_grid = new Voxel*[gridSize];
+  bool* b_grid = new bool[gridSize];
+  std::shared_ptr<bool> boundary_grid(b_grid);
+  boolGrids_.insert(std::make_pair("boundary", boundary_grid));
   int num_filled = 0;
   // Transfer data from Volume to VoxelGrid
   for (int i = 0; i < dims[0]; i++) {
     for (int j = 0; j < dims[1]; j++) {
       for (int k = 0; k < dims[2]; k++) {
-        Voxel* vox = new Voxel(false);
         if (vhacdVolume->GetVoxel(i, j, k) >= 2) {
           num_filled++;
-          (*vox).is_filled = true;
+          setBoolVoxelByIndex(Mn::Vector3i(i, j, k), true);
+        } else {
+          setBoolVoxelByIndex(Mn::Vector3i(i, j, k), false);
         }
-        setVoxelByIndex(Mn::Vector3i(i, j, k), vox);
       }
     }
   }
   Mn::Debug() << "Resolution: " << dims[0] << dims[1] << dims[2];
   Mn::Debug() << "Number of filled voxels: " << num_filled;
 }
-
-VoxelGrid::VoxelGrid(const assets::MeshMetaData& meshMetaData,
-                     Mn::Vector3 voxelSize) {}
 
 VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
                      const Mn::Vector3i& voxelGridDimensions) {
@@ -72,12 +70,54 @@ VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
   m_offset = Mn::Vector3(0.0, 0.0, 0.0);
   const int gridSize =
       voxelGridDimensions[0] * voxelGridDimensions[1] * voxelGridDimensions[2];
-  m_grid = new Voxel*[gridSize];
+  bool* b_grid = new bool[gridSize];
+  std::shared_ptr<bool> boundary_grid(b_grid);
+  std::memset(boundary_grid.get(), false, gridSize * sizeof(bool));
+  boolGrids_.insert(std::make_pair("boundary", boundary_grid));
 }
 
 VoxelGrid::VoxelGrid(const std::string filepath) {}
 
-// (coords.y * x.size * z.size + coords.z * x.size + coords.x)
+// Creators for extra voxel grids
+
+void VoxelGrid::addBoolGrid(const std::string gridName) {
+  const int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                       m_voxelGridDimensions[2];
+  bool* n_grid = new bool[gridSize];
+  std::shared_ptr<bool> new_grid(n_grid);
+  std::memset(new_grid.get(), false, gridSize * sizeof(bool));
+  boolGrids_.insert(std::make_pair(gridName, new_grid));
+}
+
+void VoxelGrid::addIntGrid(const std::string gridName) {
+  const int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                       m_voxelGridDimensions[2];
+  int* n_grid = new int[gridSize];
+  std::shared_ptr<int> new_grid(n_grid);
+  std::memset(new_grid.get(), 0, gridSize * sizeof(int));
+  intGrids_.insert(std::make_pair(gridName, new_grid));
+}
+
+void VoxelGrid::addFloatGrid(const std::string gridName) {
+  const int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                       m_voxelGridDimensions[2];
+  float* n_grid = new float[gridSize];
+  std::shared_ptr<float> new_grid(n_grid);
+  std::memset(new_grid.get(), 0, gridSize * sizeof(float));
+  floatGrids_.insert(std::make_pair(gridName, new_grid));
+}
+
+void VoxelGrid::addVector3Grid(const std::string gridName) {
+  const int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                       m_voxelGridDimensions[2];
+  Mn::Vector3* n_grid = new Mn::Vector3[gridSize];
+  std::shared_ptr<Mn::Vector3> new_grid(n_grid);
+  std::memset(new_grid.get(), 0, gridSize * sizeof(Mn::Vector3));
+  vector3Grids_.insert(std::make_pair(gridName, new_grid));
+}
+
+// Currently naive hashing. TODO: Look into hibert curves and Z-curve
+// alternatives for mappings that maximize memory locality of adjacent cells.
 int VoxelGrid::hashVoxelIndex(const Mn::Vector3i& coords) {
   int hashed_voxel =
       coords[0] + coords[1] * m_voxelGridDimensions[0] +
@@ -85,12 +125,61 @@ int VoxelGrid::hashVoxelIndex(const Mn::Vector3i& coords) {
   return hashed_voxel;
 }
 
-// Gets a voxel pointer based on local coords (coords.y * x.size * z.size +
-// coords.z * x.size + coords.x) O(1) access. Returns nullptr if invalid
-// coordinates.
-Voxel* VoxelGrid::getVoxelByIndex(const Mn::Vector3i& coords) {
+//  --== GETTERS AND SETTERS FOR VOXELS ==--
+
+// Getter and setter for bool value voxel grids
+bool VoxelGrid::getBoolVoxelByIndex(const Mn::Vector3i& coords,
+                                    std::string gridName) {
   int hashedVoxelIndex = hashVoxelIndex(coords);
-  return m_grid[hashedVoxelIndex];
+  return boolGrids_[gridName].get()[hashedVoxelIndex];
+}
+
+void VoxelGrid::setBoolVoxelByIndex(const Mn::Vector3i& coords,
+                                    bool val,
+                                    std::string gridName) {
+  int hashedVoxelIndex = hashVoxelIndex(coords);
+  boolGrids_[gridName].get()[hashedVoxelIndex] = val;
+}
+// Getter and setter for int value voxel grids
+int VoxelGrid::getIntVoxelByIndex(const Mn::Vector3i& coords,
+                                  std::string gridName) {
+  int hashedVoxelIndex = hashVoxelIndex(coords);
+  return intGrids_[gridName].get()[hashedVoxelIndex];
+}
+
+void VoxelGrid::setIntVoxelByIndex(const Mn::Vector3i& coords,
+                                   int val,
+                                   std::string gridName) {
+  int hashedVoxelIndex = hashVoxelIndex(coords);
+  intGrids_[gridName].get()[hashedVoxelIndex] = val;
+}
+
+// Getter and setter for Float value voxel grids
+float VoxelGrid::getFloatVoxelByIndex(const Mn::Vector3i& coords,
+                                      std::string gridName) {
+  int hashedVoxelIndex = hashVoxelIndex(coords);
+  return floatGrids_[gridName].get()[hashedVoxelIndex];
+}
+
+void VoxelGrid::setFloatVoxelByIndex(const Mn::Vector3i& coords,
+                                     float val,
+                                     std::string gridName) {
+  int hashedVoxelIndex = hashVoxelIndex(coords);
+  floatGrids_[gridName].get()[hashedVoxelIndex] = val;
+}
+
+// Getter and setter for Vector3 value voxel grids
+Mn::Vector3 VoxelGrid::getVector3VoxelByIndex(const Mn::Vector3i& coords,
+                                              std::string gridName) {
+  int hashedVoxelIndex = hashVoxelIndex(coords);
+  return vector3Grids_[gridName].get()[hashedVoxelIndex];
+}
+
+void VoxelGrid::setVector3VoxelByIndex(const Mn::Vector3i& coords,
+                                       Mn::Vector3 val,
+                                       std::string gridName) {
+  int hashedVoxelIndex = hashVoxelIndex(coords);
+  vector3Grids_[gridName].get()[hashedVoxelIndex] = val;
 }
 
 Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
@@ -99,11 +188,6 @@ Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
                             (coords[2]) * m_voxelSize[2]);
   global_coords += m_offset;
   return global_coords;
-}
-
-void VoxelGrid::setVoxelByIndex(const Mn::Vector3i& coords, Voxel* voxel) {
-  int hashedVoxelIndex = hashVoxelIndex(coords);
-  m_grid[hashedVoxelIndex] = voxel;
 }
 
 void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
@@ -165,8 +249,7 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   indices.push_back(sz + 4);
 }
 
-void VoxelGrid::fillVoxelMeshData(
-    Cr::Containers::Optional<Mn::Trade::MeshData>& mesh) {
+void VoxelGrid::generateMesh() {
   std::vector<Mn::UnsignedInt> indices;
   std::vector<Mn::Vector3> positions;
   int num_filled = 0;
@@ -174,10 +257,8 @@ void VoxelGrid::fillVoxelMeshData(
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
         Mn::Vector3i local_coords(i, j, k);
-        Voxel* vox = getVoxelByIndex(local_coords);
-        if (vox == nullptr)
-          continue;
-        if (vox->is_filled) {
+        int val = getBoolVoxelByIndex(local_coords);
+        if (val == 1) {
           num_filled++;
           addVoxelToMeshPrimitives(positions, indices, local_coords);
         }
@@ -186,48 +267,18 @@ void VoxelGrid::fillVoxelMeshData(
   }
 
   Mn::Debug() << "Number of filled voxels for the visual mesh: " << num_filled;
-  mesh = Mn::MeshTools::owned(Mn::Trade::MeshData{
-      Mn::MeshPrimitive::Triangles,
-      {},
-      indices,
-      Mn::Trade::MeshIndexData{indices},
-      {},
-      positions,
-      {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
-                                    Cr::Containers::arrayView(positions)}}});
-}
-
-void VoxelGrid::generateMeshData() {
-  std::vector<Mn::UnsignedInt> indices;
-  std::vector<Mn::Vector3> positions;
-  int num_filled = 0;
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        Mn::Vector3i local_coords(i, j, k);
-        Voxel* vox = getVoxelByIndex(local_coords);
-        if (vox == nullptr)
-          continue;
-        if (vox->is_filled) {
-          num_filled++;
-          addVoxelToMeshPrimitives(positions, indices, local_coords);
-        }
-      }
-    }
-  }
-
-  Mn::Debug() << "Number of filled voxels for the visual mesh: " << num_filled;
-  mesh_ = std::make_unique<Mn::GL::Mesh>(
-      Mn::MeshTools::compile(Mn::MeshTools::owned(
-          Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
-                              {},
-                              indices,
-                              Mn::Trade::MeshIndexData{indices},
-                              {},
-                              positions,
-                              {Mn::Trade::MeshAttributeData{
-                                  Mn::Trade::MeshAttribute::Position,
-                                  Cr::Containers::arrayView(positions)}}})));
+  meshData_ = std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::owned(
+      Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
+                          {},
+                          indices,
+                          Mn::Trade::MeshIndexData{indices},
+                          {},
+                          positions,
+                          {Mn::Trade::MeshAttributeData{
+                              Mn::Trade::MeshAttribute::Position,
+                              Cr::Containers::arrayView(positions)}}}));
+  meshGL_ =
+      std::make_unique<Magnum::GL::Mesh>(Mn::MeshTools::compile(*meshData_));
 }
 
 }  // namespace geo

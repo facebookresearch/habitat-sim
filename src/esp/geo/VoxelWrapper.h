@@ -18,6 +18,8 @@ class VoxelWrapper {
                esp::scene::SceneNode* sceneNode,
                esp::assets::ResourceManager& resourceManager_,
                int resolution = 1000000);
+
+  std::shared_ptr<VoxelGrid> getVoxelGrid();
 };
 
 }  // namespace geo

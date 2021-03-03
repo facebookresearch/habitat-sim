@@ -659,7 +659,8 @@ class PhysicsManager {
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    */
-  esp::geo::VoxelWrapper* getVoxelization(const int physObjectID) const;
+  std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelization(
+      const int physObjectID) const;
 
   // ============= Platform dependent function =============
 
