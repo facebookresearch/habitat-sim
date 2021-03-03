@@ -72,7 +72,13 @@ void initSceneBindings(py::module& m) {
           py::overload_cast<>(&SceneNode::absoluteTranslation))
       .def_property_readonly(
           "absolute_translation",
-          py::overload_cast<>(&SceneNode::absoluteTranslation, py::const_));
+          py::overload_cast<>(&SceneNode::absoluteTranslation, py::const_))
+      .def_property_readonly("node_sensor_suite",
+                             &SceneNode::getNodeSensorSuite,
+                             R"(Get node SensorSuite of this SceneNode)")
+      .def_property_readonly("subtree_sensor_suite",
+                             &SceneNode::getSubtreeSensorSuite,
+                             R"(Get subtree SensorSuite of this SceneNode)");
 
   py::class_<SceneGraph>(m, "SceneGraph")
       .def(py::init())

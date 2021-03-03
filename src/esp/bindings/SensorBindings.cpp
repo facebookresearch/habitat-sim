@@ -18,6 +18,7 @@
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
 #include "esp/sensor/Sensor.h"
+#include "esp/sensor/SensorFactory.h"
 #include "esp/sim/Simulator.h"
 
 namespace py = pybind11;
@@ -95,6 +96,10 @@ void initSensorBindings(py::module& m) {
       .def(py::init(&CameraSensorSpec::create<>))
       .def_readwrite("channels", &CameraSensorSpec::channels)
       .def_readwrite("observation_space", &CameraSensorSpec::observationSpace);
+
+  // ==== SensorFactory ====
+  py::class_<SensorFactory>(m, "SensorFactory")
+      .def("create_sensors", &SensorFactory::createSensors);
 
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,

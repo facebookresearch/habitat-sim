@@ -158,10 +158,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("bounds", &PathFinder::bounds)
       .function("isNavigable", &PathFinder::isNavigable);
 
-  em::class_<SensorSuite>("SensorSuite")
-      .smart_ptr_constructor("SensorSuite", &SensorSuite::create<>)
-      .function("get", &SensorSuite::get);
-
   em::enum_<SensorType>("SensorType")
       .value("NONE", SensorType::None)
       .value("COLOR", SensorType::Color)
@@ -227,8 +223,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("config",
                 em::select_overload<const AgentConfiguration&() const>(
                     &Agent::getConfig))
-      .property("sensorSuite", em::select_overload<const SensorSuite&() const>(
-                                   &Agent::getSensorSuite))
       .function("getState", &Agent::getState)
       .function("setState", &Agent::setState)
       .function("hasAction", &Agent::hasAction)
