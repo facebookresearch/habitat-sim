@@ -52,6 +52,9 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   spec_->sanityCheck();
 
   node.getNodeSensorSuite().add(*this);
+  static_cast<scene::SceneNode&>(*node.parent())
+      .getNodeSensorSuite()
+      .add(*this);
   node.getSubtreeSensorSuite().add(*this);
   // Traverse up to root node and add sensor to every subtreeSensorSuite
   auto parent = node.parent();
@@ -63,8 +66,6 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
 }
 
 Sensor::~Sensor() {
-
-  LOG(INFO) << node().getId();
   // Traverse up to root node and remove sensor from every subtreeSensorSuite
   auto current = node().parent();
   while (current->parent() != nullptr) {
@@ -73,7 +74,6 @@ Sensor::~Sensor() {
     current = current->parent();
   }
   LOG(INFO) << "Deconstructing Sensor";
-  LOG(INFO) << spec_->uuid;
 }
 
 void Sensor::setTransformationFromSpec() {

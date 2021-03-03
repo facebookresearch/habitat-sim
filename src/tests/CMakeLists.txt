@@ -17,7 +17,6 @@ configure_file(
 
 test(CoreTest io)
 
-
 corrade_add_test(
   SimTest
   SimTest.cpp

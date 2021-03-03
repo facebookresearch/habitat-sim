@@ -92,24 +92,24 @@ void SensorTest::testSensorFactory() {
 
   // Remove sensor from parent node and assert that it is no longer in parent
   // subtreeSensorSuite
-  //parentNode.getSubtreeSensorSuite().get("A").~Sensor();
+  // parentNode.getSubtreeSensorSuite().get("A").~Sensor();
   // delete parentNode.getSubtreeSensorSuite().get("A").node();
   // CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() ==
-  //                7);  // 6
+  //                7);  // should be 6
 
-  // // Remove sensor from child node and assert that it is no longer in parent and
+  // // Remove sensor from child node and assert that it is no longer in parent
+  // and
   // // child subtreeSensorSuite
   // //childNode.getSubtreeSensorSuite().get("D").~Sensor();
   // CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() ==
-  //                7);  // 5
+  //                7);  // should be 5
   // CORRADE_VERIFY(childNode.getSubtreeSensorSuite().getSensors().size() ==
-  //                3);  // 2
+  //                3);  // should be 2
 
   // // Delete child node and assert that sensors are no longer in parentNode
   // delete childNode;
   // CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() ==
-  //                7);  // 3
-
+  //                7);  // should be 3
 }
 
 CORRADE_TEST_MAIN(SensorTest)
