@@ -730,51 +730,52 @@ void SimTest::addSensorToObject() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
 
-//   // Add sensor to sphere object
-//   auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
-//   objectSensorSpec->uuid = std::to_string(objectID);
-//   objectSensorSpec->position = {0, 0, 0};
-//   objectSensorSpec->orientation = {0, 0, 0};
-//   objectSensorSpec->resolution = {128, 128};
-//   simulator->addSensorToObject(objectID, objectSensorSpec);
-//   std::string expectedUUID = std::to_string(objectID);
-//   CameraSensor& cameraSensor =
-//       dynamic_cast<CameraSensor&>(objectNode.getSubtreeSensorSuite().get(expectedUUID));
-//   cameraSensor.setTransformationFromSpec();
+  // Add sensor to sphere object
+  auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
+  objectSensorSpec->uuid = std::to_string(objectID);
+  objectSensorSpec->position = {0, 0, 0};
+  objectSensorSpec->orientation = {0, 0, 0};
+  objectSensorSpec->resolution = {128, 128};
+  simulator->addSensorToObject(objectID, objectSensorSpec);
+  std::string expectedUUID = std::to_string(objectID);
+  CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
+      objectNode.getSubtreeSensorSuite().get(expectedUUID));
+  cameraSensor.setTransformationFromSpec();
 
-//   simulator->setTranslation({1.0f, 1.5f, 1.0f},
-//                             objectID);  // Move camera to same place as agent
+  simulator->setTranslation({1.0f, 1.5f, 1.0f},
+                            objectID);  // Move camera to same place as agent
 
-//   auto objs2 = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-//   int objectID2 = simulator->addObjectByHandle(objs[0]);
-//   CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
-//   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
-//   esp::scene::SceneNode& objectNode2 = *simulator->getObjectSceneNode(objectID2);
+  auto objs2 = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
+  int objectID2 = simulator->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
+  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
+  esp::scene::SceneNode& objectNode2 =
+      *simulator->getObjectSceneNode(objectID2);
 
-//   Observation observation;
-//   ObservationSpace obsSpace;
-//   simulator->getRenderer()->bindRenderTarget(cameraSensor);
-//   CORRADE_VERIFY(cameraSensor.getObservation(*simulator, observation));
-//   CORRADE_VERIFY(cameraSensor.getObservationSpace(obsSpace));
+  Observation observation;
+  ObservationSpace obsSpace;
+  simulator->getRenderer()->bindRenderTarget(cameraSensor);
+  CORRADE_VERIFY(cameraSensor.getObservation(*simulator, observation));
+  CORRADE_VERIFY(cameraSensor.getObservationSpace(obsSpace));
 
-//   esp::vec2i defaultResolution = {128, 128};
-//   std::vector<size_t> expectedShape{{static_cast<size_t>(defaultResolution[0]),
-//                                      static_cast<size_t>(defaultResolution[1]),
-//                                      4}};
+  esp::vec2i defaultResolution = {128, 128};
+  std::vector<size_t> expectedShape{{static_cast<size_t>(defaultResolution[0]),
+                                     static_cast<size_t>(defaultResolution[1]),
+                                     4}};
 
-//   CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::Tensor);
-//   CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
-//   CORRADE_COMPARE(obsSpace.shape, expectedShape);
-//   CORRADE_COMPARE(observation.buffer->shape, expectedShape);
+  CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::Tensor);
+  CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
+  CORRADE_COMPARE(obsSpace.shape, expectedShape);
+  CORRADE_COMPARE(observation.buffer->shape, expectedShape);
 
-//   // Compare with previously rendered ground truth
-//   // Object camera at same location as agent camera should render similar image
-//   CORRADE_COMPARE_WITH(
-//       (Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
-//                        {defaultResolution[0], defaultResolution[1]},
-//                        observation.buffer->data}),
-//       Cr::Utility::Directory::join(screenshotDir, "SimTestExpectedScene.png"),
-//       (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.75f}));
+  // Compare with previously rendered ground truth
+  // Object camera at same location as agent camera should render similar image
+  CORRADE_COMPARE_WITH(
+      (Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
+                       {defaultResolution[0], defaultResolution[1]},
+                       observation.buffer->data}),
+      Cr::Utility::Directory::join(screenshotDir, "SimTestExpectedScene.png"),
+      (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.75f}));
 }
 }  // namespace
 

@@ -18,8 +18,9 @@ void SensorFactory::createSensors(scene::SceneNode& node,
     if (spec->isVisualSensorSpec()) {
       if (spec->sensorSubType == SensorSubType::Orthographic ||
           spec->sensorSubType == SensorSubType::Pinhole) {
-            sensorNode.addFeature<sensor::CameraSensor>(std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
-          }
+        sensorNode.addFeature<sensor::CameraSensor>(
+            std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
+      }
       // TODO: Implement fisheye sensor, Equirectangle sensor, Panorama sensor
       // else if(spec->sensorSubType == SensorSubType::Fisheye) {
       //   sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));

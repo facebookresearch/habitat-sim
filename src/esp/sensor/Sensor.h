@@ -158,7 +158,8 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
     return sensors_;
   }
 
-  const std::map<std::string, std::reference_wrapper<sensor::Sensor>>& getSensors() const {
+  const std::map<std::string, std::reference_wrapper<sensor::Sensor>>&
+  getSensors() const {
     return sensors_;
   }
 
