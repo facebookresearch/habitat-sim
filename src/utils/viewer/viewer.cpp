@@ -566,6 +566,8 @@ class Viewer : public Mn::Platform::Application {
     return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
   }
 
+  void reloadLights();
+
   std::string helpText = R"(
 ==================================================
 Welcome to the Habitat-sim C++ Viewer application!
@@ -731,6 +733,8 @@ Key Commands:
   esp::scene::SceneGraph* activeSceneGraph_ = nullptr;
   bool drawObjectBBs = false;
   std::string gfxReplayRecordFilepath_;
+  std::string gfxReplayPlaybackFilepath_;
+  std::string lightsFilepath_;
 
   std::string cameraLoadPath_;
   // bool cameraSaved_ = false;
@@ -740,7 +744,7 @@ Key Commands:
   Mn::Timeline timeline_;
 
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
-  bool showFPS_ = true;
+  bool showFPS_ = false;  // disabled by default
   bool flyingCameraMode_ = false;
 
   // NOTE: Mouse + shift is to select object on the screen!!
@@ -750,13 +754,17 @@ Key Commands:
   // included)
 
   Mn::DebugTools::GLFrameProfiler profiler_{};
+
+  std::shared_ptr<esp::gfx::replay::Player> player_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
     : Mn::Platform::Application{
           arguments,
-          Configuration{}.setTitle("Viewer").setWindowFlags(
-              Configuration::WindowFlag::Resizable),
+          Configuration{}
+              .setTitle("Viewer")
+              .setSize(Mn::Vector2i(1024, 768))
+              .setWindowFlags(Configuration::WindowFlag::Resizable),
           GLConfiguration{}
               .setColorBufferSize(Mn::Vector4i(8, 8, 8, 8))
               .setSampleCount(4)} {
@@ -780,6 +788,14 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("gfx-replay-record-filepath")
       .setHelp("gfx-replay-record-filepath",
                "Enable replay recording with R key.")
+      .addOption("gfx-replay-playback-filepath")
+      .setHelp("gfx-replay-playback-filepath",
+               "Enable replay playback with [ and ] keys. Hold shift to seek "
+               "faster.")
+      .addOption("lights-filepath")
+      .setHelp("lights-filepath",
+               "A lights JSON file which will be hot-reloaded at 1Hz, to "
+               "support light tuning.")
       .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
@@ -830,6 +846,8 @@ Viewer::Viewer(const Arguments& arguments)
 
   cameraLoadPath_ = args.value("camera-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
+  gfxReplayPlaybackFilepath_ = args.value("gfx-replay-playback-filepath");
+  lightsFilepath_ = args.value("lights-filepath");
 
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
@@ -978,6 +996,18 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
+
+  if (!gfxReplayPlaybackFilepath_.empty()) {
+    player_ = simulator_->getGfxReplayManager()->readKeyframesFromFile(
+        gfxReplayPlaybackFilepath_);
+    if (player_) {
+      player_->setKeyframeIndex(0);
+    } else {
+      LOG(WARNING) << "Failed to load replay " << gfxReplayPlaybackFilepath_;
+    }
+  }
+
+  reloadLights();
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -1353,6 +1383,15 @@ void Viewer::drawEvent() {
     }
     // reset timeSinceLastSimulation, accounting for potential overflow
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
+
+    // reload lights at 1Hz
+    {
+      static int counter = 0;
+      if (counter++ == 60) {
+        reloadLights();
+        counter = 0;
+      }
+    }
   }
   uint32_t visibles = 0;
   if (flyingCameraMode_) {
@@ -1440,17 +1479,17 @@ void Viewer::drawEvent() {
                      : "Pinhole"));
     ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
-  }
 
-  ImGui::SetNextWindowPos(ImVec2(10, 10));
-  ImGui::Begin("main", NULL,
-               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
-                   ImGuiWindowFlags_AlwaysAutoResize);
-  ImGui::SetWindowFontScale(2.0);
-  std::string modeText =
-      "Mouse Ineraction Mode: " + getEnumName(mouseInteractionMode);
-  ImGui::Text("%s", modeText.c_str());
-  ImGui::End();
+    ImGui::SetNextWindowPos(ImVec2(10, 10));
+    ImGui::Begin("main", NULL,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                     ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::SetWindowFontScale(2.0);
+    std::string modeText =
+        "Mouse Ineraction Mode: " + getEnumName(mouseInteractionMode);
+    ImGui::Text("%s", modeText.c_str());
+    ImGui::End();
+  }
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
@@ -2079,6 +2118,25 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
+
+    case KeyEvent::Key::LeftBracket:
+      if (player_) {
+        const int stepSize =
+            (event.modifiers() & MouseEvent::Modifier::Shift) ? 60 : 1;
+        player_->setKeyframeIndex(
+            std::max(player_->getKeyframeIndex() - stepSize, 0));
+      }
+      break;
+    case KeyEvent::Key::RightBracket:
+      if (player_) {
+        const int stepSize =
+            (event.modifiers() & MouseEvent::Modifier::Shift) ? 60 : 1;
+        player_->setKeyframeIndex(
+            std::min(player_->getKeyframeIndex() + stepSize,
+                     player_->getNumKeyframes() - 1));
+      }
+      break;
+
     default:
       break;
   }
@@ -2225,6 +2283,46 @@ void Viewer::setupDemoFurniture() {
                  7, 6, 0.5, 0),
     };
   }
+}
+
+void Viewer::reloadLights() {
+  if (lightsFilepath_.empty()) {
+    return;
+  }
+  esp::io::JsonDocument jsonConfig;
+  try {
+    jsonConfig = esp::io::parseJsonFile(lightsFilepath_);
+  } catch (...) {
+    LOG(INFO) << lightsFilepath_ << " parse failed";
+    return;
+  }
+  std::vector<esp::gfx::LightInfo> lightInfos;
+  if (jsonConfig.HasMember("lights") && jsonConfig["lights"].IsArray()) {
+    const auto& lights = jsonConfig["lights"];
+    for (rapidjson::SizeType i = 0; i < lights.Size(); i++) {
+      const auto& light = lights[i];
+      ASSERT(light.HasMember("position"));
+      ASSERT(light.HasMember("color"));
+      const auto& pos = light.FindMember("position")->value;
+      ASSERT(pos.IsArray());
+      ASSERT(pos.Size() == 4);
+      ASSERT(pos[0].IsNumber());
+      const auto& colorScale = light.FindMember("color_scale")->value;
+      ASSERT(colorScale.IsNumber());
+      const auto& color = light.FindMember("color")->value;
+      ASSERT(color.IsArray());
+      ASSERT(color.Size() == 3);
+      ASSERT(color[0].IsNumber());
+      float lightPosW = pos[3].GetDouble() == 1.0 ? 1.0 : 0.0;
+      lightInfos.push_back(esp::gfx::LightInfo{
+          Magnum::Vector4(pos[0].GetDouble(), pos[1].GetDouble(),
+                          pos[2].GetDouble(), lightPosW),
+          Magnum::Color3(color[0].GetDouble() * colorScale.GetDouble(),
+                         color[1].GetDouble() * colorScale.GetDouble(),
+                         color[2].GetDouble() * colorScale.GetDouble())});
+    }
+  }
+  simulator_->setLightSetup(lightInfos);
 }
 
 }  // namespace
