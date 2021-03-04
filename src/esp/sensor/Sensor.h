@@ -103,6 +103,7 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   // can be called ONLY when it is attached to a scene node
   void setTransformationFromSpec();
 
+  // Remove references to sensors in sensorSuites and call Sensor's destructor
   void deleteSensor();
 
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) = 0;

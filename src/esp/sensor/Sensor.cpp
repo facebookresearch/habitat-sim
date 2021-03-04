@@ -83,7 +83,7 @@ void Sensor::setTransformationFromSpec() {
 
 void Sensor::deleteSensor() {
   // Traverse up to root node and remove sensor from every subtreeSensorSuite,
-  // if only the sensor is deleted and the sceneNode still exists
+  // only if the sensor is deleted and the sceneNode still exists
   node().getNodeSensorSuite().remove(*this);
   node().getSubtreeSensorSuite().remove(*this);
   if (node().parent() != nullptr) {

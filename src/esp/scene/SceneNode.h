@@ -76,6 +76,9 @@ class SceneNode : public MagnumObject,
   //! Sets node semanticId
   virtual void setSemanticId(int semanticId) { semanticId_ = semanticId; }
 
+  // Calls sceneNode's destructor
+  void deleteNode() { delete this; }
+
   Magnum::Vector3 absoluteTranslation() const;
 
   Magnum::Vector3 absoluteTranslation();

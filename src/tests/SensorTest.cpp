@@ -91,11 +91,9 @@ void SensorTest::testSensorFactory() {
   CORRADE_VERIFY(childNode.getSubtreeSensorSuite().getSensors().size() == 1);
 
   // Delete child node and assert that sensors are no longer in parentNode
-  childNode.~SceneNode();
+  childNode.deleteNode();
   CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 3);
   CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 3);
-
-  LOG(INFO) << "ALL DONE";
 }
 
 CORRADE_TEST_MAIN(SensorTest)
