@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneNode.h"
+#include "SceneGraph.h"
 #include "esp/geo/geo.h"
 #include "esp/sensor/Sensor.h"
 
@@ -31,6 +32,24 @@ SceneNode::SceneNode(MagnumScene& parentNode)
 }
 
 SceneNode::~SceneNode() {
+  // if the entire scene graph is being deleted, no need to update anything
+  if (SceneGraph::isRootNode(*this)) {
+    return;
+  }
+  if (!parent()) {
+    return;
+  }
+  // If node has a parent node, update the sensorSuites stored in each ancestor
+  // node in a bottom-up manner.
+  auto* child = children().first();
+  while (child != nullptr) {
+    SceneNode* child_node = dynamic_cast<SceneNode*>(child);
+    child = child->nextSibling();
+    if (child_node != nullptr) {
+      child_node->deleteNode();
+    }
+  }
+  // Remove all sensors when current node has no more children
   for (auto& entry : getNodeSensorSuite().getSensors()) {
     entry.second.get().deleteSensor();
     if (getNodeSensorSuite().getSensors().size() == 0) {

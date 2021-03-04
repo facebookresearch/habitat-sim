@@ -4,6 +4,7 @@
 
 #include "Sensor.h"
 #include <Magnum/EigenIntegration/Integration.h>
+#include "esp/scene/SceneGraph.h"
 
 #include <utility>
 
@@ -65,6 +66,20 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
 }
 
 Sensor::~Sensor() {
+  // // Traverse up to root node and remove sensor from every
+  // subtreeSensorSuite,
+  // // only if the sceneNode still exists
+  if (node().parent() != nullptr) {
+    node().getNodeSensorSuite().remove(*this);
+    node().getSubtreeSensorSuite().remove(*this);
+    auto current = node().parent();
+    static_cast<scene::SceneNode&>(*current).getNodeSensorSuite().remove(*this);
+    while (current->parent() != nullptr) {
+      static_cast<scene::SceneNode&>(*current).getSubtreeSensorSuite().remove(
+          *this);
+      current = current->parent();
+    }
+  }
   LOG(INFO) << "Deconstructing Sensor";
 }
 
@@ -79,23 +94,6 @@ void Sensor::setTransformationFromSpec() {
   node().rotateX(Magnum::Rad(spec_->orientation[0]));
   node().rotateY(Magnum::Rad(spec_->orientation[1]));
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
-}
-
-void Sensor::deleteSensor() {
-  // Traverse up to root node and remove sensor from every subtreeSensorSuite,
-  // only if the sensor is deleted and the sceneNode still exists
-  node().getNodeSensorSuite().remove(*this);
-  node().getSubtreeSensorSuite().remove(*this);
-  if (node().parent() != nullptr) {
-    auto current = node().parent();
-    static_cast<scene::SceneNode&>(*current).getNodeSensorSuite().remove(*this);
-    while (current->parent() != nullptr) {
-      static_cast<scene::SceneNode&>(*current).getSubtreeSensorSuite().remove(
-          *this);
-      current = current->parent();
-    }
-  }
-  delete this;
 }
 
 SensorSuite::SensorSuite(scene::SceneNode& node)
