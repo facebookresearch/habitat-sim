@@ -51,6 +51,8 @@ class Player {
    */
   explicit Player(const LoadAndCreateRenderAssetInstanceCallback& callback);
 
+  ~Player();
+
   /**
    * @brief Read keyframes. See also @ref Recorder::writeSavedKeyframesToFile.
    * After calling this, use @ref setKeyframeIndex to set a keyframe.
