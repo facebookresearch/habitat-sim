@@ -257,13 +257,6 @@ struct Renderer::Impl {
       : context_{context}, depthShader_{nullptr}, flags_{flags} {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
-
-#if !defined(CORRADE_TARGET_EMSCRIPTEN)
-    if (flags & Flag::BackgroundThread) {
-      CORRADE_INTERNAL_ASSERT(context_ != nullptr);
-      backgroundRenderer_ = std::make_unique<BackgroundRenderThread>(context_);
-    }
-#endif
   }
 
   ~Impl() {
@@ -294,6 +287,12 @@ struct Renderer::Impl {
                  scene::SceneGraph& sceneGraph,
                  const Mn::MutableImageView2D& view,
                  RenderCamera::Flags flags) {
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
+    if (!backgroundRenderer_ && (flags_ & Flag::BackgroundThread)) {
+      CORRADE_INTERNAL_ASSERT(context_ != nullptr);
+      backgroundRenderer_ = std::make_unique<BackgroundRenderThread>(context_);
+    }
+#endif
     if (!backgroundRenderer_)
       Mn::Fatal{} << "Renderer was not created with a background render "
                      "thread, cannot do async drawing";

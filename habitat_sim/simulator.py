@@ -117,7 +117,7 @@ class Simulator(SimulatorBackend):
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 
-    def close(self, destroy: bool = False) -> None:
+    def close(self, destroy: bool = True) -> None:
         if self.renderer is not None:
             self.renderer.acquire_gl_context()
 

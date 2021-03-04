@@ -46,6 +46,11 @@ def powerset(iterable):
             "--no-display",
         ),
         ("examples/tutorials/semantic_id_tutorial.py", "--no-show-images"),
+        (
+            "examples/tutorial/URDF_robotics_tutorial.py",
+            "--no-make-video",
+            "--no-display",
+        ),
     ],
 )
 def test_example_modules(args):
