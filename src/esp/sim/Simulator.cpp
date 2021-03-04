@@ -864,6 +864,20 @@ double Simulator::stepWorld(const double dt) {
 #endif
     physicsManager_->updateNodes();
   }
+
+  // temp force replay recording and periodic writing to disk
+  {
+    const auto recorder = getGfxReplayManager()->getRecorder();
+    if (recorder) {
+      recorder->saveKeyframe();
+      static int count = 0;
+      count++;
+      if (count > 500) {
+        count = 0;
+        recorder->writeSavedKeyframesToFile("./default.replay.json");
+      }
+    }
+  }
   return getWorldTime();
 }
 

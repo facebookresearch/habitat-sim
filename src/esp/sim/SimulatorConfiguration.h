@@ -36,7 +36,7 @@ struct SimulatorConfiguration {
   /**
    * @brief todo
    */
-  bool enableGfxReplaySave = false;
+  bool enableGfxReplaySave = true;  // temp enable replay recording by default
   /**
    * @brief Whether or not to load the semantic mesh
    */
