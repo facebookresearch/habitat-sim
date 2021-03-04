@@ -791,12 +791,28 @@ void Viewer::invertGravity() {
 
 void Viewer::displayVoxelField(int objectID) {
   int resolutions[3] = {2000000, 100000, 1000};
-  unsigned int resolution = resolutions[resolutionInd % 3];
+  unsigned int resolution = resolutions[0];
   simulator_->createObjectVoxelization(objectID, resolution);
   std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization =
       simulator_->getObjectVoxelication(objectID);
 
   auto voxelGrid = objectVoxelization->getVoxelGrid();
+  voxelGrid->generateInteriorExteriorVoxelGrid();
+  voxelGrid->generateSDF("SignedDistanceField");
+  voxelGrid->generateBoolGridFromIntGrid("InteriorExterior");
+  voxelGrid->generateBoolGridFromIntGrid("SignedDistanceField", 0, 0,
+                                         "SDFSubset1");
+  /*voxelGrid->generateBoolGridFromIntGrid("SignedDistanceField", -2, -1,
+                                         "SDFSubset2");
+  voxelGrid->generateBoolGridFromIntGrid("SignedDistanceField", -4, -3,
+                                         "SDFSubset3");*/
+  /*std::string grids[4] = {"SDFSubset1", "SDFSubset2", "SDFSubset3",
+                          "InteriorExterior"};*/
+  int curDistanceVisualization = -1 * (resolutionInd % 16);
+  voxelGrid->generateBoolGridFromIntGrid(
+      "SignedDistanceField", curDistanceVisualization,
+      curDistanceVisualization + 1, "SDFSubset");
+  voxelGrid->generateMesh("SDFSubset");
 
   // custom shader for voxel grid
   Magnum::Shaders::MeshVisualizer3D shader_{
@@ -1377,9 +1393,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Y:
       displayVoxelField(-1);
       break;
-    case KeyEvent::Key::L:
+    case KeyEvent::Key::L: {
+      displayVoxelField(-1);
       resolutionInd++;
       break;
+    }
     default:
       break;
   }

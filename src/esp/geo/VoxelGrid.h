@@ -49,6 +49,12 @@ class VoxelGrid {
   // (coords.y * x.size * z.size + coords.z * x.size + coords.x)
   int hashVoxelIndex(const Mn::Vector3i& coords);
 
+  bool isValidIndex(const Mn::Vector3i& coords) const {
+    return coords[0] >= 0 && coords[1] >= 0 && coords[2] >= 0 &&
+           coords[0] < m_voxelGridDimensions[0] &&
+           coords[1] < m_voxelGridDimensions[1] &&
+           coords[2] < m_voxelGridDimensions[2];
+  }
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
 
   // Getter and setter for bool value voxel grids
@@ -107,6 +113,21 @@ class VoxelGrid {
   // Convert coords to voxel coordinates
   void setOffset(const Mn::Vector3& coords);
 
+  // built in VoxelGrid Generators
+
+  // convert Integer mesh to bool mesh (useful for visualization)
+  int generateBoolGridFromIntGrid(std::string intGridName,
+                                  int startRange = INT_MIN,
+                                  int endRange = 0,
+                                  std::string boolGridName = "");
+
+  // 6D SDF - labels each cell as interior, exterior, or boundary
+  void generateInteriorExteriorVoxelGrid();
+
+  // Manhattan distance SDF - starting from the interior exterior voxel grid,
+  // computes SDF with double sweep approach
+  void generateSDF(std::string gridName = "SignedDistanceField");
+
   // found file format: svx - https://abfab3d.com/svx-format/
   bool saveToSVXFile(const std::string& filepath, const std::string& filename);
 
@@ -115,7 +136,7 @@ class VoxelGrid {
                                 Mn::Vector3i local_coords);
 
   // insert voxel information into a mesh which will be used for visualization.
-  void generateMesh();
+  void generateMesh(std::string gridName = "boundary");
 
   ESP_SMART_POINTERS(VoxelGrid)
 
