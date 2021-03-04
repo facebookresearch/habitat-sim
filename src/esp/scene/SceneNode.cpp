@@ -36,27 +36,30 @@ SceneNode::~SceneNode() {
   if (SceneGraph::isRootNode(*this)) {
     return;
   }
-  if (!parent()) {
+  if (!this->parent()) {
     return;
   }
-  // If node has a parent node, update the sensorSuites stored in each ancestor
-  // node in a bottom-up manner.
-  auto* child = children().first();
-  while (child != nullptr) {
-    SceneNode* child_node = dynamic_cast<SceneNode*>(child);
-    child = child->nextSibling();
-    if (child_node != nullptr) {
-      child_node->deleteNode();
-    }
+  // Otherwise, update the sensorSuites stored in each ancestor node in a
+  // bottom-up manner.
+  for (const auto& sensor : nodeSensorSuite_->getSensors()) {
+    // erase from its parent's nodeSensorSuite
+    static_cast<SceneNode*>(this->parent())
+        ->getNodeSensorSuite()
+        .getSensors()
+        .erase(sensor.first);
+    // go bottom to the top, and erase sensors and all subtreeSensors from its
+    // ancestor's subtreeSensorSuite
+    SceneNode* currentNode = this;
+    do {
+      currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
+      // no need to worry currentNode could be nullptr, no chance
+      currentNode->getSubtreeSensorSuite().getSensors().erase(sensor.first);
+      for (const auto& subtreeSensor : subtreeSensorSuite_->getSensors()) {
+        currentNode->getSubtreeSensorSuite().getSensors().erase(
+            subtreeSensor.first);
+      }
+    } while (!SceneGraph::isRootNode(*currentNode));
   }
-  // Remove all sensors when current node has no more children
-  for (auto& entry : getNodeSensorSuite().getSensors()) {
-    entry.second.get().deleteSensor();
-    if (getNodeSensorSuite().getSensors().size() == 0) {
-      break;
-    }
-  }
-  LOG(INFO) << "Deconstructing SceneNode";
 }
 
 SceneNode& SceneNode::createChild() {
