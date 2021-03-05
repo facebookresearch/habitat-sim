@@ -60,6 +60,11 @@ const config = {
       template: path.resolve(__dirname, "viewer.html"),
       filename: path.resolve(buildRootPath, "viewer.html"),
       hash: true
+    }),
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, "replay_viewer.html"),
+      filename: path.resolve(buildRootPath, "replay_viewer.html"),
+      hash: true
     })
   ],
   devtool: "source-map"
