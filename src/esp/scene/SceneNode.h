@@ -37,6 +37,18 @@ enum class SceneNodeType {
   OBJECT = 4,  // objects added via physics api
 };
 
+enum class SceneNodeTag : Magnum::UnsignedShort {
+  /**
+   * Set node as Leaf node, so no children nodes are allowed
+   */
+  Leaf = 1 << 0
+};
+
+/**
+ * @brief SceneNodeTags
+ */
+typedef Corrade::Containers::EnumSet<SceneNodeTag> SceneNodeTags;
+
 class SceneNode : public MagnumObject,
                   public Magnum::SceneGraph::AbstractFeature3D {
  public:
@@ -59,6 +71,18 @@ class SceneNode : public MagnumObject,
     new U{*this, std::forward<Args>(args)...};
   }
 
+  // Returns sceneNodeTags of SceneNode
+  SceneNodeTags sceneNodeTags() const { return sceneNodeTags_; }
+
+  /**
+   * @brief Sets sceneNodeTags_ of SceneNode
+   *
+   * @param sceneNodeTags sceneNodeTags to set sceneNodeTags_ to
+   */
+  void setSceneNodeTags(SceneNodeTags sceneNodeTags) {
+    sceneNodeTags_ = sceneNodeTags;
+  }
+
   //! Create a new child SceneNode and return it. NOTE: this SceneNode owns and
   //! is responsible for deallocating created child
   //! NOTE: child node inherits parent id by default
@@ -75,9 +99,6 @@ class SceneNode : public MagnumObject,
 
   //! Sets node semanticId
   virtual void setSemanticId(int semanticId) { semanticId_ = semanticId; }
-
-  // Calls sceneNode's destructor
-  void deleteNode() { delete this; }
 
   Magnum::Vector3 absoluteTranslation() const;
 
@@ -97,8 +118,11 @@ class SceneNode : public MagnumObject,
   //! this node is the root
   const Magnum::Range3D& getCumulativeBB() const { return cumulativeBB_; };
 
+  // Return SensorSuite containing references to Sensors this SceneNode holds
   esp::sensor::SensorSuite& getNodeSensorSuite() { return *nodeSensorSuite_; }
 
+  // Return SensorSuite containing references to superset of all Sensors held by
+  // this SceneNode and its children
   esp::sensor::SensorSuite& getSubtreeSensorSuite() {
     return *subtreeSensorSuite_;
   }
@@ -126,6 +150,9 @@ class SceneNode : public MagnumObject,
   // the type of the attached object (e.g., sensor, agent etc.)
   SceneNodeType type_ = SceneNodeType::EMPTY;
   int id_ = ID_UNDEFINED;
+
+  // SceneNodeTags of this node, used to flag attributes such as leaf node
+  SceneNodeTags sceneNodeTags_ = {};
 
   //! The semantic category of this node. Used to render attached Drawables with
   //! Semantic sensor when no perVertexObjectIds are present.
@@ -158,7 +185,12 @@ class SceneNode : public MagnumObject,
   //! the frustum plane in last frame that culls this node
   int frustumPlaneIndex = 0;
 
+  // Pointer to SensorSuite containing references to Sensors this SceneNode
+  // holds
   esp::sensor::SensorSuite* nodeSensorSuite_;
+
+  // Pointer to SensorSuite containing references to superset of all Sensors
+  // held by this SceneNode and its children
   esp::sensor::SensorSuite* subtreeSensorSuite_;
 };
 
@@ -226,6 +258,7 @@ void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
       const_cast<const SceneNode&>(node), constFeatureCb);
 }
 
+CORRADE_ENUMSET_OPERATORS(SceneNodeTags)
 }  // namespace scene
 }  // namespace esp
 

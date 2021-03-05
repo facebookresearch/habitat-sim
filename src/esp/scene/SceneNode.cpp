@@ -36,33 +36,43 @@ SceneNode::~SceneNode() {
   if (SceneGraph::isRootNode(*this)) {
     return;
   }
+  // if it is to delete a subtree
+  // then two cases:
+  // 1) current node is the root node (of this subtree).
+  // In case 1, you do not have to do anything since its parent node is nullptr
+  // already!! This is because magnum destroys the nodes in a top-down manner
+  // recursively, root node first, and then its child nodes
   if (!this->parent()) {
     return;
   }
-  // Otherwise, update the sensorSuites stored in each ancestor node in a
-  // bottom-up manner.
+
+  // 2) current node is NOT the root node.
+  // In case 2, you need update the sensorSuites stored in each ancestor node in
+  // a bottom-up manner.
+
+  // First erase all nodes in nodeSensorSuite from its parent's nodeSensorSuite
   for (const auto& sensor : nodeSensorSuite_->getSensors()) {
-    // erase from its parent's nodeSensorSuite
     static_cast<SceneNode*>(this->parent())
         ->getNodeSensorSuite()
         .getSensors()
         .erase(sensor.first);
-    // go bottom to the top, and erase sensors and all subtreeSensors from its
-    // ancestor's subtreeSensorSuite
+  }
+
+  // go bottom to the top, and erase sensors and all subtreeSensors from its
+  // ancestors' subtreeSensorSuites
+  for (const auto& sensor : subtreeSensorSuite_->getSensors()) {
     SceneNode* currentNode = this;
     do {
       currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
-      // no need to worry currentNode could be nullptr, no chance
+      // no need to worry that currentNode could be nullptr, no chance
       currentNode->getSubtreeSensorSuite().getSensors().erase(sensor.first);
-      for (const auto& subtreeSensor : subtreeSensorSuite_->getSensors()) {
-        currentNode->getSubtreeSensorSuite().getSensors().erase(
-            subtreeSensor.first);
-      }
     } while (!SceneGraph::isRootNode(*currentNode));
   }
 }
 
 SceneNode& SceneNode::createChild() {
+  CORRADE_ASSERT(!(sceneNodeTags_ & SceneNodeTag::Leaf),
+                 "Leaf node can not create child", *this);
   // will set the parent to *this
   SceneNode* node = new SceneNode(*this);
   node->setId(this->getId());

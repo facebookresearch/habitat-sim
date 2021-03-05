@@ -32,5 +32,15 @@ void SensorFactory::createSensors(scene::SceneNode& node,
     // }
   }
 }
+
+void SensorFactory::deleteSensor(const sensor::Sensor& sensor) {
+  delete (&sensor.node());
+}
+
+void SensorFactory::deleteSensor(scene::SceneNode& node,
+                                 const std::string& uuid) {
+  delete (&node.getSubtreeSensorSuite().get(uuid).node());
+}
+
 }  // namespace sensor
 }  // namespace esp

@@ -19,6 +19,21 @@ class SensorFactory {
    */
   static void createSensors(scene::SceneNode& node,
                             const sensor::SensorSetup& sensorSetup);
+
+  /**
+   * @brief Static method to delete Sensor
+   * @param[in] sensor Sensor to delete
+   *
+   */
+  static void deleteSensor(const sensor::Sensor& sensor);
+
+  /**
+   * @brief Static method to delete Sensor
+   * @param[in] node SceneNode of SensorSuite to find Sensor to delete
+   * @param[in] uuid string of Sensor to delete's uuid
+   *
+   */
+  static void deleteSensor(scene::SceneNode& node, const std::string& uuid);
 };
 }  // namespace sensor
 }  // namespace esp

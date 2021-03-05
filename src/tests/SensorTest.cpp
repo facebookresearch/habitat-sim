@@ -139,7 +139,7 @@ void SensorTest::testSensorDestructors() {
                  4);
 
   // Remove sensor from parentNode
-  parentNode.getSubtreeSensorSuite().get("1A").deleteSensor();
+  SensorFactory::deleteSensor(parentNode, "1A");
   CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 1);
   CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 8);
   CORRADE_VERIFY(childNode.getNodeSensorSuite().getSensors().size() == 3);
@@ -149,7 +149,7 @@ void SensorTest::testSensorDestructors() {
                  4);
 
   // Remove sensor from child node
-  parentNode.getSubtreeSensorSuite().get("2A").deleteSensor();
+  SensorFactory::deleteSensor(parentNode, "2A");
   CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 1);
   CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 7);
   CORRADE_VERIFY(childNode.getNodeSensorSuite().getSensors().size() == 2);
@@ -159,7 +159,7 @@ void SensorTest::testSensorDestructors() {
                  4);
 
   // Remove sensor from grandchild node
-  parentNode.getSubtreeSensorSuite().get("3A").deleteSensor();
+  SensorFactory::deleteSensor(parentNode, "3A");
   CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 1);
   CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 6);
   CORRADE_VERIFY(childNode.getNodeSensorSuite().getSensors().size() == 2);
@@ -169,7 +169,7 @@ void SensorTest::testSensorDestructors() {
                  3);
 
   // Remove child node and assert grandchild node is destructed as well
-  childNode.deleteNode();
+  delete (&childNode);
   CORRADE_VERIFY(parentNode.getNodeSensorSuite().getSensors().size() == 1);
   CORRADE_VERIFY(parentNode.getSubtreeSensorSuite().getSensors().size() == 1);
 }
