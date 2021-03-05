@@ -285,6 +285,8 @@ playback_cfg = habitat_sim.Configuration(
     cfg.agents,
 )
 
+sim.close()
+
 if not sim:
     sim = habitat_sim.Simulator(playback_cfg)
 else:
@@ -408,6 +410,9 @@ if make_video:
 sim.remove_object(agent_viz_id)
 sim.remove_object(sensor_viz_id)
 
+# clean up the player
+player.close()
+
 # %% [markdown]
 # ## Load multiple replays and create a "sequence" image.
 # In this tutorial, we only recorded one replay. In general, you can load and play multiple replays and they are rendered "additively" (all objects from all replays are visualized on top of each other). Here, let's load multiple copies of our replay and create a single image showing different snapshots in time.
@@ -415,10 +420,14 @@ sim.remove_object(sensor_viz_id)
 
 observations = []
 num_copies = 30
+other_players = []
 for i in range(num_copies):
     other_player = sim.gfx_replay_manager.read_keyframes_from_file(replay_filepath)
     assert other_player
-    other_player.set_keyframe_index(player.get_num_keyframes() // (num_copies - 1) * i)
+    other_player.set_keyframe_index(
+        other_player.get_num_keyframes() // (num_copies - 1) * i
+    )
+    other_players.append(other_player)
 
 # place a third-person camera
 sensor_node.translation = [1.0, -0.9, -0.3]
@@ -439,3 +448,7 @@ if make_video:
         output_path + "replay_playback4",
         open_vid=show_video,
     )
+
+# clean up the players
+for other_player in other_players:
+    other_player.close()

@@ -39,7 +39,11 @@ void initGfxReplayBindings(py::module& m) {
                                py::make_tuple(translation, rotation))
                          : py::cast<py::object>(Py_None);
           },
-          R"(Get a previously-added user transform. See also ReplayManager.add_user_transform_to_keyframe.)");
+          R"(Get a previously-added user transform. See also ReplayManager.add_user_transform_to_keyframe.)")
+
+      .def(
+          "close", &Player::close,
+          R"(Unload all keyframes. The Player is unusable after it is closed.)");
 
   py::class_<ReplayManager, ReplayManager::ptr>(m, "ReplayManager")
       .def(
