@@ -62,7 +62,7 @@ class CameraSensor : public VisualSensor {
    * @param[in] space Instance of ObservationSpace class which will be updated
    * with information from this sensor
    */
-  virtual bool getObservationSpace(ObservationSpace& space) override;
+  bool getObservationSpace(ObservationSpace& space) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's

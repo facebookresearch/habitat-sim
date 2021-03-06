@@ -36,7 +36,7 @@ class SensorInfoVisualizer {
   /**
    * @brief destructor
    */
-  ~SensorInfoVisualizer(){};
+  ~SensorInfoVisualizer() = default;
 
   void prepareToDraw(Magnum::Vector2i framebufferSize);
 

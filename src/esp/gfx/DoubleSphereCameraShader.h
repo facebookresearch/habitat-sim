@@ -71,15 +71,15 @@ class DoubleSphereCameraShader : public FisheyeShader {
   /**
    * @brief deconstructor
    */
-  virtual ~DoubleSphereCameraShader() = default;
+  ~DoubleSphereCameraShader() override = default;
 
  protected:
   int focalLengthUniform_ = ID_UNDEFINED;
   int principalPointOffsetUniform_ = ID_UNDEFINED;
   int alphaUniform_ = ID_UNDEFINED;
   int xiUniform_ = ID_UNDEFINED;
-  virtual void cacheUniforms() override;
-  virtual void setTextureBindingPoints() override;
+  void cacheUniforms() override;
+  void setTextureBindingPoints() override;
 };
 
 }  // namespace gfx
