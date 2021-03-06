@@ -7,7 +7,7 @@ MAX_NUMBER_OF_PACKAGES = 30
 parser = argparse.ArgumentParser("Running benchmarks on simulator")
 parser.add_argument("--username", type=str)
 parser.add_argument("--password", type=str)
-parser.add_argument('--nightly', help="Make conda nightly build.", action='store_true')
+parser.add_argument('--nightly', help="Remove old conda nightly builds.", action='store_true')
 args = parser.parse_args()
 
 
@@ -20,4 +20,3 @@ versions = re.findall("\d\.\d\.\d\.\d{4}\.\d\d\.\d\d", str(result.stdout) + str(
 remove_versions = versions[:-MAX_NUMBER_OF_PACKAGES]
 print(f"anaconda remove {' '.join(list(map(lambda x: f'aihabitat-nightly/habitat-sim/{x}', remove_versions)))}”)
 result_remove = subprocess.run(['anaconda', 'remove', "-f", * list(map(lambda x: f'aihabitat-nightly/habitat-sim/{x}', remove_versions))], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-
