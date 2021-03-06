@@ -538,15 +538,15 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
-  auto pinholeCameraSpec = esp::sensor::CameraSensorSpec::create();
-  pinholeCameraSpec->sensorSubType =
+  auto cameraSensorSpec = esp::sensor::CameraSensorSpec::create();
+  cameraSensorSpec->sensorSubType =
       args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
                                  : esp::sensor::SensorSubType::Pinhole;
-  pinholeCameraSpec->sensorType = esp::sensor::SensorType::Color;
-  pinholeCameraSpec->position = {0.0f, 1.5f, 0.0f};
-  pinholeCameraSpec->orientation = {0, 0, 0};
-  pinholeCameraSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  cameraSensorSpec->sensorType = esp::sensor::SensorType::Color;
+  cameraSensorSpec->position = {0.0f, 1.5f, 0.0f};
+  cameraSensorSpec->orientation = {0, 0, 0};
+  cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  agentConfig.sensorSpecifications = {cameraSensorSpec};
 
   // add the new fisheye sensor
   agentConfig.sensorSpecifications.emplace_back(
@@ -559,8 +559,8 @@ Viewer::Viewer(const Arguments& arguments)
     spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
     spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-    spec->xi = -0.18;
     spec->alpha = 0.59;
+    spec->xi = -0.18;
     int size =
         viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
     spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
@@ -570,9 +570,10 @@ Viewer::Viewer(const Arguments& arguments)
 
   // add the depth sensor
   agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::SensorSpec::create());
+      esp::sensor::CameraSensorSpec::create());
   {
-    auto spec = agentConfig.sensorSpecifications.back().get();
+    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
     spec->uuid = "depth";
     spec->sensorType = esp::sensor::SensorType::Depth;
     spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;

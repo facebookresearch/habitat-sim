@@ -15,9 +15,8 @@ sensor::SensorSuite SensorFactory::createSensors(
     // VisualSensor Setup
     if (spec->isVisualSensorSpec()) {
       if (spec->sensorSubType == sensor::SensorSubType::Fisheye) {
-        // XXX
-        // TODO: must fix the spec here!!!
-        sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
+        sensorSuite.add(sensor::FisheyeSensor::create(
+            sensorNode, std::dynamic_pointer_cast<FisheyeSensorSpec>(spec)));
       } else if (spec->sensorSubType == SensorSubType::Orthographic ||
                  spec->sensorSubType == SensorSubType::Pinhole) {
         sensorSuite.add(CameraSensor::create(

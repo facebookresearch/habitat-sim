@@ -29,7 +29,7 @@ enum class FisheyeSensorModelType : Magnum::UnsignedInt {
   // KannalaBrandt = 2,
 };
 
-struct FisheyeSensorSpec : public SensorSpec {
+struct FisheyeSensorSpec : public VisualSensorSpec {
   FisheyeSensorModelType fisheyeModelType;
   /**
    * @brief near clipping plane for cubemap camera
@@ -53,9 +53,19 @@ struct FisheyeSensorSpec : public SensorSpec {
   Magnum::Vector2 principalPointOffset;
 
   /**
+   * @brief Constructor
+   */
+  FisheyeSensorSpec();
+
+  /**
+   * @brief operator ==, check if 2 specs are equal
+   */
+  bool operator==(const FisheyeSensorSpec& a) const;
+
+  /**
    * @brief check if the specification is legal
    */
-  virtual void sanityCheck();
+  void sanityCheck() override;
   ESP_SMART_POINTERS(FisheyeSensorSpec)
 };
 
@@ -66,9 +76,16 @@ struct FisheyeSensorDoubleSphereSpec : public FisheyeSensorSpec {
    * Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
    * Camera Model, The International Conference on 3D Vision (3DV), 2018
    */
-  float alpha;
-  float xi;
-  virtual void sanityCheck();
+  float alpha = 0.59;
+  float xi = -0.18;
+  /**
+   * @brief constructor
+   */
+  FisheyeSensorDoubleSphereSpec() : FisheyeSensorSpec() {}
+  /**
+   * @brief check if the specification is legal
+   */
+  void sanityCheck() override;
   ESP_SMART_POINTERS(FisheyeSensorDoubleSphereSpec)
 };
 
@@ -84,7 +101,7 @@ class FisheyeSensor : public VisualSensor {
    * user can use them immediately
    */
   explicit FisheyeSensor(scene::SceneNode& cameraNode,
-                         const SensorSpec::ptr& spec);
+                         const FisheyeSensorSpec::ptr& spec);
   /**
    * @brief destructor
    */
@@ -112,7 +129,8 @@ class FisheyeSensor : public VisualSensor {
   gfx::RenderCamera* getRenderCamera() { return nullptr; }
 
  protected:
-  FisheyeSensorSpec::ptr fisheyeSensorSpec_ = nullptr;
+  FisheyeSensorSpec::ptr fisheyeSensorSpec_ =
+      std::dynamic_pointer_cast<FisheyeSensorSpec>(spec_);
   // raw pointer only, we can create it but let magnum to handle the memory
   // recycling when releasing it.
   gfx::CubeMapCamera* cubeMapCamera_;

@@ -14,9 +14,13 @@ namespace Cr = Corrade;
 namespace esp {
 namespace sensor {
 
+FisheyeSensorSpec::FisheyeSensorSpec() : VisualSensorSpec() {
+  uuid = "fisheye";
+  sensorSubType = SensorSubType::Fisheye;
+}
+
 void FisheyeSensorSpec::sanityCheck() {
-  // TODO:
-  // call base class sanity check first
+  VisualSensorSpec::sanityCheck();
   CORRADE_ASSERT(focalLength[0] > 0 && focalLength[1] > 0,
                  "FisheyeSensorSpec::sanityCheck(): focal length,"
                      << focalLength << "is illegal.", );
@@ -29,57 +33,71 @@ void FisheyeSensorSpec::sanityCheck() {
 
 void FisheyeSensorDoubleSphereSpec::sanityCheck() {
   FisheyeSensorSpec::sanityCheck();
+  CORRADE_ASSERT(fisheyeModelType == FisheyeSensorModelType::DoubleSphere,
+                 "FisheyeSensorDoubleSphereSpec::sanityCheck(): fisheye model "
+                 "type is wrong. It should be DoubleSphere.", );
   CORRADE_ASSERT(alpha >= 0 && alpha <= 1.0,
                  "FisheyeSensorDoubleSphereSpec::sanityCheck(): alpha"
                      << alpha << "is illegal.", );
 }
 
-FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
-                             const SensorSpec::ptr& spec)
-    : VisualSensor(cameraNode, spec) {
-  fisheyeSensorSpec_ = std::static_pointer_cast<FisheyeSensorSpec>(spec_);
-  auto convertSpec = [&]() {
-    switch (fisheyeSensorSpec_->fisheyeModelType) {
-      case FisheyeSensorModelType::DoubleSphere:
-        return static_cast<FisheyeSensorDoubleSphereSpec*>(
-            fisheyeSensorSpec_.get());
-        break;
-
-      default:
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-        break;
-    }
-  };
-  auto actualSpec = convertSpec();
+template <typename T>
+void specSanityCheck(FisheyeSensorSpec* spec) {
+  auto actualSpec = dynamic_cast<T*>(spec);
+  CORRADE_ASSERT(actualSpec,
+                 "FisheyeSensor::FisheyeSensor(): the spec cannot be converted "
+                 "to any known fiesheye sensor spec.", );
   actualSpec->sanityCheck();
+}
+
+FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
+                             const FisheyeSensorSpec::ptr& spec)
+    : VisualSensor(cameraNode, spec) {
+  switch (fisheyeSensorSpec_->fisheyeModelType) {
+    case FisheyeSensorModelType::DoubleSphere: {
+      specSanityCheck<FisheyeSensorDoubleSphereSpec>(fisheyeSensorSpec_.get());
+    } break;
+  };
 
   // initialize a cubemap
-  auto& res = actualSpec->resolution;
+  auto& res = fisheyeSensorSpec_->resolution;
   int size = res[0] < res[1] ? res[0] : res[1];
   gfx::CubeMap::Flags cubeMapFlags = {};
-  if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
-    cubeMapFlags |= gfx::CubeMap::Flag::ColorTexture;
+  switch (fisheyeSensorSpec_->sensorType) {
+    case SensorType::Color:
+      cubeMapFlags |= gfx::CubeMap::Flag::ColorTexture;
+      break;
+    case SensorType::Depth:
+      cubeMapFlags |= gfx::CubeMap::Flag::DepthTexture;
+      break;
+    // TODO: Semantic
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
   }
-  if (fisheyeSensorSpec_->sensorType == SensorType::Depth) {
-    cubeMapFlags |= gfx::CubeMap::Flag::DepthTexture;
-  }
-  // TODO: Semantic
   cubeMap_ = std::make_unique<gfx::CubeMap>(size, cubeMapFlags);
 
   // initialize the cubemap camera, it attaches to the same node as the sensor
+  // You do not have to release it in the dtor since magnum scene graph will
+  // handle it
   cubeMapCamera_ = new gfx::CubeMapCamera(cameraNode);
   cubeMapCamera_->setProjectionMatrix(size,
                                       fisheyeSensorSpec_->cubeMapCameraNear,
                                       fisheyeSensorSpec_->cubeMapCameraFar);
 
-  if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
-    fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
+  // setup shader flags
+  switch (fisheyeSensorSpec_->sensorType) {
+    case SensorType::Color:
+      fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::ColorTexture;
+      break;
+    case SensorType::Depth:
+      fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::DepthTexture;
+      break;
+    // TODO: Semantic
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
   }
-
-  if (fisheyeSensorSpec_->sensorType == SensorType::Depth) {
-    fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::DepthTexture;
-  }
-
   // compute the depth unprojection parameters
   {
     float f = fisheyeSensorSpec_->cubeMapCameraFar;
@@ -97,6 +115,15 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   mesh_.setCount(3);
 }
 
+bool FisheyeSensorSpec::operator==(const FisheyeSensorSpec& a) const {
+  return VisualSensorSpec::operator==(a) &&
+         fisheyeModelType == a.fisheyeModelType &&
+         cubeMapCameraNear == a.cubeMapCameraNear &&
+         cubeMapCameraFar == a.cubeMapCameraFar &&
+         focalLength == a.focalLength &&
+         principalPointOffset == a.principalPointOffset;
+}
+
 Mn::ResourceKey FisheyeSensor::getShaderKey() {
   return Cr::Utility::formatString(
       FISH_EYE_SHADER_KEY_TEMPLATE,
@@ -112,7 +139,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
 
   // in case the fisheye sensor resolution changed at runtime
   {
-    auto& res = spec_->resolution;
+    auto& res = fisheyeSensorSpec_->resolution;
     int size = res[0] < res[1] ? res[0] : res[1];
     bool reset = cubeMap_->reset(size);
     if (reset) {
@@ -159,11 +186,11 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
 
         // TODO:
         // The other FisheyeSensorModelType
-
-      default:
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-        break;
     }
+    CORRADE_ASSERT(shader_,
+                   "FisheyeSensor::drawObservation(): Cannot initialize the "
+                   "shader since the fisheye model type is unknown.",
+                   false);
   }
   CORRADE_INTERNAL_ASSERT(shader_ && shader_->flags() == fisheyeShaderFlags_);
   // draw the observation to the render target
@@ -180,9 +207,8 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
           .setXi(actualSpec.xi);
     } break;
 
-      // TODO:
-      // The other FisheyeSensorModelType
-
+    // TODO:
+    // The other FisheyeSensorModelType
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;

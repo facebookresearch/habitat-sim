@@ -41,6 +41,10 @@ void Player::readKeyframesFromFile(const std::string& filepath) {
   }
 }
 
+Player::~Player() {
+  clearFrame();
+}
+
 int Player::getKeyframeIndex() const {
   return frameIndex_;
 }

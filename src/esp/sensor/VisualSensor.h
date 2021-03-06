@@ -141,7 +141,7 @@ class VisualSensor : public Sensor {
   /**
    * @brief Returns RenderCamera
    */
-  virtual gfx::RenderCamera* getRenderCamera() const = 0;
+  virtual gfx::RenderCamera* getRenderCamera() const { return nullptr; }
 
   /**
    * @brief Gets near plane distance.

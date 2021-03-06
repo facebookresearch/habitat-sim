@@ -31,11 +31,13 @@ void SensorSpec::sanityCheck() {
   CORRADE_ASSERT(!uuid.empty(),
                  "SensorSpec::sanityCheck(): uuid cannot be an empty string", );
   CORRADE_ASSERT(
-      sensorType >= SensorType::None && sensorType <= SensorType::Text,
-      "SensorSpec::sanityCheck(): sensorType is illegal", );
-  CORRADE_ASSERT(sensorSubType >= SensorSubType::None &&
-                     sensorSubType <= SensorSubType::Orthographic,
-                 "SensorSpec::sanityCheck(): sensorSubType is illegal", );
+      sensorType > SensorType::None && sensorType < SensorType::SensorTypeCount,
+      "SensorSpec::sanityCheck(): sensorType" << int32_t(sensorType)
+                                              << "is illegal", );
+  CORRADE_ASSERT(sensorSubType > SensorSubType::None &&
+                     sensorSubType < SensorSubType::SensorSubTypeCount,
+                 "SensorSpec::sanityCheck(): sensorSubType"
+                     << int32_t(sensorType) << "is illegal", );
   CORRADE_ASSERT((abs(position.array()) >= 0).any(),
                  "SensorSpec::sanityCheck(): position is illegal", );
   CORRADE_ASSERT((abs(orientation.array()) >= 0).any(),
