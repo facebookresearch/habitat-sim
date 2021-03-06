@@ -62,7 +62,7 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
    */
   explicit FisheyeShader(Flags flags = {Flag::ColorTexture});
 
-  virtual ~FisheyeShader(){};
+  virtual ~FisheyeShader() = default;
 
   /** @brief Flags */
   Flags flags() const { return flags_; }

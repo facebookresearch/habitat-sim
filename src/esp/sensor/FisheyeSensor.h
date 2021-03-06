@@ -105,7 +105,7 @@ class FisheyeSensor : public VisualSensor {
   /**
    * @brief destructor
    */
-  ~FisheyeSensor(){};
+  ~FisheyeSensor() = default;
   /**
    * @brief Draw an observation to the frame buffer
    * @return true if success, otherwise false (e.g., frame buffer is not set)
