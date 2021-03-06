@@ -15,7 +15,14 @@
 
 namespace esp {
 namespace gfx {
-
+namespace fisheyeShaderTexUnitSpace {
+enum TextureUnit : uint8_t {
+  Color = 0,
+  Depth = 1,
+  // TODO
+  // ObjectId = 2,
+};
+}
 // Interface class for various fisheye camera shaders, such as "Double Sphere
 // Camera", "Field-of-View Camera", etc.
 class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
@@ -59,6 +66,7 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief constructor
+   * @param[in] flags fisheye shader flags
    */
   explicit FisheyeShader(Flags flags = {Flag::ColorTexture});
 
@@ -67,23 +75,16 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
   /** @brief Flags */
   Flags flags() const { return flags_; }
 
-  /*
-  template <typename... DrawableGroupArgs>
-  gfx::DrawableGroup* createDrawableGroup(std::string id,
-                                          DrawableGroupArgs&&... args) {
-    auto inserted = drawableGroups_.emplace(
-        std::piecewise_construct, std::forward_as_tuple(std::move(id)),
-        std::forward_as_tuple(std::forward<DrawableGroupArgs>(args)...));
-        */
-
-  virtual FisheyeShader& bindColorTexture(
-      CORRADE_UNUSED Magnum::GL::CubeMapTexture& texture) {
-    return *this;
-  }
-  virtual FisheyeShader& bindDepthTexture(
-      CORRADE_UNUSED Magnum::GL::CubeMapTexture& texture) {
-    return *this;
-  }
+  /**
+   * @brief bind cubemap color texture
+   * @param[in] texture cubemap color texture
+   */
+  virtual FisheyeShader& bindColorTexture(Magnum::GL::CubeMapTexture& texture);
+  /**
+   * @brief bind cubemap depth texture
+   * @param[in] texture cubemap depth texture
+   */
+  virtual FisheyeShader& bindDepthTexture(Magnum::GL::CubeMapTexture& texture);
   // virtual FisheyeShader& bindObjectIdTexture(Magnum::GL::Texture2D&
   // texture);
 

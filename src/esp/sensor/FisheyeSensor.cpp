@@ -171,40 +171,32 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   }
   */
 
-  // obtain shader based on fisheye model type
-  shader_ = fisheyeShaderManager_.get<gfx::FisheyeShader>(getShaderKey());
-
-  // if no shader with flags exists, create one
-  if (!shader_) {
-    switch (fisheyeSensorSpec_->fisheyeModelType) {
-      case FisheyeSensorModelType::DoubleSphere:
-        fisheyeShaderManager_.set<gfx::FisheyeShader>(
-            shader_.key(),
-            new gfx::DoubleSphereCameraShader{fisheyeShaderFlags_},
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-        break;
-
-        // TODO:
-        // The other FisheyeSensorModelType
+  auto drawWith = [&](auto& shader) {
+    if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
+      shader.bindColorTexture(
+          cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
     }
-    CORRADE_ASSERT(shader_,
-                   "FisheyeSensor::drawObservation(): Cannot initialize the "
-                   "shader since the fisheye model type is unknown.",
-                   false);
-  }
-  CORRADE_INTERNAL_ASSERT(shader_ && shader_->flags() == fisheyeShaderFlags_);
-  // draw the observation to the render target
+    if (fisheyeSensorSpec_->sensorType == SensorType::Depth) {
+      shader.bindDepthTexture(
+          cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
+    }
+    renderTarget().renderEnter();
+    shader.draw(mesh_);
+    renderTarget().renderExit();
+  };
 
   switch (fisheyeSensorSpec_->fisheyeModelType) {
     case FisheyeSensorModelType::DoubleSphere: {
-      auto& actualShader =
-          static_cast<gfx::DoubleSphereCameraShader&>(*shader_);
+      Magnum::Resource<gfx::FisheyeShader, gfx::DoubleSphereCameraShader>
+          shader = getShader<gfx::DoubleSphereCameraShader>();
       auto& actualSpec =
           static_cast<FisheyeSensorDoubleSphereSpec&>(*fisheyeSensorSpec_);
-      actualShader.setFocalLength(actualSpec.focalLength)
+      (*shader)
+          .setFocalLength(actualSpec.focalLength)
           .setPrincipalPointOffset(actualSpec.principalPointOffset)
           .setAlpha(actualSpec.alpha)
           .setXi(actualSpec.xi);
+      drawWith(*shader);
     } break;
 
     // TODO:
@@ -213,17 +205,6 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
   }
-  if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
-    shader_->bindColorTexture(
-        cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
-  }
-  if (fisheyeSensorSpec_->sensorType == SensorType::Depth) {
-    shader_->bindDepthTexture(
-        cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
-  }
-  renderTarget().renderEnter();
-  shader_->draw(mesh_);
-  renderTarget().renderExit();
 
   return true;
 }

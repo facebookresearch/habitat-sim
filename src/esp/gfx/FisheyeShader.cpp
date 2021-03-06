@@ -22,5 +22,25 @@ FisheyeShader::FisheyeShader(Flags flags) : flags_(flags) {
                  "FisheyeShader::FisheyeShader(): shader "
                  "flags cannot be empty.", );
 }
+FisheyeShader& FisheyeShader::bindColorTexture(
+    Mn::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(flags_ & FisheyeShader::Flag::ColorTexture,
+                 "FisheyeShader::bindColorTexture(): the shader was not "
+                 "created with color texture enabled",
+                 *this);
+  texture.bind(fisheyeShaderTexUnitSpace::TextureUnit::Color);
+  return *this;
+}
+
+FisheyeShader& FisheyeShader::bindDepthTexture(
+    Mn::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(flags_ & FisheyeShader::Flag::DepthTexture,
+                 "FisheyeShader::bindDepthTexture(): the shader was not "
+                 "created with depth texture enabled",
+                 *this);
+  texture.bind(fisheyeShaderTexUnitSpace::TextureUnit::Depth);
+  return *this;
+}
+
 }  // namespace gfx
 }  // namespace esp

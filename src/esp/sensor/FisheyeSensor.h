@@ -126,7 +126,7 @@ class FisheyeSensor : public VisualSensor {
   static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
       "fisheye-model-type={}-flags={}";
 
-  gfx::RenderCamera* getRenderCamera() { return nullptr; }
+  gfx::RenderCamera* getRenderCamera() = delete;
 
  protected:
   FisheyeSensorSpec::ptr fisheyeSensorSpec_ =
@@ -139,7 +139,7 @@ class FisheyeSensor : public VisualSensor {
   // fisheye shader resource manager, which manages different shaders such as
   // DoubleSphereCameraShader, FieldOfViewCameraShader (TODO) ...
   Magnum::ResourceManager<gfx::FisheyeShader> fisheyeShaderManager_;
-  Magnum::Resource<gfx::FisheyeShader> shader_;
+  // Magnum::Resource<gfx::FisheyeShader> shader_;
   // a big triangles that covers the whole screen
   Magnum::GL::Mesh mesh_;
 
@@ -160,8 +160,27 @@ class FisheyeSensor : public VisualSensor {
 
   Magnum::ResourceKey getShaderKey();
 
+  template <typename T>
+  Magnum::Resource<gfx::FisheyeShader, T> getShader();
+
   ESP_SMART_POINTERS(FisheyeSensor)
 };
+
+template <typename T>
+Magnum::Resource<gfx::FisheyeShader, T> FisheyeSensor::getShader() {
+  Magnum::Resource<gfx::FisheyeShader, T> shader =
+      fisheyeShaderManager_.get<gfx::FisheyeShader, T>(getShaderKey());
+  if (!shader) {
+    fisheyeShaderManager_.set<gfx::FisheyeShader>(
+        shader.key(), new T{fisheyeShaderFlags_}, Mn::ResourceDataState::Final,
+        Mn::ResourcePolicy::ReferenceCounted);
+  }
+
+  CORRADE_INTERNAL_ASSERT(shader && shader->flags() == fisheyeShaderFlags_);
+
+  return shader;
+}
+
 }  // namespace sensor
 }  // namespace esp
 

@@ -25,14 +25,6 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
-namespace {
-enum TextureUnit : uint8_t {
-  Color = 0,
-  Depth = 1,
-  // TODO
-  // ObjectId = 2,
-};
-}  // namespace
 DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
     : FisheyeShader(flags) {
   if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
@@ -94,34 +86,14 @@ void DoubleSphereCameraShader::cacheUniforms() {
 
 void DoubleSphereCameraShader::setTextureBindingPoints() {
   if (flags_ & FisheyeShader::Flag::ColorTexture) {
-    setUniform(uniformLocation("ColorTexture"), TextureUnit::Color);
+    setUniform(uniformLocation("ColorTexture"),
+               fisheyeShaderTexUnitSpace::TextureUnit::Color);
   }
   if (flags_ & FisheyeShader::Flag::DepthTexture) {
-    setUniform(uniformLocation("DepthTexture"), TextureUnit::Depth);
+    setUniform(uniformLocation("DepthTexture"),
+               fisheyeShaderTexUnitSpace::TextureUnit::Depth);
   }
   // TODO: handle the other flags, ObjectIdTexture
-}
-
-DoubleSphereCameraShader& DoubleSphereCameraShader::bindColorTexture(
-    Mn::GL::CubeMapTexture& texture) {
-  CORRADE_ASSERT(
-      flags_ & FisheyeShader::Flag::ColorTexture,
-      "DoubleSphereCameraShader::bindColorTexture(): the shader was not "
-      "created with color texture enabled",
-      *this);
-  texture.bind(TextureUnit::Color);
-  return *this;
-}
-
-DoubleSphereCameraShader& DoubleSphereCameraShader::bindDepthTexture(
-    Mn::GL::CubeMapTexture& texture) {
-  CORRADE_ASSERT(
-      flags_ & FisheyeShader::Flag::DepthTexture,
-      "DoubleSphereCameraShader::bindDepthTexture(): the shader was not "
-      "created with depth texture enabled",
-      *this);
-  texture.bind(TextureUnit::Depth);
-  return *this;
 }
 
 DoubleSphereCameraShader& DoubleSphereCameraShader::setFocalLength(
