@@ -13,6 +13,7 @@
 #include <utility>
 
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/VisualSensor.h"
 #ifdef ESP_BUILD_WITH_CUDA
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
@@ -50,6 +51,7 @@ void initSensorBindings(py::module& m) {
       .value("SEMANTIC", SensorType::Semantic);
 
   py::enum_<SensorSubType>(m, "SensorSubType")
+      .value("NONE", SensorSubType::None)
       .value("PINHOLE", SensorSubType::Pinhole)
       .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
 
@@ -59,14 +61,8 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("uuid", &SensorSpec::uuid)
       .def_readwrite("sensor_type", &SensorSpec::sensorType)
       .def_readwrite("sensor_subtype", &SensorSpec::sensorSubType)
-      .def_readwrite("parameters", &SensorSpec::parameters)
       .def_readwrite("position", &SensorSpec::position)
       .def_readwrite("orientation", &SensorSpec::orientation)
-      .def_readwrite("resolution", &SensorSpec::resolution)
-      .def_readwrite("channels", &SensorSpec::channels)
-      .def_readwrite("encoding", &SensorSpec::encoding)
-      .def_readwrite("gpu2gpu_transfer", &SensorSpec::gpu2gpuTransfer)
-      .def_readwrite("observation_space", &SensorSpec::observationSpace)
       .def_readwrite("noise_model", &SensorSpec::noiseModel)
       .def_property(
           "noise_model_kwargs",
@@ -80,14 +76,25 @@ void initSensorBindings(py::module& m) {
           [](SensorSpec& self, py::dict v) {
             py::setattr(py::cast(self), "__noise_model_kwargs", std::move(v));
           })
-      .def("__eq__",
-           [](const SensorSpec& self, const SensorSpec& other) -> bool {
-             return self == other;
-           })
-      .def("__neq__",
-           [](const SensorSpec& self, const SensorSpec& other) -> bool {
-             return self != other;
-           });
+      .def("is_visual_sensor_spec", &SensorSpec::isVisualSensorSpec)
+      .def("__eq__", &SensorSpec::operator==)
+      .def("__neq__", &SensorSpec::operator!=);
+
+  // ==== VisualSensorSpec ====
+  py::class_<VisualSensorSpec, VisualSensorSpec::ptr, SensorSpec>(
+      m, "VisualSensorSpec", py::dynamic_attr())
+      .def(py::init(&VisualSensorSpec::create<>))
+      .def_readwrite("ortho_scale", &VisualSensorSpec::ortho_scale)
+      .def_readwrite("resolution", &VisualSensorSpec::resolution)
+      .def_readwrite("encoding", &VisualSensorSpec::encoding)
+      .def_readwrite("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer);
+
+  // ====CameraSensorSpec ====
+  py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec,
+             SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
+      .def(py::init(&CameraSensorSpec::create<>))
+      .def_readwrite("channels", &CameraSensorSpec::channels)
+      .def_readwrite("observation_space", &CameraSensorSpec::observationSpace);
 
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
@@ -109,6 +116,14 @@ void initSensorBindings(py::module& m) {
           "render_camera", &VisualSensor::getRenderCamera,
           R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",
           pybind11::return_value_policy::reference)
+      .def_property_readonly(
+          "near", &VisualSensor::getNear,
+          R"(The distance to the near clipping plane this VisualSensor uses.)")
+      .def_property_readonly(
+          "far", &VisualSensor::getFar,
+          R"(The distance to the far clipping plane this VisualSensor uses.)")
+      .def_property_readonly("hfov", &VisualSensor::getFOV,
+                             R"(The Field of View this VisualSensor uses.)")
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 
@@ -117,7 +132,7 @@ void initSensorBindings(py::module& m) {
              VisualSensor, Magnum::SceneGraph::PyFeatureHolder<CameraSensor>>(
       m, "CameraSensor")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
-                          const SensorSpec::ptr&>())
+                          const CameraSensorSpec::ptr&>())
       .def("set_projection_params", &CameraSensor::setProjectionParameters,
            R"(Specify the projection parameters this CameraSensor should use.
            Should be consumed by first querying this CameraSensor's SensorSpec
@@ -128,8 +143,13 @@ void initSensorBindings(py::module& m) {
           passed amount. User >1 to increase, 0<factor<1 to decrease.)",
            "factor"_a)
       .def("reset_zoom", &CameraSensor::resetZoom,
-           R"(Reset Orthographic Zoom or Perspective FOV to values
-          specified in current sensor spec for this CameraSensor.)")
+           R"(Reset Orthographic Zoom or Perspective FOV.)")
+      .def(
+          "set_width", &CameraSensor::setWidth,
+          R"(Set the width of the resolution in SensorSpec for this CameraSensor.)")
+      .def(
+          "set_height", &CameraSensor::setHeight,
+          R"(Set the height of the resolution in the SensorSpec for this CameraSensor.)")
       .def_property(
           "fov",
           static_cast<Mn::Deg (CameraSensor::*)() const>(&CameraSensor::getFOV),
@@ -140,23 +160,12 @@ void initSensorBindings(py::module& m) {
           "camera_type", &CameraSensor::getCameraType,
           &CameraSensor::setCameraType,
           R"(The type of projection (ORTHOGRAPHIC or PINHOLE) this CameraSensor uses.)")
-      .def_property("width", &CameraSensor::getWidth, &CameraSensor::setWidth,
-                    R"(The width of the viewport for this CameraSensor.)")
-      .def_property("height", &CameraSensor::getHeight,
-                    &CameraSensor::setHeight,
-                    R"(The height of the viewport for this CameraSensor.)")
       .def_property(
           "near_plane_dist", &CameraSensor::getNear, &CameraSensor::setNear,
           R"(The distance to the near clipping plane for this CameraSensor uses.)")
       .def_property(
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
           R"(The distance to the far clipping plane for this CameraSensor uses.)");
-
-  // ==== SensorSuite ====
-  py::class_<SensorSuite, SensorSuite::ptr>(m, "SensorSuite")
-      .def(py::init(&SensorSuite::create<>))
-      .def("add", &SensorSuite::add)
-      .def("get", &SensorSuite::get, R"(get the sensor by id)");
 
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(

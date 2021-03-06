@@ -44,11 +44,11 @@ enum class SceneInstanceTranslationOrigin {
 
 class SceneAttributesManager
     : public AttributesManager<attributes::SceneAttributes,
-                               core::ManagedContainerAccess::Copy> {
+                               core::ManagedObjectAccess::Copy> {
  public:
   SceneAttributesManager()
       : AttributesManager<attributes::SceneAttributes,
-                          core::ManagedContainerAccess::Copy>::
+                          core::ManagedObjectAccess::Copy>::
             AttributesManager("Scene Instance", "scene_instance.json") {
     buildCtorFuncPtrMaps();
   }
@@ -184,7 +184,7 @@ class SceneAttributesManager
    * @param handle Ignored.
    * @return false
    */
-  virtual bool isValidPrimitiveAttributes(
+  bool isValidPrimitiveAttributes(
       CORRADE_UNUSED const std::string& handle) override {
     return false;
   }

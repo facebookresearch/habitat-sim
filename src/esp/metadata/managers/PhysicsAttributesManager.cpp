@@ -7,7 +7,6 @@
 
 #include "esp/io/json.h"
 
-using std::placeholders::_1;
 namespace Cr = Corrade;
 namespace esp {
 
@@ -38,35 +37,42 @@ void PhysicsAttributesManager::setValsFromJSONDoc(
   // attributes ctor.
   io::jsonIntoConstSetter<std::string>(
       jsonConfig, "physics_simulator",
-      std::bind(&PhysicsManagerAttributes::setSimulator,
-                physicsManagerAttributes, _1));
+      [physicsManagerAttributes](const std::string& simulator) {
+        physicsManagerAttributes->setSimulator(simulator);
+      });
 
   // load the physics timestep
   io::jsonIntoSetter<double>(jsonConfig, "timestep",
-                             std::bind(&PhysicsManagerAttributes::setTimestep,
-                                       physicsManagerAttributes, _1));
+                             [physicsManagerAttributes](double timestep) {
+                               physicsManagerAttributes->setTimestep(timestep);
+                             });
 
   // load the max substeps between time step
-  io::jsonIntoSetter<int>(jsonConfig, "max_substeps",
-                          std::bind(&PhysicsManagerAttributes::setMaxSubsteps,
-                                    physicsManagerAttributes, _1));
+  io::jsonIntoSetter<int>(
+      jsonConfig, "max_substeps", [physicsManagerAttributes](int max_substeps) {
+        physicsManagerAttributes->setMaxSubsteps(max_substeps);
+      });
   // load the friction coefficient
   io::jsonIntoSetter<double>(
       jsonConfig, "friction_coefficient",
-      std::bind(&PhysicsManagerAttributes::setFrictionCoefficient,
-                physicsManagerAttributes, _1));
+      [physicsManagerAttributes](double friction_coefficient) {
+        physicsManagerAttributes->setFrictionCoefficient(friction_coefficient);
+      });
 
   // load the restitution coefficient
   io::jsonIntoSetter<double>(
       jsonConfig, "restitution_coefficient",
-      std::bind(&PhysicsManagerAttributes::setRestitutionCoefficient,
-                physicsManagerAttributes, _1));
+      [physicsManagerAttributes](double restitution_coefficient) {
+        physicsManagerAttributes->setRestitutionCoefficient(
+            restitution_coefficient);
+      });
 
   // load world gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "gravity",
-      std::bind(&PhysicsManagerAttributes::setGravity, physicsManagerAttributes,
-                _1));
+      [physicsManagerAttributes](const Magnum::Vector3& gravity) {
+        physicsManagerAttributes->setGravity(gravity);
+      });
 
 }  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 

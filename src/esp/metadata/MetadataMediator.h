@@ -29,10 +29,10 @@ namespace metadata {
 
 class MetadataMediator {
  public:
-  MetadataMediator(const sim::SimulatorConfiguration& cfg);
+  explicit MetadataMediator(const sim::SimulatorConfiguration& cfg);
 
   MetadataMediator() : MetadataMediator(sim::SimulatorConfiguration{}) {}
-  ~MetadataMediator() {}
+  ~MetadataMediator() = default;
 
   /**
    * @brief Set current @ref esp::sim::SimulatorConfiguration to be used.
@@ -40,6 +40,14 @@ class MetadataMediator {
    * @return Whether config was set properly.
    */
   bool setSimulatorConfiguration(const sim::SimulatorConfiguration& cfg);
+
+  /**
+   * @brief Return the current @ref esp::sim::SimulatorConfiguration this
+   * MetadataMediator is using.  Used to build Simulator from existing MM.
+   */
+  const sim::SimulatorConfiguration& getSimulatorConfiguration() const {
+    return this->simConfig_;
+  }
 
   /**
    * @brief Creates a dataset attributes using @p sceneDatasetName, and
@@ -175,7 +183,7 @@ class MetadataMediator {
   }  // MetadataMediator::getStageAttributesManager
 
   /**
-   * @brief Return current physics manager attributes.
+   * @brief Return a copy of the current physics manager attributes.
    */
   attributes::PhysicsManagerAttributes::ptr
   getCurrentPhysicsManagerAttributes() {

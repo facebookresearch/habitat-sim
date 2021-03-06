@@ -31,7 +31,7 @@ def make_configuration():
 
     # sensor configurations
     sensor_specs = []
-    sensor_spec = habitat_sim.SensorSpec()
+    sensor_spec = habitat_sim.CameraSensorSpec()
     sensor_spec.uuid = "rgba_camera_1stperson"
     sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
     sensor_spec.resolution = [544, 720]
@@ -73,6 +73,9 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
         data["collisions"] += collisions
 
 
+def_params = habitat_sim.VHACDParameters()
+
+
 def box_drop_test(
     args,
     objects,
@@ -80,6 +83,8 @@ def box_drop_test(
     box_size=2,
     object_speed=2,
     post_throw_settling_time=5,
+    useVHACD=False,
+    VHACDParams=def_params,
 ):  # take in parameters here
     """Drops a specified number of objects into a box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame. """
 
@@ -96,7 +101,7 @@ def box_drop_test(
             0,
             habitat_sim.AgentState(
                 [5.45 * box_size, 2.4 * box_size, 1.2 * box_size],
-                np.quaternion(-0.83147, 0.2, -0.55557, -0.2),
+                np.quaternion(-0.8000822, 0.1924500, -0.5345973, -0.1924500),
             ),
         )
 
@@ -105,7 +110,6 @@ def box_drop_test(
 
         # build box
         cube_handle = obj_templates_mgr.get_template_handles("cube")[0]
-
         box_parts = []
         boxIDs = []
         for _i in range(5):
@@ -141,9 +145,30 @@ def box_drop_test(
                 ]
             ]
             obj_template = obj_templates_mgr.get_template_by_ID(object_ids[-1])
-            if "scale" in obj.keys():
+
+            if "scale" in obj:
                 obj_template.scale *= obj["scale"]
-            obj_templates_mgr.register_template(obj_template)
+            obj_handle = obj_template.render_asset_handle
+
+            if useVHACD:
+                new_handle = sim.apply_convex_hull_decomposition(
+                    obj_handle, VHACDParams, True, False
+                )
+
+                new_obj_template = obj_templates_mgr.get_template_by_handle(new_handle)
+
+                if "scale" in obj:
+                    new_obj_template.scale *= obj["scale"]
+
+                obj_templates_mgr.register_template(
+                    new_obj_template, force_registration=True
+                )
+                object_ids[-1] = new_obj_template.ID
+                print("Template Registered")
+            else:
+                obj_templates_mgr.register_template(
+                    obj_template, force_registration=True
+                )
 
         # throw objects into box
         for i in range(num_objects):
@@ -204,7 +229,7 @@ benchmarks = {
                 {"path": "test_assets/objects/donut", "scale": 2},
                 {"path": "test_assets/objects/nested_box", "scale": 0.5},
             ],
-            200,
+            20,
             2,
             1.8,
             10,

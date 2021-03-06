@@ -523,15 +523,16 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
-  agentConfig.sensorSpecifications[0]->resolution =
-      esp::vec2i(viewportSize[1], viewportSize[0]);
-
-  agentConfig.sensorSpecifications[0]->sensorSubType =
+  auto cameraSensorSpec = esp::sensor::CameraSensorSpec::create();
+  cameraSensorSpec->sensorSubType =
       args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
                                  : esp::sensor::SensorSubType::Pinhole;
+  cameraSensorSpec->sensorType = esp::sensor::SensorType::Color;
+  cameraSensorSpec->position = {0.0f, 1.5f, 0.0f};
+  cameraSensorSpec->orientation = {0, 0, 0};
+  cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  agentConfig.sensorSpecifications = {cameraSensorSpec};
 
-  // add selects a random initial state and sets up the default controls and
-  // step filter
   simulator_->addAgent(agentConfig);
 
   // Set up camera
@@ -598,6 +599,10 @@ void Viewer::switchCameraType() {
     }
     case esp::sensor::SensorSubType::Orthographic: {
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
+      return;
+    }
+    case esp::sensor::SensorSubType::None: {
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       return;
     }
   }
@@ -905,7 +910,7 @@ void Viewer::drawEvent() {
     Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
-    visibles = renderCamera_->getPreviousNumVisibileDrawables();
+    visibles = renderCamera_->getPreviousNumVisibleDrawables();
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
     CORRADE_ASSERT(sensorRenderTarget,
@@ -1036,8 +1041,8 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
     if (visualSensor != nullptr) {
-      visualSensor->specification()->resolution = {event.framebufferSize()[1],
-                                                   event.framebufferSize()[0]};
+      visualSensor->setResolution(event.framebufferSize()[1],
+                                  event.framebufferSize()[0]);
       renderCamera_->setViewport(visualSensor->framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
     }

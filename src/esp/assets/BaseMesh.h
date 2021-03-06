@@ -82,7 +82,7 @@ class BaseMesh {
   explicit BaseMesh(SupportedMeshType type) : type_(type){};
 
   /** @brief Destructor */
-  virtual ~BaseMesh(){};
+  virtual ~BaseMesh() = default;
 
   /**
    * @brief Set the @ref SupportedMeshType, @ref type_, of this object.

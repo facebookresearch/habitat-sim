@@ -25,6 +25,7 @@
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/SensorFactory.h"
 #include "esp/sensor/VisualSensor.h"
 
 namespace Cr = Corrade;
@@ -36,8 +37,10 @@ using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
-Simulator::Simulator(const SimulatorConfiguration& cfg)
-    : random_{core::Random::create(cfg.randomSeed)},
+Simulator::Simulator(const SimulatorConfiguration& cfg,
+                     metadata::MetadataMediator::ptr _metadataMediator)
+    : metadataMediator_{std::move(_metadataMediator)},
+      random_{core::Random::create(cfg.randomSeed)},
       requiresTextures_{Cr::Containers::NullOpt} {
   // initalize members according to cfg
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
@@ -88,10 +91,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   if (!resourceManager_) {
     resourceManager_ =
         std::make_unique<assets::ResourceManager>(metadataMediator_);
-    if (config_.createRenderer) {
+    if (cfg.createRenderer) {
       // needs to be called after ResourceManager exists but before any assets
       // have been loaded
-      reconfigureReplayManager();
+      reconfigureReplayManager(cfg.enableGfxReplaySave);
     }
   } else {
     resourceManager_->setMetadataMediator(metadataMediator_);
@@ -122,7 +125,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                     "initialized with True.  Call close() to change this.";
   }
 
-  bool success;
+  bool success = false;
   // (re) create scene instance based on whether or not a renderer is requested.
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
@@ -211,7 +214,12 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   const std::string semanticSceneDescFilename =
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(
           curSceneInstanceAttributes->getSemanticSceneHandle());
+
   if (semanticSceneDescFilename.compare("") != 0) {
+    bool fileExists = false;
+    bool success = false;
+    const std::string msgPrefix =
+        "Simulator::setSceneInstanceAttributes : Attempt to load ";
     // semantic scene descriptor might not exist, so
     semanticScene_ = nullptr;
     semanticScene_ = scene::SemanticScene::create();
@@ -219,92 +227,34 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
               << activeSceneName
               << " proposed Semantic Scene Descriptor filename : "
               << semanticSceneDescFilename;
-    // 1/25/21 : in order to support backwards compatibility, the old
-    // mechanism of constructing a "house" file name from the name of the stage
-    // asset is preserved, but is accomplished in the stage attributes
-    // initialization, instead of within simulation config code itself.  This
-    // name is then added to the scene dataset and scene instance attributes if
-    // it is not specified there already and no other ssd has been specified in
-    // the scene instance.
 
-    // first we will check if the explicitly specified ssd
-    bool fileExists = FileUtil::exists(semanticSceneDescFilename);
-    bool success = false;
-    using Corrade::Utility::String::endsWith;
-    const std::string msgPrefix =
-        "Simulator::setSceneInstanceAttributes : Attempt to load ";
-    if (fileExists) {
-      // given SSD file exists
-      if (endsWith(semanticSceneDescFilename, "info_semantic.json")) {
-        success = scene::SemanticScene::loadReplicaHouse(
-            semanticSceneDescFilename, *semanticScene_);
+    // Attempt to load semantic scene descriptor specified in scene instance
+    // file, agnostic to file type inferred by name,
+    success = scene::SemanticScene::loadSemanticSceneDescriptor(
+        semanticSceneDescFilename, *semanticScene_);
+    if (!success) {
+      // attempt to look for specified file failed, attempt to build new file
+      // name by searching in path specified of specified file for
+      // info_semantic.json file for replica dataset
+      const std::string tmpFName = FileUtil::join(
+          FileUtil::path(semanticSceneDescFilename), "info_semantic.json");
+      if (FileUtil::exists(tmpFName)) {
+        success =
+            scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
         LOG(INFO) << msgPrefix
-                  << "Replica w/existing file : " << semanticSceneDescFilename
-                  << " : " << (success ? "" : "not ") << "successful";
-      } else {
-        if (endsWith(semanticSceneDescFilename, ".house")) {
-          success = scene::SemanticScene::loadMp3dHouse(
-              semanticSceneDescFilename, *semanticScene_);
-          LOG(INFO) << msgPrefix
-                    << "Mp3d w/existing file : " << semanticSceneDescFilename
-                    << " : " << (success ? "" : "not ") << "successful";
-
-        } else if (endsWith(semanticSceneDescFilename, ".scn")) {
-          success = scene::SemanticScene::loadGibsonHouse(
-              semanticSceneDescFilename, *semanticScene_);
-          LOG(INFO) << msgPrefix
-                    << "Gibson w/existing file : " << semanticSceneDescFilename
-                    << " : " << (success ? "" : "not ") << "successful";
-        }
+                  << "Replica w/existing constructed file : " << tmpFName
+                  << " in directory with " << semanticSceneDescFilename << " : "
+                  << (success ? "" : "not ") << "successful";
       }
-    }
+    }  // if given SSD file name specifiedd exists
+    LOG(WARNING)
+        << "Simulator::setSceneInstanceAttributes : All attempts to load "
+           "SSD with SceneAttributes-provided name "
+        << semanticSceneDescFilename << " : exist : " << fileExists
+        << " : loaded as expected type : " << success;
 
-    if (!fileExists || !success) {
-      // get stage attributes for current scene instance
-      auto stageAttributes = metadataMediator_->getNamedStageAttributesCopy(
-          curSceneInstanceAttributes->getStageInstance()->getHandle());
-      if (stageAttributes != nullptr) {
-        // assetType of stage is used to specify semanctic scene descriptor
-        // format
-        assets::AssetType assetType = static_cast<assets::AssetType>(
-            stageAttributes->getRenderAssetType());
-        // semantic scene descriptor might not exist, so
-        semanticScene_ = nullptr;
-        semanticScene_ = scene::SemanticScene::create();
-        switch (assetType) {
-          case assets::AssetType::INSTANCE_MESH: {
-            const std::string tmpFName =
-                FileUtil::join(FileUtil::path(semanticSceneDescFilename),
-                               "info_semantic.json");
-            if (FileUtil::exists(tmpFName)) {
-              scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
-            }
-            break;
-          }
-          case assets::AssetType::MP3D_MESH: {
-            if (FileUtil::exists(semanticSceneDescFilename)) {
-              if (endsWith(semanticSceneDescFilename, ".house")) {
-                scene::SemanticScene::loadMp3dHouse(semanticSceneDescFilename,
-                                                    *semanticScene_);
-              } else if (endsWith(semanticSceneDescFilename, ".scn")) {
-                scene::SemanticScene::loadGibsonHouse(semanticSceneDescFilename,
-                                                      *semanticScene_);
-              }
-            }
-            break;
-          }
-          case assets::AssetType::SUNCG_SCENE: {
-            // SUNCG is not handled anymore
-            // scene::SemanticScene::loadSuncgHouse(stageAttributesHandle,
-            // *semanticScene_);
-            break;
-          }
-          default:
-            break;
-        }  // end switch
-      }    // stage attributes != nullptr
-    }  // if semantic scene descriptor file name specified has unknown extension
-  }    // if semantic scene descriptor specified in scene instance
+  }  // if semantic scene descriptor specified in scene instance
+
   // 3. Specify frustumCulling based on value either from config (if override
   // is specified) or from scene instance attributes.
   frustumCulling_ = config_.frustumCulling;
@@ -459,7 +409,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   scene::SceneNode* attachmentNode = nullptr;
   // vector holding all objects added
   std::vector<int> objectsAdded;
-  int objID;
+  int objID = 0;
 
   // whether or not to correct for COM shift - only do for blender-sourced
   // scene attributes
@@ -561,11 +511,11 @@ void Simulator::seed(uint32_t newSeed) {
   pathfinder_->seed(newSeed);
 }
 
-void Simulator::reconfigureReplayManager() {
+void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   gfxReplayMgr_ = std::make_shared<gfx::replay::ReplayManager>();
 
   // construct Recorder instance if requested
-  gfxReplayMgr_->setRecorder(config_.enableGfxReplaySave
+  gfxReplayMgr_->setRecorder(enableGfxReplaySave
                                  ? std::make_shared<gfx::replay::Recorder>()
                                  : nullptr);
   // assign Recorder to ResourceManager
@@ -574,8 +524,11 @@ void Simulator::reconfigureReplayManager() {
 
   // provide Player callback to replay manager
   gfxReplayMgr_->setPlayerCallback(
-      std::bind(&esp::sim::Simulator::loadAndCreateRenderAssetInstance, this,
-                std::placeholders::_1, std::placeholders::_2));
+      [this](const assets::AssetInfo& assetInfo,
+             const assets::RenderAssetInstanceCreationInfo& creation)
+          -> scene::SceneNode* {
+        return loadAndCreateRenderAssetInstance(assetInfo, creation);
+      });
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
@@ -1076,6 +1029,56 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
+std::string Simulator::convexHullDecomposition(
+    const std::string& filename,
+    const assets::ResourceManager::VHACDParameters& params,
+    const bool renderChd,
+    const bool saveChdToObj) {
+  Cr::Utility::Debug() << "VHACD PARAMS RESOLUTION: " << params.m_resolution;
+
+  // generate a unique filename
+  std::string chdFilename =
+      Cr::Utility::Directory::splitExtension(filename).first + ".chd";
+  if (resourceManager_->isAssetDataRegistered(chdFilename)) {
+    int nameAttempt = 1;
+    chdFilename += "_";
+    // Iterate until a unique filename is found.
+    while (resourceManager_->isAssetDataRegistered(
+        chdFilename + std::to_string(nameAttempt))) {
+      nameAttempt++;
+    }
+    chdFilename += std::to_string(nameAttempt);
+  }
+
+  // run VHACD on the given filename mesh with the given params, store the
+  // results in the resourceDict_ registered under chdFilename
+  resourceManager_->createConvexHullDecomposition(filename, chdFilename, params,
+                                                  saveChdToObj);
+
+  // create object attributes for the new chd object
+  auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
+  auto chdObjAttr = objAttrMgr->createObject(chdFilename, false);
+
+  // specify collision asset handle & other attributes
+  chdObjAttr->setCollisionAssetHandle(chdFilename);
+  chdObjAttr->setIsCollidable(true);
+  chdObjAttr->setCollisionAssetIsPrimitive(false);
+  chdObjAttr->setJoinCollisionMeshes(false);
+
+  // if the renderChd flag is set to true, set the convex hull decomposition to
+  // be the render asset (useful for testing)
+
+  chdObjAttr->setRenderAssetHandle(renderChd ? chdFilename : filename);
+
+  chdObjAttr->setRenderAssetIsPrimitive(false);
+
+  // register object and return handle
+  objAttrMgr->registerObject(chdObjAttr, chdFilename, true);
+  return chdObjAttr->getHandle();
+}
+#endif
+
 agent::Agent::ptr Simulator::addAgent(
     const agent::AgentConfiguration& agentConfig,
     scene::SceneNode& agentParentNode) {
@@ -1084,9 +1087,10 @@ agent::Agent::ptr Simulator::addAgent(
   // attach each agent, each sensor to a scene node, set the local
   // transformation of the sensor w.r.t. the agent (done internally in the
   // constructor of Agent)
-
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
+  ag->setSensorSuite(esp::sensor::SensorFactory::createSensors(
+      agentNode, agentConfig.sensorSpecifications));
 
   agent::AgentState state;
   sampleRandomAgentState(state);
@@ -1120,6 +1124,17 @@ agent::Agent::ptr Simulator::addAgent(
 agent::Agent::ptr Simulator::getAgent(const int agentId) {
   ASSERT(0 <= agentId && agentId < agents_.size());
   return agents_[agentId];
+}
+
+esp::sensor::Sensor::ptr Simulator::addSensorToObject(
+    const int objectId,
+    const esp::sensor::SensorSpec::ptr& sensorSpec) {
+  esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
+  esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
+  esp::sensor::SensorSuite sensorSuite =
+      esp::sensor::SensorFactory::createSensors(objectNode,
+                                                sensorSpecifications);
+  return sensorSuite.get(sensorSpec->uuid);
 }
 
 nav::PathFinder::ptr Simulator::getPathFinder() {

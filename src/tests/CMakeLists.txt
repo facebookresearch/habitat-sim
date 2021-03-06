@@ -51,7 +51,7 @@ target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 test(PhysicsTest physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(GfxReplayTest assets gfx)
+test(GfxReplayTest assets gfx sim)
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(ResourceManagerTest assets)
@@ -65,6 +65,9 @@ target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(SceneGraphTest scene)
 target_include_directories(SceneGraphTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
+target_include_directories(SensorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Some tests are LOUD, we don't want to include their full log (but OTOH we
 # want to have full log from others, so this is a compromise)

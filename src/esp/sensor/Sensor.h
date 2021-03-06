@@ -38,34 +38,29 @@ enum class ObservationSpaceType {
 };
 
 enum class SensorSubType {
-  Pinhole = 0,
-  Orthographic = 1,
+  None = 0,
+  Pinhole = 1,
+  Orthographic = 2,
 };
 
 // Specifies the configuration parameters of a sensor
 struct SensorSpec {
-  std::string uuid = "rgba_camera";
-  SensorType sensorType = SensorType::Color;
-  SensorSubType sensorSubType = SensorSubType::Pinhole;
-  std::map<std::string, std::string> parameters = {{"near", "0.01"},
-                                                   {"far", "1000"},
-                                                   {"hfov", "90"},
-                                                   {"ortho_scale", ".1"}};
+  std::string uuid = "";
+  SensorType sensorType = SensorType::None;
+  SensorSubType sensorSubType = SensorSubType::None;
   vec3f position = {0, 1.5, 0};
   vec3f orientation = {0, 0, 0};
-  vec2i resolution = {84, 84};
-  int channels = 4;
-  std::string encoding = "rgba_uint8";
-  // description of Sensor observation space as gym.spaces.Dict()
-  std::string observationSpace = "";
   std::string noiseModel = "None";
-  bool gpu2gpuTransfer = false;
+  SensorSpec() = default;
+  virtual ~SensorSpec();
+  virtual bool isVisualSensorSpec() const { return false; }
+  virtual void sanityCheck();
+  bool operator==(const SensorSpec& a) const;
+  bool operator!=(const SensorSpec& a) const;
   ESP_SMART_POINTERS(SensorSpec)
 };
 
-bool operator==(const SensorSpec& a, const SensorSpec& b);
-bool operator!=(const SensorSpec& a, const SensorSpec& b);
-
+using SensorSetup = std::vector<sensor::SensorSpec::ptr>;
 // Represents a particular sensor Observation
 struct Observation {
   // TODO: populate this struct with raw data
@@ -84,7 +79,7 @@ struct ObservationSpace {
 class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);
-  virtual ~Sensor() { LOG(INFO) << "Deconstructing Sensor"; }
+  ~Sensor() override { LOG(INFO) << "Deconstructing Sensor"; }
 
   // Get the scene node being attached to.
   scene::SceneNode& node() { return object(); }
@@ -102,10 +97,10 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   SensorSpec::ptr specification() const { return spec_; }
 
-  // can be called ONLY when it is attached to a scene node
-  virtual void setTransformationFromSpec();
+  virtual bool isVisualSensor() const { return false; }
 
-  virtual bool isVisualSensor() { return false; }
+  // can be called ONLY when it is attached to a scene node
+  void setTransformationFromSpec();
 
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) = 0;
   virtual bool getObservationSpace(ObservationSpace& space) = 0;
@@ -131,6 +126,14 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 class SensorSuite {
  public:
   void add(const Sensor::ptr& sensor);
+
+  /**
+   * @brief Concatenate sensorSuite's sensors to existing sensors_
+   * @param[in] sensorSuite Instance of SensorSuite class from which to copy
+   * Sensors
+   * Note: it does not update any element whose key already exists.
+   */
+  void merge(SensorSuite& sensorSuite);
   void clear();
   ~SensorSuite() { LOG(INFO) << "Deconstructing SensorSuite"; }
 

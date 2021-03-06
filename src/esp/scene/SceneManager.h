@@ -21,7 +21,7 @@ namespace scene {
 // make SceneManager a singleton class
 class SceneManager {
  public:
-  SceneManager(){};
+  SceneManager() = default;
   ~SceneManager() { LOG(INFO) << "Deconstructing SceneManager"; }
 
   // returns the scene ID

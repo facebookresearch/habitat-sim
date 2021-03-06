@@ -44,8 +44,8 @@ class PbrDrawable : public Drawable {
    *        drawable is attached) relative to camera
    * @param camera, the camera that views and renders the world
    */
-  virtual void draw(const Magnum::Matrix4& transformationMatrix,
-                    Magnum::SceneGraph::Camera3D& camera) override;
+  void draw(const Magnum::Matrix4& transformationMatrix,
+            Magnum::SceneGraph::Camera3D& camera) override;
 
   /**
    *  @brief Update the shader so it can correcly handle the current material,

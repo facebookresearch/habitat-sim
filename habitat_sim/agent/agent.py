@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 import attr
 import magnum as mn
 import numpy as np
+import quaternion
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
@@ -19,6 +20,12 @@ from habitat_sim.utils.common import (
     quat_from_magnum,
     quat_rotate_vector,
     quat_to_magnum,
+)
+from habitat_sim.utils.validators import (
+    NoAttrValidationContext,
+    all_is_finite,
+    is_unit_length,
+    value_is_validated,
 )
 
 from .controls import ActuationSpec, ObjectControls
@@ -46,6 +53,14 @@ def _default_action_space() -> Dict[str, ActionSpec]:
     )
 
 
+def _triple_zero() -> np.ndarray:
+    return np.zeros(3)
+
+
+def _default_quaternion() -> np.quaternion:
+    return quaternion.quaternion(1, 0, 0, 0)
+
+
 @attr.s(auto_attribs=True, slots=True)
 class SixDOFPose(object):
     r"""Specifies a position with 6 degrees of freedom
@@ -54,19 +69,32 @@ class SixDOFPose(object):
     :property rotation: unit quaternion rotation
     """
 
-    position: np.ndarray = np.zeros(3)
-    rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
+    position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    rotation: Union[np.quaternion, List] = attr.ib(
+        factory=_default_quaternion, validator=is_unit_length
+    )
 
 
 @attr.s(auto_attribs=True, slots=True)
 class AgentState(object):
-    position: np.ndarray = np.zeros(3)
-    rotation: Union[np.quaternion, List, np.ndarray] = np.quaternion(1, 0, 0, 0)
-    velocity: np.ndarray = np.zeros(3)
-    angular_velocity: np.ndarray = np.zeros(3)
-    force: np.ndarray = np.zeros(3)
-    torque: np.ndarray = np.zeros(3)
-    sensor_states: Dict[str, SixDOFPose] = attr.Factory(dict)
+    position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    rotation: Union[np.quaternion, List, np.ndarray] = attr.ib(
+        factory=_default_quaternion, validator=is_unit_length
+    )
+    velocity: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    angular_velocity: np.ndarray = attr.ib(
+        factory=_triple_zero, validator=all_is_finite
+    )
+    force: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    torque: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
+    sensor_states: Dict[str, SixDOFPose] = attr.ib(
+        factory=dict,
+        validator=attr.validators.deep_mapping(
+            key_validator=attr.validators.instance_of(str),
+            value_validator=value_is_validated,
+            mapping_validator=attr.validators.instance_of(dict),
+        ),
+    )
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -79,9 +107,7 @@ class AgentConfiguration(object):
     linear_friction: float = 0.5
     angular_friction: float = 1.0
     coefficient_of_restitution: float = 0.0
-    sensor_specifications: List[hsim.SensorSpec] = attr.Factory(
-        lambda: [hsim.SensorSpec()]
-    )
+    sensor_specifications: List[hsim.SensorSpec] = []
     action_space: Dict[Any, ActionSpec] = attr.Factory(_default_action_space)
     body_type: str = "cylinder"
 
@@ -153,6 +179,17 @@ class Agent(object):
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
+        if not spec.is_visual_sensor_spec:
+            raise ValueError(
+                f"""{spec.sensor_type} is a sensorType that is not implemented yet"""
+            )
+        CameraSensorSubTypeSet = {
+            habitat_sim.SensorSubType.PINHOLE,
+            habitat_sim.SensorSubType.ORTHOGRAPHIC,
+        }
+        if spec.sensor_subtype not in CameraSensorSubTypeSet:
+            raise ValueError(f"""{spec.sensor_subtype} is an illegal sensorSubType""")
+        # TODO: Add more checks for NonVisualSensorSpec, Other types of sensors
         self._sensors.add(hsim.CameraSensor(self.scene_node.create_child(), spec))
 
     def act(self, action_id: Any) -> bool:
@@ -183,6 +220,7 @@ class Agent(object):
 
         return did_collide
 
+    @NoAttrValidationContext()
     def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)
         state = AgentState(
@@ -227,6 +265,7 @@ class Agent(object):
         the state of a sensor instead of moving the agent.
 
         """
+        attr.validate(state)
         habitat_sim.errors.assert_obj_valid(self.body)
 
         if isinstance(state.rotation, (list, np.ndarray)):

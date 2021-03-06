@@ -14,6 +14,7 @@ catch() {
   fi
 }
 #Don't change the colab versions for these libraries
+PYTHON_VERSION="$( python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' )"
 PIL_VERSION="$(python -c 'import PIL; print(PIL.__version__)')"
 CFFI_VERSION="$(python -c 'import cffi; print(cffi.__version__)')"
 #Install Miniconda
@@ -21,7 +22,7 @@ cd /content/
 wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && bash Miniconda3-latest-Linux-x86_64.sh -bfp /usr/local
 
 #Adds the conda libraries directly to the colab path.
-ln -s /usr/local/lib/python3.6/dist-packages /usr/local/lib/python3.6/site-packages
+ln -s "/usr/local/lib/python${PYTHON_VERSION}/dist-packages" "/usr/local/lib/python${PYTHON_VERSION}/site-packages"
 
 ##Install Habitat-Sim and Magnum binaries
 conda config --set pip_interop_enabled True
@@ -30,7 +31,7 @@ CHANNEL="${CHANNEL:-aihabitat}"
 if ${NIGHTLY}; then
   CHANNEL="${CHANNEL}-nightly"
 fi
-conda install -S -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet python=3.6 "pillow==${PIL_VERSION}" "cffi==${CFFI_VERSION}"
+conda install -S -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet "python=${PYTHON_VERSION}" "pillow==${PIL_VERSION}" "cffi==${CFFI_VERSION}"
 
 #Shallow GIT clone for speed
 git clone https://github.com/facebookresearch/habitat-lab --depth 1

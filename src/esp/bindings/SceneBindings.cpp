@@ -67,8 +67,12 @@ void initSceneBindings(py::module& m) {
       .def_property_readonly(
           "mesh_bb", &SceneNode::getMeshBB,
           R"(The axis aligned bounding box of the mesh drawables attached to this node.)")
-      .def_property_readonly("absolute_translation",
-                             &SceneNode::absoluteTranslation);
+      .def_property_readonly(
+          "absolute_translation",
+          py::overload_cast<>(&SceneNode::absoluteTranslation))
+      .def_property_readonly(
+          "absolute_translation",
+          py::overload_cast<>(&SceneNode::absoluteTranslation, py::const_));
 
   py::class_<SceneGraph>(m, "SceneGraph")
       .def(py::init())

@@ -87,7 +87,7 @@ def make_configuration():
     # below.
     backend_cfg.enable_gfx_replay_save = True
 
-    sensor_cfg = habitat_sim.SensorSpec()
+    sensor_cfg = habitat_sim.CameraSensorSpec()
     sensor_cfg.resolution = [544, 720]
     agent_cfg = habitat_sim.agent.AgentConfiguration()
     agent_cfg.sensor_specifications = [sensor_cfg]
@@ -143,6 +143,7 @@ def simulate_with_moving_agent(
             observations.append(sim.get_sensor_observations())
 
     return observations
+
 
 # %% [markdown]
 # ## More tutorial setup

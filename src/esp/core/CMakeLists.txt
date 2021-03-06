@@ -22,6 +22,10 @@ if(BUILD_WITH_BULLET)
   set(ESP_BUILD_WITH_BULLET ON)
 endif()
 
+if(BUILD_WITH_VHACD)
+  set(ESP_BUILD_WITH_VHACD ON)
+endif()
+
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )
@@ -33,6 +37,8 @@ add_library(
   AbstractManagedObject.h
   Buffer.cpp
   Buffer.h
+  Check.cpp
+  Check.h
   Configuration.h
   esp.cpp
   esp.h

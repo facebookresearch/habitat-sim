@@ -47,7 +47,7 @@ class RenderCamera : public MagnumCamera {
    * @brief Constructor
    * @param node, the scene node to which the camera is attached
    */
-  RenderCamera(scene::SceneNode& node);
+  explicit RenderCamera(scene::SceneNode& node);
   /**
    * @brief Constructor
    * @param node, the scene node to which the camera is attached
@@ -91,10 +91,9 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief destructor
+   * do nothing, let magnum handle the camera
    */
-  virtual ~RenderCamera() {
-    // do nothing, let magnum handle the camera
-  }
+  ~RenderCamera() override = default;
 
   // Get the scene node being attached to.
   scene::SceneNode& node() { return object(); }
@@ -201,7 +200,7 @@ class RenderCamera : public MagnumCamera {
    * @brief Query the cached number of Drawables visible after frustum culling
    * for the most recent render pass.
    */
-  size_t getPreviousNumVisibileDrawables() const {
+  size_t getPreviousNumVisibleDrawables() const {
     return previousNumVisibleDrawables_;
   }
 

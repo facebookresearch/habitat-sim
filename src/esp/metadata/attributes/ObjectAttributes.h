@@ -30,7 +30,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
   AbstractObjectAttributes(const std::string& classKey,
                            const std::string& handle);
 
-  virtual ~AbstractObjectAttributes() = default;
+  ~AbstractObjectAttributes() override = default;
 
   /**
    * @brief Scale of the ojbect
@@ -183,7 +183,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
-  ObjectAttributes(const std::string& handle = "");
+  explicit ObjectAttributes(const std::string& handle = "");
   // center of mass (COM)
   void setCOM(const Magnum::Vector3& com) { setVec3("COM", com); }
   Magnum::Vector3 getCOM() const { return getVec3("COM"); }
@@ -258,7 +258,7 @@ class ObjectAttributes : public AbstractObjectAttributes {
  */
 class StageAttributes : public AbstractObjectAttributes {
  public:
-  StageAttributes(const std::string& handle = "");
+  explicit StageAttributes(const std::string& handle = "");
 
   void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }
   Magnum::Vector3 getOrigin() const { return getVec3("origin"); }

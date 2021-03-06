@@ -8,8 +8,6 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
-using std::placeholders::_1;
-
 namespace esp {
 namespace metadata {
 
@@ -127,7 +125,9 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
       jCell, "template_name",
-      std::bind(&SceneObjectInstanceAttributes::setHandle, instanceAttrs, _1));
+      [instanceAttrs](const std::string& template_name) {
+        instanceAttrs->setHandle(template_name);
+      });
 
   // Check for translation origin override for a particular instance.  Default
   // to unknown, which will mean use scene instance-level default.
@@ -159,14 +159,15 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
   // translation from origin
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jCell, "translation",
-      std::bind(&SceneObjectInstanceAttributes::setTranslation, instanceAttrs,
-                _1));
+      [instanceAttrs](const Magnum::Vector3& translation) {
+        instanceAttrs->setTranslation(translation);
+      });
 
   // orientation TODO : support euler angles too?
   io::jsonIntoConstSetter<Magnum::Quaternion>(
-      jCell, "rotation",
-      std::bind(&SceneObjectInstanceAttributes::setRotation, instanceAttrs,
-                _1));
+      jCell, "rotation", [instanceAttrs](const Magnum::Quaternion& rotation) {
+        instanceAttrs->setRotation(rotation);
+      });
 
   return instanceAttrs;
 

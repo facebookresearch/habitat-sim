@@ -4,14 +4,18 @@
 
 from habitat_sim._ext.habitat_sim_bindings import (
     CameraSensor,
+    CameraSensorSpec,
     Observation,
     Sensor,
     SensorSpec,
     SensorType,
     VisualSensor,
+    VisualSensorSpec,
 )
 
 __all__ = [
+    "CameraSensorSpec",
+    "VisualSensorSpec",
     "CameraSensor",
     "Observation",
     "Sensor",

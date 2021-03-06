@@ -23,6 +23,7 @@
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
+#include <Magnum/Trade/Trade.h>
 
 #include "Asset.h"
 #include "BaseMesh.h"
@@ -42,11 +43,14 @@
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 
+#ifdef ESP_BUILD_WITH_VHACD
+#include <VHACD.h>
+#endif
+
 // forward declarations
 namespace Magnum {
 namespace Trade {
 class AbstractImporter;
-class AbstractShaderProgram;
 class PhongMaterialData;
 }  // namespace Trade
 }  // namespace Magnum
@@ -84,6 +88,22 @@ class ResourceManager {
   /** @brief Convenience typedef for Importer class */
   using Importer = Mn::Trade::AbstractImporter;
 
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Simple struct interface for creating and managing VHACD parameters.
+   * These parameters are passed into VHACD and specify how convex hull
+   * decomposition is ran.
+   */
+  struct VHACDParameters : VHACD::IVHACD::Parameters {
+    VHACDParameters() {
+      m_oclAcceleration = false;  // OCL Acceleration does not work on VHACD
+    }
+    ESP_SMART_POINTERS(VHACDParameters)
+  };
+
+  VHACD::IVHACD* interfaceVHACD;
+#endif
+
   /**
    * @brief Flag
    *
@@ -106,7 +126,7 @@ class ResourceManager {
                            Flags flags = {});
 
   /** @brief Destructor */
-  ~ResourceManager() {}
+  ~ResourceManager();
 
   /**
    * @brief This function will build the various @ref Importers used by the
@@ -254,10 +274,10 @@ class ResourceManager {
   /**
    * @brief Set a reference to the current @ref metadataMediator_.  Perform any
    * initialization that may be required when @ref metadataMediator_ is changed.
-   * @param _MM a reference to the new @ref metadataMediator_.
+   * @param MM a reference to the new @ref metadataMediator_.
    */
-  void setMetadataMediator(metadata::MetadataMediator::ptr _MM) {
-    metadataMediator_ = _MM;
+  void setMetadataMediator(metadata::MetadataMediator::ptr MM) {
+    metadataMediator_ = std::move(MM);
   }
 
   /**
@@ -321,8 +341,44 @@ class ResourceManager {
    * @return The unified @ref MeshData object for the asset.
    */
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
-      const std::string& filename);
+      const std::string& filename) const;
 
+  /**
+   * @brief Converts a MeshMetaData into a obj file.
+   *
+   * @param filename The MeshMetaData filename to be converted to obj.
+   * @param new_filename The name of the file that will be created.
+   * @param filepath The file path, including new file name, for the obj file.
+   */
+  bool outputMeshMetaDataToObj(const std::string& filename,
+                               const std::string& new_filename,
+                               const std::string& filepath) const;
+
+  /**
+   * @brief Returns the number of resources registered under a given resource
+   * name.
+   *
+   * @param resourceName The name of the resource.
+   */
+  bool isAssetDataRegistered(const std::string& resourceName) const;
+
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Runs convex hull decomposition on a specified file.
+   *
+   * @param filename The MeshMetaData filename to be converted.
+   * @param chdFilename The new filename for the chd collision mesh.
+   * @param params VHACD params that specify resolution, vertices per convex
+   * hull, etc.
+   * @param saveChdToObj Specifies whether or not to save the newly created
+   * convex hull asset to an obj file.
+   */
+  void createConvexHullDecomposition(
+      const std::string& filename,
+      const std::string& chdFilename,
+      const VHACDParameters& params = VHACDParameters(),
+      const bool saveChdToObj = false);
+#endif
   /**
    * @brief Add an object from a specified object template handle to the
    * specified @ref DrawableGroup as a child of the specified @ref
@@ -591,7 +647,7 @@ class ResourceManager {
    * @brief Recursively build a unified @ref MeshData from loaded assets via a
    * tree of @ref MeshTransformNode.
    *
-   * @param mesh The @ref MeshData being constructed.
+   * @param[in,out] mesh The @ref MeshData being constructed.
    * @param metaData The @ref MeshMetaData for the object heirarchy being
    * joined.
    * @param node The current @ref MeshTransformNode in the recursion.
@@ -601,7 +657,7 @@ class ResourceManager {
   void joinHeirarchy(MeshData& mesh,
                      const MeshMetaData& metaData,
                      const MeshTransformNode& node,
-                     const Mn::Matrix4& transformFromParentToWorld);
+                     const Mn::Matrix4& transformFromParentToWorld) const;
 
   /**
    * @brief Load materials from importer into assets, and update metaData for
@@ -636,7 +692,7 @@ class ResourceManager {
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
       const Mn::Trade::PhongMaterialData& material,
-      int textureBaseIndex);
+      int textureBaseIndex) const;
 
   /**
    * @brief Build a @ref PbrMaterialData for use with PBR shading
@@ -648,7 +704,7 @@ class ResourceManager {
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
       const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
-      int textureBaseIndex);
+      int textureBaseIndex) const;
 
   /**
    * @brief Load a mesh describing some scene asset based on the passed
