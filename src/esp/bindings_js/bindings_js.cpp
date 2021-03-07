@@ -189,7 +189,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<VisualSensorSpec, em::base<SensorSpec>>("VisualSensorSpec")
       .smart_ptr_constructor("VisualSensorSpec", &VisualSensorSpec::create<>)
       .property("resolution", &VisualSensorSpec::resolution)
-      .property("encoding", &VisualSensorSpec::encoding)
       .property("channels", &VisualSensorSpec::channels)
       .property("near", &VisualSensorSpec::near)
       .property("far", &VisualSensorSpec::far)
