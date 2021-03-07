@@ -92,6 +92,7 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
       fisheyeShaderFlags_ |= gfx::FisheyeShader::Flag::DepthTexture;
       break;
     // TODO: Semantic
+    // sensor type list is too long, have to use default
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
