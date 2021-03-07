@@ -138,13 +138,6 @@ class VisualSensor : public Sensor {
   bool getObservationSpace(ObservationSpace& space) override;
 
   /**
-   * @brief visualize originally undisplayable info (such as depth, semantic
-   * info) to the frame buffer using simulator's renderer
-   * @param[in] sim Instance of Simulator class for which the observation needs
-   *                to be drawn
-   */
-  virtual void visualizeObservation(gfx::SensorInfoVisualizer& visualizer);
-  /**
    * @brief Sets resolution of Sensor's sensorSpec
    */
   void setResolution(int height, int width) {

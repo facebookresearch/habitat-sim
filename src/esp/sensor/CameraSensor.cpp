@@ -12,7 +12,6 @@
 #include "CameraSensor.h"
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/Renderer.h"
-#include "esp/gfx/SensorInfoVisualizer.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {

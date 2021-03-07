@@ -27,7 +27,6 @@
 #include <Magnum/Timeline.h>
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
-#include "esp/gfx/SensorInfoVisualizer.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/nav/PathFinder.h"
@@ -367,10 +366,6 @@ Key Commands:
   bool cubeMapMode_ = false;
 
   int fisheyeMode_ = 0;
-
-  bool depthMode_ = false;
-
-  esp::gfx::SensorInfoVisualizer sensorInfoVisualizer_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -581,6 +576,7 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // add the fisheye depth sensor
+  /*
   agentConfig.sensorSpecifications.emplace_back(
       esp::sensor::FisheyeSensorDoubleSphereSpec::create());
   {
@@ -599,6 +595,7 @@ Viewer::Viewer(const Arguments& arguments)
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
   }
+  */
 
   // add selects a random initial state and sets up the default controls and
   // step filter
@@ -983,12 +980,7 @@ void Viewer::drawEvent() {
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
-  if (depthMode_) {
-    simulator_->drawObservation(defaultAgentId_, "depth");
-    simulator_->visualizeObservation(defaultAgentId_, "depth",
-                                     sensorInfoVisualizer_);
-    sensorInfoVisualizer_.blitRgbaToDefault();
-  } else if (fisheyeMode_ != 0) {
+  if (fisheyeMode_ != 0) {
     std::string sensorId = fisheyeMode_ == 1 ? "fisheye" : "depth_fisheye";
     simulator_->drawObservation(defaultAgentId_, sensorId);
 
@@ -1002,12 +994,13 @@ void Viewer::drawEvent() {
                        "cannot be nullptr.", );
         sensorRenderTarget->blitRgbaToDefault();
       } break;
-
-      case 2: {
-        simulator_->visualizeObservation(defaultAgentId_, "depth_fisheye",
-                                         sensorInfoVisualizer_);
-        sensorInfoVisualizer_.blitRgbaToDefault();
-      } break;
+        /*
+        case 2: {
+          simulator_->visualizeObservation(defaultAgentId_, "depth_fisheye",
+                                           sensorInfoVisualizer_);
+          sensorInfoVisualizer_.blitRgbaToDefault();
+        } break;
+        */
     }  // switch
   } else if (flyingCameraMode_) {
     visibles = 0;
@@ -1370,7 +1363,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
 
     case KeyEvent::Key::Four:
-      fisheyeMode_ = (fisheyeMode_ + 1) % 3;
+      fisheyeMode_ = (fisheyeMode_ + 1) % 2;
       LOG(INFO) << "Fisheye sensor mode is " << fisheyeMode_;
       break;
 
@@ -1381,11 +1374,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Six:
       // reset camera zoom
       getAgentCamera().resetZoom();
-      break;
-
-    case KeyEvent::Key::Seven:
-      depthMode_ = !depthMode_;
-      LOG(INFO) << "Depth sensor is " << (depthMode_ ? "ON" : "OFF");
       break;
 
     case KeyEvent::Key::Eight:
