@@ -137,33 +137,6 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
   return true;
 }
 
-void CameraSensor::readObservation(Observation& obs) {
-  // Make sure we have memory
-  if (buffer_ == nullptr) {
-    // TODO: check if our sensor was resized and resize our buffer if needed
-    ObservationSpace space;
-    getObservationSpace(space);
-    buffer_ = core::Buffer::create(space.shape, space.dataType);
-  }
-  obs.buffer = buffer_;
-
-  // TODO: have different classes for the different types of sensors
-  // TODO: do we need to flip axis?
-  if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
-    renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
-        Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
-        obs.buffer->data});
-  } else if (cameraSensorSpec_->sensorType == SensorType::Depth) {
-    renderTarget().readFrameDepth(Magnum::MutableImageView2D{
-        Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
-        obs.buffer->data});
-  } else {
-    renderTarget().readFrameRgba(Magnum::MutableImageView2D{
-        Magnum::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
-        obs.buffer->data});
-  }
-}
-
 Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()
     const {
   // projectionMatrix_ is managed by implementation class and is set whenever

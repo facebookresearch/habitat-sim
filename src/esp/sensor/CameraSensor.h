@@ -147,7 +147,6 @@ class CameraSensor : public VisualSensor {
     visualSensorSpec_->near = _near;
     recomputeBaseProjectionMatrix();
   }
-  float getNear() const { return visualSensorSpec_->near; }
 
   /**
    * @brief Sets far plane distance.
@@ -159,7 +158,6 @@ class CameraSensor : public VisualSensor {
     visualSensorSpec_->far = _far;
     recomputeBaseProjectionMatrix();
   }
-  float getFar() const { return visualSensorSpec_->far; }
 
  protected:
   /**
@@ -175,13 +173,6 @@ class CameraSensor : public VisualSensor {
    * change.
    */
   void recomputeProjectionMatrix();
-
-  /**
-   * @brief Read the observation that was rendered by the simulator
-   * @param[in,out] obs Instance of Observation class in which the observation
-   * will be stored
-   */
-  virtual void readObservation(Observation& obs);
 
   /**
    * @brief This camera's projection matrix. Should be recomputeulated every

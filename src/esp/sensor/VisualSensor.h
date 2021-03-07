@@ -114,7 +114,7 @@ class VisualSensor : public Sensor {
    * @param[in,out] obs Instance of Observation class in which the observation
    * will be stored
    */
-  void readObservation(Observation& obs);
+  virtual void readObservation(Observation& obs);
 
   /**
    * @brief Draws an observation to the frame buffer using simulator's renderer,
