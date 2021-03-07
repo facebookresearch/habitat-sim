@@ -188,15 +188,16 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
 
   em::class_<VisualSensorSpec, em::base<SensorSpec>>("VisualSensorSpec")
       .smart_ptr_constructor("VisualSensorSpec", &VisualSensorSpec::create<>)
-      .property("ortho_scale", &VisualSensorSpec::ortho_scale)
       .property("resolution", &VisualSensorSpec::resolution)
       .property("encoding", &VisualSensorSpec::encoding)
+      .property("channels", &VisualSensorSpec::channels)
+      .property("near", &VisualSensorSpec::near)
+      .property("far", &VisualSensorSpec::far)
       .property("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer);
 
   em::class_<CameraSensorSpec, em::base<VisualSensorSpec>>("CameraSensorSpec")
       .smart_ptr_constructor("CameraSensorSpec", &CameraSensorSpec::create<>)
-      .property("channels", &CameraSensorSpec::channels)
-      .property("observation_space", &CameraSensorSpec::observationSpace);
+      .property("ortho_scale", &CameraSensorSpec::ortho_scale);
 
   em::class_<Sensor>("Sensor")
       .smart_ptr<Sensor::ptr>("Sensor::ptr")
