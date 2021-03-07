@@ -3,8 +3,6 @@
 
 namespace esp {
 namespace sensor {
-class SensorSuite;
-
 class SensorFactory {
  public:
   /**
