@@ -47,8 +47,6 @@ enum class SensorSubType : int32_t {
 };
 
 // Specifies the configuration parameters of a sensor
-// (sensor redesign) TODO:
-// SensorSpec --> VisualSensorSpec --> CameraSensorSpec --> Specific Sensor Spec
 struct SensorSpec {
   std::string uuid = "";
   SensorType sensorType = SensorType::None;
