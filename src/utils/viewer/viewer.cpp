@@ -57,8 +57,6 @@
 #include "ObjectPickingHelper.h"
 #include "esp/physics/configure.h"
 
-#include "esp/gfx/CubeMap.h"
-#include "esp/gfx/CubeMapCamera.h"
 #include "esp/sensor/FisheyeSensor.h"
 
 constexpr float moveSensitivity = 0.07f;
@@ -360,10 +358,6 @@ Key Commands:
   // included)
   Mn::DebugTools::GLFrameProfiler profiler_{};
 
-  std::unique_ptr<esp::gfx::CubeMapCamera> cubeMapCamera_ = nullptr;
-  std::unique_ptr<esp::gfx::CubeMap> cubeMap_ = nullptr;
-  esp::scene::SceneNode* cubeMapCameraNode_ = nullptr;
-
   int fisheyeMode_ = 0;
 };
 
@@ -609,17 +603,6 @@ Viewer::Viewer(const Arguments& arguments)
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
-  // cubeMapCamera node directly connects to the root node
-  cubeMapCameraNode_ = &(activeSceneGraph_->getRootNode().createChild());
-  cubeMapCamera_ =
-      std::make_unique<esp::gfx::CubeMapCamera>(*cubeMapCameraNode_);
-  {
-    esp::gfx::CubeMap::Flags flags = esp::gfx::CubeMap::Flag::ColorTexture |
-                                     esp::gfx::CubeMap::Flag::DepthTexture;
-    int imageSize = 1024;
-    cubeMap_ = std::make_unique<esp::gfx::CubeMap>(imageSize, flags);
-    cubeMapCamera_->setProjectionMatrix(imageSize, 0.001, 1000);
-  }
   /**
    * Set up per frame profiler to be aware of bottlenecking in processing data
    * Interpretation: CpuDuration should be less than GpuDuration to avoid GPU
