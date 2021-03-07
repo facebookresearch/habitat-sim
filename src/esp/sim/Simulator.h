@@ -35,7 +35,6 @@ class SemanticScene;
 }  // namespace scene
 namespace gfx {
 class Renderer;
-class SensorInfoVisualizer;
 namespace replay {
 class ReplayManager;
 }  // namespace replay
@@ -766,10 +765,6 @@ class Simulator {
    *                   be returned
    */
   bool drawObservation(int agentId, const std::string& sensorId);
-
-  bool visualizeObservation(int agentId,
-                            const std::string& sensorId,
-                            gfx::SensorInfoVisualizer& visualizer);
 
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,

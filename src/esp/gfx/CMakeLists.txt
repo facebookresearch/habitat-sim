@@ -47,10 +47,6 @@ set(
   DoubleSphereCameraShader.h
   FisheyeShader.cpp
   FisheyeShader.h
-  DepthVisualizerShader.cpp
-  DepthVisualizerShader.h
-  SensorInfoVisualizer.cpp
-  SensorInfoVisualizer.h
 )
 
 # If ptex support is enabled add relevant source files

@@ -1177,22 +1177,6 @@ bool Simulator::drawObservation(const int agentId,
   return false;
 }
 
-bool Simulator::visualizeObservation(int agentId,
-                                     const std::string& sensorId,
-                                     gfx::SensorInfoVisualizer& visualizer) {
-  agent::Agent::ptr ag = getAgent(agentId);
-
-  if (ag != nullptr) {
-    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
-    if (sensor.isVisualSensor()) {
-      static_cast<sensor::VisualSensor&>(sensor).visualizeObservation(
-          visualizer);
-      return true;
-    }
-  }
-  return false;
-}
-
 bool Simulator::getAgentObservation(const int agentId,
                                     const std::string& sensorId,
                                     sensor::Observation& observation) {
