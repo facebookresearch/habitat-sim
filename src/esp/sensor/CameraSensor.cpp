@@ -25,6 +25,9 @@ CameraSensorSpec::CameraSensorSpec() : VisualSensorSpec() {
 
 void CameraSensorSpec::sanityCheck() {
   VisualSensorSpec::sanityCheck();
+  CORRADE_ASSERT(
+      ortho_scale > 0,
+      "CameraSensorSpec::sanityCheck(): ortho_scale must be greater than 0", );
   CORRADE_ASSERT(sensorSubType == SensorSubType::Pinhole ||
                      sensorSubType == SensorSubType::Orthographic,
                  "CameraSensorSpec::sanityCheck(): sensorSpec does not have "
@@ -33,8 +36,7 @@ void CameraSensorSpec::sanityCheck() {
 }
 
 bool CameraSensorSpec::operator==(const CameraSensorSpec& a) const {
-  return VisualSensorSpec::operator==(a) && channels == a.channels &&
-         observationSpace == a.observationSpace;
+  return VisualSensorSpec::operator==(a) && ortho_scale == a.ortho_scale;
 }
 
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
@@ -87,49 +89,23 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
                             cameraSensorSpec_->resolution[1]};
   if (cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic) {
     nearPlaneSize_ /= cameraSensorSpec_->ortho_scale;
-    baseProjMatrix_ =
-        Mn::Matrix4::orthographicProjection(nearPlaneSize_, near_, far_);
+    baseProjMatrix_ = Mn::Matrix4::orthographicProjection(
+        nearPlaneSize_, cameraSensorSpec_->near, cameraSensorSpec_->far);
   } else {
     // cameraSensorSpec_ is subtype Pinhole
     Magnum::Deg halfHFovRad{Magnum::Deg(.5 * hfov_)};
-    float scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
+    float scale = 1.0f / (2.0f * cameraSensorSpec_->near *
+                          Magnum::Math::tan(halfHFovRad));
     nearPlaneSize_ /= scale;
-    baseProjMatrix_ =
-        Mn::Matrix4::perspectiveProjection(nearPlaneSize_, near_, far_);
+    baseProjMatrix_ = Mn::Matrix4::perspectiveProjection(
+        nearPlaneSize_, cameraSensorSpec_->near, cameraSensorSpec_->far);
   }
   // build projection matrix
   recomputeProjectionMatrix();
 }  // CameraSensor::recomputeNearPlaneSize
 
-bool CameraSensor::getObservationSpace(ObservationSpace& space) {
-  space.spaceType = ObservationSpaceType::Tensor;
-  space.shape = {static_cast<size_t>(cameraSensorSpec_->resolution[0]),
-                 static_cast<size_t>(cameraSensorSpec_->resolution[1]),
-                 static_cast<size_t>(cameraSensorSpec_->channels)};
-  space.dataType = core::DataType::DT_UINT8;
-  if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
-    space.dataType = core::DataType::DT_UINT32;
-  } else if (cameraSensorSpec_->sensorType == SensorType::Depth) {
-    space.dataType = core::DataType::DT_FLOAT;
-  }
-  return true;
-}
-
 gfx::RenderCamera* CameraSensor::getRenderCamera() const {
   return renderCamera_;
-}
-
-bool CameraSensor::getObservation(sim::Simulator& sim, Observation& obs) {
-  // TODO: check if sensor is valid?
-  // TODO: have different classes for the different types of sensors
-  //
-  if (!hasRenderTarget())
-    return false;
-
-  drawObservation(sim);
-  readObservation(obs);
-
-  return true;
 }
 
 bool CameraSensor::drawObservation(sim::Simulator& sim) {

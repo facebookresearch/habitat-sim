@@ -21,14 +21,13 @@ FisheyeSensorSpec::FisheyeSensorSpec() : VisualSensorSpec() {
 
 void FisheyeSensorSpec::sanityCheck() {
   VisualSensorSpec::sanityCheck();
+  CORRADE_ASSERT(
+      sensorSubType == SensorSubType::Fisheye,
+      "FisheyeSensorSpec::sanityCheck(): sensorSpec is not Fisheye", );
+
   CORRADE_ASSERT(focalLength[0] > 0 && focalLength[1] > 0,
                  "FisheyeSensorSpec::sanityCheck(): focal length,"
                      << focalLength << "is illegal.", );
-
-  CORRADE_ASSERT(
-      cubeMapCameraNear > 0.0 && cubeMapCameraFar > cubeMapCameraNear,
-      "FisheyeSensorSpec::sanityCheck(): clipping planes for the cubemap "
-      "camera are illegal.", );
 }
 
 void FisheyeSensorDoubleSphereSpec::sanityCheck() {
@@ -81,9 +80,8 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   // You do not have to release it in the dtor since magnum scene graph will
   // handle it
   cubeMapCamera_ = new gfx::CubeMapCamera(cameraNode);
-  cubeMapCamera_->setProjectionMatrix(size,
-                                      fisheyeSensorSpec_->cubeMapCameraNear,
-                                      fisheyeSensorSpec_->cubeMapCameraFar);
+  cubeMapCamera_->setProjectionMatrix(size, fisheyeSensorSpec_->near,
+                                      fisheyeSensorSpec_->far);
 
   // setup shader flags
   switch (fisheyeSensorSpec_->sensorType) {
@@ -98,18 +96,6 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
   }
-  // compute the depth unprojection parameters
-  {
-    float f = fisheyeSensorSpec_->cubeMapCameraFar;
-    float n = fisheyeSensorSpec_->cubeMapCameraNear;
-    float d = f - n;
-    // in projection matrix, two entries related to the depth are:
-    // -(f+n)/(f-n), -2fn/(f-n), where f is the far plane, and n is the near
-    // plane. depth parameters = 0.5 * vector(proj[2][2] - 1.0f, proj[3][2])
-    depthUnprojectionParameters_ =
-        0.5 * Mn::Vector2{-(f + n) / d - 1.0f, -2.0f * f * n / d};
-  }
-
   // prepare a big triangle mesh to cover the screen
   mesh_ = Mn::GL::Mesh{};
   mesh_.setCount(3);
@@ -118,8 +104,6 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
 bool FisheyeSensorSpec::operator==(const FisheyeSensorSpec& a) const {
   return VisualSensorSpec::operator==(a) &&
          fisheyeModelType == a.fisheyeModelType &&
-         cubeMapCameraNear == a.cubeMapCameraNear &&
-         cubeMapCameraFar == a.cubeMapCameraFar &&
          focalLength == a.focalLength &&
          principalPointOffset == a.principalPointOffset;
 }
@@ -143,9 +127,8 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
     int size = res[0] < res[1] ? res[0] : res[1];
     bool reset = cubeMap_->reset(size);
     if (reset) {
-      cubeMapCamera_->setProjectionMatrix(size,
-                                          fisheyeSensorSpec_->cubeMapCameraNear,
-                                          fisheyeSensorSpec_->cubeMapCameraFar);
+      cubeMapCamera_->setProjectionMatrix(size, fisheyeSensorSpec_->near,
+                                          fisheyeSensorSpec_->far);
     }
   }
 
@@ -199,24 +182,22 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
       drawWith(*shader);
     } break;
 
-    // TODO:
-    // The other FisheyeSensorModelType
-    default:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      break;
+      // TODO:
+      // The other FisheyeSensorModelType
   }
 
   return true;
 }
 
-/**
- * @brief Returns the parameters needed to unproject depth for the sensor.
- *
- * Will always be @ref Corrade::Containers::NullOpt for the base sensor class
- * as it has no projection parameters
- */
 Cr::Containers::Optional<Mn::Vector2> FisheyeSensor::depthUnprojection() const {
-  return {depthUnprojectionParameters_};
-};
+  float f = fisheyeSensorSpec_->far;
+  float n = fisheyeSensorSpec_->near;
+  float d = f - n;
+  // in projection matrix, two entries related to the depth are:
+  // -(f+n)/(f-n), -2fn/(f-n), where f is the far plane, and n is the near
+  // plane. depth parameters = 0.5 * vector(proj[2][2] - 1.0f, proj[3][2])
+  return {0.5 * Mn::Vector2{-(f + n) / d - 1.0f, -2.0f * f * n / d}};
+}
+
 }  // namespace sensor
 }  // namespace esp

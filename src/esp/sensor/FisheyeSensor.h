@@ -32,14 +32,6 @@ enum class FisheyeSensorModelType : Magnum::UnsignedInt {
 struct FisheyeSensorSpec : public VisualSensorSpec {
   FisheyeSensorModelType fisheyeModelType;
   /**
-   * @brief near clipping plane for cubemap camera
-   */
-  float cubeMapCameraNear = 0.01f;
-  /**
-   * @brief far clipping plane for cubemap camera
-   */
-  float cubeMapCameraFar = 100.0f;
-  /**
    * @brief Focal length, fx, fy, the distance between the pinhole and the image
    * plane.
    * In practice, fx and fy can differ for a number of reasons. See
@@ -105,14 +97,14 @@ class FisheyeSensor : public VisualSensor {
   /**
    * @brief destructor
    */
-  ~FisheyeSensor() = default;
+  ~FisheyeSensor() override = default;
   /**
    * @brief Draw an observation to the frame buffer
    * @return true if success, otherwise false (e.g., frame buffer is not set)
    * @param[in] sim Instance of Simulator class for which the observation needs
    *                to be drawn
    */
-  virtual bool drawObservation(sim::Simulator& sim) override;
+  bool drawObservation(sim::Simulator& sim) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
@@ -120,7 +112,7 @@ class FisheyeSensor : public VisualSensor {
    * Will always be @ref Corrade::Containers::NullOpt for the base sensor
    * class as it has no projection parameters
    */
-  virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
+  Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
       const override;
 
   static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
@@ -144,19 +136,6 @@ class FisheyeSensor : public VisualSensor {
   Magnum::GL::Mesh mesh_;
 
   gfx::FisheyeShader::Flags fisheyeShaderFlags_{};
-
-  /**
-   * The two parameters in projection matrix (0-indexed, column major) related
-   * to the depth are proj[col=2][row=2] and proj[col=3][row=2],
-   * They are:
-   * -(f+n)/(f-n), -2fn/(f-n), where f is the far plane, and n is the near
-   * plane.
-   *
-   * depthParameters = 0.5 * vector(proj[2][2] - 1.0f, proj[3][2]).
-   *
-   * See @ref gfx::calculateDepthUnprojection() for more details
-   */
-  Magnum::Vector2 depthUnprojectionParameters_;
 
   Magnum::ResourceKey getShaderKey();
 

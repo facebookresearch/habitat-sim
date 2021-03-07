@@ -24,10 +24,17 @@ namespace sensor {
 using Mn::Math::Literals::operator""_degf;
 
 struct VisualSensorSpec : public SensorSpec {
-  float ortho_scale = 0.1f;
-  vec2i resolution = {128, 128};        // height x width
-  std::string encoding = "rgba_uint8";  // For rendering colors in images
-  bool gpu2gpuTransfer = false;         // True for pytorch tensor support
+  vec2i resolution = {128, 128};  // height x width
+  int channels = 4;
+  bool gpu2gpuTransfer = false;  // True for pytorch tensor support
+  /**
+   * @brief near clipping plane
+   */
+  float near = 0.01f;
+  /**
+   * @brief far clipping plane
+   */
+  float far = 1000.0f;
   VisualSensorSpec();
   void sanityCheck() override;
   bool isVisualSensorSpec() const override { return true; }
@@ -100,18 +107,35 @@ class VisualSensor : public Sensor {
    * @param[in] sim Instance of Simulator class for which the observation needs
    *                to be drawn
    */
-  virtual bool drawObservation(CORRADE_UNUSED sim::Simulator& sim) {
-    return false;
-  }
+  virtual bool drawObservation(CORRADE_UNUSED sim::Simulator& sim) = 0;
 
-  bool getObservation(CORRADE_UNUSED sim::Simulator& sim,
-                      CORRADE_UNUSED Observation& obs) override {
-    return false;
-  }
+  /**
+   * @brief Read the observation that was rendered by the simulator
+   * @param[in,out] obs Instance of Observation class in which the observation
+   * will be stored
+   */
+  void readObservation(Observation& obs);
 
-  bool getObservationSpace(CORRADE_UNUSED ObservationSpace& space) override {
-    return false;
-  }
+  /**
+   * @brief Draws an observation to the frame buffer using simulator's renderer,
+   * then reads the observation to the sensor's memory buffer
+   * @return true if success, otherwise false (e.g., failed to draw or read
+   * observation)
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be drawn, obs Instance of Observation class in which the
+   * observation will be stored
+   */
+  bool getObservation(sim::Simulator& sim, Observation& obs) override;
+
+  /**
+   * @brief Updates ObservationSpace space with spaceType, shape, and dataType
+   * of this sensor. The information in space is later used to resize the
+   * sensor's memory buffer if sensor is resized.
+   * @return true if success, otherwise false
+   * @param[in] space Instance of ObservationSpace class which will be updated
+   * with information from this sensor
+   */
+  bool getObservationSpace(ObservationSpace& space) override;
 
   /**
    * @brief visualize originally undisplayable info (such as depth, semantic
@@ -145,12 +169,12 @@ class VisualSensor : public Sensor {
   /**
    * @brief Gets near plane distance.
    */
-  float getNear() const { return near_; }
+  float getNear() const { return visualSensorSpec_->near; }
 
   /**
    * @brief Gets far plane distance.
    */
-  float getFar() const { return far_; }
+  float getFar() const { return visualSensorSpec_->far; }
 
   /**
    * @brief Returns the FOV of this Sensor
@@ -158,18 +182,8 @@ class VisualSensor : public Sensor {
   Mn::Deg getFOV() const { return hfov_; }
 
  protected:
-  /** @brief projection parameters
-   */
-
-  /** @brief near clipping plane
-   */
-  float near_ = 0.01f;
-
-  /** @brief far clipping plane
-   */
-  float far_ = 1000.0f;
-
-  /** @brief field of view
+  /**
+   * @brief field of view
    */
   Mn::Deg hfov_ = 90.0_degf;
 
