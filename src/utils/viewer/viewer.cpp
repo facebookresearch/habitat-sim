@@ -987,6 +987,10 @@ void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
   // RenderCamera
   profiler_.beginFrame();
+<<<<<<< HEAD
+=======
+
+>>>>>>> c7357f63... minor
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
