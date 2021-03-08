@@ -23,6 +23,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
     SensorFactory,
     SensorSpec,
     SensorSubType,
+    SensorSuite,
     SensorType,
     ShortestPath,
 )

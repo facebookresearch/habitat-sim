@@ -172,7 +172,7 @@ class Agent(object):
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        hsim.SensorFactory.createSensors(self.scene_node, [spec])
+        hsim.SensorFactory.create_sensors(self.scene_node, [spec])
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id

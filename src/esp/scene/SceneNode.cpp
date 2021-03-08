@@ -14,7 +14,7 @@ namespace scene {
 
 SceneNode::SceneNode(SceneNode& parent)
     : Mn::SceneGraph::AbstractFeature3D{*this} {
-  setParent(&parent);
+  MagnumObject::setParent(&parent);
   setId(parent.getId());
   setCachedTransformations(Mn::SceneGraph::CachedTransformation::Absolute);
   absoluteTransformation_ = absoluteTransformation();
@@ -90,8 +90,7 @@ SceneNode& SceneNode::setParent(SceneNode* newParent) {
 
   // Skip if this is scene or RootNode (which cannot have parent), or if
   // newParent is already parent
-  if (isScene() || SceneGraph::isRootNode(*this) ||
-      this->parent() == newParent) {
+  if (isScene() || this->parent() == newParent) {
     return *this;
   }
 
