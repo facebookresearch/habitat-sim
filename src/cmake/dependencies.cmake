@@ -5,6 +5,8 @@
 set(DEPS_DIR "${CMAKE_CURRENT_LIST_DIR}/../deps")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}")
 
+add_subdirectory("${DEPS_DIR}/meshoptimizer" EXCLUDE_FROM_ALL)
+
 # Find Corrade first so we can use CORRADE_TARGET_*
 if(NOT USE_SYSTEM_MAGNUM)
   # These are enabled by default but we don't need them right now -- disabling
@@ -222,6 +224,11 @@ if(NOT USE_SYSTEM_MAGNUM)
     set(WITH_IMAGECONVERTER ON CACHE BOOL "" FORCE)
     set(WITH_BASISIMAGECONVERTER ON CACHE BOOL "" FORCE)
   endif()
+
+  set(meshoptimizer_DIR "${DEPS_DIR}/meshoptimizer")
+  set(WITH_MESHOPTIMIZERSCENECONVERTER ON CACHE BOOL "" FORCE)
+  set(WITH_SCENECONVERTER ON CACHE BOOL "" FORCE)
+  set(WITH_ANYSCENECONVERTER ON CACHE BOOL "" FORCE)
 
   if(BUILD_WITH_BULLET)
     # Build Magnum's BulletIntegration

@@ -110,6 +110,7 @@ endif()
 if(BUILD_BASIS_COMPRESSOR)
   add_subdirectory(utils/imageconverter)
 endif()
+add_subdirectory(utils/sceneconverter)
 
 if(BUILD_TEST)
   add_subdirectory(tests)

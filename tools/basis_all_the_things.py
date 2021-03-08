@@ -48,9 +48,21 @@ def build_parser(
     parser.add_argument(
         "--inplace",
         action="store_true",
-        help="Compresses meshes in place.  Original meshes will be renamed as *.glb.orig.  If false, a copy of basedir will be made and compressed meshes will be put in there.",
+        help="Compresses meshes in place.  If false, a copy of basedir will be made and compressed meshes will be put in there.",
+    )
+    parser.add_argument(
+        "--rename-basis",
+        action="store_true",
+        help="Rename the basis meshes to *.glb, and if done inplace original glbs to *.glb.orig.  Otherwise the basis meshes are named *.basis.glb",
+    )
+    parser.add_argument(
+        "--niceness", type=int, default=10, help="Niceness value for all the workers"
     )
     return parser
+
+
+def set_nicesness(niceness):
+    os.nice(niceness)
 
 
 def extract_images(mesh_name: str) -> None:
@@ -103,7 +115,7 @@ def package_meshes(mesh_name: str) -> None:
     )
 
 
-def finalize(folder: str, inplace: bool) -> str:
+def finalize(folder: str, inplace: bool, rename_basis: bool) -> str:
     if inplace:
         output_folder = folder
     else:
@@ -114,15 +126,16 @@ def finalize(folder: str, inplace: bool) -> str:
 
         shutil.copytree(folder, output_folder)
 
-    for basis_mesh in glob.glob(
-        osp.join(output_folder, "**", "*.basis.glb"), recursive=True
-    ):
-        mesh_name = osp.splitext(osp.splitext(basis_mesh)[0])[0] + ".glb"
+    if rename_basis:
+        for basis_mesh in glob.glob(
+            osp.join(output_folder, "**", "*.basis.glb"), recursive=True
+        ):
+            mesh_name = osp.splitext(osp.splitext(basis_mesh)[0])[0] + ".glb"
 
-        if inplace:
-            shutil.move(mesh_name, mesh_name + ".orig")
+            if inplace:
+                shutil.move(mesh_name, mesh_name + ".orig")
 
-        shutil.move(basis_mesh, mesh_name)
+            shutil.move(basis_mesh, mesh_name)
 
     return output_folder
 
@@ -134,14 +147,17 @@ def _map_all_and_wait(pool: multiprocessing.Pool, func: Callable, inputs: List[A
 
 
 def _clean(lst: List[str]) -> None:
-    for f in lst:
+    if len(lst) > 0:
+        print("Cleaning...")
+
+    for f in tqdm.tqdm(lst):
         if osp.isdir(f):
             shutil.rmtree(f)
         else:
             os.remove(f)
 
 
-def clean_up(folder: str) -> None:
+def clean_up(folder: str, args) -> None:
     _clean(glob.glob(f"{folder}/**/*_hab_basis_tool", recursive=True))
 
     _clean(glob.glob(f"{folder}/**/*.gltf", recursive=True))
@@ -150,7 +166,8 @@ def clean_up(folder: str) -> None:
 
     _clean(glob.glob(f"{folder}/**/*.bin", recursive=True))
 
-    _clean(glob.glob(f"{folder}/**/*.basis.glb", recursive=True))
+    if args.rename_basis:
+        _clean(glob.glob(f"{folder}/**/*.basis.glb", recursive=True))
 
 
 def main():
@@ -169,18 +186,28 @@ def main():
     files = [f for f in files if "_convex" not in f]
 
     if args.pre_clean:
-        clean_up(args.basedir)
+        clean_up(args.basedir, args)
 
-    with multiprocessing.Pool(args.num_workers) as pool:
+    with multiprocessing.Pool(
+        args.num_workers, initializer=set_nicesness, initargs=(args.niceness,)
+    ) as pool:
         print("Extracting images...")
         _map_all_and_wait(pool, extract_images, files)
 
         # Convert to basis
         images = []
-        images += list(glob.glob(f"{args.basedir}/**/*.jpg", recursive=True))
-        images += list(glob.glob(f"{args.basedir}/**/*.png", recursive=True))
-        images += list(glob.glob(f"{args.basedir}/**/*.jpeg", recursive=True))
-        images = list(filter(lambda img: not osp.exists(img_name_to_basis(img))))
+        images += list(
+            glob.glob(f"{args.basedir}/**/*_hab_basis_tool/*.jpg", recursive=True)
+        )
+        images += list(
+            glob.glob(f"{args.basedir}/**/*_hab_basis_tool/*.png", recursive=True)
+        )
+        images += list(
+            glob.glob(f"{args.basedir}/**/*_hab_basis_tool/*.jpeg", recursive=True)
+        )
+        images = list(
+            filter(lambda img: not osp.exists(img_name_to_basis(img)), images)
+        )
 
         print(f"Compressing {len(images)} images with basis...")
         _map_all_and_wait(pool, convert_image_to_basis, images)
@@ -190,10 +217,10 @@ def main():
         _map_all_and_wait(pool, package_meshes, files)
 
     print("Finalizing...")
-    converted_name = finalize(args.basedir)
+    converted_name = finalize(args.basedir, args.inplace, args.rename_basis)
     # Do cleanup
-    clean_up(args.basedir)
-    clean_up(converted_name)
+    clean_up(args.basedir, args)
+    clean_up(converted_name, args)
     print(f"Done. Basis meshes in {converted_name}")
 
 

@@ -52,3 +52,6 @@
 [submodule "src/deps/bullet3"]
 	path = src/deps/bullet3
 	url = https://github.com/bulletphysics/bullet3
+[submodule "src/deps/meshoptimizer"]
+	path = src/deps/meshoptimizer
+	url = https://github.com/zeux/meshoptimizer
