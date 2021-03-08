@@ -17,20 +17,21 @@ class SensorFactory {
    * specs for each sensor
    *
    */
-  static void createSensors(scene::SceneNode& node,
-                            const sensor::SensorSetup& sensorSetup);
+  static std::map<std::string, std::reference_wrapper<sensor::Sensor>>&
+  createSensors(scene::SceneNode& node, const sensor::SensorSetup& sensorSetup);
 
   /**
-   * @brief Static method to delete Sensor
+   * @brief Static method to delete a Sensor
    * @param[in] sensor Sensor to delete
    *
    */
   static void deleteSensor(const sensor::Sensor& sensor);
 
   /**
-   * @brief Static method to delete Sensor
-   * @param[in] node SceneNode of SensorSuite to find Sensor to delete
-   * @param[in] uuid string of Sensor to delete's uuid
+   * @brief Static method to delete a Sensor from the subtree rooted at node
+   * @param[in] node root SceneNode of the subtree in which the Sensor will be
+   * searched
+   * @param[in] uuid Sensor's uuid
    *
    */
   static void deleteSensor(scene::SceneNode& node, const std::string& uuid);

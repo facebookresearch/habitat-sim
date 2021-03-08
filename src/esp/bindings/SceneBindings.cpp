@@ -78,7 +78,11 @@ void initSceneBindings(py::module& m) {
                              R"(Get node SensorSuite of this SceneNode)")
       .def_property_readonly("subtree_sensor_suite",
                              &SceneNode::getSubtreeSensorSuite,
-                             R"(Get subtree SensorSuite of this SceneNode)");
+                             R"(Get subtree SensorSuite of this SceneNode)")
+      .def_property_readonly("node_sensors", &SceneNode::getNodeSensors,
+                             R"(Get node sensors of this SceneNode)")
+      .def_property_readonly("subtree_sensors", &SceneNode::getSubtreeSensors,
+                             R"(Get subtree sensors of this SceneNode)");
 
   py::class_<SceneGraph>(m, "SceneGraph")
       .def(py::init())

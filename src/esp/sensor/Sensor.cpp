@@ -46,8 +46,13 @@ void SensorSpec::sanityCheck() {
 
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
     : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
+  CORRADE_ASSERT(node.children().first() == nullptr,
+                 "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node. "
+                 "The number of children of this node is not zero.", );
+  CORRADE_ASSERT(
+      !(node.getSceneNodeTags() &= scene::SceneNodeTag::Leaf),
+      "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node.", );
   node.setType(scene::SceneNodeType::SENSOR);
-  node.setSceneNodeTags({scene::SceneNodeTag::Leaf});
   CORRADE_ASSERT(spec_,
                  "Sensor::Sensor(): Cannot initialize sensor. The "
                  "specification is null.", );
@@ -67,6 +72,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
 }
 
 Sensor::~Sensor() {
+  // Updating of info in SensorSuites will be handled by SceneNode
   LOG(INFO) << "Deconstructing Sensor";
 }
 
@@ -96,7 +102,11 @@ void SensorSuite::merge(const SensorSuite& sensorSuite) {
 }
 
 void SensorSuite::remove(const sensor::Sensor& sensor) {
-  sensors_.erase(sensor.specification()->uuid);
+  remove(sensor.specification()->uuid);
+}
+
+void SensorSuite::remove(const std::string& uuid) {
+  sensors_.erase(uuid);
 }
 
 sensor::Sensor& SensorSuite::get(const std::string& uuid) const {

@@ -99,7 +99,29 @@ void initSensorBindings(py::module& m) {
 
   // ==== SensorFactory ====
   py::class_<SensorFactory>(m, "SensorFactory")
-      .def("create_sensors", &SensorFactory::createSensors);
+      .def("create_sensors", &SensorFactory::createSensors)
+      .def("delete_sensor",
+           py::overload_cast<const Sensor&>(&SensorFactory::deleteSensor))
+      .def("delete_sensor",
+           py::overload_cast<esp::scene::SceneNode&, const std::string&>(
+               &SensorFactory::deleteSensor));
+
+  // ==== SensorSuite ====
+  py::class_<SensorSuite, Magnum::SceneGraph::PyFeature<SensorSuite>,
+             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::PyFeatureHolder<SensorSuite>>(m, "SensorSuite")
+      .def("add", &SensorSuite::add)
+      .def("merge", &SensorSuite::merge)
+      .def("remove", py::overload_cast<const Sensor&>(&SensorSuite::remove))
+      .def("remove",
+           py::overload_cast<const std::string&>(&SensorSuite::remove))
+      .def("clear", &SensorSuite::clear)
+      .def("get", &SensorSuite::get)
+      .def("get_sensors",
+           py::overload_cast<>(&SensorSuite::getSensors, py::const_))
+      .def_property_readonly("node", nodeGetter<Sensor>,
+                             "Node this object is attached to")
+      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
 
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,

@@ -139,6 +139,11 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
 
+  /**
+   * @brief Add Sensor sensor to existing sensors_ with key sensor's uuid
+   * @param[in] sensor to be added to sensors_
+   * Note: it does not update any element whose key already exists.
+   */
   void add(Sensor& sensor);
 
   /**
@@ -149,12 +154,33 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
    */
   void merge(const SensorSuite& sensorSuite);
 
+  /**
+   * @brief Remove Sensor sensor from existing sensors_
+   * @param[in] sensor to be removed from sensors_
+   */
   void remove(const Sensor& sensor);
 
+  /**
+   * @brief Remove Sensor with key uuid from existing sensors_
+   * @param[in] uuid of Sensor to be removed from sensors_
+   */
+  void remove(const std::string& uuid);
+
+  /**
+   * @brief Clear all entries of sensors_
+   */
   void clear();
 
+  /**
+   * @brief Return reference to Sensor with key uuid in existing sensors_
+   * @param[in] uuid of Sensor to be found in sensors_
+   * @param[out] reference to Sensor with key uuid
+   */
   sensor::Sensor& get(const std::string& uuid) const;
 
+  /**
+   * @brief Return sensors_, map of uuid keys and Sensor values
+   */
   std::map<std::string, std::reference_wrapper<sensor::Sensor>>& getSensors() {
     return sensors_;
   }

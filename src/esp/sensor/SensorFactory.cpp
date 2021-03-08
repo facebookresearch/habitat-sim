@@ -10,10 +10,12 @@
 
 namespace esp {
 namespace sensor {
-void SensorFactory::createSensors(scene::SceneNode& node,
-                                  const sensor::SensorSetup& sensorSetup) {
+std::map<std::string, std::reference_wrapper<sensor::Sensor>>&
+SensorFactory::createSensors(scene::SceneNode& node,
+                             const sensor::SensorSetup& sensorSetup) {
   for (const SensorSpec::ptr& spec : sensorSetup) {
-    scene::SceneNode& sensorNode = node.createChild();
+    scene::SceneNode& sensorNode =
+        node.createChild({scene::SceneNodeTag::Leaf});
     // VisualSensor Setup
     if (spec->isVisualSensorSpec()) {
       if (spec->sensorSubType == SensorSubType::Orthographic ||
@@ -21,7 +23,7 @@ void SensorFactory::createSensors(scene::SceneNode& node,
         sensorNode.addFeature<sensor::CameraSensor>(
             std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
       }
-      // TODO: Implement fisheye sensor, Equirectangle sensor, Panorama sensor
+      // TODO: Implement fisheye sensor, Equirectangular sensor, Panorama sensor
       // else if(spec->sensorSubType == SensorSubType::Fisheye) {
       //   sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
       //
@@ -31,6 +33,7 @@ void SensorFactory::createSensors(scene::SceneNode& node,
     //   //NonVisualSensor Setup
     // }
   }
+  return node.getNodeSensors();
 }
 
 void SensorFactory::deleteSensor(const sensor::Sensor& sensor) {
@@ -39,7 +42,7 @@ void SensorFactory::deleteSensor(const sensor::Sensor& sensor) {
 
 void SensorFactory::deleteSensor(scene::SceneNode& node,
                                  const std::string& uuid) {
-  delete (&node.getSubtreeSensorSuite().get(uuid).node());
+  deleteSensor(node.getSubtreeSensorSuite().get(uuid));
 }
 
 }  // namespace sensor

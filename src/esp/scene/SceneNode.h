@@ -22,7 +22,8 @@ namespace esp {
 
 namespace sensor {
 class SensorSuite;
-}
+class Sensor;
+}  // namespace sensor
 
 namespace scene {
 
@@ -41,7 +42,7 @@ enum class SceneNodeTag : Magnum::UnsignedShort {
   /**
    * Set node as Leaf node, so no children nodes are allowed
    */
-  Leaf = 1 << 0
+  Leaf = 1 << 0,
 };
 
 /**
@@ -72,21 +73,42 @@ class SceneNode : public MagnumObject,
   }
 
   // Returns sceneNodeTags of SceneNode
-  SceneNodeTags sceneNodeTags() const { return sceneNodeTags_; }
+  SceneNodeTags getSceneNodeTags() const { return sceneNodeTags_; }
 
   /**
    * @brief Sets sceneNodeTags_ of SceneNode
    *
-   * @param sceneNodeTags sceneNodeTags to set sceneNodeTags_ to
+   * @param sceneNodeTags SceneNodeTags to enumset sceneNodeTags_ to
    */
   void setSceneNodeTags(SceneNodeTags sceneNodeTags) {
     sceneNodeTags_ = sceneNodeTags;
   }
 
+  /**
+   * @brief Add SceneNodeTag to sceneNodeTags_ of SceneNode
+   *
+   * @param sceneNodeTag SceneNodeTag to add to enumset sceneNodeTags_
+   */
+  void addSceneNodeTag(SceneNodeTag sceneNodeTag) {
+    sceneNodeTags_ |= sceneNodeTag;
+  }
+
+  /**
+   * @brief Remove SceneNodeTag from sceneNodeTags_ of SceneNode
+   *
+   * @param sceneNodeTag SceneNodeTag to remove from enumset sceneNodeTags_
+   */
+  void removeSceneNodeTag(SceneNodeTag sceneNodeTag) {
+    SceneNodeTags toRemove = {sceneNodeTag};
+    sceneNodeTags_ &= ~toRemove;
+  }
+
   //! Create a new child SceneNode and return it. NOTE: this SceneNode owns and
   //! is responsible for deallocating created child
   //! NOTE: child node inherits parent id by default
-  SceneNode& createChild();
+  SceneNode& createChild(SceneNodeTags childNodeTag = {});
+
+  SceneNode& setParent(SceneNode* newParent);
 
   //! Returns node id
   virtual int getId() const { return id_; }
@@ -118,14 +140,49 @@ class SceneNode : public MagnumObject,
   //! this node is the root
   const Magnum::Range3D& getCumulativeBB() const { return cumulativeBB_; };
 
-  // Return SensorSuite containing references to Sensors this SceneNode holds
+  /**
+   * @brief Return SensorSuite containing references to Sensors this SceneNode
+   * holds
+   */
   esp::sensor::SensorSuite& getNodeSensorSuite() { return *nodeSensorSuite_; }
 
-  // Return SensorSuite containing references to superset of all Sensors held by
-  // this SceneNode and its children
+  /**
+   * @brief Return map containing references to Sensors this SceneNode holds
+   * keys are uuid strings, values are references to Sensors with that uuid
+   */
+  std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
+  getNodeSensors();
+
+  /**
+   * @brief Return SensorSuite containing references to superset of all Sensors
+   * held by this SceneNode and its children
+   */
   esp::sensor::SensorSuite& getSubtreeSensorSuite() {
     return *subtreeSensorSuite_;
   }
+
+  /**
+   * @brief Return map containing references to superset of all Sensors held by
+   * this SceneNode and its children values keys are uuid strings, values are
+   * references to Sensors with that uuid
+   */
+  std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
+  getSubtreeSensors();
+
+  /** @brief Remove sensors in this' nodeSensorSuite from parent's
+   * nodeSensorSuite
+   */
+  void removeSensorsFromParentNodeSensorSuite();
+
+  /** @brief Go bottom to the top, and erase all subtreeSensors from this'
+   * ancestors' subtreeSensorSuites
+   */
+  void removeSubtreeSensorsFromAncestors();
+
+  /** @brief Go bottom to the top, and add all subtreeSensors to this'
+   * ancestors' subtreeSensorSuites
+   */
+  void addSubtreeSensorsToAncestors();
 
   //! set local bounding box for meshes stored at this node
   void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = meshBB; };
