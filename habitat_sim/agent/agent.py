@@ -14,7 +14,6 @@ import quaternion
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
 from habitat_sim._ext.habitat_sim_bindings import SceneNode
-from habitat_sim.sensors.sensor_suite import SensorSuite
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -133,7 +132,6 @@ class Agent(object):
     """
 
     agent_config: AgentConfiguration
-    _sensors: SensorSuite
     controls: ObjectControls
     body: mn.scenegraph.AbstractFeature3D
 
@@ -141,11 +139,9 @@ class Agent(object):
         self,
         scene_node: hsim.SceneNode,
         agent_config: Optional[AgentConfiguration] = None,
-        _sensors: Optional[SensorSuite] = None,
         controls: Optional[ObjectControls] = None,
     ) -> None:
         self.agent_config = agent_config if agent_config else AgentConfiguration()
-        self._sensors = _sensors if _sensors else SensorSuite()
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
@@ -166,31 +162,17 @@ class Agent(object):
         self.agent_config = agent_config
 
         if reconfigure_sensors:
-            self._sensors.clear()
+            self.scene_node.node_sensor_suite.clear()
             for spec in self.agent_config.sensor_specifications:
                 self._add_sensor(spec, modify_agent_config=False)
 
     def _add_sensor(
         self, spec: hsim.SensorSpec, modify_agent_config: bool = True
     ) -> None:
-        assert (
-            spec.uuid not in self._sensors
-        ), f"Error, {spec.uuid} already exists in the sensor suite"
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        if not spec.is_visual_sensor_spec:
-            raise ValueError(
-                f"""{spec.sensor_type} is a sensorType that is not implemented yet"""
-            )
-        CameraSensorSubTypeSet = {
-            habitat_sim.SensorSubType.PINHOLE,
-            habitat_sim.SensorSubType.ORTHOGRAPHIC,
-        }
-        if spec.sensor_subtype not in CameraSensorSubTypeSet:
-            raise ValueError(f"""{spec.sensor_subtype} is an illegal sensorSubType""")
-        # TODO: Add more checks for NonVisualSensorSpec, Other types of sensors
-        self._sensors.add(hsim.CameraSensor(self.scene_node.create_child(), spec))
+        hsim.SensorFactory.createSensors(self.scene_node, [spec])
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
@@ -212,7 +194,7 @@ class Agent(object):
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for _, v in self._sensors.items():
+            for _, v in self.scene_node.node_sensors:
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
@@ -227,7 +209,7 @@ class Agent(object):
             np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
-        for k, v in self._sensors.items():
+        for k, v in self.scene_node.node_sensors:
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
@@ -277,16 +259,16 @@ class Agent(object):
         self.body.object.rotation = quat_to_magnum(state.rotation)
 
         if reset_sensors:
-            for _, v in self._sensors.items():
+            for _, v in self.scene_node.node_sensors:
                 v.set_transformation_from_spec()
 
         if not infer_sensor_states:
             for k, v in state.sensor_states.items():
-                assert k in self._sensors
+                assert k in self.scene_node.node_sensors
                 if isinstance(v.rotation, list):
                     v.rotation = quat_from_coeffs(v.rotation)
 
-                s = self._sensors[k]
+                s = self.scene_node.node_sensors.get(k)
 
                 s.node.reset_transformation()
                 s.node.translate(
@@ -322,4 +304,4 @@ class Agent(object):
         )
 
     def close(self) -> None:
-        self._sensors = None
+        self.scene_node.node_sensors.clear()

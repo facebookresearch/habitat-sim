@@ -72,7 +72,6 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
-    __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
@@ -118,12 +117,12 @@ class Simulator(SimulatorBackend):
         self.__set_from_config(self.config)
 
     def close(self) -> None:
-        for agent_sensorsuite in self.__sensors:
-            for sensor in agent_sensorsuite.values():
+        for agent in self.agents:
+            for sensor in agent.scene_node.node_sensors:
                 sensor.close()
                 del sensor
-
-        self.__sensors = []
+            agent.close()
+            del agent
 
         for agent in self.agents:
             agent.close()
@@ -254,19 +253,11 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self.__sensors: List[Dict[str, Sensor]] = [
-            dict() for i in range(len(config.agents))
-        ]
         self.__last_state = dict()
         for agent_id, agent_cfg in enumerate(config.agents):
             for spec in agent_cfg.sensor_specifications:
-                self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
+                self.add_sensor(spec, agent_id=agent_id)
             self.initialize_agent(agent_id)
-
-    def _update_simulator_sensors(self, uuid: str, agent_id: int) -> None:
-        self.__sensors[agent_id][uuid] = Sensor(
-            sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
-        )
 
     def add_sensor(
         self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
@@ -295,7 +286,6 @@ class Simulator(SimulatorBackend):
             agent_id = self._default_agent_id
         agent = self.get_agent(agent_id=agent_id)
         agent._add_sensor(sensor_spec)
-        self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
@@ -341,15 +331,16 @@ class Simulator(SimulatorBackend):
             return_single = False
 
         for agent_id in agent_ids:
-            agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
+            for _sensor_uuid, sensor in self.get_agent(
+                agent_id
+            ).scene_node.node_sensors:
                 sensor.draw_observation()
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
         for agent_id in agent_ids:
             agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
-            for sensor_uuid, sensor in self.__sensors[agent_id].items():
+            for sensor_uuid, sensor in self.get_agent(agent_id).scene_node.node_sensors:
                 agent_observations[sensor_uuid] = sensor.get_observation()
             observations[agent_id] = agent_observations
         if return_single:
@@ -370,11 +361,6 @@ class Simulator(SimulatorBackend):
     def _last_state(self, state: AgentState) -> None:
         # TODO Deprecate and remove
         self.__last_state[self._default_agent_id] = state
-
-    @property
-    def _sensors(self) -> Dict[str, "Sensor"]:
-        # TODO Deprecate and remove
-        return self.__sensors[self._default_agent_id]
 
     def last_state(self, agent_id: Optional[int] = None) -> AgentState:
         if agent_id is None:
@@ -485,7 +471,7 @@ class Sensor:
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent._sensors[sensor_id]
+        self._sensor_object = self._agent.scene_node.node_sensors.get(sensor_id)
 
         self._spec = self._sensor_object.specification()
 

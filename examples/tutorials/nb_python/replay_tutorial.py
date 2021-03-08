@@ -108,8 +108,9 @@ def simulate_with_moving_agent(
     look_rotation_vel=0.0,
     get_frames=True,
 ):
-    sensor_node = sim._sensors["rgba_camera"]._sensor_object.object
+
     agent_node = sim.get_agent(0).body.object
+    sensor_node = agent_node.node_sensors.get("rgba_camera")._sensor_object.object
 
     # simulate dt seconds at 60Hz to the nearest fixed timestep
     time_step = 1.0 / 60.0
