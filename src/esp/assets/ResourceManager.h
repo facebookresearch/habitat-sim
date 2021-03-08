@@ -184,7 +184,7 @@ class ResourceManager {
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
-      const metadata::attributes::StageAttributes::ptr& sceneAttributes,
+      metadata::attributes::StageAttributes::ptr& sceneAttributes,
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
       std::vector<int>& activeSceneIDs,
@@ -209,12 +209,14 @@ class ResourceManager {
    * collisionMeshGroups_, respectively. Assumes valid render and collisions
    * asset handles have been specified (This is checked/verified during
    * registration.)
-   * @param objTemplateHandle The key for referencing the template in the
-   * @ref esp::metadata::managers::ObjectAttributesManager::objectLibrary_.
+   * @param ObjectAttributes The object template describing the object we wish
+   * to instantiate, copied from an entry in @ref
+   * esp::metadata::managers::ObjectAttributesManager::objectLibrary_.
    * @return whether process succeeded or not - only currently fails if
    * registration call fails.
    */
-  bool instantiateAssetsOnDemand(const std::string& objTemplateHandle);
+  bool instantiateAssetsOnDemand(
+      const metadata::attributes::ObjectAttributes::ptr& ObjectAttributes);
 
   //======== Accessor functions ========
   /**
