@@ -168,7 +168,7 @@ if make_video and not os.path.exists(output_path):
 
 cfg = make_configuration()
 sim = None
-replay_filepath = output_path + "replay.json"
+replay_filepath = "./replay.json"
 
 if not sim:
     sim = habitat_sim.Simulator(cfg)
@@ -269,6 +269,7 @@ if make_video:
 # %%
 
 sim.gfx_replay_manager.write_saved_keyframes_to_file(replay_filepath)
+assert os.path.exists(replay_filepath)
 
 remove_all_objects(sim)
 
@@ -452,3 +453,6 @@ if make_video:
 # clean up the players
 for other_player in other_players:
     other_player.close()
+
+# clean up replay file
+os.remove(replay_filepath)
