@@ -45,6 +45,11 @@ def powerset(iterable):
             "--no-make-video",
             "--no-display",
         ),
+        (
+            "examples/tutorials/nb_python/replay_tutorial.py",
+            "--no-show-video",
+            "--no-make-video",
+        ),
         ("examples/tutorials/semantic_id_tutorial.py", "--no-show-images"),
     ],
 )

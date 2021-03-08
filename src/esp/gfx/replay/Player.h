@@ -85,6 +85,11 @@ class Player {
                         Magnum::Quaternion* rotation) const;
 
   /**
+   * @brief Unload all keyframes.
+   */
+  void close();
+
+  /**
    * @brief Reserved for unit-testing.
    */
   void debugSetKeyframes(std::vector<Keyframe>&& keyframes) {
