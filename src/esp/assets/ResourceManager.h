@@ -342,7 +342,11 @@ class ResourceManager {
   }
 
   /**
-   * @brief
+   * @brief Return a vector of all vertex positions in the mesh
+   *
+   * Constructs a vector of all vertex positions the vertex positions in each
+   * separate mesh.
+   * @return A nested vector of vertex positions (level 1) in meshes (level 2).
    */
   std::vector<std::vector<vec3f>> getVertices() {
     std::vector<std::vector<vec3f>> r;
@@ -359,7 +363,11 @@ class ResourceManager {
   }
 
   /**
-   * @brief
+   * @brief Return a vector of the vertex position in a given mesh.
+   *
+   * Given the integer ID of a mesh, get the vertex positions in that mesh.
+   * @param id The number index of a mesh.
+   * @return A vector of vertex positions.
    */
   std::vector<vec3f> getVertices(int id) {
     const std::vector<vec3f> vertexPositions =
@@ -369,7 +377,12 @@ class ResourceManager {
   }
 
   /**
-   * @brief
+   * @brief Return a vector of object IDs for each vertex in a given mesh.
+   *
+   * Given the integer ID of a mesh, get the object IDs of each vertex in
+   * the mesh.
+   * @param id The number index of a mesh.
+   * @return A vector of object IDs.
    */
   std::vector<uint16_t> getObjectIds(int id) {
     const std::vector<uint16_t> objIds =
@@ -379,7 +392,10 @@ class ResourceManager {
   }
 
    /**
-    * @brief
+    * @brief Return a vector of the integer IDs of existing meshes.
+    *
+    * Return a vector of the integer IDs of existing meshes.
+    * @return a vector of existing mesh IDs.
     */
    std::vector<int> getMeshKeys() {
      std::vector<int> r;
