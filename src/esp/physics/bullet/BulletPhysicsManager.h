@@ -209,7 +209,8 @@ class BulletPhysicsManager : public PhysicsManager {
    * properties of the stage.
    * @return true if successful and false otherwise
    */
-  bool addStageFinalize(const std::string& handle) override;
+  bool addStageFinalize(const metadata::attributes::StageAttributes::ptr&
+                            initAttributes) override;
 
   /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID
@@ -221,9 +222,10 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map
    */
-  bool makeAndAddRigidObject(int newObjectID,
-                             const std::string& handle,
-                             scene::SceneNode* objectNode) override;
+  bool makeAndAddRigidObject(
+      int newObjectID,
+      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      scene::SceneNode* objectNode) override;
 
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;

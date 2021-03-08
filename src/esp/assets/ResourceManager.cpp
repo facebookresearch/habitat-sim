@@ -179,7 +179,7 @@ void ResourceManager::initPhysicsManager(
 }  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadStage(
-    const StageAttributes::ptr& stageAttributes,
+    StageAttributes::ptr& stageAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
@@ -326,8 +326,7 @@ bool ResourceManager::loadStage(
     // Either add with pre-built meshGroup if collision assets are loaded
     // or empty vector for mesh group - this should only be the case if
     // we are using None-type physicsManager.
-    bool sceneSuccess =
-        _physicsManager->addStage(stageAttributes->getHandle(), meshGroup);
+    bool sceneSuccess = _physicsManager->addStage(stageAttributes, meshGroup);
     if (!sceneSuccess) {
       LOG(ERROR) << "ResourceManager::loadStage : Adding Stage "
                  << stageAttributes->getHandle()
@@ -1783,10 +1782,8 @@ void ResourceManager::loadTextures(Importer& importer,
 }  // ResourceManager::loadTextures
 
 bool ResourceManager::instantiateAssetsOnDemand(
-    const std::string& objectTemplateHandle) {
-  // Meta data
-  ObjectAttributes::ptr ObjectAttributes =
-      getObjectAttributesManager()->getObjectByHandle(objectTemplateHandle);
+    const metadata::attributes::ObjectAttributes::ptr& ObjectAttributes) {
+  const std::string& objectTemplateHandle = ObjectAttributes->getHandle();
 
   if (!ObjectAttributes) {
     return false;
