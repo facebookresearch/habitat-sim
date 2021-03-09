@@ -53,7 +53,7 @@ struct SensorSpec {
   vec3f orientation = {0, 0, 0};
   std::string noiseModel = "None";
   SensorSpec() = default;
-  virtual ~SensorSpec();
+  virtual ~SensorSpec() = default;
   virtual bool isVisualSensorSpec() const { return false; }
   virtual void sanityCheck();
   bool operator==(const SensorSpec& a) const;
