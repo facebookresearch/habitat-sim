@@ -648,13 +648,6 @@ workflows:
       - build_and_test_habitat_lab_conda
       - install_and_test_ubuntu
       - pre-commit
-      # remove before commit, for testing only
-      - build_conda_binaries:
-          AIHABITAT_CONDA_CHN: aihabitat-nightly
-          AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
-          NIGHTLY_FLAG: "--nightly"
-          requires:
-            - install_and_test_ubuntu
   nightly:
     triggers:
       - schedule:
