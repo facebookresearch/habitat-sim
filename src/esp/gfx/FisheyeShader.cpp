@@ -10,8 +10,6 @@
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/Version.h>
 
-#include <sstream>
-
 namespace Mn = Magnum;
 namespace Cr = Corrade;
 
