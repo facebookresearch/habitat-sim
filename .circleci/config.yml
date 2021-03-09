@@ -573,10 +573,16 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
+
+              # Install anaconda to work with packages repo
+              curl -O https://repo.anaconda.com/archive/Anaconda3-2019.03-Linux-x86_64.sh
+              bash Anaconda3-2019.03-Linux-x86_64.sh -b -p $HOME/anaconda
+              export PATH=$HOME/anaconda/bin:$PATH
+
               cd habitat-sim/conda-build
 
               # Delete old nightly builds
-              python common/delete_old_night_packages.py --username $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --password $<< parameters.AIHABITAT_CONDA_CHN >> --nightly << parameters.NIGHTLY_FLAG >>
+              python common/delete_old_night_packages.py --username $<< parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> << parameters.NIGHTLY_FLAG >>
 
               # install Docker
               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
@@ -642,6 +648,13 @@ workflows:
       - build_and_test_habitat_lab_conda
       - install_and_test_ubuntu
       - pre-commit
+      # remove before commit, for testing only
+      - build_conda_binaries:
+          AIHABITAT_CONDA_CHN: aihabitat-nightly
+          AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
+          NIGHTLY_FLAG: "--nightly"
+          requires:
+            - install_and_test_ubuntu
   nightly:
     triggers:
       - schedule:
