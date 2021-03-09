@@ -52,7 +52,7 @@ SceneNode::~SceneNode() {
 
   // First remove all sensors in nodeSensorSuite from its parent's
   // nodeSensorSuite if node is leaf node
-  if (getSceneNodeTags() &= SceneNodeTag::Leaf) {
+  if (getSceneNodeTags() & SceneNodeTag::Leaf) {
     removeSensorsFromParentNodeSensorSuite();
   }
 
