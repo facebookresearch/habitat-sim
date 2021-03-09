@@ -5,5 +5,3 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim.sensors import noise_models
-
-__all__ = ["SensorSuite"]
