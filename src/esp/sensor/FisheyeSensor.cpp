@@ -130,6 +130,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
     if (reset) {
       cubeMapCamera_->setProjectionMatrix(size, fisheyeSensorSpec_->near,
                                           fisheyeSensorSpec_->far);
+      LOG(INFO) << "#### reset!!" << size << " ";
     }
   }
 
