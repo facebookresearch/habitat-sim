@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GEO_COORDINATEFRAME_H_
+#define ESP_GEO_COORDINATEFRAME_H_
 
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
@@ -70,3 +71,5 @@ inline std::ostream& operator<<(std::ostream& os, const CoordinateFrame& c) {
 
 }  // namespace geo
 }  // namespace esp
+
+#endif  // ESP_GEO_COORDINATEFRAME_H_

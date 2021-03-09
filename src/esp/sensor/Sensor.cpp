@@ -11,10 +11,6 @@
 namespace esp {
 namespace sensor {
 
-SensorSpec::~SensorSpec() {
-  LOG(INFO) << "Deconstructing SensorSpec";
-}
-
 bool SensorSpec::operator==(const SensorSpec& a) const {
   return uuid == a.uuid && sensorType == a.sensorType &&
          sensorSubType == a.sensorSubType && position == a.position &&
