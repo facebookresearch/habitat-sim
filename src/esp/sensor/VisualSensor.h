@@ -139,6 +139,8 @@ class VisualSensor : public Sensor {
    */
   Mn::Deg getFOV() const { return hfov_; }
 
+  VisualSensorSpec getSensorSpec() { return *visualSensorSpec_; }
+
  protected:
   /** @brief projection parameters
    */

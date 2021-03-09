@@ -194,7 +194,7 @@ class Agent(object):
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for _, v in self.scene_node.node_sensors:
+            for _, v in self.scene_node.node_sensors.items():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
@@ -209,7 +209,7 @@ class Agent(object):
             np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
-        for k, v in self.scene_node.node_sensors:
+        for k, v in self.scene_node.node_sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
@@ -259,7 +259,7 @@ class Agent(object):
         self.body.object.rotation = quat_to_magnum(state.rotation)
 
         if reset_sensors:
-            for _, v in self.scene_node.node_sensors:
+            for _, v in self.scene_node.node_sensors.items():
                 v.set_transformation_from_spec()
 
         if not infer_sensor_states:
