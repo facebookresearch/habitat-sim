@@ -463,6 +463,7 @@ class Simulator(SimulatorBackend):
                 end_pos = self.pathfinder.try_step(start_pos, end_pos)
             else:
                 end_pos = self.pathfinder.try_step_no_sliding(start_pos, end_pos)
+
         return end_pos
 
     def __del__(self) -> None:
