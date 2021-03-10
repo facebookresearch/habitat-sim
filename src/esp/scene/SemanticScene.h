@@ -5,6 +5,7 @@
 #ifndef ESP_SCENE_SEMANTICSCENE_H_
 #define ESP_SCENE_SEMANTICSCENE_H_
 
+#include <Corrade/Utility/Directory.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -13,6 +14,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/geo/OBB.h"
+#include "esp/io/json.h"
 
 namespace esp {
 namespace scene {
@@ -81,21 +83,54 @@ class SemanticScene {
     }
   }
 
-  //! load SemanticScene from a Gibson house format file
-  static bool loadGibsonHouse(
+  /**
+   * @brief Attempt to load SemanticScene descriptor from an unknown file type.
+   * @param filename the name of the house file to attempt to load
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully loaded
+   */
+  static bool loadSemanticSceneDescriptor(
       const std::string& filename,
       SemanticScene& scene,
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
 
-  //! load SemanticScene from a Matterport3D House format filename
+  /**
+   * @brief Attempt to load SemanticScene from a Gibson dataset house format
+   * file
+   * @param filename the name of the house file to attempt to load
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully loaded
+   */
+  static bool loadGibsonHouse(
+      const std::string& filename,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
+  /**
+   * @brief Attempt to load SemanticScene from a Matterport3D dataset house
+   * format file
+   * @param filename the name of the house file to attempt to load
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully loaded
+   */
   static bool loadMp3dHouse(
       const std::string& filename,
       SemanticScene& scene,
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
 
-  //! load SemanticScene from a SUNCG house format file
+  /**
+   * @brief Attempt to load SemanticScene from a Replica dataset house format
+   * file
+   * @param filename the name of the house file to attempt to load
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully loaded
+   */
   static bool loadReplicaHouse(
       const std::string& filename,
       SemanticScene& scene,
@@ -108,6 +143,67 @@ class SemanticScene {
                              const quatf& rotation = quatf::Identity());
 
  protected:
+  /**
+   * @brief Verify a requested file exists.
+   * @param houseFile the file to attempt to load
+   * @param srcFunc calling function name to be displayed in failure message
+   * @return whether found or not
+   */
+  static bool checkFileExists(const std::string& filename,
+                              const std::string& srcFunc) {
+    if (!Cr::Utility::Directory::exists(filename)) {
+      LOG(ERROR) << "SemanticScene::" << srcFunc << " : File " << filename
+                 << " does not exist.  Aborting load.";
+      return false;
+    }
+    return true;
+  }  // checkFileExists
+
+  /**
+   * @brief Build the mp3 semantic data from the passed file stream. File being
+   * streamed is expected to be appropriate format.
+   * @param ifs The opened file stream describing the Mp3d semantic annotations.
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully built. Currently only returns true, but retaining
+   * return value for future support.
+   */
+  static bool buildMp3dHouse(
+      std::ifstream& ifs,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
+
+  /**
+   * @brief Build SemanticScene from a Gibson dataset house JSON. JSON is
+   * expected to have been verified already.
+   * @param jsonDoc the JSON document describing the semantic annotations.
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully built. Currently only returns true, but retaining
+   * return value for future support.
+   */
+  static bool buildGibsonHouse(
+      const io::JsonDocument& jsonDoc,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
+
+  /**
+   * @brief Build SemanticScene from a Replica dataset house JSON. JSON is
+   * expected to have been verified already.
+   * @param jsonDoc the JSON document describing the semantic annotations.
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load.
+   * @return successfully built. Currently only returns true, but retaining
+   * return value for future support.
+   */
+  static bool buildReplicaHouse(
+      const io::JsonDocument& jsonDoc,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
+
   std::string name_;
   std::string label_;
   box3f bbox_;
@@ -139,7 +235,7 @@ class SemanticLevel {
   box3f aabb() const { return bbox_; }
 
  protected:
-  int index_;
+  int index_{};
   std::string labelCode_;
   vec3f position_;
   box3f bbox_;
@@ -172,8 +268,8 @@ class SemanticRegion {
   const SemanticCategory::ptr category() const { return category_; }
 
  protected:
-  int index_;
-  int parentIndex_;
+  int index_{};
+  int parentIndex_{};
   std::shared_ptr<SemanticCategory> category_;
   vec3f position_;
   box3f bbox_;
@@ -206,8 +302,8 @@ class SemanticObject {
   const SemanticCategory::ptr category() const { return category_; }
 
  protected:
-  int index_;
-  int parentIndex_;
+  int index_{};
+  int parentIndex_{};
   std::shared_ptr<SemanticCategory> category_;
   geo::OBB obb_;
   std::shared_ptr<SemanticRegion> region_;

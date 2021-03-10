@@ -235,16 +235,18 @@ struct RenderTarget::Impl {
   }
 #endif
 
-  ~Impl() {
 #ifdef ESP_BUILD_WITH_CUDA
+  ~Impl() {
     if (colorBufferCugl_ != nullptr)
       checkCudaErrors(cudaGraphicsUnregisterResource(colorBufferCugl_));
     if (depthBufferCugl_ != nullptr)
       checkCudaErrors(cudaGraphicsUnregisterResource(depthBufferCugl_));
     if (objecIdBufferCugl_ != nullptr)
       checkCudaErrors(cudaGraphicsUnregisterResource(objecIdBufferCugl_));
-#endif
   }
+#else
+  ~Impl() = default;
+#endif
 
  private:
   Mn::GL::Renderbuffer colorBuffer_;

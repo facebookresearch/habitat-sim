@@ -11,7 +11,6 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
-using std::placeholders::_1;
 namespace Cr = Corrade;
 
 namespace esp {
@@ -80,42 +79,50 @@ void ObjectAttributesManager::setValsFromJSONDoc(
 
   // Populate with object-specific fields found in json, if any are there.
   // object mass
-  io::jsonIntoSetter<double>(
-      jsonConfig, "mass",
-      std::bind(&ObjectAttributes::setMass, objAttributes, _1));
+  io::jsonIntoSetter<double>(jsonConfig, "mass", [objAttributes](double mass) {
+    objAttributes->setMass(mass);
+  });
   // linear damping
-  io::jsonIntoSetter<double>(
-      jsonConfig, "linear_damping",
-      std::bind(&ObjectAttributes::setLinearDamping, objAttributes, _1));
+  io::jsonIntoSetter<double>(jsonConfig, "linear_damping",
+                             [objAttributes](double linear_damping) {
+                               objAttributes->setLinearDamping(linear_damping);
+                             });
   // angular damping
   io::jsonIntoSetter<double>(
-      jsonConfig, "angular_damping",
-      std::bind(&ObjectAttributes::setAngularDamping, objAttributes, _1));
+      jsonConfig, "angular_damping", [objAttributes](double angular_damping) {
+        objAttributes->setAngularDamping(angular_damping);
+      });
   // Use bounding box as collision object
   io::jsonIntoSetter<bool>(
       jsonConfig, "use_bounding_box_for_collision",
-      std::bind(&ObjectAttributes::setBoundingBoxCollisions, objAttributes,
-                _1));
+      [objAttributes](bool use_bounding_box_for_collision) {
+        objAttributes->setBoundingBoxCollisions(use_bounding_box_for_collision);
+      });
   // Join collision meshes if specified
   io::jsonIntoSetter<bool>(
       jsonConfig, "join_collision_meshes",
-      std::bind(&ObjectAttributes::setJoinCollisionMeshes, objAttributes, _1));
+      [objAttributes](bool join_collision_meshes) {
+        objAttributes->setJoinCollisionMeshes(join_collision_meshes);
+      });
 
   // The object's interia matrix diagonal
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "inertia",
-      std::bind(&ObjectAttributes::setInertia, objAttributes, _1));
+      jsonConfig, "inertia", [objAttributes](const Magnum::Vector3& inertia) {
+        objAttributes->setInertia(inertia);
+      });
 
   // The object's semantic ID
-  io::jsonIntoSetter<int>(
-      jsonConfig, "semantic_id",
-      std::bind(&ObjectAttributes::setSemanticId, objAttributes, _1));
+  io::jsonIntoSetter<int>(jsonConfig, "semantic_id",
+                          [objAttributes](int semantic_id) {
+                            objAttributes->setSemanticId(semantic_id);
+                          });
 
   // The center of mass (in the local frame of the object)
   // if COM is provided, use it for mesh shift
   bool comIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "COM",
-      std::bind(&ObjectAttributes::setCOM, objAttributes, _1));
+      jsonConfig, "COM", [objAttributes](const Magnum::Vector3& COM) {
+        objAttributes->setCOM(COM);
+      });
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
 }  // ObjectAttributesManager::setValsFromJSONDoc
@@ -141,13 +148,15 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     // set defaults for passed render asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, true, newAttributes->getRenderAssetHandle(),
-        std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
-                  _1));
+        [newAttributes](int render_asset_type) {
+          newAttributes->setRenderAssetType(render_asset_type);
+        });
     // set defaults for passed collision asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
-        std::bind(&AbstractObjectAttributes::setCollisionAssetType,
-                  newAttributes, _1));
+        [newAttributes](int collision_asset_type) {
+          newAttributes->setCollisionAssetType(collision_asset_type);
+        });
   }
   return newAttributes;
 }  // ObjectAttributesManager::initNewObjectInternal

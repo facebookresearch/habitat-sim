@@ -41,6 +41,11 @@ void SensorSuite::add(const Sensor::ptr& sensor) {
   sensors_[uuid] = sensor;
 }
 
+void SensorSuite::merge(SensorSuite& sensorSuite) {
+  sensors_.insert(sensorSuite.getSensors().begin(),
+                  sensorSuite.getSensors().end());
+}
+
 Sensor::ptr SensorSuite::get(const std::string& uuid) const {
   return (sensors_.at(uuid));
 }

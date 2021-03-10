@@ -96,7 +96,7 @@ def box_drop_test(
             0,
             habitat_sim.AgentState(
                 [5.45 * box_size, 2.4 * box_size, 1.2 * box_size],
-                np.quaternion(-0.83147, 0.2, -0.55557, -0.2),
+                np.quaternion(-0.8000822, 0.1924500, -0.5345973, -0.1924500),
             ),
         )
 
@@ -141,7 +141,7 @@ def box_drop_test(
                 ]
             ]
             obj_template = obj_templates_mgr.get_template_by_ID(object_ids[-1])
-            if "scale" in obj.keys():
+            if "scale" in obj:
                 obj_template.scale *= obj["scale"]
             obj_templates_mgr.register_template(obj_template)
 

@@ -14,6 +14,7 @@ add_library(
   SceneManager.h
   SceneNode.cpp
   SceneNode.h
+  SemanticScene.cpp
   SemanticScene.h
   SuncgObjectCategoryMap.h
   SuncgSemanticScene.cpp

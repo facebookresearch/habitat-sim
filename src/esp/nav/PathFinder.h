@@ -23,7 +23,7 @@ class PathFinder;
 struct HitRecord {
   vec3f hitPos;
   vec3f hitNormal;
-  float hitDist;
+  float hitDist{};
 };
 
 /**
@@ -55,7 +55,7 @@ struct ShortestPath {
    *
    * @note Will be inf if no path exists
    */
-  float geodesicDistance;
+  float geodesicDistance{};
 
   ESP_SMART_POINTERS(ShortestPath)
 };
@@ -102,37 +102,37 @@ struct MultiGoalShortestPath {
 
 struct NavMeshSettings {
   //! Cell size in world units
-  float cellSize;
+  float cellSize{};
   //! Cell height in world units
-  float cellHeight;
+  float cellHeight{};
   //! Agent height in world units
-  float agentHeight;
+  float agentHeight{};
   //! Agent radius in world units
-  float agentRadius;
+  float agentRadius{};
   //! Agent max climb in world units
-  float agentMaxClimb;
+  float agentMaxClimb{};
   //! Agent max slope in degrees
-  float agentMaxSlope;
+  float agentMaxSlope{};
   //! Region minimum size in voxels. regionMinSize = sqrt(regionMinArea)
-  float regionMinSize;
+  float regionMinSize{};
   //! Region merge size in voxels. regionMergeSize = sqrt(regionMergeArea)
-  float regionMergeSize;
+  float regionMergeSize{};
   //! Edge max length in world units
-  float edgeMaxLen;
+  float edgeMaxLen{};
   //! Edge max error in voxels
-  float edgeMaxError;
-  float vertsPerPoly;
+  float edgeMaxError{};
+  float vertsPerPoly{};
   //! Detail sample distance in voxels
-  float detailSampleDist;
+  float detailSampleDist{};
   //! Detail sample max error in voxel heights.
-  float detailSampleMaxError;
+  float detailSampleMaxError{};
   //! Bounds of the area to mesh
   vec3f navMeshBMin;
   vec3f navMeshBMax;
 
-  bool filterLowHangingObstacles;
-  bool filterLedgeSpans;
-  bool filterWalkableLowHeightSpans;
+  bool filterLowHangingObstacles{};
+  bool filterLedgeSpans{};
+  bool filterWalkableLowHeightSpans{};
 
   void setDefaults() {
     cellSize = 0.05f;

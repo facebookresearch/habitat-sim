@@ -27,7 +27,7 @@ class Mp3dInstanceMeshData : public GenericInstanceMeshData {
  public:
   Mp3dInstanceMeshData()
       : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH) {}
-  virtual ~Mp3dInstanceMeshData() {}
+  ~Mp3dInstanceMeshData() override = default;
 
   //! Loads an MP3D house segmentations PLY file
   bool loadMp3dPLY(const std::string& plyFile);

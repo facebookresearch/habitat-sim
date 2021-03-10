@@ -46,7 +46,7 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
   AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
       : esp::core::ManagedContainer<T, Access>::ManagedContainer(attrType),
         JSONTypeExt_(JSONTypeExt) {}
-  virtual ~AttributesManager() = default;
+  ~AttributesManager() override = default;
 
   /**
    * @brief Load all file-based templates given string list of template file
@@ -112,7 +112,7 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
    * @param jsonConfig json document to parse
    * @return a reference to the desired template.
    */
-  virtual AttribsPtr buildObjectFromJSONDoc(
+  AttribsPtr buildObjectFromJSONDoc(
       const std::string& templateName,
       const io::JsonGenericValue& jsonConfig) override {
     // Construct a ObjectAttributes and populate with any

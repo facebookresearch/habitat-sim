@@ -14,7 +14,6 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
-using std::placeholders::_1;
 namespace esp {
 using assets::AssetType;
 namespace metadata {
@@ -225,18 +224,23 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // set defaults for passed render asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, true, newAttributes->getRenderAssetHandle(),
-        std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
-                  _1));
+        [newAttributes](auto&& PH1) {
+          newAttributes->setRenderAssetType(std::forward<decltype(PH1)>(PH1));
+        });
     // set defaults for passed collision asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
-        std::bind(&AbstractObjectAttributes::setCollisionAssetType,
-                  newAttributes, _1));
+        [newAttributes](auto&& PH1) {
+          newAttributes->setCollisionAssetType(
+              std::forward<decltype(PH1)>(PH1));
+        });
 
     // set defaults for passed semantic asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getSemanticAssetHandle(),
-        std::bind(&StageAttributes::setSemanticAssetType, newAttributes, _1));
+        [newAttributes](auto&& PH1) {
+          newAttributes->setSemanticAssetType(std::forward<decltype(PH1)>(PH1));
+        });
   }
   // set default physical quantities specified in physics manager attributes
   if (physicsAttributesManager_->getObjectLibHasHandle(
@@ -304,13 +308,15 @@ void StageAttributesManager::setValsFromJSONDoc(
   // now parse stage-specific fields.
   // load stage specific gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "gravity",
-      std::bind(&StageAttributes::setGravity, stageAttributes, _1));
+      jsonConfig, "gravity", [stageAttributes](auto&& PH1) {
+        stageAttributes->setGravity(std::forward<decltype(PH1)>(PH1));
+      });
 
   // load stage specific origin
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "origin",
-      std::bind(&StageAttributes::setOrigin, stageAttributes, _1));
+      jsonConfig, "origin", [stageAttributes](auto&& PH1) {
+        stageAttributes->setOrigin(std::forward<decltype(PH1)>(PH1));
+      });
 
   // populate specified semantic file name if specified in json - defaults
   // are overridden only if specified in json.
@@ -323,8 +329,9 @@ void StageAttributesManager::setValsFromJSONDoc(
   std::string semanticFName = stageAttributes->getSemanticAssetHandle();
   semanticFName = this->setJSONAssetHandleAndType(
       stageAttributes, jsonConfig, "semantic_asset_type", "semantic_asset",
-      semanticFName,
-      std::bind(&StageAttributes::setSemanticAssetType, stageAttributes, _1));
+      semanticFName, [stageAttributes](auto&& PH1) {
+        stageAttributes->setSemanticAssetType(std::forward<decltype(PH1)>(PH1));
+      });
   // if "semantic mesh" is specified in stage json to non-empty value, set
   // value (override default).
   stageAttributes->setSemanticAssetHandle(semanticFName);

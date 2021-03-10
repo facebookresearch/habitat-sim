@@ -4,6 +4,8 @@ set(
   CameraSensor.h
   Sensor.cpp
   Sensor.h
+  SensorFactory.cpp
+  SensorFactory.h
   VisualSensor.cpp
   VisualSensor.h
 )

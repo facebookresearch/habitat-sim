@@ -6,6 +6,8 @@
 #define ESP_SIM_SIMULATOR_H_
 
 #include <Corrade/Utility/Assert.h>
+
+#include <utility>
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
@@ -18,6 +20,7 @@
 #include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+#include "esp/sensor/Sensor.h"
 
 #include "SimulatorConfiguration.h"
 
@@ -42,7 +45,9 @@ namespace esp {
 namespace sim {
 class Simulator {
  public:
-  explicit Simulator(const SimulatorConfiguration& cfg);
+  explicit Simulator(
+      const SimulatorConfiguration& cfg,
+      metadata::MetadataMediator::ptr _metadataMediator = nullptr);
   virtual ~Simulator();
 
   /**
@@ -762,6 +767,18 @@ class Simulator {
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
 
   /**
+   * @brief Initialize sensor and attach to sceneNode of a particular object
+   * @param objectId    Id of the object to which a sensor will be initialized
+   * at its node
+   * @param sensorSpec  SensorSpec of sensor to be initialized
+   * @return            handle to sensor initialized
+   *
+   */
+  esp::sensor::Sensor::ptr addSensorToObject(
+      const int objectId,
+      esp::sensor::SensorSpec::ptr& sensorSpec);
+
+  /**
    * @brief Displays observations on default frame buffer for a
    * particular sensor of an agent
    * @param agentId    Id of the agent for which the observation is to
@@ -878,7 +895,9 @@ class Simulator {
    * @brief Set this simulator's MetadataMediator
    */
   void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
-    metadataMediator_ = _metadataMediator;
+    metadataMediator_ = std::move(_metadataMediator);
+    // set newly added MM to have current Simulator Config
+    metadataMediator_->setSimulatorConfiguration(this->config_);
   }
 
   /**
@@ -891,7 +910,7 @@ class Simulator {
       const assets::RenderAssetInstanceCreationInfo& creation);
 
  protected:
-  Simulator(){};
+  Simulator() = default;
   /**
    * @brief Builds a scene instance and populates it with initial object layout,
    * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes
@@ -969,6 +988,7 @@ class Simulator {
   SimulatorConfiguration config_;
 
   std::vector<agent::Agent::ptr> agents_;
+
   nav::PathFinder::ptr pathfinder_;
   // state indicating frustum culling is enabled or not
   //

@@ -41,9 +41,8 @@ class ObjectControls {
   }
 
  protected:
-  MoveFilterFunc moveFilterFunc_ = [](const vec3f& start, const vec3f& end) {
-    return end;
-  };
+  MoveFilterFunc moveFilterFunc_ = [](const vec3f& /*start*/,
+                                      const vec3f& end) { return end; };
   std::map<std::string, MoveFunc> moveFuncMap_;
 
   ESP_SMART_POINTERS(ObjectControls)
