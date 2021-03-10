@@ -70,7 +70,6 @@ class Simulator(SimulatorBackend):
 
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
-    _sensor_readers: Dict[str, SensorReader] = attr.ib(factory=dict, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
     __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
@@ -295,21 +294,8 @@ class Simulator(SimulatorBackend):
         if agent_id is None:
             agent_id = self._default_agent_id
         agent = self.get_agent(agent_id=agent_id)
-<<<<<<< HEAD
-        agent._add_sensor(sensor_spec, modify_agent_config=False)
-        self._sensor_readers[sensor_spec.uuid] = SensorReader(
-            self, agent.scene_node.node_sensors[sensor_spec.uuid]
-        )
-        self.renderer.bind_render_target(
-            agent.scene_node.node_sensors[sensor_spec.uuid]
-        )
-=======
         agent._add_sensor(sensor_spec)
-<<<<<<< HEAD
->>>>>>> parent of 1d680e28... Deprecate sensorSuite and Sensor wrapper in python now that sensors are kept track of on the c++ side, fix some python tests
-=======
         self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
->>>>>>> parent of 5ce9a323... Preliminary python
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
@@ -355,38 +341,16 @@ class Simulator(SimulatorBackend):
             return_single = False
 
         for agent_id in agent_ids:
-<<<<<<< HEAD
-<<<<<<< HEAD
-            for uuid in self.get_agent(agent_id).scene_node.node_sensors.items():
-                self.draw_observation(self._sensor_readers[uuid])
-=======
-            for _sensor_uuid, sensor in self.get_agent(
-                agent_id
-            ).scene_node.node_sensors:
-=======
             agent_sensorsuite = self.__sensors[agent_id]
             for _sensor_uuid, sensor in agent_sensorsuite.items():
->>>>>>> parent of 5ce9a323... Preliminary python
                 sensor.draw_observation()
->>>>>>> parent of 1d680e28... Deprecate sensorSuite and Sensor wrapper in python now that sensors are kept track of on the c++ side, fix some python tests
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
         for agent_id in agent_ids:
             agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
-<<<<<<< HEAD
-<<<<<<< HEAD
-            for uuid in self.get_agent(agent_id).scene_node.node_sensors.items():
-                agent_observations[uuid] = self.get_observation(
-                    self._sensor_readers[uuid]
-                )
-=======
-            for sensor_uuid, sensor in self.get_agent(agent_id).scene_node.node_sensors:
-=======
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
->>>>>>> parent of 5ce9a323... Preliminary python
                 agent_observations[sensor_uuid] = sensor.get_observation()
->>>>>>> parent of 1d680e28... Deprecate sensorSuite and Sensor wrapper in python now that sensors are kept track of on the c++ side, fix some python tests
             observations[agent_id] = agent_observations
         if return_single:
             return next(iter(observations.values()))
@@ -507,117 +471,6 @@ class Simulator(SimulatorBackend):
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
 
-<<<<<<< HEAD
-    def draw_observation(self, sensor_reader: SensorReader) -> None:
-        # sanity check:
-
-        # see if the sensor is attached to a scene graph, otherwise it is invalid,
-        # and cannot make any observation
-        if not sensor_reader._sensor_object.object:
-            raise habitat_sim.errors.InvalidAttachedObject(
-                "Sensor observation requested but sensor is invalid.\
-                 (has it been detached from a scene node?)"
-            )
-
-        # get the correct scene graph based on application
-        if sensor_reader._spec.sensor_type == SensorType.SEMANTIC:
-            if self.semantic_scene is None:
-                raise RuntimeError(
-                    "SemanticSensor observation requested but no SemanticScene is loaded"
-                )
-            scene = self.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self.get_active_scene_graph()
-
-        # now, connect the agent to the root node of the current scene graph
-
-        # sanity check is not needed on agent:
-        # because if a sensor is attached to a scene graph,
-        # it implies the agent is attached to the same scene graph
-        # (it assumes backend simulator will guarantee it.)
-
-        agent_node = sensor_reader._sensor_object.scene_node.parent
-        agent_node.parent = scene.get_root_node()
-
-        render_flags = habitat_sim.gfx.Camera.Flags.NONE
-
-        if self.frustum_culling:
-            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
-
-        with sensor_reader._sensor_object.render_target:
-            self.renderer.draw(self._sensor_object, scene, render_flags)
-
-        # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
-        if (
-            sensor_reader._spec.sensor_type == SensorType.SEMANTIC
-            and self.get_active_scene_graph()
-            is not self.get_active_semantic_scene_graph()
-        ):
-            agent_node.parent = self.get_active_scene_graph().get_root_node()
-            render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
-            self.renderer.draw(
-                sensor_reader._sensor_object,
-                self._sim.get_active_scene_graph(),
-                render_flags,
-            )
-
-    def get_observation(self, sensor_reader: SensorReader) -> Union[ndarray, "Tensor"]:
-
-        tgt = sensor_reader._sensor_object.render_target
-
-        if sensor_reader._spec.gpu2gpu_transfer:
-            with torch.cuda.device(sensor_reader._buffer.device):  # type: ignore[attr-defined]
-                if sensor_reader._spec.sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(sensor_reader._buffer.data_ptr())  # type: ignore[attr-defined]
-                elif sensor_reader._spec.sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(sensor_reader._buffer.data_ptr())  # type: ignore[attr-defined]
-                else:
-                    tgt.read_frame_rgba_gpu(sensor_reader._buffer.data_ptr())  # type: ignore[attr-defined]
-
-                obs = sensor_reader._buffer.flip(0)
-        else:
-            size = sensor_reader._sensor_object.framebuffer_size
-
-            if sensor_reader._spec.sensor_type == SensorType.SEMANTIC:
-                tgt.read_frame_object_id(
-                    mn.MutableImageView2D(
-                        mn.PixelFormat.R32UI, size, sensor_reader._buffer
-                    )
-                )
-            elif sensor_reader._spec.sensor_type == SensorType.DEPTH:
-                tgt.read_frame_depth(
-                    mn.MutableImageView2D(
-                        mn.PixelFormat.R32F, size, sensor_reader._buffer
-                    )
-                )
-            else:
-                tgt.read_frame_rgba(
-                    mn.MutableImageView2D(
-                        mn.PixelFormat.RGBA8_UNORM,
-                        size,
-                        sensor_reader._buffer.reshape(
-                            sensor_reader._spec.resolution[0], -1
-                        ),
-                    )
-                )
-
-            obs = np.flip(sensor_reader._buffer, axis=0)
-
-        return sensor_reader._noise_model(obs)
-
-
-class SensorReader:
-    r"""Class to help initialize torch/numpy buffers and noise models for sensors in python"""
-
-    def __init__(self, sim: Simulator, sensor: Sensor) -> None:
-        # Initialize sensor buffers as np arrays and noise models
-        # sensor is an attached object to the scene node
-        # store such "attached object" in _sensor_object
-
-        self._sim = sim
-        self._sensor_object: Sensor
-        self._spec = self._sensor_object.sensor_spec
-=======
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
@@ -636,7 +489,6 @@ class Sensor:
         self._spec = self._sensor_object.specification()
 
         self._sim.renderer.bind_render_target(self._sensor_object)
->>>>>>> parent of 1d680e28... Deprecate sensorSuite and Sensor wrapper in python now that sensors are kept track of on the c++ side, fix some python tests
 
         if self._spec.gpu2gpu_transfer:
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
@@ -688,8 +540,6 @@ class Sensor:
         ), "Noise model '{}' is not valid for sensor '{}'".format(
             self._spec.noise_model, self._spec.uuid
         )
-<<<<<<< HEAD
-=======
 
     def draw_observation(self) -> None:
         # sanity check:
@@ -784,4 +634,3 @@ class Sensor:
         self._sim = None
         self._agent = None
         self._sensor_object = None
->>>>>>> parent of 1d680e28... Deprecate sensorSuite and Sensor wrapper in python now that sensors are kept track of on the c++ side, fix some python tests
