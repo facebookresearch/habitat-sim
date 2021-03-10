@@ -4,6 +4,8 @@
 
 #include "VisualSensor.h"
 #include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/ImageView.h>
+#include <Magnum/PixelFormat.h>
 
 #include <utility>
 
@@ -38,20 +40,22 @@ void VisualSensorSpec::sanityCheck() {
         "VisualSensorSpec::sanityCheck(): sensorType must be Depth if "
         "noiseModel is Redwood", );
   }
-  CORRADE_ASSERT(
-      ortho_scale > 0,
-      "VisualSensorSpec::sanityCheck(): ortho_scale must be greater than 0", );
   CORRADE_ASSERT(resolution[0] > 0 && resolution[1] > 0,
                  "VisualSensorSpec::sanityCheck(): resolution height and "
                  "width must be greater than 0", );
-  CORRADE_ASSERT(!encoding.empty(),
-                 "VisualSensorSpec::sanityCheck(): encoding is unitialized", );
+  CORRADE_ASSERT(
+      channels > 0,
+      "VisualSensorSpec::sanityCheck(): the value of the channels which is"
+          << channels << "is illegal", );
+  CORRADE_ASSERT(
+      near > 0.0 && far > near,
+      "VisualSensorSpec::sanityCheck(): the near or far plane is illegal.", );
 }
 
 bool VisualSensorSpec::operator==(const VisualSensorSpec& a) const {
-  return SensorSpec::operator==(a) && ortho_scale == a.ortho_scale &&
-         resolution == a.resolution && encoding == a.encoding &&
-         gpu2gpuTransfer == a.gpu2gpuTransfer;
+  return SensorSpec::operator==(a) && resolution == a.resolution &&
+         channels == a.channels && gpu2gpuTransfer == a.gpu2gpuTransfer &&
+         far == a.far && near == a.near;
 }
 
 VisualSensor::VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec)
@@ -79,6 +83,60 @@ bool VisualSensor::displayObservation(sim::Simulator& sim) {
   }
   drawObservation(sim);
   renderTarget().blitRgbaToDefault();
+  return true;
+}
+
+bool VisualSensor::getObservationSpace(ObservationSpace& space) {
+  space.spaceType = ObservationSpaceType::Tensor;
+  space.shape = {static_cast<size_t>(visualSensorSpec_->resolution[0]),
+                 static_cast<size_t>(visualSensorSpec_->resolution[1]),
+                 static_cast<size_t>(visualSensorSpec_->channels)};
+  space.dataType = core::DataType::DT_UINT8;
+  if (visualSensorSpec_->sensorType == SensorType::Semantic) {
+    space.dataType = core::DataType::DT_UINT32;
+  } else if (visualSensorSpec_->sensorType == SensorType::Depth) {
+    space.dataType = core::DataType::DT_FLOAT;
+  }
+  return true;
+}
+
+void VisualSensor::readObservation(Observation& obs) {
+  // Make sure we have memory
+  if (buffer_ == nullptr) {
+    // TODO: check if our sensor was resized and resize our buffer if needed
+    ObservationSpace space;
+    getObservationSpace(space);
+    buffer_ = core::Buffer::create(space.shape, space.dataType);
+  }
+  obs.buffer = buffer_;
+
+  // TODO: have different classes for the different types of sensors
+  // TODO: do we need to flip axis?
+  if (visualSensorSpec_->sensorType == SensorType::Semantic) {
+    renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
+        obs.buffer->data});
+  } else if (visualSensorSpec_->sensorType == SensorType::Depth) {
+    renderTarget().readFrameDepth(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
+        obs.buffer->data});
+  } else {
+    renderTarget().readFrameRgba(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
+        obs.buffer->data});
+  }
+}
+
+bool VisualSensor::getObservation(sim::Simulator& sim, Observation& obs) {
+  // TODO: check if sensor is valid?
+  // TODO: have different classes for the different types of sensors
+  //
+  if (!hasRenderTarget())
+    return false;
+
+  drawObservation(sim);
+  readObservation(obs);
+
   return true;
 }
 
