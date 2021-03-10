@@ -98,8 +98,6 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   SensorSpec::ptr specification() const { return spec_; }
 
-  SensorSpec getSensorSpec() { return *spec_; }
-
   virtual bool isVisualSensor() const { return false; }
 
   // can be called ONLY when it is attached to a scene node

@@ -131,7 +131,6 @@ void initSensorBindings(py::module& m) {
       .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
       .def("is_visual_sensor", &Sensor::isVisualSensor)
       .def("get_observation", &Sensor::getObservation)
-      .def_property_readonly("sensor_spec", &Sensor::getSensorSpec)
       .def_property_readonly("node", nodeGetter<Sensor>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
@@ -140,8 +139,6 @@ void initSensorBindings(py::module& m) {
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
              Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(m,
                                                                 "VisualSensor")
-      .def("draw_observation", &VisualSensor::drawObservation)
-      .def_property_readonly("sensor_spec", &VisualSensor::getSensorSpec)
       .def_property_readonly(
           "render_camera", &VisualSensor::getRenderCamera,
           R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",
@@ -195,8 +192,7 @@ void initSensorBindings(py::module& m) {
           R"(The distance to the near clipping plane for this CameraSensor uses.)")
       .def_property(
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
-          R"(The distance to the far clipping plane for this CameraSensor uses.)")
-      .def_property_readonly("sensor_spec", &CameraSensor::getSensorSpec);
+          R"(The distance to the far clipping plane for this CameraSensor uses.)");
 
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(

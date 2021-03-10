@@ -183,8 +183,6 @@ class CameraSensor : public VisualSensor {
   }
   float getFar() const { return far_; }
 
-  CameraSensorSpec getSensorSpec() { return *cameraSensorSpec_; }
-
  protected:
   /**
    * @brief Recalculate the base projection matrix, based on camera type and
