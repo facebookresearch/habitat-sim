@@ -127,6 +127,10 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
     return node().getSubtreeSensorSuite();
   }
 
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>>& getSensors() {
+    return node().getSubtreeSensors();
+  }
+
   const AgentConfiguration& getConfig() const { return configuration_; }
   AgentConfiguration& getConfig() { return configuration_; }
 

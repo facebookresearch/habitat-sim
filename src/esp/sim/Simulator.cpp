@@ -1096,7 +1096,7 @@ agent::Agent::ptr Simulator::addAgent(
   ag->setInitialState(state);
 
   // Add a RenderTarget to each of the agent's sensors
-  for (auto& it : ag->getSensorSuite().getSensors()) {
+  for (auto& it : ag->getSensors()) {
     if (it.second.get().isVisualSensor()) {
       sensor::VisualSensor& sensor =
           static_cast<sensor::VisualSensor&>(it.second.get());
@@ -1194,7 +1194,7 @@ int Simulator::getAgentObservations(
   observations.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    for (auto& s : ag->getSensorSuite().getSensors()) {
+    for (auto& s : ag->getSensors()) {
       sensor::Observation obs;
       if (s.second.get().getObservation(*this, obs)) {
         observations[s.first] = obs;
@@ -1220,7 +1220,7 @@ int Simulator::getAgentObservationSpaces(
   spaces.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    for (auto& s : ag->getSensorSuite().getSensors()) {
+    for (auto& s : ag->getSensors()) {
       sensor::ObservationSpace space;
       if (s.second.get().getObservationSpace(space)) {
         spaces[s.first] = space;

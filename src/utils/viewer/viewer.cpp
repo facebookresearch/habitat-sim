@@ -1036,7 +1036,7 @@ void Viewer::moveAndLook(int repetitions) {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  for (auto& it : defaultAgent_->getSensorSuite().getSensors()) {
+  for (auto& it : agentBodyNode_->getSubtreeSensors()) {
     if (it.second.get().isVisualSensor()) {
       esp::sensor::VisualSensor& visualSensor =
           static_cast<esp::sensor::VisualSensor&>(it.second.get());
@@ -1161,7 +1161,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   auto& controls = *defaultAgent_->getControls().get();
   controls(*agentBodyNode_, "turnRight", delta.x());
   // apply the transformation to all sensors
-  for (auto& p : defaultAgent_->getSensorSuite().getSensors()) {
+  for (auto& p : agentBodyNode_->getSubtreeSensors()) {
     controls(p.second.get().object(),  // SceneNode
              "lookDown",               // action name
              delta.y(),                // amount
