@@ -148,6 +148,8 @@ class Viewer : public Mn::Platform::Application {
   void wiggleLastObject();
   void invertGravity();
   void displayVoxelField(int objectID);
+
+  bool isInRange(float val);
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -789,29 +791,41 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
+bool isTrue(bool val) {
+  return val;
+}
+
+bool isHorizontal(Mn::Vector3 val) {
+  return abs(val.normalized()[0]) * abs(val.normalized()[0]) +
+             abs(val.normalized()[2]) * abs(val.normalized()[2]) <=
+         0;
+  // return val[0] == 1;
+}
+
+bool Viewer::isInRange(float val) {
+  int curDistanceVisualization = 1 * (resolutionInd % 18);
+  return val >= curDistanceVisualization - 1 && val < curDistanceVisualization;
+}
 void Viewer::displayVoxelField(int objectID) {
   int resolutions[3] = {2000000, 100000, 1000};
   unsigned int resolution = resolutions[0];
   simulator_->createObjectVoxelization(objectID, resolution);
   std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization =
       simulator_->getObjectVoxelication(objectID);
-
+  !Mn::Debug();
+  Mn::Debug() << objectVoxelization->getGlobalCoordsFromVoxelIndex(
+      Mn::Vector3i(0, 0, 0));
+  Mn::Debug() << objectVoxelization->getVoxelIndexFromGlobalCoords(
+      objectVoxelization->getGlobalCoordsFromVoxelIndex(Mn::Vector3i(2, 1, 3)));
   auto voxelGrid = objectVoxelization->getVoxelGrid();
   voxelGrid->generateInteriorExteriorVoxelGrid();
-  voxelGrid->generateSDF("SignedDistanceField");
-  voxelGrid->generateBoolGridFromIntGrid("InteriorExterior");
-  voxelGrid->generateBoolGridFromIntGrid("SignedDistanceField", 0, 0,
-                                         "SDFSubset1");
-  /*voxelGrid->generateBoolGridFromIntGrid("SignedDistanceField", -2, -1,
-                                         "SDFSubset2");
-  voxelGrid->generateBoolGridFromIntGrid("SignedDistanceField", -4, -3,
-                                         "SDFSubset3");*/
-  /*std::string grids[4] = {"SDFSubset1", "SDFSubset2", "SDFSubset3",
-                          "InteriorExterior"};*/
-  int curDistanceVisualization = -1 * (resolutionInd % 16);
-  voxelGrid->generateBoolGridFromIntGrid(
-      "SignedDistanceField", curDistanceVisualization,
-      curDistanceVisualization + 1, "SDFSubset");
+  !Mn::Debug();
+  voxelGrid->generateEuclideanDistanceSDF("SignedDistanceField");
+
+  int curDistanceVisualization = -1 * (resolutionInd % 18);
+  voxelGrid->generateBoolGridFromFloatGrid("SignedDistanceField", "SDFSubset",
+                                           curDistanceVisualization,
+                                           curDistanceVisualization + 1);
   voxelGrid->generateMesh("SDFSubset");
 
   // custom shader for voxel grid
@@ -843,9 +857,10 @@ void Viewer::displayVoxelField(int objectID) {
   esp::scene::SceneNode* visualVoxelNode = &(objectVisNode->createChild());
 
   // visualVoxelNode->setTranslation(translation);
+  // simulator_->setObjectVoxelizationDraw(true, objectID);
 
   objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
-      voxelGrid->getMeshGL(), visualVoxelNode, &shader_);
+      voxelGrid->getMeshGL("SDFSubset"), visualVoxelNode, &shader_);
   /*auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId - 1],
       &objectPickingHelper_->getDrawables());*/
@@ -1390,13 +1405,61 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
-    case KeyEvent::Key::Y:
-      displayVoxelField(-1);
-      break;
+    case KeyEvent::Key::Y: {
+      // Fill a voxel set with a specific condition (isLarge)
+      std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
+      esp::geo::VoxelWrapper* vWrapper =
+          simulator_->getObjectVoxelication(-1).get();
+      vWrapper->getVoxelGrid()->fillVoxelSetFromBoolGrid(voxelSet, "SDFSubset",
+                                                         isTrue);
+
+      // Place new object
+      addTemplateObject();
+      // get recently placed object ID
+      int objectID = simulator_->getExistingObjectIDs().back();
+      Mn::Vector3 pos = vWrapper->getGlobalCoordsFromVoxelIndex(
+          voxelSet[rand() % voxelSet.size()]);
+      simulator_->setTranslation(pos, objectID);
+      Mn::Debug() << voxelSet.size();
+    } break;
     case KeyEvent::Key::L: {
       displayVoxelField(-1);
       resolutionInd++;
       break;
+    }
+    case KeyEvent::Key::G: {
+      std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
+      esp::geo::VoxelWrapper* vWrapper =
+          simulator_->getObjectVoxelication(-1).get();
+      !Mn::Debug();
+      vWrapper->getVoxelGrid()->generateEuclideanDistanceSDF();
+      vWrapper->getVoxelGrid()->generateDistanceFlowField("FlowField");
+      !Mn::Debug();
+      vWrapper->getVoxelGrid()->generateBoolGridFromVector3Grid(
+          "FlowField", "Flow", isHorizontal);
+      !Mn::Debug();
+      vWrapper->getVoxelGrid()->generateMesh("Flow");
+      !Mn::Debug();
+      // Get visualSceneNode.
+      int objectID = -1;
+      esp::scene::SceneNode* objectVisNode =
+          objectID == -1 ? &activeSceneGraph_->getRootNode()
+                         : simulator_->getObjectVisualSceneNodes(objectID)[0];
+
+      esp::scene::SceneNode* visualVoxelNode = &(objectVisNode->createChild());
+      Magnum::Shaders::MeshVisualizer3D shader_{
+          Magnum::Shaders::MeshVisualizer3D::Flag::Wireframe};
+      const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
+      shader_.setViewportSize(Mn::Vector2{viewportSize});
+      shader_.setColor(0x2f83cc7f_rgbaf)
+          .setWireframeColor(0xdcdcdc_rgbf)
+          .setWireframeWidth(2.0);
+      // visualVoxelNode->setTranslation(translation);
+      // simulator_->setObjectVoxelizationDraw(true, objectID);
+
+      objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
+          vWrapper->getVoxelGrid()->getMeshGL("Flow"), visualVoxelNode,
+          &shader_);
     }
     default:
       break;

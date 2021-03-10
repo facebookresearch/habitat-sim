@@ -126,7 +126,7 @@ void ObjectPickingHelper::createPickedObjectVisualizer(
 }
 
 void ObjectPickingHelper::createPickedObjectVoxelGridVisualizer(
-    std::unique_ptr<Mn::GL::Mesh>& mesh,
+    Mn::GL::Mesh& mesh,
     esp::scene::SceneNode* node,
     Magnum::Shaders::MeshVisualizer3D* customShader_) {
   if (meshVisualizerDrawable_) {
@@ -137,7 +137,7 @@ void ObjectPickingHelper::createPickedObjectVoxelGridVisualizer(
   // magnum scene graph will handle the garbage collection even we did not
   // recycle it by the end of the simulation
   meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
-      *node, shader_, *mesh, &pickedObjectDrawbles_);
+      *node, shader_, mesh, &pickedObjectDrawbles_);
 
   return;
 }

@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <limits.h>
 #include <cmath>
 
@@ -160,11 +161,19 @@ int VoxelGrid::hashVoxelIndex(const Mn::Vector3i& coords) {
   return hashed_voxel;
 }
 
+Mn::Vector3i VoxelGrid::reverseHash(const int hash) {
+  return Mn::Vector3i(
+      hash % m_voxelGridDimensions[0],
+      hash / m_voxelGridDimensions[0] % m_voxelGridDimensions[1],
+      hash / m_voxelGridDimensions[0] / m_voxelGridDimensions[1]);
+}
+
 //  --== GETTERS AND SETTERS FOR VOXELS ==--
 
 // Getter and setter for bool value voxel grids
 bool VoxelGrid::getBoolVoxelByIndex(const Mn::Vector3i& coords,
                                     std::string gridName) {
+  assert(boolGrids_.find(gridName) != boolGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   return boolGrids_[gridName].get()[hashedVoxelIndex];
 }
@@ -172,12 +181,14 @@ bool VoxelGrid::getBoolVoxelByIndex(const Mn::Vector3i& coords,
 void VoxelGrid::setBoolVoxelByIndex(const Mn::Vector3i& coords,
                                     bool val,
                                     std::string gridName) {
+  assert(boolGrids_.find(gridName) != boolGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   boolGrids_[gridName].get()[hashedVoxelIndex] = val;
 }
 // Getter and setter for int value voxel grids
 int VoxelGrid::getIntVoxelByIndex(const Mn::Vector3i& coords,
                                   std::string gridName) {
+  assert(intGrids_.find(gridName) != intGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   return intGrids_[gridName].get()[hashedVoxelIndex];
 }
@@ -185,6 +196,7 @@ int VoxelGrid::getIntVoxelByIndex(const Mn::Vector3i& coords,
 void VoxelGrid::setIntVoxelByIndex(const Mn::Vector3i& coords,
                                    int val,
                                    std::string gridName) {
+  assert(intGrids_.find(gridName) != intGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   intGrids_[gridName].get()[hashedVoxelIndex] = val;
 }
@@ -192,6 +204,7 @@ void VoxelGrid::setIntVoxelByIndex(const Mn::Vector3i& coords,
 // Getter and setter for Float value voxel grids
 float VoxelGrid::getFloatVoxelByIndex(const Mn::Vector3i& coords,
                                       std::string gridName) {
+  assert(floatGrids_.find(gridName) != floatGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   return floatGrids_[gridName].get()[hashedVoxelIndex];
 }
@@ -199,6 +212,7 @@ float VoxelGrid::getFloatVoxelByIndex(const Mn::Vector3i& coords,
 void VoxelGrid::setFloatVoxelByIndex(const Mn::Vector3i& coords,
                                      float val,
                                      std::string gridName) {
+  assert(floatGrids_.find(gridName) != floatGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   floatGrids_[gridName].get()[hashedVoxelIndex] = val;
 }
@@ -206,6 +220,7 @@ void VoxelGrid::setFloatVoxelByIndex(const Mn::Vector3i& coords,
 // Getter and setter for Vector3 value voxel grids
 Mn::Vector3 VoxelGrid::getVector3VoxelByIndex(const Mn::Vector3i& coords,
                                               std::string gridName) {
+  assert(vector3Grids_.find(gridName) != vector3Grids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   return vector3Grids_[gridName].get()[hashedVoxelIndex];
 }
@@ -213,6 +228,7 @@ Mn::Vector3 VoxelGrid::getVector3VoxelByIndex(const Mn::Vector3i& coords,
 void VoxelGrid::setVector3VoxelByIndex(const Mn::Vector3i& coords,
                                        Mn::Vector3 val,
                                        std::string gridName) {
+  assert(vector3Grids_.find(gridName) != vector3Grids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   vector3Grids_[gridName].get()[hashedVoxelIndex] = val;
 }
@@ -226,9 +242,10 @@ Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
 }
 
 int VoxelGrid::generateBoolGridFromIntGrid(std::string intGridName,
+                                           std::string boolGridName,
                                            int startRange,
-                                           int endRange,
-                                           std::string boolGridName) {
+                                           int endRange) {
+  assert(intGrids_.find(intGridName) != intGrids_.end());
   int num_filled = 0;
   if (boolGridName == "")
     boolGridName = intGridName;
@@ -245,7 +262,101 @@ int VoxelGrid::generateBoolGridFromIntGrid(std::string intGridName,
   return num_filled;
 }
 
-// 6D SDF - labels each cell as interior, exterior, or boundary
+int VoxelGrid::generateBoolGridFromVector3Grid(std::string vector3GridName,
+                                               std::string boolGridName,
+                                               bool func(Mn::Vector3)) {
+  assert(vector3Grids_.find(vector3GridName) != vector3Grids_.end());
+  int num_filled = 0;
+  if (boolGridName == "")
+    boolGridName = vector3GridName;
+  addBoolGrid(boolGridName);
+  for (int i = 0; i < m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                          m_voxelGridDimensions[2];
+       i++) {
+    if (func(vector3Grids_[vector3GridName].get()[i])) {
+      boolGrids_[boolGridName].get()[i] = true;
+      num_filled++;
+    }
+  }
+  return num_filled;
+}
+
+int VoxelGrid::generateBoolGridFromFloatGrid(std::string floatGridName,
+                                             std::string boolGridName,
+                                             float startRange,
+                                             float endRange) {
+  assert(floatGrids_.find(floatGridName) != floatGrids_.end());
+  Mn::Debug() << "hmm?";
+  int num_filled = 0;
+  if (boolGridName == "")
+    boolGridName = floatGridName;
+  addBoolGrid(boolGridName);
+  for (int i = 0; i < m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                          m_voxelGridDimensions[2];
+       i++) {
+    if (floatGrids_[floatGridName].get()[i] >= startRange &&
+        floatGrids_[floatGridName].get()[i] <= endRange) {
+      boolGrids_[boolGridName].get()[i] = true;
+      num_filled++;
+    }
+  }
+  return num_filled;
+}
+
+void VoxelGrid::fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
+                                         std::string boolGridName,
+                                         bool (*func)(bool)) {
+  assert(boolGrids_.find(boolGridName) != boolGrids_.end());
+  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                 m_voxelGridDimensions[2];
+  for (int i = 0; i < gridSize; i++) {
+    if (func(boolGrids_[boolGridName].get()[i])) {
+      voxelSet.push_back(reverseHash(i));
+    }
+  }
+}
+
+void VoxelGrid::fillVoxelSetFromIntGrid(std::vector<Mn::Vector3i>& voxelSet,
+                                        std::string intGridName,
+                                        bool (*func)(int)) {
+  assert(intGrids_.find(intGridName) != intGrids_.end());
+  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                 m_voxelGridDimensions[2];
+  for (int i = 0; i < gridSize; i++) {
+    if (func(intGrids_[intGridName].get()[i])) {
+      voxelSet.push_back(reverseHash(i));
+    }
+  }
+}
+
+void VoxelGrid::fillVoxelSetFromFloatGrid(std::vector<Mn::Vector3i>& voxelSet,
+                                          std::string floatGridName,
+                                          bool (*func)(float)) {
+  assert(floatGrids_.find(floatGridName) != floatGrids_.end());
+  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                 m_voxelGridDimensions[2];
+  for (int i = 0; i < gridSize; i++) {
+    if ((*func)(floatGrids_[floatGridName].get()[i])) {
+      voxelSet.push_back(reverseHash(i));
+    }
+  }
+}
+
+void VoxelGrid::fillVoxelSetFromVector3Grid(std::vector<Mn::Vector3i>& voxelSet,
+                                            std::string vector3GridName,
+                                            bool (*func)(Mn::Vector3)) {
+  assert(vector3Grids_.find(vector3GridName) != vector3Grids_.end());
+  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                 m_voxelGridDimensions[2];
+  for (int i = 0; i < gridSize; i++) {
+    if (func(vector3Grids_[vector3GridName].get()[i])) {
+      voxelSet.push_back(reverseHash(i));
+    }
+  }
+}
+
+// 6D SDF - labels each cell as interior (-inf), exterior (+inf), or boundary
+// (0)
 void VoxelGrid::generateInteriorExteriorVoxelGrid() {
   // create 6 bool grids
   addBoolGrid("negXShadow");
@@ -373,8 +484,8 @@ void VoxelGrid::generateInteriorExteriorVoxelGrid() {
 }
 
 // Manhattan distance SDF - starting from the interior exterior voxel grid,
-// computes SDF with double sweep approach
-void VoxelGrid::generateSDF(std::string gridName) {
+// computes SDF in terms of manhattan distance with double sweep approach
+void VoxelGrid::generateManhattanDistanceSDF(std::string gridName) {
   // check to see if Interior/Exterior grid exists, if not, generate it
   if (intGrids_.find("InteriorExterior") == intGrids_.end()) {
     generateInteriorExteriorVoxelGrid();
@@ -391,7 +502,7 @@ void VoxelGrid::generateSDF(std::string gridName) {
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        int i_behind, j_behind, k_behind;
+        int i_behind = INT_MAX, j_behind = INT_MAX, k_behind = INT_MAX;
         if (isValidIndex(Mn::Vector3i(i - 1, j, k))) {
           i_behind = abs(
               std::max(getIntVoxelByIndex(Mn::Vector3i(i - 1, j, k), gridName),
@@ -437,7 +548,7 @@ void VoxelGrid::generateSDF(std::string gridName) {
         int curVal = getIntVoxelByIndex(Mn::Vector3i(i, j, k), gridName);
         if (curVal == 0)
           continue;
-        int i_ahead, j_ahead, k_ahead;
+        int i_ahead = INT_MAX, j_ahead = INT_MAX, k_ahead = INT_MAX;
         if (isValidIndex(Mn::Vector3i(i + 1, j, k))) {
           i_ahead = abs(
               std::max(getIntVoxelByIndex(Mn::Vector3i(i + 1, j, k), gridName),
@@ -475,6 +586,153 @@ void VoxelGrid::generateSDF(std::string gridName) {
         setIntVoxelByIndex(Mn::Vector3i(i, j, k), curVal, gridName);
       }
     }
+  }
+}
+
+void VoxelGrid::generateEuclideanDistanceSDF(std::string gridName) {
+  // check to see if Interior/Exterior grid exists, if not, generate it
+  if (intGrids_.find("InteriorExterior") == intGrids_.end()) {
+    generateInteriorExteriorVoxelGrid();
+  }
+  // create new vector3Grid and fill data from interior/exterior grid
+  addVector3Grid("ClosestBoundaryCell");
+  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+        int hashedIndex = hashVoxelIndex(Mn::Vector3i(i, j, k));
+        int label = intGrids_["InteriorExterior"].get()[hashedIndex];
+        if (label == 0) {
+          vector3Grids_["ClosestBoundaryCell"].get()[hashedIndex] =
+              Mn::Vector3(i, j, k);
+        } else {
+          // intializing the closest boundary cell to be very far / invalid, so
+          // it is ensured to be overwritten in the SDF calculation sweeps.
+          vector3Grids_["ClosestBoundaryCell"].get()[hashedIndex] =
+              Mn::Vector3(m_voxelGridDimensions) * 2;
+        }
+      }
+    }
+  }
+
+  // 1st sweep
+  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+        Mn::Vector3 i_behind = Mn::Vector3(m_voxelGridDimensions) * 2,
+                    j_behind = Mn::Vector3(m_voxelGridDimensions) * 2,
+                    k_behind = Mn::Vector3(m_voxelGridDimensions) * 2;
+        if (isValidIndex(Mn::Vector3i(i - 1, j, k))) {
+          i_behind = getVector3VoxelByIndex(Mn::Vector3i(i - 1, j, k),
+                                            "ClosestBoundaryCell");
+        }
+        if (isValidIndex(Mn::Vector3i(i, j - 1, k))) {
+          j_behind = getVector3VoxelByIndex(Mn::Vector3i(i, j - 1, k),
+                                            "ClosestBoundaryCell");
+        }
+        if (isValidIndex(Mn::Vector3i(i, j, k - 1))) {
+          k_behind = getVector3VoxelByIndex(Mn::Vector3i(i, j, k - 1),
+                                            "ClosestBoundaryCell");
+        }
+        Mn::Vector3 coords(i, j, k);
+
+        // get the currently recorded closest boundary distance
+        float cur_dist = (getVector3VoxelByIndex(Mn::Vector3i(i, j, k),
+                                                 "ClosestBoundaryCell") -
+                          coords)
+                             .length();
+
+        // get the current distances from each point's closest boundary and
+        // the current coordinates.
+        float i_dist, j_dist, k_dist;
+        i_dist = (i_behind - coords).length();
+        j_dist = (j_behind - coords).length();
+        k_dist = (k_behind - coords).length();
+
+        if (i_dist <= j_dist && i_dist <= k_dist && i_dist <= cur_dist) {
+          setVector3VoxelByIndex(Mn::Vector3i(i, j, k), i_behind,
+                                 "ClosestBoundaryCell");
+        } else if (j_dist <= i_dist && j_dist <= k_dist && j_dist <= cur_dist) {
+          setVector3VoxelByIndex(Mn::Vector3i(i, j, k), j_behind,
+                                 "ClosestBoundaryCell");
+        } else if (k_dist <= i_dist && k_dist <= j_dist && k_dist <= cur_dist) {
+          setVector3VoxelByIndex(Mn::Vector3i(i, j, k), k_behind,
+                                 "ClosestBoundaryCell");
+        }
+      }
+    }
+  }
+  // create float grid for distances, will be filled in this sweep.
+  addFloatGrid(gridName);
+  // second sweep
+  for (int i = m_voxelGridDimensions[0]; i >= 0; i--) {
+    for (int j = m_voxelGridDimensions[1]; j >= 0; j--) {
+      for (int k = m_voxelGridDimensions[2]; k >= 0; k--) {
+        Mn::Vector3 i_ahead = Mn::Vector3(m_voxelGridDimensions) * 2,
+                    j_ahead = Mn::Vector3(m_voxelGridDimensions) * 2,
+                    k_ahead = Mn::Vector3(m_voxelGridDimensions) * 2;
+        if (isValidIndex(Mn::Vector3i(i + 1, j, k))) {
+          i_ahead = getVector3VoxelByIndex(Mn::Vector3i(i + 1, j, k),
+                                           "ClosestBoundaryCell");
+        }
+        if (isValidIndex(Mn::Vector3i(i, j + 1, k))) {
+          j_ahead = getVector3VoxelByIndex(Mn::Vector3i(i, j + 1, k),
+                                           "ClosestBoundaryCell");
+        }
+        if (isValidIndex(Mn::Vector3i(i, j, k + 1))) {
+          k_ahead = getVector3VoxelByIndex(Mn::Vector3i(i, j, k + 1),
+                                           "ClosestBoundaryCell");
+        }
+        Mn::Vector3 coords(i, j, k);
+
+        // get the currently recorded closest boundary distance
+        float cur_dist = (getVector3VoxelByIndex(Mn::Vector3i(i, j, k),
+                                                 "ClosestBoundaryCell") -
+                          coords)
+                             .length();
+        // get whether the coord is considered interior or exterior
+        int intOrExtVal =
+            getIntVoxelByIndex(Mn::Vector3i(i, j, k), "InteriorExterior");
+        int intOrExtSign = (intOrExtVal > 0) - (intOrExtVal < 0);
+
+        // get the current distances from each point's closest boundary and
+        // the current coordinates.
+        float i_dist, j_dist, k_dist;
+        i_dist = (i_ahead - coords).length();
+        j_dist = (j_ahead - coords).length();
+        k_dist = (k_ahead - coords).length();
+        if (i_dist <= j_dist && i_dist <= k_dist && i_dist <= cur_dist) {
+          setVector3VoxelByIndex(Mn::Vector3i(i, j, k), i_ahead,
+                                 "ClosestBoundaryCell");
+          setFloatVoxelByIndex(Mn::Vector3i(i, j, k), intOrExtSign * i_dist,
+                               gridName);
+        } else if (j_dist <= i_dist && j_dist <= k_dist && j_dist <= cur_dist) {
+          setVector3VoxelByIndex(Mn::Vector3i(i, j, k), j_ahead,
+                                 "ClosestBoundaryCell");
+          setFloatVoxelByIndex(Mn::Vector3i(i, j, k), intOrExtSign * j_dist,
+                               gridName);
+        } else if (k_dist <= i_dist && k_dist <= j_dist && k_dist <= cur_dist) {
+          setVector3VoxelByIndex(Mn::Vector3i(i, j, k), k_ahead,
+                                 "ClosestBoundaryCell");
+          setFloatVoxelByIndex(Mn::Vector3i(i, j, k), intOrExtSign * k_dist,
+                               gridName);
+        } else {
+          setFloatVoxelByIndex(Mn::Vector3i(i, j, k), intOrExtSign * cur_dist,
+                               gridName);
+        }
+      }
+    }
+  }
+}
+
+void VoxelGrid::generateDistanceFlowField(std::string gridName) {
+  // generateEuclideanDistanceSDF();
+  addVector3Grid(gridName);
+  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+                 m_voxelGridDimensions[2];
+  for (int i = 0; i < gridSize; i++) {
+    Mn::Vector3 index = Mn::Vector3(reverseHash(i));
+    vector3Grids_[gridName].get()[i] =
+        index - vector3Grids_["ClosestBoundaryCell"].get()[i];
   }
 }
 
@@ -538,6 +796,9 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
 }
 
 void VoxelGrid::generateMesh(std::string gridName) {
+  !Mn::Debug();
+  assert(boolGrids_.find(gridName) != boolGrids_.end());
+  !Mn::Debug();
   std::vector<Mn::UnsignedInt> indices;
   std::vector<Mn::Vector3> positions;
   int num_filled = 0;
@@ -553,9 +814,9 @@ void VoxelGrid::generateMesh(std::string gridName) {
       }
     }
   }
-
+  !Mn::Debug();
   Mn::Debug() << "Number of filled voxels for the visual mesh: " << num_filled;
-  meshData_ = std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::owned(
+  /*meshData_ = std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::owned(
       Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
                           {},
                           indices,
@@ -564,9 +825,44 @@ void VoxelGrid::generateMesh(std::string gridName) {
                           positions,
                           {Mn::Trade::MeshAttributeData{
                               Mn::Trade::MeshAttribute::Position,
-                              Cr::Containers::arrayView(positions)}}}));
-  meshGL_ =
-      std::make_unique<Magnum::GL::Mesh>(Mn::MeshTools::compile(*meshData_));
+                              Cr::Containers::arrayView(positions)}}}));*/
+  if (meshDataDict_.find(gridName) != meshDataDict_.end()) {
+    // Mn::GL::Mesh* meshGL = Mn::MeshTools::compile(*meshDataDict_[gridName]);
+    meshDataDict_[gridName] =
+        std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::owned(
+            Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
+                                {},
+                                indices,
+                                Mn::Trade::MeshIndexData{indices},
+                                {},
+                                positions,
+                                {Mn::Trade::MeshAttributeData{
+                                    Mn::Trade::MeshAttribute::Position,
+                                    Cr::Containers::arrayView(positions)}}}));
+  } else {
+    meshDataDict_.insert(std::make_pair(
+        gridName,
+        std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::owned(
+            Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
+                                {},
+                                indices,
+                                Mn::Trade::MeshIndexData{indices},
+                                {},
+                                positions,
+                                {Mn::Trade::MeshAttributeData{
+                                    Mn::Trade::MeshAttribute::Position,
+                                    Cr::Containers::arrayView(positions)}}}))));
+  }
+
+  // meshGL_ =
+  //    std::make_unique<Magnum::GL::Mesh>(Mn::MeshTools::compile(*meshData_));
+  if (meshGLDict_.find(gridName) != meshGLDict_.end()) {
+    // Mn::GL::Mesh* meshGL = Mn::MeshTools::compile(*meshDataDict_[gridName]);
+    meshGLDict_[gridName] = Mn::MeshTools::compile(*meshDataDict_[gridName]);
+  } else {
+    meshGLDict_.insert(std::make_pair(
+        gridName, Mn::MeshTools::compile(*meshDataDict_[gridName])));
+  }
 }
 
 }  // namespace geo

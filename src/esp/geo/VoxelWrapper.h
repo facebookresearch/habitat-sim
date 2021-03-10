@@ -18,7 +18,9 @@ class VoxelWrapper {
                esp::scene::SceneNode* sceneNode,
                esp::assets::ResourceManager& resourceManager_,
                int resolution = 1000000);
+  Mn::Vector3i getVoxelIndexFromGlobalCoords(Mn::Vector3 coords);
 
+  Mn::Vector3 getGlobalCoordsFromVoxelIndex(Mn::Vector3i index);
   std::shared_ptr<VoxelGrid> getVoxelGrid();
 };
 

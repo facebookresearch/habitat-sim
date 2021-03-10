@@ -61,7 +61,7 @@ class ObjectPickingHelper {
    * function will delete any previously created visualizer object
    */
   void createPickedObjectVoxelGridVisualizer(
-      std::unique_ptr<Mn::GL::Mesh>& mesh,
+      Mn::GL::Mesh& mesh,
       esp::scene::SceneNode* node,
       Magnum::Shaders::MeshVisualizer3D* customShader_);
 

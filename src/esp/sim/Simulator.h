@@ -511,13 +511,13 @@ class Simulator {
    * If a voxel grid for the object has not been created, it will make one with
    * default arguments using createObjectVisualization().
    *
-   * @param drawVG Whether or not the render the voxel grid.
+   * @param drawV Whether or not the render the voxel grid.
    * @param objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void setObjectVoxelGridDraw(bool drawVG, int objectID, int sceneID = 0);
+  void setObjectVoxelizationDraw(bool drawV, int objectID, int sceneID = 0);
 
   /**
    * @brief Creates a voxelization for a particular object.

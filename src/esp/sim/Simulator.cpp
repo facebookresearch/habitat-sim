@@ -890,6 +890,14 @@ std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getObjectVoxelication(
   return physicsManager_->getObjectVoxelization(objectID);
 }
 
+void Simulator::setObjectVoxelizationDraw(bool drawV,
+                                          int objectID,
+                                          int sceneID) {
+  auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& drawables = sceneGraph_.getDrawables();
+  physicsManager_->setObjectVoxelixationDraw(objectID, &drawables, drawV);
+}
+
 void Simulator::setObjectSemanticId(uint32_t semanticId,
                                     const int objectID,
                                     const int sceneID) {

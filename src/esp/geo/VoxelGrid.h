@@ -49,6 +49,8 @@ class VoxelGrid {
   // (coords.y * x.size * z.size + coords.z * x.size + coords.x)
   int hashVoxelIndex(const Mn::Vector3i& coords);
 
+  Mn::Vector3i reverseHash(const int hash);
+
   bool isValidIndex(const Mn::Vector3i& coords) const {
     return coords[0] >= 0 && coords[1] >= 0 && coords[2] >= 0 &&
            coords[0] < m_voxelGridDimensions[0] &&
@@ -95,17 +97,18 @@ class VoxelGrid {
   // global position VoxelSize/2 + offset.dot(VoxelSize)
   Mn::Vector3 getOffset() { return m_offset; }
 
-  std::shared_ptr<Mn::Trade::MeshData> getMeshData() {
-    if (meshData_ == nullptr)
-      generateMesh();
-    return meshData_;
+  std::shared_ptr<Mn::Trade::MeshData> getMeshData(
+      std::string gridName = "boundary") {
+    if (meshDataDict_[gridName] == nullptr)
+      generateMesh(gridName);
+    return meshDataDict_[gridName];
   }
 
   // The GL Mesh for visualizing the voxel.
-  std::unique_ptr<Mn::GL::Mesh>& getMeshGL() {
-    if (meshData_ == nullptr)
-      generateMesh();
-    return meshGL_;
+  Mn::GL::Mesh& getMeshGL(std::string gridName = "boundary") {
+    if (meshDataDict_[gridName] == nullptr)
+      generateMesh(gridName);
+    return meshGLDict_[gridName];
   }
 
   Mn::Vector3 getGlobalCoords(const Mn::Vector3i& coords);
@@ -117,16 +120,49 @@ class VoxelGrid {
 
   // convert Integer mesh to bool mesh (useful for visualization)
   int generateBoolGridFromIntGrid(std::string intGridName,
-                                  int startRange = INT_MIN,
-                                  int endRange = 0,
-                                  std::string boolGridName = "");
+                                  std::string boolGridName,
+                                  int startRange,
+                                  int endRange);
+
+  // convert Float grid to bool grid (useful for visualization, currently only
+  // bool grids can produce meshes)
+  int generateBoolGridFromFloatGrid(std::string floatGridName,
+                                    std::string boolGridName,
+                                    float startRange,
+                                    float endRange);
+
+  int generateBoolGridFromVector3Grid(std::string floatGridName,
+                                      std::string boolGridName,
+                                      bool func(Mn::Vector3));
+
+  void fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
+                                std::string boolGridName,
+                                bool func(bool));
+
+  void fillVoxelSetFromIntGrid(std::vector<Mn::Vector3i>& voxelSet,
+                               std::string intGridName,
+                               bool func(int));
+
+  void fillVoxelSetFromFloatGrid(std::vector<Mn::Vector3i>& voxelSet,
+                                 std::string floatGridName,
+                                 bool func(float));
+
+  void fillVoxelSetFromVector3Grid(std::vector<Mn::Vector3i>& voxelSet,
+                                   std::string vector3GridName,
+                                   bool func(Mn::Vector3));
 
   // 6D SDF - labels each cell as interior, exterior, or boundary
   void generateInteriorExteriorVoxelGrid();
 
   // Manhattan distance SDF - starting from the interior exterior voxel grid,
   // computes SDF with double sweep approach
-  void generateSDF(std::string gridName = "SignedDistanceField");
+  void generateManhattanDistanceSDF(
+      std::string gridName = "MSignedDistanceField");
+
+  void generateEuclideanDistanceSDF(
+      std::string gridName = "ESignedDistanceField");
+
+  void generateDistanceFlowField(std::string gridName = "DistanceFlowField");
 
   // found file format: svx - https://abfab3d.com/svx-format/
   bool saveToSVXFile(const std::string& filepath, const std::string& filename);
@@ -155,8 +191,14 @@ class VoxelGrid {
   // The MeshData of the voxelization, used for visualization
   std::shared_ptr<Mn::Trade::MeshData> meshData_;
 
+  std::map<std::string, std::shared_ptr<Mn::Trade::MeshData> > meshDataDict_;
+
   // The GL Mesh for visualizing the voxel.
   std::unique_ptr<Mn::GL::Mesh> meshGL_;
+
+  std::map<std::string, Mn::GL::Mesh> meshGLDict_;
+
+  // std::map<std::string, bool > vfRecentlyUpdated_;
 
   /* a pointer to an array of pointers to Voxels.
   Alternatives:

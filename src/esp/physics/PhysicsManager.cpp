@@ -9,7 +9,11 @@
 #include <Magnum/Math/Range.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
+#include "esp/gfx/GenericDrawable.h"
+#include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/MeshVisualizerDrawable.h"
+#include "esp/gfx/PbrDrawable.h"
+#include "esp/gfx/replay/Recorder.h"
 
 using namespace Mn::Math::Literals;
 using Magnum::Math::Literals::operator""_degf;
@@ -566,7 +570,7 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
 void PhysicsManager::setObjectVoxelixationDraw(int physObjectID,
                                                DrawableGroup* drawables,
                                                bool drawVoxelization) {
-  assertIDValidity(physObjectID);
+  // assertIDValidity(physObjectID);
   if (existingObjects_.at(physObjectID)->VoxelNode_ && !drawVoxelization) {
     // destroy the node
     delete existingObjects_.at(physObjectID)->VoxelNode_;
@@ -591,9 +595,18 @@ void PhysicsManager::setObjectVoxelixationDraw(int physObjectID,
         .setWireframeColor(0xdcdcdc_rgbf)
         .setWireframeWidth(2.0);
 
+    esp::geo::VoxelWrapper* voxelWrapper_ =
+        existingObjects_.at(physObjectID)->voxelWrapper.get();
+    gfx::Drawable::Flags meshAttributeFlags{};
+    !Mn::Debug();
+    resourceManager_.createDrawable(
+        voxelWrapper_->getVoxelGrid()->getMeshGL(), meshAttributeFlags,
+        *existingObjects_.at(physObjectID)->VoxelNode_, DEFAULT_LIGHTING_KEY,
+        WHITE_MATERIAL_KEY, drawables);
+
     // get the voxel grid mesh
-    resourceManager_.addPrimitiveToDrawables(
-        0, *existingObjects_.at(physObjectID)->VoxelNode_, drawables);
+    // resourceManager_.addPrimitiveToDrawables(
+    //    0, *existingObjects_.at(physObjectID)->VoxelNode_, drawables);
   }
 }
 

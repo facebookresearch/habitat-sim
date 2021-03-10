@@ -407,6 +407,37 @@ class ResourceManager {
                                DrawableGroup* drawables);
 
   /**
+   * @brief Create a @ref gfx::Drawable for the specified mesh, node,
+   * and @ref ShaderType.
+   *
+   * Add this drawable to the @ref DrawableGroup if provided.
+   * @param shaderType Indentifies the desired shader program for rendering
+   * the @ref gfx::Drawable.
+   * @param mesh The render mesh.
+   * @param meshAttributeFlags flags for the attributes of the render mesh
+   * @param node The @ref scene::SceneNode to which the drawable will be
+   * attached.
+   * @param lightSetupKey The @ref LightSetup key that will be used
+   * for the drawable.
+   * @param materialKey The @ref MaterialData key that will be used
+   * for the drawable.
+   * @param meshID Optional, the index of this mesh component stored in
+   * meshes_
+   * @param group Optional @ref DrawableGroup with which the render the @ref
+   * gfx::Drawable.
+   * @param texture Optional texture for the mesh.
+   * @param color Optional color parameter for the shader program. Defaults to
+   * white.
+   */
+
+  void createDrawable(Mn::GL::Mesh& mesh,
+                      gfx::Drawable::Flags& meshAttributeFlags,
+                      scene::SceneNode& node,
+                      const Mn::ResourceKey& lightSetupKey,
+                      const Mn::ResourceKey& materialKey,
+                      DrawableGroup* group = nullptr);
+
+  /**
    * @brief Remove the specified primitive mesh.
    *
    * @param primitiveID The key of the primitive in @ref primitive_meshes_.
@@ -887,37 +918,6 @@ class ResourceManager {
       const std::vector<StaticDrawableInfo>& staticDrawableInfo);
 
   // ======== Rendering Utility Functions ========
-
-  /**
-   * @brief Create a @ref gfx::Drawable for the specified mesh, node,
-   * and @ref ShaderType.
-   *
-   * Add this drawable to the @ref DrawableGroup if provided.
-   * @param shaderType Indentifies the desired shader program for rendering
-   * the @ref gfx::Drawable.
-   * @param mesh The render mesh.
-   * @param meshAttributeFlags flags for the attributes of the render mesh
-   * @param node The @ref scene::SceneNode to which the drawable will be
-   * attached.
-   * @param lightSetupKey The @ref LightSetup key that will be used
-   * for the drawable.
-   * @param materialKey The @ref MaterialData key that will be used
-   * for the drawable.
-   * @param meshID Optional, the index of this mesh component stored in
-   * meshes_
-   * @param group Optional @ref DrawableGroup with which the render the @ref
-   * gfx::Drawable.
-   * @param texture Optional texture for the mesh.
-   * @param color Optional color parameter for the shader program. Defaults to
-   * white.
-   */
-
-  void createDrawable(Mn::GL::Mesh& mesh,
-                      gfx::Drawable::Flags& meshAttributeFlags,
-                      scene::SceneNode& node,
-                      const Mn::ResourceKey& lightSetupKey,
-                      const Mn::ResourceKey& materialKey,
-                      DrawableGroup* group = nullptr);
 
   Flags flags_;
 
