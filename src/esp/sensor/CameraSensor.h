@@ -13,7 +13,7 @@ namespace esp {
 namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
-  float ortho_scale = 0.1f;
+  float orthoScale = 0.1f;
   CameraSensorSpec();
   void sanityCheck() override;
   bool operator==(const CameraSensorSpec& a) const;

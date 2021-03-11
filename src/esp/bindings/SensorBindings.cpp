@@ -94,7 +94,7 @@ void initSensorBindings(py::module& m) {
   py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec,
              SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
-      .def_readwrite("ortho_scale", &CameraSensorSpec::ortho_scale);
+      .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
