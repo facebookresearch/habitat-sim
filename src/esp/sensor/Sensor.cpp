@@ -42,13 +42,9 @@ void SensorSpec::sanityCheck() {
 
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
     : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
-  LOG(INFO) << "Initializing Sensor";
   CORRADE_ASSERT(node.children().first() == nullptr,
                  "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node. "
                  "The number of children of this node is not zero.", );
-  // TODO: Removed when python is refactored to use SensorFactory to initialize
-  // sensors
-  node.addSceneNodeTag(scene::SceneNodeTag::Leaf);
   CORRADE_ASSERT(
       node.getSceneNodeTags() & scene::SceneNodeTag::Leaf,
       "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node.", );

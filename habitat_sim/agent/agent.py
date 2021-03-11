@@ -179,18 +179,8 @@ class Agent(object):
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        if not spec.is_visual_sensor_spec:
-            raise ValueError(
-                f"""{spec.sensor_type} is a sensorType that is not implemented yet"""
-            )
-        CameraSensorSubTypeSet = {
-            habitat_sim.SensorSubType.PINHOLE,
-            habitat_sim.SensorSubType.ORTHOGRAPHIC,
-        }
-        if spec.sensor_subtype not in CameraSensorSubTypeSet:
-            raise ValueError(f"""{spec.sensor_subtype} is an illegal sensorSubType""")
-        # TODO: Add more checks for NonVisualSensorSpec, Other types of sensors
-        self._sensors.add(hsim.CameraSensor(self.scene_node.create_child(), spec))
+        sensor_suite = hsim.SensorFactory.create_sensors(self.scene_node, [spec])
+        self._sensors.add(sensor_suite[spec.uuid])
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
