@@ -123,11 +123,12 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   scene::ObjectControls::ptr getControls() { return controls_; }
 
-  sensor::SensorSuite& getSensorSuite() {
+  sensor::SensorSuite& getSubtreeSensorSuite() {
     return node().getSubtreeSensorSuite();
   }
 
-  std::map<std::string, std::reference_wrapper<sensor::Sensor>>& getSensors() {
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>>&
+  getSubtreeSensors() {
     return node().getSubtreeSensors();
   }
 
