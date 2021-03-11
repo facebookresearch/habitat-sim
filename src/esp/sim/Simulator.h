@@ -509,6 +509,21 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, int objectID, int sceneID = 0);
 
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Creates a voxelization for a particular object.
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param resolution The resolution of the voxel grid to be created.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void createObjectVoxelization(int objectID,
+                                int resolution = 1000000,
+                                int sceneID = 0);
+#endif
+
   /**
    * @brief Turn on/off rendering for the voxel grid of the object's visual
    * component.
@@ -522,19 +537,44 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void setObjectVoxelizationDraw(bool drawV, int objectID, int sceneID = 0);
+  void setObjectVoxelizationDraw(bool drawV,
+                                 int objectID,
+                                 std::string gridName = "Boundary",
+                                 int sceneID = 0);
 
   /**
-   * @brief Creates a voxelization for a particular object.
+   * @brief Returns the VoxelWrapper for a particular object.
    *
    * @param objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
+   * @return A shared ptr to the object's VoxelWrapper .
+   */
+  std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelization(int objectID);
+
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Creates a voxelization for the scene.
+   *
    * @param resolution The resolution of the voxel grid to be created.
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void createObjectVoxelization(int objectID,
-                                int resolution = 1000000,
+  void createSceneVoxelization(int resolution = 1000000, int sceneID = 0);
+#endif
+
+  /**
+   * @brief Turn on/off rendering for the voxel grid of the scene's visual
+   * component.
+   *
+   * If a voxel grid for the scene has not been created, it will make one with
+   * default arguments using createObjectVisualization().
+   *
+   * @param drawV Whether or not the render the voxel grid.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void setSceneVoxelizationDraw(bool drawV,
+                                std::string gridName = "Boundary",
                                 int sceneID = 0);
 
   /**
@@ -544,7 +584,7 @@ class Simulator {
    * esp::physics::PhysicsManager::existingObjects_.
    * @return A shared ptr to the object's VoxelWrapper .
    */
-  std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelication(int objectID);
+  std::shared_ptr<esp::geo::VoxelWrapper> getSceneVoxelization();
 
   /**
    * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
@@ -776,7 +816,7 @@ class Simulator {
    */
   esp::sensor::Sensor::ptr addSensorToObject(
       const int objectId,
-      esp::sensor::SensorSpec::ptr& sensorSpec);
+      const esp::sensor::SensorSpec::ptr& sensorSpec);
 
   /**
    * @brief Displays observations on default frame buffer for a
@@ -909,6 +949,29 @@ class Simulator {
       const assets::AssetInfo& assetInfo,
       const assets::RenderAssetInstanceCreationInfo& creation);
 
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Runs convex hull decomposition on a specified file. Creates an
+   * object attributes referencing a newly created convex hull asset, and
+   * returns the attribute's handle.
+   *
+   * @param filename The MeshMetaData filename to be converted.
+   * @param params VHACD params that specify resolution, vertices per convex
+   * hull, etc.
+   * @param renderChd Specifies whether or not to render the coinvex hull asset,
+   * or to render the original render asset.
+   * @param saveChdToObj Specifies whether or not to save the newly created
+   * convex hull asset to an obj file.
+   * @return The handle of the newly created object attributes.
+   */
+  std::string convexHullDecomposition(
+      const std::string& filename,
+      const assets::ResourceManager::VHACDParameters& params =
+          assets::ResourceManager::VHACDParameters(),
+      bool renderChd = false,
+      bool saveChdToObj = false);
+#endif
+
  protected:
   Simulator() = default;
   /**
@@ -956,7 +1019,7 @@ class Simulator {
     return isValidScene(sceneID) && physicsManager_ != nullptr;
   }
 
-  void reconfigureReplayManager();
+  void reconfigureReplayManager(bool enableGfxReplaySave);
 
   gfx::WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<gfx::Renderer> renderer_ = nullptr;

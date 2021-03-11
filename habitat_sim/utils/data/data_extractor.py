@@ -271,38 +271,35 @@ class ImageExtractor:
         sim_cfg.scene_id = settings["scene"]
 
         # define default sensor parameters (see src/esp/Sensor/Sensor.h)
-        sensors = {
-            "color_sensor": {  # active if sim_settings["color_sensor"]
-                "sensor_type": hsim.SensorType.COLOR,
-                "resolution": [settings["height"], settings["width"]],
-                "position": [0.0, settings["sensor_height"], 0.0],
-            },
-            "depth_sensor": {  # active if sim_settings["depth_sensor"]
-                "sensor_type": hsim.SensorType.DEPTH,
-                "resolution": [settings["height"], settings["width"]],
-                "position": [0.0, settings["sensor_height"], 0.0],
-            },
-            "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
-                "sensor_type": hsim.SensorType.SEMANTIC,
-                "resolution": [settings["height"], settings["width"]],
-                "position": [0.0, settings["sensor_height"], 0.0],
-            },
-        }
-
-        # create sensor specifications
         sensor_specs = []
-        for sensor_uuid, sensor_params in sensors.items():
-            if settings[sensor_uuid]:
-                sensor_spec = hsim.SensorSpec()
-                sensor_spec.uuid = sensor_uuid
-                sensor_spec.sensor_type = sensor_params["sensor_type"]
-                sensor_spec.resolution = sensor_params["resolution"]
-                sensor_spec.position = sensor_params["position"]
-                sensor_spec.gpu2gpu_transfer = False
-                sensor_specs.append(sensor_spec)
+        if settings["color_sensor"]:
+            color_sensor_spec = habitat_sim.CameraSensorSpec()
+            color_sensor_spec.uuid = "color_sensor"
+            color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+            color_sensor_spec.resolution = [settings["height"], settings["width"]]
+            color_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+            color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+            sensor_specs.append(color_sensor_spec)
+
+        if settings["depth_sensor"]:
+            depth_sensor_spec = habitat_sim.CameraSensorSpec()
+            depth_sensor_spec.uuid = "depth_sensor"
+            depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
+            depth_sensor_spec.resolution = [settings["height"], settings["width"]]
+            depth_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+            depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+            sensor_specs.append(depth_sensor_spec)
+
+        if settings["semantic_sensor"]:
+            semantic_sensor_spec = habitat_sim.CameraSensorSpec()
+            semantic_sensor_spec.uuid = "semantic_sensor"
+            semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
+            semantic_sensor_spec.resolution = [settings["height"], settings["width"]]
+            semantic_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+            semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+            sensor_specs.append(semantic_sensor_spec)
 
         # create agent specifications
         agent_cfg = AgentConfiguration()
         agent_cfg.sensor_specifications = sensor_specs
-
         return habitat_sim.Configuration(sim_cfg, [agent_cfg])

@@ -9,6 +9,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace geo {
 
+#ifdef ESP_BUILD_WITH_VHACD
 VoxelWrapper::VoxelWrapper(std::string renderAssetHandle,
                            esp::scene::SceneNode* sceneNode,
                            esp::assets::ResourceManager& resourceManager_,
@@ -25,6 +26,25 @@ VoxelWrapper::VoxelWrapper(std::string renderAssetHandle,
         esp::assets::MeshData::create_unique();
     objMesh = resourceManager_.createJoinedCollisionMesh(renderAssetHandle);
     voxelGrid = std::make_shared<VoxelGrid>(objMesh, resolution);
+    resourceManager_.registerVoxelGrid(voxelGridHandle, voxelGrid);
+  }
+}
+#endif
+
+VoxelWrapper::VoxelWrapper(std::string renderAssetHandle,
+                           esp::scene::SceneNode* sceneNode,
+                           esp::assets::ResourceManager& resourceManager_,
+                           Mn::Vector3& voxelSize,
+                           Mn::Vector3i& voxelDimensions,
+                           int resolution) {
+  std::string voxelGridHandle =
+      renderAssetHandle + "_" + std::to_string(resolution);
+  // check for existence of specified VoxelGrid
+  if (resourceManager_.voxelGridExists(
+          voxelGridHandle)) {  // if it exists, simply point the wrapper to it.
+    voxelGrid = resourceManager_.getVoxelGrid(voxelGridHandle);
+  } else {  // if not, create a new voxel
+    voxelGrid = std::make_shared<VoxelGrid>(voxelSize, voxelDimensions);
     resourceManager_.registerVoxelGrid(voxelGridHandle, voxelGrid);
   }
 }

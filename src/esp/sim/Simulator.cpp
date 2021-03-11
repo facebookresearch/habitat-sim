@@ -91,10 +91,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   if (!resourceManager_) {
     resourceManager_ =
         std::make_unique<assets::ResourceManager>(metadataMediator_);
-    if (config_.createRenderer) {
+    if (cfg.createRenderer) {
       // needs to be called after ResourceManager exists but before any assets
       // have been loaded
-      reconfigureReplayManager();
+      reconfigureReplayManager(cfg.enableGfxReplaySave);
     }
   } else {
     resourceManager_->setMetadataMediator(metadataMediator_);
@@ -511,11 +511,11 @@ void Simulator::seed(uint32_t newSeed) {
   pathfinder_->seed(newSeed);
 }
 
-void Simulator::reconfigureReplayManager() {
+void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   gfxReplayMgr_ = std::make_shared<gfx::replay::ReplayManager>();
 
   // construct Recorder instance if requested
-  gfxReplayMgr_->setRecorder(config_.enableGfxReplaySave
+  gfxReplayMgr_->setRecorder(enableGfxReplaySave
                                  ? std::make_shared<gfx::replay::Recorder>()
                                  : nullptr);
   // assign Recorder to ResourceManager
@@ -832,23 +832,45 @@ void Simulator::setObjectBBDraw(bool drawBB,
   }
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
 void Simulator::createObjectVoxelization(int objectID,
                                          int resolution,
                                          int sceneID) {
   physicsManager_->generateVoxelization(objectID, resolution);
 }
+#endif
 
-std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getObjectVoxelication(
+void Simulator::setObjectVoxelizationDraw(bool drawV,
+                                          int objectID,
+                                          std::string gridName,
+                                          int sceneID) {
+  auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& drawables = sceneGraph_.getDrawables();
+  physicsManager_->setObjectVoxelizationDraw(objectID, gridName, &drawables,
+                                             drawV);
+}
+
+std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getObjectVoxelization(
     int objectID) {
   return physicsManager_->getObjectVoxelization(objectID);
 }
 
-void Simulator::setObjectVoxelizationDraw(bool drawV,
-                                          int objectID,
-                                          int sceneID) {
+#ifdef ESP_BUILD_WITH_VHACD
+void Simulator::createSceneVoxelization(int resolution, int sceneID) {
+  physicsManager_->generateSceneVoxelization(resolution);
+}
+#endif
+
+void Simulator::setSceneVoxelizationDraw(bool drawV,
+                                         std::string gridName,
+                                         int sceneID) {
   auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
   auto& drawables = sceneGraph_.getDrawables();
-  physicsManager_->setObjectVoxelixationDraw(objectID, &drawables, drawV);
+  physicsManager_->setSceneVoxelizationDraw(gridName, &drawables, drawV);
+}
+
+std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getSceneVoxelization() {
+  return physicsManager_->getSceneVoxelization();
 }
 
 void Simulator::setObjectSemanticId(uint32_t semanticId,
@@ -1064,6 +1086,56 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
+std::string Simulator::convexHullDecomposition(
+    const std::string& filename,
+    const assets::ResourceManager::VHACDParameters& params,
+    const bool renderChd,
+    const bool saveChdToObj) {
+  Cr::Utility::Debug() << "VHACD PARAMS RESOLUTION: " << params.m_resolution;
+
+  // generate a unique filename
+  std::string chdFilename =
+      Cr::Utility::Directory::splitExtension(filename).first + ".chd";
+  if (resourceManager_->isAssetDataRegistered(chdFilename)) {
+    int nameAttempt = 1;
+    chdFilename += "_";
+    // Iterate until a unique filename is found.
+    while (resourceManager_->isAssetDataRegistered(
+        chdFilename + std::to_string(nameAttempt))) {
+      nameAttempt++;
+    }
+    chdFilename += std::to_string(nameAttempt);
+  }
+
+  // run VHACD on the given filename mesh with the given params, store the
+  // results in the resourceDict_ registered under chdFilename
+  resourceManager_->createConvexHullDecomposition(filename, chdFilename, params,
+                                                  saveChdToObj);
+
+  // create object attributes for the new chd object
+  auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
+  auto chdObjAttr = objAttrMgr->createObject(chdFilename, false);
+
+  // specify collision asset handle & other attributes
+  chdObjAttr->setCollisionAssetHandle(chdFilename);
+  chdObjAttr->setIsCollidable(true);
+  chdObjAttr->setCollisionAssetIsPrimitive(false);
+  chdObjAttr->setJoinCollisionMeshes(false);
+
+  // if the renderChd flag is set to true, set the convex hull decomposition to
+  // be the render asset (useful for testing)
+
+  chdObjAttr->setRenderAssetHandle(renderChd ? chdFilename : filename);
+
+  chdObjAttr->setRenderAssetIsPrimitive(false);
+
+  // register object and return handle
+  objAttrMgr->registerObject(chdObjAttr, chdFilename, true);
+  return chdObjAttr->getHandle();
+}
+#endif
+
 agent::Agent::ptr Simulator::addAgent(
     const agent::AgentConfiguration& agentConfig,
     scene::SceneNode& agentParentNode) {
@@ -1113,7 +1185,7 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
 
 esp::sensor::Sensor::ptr Simulator::addSensorToObject(
     const int objectId,
-    esp::sensor::SensorSpec::ptr& sensorSpec) {
+    const esp::sensor::SensorSpec::ptr& sensorSpec) {
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
   esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
   esp::sensor::SensorSuite sensorSuite =

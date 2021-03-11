@@ -464,26 +464,18 @@ void PhysicsManager::setAngularDamping(const int physObjectID,
   existingObjects_.at(physObjectID)->setAngularDamping(angDamping);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
 void PhysicsManager::generateVoxelization(const int physObjectID,
                                           const int resolution) {
-  /*std::string renderAssetHandle = existingObjects_.at(physObjectID)
-                                      ->getInitializationAttributes()
-                                      ->getRenderAssetHandle();
-  // std::unique_ptr<esp::assets::MeshData> objMesh =
-  //   esp::assets::MeshData::create_unique();
-  // objMesh = resourceManager_.createJoinedCollisionMesh(renderAssetHandle);
-  esp::geo::VoxelWrapper* voxelWrapper = new esp::geo::VoxelWrapper(
-      renderAssetHandle, existingObjects_.at(physObjectID)->node(),
-      resourceManager_, resolution);
-  existingObjects_.at(physObjectID)->setVoxelWrapper(voxelWrapper);*/
-  if (physObjectID == -1) {
-    staticStageObject_->generateVoxelization(resourceManager_, resolution);
-  } else {
-    assertIDValidity(physObjectID);
-    existingObjects_.at(physObjectID)
-        ->generateVoxelization(resourceManager_, resolution);
-  }
+  assertIDValidity(physObjectID);
+  existingObjects_.at(physObjectID)
+      ->generateVoxelization(resourceManager_, resolution);
 }
+
+void PhysicsManager::generateSceneVoxelization(const int resolution) {
+  staticStageObject_->generateVoxelization(resourceManager_, resolution);
+}
+#endif
 
 //============ Object Getter functions =============
 double PhysicsManager::getMass(const int physObjectID) const {
@@ -532,12 +524,13 @@ double PhysicsManager::getAngularDamping(const int physObjectID) const {
 }
 std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getObjectVoxelization(
     const int physObjectID) const {
-  if (physObjectID >= 0) {
-    assertIDValidity(physObjectID);
-    return existingObjects_.at(physObjectID)->getVoxelization();
-  } else {
-    return staticStageObject_->getVoxelization();
-  }
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->getVoxelization();
+}
+
+std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getSceneVoxelization()
+    const {
+  return staticStageObject_->getVoxelization();
 }
 
 void PhysicsManager::setObjectBBDraw(int physObjectID,
@@ -567,19 +560,37 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
   }
 }
 
-void PhysicsManager::setObjectVoxelixationDraw(int physObjectID,
+void PhysicsManager::setObjectVoxelizationDraw(int physObjectID,
+                                               std::string gridName,
                                                DrawableGroup* drawables,
                                                bool drawVoxelization) {
-  // assertIDValidity(physObjectID);
-  if (existingObjects_.at(physObjectID)->VoxelNode_ && !drawVoxelization) {
+  assertIDValidity(physObjectID);
+  setVoxelizationDraw(gridName,
+                      dynamic_cast<esp::physics::RigidBase*>(
+                          existingObjects_.at(physObjectID).get()),
+                      drawables, drawVoxelization);
+}
+
+void PhysicsManager::setSceneVoxelizationDraw(std::string gridName,
+                                              DrawableGroup* drawables,
+                                              bool drawVoxelization) {
+  setVoxelizationDraw(
+      gridName,
+      dynamic_cast<esp::physics::RigidBase*>(staticStageObject_.get()),
+      drawables, drawVoxelization);
+}
+
+void PhysicsManager::setVoxelizationDraw(std::string& gridName,
+                                         esp::physics::RigidBase* rigidBase,
+                                         DrawableGroup* drawables,
+                                         bool drawVoxelization) {
+  if (rigidBase->VoxelNode_ && !drawVoxelization) {
     // destroy the node
-    delete existingObjects_.at(physObjectID)->VoxelNode_;
-    existingObjects_.at(physObjectID)->VoxelNode_ = nullptr;
-  } else if (drawVoxelization &&
-             existingObjects_.at(physObjectID)->visualNode_) {
+    delete rigidBase->VoxelNode_;
+    rigidBase->VoxelNode_ = nullptr;
+  } else if (drawVoxelization && rigidBase->visualNode_) {
     // add a new VoxelNode_
-    existingObjects_.at(physObjectID)->VoxelNode_ =
-        &existingObjects_.at(physObjectID)->visualNode_->createChild();
+    rigidBase->VoxelNode_ = &rigidBase->visualNode_->createChild();
     /*existingObjects_.at(physObjectID)
         ->VoxelNode_->MagnumObject::setTranslation(
             existingObjects_[physObjectID]
@@ -595,14 +606,13 @@ void PhysicsManager::setObjectVoxelixationDraw(int physObjectID,
         .setWireframeColor(0xdcdcdc_rgbf)
         .setWireframeWidth(2.0);
 
-    esp::geo::VoxelWrapper* voxelWrapper_ =
-        existingObjects_.at(physObjectID)->voxelWrapper.get();
+    esp::geo::VoxelWrapper* voxelWrapper_ = rigidBase->voxelWrapper.get();
     gfx::Drawable::Flags meshAttributeFlags{};
     !Mn::Debug();
     resourceManager_.createDrawable(
-        voxelWrapper_->getVoxelGrid()->getMeshGL(), meshAttributeFlags,
-        *existingObjects_.at(physObjectID)->VoxelNode_, DEFAULT_LIGHTING_KEY,
-        WHITE_MATERIAL_KEY, drawables);
+        voxelWrapper_->getVoxelGrid()->getMeshGL(gridName), meshAttributeFlags,
+        *rigidBase->VoxelNode_, DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY,
+        drawables);
 
     // get the voxel grid mesh
     // resourceManager_.addPrimitiveToDrawables(

@@ -533,15 +533,16 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
-  agentConfig.sensorSpecifications[0]->resolution =
-      esp::vec2i(viewportSize[1], viewportSize[0]);
-
-  agentConfig.sensorSpecifications[0]->sensorSubType =
+  auto cameraSensorSpec = esp::sensor::CameraSensorSpec::create();
+  cameraSensorSpec->sensorSubType =
       args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
                                  : esp::sensor::SensorSubType::Pinhole;
+  cameraSensorSpec->sensorType = esp::sensor::SensorType::Color;
+  cameraSensorSpec->position = {0.0f, 1.5f, 0.0f};
+  cameraSensorSpec->orientation = {0, 0, 0};
+  cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  agentConfig.sensorSpecifications = {cameraSensorSpec};
 
-  // add selects a random initial state and sets up the default controls and
-  // step filter
   simulator_->addAgent(agentConfig);
 
   // Set up camera
@@ -608,6 +609,10 @@ void Viewer::switchCameraType() {
     }
     case esp::sensor::SensorSubType::Orthographic: {
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
+      return;
+    }
+    case esp::sensor::SensorSubType::None: {
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       return;
     }
   }
@@ -806,20 +811,22 @@ bool Viewer::isInRange(float val) {
   int curDistanceVisualization = 1 * (resolutionInd % 18);
   return val >= curDistanceVisualization - 1 && val < curDistanceVisualization;
 }
+
+#ifdef ESP_BUILD_WITH_VHACD
 void Viewer::displayVoxelField(int objectID) {
   int resolutions[3] = {2000000, 100000, 1000};
   unsigned int resolution = resolutions[0];
-  simulator_->createObjectVoxelization(objectID, resolution);
-  std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization =
-      simulator_->getObjectVoxelication(objectID);
-  !Mn::Debug();
-  Mn::Debug() << objectVoxelization->getGlobalCoordsFromVoxelIndex(
-      Mn::Vector3i(0, 0, 0));
-  Mn::Debug() << objectVoxelization->getVoxelIndexFromGlobalCoords(
-      objectVoxelization->getGlobalCoordsFromVoxelIndex(Mn::Vector3i(2, 1, 3)));
+  std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization;
+  if (objectID == -1) {
+    simulator_->createSceneVoxelization(resolution);
+    objectVoxelization = simulator_->getSceneVoxelization();
+  } else {
+    simulator_->createObjectVoxelization(objectID, resolution);
+    objectVoxelization = simulator_->getObjectVoxelization(objectID);
+  }
+
   auto voxelGrid = objectVoxelization->getVoxelGrid();
   voxelGrid->generateInteriorExteriorVoxelGrid();
-  !Mn::Debug();
   voxelGrid->generateEuclideanDistanceSDF("SignedDistanceField");
 
   int curDistanceVisualization = -1 * (resolutionInd % 18);
@@ -827,6 +834,8 @@ void Viewer::displayVoxelField(int objectID) {
                                            curDistanceVisualization,
                                            curDistanceVisualization + 1);
   voxelGrid->generateMesh("SDFSubset");
+  voxelGrid->generateDistanceFlowField("FlowField");
+  voxelGrid->generateMesh("FlowField", true);
 
   // custom shader for voxel grid
   Magnum::Shaders::MeshVisualizer3D shader_{
@@ -857,16 +866,20 @@ void Viewer::displayVoxelField(int objectID) {
   esp::scene::SceneNode* visualVoxelNode = &(objectVisNode->createChild());
 
   // visualVoxelNode->setTranslation(translation);
-  // simulator_->setObjectVoxelizationDraw(true, objectID);
-
+  /*if (objectID == -1) {
+    simulator_->setSceneVoxelizationDraw(true, "SDFSubset", 0);
+  } else {
+    simulator_->setObjectVoxelizationDraw(true, objectID, "SDFSubset", 0);
+  }*/
   objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
-      voxelGrid->getMeshGL("SDFSubset"), visualVoxelNode, &shader_);
+      voxelGrid->getMeshGL("FlowField"), visualVoxelNode, &shader_);
   /*auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId - 1],
       &objectPickingHelper_->getDrawables());*/
 
   // objectVisNode->setScaling(Mn::Vector3(2, 2, 2));
 }
+#endif
 
 void Viewer::pokeLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
@@ -1123,8 +1136,8 @@ void Viewer::viewportEvent(ViewportEvent& event) {
     auto visualSensor =
         dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
     if (visualSensor != nullptr) {
-      visualSensor->specification()->resolution = {event.framebufferSize()[1],
-                                                   event.framebufferSize()[0]};
+      visualSensor->setResolution(event.framebufferSize()[1],
+                                  event.framebufferSize()[0]);
       renderCamera_->setViewport(visualSensor->framebufferSize());
       simulator_->getRenderer()->bindRenderTarget(*visualSensor);
     }
@@ -1194,7 +1207,9 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           Mn::Debug() << res.objectId;
         }
         auto objID = raycastResults.hits[0].objectId;
+#ifdef ESP_BUILD_WITH_VHACD
         displayVoxelField(objID);
+#endif
       }
     }
   }
@@ -1409,7 +1424,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // Fill a voxel set with a specific condition (isLarge)
       std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
       esp::geo::VoxelWrapper* vWrapper =
-          simulator_->getObjectVoxelication(-1).get();
+          simulator_->getObjectVoxelization(-1).get();
       vWrapper->getVoxelGrid()->fillVoxelSetFromBoolGrid(voxelSet, "SDFSubset",
                                                          isTrue);
 
@@ -1423,14 +1438,16 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       Mn::Debug() << voxelSet.size();
     } break;
     case KeyEvent::Key::L: {
+#ifdef ESP_BUILD_WITH_VHACD
       displayVoxelField(-1);
+#endif
       resolutionInd++;
       break;
     }
     case KeyEvent::Key::G: {
       std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
       esp::geo::VoxelWrapper* vWrapper =
-          simulator_->getObjectVoxelication(-1).get();
+          simulator_->getObjectVoxelization(-1).get();
       !Mn::Debug();
       vWrapper->getVoxelGrid()->generateEuclideanDistanceSDF();
       vWrapper->getVoxelGrid()->generateDistanceFlowField("FlowField");

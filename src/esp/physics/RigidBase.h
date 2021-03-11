@@ -557,6 +557,8 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void setCOM(CORRADE_UNUSED const Magnum::Vector3& COM) {}
 
+#ifdef ESP_BUILD_WITH_VHACD
+
   /** @brief Initializes a new VoxelWrapper with a specified resolution.
    * @param resolution Represents the approximate number of voxels in the new
    * voxelization.
@@ -570,6 +572,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
         std::make_shared<esp::geo::VoxelWrapper>(esp::geo::VoxelWrapper(
             renderAssetHandle, &node(), resourceManager_, resolution));
   }
+#endif
 
   /** @brief Set the diagonal of the inertia matrix for the object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia

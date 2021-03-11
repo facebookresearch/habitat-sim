@@ -14,9 +14,17 @@ class VoxelWrapper {
   std::shared_ptr<VoxelGrid> voxelGrid;
 
  public:
+#ifdef ESP_BUILD_WITH_VHACD
   VoxelWrapper(std::string renderAssetHandle,
                esp::scene::SceneNode* sceneNode,
                esp::assets::ResourceManager& resourceManager_,
+               int resolution = 1000000);
+#endif
+  VoxelWrapper(std::string renderAssetHandle,
+               esp::scene::SceneNode* sceneNode,
+               esp::assets::ResourceManager& resourceManager_,
+               Mn::Vector3& voxelSize,
+               Mn::Vector3i& voxelDimensions,
                int resolution = 1000000);
   Mn::Vector3i getVoxelIndexFromGlobalCoords(Mn::Vector3 coords);
 

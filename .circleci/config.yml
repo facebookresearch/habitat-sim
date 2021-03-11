@@ -51,6 +51,7 @@ commands:
                   zip \
                   libbullet-dev\
                   lcov\
+                  libhdf5-dev \
                   unzip || true
       - run:
           name: Install Headless Chrome dependencies
@@ -355,7 +356,7 @@ jobs:
                   texlive-fonts-recommended
 
               # Rebuild with all options enabled
-              ./build.sh --with-cuda --with-bullet
+              ./build.sh --with-cuda --with-bullet --vhacd
               cd docs
               git submodule update --init
               ./build-public.sh
@@ -366,7 +367,7 @@ jobs:
               . activate habitat;
               cd habitat-sim
               #Rebuild headless
-              python setup.py install --headless --with-bullet --with-cuda
+              python setup.py install --headless --with-bullet --with-cuda --vhacd
               cd ..
               if [ ! -d ./habitat-lab ]
               then
@@ -443,7 +444,7 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 4
-              python -u setup.py install --headless
+              python -u setup.py install --headless --vhacd
       - run:
           name: run clang-tidy
           command: |
@@ -507,6 +508,7 @@ jobs:
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
                 --bullet \
+                --vhacd \
                 --with-cuda \
                 --build-datatool \
                 --run-tests \
@@ -571,7 +573,16 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
+
+              # Install anaconda to work with packages repo
+              curl -O https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
+              bash Anaconda3-2020.11-Linux-x86_64.sh -b -p $HOME/anaconda
+              export PATH=$HOME/anaconda/bin:$PATH
+
               cd habitat-sim/conda-build
+
+              # Delete old nightly builds
+              python common/delete_old_night_packages.py --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> << parameters.NIGHTLY_FLAG >>
 
               # install Docker
               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -

@@ -16,6 +16,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace geo {
 
+#ifdef ESP_BUILD_WITH_VHACD
 VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
                      int resolution) {
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
@@ -66,6 +67,7 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
   Mn::Debug() << "Resolution: " << dims[0] << dims[1] << dims[2];
   Mn::Debug() << "Number of filled voxels: " << num_filled;
 }
+#endif
 
 VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
                      const Mn::Vector3i& voxelGridDimensions) {
@@ -795,10 +797,33 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   indices.push_back(sz + 4);
 }
 
-void VoxelGrid::generateMesh(std::string gridName) {
+void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
+                                          std::vector<Mn::UnsignedInt>& indices,
+                                          Mn::Vector3i& local_coords,
+                                          Mn::Vector3& vec) {
+  Mn::Vector3 mid = getGlobalCoords(local_coords);
+  Mn::Vector3 pos1 = mid + Mn::Vector3(m_voxelSize[0] * 1 / 20, 0, 0);
+  Mn::Vector3 pos2 = mid - Mn::Vector3(m_voxelSize[0] * 1 / 20, 0, 0);
+  Mn::Vector3 pos3 = vec.normalized() * m_voxelSize * 1 / 2 + mid;
+  positions.push_back(pos1);
+  positions.push_back(pos2);
+  positions.push_back(pos3);
+  unsigned int sz = positions.size() - 3;
+  indices.push_back(sz);
+  indices.push_back(sz + 1);
+  indices.push_back(sz + 2);
+  indices.push_back(sz + 2);
+  indices.push_back(sz + 1);
+  indices.push_back(sz);
+}
+
+void VoxelGrid::generateMesh(std::string gridName, bool isVectorField) {
   !Mn::Debug();
-  assert(boolGrids_.find(gridName) != boolGrids_.end());
-  !Mn::Debug();
+  if (isVectorField)
+    assert(vector3Grids_.find(gridName) != vector3Grids_.end());
+  else
+    assert(boolGrids_.find(gridName) != boolGrids_.end());
+
   std::vector<Mn::UnsignedInt> indices;
   std::vector<Mn::Vector3> positions;
   int num_filled = 0;
@@ -806,10 +831,16 @@ void VoxelGrid::generateMesh(std::string gridName) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
         Mn::Vector3i local_coords(i, j, k);
-        bool val = getBoolVoxelByIndex(local_coords, gridName);
-        if (val) {
-          num_filled++;
-          addVoxelToMeshPrimitives(positions, indices, local_coords);
+        if (isVectorField) {
+          Mn::Vector3 vec = getVector3VoxelByIndex(local_coords, gridName);
+          if (vec != Mn::Vector3(0, 0, 0))
+            addVectorToMeshPrimitives(positions, indices, local_coords, vec);
+        } else {
+          bool val = getBoolVoxelByIndex(local_coords, gridName);
+          if (val) {
+            num_filled++;
+            addVoxelToMeshPrimitives(positions, indices, local_coords);
+          }
         }
       }
     }

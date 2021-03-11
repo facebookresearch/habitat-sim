@@ -87,7 +87,7 @@ def make_configuration():
     # below.
     backend_cfg.enable_gfx_replay_save = True
 
-    sensor_cfg = habitat_sim.SensorSpec()
+    sensor_cfg = habitat_sim.CameraSensorSpec()
     sensor_cfg.resolution = [544, 720]
     agent_cfg = habitat_sim.agent.AgentConfiguration()
     agent_cfg.sensor_specifications = [sensor_cfg]
@@ -144,6 +144,7 @@ def simulate_with_moving_agent(
 
     return observations
 
+
 # %% [markdown]
 # ## More tutorial setup
 # %%
@@ -167,7 +168,7 @@ if make_video and not os.path.exists(output_path):
 
 cfg = make_configuration()
 sim = None
-replay_filepath = output_path + "replay.json"
+replay_filepath = "./replay.json"
 
 if not sim:
     sim = habitat_sim.Simulator(cfg)
@@ -268,6 +269,7 @@ if make_video:
 # %%
 
 sim.gfx_replay_manager.write_saved_keyframes_to_file(replay_filepath)
+assert os.path.exists(replay_filepath)
 
 remove_all_objects(sim)
 
@@ -283,6 +285,8 @@ playback_cfg = habitat_sim.Configuration(
     ),
     cfg.agents,
 )
+
+sim.close()
 
 if not sim:
     sim = habitat_sim.Simulator(playback_cfg)
@@ -407,6 +411,9 @@ if make_video:
 sim.remove_object(agent_viz_id)
 sim.remove_object(sensor_viz_id)
 
+# clean up the player
+player.close()
+
 # %% [markdown]
 # ## Load multiple replays and create a "sequence" image.
 # In this tutorial, we only recorded one replay. In general, you can load and play multiple replays and they are rendered "additively" (all objects from all replays are visualized on top of each other). Here, let's load multiple copies of our replay and create a single image showing different snapshots in time.
@@ -414,10 +421,14 @@ sim.remove_object(sensor_viz_id)
 
 observations = []
 num_copies = 30
+other_players = []
 for i in range(num_copies):
     other_player = sim.gfx_replay_manager.read_keyframes_from_file(replay_filepath)
     assert other_player
-    other_player.set_keyframe_index(player.get_num_keyframes() // (num_copies - 1) * i)
+    other_player.set_keyframe_index(
+        other_player.get_num_keyframes() // (num_copies - 1) * i
+    )
+    other_players.append(other_player)
 
 # place a third-person camera
 sensor_node.translation = [1.0, -0.9, -0.3]
@@ -438,3 +449,10 @@ if make_video:
         output_path + "replay_playback4",
         open_vid=show_video,
     )
+
+# clean up the players
+for other_player in other_players:
+    other_player.close()
+
+# clean up replay file
+os.remove(replay_filepath)
