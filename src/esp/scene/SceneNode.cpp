@@ -139,9 +139,9 @@ void SceneNode::removeSubtreeSensorsFromAncestors() {
     SceneNode* currentNode = this;
     do {
       currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
-      // no need to worry that currentNode could be nullptr, no chance
       currentNode->getSubtreeSensors().erase(sensor.first);
-    } while (!SceneGraph::isRootNode(*currentNode));
+    } while (!SceneGraph::isRootNode(*currentNode) &&
+             currentNode->parent() != nullptr);
   }
 }
 
@@ -150,9 +150,9 @@ void SceneNode::addSubtreeSensorsToAncestors() {
     SceneNode* currentNode = this;
     do {
       currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
-      // no need to worry that currentNode could be nullptr, no chance
       currentNode->getSubtreeSensorSuite().add(sensor.second);
-    } while (!SceneGraph::isRootNode(*currentNode));
+    } while (!SceneGraph::isRootNode(*currentNode) &&
+             currentNode->parent() != nullptr);
   }
 }
 
