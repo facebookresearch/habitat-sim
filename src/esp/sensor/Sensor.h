@@ -41,6 +41,7 @@ enum class SensorSubType {
   None = 0,
   Pinhole = 1,
   Orthographic = 2,
+  Equirectangular = 3,
 };
 
 // Specifies the configuration parameters of a sensor

@@ -2,6 +2,8 @@ set(
   sensor_SOURCES
   CameraSensor.cpp
   CameraSensor.h
+  EquirectangularSensor.cpp
+  EquirectangularSensor.h
   Sensor.cpp
   Sensor.h
   SensorFactory.cpp
