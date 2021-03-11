@@ -23,8 +23,7 @@ Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
     : loadAndCreateRenderAssetInstanceCallback(callback) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
-  clearFrame();
-  keyframes_.clear();
+  close();
 
   if (!Corrade::Utility::Directory::exists(filepath)) {
     LOG(ERROR) << "Player::readKeyframesFromFile: file " << filepath
@@ -83,8 +82,16 @@ bool Player::getUserTransform(const std::string& name,
   }
 }
 
+void Player::close() {
+  clearFrame();
+  keyframes_.clear();
+}
+
 void Player::clearFrame() {
   for (const auto& pair : createdInstances_) {
+    // TODO: use NodeDeletionHelper to safely delete nodes owned by the Player.
+    // the deletion here is unsafe because a Player may persist beyond the
+    // lifetime of these nodes.
     delete pair.second;
   }
   createdInstances_.clear();
