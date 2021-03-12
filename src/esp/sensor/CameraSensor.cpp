@@ -27,11 +27,13 @@ void CameraSensorSpec::sanityCheck() {
                  "CameraSensorSpec::sanityCheck(): sensorSpec does not have "
                  "SensorSubType "
                  "Pinhole or Orthographic", );
+  CORRADE_ASSERT(
+      orthoScale > 0,
+      "CameraSensorSpec::sanityCheck(): orthoScale must be greater than 0", );
 }
 
 bool CameraSensorSpec::operator==(const CameraSensorSpec& a) const {
-  return VisualSensorSpec::operator==(a) && channels == a.channels &&
-         observationSpace == a.observationSpace;
+  return VisualSensorSpec::operator==(a) && orthoScale == a.orthoScale;
 }
 
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
@@ -82,50 +84,24 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
       Mn::Vector2{1.0f, static_cast<float>(cameraSensorSpec_->resolution[0]) /
                             cameraSensorSpec_->resolution[1]};
   if (cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic) {
-    nearPlaneSize_ /= cameraSensorSpec_->ortho_scale;
-    baseProjMatrix_ =
-        Mn::Matrix4::orthographicProjection(nearPlaneSize_, near_, far_);
+    nearPlaneSize_ /= cameraSensorSpec_->orthoScale;
+    baseProjMatrix_ = Mn::Matrix4::orthographicProjection(
+        nearPlaneSize_, cameraSensorSpec_->near, cameraSensorSpec_->far);
   } else {
     // cameraSensorSpec_ is subtype Pinhole
     Magnum::Deg halfHFovRad{Magnum::Deg(.5 * hfov_)};
-    float scale = 1.0f / (2.0f * near_ * Magnum::Math::tan(halfHFovRad));
+    float scale = 1.0f / (2.0f * cameraSensorSpec_->near *
+                          Magnum::Math::tan(halfHFovRad));
     nearPlaneSize_ /= scale;
-    baseProjMatrix_ =
-        Mn::Matrix4::perspectiveProjection(nearPlaneSize_, near_, far_);
+    baseProjMatrix_ = Mn::Matrix4::perspectiveProjection(
+        nearPlaneSize_, cameraSensorSpec_->near, cameraSensorSpec_->far);
   }
   // build projection matrix
   recomputeProjectionMatrix();
 }  // CameraSensor::recomputeNearPlaneSize
 
-bool CameraSensor::getObservationSpace(ObservationSpace& space) {
-  space.spaceType = ObservationSpaceType::Tensor;
-  space.shape = {static_cast<size_t>(cameraSensorSpec_->resolution[0]),
-                 static_cast<size_t>(cameraSensorSpec_->resolution[1]),
-                 static_cast<size_t>(cameraSensorSpec_->channels)};
-  space.dataType = core::DataType::DT_UINT8;
-  if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
-    space.dataType = core::DataType::DT_UINT32;
-  } else if (cameraSensorSpec_->sensorType == SensorType::Depth) {
-    space.dataType = core::DataType::DT_FLOAT;
-  }
-  return true;
-}
-
 gfx::RenderCamera* CameraSensor::getRenderCamera() const {
   return renderCamera_;
-}
-
-bool CameraSensor::getObservation(sim::Simulator& sim, Observation& obs) {
-  // TODO: check if sensor is valid?
-  // TODO: have different classes for the different types of sensors
-  //
-  if (!hasRenderTarget())
-    return false;
-
-  drawObservation(sim);
-  readObservation(obs);
-
-  return true;
 }
 
 bool CameraSensor::drawObservation(sim::Simulator& sim) {
@@ -155,33 +131,6 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
   renderTarget().renderExit();
 
   return true;
-}
-
-void CameraSensor::readObservation(Observation& obs) {
-  // Make sure we have memory
-  if (buffer_ == nullptr) {
-    // TODO: check if our sensor was resized and resize our buffer if needed
-    ObservationSpace space;
-    getObservationSpace(space);
-    buffer_ = core::Buffer::create(space.shape, space.dataType);
-  }
-  obs.buffer = buffer_;
-
-  // TODO: have different classes for the different types of sensors
-  // TODO: do we need to flip axis?
-  if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
-    renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
-        Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
-        obs.buffer->data});
-  } else if (cameraSensorSpec_->sensorType == SensorType::Depth) {
-    renderTarget().readFrameDepth(Magnum::MutableImageView2D{
-        Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
-        obs.buffer->data});
-  } else {
-    renderTarget().readFrameRgba(Magnum::MutableImageView2D{
-        Magnum::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
-        obs.buffer->data});
-  }
 }
 
 Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()
