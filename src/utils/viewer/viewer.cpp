@@ -756,6 +756,7 @@ Key Commands:
   Mn::DebugTools::GLFrameProfiler profiler_{};
 
   std::shared_ptr<esp::gfx::replay::Player> player_;
+  float ycbLightColorScale_ = 4.f;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -2323,6 +2324,12 @@ void Viewer::reloadLights() {
     }
   }
   simulator_->setLightSetup(lightInfos);
+
+  for (auto& info : lightInfos) {
+    info.color *= ycbLightColorScale_;
+  }
+
+  simulator_->setLightSetup(lightInfos, "ycb");
 }
 
 }  // namespace

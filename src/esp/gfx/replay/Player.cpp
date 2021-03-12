@@ -112,8 +112,18 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
     ASSERT(assetInfos_.count(creation.filepath));
+
+    // "filepath":
+    // "data/objects/ycb/002_master_chef_can/google_16k/textured.obj",
+
+    // temp hack assign "ycb" lightSetupKey if filepath contains "objects/ycb"
+    auto adjustedCreation = creation;
+    if (adjustedCreation.filepath.find("objects/ycb") != std::string::npos) {
+      adjustedCreation.lightSetupKey = "ycb";
+    }
+
     auto node = loadAndCreateRenderAssetInstanceCallback(
-        assetInfos_[creation.filepath], creation);
+        assetInfos_[adjustedCreation.filepath], adjustedCreation);
     if (!node) {
       if (!failedFilepaths_.count(creation.filepath)) {
         LOG(WARNING) << "Player: load failed for asset [" << creation.filepath
