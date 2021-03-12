@@ -113,6 +113,15 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     }
     ASSERT(assetInfos_.count(creation.filepath));
 
+    if (creation.filepath.find("bellows_link.STL") != std::string::npos) {
+      if (!failedFilepaths_.count(creation.filepath)) {
+        LOG(WARNING) << "Player: disabling display for bellows_link.STL "
+                        "because we don't want to display it.";
+        failedFilepaths_.insert(creation.filepath);
+      }
+      continue;
+    }
+
     // "filepath":
     // "data/objects/ycb/002_master_chef_can/google_16k/textured.obj",
 
