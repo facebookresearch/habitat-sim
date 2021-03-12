@@ -83,6 +83,8 @@ SceneNode& SceneNode::createChild(SceneNodeTags childNodeTags) {
 }
 
 SceneNode& SceneNode::setParent(SceneNode* newParent) {
+  // Perform same internal checks as magnum to ensure newParent is a valid new
+  // parent before updating any SensorSuites
   // Parent can not be leaf node
   CORRADE_ASSERT(!(newParent->getSceneNodeTags() & SceneNodeTag::Leaf),
                  "SceneNode::setParent(): New parent node can not be leaf node",
