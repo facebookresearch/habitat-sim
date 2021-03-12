@@ -93,6 +93,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_map<std::string, float>("MapStringFloat");
   em::register_map<std::string, std::string>("MapStringString");
   em::register_map<std::string, Sensor::ptr>("MapStringSensor");
+  // em::register_map<std::string,
+  // std::reference_wrapper<Sensor>>("MapStringRefSensor");
   em::register_map<std::string, SensorSpec::ptr>("MapStringSensorSpec");
   em::register_map<std::string, Observation>("MapStringObservation");
   em::register_map<std::string, ActionSpec::ptr>("ActionSpace");
@@ -174,6 +176,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .value("NONE", SensorSubType::None)
       .value("PINHOLE", SensorSubType::Pinhole)
       .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
+
   em::class_<SensorSpec>("SensorSpec")
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
       .property("uuid", &SensorSpec::uuid)
@@ -199,6 +202,16 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getObservation", &Sensor_getObservation)
       .function("setLocalTransform", &Sensor_setLocalTransform)
       .function("specification", &Sensor::specification);
+
+  em::class_<SensorSuite>("SensorSuite")
+      .smart_ptr<SensorSuite::ptr>("SensorSuite::ptr")
+      .function("add", &SensorSuite::add)
+      .function("merge", &SensorSuite::merge)
+      .function("remove",
+                em::select_overload<void(const Sensor&)>(&SensorSuite::remove))
+      .function("remove", em::select_overload<void(const std::string&)>(
+                              &SensorSuite::remove))
+      .function("clear", &SensorSuite::clear);
 
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",

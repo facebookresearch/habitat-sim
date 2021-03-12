@@ -95,15 +95,41 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
     return static_cast<const scene::SceneNode&>(
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
-
+  /**
+   * @brief Return a pointer to this Sensor's SensorSpec
+   */
   SensorSpec::ptr specification() const { return spec_; }
 
+  /**
+   * @brief Return whether or not this Sensor is a VisualSensor
+   */
   virtual bool isVisualSensor() const { return false; }
 
-  // can be called ONLY when it is attached to a scene node
+  /**
+   * @brief Sets node's position and orientation from Sensor's SensorSpec
+   * can be called ONLY when it is attached to a scene node
+   */
   void setTransformationFromSpec();
 
+  /**
+   * @brief Draws an observation to the frame buffer using simulator's renderer,
+   * then reads the observation to the sensor's memory buffer
+   * @return true if success, otherwise false (e.g., failed to draw or read
+   * observation)
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be drawn, obs Instance of Observation class in which the
+   * observation will be stored
+   */
   virtual bool getObservation(sim::Simulator& sim, Observation& obs) = 0;
+
+  /**
+   * @brief Updates ObservationSpace space with spaceType, shape, and dataType
+   * of this sensor. The information in space is later used to resize the
+   * sensor's memory buffer if sensor is resized.
+   * @return true if success, otherwise false
+   * @param[in] space Instance of ObservationSpace class which will be updated
+   * with information from this sensor
+   */
   virtual bool getObservationSpace(ObservationSpace& space) = 0;
 
   /**
