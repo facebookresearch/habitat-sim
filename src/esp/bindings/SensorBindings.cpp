@@ -85,17 +85,17 @@ void initSensorBindings(py::module& m) {
   py::class_<VisualSensorSpec, VisualSensorSpec::ptr, SensorSpec>(
       m, "VisualSensorSpec", py::dynamic_attr())
       .def(py::init(&VisualSensorSpec::create<>))
-      .def_readwrite("ortho_scale", &VisualSensorSpec::ortho_scale)
+      .def_readwrite("near", &VisualSensorSpec::near)
+      .def_readwrite("far", &VisualSensorSpec::far)
       .def_readwrite("resolution", &VisualSensorSpec::resolution)
-      .def_readwrite("encoding", &VisualSensorSpec::encoding)
-      .def_readwrite("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer);
+      .def_readwrite("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer)
+      .def_readwrite("channels", &VisualSensorSpec::channels);
 
   // ====CameraSensorSpec ====
   py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec,
              SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
-      .def_readwrite("channels", &CameraSensorSpec::channels)
-      .def_readwrite("observation_space", &CameraSensorSpec::observationSpace);
+      .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
   // ==== SensorFactory ====
   py::class_<SensorFactory>(m, "SensorFactory")
