@@ -260,7 +260,9 @@ void SensorTest::testSensorDestructors() {
   nextGrandchild = nextGrandchild->nextSibling();
   CORRADE_VERIFY(!nextGrandchild);
 
-  // Delete sensor that doesn't exist and verify no errors
+  // Delete sensor that doesn't exist
+  // Message that Sensor does not exist will be logged, but no errors will be
+  // thrown
   SensorFactory::deleteSensor(parentNode, "1C");
 }
 

@@ -136,23 +136,21 @@ void SceneNode::removeSensorsFromParentNodeSensorSuite() {
 
 void SceneNode::removeSubtreeSensorsFromAncestors() {
   for (const auto& sensor : subtreeSensorSuite_->getSensors()) {
-    SceneNode* currentNode = this;
-    do {
-      currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
+    SceneNode* currentNode = dynamic_cast<SceneNode*>(this->parent());
+    while (currentNode != nullptr && !SceneGraph::isRootNode(*currentNode)) {
       currentNode->getSubtreeSensors().erase(sensor.first);
-    } while (!SceneGraph::isRootNode(*currentNode) &&
-             currentNode->parent() != nullptr);
+      currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
+    }
   }
 }
 
 void SceneNode::addSubtreeSensorsToAncestors() {
   for (const auto& sensor : subtreeSensorSuite_->getSensors()) {
-    SceneNode* currentNode = this;
-    do {
-      currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
+    SceneNode* currentNode = dynamic_cast<SceneNode*>(this->parent());
+    while (currentNode != nullptr && !SceneGraph::isRootNode(*currentNode)) {
       currentNode->getSubtreeSensorSuite().add(sensor.second);
-    } while (!SceneGraph::isRootNode(*currentNode) &&
-             currentNode->parent() != nullptr);
+      currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
+    }
   }
 }
 
