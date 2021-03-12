@@ -72,7 +72,7 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
-    __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
+    __sensors: Dict[str, "Sensor"] = attr.ib(factory=dict, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
@@ -118,12 +118,11 @@ class Simulator(SimulatorBackend):
         self.__set_from_config(self.config)
 
     def close(self) -> None:
-        for agent_sensorsuite in self.__sensors:
-            for sensor in agent_sensorsuite.values():
-                sensor.close()
-                del sensor
+        for _, sensor in self.__sensors.items():
+            sensor.close()
+            del sensor
 
-        self.__sensors = []
+        self.__sensors.clear()
 
         for agent in self.agents:
             agent.close()
@@ -254,9 +253,7 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self.__sensors: List[Dict[str, Sensor]] = [
-            dict() for i in range(len(config.agents))
-        ]
+        self.__sensors: Dict[str, Sensor] = {}
         self.__last_state = dict()
         for agent_id, agent_cfg in enumerate(config.agents):
             for spec in agent_cfg.sensor_specifications:
@@ -264,7 +261,7 @@ class Simulator(SimulatorBackend):
             self.initialize_agent(agent_id)
 
     def _update_simulator_sensors(self, uuid: str, agent_id: int) -> None:
-        self.__sensors[agent_id][uuid] = Sensor(
+        self.__sensors[uuid] = Sensor(
             sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
         )
 
@@ -341,16 +338,19 @@ class Simulator(SimulatorBackend):
             return_single = False
 
         for agent_id in agent_ids:
-            agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
-                sensor.draw_observation()
+            agent_sensors = self.get_agent(agent_id)._sensors
+            for _, sensor in agent_sensors.items():
+                sensor.draw_observation(self)
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
         for agent_id in agent_ids:
+            agent_sensors = self.get_agent(agent_id)._sensors
             agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
-            for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                agent_observations[sensor_uuid] = sensor.get_observation()
+            for sensor_uuid, _ in agent_sensors.items():
+                agent_observations[sensor_uuid] = self.__sensors[
+                    sensor_uuid
+                ].get_observation()
             observations[agent_id] = agent_observations
         if return_single:
             return next(iter(observations.values()))
@@ -370,11 +370,6 @@ class Simulator(SimulatorBackend):
     def _last_state(self, state: AgentState) -> None:
         # TODO Deprecate and remove
         self.__last_state[self._default_agent_id] = state
-
-    @property
-    def _sensors(self) -> Dict[str, "Sensor"]:
-        # TODO Deprecate and remove
-        return self.__sensors[self._default_agent_id]
 
     def last_state(self, agent_id: Optional[int] = None) -> AgentState:
         if agent_id is None:
@@ -471,103 +466,6 @@ class Simulator(SimulatorBackend):
 
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
-
-    def draw_observation(self, sensor_reader: SensorReader) -> None:
-        # sanity check:
-
-        # see if the sensor is attached to a scene graph, otherwise it is invalid,
-        # and cannot make any observation
-        if not sensor_reader._sensor_object.object:
-            raise habitat_sim.errors.InvalidAttachedObject(
-                "Sensor observation requested but sensor is invalid.\
-                 (has it been detached from a scene node?)"
-            )
-
-        # get the correct scene graph based on application
-        if sensor_reader._spec.sensor_type == SensorType.SEMANTIC:
-            if self.semantic_scene is None:
-                raise RuntimeError(
-                    "SemanticSensor observation requested but no SemanticScene is loaded"
-                )
-            scene = self.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self.get_active_scene_graph()
-
-        # now, connect the agent to the root node of the current scene graph
-
-        # sanity check is not needed on agent:
-        # because if a sensor is attached to a scene graph,
-        # it implies the agent is attached to the same scene graph
-        # (it assumes backend simulator will guarantee it.)
-
-        agent_node = sensor_reader._sensor_object.scene_node.parent
-        agent_node.parent = scene.get_root_node()
-
-        render_flags = habitat_sim.gfx.Camera.Flags.NONE
-
-        if self.frustum_culling:
-            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
-
-        with sensor_reader._sensor_object.render_target:
-            self.renderer.draw(self._sensor_object, scene, render_flags)
-
-        # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
-        if (
-            sensor_reader._spec.sensor_type == SensorType.SEMANTIC
-            and self.get_active_scene_graph()
-            is not self.get_active_semantic_scene_graph()
-        ):
-            agent_node.parent = self.get_active_scene_graph().get_root_node()
-            render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
-            self.renderer.draw(
-                sensor_reader._sensor_object,
-                self._sim.get_active_scene_graph(),
-                render_flags,
-            )
-
-    def get_observation(self, sensor_reader: SensorReader) -> Union[ndarray, "Tensor"]:
-
-        tgt = sensor_reader._sensor_object.render_target
-
-        if sensor_reader._spec.gpu2gpu_transfer:
-            with torch.cuda.device(sensor_reader._buffer.device):  # type: ignore[attr-defined]
-                if sensor_reader._spec.sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(sensor_reader._buffer.data_ptr())  # type: ignore[attr-defined]
-                elif sensor_reader._spec.sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(sensor_reader._buffer.data_ptr())  # type: ignore[attr-defined]
-                else:
-                    tgt.read_frame_rgba_gpu(sensor_reader._buffer.data_ptr())  # type: ignore[attr-defined]
-
-                obs = sensor_reader._buffer.flip(0)
-        else:
-            size = sensor_reader._sensor_object.framebuffer_size
-
-            if sensor_reader._spec.sensor_type == SensorType.SEMANTIC:
-                tgt.read_frame_object_id(
-                    mn.MutableImageView2D(
-                        mn.PixelFormat.R32UI, size, sensor_reader._buffer
-                    )
-                )
-            elif sensor_reader._spec.sensor_type == SensorType.DEPTH:
-                tgt.read_frame_depth(
-                    mn.MutableImageView2D(
-                        mn.PixelFormat.R32F, size, sensor_reader._buffer
-                    )
-                )
-            else:
-                tgt.read_frame_rgba(
-                    mn.MutableImageView2D(
-                        mn.PixelFormat.RGBA8_UNORM,
-                        size,
-                        sensor_reader._buffer.reshape(
-                            sensor_reader._spec.resolution[0], -1
-                        ),
-                    )
-                )
-
-            obs = np.flip(sensor_reader._buffer, axis=0)
-
-        return sensor_reader._noise_model(obs)
 
 
 class Sensor:

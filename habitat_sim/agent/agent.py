@@ -14,7 +14,6 @@ import quaternion
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
 from habitat_sim._ext.habitat_sim_bindings import SceneNode
-from habitat_sim.sensors.sensor_suite import SensorSuite
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -133,7 +132,6 @@ class Agent(object):
     """
 
     agent_config: AgentConfiguration
-    _sensors: SensorSuite
     controls: ObjectControls
     body: mn.scenegraph.AbstractFeature3D
 
@@ -141,11 +139,10 @@ class Agent(object):
         self,
         scene_node: hsim.SceneNode,
         agent_config: Optional[AgentConfiguration] = None,
-        _sensors: Optional[SensorSuite] = None,
         controls: Optional[ObjectControls] = None,
     ) -> None:
         self.agent_config = agent_config if agent_config else AgentConfiguration()
-        self._sensors = _sensors if _sensors else SensorSuite()
+        self._sensors = scene_node.subtree_sensors
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
@@ -179,8 +176,8 @@ class Agent(object):
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        sensor_suite = hsim.SensorFactory.create_sensors(self.scene_node, [spec])
-        self._sensors.add(sensor_suite[spec.uuid])
+        hsim.SensorFactory.create_sensors(self.scene_node, [spec])
+        self._sensors = self.scene_node.subtree_sensors
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
