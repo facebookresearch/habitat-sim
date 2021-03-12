@@ -46,7 +46,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
                  "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node. "
                  "The number of children of this node is not zero.", );
   CORRADE_ASSERT(
-      node.getSceneNodeTags() &= scene::SceneNodeTag::Leaf,
+      node.getSceneNodeTags() & scene::SceneNodeTag::Leaf,
       "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node.", );
   node.setType(scene::SceneNodeType::SENSOR);
   CORRADE_ASSERT(spec_,

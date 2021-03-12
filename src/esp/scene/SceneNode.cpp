@@ -84,7 +84,7 @@ SceneNode& SceneNode::createChild(SceneNodeTags childNodeTags) {
 
 SceneNode& SceneNode::setParent(SceneNode* newParent) {
   // Parent can not be leaf node
-  CORRADE_ASSERT(!(newParent->getSceneNodeTags() &= SceneNodeTag::Leaf),
+  CORRADE_ASSERT(!(newParent->getSceneNodeTags() & SceneNodeTag::Leaf),
                  "SceneNode::setParent(): New parent node can not be leaf node",
                  *this);
 
@@ -106,7 +106,7 @@ SceneNode& SceneNode::setParent(SceneNode* newParent) {
   removeSubtreeSensorsFromAncestors();
 
   // If current node is a leaf node, it may contain sensors
-  if (getSceneNodeTags() &= SceneNodeTag::Leaf) {
+  if (getSceneNodeTags() & SceneNodeTag::Leaf) {
     // Remove sensors from old parent node's nodeSensorSuite
     removeSensorsFromParentNodeSensorSuite();
   }
@@ -117,7 +117,7 @@ SceneNode& SceneNode::setParent(SceneNode* newParent) {
   addSubtreeSensorsToAncestors();
 
   // Add sensors to newParent's nodeSensorSuite
-  if (getSceneNodeTags() &= SceneNodeTag::Leaf) {
+  if (getSceneNodeTags() & SceneNodeTag::Leaf) {
     for (const auto& sensor : nodeSensorSuite_->getSensors()) {
       newParent->getNodeSensorSuite().add(sensor.second);
     }
@@ -136,23 +136,21 @@ void SceneNode::removeSensorsFromParentNodeSensorSuite() {
 
 void SceneNode::removeSubtreeSensorsFromAncestors() {
   for (const auto& sensor : subtreeSensorSuite_->getSensors()) {
-    SceneNode* currentNode = this;
-    do {
+    SceneNode* currentNode = dynamic_cast<SceneNode*>(this->parent());
+    while (currentNode != nullptr && !SceneGraph::isRootNode(*currentNode)) {
+      currentNode->getSubtreeSensors().erase(sensor.first);
       currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
-      // no need to worry that currentNode could be nullptr, no chance
-      currentNode->getSubtreeSensorSuite().getSensors().erase(sensor.first);
-    } while (!SceneGraph::isRootNode(*currentNode));
+    }
   }
 }
 
 void SceneNode::addSubtreeSensorsToAncestors() {
   for (const auto& sensor : subtreeSensorSuite_->getSensors()) {
-    SceneNode* currentNode = this;
-    do {
-      currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
-      // no need to worry that currentNode could be nullptr, no chance
+    SceneNode* currentNode = dynamic_cast<SceneNode*>(this->parent());
+    while (currentNode != nullptr && !SceneGraph::isRootNode(*currentNode)) {
       currentNode->getSubtreeSensorSuite().add(sensor.second);
-    } while (!SceneGraph::isRootNode(*currentNode));
+      currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
+    }
   }
 }
 

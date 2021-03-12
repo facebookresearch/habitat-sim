@@ -62,7 +62,6 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         SensorFactory,
         SensorSpec,
         SensorSubType,
-        SensorSuite,
         SensorType,
         SimulatorConfiguration,
         VisualSensorSpec,

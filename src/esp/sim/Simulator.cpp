@@ -1096,7 +1096,7 @@ agent::Agent::ptr Simulator::addAgent(
   ag->setInitialState(state);
 
   // Add a RenderTarget to each of the agent's sensors
-  for (auto& it : ag->getSensorSuite().getSensors()) {
+  for (auto& it : ag->getSubtreeSensors()) {
     if (it.second.get().isVisualSensor()) {
       sensor::VisualSensor& sensor =
           static_cast<sensor::VisualSensor&>(it.second.get());
@@ -1147,7 +1147,7 @@ gfx::RenderTarget* Simulator::getRenderTarget(int agentId,
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
-    sensor::Sensor& sensor = ag->getSensorSuite().get(sensorId);
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
     if (sensor.isVisualSensor()) {
       return &(static_cast<sensor::VisualSensor&>(sensor).renderTarget());
     }
@@ -1160,7 +1160,7 @@ bool Simulator::displayObservation(const int agentId,
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
-    sensor::Sensor& sensor = ag->getSensorSuite().get(sensorId);
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
     return sensor.displayObservation(*this);
   }
   return false;
@@ -1171,7 +1171,7 @@ bool Simulator::drawObservation(const int agentId,
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
-    sensor::Sensor& sensor = ag->getSensorSuite().get(sensorId);
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
     return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
   }
   return false;
@@ -1182,8 +1182,8 @@ bool Simulator::getAgentObservation(const int agentId,
                                     sensor::Observation& observation) {
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    return ag->getSensorSuite().get(sensorId).getObservation(*this,
-                                                             observation);
+    return ag->getSubtreeSensorSuite().get(sensorId).getObservation(
+        *this, observation);
   }
   return false;
 }
@@ -1194,7 +1194,7 @@ int Simulator::getAgentObservations(
   observations.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    for (auto& s : ag->getSensorSuite().getSensors()) {
+    for (auto& s : ag->getSubtreeSensors()) {
       sensor::Observation obs;
       if (s.second.get().getObservation(*this, obs)) {
         observations[s.first] = obs;
@@ -1209,7 +1209,7 @@ bool Simulator::getAgentObservationSpace(const int agentId,
                                          sensor::ObservationSpace& space) {
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    return ag->getSensorSuite().get(sensorId).getObservationSpace(space);
+    return ag->getSubtreeSensorSuite().get(sensorId).getObservationSpace(space);
   }
   return false;
 }
@@ -1220,7 +1220,7 @@ int Simulator::getAgentObservationSpaces(
   spaces.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    for (auto& s : ag->getSensorSuite().getSensors()) {
+    for (auto& s : ag->getSubtreeSensors()) {
       sensor::ObservationSpace space;
       if (s.second.get().getObservationSpace(space)) {
         spaces[s.first] = space;

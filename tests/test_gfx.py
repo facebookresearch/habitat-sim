@@ -37,9 +37,7 @@ def test_unproject():
         sim.agents[0].scene_node.translation = mn.Vector3(0.5, 0, 0)
 
         # setup camera
-        render_camera = (
-            sim.agents[0].scene_node.node_sensors["color_sensor"].render_camera
-        )
+        render_camera = sim._sensors["color_sensor"]._sensor_object.render_camera
 
         # test unproject
         center_ray = render_camera.unproject(

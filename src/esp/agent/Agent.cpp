@@ -38,7 +38,7 @@ bool Agent::act(const std::string& actionName) {
                         actionSpec.actuation.at("amount"),
                         /*applyFilter=*/true);
     } else {
-      for (const auto& p : node().getNodeSensorSuite().getSensors()) {
+      for (const auto& p : node().getNodeSensors()) {
         controls_->action(p.second.get().object(), actionSpec.name,
                           actionSpec.actuation.at("amount"),
                           /*applyFilter=*/false);
@@ -77,7 +77,7 @@ void Agent::setState(const AgentState& state,
   node().setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 
   if (resetSensors) {
-    for (auto& p : node().getNodeSensorSuite().getSensors()) {
+    for (auto& p : node().getNodeSensors()) {
       p.second.get().setTransformationFromSpec();
     }
   }

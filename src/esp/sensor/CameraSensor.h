@@ -13,9 +13,7 @@ namespace esp {
 namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
-  int channels = 4;
-  // description of Sensor observation space as gym.spaces.Dict()
-  std::string observationSpace = "";
+  float orthoScale = 0.1f;
   CameraSensorSpec();
   void sanityCheck() override;
   bool operator==(const CameraSensorSpec& a) const;
@@ -41,27 +39,6 @@ class CameraSensor : public VisualSensor {
    * for rendering
    */
   gfx::RenderCamera* getRenderCamera() const override;
-
-  /**
-   * @brief Draws an observation to the frame buffer using simulator's renderer,
-   * then reads the observation to the sensor's memory buffer
-   * @return true if success, otherwise false (e.g., failed to draw or read
-   * observation)
-   * @param[in] sim Instance of Simulator class for which the observation needs
-   *                to be drawn, obs Instance of Observation class in which the
-   * observation will be stored
-   */
-  bool getObservation(sim::Simulator& sim, Observation& obs) override;
-
-  /**
-   * @brief Updates ObservationSpace space with spaceType, shape, and dataType
-   * of this sensor. The information in space is later used to resize the
-   * sensor's memory buffer if sensor is resized.
-   * @return true if success, otherwise false
-   * @param[in] space Instance of ObservationSpace class which will be updated
-   * with information from this sensor
-   */
-  bool getObservationSpace(ObservationSpace& space) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's
@@ -166,10 +143,9 @@ class CameraSensor : public VisualSensor {
     CORRADE_ASSERT(_near > 0,
                    "CameraSensor::setNear(): near plane distance must be "
                    "greater than 0", );
-    near_ = _near;
+    cameraSensorSpec_->near = _near;
     recomputeBaseProjectionMatrix();
   }
-  float getNear() const { return near_; }
 
   /**
    * @brief Sets far plane distance.
@@ -178,12 +154,9 @@ class CameraSensor : public VisualSensor {
     CORRADE_ASSERT(
         _far > 0,
         "CameraSensor::setFar(): Far plane distance must be greater than 0", );
-    far_ = _far;
+    cameraSensorSpec_->far = _far;
     recomputeBaseProjectionMatrix();
   }
-  float getFar() const { return far_; }
-
-  CameraSensorSpec getSensorSpec() { return *cameraSensorSpec_; }
 
  protected:
   /**
@@ -199,13 +172,6 @@ class CameraSensor : public VisualSensor {
    * change.
    */
   void recomputeProjectionMatrix();
-
-  /**
-   * @brief Read the observation that was rendered by the simulator
-   * @param[in,out] obs Instance of Observation class in which the observation
-   * will be stored
-   */
-  virtual void readObservation(Observation& obs);
 
   /**
    * @brief This camera's projection matrix. Should be recomputeulated every
