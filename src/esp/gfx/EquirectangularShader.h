@@ -10,6 +10,8 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Shaders/Generic.h>
+#include "Magnum/GL/Mesh.h"
+#include "esp/gfx/CubeMap.h"
 
 #include "esp/core/esp.h"
 
@@ -70,6 +72,7 @@ class EquirectangularShader : public Magnum::GL::AbstractShaderProgram {
 
   ~EquirectangularShader() override = default;
 
+
   /** @brief Flags */
   Flags flags() const { return flags_; }
 
@@ -86,6 +89,7 @@ class EquirectangularShader : public Magnum::GL::AbstractShaderProgram {
   // EquirectangularShader& bindObjectIdTexture(Magnum::GL::Texture2D&
   // texture);
 
+  void draw(Magnum::GL::Mesh& mesh, CubeMap& cubemap);
  protected:
   Flags flags_;
 

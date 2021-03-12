@@ -52,6 +52,7 @@
 #include "esp/io/io.h"
 
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/EquirectangularSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
@@ -524,6 +525,7 @@ Viewer::Viewer(const Arguments& arguments)
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
   auto cameraSensorSpec = esp::sensor::CameraSensorSpec::create();
+  cameraSensorSpec->uuid = "rgba_camera";
   cameraSensorSpec->sensorSubType =
       args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
                                  : esp::sensor::SensorSubType::Pinhole;
@@ -531,8 +533,13 @@ Viewer::Viewer(const Arguments& arguments)
   cameraSensorSpec->position = {0.0f, 1.5f, 0.0f};
   cameraSensorSpec->orientation = {0, 0, 0};
   cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  agentConfig.sensorSpecifications = {cameraSensorSpec};
 
+
+  auto equirectangularSensorSpec = esp::sensor::EquirectangularSensorSpec::create();
+  equirectangularSensorSpec->uuid = "equirectangular";
+  equirectangularSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+
+  agentConfig.sensorSpecifications = {cameraSensorSpec, equirectangularSensorSpec};
   simulator_->addAgent(agentConfig);
 
   // Set up camera
@@ -880,12 +887,20 @@ void Viewer::drawEvent() {
   }
   uint32_t visibles = 0;
   if (flyingCameraMode_) {
-    Mn::GL::defaultFramebuffer.bind();
-    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-      esp::gfx::RenderCamera::Flags flags =
-          esp::gfx::RenderCamera::Flag::FrustumCulling;
-      visibles += renderCamera_->draw(it.second, flags);
-    }
+    simulator_->drawObservation(defaultAgentId_, "equirectangular");
+    esp::gfx::RenderTarget* sensorRenderTarget =
+            simulator_->getRenderTarget(defaultAgentId_, "equirectangular");
+        CORRADE_ASSERT(sensorRenderTarget,
+                       "Error in Viewer::drawEvent: sensor's rendering target "
+                       "cannot be nullptr.", );
+        sensorRenderTarget->blitRgbaToDefault();
+    // Mn::GL::defaultFramebuffer.bind();
+    // for (auto& it : activeSceneGraph_->getDrawableGroups()) {
+    //   esp::gfx::RenderCamera::Flags flags =
+    //       esp::gfx::RenderCamera::Flag::FrustumCulling;
+    //   visibles += renderCamera_->draw(it.second, flags);
+  // }
+
   } else {
     // using polygon offset to increase mesh depth to a avoid z-fighting with
     // debug draw (since lines will not respond to offset).
@@ -911,8 +926,10 @@ void Viewer::drawEvent() {
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
     visibles = renderCamera_->getPreviousNumVisibleDrawables();
+    // esp::gfx::RenderTarget* sensorRenderTarget =
+    //     simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
     esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
+         simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
     CORRADE_ASSERT(sensorRenderTarget,
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );

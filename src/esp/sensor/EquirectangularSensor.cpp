@@ -30,6 +30,7 @@ void EquirectangularSensorSpec::sanityCheck() {
 EquirectangularSensor::EquirectangularSensor(scene::SceneNode& cameraNode,
                              const EquirectangularSensorSpec::ptr& spec)
     : VisualSensor(cameraNode, spec) {
+  equirectangularSensorSpec_->sanityCheck();
   // initialize a cubemap
   auto& res = equirectangularSensorSpec_->resolution;
   int size = res[0] < res[1] ? res[0] : res[1];
@@ -70,15 +71,13 @@ EquirectangularSensor::EquirectangularSensor(scene::SceneNode& cameraNode,
       break;
   }
   shader_ = new gfx::EquirectangularShader(equirectangularShaderFlags_);
-  // prepare a big triangle mesh to cover the screen
+  // prepare a big rectangular mesh
   mesh_ = Mn::GL::Mesh{};
-  mesh_.setCount(3);
+  mesh_.setCount(4);
 }
 
 bool EquirectangularSensorSpec::operator==(const EquirectangularSensorSpec& a) const {
-  return VisualSensorSpec::operator==(a) &&
-         focalLength == a.focalLength &&
-         principalPointOffset == a.principalPointOffset;
+  return VisualSensorSpec::operator==(a);
 }
 
 
@@ -116,7 +115,7 @@ bool EquirectangularSensor::drawObservation(sim::Simulator& sim) {
             cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
     }
     renderTarget().renderEnter();
-    shader_->draw(mesh_);
+    shader_->draw(mesh_, *cubeMap_);
     renderTarget().renderExit();
     return true;
 }

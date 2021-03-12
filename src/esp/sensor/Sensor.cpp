@@ -30,7 +30,7 @@ void SensorSpec::sanityCheck() {
       sensorType >= SensorType::None && sensorType <= SensorType::Text,
       "SensorSpec::sanityCheck(): sensorType is illegal", );
   CORRADE_ASSERT(sensorSubType >= SensorSubType::None &&
-                     sensorSubType <= SensorSubType::Orthographic,
+                     sensorSubType <= SensorSubType::Equirectangular,
                  "SensorSpec::sanityCheck(): sensorSubType is illegal", );
   CORRADE_ASSERT((abs(position.array()) >= 0).any(),
                  "SensorSpec::sanityCheck(): position is illegal", );

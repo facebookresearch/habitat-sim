@@ -9,6 +9,8 @@
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/Version.h>
+#include "Magnum/GL/Mesh.h"
+#include "esp/gfx/CubeMap.h"
 
 #include <sstream>
 
@@ -58,5 +60,11 @@ EquirectangularShader& EquirectangularShader::bindDepthTexture(
   return *this;
 }
 
+void EquirectangularShader::draw(Magnum::GL::Mesh& mesh, CubeMap& cubemap) {
+  Corrade::Containers::StaticArray<6, Magnum::GL::Framebuffer>& framebuffer = cubemap.getFrameBuffer();
+
+
+  Magnum::GL::AbstractShaderProgram::draw(mesh);
+}
 }  // namespace gfx
 }  // namespace esp

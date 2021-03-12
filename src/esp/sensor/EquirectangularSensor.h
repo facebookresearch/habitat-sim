@@ -30,10 +30,6 @@ struct EquirectangularSensorSpec : public VisualSensorSpec {
    * @brief operator ==, check if 2 specs are equal
    */
   bool operator==(const EquirectangularSensorSpec& a) const;
-
-  float near = 0.01f;
-  float far = 1000;
-
   /**
    * @brief check if the specification is legal
    */
