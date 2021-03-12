@@ -35,8 +35,8 @@ VoxelWrapper::VoxelWrapper(std::string renderAssetHandle,
                            esp::scene::SceneNode* sceneNode,
                            esp::assets::ResourceManager& resourceManager_,
                            Mn::Vector3& voxelSize,
-                           Mn::Vector3i& voxelDimensions,
-                           int resolution) {
+                           Mn::Vector3i& voxelDimensions) {
+  int resolution = voxelDimensions[0] * voxelDimensions[1] * voxelDimensions[2];
   std::string voxelGridHandle =
       renderAssetHandle + "_" + std::to_string(resolution);
   // check for existence of specified VoxelGrid

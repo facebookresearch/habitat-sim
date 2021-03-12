@@ -396,10 +396,13 @@ class VoxelGrid {
   /**
    * @brief Helper function for generate mesh. Adds a cube voxel to a mesh.
    * @param positions A vector of vertices for the mesh.
+   * @param colors A vector of per-pertice colors
    * @param indices A vector of indicies for the faces on the mesh.
    * @param local_coords A voxel index specifying the location of the voxel.
    */
   void addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
+                                std::vector<Mn::Vector3>& normals,
+                                std::vector<Mn::Color3>& colors,
                                 std::vector<Mn::UnsignedInt>& indices,
                                 Mn::Vector3i local_coords);
 
@@ -407,11 +410,14 @@ class VoxelGrid {
    * @brief Helper function for generate mesh. Adds a vector voxel to a mesh
    * which points in a specified direction.
    * @param positions A vector of vertices for the mesh.
+   * @param colors A vector of per-pertice colors
    * @param indices A vector of indicies for the faces on the mesh.
    * @param local_coords A voxel index specifying the location of the voxel.
    * @param vec The vector to be converted into a mesh.
    */
   void addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
+                                 std::vector<Mn::Vector3>& normals,
+                                 std::vector<Mn::Color3>& colors,
                                  std::vector<Mn::UnsignedInt>& indices,
                                  Mn::Vector3i& local_coords,
                                  Mn::Vector3& vec);

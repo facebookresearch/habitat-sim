@@ -833,51 +833,18 @@ void Viewer::displayVoxelField(int objectID) {
   voxelGrid->generateBoolGridFromFloatGrid("SignedDistanceField", "SDFSubset",
                                            curDistanceVisualization,
                                            curDistanceVisualization + 1);
+  !Mn::Debug();
   voxelGrid->generateMesh("SDFSubset");
+  !Mn::Debug();
   voxelGrid->generateDistanceFlowField("FlowField");
   voxelGrid->generateMesh("FlowField", true);
 
-  // custom shader for voxel grid
-  Magnum::Shaders::MeshVisualizer3D shader_{
-      Magnum::Shaders::MeshVisualizer3D::Flag::Wireframe};
-  const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
-  shader_.setViewportSize(Mn::Vector2{viewportSize});
-  shader_.setColor(0x2f83cc7f_rgbaf)
-      .setWireframeColor(0xdcdcdc_rgbf)
-      .setWireframeWidth(2.0);
-
-  objectPickingHelper_->prepareToDraw();
-
-  // redraw the scene on the object picking framebuffer
-  esp::gfx::RenderCamera::Flags flags =
-      esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
-  if (simulator_->isFrustumCullingEnabled())
-    flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-  for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-    renderCamera_->draw(it.second, flags);
-  }
-  !Mn::Debug();
-
-  // Get visualSceneNode.
-  esp::scene::SceneNode* objectVisNode =
-      objectID == -1 ? &activeSceneGraph_->getRootNode()
-                     : simulator_->getObjectVisualSceneNodes(objectID)[0];
-
-  esp::scene::SceneNode* visualVoxelNode = &(objectVisNode->createChild());
-
   // visualVoxelNode->setTranslation(translation);
-  /*if (objectID == -1) {
+  if (objectID == -1) {
     simulator_->setSceneVoxelizationDraw(true, "SDFSubset", 0);
   } else {
     simulator_->setObjectVoxelizationDraw(true, objectID, "SDFSubset", 0);
-  }*/
-  objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
-      voxelGrid->getMeshGL("FlowField"), visualVoxelNode, &shader_);
-  /*auto meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
-      rootNode, shader_, *voxel_grids_[nextVoxelGridMeshId - 1],
-      &objectPickingHelper_->getDrawables());*/
-
-  // objectVisNode->setScaling(Mn::Vector3(2, 2, 2));
+  }
 }
 #endif
 
@@ -1445,38 +1412,29 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     }
     case KeyEvent::Key::G: {
-      std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
-      esp::geo::VoxelWrapper* vWrapper =
-          simulator_->getObjectVoxelization(-1).get();
-      !Mn::Debug();
-      vWrapper->getVoxelGrid()->generateEuclideanDistanceSDF();
-      vWrapper->getVoxelGrid()->generateDistanceFlowField("FlowField");
-      !Mn::Debug();
-      vWrapper->getVoxelGrid()->generateBoolGridFromVector3Grid(
-          "FlowField", "Flow", isHorizontal);
-      !Mn::Debug();
-      vWrapper->getVoxelGrid()->generateMesh("Flow");
-      !Mn::Debug();
-      // Get visualSceneNode.
+      int resolutions[3] = {2000000, 100000, 1000};
+      resolutionInd++;
+      unsigned int resolution = resolutions[0];
+      std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization;
       int objectID = -1;
-      esp::scene::SceneNode* objectVisNode =
-          objectID == -1 ? &activeSceneGraph_->getRootNode()
-                         : simulator_->getObjectVisualSceneNodes(objectID)[0];
+      if (objectID == -1) {
+        simulator_->createSceneVoxelization(resolution);
+        objectVoxelization = simulator_->getSceneVoxelization();
+      } else {
+        simulator_->createObjectVoxelization(objectID, resolution);
+        objectVoxelization = simulator_->getObjectVoxelization(objectID);
+      }
 
-      esp::scene::SceneNode* visualVoxelNode = &(objectVisNode->createChild());
-      Magnum::Shaders::MeshVisualizer3D shader_{
-          Magnum::Shaders::MeshVisualizer3D::Flag::Wireframe};
-      const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
-      shader_.setViewportSize(Mn::Vector2{viewportSize});
-      shader_.setColor(0x2f83cc7f_rgbaf)
-          .setWireframeColor(0xdcdcdc_rgbf)
-          .setWireframeWidth(2.0);
-      // visualVoxelNode->setTranslation(translation);
-      // simulator_->setObjectVoxelizationDraw(true, objectID);
+      auto voxelGrid = objectVoxelization->getVoxelGrid();
+      voxelGrid->generateInteriorExteriorVoxelGrid();
+      voxelGrid->generateEuclideanDistanceSDF("SignedDistanceField");
 
-      objectPickingHelper_->createPickedObjectVoxelGridVisualizer(
-          vWrapper->getVoxelGrid()->getMeshGL("Flow"), visualVoxelNode,
-          &shader_);
+      int curDistanceVisualization = -1 * (resolutionInd % 18);
+      voxelGrid->generateBoolGridFromFloatGrid(
+          "SignedDistanceField", "SDFSubset", curDistanceVisualization,
+          curDistanceVisualization + 1);
+      !Mn::Debug();
+      voxelGrid->generateMesh("SDFSubset");
     }
     default:
       break;

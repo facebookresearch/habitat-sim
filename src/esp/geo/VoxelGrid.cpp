@@ -5,7 +5,9 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
+#include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
+#include <Magnum/Primitives/Cube.h>
 
 #include "VoxelGrid.h"
 #include "esp/assets/ResourceManager.h"
@@ -739,22 +741,58 @@ void VoxelGrid::generateDistanceFlowField(std::string gridName) {
 }
 
 void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
+                                         std::vector<Mn::Vector3>& normals,
+                                         std::vector<Mn::Color3>& colors,
                                          std::vector<Mn::UnsignedInt>& indices,
                                          Mn::Vector3i local_coords) {
+  Mn::Trade::MeshData cubeData = Mn::Primitives::cubeSolid();
+
   // add cube to mesh
   Mn::Vector3 mid = getGlobalCoords(local_coords);
   // add vertices
-  for (int i = -1; i <= 1; i += 2) {
+  /*for (int i = -1; i <= 1; i += 2) {
     for (int j = -1; j <= 1; j += 2) {
       for (int k = -1; k <= 1; k += 2) {
         positions.push_back(mid + Mn::Vector3(i, j, k) * m_voxelSize /
                                       2);  // TODO: Divide m_voxelSize by 2
+        colors.push_back(Mn::Color3(.1, .7, 1));
+        normals.push_back(Mn::Vector3(i, j, k) * m_voxelSize / 2);
       }
     }
+  }*/
+  auto cubePositions = cubeData.positions3DAsArray();
+  auto cubeNormals = cubeData.normalsAsArray();
+
+  /*for (Mn::Vector3 pos : cubeData.positions3DAsArray()) {
+    positions.push_back(pos * m_voxelSize / 2 + mid);
+  }
+  for (Mn::Vector3 norm : cubeData.normalsAsArray()) {
+    normals.push_back(norm);
+  }
+  for (int i = 0; i < 24; i++) {
+    colors.push_back(Mn::Color3(.1, .7, 1));
+  }
+  unsigned int sz = positions.size() - 24;
+  auto cubeIndices = cubeData.indices();
+  for (int i = 0; i < 36; i++) {
+    indices.push_back(sz + cubeIndices[i][0]);
+  }*/
+
+  for (int i = 0; i < 24; i++) {
+    Mn::Vector3 vertOffset = cubePositions[i] * m_voxelSize / 2;
+    positions.push_back(vertOffset + mid);
+    normals.push_back(cubePositions[i].normalized() * 1 / 4 +
+                      cubeNormals[i].normalized() * 3 / 4);
+    colors.push_back(Mn::Color3(.4, .8, 1));
+  }
+  unsigned int sz = positions.size() - 24;
+  auto cubeIndices = cubeData.indices();
+  for (int i = 0; i < 36; i++) {
+    indices.push_back(sz + cubeIndices[i][0]);
   }
   // add triangles (12)
-  unsigned int sz = positions.size() - 8;
-  indices.push_back(sz);
+
+  /*indices.push_back(sz);
   indices.push_back(sz + 3);
   indices.push_back(sz + 2);
   indices.push_back(sz);
@@ -794,27 +832,59 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   indices.push_back(sz + 5);
   indices.push_back(sz + 1);
   indices.push_back(sz + 0);
-  indices.push_back(sz + 4);
+  indices.push_back(sz + 4);*/
 }
 
 void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
+                                          std::vector<Mn::Vector3>& normals,
+                                          std::vector<Mn::Color3>& colors,
                                           std::vector<Mn::UnsignedInt>& indices,
                                           Mn::Vector3i& local_coords,
                                           Mn::Vector3& vec) {
   Mn::Vector3 mid = getGlobalCoords(local_coords);
-  Mn::Vector3 pos1 = mid + Mn::Vector3(m_voxelSize[0] * 1 / 20, 0, 0);
-  Mn::Vector3 pos2 = mid - Mn::Vector3(m_voxelSize[0] * 1 / 20, 0, 0);
-  Mn::Vector3 pos3 = vec.normalized() * m_voxelSize * 1 / 2 + mid;
+  Mn::Vector3 pos1 = vec.normalized() * m_voxelSize * 1 / 2 + mid;
+  Mn::Vector3 orthog1 = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
+  Mn::Vector3 orthog2 = Mn::Math::cross(vec, orthog1);
+
+  Mn::Vector3 pos2 = mid + orthog1.normalized() * m_voxelSize * 1 / 20;
+  Mn::Vector3 pos3 = mid + orthog2.normalized() * m_voxelSize * 1 / 20;
+  Mn::Vector3 pos4 = mid - orthog1.normalized() * m_voxelSize * 1 / 20;
+  Mn::Vector3 pos5 = mid - orthog2.normalized() * m_voxelSize * 1 / 20;
+
   positions.push_back(pos1);
   positions.push_back(pos2);
   positions.push_back(pos3);
-  unsigned int sz = positions.size() - 3;
+  positions.push_back(pos4);
+  positions.push_back(pos5);
+
+  colors.push_back(Mn::Color3(1, 1, 1));
+  colors.push_back(Mn::Color3(0, .3, 1));
+  colors.push_back(Mn::Color3(0, .3, 1));
+  colors.push_back(Mn::Color3(0, .3, 1));
+  colors.push_back(Mn::Color3(0, .3, 1));
+
+  normals.push_back(vec.normalized());
+  normals.push_back((pos1 - mid).normalized());
+  normals.push_back((pos2 - mid).normalized());
+  normals.push_back((pos3 - mid).normalized());
+  normals.push_back((pos4 - mid).normalized());
+
+  unsigned int sz = positions.size() - 5;
+  indices.push_back(sz);
+  indices.push_back(sz + 2);
+  indices.push_back(sz + 1);
+
+  indices.push_back(sz);
+  indices.push_back(sz + 3);
+  indices.push_back(sz + 2);
+
+  indices.push_back(sz);
+  indices.push_back(sz + 4);
+  indices.push_back(sz + 3);
+
   indices.push_back(sz);
   indices.push_back(sz + 1);
-  indices.push_back(sz + 2);
-  indices.push_back(sz + 2);
-  indices.push_back(sz + 1);
-  indices.push_back(sz);
+  indices.push_back(sz + 4);
 }
 
 void VoxelGrid::generateMesh(std::string gridName, bool isVectorField) {
@@ -826,6 +896,8 @@ void VoxelGrid::generateMesh(std::string gridName, bool isVectorField) {
 
   std::vector<Mn::UnsignedInt> indices;
   std::vector<Mn::Vector3> positions;
+  std::vector<Mn::Vector3> normals;
+  std::vector<Mn::Color3> colors;
   int num_filled = 0;
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
@@ -834,12 +906,14 @@ void VoxelGrid::generateMesh(std::string gridName, bool isVectorField) {
         if (isVectorField) {
           Mn::Vector3 vec = getVector3VoxelByIndex(local_coords, gridName);
           if (vec != Mn::Vector3(0, 0, 0))
-            addVectorToMeshPrimitives(positions, indices, local_coords, vec);
+            addVectorToMeshPrimitives(positions, normals, colors, indices,
+                                      local_coords, vec);
         } else {
           bool val = getBoolVoxelByIndex(local_coords, gridName);
           if (val) {
             num_filled++;
-            addVoxelToMeshPrimitives(positions, indices, local_coords);
+            addVoxelToMeshPrimitives(positions, normals, colors, indices,
+                                     local_coords);
           }
         }
       }
@@ -847,42 +921,44 @@ void VoxelGrid::generateMesh(std::string gridName, bool isVectorField) {
   }
   !Mn::Debug();
   Mn::Debug() << "Number of filled voxels for the visual mesh: " << num_filled;
-  /*meshData_ = std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::owned(
-      Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
-                          {},
-                          indices,
-                          Mn::Trade::MeshIndexData{indices},
-                          {},
-                          positions,
-                          {Mn::Trade::MeshAttributeData{
-                              Mn::Trade::MeshAttribute::Position,
-                              Cr::Containers::arrayView(positions)}}}));*/
+
   if (meshDataDict_.find(gridName) != meshDataDict_.end()) {
-    // Mn::GL::Mesh* meshGL = Mn::MeshTools::compile(*meshDataDict_[gridName]);
+    Mn::Trade::MeshData positionMeshData{
+        Mn::MeshPrimitive::Triangles,
+        {},
+        indices,
+        Mn::Trade::MeshIndexData{indices},
+        {},
+        positions,
+        {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
+                                      Cr::Containers::arrayView(positions)}}};
     meshDataDict_[gridName] =
-        std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::owned(
-            Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
-                                {},
-                                indices,
-                                Mn::Trade::MeshIndexData{indices},
-                                {},
-                                positions,
-                                {Mn::Trade::MeshAttributeData{
-                                    Mn::Trade::MeshAttribute::Position,
-                                    Cr::Containers::arrayView(positions)}}}));
+        std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::interleave(
+            positionMeshData,
+            {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color,
+                                          Cr::Containers::arrayView(colors)},
+             Mn::Trade::MeshAttributeData{
+                 Mn::Trade::MeshAttribute::Normal,
+                 Cr::Containers::arrayView(normals)}}));
   } else {
+    Mn::Trade::MeshData positionMeshData{
+        Mn::MeshPrimitive::Triangles,
+        {},
+        indices,
+        Mn::Trade::MeshIndexData{indices},
+        {},
+        positions,
+        {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
+                                      Cr::Containers::arrayView(positions)}}};
     meshDataDict_.insert(std::make_pair(
         gridName,
-        std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::owned(
-            Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
-                                {},
-                                indices,
-                                Mn::Trade::MeshIndexData{indices},
-                                {},
-                                positions,
-                                {Mn::Trade::MeshAttributeData{
-                                    Mn::Trade::MeshAttribute::Position,
-                                    Cr::Containers::arrayView(positions)}}}))));
+        std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::interleave(
+            positionMeshData,
+            {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color,
+                                          Cr::Containers::arrayView(colors)},
+             Mn::Trade::MeshAttributeData{
+                 Mn::Trade::MeshAttribute::Normal,
+                 Cr::Containers::arrayView(normals)}}))));
   }
 
   // meshGL_ =

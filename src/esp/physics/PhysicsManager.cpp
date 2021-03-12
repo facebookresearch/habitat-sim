@@ -588,35 +588,22 @@ void PhysicsManager::setVoxelizationDraw(std::string& gridName,
     // destroy the node
     delete rigidBase->VoxelNode_;
     rigidBase->VoxelNode_ = nullptr;
-  } else if (drawVoxelization && rigidBase->visualNode_) {
-    // add a new VoxelNode_
-    rigidBase->VoxelNode_ = &rigidBase->visualNode_->createChild();
-    /*existingObjects_.at(physObjectID)
-        ->VoxelNode_->MagnumObject::setTranslation(
-            existingObjects_[physObjectID]
-                ->visualNode_->getCumulativeBB()
-                .center());*/
 
-    // custom shader for voxel grid
-    Magnum::Shaders::MeshVisualizer3D shader_{
-        Magnum::Shaders::MeshVisualizer3D::Flag::Wireframe};
-    const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
-    shader_.setViewportSize(Mn::Vector2{viewportSize});
-    shader_.setColor(0x2f83cc7f_rgbaf)
-        .setWireframeColor(0xdcdcdc_rgbf)
-        .setWireframeWidth(2.0);
+  } else if (drawVoxelization && rigidBase->visualNode_) {
+    if (rigidBase->VoxelNode_) {
+      // if the VoxelNode is already rendering something, destroy it.
+      delete rigidBase->VoxelNode_;
+    }
+
+    // re-create the voxel node
+    rigidBase->VoxelNode_ = &rigidBase->visualNode_->createChild();
 
     esp::geo::VoxelWrapper* voxelWrapper_ = rigidBase->voxelWrapper.get();
     gfx::Drawable::Flags meshAttributeFlags{};
-    !Mn::Debug();
     resourceManager_.createDrawable(
         voxelWrapper_->getVoxelGrid()->getMeshGL(gridName), meshAttributeFlags,
-        *rigidBase->VoxelNode_, DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY,
-        drawables);
-
-    // get the voxel grid mesh
-    // resourceManager_.addPrimitiveToDrawables(
-    //    0, *existingObjects_.at(physObjectID)->VoxelNode_, drawables);
+        *rigidBase->VoxelNode_, DEFAULT_LIGHTING_KEY,
+        PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
   }
 }
 
