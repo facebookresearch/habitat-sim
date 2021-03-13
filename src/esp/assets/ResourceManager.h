@@ -384,6 +384,7 @@ class ResourceManager {
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
       const std::string& filename) const;
 
+#ifdef ESP_BUILD_WITH_VHACD
   /**
    * @brief Converts a MeshMetaData into a obj file.
    *
@@ -403,7 +404,6 @@ class ResourceManager {
    */
   bool isAssetDataRegistered(const std::string& resourceName) const;
 
-#ifdef ESP_BUILD_WITH_VHACD
   /**
    * @brief Runs convex hull decomposition on a specified file.
    *

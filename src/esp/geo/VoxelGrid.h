@@ -31,7 +31,7 @@ class VoxelGrid {
  public:
 #ifdef ESP_BUILD_WITH_VHACD
   /**
-   * @brief Generates a boundary voxel grid using VHACD's voxelization
+   * @brief Generates a Boundary voxel grid using VHACD's voxelization
    * framework.
    * @param MeshData The mesh that will be voxelized
    * @param resolution The approximate number of voxels in the voxel grid.
@@ -52,7 +52,7 @@ class VoxelGrid {
    * @brief Loads a Voxel grid in from a file path. If the filepath points to a
    * directory, all .svx files will be loaded. If file path points to a file,
    * this file must represent a boolean voxel grid which will represent the
-   * voxel grid's boundary grid.
+   * voxel grid's Boundary grid.
    * @param filepath Can either be the path to a directory or a single .svx
    * file.
    */
@@ -119,7 +119,7 @@ class VoxelGrid {
    * @return The boolean value located at the index.
    */
   bool getBoolVoxelByIndex(const Mn::Vector3i& coords,
-                           std::string gridName = "boundary");
+                           std::string gridName = "Boundary");
 
   /**
    * @brief Sets the boolean value at a given index for a specific voxel grid.
@@ -129,7 +129,7 @@ class VoxelGrid {
    */
   void setBoolVoxelByIndex(const Mn::Vector3i& coords,
                            bool val,
-                           std::string gridName = "boundary");
+                           std::string gridName = "Boundary");
 
   /**
    * @brief Retrieves the integer value at a given index for a specific voxel
@@ -215,7 +215,7 @@ class VoxelGrid {
    * @return A shared pointer to the MeshData.
    */
   std::shared_ptr<Mn::Trade::MeshData> getMeshData(
-      std::string gridName = "boundary") {
+      std::string gridName = "Boundary") {
     if (meshDataDict_[gridName] == nullptr)
       generateMesh(gridName);
     return meshDataDict_[gridName];
@@ -227,7 +227,7 @@ class VoxelGrid {
    * @param gridName The key underwhich the desired voxel grid is registered.
    * @return A shared pointer to the MeshGL.
    */
-  Mn::GL::Mesh& getMeshGL(std::string gridName = "boundary") {
+  Mn::GL::Mesh& getMeshGL(std::string gridName = "Boundary") {
     if (meshDataDict_[gridName] == nullptr)
       generateMesh(gridName);
     return meshGLDict_[gridName];
@@ -344,7 +344,7 @@ class VoxelGrid {
 
   /**
    * @brief Generates an integer grid registered under "InteriorExterior" which
-   * stores +inf for exterior cells, -inf for interior cells, and 0 for boundary
+   * stores +inf for exterior cells, -inf for interior cells, and 0 for Boundary
    * cells.
    */
   void generateInteriorExteriorVoxelGrid();
@@ -361,7 +361,7 @@ class VoxelGrid {
   /**
    * @brief Generates a signed distance field using euclidean distance as a
    * distance metric. Also created a "ClosestBoundaryCell" vector3 grid which
-   * holds the index of the closest boundary grid.
+   * holds the index of the closest Boundary grid.
    * @param gridName The name underwhich to register the newly created euclidean
    * SDF.
    */
@@ -370,7 +370,7 @@ class VoxelGrid {
 
   /**
    * @brief Generates a Vector3 field where each vector of a cell points away
-   * from it's closest boundary cell.
+   * from it's closest Boundary cell.
    * @param gridName The name underwhich to register the newly created distance
    * flow field.
    */
@@ -388,7 +388,7 @@ class VoxelGrid {
    * @param gridName The name of the voxel grid to be converted into a mesh.
    * @param isVectorField If set to true, a vector field mesh will be generated.
    */
-  void generateMesh(std::string gridName = "boundary",
+  void generateMesh(std::string gridName = "Boundary",
                     bool isVectorField = false);
 
   ESP_SMART_POINTERS(VoxelGrid)
@@ -404,7 +404,7 @@ class VoxelGrid {
                                 std::vector<Mn::Vector3>& normals,
                                 std::vector<Mn::Color3>& colors,
                                 std::vector<Mn::UnsignedInt>& indices,
-                                Mn::Vector3i local_coords);
+                                Mn::Vector3i& local_coords);
 
   /**
    * @brief Helper function for generate mesh. Adds a vector voxel to a mesh

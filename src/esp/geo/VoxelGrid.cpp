@@ -40,7 +40,6 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
   m_voxelGridDimensions = Mn::Vector3i(dims[0], dims[1], dims[2]);
 
   VHACD::Vec3<double> center = vhacdVolume->getCenter();
-  Mn::Debug() << "Barycenter" << center[0] << center[1] << center[2];
 
   // VHACD computes a axis-aligned bounding box; we need to offset the voxelgrid
   // by the minimum corner of the AABB
@@ -51,7 +50,7 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
   const int gridSize = dims[0] * dims[1] * dims[2];
   bool* b_grid = new bool[gridSize];
   std::shared_ptr<bool> boundary_grid(b_grid);
-  boolGrids_.insert(std::make_pair("boundary", boundary_grid));
+  boolGrids_.insert(std::make_pair("Boundary", boundary_grid));
   int num_filled = 0;
   // Transfer data from Volume to VoxelGrid
   for (int i = 0; i < dims[0]; i++) {
@@ -66,8 +65,6 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
       }
     }
   }
-  Mn::Debug() << "Resolution: " << dims[0] << dims[1] << dims[2];
-  Mn::Debug() << "Number of filled voxels: " << num_filled;
 }
 #endif
 
@@ -81,7 +78,7 @@ VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
   bool* b_grid = new bool[gridSize];
   std::shared_ptr<bool> boundary_grid(b_grid);
   std::memset(boundary_grid.get(), false, gridSize * sizeof(bool));
-  boolGrids_.insert(std::make_pair("boundary", boundary_grid));
+  boolGrids_.insert(std::make_pair("Boundary", boundary_grid));
 }
 
 VoxelGrid::VoxelGrid(const std::string filepath) {}
@@ -290,7 +287,6 @@ int VoxelGrid::generateBoolGridFromFloatGrid(std::string floatGridName,
                                              float startRange,
                                              float endRange) {
   assert(floatGrids_.find(floatGridName) != floatGrids_.end());
-  Mn::Debug() << "hmm?";
   int num_filled = 0;
   if (boolGridName == "")
     boolGridName = floatGridName;
@@ -744,95 +740,32 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                          std::vector<Mn::Vector3>& normals,
                                          std::vector<Mn::Color3>& colors,
                                          std::vector<Mn::UnsignedInt>& indices,
-                                         Mn::Vector3i local_coords) {
+                                         Mn::Vector3i& local_coords) {
+  // Using the data of a cubeSolid to create the voxel cube
   Mn::Trade::MeshData cubeData = Mn::Primitives::cubeSolid();
 
   // add cube to mesh
+
+  // midpoint of a voxel
   Mn::Vector3 mid = getGlobalCoords(local_coords);
-  // add vertices
-  /*for (int i = -1; i <= 1; i += 2) {
-    for (int j = -1; j <= 1; j += 2) {
-      for (int k = -1; k <= 1; k += 2) {
-        positions.push_back(mid + Mn::Vector3(i, j, k) * m_voxelSize /
-                                      2);  // TODO: Divide m_voxelSize by 2
-        colors.push_back(Mn::Color3(.1, .7, 1));
-        normals.push_back(Mn::Vector3(i, j, k) * m_voxelSize / 2);
-      }
-    }
-  }*/
+
   auto cubePositions = cubeData.positions3DAsArray();
   auto cubeNormals = cubeData.normalsAsArray();
-
-  /*for (Mn::Vector3 pos : cubeData.positions3DAsArray()) {
-    positions.push_back(pos * m_voxelSize / 2 + mid);
-  }
-  for (Mn::Vector3 norm : cubeData.normalsAsArray()) {
-    normals.push_back(norm);
-  }
-  for (int i = 0; i < 24; i++) {
-    colors.push_back(Mn::Color3(.1, .7, 1));
-  }
-  unsigned int sz = positions.size() - 24;
-  auto cubeIndices = cubeData.indices();
-  for (int i = 0; i < 36; i++) {
-    indices.push_back(sz + cubeIndices[i][0]);
-  }*/
 
   for (int i = 0; i < 24; i++) {
     Mn::Vector3 vertOffset = cubePositions[i] * m_voxelSize / 2;
     positions.push_back(vertOffset + mid);
+    // Set the normals to be weighted such that cubes look slightly curved
     normals.push_back(cubePositions[i].normalized() * 1 / 4 +
                       cubeNormals[i].normalized() * 3 / 4);
     colors.push_back(Mn::Color3(.4, .8, 1));
   }
+  // cube faces
   unsigned int sz = positions.size() - 24;
   auto cubeIndices = cubeData.indices();
   for (int i = 0; i < 36; i++) {
     indices.push_back(sz + cubeIndices[i][0]);
   }
-  // add triangles (12)
-
-  /*indices.push_back(sz);
-  indices.push_back(sz + 3);
-  indices.push_back(sz + 2);
-  indices.push_back(sz);
-  indices.push_back(sz + 1);
-  indices.push_back(sz + 3);
-
-  indices.push_back(sz + 4);
-  indices.push_back(sz + 6);
-  indices.push_back(sz + 7);
-  indices.push_back(sz + 4);
-  indices.push_back(sz + 7);
-  indices.push_back(sz + 5);
-
-  indices.push_back(sz + 2);
-  indices.push_back(sz + 7);
-  indices.push_back(sz + 6);
-  indices.push_back(sz + 2);
-  indices.push_back(sz + 3);
-  indices.push_back(sz + 7);
-
-  indices.push_back(sz + 4);
-  indices.push_back(sz + 0);
-  indices.push_back(sz + 2);
-  indices.push_back(sz + 4);
-  indices.push_back(sz + 2);
-  indices.push_back(sz + 6);
-
-  indices.push_back(sz + 5);
-  indices.push_back(sz + 3);
-  indices.push_back(sz + 1);
-  indices.push_back(sz + 5);
-  indices.push_back(sz + 7);
-  indices.push_back(sz + 3);
-
-  indices.push_back(sz + 1);
-  indices.push_back(sz + 4);
-  indices.push_back(sz + 5);
-  indices.push_back(sz + 1);
-  indices.push_back(sz + 0);
-  indices.push_back(sz + 4);*/
 }
 
 void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
@@ -844,6 +777,9 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   Mn::Vector3 mid = getGlobalCoords(local_coords);
   Mn::Vector3 pos1 = vec.normalized() * m_voxelSize * 1 / 2 + mid;
   Mn::Vector3 orthog1 = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
+  if (orthog1 == Mn::Vector3(0, 0, 0)) {
+    orthog1 = Mn::Vector3(1, 0, 0);
+  }
   Mn::Vector3 orthog2 = Mn::Math::cross(vec, orthog1);
 
   Mn::Vector3 pos2 = mid + orthog1.normalized() * m_voxelSize * 1 / 20;
@@ -888,17 +824,17 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
 }
 
 void VoxelGrid::generateMesh(std::string gridName, bool isVectorField) {
-  !Mn::Debug();
   if (isVectorField)
     assert(vector3Grids_.find(gridName) != vector3Grids_.end());
   else
     assert(boolGrids_.find(gridName) != boolGrids_.end());
-
   std::vector<Mn::UnsignedInt> indices;
   std::vector<Mn::Vector3> positions;
   std::vector<Mn::Vector3> normals;
   std::vector<Mn::Color3> colors;
   int num_filled = 0;
+
+  // iterate through each voxel grid cell
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
@@ -919,9 +855,9 @@ void VoxelGrid::generateMesh(std::string gridName, bool isVectorField) {
       }
     }
   }
-  !Mn::Debug();
-  Mn::Debug() << "Number of filled voxels for the visual mesh: " << num_filled;
 
+  // If the mesh already exists, replace it. Otherwise, create a new entry in
+  // the dict
   if (meshDataDict_.find(gridName) != meshDataDict_.end()) {
     Mn::Trade::MeshData positionMeshData{
         Mn::MeshPrimitive::Triangles,
@@ -961,10 +897,9 @@ void VoxelGrid::generateMesh(std::string gridName, bool isVectorField) {
                  Cr::Containers::arrayView(normals)}}))));
   }
 
-  // meshGL_ =
-  //    std::make_unique<Magnum::GL::Mesh>(Mn::MeshTools::compile(*meshData_));
+  // If the mesh already exists, replace it. Otherwise, create a new entry in
+  // the dict
   if (meshGLDict_.find(gridName) != meshGLDict_.end()) {
-    // Mn::GL::Mesh* meshGL = Mn::MeshTools::compile(*meshDataDict_[gridName]);
     meshGLDict_[gridName] = Mn::MeshTools::compile(*meshDataDict_[gridName]);
   } else {
     meshGLDict_.insert(std::make_pair(
