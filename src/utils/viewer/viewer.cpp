@@ -190,6 +190,8 @@ Mouse Functions:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
   SHIFT-RIGHT:
     Click a mesh to highlight it.
+  CTRL-RIGHT:
+    (With 'enable-physics') Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 
@@ -233,6 +235,8 @@ Key Commands:
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
+  'g': (physics) Display a scene vector field.
+  'l': (physics) Iterate through different ranges of the scene's voxelized signed distance field.
   ==================================================
   )";
 

@@ -15,9 +15,6 @@
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
 
-using namespace Mn::Math::Literals;
-using Magnum::Math::Literals::operator""_degf;
-
 namespace esp {
 namespace physics {
 
