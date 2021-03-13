@@ -519,9 +519,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void createObjectVoxelization(int objectID,
-                                int resolution = 1000000,
-                                int sceneID = 0);
+  void createObjectVoxelization(int objectID, int resolution = 1000000);
 #endif
 
   /**
@@ -539,8 +537,7 @@ class Simulator {
    */
   void setObjectVoxelizationDraw(bool drawV,
                                  int objectID,
-                                 std::string gridName = "Boundary",
-                                 int sceneID = 0);
+                                 const std::string& gridName = "Boundary");
 
   /**
    * @brief Returns the VoxelWrapper for a particular object.
@@ -559,7 +556,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void createSceneVoxelization(int resolution = 1000000, int sceneID = 0);
+  void createSceneVoxelization(int resolution = 1000000);
 #endif
 
   /**
@@ -574,8 +571,7 @@ class Simulator {
    * the object.
    */
   void setSceneVoxelizationDraw(bool drawV,
-                                std::string gridName = "Boundary",
-                                int sceneID = 0);
+                                const std::string& gridName = "Boundary");
 
   /**
    * @brief Returns the VoxelWrapper for a particular object.

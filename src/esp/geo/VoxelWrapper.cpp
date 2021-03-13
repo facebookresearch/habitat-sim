@@ -10,7 +10,7 @@ namespace esp {
 namespace geo {
 
 #ifdef ESP_BUILD_WITH_VHACD
-VoxelWrapper::VoxelWrapper(std::string renderAssetHandle,
+VoxelWrapper::VoxelWrapper(std::string& renderAssetHandle,
                            esp::scene::SceneNode* sceneNode,
                            esp::assets::ResourceManager& resourceManager_,
                            int resolution)
@@ -31,11 +31,12 @@ VoxelWrapper::VoxelWrapper(std::string renderAssetHandle,
 }
 #endif
 
-VoxelWrapper::VoxelWrapper(std::string renderAssetHandle,
+VoxelWrapper::VoxelWrapper(std::string& renderAssetHandle,
                            esp::scene::SceneNode* sceneNode,
                            esp::assets::ResourceManager& resourceManager_,
                            Mn::Vector3& voxelSize,
-                           Mn::Vector3i& voxelDimensions) {
+                           Mn::Vector3i& voxelDimensions)
+    : SceneNode(sceneNode) {
   int resolution = voxelDimensions[0] * voxelDimensions[1] * voxelDimensions[2];
   std::string voxelGridHandle =
       renderAssetHandle + "_" + std::to_string(resolution);

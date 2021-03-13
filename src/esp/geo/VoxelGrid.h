@@ -56,31 +56,31 @@ class VoxelGrid {
    * @param filepath Can either be the path to a directory or a single .svx
    * file.
    */
-  VoxelGrid(const std::string filepath);
+  explicit VoxelGrid(const std::string filepath);
 
   /**
    * @brief Generates a new empty boolean voxel grid.
    * @param name The key underwhich the grid will be registered and accessed.
    */
-  void addBoolGrid(std::string name);
+  void addBoolGrid(const std::string& name);
 
   /**
    * @brief Generates a new empty integer voxel grid.
    * @param name The key underwhich the grid will be registered and accessed.
    */
-  void addIntGrid(std::string name);
+  void addIntGrid(const std::string& name);
 
   /**
    * @brief Generates a new empty float voxel grid.
    * @param name The key underwhich the grid will be registered and accessed.
    */
-  void addFloatGrid(std::string name);
+  void addFloatGrid(const std::string& name);
 
   /**
    * @brief Generates a new empty Magnum Vector3 voxel grid.
    * @param name The key underwhich the grid will be registered and accessed.
    */
-  void addVector3Grid(std::string name);
+  void addVector3Grid(const std::string& name);
 
   /**
    * @brief Linearizes 3D voxel coordinates to a single value in order to
@@ -119,7 +119,7 @@ class VoxelGrid {
    * @return The boolean value located at the index.
    */
   bool getBoolVoxelByIndex(const Mn::Vector3i& coords,
-                           std::string gridName = "Boundary");
+                           const std::string& gridName = "Boundary");
 
   /**
    * @brief Sets the boolean value at a given index for a specific voxel grid.
@@ -129,7 +129,7 @@ class VoxelGrid {
    */
   void setBoolVoxelByIndex(const Mn::Vector3i& coords,
                            bool val,
-                           std::string gridName = "Boundary");
+                           const std::string& gridName = "Boundary");
 
   /**
    * @brief Retrieves the integer value at a given index for a specific voxel
@@ -138,7 +138,8 @@ class VoxelGrid {
    * @param gridName The key underwhich the desired voxel grid is registered.
    * @return The integer value located at the index.
    */
-  int getIntVoxelByIndex(const Mn::Vector3i& coords, std::string gridName);
+  int getIntVoxelByIndex(const Mn::Vector3i& coords,
+                         const std::string& gridName);
 
   /**
    * @brief Sets the integer value at a given index for a specific voxel grid.
@@ -148,7 +149,7 @@ class VoxelGrid {
    */
   void setIntVoxelByIndex(const Mn::Vector3i& coords,
                           int val,
-                          std::string gridName);
+                          const std::string& gridName);
 
   /**
    * @brief Retrieves the float value at a given index for a specific voxel
@@ -157,7 +158,8 @@ class VoxelGrid {
    * @param gridName The key underwhich the desired voxel grid is registered.
    * @return The float value located at the index.
    */
-  float getFloatVoxelByIndex(const Mn::Vector3i& coords, std::string gridName);
+  float getFloatVoxelByIndex(const Mn::Vector3i& coords,
+                             const std::string& gridName);
 
   /**
    * @brief Sets the float value at a given index for a specific voxel grid.
@@ -167,7 +169,7 @@ class VoxelGrid {
    */
   void setFloatVoxelByIndex(const Mn::Vector3i& coords,
                             float val,
-                            std::string gridName);
+                            const std::string& gridName);
 
   /**
    * @brief Retrieves the Vector3 value at a given index for a specific voxel
@@ -177,7 +179,7 @@ class VoxelGrid {
    * @return The Vector3 value located at the index.
    */
   Mn::Vector3 getVector3VoxelByIndex(const Mn::Vector3i& coords,
-                                     std::string gridName);
+                                     const std::string& gridName);
 
   /**
    * @brief Sets the Vector3 value at a given index for a specific voxel grid.
@@ -186,8 +188,8 @@ class VoxelGrid {
    * @param gridName The key underwhich the desired voxel grid is registered.
    */
   void setVector3VoxelByIndex(const Mn::Vector3i& coords,
-                              Mn::Vector3 val,
-                              std::string gridName);
+                              const Mn::Vector3& val,
+                              const std::string& gridName);
 
   /**
    * @brief Returns the dimensions of the voxel grid.
@@ -215,11 +217,7 @@ class VoxelGrid {
    * @return A shared pointer to the MeshData.
    */
   std::shared_ptr<Mn::Trade::MeshData> getMeshData(
-      std::string gridName = "Boundary") {
-    if (meshDataDict_[gridName] == nullptr)
-      generateMesh(gridName);
-    return meshDataDict_[gridName];
-  }
+      const std::string& gridName = "Boundary");
 
   /**
    * @brief Retrieves the MeshGL used for rendering for a particular voxelGrid.
@@ -227,11 +225,7 @@ class VoxelGrid {
    * @param gridName The key underwhich the desired voxel grid is registered.
    * @return A shared pointer to the MeshGL.
    */
-  Mn::GL::Mesh& getMeshGL(std::string gridName = "Boundary") {
-    if (meshDataDict_[gridName] == nullptr)
-      generateMesh(gridName);
-    return meshGLDict_[gridName];
-  }
+  Mn::GL::Mesh& getMeshGL(const std::string& gridName = "Boundary");
 
   /**
    * @brief Converts a voxel index into global coords by applying the offset and
@@ -262,7 +256,7 @@ class VoxelGrid {
    * @return An integer representing the number of cells that fell imbetween
    * startRange and endRange and were set to true in the boolean grid.
    */
-  int generateBoolGridFromIntGrid(std::string intGridName,
+  int generateBoolGridFromIntGrid(const std::string& intGridName,
                                   std::string boolGridName,
                                   int startRange,
                                   int endRange);
@@ -278,7 +272,7 @@ class VoxelGrid {
    * @return An integer representing the number of cells that fell imbetween
    * startRange and endRange and were set to true in the boolean grid.
    */
-  int generateBoolGridFromFloatGrid(std::string floatGridName,
+  int generateBoolGridFromFloatGrid(const std::string& floatGridName,
                                     std::string boolGridName,
                                     float startRange,
                                     float endRange);
@@ -294,7 +288,7 @@ class VoxelGrid {
    * @return An integer representing the number of cells that were set to true
    * in the boolean grid.
    */
-  int generateBoolGridFromVector3Grid(std::string vector3GridName,
+  int generateBoolGridFromVector3Grid(const std::string& vector3GridName,
                                       std::string boolGridName,
                                       bool func(Mn::Vector3));
 
@@ -306,7 +300,7 @@ class VoxelGrid {
    * value should be included in the set or not.
    */
   void fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                std::string boolGridName,
+                                const std::string& boolGridName,
                                 bool func(bool));
 
   /**
@@ -317,7 +311,7 @@ class VoxelGrid {
    * value should be included in the set or not.
    */
   void fillVoxelSetFromIntGrid(std::vector<Mn::Vector3i>& voxelSet,
-                               std::string intGridName,
+                               const std::string& intGridName,
                                bool func(int));
 
   /**
@@ -328,7 +322,7 @@ class VoxelGrid {
    * value should be included in the set or not.
    */
   void fillVoxelSetFromFloatGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                 std::string floatGridName,
+                                 const std::string& floatGridName,
                                  bool func(float));
 
   /**
@@ -339,7 +333,7 @@ class VoxelGrid {
    * value should be included in the set or not.
    */
   void fillVoxelSetFromVector3Grid(std::vector<Mn::Vector3i>& voxelSet,
-                                   std::string vector3GridName,
+                                   const std::string& vector3GridName,
                                    bool func(Mn::Vector3));
 
   /**
@@ -356,7 +350,7 @@ class VoxelGrid {
    * SDF.
    */
   void generateManhattanDistanceSDF(
-      std::string gridName = "MSignedDistanceField");
+      const std::string& gridName = "MSignedDistanceField");
 
   /**
    * @brief Generates a signed distance field using euclidean distance as a
@@ -366,7 +360,7 @@ class VoxelGrid {
    * SDF.
    */
   void generateEuclideanDistanceSDF(
-      std::string gridName = "ESignedDistanceField");
+      const std::string& gridName = "ESignedDistanceField");
 
   /**
    * @brief Generates a Vector3 field where each vector of a cell points away
@@ -374,7 +368,8 @@ class VoxelGrid {
    * @param gridName The name underwhich to register the newly created distance
    * flow field.
    */
-  void generateDistanceFlowField(std::string gridName = "DistanceFlowField");
+  void generateDistanceFlowField(
+      const std::string& gridName = "DistanceFlowField");
 
   /**
    * @brief Saves a particular grid to a svx file at a specified directory.
@@ -388,7 +383,7 @@ class VoxelGrid {
    * @param gridName The name of the voxel grid to be converted into a mesh.
    * @param isVectorField If set to true, a vector field mesh will be generated.
    */
-  void generateMesh(std::string gridName = "Boundary",
+  void generateMesh(const std::string& gridName = "Boundary",
                     bool isVectorField = false);
 
   ESP_SMART_POINTERS(VoxelGrid)
@@ -404,7 +399,7 @@ class VoxelGrid {
                                 std::vector<Mn::Vector3>& normals,
                                 std::vector<Mn::Color3>& colors,
                                 std::vector<Mn::UnsignedInt>& indices,
-                                Mn::Vector3i& local_coords);
+                                const Mn::Vector3i& local_coords);
 
   /**
    * @brief Helper function for generate mesh. Adds a vector voxel to a mesh
@@ -419,8 +414,8 @@ class VoxelGrid {
                                  std::vector<Mn::Vector3>& normals,
                                  std::vector<Mn::Color3>& colors,
                                  std::vector<Mn::UnsignedInt>& indices,
-                                 Mn::Vector3i& local_coords,
-                                 Mn::Vector3& vec);
+                                 const Mn::Vector3i& local_coords,
+                                 const Mn::Vector3& vec);
 
  private:
   // The number of voxels on the x, y, and z dimensions of the grid

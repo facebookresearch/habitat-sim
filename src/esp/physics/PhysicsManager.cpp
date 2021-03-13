@@ -561,7 +561,7 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
 }
 
 void PhysicsManager::setObjectVoxelizationDraw(int physObjectID,
-                                               std::string gridName,
+                                               const std::string& gridName,
                                                DrawableGroup* drawables,
                                                bool drawVoxelization) {
   assertIDValidity(physObjectID);
@@ -571,7 +571,7 @@ void PhysicsManager::setObjectVoxelizationDraw(int physObjectID,
                       drawables, drawVoxelization);
 }
 
-void PhysicsManager::setSceneVoxelizationDraw(std::string gridName,
+void PhysicsManager::setSceneVoxelizationDraw(const std::string& gridName,
                                               DrawableGroup* drawables,
                                               bool drawVoxelization) {
   setVoxelizationDraw(
@@ -580,7 +580,7 @@ void PhysicsManager::setSceneVoxelizationDraw(std::string gridName,
       drawables, drawVoxelization);
 }
 
-void PhysicsManager::setVoxelizationDraw(std::string& gridName,
+void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
                                          esp::physics::RigidBase* rigidBase,
                                          DrawableGroup* drawables,
                                          bool drawVoxelization) {

@@ -833,17 +833,14 @@ void Simulator::setObjectBBDraw(bool drawBB,
 }
 
 #ifdef ESP_BUILD_WITH_VHACD
-void Simulator::createObjectVoxelization(int objectID,
-                                         int resolution,
-                                         int sceneID) {
+void Simulator::createObjectVoxelization(int objectID, int resolution) {
   physicsManager_->generateVoxelization(objectID, resolution);
 }
 #endif
 
 void Simulator::setObjectVoxelizationDraw(bool drawV,
                                           int objectID,
-                                          std::string gridName,
-                                          int sceneID) {
+                                          const std::string& gridName) {
   auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
   auto& drawables = sceneGraph_.getDrawables();
   physicsManager_->setObjectVoxelizationDraw(objectID, gridName, &drawables,
@@ -856,14 +853,13 @@ std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getObjectVoxelization(
 }
 
 #ifdef ESP_BUILD_WITH_VHACD
-void Simulator::createSceneVoxelization(int resolution, int sceneID) {
+void Simulator::createSceneVoxelization(int resolution) {
   physicsManager_->generateSceneVoxelization(resolution);
 }
 #endif
 
 void Simulator::setSceneVoxelizationDraw(bool drawV,
-                                         std::string gridName,
-                                         int sceneID) {
+                                         const std::string& gridName) {
   auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
   auto& drawables = sceneGraph_.getDrawables();
   physicsManager_->setSceneVoxelizationDraw(gridName, &drawables, drawV);

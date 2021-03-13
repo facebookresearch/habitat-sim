@@ -81,11 +81,9 @@ VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
   boolGrids_.insert(std::make_pair("Boundary", boundary_grid));
 }
 
-VoxelGrid::VoxelGrid(const std::string filepath) {}
-
 // Creators for extra voxel grids
 
-void VoxelGrid::addBoolGrid(const std::string gridName) {
+void VoxelGrid::addBoolGrid(const std::string& gridName) {
   if (boolGrids_.find(gridName) != boolGrids_.end()) {
     // grid exists, simply overwrite
     Mn::Debug() << "Grid" << gridName << "exists, overwriting.";
@@ -102,7 +100,7 @@ void VoxelGrid::addBoolGrid(const std::string gridName) {
   boolGrids_.insert(std::make_pair(gridName, new_grid));
 }
 
-void VoxelGrid::addIntGrid(const std::string gridName) {
+void VoxelGrid::addIntGrid(const std::string& gridName) {
   if (intGrids_.find(gridName) != intGrids_.end()) {
     // grid exists, simply overwrite
     Mn::Debug() << "Grid" << gridName << "exists, overwriting.";
@@ -119,7 +117,7 @@ void VoxelGrid::addIntGrid(const std::string gridName) {
   intGrids_.insert(std::make_pair(gridName, new_grid));
 }
 
-void VoxelGrid::addFloatGrid(const std::string gridName) {
+void VoxelGrid::addFloatGrid(const std::string& gridName) {
   if (floatGrids_.find(gridName) != floatGrids_.end()) {
     // grid exists, simply overwrite
     Mn::Debug() << "Grid" << gridName << "exists, overwriting.";
@@ -136,7 +134,7 @@ void VoxelGrid::addFloatGrid(const std::string gridName) {
   floatGrids_.insert(std::make_pair(gridName, new_grid));
 }
 
-void VoxelGrid::addVector3Grid(const std::string gridName) {
+void VoxelGrid::addVector3Grid(const std::string& gridName) {
   if (vector3Grids_.find(gridName) != vector3Grids_.end()) {
     // grid exists, simply overwrite
     Mn::Debug() << "Grid" << gridName << "exists, overwriting.";
@@ -173,7 +171,7 @@ Mn::Vector3i VoxelGrid::reverseHash(const int hash) {
 
 // Getter and setter for bool value voxel grids
 bool VoxelGrid::getBoolVoxelByIndex(const Mn::Vector3i& coords,
-                                    std::string gridName) {
+                                    const std::string& gridName) {
   assert(boolGrids_.find(gridName) != boolGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   return boolGrids_[gridName].get()[hashedVoxelIndex];
@@ -181,14 +179,14 @@ bool VoxelGrid::getBoolVoxelByIndex(const Mn::Vector3i& coords,
 
 void VoxelGrid::setBoolVoxelByIndex(const Mn::Vector3i& coords,
                                     bool val,
-                                    std::string gridName) {
+                                    const std::string& gridName) {
   assert(boolGrids_.find(gridName) != boolGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   boolGrids_[gridName].get()[hashedVoxelIndex] = val;
 }
 // Getter and setter for int value voxel grids
 int VoxelGrid::getIntVoxelByIndex(const Mn::Vector3i& coords,
-                                  std::string gridName) {
+                                  const std::string& gridName) {
   assert(intGrids_.find(gridName) != intGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   return intGrids_[gridName].get()[hashedVoxelIndex];
@@ -196,7 +194,7 @@ int VoxelGrid::getIntVoxelByIndex(const Mn::Vector3i& coords,
 
 void VoxelGrid::setIntVoxelByIndex(const Mn::Vector3i& coords,
                                    int val,
-                                   std::string gridName) {
+                                   const std::string& gridName) {
   assert(intGrids_.find(gridName) != intGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   intGrids_[gridName].get()[hashedVoxelIndex] = val;
@@ -204,7 +202,7 @@ void VoxelGrid::setIntVoxelByIndex(const Mn::Vector3i& coords,
 
 // Getter and setter for Float value voxel grids
 float VoxelGrid::getFloatVoxelByIndex(const Mn::Vector3i& coords,
-                                      std::string gridName) {
+                                      const std::string& gridName) {
   assert(floatGrids_.find(gridName) != floatGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   return floatGrids_[gridName].get()[hashedVoxelIndex];
@@ -212,7 +210,7 @@ float VoxelGrid::getFloatVoxelByIndex(const Mn::Vector3i& coords,
 
 void VoxelGrid::setFloatVoxelByIndex(const Mn::Vector3i& coords,
                                      float val,
-                                     std::string gridName) {
+                                     const std::string& gridName) {
   assert(floatGrids_.find(gridName) != floatGrids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   floatGrids_[gridName].get()[hashedVoxelIndex] = val;
@@ -220,18 +218,31 @@ void VoxelGrid::setFloatVoxelByIndex(const Mn::Vector3i& coords,
 
 // Getter and setter for Vector3 value voxel grids
 Mn::Vector3 VoxelGrid::getVector3VoxelByIndex(const Mn::Vector3i& coords,
-                                              std::string gridName) {
+                                              const std::string& gridName) {
   assert(vector3Grids_.find(gridName) != vector3Grids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   return vector3Grids_[gridName].get()[hashedVoxelIndex];
 }
 
 void VoxelGrid::setVector3VoxelByIndex(const Mn::Vector3i& coords,
-                                       Mn::Vector3 val,
-                                       std::string gridName) {
+                                       const Mn::Vector3& val,
+                                       const std::string& gridName) {
   assert(vector3Grids_.find(gridName) != vector3Grids_.end());
   int hashedVoxelIndex = hashVoxelIndex(coords);
   vector3Grids_[gridName].get()[hashedVoxelIndex] = val;
+}
+
+std::shared_ptr<Mn::Trade::MeshData> VoxelGrid::getMeshData(
+    const std::string& gridName) {
+  if (meshDataDict_[gridName] == nullptr)
+    generateMesh(gridName);
+  return meshDataDict_[gridName];
+}
+
+Mn::GL::Mesh& VoxelGrid::getMeshGL(const std::string& gridName) {
+  if (meshDataDict_[gridName] == nullptr)
+    generateMesh(gridName);
+  return meshGLDict_[gridName];
 }
 
 Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
@@ -242,7 +253,7 @@ Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
   return global_coords;
 }
 
-int VoxelGrid::generateBoolGridFromIntGrid(std::string intGridName,
+int VoxelGrid::generateBoolGridFromIntGrid(const std::string& intGridName,
                                            std::string boolGridName,
                                            int startRange,
                                            int endRange) {
@@ -263,9 +274,10 @@ int VoxelGrid::generateBoolGridFromIntGrid(std::string intGridName,
   return num_filled;
 }
 
-int VoxelGrid::generateBoolGridFromVector3Grid(std::string vector3GridName,
-                                               std::string boolGridName,
-                                               bool func(Mn::Vector3)) {
+int VoxelGrid::generateBoolGridFromVector3Grid(
+    const std::string& vector3GridName,
+    std::string boolGridName,
+    bool func(Mn::Vector3)) {
   assert(vector3Grids_.find(vector3GridName) != vector3Grids_.end());
   int num_filled = 0;
   if (boolGridName == "")
@@ -282,7 +294,7 @@ int VoxelGrid::generateBoolGridFromVector3Grid(std::string vector3GridName,
   return num_filled;
 }
 
-int VoxelGrid::generateBoolGridFromFloatGrid(std::string floatGridName,
+int VoxelGrid::generateBoolGridFromFloatGrid(const std::string& floatGridName,
                                              std::string boolGridName,
                                              float startRange,
                                              float endRange) {
@@ -304,7 +316,7 @@ int VoxelGrid::generateBoolGridFromFloatGrid(std::string floatGridName,
 }
 
 void VoxelGrid::fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                         std::string boolGridName,
+                                         const std::string& boolGridName,
                                          bool (*func)(bool)) {
   assert(boolGrids_.find(boolGridName) != boolGrids_.end());
   int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
@@ -317,7 +329,7 @@ void VoxelGrid::fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
 }
 
 void VoxelGrid::fillVoxelSetFromIntGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                        std::string intGridName,
+                                        const std::string& intGridName,
                                         bool (*func)(int)) {
   assert(intGrids_.find(intGridName) != intGrids_.end());
   int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
@@ -330,7 +342,7 @@ void VoxelGrid::fillVoxelSetFromIntGrid(std::vector<Mn::Vector3i>& voxelSet,
 }
 
 void VoxelGrid::fillVoxelSetFromFloatGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                          std::string floatGridName,
+                                          const std::string& floatGridName,
                                           bool (*func)(float)) {
   assert(floatGrids_.find(floatGridName) != floatGrids_.end());
   int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
@@ -343,7 +355,7 @@ void VoxelGrid::fillVoxelSetFromFloatGrid(std::vector<Mn::Vector3i>& voxelSet,
 }
 
 void VoxelGrid::fillVoxelSetFromVector3Grid(std::vector<Mn::Vector3i>& voxelSet,
-                                            std::string vector3GridName,
+                                            const std::string& vector3GridName,
                                             bool (*func)(Mn::Vector3)) {
   assert(vector3Grids_.find(vector3GridName) != vector3Grids_.end());
   int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
@@ -453,8 +465,8 @@ void VoxelGrid::generateInteriorExteriorVoxelGrid() {
 
   // create int grid
   addIntGrid(gridName);
-  bool nX, pX, nY, pY, nZ, pZ;
-  int hash;
+  bool nX = false, pX = false, nY = false, pY = false, nZ = false, pZ = false;
+  int hash = 0;
   // fill in int grid with voting approach
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
@@ -485,7 +497,7 @@ void VoxelGrid::generateInteriorExteriorVoxelGrid() {
 
 // Manhattan distance SDF - starting from the interior exterior voxel grid,
 // computes SDF in terms of manhattan distance with double sweep approach
-void VoxelGrid::generateManhattanDistanceSDF(std::string gridName) {
+void VoxelGrid::generateManhattanDistanceSDF(const std::string& gridName) {
   // check to see if Interior/Exterior grid exists, if not, generate it
   if (intGrids_.find("InteriorExterior") == intGrids_.end()) {
     generateInteriorExteriorVoxelGrid();
@@ -519,7 +531,7 @@ void VoxelGrid::generateManhattanDistanceSDF(std::string gridName) {
                        -2147483646));
         }
         int curVal = getIntVoxelByIndex(Mn::Vector3i(i, j, k), gridName);
-        int closest;
+        int closest = 0;
         if (i_behind <= j_behind && i_behind <= k_behind) {
           // i_behind is closest to nearest obstacle.
           closest = i_behind;
@@ -589,7 +601,7 @@ void VoxelGrid::generateManhattanDistanceSDF(std::string gridName) {
   }
 }
 
-void VoxelGrid::generateEuclideanDistanceSDF(std::string gridName) {
+void VoxelGrid::generateEuclideanDistanceSDF(const std::string& gridName) {
   // check to see if Interior/Exterior grid exists, if not, generate it
   if (intGrids_.find("InteriorExterior") == intGrids_.end()) {
     generateInteriorExteriorVoxelGrid();
@@ -643,7 +655,7 @@ void VoxelGrid::generateEuclideanDistanceSDF(std::string gridName) {
 
         // get the current distances from each point's closest boundary and
         // the current coordinates.
-        float i_dist, j_dist, k_dist;
+        float i_dist = NAN, j_dist = NAN, k_dist = NAN;
         i_dist = (i_behind - coords).length();
         j_dist = (j_behind - coords).length();
         k_dist = (k_behind - coords).length();
@@ -696,7 +708,7 @@ void VoxelGrid::generateEuclideanDistanceSDF(std::string gridName) {
 
         // get the current distances from each point's closest boundary and
         // the current coordinates.
-        float i_dist, j_dist, k_dist;
+        float i_dist = NAN, j_dist = NAN, k_dist = NAN;
         i_dist = (i_ahead - coords).length();
         j_dist = (j_ahead - coords).length();
         k_dist = (k_ahead - coords).length();
@@ -724,7 +736,7 @@ void VoxelGrid::generateEuclideanDistanceSDF(std::string gridName) {
   }
 }
 
-void VoxelGrid::generateDistanceFlowField(std::string gridName) {
+void VoxelGrid::generateDistanceFlowField(const std::string& gridName) {
   // generateEuclideanDistanceSDF();
   addVector3Grid(gridName);
   int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
@@ -740,7 +752,7 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                          std::vector<Mn::Vector3>& normals,
                                          std::vector<Mn::Color3>& colors,
                                          std::vector<Mn::UnsignedInt>& indices,
-                                         Mn::Vector3i& local_coords) {
+                                         const Mn::Vector3i& local_coords) {
   // Using the data of a cubeSolid to create the voxel cube
   Mn::Trade::MeshData cubeData = Mn::Primitives::cubeSolid();
 
@@ -772,8 +784,8 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                           std::vector<Mn::Vector3>& normals,
                                           std::vector<Mn::Color3>& colors,
                                           std::vector<Mn::UnsignedInt>& indices,
-                                          Mn::Vector3i& local_coords,
-                                          Mn::Vector3& vec) {
+                                          const Mn::Vector3i& local_coords,
+                                          const Mn::Vector3& vec) {
   Mn::Vector3 mid = getGlobalCoords(local_coords);
   Mn::Vector3 pos1 = vec.normalized() * m_voxelSize * 1 / 2 + mid;
   Mn::Vector3 orthog1 = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
@@ -807,23 +819,23 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
 
   unsigned int sz = positions.size() - 5;
   indices.push_back(sz);
-  indices.push_back(sz + 2);
   indices.push_back(sz + 1);
-
-  indices.push_back(sz);
-  indices.push_back(sz + 3);
   indices.push_back(sz + 2);
 
   indices.push_back(sz);
-  indices.push_back(sz + 4);
+  indices.push_back(sz + 2);
   indices.push_back(sz + 3);
 
   indices.push_back(sz);
-  indices.push_back(sz + 1);
+  indices.push_back(sz + 3);
   indices.push_back(sz + 4);
+
+  indices.push_back(sz);
+  indices.push_back(sz + 4);
+  indices.push_back(sz + 1);
 }
 
-void VoxelGrid::generateMesh(std::string gridName, bool isVectorField) {
+void VoxelGrid::generateMesh(const std::string& gridName, bool isVectorField) {
   if (isVectorField)
     assert(vector3Grids_.find(gridName) != vector3Grids_.end());
   else

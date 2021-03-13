@@ -1407,7 +1407,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       voxelGrid->generateMesh("SDFSubset");
 
       // Draw the voxel grid
-      simulator_->setSceneVoxelizationDraw(true, "SDFSubset", 0);
+      simulator_->setSceneVoxelizationDraw(true, "SDFSubset");
 
       // Increase the distance visualized for next time (Pressing L repeatedly
       // will visualize different distances)
@@ -1441,7 +1441,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       voxelGrid->generateMesh("FlowField", true);
 
       // draw the vector field
-      simulator_->setSceneVoxelizationDraw(true, "FlowField", 0);
+      simulator_->setSceneVoxelizationDraw(true, "FlowField");
     }
 #endif
     default:

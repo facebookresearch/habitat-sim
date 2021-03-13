@@ -23,7 +23,7 @@ class VoxelWrapper {
    * @param sceneNode The scene node the voxel wrapper will be pointing to.
    * @param resourceManager_ Used for retrieving or registering the voxel grid.
    */
-  VoxelWrapper(std::string renderAssetHandle,
+  VoxelWrapper(std::string& renderAssetHandle,
                esp::scene::SceneNode* sceneNode,
                esp::assets::ResourceManager& resourceManager_,
                int resolution = 1000000);
@@ -38,7 +38,7 @@ class VoxelWrapper {
    * @param voxelSize The size of an individual voxel cell.
    * @param voxelDimensions The dimensions of the voxel grid.
    */
-  VoxelWrapper(std::string renderAssetHandle,
+  VoxelWrapper(std::string& renderAssetHandle,
                esp::scene::SceneNode* sceneNode,
                esp::assets::ResourceManager& resourceManager_,
                Mn::Vector3& voxelSize,

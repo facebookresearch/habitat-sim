@@ -823,7 +823,7 @@ class PhysicsManager {
    * @param drawBB Set rendering of the voxelization to true or false.
    */
   void setObjectVoxelizationDraw(int physObjectID,
-                                 std::string gridName,
+                                 const std::string& gridName,
                                  DrawableGroup* drawables,
                                  bool drawBB);
 
@@ -831,7 +831,7 @@ class PhysicsManager {
    * @param drawables The drawables group with which to render the voxelization.
    * @param drawBB Set rendering of the voxelization to true or false.
    */
-  void setSceneVoxelizationDraw(std::string gridName,
+  void setSceneVoxelizationDraw(const std::string& gridName,
                                 DrawableGroup* drawables,
                                 bool drawBB);
 
@@ -1061,7 +1061,7 @@ class PhysicsManager {
    * @param drawables The drawables group with which to render the voxelization.
    * @param drawBB Set rendering of the voxelization to true or false.
    */
-  void setVoxelizationDraw(std::string& gridName,
+  void setVoxelizationDraw(const std::string& gridName,
                            esp::physics::RigidBase* rigidBase,
                            DrawableGroup* drawables,
                            bool drawVoxelization);
