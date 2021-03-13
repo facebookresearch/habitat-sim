@@ -173,14 +173,6 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
   void add(Sensor& sensor);
 
   /**
-   * @brief Concatenate sensorSuite's sensors to existing sensors_
-   * @param[in] sensorSuite Instance of SensorSuite class from which to copy
-   * Sensors
-   * Note: it does not update any element whose key already exists.
-   */
-  void merge(const SensorSuite& sensorSuite);
-
-  /**
    * @brief Remove Sensor sensor from existing sensors_
    * @param[in] sensor to be removed from sensors_
    */

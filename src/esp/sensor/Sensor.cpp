@@ -54,16 +54,10 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
                  "specification is null.", );
   spec_->sanityCheck();
   node.getNodeSensorSuite().add(*this);
-  static_cast<scene::SceneNode&>(*node.parent())
-      .getNodeSensorSuite()
-      .add(*this);
   node.getSubtreeSensorSuite().add(*this);
+  node.addSensorToParentNodeSensorSuite();
   // Traverse up to root node and add sensor to every subtreeSensorSuite
-  auto parent = node.parent();
-  while (parent->parent() != nullptr) {
-    static_cast<scene::SceneNode&>(*parent).getSubtreeSensorSuite().add(*this);
-    parent = parent->parent();
-  }
+  node.addSubtreeSensorsToAncestors();
   setTransformationFromSpec();
 }
 
@@ -90,11 +84,6 @@ SensorSuite::SensorSuite(scene::SceneNode& node)
 
 void SensorSuite::add(sensor::Sensor& sensor) {
   sensors_.emplace(sensor.specification()->uuid, std::ref(sensor));
-}
-
-void SensorSuite::merge(const SensorSuite& sensorSuite) {
-  sensors_.insert(sensorSuite.getSensors().begin(),
-                  sensorSuite.getSensors().end());
 }
 
 void SensorSuite::remove(const sensor::Sensor& sensor) {

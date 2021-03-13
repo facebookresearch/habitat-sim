@@ -206,7 +206,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<SensorSuite>("SensorSuite")
       .smart_ptr<SensorSuite::ptr>("SensorSuite::ptr")
       .function("add", &SensorSuite::add)
-      .function("merge", &SensorSuite::merge)
       .function("remove",
                 em::select_overload<void(const Sensor&)>(&SensorSuite::remove))
       .function("remove", em::select_overload<void(const std::string&)>(
