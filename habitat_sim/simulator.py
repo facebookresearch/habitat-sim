@@ -605,6 +605,7 @@ class Sensor:
         if self._sim.frustum_culling:
             render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
 
+        self._sim.renderer.acquire_gl_context()
         with self._sensor_object.render_target:
             self._sim.renderer.draw(self._sensor_object, scene, render_flags)
 
