@@ -111,7 +111,6 @@ void initSensorBindings(py::module& m) {
              Magnum::SceneGraph::AbstractFeature3D,
              Magnum::SceneGraph::PyFeatureHolder<SensorSuite>>(m, "SensorSuite")
       .def("add", &SensorSuite::add)
-      .def("merge", &SensorSuite::merge)
       .def("remove", py::overload_cast<const Sensor&>(&SensorSuite::remove))
       .def("remove",
            py::overload_cast<const std::string&>(&SensorSuite::remove))

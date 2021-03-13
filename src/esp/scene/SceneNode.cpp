@@ -50,11 +50,8 @@ SceneNode::~SceneNode() {
   // In case 2, you need update the sensorSuites stored in each ancestor node in
   // a bottom-up manner.
 
-  // First remove all sensors in nodeSensorSuite from its parent's
-  // nodeSensorSuite if node is leaf node
-  if (getSceneNodeTags() & SceneNodeTag::Leaf) {
-    removeSensorsFromParentNodeSensorSuite();
-  }
+  // First Sensor from parent's nodeSensorSuite if node is leaf node
+  removeSensorFromParentNodeSensorSuite();
 
   // go bottom to the top, and erase sensors and all subtreeSensors from its
   // ancestors' subtreeSensorSuites
@@ -83,6 +80,8 @@ SceneNode& SceneNode::createChild(SceneNodeTags childNodeTags) {
 }
 
 SceneNode& SceneNode::setParent(SceneNode* newParent) {
+  // Perform same internal checks as magnum to ensure newParent is a valid new
+  // parent before updating any SensorSuites
   // Parent can not be leaf node
   CORRADE_ASSERT(!(newParent->getSceneNodeTags() & SceneNodeTag::Leaf),
                  "SceneNode::setParent(): New parent node can not be leaf node",
@@ -90,11 +89,12 @@ SceneNode& SceneNode::setParent(SceneNode* newParent) {
 
   // Skip if this is scene or RootNode (which cannot have parent), or if
   // newParent is already parent
-  if (isScene() || this->parent() == newParent) {
+  if (isScene() || SceneGraph::isRootNode(*this) ||
+      this->parent() == newParent) {
     return *this;
   }
 
-  // Skip if this is parent of newParent
+  // Skip if this is an ancestor of newParent
   auto p = newParent->parent();
   while (p) {
     if (p == this)
@@ -102,53 +102,70 @@ SceneNode& SceneNode::setParent(SceneNode* newParent) {
     p = p->parent();
   }
 
-  // Update old ancestors' SensorSuites
+  // Update old ancestors' SubtreeSensorSuites
   removeSubtreeSensorsFromAncestors();
-
-  // If current node is a leaf node, it may contain sensors
-  if (getSceneNodeTags() & SceneNodeTag::Leaf) {
-    // Remove sensors from old parent node's nodeSensorSuite
-    removeSensorsFromParentNodeSensorSuite();
-  }
+  // Remove sensors from old parent node's nodeSensorSuite
+  removeSensorFromParentNodeSensorSuite();
 
   MagnumObject::setParent(newParent);
 
-  // Update new ancestors' SensorSuites
+  // Update new ancestors'SubtreeSensorSuites
   addSubtreeSensorsToAncestors();
-
   // Add sensors to newParent's nodeSensorSuite
-  if (getSceneNodeTags() & SceneNodeTag::Leaf) {
-    for (const auto& sensor : nodeSensorSuite_->getSensors()) {
-      newParent->getNodeSensorSuite().add(sensor.second);
-    }
-  }
+  addSensorToParentNodeSensorSuite();
   return *this;
 }
 
-void SceneNode::removeSensorsFromParentNodeSensorSuite() {
-  for (const auto& sensor : nodeSensorSuite_->getSensors()) {
-    static_cast<SceneNode*>(this->parent())
+void SceneNode::addSensorToParentNodeSensorSuite() {
+  // Only add a sensor if this is a leaf node and sensor exists
+  if (!(getSceneNodeTags() & SceneNodeTag::Leaf) ||
+      nodeSensorSuite_->getSensors().empty()) {
+    return;
+  }
+  // There only exists 0 or 1 sensors in a leaf nodeSensorSuite
+  // Get the first one, and if it is valid, add it to parent's nodeSensorSuite
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>>::iterator it =
+      nodeSensorSuite_->getSensors().begin();
+  if (it != nodeSensorSuite_->getSensors().end()) {
+    static_cast<scene::SceneNode*>(this->parent())
         ->getNodeSensorSuite()
-        .getSensors()
-        .erase(sensor.first);
+        .add(it->second);
   }
 }
 
-void SceneNode::removeSubtreeSensorsFromAncestors() {
-  for (const auto& sensor : subtreeSensorSuite_->getSensors()) {
-    SceneNode* currentNode = dynamic_cast<SceneNode*>(this->parent());
-    while (currentNode != nullptr && !SceneGraph::isRootNode(*currentNode)) {
-      currentNode->getSubtreeSensors().erase(sensor.first);
-      currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
-    }
+void SceneNode::removeSensorFromParentNodeSensorSuite() {
+  // Only add a sensor if this is a leaf node and sensor exists
+  if (!(getSceneNodeTags() & SceneNodeTag::Leaf) ||
+      nodeSensorSuite_->getSensors().empty()) {
+    return;
+  }
+  // There only exists 0 or 1 sensors in a leaf nodeSensorSuite
+  // Get the first one, and if it is valid, remove it from parent's
+  // nodeSensorSuite
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>>::iterator it =
+      nodeSensorSuite_->getSensors().begin();
+  if (it != nodeSensorSuite_->getSensors().end()) {
+    static_cast<scene::SceneNode*>(this->parent())
+        ->getNodeSensorSuite()
+        .remove(it->first);
   }
 }
 
 void SceneNode::addSubtreeSensorsToAncestors() {
   for (const auto& sensor : subtreeSensorSuite_->getSensors()) {
     SceneNode* currentNode = dynamic_cast<SceneNode*>(this->parent());
-    while (currentNode != nullptr && !SceneGraph::isRootNode(*currentNode)) {
+    while (currentNode && !SceneGraph::isRootNode(*currentNode)) {
       currentNode->getSubtreeSensorSuite().add(sensor.second);
+      currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
+    }
+  }
+}
+
+void SceneNode::removeSubtreeSensorsFromAncestors() {
+  for (const auto& sensor : subtreeSensorSuite_->getSensors()) {
+    SceneNode* currentNode = dynamic_cast<SceneNode*>(this->parent());
+    while (currentNode && !SceneGraph::isRootNode(*currentNode)) {
+      currentNode->getSubtreeSensorSuite().remove(sensor.first);
       currentNode = dynamic_cast<SceneNode*>(currentNode->parent());
     }
   }

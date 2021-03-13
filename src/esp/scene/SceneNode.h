@@ -169,10 +169,17 @@ class SceneNode : public MagnumObject,
   std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
   getSubtreeSensors();
 
-  /** @brief Remove sensors in this' nodeSensorSuite from parent's
+  /** @brief Add sensor in this' nodeSensorSuite to parent's
    * nodeSensorSuite
+   * Note: This only adds a sensor if this is a leaf node and sensor exists
    */
-  void removeSensorsFromParentNodeSensorSuite();
+  void addSensorToParentNodeSensorSuite();
+
+  /** @brief Remove sensor in this' nodeSensorSuite from parent's
+   * nodeSensorSuite
+   * Note: This only removes a sensor if this is a leaf node and sensor exists
+   */
+  void removeSensorFromParentNodeSensorSuite();
 
   /** @brief Go bottom to the top, and erase all subtreeSensors from this'
    * ancestors' subtreeSensorSuites
