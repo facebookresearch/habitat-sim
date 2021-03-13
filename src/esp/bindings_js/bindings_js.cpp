@@ -196,7 +196,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
 
   em::class_<CameraSensorSpec, em::base<VisualSensorSpec>>("CameraSensorSpec")
       .smart_ptr_constructor("CameraSensorSpec", &CameraSensorSpec::create<>)
-      .property("ortho_scale", &CameraSensorSpec::ortho_scale);
+      .property("ortho_scale", &CameraSensorSpec::orthoScale);
 
   em::class_<Sensor>("Sensor")
       .smart_ptr<Sensor::ptr>("Sensor::ptr")

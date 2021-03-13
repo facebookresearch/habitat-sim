@@ -25,18 +25,18 @@ CameraSensorSpec::CameraSensorSpec() : VisualSensorSpec() {
 
 void CameraSensorSpec::sanityCheck() {
   VisualSensorSpec::sanityCheck();
-  CORRADE_ASSERT(
-      ortho_scale > 0,
-      "CameraSensorSpec::sanityCheck(): ortho_scale must be greater than 0", );
   CORRADE_ASSERT(sensorSubType == SensorSubType::Pinhole ||
                      sensorSubType == SensorSubType::Orthographic,
                  "CameraSensorSpec::sanityCheck(): sensorSpec does not have "
                  "SensorSubType "
                  "Pinhole or Orthographic", );
+  CORRADE_ASSERT(
+      orthoScale > 0,
+      "CameraSensorSpec::sanityCheck(): orthoScale must be greater than 0", );
 }
 
 bool CameraSensorSpec::operator==(const CameraSensorSpec& a) const {
-  return VisualSensorSpec::operator==(a) && ortho_scale == a.ortho_scale;
+  return VisualSensorSpec::operator==(a) && orthoScale == a.orthoScale;
 }
 
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
@@ -88,7 +88,7 @@ void CameraSensor::recomputeBaseProjectionMatrix() {
       Mn::Vector2{1.0f, static_cast<float>(cameraSensorSpec_->resolution[0]) /
                             cameraSensorSpec_->resolution[1]};
   if (cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic) {
-    nearPlaneSize_ /= cameraSensorSpec_->ortho_scale;
+    nearPlaneSize_ /= cameraSensorSpec_->orthoScale;
     baseProjMatrix_ = Mn::Matrix4::orthographicProjection(
         nearPlaneSize_, cameraSensorSpec_->near, cameraSensorSpec_->far);
   } else {

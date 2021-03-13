@@ -42,16 +42,13 @@ void VisualSensorSpec::sanityCheck() {
         "VisualSensorSpec::sanityCheck(): sensorType must be Depth if "
         "noiseModel is Redwood", );
   }
-
   CORRADE_ASSERT(resolution[0] > 0 && resolution[1] > 0,
                  "VisualSensorSpec::sanityCheck(): resolution height and "
                  "width must be greater than 0", );
-
   CORRADE_ASSERT(
       channels > 0,
       "VisualSensorSpec::sanityCheck(): the value of the channels which is"
           << channels << "is illegal", );
-
   CORRADE_ASSERT(
       near > 0.0 && far > near,
       "VisualSensorSpec::sanityCheck(): the near or far plane is illegal.", );

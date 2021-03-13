@@ -25,7 +25,8 @@ using Mn::Math::Literals::operator""_degf;
 
 struct VisualSensorSpec : public SensorSpec {
   vec2i resolution = {128, 128};  // height x width
-  int channels = 4;
+  int channels =
+      4;  // Number of components in buffer values, eg. 4 channels for RGBA
   bool gpu2gpuTransfer = false;  // True for pytorch tensor support
   /**
    * @brief near clipping plane
@@ -60,15 +61,13 @@ class VisualSensor : public Sensor {
     return {visualSensorSpec_->resolution[1], visualSensorSpec_->resolution[0]};
   }
 
-  bool isVisualSensor() const override { return true; }
-
-  /**
-   * @brief Display next observation from Simulator on default frame buffer
-   * @param[in] sim Instance of Simulator class for which the observation needs
+  /* @param[in] sim Instance of Simulator class for which the observation needs
    *                to be displayed
    * @return Whether the display process was successful or not
    */
   bool displayObservation(sim::Simulator& sim) override;
+
+  bool isVisualSensor() const override { return true; }
 
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
@@ -182,8 +181,7 @@ class VisualSensor : public Sensor {
   Mn::Deg getFOV() const { return hfov_; }
 
  protected:
-  /**
-   * @brief field of view
+  /** @brief field of view
    */
   Mn::Deg hfov_ = 90.0_degf;
 

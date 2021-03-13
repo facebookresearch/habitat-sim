@@ -13,7 +13,7 @@ namespace esp {
 namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
-  float ortho_scale = 0.1f;
+  float orthoScale = 0.1f;
   CameraSensorSpec();
   void sanityCheck() override;
   bool operator==(const CameraSensorSpec& a) const;
@@ -144,7 +144,7 @@ class CameraSensor : public VisualSensor {
     CORRADE_ASSERT(_near > 0,
                    "CameraSensor::setNear(): near plane distance must be "
                    "greater than 0", );
-    visualSensorSpec_->near = _near;
+    cameraSensorSpec_->near = _near;
     recomputeBaseProjectionMatrix();
   }
 
@@ -155,7 +155,7 @@ class CameraSensor : public VisualSensor {
     CORRADE_ASSERT(
         _far > 0,
         "CameraSensor::setFar(): Far plane distance must be greater than 0", );
-    visualSensorSpec_->far = _far;
+    cameraSensorSpec_->far = _far;
     recomputeBaseProjectionMatrix();
   }
 
