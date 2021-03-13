@@ -327,7 +327,7 @@ class VRDemo extends WebDemo {
   }
 
   updateHeadPose(pose, agent) {
-    const headRotation = Module.Quaternion.fromVec4f(
+    const headRotation = Module.toQuaternion(
       pointToArray(pose.transform.orientation)
     );
     const pointingVec = headRotation.transformVector(this.FWD);
@@ -343,7 +343,10 @@ class VRDemo extends WebDemo {
       this.DOWN
     );
 
-    agent.setRotation(agentQuat);
+    let state = new Module.AgentState();
+    agent.getState(state);
+    state.rotation = Module.toVec4f(agentQuat);
+    agent.setState(state, false);
 
     for (var iView = 0; iView < pose.views.length; ++iView) {
       const view = pose.views[iView];
@@ -352,9 +355,14 @@ class VRDemo extends WebDemo {
 
       const pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
       sensor.setLocalTransform(
-        inverseAgentRot.transformVector(new Module.Vector3(...pos)),
-        inverseAgentRot.mul(
-          Module.Quaternion.fromVec4f(pointToArray(view.transform.orientation))
+        Module.toVec3f(
+          inverseAgentRot.transformVector(new Module.Vector3(...pos))
+        ),
+        Module.toVec4f(
+          Module.Quaternion.mul(
+            inverseAgentRot,
+            Module.toQuaternion(pointToArray(view.transform.orientation))
+          )
         )
       );
     }
