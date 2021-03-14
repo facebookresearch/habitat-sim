@@ -540,7 +540,8 @@ Viewer::Viewer(const Arguments& arguments)
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
   renderCamera_ = getAgentCamera().getRenderCamera();
-
+  auto locobot_handle = simulator_->getObjectAttributesManager()->getFileTemplateHandlesBySubstring("locobot")[0];
+  simulator_->addObjectByHandle(locobot_handle, agentBodyNode_);
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
