@@ -665,11 +665,13 @@ class PhysicsManager {
   /** @brief Gets the VoxelWrapper associated with a rigid object.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
+   * @return A pointer to the object's Voxel Wrapper.
    */
   std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelization(
       const int physObjectID) const;
 
   /** @brief Gets the VoxelWrapper associated with the scene.
+   * @return A pointer to the scene's Voxel Wrapper.
    */
   std::shared_ptr<esp::geo::VoxelWrapper> getSceneVoxelization() const;
 

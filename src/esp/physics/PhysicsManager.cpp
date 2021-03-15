@@ -5,15 +5,7 @@
 #include "PhysicsManager.h"
 #include "esp/assets/CollisionMeshData.h"
 
-#include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/Math/Range.h>
-#include <Magnum/Shaders/Generic.h>
-#include <Magnum/Shaders/Shaders.h>
-#include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/MaterialUtil.h"
-#include "esp/gfx/MeshVisualizerDrawable.h"
-#include "esp/gfx/PbrDrawable.h"
-#include "esp/gfx/replay/Recorder.h"
 
 namespace esp {
 namespace physics {

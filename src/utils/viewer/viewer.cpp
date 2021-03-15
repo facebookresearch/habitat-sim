@@ -20,8 +20,6 @@
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
-#include <Magnum/Math/Functions.h>  //TODO: Remove when transfering Voxel framework.
-#include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Generic.h>
@@ -30,7 +28,6 @@
 #ifdef ESP_BUILD_WITH_VHACD
 #include "esp/geo/VoxelGrid.h"
 #endif
-#include "esp/gfx/MeshVisualizerDrawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -1143,7 +1140,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     // also, setup the color attachment for rendering, and remove the
     // visualizer for the previously picked object
     objectPickingHelper_->prepareToDraw();
-    !Mn::Debug();
+
     // redraw the scene on the object picking framebuffer
     esp::gfx::RenderCamera::Flags flags =
         esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
@@ -1156,6 +1153,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     // Read the object Id
     unsigned int pickedObject =
         objectPickingHelper_->getObjectId(event.position(), windowSize());
+
     // if an object is selected, create a visualizer
     createPickedObjectVisualizer(pickedObject);
     return;
