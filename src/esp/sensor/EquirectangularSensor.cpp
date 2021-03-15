@@ -21,14 +21,14 @@ EquirectangularSensorSpec::EquirectangularSensorSpec() : VisualSensorSpec() {
 
 void EquirectangularSensorSpec::sanityCheck() {
   VisualSensorSpec::sanityCheck();
-  CORRADE_ASSERT(
-      sensorSubType == SensorSubType::Equirectangular,
-      "EquirectangularSensorSpec::sanityCheck(): sensorSpec is not Equirectangular", );
+  CORRADE_ASSERT(sensorSubType == SensorSubType::Equirectangular,
+                 "EquirectangularSensorSpec::sanityCheck(): sensorSpec is not "
+                 "Equirectangular", );
 }
 
-
-EquirectangularSensor::EquirectangularSensor(scene::SceneNode& cameraNode,
-                             const EquirectangularSensorSpec::ptr& spec)
+EquirectangularSensor::EquirectangularSensor(
+    scene::SceneNode& cameraNode,
+    const EquirectangularSensorSpec::ptr& spec)
     : VisualSensor(cameraNode, spec) {
   equirectangularSensorSpec_->sanityCheck();
   // initialize a cubemap
@@ -59,10 +59,12 @@ EquirectangularSensor::EquirectangularSensor(scene::SceneNode& cameraNode,
   // setup shader flags
   switch (equirectangularSensorSpec_->sensorType) {
     case SensorType::Color:
-      equirectangularShaderFlags_ |= gfx::EquirectangularShader::Flag::ColorTexture;
+      equirectangularShaderFlags_ |=
+          gfx::EquirectangularShader::Flag::ColorTexture;
       break;
     case SensorType::Depth:
-      equirectangularShaderFlags_ |= gfx::EquirectangularShader::Flag::DepthTexture;
+      equirectangularShaderFlags_ |=
+          gfx::EquirectangularShader::Flag::DepthTexture;
       break;
     // TODO: Semantic
     // sensor type list is too long, have to use default
@@ -71,15 +73,16 @@ EquirectangularSensor::EquirectangularSensor(scene::SceneNode& cameraNode,
       break;
   }
   shader_ = new gfx::EquirectangularShader(equirectangularShaderFlags_);
-  // prepare a big rectangular mesh
+  shader_->setViewportSize(equirectangularSensorSpec_->resolution);
+  // prepare a big triangular mesh
   mesh_ = Mn::GL::Mesh{};
-  mesh_.setCount(4);
+  mesh_.setCount(3);
 }
 
-bool EquirectangularSensorSpec::operator==(const EquirectangularSensorSpec& a) const {
+bool EquirectangularSensorSpec::operator==(
+    const EquirectangularSensorSpec& a) const {
   return VisualSensorSpec::operator==(a);
 }
-
 
 bool EquirectangularSensor::drawObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
@@ -92,9 +95,11 @@ bool EquirectangularSensor::drawObservation(sim::Simulator& sim) {
     int size = res[0] < res[1] ? res[0] : res[1];
     bool reset = cubeMap_->reset(size);
     if (reset) {
-      cubeMapCamera_->setProjectionMatrix(size, equirectangularSensorSpec_->near,
+      cubeMapCamera_->setProjectionMatrix(size,
+                                          equirectangularSensorSpec_->near,
                                           equirectangularSensorSpec_->far);
-      LOG(INFO) << "#### reset!!" << size << " ";
+
+      shader_->setViewportSize(equirectangularSensorSpec_->resolution);
     }
   }
 
@@ -105,22 +110,22 @@ bool EquirectangularSensor::drawObservation(sim::Simulator& sim) {
   // generate the cubemap texture
   cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), flags);
 
-
-    if (equirectangularSensorSpec_->sensorType == SensorType::Color) {
-        shader_->bindColorTexture(
-            cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
-    }
-    if (equirectangularSensorSpec_->sensorType == SensorType::Depth) {
-        shader_->bindDepthTexture(
-            cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
-    }
-    renderTarget().renderEnter();
-    shader_->draw(mesh_, *cubeMap_);
-    renderTarget().renderExit();
-    return true;
+  if (equirectangularSensorSpec_->sensorType == SensorType::Color) {
+    shader_->bindColorTexture(
+        cubeMap_->getTexture(gfx::CubeMap::TextureType::Color));
+  }
+  if (equirectangularSensorSpec_->sensorType == SensorType::Depth) {
+    shader_->bindDepthTexture(
+        cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
+  }
+  renderTarget().renderEnter();
+  shader_->draw(mesh_);
+  renderTarget().renderExit();
+  return true;
 }
 
-Cr::Containers::Optional<Mn::Vector2> EquirectangularSensor::depthUnprojection() const {
+Cr::Containers::Optional<Mn::Vector2> EquirectangularSensor::depthUnprojection()
+    const {
   float f = equirectangularSensorSpec_->far;
   float n = equirectangularSensorSpec_->near;
   float d = f - n;

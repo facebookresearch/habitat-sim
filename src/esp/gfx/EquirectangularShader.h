@@ -72,7 +72,6 @@ class EquirectangularShader : public Magnum::GL::AbstractShaderProgram {
 
   ~EquirectangularShader() override = default;
 
-
   /** @brief Flags */
   Flags flags() const { return flags_; }
 
@@ -89,21 +88,26 @@ class EquirectangularShader : public Magnum::GL::AbstractShaderProgram {
   // EquirectangularShader& bindObjectIdTexture(Magnum::GL::Texture2D&
   // texture);
 
-  void draw(Magnum::GL::Mesh& mesh, CubeMap& cubemap);
+  /**
+   * @brief Set ViewportSize for calculations in vert
+   * @param[in] Vector2i viewportSize
+   */
+  EquirectangularShader& setViewportSize(esp::vec2i viewportSize);
+
  protected:
   Flags flags_;
 
-//   // ======= uniforms =======
-//   // it hurts the performance to call glGetUniformLocation() every frame due
-//   // to string operations. therefore, cache the locations in the constructor
-//   // using the function @ref cacheUniforms()
-
-//   // common material uniforms
-
-//   /**
-//    * @brief cache the uniform locations
-//    */
-//     void cacheUniforms();
+  // ======= uniforms =======
+  // it hurts the performance to call glGetUniformLocation() every frame due
+  // to string operations. therefore, cache the locations in the constructor
+  // using the function @ref cacheUniforms()
+  // common material uniforms
+  int viewportHeight_ = ID_UNDEFINED;
+  int viewportWidth_ = ID_UNDEFINED;
+  /**
+   * @brief cache the uniform locations
+   */
+  void cacheUniforms();
 
   /**
    * @brief set texture binding points in the shader

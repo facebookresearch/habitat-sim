@@ -18,8 +18,6 @@
 namespace esp {
 namespace sensor {
 
-
-
 struct EquirectangularSensorSpec : public VisualSensorSpec {
   /**
    * @brief Constructor
@@ -45,7 +43,7 @@ class EquirectangularSensor : public VisualSensor {
    * user can use them immediately
    */
   explicit EquirectangularSensor(scene::SceneNode& cameraNode,
-                         const EquirectangularSensorSpec::ptr& spec);
+                                 const EquirectangularSensorSpec::ptr& spec);
   /**
    * @brief destructor
    */
@@ -67,9 +65,6 @@ class EquirectangularSensor : public VisualSensor {
   Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
       const override;
 
-  static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
-      "equirectangular-model-type={}-flags={}";
-
   gfx::RenderCamera* getRenderCamera() = delete;
 
  protected:
@@ -90,7 +85,6 @@ class EquirectangularSensor : public VisualSensor {
 
   ESP_SMART_POINTERS(EquirectangularSensor)
 };
-
 
 }  // namespace sensor
 }  // namespace esp

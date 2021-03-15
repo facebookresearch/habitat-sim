@@ -357,6 +357,7 @@ Key Commands:
   // included)
 
   Mn::DebugTools::GLFrameProfiler profiler_{};
+  int equirectangularMode_ = 0;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -534,12 +535,14 @@ Viewer::Viewer(const Arguments& arguments)
   cameraSensorSpec->orientation = {0, 0, 0};
   cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
 
-
-  auto equirectangularSensorSpec = esp::sensor::EquirectangularSensorSpec::create();
+  auto equirectangularSensorSpec =
+      esp::sensor::EquirectangularSensorSpec::create();
   equirectangularSensorSpec->uuid = "equirectangular";
-  equirectangularSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  equirectangularSensorSpec->resolution =
+      esp::vec2i(viewportSize[1], viewportSize[0]);
 
-  agentConfig.sensorSpecifications = {cameraSensorSpec, equirectangularSensorSpec};
+  agentConfig.sensorSpecifications = {cameraSensorSpec,
+                                      equirectangularSensorSpec};
   simulator_->addAgent(agentConfig);
 
   // Set up camera
@@ -606,6 +609,9 @@ void Viewer::switchCameraType() {
     }
     case esp::sensor::SensorSubType::Orthographic: {
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
+      return;
+    }
+    case esp::sensor::SensorSubType::Equirectangular: {
       return;
     }
     case esp::sensor::SensorSubType::None: {
@@ -887,19 +893,20 @@ void Viewer::drawEvent() {
   }
   uint32_t visibles = 0;
   if (flyingCameraMode_) {
+    Mn::GL::defaultFramebuffer.bind();
+    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
+      esp::gfx::RenderCamera::Flags flags =
+          esp::gfx::RenderCamera::Flag::FrustumCulling;
+      visibles += renderCamera_->draw(it.second, flags);
+    }
+  } else if (equirectangularMode_) {
     simulator_->drawObservation(defaultAgentId_, "equirectangular");
     esp::gfx::RenderTarget* sensorRenderTarget =
-            simulator_->getRenderTarget(defaultAgentId_, "equirectangular");
-        CORRADE_ASSERT(sensorRenderTarget,
-                       "Error in Viewer::drawEvent: sensor's rendering target "
-                       "cannot be nullptr.", );
-        sensorRenderTarget->blitRgbaToDefault();
-    // Mn::GL::defaultFramebuffer.bind();
-    // for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-    //   esp::gfx::RenderCamera::Flags flags =
-    //       esp::gfx::RenderCamera::Flag::FrustumCulling;
-    //   visibles += renderCamera_->draw(it.second, flags);
-  // }
+        simulator_->getRenderTarget(defaultAgentId_, "equirectangular");
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    sensorRenderTarget->blitRgbaToDefault();
 
   } else {
     // using polygon offset to increase mesh depth to a avoid z-fighting with
@@ -929,7 +936,7 @@ void Viewer::drawEvent() {
     // esp::gfx::RenderTarget* sensorRenderTarget =
     //     simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
     esp::gfx::RenderTarget* sensorRenderTarget =
-         simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
+        simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
     CORRADE_ASSERT(sensorRenderTarget,
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
@@ -1238,6 +1245,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Six:
       // reset camera zoom
       getAgentCamera().resetZoom();
+      break;
+    case KeyEvent::Key::Seven:
+      equirectangularMode_ = (equirectangularMode_ + 1) % 2;
+      LOG(INFO) << "Equirectangular mode is " << equirectangularMode_;
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();

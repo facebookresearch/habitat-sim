@@ -20,10 +20,11 @@ sensor::SensorSuite SensorFactory::createSensors(
             sensorNode, std::dynamic_pointer_cast<CameraSensorSpec>(spec)));
       }
       // TODO: Implement fisheye sensor, Equirectangle sensor, Panorama sensor
-      else if(spec->sensorSubType == SensorSubType::Equirectangular) {
-        sensorSuite.add(sensor::EquirectangularSensor::create(sensorNode, std::dynamic_pointer_cast<EquirectangularSensorSpec>(spec)));
+      else if (spec->sensorSubType == SensorSubType::Equirectangular) {
+        sensorSuite.add(sensor::EquirectangularSensor::create(
+            sensorNode,
+            std::dynamic_pointer_cast<EquirectangularSensorSpec>(spec)));
       }
-
     }
     // TODO: Implement NonVisualSensorSpecs
     // else if (!spec->isVisualSensorSpec()) {}

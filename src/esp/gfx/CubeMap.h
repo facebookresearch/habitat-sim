@@ -162,7 +162,10 @@ class CubeMap {
   /**
    * @brief Return framebuffer
    */
-  Corrade::Containers::StaticArray<6, Magnum::GL::Framebuffer>& getFrameBuffer() {return frameBuffer_;}
+  Corrade::Containers::StaticArray<6, Magnum::GL::Framebuffer>&
+  getFrameBuffer() {
+    return frameBuffer_;
+  }
 
  private:
   Flags flags_;
