@@ -1,12 +1,12 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-
 #include "FisheyeSensor.h"
+#include "esp/core/Check.h"
+#include "esp/gfx/DoubleSphereCameraShader.h"
 
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/FormatStl.h>
-#include "esp/gfx/DoubleSphereCameraShader.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -21,31 +21,30 @@ FisheyeSensorSpec::FisheyeSensorSpec() : VisualSensorSpec() {
 
 void FisheyeSensorSpec::sanityCheck() {
   VisualSensorSpec::sanityCheck();
-  CORRADE_ASSERT(
-      sensorSubType == SensorSubType::Fisheye,
-      "FisheyeSensorSpec::sanityCheck(): sensorSpec is not Fisheye", );
+  ESP_CHECK(sensorSubType == SensorSubType::Fisheye,
+            "FisheyeSensorSpec::sanityCheck(): sensorSpec is not Fisheye");
 
-  CORRADE_ASSERT(focalLength[0] > 0 && focalLength[1] > 0,
-                 "FisheyeSensorSpec::sanityCheck(): focal length,"
-                     << focalLength << "is illegal.", );
+  ESP_CHECK(focalLength[0] > 0 && focalLength[1] > 0,
+            "FisheyeSensorSpec::sanityCheck(): focal length," << focalLength
+                                                              << "is illegal.");
 }
 
 void FisheyeSensorDoubleSphereSpec::sanityCheck() {
   FisheyeSensorSpec::sanityCheck();
-  CORRADE_ASSERT(fisheyeModelType == FisheyeSensorModelType::DoubleSphere,
-                 "FisheyeSensorDoubleSphereSpec::sanityCheck(): fisheye model "
-                 "type is wrong. It should be DoubleSphere.", );
-  CORRADE_ASSERT(alpha >= 0 && alpha <= 1.0,
-                 "FisheyeSensorDoubleSphereSpec::sanityCheck(): alpha"
-                     << alpha << "is illegal.", );
+  ESP_CHECK(fisheyeModelType == FisheyeSensorModelType::DoubleSphere,
+            "FisheyeSensorDoubleSphereSpec::sanityCheck(): fisheye model "
+            "type is wrong. It should be DoubleSphere.");
+  ESP_CHECK(alpha >= 0 && alpha <= 1.0,
+            "FisheyeSensorDoubleSphereSpec::sanityCheck(): alpha"
+                << alpha << "is illegal.");
 }
 
 template <typename T>
 void specSanityCheck(FisheyeSensorSpec* spec) {
   auto actualSpec = dynamic_cast<T*>(spec);
-  CORRADE_ASSERT(actualSpec,
-                 "FisheyeSensor::FisheyeSensor(): the spec cannot be converted "
-                 "to any known fiesheye sensor spec.", );
+  ESP_CHECK(actualSpec,
+            "FisheyeSensor::FisheyeSensor(): the spec cannot be converted "
+            "to any known fiesheye sensor spec.");
   actualSpec->sanityCheck();
 }
 

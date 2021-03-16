@@ -90,27 +90,6 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
 
  protected:
   Flags flags_;
-
-  // ======= uniforms =======
-  // it hurts the performance to call glGetUniformLocation() every frame due
-  // to string operations. therefore, cache the locations in the constructor
-  // using the function @ref cacheUniforms()
-
-  // common material uniforms
-
-  /**
-   * @brief cache the uniform locations
-   * NOTE: Subclass must implement this function, and call it at the end of
-   * the constructor
-   */
-  virtual void cacheUniforms() = 0;
-
-  /**
-   * @brief set texture binding points in the shader
-   * NOTE: Subclass must implement this function, and call it at the end of
-   * the constructor
-   */
-  virtual void setTextureBindingPoints() = 0;
 };
 CORRADE_ENUMSET_OPERATORS(FisheyeShader::Flags)
 }  // namespace gfx

@@ -73,18 +73,7 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
-  setTextureBindingPoints();
-  cacheUniforms();
-}
-
-void DoubleSphereCameraShader::cacheUniforms() {
-  focalLengthUniform_ = uniformLocation("FocalLength");
-  principalPointOffsetUniform_ = uniformLocation("PrincipalPointOffset");
-  alphaUniform_ = uniformLocation("Alpha");
-  xiUniform_ = uniformLocation("Xi");
-}
-
-void DoubleSphereCameraShader::setTextureBindingPoints() {
+  // set texture binding points in the shader
   if (flags_ & FisheyeShader::Flag::ColorTexture) {
     setUniform(uniformLocation("ColorTexture"),
                fisheyeShaderTexUnitSpace::TextureUnit::Color);
@@ -94,6 +83,15 @@ void DoubleSphereCameraShader::setTextureBindingPoints() {
                fisheyeShaderTexUnitSpace::TextureUnit::Depth);
   }
   // TODO: handle the other flags, ObjectIdTexture
+
+  // cache the uniform locations
+  // it hurts the performance to call glGetUniformLocation() every frame due
+  // to string operations. therefore, cache the locations in the constructor
+
+  focalLengthUniform_ = uniformLocation("FocalLength");
+  principalPointOffsetUniform_ = uniformLocation("PrincipalPointOffset");
+  alphaUniform_ = uniformLocation("Alpha");
+  xiUniform_ = uniformLocation("Xi");
 }
 
 DoubleSphereCameraShader& DoubleSphereCameraShader::setFocalLength(
