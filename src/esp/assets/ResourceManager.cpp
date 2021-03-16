@@ -2251,8 +2251,17 @@ void ResourceManager::createConvexHullDecomposition(
     const VHACDParameters& params,
     const bool saveChdToObj) {
   if (resourceDict_.count(filename) == 0) {
+    // retrieve existing, or create new, object attributes corresponding to
+    // passed filename
+    auto objAttributes =
+        getObjectAttributesManager()->getObjectCopyByHandle(filename);
+    if (objAttributes == nullptr) {
+      objAttributes =
+          getObjectAttributesManager()->createObject(filename, false);
+    }
+
     // load/check for render MeshMetaData and load assets
-    loadObjectMeshDataFromFile(filename, filename, "render", true);
+    loadObjectMeshDataFromFile(filename, objAttributes, "render", true);
 
   }  // if no render asset exists
 
