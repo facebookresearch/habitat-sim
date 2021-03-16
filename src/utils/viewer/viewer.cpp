@@ -147,6 +147,10 @@ class Viewer : public Mn::Platform::Application {
   void wiggleLastObject();
   void invertGravity();
 
+  void displaySceneFlowField();
+
+  void iterateAndDisplaySignedDistanceField();
+
 #ifdef ESP_BUILD_WITH_VHACD
   void displayVoxelField(int objectID);
 #endif
@@ -803,6 +807,64 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
+void Viewer::displaySceneFlowField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization;
+  objectVoxelization = simulator_->getSceneVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  if (objectVoxelization == nullptr) {
+    simulator_->createSceneVoxelization(2000000);
+    objectVoxelization = simulator_->getSceneVoxelization();
+    objectVoxelization->getVoxelGrid()->generateEuclideanDistanceSDF(
+        "ESignedDistanceField");
+  }
+
+  // get access to underlying VoxelGrid (TODO: Pull functionality up from
+  // VoxelGrid.h to VoxelWrapper.h)
+  auto voxelGrid = objectVoxelization->getVoxelGrid();
+
+  // generate a vector field (This one in particular holds vectors pointing
+  // away from it's closest boundary)
+  voxelGrid->generateDistanceFlowField("FlowField");
+  // generate a mesh of the vector field with boolean isVectorField set to
+  // true
+  voxelGrid->generateMesh("FlowField", true);
+
+  // draw the vector field
+  simulator_->setSceneVoxelizationDraw(true, "FlowField");
+}
+
+void Viewer::iterateAndDisplaySignedDistanceField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization;
+  objectVoxelization = simulator_->getSceneVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  if (objectVoxelization == nullptr) {
+    simulator_->createSceneVoxelization(2000000);
+    objectVoxelization = simulator_->getSceneVoxelization();
+    objectVoxelization->getVoxelGrid()->generateEuclideanDistanceSDF();
+  }
+
+  // get access to underlying VoxelGrid (TODO: Pull functionality up from
+  // VoxelGrid.h to VoxelWrapper.h)
+  auto voxelGrid = objectVoxelization->getVoxelGrid();
+
+  // Set the range of distances to render, and generate a mesh for this (18
+  // is set to be the max distance)
+  int curDistanceVisualization = -1 * (voxelDistance % 18);
+  voxelGrid->generateBoolGridFromFloatGrid("ESignedDistanceField", "SDFSubset",
+                                           curDistanceVisualization,
+                                           curDistanceVisualization + 1);
+  voxelGrid->generateMesh("SDFSubset");
+
+  // Draw the voxel grid
+  simulator_->setSceneVoxelizationDraw(true, "SDFSubset");
+}
+
 bool isTrue(bool val) {
   return val;
 }
@@ -1384,66 +1446,15 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
 #ifdef ESP_BUILD_WITH_VHACD
     case KeyEvent::Key::L: {
-      // Temporary key event used for testing & visualizing Voxel Grid framework
-      std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization;
-      objectVoxelization = simulator_->getSceneVoxelization();
-
-      // if the object hasn't been voxelized, do that and generate an SDF as
-      // well
-      if (objectVoxelization == nullptr) {
-        simulator_->createSceneVoxelization(2000000);
-        objectVoxelization = simulator_->getSceneVoxelization();
-        objectVoxelization->getVoxelGrid()->generateEuclideanDistanceSDF();
-      }
-
-      // get access to underlying VoxelGrid (TODO: Pull functionality up from
-      // VoxelGrid.h to VoxelWrapper.h)
-      auto voxelGrid = objectVoxelization->getVoxelGrid();
-
-      // Set the range of distances to render, and generate a mesh for this (18
-      // is set to be the max distance)
-      int curDistanceVisualization = -1 * (voxelDistance % 18);
-      voxelGrid->generateBoolGridFromFloatGrid(
-          "ESignedDistanceField", "SDFSubset", curDistanceVisualization,
-          curDistanceVisualization + 1);
-      voxelGrid->generateMesh("SDFSubset");
-
-      // Draw the voxel grid
-      simulator_->setSceneVoxelizationDraw(true, "SDFSubset");
-
+      iterateAndDisplaySignedDistanceField();
       // Increase the distance visualized for next time (Pressing L repeatedly
       // will visualize different distances)
       voxelDistance++;
-
       break;
     }
     case KeyEvent::Key::G: {
-      // Temporary key event used for testing & visualizing Voxel Grid framework
-      std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization;
-      objectVoxelization = simulator_->getSceneVoxelization();
-
-      // if the object hasn't been voxelized, do that and generate an SDF as
-      // well
-      if (objectVoxelization == nullptr) {
-        simulator_->createSceneVoxelization(2000000);
-        objectVoxelization = simulator_->getSceneVoxelization();
-        objectVoxelization->getVoxelGrid()->generateEuclideanDistanceSDF(
-            "ESignedDistanceField");
-      }
-
-      // get access to underlying VoxelGrid (TODO: Pull functionality up from
-      // VoxelGrid.h to VoxelWrapper.h)
-      auto voxelGrid = objectVoxelization->getVoxelGrid();
-
-      // generate a vector field (This one in particular holds vectors pointing
-      // away from it's closest boundary)
-      voxelGrid->generateDistanceFlowField("SDFSubset");
-      // generate a mesh of the vector field with boolean isVectorField set to
-      // true
-      voxelGrid->generateMesh("SDFSubset", true);
-
-      // draw the vector field
-      simulator_->setSceneVoxelizationDraw(true, "SDFSubset");
+      displaySceneFlowField();
+      break;
     }
 #endif
     default:

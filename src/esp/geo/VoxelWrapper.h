@@ -8,6 +8,11 @@
 namespace esp {
 namespace geo {
 
+// When an object is voxelized, it is given a VoxelWrapper which points to an
+// underlying VoxelGrid and the scene node of the object. This class handles
+// object-specific functionality. Multiple objects will each have there own
+// VoxelWrapper, but each of those VoxelWrappers could share a VoxelGrid if they
+// have the same underlying RenderAssetHandle and Voxel resolution.
 class VoxelWrapper {
  private:
   esp::scene::SceneNode* SceneNode;
