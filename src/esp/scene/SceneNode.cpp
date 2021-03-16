@@ -124,9 +124,13 @@ void SceneNode::addSensorToParentNodeSensorSuite() {
   }
   // There only exists 0 or 1 sensors in a leaf nodeSensorSuite
   // Get the first one, and if it is valid, add it to parent's nodeSensorSuite
+  CORRADE_INTERNAL_ASSERT(nodeSensorSuite_->getSensors().size() == 1);
   std::map<std::string, std::reference_wrapper<sensor::Sensor>>::iterator it =
       nodeSensorSuite_->getSensors().begin();
   if (it != nodeSensorSuite_->getSensors().end()) {
+    CORRADE_ASSERT(static_cast<scene::SceneNode*>(this->parent()) != nullptr,
+                   "SceneNode::addSensorToParentNodeSensorSuite(): Parent null "
+                   "is nullptr", );
     static_cast<scene::SceneNode*>(this->parent())
         ->getNodeSensorSuite()
         .add(it->second);
@@ -134,7 +138,7 @@ void SceneNode::addSensorToParentNodeSensorSuite() {
 }
 
 void SceneNode::removeSensorFromParentNodeSensorSuite() {
-  // Only add a sensor if this is a leaf node and sensor exists
+  // Only remove a sensor if this is a leaf node and sensor exists
   if (!(getSceneNodeTags() & SceneNodeTag::Leaf) ||
       nodeSensorSuite_->getSensors().empty()) {
     return;
@@ -142,9 +146,13 @@ void SceneNode::removeSensorFromParentNodeSensorSuite() {
   // There only exists 0 or 1 sensors in a leaf nodeSensorSuite
   // Get the first one, and if it is valid, remove it from parent's
   // nodeSensorSuite
+  CORRADE_INTERNAL_ASSERT(nodeSensorSuite_->getSensors().size() == 1);
   std::map<std::string, std::reference_wrapper<sensor::Sensor>>::iterator it =
       nodeSensorSuite_->getSensors().begin();
   if (it != nodeSensorSuite_->getSensors().end()) {
+    CORRADE_ASSERT(static_cast<scene::SceneNode*>(this->parent()) != nullptr,
+                   "SceneNode::addSensorToParentNodeSensorSuite(): Parent null "
+                   "is nullptr", );
     static_cast<scene::SceneNode*>(this->parent())
         ->getNodeSensorSuite()
         .remove(it->first);
