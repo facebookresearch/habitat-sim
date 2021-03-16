@@ -977,7 +977,18 @@ class Simulator {
   std::vector<vec3f> getVertices(int id) {
     return resourceManager_->getVertices(id);
   }
-
+  /**
+   * @brief
+   */
+  std::vector<vec3uc> getVerticesColor(int id) {
+    return resourceManager_->getVerticesColor(id);
+  }
+  /**
+   * @brief
+   */
+  std::vector<uint32_t> getSurfIndexes(int id) {
+    return resourceManager_->getSurfIndexes(id);
+  }
   /**
    * @brief Return a vector of the object IDs for each vertex location of a
    * given mesh.

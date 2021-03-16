@@ -332,6 +332,14 @@ void initSimBindings(py::module& m) {
            "ID"_a,
            pybind11::return_value_policy::reference,
            R"(Return a vector of the vertex locations on a given mesh.)")
+       .def("get_vertices_color",
+            &Simulator::getVerticesColor,
+            pybind11::return_value_policy::reference,
+            R"()")
+       .def("get_surface_ids",
+            &Simulator::getSurfIndexes,
+            pybind11::return_value_policy::reference,
+            R"()")
        .def("get_object_ids",
            &Simulator::getObjectIds,
            "ID"_a,

@@ -377,6 +377,26 @@ class ResourceManager {
   }
 
   /**
+   * @brief Return a vector of what I believe are the surface indexes for a specific mesh in the scene.
+   */
+  std::vector<uint32_t> getSurfIndexes(int id) {
+    const std::vector<uint32_t> surfIndexes =
+          dynamic_cast<GenericInstanceMeshData&>(*meshes_.at(id))
+              .getIndexBufferObjectCPU();
+    return surfIndexes;
+  }
+
+  /**
+   * @brief Return a vector of color per vertex for a specific mesh in the scene.
+   */
+  std::vector<vec3uc> getVerticesColor(int id) {
+    const std::vector<vec3uc> colors =
+          dynamic_cast<GenericInstanceMeshData&>(*meshes_.at(id))
+              .getColorBufferObjectCPU();
+    return colors;
+  }
+
+  /**
    * @brief Return a vector of object IDs for each vertex in a given mesh.
    *
    * Given the integer ID of a mesh, get the object IDs of each vertex in
