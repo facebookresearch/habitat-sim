@@ -5,6 +5,7 @@
 #ifndef ESP_IO_IO_H_
 #define ESP_IO_IO_H_
 
+#include <glob.h>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,14 @@ size_t fileSize(const std::string& file);
 std::string removeExtension(const std::string& file);
 
 std::string changeExtension(const std::string& file, const std::string& ext);
+
+/**
+ * @brief This function will perform globbing on a passed path + pattern,
+ * returning all the files and directories that match the pattern.
+ * @param pattern The pattern to match
+ * @return a vector of the fully-qualified paths that match the pattern.
+ */
+std::vector<std::string> globDirs(const std::string& pattern);
 
 /** @brief Tokenize input string by any delimiter char in delimiterCharList.
  *

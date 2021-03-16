@@ -254,14 +254,20 @@ void AttributesManager<T, Access>::buildCfgPathsFromJSONAndLoad(
     if (!jsonPaths[i].IsString()) {
       LOG(ERROR)
           << "AttributesManager::buildCfgPathsFromJSONAndLoad : Invalid path "
-             "value in configuration array element @ idx "
+             "value in file path array element @ idx "
           << i << ". Skipping.";
       continue;
     }
     std::string absolutePath =
         Cr::Utility::Directory::join(configDir, jsonPaths[i].GetString());
-    // load all object templates available as configs in absolutePath
-    this->loadAllConfigsFromPath(absolutePath, true);
+    std::vector<std::string> globPaths = io::globDirs(absolutePath);
+
+    for (const auto& globPath : globPaths) {
+      // load all object templates available as configs in absolutePath
+      LOG(WARNING) << "Glob path result for " << absolutePath << " : "
+                   << globPath;
+      this->loadAllConfigsFromPath(globPath, true);
+    }
   }
   LOG(INFO) << "AttributesManager::buildCfgPathsFromJSONAndLoad : "
             << std::to_string(jsonPaths.Size())
