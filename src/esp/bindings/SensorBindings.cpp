@@ -38,6 +38,94 @@ esp::scene::SceneNode* nodeGetter(T& self) {
 namespace esp {
 namespace sensor {
 
+// Get the torch tensor or numpy array buffer of the Sensor, initialize if it
+// does not exist yet
+template <class T>
+
+auto buffer(T& self, int gpuDevice) {
+  py::handle handle = py::cast(self);
+  if (!py::hasattr(handle, "__buffer")) {
+    if (self.specification()->gpu2gpuTransfer) {
+#ifdef ESP_BUILD_WITH_CUDA
+      auto torch = py::module_::import("torch");
+      if (self.specification()->sensorType == SensorType::Semantic) {
+          py::setattr(
+              handle, "__buffer",
+              torch.attr("empty")(
+                  (py::int_(self.specification()->resolution[0]),
+                    py::int_(self.specification()->resolution[1])),
+                  "dtype"_a = torch.attr("int32"),
+                  "device"_a = torch.attr("device")(
+                      py::str("cuda"), py::int_(gpuDevice)));
+      } else if (self.specification()->sensorType == SensorType::Depth) {
+        py::setattr(
+            handle, "__buffer",
+            torch.attr("empty")((py::int_(self.specification()->resolution[0]),
+                                 py::int_(self.specification()->resolution[1])),
+                                "dtype"_a = torch.attr("float32"),
+                                "device"_a = torch.attr("device")(
+                                    py::str("cuda"), py::int_(gpuDevice))));
+      } else {
+        py::setattr(
+            handle, "__buffer",
+            torch.attr("empty")((py::int_(self.specification()->resolution[0]),
+                                 py::int_(self.specification()->resolution[1]),
+                                 py::int_(self.specification()->channels)),
+                                "dtype"_a = torch.attr("uint32"),
+                                "device"_a = torch.attr("device")(
+                                    py::str("cuda"), py::int_(gpuDevice))));
+      }
+#endif
+    } else {
+      if (self.specification()->sensorType == SensorType::Semantic) {
+        auto pyBuffer = py::array(py::buffer_info(
+            nullptr,          /* Pointer to data (nullptr -> ask NumPy to
+                                 allocate!) */
+            sizeof(uint32_t), /* Size of one item */
+            py::format_descriptor<uint32_t>::value, /* Buffer format
+                                                     */
+            2,                                      /* How many dimensions? */
+            {self.specification()->resolution[0],
+             self.specification()->resolution[1]}, /* Number of elements for
+                                                     each dimension */
+            {sizeof(uint32_t), sizeof(uint32_t)}
+            /* Strides for each dimension */
+            ));
+        py::setattr(handle, "__buffer", pyBuffer);
+      } else if (self.specification()->sensorType == SensorType::Depth) {
+        auto pyBuffer = py::array(py::buffer_info(
+            nullptr,       /* Pointer to data (nullptr -> ask NumPy to
+                              allocate!) */
+            sizeof(float), /* Size of one item */
+            py::format_descriptor<float>::value, /* Buffer format */
+            2,                                   /* How many dimensions? */
+            {self.specification()->resolution[0],
+             self.specification()->resolution[1]}, /* Number of elements for
+                                                     each dimension */
+            {sizeof(float), sizeof(float)} /* Strides for each dimension */
+            ));
+        py::setattr(handle, "__buffer", pyBuffer);
+      } else {
+        auto pyBuffer = py::array(py::buffer_info(
+            nullptr,         /* Pointer to data (nullptr -> ask NumPy to
+                                allocate!) */
+            sizeof(uint8_t), /* Size of one item */
+            py::format_descriptor<uint8_t>::value, /* Buffer format */
+            3,                                     /* How many dimensions? */
+            {self.specification()->resolution[0],
+             self.specification()->resolution[1],
+             self.specification()->channels}, /* Number of elements
+                                                 for each dimension */
+            {sizeof(uint8_t), sizeof(uint8_t), sizeof(uint8_t)}
+            /* Strides for each dimension */
+            ));
+        py::setattr(handle, "__buffer", pyBuffer);
+      }
+    }
+  }
+  return py::getattr(handle, "__buffer");
+};
+
 void initSensorBindings(py::module& m) {
   // ==== Observation ====
   // NOLINTNEXTLINE(bugprone-unused-raii)
@@ -125,7 +213,8 @@ void initSensorBindings(py::module& m) {
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
              Magnum::SceneGraph::AbstractFeature3D,
-             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
+             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor",
+                                                          py::dynamic_attr())
       .def("specification", &Sensor::specification)
       .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
       .def("is_visual_sensor", &Sensor::isVisualSensor)
@@ -136,9 +225,8 @@ void initSensorBindings(py::module& m) {
 
   // ==== VisualSensor ====
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
-             Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(m,
-                                                                "VisualSensor")
-
+             Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(
+      m, "VisualSensor", py::dynamic_attr())
       .def(
           "draw_observation", &VisualSensor::drawObservation,
           R"(Draw an observation to the frame buffer using simulator's renderer)")
@@ -155,12 +243,15 @@ void initSensorBindings(py::module& m) {
       .def_property_readonly("hfov", &VisualSensor::getFOV,
                              R"(The Field of View this VisualSensor uses.)")
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
-      .def_property_readonly("render_target", &VisualSensor::renderTarget);
+      .def_property_readonly("render_target", &VisualSensor::renderTarget)
+      .def(
+          "buffer", buffer<VisualSensor>,
+          R"(Get the torch tensor or numpy array buffer of the Sensor, initialize if it does not exist yet)");
 
   // === CameraSensor ====
   py::class_<CameraSensor, Magnum::SceneGraph::PyFeature<CameraSensor>,
              VisualSensor, Magnum::SceneGraph::PyFeatureHolder<CameraSensor>>(
-      m, "CameraSensor")
+      m, "CameraSensor", py::dynamic_attr())
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const CameraSensorSpec::ptr&>())
       .def("set_projection_params", &CameraSensor::setProjectionParameters,
@@ -196,7 +287,6 @@ void initSensorBindings(py::module& m) {
       .def_property(
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
           R"(The distance to the far clipping plane for this CameraSensor uses.)");
-
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")

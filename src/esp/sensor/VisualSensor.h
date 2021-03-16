@@ -182,6 +182,9 @@ class VisualSensor : public Sensor {
    */
   Mn::Deg getFOV() const { return hfov_; }
 
+  VisualSensorSpec::ptr specification() { return visualSensorSpec_; }
+
+  //
  protected:
   /** @brief field of view
    */

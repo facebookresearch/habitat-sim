@@ -26,14 +26,13 @@ try:
 except ImportError:
     _HAS_TORCH = False
 
-import habitat_sim.errors
+
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
-from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import logger
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
-from habitat_sim.sensor import SensorSpec, SensorType
-from habitat_sim.sensors.noise_models import make_sensor_noise_model
+from habitat_sim.sensor import Sensor, SensorSpec, SensorType
+from habitat_sim.sensors.noise_models import SensorNoiseModel, make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
@@ -72,7 +71,7 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
-    __sensors: Dict[str, "Sensor"] = attr.ib(factory=dict, init=False)
+    __noise_models: Dict[str, SensorNoiseModel] = attr.ib(factory=dict, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
@@ -118,11 +117,7 @@ class Simulator(SimulatorBackend):
         self.__set_from_config(self.config)
 
     def close(self) -> None:
-        for _, sensor in self.__sensors.items():
-            sensor.close()
-            del sensor
-
-        self.__sensors.clear()
+        self.__noise_models.clear()
 
         for agent in self.agents:
             agent.close()
@@ -253,17 +248,32 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self.__sensors: Dict[str, Sensor] = {}
+        self.__noise_models: Dict[str, SensorNoiseModel] = {}
         self.__last_state = dict()
-        for agent_id, agent_cfg in enumerate(config.agents):
-            for spec in agent_cfg.sensor_specifications:
-                self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
+        for agent_id, _ in enumerate(config.agents):
             self.initialize_agent(agent_id)
 
-    def _update_simulator_sensors(self, uuid: str, agent_id: int) -> None:
-        self.__sensors[uuid] = Sensor(
-            sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
+    def make_noise_model(self, sensor_spec: SensorSpec):
+        noise_model_kwargs = sensor_spec.noise_model_kwargs
+        gpu_device = 0
+        if sensor_spec.gpu2gpu_transfer:
+            gpu_device = self.gpu_device
+        noise_model = make_sensor_noise_model(
+            sensor_spec.noise_model, {"gpu_device_id": gpu_device, **noise_model_kwargs}
         )
+        assert noise_model.is_valid_sensor_type(
+            sensor_spec.sensor_type
+        ), "Noise model '{}' is not valid for sensor '{}'".format(
+            sensor_spec.noise_model, sensor_spec.uuid
+        )
+        return noise_model
+
+    def get_noise_model(self, sensor_spec: SensorSpec):
+        if sensor_spec.noise_model not in self.__noise_models:
+            self.__noise_models[sensor_spec.noise_model] = self.make_noise_model(
+                sensor_spec
+            )
+        return self.__noise_models[sensor_spec.noise_model]
 
     def add_sensor(
         self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
@@ -292,7 +302,6 @@ class Simulator(SimulatorBackend):
             agent_id = self._default_agent_id
         agent = self.get_agent(agent_id=agent_id)
         agent._add_sensor(sensor_spec)
-        self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
@@ -338,19 +347,17 @@ class Simulator(SimulatorBackend):
             return_single = False
 
         for agent_id in agent_ids:
-            agent_sensors = self.get_agent(agent_id)._sensors
+            agent_sensors = self.get_agent(agent_id).scene_node.subtree_sensors
             for _, sensor in agent_sensors.items():
                 sensor.draw_observation(self)
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
         for agent_id in agent_ids:
-            agent_sensors = self.get_agent(agent_id)._sensors
+            agent_sensors = self.get_agent(agent_id).scene_node.subtree_sensors
             agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
-            for sensor_uuid, _ in agent_sensors.items():
-                agent_observations[sensor_uuid] = self.__sensors[
-                    sensor_uuid
-                ].get_observation()
+            for sensor_uuid, sensor in agent_sensors.items():
+                agent_observations[sensor_uuid] = self.get_observation(sensor)
             observations[agent_id] = agent_observations
         if return_single:
             return next(iter(observations.values()))
@@ -467,166 +474,52 @@ class Simulator(SimulatorBackend):
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
 
+    def get_observation(self, sensor: Sensor) -> Union[ndarray, "Tensor"]:
+        self.renderer.bind_render_target(sensor)
+        tgt = sensor.render_target
+        noise_model = self.get_noise_model(sensor.specification())
 
-class Sensor:
-    r"""Wrapper around habitat_sim.Sensor
-
-    TODO(MS) define entire Sensor class in python, reducing complexity
-    """
-
-    def __init__(self, sim: Simulator, agent: Agent, sensor_id: str) -> None:
-        self._sim = sim
-        self._agent = agent
-
-        # sensor is an attached object to the scene node
-        # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent._sensors[sensor_id]
-
-        self._spec = self._sensor_object.specification()
-
-        self._sim.renderer.bind_render_target(self._sensor_object)
-
-        if self._spec.gpu2gpu_transfer:
-            assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
-            assert _HAS_TORCH
-            device = torch.device("cuda", self._sim.gpu_device)  # type: ignore[attr-defined]
-            torch.cuda.set_device(device)
-
-            resolution = self._spec.resolution
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                self._buffer = torch.empty(
-                    resolution[0], resolution[1], dtype=torch.int32, device=device
-                )
-            elif self._spec.sensor_type == SensorType.DEPTH:
-                self._buffer = torch.empty(
-                    resolution[0], resolution[1], dtype=torch.float32, device=device
-                )
-            else:
-                self._buffer = torch.empty(
-                    resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
-                )
-        else:
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                self._buffer = np.empty(
-                    (self._spec.resolution[0], self._spec.resolution[1]),
-                    dtype=np.uint32,
-                )
-            elif self._spec.sensor_type == SensorType.DEPTH:
-                self._buffer = np.empty(
-                    (self._spec.resolution[0], self._spec.resolution[1]),
-                    dtype=np.float32,
-                )
-            else:
-                self._buffer = np.empty(
-                    (
-                        self._spec.resolution[0],
-                        self._spec.resolution[1],
-                        self._spec.channels,
-                    ),
-                    dtype=np.uint8,
-                )
-
-        noise_model_kwargs = self._spec.noise_model_kwargs
-        self._noise_model = make_sensor_noise_model(
-            self._spec.noise_model,
-            {"gpu_device_id": self._sim.gpu_device, **noise_model_kwargs},
-        )
-        assert self._noise_model.is_valid_sensor_type(
-            self._spec.sensor_type
-        ), "Noise model '{}' is not valid for sensor '{}'".format(
-            self._spec.noise_model, self._spec.uuid
-        )
-
-    def draw_observation(self) -> None:
-        # sanity check:
-
-        # see if the sensor is attached to a scene graph, otherwise it is invalid,
-        # and cannot make any observation
-        if not self._sensor_object.object:
-            raise habitat_sim.errors.InvalidAttachedObject(
-                "Sensor observation requested but sensor is invalid.\
-                 (has it been detached from a scene node?)"
-            )
-
-        # get the correct scene graph based on application
-        if self._spec.sensor_type == SensorType.SEMANTIC:
-            if self._sim.semantic_scene is None:
-                raise RuntimeError(
-                    "SemanticSensor observation requested but no SemanticScene is loaded"
-                )
-            scene = self._sim.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
-
-        # now, connect the agent to the root node of the current scene graph
-
-        # sanity check is not needed on agent:
-        # because if a sensor is attached to a scene graph,
-        # it implies the agent is attached to the same scene graph
-        # (it assumes backend simulator will guarantee it.)
-
-        agent_node = self._agent.scene_node
-        agent_node.parent = scene.get_root_node()
-
-        render_flags = habitat_sim.gfx.Camera.Flags.NONE
-
-        if self._sim.frustum_culling:
-            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
-
-        with self._sensor_object.render_target:
-            self._sim.renderer.draw(self._sensor_object, scene, render_flags)
-
-        # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
-        if (
-            self._spec.sensor_type == SensorType.SEMANTIC
-            and self._sim.get_active_scene_graph()
-            is not self._sim.get_active_semantic_scene_graph()
-        ):
-            agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
-            render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
-            self._sim.renderer.draw(
-                self._sensor_object, self._sim.get_active_scene_graph(), render_flags
-            )
-
-    def get_observation(self) -> Union[ndarray, "Tensor"]:
-
-        tgt = self._sensor_object.render_target
-
-        if self._spec.gpu2gpu_transfer:
-            with torch.cuda.device(self._buffer.device):  # type: ignore[attr-defined]
-                if self._spec.sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
-                elif self._spec.sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
+        if sensor.specification().gpu2gpu_transfer:
+            with torch.cuda.device(self.gpu_device):  # type: ignore[attr-defined]
+                if sensor.specification().sensor_type == SensorType.SEMANTIC:
+                    tgt.read_frame_object_id_gpu(sensor.buffer(self.gpu_device).data_ptr())  # type: ignore[attr-defined]
+                elif sensor.specification().sensor_type == SensorType.DEPTH:
+                    tgt.read_frame_depth_gpu(sensor.buffer(self.gpu_device).data_ptr())  # type: ignore[attr-defined]
                 else:
-                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
+                    tgt.read_frame_rgba_gpu(sensor.buffer(self.gpu_device).data_ptr())  # type: ignore[attr-defined]
 
-                obs = self._buffer.flip(0)
+                obs = sensor.buffer(self.gpu_device).flip(0)
         else:
-            size = self._sensor_object.framebuffer_size
+            size = sensor.framebuffer_size
 
-            if self._spec.sensor_type == SensorType.SEMANTIC:
+            if sensor.specification().sensor_type == SensorType.SEMANTIC:
                 tgt.read_frame_object_id(
-                    mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)
+                    mn.MutableImageView2D(
+                        mn.PixelFormat.R32UI,
+                        size,
+                        np.array(sensor.buffer(self.gpu_device)),
+                    )
                 )
-            elif self._spec.sensor_type == SensorType.DEPTH:
+            elif sensor.specification().sensor_type == SensorType.DEPTH:
                 tgt.read_frame_depth(
-                    mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer)
+                    mn.MutableImageView2D(
+                        mn.PixelFormat.R32F,
+                        size,
+                        np.array(sensor.buffer(self.gpu_device)),
+                    )
                 )
             else:
+
                 tgt.read_frame_rgba(
                     mn.MutableImageView2D(
                         mn.PixelFormat.RGBA8_UNORM,
                         size,
-                        self._buffer.reshape(self._spec.resolution[0], -1),
+                        np.array(sensor.buffer(self.gpu_device)).reshape(
+                            sensor.specification().resolution[0], -1
+                        ),
                     )
                 )
 
-            obs = np.flip(self._buffer, axis=0)
+            obs = np.flip(sensor.buffer(self.gpu_device), axis=0)
 
-        return self._noise_model(obs)
-
-    def close(self) -> None:
-        self._sim = None
-        self._agent = None
-        self._sensor_object = None
+        return noise_model(obs)
