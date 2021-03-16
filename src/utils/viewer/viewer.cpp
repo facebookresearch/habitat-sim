@@ -1437,13 +1437,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 
       // generate a vector field (This one in particular holds vectors pointing
       // away from it's closest boundary)
-      voxelGrid->generateDistanceFlowField("FlowField");
+      voxelGrid->generateDistanceFlowField("SDFSubset");
       // generate a mesh of the vector field with boolean isVectorField set to
       // true
-      voxelGrid->generateMesh("FlowField", true);
+      voxelGrid->generateMesh("SDFSubset", true);
 
       // draw the vector field
-      simulator_->setSceneVoxelizationDraw(true, "FlowField");
+      simulator_->setSceneVoxelizationDraw(true, "SDFSubset");
     }
 #endif
     default:

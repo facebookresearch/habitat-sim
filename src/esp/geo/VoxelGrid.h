@@ -112,84 +112,59 @@ class VoxelGrid {
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
 
   /**
-   * @brief Retrieves the boolean value at a given index for a specific voxel
-   * grid.
-   * @param coords The voxel index.
-   * @param gridName The key underwhich the desired voxel grid is registered.
-   * @return The boolean value located at the index.
+   * @brief Sets a voxel at a specified index for a specified grid to a value.
+   * @param index The index of the voxel
+   * @param gridName The voxel grid.
+   * @param value The new value.
    */
-  bool getBoolVoxelByIndex(const Mn::Vector3i& coords,
-                           const std::string& gridName = "Boundary");
+  template <typename T>
+  void setVoxel(Mn::Vector3i index,
+                const std::string& gridName,
+                const T& value) {
+    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
+    int h = hashVoxelIndex(index);
+    arrayView[h] = value;
+  }
 
   /**
-   * @brief Sets the boolean value at a given index for a specific voxel grid.
-   * @param coords The voxel index.
-   * @param val The new value to be stored.
-   * @param gridName The key underwhich the desired voxel grid is registered.
+   * @brief Sets a voxel at a specified hash index for a specified grid to a
+   * value.
+   * @param hash The hash value of the voxel
+   * @param gridName The voxel grid.
+   * @param value The new value.
    */
-  void setBoolVoxelByIndex(const Mn::Vector3i& coords,
-                           bool val,
-                           const std::string& gridName = "Boundary");
+  template <typename T>
+  void setVoxelByHash(int hash, const std::string& gridName, const T& value) {
+    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
+    arrayView[hash] = value;
+  }
 
   /**
-   * @brief Retrieves the integer value at a given index for a specific voxel
-   * grid.
-   * @param coords The voxel index.
-   * @param gridName The key underwhich the desired voxel grid is registered.
-   * @return The integer value located at the index.
+   * @brief Retrieves the voxel value from a grid of a specified type (bool,
+   * int, float, Mn::Vector3).
+   * @param index The index of the voxel
+   * @param gridName The voxel grid.
+   * @return The value from the specified voxel grid.
    */
-  int getIntVoxelByIndex(const Mn::Vector3i& coords,
-                         const std::string& gridName);
+  template <typename T>
+  T getVoxel(Mn::Vector3i index, const std::string& gridName) {
+    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
+    int h = hashVoxelIndex(index);
+    return arrayView[h];
+  }
 
   /**
-   * @brief Sets the integer value at a given index for a specific voxel grid.
-   * @param coords The voxel index.
-   * @param val The new value to be stored.
-   * @param gridName The key underwhich the desired voxel grid is registered.
+   * @brief Retrieves the voxel value from a grid of a specified type (bool,
+   * int, float, Mn::Vector3).
+   * @param index The hash value of the voxel
+   * @param gridName The voxel grid.
+   * @return The value from the specified voxel grid.
    */
-  void setIntVoxelByIndex(const Mn::Vector3i& coords,
-                          int val,
-                          const std::string& gridName);
-
-  /**
-   * @brief Retrieves the float value at a given index for a specific voxel
-   * grid.
-   * @param coords The voxel index.
-   * @param gridName The key underwhich the desired voxel grid is registered.
-   * @return The float value located at the index.
-   */
-  float getFloatVoxelByIndex(const Mn::Vector3i& coords,
-                             const std::string& gridName);
-
-  /**
-   * @brief Sets the float value at a given index for a specific voxel grid.
-   * @param coords The voxel index.
-   * @param val The new value to be stored.
-   * @param gridName The key underwhich the desired voxel grid is registered.
-   */
-  void setFloatVoxelByIndex(const Mn::Vector3i& coords,
-                            float val,
-                            const std::string& gridName);
-
-  /**
-   * @brief Retrieves the Vector3 value at a given index for a specific voxel
-   * grid.
-   * @param coords The voxel index.
-   * @param gridName The key underwhich the desired voxel grid is registered.
-   * @return The Vector3 value located at the index.
-   */
-  Mn::Vector3 getVector3VoxelByIndex(const Mn::Vector3i& coords,
-                                     const std::string& gridName);
-
-  /**
-   * @brief Sets the Vector3 value at a given index for a specific voxel grid.
-   * @param coords The voxel index.
-   * @param val The new value to be stored.
-   * @param gridName The key underwhich the desired voxel grid is registered.
-   */
-  void setVector3VoxelByIndex(const Mn::Vector3i& coords,
-                              const Mn::Vector3& val,
-                              const std::string& gridName);
+  template <typename T>
+  T getVoxelByHash(int hash, const std::string& gridName) {
+    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
+    return arrayView[hash];
+  }
 
   /**
    * @brief Returns the dimensions of the voxel grid.
@@ -431,18 +406,13 @@ class VoxelGrid {
   Mn::Vector3 m_offset;
 
   // The MeshData dictionary of various voxelizations, used for visualization
-  std::map<std::string, std::shared_ptr<Mn::Trade::MeshData> > meshDataDict_;
+  std::map<std::string, std::shared_ptr<Mn::Trade::MeshData>> meshDataDict_;
 
   // The GL Mesh dictionary for visualizing the voxel.
   std::map<std::string, Mn::GL::Mesh> meshGLDict_;
 
-  std::map<std::string, std::shared_ptr<bool> > boolGrids_;
-
-  std::map<std::string, std::shared_ptr<int> > intGrids_;
-
-  std::map<std::string, std::shared_ptr<float> > floatGrids_;
-
-  std::map<std::string, std::shared_ptr<Mn::Vector3> > vector3Grids_;
+  std::map<std::string, std::pair<std::string, Cr::Containers::Array<char>>>
+      grids_;
 };
 
 }  // namespace geo
