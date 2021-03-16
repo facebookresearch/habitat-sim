@@ -493,21 +493,20 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
       sceneID = creation.isSemantic() ? activeSceneIDs[1] : activeSceneIDs[0];
     }
   }
-
-  auto& sceneGraph = sceneManagerPtr->getSceneGraph(sceneID);
-  auto& rootNode = sceneGraph.getRootNode();
-  auto& drawables = sceneGraph.getDrawables();
-
   const bool fileIsLoaded = resourceDict_.count(assetInfo.filepath) > 0;
   if (!fileIsLoaded) {
     if (!loadRenderAsset(assetInfo)) {
       return nullptr;
     }
   }
-
   ASSERT(assetInfo.filepath == creation.filepath);
+
+  auto& sceneGraph = sceneManagerPtr->getSceneGraph(sceneID);
+  auto& rootNode = sceneGraph.getRootNode();
+  auto& drawables = sceneGraph.getDrawables();
+
   return createRenderAssetInstance(creation, &rootNode, &drawables);
-}
+}  // ResourceManager::loadAndCreateRenderAssetInstance
 
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   bool meshSuccess = false;
@@ -570,7 +569,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
   }
 
   return newNode;
-}
+}  // ResourceManager::createRenderAssetInstance
 
 bool ResourceManager::loadStageInternal(
     const AssetInfo& info,
@@ -658,7 +657,7 @@ bool ResourceManager::buildStageCollisionMeshGroup(
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
-    const std::string& objectTemplateHandle,
+    const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
     const std::string& meshType,
     const bool requiresLighting) {
   bool success = false;
@@ -667,8 +666,9 @@ bool ResourceManager::loadObjectMeshDataFromFile(
     meshInfo.requiresLighting = requiresLighting;
     success = loadRenderAsset(meshInfo);
     if (!success) {
-      LOG(ERROR) << "Failed to load a physical object (" << objectTemplateHandle
-                 << ")'s " << meshType << " mesh from file : " << filename;
+      LOG(ERROR) << "Failed to load a physical object ("
+                 << objectAttributes->getHandle() << ")'s " << meshType
+                 << " mesh from file : " << filename;
     }
   }
   return success;
@@ -826,12 +826,14 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
   meshDataGL->meshTransform_ = transform * meshDataGL->meshTransform_;
 
   meshDataGL->BB = meshDataGL->BB.translated(translation);
-}
+}  // ResourceManager::translateMesh
 
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
-  auto primTemplate =
-      getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
+  // retrieves -actual- template, not a copy
+  const esp::metadata::attributes::AbstractPrimitiveAttributes::ptr
+      primTemplate =
+          getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetHandle = primTemplate->getHandle();
@@ -902,7 +904,7 @@ void ResourceManager::buildPrimitiveAssetData(
             << " | Conf has group for this obj type : "
             << conf.hasGroup(primClassName);
 
-}  // buildPrimitiveAssetData
+}  // ResourceManager::buildPrimitiveAssetData
 
 bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
   ASSERT(info.type == AssetType::FRL_PTEX_MESH);
@@ -946,7 +948,7 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
                 "option when building.";
   return false;
 #endif
-}
+}  // ResourceManager::loadRenderAssetPTex
 
 scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
     const RenderAssetInstanceCreationInfo& creation,
@@ -996,7 +998,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
                 "option when building.";
   return nullptr;
 #endif
-}
+}  // ResourceManager::createRenderAssetInstancePTex
 
 bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   ASSERT(info.type == AssetType::INSTANCE_MESH);
@@ -1043,7 +1045,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
                         LoadedAssetData{info, std::move(meshMetaData)});
 
   return true;
-}
+}  // ResourceManager::loadRenderAssetIMesh
 
 scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
     const RenderAssetInstanceCreationInfo& creation,
@@ -1091,7 +1093,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   }
 
   return instanceRoot;
-}
+}  // ResourceManager::createRenderAssetInstanceIMesh
 
 bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   ASSERT(isRenderAssetGeneral(info.type));
@@ -1224,7 +1226,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
       R * meshMetaData.root.transformFromLocalToParent;
 
   return true;
-}
+}  // ResourceManager::loadRenderAssetGeneral
 
 scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
     const RenderAssetInstanceCreationInfo& creation,
@@ -1279,7 +1281,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   }
 
   return &newNode;
-}
+}  // ResourceManager::createRenderAssetInstanceGeneralPrimitive
 
 bool ResourceManager::buildTrajectoryVisualization(
     const std::string& trajVisName,
@@ -1480,7 +1482,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     shaderManager_.set(std::to_string(currentMaterialID),
                        finalMaterial.release());
   }
-}
+}  // ResourceManager::loadMaterials
 
 gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
@@ -1658,7 +1660,7 @@ void ResourceManager::loadMeshes(Importer& importer,
     gltfMeshData->uploadBuffersToGPU(false);
     meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
   }
-}
+}  // ResourceManager::loadMeshes
 
 //! Recursively load the transformation chain specified by the mesh file
 void ResourceManager::loadMeshHierarchy(Importer& importer,
@@ -1700,7 +1702,7 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   for (auto childObjectID : objectData->children()) {
     loadMeshHierarchy(importer, parent.children.back(), childObjectID);
   }
-}
+}  // ResourceManager::loadMeshHierarchy
 
 void ResourceManager::loadTextures(Importer& importer,
                                    LoadedAssetData& loadedAssetData) {
@@ -1782,8 +1784,8 @@ void ResourceManager::loadTextures(Importer& importer,
 }  // ResourceManager::loadTextures
 
 bool ResourceManager::instantiateAssetsOnDemand(
-    const metadata::attributes::ObjectAttributes::ptr& ObjectAttributes) {
-  const std::string& objectTemplateHandle = ObjectAttributes->getHandle();
+    const metadata::attributes::ObjectAttributes::ptr& objectAttributes) {
+  const std::string& objectTemplateHandle = objectAttributes->getHandle();
 
   if (!ObjectAttributes) {
     return false;
@@ -1796,10 +1798,10 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // object has acquired a copy of its parent attributes.  No object should
   // ever have a copy of attributes with isDirty == true - any editing of
   // attributes for objects requires object rebuilding.
-  if (ObjectAttributes->getIsDirty()) {
+  if (objectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
         (ID_UNDEFINED != getObjectAttributesManager()->registerObject(
-                             ObjectAttributes, objectTemplateHandle)),
+                             objectAttributes, objectTemplateHandle)),
         "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
             << objectTemplateHandle
@@ -1808,13 +1810,13 @@ bool ResourceManager::instantiateAssetsOnDemand(
   }
 
   // get render asset handle
-  std::string renderAssetHandle = ObjectAttributes->getRenderAssetHandle();
+  std::string renderAssetHandle = objectAttributes->getRenderAssetHandle();
   // whether attributes requires lighting
-  bool requiresLighting = ObjectAttributes->getRequiresLighting();
+  bool requiresLighting = objectAttributes->getRequiresLighting();
   bool renderMeshSuccess = false;
   // no resource dict entry exists for renderAssetHandle
   if (resourceDict_.count(renderAssetHandle) == 0) {
-    if (ObjectAttributes->getRenderAssetIsPrimitive()) {
+    if (objectAttributes->getRenderAssetIsPrimitive()) {
       // needs to have a primitive asset attributes with same name
       if (!getAssetAttributesManager()->getObjectLibHasHandle(
               renderAssetHandle)) {
@@ -1833,19 +1835,19 @@ bool ResourceManager::instantiateAssetsOnDemand(
     } else {
       // load/check_for render mesh metadata and load assets
       renderMeshSuccess = loadObjectMeshDataFromFile(
-          renderAssetHandle, objectTemplateHandle, "render", requiresLighting);
+          renderAssetHandle, objectAttributes, "render", requiresLighting);
     }
   }  // if no render asset exists
 
   // check if uses collision mesh
   // TODO : handle visualization-only objects lacking collision assets
   //        Probably just need to check attr->isCollidable()
-  if (!ObjectAttributes->getCollisionAssetIsPrimitive()) {
+  if (!objectAttributes->getCollisionAssetIsPrimitive()) {
     const auto collisionAssetHandle =
-        ObjectAttributes->getCollisionAssetHandle();
+        objectAttributes->getCollisionAssetHandle();
     if (resourceDict_.count(collisionAssetHandle) == 0) {
       bool collisionMeshSuccess = loadObjectMeshDataFromFile(
-          collisionAssetHandle, objectTemplateHandle, "collision",
+          collisionAssetHandle, objectAttributes, "collision",
           !renderMeshSuccess && requiresLighting);
 
       if (!collisionMeshSuccess) {
@@ -2015,7 +2017,7 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
           group);              // drawable group
       break;
   }
-}
+}  // ResourceManager::createDrawable
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
@@ -2236,7 +2238,7 @@ bool ResourceManager::outputMeshMetaDataToObj(
   Cr::Utility::Directory::writeString(filepath + "/" + new_filename, out);
 
   return success;
-}
+}  // ResourceManager::outputMeshMetaDataToObj
 
 bool ResourceManager::isAssetDataRegistered(
     const std::string& resourceName) const {
