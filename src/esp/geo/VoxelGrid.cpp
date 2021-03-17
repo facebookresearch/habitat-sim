@@ -20,7 +20,9 @@ namespace geo {
 
 #ifdef ESP_BUILD_WITH_VHACD
 VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
-                     int resolution) {
+                     const std::string& renderAssetHandle,
+                     int resolution)
+    : m_renderAssetHandle(renderAssetHandle) {
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
   /*VHACD::IVHACD::Parameters params;
   params.m_resolution = resolution;
@@ -45,11 +47,11 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
   // by the minimum corner of the AABB
   VHACD::Vec3<double> minBB = vhacdVolume->getMinBB();
   m_offset = Mn::Vector3(minBB[0], minBB[1], minBB[2]);
+  m_BBMaxOffset = m_offset + Mn::Vector3(m_voxelGridDimensions) * scale;
 
   // create empty VoxelGrid
-  const int gridSize = dims[0] * dims[1] * dims[2];
   Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                           gridSize * sizeof(bool)};
+                                           gridSize() * sizeof(bool)};
   grids_.insert(
       std::make_pair("Boundary", std::make_pair("bool", std::move(cr_grid))));
 
@@ -75,87 +77,10 @@ VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
   m_voxelSize = voxelSize;
   m_voxelGridDimensions = voxelGridDimensions;
   m_offset = Mn::Vector3(0.0, 0.0, 0.0);
-  const int gridSize =
-      voxelGridDimensions[0] * voxelGridDimensions[1] * voxelGridDimensions[2];
   Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                           gridSize * sizeof(bool)};
+                                           gridSize() * sizeof(bool)};
   grids_.insert(
       std::make_pair("Boundary", std::make_pair("bool", std::move(cr_grid))));
-}
-
-// Creators for extra voxel grids
-
-void VoxelGrid::addBoolGrid(const std::string& gridName) {
-  const int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-                       m_voxelGridDimensions[2];
-  if (grids_.find(gridName) != grids_.end()) {
-    // grid exists, simply overwrite
-    Mn::Debug() << "Grid" << gridName << "exists, overwriting.";
-    Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                             gridSize * sizeof(bool)};
-
-    grids_[gridName].second = std::move(cr_grid);
-    grids_[gridName].first = "bool";
-    return;
-  }
-  Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                           gridSize * sizeof(bool)};
-  grids_.insert(
-      std::make_pair(gridName, std::make_pair("bool", std::move(cr_grid))));
-}
-
-void VoxelGrid::addIntGrid(const std::string& gridName) {
-  const int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-                       m_voxelGridDimensions[2];
-  if (grids_.find(gridName) != grids_.end()) {
-    // grid exists, simply overwrite
-    Mn::Debug() << "Grid" << gridName << "exists, overwriting.";
-    Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                             gridSize * sizeof(int)};
-    grids_[gridName].second = std::move(cr_grid);
-    grids_[gridName].first = "int";
-    return;
-  }
-  Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                           gridSize * sizeof(int)};
-  grids_.insert(
-      std::make_pair(gridName, std::make_pair("int", std::move(cr_grid))));
-}
-
-void VoxelGrid::addFloatGrid(const std::string& gridName) {
-  const int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-                       m_voxelGridDimensions[2];
-  if (grids_.find(gridName) != grids_.end()) {
-    // grid exists, simply overwrite
-    Mn::Debug() << "Grid" << gridName << "exists, overwriting.";
-    Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                             gridSize * sizeof(float)};
-    grids_[gridName].second = std::move(cr_grid);
-    grids_[gridName].first = "float";
-    return;
-  }
-  Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                           gridSize * sizeof(float)};
-  grids_.insert(
-      std::make_pair(gridName, std::make_pair("float", std::move(cr_grid))));
-}
-
-void VoxelGrid::addVector3Grid(const std::string& gridName) {
-  const int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-                       m_voxelGridDimensions[2];
-  if (grids_.find(gridName) != grids_.end()) {
-    // grid exists, simply overwrite
-    Mn::Debug() << "Grid" << gridName << "exists, overwriting.";
-    Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                             gridSize * sizeof(Mn::Vector3)};
-    grids_[gridName].second = std::move(cr_grid);
-    grids_[gridName].first = "vector3";
-    return;
-  }
-  Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                           gridSize * sizeof(Mn::Vector3)};
-  grids_.insert(
-      std::make_pair(gridName, std::make_pair("vector3", std::move(cr_grid))));
 }
 
 // Currently naive hashing. TODO: Replace with Magnum container and
@@ -198,13 +123,13 @@ Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
 }
 
 int VoxelGrid::generateBoolGridFromIntGrid(const std::string& intGridName,
-                                           std::string boolGridName,
+                                           const std::string& boolGridName,
                                            int startRange,
                                            int endRange) {
   assert(grids_.find(intGridName) != grids_.end());
   assert(grids_[intGridName].first == "int");
   int num_filled = 0;
-  addBoolGrid(boolGridName);
+  addGrid<bool>(boolGridName);
   for (int i = 0; i < m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
                           m_voxelGridDimensions[2];
        i++) {
@@ -219,12 +144,12 @@ int VoxelGrid::generateBoolGridFromIntGrid(const std::string& intGridName,
 
 int VoxelGrid::generateBoolGridFromVector3Grid(
     const std::string& vector3GridName,
-    std::string boolGridName,
+    const std::string& boolGridName,
     bool func(Mn::Vector3)) {
   assert(grids_.find(vector3GridName) != grids_.end());
   assert(grids_[vector3GridName].first == "vector3");
   int num_filled = 0;
-  addBoolGrid(boolGridName);
+  addGrid<bool>(boolGridName);
   for (int i = 0; i < m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
                           m_voxelGridDimensions[2];
        i++) {
@@ -237,13 +162,13 @@ int VoxelGrid::generateBoolGridFromVector3Grid(
 }
 
 int VoxelGrid::generateBoolGridFromFloatGrid(const std::string& floatGridName,
-                                             std::string boolGridName,
+                                             const std::string& boolGridName,
                                              float startRange,
                                              float endRange) {
   assert(grids_.find(floatGridName) != grids_.end());
   assert(grids_[floatGridName].first == "float");
   int num_filled = 0;
-  addBoolGrid(boolGridName);
+  addGrid<bool>(boolGridName);
   for (int i = 0; i < m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
                           m_voxelGridDimensions[2];
        i++) {
@@ -261,9 +186,7 @@ void VoxelGrid::fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
                                          bool (*func)(bool)) {
   assert(grids_.find(boolGridName) != grids_.end());
   assert(grids_[boolGridName].first == "bool");
-  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-                 m_voxelGridDimensions[2];
-  for (int i = 0; i < gridSize; i++) {
+  for (int i = 0; i < gridSize(); i++) {
     if (func(getVoxelByHash<bool>(i, boolGridName))) {
       voxelSet.push_back(reverseHash(i));
     }
@@ -275,9 +198,7 @@ void VoxelGrid::fillVoxelSetFromIntGrid(std::vector<Mn::Vector3i>& voxelSet,
                                         bool (*func)(int)) {
   assert(grids_.find(intGridName) != grids_.end());
   assert(grids_[intGridName].first == "int");
-  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-                 m_voxelGridDimensions[2];
-  for (int i = 0; i < gridSize; i++) {
+  for (int i = 0; i < gridSize(); i++) {
     if (func(getVoxelByHash<int>(i, intGridName))) {
       voxelSet.push_back(reverseHash(i));
     }
@@ -289,9 +210,7 @@ void VoxelGrid::fillVoxelSetFromFloatGrid(std::vector<Mn::Vector3i>& voxelSet,
                                           bool (*func)(float)) {
   assert(grids_.find(floatGridName) != grids_.end());
   assert(grids_[floatGridName].first == "float");
-  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-                 m_voxelGridDimensions[2];
-  for (int i = 0; i < gridSize; i++) {
+  for (int i = 0; i < gridSize(); i++) {
     if (func(getVoxelByHash<float>(i, floatGridName))) {
       voxelSet.push_back(reverseHash(i));
     }
@@ -303,9 +222,7 @@ void VoxelGrid::fillVoxelSetFromVector3Grid(std::vector<Mn::Vector3i>& voxelSet,
                                             bool (*func)(Mn::Vector3)) {
   assert(grids_.find(vector3GridName) != grids_.end());
   assert(grids_[vector3GridName].first == "vector3");
-  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-                 m_voxelGridDimensions[2];
-  for (int i = 0; i < gridSize; i++) {
+  for (int i = 0; i < gridSize(); i++) {
     if (func(getVoxelByHash<Mn::Vector3>(i, vector3GridName))) {
       voxelSet.push_back(reverseHash(i));
     }
@@ -315,12 +232,12 @@ void VoxelGrid::fillVoxelSetFromVector3Grid(std::vector<Mn::Vector3i>& voxelSet,
 // 6D SDF - labels each cell as interior (-inf), exterior (+inf), or boundary
 void VoxelGrid::generateInteriorExteriorVoxelGrid() {
   // create 6 bool grids
-  addBoolGrid("negXShadow");
-  addBoolGrid("posXShadow");
-  addBoolGrid("negYShadow");
-  addBoolGrid("posYShadow");
-  addBoolGrid("negZShadow");
-  addBoolGrid("posZShadow");
+  addGrid<bool>("negXShadow");
+  addGrid<bool>("posXShadow");
+  addGrid<bool>("negYShadow");
+  addGrid<bool>("posYShadow");
+  addGrid<bool>("negZShadow");
+  addGrid<bool>("posZShadow");
   // fill each grids with ray cast
   bool hit = false;
   int ind = 0;
@@ -410,7 +327,7 @@ void VoxelGrid::generateInteriorExteriorVoxelGrid() {
   }
 
   // create int grid
-  addIntGrid(gridName);
+  addGrid<int>(gridName);
   bool nX = false, pX = false, nY = false, pY = false, nZ = false, pZ = false;
   int hash = 0;
   // fill in int grid with voting approach
@@ -449,7 +366,7 @@ void VoxelGrid::generateManhattanDistanceSDF(const std::string& gridName) {
     generateInteriorExteriorVoxelGrid();
   }
   // create new intGrid and copy data from interior/exterior grid
-  addIntGrid(gridName);
+  addGrid<int>(gridName);
   for (int i = 0; i < m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
                           m_voxelGridDimensions[2];
        i++) {
@@ -517,7 +434,7 @@ void VoxelGrid::generateManhattanDistanceSDF(const std::string& gridName) {
               getVoxel<int>(Mn::Vector3i(i, j, k + 1), gridName), -2147483646));
         }
 
-        int closest;
+        int closest = INT_MAX - 1;
         if (i_ahead <= j_ahead && i_ahead <= k_ahead) {
           // i_ahead is closest to nearest obstacle.
           closest = i_ahead;
@@ -547,7 +464,7 @@ void VoxelGrid::generateEuclideanDistanceSDF(const std::string& gridName) {
     generateInteriorExteriorVoxelGrid();
   }
   // create new vector3Grid and fill data from interior/exterior grid
-  addVector3Grid("ClosestBoundaryCell");
+  addGrid<Mn::Vector3>("ClosestBoundaryCell");
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
@@ -611,7 +528,7 @@ void VoxelGrid::generateEuclideanDistanceSDF(const std::string& gridName) {
     }
   }
   // create float grid for distances, will be filled in this sweep.
-  addFloatGrid(gridName);
+  addGrid<float>(gridName);
   // second sweep
   for (int i = m_voxelGridDimensions[0]; i >= 0; i--) {
     for (int j = m_voxelGridDimensions[1]; j >= 0; j--) {
@@ -668,10 +585,8 @@ void VoxelGrid::generateEuclideanDistanceSDF(const std::string& gridName) {
 
 void VoxelGrid::generateDistanceFlowField(const std::string& gridName) {
   // generateEuclideanDistanceSDF();
-  addVector3Grid(gridName);
-  int gridSize = m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-                 m_voxelGridDimensions[2];
-  for (int i = 0; i < gridSize; i++) {
+  addGrid<Mn::Vector3>(gridName);
+  for (int i = 0; i < gridSize(); i++) {
     Mn::Vector3 index = Mn::Vector3(reverseHash(i));
     setVoxelByHash(
         i, gridName,
@@ -856,6 +771,21 @@ void VoxelGrid::generateMesh(const std::string& gridName, bool isVectorField) {
     meshGLDict_.insert(std::make_pair(
         gridName, Mn::MeshTools::compile(*meshDataDict_[gridName])));
   }
+}
+
+// --== SAVING AND LOADING VOXEL FIELDS ==--
+
+// save a single grid
+bool VoxelGrid::saveGridToSVXFile(const std::string& gridName,
+                                  const std::string& filepath) {
+  // need to remove path from render asset handle
+  std::string objDirectory =
+      Cr::Utility::Directory::join(Corrade::Utility::Directory::current(),
+                                   "data/VoxelGrids/") +
+      Cr::Utility::Directory::splitExtension(m_renderAssetHandle).first + "/" +
+      gridName;
+
+  Mn::Debug() << objDirectory;
 }
 
 }  // namespace geo

@@ -147,11 +147,11 @@ class Viewer : public Mn::Platform::Application {
   void wiggleLastObject();
   void invertGravity();
 
+#ifdef ESP_BUILD_WITH_VHACD
   void displaySceneFlowField();
 
   void iterateAndDisplaySignedDistanceField();
 
-#ifdef ESP_BUILD_WITH_VHACD
   void displayVoxelField(int objectID);
 #endif
 
@@ -807,6 +807,7 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
 void Viewer::displaySceneFlowField() {
   // Temporary key event used for testing & visualizing Voxel Grid framework
   std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization;
@@ -876,7 +877,6 @@ bool isHorizontal(Mn::Vector3 val) {
   // return val[0] == 1;
 }
 
-#ifdef ESP_BUILD_WITH_VHACD
 bool Viewer::isInRange(float val) {
   int curDistanceVisualization = 1 * (voxelDistance % 18);
   return val >= curDistanceVisualization - 1 && val < curDistanceVisualization;
@@ -885,7 +885,6 @@ bool Viewer::isInRange(float val) {
 void Viewer::displayVoxelField(int objectID) {
   // create a voxelization and get a pointer to the underlying VoxelGrid class
   unsigned int resolution = 2000000;
-  Mn::Debug() << objectID;
   std::shared_ptr<esp::geo::VoxelWrapper> objectVoxelization;
   if (objectID == -1) {
     simulator_->createSceneVoxelization(resolution);
@@ -895,7 +894,6 @@ void Viewer::displayVoxelField(int objectID) {
     objectVoxelization = simulator_->getObjectVoxelization(objectID);
   }
   auto voxelGrid = objectVoxelization->getVoxelGrid();
-
   // generate SDF for later use
   voxelGrid->generateEuclideanDistanceSDF("ESignedDistanceField");
 

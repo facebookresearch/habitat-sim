@@ -593,6 +593,16 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
         voxelWrapper_->getVoxelGrid()->getMeshGL(gridName), meshAttributeFlags,
         *rigidBase->VoxelNode_, DEFAULT_LIGHTING_KEY,
         PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
+
+    // If the RigidBase is a stage, need to set the BB to make culling work.
+    if (dynamic_cast<esp::physics::RigidStage*>(rigidBase) != nullptr) {
+      // set bounding box for the node to be the bb computed by vhacd
+      Mn::Range3D bb{rigidBase->voxelWrapper->getVoxelGrid()->getOffset(),
+                     rigidBase->voxelWrapper->getVoxelGrid()->getMaxOffset()};
+      rigidBase->VoxelNode_->setMeshBB(bb);
+      //
+      rigidBase->node().computeCumulativeBB();
+    }
   }
 }
 

@@ -36,7 +36,9 @@ class VoxelGrid {
    * @param MeshData The mesh that will be voxelized
    * @param resolution The approximate number of voxels in the voxel grid.
    */
-  VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData, int resolution);
+  VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
+            const std::string& renderAssetHandle,
+            int resolution);
 #endif
 
   /**
@@ -59,28 +61,37 @@ class VoxelGrid {
   explicit VoxelGrid(const std::string filepath);
 
   /**
-   * @brief Generates a new empty boolean voxel grid.
+   * @brief Generates a new empty voxel grid of a specified type.
    * @param name The key underwhich the grid will be registered and accessed.
    */
-  void addBoolGrid(const std::string& name);
+  template <typename T>
+  void addGrid(const std::string& gridName) {
+    std::string type;
+    // set type depending on the type of T
+    if (std::string(typeid(T).name()) == "i") {
+      type = "int";
+    } else if (std::string(typeid(T).name()) == "f") {
+      type = "float";
+    } else if (std::string(typeid(T).name()) == "b") {
+      type = "bool";
+    } else if (std::string(typeid(T).name()) == "N6Magnum4Math7Vector3IfEE") {
+      type = "vector3";
+    }
 
-  /**
-   * @brief Generates a new empty integer voxel grid.
-   * @param name The key underwhich the grid will be registered and accessed.
-   */
-  void addIntGrid(const std::string& name);
-
-  /**
-   * @brief Generates a new empty float voxel grid.
-   * @param name The key underwhich the grid will be registered and accessed.
-   */
-  void addFloatGrid(const std::string& name);
-
-  /**
-   * @brief Generates a new empty Magnum Vector3 voxel grid.
-   * @param name The key underwhich the grid will be registered and accessed.
-   */
-  void addVector3Grid(const std::string& name);
+    if (grids_.find(gridName) != grids_.end()) {
+      // grid exists, simply overwrite
+      Mn::Debug() << gridName << "exists, overwriting.";
+      Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
+                                               gridSize() * sizeof(T)};
+      grids_[gridName].second = std::move(cr_grid);
+      grids_[gridName].first = type;
+      return;
+    }
+    Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
+                                             gridSize() * sizeof(T)};
+    grids_.insert(
+        std::make_pair(gridName, std::make_pair(type, std::move(cr_grid))));
+  }
 
   /**
    * @brief Linearizes 3D voxel coordinates to a single value in order to
@@ -186,6 +197,13 @@ class VoxelGrid {
   Mn::Vector3 getOffset() { return m_offset; }
 
   /**
+   * @brief Returns the bounding box maximum offset used for generating an
+   * aligned mesh.
+   * @return The Vector3 value representing the offset.
+   */
+  Mn::Vector3 getMaxOffset() { return m_BBMaxOffset; }
+
+  /**
    * @brief Retrieves the MeshData for a particular voxelGrid. If it does not
    * exist, it will generate the mesh for that grid.
    * @param gridName The key underwhich the desired voxel grid is registered.
@@ -232,7 +250,7 @@ class VoxelGrid {
    * startRange and endRange and were set to true in the boolean grid.
    */
   int generateBoolGridFromIntGrid(const std::string& intGridName,
-                                  std::string boolGridName,
+                                  const std::string& boolGridName,
                                   int startRange,
                                   int endRange);
 
@@ -248,7 +266,7 @@ class VoxelGrid {
    * startRange and endRange and were set to true in the boolean grid.
    */
   int generateBoolGridFromFloatGrid(const std::string& floatGridName,
-                                    std::string boolGridName,
+                                    const std::string& boolGridName,
                                     float startRange,
                                     float endRange);
 
@@ -264,7 +282,7 @@ class VoxelGrid {
    * in the boolean grid.
    */
   int generateBoolGridFromVector3Grid(const std::string& vector3GridName,
-                                      std::string boolGridName,
+                                      const std::string& boolGridName,
                                       bool func(Mn::Vector3));
 
   /**
@@ -353,7 +371,17 @@ class VoxelGrid {
    * @param filepath The directory to which the svx file will be saved.
    * @param gridName The name of the voxel grid to be saved.
    */
-  bool saveToSVXFile(const std::string& filepath, const std::string& gridName);
+  bool saveGridToSVXFile(const std::string& gridName,
+                         const std::string& filepath);
+
+  /**
+   * @brief Saves a all grids to a svx file at a specified directory. More
+   * info for the file format found at
+   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
+   * @param filepath The directory to which the svx file will be saved.
+   * @param gridName The name of the voxel grid to be saved.
+   */
+  bool saveToSVXFile(const std::string& filepath);
 
   /**
    * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.
@@ -394,6 +422,15 @@ class VoxelGrid {
                                  const Mn::Vector3i& local_coords,
                                  const Mn::Vector3& vec);
 
+  /**
+   * @brief Gets the length of the voxel grid.
+   * @return The length of the 1 dimensional array voxel grid.
+   */
+  int gridSize() {
+    return m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+           m_voxelGridDimensions[2];
+  }
+
  private:
   // The number of voxels on the x, y, and z dimensions of the grid
   Mn::Vector3i m_voxelGridDimensions;
@@ -406,6 +443,11 @@ class VoxelGrid {
   // global position VoxelSize/2 + offset.dot(VoxelSize). m_offset is in
   // world coordinates (not voxel).
   Mn::Vector3 m_offset;
+
+  Mn::Vector3 m_BBMaxOffset;
+
+  // The underlying render asset handle the asset is tied to
+  std::string m_renderAssetHandle;
 
   // The MeshData dictionary of various voxelizations, used for visualization
   std::map<std::string, std::shared_ptr<Mn::Trade::MeshData>> meshDataDict_;
