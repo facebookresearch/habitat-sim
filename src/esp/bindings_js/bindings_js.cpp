@@ -15,10 +15,12 @@ namespace em = emscripten;
 
 using namespace esp;
 using namespace esp::agent;
+using namespace esp::assets;
 using namespace esp::core;
 using namespace esp::geo;
 using namespace esp::gfx;
 using namespace esp::nav;
+using namespace esp::physics;
 using namespace esp::scene;
 using namespace esp::sensor;
 using namespace esp::sim;
@@ -74,6 +76,11 @@ Magnum::Quaternion Quaternion_mul(const Magnum::Quaternion& q1,
   return q1 * q2;
 }
 
+Magnum::Vector3 Vector3_add(const Magnum::Vector3& v1,
+                            const Magnum::Vector3& v2) {
+  return v1 + v2;
+}
+
 Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
   Observation ret;
   if (CameraSensor * camera{dynamic_cast<CameraSensor*>(&sensor)})
@@ -100,10 +107,20 @@ void Sensor_setLocalTransform(Sensor& sensor,
   node.setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 }
 
+/**
+ * @brief Call ObjectAttributesManager loadAllConfigsFromPath to load object
+ * configs. This is required before using Simulator.addObjectByHandle.
+ */
+void loadAllObjectConfigsFromPath(Simulator& sim, const std::string& path) {
+  auto objectAttrManager = sim.getObjectAttributesManager();
+  objectAttrManager->loadAllConfigsFromPath(path);
+}
+
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::function("toQuaternion", &toQuaternion);
   em::function("toVec3f", &toVec3f);
   em::function("toVec4f", &toVec4f);
+  em::function("loadAllObjectConfigsFromPath", &loadAllObjectConfigsFromPath);
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
@@ -149,11 +166,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .element(em::index<2>())
       .element(em::index<3>());
 
-  em::value_array<Magnum::Vector3>("Vector3")
-      .element(em::index<0>())
-      .element(em::index<1>())
-      .element(em::index<2>());
-
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
@@ -168,7 +180,9 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("z", em::select_overload<float&()>(&Magnum::Vector3::z))
       .class_function("xAxis", &Magnum::Vector3::xAxis)
       .class_function("yAxis", &Magnum::Vector3::yAxis)
-      .class_function("zAxis", &Magnum::Vector3::zAxis);
+      .class_function("zAxis", &Magnum::Vector3::zAxis)
+      // add class method instead of operator+
+      .class_function("add", &Vector3_add);
 
   em::class_<Magnum::Quaternion>("Quaternion")
       .constructor<Magnum::Vector3, float>()
@@ -176,6 +190,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("normalized", &Magnum::Quaternion::normalized)
       .function("inverted", &Magnum::Quaternion::inverted)
       .function("transformVector", &Magnum::Quaternion::transformVector)
+      // mul class method instead of operator*
       .class_function("mul", &Quaternion_mul)
       .class_function("rotation", &Magnum::Quaternion::rotation);
 
@@ -304,8 +319,12 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
 
+  em::class_<SceneNode>("SceneNode")
+      .function("getId", &SceneNode::getId)
+      .function("getSemanticId", &SceneNode::getSemanticId);
+
   em::enum_<MotionType>("MotionType")
-      .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
+      .value("UNDEFINED", MotionType::UNDEFINED)
       .value("STATIC", MotionType::STATIC)
       .value("KINEMATIC", MotionType::KINEMATIC)
       .value("DYNAMIC", MotionType::DYNAMIC);
@@ -345,5 +364,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getRotation", &Simulator::getRotation)
       .function("setObjectLightSetup", &Simulator::setObjectLightSetup)
       .function("getLightSetup", &Simulator::getLightSetup)
-      .function("setLightSetup", &Simulator::setLightSetup);
+      .function("setLightSetup", &Simulator::setLightSetup)
+      .function("stepWorld", &Simulator::stepWorld);
 }

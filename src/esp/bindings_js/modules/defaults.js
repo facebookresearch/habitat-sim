@@ -36,4 +36,4 @@ export const defaultScene =
 
 export const infoSemanticFileName = "info_semantic.json";
 
-export const dataHome = "data/";
+export const defaultPhysicsConfigFilepath = "data/default.physics_config.json";

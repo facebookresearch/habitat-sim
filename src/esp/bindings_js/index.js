@@ -7,7 +7,7 @@
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
-import { defaultScene, dataHome } from "./modules/defaults";
+import { defaultScene, defaultPhysicsConfigFilepath } from "./modules/defaults";
 import "./bindings.css";
 import {
   checkWebAssemblySupport,
@@ -33,39 +33,6 @@ function preload(url) {
   return file_parents_str + file;
 }
 
-function preloadPhysConfig(url) {
-  let emDataHome = "/data";
-  FS.mkdir(emDataHome);
-
-  let file = url;
-  if (url.indexOf("http") === 0) {
-    const splits = url.split("/");
-    file = splits[splits.length - 1];
-  }
-  FS.createPreloadedFile(emDataHome, file, dataHome.concat(url), true, false);
-
-  let emObjHome = emDataHome.concat("/objects");
-  FS.mkdir(emObjHome);
-
-  // TODO Need to loop through the objects directory on the server (`phys/objects/*`) and put all of the glbs onto the client
-  FS.createPreloadedFile(
-    emObjHome,
-    "sphere.glb",
-    dataHome.concat("test_assets/objects/sphere.glb"),
-    true,
-    false
-  );
-  FS.createPreloadedFile(
-    emObjHome,
-    "sphere.phys_properties.json",
-    dataHome.concat("test_assets/objects/sphere.phys_properties.json"),
-    true,
-    false
-  );
-
-  return emDataHome.concat("/".concat(file));
-}
-
 Module.preRun.push(() => {
   let config = {};
   config.scene = defaultScene;
@@ -74,10 +41,7 @@ Module.preRun.push(() => {
   const scene = config.scene;
   Module.scene = preload(scene);
 
-  const physicsConfigFile = window.config.defaultPhysConfig;
-  Module.physicsConfigFile = preloadPhysConfig(physicsConfigFile);
-
-  Module.enablePhysics = window.config.enablePhysics === "true";
+  Module.physicsConfigFile = preload(defaultPhysicsConfigFilepath);
 
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
 
