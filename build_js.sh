@@ -28,6 +28,7 @@ popd
 mkdir -p build_js
 cd build_js
 
+
 EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
 cmake ../src \
     -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/RelWithDebInfo/bin/corrade-rc \
@@ -38,8 +39,7 @@ cmake ../src \
     -DBUILD_PTEX_SUPPORT=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$EMSCRIPTEN" \
-    -DCMAKE_TOOLCHAIN_FILE="../src/deps/magnum-integration/toolchains/generic/Emscripten-wasm.cmake" \
-    -DCMAKE_FIND_ROOT_PATH=$(pwd) \
+    -DCMAKE_TOOLCHAIN_FILE="../src/deps/corrade/toolchains/generic/Emscripten-wasm.cmake" \
     -DCMAKE_INSTALL_PREFIX="." \
     -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1" \
     -DCMAKE_EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS}" \
