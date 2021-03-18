@@ -107,11 +107,10 @@ struct SimTest : Cr::TestSuite::Tester {
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
     return sim;
   }
-  void checkCameraSensorRGBAObservation(
-      Simulator& sim,
-      const std::string& groundTruthImageFile,
-      Magnum::Float maxThreshold,
-      Magnum::Float meanThreshold);
+  void checkCameraSensorRGBAObservation(Simulator& sim,
+                                        const std::string& groundTruthImageFile,
+                                        Magnum::Float maxThreshold,
+                                        Magnum::Float meanThreshold);
 
   void checkEquirectangularRGBAObservation(
       Simulator& sim,
@@ -306,8 +305,10 @@ void SimTest::checkEquirectangularRGBAObservation(
     Magnum::Float maxThreshold,
     Magnum::Float meanThreshold) {
   // do not rely on default SensorSpec default constructor to remain constant
-  auto equirectangularSensorSpec = esp::sensor::EquirectangularSensorSpec::create();
-  equirectangularSensorSpec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+  auto equirectangularSensorSpec =
+      esp::sensor::EquirectangularSensorSpec::create();
+  equirectangularSensorSpec->sensorSubType =
+      esp::sensor::SensorSubType::Equirectangular;
   equirectangularSensorSpec->sensorType = SensorType::Color;
   equirectangularSensorSpec->position = {1.0f, 1.5f, 1.0f};
   equirectangularSensorSpec->resolution = {128, 128};
@@ -319,10 +320,10 @@ void SimTest::checkEquirectangularRGBAObservation(
 
   Observation observation;
   ObservationSpace obsSpace;
-  CORRADE_VERIFY(
-      simulator.getAgentObservation(0, equirectangularSensorSpec->uuid, observation));
-  CORRADE_VERIFY(
-      simulator.getAgentObservationSpace(0, equirectangularSensorSpec->uuid, obsSpace));
+  CORRADE_VERIFY(simulator.getAgentObservation(
+      0, equirectangularSensorSpec->uuid, observation));
+  CORRADE_VERIFY(simulator.getAgentObservationSpace(
+      0, equirectangularSensorSpec->uuid, obsSpace));
 
   std::vector<size_t> expectedShape{
       {static_cast<size_t>(equirectangularSensorSpec->resolution[0]),
@@ -333,21 +334,12 @@ void SimTest::checkEquirectangularRGBAObservation(
   CORRADE_COMPARE(obsSpace.shape, expectedShape);
   CORRADE_COMPARE(observation.buffer->shape, expectedShape);
 
-    esp::sensor::EquirectangularSensor* equirectangularSensor = dynamic_cast<esp::sensor::EquirectangularSensor*>(agent->getSensorSuite().get(equirectangularSensorSpec->uuid).get());
-
-    simulator.getRenderer()->bindRenderTarget(*equirectangularSensor);
-    Mn::GL::defaultFramebuffer.setViewport({{}, {equirectangularSensorSpec->resolution[0], equirectangularSensorSpec->resolution[1]}});
-    Mn::GL::defaultFramebuffer.bind();
-    equirectangularSensor->displayObservation(simulator);
-
-    Mn::DebugTools::screenshot(Mn::GL::defaultFramebuffer, Cr::Utility::Directory::join(screenshotDir, "SimTestEquirectangularExpectedScene.png"));
-
   // Compare with previously rendered ground truth
   CORRADE_COMPARE_WITH(
-      (Mn::ImageView2D{
-          Mn::PixelFormat::RGBA8Unorm,
-          {equirectangularSensorSpec->resolution[0], equirectangularSensorSpec->resolution[1]},
-          observation.buffer->data}),
+      (Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
+                       {equirectangularSensorSpec->resolution[0],
+                        equirectangularSensorSpec->resolution[1]},
+                       observation.buffer->data}),
       Cr::Utility::Directory::join(screenshotDir, groundTruthImageFile),
       (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
 }
@@ -361,19 +353,21 @@ void SimTest::getSceneRGBAObservation() {
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   Corrade::Utility::Debug() << "Built simulator";
   checkCameraSensorRGBAObservation(*simulator, "SimTestExpectedScene.png",
-                                    maxThreshold, 0.75f);
+                                   maxThreshold, 0.75f);
 }
 
 void SimTest::getSceneEquirectangularRGBAObservation() {
-  Corrade::Utility::Debug() << "Starting Test : getSceneEquirectangularRGBAObservation ";
+  Corrade::Utility::Debug()
+      << "Starting Test : getSceneEquirectangularRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
   Corrade::Utility::Debug() << "About to build simulator";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   Corrade::Utility::Debug() << "Built simulator";
-  checkEquirectangularRGBAObservation(*simulator, "SimTestEquirectangularExpectedScene.png",
-                                    maxThreshold, 0.75f);
+  checkEquirectangularRGBAObservation(*simulator,
+                                      "SimTestEquirectangularExpectedScene.png",
+                                      maxThreshold, 0.75f);
 }
 
 void SimTest::getSceneWithLightingRGBAObservation() {

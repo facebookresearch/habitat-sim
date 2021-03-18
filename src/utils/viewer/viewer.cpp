@@ -933,8 +933,6 @@ void Viewer::drawEvent() {
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
     visibles = renderCamera_->getPreviousNumVisibleDrawables();
-    // esp::gfx::RenderTarget* sensorRenderTarget =
-    //     simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
     CORRADE_ASSERT(sensorRenderTarget,
