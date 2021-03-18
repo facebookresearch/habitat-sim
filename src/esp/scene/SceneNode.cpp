@@ -27,30 +27,28 @@ SceneNode::SceneNode(MagnumScene& parentNode)
   MagnumObject::setParent(&parentNode);
   setCachedTransformations(Mn::SceneGraph::CachedTransformation::Absolute);
   absoluteTransformation_ = absoluteTransformation();
+  // nodeSensorSuite_ and subtreeSensorSuite_ will be released upon SceneNode's deletion
   nodeSensorSuite_ = new esp::sensor::SensorSuite(*this);
   subtreeSensorSuite_ = new esp::sensor::SensorSuite(*this);
 }
 
 SceneNode::~SceneNode() {
-  // if the entire scene graph is being deleted, no need to update anything
+  // If the entire scene graph is being deleted no need to update anything
   if (SceneGraph::isRootNode(*this)) {
     return;
   }
-  // if it is to delete a subtree
-  // then two cases:
-  // 1) current node is the root node (of this subtree).
-  // In case 1, you do not have to do anything since its parent node is nullptr
-  // already!! This is because magnum destroys the nodes in a top-down manner
+  // If a subtree is being deleted
+  // If parent node is nullptr already, there is no need to do anything.
+  // This is because magnum destroys the nodes in a top-down manner
   // recursively, root node first, and then its child nodes
   if (!this->parent()) {
     return;
   }
 
-  // 2) current node is NOT the root node.
-  // In case 2, you need update the sensorSuites stored in each ancestor node in
+  // If parent node is not nullptr, update the sensorSuites stored in each ancestor node in
   // a bottom-up manner.
 
-  // First Sensor from parent's nodeSensorSuite if node is leaf node
+  // First remove Sensor from parent's nodeSensorSuite if node is leaf node
   removeSensorFromParentNodeSensorSuite();
 
   // go bottom to the top, and erase sensors and all subtreeSensors from its
@@ -102,10 +100,12 @@ SceneNode& SceneNode::setParent(SceneNode* newParent) {
     p = p->parent();
   }
 
-  // Update old ancestors' SubtreeSensorSuites
-  removeSubtreeSensorsFromAncestors();
   // Remove sensors from old parent node's nodeSensorSuite
   removeSensorFromParentNodeSensorSuite();
+
+  // Update old ancestors' SubtreeSensorSuites
+  removeSubtreeSensorsFromAncestors();
+
 
   MagnumObject::setParent(newParent);
 
@@ -129,7 +129,7 @@ void SceneNode::addSensorToParentNodeSensorSuite() {
       nodeSensorSuite_->getSensors().begin();
   if (it != nodeSensorSuite_->getSensors().end()) {
     CORRADE_ASSERT(static_cast<scene::SceneNode*>(this->parent()) != nullptr,
-                   "SceneNode::addSensorToParentNodeSensorSuite(): Parent null "
+                   "SceneNode::addSensorToParentNodeSensorSuite(): Parent node "
                    "is nullptr", );
     static_cast<scene::SceneNode*>(this->parent())
         ->getNodeSensorSuite()
@@ -151,7 +151,7 @@ void SceneNode::removeSensorFromParentNodeSensorSuite() {
       nodeSensorSuite_->getSensors().begin();
   if (it != nodeSensorSuite_->getSensors().end()) {
     CORRADE_ASSERT(static_cast<scene::SceneNode*>(this->parent()) != nullptr,
-                   "SceneNode::addSensorToParentNodeSensorSuite(): Parent null "
+                   "SceneNode::addSensorToParentNodeSensorSuite(): Parent node "
                    "is nullptr", );
     static_cast<scene::SceneNode*>(this->parent())
         ->getNodeSensorSuite()

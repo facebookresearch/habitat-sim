@@ -268,7 +268,7 @@ class VRDemo extends WebDemo {
       const viewport = layer.getViewport(view);
       this.gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
-      const sensor = agent.sensorSuite.get(VIEW_SENSORS[iView]);
+      const sensor = agent.getSubtreeSensors[VIEW_SENSORS[iView]];
 
       sensor.setLocalTransform(
         pointToArray(view.transform.position).slice(0, -1), // don't need w for position
