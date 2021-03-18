@@ -27,7 +27,8 @@ SceneNode::SceneNode(MagnumScene& parentNode)
   MagnumObject::setParent(&parentNode);
   setCachedTransformations(Mn::SceneGraph::CachedTransformation::Absolute);
   absoluteTransformation_ = absoluteTransformation();
-  // nodeSensorSuite_ and subtreeSensorSuite_ will be released upon SceneNode's deletion
+  // nodeSensorSuite_ and subtreeSensorSuite_ will be released upon SceneNode's
+  // deletion
   nodeSensorSuite_ = new esp::sensor::SensorSuite(*this);
   subtreeSensorSuite_ = new esp::sensor::SensorSuite(*this);
 }
@@ -45,8 +46,8 @@ SceneNode::~SceneNode() {
     return;
   }
 
-  // If parent node is not nullptr, update the sensorSuites stored in each ancestor node in
-  // a bottom-up manner.
+  // If parent node is not nullptr, update the sensorSuites stored in each
+  // ancestor node in a bottom-up manner.
 
   // First remove Sensor from parent's nodeSensorSuite if node is leaf node
   removeSensorFromParentNodeSensorSuite();
@@ -106,7 +107,6 @@ SceneNode& SceneNode::setParent(SceneNode* newParent) {
   // Update old ancestors' SubtreeSensorSuites
   removeSubtreeSensorsFromAncestors();
 
-
   MagnumObject::setParent(newParent);
 
   // Update new ancestors'SubtreeSensorSuites
@@ -123,17 +123,19 @@ void SceneNode::addSensorToParentNodeSensorSuite() {
     return;
   }
   // There only exists 0 or 1 sensors in a leaf nodeSensorSuite
-  // Get the first one, and if it is valid, add it to parent's nodeSensorSuite
   CORRADE_INTERNAL_ASSERT(nodeSensorSuite_->getSensors().size() == 1);
+  // Get the first one, and if it is valid, add it to parent's nodeSensorSuite
   std::map<std::string, std::reference_wrapper<sensor::Sensor>>::iterator it =
       nodeSensorSuite_->getSensors().begin();
   if (it != nodeSensorSuite_->getSensors().end()) {
-    CORRADE_ASSERT(static_cast<scene::SceneNode*>(this->parent()) != nullptr,
+    SceneNode* parentNode = dynamic_cast<SceneNode*>(this->parent());
+    // SceneNode::addSensorToParentNodeSensorSuite() is only called when
+    // constructing a sensor or setting the new parent of a node, so parentNode
+    // should never be nullptr
+    CORRADE_ASSERT(parentNode != nullptr,
                    "SceneNode::addSensorToParentNodeSensorSuite(): Parent node "
                    "is nullptr", );
-    static_cast<scene::SceneNode*>(this->parent())
-        ->getNodeSensorSuite()
-        .add(it->second);
+    parentNode->getNodeSensorSuite().add(it->second);
   }
 }
 
@@ -144,18 +146,18 @@ void SceneNode::removeSensorFromParentNodeSensorSuite() {
     return;
   }
   // There only exists 0 or 1 sensors in a leaf nodeSensorSuite
+  CORRADE_INTERNAL_ASSERT(nodeSensorSuite_->getSensors().size() == 1);
   // Get the first one, and if it is valid, remove it from parent's
   // nodeSensorSuite
-  CORRADE_INTERNAL_ASSERT(nodeSensorSuite_->getSensors().size() == 1);
   std::map<std::string, std::reference_wrapper<sensor::Sensor>>::iterator it =
       nodeSensorSuite_->getSensors().begin();
   if (it != nodeSensorSuite_->getSensors().end()) {
-    CORRADE_ASSERT(static_cast<scene::SceneNode*>(this->parent()) != nullptr,
-                   "SceneNode::addSensorToParentNodeSensorSuite(): Parent node "
-                   "is nullptr", );
-    static_cast<scene::SceneNode*>(this->parent())
-        ->getNodeSensorSuite()
-        .remove(it->first);
+    SceneNode* parentNode = dynamic_cast<SceneNode*>(this->parent());
+    // If parentNode has not been deconstructed, remove leaf node's sensor from
+    // parentNode's nodeSensorSuite
+    if (parentNode != nullptr) {
+      parentNode->getNodeSensorSuite().remove(it->first);
+    }
   }
 }
 

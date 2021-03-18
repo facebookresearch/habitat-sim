@@ -209,7 +209,11 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("remove", em::select_overload<void(const std::string&)>(
                               &SensorSuite::remove))
       .function("clear", &SensorSuite::clear)
-      .function("getSensors", em::select_overload<std::map<std::string, std::reference_wrapper<sensor::Sensor>>&()>(&SensorSuite::getSensors));
+      .function(
+          "getSensors",
+          em::select_overload<
+              std::map<std::string, std::reference_wrapper<sensor::Sensor>>&()>(
+              &SensorSuite::getSensors));
 
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",
