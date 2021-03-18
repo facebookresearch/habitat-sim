@@ -22,7 +22,7 @@ layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out vec4 fragmentColor;
 
 void main(void) {
   vec3 m;
-  float PI = 3.1415926535897932384626433832795;
+  const float PI = 3.1415926535897932384626433832795;
   float phi = gl_FragCoord.x * 2 * PI / ViewportWidth;
   float theta = gl_FragCoord.y * PI / ViewportHeight;
   m.x = sin(phi) * sin(theta);
