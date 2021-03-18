@@ -15,6 +15,7 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/EquirectangularSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "configure.h"
@@ -106,7 +107,13 @@ struct SimTest : Cr::TestSuite::Tester {
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
     return sim;
   }
-  void checkPinholeCameraRGBAObservation(
+  void checkCameraSensorRGBAObservation(
+      Simulator& sim,
+      const std::string& groundTruthImageFile,
+      Magnum::Float maxThreshold,
+      Magnum::Float meanThreshold);
+
+  void checkEquirectangularRGBAObservation(
       Simulator& sim,
       const std::string& groundTruthImageFile,
       Magnum::Float maxThreshold,
@@ -116,6 +123,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void reconfigure();
   void reset();
   void getSceneRGBAObservation();
+  void getSceneEquirectangularRGBAObservation();
   void getSceneWithLightingRGBAObservation();
   void getDefaultLightingRGBAObservation();
   void getCustomLightingRGBAObservation();
@@ -155,6 +163,7 @@ SimTest::SimTest() {
             //test instances test both mechanisms for constructing simulator
   addInstancedTests({
             &SimTest::getSceneRGBAObservation,
+            &SimTest::getSceneEquirectangularRGBAObservation,
             &SimTest::getSceneWithLightingRGBAObservation,
             &SimTest::getDefaultLightingRGBAObservation,
             &SimTest::getCustomLightingRGBAObservation,
@@ -214,13 +223,13 @@ void SimTest::reset() {
   CORRADE_VERIFY(true);
   auto testReset = [&](Simulator& simulator) {
     PathFinder::ptr pathfinder = simulator.getPathFinder();
-    auto pinholeCameraSpec = CameraSensorSpec::create();
-    pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-    pinholeCameraSpec->sensorType = SensorType::Color;
-    pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
-    pinholeCameraSpec->resolution = {100, 100};
+    auto cameraSensorSpec = esp::sensor::CameraSensorSpec::create();
+    cameraSensorSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+    cameraSensorSpec->sensorType = SensorType::Color;
+    cameraSensorSpec->position = {0.0f, 1.5f, 5.0f};
+    cameraSensorSpec->resolution = {100, 100};
     AgentConfiguration agentConfig{};
-    agentConfig.sensorSpecifications = {pinholeCameraSpec};
+    agentConfig.sensorSpecifications = {cameraSensorSpec};
     auto agent = simulator.addAgent(agentConfig);
 
     auto stateOrig = AgentState::create();
@@ -248,33 +257,33 @@ void SimTest::reset() {
   testReset(simulator_mm);
 }
 
-void SimTest::checkPinholeCameraRGBAObservation(
+void SimTest::checkCameraSensorRGBAObservation(
     Simulator& simulator,
     const std::string& groundTruthImageFile,
     Magnum::Float maxThreshold,
     Magnum::Float meanThreshold) {
   // do not rely on default SensorSpec default constructor to remain constant
-  auto pinholeCameraSpec = CameraSensorSpec::create();
-  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-  pinholeCameraSpec->sensorType = SensorType::Color;
-  pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
-  pinholeCameraSpec->resolution = {128, 128};
+  auto cameraSensorSpec = esp::sensor::CameraSensorSpec::create();
+  cameraSensorSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+  cameraSensorSpec->sensorType = SensorType::Color;
+  cameraSensorSpec->position = {1.0f, 1.5f, 1.0f};
+  cameraSensorSpec->resolution = {128, 128};
 
   AgentConfiguration agentConfig{};
-  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  agentConfig.sensorSpecifications = {cameraSensorSpec};
   Agent::ptr agent = simulator.addAgent(agentConfig);
   agent->setInitialState(AgentState{});
 
   Observation observation;
   ObservationSpace obsSpace;
   CORRADE_VERIFY(
-      simulator.getAgentObservation(0, pinholeCameraSpec->uuid, observation));
+      simulator.getAgentObservation(0, cameraSensorSpec->uuid, observation));
   CORRADE_VERIFY(
-      simulator.getAgentObservationSpace(0, pinholeCameraSpec->uuid, obsSpace));
+      simulator.getAgentObservationSpace(0, cameraSensorSpec->uuid, obsSpace));
 
   std::vector<size_t> expectedShape{
-      {static_cast<size_t>(pinholeCameraSpec->resolution[0]),
-       static_cast<size_t>(pinholeCameraSpec->resolution[1]), 4}};
+      {static_cast<size_t>(cameraSensorSpec->resolution[0]),
+       static_cast<size_t>(cameraSensorSpec->resolution[1]), 4}};
 
   CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::Tensor);
   CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
@@ -285,7 +294,59 @@ void SimTest::checkPinholeCameraRGBAObservation(
   CORRADE_COMPARE_WITH(
       (Mn::ImageView2D{
           Mn::PixelFormat::RGBA8Unorm,
-          {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
+          {cameraSensorSpec->resolution[0], cameraSensorSpec->resolution[1]},
+          observation.buffer->data}),
+      Cr::Utility::Directory::join(screenshotDir, groundTruthImageFile),
+      (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
+}
+
+void SimTest::checkEquirectangularRGBAObservation(
+    Simulator& simulator,
+    const std::string& groundTruthImageFile,
+    Magnum::Float maxThreshold,
+    Magnum::Float meanThreshold) {
+  // do not rely on default SensorSpec default constructor to remain constant
+  auto equirectangularSensorSpec = esp::sensor::EquirectangularSensorSpec::create();
+  equirectangularSensorSpec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+  equirectangularSensorSpec->sensorType = SensorType::Color;
+  equirectangularSensorSpec->position = {1.0f, 1.5f, 1.0f};
+  equirectangularSensorSpec->resolution = {128, 128};
+
+  AgentConfiguration agentConfig{};
+  agentConfig.sensorSpecifications = {equirectangularSensorSpec};
+  Agent::ptr agent = simulator.addAgent(agentConfig);
+  agent->setInitialState(AgentState{});
+
+  Observation observation;
+  ObservationSpace obsSpace;
+  CORRADE_VERIFY(
+      simulator.getAgentObservation(0, equirectangularSensorSpec->uuid, observation));
+  CORRADE_VERIFY(
+      simulator.getAgentObservationSpace(0, equirectangularSensorSpec->uuid, obsSpace));
+
+  std::vector<size_t> expectedShape{
+      {static_cast<size_t>(equirectangularSensorSpec->resolution[0]),
+       static_cast<size_t>(equirectangularSensorSpec->resolution[1]), 4}};
+
+  CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::Tensor);
+  CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
+  CORRADE_COMPARE(obsSpace.shape, expectedShape);
+  CORRADE_COMPARE(observation.buffer->shape, expectedShape);
+
+    esp::sensor::EquirectangularSensor* equirectangularSensor = dynamic_cast<esp::sensor::EquirectangularSensor*>(agent->getSensorSuite().get(equirectangularSensorSpec->uuid).get());
+
+    simulator.getRenderer()->bindRenderTarget(*equirectangularSensor);
+    Mn::GL::defaultFramebuffer.setViewport({{}, {equirectangularSensorSpec->resolution[0], equirectangularSensorSpec->resolution[1]}});
+    Mn::GL::defaultFramebuffer.bind();
+    equirectangularSensor->displayObservation(simulator);
+
+    Mn::DebugTools::screenshot(Mn::GL::defaultFramebuffer, Cr::Utility::Directory::join(screenshotDir, "SimTestEquirectangularExpectedScene.png"));
+
+  // Compare with previously rendered ground truth
+  CORRADE_COMPARE_WITH(
+      (Mn::ImageView2D{
+          Mn::PixelFormat::RGBA8Unorm,
+          {equirectangularSensorSpec->resolution[0], equirectangularSensorSpec->resolution[1]},
           observation.buffer->data}),
       Cr::Utility::Directory::join(screenshotDir, groundTruthImageFile),
       (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
@@ -299,7 +360,19 @@ void SimTest::getSceneRGBAObservation() {
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   Corrade::Utility::Debug() << "Built simulator";
-  checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
+  checkCameraSensorRGBAObservation(*simulator, "SimTestExpectedScene.png",
+                                    maxThreshold, 0.75f);
+}
+
+void SimTest::getSceneEquirectangularRGBAObservation() {
+  Corrade::Utility::Debug() << "Starting Test : getSceneEquirectangularRGBAObservation ";
+  setTestCaseName(CORRADE_FUNCTION);
+  Corrade::Utility::Debug() << "About to build simulator";
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  Corrade::Utility::Debug() << "Built simulator";
+  checkEquirectangularRGBAObservation(*simulator, "SimTestEquirectangularExpectedScene.png",
                                     maxThreshold, 0.75f);
 }
 
@@ -310,7 +383,7 @@ void SimTest::getSceneWithLightingRGBAObservation() {
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, "custom_lighting_1");
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
 }
 
@@ -326,8 +399,7 @@ void SimTest::getDefaultLightingRGBAObservation() {
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
-
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 }
 
@@ -345,7 +417,7 @@ void SimTest::getCustomLightingRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 }
 
@@ -363,11 +435,11 @@ void SimTest::updateLightSetupRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
   simulator->setLightSetup(lightSetup1);
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
   simulator->removeObject(objectID);
 
@@ -377,11 +449,11 @@ void SimTest::updateLightSetupRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 
   simulator->setLightSetup(lightSetup2, "custom_lighting_1");
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting2.png", maxThreshold, 0.71f);
 }
 
@@ -397,17 +469,17 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
   // change from default lighting to custom
   simulator->setObjectLightSetup(objectID, "custom_lighting_1");
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 
   // change from one custom lighting to another
   simulator->setObjectLightSetup(objectID, "custom_lighting_2");
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting2.png", maxThreshold, 0.71f);
 }
 
@@ -431,17 +503,17 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   CORRADE_VERIFY(otherObjectID != esp::ID_UNDEFINED);
   simulator->setTranslation({2.0f, 0.5f, -0.5f}, otherObjectID);
 
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedSameLighting.png", maxThreshold, 0.01f);
 
   simulator->setLightSetup(lightSetup2, "custom_lighting_1");
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedSameLighting2.png", maxThreshold, 0.01f);
   simulator->setLightSetup(lightSetup1, "custom_lighting_1");
 
   // make sure we can move a single object to another group
   simulator->setObjectLightSetup(objectID, "custom_lighting_2");
-  checkPinholeCameraRGBAObservation(
+  checkCameraSensorRGBAObservation(
       *simulator, "SimTestExpectedDifferentLighting.png", maxThreshold, 0.01f);
 }
 
