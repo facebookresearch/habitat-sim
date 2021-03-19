@@ -33,10 +33,10 @@ void main(void) {
   m.z = (1 - Alpha * Alpha * r2) / (Alpha * sqrt(sq1) + 1.0 - Alpha);
   float mz2 = m.z * m.z;
   float sq2 = mz2 + (1 - Xi * Xi) * r2;
-
-  // unproject to get the ray direction
   if (sq2 < 0.0)
     discard;
+
+  // unproject to get the ray direction
   vec3 ray = (m.z * Xi + sqrt(sq2)) / (mz2 + r2) * m - vec3(0.0, 0.0, Xi);
 
 #if defined(COLOR_TEXTURE)
