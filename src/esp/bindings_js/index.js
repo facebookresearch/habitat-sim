@@ -52,6 +52,10 @@ Module.preRun.push(() => {
   } else if (config.semantic === "replica") {
     preload(getInfoSemanticUrl(config.scene));
   }
+
+  if (window.vrEnabled) {
+    VRDemo.preloadFiles(preload);
+  }
 });
 
 Module.onRuntimeInitialized = async function() {
@@ -62,16 +66,18 @@ Module.onRuntimeInitialized = async function() {
     if (supported) {
       console.log("WebXR is supported");
       demo = new VRDemo();
+    } else {
+      console.log("WebXR not supported");
     }
   } else if (window.viewerEnabled) {
     demo = new ViewerDemo();
-  }
-
-  if (!demo) {
+  } else {
     demo = new WebDemo();
   }
 
-  demo.display();
+  if (demo) {
+    demo.display();
+  }
 };
 
 function checkSupport() {
