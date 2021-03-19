@@ -102,7 +102,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
   em::register_vector<std::shared_ptr<SemanticObject>>("VectorSemanticObjects");
-
   em::register_map<std::string, float>("MapStringFloat");
   em::register_map<std::string, std::string>("MapStringString");
   em::register_map<std::string, Sensor::ptr>("MapStringSensor");
@@ -235,20 +234,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setLocalTransform", &Sensor_setLocalTransform)
       .function("specification", &Sensor::specification);
 
-  em::class_<SensorSuite>("SensorSuite")
-      .smart_ptr<SensorSuite::ptr>("SensorSuite::ptr")
-      .function("add", &SensorSuite::add)
-      .function("remove",
-                em::select_overload<void(const Sensor&)>(&SensorSuite::remove))
-      .function("remove", em::select_overload<void(const std::string&)>(
-                              &SensorSuite::remove))
-      .function("clear", &SensorSuite::clear)
-      .function(
-          "getSensors",
-          em::select_overload<
-              std::map<std::string, std::reference_wrapper<sensor::Sensor>>&()>(
-              &SensorSuite::getSensors));
-
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",
                              &SimulatorConfiguration::create<>)
@@ -276,7 +261,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setState", &Agent::setState)
       .function("hasAction", &Agent::hasAction)
       .function("act", &Agent::act)
-      .function("getSubtreeSensors", &Agent::getSubtreeSensors);
+      .function("getSubtreeSensors", &Agent::jsGetSubtreeSensors);
 
   em::class_<Observation>("Observation")
       .smart_ptr_constructor("Observation", &Observation::create<>)

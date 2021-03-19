@@ -147,6 +147,8 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   ESP_SMART_POINTERS(Sensor)
 };
 
+// Represents a set of sensors, with each sensor being identified through a
+// unique id
 class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   explicit SensorSuite(scene::SceneNode& node);
@@ -207,6 +209,12 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
   getSensors() const {
     return sensors_;
   }
+
+  /**
+   * @brief Creates and returns map of uuid keys and Sensor:ptr values
+   * NOTE: This is only called in JS, as emscripten needs pointers
+   */
+  std::map<std::string, Sensor::ptr> jsGetSensors();
 
  protected:
   std::map<std::string, std::reference_wrapper<sensor::Sensor>> sensors_;

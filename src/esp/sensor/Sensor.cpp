@@ -102,6 +102,15 @@ sensor::Sensor& SensorSuite::get(const std::string& uuid) const {
   return sensors_.at(uuid).get();
 }
 
+std::map<std::string, Sensor::ptr> SensorSuite::jsGetSensors() {
+  std::map<std::string, Sensor::ptr> jsSensors =
+      std::map<std::string, Sensor::ptr>();
+  for (auto& entry : sensors_) {
+    jsSensors[entry.first] = std::shared_ptr<Sensor>(&entry.second.get());
+  }
+  return jsSensors;
+}
+
 void SensorSuite::clear() {
   sensors_.clear();
 }

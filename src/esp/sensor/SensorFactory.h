@@ -32,6 +32,8 @@ class SensorFactory {
    * @param[in] node root SceneNode of the subtree in which the Sensor will be
    * searched
    * @param[in] uuid Sensor's uuid
+   * NOTE: If sensor does not exist, SensorFactory will log a message but
+   * proceed without any errors thrown
    *
    */
   static void deleteSensor(scene::SceneNode& node, const std::string& uuid);
