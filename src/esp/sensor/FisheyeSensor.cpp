@@ -27,6 +27,11 @@ void FisheyeSensorSpec::sanityCheck() {
   ESP_CHECK(focalLength[0] > 0 && focalLength[1] > 0,
             "FisheyeSensorSpec::sanityCheck(): focal length," << focalLength
                                                               << "is illegal.");
+  if (cubemapSize != Cr::Containers::NullOpt) {
+    ESP_CHECK(*cubemapSize > 0,
+              "FisheyeSensorSpec::sanityCheck(): the size of the cubemap,"
+                  << *cubemapSize << "is illegal.");
+  }
 }
 
 void FisheyeSensorDoubleSphereSpec::sanityCheck() {
@@ -60,6 +65,10 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   // initialize a cubemap
   auto& res = fisheyeSensorSpec_->resolution;
   int size = res[0] < res[1] ? res[0] : res[1];
+  // if user sets the size of the cubemap, use it
+  if (fisheyeSensorSpec_->cubemapSize != Corrade::Containers::NullOpt) {
+    size = *fisheyeSensorSpec_->cubemapSize;
+  }
   gfx::CubeMap::Flags cubeMapFlags = {};
   switch (fisheyeSensorSpec_->sensorType) {
     case SensorType::Color:
@@ -73,7 +82,7 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
   }
-  cubeMap_ = std::make_unique<gfx::CubeMap>(size, cubeMapFlags);
+  cubeMap_ = esp::gfx::CubeMap{size, cubeMapFlags};
 
   // initialize the cubemap camera, it attaches to the same node as the sensor
   // You do not have to release it in the dtor since magnum scene graph will
@@ -184,6 +193,10 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
 
       // TODO:
       // The other FisheyeSensorModelType
+
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
   }
 
   return true;

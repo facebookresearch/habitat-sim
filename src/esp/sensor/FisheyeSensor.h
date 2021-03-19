@@ -5,6 +5,7 @@
 #ifndef ESP_SENSOR_FISHEYESENSOR_H_
 #define ESP_SENSOR_FISHEYESENSOR_H_
 
+#include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/ResourceManager.h>
@@ -53,6 +54,11 @@ struct FisheyeSensorSpec : public VisualSensorSpec {
    * @brief operator ==, check if 2 specs are equal
    */
   bool operator==(const FisheyeSensorSpec& a) const;
+
+  /**
+   * @brief the size of the cubemap
+   */
+  Corrade::Containers::Optional<int> cubemapSize = Corrade::Containers::NullOpt;
 
   /**
    * @brief check if the specification is legal
@@ -126,7 +132,8 @@ class FisheyeSensor : public VisualSensor {
   // raw pointer only, we can create it but let magnum to handle the memory
   // recycling when releasing it.
   gfx::CubeMapCamera* cubeMapCamera_;
-  std::unique_ptr<esp::gfx::CubeMap> cubeMap_ = nullptr;
+  // std::unique_ptr<esp::gfx::CubeMap> cubeMap_ = nullptr;
+  Corrade::Containers::Optional<esp::gfx::CubeMap> cubeMap_;
 
   // fisheye shader resource manager, which manages different shaders such as
   // DoubleSphereCameraShader, FieldOfViewCameraShader (TODO) ...
