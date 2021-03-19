@@ -13,9 +13,9 @@
 
 #include <sstream>
 
-// This is to import the "resources" at runtime. // When the resource is
+// This is to import the "resources" at runtime. When the resource is
 // compiled into static library, it must be explicitly initialized via this
-// macro, and should be called // *outside* of any namespace.
+// macro, and should be called *outside* of any namespace.
 static void importShaderResources() {
   CORRADE_RESOURCE_INITIALIZE(ShaderResources)
 }
