@@ -7,13 +7,16 @@
 
 #include <vector>
 
+#include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Containers/StridedArrayView.h>
+#include <Corrade/Utility/Directory.h>
+#include <Magnum/Math/CubicHermite.h>
+#include <Magnum/Math/Range.h>
+
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
-
-#include <Magnum/Math/CubicHermite.h>
-#include <Magnum/Math/Range.h>
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/magnum.h"
 
@@ -94,6 +97,25 @@ class VoxelGrid {
   }
 
   /**
+   * @brief Removes a grid and frees up memory.
+   * @param name The name of the grid to be removed.
+   */
+  void removeGrid(const std::string& gridName) {
+    assert(grids_.find(gridName) != grids_.end());
+    grids_.erase(gridName);
+  }
+
+  template <typename T>
+  Cr::Containers::StridedArrayView<3, T> getGrid(const std::string& gridName) {
+    std::string type = grids_[gridName].first;
+    unsigned long dims[3]{static_cast<unsigned long>(m_voxelGridDimensions[0]),
+                          static_cast<unsigned long>(m_voxelGridDimensions[1]),
+                          static_cast<unsigned long>(m_voxelGridDimensions[2])};
+    return Cr::Containers::StridedArrayView<3, T>{
+        Cr::Containers::arrayCast<T>(grids_[gridName].second), dims};
+  }
+
+  /**
    * @brief Linearizes 3D voxel coordinates to a single value in order to
    * directly access a voxel grid.
    * @param coords The 3D voxel index to be linearized.
@@ -132,9 +154,8 @@ class VoxelGrid {
   void setVoxel(Mn::Vector3i index,
                 const std::string& gridName,
                 const T& value) {
-    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
-    int h = hashVoxelIndex(index);
-    arrayView[h] = value;
+    auto arrayView3D = getGrid<T>(gridName);
+    arrayView3D[index[0]][index[1]][index[2]] = value;
   }
 
   /**
@@ -159,9 +180,8 @@ class VoxelGrid {
    */
   template <typename T>
   T getVoxel(Mn::Vector3i index, const std::string& gridName) {
-    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
-    int h = hashVoxelIndex(index);
-    return arrayView[h];
+    auto arrayView3D = getGrid<T>(gridName);
+    return arrayView3D[index[0]][index[1]][index[2]];
   }
 
   /**
@@ -371,8 +391,22 @@ class VoxelGrid {
    * @param filepath The directory to which the svx file will be saved.
    * @param gridName The name of the voxel grid to be saved.
    */
+  template <typename T>
   bool saveGridToSVXFile(const std::string& gridName,
-                         const std::string& filepath);
+                         const std::string& filepath) {
+    bool success = Cr::Utility::Directory::mkpath(filepath);
+    Mn::Debug() << filepath;
+    // write png files
+    std::vector<std::string> pngFiles = std::vector<std::string>();
+    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
+    // Cr::Containers::StridedArrayView3D<T> data{arrayView,
+    // m_voxelGridDimensions};
+    auto grid = getGrid<T>(gridName);
+    for (int i = 0; i < 10; i++) {
+      Mn::Debug() << grid[i][i][i];
+    }
+    return success;
+  }
 
   /**
    * @brief Saves a all grids to a svx file at a specified directory. More
@@ -383,6 +417,22 @@ class VoxelGrid {
    */
   bool saveToSVXFile(const std::string& filepath);
 
+  /**
+   * @brief Saves a particular grid to a svx file at a set directory. More
+   * info for the file format found at
+   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
+   * @param gridName The name of the voxel grid to be saved.
+   */
+  bool saveGridToSVXFile(const std::string& gridName);
+
+  /**
+   * @brief Saves a all grids to a svx file at a set directory. More
+   * info for the file format found at
+   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
+   * @param gridName The name of the voxel grid to be saved.
+   */
+
+  bool saveToSVXFile();
   /**
    * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.
    * @param gridName The name of the voxel grid to be converted into a mesh.

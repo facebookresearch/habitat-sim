@@ -847,7 +847,8 @@ void Viewer::iterateAndDisplaySignedDistanceField() {
   if (objectVoxelization == nullptr) {
     simulator_->createSceneVoxelization(2000000);
     objectVoxelization = simulator_->getSceneVoxelization();
-    objectVoxelization->getVoxelGrid()->generateEuclideanDistanceSDF();
+    objectVoxelization->getVoxelGrid()->generateEuclideanDistanceSDF(
+        "ESignedDistanceField");
   }
 
   // get access to underlying VoxelGrid (TODO: Pull functionality up from
@@ -893,14 +894,13 @@ void Viewer::displayVoxelField(int objectID) {
     simulator_->createObjectVoxelization(objectID, resolution);
     objectVoxelization = simulator_->getObjectVoxelization(objectID);
   }
+  !Mn::Debug();
   auto voxelGrid = objectVoxelization->getVoxelGrid();
   // generate SDF for later use
   voxelGrid->generateEuclideanDistanceSDF("ESignedDistanceField");
-
-  // generates a mesh for a default voxel grid "Boundary" which is simply the
-  // boundary voxel grid.
-  // voxelGrid->generateMesh();
-
+  !Mn::Debug();
+  voxelGrid->saveToSVXFile();
+  !Mn::Debug();
   // visualizes the Boundary voxel grid
   if (objectID == -1) {
     simulator_->setSceneVoxelizationDraw(true);
