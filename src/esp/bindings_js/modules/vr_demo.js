@@ -51,6 +51,27 @@ class VRDemo extends WebDemo {
     this.fpsElement = document.getElementById(fpsId);
   }
 
+  static preloadFiles(preloadFunc) {
+    // For dataUrlBase, if you specify a relative path here like "data", it is relative
+    // to the bindings_js folder where index.js is served. You can alternately specify a
+    // full URL base such as https://www.mywebsite.com/data". For local testing, note
+    // that we symlink your habitat-sim data directory (habitat-sim/data) to
+    // /build_js/esp/bindings_js/data. (See "resources" in
+    // src/esp/bindings_js/CMakeLists.txt.)
+    let dataUrlBase = "data";
+    // preloadFunc(dataUrlBase + "/objects/cheezit.glb", true);
+    // preloadFunc(dataUrlBase + "/objects/cheezit.object_config.json", true);
+    // preloadFunc(dataUrlBase + "/objects/skillet.glb", true);
+    // preloadFunc(dataUrlBase + "/objects/skillet.object_config.json", true);
+    // preloadFunc(dataUrlBase + "/objects/chefcan.glb", true);
+    // preloadFunc(dataUrlBase + "/objects/chefcan.object_config.json", true);
+    preloadFunc(dataUrlBase + "/objects/banana_convex.glb", true);
+    preloadFunc(
+      dataUrlBase + "/objects/banana_convex.object_config.json",
+      true
+    );
+  }
+
   display(agentConfig = defaultAgentConfig, episodePath = undefined) {
     super.display(agentConfig, episodePath);
     this.setUpVR();
@@ -72,6 +93,35 @@ class VRDemo extends WebDemo {
 
       this.sensorSpecs[iView] = sensor.specification();
     }
+  }
+
+  initScene() {
+    // Set agent to identity transform.
+    const agent = this.simenv.sim.getAgent(this.simenv.selectedAgentId);
+    let state = new Module.AgentState();
+    agent.getState(state);
+    state.position = [0.0, 0.0, 0.0];
+    state.rotation = [0.0, 0.0, 0.0, 1.0];
+    agent.setState(state, false);
+
+    Module.loadAllObjectConfigsFromPath(this.simenv.sim, "/data/objects");
+    // todo: use simenv wrapper?
+    this.handObjId = this.simenv.sim.addObjectByHandle(
+      "/data/objects/banana_convex.object_config.json",
+      null,
+      "",
+      0
+    );
+    this.simenv.sim.setObjectMotionType(
+      Module.MotionType.KINEMATIC,
+      this.handObjId,
+      0
+    );
+    this.simenv.sim.setTranslation(
+      new Module.Vector3(0.0, 0.0, 0.0),
+      this.handObjId,
+      0
+    );
   }
 
   // Compiles a GLSL shader. Returns null on failure
@@ -181,6 +231,7 @@ class VRDemo extends WebDemo {
         xrCompatible: true
       });
       this.initSensors();
+      this.initScene();
       this.initGL();
     }
     this.webXRSession = await navigator.xr.requestSession("immersive-vr", {
@@ -314,15 +365,37 @@ class VRDemo extends WebDemo {
         }
         this.prevRightHeld = rightHeld;
       }
-      /*
+
       // 6DoF pose example
       if (inputSource.gripSpace) {
         const inputPose = frame.getPose(
           inputSource.gripSpace,
           this.xrReferenceSpace
         );
+
+        {
+          let poseTransform = inputPose.transform;
+
+          //const view = inputPose.views[0];
+          //const pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
+          const pos = pointToArray(poseTransform.position).slice(0, -1); // don't need w for position
+
+          this.simenv.sim.setTranslation(
+            Module.Vector3.add(
+              new Module.Vector3(...pos),
+              new Module.Vector3(0.0, 0.0, 0.0)
+            ),
+            this.handObjId,
+            0
+          );
+
+          this.simenv.sim.setRotation(
+            Module.toQuaternion(pointToArray(poseTransform.orientation)),
+            this.handObjId,
+            0
+          );
+        }
       }
-      */
     }
   }
 
