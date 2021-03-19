@@ -31,10 +31,11 @@ class WebDemo {
 
     this.simenv.addAgent(agentConfig);
 
-    if (initializeTopDown) {
+    let topdownElement = document.getElementById("topdown");
+    if (initializeTopDown && topdownElement) {
       this.topdown = new TopDownMap(
         this.simenv.getPathFinder(),
-        document.getElementById("topdown")
+        topdownElement
       );
     } else {
       this.topdown = null;
