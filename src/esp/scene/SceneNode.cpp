@@ -173,7 +173,7 @@ void SceneNode::addSubtreeSensorsToAncestors() {
       if (currentNode != nullptr) {
         currentNode->getSubtreeSensorSuite().add(entry.second);
       }
-    } while (!SceneGraph::isRootNode(*currentNode));
+    } while (currentNode && !SceneGraph::isRootNode(*currentNode));
   }
 }
 
@@ -190,7 +190,7 @@ void SceneNode::removeSubtreeSensorsFromAncestors() {
       if (currentNode != nullptr) {
         currentNode->getSubtreeSensorSuite().remove(entry.first);
       }
-    } while (!SceneGraph::isRootNode(*currentNode));
+    } while (currentNode && !SceneGraph::isRootNode(*currentNode));
   }
 }
 
