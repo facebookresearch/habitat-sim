@@ -52,6 +52,8 @@ void SensorTest::testSensorFactory() {
   auto sensorSpecB = CameraSensorSpec::create();
   sensorSpecB->uuid = "B";
   SensorFactory::createSensors(parentNode, {sensorSpecA, sensorSpecB});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 2);
 
@@ -59,6 +61,8 @@ void SensorTest::testSensorFactory() {
   auto sensorSpecC = CameraSensorSpec::create();
   sensorSpecC->uuid = "C";
   SensorFactory::createSensors(parentNode, {sensorSpecC});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 3);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 3);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 3);
 
@@ -67,6 +71,8 @@ void SensorTest::testSensorFactory() {
   auto sensorSpecE = CameraSensorSpec::create();
   sensorSpecE->uuid = "E";
   SensorFactory::createSensors(childNode, {sensorSpecD, sensorSpecE});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 5);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 3);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 5);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 2);
@@ -76,6 +82,8 @@ void SensorTest::testSensorFactory() {
   auto sensorSpecF = CameraSensorSpec::create();
   sensorSpecF->uuid = "F";
   SensorFactory::createSensors(parentNode, {sensorSpecF, sensorSpecF});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 6);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 4);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 6);
 }
@@ -110,6 +118,8 @@ void SensorTest::testSensorDestructors() {
   auto sensorSpec1B = CameraSensorSpec::create();
   sensorSpec1B->uuid = "1B";
   SensorFactory::createSensors(parentNode, {sensorSpec1A, sensorSpec1B});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 2);
 
@@ -122,6 +132,8 @@ void SensorTest::testSensorDestructors() {
   sensorSpec2C->uuid = "2C";
   SensorFactory::createSensors(childNode,
                                {sensorSpec2A, sensorSpec2B, sensorSpec2C});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 5);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 5);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 3);
@@ -138,6 +150,8 @@ void SensorTest::testSensorDestructors() {
   sensorSpec3D->uuid = "3D";
   SensorFactory::createSensors(
       grandchildNode, {sensorSpec3A, sensorSpec3B, sensorSpec3C, sensorSpec3D});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 9);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 9);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 3);
@@ -151,6 +165,8 @@ void SensorTest::testSensorDestructors() {
   auto sensorSpec4B = CameraSensorSpec::create();
   sensorSpec4B->uuid = "4B";
   SensorFactory::createSensors(grandchild2Node, {sensorSpec4A, sensorSpec4B});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 11);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 11);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 3);
@@ -167,6 +183,8 @@ void SensorTest::testSensorDestructors() {
   sensorSpec5B->uuid = "5B";
   SensorFactory::createSensors(greatgrandchildNode,
                                {sensorSpec5A, sensorSpec5B});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 13);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 13);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 3);
@@ -180,6 +198,8 @@ void SensorTest::testSensorDestructors() {
 
   // Remove sensor from parentNode
   SensorFactory::deleteSensor(parentNode, "1A");
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 12);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 12);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 3);
@@ -193,6 +213,8 @@ void SensorTest::testSensorDestructors() {
 
   // Remove sensor from child node
   SensorFactory::deleteSensor(parentNode, "2A");
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 11);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 11);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 2);
@@ -206,6 +228,8 @@ void SensorTest::testSensorDestructors() {
 
   // Remove sensor from grandchild node
   SensorFactory::deleteSensor(parentNode, "3A");
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 10);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 10);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 2);
@@ -219,6 +243,8 @@ void SensorTest::testSensorDestructors() {
 
   // Remove sensor from greatgrandchild node
   SensorFactory::deleteSensor(parentNode, "5A");
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 9);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 9);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 2);
@@ -240,6 +266,8 @@ void SensorTest::testSensorDestructors() {
                  4);
 
   delete (&grandchildNode);
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 5);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 5);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 2);
@@ -294,6 +322,8 @@ void SensorTest::testSetParent() {
   auto sensorSpec4B = CameraSensorSpec::create();
   sensorSpec4B->uuid = "4B";
   SensorFactory::createSensors(child2Node, {sensorSpec4A, sensorSpec4B});
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 2);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 0);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 2);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 0);
@@ -306,6 +336,9 @@ void SensorTest::testSetParent() {
   // Set parent of child2 node to parentNode and assert correct number of
   // sensors in child and parent subtreeSensorSuites
   child2Node.setParent(&parentNode);
+  // Assert rootNode SensorSuites unchanged
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 2);
   // Assert parentNode subtreeSensorSuite unchanged
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 0);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 2);
@@ -323,6 +356,9 @@ void SensorTest::testSetParent() {
   // in sensorSuites
   parentNode.getSubtreeSensorSuite().get("4A").node().setParent(
       &grandchildNode);
+  // Assert rootNode SensorSuites unchanged
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 2);
   // Assert parentNode subtreeSensorSuite unchanged
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 0);
   CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 2);

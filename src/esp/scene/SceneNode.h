@@ -54,11 +54,6 @@ typedef Corrade::Containers::EnumSet<SceneNodeTag> SceneNodeTags;
 class SceneNode : public MagnumObject,
                   public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  // creating a scene node "in the air" is not allowed.
-  // it must set an existing node as its parent node.
-  // this is to prevent any sub-tree that is "floating in the air", without a
-  // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
-  SceneNode() = delete;
   SceneNode(SceneNode& parent);
   ~SceneNode() override;
 
@@ -217,6 +212,14 @@ class SceneNode : public MagnumObject,
   // it can ONLY be called from SceneGraph class to initialize the scene graph
   friend class SceneGraph;
   explicit SceneNode(MagnumScene& parentNode);
+
+  // Do not make the following constructor public!
+  // This is only used for constructor delegation
+  // creating a scene node "in the air" is not allowed.
+  // it must set an existing node as its parent node.
+  // this is to prevent any sub-tree that is "floating in the air", without a
+  // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
+  SceneNode();
 
   void clean(const Magnum::Matrix4& absoluteTransformation) override;
 
