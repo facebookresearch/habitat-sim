@@ -2,6 +2,8 @@ import random
 from copy import copy
 from os import path as osp
 
+import pytest
+
 import magnum as mn
 import numpy as np
 import pytest
@@ -258,3 +260,25 @@ def test_object_template_editing():
 def test_no_config():
     with pytest.raises(TypeError):
         _ = habitat_sim.Simulator()  # type: ignore[call-arg]
+
+@pytest.mark.skip(reason="the test requires data not present on the repository")
+def test_mesh_point_extraction():
+    ''' Test the interface for retrieving mesh data '''
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "office_0/habitat/mesh_semantic.ply"
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    sim = habitat_sim.Simulator(hab_cfg)
+
+    # Try getting a list of mesh IDs
+    keys = sim.get_mesh_keys()
+    assert(len(keys) == 68)
+
+    # Test getting information on mesh 0
+    vertices = sim.get_vertices(0)
+    assert(len(vertices) == 13431)
+    vertices_color = sim.get_vertices_color(0)
+    assert(len(vertices_color) == 13431)
+    vertices = sim.get_object_ids(0)
+    assert(len(vertices) == 13431)
+    surface_ids = sim.get_surface_ids(0)
+    assert(len(surface_ids) == 76908)
