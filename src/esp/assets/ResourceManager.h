@@ -342,27 +342,6 @@ class ResourceManager {
   }
 
   /**
-   * @brief Return a vector of all vertex positions in the mesh
-   *
-   * Constructs a vector of all vertex positions the vertex positions in each
-   * separate mesh.
-   * @return A nested vector of vertex positions (level 1) in meshes (level 2).
-   */
-  std::vector<std::vector<vec3f>> getVertices() {
-    std::vector<std::vector<vec3f>> r;
-    for (auto const& m : meshes_){
-      auto id = m.first;
-      printf("Getting mesh number %d\n", id);
-      auto mesh = m.second;
-      const std::vector<vec3f> vertexPositions =
-            dynamic_cast<GenericInstanceMeshData&>(*mesh)
-                .getVertexBufferObjectCPU();
-      r.push_back(vertexPositions);
-    }
-    return r;
-  }
-
-  /**
    * @brief Return a vector of the vertex position in a given mesh.
    *
    * Given the integer ID of a mesh, get the vertex positions in that mesh.
