@@ -99,10 +99,9 @@ class BulletRigidObject : public BulletBase,
    *
    */
   virtual void setSleep(bool sleep) override {
-    //bObjectRigidBody_->activate(!sleep);
-    if(sleep){
+    if (sleep) {
       bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
-    }else{
+    } else {
       bObjectRigidBody_->activate();
     }
   }
