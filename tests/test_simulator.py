@@ -2,8 +2,6 @@ import random
 from copy import copy
 from os import path as osp
 
-import pytest
-
 import magnum as mn
 import numpy as np
 import pytest
