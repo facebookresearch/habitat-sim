@@ -142,15 +142,6 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
     return node().getSubtreeSensors();
   }
 
-  /**
-   * @brief Return map of uuid keys and Sensor:ptr values of all Sensors held by
-   * this Agent's SceneNode and its children values.
-   * NOTE: This is only called in JS, as emscripten needs pointers
-   */
-  std::map<std::string, sensor::Sensor::ptr> jsGetSubtreeSensors() {
-    return node().getSubtreeSensorSuite().jsGetSensors();
-  }
-
   const AgentConfiguration& getConfig() const { return configuration_; }
   AgentConfiguration& getConfig() { return configuration_; }
 

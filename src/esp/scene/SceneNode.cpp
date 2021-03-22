@@ -16,8 +16,9 @@ namespace scene {
 SceneNode::SceneNode() : Mn::SceneGraph::AbstractFeature3D{*this} {
   setCachedTransformations(Mn::SceneGraph::CachedTransformation::Absolute);
   absoluteTransformation_ = absoluteTransformation();
-  // nodeSensorSuite_ and subtreeSensorSuite_ will be released upon SceneNode's
-  // deletion
+  // Once created, nodeSensorSuite_ and subtreeSensorSuite_ are features owned
+  // by the SceneNode. No need to release them in the destructor since the
+  // magnum SceneGraph will handle it.
   nodeSensorSuite_ = new esp::sensor::SensorSuite(*this);
   subtreeSensorSuite_ = new esp::sensor::SensorSuite(*this);
 }
@@ -67,9 +68,6 @@ SceneNode::getSubtreeSensors() {
 SceneNode& SceneNode::createChild(SceneNodeTags childNodeTags) {
   ESP_CHECK(!(sceneNodeTags_ & SceneNodeTag::Leaf),
             "SceneNode::createChild(): Can not create child from leaf node");
-  CORRADE_ASSERT(
-      !(sceneNodeTags_ & SceneNodeTag::Leaf),
-      "SceneNode::createChild(): Can not create child from leaf node", *this);
   // will set the parent to *this
   SceneNode* node = new SceneNode(*this);
   node->setId(this->getId());
@@ -83,10 +81,6 @@ SceneNode& SceneNode::setParent(SceneNode* newParent) {
   // Parent can not be leaf node
   ESP_CHECK(!(newParent->getSceneNodeTags() & SceneNodeTag::Leaf),
             "SceneNode::setParent(): New parent node can not be leaf node");
-  CORRADE_ASSERT(!(newParent->getSceneNodeTags() & SceneNodeTag::Leaf),
-                 "SceneNode::setParent(): New parent node can not be leaf node",
-                 *this);
-
   // Skip if this is scene or RootNode (which cannot have parent), or if
   // newParent is already parent
   if (isScene() || SceneGraph::isRootNode(*this) ||
