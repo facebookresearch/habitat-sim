@@ -329,13 +329,15 @@ void initSimBindings(py::module& m) {
           R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count can be used as a metric for the complexity/cost of collision-handling in the current scene.)")
       .def("get_vertices",
            &Simulator::getVertices,
+           "ID"_a,
            pybind11::return_value_policy::reference,
            R"(Return a vector of the vertex locations on a given mesh.)")
-      .def("get_object_ids",
+       .def("get_object_ids",
            &Simulator::getObjectIds,
+           "ID"_a,
            pybind11::return_value_policy::reference,
            R"(Return the object IDs for each vertex in a given mesh.)")
-      .def("get_mesh_keys",
+       .def("get_mesh_keys",
            &Simulator::getMeshKeys,
            pybind11::return_value_policy::reference,
            R"(Return a list of the IDs of existing meshes.)")
