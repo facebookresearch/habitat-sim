@@ -29,11 +29,11 @@
 #include "Asset.h"
 #include "BaseMesh.h"
 #include "CollisionMeshData.h"
+#include "GenericInstanceMeshData.h"
 #include "GenericMeshData.h"
 #include "GenericSemanticMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
-#include "GenericInstanceMeshData.h"
 #include "RenderAssetInstanceCreationInfo.h"
 #include "esp/geo/VoxelGrid.h"
 #include "esp/gfx/CubeMap.h"
@@ -350,11 +350,13 @@ class ResourceManager {
    * @return A vector of vertex positions.
    */
   std::vector<vec3f> getVertices(int id) {
-    BaseMesh &mesh = *meshes_.at(id);
-    if(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH){
+    BaseMesh& mesh = *meshes_.at(id);
+    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
       // It is an instance mesh and it is possible to return the vertex data
-      const GenericInstanceMeshData &instMesh = dynamic_cast<GenericInstanceMeshData&>(mesh);
-      const std::vector<vec3f> vertexPositions = instMesh.getVertexBufferObjectCPU();
+      const GenericInstanceMeshData& instMesh =
+          dynamic_cast<GenericInstanceMeshData&>(mesh);
+      const std::vector<vec3f> vertexPositions =
+          instMesh.getVertexBufferObjectCPU();
       return vertexPositions;
 
     } else {
@@ -365,14 +367,17 @@ class ResourceManager {
   }
 
   /**
-   * @brief Return a vector of the surface indexes for a specific mesh in the scene.
+   * @brief Return a vector of the surface indexes for a specific mesh in the
+   * scene.
    */
   std::vector<uint32_t> getSurfIndexes(int id) {
-    BaseMesh &mesh = *meshes_.at(id);
-    if(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH){
+    BaseMesh& mesh = *meshes_.at(id);
+    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
       // It is an instance mesh and it is possible to return the vertex data
-      const GenericInstanceMeshData &instMesh = dynamic_cast<GenericInstanceMeshData&>(mesh);
-      const std::vector<uint32_t> surfIndexes = instMesh.getIndexBufferObjectCPU();
+      const GenericInstanceMeshData& instMesh =
+          dynamic_cast<GenericInstanceMeshData&>(mesh);
+      const std::vector<uint32_t> surfIndexes =
+          instMesh.getIndexBufferObjectCPU();
       return surfIndexes;
 
     } else {
@@ -382,13 +387,15 @@ class ResourceManager {
   }
 
   /**
-   * @brief Return a vector of color per vertex for a specific mesh in the scene.
+   * @brief Return a vector of color per vertex for a specific mesh in the
+   * scene.
    */
   std::vector<vec3uc> getVerticesColor(int id) {
-    BaseMesh &mesh = *meshes_.at(id);
-    if(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH){
+    BaseMesh& mesh = *meshes_.at(id);
+    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
       // It is an instance mesh and it is possible to return the vertex data
-      const GenericInstanceMeshData &instMesh = dynamic_cast<GenericInstanceMeshData&>(mesh);
+      const GenericInstanceMeshData& instMesh =
+          dynamic_cast<GenericInstanceMeshData&>(mesh);
       const std::vector<vec3uc> colors = instMesh.getColorBufferObjectCPU();
       return colors;
 
@@ -407,11 +414,13 @@ class ResourceManager {
    * @return A vector of object IDs.
    */
   std::vector<uint16_t> getObjectIds(int id) {
-    BaseMesh &mesh = *meshes_.at(id);
-    if(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH){
+    BaseMesh& mesh = *meshes_.at(id);
+    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
       // It is an instance mesh and it is possible to return the vertex data
-      const GenericInstanceMeshData &instMesh = dynamic_cast<GenericInstanceMeshData&>(mesh);
-      const std::vector<uint16_t> objIds = instMesh.getObjectIdsBufferObjectCPU();
+      const GenericInstanceMeshData& instMesh =
+          dynamic_cast<GenericInstanceMeshData&>(mesh);
+      const std::vector<uint16_t> objIds =
+          instMesh.getObjectIdsBufferObjectCPU();
       return objIds;
 
     } else {
@@ -420,20 +429,20 @@ class ResourceManager {
     }
   }
 
-   /**
-    * @brief Return a vector of the integer IDs of existing meshes.
-    *
-    * Return a vector of the integer IDs of existing meshes.
-    * @return a vector of existing mesh IDs.
-    */
-   std::vector<int> getMeshKeys() {
-     std::vector<int> r;
-     for (auto const& m : meshes_){
-       int id = m.first;
-       r.push_back(id);
-     }
-     return r;
-   }
+  /**
+   * @brief Return a vector of the integer IDs of existing meshes.
+   *
+   * Return a vector of the integer IDs of existing meshes.
+   * @return a vector of existing mesh IDs.
+   */
+  std::vector<int> getMeshKeys() {
+    std::vector<int> r;
+    for (auto const& m : meshes_) {
+      int id = m.first;
+      r.push_back(id);
+    }
+    return r;
+  }
 
   /**
    * @brief Set a reference to the current @ref metadataMediator_.  Perform any
