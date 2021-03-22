@@ -10,8 +10,8 @@
  */
 
 // These are helper functions for the SDK samples (string parsing, timers, etc)
-#ifndef STRING_HELPER_H
-#define STRING_HELPER_H
+#ifndef ESP_GFX_CUDA_HELPERS_HELPER_STRING_H
+#define ESP_GFX_CUDA_HELPERS_HELPER_STRING_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -687,4 +687,4 @@ inline char* sdkFindFilePath(const char* filename,
   return 0;
 }
 
-#endif
+#endif  // ESP_GFX_CUDA_HELPERS_HELPER_STRING_H

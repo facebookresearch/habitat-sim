@@ -12,10 +12,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions for initialization and error checking
 
-#ifndef HELPER_CUDA_H
-#define HELPER_CUDA_H
-
-#pragma once
+#ifndef ESP_GFX_CUDA_HELPERS_HELPER_CUDA_H
+#define ESP_GFX_CUDA_HELPERS_HELPER_CUDA_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1221,4 +1219,4 @@ inline bool checkCudaCapabilities(int major_version, int minor_version) {
 
 // end of CUDA Helper Functions
 
-#endif
+#endif  // ESP_GFX_CUDA_HELPERS_HELPER_
