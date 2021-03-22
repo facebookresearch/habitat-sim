@@ -296,10 +296,10 @@ def test_mesh_point_extraction_when_not_instance():
 
     # The other mesh data extraction methods should throw an exception
     with pytest.raises(Exception):
-        vertices = sim.get_vertices(0)
+        sim.get_vertices(0)
     with pytest.raises(Exception):
-        vertices = sim.get_vertices_color(0)
+        sim.get_vertices_color(0)
     with pytest.raises(Exception):
-        vertices = sim.get_object_ids(0)
+        sim.get_object_ids(0)
     with pytest.raises(Exception):
-        vertices = sim.get_surface_ids(0)
+        sim.get_surface_ids(0)
