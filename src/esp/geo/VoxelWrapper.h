@@ -70,6 +70,354 @@ class VoxelWrapper {
    * @return The underlying voxel grid.
    */
   std::shared_ptr<VoxelGrid> getVoxelGrid();
+
+  // --== FUNCTIONS FROM VOXELGRID ==--
+  /**
+   * @brief Generates a new empty voxel grid of a specified type.
+   * @param name The key underwhich the grid will be registered and accessed.
+   * @return a StridedArrayView3D for the newly created grid.
+   */
+  template <typename T>
+  Cr::Containers::StridedArrayView<3, T> addGrid(const std::string& gridName) {
+    voxelGrid->addGrid<T>(gridName);
+    return getGrid<T>(gridName);
+  }
+
+  /**
+   * @brief Removes a grid and frees up memory.
+   * @param name The name of the grid to be removed.
+   */
+  void removeGrid(const std::string& gridName) {
+    voxelGrid->removeGrid(gridName);
+  }
+
+  /**
+   * @brief Returns a StridedArrayView3D of a grid for easy index access and
+   * manipulation.
+   * @param name The name of the grid to be removed.
+   * @return A StridedArrayView3D of the specified grid.
+   */
+  template <typename T>
+  Cr::Containers::StridedArrayView<3, T> getGrid(const std::string& gridName) {
+    return voxelGrid->getGrid<T>(gridName);
+  }
+
+  //  --== GETTERS AND SETTERS FOR VOXELS ==--
+
+  /**
+   * @brief Sets a voxel at a specified index for a specified grid to a value.
+   * @param index The index of the voxel
+   * @param gridName The voxel grid.
+   * @param value The new value.
+   */
+  template <typename T>
+  void setVoxel(Mn::Vector3i index,
+                const std::string& gridName,
+                const T& value) {
+    auto arrayView3D = getGrid<T>(gridName);
+    arrayView3D[index[0]][index[1]][index[2]] = value;
+  }
+
+  /**
+   * @brief Retrieves the voxel value from a grid of a specified type (bool,
+   * int, float, Mn::Vector3).
+   * @param index The index of the voxel
+   * @param gridName The voxel grid.
+   * @return The value from the specified voxel grid.
+   */
+  template <typename T>
+  T getVoxel(Mn::Vector3i index, const std::string& gridName) {
+    auto arrayView3D = getGrid<T>(gridName);
+    return arrayView3D[index[0]][index[1]][index[2]];
+  }
+
+  /**
+   * @brief Returns the dimensions of the voxel grid.
+   * @return The Vector3i value representing the dimensions.
+   */
+  Mn::Vector3i getVoxelGridDimensions() {
+    return voxelGrid->getVoxelGridDimensions();
+  }
+
+  /**
+   * @brief Returns the size of a voxel.
+   * @return The Vector3 value representing the size of a voxel.
+   */
+  Mn::Vector3 getVoxelSize() { return voxelGrid->getVoxelSize(); }
+
+  /**
+   * @brief Returns the bounding box minimum offset used for generating an
+   * aligned mesh.
+   * @return The Vector3 value representing the offset.
+   */
+  Mn::Vector3 getOffset() { return voxelGrid->getOffset(); }
+
+  /**
+   * @brief Returns the bounding box maximum offset used for generating an
+   * aligned mesh.
+   * @return The Vector3 value representing the offset.
+   */
+  Mn::Vector3 getMaxOffset() { return voxelGrid->getMaxOffset(); }
+
+  /**
+   * @brief Retrieves the MeshData for a particular voxelGrid. If it does not
+   * exist, it will generate the mesh for that grid.
+   * @param gridName The key underwhich the desired voxel grid is registered.
+   * @return A shared pointer to the MeshData.
+   */
+  std::shared_ptr<Mn::Trade::MeshData> getMeshData(
+      const std::string& gridName = "Boundary") {
+    return voxelGrid->getMeshData(gridName);
+  }
+
+  /**
+   * @brief Retrieves the MeshGL used for rendering for a particular voxelGrid.
+   * If it does not exist, it will generate the mesh for that grid.
+   * @param gridName The key underwhich the desired voxel grid is registered.
+   * @return A reference to the MeshGL.
+   */
+  Mn::GL::Mesh& getMeshGL(const std::string& gridName = "Boundary") {
+    return voxelGrid->getMeshGL(gridName);
+  }
+
+  /**
+   * @brief Sets the offset of the voxel grid.
+   * @param coords The new offset.
+   */
+  void setOffset(const Mn::Vector3& coords) { voxelGrid->setOffset(coords); }
+
+  // --== BUILT-IN VOXELGRID GENERATORS ==--
+
+  /**
+   * @brief Generates a boolean voxel grid based on an integer grid. Values in
+   * the boolean grid are true if the value for a voxel in the integer grid
+   * falls between startRange and endRange.
+   * @param intGridName The name of the integer grid.
+   * @param boolGridName The name of the newly created boolean grid.
+   * @param startRange The lowerbound in the true range.
+   * @param endRange The upperbound in the true range.
+   * @return An integer representing the number of cells that fell imbetween
+   * startRange and endRange and were set to true in the boolean grid.
+   */
+  int generateBoolGridFromIntGrid(const std::string& intGridName,
+                                  const std::string& boolGridName,
+                                  int startRange,
+                                  int endRange) {
+    return voxelGrid->generateBoolGridFromIntGrid(intGridName, boolGridName,
+                                                  startRange, endRange);
+  }
+
+  /**
+   * @brief Generates a boolean voxel grid based on an float grid. Values in the
+   * boolean grid are true if the value for a voxel in the float grid falls
+   * between startRange and endRange.
+   * @param floatGridName The name of the float grid.
+   * @param boolGridName The name of the newly created boolean grid.
+   * @param startRange The lowerbound in the true range.
+   * @param endRange The upperbound in the true range.
+   * @return An integer representing the number of cells that fell imbetween
+   * startRange and endRange and were set to true in the boolean grid.
+   */
+  int generateBoolGridFromFloatGrid(const std::string& floatGridName,
+                                    const std::string& boolGridName,
+                                    float startRange,
+                                    float endRange) {
+    return voxelGrid->generateBoolGridFromFloatGrid(floatGridName, boolGridName,
+                                                    startRange, endRange);
+  }
+
+  /**
+   * @brief Generates a boolean voxel grid based on an Vector3 grid. Values in
+   * the boolean grid are true if the value for a voxel in the Vector3 grid
+   * returns true when evaluated by the function func which is passed in.
+   * @param vector3GridName The name of the vector3 grid.
+   * @param boolGridName The name of the newly created boolean grid.
+   * @param func A pointer to a function used for evaluating whether a voxel
+   * value should be true or not.
+   * @return An integer representing the number of cells that were set to true
+   * in the boolean grid.
+   */
+  int generateBoolGridFromVector3Grid(const std::string& vector3GridName,
+                                      const std::string& boolGridName,
+                                      bool func(Mn::Vector3)) {
+    return voxelGrid->generateBoolGridFromVector3Grid(vector3GridName,
+                                                      boolGridName, func);
+  }
+
+  /**
+   * @brief Fills a vector with voxel indices that meet some criteria.
+   * @param[in,out] voxelSet The vector in which the indices will be inserted.
+   * @param boolGridName The name of the boolean grid to be processed.
+   * @param func A pointer to a function used for evaluating whether a voxel
+   * value should be included in the set or not.
+   */
+  void fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
+                                const std::string& boolGridName,
+                                bool func(bool)) {
+    voxelGrid->fillVoxelSetFromBoolGrid(voxelSet, boolGridName, func);
+  }
+
+  /**
+   * @brief Fills a vector with voxel indices that meet some criteria.
+   * @param[in,out] voxelSet The vector in which the indices will be inserted.
+   * @param intGridName The name of the int grid to be processed.
+   * @param func A pointer to a function used for evaluating whether a voxel
+   * value should be included in the set or not.
+   */
+  void fillVoxelSetFromIntGrid(std::vector<Mn::Vector3i>& voxelSet,
+                               const std::string& intGridName,
+                               bool func(int)) {
+    voxelGrid->fillVoxelSetFromIntGrid(voxelSet, intGridName, func);
+  }
+
+  /**
+   * @brief Fills a vector with voxel indices that meet some criteria.
+   * @param[in,out] voxelSet The vector in which the indices will be inserted.
+   * @param floatGridName The name of the float grid to be processed.
+   * @param func A pointer to a function used for evaluating whether a voxel
+   * value should be included in the set or not.
+   */
+  void fillVoxelSetFromFloatGrid(std::vector<Mn::Vector3i>& voxelSet,
+                                 const std::string& floatGridName,
+                                 bool func(float)) {
+    voxelGrid->fillVoxelSetFromFloatGrid(voxelSet, floatGridName, func);
+  }
+
+  /**
+   * @brief Fills a vector with voxel indices that meet some criteria.
+   * @param[in,out] voxelSet The vector in which the indices will be inserted.
+   * @param vector3GridName The name of the Vector3 grid to be processed.
+   * @param func A pointer to a function used for evaluating whether a voxel
+   * value should be included in the set or not.
+   */
+  void fillVoxelSetFromVector3Grid(std::vector<Mn::Vector3i>& voxelSet,
+                                   const std::string& vector3GridName,
+                                   bool func(Mn::Vector3)) {
+    voxelGrid->fillVoxelSetFromVector3Grid(voxelSet, vector3GridName, func);
+  }
+
+  /**
+   * @brief Generates an integer grid registered under "InteriorExterior" which
+   * stores +inf for exterior cells, -inf for interior cells, and 0 for Boundary
+   * cells.
+   * @return A StridedArrayView3D of the newly created int grid.
+   */
+  Cr::Containers::StridedArrayView<3, int> generateInteriorExteriorVoxelGrid() {
+    voxelGrid->generateInteriorExteriorVoxelGrid();
+    return getGrid<int>("InteriorExterior");
+  }
+
+  /**
+   * @brief Generates a signed distance field using manhattan distance as a
+   * distance metric.
+   * @param gridName The name underwhich to register the newly created manhattan
+   * SDF.
+   * @return A StridedArrayView3D of the newly created int grid.
+   */
+  Cr::Containers::StridedArrayView<3, int> generateManhattanDistanceSDF(
+      const std::string& gridName = "MSignedDistanceField") {
+    voxelGrid->generateManhattanDistanceSDF(gridName);
+    return getGrid<int>(gridName);
+  }
+
+  /**
+   * @brief Generates a signed distance field using euclidean distance as a
+   * distance metric. Also created a "ClosestBoundaryCell" vector3 grid which
+   * holds the index of the closest Boundary grid.
+   * @param gridName The name underwhich to register the newly created euclidean
+   * SDF.
+   * @return A StridedArrayView3D of the newly created float grid.
+   */
+  Cr::Containers::StridedArrayView<3, float> generateEuclideanDistanceSDF(
+      const std::string& gridName = "ESignedDistanceField") {
+    voxelGrid->generateEuclideanDistanceSDF(gridName);
+    return getGrid<float>(gridName);
+  }
+
+  /**
+   * @brief Generates a Vector3 field where each vector of a cell points away
+   * from it's closest Boundary cell.
+   * @param gridName The name underwhich to register the newly created distance
+   * flow field.
+   * @return A StridedArrayView3D of the newly created Vector3 grid.
+   */
+  Cr::Containers::StridedArrayView<3, Mn::Vector3> generateDistanceFlowField(
+      const std::string& gridName = "DistanceFlowField") {
+    voxelGrid->generateDistanceFlowField(gridName);
+    return getGrid<Mn::Vector3>(gridName);
+  }
+
+  /**
+   * @brief Saves a particular grid to a svx file at a specified directory. More
+   * info for the file format found at
+   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
+   * @param filepath The directory to which the svx file will be saved.
+   * @param gridName The name of the voxel grid to be saved.
+   */
+  template <typename T>
+  bool saveGridToSVXFile(const std::string& gridName,
+                         const std::string& filepath) {
+    return voxelGrid->saveGridToSVXFile<T>(gridName, filepath);
+  }
+
+  /**
+   * @brief Saves a all grids to a svx file at a specified directory. More
+   * info for the file format found at
+   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
+   * @param filepath The directory to which the svx file will be saved.
+   * @param gridName The name of the voxel grid to be saved.
+   */
+  bool saveToSVXFile(const std::string& filepath) {
+    return voxelGrid->saveToSVXFile(filepath);
+  }
+
+  /**
+   * @brief Saves a particular grid to a svx file at a set directory. More
+   * info for the file format found at
+   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
+   * @param gridName The name of the voxel grid to be saved.
+   */
+  bool saveGridToSVXFile(const std::string& gridName) {
+    return voxelGrid->saveGridToSVXFile(gridName);
+  }
+
+  /**
+   * @brief Saves a all grids to a svx file at a set directory. More
+   * info for the file format found at
+   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
+   * @param gridName The name of the voxel grid to be saved.
+   */
+
+  bool saveToSVXFile() { return voxelGrid->saveToSVXFile(); }
+  /**
+   * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.
+   * @param gridName The name of the voxel grid to be converted into a mesh.
+   * @param isVectorField If set to true, a vector field mesh will be generated.
+   */
+  void generateMesh(const std::string& gridName = "Boundary",
+                    bool isVectorField = false) {
+    voxelGrid->generateMesh(gridName, isVectorField);
+  }
+
+  /**
+   * @brief Generates a colored slice of a mesh.
+   * @param gridName The name of the voxel grid to be converted into a mesh
+   * slice.
+   * @param ind The index long the x axis for the slicing plane.
+   * @param minVal The minimum value of the grid. Used for determining heatmap
+   * colors.
+   * @param maxVal The maximum value of the grid. Used for determining heatmap
+   * colors.
+   */
+  template <typename T>
+  void generateSliceMesh(const std::string& gridName = "Boundary",
+                         int ind = 0,
+                         T minVal = 0,
+                         T maxVal = 1) {
+    voxelGrid->generateSliceMesh(gridName, ind, minVal, maxVal);
+  }
+
+  ESP_SMART_POINTERS(VoxelWrapper)
 };
 
 }  // namespace geo

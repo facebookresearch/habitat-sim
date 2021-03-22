@@ -5,6 +5,7 @@
 #include "esp/bindings/bindings.h"
 
 #include "esp/geo/OBB.h"
+#include "esp/geo/VoxelWrapper.h"
 #include "esp/geo/geo.h"
 
 namespace py = pybind11;
@@ -64,6 +65,8 @@ void initGeoBindings(py::module& m) {
            1.0 is a chordal Catmull-Rom spline)",
       "key_points"_a, "num_interpolations"_a, "alpha"_a = .5f);
 
+  // ==== VoxelWrapper ====
+  py::class_<VoxelWrapper, VoxelWrapper::ptr>(m, "VoxelWrapper");
 }  // initGeoBindings
 
 }  // namespace geo

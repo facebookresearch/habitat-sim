@@ -10,8 +10,13 @@
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/Utility/Directory.h>
+#include <Magnum/GL/PixelFormat.h>
+#include <Magnum/Image.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/CubicHermite.h>
 #include <Magnum/Math/Range.h>
+#include <Magnum/PixelFormat.h>
+#include <tinyxml2.h>
 
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
@@ -105,6 +110,12 @@ class VoxelGrid {
     grids_.erase(gridName);
   }
 
+  /**
+   * @brief Returns a StridedArrayView3D of a grid for easy index access and
+   * manipulation.
+   * @param name The name of the grid to be removed.
+   * @return A StridedArrayView3D of the specified grid.
+   */
   template <typename T>
   Cr::Containers::StridedArrayView<3, T> getGrid(const std::string& gridName) {
     std::string type = grids_[gridName].first;
@@ -115,33 +126,6 @@ class VoxelGrid {
         Cr::Containers::arrayCast<T>(grids_[gridName].second), dims};
   }
 
-  /**
-   * @brief Linearizes 3D voxel coordinates to a single value in order to
-   * directly access a voxel grid.
-   * @param coords The 3D voxel index to be linearized.
-   * @return The has value of the voxel index.
-   */
-  int hashVoxelIndex(const Mn::Vector3i& coords);
-
-  /**
-   * @brief Converts a hash value into a 3 dimensional coordinate.
-   * @param hash The hash value.
-   * @return The voxel index derived from the given hash value.
-   */
-  Mn::Vector3i reverseHash(const int hash);
-
-  /**
-   * @brief Checks to see if a given 3D voxel index is valid and does not go out
-   * of bounds.
-   * @param coords The voxel index.
-   * @return True if the voxel index is valid, false otherwise.
-   */
-  bool isValidIndex(const Mn::Vector3i& coords) const {
-    return coords[0] >= 0 && coords[1] >= 0 && coords[2] >= 0 &&
-           coords[0] < m_voxelGridDimensions[0] &&
-           coords[1] < m_voxelGridDimensions[1] &&
-           coords[2] < m_voxelGridDimensions[2];
-  }
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
 
   /**
@@ -159,19 +143,6 @@ class VoxelGrid {
   }
 
   /**
-   * @brief Sets a voxel at a specified hash index for a specified grid to a
-   * value.
-   * @param hash The hash value of the voxel
-   * @param gridName The voxel grid.
-   * @param value The new value.
-   */
-  template <typename T>
-  void setVoxelByHash(int hash, const std::string& gridName, const T& value) {
-    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
-    arrayView[hash] = value;
-  }
-
-  /**
    * @brief Retrieves the voxel value from a grid of a specified type (bool,
    * int, float, Mn::Vector3).
    * @param index The index of the voxel
@@ -182,19 +153,6 @@ class VoxelGrid {
   T getVoxel(Mn::Vector3i index, const std::string& gridName) {
     auto arrayView3D = getGrid<T>(gridName);
     return arrayView3D[index[0]][index[1]][index[2]];
-  }
-
-  /**
-   * @brief Retrieves the voxel value from a grid of a specified type (bool,
-   * int, float, Mn::Vector3).
-   * @param index The hash value of the voxel
-   * @param gridName The voxel grid.
-   * @return The value from the specified voxel grid.
-   */
-  template <typename T>
-  T getVoxelByHash(int hash, const std::string& gridName) {
-    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
-    return arrayView[hash];
   }
 
   /**
@@ -399,9 +357,43 @@ class VoxelGrid {
     // write png files
     std::vector<std::string> pngFiles = std::vector<std::string>();
     auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
-    // Cr::Containers::StridedArrayView3D<T> data{arrayView,
-    // m_voxelGridDimensions};
+
     auto grid = getGrid<T>(gridName);
+
+    // create xml
+    tinyxml2::XMLDocument xmlDoc;
+    tinyxml2::XMLNode* pRoot = xmlDoc.NewElement("Root");
+    xmlDoc.InsertFirstChild(pRoot);
+    tinyxml2::XMLElement* pElement = xmlDoc.NewElement("IntValue");
+    pElement->SetText(10);
+    pRoot->InsertEndChild(pElement);
+    pElement = xmlDoc.NewElement("FloatValue");
+    pElement->SetText(0.5f);
+
+    pRoot->InsertEndChild(pElement);
+
+    std::string xmlFileName =
+        Cr::Utility::Directory::join(filepath, gridName + ".xml");
+    // declaring character array
+    char char_array[xmlFileName.length() + 1];
+
+    strcpy(char_array, xmlFileName.c_str());
+    // tinyxml2::XMLError eResult = xmlDoc.SaveFile(char_array);
+    // tinyxml2::XMLCheckResult(eResult);
+    // auto arrayView2D = Cr::Containers::arrayCast<T>(grid.slice({0,0,0}, {1,
+    // 5, 5})[0]); Mn::Debug() << arrayView2D;
+    // Containers::Array<Mn::PixelFormat::R32UI> data{1,2,3,4};
+    // Mn::Trade::ImageData2D image{T, {5,5}, std::move(arrayView2D)};
+    if (std::string(typeid(T).name()) == "i") {
+      // R32UI
+    } else if (std::string(typeid(T).name()) == "f") {
+      // R32F
+    } else if (std::string(typeid(T).name()) == "b") {
+      // R8I
+    } else if (std::string(typeid(T).name()) == "N6Magnum4Math7Vector3IfEE") {
+      // RGB32F
+    }
+
     for (int i = 0; i < 10; i++) {
       Mn::Debug() << grid[i][i][i];
     }
@@ -441,8 +433,99 @@ class VoxelGrid {
   void generateMesh(const std::string& gridName = "Boundary",
                     bool isVectorField = false);
 
+  /**
+   * @brief Generates a colored slice of a mesh.
+   * @param gridName The name of the voxel grid to be converted into a mesh
+   * slice.
+   * @param ind The index long the x axis for the slicing plane.
+   * @param minVal The minimum value of the grid. Used for determining heatmap
+   * colors.
+   * @param maxVal The maximum value of the grid. Used for determining heatmap
+   * colors.
+   */
+  template <typename T>
+  void generateSliceMesh(const std::string& gridName = "Boundary",
+                         int ind = 0,
+                         T minVal = 0,
+                         T maxVal = 1) {
+    assert(grids_.find(gridName) != grids_.end());
+    assert(minVal != maxVal);
+    std::vector<Mn::UnsignedInt> indices;
+    std::vector<Mn::Vector3> positions;
+    std::vector<Mn::Vector3> normals;
+    std::vector<Mn::Color3> colors;
+    int num_filled = 0;
+    auto grid = getGrid<T>(gridName);
+    // iterate through each voxel grid cell
+    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+        T val = clamp(grid[ind][j][k], minVal, maxVal);
+        val -= minVal;
+        float colorVal = val / (maxVal - minVal);
+        Mn::Vector3i local_coords(ind, j, k);
+        Mn::Color3 col = Mn::Color3(1 - colorVal, colorVal, 0);
+        addVoxelToMeshPrimitives(positions, normals, colors, indices,
+                                 local_coords, col);
+      }
+    }
+    generateMeshDataAndMeshGL(gridName, indices, positions, normals, colors);
+  }
+
   ESP_SMART_POINTERS(VoxelGrid)
  protected:
+  /**
+   * @brief Generates the Magnum MeshData and MeshGL given indices, positions,
+   * normals, and colors.
+   * @param indices The indices of the mesh.
+   * @param positions The positions of the mesh.
+   * @param normals The normals of the mesh.
+   * @param colors The colors of the mesh.
+   */
+  void generateMeshDataAndMeshGL(const std::string gridName,
+                                 std::vector<Mn::UnsignedInt>& indices,
+                                 std::vector<Mn::Vector3>& positions,
+                                 std::vector<Mn::Vector3>& normals,
+                                 std::vector<Mn::Color3>& colors);
+
+  /**
+   * @brief Checks to see if a given 3D voxel index is valid and does not go out
+   * of bounds.
+   * @param coords The voxel index.
+   * @return True if the voxel index is valid, false otherwise.
+   */
+  bool isValidIndex(const Mn::Vector3i& coords) const {
+    return coords[0] >= 0 && coords[1] >= 0 && coords[2] >= 0 &&
+           coords[0] < m_voxelGridDimensions[0] &&
+           coords[1] < m_voxelGridDimensions[1] &&
+           coords[2] < m_voxelGridDimensions[2];
+  }
+
+  /**
+   * @brief Sets a voxel at a specified hash index for a specified grid to a
+   * value.
+   * @param hash The hash value of the voxel
+   * @param gridName The voxel grid.
+   * @param value The new value.
+   */
+  template <typename T>
+  void setVoxelByHash(int hash, const std::string& gridName, const T& value) {
+    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
+    arrayView[hash] = value;
+  }
+
+  /**
+   * @brief Retrieves the voxel value from a grid of a specified type (bool,
+   * int, float, Mn::Vector3).
+   * @param index The hash value of the voxel
+   * @param gridName The voxel grid.
+   * @return The value from the specified voxel grid.
+   */
+  template <typename T>
+  T getVoxelByHash(int hash, const std::string& gridName) {
+    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
+    return arrayView[hash];
+  }
+
   /**
    * @brief Helper function for generate mesh. Adds a cube voxel to a mesh.
    * @param positions A vector of vertices for the mesh.
@@ -454,7 +537,10 @@ class VoxelGrid {
                                 std::vector<Mn::Vector3>& normals,
                                 std::vector<Mn::Color3>& colors,
                                 std::vector<Mn::UnsignedInt>& indices,
-                                const Mn::Vector3i& local_coords);
+                                const Mn::Vector3i& local_coords,
+                                const Mn::Color3& color = Mn::Color3(.4,
+                                                                     .8,
+                                                                     1));
 
   /**
    * @brief Helper function for generate mesh. Adds a vector voxel to a mesh

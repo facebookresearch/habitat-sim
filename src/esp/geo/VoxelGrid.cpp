@@ -82,24 +82,6 @@ VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
       std::make_pair("Boundary", std::make_pair("bool", std::move(cr_grid))));
 }
 
-// Currently naive hashing. TODO: Replace with Magnum container and
-// StridedArrayView3D.
-int VoxelGrid::hashVoxelIndex(const Mn::Vector3i& coords) {
-  assert(isValidIndex(coords));
-  int hashed_voxel =
-      coords[2] + coords[1] * m_voxelGridDimensions[2] +
-      coords[0] * m_voxelGridDimensions[2] * m_voxelGridDimensions[1];
-  return hashed_voxel;
-}
-
-Mn::Vector3i VoxelGrid::reverseHash(const int hash) {
-  assert(hash < gridSize());
-  return Mn::Vector3i(
-      hash % m_voxelGridDimensions[2],
-      hash / m_voxelGridDimensions[2] % m_voxelGridDimensions[1],
-      hash / m_voxelGridDimensions[2] / m_voxelGridDimensions[1]);
-}
-
 //  --== GETTERS AND SETTERS FOR VOXELS ==--
 
 std::shared_ptr<Mn::Trade::MeshData> VoxelGrid::getMeshData(
@@ -633,7 +615,8 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                          std::vector<Mn::Vector3>& normals,
                                          std::vector<Mn::Color3>& colors,
                                          std::vector<Mn::UnsignedInt>& indices,
-                                         const Mn::Vector3i& local_coords) {
+                                         const Mn::Vector3i& local_coords,
+                                         const Mn::Color3& color) {
   // Using the data of a cubeSolid to create the voxel cube
   Mn::Trade::MeshData cubeData = Mn::Primitives::cubeSolid();
 
@@ -650,7 +633,7 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
     // Set the normals to be weighted such that cubes look slightly curved
     normals.push_back(cubePositions[i].normalized() * 1 / 4 +
                       cubeNormals[i].normalized() * 3 / 4);
-    colors.push_back(Mn::Color3(.4, .8, 1));
+    colors.push_back(color);
   }
   // cube faces
   unsigned int sz = positions.size() - 24;
@@ -727,36 +710,11 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   indices.push_back(sz + 4);
 }
 
-void VoxelGrid::generateMesh(const std::string& gridName, bool isVectorField) {
-  assert(grids_.find(gridName) != grids_.end());
-  std::vector<Mn::UnsignedInt> indices;
-  std::vector<Mn::Vector3> positions;
-  std::vector<Mn::Vector3> normals;
-  std::vector<Mn::Color3> colors;
-  int num_filled = 0;
-
-  // iterate through each voxel grid cell
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        Mn::Vector3i local_coords(i, j, k);
-        if (isVectorField) {
-          Mn::Vector3 vec = getVoxel<Mn::Vector3>(local_coords, gridName);
-          if (vec != Mn::Vector3(0, 0, 0))
-            addVectorToMeshPrimitives(positions, normals, colors, indices,
-                                      local_coords, vec);
-        } else {
-          bool val = getVoxel<bool>(local_coords, gridName);
-          if (val) {
-            num_filled++;
-            addVoxelToMeshPrimitives(positions, normals, colors, indices,
-                                     local_coords);
-          }
-        }
-      }
-    }
-  }
-
+void VoxelGrid::generateMeshDataAndMeshGL(const std::string gridName,
+                                          std::vector<Mn::UnsignedInt>& indices,
+                                          std::vector<Mn::Vector3>& positions,
+                                          std::vector<Mn::Vector3>& normals,
+                                          std::vector<Mn::Color3>& colors) {
   // If the mesh already exists, replace it. Otherwise, create a new entry in
   // the dict
   if (meshDataDict_.find(gridName) != meshDataDict_.end()) {
@@ -806,6 +764,38 @@ void VoxelGrid::generateMesh(const std::string& gridName, bool isVectorField) {
     meshGLDict_.insert(std::make_pair(
         gridName, Mn::MeshTools::compile(*meshDataDict_[gridName])));
   }
+}
+
+void VoxelGrid::generateMesh(const std::string& gridName, bool isVectorField) {
+  assert(grids_.find(gridName) != grids_.end());
+  std::vector<Mn::UnsignedInt> indices;
+  std::vector<Mn::Vector3> positions;
+  std::vector<Mn::Vector3> normals;
+  std::vector<Mn::Color3> colors;
+  int num_filled = 0;
+  // iterate through each voxel grid cell
+  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+        Mn::Vector3i local_coords(i, j, k);
+        if (isVectorField) {
+          Mn::Vector3 vec = getVoxel<Mn::Vector3>(local_coords, gridName);
+          if (vec != Mn::Vector3(0, 0, 0))
+            addVectorToMeshPrimitives(positions, normals, colors, indices,
+                                      local_coords, vec);
+        } else {
+          bool val = getVoxel<bool>(local_coords, gridName);
+          if (val) {
+            num_filled++;
+            addVoxelToMeshPrimitives(positions, normals, colors, indices,
+                                     local_coords);
+          }
+        }
+      }
+    }
+  }
+
+  generateMeshDataAndMeshGL(gridName, indices, positions, normals, colors);
 }
 
 // --== SAVING AND LOADING VOXEL FIELDS ==--
