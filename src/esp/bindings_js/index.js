@@ -23,7 +23,7 @@ function preload(url) {
   if (url.indexOf("http") === -1) {
     let file_parents = splits.slice(0, splits.length - 1);
     for (let i = 0; i < splits.length - 1; i += 1) {
-      file_parents_str += file_parents[i] + "/";
+      file_parents_str += file_parents[i];
       if (!FS.analyzePath(file_parents_str).exists) {
         FS.mkdir(file_parents_str, 777);
       }
