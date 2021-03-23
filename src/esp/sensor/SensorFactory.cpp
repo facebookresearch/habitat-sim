@@ -40,13 +40,13 @@ void SensorFactory::deleteSensor(const sensor::Sensor& sensor) {
   delete (&sensor.node());
 }
 
-void SensorFactory::deleteSensor(scene::SceneNode& node,
-                                 const std::string& uuid) {
+void SensorFactory::deleteSubtreeSensor(scene::SceneNode& node,
+                                        const std::string& uuid) {
   // If sensor does not exist, SensorFactory will log a message but proceed
   // without errors thrown
   if (node.getSubtreeSensors().count(uuid) == 0) {
-    LOG(INFO) << "SensorFactory::deleteSensor(): Sensor with uuid " << uuid
-              << " does not exist at node" << node.getId();
+    LOG(INFO) << "SensorFactory::deleteSubtreeSensor(): Sensor with uuid "
+              << uuid << " does not exist at node" << node.getId();
     return;
   }
   deleteSensor(node.getSubtreeSensorSuite().get(uuid));

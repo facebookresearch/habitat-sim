@@ -95,8 +95,7 @@ class SceneNode : public MagnumObject,
    * @param[in] sceneNodeTag SceneNodeTag to remove from enumset sceneNodeTags_
    */
   void removeSceneNodeTag(SceneNodeTag sceneNodeTag) {
-    SceneNodeTags toRemove = {sceneNodeTag};
-    sceneNodeTags_ &= ~toRemove;
+    sceneNodeTags_ &= ~SceneNodeTags{sceneNodeTag};
   }
 
   //! Create a new child SceneNode and return it. NOTE: this SceneNode owns and

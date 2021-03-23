@@ -197,7 +197,7 @@ void SensorTest::testSensorDestructors() {
   CORRADE_VERIFY(greatgrandchildNode.getSubtreeSensors().size() == 2);
 
   // Remove sensor from parentNode
-  SensorFactory::deleteSensor(parentNode, "1A");
+  SensorFactory::deleteSubtreeSensor(parentNode, "1A");
   CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
   CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 12);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
@@ -212,7 +212,7 @@ void SensorTest::testSensorDestructors() {
   CORRADE_VERIFY(greatgrandchildNode.getSubtreeSensors().size() == 2);
 
   // Remove sensor from child node
-  SensorFactory::deleteSensor(parentNode, "2A");
+  SensorFactory::deleteSubtreeSensor(parentNode, "2A");
   CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
   CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 11);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
@@ -227,7 +227,7 @@ void SensorTest::testSensorDestructors() {
   CORRADE_VERIFY(greatgrandchildNode.getSubtreeSensors().size() == 2);
 
   // Remove sensor from grandchild node
-  SensorFactory::deleteSensor(parentNode, "3A");
+  SensorFactory::deleteSubtreeSensor(parentNode, "3A");
   CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
   CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 10);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
@@ -242,7 +242,7 @@ void SensorTest::testSensorDestructors() {
   CORRADE_VERIFY(greatgrandchildNode.getSubtreeSensors().size() == 2);
 
   // Remove sensor from greatgrandchild node
-  SensorFactory::deleteSensor(parentNode, "5A");
+  SensorFactory::deleteSubtreeSensor(parentNode, "5A");
   CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
   CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 9);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
@@ -291,7 +291,7 @@ void SensorTest::testSensorDestructors() {
   // Delete sensor that doesn't exist
   // Message that Sensor does not exist will be logged, but no errors will be
   // thrown
-  SensorFactory::deleteSensor(parentNode, "1C");
+  SensorFactory::deleteSubtreeSensor(parentNode, "1C");
 }
 
 void SensorTest::testSetParent() {
