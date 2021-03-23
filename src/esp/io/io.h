@@ -20,8 +20,9 @@ std::string removeExtension(const std::string& file);
 std::string changeExtension(const std::string& file, const std::string& ext);
 
 /**
- * @brief This function will perform glob-based pattern matching to find and
- * return all the files and directories that match the pattern.
+ * @brief This function will perform [glob-based pattern matching]
+ * (https://en.wikipedia.org/wiki/Glob_(programming)) to find and return all the
+ * files and directories that match the pattern.
  * @param pattern The pattern to match
  * @return a vector of the fully-qualified paths that match the pattern.
  */
