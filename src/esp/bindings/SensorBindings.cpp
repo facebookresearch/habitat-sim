@@ -191,11 +191,8 @@ void initSensorBindings(py::module& m) {
   // ==== SensorFactory ====
   py::class_<SensorFactory>(m, "SensorFactory")
       .def("create_sensors", &SensorFactory::createSensors)
-      .def("delete_sensor",
-           py::overload_cast<const Sensor&>(&SensorFactory::deleteSensor))
-      .def("delete_sensor",
-           py::overload_cast<esp::scene::SceneNode&, const std::string&>(
-               &SensorFactory::deleteSensor));
+      .def("delete_sensor", &SensorFactory::deleteSensor)
+      .def("delete_subtree_sensor", &SensorFactory::deleteSubtreeSensor);
 
   // ==== SensorSuite ====
   py::class_<SensorSuite, Magnum::SceneGraph::PyFeature<SensorSuite>,

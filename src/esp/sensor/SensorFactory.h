@@ -36,7 +36,8 @@ class SensorFactory {
    * proceed without any errors thrown
    *
    */
-  static void deleteSensor(scene::SceneNode& node, const std::string& uuid);
+  static void deleteSubtreeSensor(scene::SceneNode& node,
+                                  const std::string& uuid);
 };
 }  // namespace sensor
 }  // namespace esp
