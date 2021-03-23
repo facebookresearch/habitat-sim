@@ -33,21 +33,17 @@ esp::scene::SceneNode* nodeGetter(T& self) {
     throw py::value_error{"feature not valid"};
   return &self.node();
 };
-}  // namespace
-
-namespace esp {
-namespace sensor {
 
 // Get the torch tensor or numpy array buffer of the Sensor, initialize if it
 // does not exist yet
 template <class T>
-
 auto buffer(T& self, int gpuDevice) {
   py::handle handle = py::cast(self);
   if (!py::hasattr(handle, "__buffer")) {
     if (self.specification()->gpu2gpuTransfer) {
       auto torch = py::module_::import("torch");
-      if (self.specification()->sensorType == SensorType::Semantic) {
+      if (self.specification()->sensorType ==
+          esp::sensor::SensorType::Semantic) {
         py::setattr(
             handle, "__buffer",
             torch.attr("empty")((py::int_(self.specification()->resolution[0]),
@@ -55,7 +51,8 @@ auto buffer(T& self, int gpuDevice) {
                                 "dtype"_a = torch.attr("int32"),
                                 "device"_a = torch.attr("device")(
                                     py::str("cuda"), py::int_(gpuDevice))));
-      } else if (self.specification()->sensorType == SensorType::Depth) {
+      } else if (self.specification()->sensorType ==
+                 esp::sensor::SensorType::Depth) {
         py::setattr(
             handle, "__buffer",
             torch.attr("empty")((py::int_(self.specification()->resolution[0]),
@@ -74,7 +71,8 @@ auto buffer(T& self, int gpuDevice) {
                                     py::str("cuda"), py::int_(gpuDevice))));
       }
     } else {
-      if (self.specification()->sensorType == SensorType::Semantic) {
+      if (self.specification()->sensorType ==
+          esp::sensor::SensorType::Semantic) {
         auto pyBuffer = py::array(py::buffer_info(
             nullptr,          /* Pointer to data (nullptr -> ask NumPy to
                                  allocate!) */
@@ -89,7 +87,8 @@ auto buffer(T& self, int gpuDevice) {
              sizeof(uint32_t)} /* Strides for each dimension */
             ));
         py::setattr(handle, "__buffer", pyBuffer);
-      } else if (self.specification()->sensorType == SensorType::Depth) {
+      } else if (self.specification()->sensorType ==
+                 esp::sensor::SensorType::Depth) {
         auto pyBuffer = py::array(py::buffer_info(
             nullptr,       /* Pointer to data (nullptr -> ask NumPy to
                               allocate!) */
@@ -124,6 +123,11 @@ auto buffer(T& self, int gpuDevice) {
   }
   return py::getattr(handle, "__buffer");
 };
+
+}  // namespace
+
+namespace esp {
+namespace sensor {
 
 void initSensorBindings(py::module& m) {
   // ==== Observation ====
