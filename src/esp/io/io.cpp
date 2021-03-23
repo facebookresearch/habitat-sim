@@ -109,10 +109,10 @@ std::string removeExtension(const std::string& file) {
 
 std::vector<std::string> globDirs(const std::string& pattern) {
   glob_t glob_result;
-  glob(pattern.c_str(), GLOB_MARK, NULL, &glob_result);
-  std::vector<std::string> ret;
+  glob(pattern.c_str(), GLOB_MARK, nullptr, &glob_result);
+  std::vector<std::string> ret(glob_result.gl_pathc);
   for (int i = 0; i < glob_result.gl_pathc; ++i) {
-    ret.push_back(std::string(glob_result.gl_pathv[i]));
+    ret[i] = std::string(glob_result.gl_pathv[i]);
   }
   globfree(&glob_result);
   return ret;
