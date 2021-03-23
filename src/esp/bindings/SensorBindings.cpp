@@ -46,17 +46,15 @@ auto buffer(T& self, int gpuDevice) {
   py::handle handle = py::cast(self);
   if (!py::hasattr(handle, "__buffer")) {
     if (self.specification()->gpu2gpuTransfer) {
-#ifdef ESP_BUILD_WITH_CUDA
       auto torch = py::module_::import("torch");
       if (self.specification()->sensorType == SensorType::Semantic) {
-          py::setattr(
-              handle, "__buffer",
-              torch.attr("empty")(
-                  (py::int_(self.specification()->resolution[0]),
-                    py::int_(self.specification()->resolution[1])),
-                  "dtype"_a = torch.attr("int32"),
-                  "device"_a = torch.attr("device")(
-                      py::str("cuda"), py::int_(gpuDevice)));
+        py::setattr(
+            handle, "__buffer",
+            torch.attr("empty")((py::int_(self.specification()->resolution[0]),
+                                 py::int_(self.specification()->resolution[1])),
+                                "dtype"_a = torch.attr("int32"),
+                                "device"_a = torch.attr("device")(
+                                    py::str("cuda"), py::int_(gpuDevice))));
       } else if (self.specification()->sensorType == SensorType::Depth) {
         py::setattr(
             handle, "__buffer",
@@ -75,7 +73,6 @@ auto buffer(T& self, int gpuDevice) {
                                 "device"_a = torch.attr("device")(
                                     py::str("cuda"), py::int_(gpuDevice))));
       }
-#endif
     } else {
       if (self.specification()->sensorType == SensorType::Semantic) {
         auto pyBuffer = py::array(py::buffer_info(
@@ -88,8 +85,8 @@ auto buffer(T& self, int gpuDevice) {
             {self.specification()->resolution[0],
              self.specification()->resolution[1]}, /* Number of elements for
                                                      each dimension */
-            {sizeof(uint32_t), sizeof(uint32_t)}
-            /* Strides for each dimension */
+            {sizeof(uint32_t) * self.specification()->resolution[1],
+             sizeof(uint32_t)} /* Strides for each dimension */
             ));
         py::setattr(handle, "__buffer", pyBuffer);
       } else if (self.specification()->sensorType == SensorType::Depth) {
@@ -102,7 +99,8 @@ auto buffer(T& self, int gpuDevice) {
             {self.specification()->resolution[0],
              self.specification()->resolution[1]}, /* Number of elements for
                                                      each dimension */
-            {sizeof(float), sizeof(float)} /* Strides for each dimension */
+            {sizeof(float) * self.specification()->resolution[1], sizeof(float)}
+            /* Strides for each dimension */
             ));
         py::setattr(handle, "__buffer", pyBuffer);
       } else {
@@ -116,8 +114,9 @@ auto buffer(T& self, int gpuDevice) {
              self.specification()->resolution[1],
              self.specification()->channels}, /* Number of elements
                                                  for each dimension */
-            {sizeof(uint8_t), sizeof(uint8_t), sizeof(uint8_t)}
-            /* Strides for each dimension */
+            {sizeof(uint8_t) * self.specification()->resolution[1] *
+                 self.specification()->channels,
+             sizeof(uint8_t), sizeof(uint8_t)} /* Strides for each dimension */
             ));
         py::setattr(handle, "__buffer", pyBuffer);
       }
@@ -225,8 +224,8 @@ void initSensorBindings(py::module& m) {
 
   // ==== VisualSensor ====
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
-             Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(
-      m, "VisualSensor", py::dynamic_attr())
+             Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(m,
+                                                                "VisualSensor")
       .def(
           "draw_observation", &VisualSensor::drawObservation,
           R"(Draw an observation to the frame buffer using simulator's renderer)")
@@ -251,7 +250,7 @@ void initSensorBindings(py::module& m) {
   // === CameraSensor ====
   py::class_<CameraSensor, Magnum::SceneGraph::PyFeature<CameraSensor>,
              VisualSensor, Magnum::SceneGraph::PyFeatureHolder<CameraSensor>>(
-      m, "CameraSensor", py::dynamic_attr())
+      m, "CameraSensor")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const CameraSensorSpec::ptr&>())
       .def("set_projection_params", &CameraSensor::setProjectionParameters,
