@@ -261,12 +261,15 @@ void AttributesManager<T, Access>::buildCfgPathsFromJSONAndLoad(
     std::string absolutePath =
         Cr::Utility::Directory::join(configDir, jsonPaths[i].GetString());
     std::vector<std::string> globPaths = io::globDirs(absolutePath);
-
-    for (const auto& globPath : globPaths) {
-      // load all object templates available as configs in absolutePath
-      LOG(WARNING) << "Glob path result for " << absolutePath << " : "
-                   << globPath;
-      this->loadAllConfigsFromPath(globPath, true);
+    if (globPaths.size() > 0) {
+      for (const auto& globPath : globPaths) {
+        // load all object templates available as configs in absolutePath
+        LOG(WARNING) << "Glob path result for " << absolutePath << " : "
+                     << globPath;
+        this->loadAllConfigsFromPath(globPath, true);
+      }
+    } else {
+      LOG(WARNING) << "No Glob path result for " << absolutePath;
     }
   }
   LOG(INFO) << "AttributesManager::buildCfgPathsFromJSONAndLoad : "
@@ -281,8 +284,8 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     std::string& msg,
     bool registerObj) -> AttribsPtr {
   AttribsPtr attrs;
-  // Modify the passed filename to have the format of a legitimate configuration
-  // file for this Attributes by changing the extension
+  // Modify the passed filename to have the format of a legitimate
+  // configuration file for this Attributes by changing the extension
   std::string jsonAttrFileName =
       (Cr::Utility::String::endsWith(filename, this->JSONTypeExt_)
            ? filename
@@ -300,13 +303,14 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
     msg = "JSON Configuration File (" + jsonAttrFileName + ") based";
   } else {
-    // An existing, valid configuration file could not be found using the passed
-    // filename.
-    // Currently non-JSON filenames are used to create new, default attributes.
+    // An existing, valid configuration file could not be found using the
+    // passed filename. Currently non-JSON filenames are used to create new,
+    // default attributes.
     attrs = this->createDefaultObject(filename, registerObj);
     // check if original filename is an actual object
     bool fileExists = (this->isValidFileName(filename));
-    // if filename passed is name of some kind of asset, or if it was not found
+    // if filename passed is name of some kind of asset, or if it was not
+    // found
     if (fileExists) {
       msg = "File (" + filename +
             ") exists but is not a recognized config filename extension, so "
