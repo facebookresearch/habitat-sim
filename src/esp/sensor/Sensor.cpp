@@ -4,6 +4,7 @@
 
 #include "Sensor.h"
 #include <Magnum/EigenIntegration/Integration.h>
+#include "esp/core/Check.h"
 #include "esp/scene/SceneGraph.h"
 
 #include <utility>
@@ -95,6 +96,9 @@ void SensorSuite::remove(const std::string& uuid) {
 }
 
 sensor::Sensor& SensorSuite::get(const std::string& uuid) const {
+  ESP_CHECK(
+      sensors_.count(uuid),
+      "SensorSuite::get(): SensorSuite does not contain key: " << uuid.c_str());
   return sensors_.at(uuid).get();
 }
 

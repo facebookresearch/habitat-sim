@@ -38,6 +38,7 @@ enum class SceneNodeType {
   OBJECT = 4,  // objects added via physics api
 };
 
+// Enumeration of SceneNodeTags
 enum class SceneNodeTag : Magnum::UnsignedShort {
   /**
    * Set node as Leaf node, so no children nodes are allowed
@@ -53,11 +54,6 @@ typedef Corrade::Containers::EnumSet<SceneNodeTag> SceneNodeTags;
 class SceneNode : public MagnumObject,
                   public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  // creating a scene node "in the air" is not allowed.
-  // it must set an existing node as its parent node.
-  // this is to prevent any sub-tree that is "floating in the air", without a
-  // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
-  SceneNode() = delete;
   SceneNode(SceneNode& parent);
   ~SceneNode() override;
 
@@ -78,7 +74,7 @@ class SceneNode : public MagnumObject,
   /**
    * @brief Sets sceneNodeTags_ of SceneNode
    *
-   * @param sceneNodeTags SceneNodeTags to enumset sceneNodeTags_ to
+   * @param[in] sceneNodeTags SceneNodeTags to set enumset sceneNodeTags_ to
    */
   void setSceneNodeTags(SceneNodeTags sceneNodeTags) {
     sceneNodeTags_ = sceneNodeTags;
@@ -87,7 +83,7 @@ class SceneNode : public MagnumObject,
   /**
    * @brief Add SceneNodeTag to sceneNodeTags_ of SceneNode
    *
-   * @param sceneNodeTag SceneNodeTag to add to enumset sceneNodeTags_
+   * @param[in] sceneNodeTag SceneNodeTag to add to enumset sceneNodeTags_
    */
   void addSceneNodeTag(SceneNodeTag sceneNodeTag) {
     sceneNodeTags_ |= sceneNodeTag;
@@ -96,7 +92,7 @@ class SceneNode : public MagnumObject,
   /**
    * @brief Remove SceneNodeTag from sceneNodeTags_ of SceneNode
    *
-   * @param sceneNodeTag SceneNodeTag to remove from enumset sceneNodeTags_
+   * @param[in] sceneNodeTag SceneNodeTag to remove from enumset sceneNodeTags_
    */
   void removeSceneNodeTag(SceneNodeTag sceneNodeTag) {
     SceneNodeTags toRemove = {sceneNodeTag};
@@ -108,6 +104,14 @@ class SceneNode : public MagnumObject,
   //! NOTE: child node inherits parent id by default
   SceneNode& createChild(SceneNodeTags childNodeTag = {});
 
+  /**
+   * @brief Sets parent SceneNode of this SceneNode, updates parent's
+   * nodeSensorSuite and ancestors' subtreeSensorSuites NOTE: Overloads
+   * MagnumObject::setParent
+   * @param[in] newParent pointer to SceneNode of new parent SceneNode of this
+   * SceneNode
+   * @return reference to self
+   */
   SceneNode& setParent(SceneNode* newParent);
 
   //! Returns node id
@@ -147,8 +151,8 @@ class SceneNode : public MagnumObject,
   esp::sensor::SensorSuite& getNodeSensorSuite() { return *nodeSensorSuite_; }
 
   /**
-   * @brief Return map containing references to Sensors this SceneNode holds
-   * keys are uuid strings, values are references to Sensors with that uuid
+   * @brief Return map containing references to Sensors this SceneNode holds.
+   * Keys are uuid strings, values are references to Sensors with that uuid
    */
   std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
   getNodeSensors();
@@ -163,7 +167,7 @@ class SceneNode : public MagnumObject,
 
   /**
    * @brief Return map containing references to superset of all Sensors held by
-   * this SceneNode and its children values keys are uuid strings, values are
+   * this SceneNode and its children values. Keys are uuid strings, values are
    * references to Sensors with that uuid
    */
   std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
@@ -171,13 +175,13 @@ class SceneNode : public MagnumObject,
 
   /** @brief Add sensor in this' nodeSensorSuite to parent's
    * nodeSensorSuite
-   * Note: This only adds a sensor if this is a leaf node and sensor exists
+   * NOTE: This only adds a sensor if this is a leaf node and sensor exists
    */
   void addSensorToParentNodeSensorSuite();
 
   /** @brief Remove sensor in this' nodeSensorSuite from parent's
    * nodeSensorSuite
-   * Note: This only removes a sensor if this is a leaf node and sensor exists
+   * NOTE: This only removes a sensor if this is a leaf node and sensor exists
    */
   void removeSensorFromParentNodeSensorSuite();
 
@@ -208,6 +212,14 @@ class SceneNode : public MagnumObject,
   // it can ONLY be called from SceneGraph class to initialize the scene graph
   friend class SceneGraph;
   explicit SceneNode(MagnumScene& parentNode);
+
+  // Do not make the following constructor public!
+  // This is only used for constructor delegation
+  // creating a scene node "in the air" is not allowed.
+  // it must set an existing node as its parent node.
+  // this is to prevent any sub-tree that is "floating in the air", without a
+  // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
+  SceneNode();
 
   void clean(const Magnum::Matrix4& absoluteTransformation) override;
 

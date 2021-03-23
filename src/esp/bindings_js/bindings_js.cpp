@@ -51,11 +51,43 @@ std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
   return spaces;
 }
 
+std::map<std::string, Sensor::ptr> Agent_getSubtreeSensors(Agent& agent) {
+  std::map<std::string, Sensor::ptr> jsSensors =
+      std::map<std::string, Sensor::ptr>();
+  for (auto& entry : agent.node().getSubtreeSensors()) {
+    jsSensors[entry.first] = std::shared_ptr<Sensor>(&entry.second.get());
+  }
+  return jsSensors;
+}
+
+template <class T, typename... Targs>
+static inline auto create(Targs&&... args) {
+  return std::make_shared<T>(std::forward<Targs>(args)...);
+}
+
+Magnum::Quaternion toQuaternion(const vec4f& rot) {
+  return Magnum::Quaternion(quatf(rot)).normalized();
+}
+
+Magnum::Quaternion Quaternion_mul(const Magnum::Quaternion& q1,
+                                  const Magnum::Quaternion& q2) {
+  return q1 * q2;
+}
+
 Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
   Observation ret;
   if (CameraSensor * camera{dynamic_cast<CameraSensor*>(&sensor)})
     camera->getObservation(sim, ret);
   return ret;
+}
+
+vec3f toVec3f(const Magnum::Vector3& pos) {
+  return vec3f(pos.x(), pos.y(), pos.z());
+}
+
+vec4f toVec4f(const Magnum::Quaternion& rot) {
+  return vec4f(rot.vector().x(), rot.vector().y(), rot.vector().z(),
+               rot.scalar());
 }
 
 void Sensor_setLocalTransform(Sensor& sensor,
@@ -68,20 +100,10 @@ void Sensor_setLocalTransform(Sensor& sensor,
   node.setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 }
 
-vec3f quaternionToEuler(const quatf& q) {
-  return q.toRotationMatrix().eulerAngles(0, 1, 2);
-}
-
-vec4f eulerToQuaternion(const vec3f& q) {
-  return (Eigen::AngleAxisf(q.x(), vec3f::UnitX()) *
-          Eigen::AngleAxisf(q.y(), vec3f::UnitY()) *
-          Eigen::AngleAxisf(q.z(), vec3f::UnitZ()))
-      .coeffs();
-}
-
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
-  em::function("quaternionToEuler", &quaternionToEuler);
-  em::function("eulerToQuaternion", &eulerToQuaternion);
+  em::function("toQuaternion", &toQuaternion);
+  em::function("toVec3f", &toVec3f);
+  em::function("toVec4f", &toVec4f);
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
@@ -89,12 +111,9 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
   em::register_vector<std::shared_ptr<SemanticObject>>("VectorSemanticObjects");
-
   em::register_map<std::string, float>("MapStringFloat");
   em::register_map<std::string, std::string>("MapStringString");
   em::register_map<std::string, Sensor::ptr>("MapStringSensor");
-  // em::register_map<std::string,
-  // std::reference_wrapper<Sensor>>("MapStringRefSensor");
   em::register_map<std::string, SensorSpec::ptr>("MapStringSensorSpec");
   em::register_map<std::string, Observation>("MapStringObservation");
   em::register_map<std::string, ActionSpec::ptr>("ActionSpace");
@@ -132,6 +151,27 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
+
+  em::class_<Magnum::Rad>("Rad").constructor<float>();
+
+  em::class_<Magnum::Vector3>("Vector3")
+      .constructor<Magnum::Vector3>()
+      .constructor<float, float, float>()
+      .function("x", em::select_overload<float&()>(&Magnum::Vector3::x))
+      .function("y", em::select_overload<float&()>(&Magnum::Vector3::y))
+      .function("z", em::select_overload<float&()>(&Magnum::Vector3::z))
+      .class_function("xAxis", &Magnum::Vector3::xAxis)
+      .class_function("yAxis", &Magnum::Vector3::yAxis)
+      .class_function("zAxis", &Magnum::Vector3::zAxis);
+
+  em::class_<Magnum::Quaternion>("Quaternion")
+      .constructor<Magnum::Vector3, float>()
+      .constructor<Magnum::Vector3>()
+      .function("normalized", &Magnum::Quaternion::normalized)
+      .function("inverted", &Magnum::Quaternion::inverted)
+      .function("transformVector", &Magnum::Quaternion::transformVector)
+      .class_function("mul", &Quaternion_mul)
+      .class_function("rotation", &Magnum::Quaternion::rotation);
 
   em::class_<AgentConfiguration>("AgentConfiguration")
       .smart_ptr_constructor("AgentConfiguration",
@@ -203,15 +243,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setLocalTransform", &Sensor_setLocalTransform)
       .function("specification", &Sensor::specification);
 
-  em::class_<SensorSuite>("SensorSuite")
-      .smart_ptr<SensorSuite::ptr>("SensorSuite::ptr")
-      .function("add", &SensorSuite::add)
-      .function("remove",
-                em::select_overload<void(const Sensor&)>(&SensorSuite::remove))
-      .function("remove", em::select_overload<void(const std::string&)>(
-                              &SensorSuite::remove))
-      .function("clear", &SensorSuite::clear);
-
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",
                              &SimulatorConfiguration::create<>)
@@ -238,7 +269,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getState", &Agent::getState)
       .function("setState", &Agent::setState)
       .function("hasAction", &Agent::hasAction)
-      .function("act", &Agent::act);
+      .function("act", &Agent::act)
+      .function("getSubtreeSensors", &Agent_getSubtreeSensors);
 
   em::class_<Observation>("Observation")
       .smart_ptr_constructor("Observation", &Observation::create<>)

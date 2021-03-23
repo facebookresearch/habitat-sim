@@ -133,8 +133,9 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Return map containing references to superset of all Sensors held by
-   * this Agent's SceneNode and its children values keys are uuid strings,
-   * values are references to Sensors with that uuid
+   * this Agent's SceneNode and its children values.
+   * Keys of map are uuid strings, values are references to Sensors with that
+   * uuid
    */
   std::map<std::string, std::reference_wrapper<sensor::Sensor>>&
   getSubtreeSensors() {

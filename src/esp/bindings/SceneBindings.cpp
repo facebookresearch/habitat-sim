@@ -58,6 +58,8 @@ void initSceneBindings(py::module& m) {
       .def(
           "create_child", [](SceneNode& self) { return &self.createChild(); },
           R"(Creates a child node, and sets its parent to the current node.)")
+      .def("set_parent", &SceneNode::setParent,
+           R"(Sets parent to parentNode, and updates ancestors' SensorSuites)")
       .def(
           "compute_cumulative_bb", &SceneNode::computeCumulativeBB,
           R"(Recursively compute the approximate axis aligned bounding boxes of the SceneGraph sub-tree rooted at this node.)")

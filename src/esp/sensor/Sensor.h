@@ -147,6 +147,8 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   ESP_SMART_POINTERS(Sensor)
 };
 
+// Represents a set of sensors, with each sensor being identified through a
+// unique id
 class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   explicit SensorSuite(scene::SceneNode& node);
