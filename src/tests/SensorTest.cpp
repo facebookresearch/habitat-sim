@@ -213,7 +213,10 @@ void SensorTest::testSensorDestructors() {
 
   // Remove sensor from child node
   SensorFactory::deleteSubtreeSensor(parentNode, "2A");
+  CORRADE_VERIFY(rootNode.getNodeSensors().size() == 0);
+  CORRADE_VERIFY(rootNode.getSubtreeSensors().size() == 11);
   CORRADE_VERIFY(parentNode.getNodeSensors().size() == 1);
+  CORRADE_VERIFY(parentNode.getSubtreeSensors().size() == 11);
   CORRADE_VERIFY(childNode.getNodeSensors().size() == 2);
   CORRADE_VERIFY(childNode.getSubtreeSensors().size() == 10);
   CORRADE_VERIFY(grandchildNode.getNodeSensors().size() == 4);
