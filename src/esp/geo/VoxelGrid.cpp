@@ -176,6 +176,8 @@ int VoxelGrid::generateBoolGridFromFloatGrid(const std::string& floatGridName,
   return num_filled;
 }
 
+// TODO Transfer these 4 functions into 1 templated function, look into changing
+// function into a custom comparator class
 void VoxelGrid::fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
                                          const std::string& boolGridName,
                                          bool (*func)(bool)) {
@@ -491,7 +493,6 @@ void VoxelGrid::generateEuclideanDistanceSDF(const std::string& gridName) {
   auto intExtGrid = getGrid<int>("InteriorExterior");
   auto closestCellGrid = getGrid<Mn::Vector3>("ClosestBoundaryCell");
 
-  Mn::Debug() << m_voxelGridDimensions;
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
@@ -610,23 +611,54 @@ void VoxelGrid::generateDistanceFlowField(const std::string& gridName) {
     }
   }
 }
+void VoxelGrid::fillBoolGridNeighborhood(std::vector<bool>& neighbors,
+                                         const std::string& gridName,
+                                         const Mn::Vector3i& index) {
+  for (int i = 0; i < 6; i++) {
+    neighbors.push_back(false);
+  }
+  auto grid = getGrid<bool>(gridName);
+  neighbors[0] = isValidIndex(index + Mn::Vector3i(0, 0, 1))
+                     ? grid[index[0]][index[1]][index[2] + 1]
+                     : false;
+  neighbors[1] = isValidIndex(index + Mn::Vector3i(1, 0, 0))
+                     ? grid[index[0] + 1][index[1]][index[2]]
+                     : false;
+  neighbors[2] = isValidIndex(index + Mn::Vector3i(0, 1, 0))
+                     ? grid[index[0]][index[1] + 1][index[2]]
+                     : false;
+  neighbors[3] = isValidIndex(index + Mn::Vector3i(0, 0, -1))
+                     ? grid[index[0]][index[1]][index[2] - 1]
+                     : false;
+  neighbors[4] = isValidIndex(index + Mn::Vector3i(0, -1, 0))
+                     ? grid[index[0]][index[1] - 1][index[2]]
+                     : false;
+  neighbors[5] = isValidIndex(index + Mn::Vector3i(-1, 0, 0))
+                     ? grid[index[0] - 1][index[1]][index[2]]
+                     : false;
+}
 
 void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                          std::vector<Mn::Vector3>& normals,
                                          std::vector<Mn::Color3>& colors,
                                          std::vector<Mn::UnsignedInt>& indices,
                                          const Mn::Vector3i& local_coords,
+                                         const std::vector<bool>& neighbors,
                                          const Mn::Color3& color) {
   // Using the data of a cubeSolid to create the voxel cube
+  assert(neighbors.size() >= 6);
   Mn::Trade::MeshData cubeData = Mn::Primitives::cubeSolid();
 
   // add cube to mesh
   // midpoint of a voxel
   Mn::Vector3 mid = getGlobalCoords(local_coords);
 
+  unsigned int sz = positions.size();
   auto cubePositions = cubeData.positions3DAsArray();
   auto cubeNormals = cubeData.normalsAsArray();
+  auto cubeIndices = cubeData.indices();
 
+  // TODO: Only add neccessary faces (based on neighborhood)
   for (int i = 0; i < 24; i++) {
     Mn::Vector3 vertOffset = cubePositions[i] * m_voxelSize / 2;
     positions.push_back(vertOffset + mid);
@@ -635,11 +667,13 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                       cubeNormals[i].normalized() * 3 / 4);
     colors.push_back(color);
   }
-  // cube faces
-  unsigned int sz = positions.size() - 24;
-  auto cubeIndices = cubeData.indices();
-  for (int i = 0; i < 36; i++) {
-    indices.push_back(sz + cubeIndices[i][0]);
+
+  for (int i = 0; i < 6; i++) {
+    if (!neighbors[i]) {
+      for (int j = 0; j < 6; j++) {
+        indices.push_back(sz + cubeIndices[i * 6 + j][0]);
+      }
+    }
   }
 }
 
@@ -662,6 +696,7 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   Mn::Vector3 pos4 = mid - orthog1.normalized() * m_voxelSize * 1 / 20;
   Mn::Vector3 pos5 = mid - orthog2.normalized() * m_voxelSize * 1 / 20;
 
+  // TODO: Consider using more for loops to reduce code
   positions.push_back(pos1);
   positions.push_back(pos2);
   positions.push_back(pos3);
@@ -681,6 +716,8 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   normals.push_back((pos4 - mid).normalized());
 
   unsigned int sz = positions.size() - 5;
+  // TODO Collapse into tetrehedron
+  // look for a magnum tetrehedron
   indices.push_back(sz);
   indices.push_back(sz + 1);
   indices.push_back(sz + 2);
@@ -692,10 +729,6 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   indices.push_back(sz);
   indices.push_back(sz + 3);
   indices.push_back(sz + 4);
-
-  indices.push_back(sz);
-  indices.push_back(sz + 4);
-  indices.push_back(sz + 1);
 
   indices.push_back(sz);
   indices.push_back(sz + 4);
@@ -787,8 +820,10 @@ void VoxelGrid::generateMesh(const std::string& gridName, bool isVectorField) {
           bool val = getVoxel<bool>(local_coords, gridName);
           if (val) {
             num_filled++;
+            std::vector<bool> neighbors{};
+            fillBoolGridNeighborhood(neighbors, gridName, local_coords);
             addVoxelToMeshPrimitives(positions, normals, colors, indices,
-                                     local_coords);
+                                     local_coords, neighbors);
           }
         }
       }

@@ -12,10 +12,7 @@ add_library(
   VoxelWrapper.h
 )
 
-target_include_directories(geo PRIVATE "${DEPS_DIR}/tinyxml2")
-
 target_link_libraries(
   geo
   PUBLIC core glog io gfx
-  PRIVATE tinyxml2
 )

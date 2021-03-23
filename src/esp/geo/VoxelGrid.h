@@ -456,6 +456,9 @@ class VoxelGrid {
     std::vector<Mn::Color3> colors;
     int num_filled = 0;
     auto grid = getGrid<T>(gridName);
+    // TODO: generate underlying structure without registering it
+    // fill the grid
+    // add
     // iterate through each voxel grid cell
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
@@ -464,8 +467,9 @@ class VoxelGrid {
         float colorVal = val / (maxVal - minVal);
         Mn::Vector3i local_coords(ind, j, k);
         Mn::Color3 col = Mn::Color3(1 - colorVal, colorVal, 0);
+        std::vector<bool> neighbors{false, false, false, false, false, false};
         addVoxelToMeshPrimitives(positions, normals, colors, indices,
-                                 local_coords, col);
+                                 local_coords, neighbors, col);
       }
     }
     generateMeshDataAndMeshGL(gridName, indices, positions, normals, colors);
@@ -473,6 +477,18 @@ class VoxelGrid {
 
   ESP_SMART_POINTERS(VoxelGrid)
  protected:
+  /**
+   * @brief Fills vector neighbors with 6 booleans representing the top (y+1),
+   * bottom (y-1), right (x+1), left (x-1), back (z + 1) and front (z-1)
+   * neighboring voxel's status.
+   * @param [in] neighbors The vector of booleans to be filled.
+   * @param gridName The name of the boolean grid to be checked.
+   * @param index The index of the voxel.
+   */
+  void fillBoolGridNeighborhood(std::vector<bool>& neighbors,
+                                const std::string& gridName,
+                                const Mn::Vector3i& index);
+
   /**
    * @brief Generates the Magnum MeshData and MeshGL given indices, positions,
    * normals, and colors.
@@ -538,6 +554,7 @@ class VoxelGrid {
                                 std::vector<Mn::Color3>& colors,
                                 std::vector<Mn::UnsignedInt>& indices,
                                 const Mn::Vector3i& local_coords,
+                                const std::vector<bool>& voxel_neighbors,
                                 const Mn::Color3& color = Mn::Color3(.4,
                                                                      .8,
                                                                      1));

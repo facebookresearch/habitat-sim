@@ -857,8 +857,8 @@ void Viewer::iterateAndDisplaySignedDistanceField() {
   int curDistanceVisualization = (voxelDistance % dims[0]);
   /*sceneVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
      "SDFSubset", curDistanceVisualization, curDistanceVisualization + 1);*/
-  sceneVoxelization->generateSliceMesh<float>("ESignedDistanceField",
-                                              curDistanceVisualization, -15, 0);
+  sceneVoxelization->generateSliceMesh("ESignedDistanceField",
+                                       curDistanceVisualization, -15.0f, 0.0f);
 
   // Draw the voxel grid
   simulator_->setSceneVoxelizationDraw(true, "ESignedDistanceField");

@@ -78,9 +78,9 @@ class VoxelWrapper {
    * @return a StridedArrayView3D for the newly created grid.
    */
   template <typename T>
-  Cr::Containers::StridedArrayView<3, T> addGrid(const std::string& gridName) {
+  void addGrid(const std::string& gridName) {
     voxelGrid->addGrid<T>(gridName);
-    return getGrid<T>(gridName);
+    // return getGrid<T>(gridName);
   }
 
   /**
@@ -302,9 +302,9 @@ class VoxelWrapper {
    * cells.
    * @return A StridedArrayView3D of the newly created int grid.
    */
-  Cr::Containers::StridedArrayView<3, int> generateInteriorExteriorVoxelGrid() {
+  void generateInteriorExteriorVoxelGrid() {
     voxelGrid->generateInteriorExteriorVoxelGrid();
-    return getGrid<int>("InteriorExterior");
+    // return getGrid<int>("InteriorExterior");
   }
 
   /**
@@ -314,10 +314,10 @@ class VoxelWrapper {
    * SDF.
    * @return A StridedArrayView3D of the newly created int grid.
    */
-  Cr::Containers::StridedArrayView<3, int> generateManhattanDistanceSDF(
+  void generateManhattanDistanceSDF(
       const std::string& gridName = "MSignedDistanceField") {
     voxelGrid->generateManhattanDistanceSDF(gridName);
-    return getGrid<int>(gridName);
+    // return getGrid<int>(gridName);
   }
 
   /**
@@ -328,10 +328,11 @@ class VoxelWrapper {
    * SDF.
    * @return A StridedArrayView3D of the newly created float grid.
    */
-  Cr::Containers::StridedArrayView<3, float> generateEuclideanDistanceSDF(
+  // Cr::Containers::StridedArrayView<3, float>
+  void generateEuclideanDistanceSDF(
       const std::string& gridName = "ESignedDistanceField") {
     voxelGrid->generateEuclideanDistanceSDF(gridName);
-    return getGrid<float>(gridName);
+    // return getGrid<float>(gridName);
   }
 
   /**
@@ -341,10 +342,10 @@ class VoxelWrapper {
    * flow field.
    * @return A StridedArrayView3D of the newly created Vector3 grid.
    */
-  Cr::Containers::StridedArrayView<3, Mn::Vector3> generateDistanceFlowField(
+  void generateDistanceFlowField(
       const std::string& gridName = "DistanceFlowField") {
     voxelGrid->generateDistanceFlowField(gridName);
-    return getGrid<Mn::Vector3>(gridName);
+    // return getGrid<Mn::Vector3>(gridName);
   }
 
   /**
