@@ -33,12 +33,8 @@ void main(void) {
     discard;
   m.z = (1 - Alpha * Alpha * r2) / (Alpha * sqrt(sq1) + 1.0 - Alpha);
   float mz2 = m.z * m.z;
-  float sq2 = mz2 + (1.0 - Xi * Xi) * r2;
-  if (sq2 < 0.0) {
-    discard;
-  }
-
   // unproject to get the ray direction
+  float sq2 = mz2 + (1.0 - Xi * Xi) * r2;
   if (sq2 < 0.0)
     discard;
 
