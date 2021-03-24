@@ -3,8 +3,9 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Sensor.h"
-
 #include <Magnum/EigenIntegration/Integration.h>
+#include "esp/core/Check.h"
+#include "esp/scene/SceneGraph.h"
 
 #include <utility>
 
@@ -44,12 +45,28 @@ void SensorSpec::sanityCheck() {
 
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
     : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
+  CORRADE_ASSERT(node.children().first() == nullptr,
+                 "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node. "
+                 "The number of children of this node is not zero.", );
+  CORRADE_ASSERT(
+      node.getSceneNodeTags() & scene::SceneNodeTag::Leaf,
+      "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node.", );
   node.setType(scene::SceneNodeType::SENSOR);
   CORRADE_ASSERT(spec_,
                  "Sensor::Sensor(): Cannot initialize sensor. The "
                  "specification is null.", );
   spec_->sanityCheck();
+  node.getNodeSensorSuite().add(*this);
+  node.getSubtreeSensorSuite().add(*this);
+  node.addSensorToParentNodeSensorSuite();
+  // Traverse up to root node and add sensor to every subtreeSensorSuite
+  node.addSubtreeSensorsToAncestors();
   setTransformationFromSpec();
+}
+
+Sensor::~Sensor() {
+  // Updating of info in SensorSuites will be handled by SceneNode
+  LOG(INFO) << "Deconstructing Sensor";
 }
 
 void Sensor::setTransformationFromSpec() {
@@ -65,18 +82,26 @@ void Sensor::setTransformationFromSpec() {
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
-void SensorSuite::add(const Sensor::ptr& sensor) {
-  const std::string uuid = sensor->specification()->uuid;
-  sensors_[uuid] = sensor;
+SensorSuite::SensorSuite(scene::SceneNode& node)
+    : Magnum::SceneGraph::AbstractFeature3D{node} {}
+
+void SensorSuite::add(sensor::Sensor& sensor) {
+  sensors_.emplace(sensor.specification()->uuid, std::ref(sensor));
 }
 
-void SensorSuite::merge(SensorSuite& sensorSuite) {
-  sensors_.insert(sensorSuite.getSensors().begin(),
-                  sensorSuite.getSensors().end());
+void SensorSuite::remove(const sensor::Sensor& sensor) {
+  remove(sensor.specification()->uuid);
 }
 
-Sensor::ptr SensorSuite::get(const std::string& uuid) const {
-  return (sensors_.at(uuid));
+void SensorSuite::remove(const std::string& uuid) {
+  sensors_.erase(uuid);
+}
+
+sensor::Sensor& SensorSuite::get(const std::string& uuid) const {
+  ESP_CHECK(
+      sensors_.count(uuid),
+      "SensorSuite::get(): SensorSuite does not contain key: " << uuid.c_str());
+  return sensors_.at(uuid).get();
 }
 
 void SensorSuite::clear() {

@@ -68,10 +68,6 @@ VisualSensor::VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec)
   visualSensorSpec_->sanityCheck();
 }
 
-VisualSensor::~VisualSensor() {
-  LOG(INFO) << "Deconstructing VisualSensor";
-}
-
 void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
   if (tgt->framebufferSize() != framebufferSize())
     throw std::runtime_error("RenderTarget is not the correct size");

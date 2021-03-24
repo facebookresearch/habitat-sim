@@ -167,7 +167,7 @@ class Viewer : public Mn::Platform::Application {
 
   esp::sensor::CameraSensor& getAgentCamera() {
     esp::sensor::Sensor& cameraSensor =
-        *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+        agentBodyNode_->getNodeSensorSuite().get("rgba_camera");
     return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
   }
 
@@ -946,12 +946,12 @@ void Viewer::drawEvent() {
 // test: create a cubemap and save the 6 images to the disk;
 #ifndef MAGNUM_TARGET_WEBGL
   if (cubeMapMode_) {
-    esp::sensor::Sensor::ptr sensor = simulator_->getAgent(defaultAgentId_)
-                                          ->getSensorSuite()
-                                          .get("rgba_camera");
-    if (sensor) {
+    esp::sensor::Sensor& sensor = simulator_->getAgent(defaultAgentId_)
+                                      ->getSubtreeSensorSuite()
+                                      .get("rgba_camera");
+    if (sensor.isVisualSensor()) {
       cubeMapCameraNode_->setTransformation(
-          sensor->node().absoluteTransformation());
+          sensor.node().absoluteTransformation());
       esp::gfx::RenderCamera::Flags flags;
       if (simulator_->isFrustumCullingEnabled()) {
         flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
@@ -1182,20 +1182,19 @@ void Viewer::moveAndLook(int repetitions) {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  auto& sensors = defaultAgent_->getSensorSuite();
-  for (auto entry : sensors.getSensors()) {
-    auto visualSensor =
-        dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
-    if (visualSensor != nullptr) {
-      visualSensor->setResolution(event.framebufferSize()[1],
-                                  event.framebufferSize()[0]);
-      renderCamera_->setViewport(visualSensor->framebufferSize());
-      simulator_->getRenderer()->bindRenderTarget(*visualSensor);
+  for (auto& it : agentBodyNode_->getSubtreeSensors()) {
+    if (it.second.get().isVisualSensor()) {
+      esp::sensor::VisualSensor& visualSensor =
+          static_cast<esp::sensor::VisualSensor&>(it.second.get());
+      visualSensor.setResolution(event.framebufferSize()[1],
+                                 event.framebufferSize()[0]);
+      renderCamera_->setViewport(visualSensor.framebufferSize());
+      simulator_->getRenderer()->bindRenderTarget(visualSensor);
 
-      if ((visualSensor->specification()->uuid == "fisheye") ||
-          (visualSensor->specification()->uuid == "depth_fisheye")) {
+      if ((visualSensor.specification()->uuid == "fisheye") ||
+          (visualSensor.specification()->uuid == "depth_fisheye")) {
         auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
-            visualSensor->specification().get());
+            visualSensor.specification().get());
 
         // const auto viewportSize =
         // Mn::GL::defaultFramebuffer.viewport().size();
@@ -1323,11 +1322,11 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   auto& controls = *defaultAgent_->getControls().get();
   controls(*agentBodyNode_, "turnRight", delta.x());
   // apply the transformation to all sensors
-  for (auto p : defaultAgent_->getSensorSuite().getSensors()) {
-    controls(p.second->object(),  // SceneNode
-             "lookDown",          // action name
-             delta.y(),           // amount
-             false);              // applyFilter
+  for (auto& p : agentBodyNode_->getSubtreeSensors()) {
+    controls(p.second.get().object(),  // SceneNode
+             "lookDown",               // action name
+             delta.y(),                // amount
+             false);                   // applyFilter
   }
 
   redraw();

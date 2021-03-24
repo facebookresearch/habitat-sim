@@ -1089,18 +1089,18 @@ agent::Agent::ptr Simulator::addAgent(
   // constructor of Agent)
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
-  ag->setSensorSuite(esp::sensor::SensorFactory::createSensors(
-      agentNode, agentConfig.sensorSpecifications));
-
+  esp::sensor::SensorFactory::createSensors(agentNode,
+                                            agentConfig.sensorSpecifications);
   agent::AgentState state;
   sampleRandomAgentState(state);
   ag->setInitialState(state);
 
   // Add a RenderTarget to each of the agent's visual sensors
-  for (auto& it : ag->getSensorSuite().getSensors()) {
-    if (it.second->isVisualSensor()) {
-      auto sensor = static_cast<sensor::VisualSensor*>(it.second.get());
-      renderer_->bindRenderTarget(*sensor);
+  for (auto& it : ag->getSubtreeSensors()) {
+    if (it.second.get().isVisualSensor()) {
+      sensor::VisualSensor& sensor =
+          static_cast<sensor::VisualSensor&>(it.second.get());
+      renderer_->bindRenderTarget(sensor);
     }
   }
 
@@ -1126,15 +1126,13 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
   return agents_[agentId];
 }
 
-esp::sensor::Sensor::ptr Simulator::addSensorToObject(
+esp::sensor::Sensor& Simulator::addSensorToObject(
     const int objectId,
     const esp::sensor::SensorSpec::ptr& sensorSpec) {
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
   esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
-  esp::sensor::SensorSuite sensorSuite =
-      esp::sensor::SensorFactory::createSensors(objectNode,
-                                                sensorSpecifications);
-  return sensorSuite.get(sensorSpec->uuid);
+  esp::sensor::SensorFactory::createSensors(objectNode, sensorSpecifications);
+  return objectNode.getNodeSensorSuite().get(sensorSpec->uuid);
 }
 
 nav::PathFinder::ptr Simulator::getPathFinder() {
@@ -1149,10 +1147,9 @@ gfx::RenderTarget* Simulator::getRenderTarget(int agentId,
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
-    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
-    if (sensor != nullptr && sensor->isVisualSensor()) {
-      return &(std::static_pointer_cast<sensor::VisualSensor>(sensor)
-                   ->renderTarget());
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
+    if (sensor.isVisualSensor()) {
+      return &(static_cast<sensor::VisualSensor&>(sensor).renderTarget());
     }
   }
   return nullptr;
@@ -1163,10 +1160,8 @@ bool Simulator::displayObservation(const int agentId,
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
-    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
-    if (sensor != nullptr) {
-      return sensor->displayObservation(*this);
-    }
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
+    return sensor.displayObservation(*this);
   }
   return false;
 }
@@ -1176,11 +1171,8 @@ bool Simulator::drawObservation(const int agentId,
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
-    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
-    if (sensor != nullptr) {
-      return std::static_pointer_cast<sensor::VisualSensor>(sensor)
-          ->drawObservation(*this);
-    }
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
+    return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
   }
   return false;
 }
@@ -1191,10 +1183,10 @@ bool Simulator::visualizeObservation(int agentId,
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
-    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
-    if (sensor != nullptr) {
-      std::static_pointer_cast<sensor::VisualSensor>(sensor)
-          ->visualizeObservation(visualizer);
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
+    if (sensor.isVisualSensor()) {
+      static_cast<sensor::VisualSensor&>(sensor).visualizeObservation(
+          visualizer);
       return true;
     }
   }
@@ -1206,10 +1198,8 @@ bool Simulator::getAgentObservation(const int agentId,
                                     sensor::Observation& observation) {
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
-    if (sensor != nullptr) {
-      return sensor->getObservation(*this, observation);
-    }
+    return ag->getSubtreeSensorSuite().get(sensorId).getObservation(
+        *this, observation);
   }
   return false;
 }
@@ -1220,11 +1210,9 @@ int Simulator::getAgentObservations(
   observations.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    const std::map<std::string, sensor::Sensor::ptr>& sensors =
-        ag->getSensorSuite().getSensors();
-    for (const std::pair<const std::string, sensor::Sensor::ptr>& s : sensors) {
+    for (auto& s : ag->getSubtreeSensors()) {
       sensor::Observation obs;
-      if (s.second->getObservation(*this, obs)) {
+      if (s.second.get().getObservation(*this, obs)) {
         observations[s.first] = obs;
       }
     }
@@ -1237,10 +1225,7 @@ bool Simulator::getAgentObservationSpace(const int agentId,
                                          sensor::ObservationSpace& space) {
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
-    if (sensor != nullptr) {
-      return sensor->getObservationSpace(space);
-    }
+    return ag->getSubtreeSensorSuite().get(sensorId).getObservationSpace(space);
   }
   return false;
 }
@@ -1251,11 +1236,9 @@ int Simulator::getAgentObservationSpaces(
   spaces.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    const std::map<std::string, sensor::Sensor::ptr>& sensors =
-        ag->getSensorSuite().getSensors();
-    for (const std::pair<const std::string, sensor::Sensor::ptr>& s : sensors) {
+    for (auto& s : ag->getSubtreeSensors()) {
       sensor::ObservationSpace space;
-      if (s.second->getObservationSpace(space)) {
+      if (s.second.get().getObservationSpace(space)) {
         spaces[s.first] = space;
       }
     }
