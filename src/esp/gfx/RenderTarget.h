@@ -83,7 +83,7 @@ class RenderTarget {
 
   /**
    * @brief Called before any draw calls that target this RenderTarget
-   * Clears the framebuffer and binds it
+   * Clears the framebuffer (optionally to a provided color) and binds it.
    */
   void renderEnter(const Cr::Containers::Optional<Mn::Color4>& clearColor =
                        Cr::Containers::NullOpt);
