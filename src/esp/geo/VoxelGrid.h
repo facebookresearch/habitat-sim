@@ -16,7 +16,6 @@
 #include <Magnum/Math/CubicHermite.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/PixelFormat.h>
-#include <tinyxml2.h>
 
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
@@ -327,90 +326,6 @@ class VoxelGrid {
   void generateDistanceFlowField(
       const std::string& gridName = "DistanceFlowField");
 
-  /**
-   * @brief Saves a particular grid to a svx file at a specified directory. More
-   * info for the file format found at
-   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
-   * @param filepath The directory to which the svx file will be saved.
-   * @param gridName The name of the voxel grid to be saved.
-   */
-  template <typename T>
-  bool saveGridToSVXFile(const std::string& gridName,
-                         const std::string& filepath) {
-    bool success = Cr::Utility::Directory::mkpath(filepath);
-    Mn::Debug() << filepath;
-    // write png files
-    std::vector<std::string> pngFiles = std::vector<std::string>();
-    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
-
-    auto grid = getGrid<T>(gridName);
-
-    // create xml
-    tinyxml2::XMLDocument xmlDoc;
-    tinyxml2::XMLNode* pRoot = xmlDoc.NewElement("Root");
-    xmlDoc.InsertFirstChild(pRoot);
-    tinyxml2::XMLElement* pElement = xmlDoc.NewElement("IntValue");
-    pElement->SetText(10);
-    pRoot->InsertEndChild(pElement);
-    pElement = xmlDoc.NewElement("FloatValue");
-    pElement->SetText(0.5f);
-
-    pRoot->InsertEndChild(pElement);
-
-    std::string xmlFileName =
-        Cr::Utility::Directory::join(filepath, gridName + ".xml");
-    // declaring character array
-    char char_array[xmlFileName.length() + 1];
-
-    strcpy(char_array, xmlFileName.c_str());
-    // tinyxml2::XMLError eResult = xmlDoc.SaveFile(char_array);
-    // tinyxml2::XMLCheckResult(eResult);
-    // auto arrayView2D = Cr::Containers::arrayCast<T>(grid.slice({0,0,0}, {1,
-    // 5, 5})[0]); Mn::Debug() << arrayView2D;
-    // Containers::Array<Mn::PixelFormat::R32UI> data{1,2,3,4};
-    // Mn::Trade::ImageData2D image{T, {5,5}, std::move(arrayView2D)};
-    VoxelGridType type = voxelGridTypeFor<T>();
-    if (type == VoxelGridType::Int) {
-      // R32UI
-    } else if (type == VoxelGridType::Float) {
-      // R32F
-    } else if (type == VoxelGridType::Bool) {
-      // R8I
-    } else if (type == VoxelGridType::Vector3) {
-      // RGB32F
-    }
-
-    for (int i = 0; i < 10; i++) {
-      Mn::Debug() << grid[i][i][i];
-    }
-    return success;
-  }
-
-  /**
-   * @brief Saves a all grids to a svx file at a specified directory. More
-   * info for the file format found at
-   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
-   * @param filepath The directory to which the svx file will be saved.
-   * @param gridName The name of the voxel grid to be saved.
-   */
-  bool saveToSVXFile(const std::string& filepath);
-
-  /**
-   * @brief Saves a particular grid to a svx file at a set directory. More
-   * info for the file format found at
-   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
-   * @param gridName The name of the voxel grid to be saved.
-   */
-  bool saveGridToSVXFile(const std::string& gridName);
-
-  /**
-   * @brief Saves a all grids to a svx file at a set directory. More
-   * info for the file format found at
-   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
-   * @param gridName The name of the voxel grid to be saved.
-   */
-
-  bool saveToSVXFile();
   /**
    * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.
    * @param gridName The name of the voxel grid to be converted into a mesh.

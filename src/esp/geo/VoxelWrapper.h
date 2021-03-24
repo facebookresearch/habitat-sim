@@ -343,48 +343,6 @@ class VoxelWrapper {
   }
 
   /**
-   * @brief Saves a particular grid to a svx file at a specified directory. More
-   * info for the file format found at
-   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
-   * @param filepath The directory to which the svx file will be saved.
-   * @param gridName The name of the voxel grid to be saved.
-   */
-  template <typename T>
-  bool saveGridToSVXFile(const std::string& gridName,
-                         const std::string& filepath) {
-    return voxelGrid->saveGridToSVXFile<T>(gridName, filepath);
-  }
-
-  /**
-   * @brief Saves a all grids to a svx file at a specified directory. More
-   * info for the file format found at
-   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
-   * @param filepath The directory to which the svx file will be saved.
-   * @param gridName The name of the voxel grid to be saved.
-   */
-  bool saveToSVXFile(const std::string& filepath) {
-    return voxelGrid->saveToSVXFile(filepath);
-  }
-
-  /**
-   * @brief Saves a particular grid to a svx file at a set directory. More
-   * info for the file format found at
-   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
-   * @param gridName The name of the voxel grid to be saved.
-   */
-  bool saveGridToSVXFile(const std::string& gridName) {
-    return voxelGrid->saveGridToSVXFile(gridName);
-  }
-
-  /**
-   * @brief Saves a all grids to a svx file at a set directory. More
-   * info for the file format found at
-   * https://abfab3d.com/svx-format/#:~:text=The%20SVX%20format(Simple%20Voxels,ease%20of%20implementation%2C%20and%20extensibility.&text=The%20basic%20format%20is%20a%20Zip%20file%2C%20named%20with%20a%20.
-   * @param gridName The name of the voxel grid to be saved.
-   */
-
-  bool saveToSVXFile() { return voxelGrid->saveToSVXFile(); }
-  /**
    * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.
    * @param gridName The name of the voxel grid to be converted into a mesh.
    * @param isVectorField If set to true, a vector field mesh will be generated.

@@ -43,6 +43,8 @@ void VoxelGrid::testVoxelGrid() {
   simulator_->createSceneVoxelization(resolution);
   auto voxelWrapper = simulator_->getSceneVoxelization().get();
 
+  // TODO Validate boundary grid (pick a few cells..)
+
   // Verify coordinate conversion works in both directions
   Mn::Vector3i voxelIndex(2, 1, 7);
   Mn::Vector3 globalCoords =
@@ -53,6 +55,7 @@ void VoxelGrid::testVoxelGrid() {
 
   // "Golden Value Tests" - Verify that certain values return the correct
   // coordinates
+  // TODO Add a few more values
   std::vector<Mn::Vector3i> voxel_indices = std::vector<Mn::Vector3i>{
       Mn::Vector3i(0, 0, 0),
       voxelWrapper->getVoxelGridDimensions() - Mn::Vector3i(1, 1, 1)};
@@ -68,6 +71,7 @@ void VoxelGrid::testVoxelGrid() {
                        global_coords[i]) == voxel_indices[i]);
   }
   // Generate SDFs and FlowFields. Ensures nothing is blatantly broken.
+  // TODO validate with pre-computed values
   voxelWrapper->generateEuclideanDistanceSDF("EuclideanSDF");
   voxelWrapper->generateManhattanDistanceSDF("ManhattanSDF");
   voxelWrapper->generateDistanceFlowField("FlowField");
@@ -81,6 +85,12 @@ void VoxelGrid::testVoxelGrid() {
     CORRADE_VERIFY(abs(grid[coord[0]][coord[1]][coord[2]] - distances[i]) <
                    0.1);
   }
+  // TODO Slicing, setters, mesh generation & validation, test global grid
+  // (create scene node, attach global grid to it, test coord -> index, set
+  // index to value, get list of set voxels, etc) test vector field mesh getter
+  // as well, test grid removal & grid list retrieval Test generate bool from
+  // int/float grid Test voxel set (make sure length & first value is expected)
+  // Test simulator set visualiztion draw to ensure no crashing
 }
 #endif
 
