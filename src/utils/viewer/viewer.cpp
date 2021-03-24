@@ -175,7 +175,7 @@ class Viewer : public Mn::Platform::Application {
 
   esp::sensor::CameraSensor& getAgentCamera() {
     esp::sensor::Sensor& cameraSensor =
-        *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+        agentBodyNode_->getNodeSensorSuite().get("rgba_camera");
     return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
   }
 
@@ -1154,15 +1154,14 @@ void Viewer::moveAndLook(int repetitions) {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  auto& sensors = defaultAgent_->getSensorSuite();
-  for (auto entry : sensors.getSensors()) {
-    auto visualSensor =
-        dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
-    if (visualSensor != nullptr) {
-      visualSensor->setResolution(event.framebufferSize()[1],
-                                  event.framebufferSize()[0]);
-      renderCamera_->setViewport(visualSensor->framebufferSize());
-      simulator_->getRenderer()->bindRenderTarget(*visualSensor);
+  for (auto& it : agentBodyNode_->getSubtreeSensors()) {
+    if (it.second.get().isVisualSensor()) {
+      esp::sensor::VisualSensor& visualSensor =
+          static_cast<esp::sensor::VisualSensor&>(it.second.get());
+      visualSensor.setResolution(event.framebufferSize()[1],
+                                 event.framebufferSize()[0]);
+      renderCamera_->setViewport(visualSensor.framebufferSize());
+      simulator_->getRenderer()->bindRenderTarget(visualSensor);
     }
   }
   Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
@@ -1296,11 +1295,11 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   auto& controls = *defaultAgent_->getControls().get();
   controls(*agentBodyNode_, "turnRight", delta.x());
   // apply the transformation to all sensors
-  for (auto p : defaultAgent_->getSensorSuite().getSensors()) {
-    controls(p.second->object(),  // SceneNode
-             "lookDown",          // action name
-             delta.y(),           // amount
-             false);              // applyFilter
+  for (auto& p : agentBodyNode_->getSubtreeSensors()) {
+    controls(p.second.get().object(),  // SceneNode
+             "lookDown",               // action name
+             delta.y(),                // amount
+             false);                   // applyFilter
   }
 
   redraw();

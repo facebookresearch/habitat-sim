@@ -842,7 +842,7 @@ class Simulator {
    * @return            handle to sensor initialized
    *
    */
-  esp::sensor::Sensor::ptr addSensorToObject(
+  esp::sensor::Sensor& addSensorToObject(
       const int objectId,
       const esp::sensor::SensorSpec::ptr& sensorSpec);
 
