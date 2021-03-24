@@ -85,7 +85,8 @@ class RenderTarget {
    * @brief Called before any draw calls that target this RenderTarget
    * Clears the framebuffer and binds it
    */
-  void renderEnter();
+  void renderEnter(const Cr::Containers::Optional<Mn::Color4>& clearColor =
+                       Cr::Containers::NullOpt);
 
   /**
    * @brief Prepare for another render pass (e.g., to bind the framebuffer).
@@ -102,6 +103,11 @@ class RenderTarget {
    * @brief The size of the framebuffer in WxH
    */
   Magnum::Vector2i framebufferSize() const;
+
+  /*
+   * @brief Clear the color buffer to specified color
+   */
+  void clearColorBuffer(const Mn::Color4& clearColor);
 
   /**
    * @brief Retrieve the RGBA rendering results.

@@ -145,10 +145,14 @@ struct RenderTarget::Impl {
         .draw(depthUnprojectionMesh_);
   }
 
-  void renderEnter() {
+  void renderEnter(const Cr::Containers::Optional<Mn::Color4>& clearColor) {
     framebuffer_.clearDepth(1.0);
     if (flags_ & Flag::RgbaBuffer) {
-      framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
+      if (clearColor) {  // custom clear color
+        framebuffer_.clearColor(0, *clearColor);
+      } else {  // default clear color
+        framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
+      }
     }
     if (flags_ & Flag::ObjectIdBuffer) {
       framebuffer_.clearColor(1, Mn::Vector4ui{});
@@ -215,6 +219,10 @@ struct RenderTarget::Impl {
 
   Mn::Vector2i framebufferSize() const {
     return framebuffer_.viewport().size();
+  }
+
+  void clearColorBuffer(const Mn::Color4& clearColor) {
+    framebuffer_.clearColor(0, clearColor);
   }
 
 #ifdef ESP_BUILD_WITH_CUDA
@@ -337,8 +345,9 @@ RenderTarget::RenderTarget(const Mn::Vector2i& size,
                                             depthShader,
                                             flags)) {}
 
-void RenderTarget::renderEnter() {
-  pimpl_->renderEnter();
+void RenderTarget::renderEnter(
+    const Cr::Containers::Optional<Mn::Color4>& clearColor) {
+  pimpl_->renderEnter(clearColor);
 }
 
 void RenderTarget::renderReEnter() {
@@ -367,6 +376,10 @@ void RenderTarget::blitRgbaToDefault() {
 
 Mn::Vector2i RenderTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
+}
+
+void RenderTarget::clearColorBuffer(const Mn::Color4& clearColor) {
+  pimpl_->clearColorBuffer(clearColor);
 }
 
 #ifdef ESP_BUILD_WITH_CUDA

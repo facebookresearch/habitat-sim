@@ -142,7 +142,9 @@ void initGfxBindings(py::module& m) {
            })
 #endif
       .def("render_enter", &RenderTarget::renderEnter)
-      .def("render_exit", &RenderTarget::renderExit);
+      .def("render_exit", &RenderTarget::renderExit)
+      .def("clear_color_buffer", &RenderTarget::clearColorBuffer,
+           "clear_color"_a);
 
   py::enum_<LightPositionModel>(
       m, "LightPositionModel",

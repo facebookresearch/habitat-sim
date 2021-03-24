@@ -109,7 +109,7 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
     return false;
   }
 
-  renderTarget().renderEnter();
+  renderTarget().renderEnter(cameraSensorSpec_->clearColor);
 
   gfx::RenderCamera::Flags flags;
   if (sim.isFrustumCullingEnabled())

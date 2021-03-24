@@ -95,7 +95,8 @@ void initSensorBindings(py::module& m) {
   py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec,
              SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
-      .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
+      .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale)
+      .def_readwrite("clear_color", &CameraSensorSpec::clearColor);
 
   // ==== SensorFactory ====
   py::class_<SensorFactory>(m, "SensorFactory")
