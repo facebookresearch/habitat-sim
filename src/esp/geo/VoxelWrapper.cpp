@@ -13,7 +13,7 @@ namespace geo {
 VoxelWrapper::VoxelWrapper(std::string& renderAssetHandle,
                            esp::scene::SceneNode* sceneNode,
                            esp::assets::ResourceManager& resourceManager_,
-                           int resolution)
+                           int resolution = 1000000)
     : SceneNode(sceneNode) {
   std::string voxelGridHandle =
       renderAssetHandle + "_" + std::to_string(resolution);
@@ -32,15 +32,14 @@ VoxelWrapper::VoxelWrapper(std::string& renderAssetHandle,
 }
 #endif
 
-VoxelWrapper::VoxelWrapper(std::string& renderAssetHandle,
+VoxelWrapper::VoxelWrapper(std::string& handle,
                            esp::scene::SceneNode* sceneNode,
                            esp::assets::ResourceManager& resourceManager_,
                            Mn::Vector3& voxelSize,
                            Mn::Vector3i& voxelDimensions)
     : SceneNode(sceneNode) {
   int resolution = voxelDimensions[0] * voxelDimensions[1] * voxelDimensions[2];
-  std::string voxelGridHandle =
-      renderAssetHandle + "_" + std::to_string(resolution);
+  std::string voxelGridHandle = handle + "_" + std::to_string(resolution);
   // check for existence of specified VoxelGrid
   if (resourceManager_.voxelGridExists(
           voxelGridHandle)) {  // if it exists, simply point the wrapper to it.

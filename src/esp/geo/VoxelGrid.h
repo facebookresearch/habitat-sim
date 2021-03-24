@@ -264,48 +264,34 @@ class VoxelGrid {
                                       bool func(Mn::Vector3));
 
   /**
-   * @brief Fills a vector with voxel indices that meet some criteria.
-   * @param[in,out] voxelSet The vector in which the indices will be inserted.
+   * @brief Returns a vector of all filled/true voxels.
    * @param boolGridName The name of the boolean grid to be processed.
-   * @param func A pointer to a function used for evaluating whether a voxel
-   * value should be included in the set or not.
+   * @return A vector of Vector3i's
    */
-  void fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                const std::string& boolGridName,
-                                bool func(bool));
+  std::vector<Mn::Vector3i> fillVoxelSetFromBoolGrid(
+      const std::string& boolGridName);
 
   /**
    * @brief Fills a vector with voxel indices that meet some criteria.
-   * @param[in,out] voxelSet The vector in which the indices will be inserted.
    * @param intGridName The name of the int grid to be processed.
-   * @param func A pointer to a function used for evaluating whether a voxel
-   * value should be included in the set or not.
+   * @param lb The lower bound of voxel values to include.
+   * @param ub The uppper bound of voxel values to include
+   * @return A vector of Vector3i's
    */
-  void fillVoxelSetFromIntGrid(std::vector<Mn::Vector3i>& voxelSet,
-                               const std::string& intGridName,
-                               bool func(int));
+  std::vector<Mn::Vector3i>
+  fillVoxelSetFromIntGrid(const std::string& intGridName, int lb, int ub);
 
   /**
    * @brief Fills a vector with voxel indices that meet some criteria.
-   * @param[in,out] voxelSet The vector in which the indices will be inserted.
    * @param floatGridName The name of the float grid to be processed.
-   * @param func A pointer to a function used for evaluating whether a voxel
-   * value should be included in the set or not.
+   * @param lb The lower bound of voxel values to include.
+   * @param ub The uppper bound of voxel values to include
+   * @return A vector of Vector3i's
    */
-  void fillVoxelSetFromFloatGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                 const std::string& floatGridName,
-                                 bool func(float));
-
-  /**
-   * @brief Fills a vector with voxel indices that meet some criteria.
-   * @param[in,out] voxelSet The vector in which the indices will be inserted.
-   * @param vector3GridName The name of the Vector3 grid to be processed.
-   * @param func A pointer to a function used for evaluating whether a voxel
-   * value should be included in the set or not.
-   */
-  void fillVoxelSetFromVector3Grid(std::vector<Mn::Vector3i>& voxelSet,
-                                   const std::string& vector3GridName,
-                                   bool func(Mn::Vector3));
+  std::vector<Mn::Vector3i> fillVoxelSetFromFloatGrid(
+      const std::string& floatGridName,
+      float lb,
+      float ub);
 
   /**
    * @brief Generates an integer grid registered under "InteriorExterior" which

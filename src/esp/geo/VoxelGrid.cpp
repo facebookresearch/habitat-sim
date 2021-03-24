@@ -176,74 +176,62 @@ int VoxelGrid::generateBoolGridFromFloatGrid(const std::string& floatGridName,
   return num_filled;
 }
 
-// TODO Transfer these 4 functions into 1 templated function, look into changing
-// function into a custom comparator class
-void VoxelGrid::fillVoxelSetFromBoolGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                         const std::string& boolGridName,
-                                         bool (*func)(bool)) {
+std::vector<Mn::Vector3i> VoxelGrid::fillVoxelSetFromBoolGrid(
+    const std::string& boolGridName) {
+  std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
   assert(grids_.find(boolGridName) != grids_.end());
   assert(grids_[boolGridName].first == "bool");
   auto boolGrid = getGrid<bool>(boolGridName);
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        if (func(boolGrid[i][j][k])) {
+        if (boolGrid[i][j][k]) {
           voxelSet.push_back(Mn::Vector3i(i, j, k));
         }
       }
     }
   }
+  return voxelSet;
 }
 
-void VoxelGrid::fillVoxelSetFromIntGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                        const std::string& intGridName,
-                                        bool (*func)(int)) {
+std::vector<Mn::Vector3i> VoxelGrid::fillVoxelSetFromIntGrid(
+    const std::string& intGridName,
+    int lb,
+    int ub) {
   assert(grids_.find(intGridName) != grids_.end());
+  std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
   assert(grids_[intGridName].first == "int");
   auto intGrid = getGrid<int>(intGridName);
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        if (func(intGrid[i][j][k])) {
+        if (intGrid[i][j][k] >= lb && intGrid[i][j][k] <= ub) {
           voxelSet.push_back(Mn::Vector3i(i, j, k));
         }
       }
     }
   }
+  return voxelSet;
 }
 
-void VoxelGrid::fillVoxelSetFromFloatGrid(std::vector<Mn::Vector3i>& voxelSet,
-                                          const std::string& floatGridName,
-                                          bool (*func)(float)) {
+std::vector<Mn::Vector3i> VoxelGrid::fillVoxelSetFromFloatGrid(
+    const std::string& floatGridName,
+    float lb,
+    float ub) {
+  std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
   assert(grids_.find(floatGridName) != grids_.end());
   assert(grids_[floatGridName].first == "float");
   auto floatGrid = getGrid<float>(floatGridName);
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        if (func(floatGrid[i][j][k])) {
+        if (floatGrid[i][j][k] >= lb && floatGrid[i][j][k] <= ub) {
           voxelSet.push_back(Mn::Vector3i(i, j, k));
         }
       }
     }
   }
-}
-
-void VoxelGrid::fillVoxelSetFromVector3Grid(std::vector<Mn::Vector3i>& voxelSet,
-                                            const std::string& vector3GridName,
-                                            bool (*func)(Mn::Vector3)) {
-  assert(grids_.find(vector3GridName) != grids_.end());
-  assert(grids_[vector3GridName].first == "vector3");
-  auto vecGrid = getGrid<Mn::Vector3>(vector3GridName);
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        if (func(vecGrid[i][j][k])) {
-          voxelSet.push_back(Mn::Vector3i(i, j, k));
-        }
-      }
-    }
-  }
+  return voxelSet;
 }
 
 // 6D SDF - labels each cell as interior (-inf), exterior (+inf), or boundary

@@ -113,6 +113,10 @@ if __name__ == "__main__":
         voxelization.generate_mesh("FlowField", True)
         sim.set_scene_voxelization_draw(True, "FlowField")
 
+        voxel_set = voxelization.fill_voxel_set_from_float_grid("ESDF", 14, 15)
+        for index in voxel_set:
+            print(voxelization.get_float_voxel(index, "ESDF"))
+
         simulate(sim, dt=1, get_frames=True, data=data)
 
         # Now generate heatmap slices of the ESDF grid

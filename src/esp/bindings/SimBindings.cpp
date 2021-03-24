@@ -328,11 +328,17 @@ void initSimBindings(py::module& m) {
               &Simulator::setSceneVoxelizationDraw, "draw_voxels"_a,
               "grid_name"_a,
               R"(Generates a scene voxelization with a specified resolution, where resolution is approximately the number of voxels.)")
-
+          .def("create_global_voxelization",
+               &Simulator::createGlobalVoxelization, "handle"_a, "voxel_size"_a,
+               "voxel_grid_dimensions"_a, "offset"_a,
+               R"(Generates a global voxel wrapper.)")
           .def("get_object_voxelization", &Simulator::getObjectVoxelization,
                "object_id"_a, R"(Returns the voxel wrapper for a scene.)")
           .def("get_scene_voxelization", &Simulator::getSceneVoxelization,
                R"(Returns the voxel wrapper for a scene.)")
+          .def(
+              "get_global_voxelization", &Simulator::getGlobalVoxelization,
+              R"(Returns the voxel wrapper registered under a specific handle.)")
 
           .def(
               "add_trajectory_object", &Simulator::addTrajectoryObject,

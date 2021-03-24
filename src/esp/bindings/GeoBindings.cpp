@@ -68,6 +68,42 @@ void initGeoBindings(py::module& m) {
 
   // ==== VoxelWrapper ====
   py::class_<VoxelWrapper, VoxelWrapper::ptr>(m, "VoxelWrapper")
+      // TODO: Replace with magnum binded Strided Array views (Not sure how to
+      // do this yet..)
+      .def("set_bool_voxel", &VoxelWrapper::setVoxel<bool>, "index"_a,
+           "grid_name"_a, "value"_a,
+           R"(Sets a voxel at an index in a specified grid to a value.)")
+      .def("set_int_voxel", &VoxelWrapper::setVoxel<int>, "index"_a,
+           "grid_name"_a, "value"_a,
+           R"(Sets a voxel at an index in a specified grid to a value.)")
+      .def("set_float_voxel", &VoxelWrapper::setVoxel<float>, "index"_a,
+           "grid_name"_a, "value"_a,
+           R"(Sets a voxel at an index in a specified grid to a value.)")
+      .def("set_vector3_voxel", &VoxelWrapper::setVoxel<Mn::Vector3>, "index"_a,
+           "grid_name"_a, "value"_a,
+           R"(Sets a voxel at an index in a specified grid to a value.)")
+
+      .def("get_bool_voxel", &VoxelWrapper::getVoxel<bool>, "index"_a,
+           "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
+      .def("get_int_voxel", &VoxelWrapper::getVoxel<int>, "index"_a,
+           "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
+      .def("get_float_voxel", &VoxelWrapper::getVoxel<float>, "index"_a,
+           "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
+      .def("get_vector3_voxel", &VoxelWrapper::getVoxel<Mn::Vector3>, "index"_a,
+           "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
+
+      .def("add_bool_grid", &VoxelWrapper::addGrid<bool>, "grid_name"_a,
+           R"(Creates an empty new bool grid.)")
+      .def("add_int_grid", &VoxelWrapper::addGrid<int>, "grid_name"_a,
+           R"(Creates an empty new int grid.)")
+      .def("add_float_grid", &VoxelWrapper::addGrid<float>, "grid_name"_a,
+           R"(Creates an empty new float grid.)")
+      .def("add_vector3_grid", &VoxelWrapper::addGrid<Mn::Vector3>,
+           "grid_name"_a, R"(Creates an empty new vector3 grid.)")
+
+      .def("remove_grid", &VoxelWrapper::removeGrid, "grid_name"_a,
+           R"(Deletes a specified grid and frees its memory.)")
+
       .def("get_voxel_index_from_global_coords",
            &VoxelWrapper::getVoxelIndexFromGlobalCoords, "coords"_a,
            R"(Gets the voxel index located at a coordinate in world space.)")
@@ -92,6 +128,20 @@ void initGeoBindings(py::module& m) {
           R"(Takes in the name of an existing float grid and produces a boolean grid where each voxel is set to true if the value of that voxel in the float grid falls within the specified range. The newly created boolean grid is registered under bool_grid_name.)")
       // TODO: put voxel set filling functions here (need to figure out how to
       // pass in function ptr as arg)
+      .def(
+          "fill_voxel_set_from_bool_grid",
+          &VoxelWrapper::fillVoxelSetFromBoolGrid, "grid_name"_a,
+          R"(Returns an array with all voxel indices which's corresponding value in grid_name are true.)")
+      .def(
+          "fill_voxel_set_from_int_grid",
+          &VoxelWrapper::fillVoxelSetFromIntGrid, "grid_name"_a,
+          "lower_bound"_a, "upper_bound"_a,
+          R"(Returns an array with all voxel indices which's corresponding value in grid_name are in the range [lower_bound, upper_bound] inclusive.)")
+      .def(
+          "fill_voxel_set_from_float_grid",
+          &VoxelWrapper::fillVoxelSetFromFloatGrid, "grid_name"_a,
+          "lower_bound"_a, "upper_bound"_a,
+          R"(Returns an array with all voxel indices which's corresponding value in grid_name are in the range [lower_bound, upper_bound] inclusive.)")
       .def(
           "generate_interior_exterior_voxel_grid",
           &VoxelWrapper::generateInteriorExteriorVoxelGrid,
