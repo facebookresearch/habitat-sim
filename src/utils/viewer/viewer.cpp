@@ -597,72 +597,6 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
-<<<<<<< HEAD
-=======
-  auto cameraSensorSpec = esp::sensor::CameraSensorSpec::create();
-  cameraSensorSpec->sensorSubType =
-      args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
-                                 : esp::sensor::SensorSubType::Pinhole;
-  cameraSensorSpec->sensorType = esp::sensor::SensorType::Color;
-  cameraSensorSpec->position = {0.0f, 1.5f, 0.0f};
-  cameraSensorSpec->orientation = {0, 0, 0};
-  cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  agentConfig.sensorSpecifications = {cameraSensorSpec};
-
-  // add the new fisheye sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::FisheyeSensorDoubleSphereSpec::create());
-  {
-    auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-
-    spec->uuid = "fisheye";
-    spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
-    spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-    spec->alpha = 0.59;
-    spec->xi = -0.18;
-    int size =
-        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
-    spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
-    spec->principalPointOffset =
-        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
-  }
-
-  // add the depth sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::CameraSensorSpec::create());
-  {
-    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-    spec->uuid = "depth";
-    spec->sensorType = esp::sensor::SensorType::Depth;
-    spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  }
-
-  // add the fisheye depth sensor
-  /*
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::FisheyeSensorDoubleSphereSpec::create());
-  {
-    auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-    spec->uuid = "depth_fisheye";
-    spec->sensorType = esp::sensor::SensorType::Depth;
-    spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
-    spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-    spec->xi = -0.18;
-    spec->alpha = 0.59;
-    int size =
-        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
-    spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
-    spec->principalPointOffset =
-        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
-  }
-  */
->>>>>>> ab101b63... minor
 
   addSensors(agentConfig, args);
   // add selects a random initial state and sets up the default controls and
@@ -987,10 +921,6 @@ void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
   // RenderCamera
   profiler_.beginFrame();
-<<<<<<< HEAD
-=======
-
->>>>>>> c7357f63... minor
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
