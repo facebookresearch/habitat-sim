@@ -363,7 +363,6 @@ Key Commands:
   std::unique_ptr<esp::gfx::CubeMapCamera> cubeMapCamera_ = nullptr;
   std::unique_ptr<esp::gfx::CubeMap> cubeMap_ = nullptr;
   esp::scene::SceneNode* cubeMapCameraNode_ = nullptr;
-  bool cubeMapMode_ = false;
 
   int fisheyeMode_ = 0;
 };
@@ -938,29 +937,6 @@ void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
   // RenderCamera
   profiler_.beginFrame();
-// test: create a cubemap and save the 6 images to the disk;
-#ifndef MAGNUM_TARGET_WEBGL
-  if (cubeMapMode_) {
-    esp::sensor::Sensor& sensor = simulator_->getAgent(defaultAgentId_)
-                                      ->getSubtreeSensorSuite()
-                                      .get("rgba_camera");
-    if (sensor.isVisualSensor()) {
-      cubeMapCameraNode_->setTransformation(
-          sensor.node().absoluteTransformation());
-      esp::gfx::RenderCamera::Flags flags;
-      if (simulator_->isFrustumCullingEnabled()) {
-        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-      }
-      cubeMap_->renderToTexture(*cubeMapCamera_, *activeSceneGraph_, flags);
-      if (cubeMap_->saveTexture(esp::gfx::CubeMap::TextureType::Depth,
-                                std::string("cubemap_viewer"))) {
-        LOG(INFO) << "CubeMap has been successfully saved.";
-      }
-    }
-    cubeMapMode_ = !cubeMapMode_;
-  }
-#endif
-
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
@@ -1352,9 +1328,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       simulateSingleStep_ = true;
       break;
       // ==== Miscellaneous ====
-    case KeyEvent::Key::Zero:
-      cubeMapMode_ = !cubeMapMode_;
-      break;
     case KeyEvent::Key::One:
       // toggle agent location recording for trajectory
       setAgentLocationRecord(!agentLocRecordOn_);
