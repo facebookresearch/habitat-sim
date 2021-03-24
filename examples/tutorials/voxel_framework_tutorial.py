@@ -104,25 +104,25 @@ if __name__ == "__main__":
 
         # running SDF calculations
         # compute a euclidean signed distance field and register the result under "ESDF"
-        voxelization.generate_euclidean_distance_sdf("ESDF")
+        voxelization.generate_manhattan_distance_sdf("ESDF")
 
         # generate a distance flow field and register the result under "FlowField"
-        voxelization.generate_distance_flow_field("FlowField")
+        # voxelization.generate_distance_flow_field("FlowField")
 
         # generate a mesh for the flow field (with is_vector boolean = true) and display is for a second.
-        voxelization.generate_mesh("FlowField", True)
-        sim.set_scene_voxelization_draw(True, "FlowField")
+        # voxelization.generate_mesh("FlowField", True)
+        # sim.set_scene_voxelization_draw(True, "FlowField")
 
-        voxel_set = voxelization.fill_voxel_set_from_float_grid("ESDF", 14, 15)
+        voxel_set = voxelization.fill_voxel_set_from_int_grid("ESDF", 14, 15)
         for index in voxel_set:
-            print(voxelization.get_float_voxel(index, "ESDF"))
+            print(voxelization.get_int_voxel(index, "ESDF"))
 
         simulate(sim, dt=1, get_frames=True, data=data)
 
         # Now generate heatmap slices of the ESDF grid
         dimensions = voxelization.get_voxel_grid_dimensions()
         for i in range(dimensions[0]):
-            voxelization.generate_float_slice_mesh("ESDF", i, -15, 0)
+            voxelization.generate_int_slice_mesh("ESDF", i, -15, 0)
             sim.set_scene_voxelization_draw(True, "ESDF")
             simulate(sim, dt=4.0 / dimensions[0], get_frames=True, data=data)
 

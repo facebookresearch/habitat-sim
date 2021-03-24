@@ -35,6 +35,8 @@ namespace Cr = Corrade;
 namespace esp {
 namespace geo {
 
+enum class VoxelGridType { Bool, Int, Float, Vector3 };
+
 class VoxelGrid {
  public:
 #ifdef ESP_BUILD_WITH_VHACD
@@ -69,22 +71,19 @@ class VoxelGrid {
   explicit VoxelGrid(const std::string filepath);
 
   /**
+   * @brief Gets the enumerated type of a particular voxel grid type.
+   * @return The enumerated type.
+   */
+  template <typename T>
+  VoxelGridType voxelGridTypeFor();  // no definition here
+
+  /**
    * @brief Generates a new empty voxel grid of a specified type.
    * @param name The key underwhich the grid will be registered and accessed.
    */
   template <typename T>
   void addGrid(const std::string& gridName) {
-    std::string type;
-    // set type depending on the type of T
-    if (std::string(typeid(T).name()) == "i") {
-      type = "int";
-    } else if (std::string(typeid(T).name()) == "f") {
-      type = "float";
-    } else if (std::string(typeid(T).name()) == "b") {
-      type = "bool";
-    } else if (std::string(typeid(T).name()) == "N6Magnum4Math7Vector3IfEE") {
-      type = "vector3";
-    }
+    VoxelGridType type = voxelGridTypeFor<T>();
 
     if (grids_.find(gridName) != grids_.end()) {
       // grid exists, simply overwrite
@@ -118,7 +117,7 @@ class VoxelGrid {
    */
   template <typename T>
   Cr::Containers::StridedArrayView<3, T> getGrid(const std::string& gridName) {
-    std::string type = grids_[gridName].first;
+    VoxelGridType type = grids_[gridName].first;
     unsigned long dims[3]{static_cast<unsigned long>(m_voxelGridDimensions[0]),
                           static_cast<unsigned long>(m_voxelGridDimensions[1]),
                           static_cast<unsigned long>(m_voxelGridDimensions[2])};
@@ -370,13 +369,14 @@ class VoxelGrid {
     // 5, 5})[0]); Mn::Debug() << arrayView2D;
     // Containers::Array<Mn::PixelFormat::R32UI> data{1,2,3,4};
     // Mn::Trade::ImageData2D image{T, {5,5}, std::move(arrayView2D)};
-    if (std::string(typeid(T).name()) == "i") {
+    VoxelGridType type = voxelGridTypeFor<T>();
+    if (type == VoxelGridType::Int) {
       // R32UI
-    } else if (std::string(typeid(T).name()) == "f") {
+    } else if (type == VoxelGridType::Float) {
       // R32F
-    } else if (std::string(typeid(T).name()) == "b") {
+    } else if (type == VoxelGridType::Bool) {
       // R8I
-    } else if (std::string(typeid(T).name()) == "N6Magnum4Math7Vector3IfEE") {
+    } else if (type == VoxelGridType::Vector3) {
       // RGB32F
     }
 
@@ -450,7 +450,7 @@ class VoxelGrid {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
         T val = clamp(grid[ind][j][k], minVal, maxVal);
         val -= minVal;
-        float colorVal = val / (maxVal - minVal);
+        float colorVal = float(val) / float(maxVal - minVal);
         Mn::Vector3i local_coords(ind, j, k);
         Mn::Color3 col = Mn::Color3(1 - colorVal, colorVal, 0);
         std::vector<bool> neighbors{false, false, false, false, false, false};
@@ -500,32 +500,6 @@ class VoxelGrid {
            coords[0] < m_voxelGridDimensions[0] &&
            coords[1] < m_voxelGridDimensions[1] &&
            coords[2] < m_voxelGridDimensions[2];
-  }
-
-  /**
-   * @brief Sets a voxel at a specified hash index for a specified grid to a
-   * value.
-   * @param hash The hash value of the voxel
-   * @param gridName The voxel grid.
-   * @param value The new value.
-   */
-  template <typename T>
-  void setVoxelByHash(int hash, const std::string& gridName, const T& value) {
-    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
-    arrayView[hash] = value;
-  }
-
-  /**
-   * @brief Retrieves the voxel value from a grid of a specified type (bool,
-   * int, float, Mn::Vector3).
-   * @param index The hash value of the voxel
-   * @param gridName The voxel grid.
-   * @return The value from the specified voxel grid.
-   */
-  template <typename T>
-  T getVoxelByHash(int hash, const std::string& gridName) {
-    auto arrayView = Cr::Containers::arrayCast<T>(grids_[gridName].second);
-    return arrayView[hash];
   }
 
   /**
@@ -594,7 +568,7 @@ class VoxelGrid {
   // The GL Mesh dictionary for visualizing the voxel.
   std::map<std::string, Mn::GL::Mesh> meshGLDict_;
 
-  std::map<std::string, std::pair<std::string, Cr::Containers::Array<char>>>
+  std::map<std::string, std::pair<VoxelGridType, Cr::Containers::Array<char>>>
       grids_;
 };
 
