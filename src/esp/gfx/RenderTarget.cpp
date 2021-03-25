@@ -18,6 +18,7 @@
 #include <Magnum/PixelFormat.h>
 
 #include "RenderTarget.h"
+#include "esp/sensor/CameraSensor.h"
 #include "magnum.h"
 
 #include "esp/gfx/DepthUnprojection.h"
@@ -145,14 +146,12 @@ struct RenderTarget::Impl {
         .draw(depthUnprojectionMesh_);
   }
 
-  void renderEnter(const Cr::Containers::Optional<Mn::Color4>& clearColor) {
+  void renderEnter(sensor::CameraSensor& cameraSensor) {
     framebuffer_.clearDepth(1.0);
     if (flags_ & Flag::RgbaBuffer) {
-      if (clearColor) {  // custom clear color
-        framebuffer_.clearColor(0, *clearColor);
-      } else {  // default clear color
-        framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
-      }
+      framebuffer_.clearColor(0, static_cast<esp::sensor::CameraSensorSpec*>(
+                                     cameraSensor.specification().get())
+                                     ->clearColor);
     }
     if (flags_ & Flag::ObjectIdBuffer) {
       framebuffer_.clearColor(1, Mn::Vector4ui{});
@@ -345,9 +344,8 @@ RenderTarget::RenderTarget(const Mn::Vector2i& size,
                                             depthShader,
                                             flags)) {}
 
-void RenderTarget::renderEnter(
-    const Cr::Containers::Optional<Mn::Color4>& clearColor) {
-  pimpl_->renderEnter(clearColor);
+void RenderTarget::renderEnter(sensor::CameraSensor& cameraSensor) {
+  pimpl_->renderEnter(cameraSensor);
 }
 
 void RenderTarget::renderReEnter() {

@@ -19,6 +19,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
+#include "esp/sensor/CameraSensor.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -99,11 +100,7 @@ void initGfxBindings(py::module& m) {
       .def("bind_render_target", &Renderer::bindRenderTarget);
 
   py::class_<RenderTarget>(m, "RenderTarget")
-      .def("__enter__",
-           [](RenderTarget& self) {
-             self.renderEnter();
-             return &self;
-           })
+      .def("__enter__", [](RenderTarget& self) { return &self; })
       .def("__exit__",
            [](RenderTarget& self, const py::object&, const py::object&,
               const py::object&) { self.renderExit(); })
@@ -141,7 +138,7 @@ void initGfxBindings(py::module& m) {
              self.readFrameObjectIdGPU(reinterpret_cast<int32_t*>(devPtr));
            })
 #endif
-      .def("render_enter", &RenderTarget::renderEnter)
+      .def("render_enter", &RenderTarget::renderEnter, "camera_sensor"_a)
       .def("render_exit", &RenderTarget::renderExit)
       .def("clear_color_buffer", &RenderTarget::clearColorBuffer,
            "clear_color"_a);

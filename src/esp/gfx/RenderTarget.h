@@ -14,6 +14,11 @@
 #include "esp/gfx/Renderer.h"
 
 namespace esp {
+
+namespace sensor {
+class CameraSensor;
+}
+
 namespace gfx {
 
 /**
@@ -85,8 +90,7 @@ class RenderTarget {
    * @brief Called before any draw calls that target this RenderTarget
    * Clears the framebuffer (optionally to a provided color) and binds it.
    */
-  void renderEnter(const Cr::Containers::Optional<Mn::Color4>& clearColor =
-                       Cr::Containers::NullOpt);
+  void renderEnter(sensor::CameraSensor& cameraSensor);
 
   /**
    * @brief Prepare for another render pass (e.g., to bind the framebuffer).
