@@ -108,11 +108,6 @@ class RenderTarget {
    */
   Magnum::Vector2i framebufferSize() const;
 
-  /*
-   * @brief Clear the color buffer to specified color
-   */
-  void clearColorBuffer(const Mn::Color4& clearColor);
-
   /**
    * @brief Retrieve the RGBA rendering results.
    *

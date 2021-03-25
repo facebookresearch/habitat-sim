@@ -220,10 +220,6 @@ struct RenderTarget::Impl {
     return framebuffer_.viewport().size();
   }
 
-  void clearColorBuffer(const Mn::Color4& clearColor) {
-    framebuffer_.clearColor(0, clearColor);
-  }
-
 #ifdef ESP_BUILD_WITH_CUDA
   void readFrameRgbaGPU(uint8_t* devPtr) {
     // TODO: Consider implementing the GPU read functions with EGLImage
@@ -374,10 +370,6 @@ void RenderTarget::blitRgbaToDefault() {
 
 Mn::Vector2i RenderTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
-}
-
-void RenderTarget::clearColorBuffer(const Mn::Color4& clearColor) {
-  pimpl_->clearColorBuffer(clearColor);
 }
 
 #ifdef ESP_BUILD_WITH_CUDA
