@@ -6,63 +6,20 @@
 from collections import defaultdict
 from glob import glob
 
+import glb_mesh_tools as gut
 import numpy as np
-import trimesh
 
-# Where ReplicaCAD data is located, relative to this file
-REPLICA_CAD_DIR = "../data/datasets/replicaCAD"
 # new scene instance glbs dir, where files to analyze reside
-STAT_SCENE_GLBS_DIR = REPLICA_CAD_DIR + "_extra_scenes/"
-
-
-# This function will return a list of translations given a list of transformations
-def get_trans_list_from_transforms(transforms):
-    results = []
-    for transform in transforms:
-        results.append(trimesh.transformations.translation_from_matrix(transform))
-    return results
-
-
-# This function will construct a list of quaternion rotations
-# given a list of transformations
-def get_rot_list_from_transforms(transforms):
-    results = []
-    for transform in transforms:
-        results.append(trimesh.transformations.quaternion_from_matrix(transform))
-    return results
-
-
-def calc_stats(pop_data):
-    obj_location_stats = {}
-    obj_location_stats["num_entries"] = len(pop_data)
-    obj_location_stats["mean"] = np.mean(pop_data, axis=0)
-    obj_location_stats["std"] = np.std(pop_data, axis=0, dtype=np.float64)
-    obj_location_stats["variance"] = np.var(pop_data, axis=0, dtype=np.float64)
-    return obj_location_stats
-
+STAT_SCENE_GLBS_DIR = "../../data/datasets/replicaCAD_extra_scenes/"
 
 # This function will take a .glb file and find the objects contained inside
 def get_new_scene_info():
-    # this function will load a scene .glb file and find the individual objects
-    # and their transformations
-    def process_scene_for_objects(filename):
-        # dict of key == object name, value == list of transforms
-        scene_obj_dict = defaultdict(list)
-        scene = trimesh.load(filename)
-        root_children = scene.graph.transforms[scene.graph.base_frame]
-
-        for k, v in root_children.items():
-            if "Empty_" not in k:
-                obj_name = k.split(".")[0].replace("-", "_")
-                scene_obj_dict[obj_name].append(v["matrix"])
-        return scene_obj_dict
-
     # build list of all new scenes
     new_scene_glbs = glob(STAT_SCENE_GLBS_DIR + "*.glb")
     each_scene_obj_dict = {}
     for new_scene_filename in new_scene_glbs:
         # returns a default dict with key == object name and value is a list of transformations
-        each_scene_obj_dict[new_scene_filename] = process_scene_for_objects(
+        each_scene_obj_dict[new_scene_filename] = gut.process_scene_for_objects(
             new_scene_filename
         )
 
@@ -75,7 +32,7 @@ def get_new_scene_info():
         # obj_in_scene_dict is a scene's default dict
         # print("\n{}\nObjects and counts : ".format(scene_name))
         for obj, transforms in obj_in_scene_dict.items():
-            translations = get_trans_list_from_transforms(transforms)
+            translations = gut.get_trans_list_from_transforms(transforms)
             # print("{} | {}".format(obj, translations))
             all_scene_translations_dict[obj].extend(translations)
             obj_per_scene_dict[obj][scene_name] = translations
@@ -85,6 +42,7 @@ def get_new_scene_info():
     for obj, translations in all_scene_translations_dict.items():
         print("{} | {}  ".format(obj, len(translations)))
     print("\n")
+
     all_obj_location_stats = {}
     for obj, scene_dict in obj_per_scene_dict.items():
         if "door" in obj or "frl_apartment_lower_shelf_01_part_01" in obj:
@@ -95,7 +53,7 @@ def get_new_scene_info():
             # easy stats, just average location of all scenes present in
             for _, translations in scene_dict.items():
                 location.append(translations[0])
-            obj_location_stats = calc_stats(location)
+            obj_location_stats = gut.calc_stats(location)
             all_obj_location_stats[obj] = {
                 "number_of_scenes": len(scene_dict),
                 "max_per_scene": obj_max_per_scene_counts[obj],
@@ -164,8 +122,8 @@ def get_new_scene_info():
                         )
                     )
                     continue
-            obj_0_stats = calc_stats(obj_0_location)
-            obj_1_stats = calc_stats(obj_1_location)
+            obj_0_stats = gut.calc_stats(obj_0_location)
+            obj_1_stats = gut.calc_stats(obj_1_location)
             all_obj_location_stats[obj] = {
                 "number_of_scenes": len(scene_dict),
                 "max_per_scene": obj_max_per_scene_counts[obj],
@@ -205,7 +163,6 @@ def write_results_csv(filename, all_object_stats):
 
 
 def main():
-
     # find all stats for object locations in each scene
     all_object_stats = get_new_scene_info()
     write_results_csv("temp_res.csv", all_object_stats)

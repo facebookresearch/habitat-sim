@@ -57,7 +57,6 @@ def hm3d_build_stage_config(partition, path_and_dir):
     scene_name = dir_name.split("-")[1]
     # build json dict to write
     json_dict = {}
-
     # names of render asset and navmesh
     # use relative names in stage config,
     # but return absolute path name to navmesh
