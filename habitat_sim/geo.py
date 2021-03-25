@@ -2,7 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from habitat_sim._ext.habitat_sim_bindings import OBB, BBox, Ray, VoxelWrapper
+from habitat_sim._ext.habitat_sim_bindings import OBB, BBox, Ray
 from habitat_sim._ext.habitat_sim_bindings.geo import (
     BACK,
     FRONT,
@@ -17,7 +17,6 @@ from habitat_sim._ext.habitat_sim_bindings.geo import (
 __all__ = [
     "BBox",
     "OBB",
-    "VoxelWrapper",
     "UP",
     "GRAVITY",
     "FRONT",
