@@ -88,7 +88,8 @@ class RenderTarget {
 
   /**
    * @brief Called before any draw calls that target this RenderTarget
-   * Clears the framebuffer (optionally to a provided color) and binds it.
+   * Clears the framebuffer to color specified by the CameraSensorSpec and binds
+   * it.
    */
   void renderEnter(sensor::CameraSensor& cameraSensor);
 
