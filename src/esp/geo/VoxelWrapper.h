@@ -59,9 +59,8 @@ class VoxelWrapper {
   Mn::Vector3i getVoxelIndexFromGlobalCoords(Mn::Vector3 coords);
 
   /**
-   * @brief Converts a voxel coordinate into global coordinates based on voxel
-   * size, offset, and the transformation of the rigid body this wrapper is
-   * attached to.
+   * @brief Converts a voxel coordinate into the global coordinates of the
+   * middle of the specified voxel cell.
    * @param index The voxel index.
    * @return The global coordinate of the middle of the specified voxel cell.
    */
@@ -72,6 +71,15 @@ class VoxelWrapper {
    * @return The underlying voxel grid.
    */
   std::shared_ptr<VoxelGrid> getVoxelGrid();
+
+  /**
+   * @brief Returns a list of existing voxel grids and their types.
+   * @return A vector of pairs, where the first element is the voxel grid's
+   * name, and the second element is the string of the object's type.
+   */
+  std::vector<std::pair<std::string, std::string>> getExistingGrids() {
+    return voxelGrid->getExistingGrids();
+  }
 
   // --== FUNCTIONS FROM VOXELGRID ==--
   /**
@@ -336,9 +344,9 @@ class VoxelWrapper {
    * flow field.
    * @return A StridedArrayView3D of the newly created Vector3 grid.
    */
-  void generateDistanceFlowField(
-      const std::string& gridName = "DistanceFlowField") {
-    voxelGrid->generateDistanceFlowField(gridName);
+  void generateDistanceGradientField(
+      const std::string& gridName = "DistanceGradientField") {
+    voxelGrid->generateDistanceGradientField(gridName);
     // return getGrid<Mn::Vector3>(gridName);
   }
 
@@ -347,9 +355,8 @@ class VoxelWrapper {
    * @param gridName The name of the voxel grid to be converted into a mesh.
    * @param isVectorField If set to true, a vector field mesh will be generated.
    */
-  void generateMesh(const std::string& gridName = "Boundary",
-                    bool isVectorField = false) {
-    voxelGrid->generateMesh(gridName, isVectorField);
+  void generateMesh(const std::string& gridName = "Boundary") {
+    voxelGrid->generateMesh(gridName);
   }
 
   /**

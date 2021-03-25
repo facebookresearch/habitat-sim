@@ -157,13 +157,13 @@ void initGeoBindings(py::module& m) {
           "grid_name"_a = "ESignedDistanceField",
           R"(Generates a signed distance field using euclidean distance under a specified grid name. Also creates a supplementary grid called "ClosestBoundaryCell" which holds the boundary voxel closest to each voxel.)")
       .def(
-          "generate_distance_flow_field",
-          &VoxelWrapper::generateDistanceFlowField, "grid_name"_a = "FlowField",
-          R"(Generates a distance flow vector field, where each vector points away from the closest boundary cell.)")
-      .def(
-          "generate_mesh", &VoxelWrapper::generateMesh,
-          "grid_name"_a = "Boundary", "is_vector_field"_a = false,
-          R"(Generates a distance flow vector field, where each vector points away from the closest boundary cell.)")
+          "generate_distance_gradient_field",
+          &VoxelWrapper::generateDistanceGradientField,
+          "grid_name"_a = "GradientField",
+          R"(Generates a distance gradient vector field, where each vector points away from the closest boundary cell.)")
+      .def("generate_mesh", &VoxelWrapper::generateMesh,
+           "grid_name"_a = "Boundary",
+           R"(Generates a mesh for either a bool grid or a vector field.)")
       .def("generate_float_slice_mesh", &VoxelWrapper::generateSliceMesh<float>,
            "grid_name"_a = "Boundary", "x_value"_a = 0, "min_value"_a = 0,
            "max_value"_a = 1,

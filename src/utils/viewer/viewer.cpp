@@ -148,7 +148,7 @@ class Viewer : public Mn::Platform::Application {
   void invertGravity();
 
 #ifdef ESP_BUILD_WITH_VHACD
-  void displaySceneFlowField();
+  void displaySceneDistanceGradientField();
 
   void iterateAndDisplaySignedDistanceField();
 
@@ -808,7 +808,7 @@ void Viewer::invertGravity() {
 }
 
 #ifdef ESP_BUILD_WITH_VHACD
-void Viewer::displaySceneFlowField() {
+void Viewer::displaySceneDistanceGradientField() {
   // Temporary key event used for testing & visualizing Voxel Grid framework
   std::shared_ptr<esp::geo::VoxelWrapper> sceneVoxelization;
   sceneVoxelization = simulator_->getSceneVoxelization();
@@ -824,17 +824,16 @@ void Viewer::displaySceneFlowField() {
   }
   !Mn::Debug();
 
-  // generate a vector field (This one in particular holds vectors pointing
-  // away from it's closest boundary)
-  sceneVoxelization->generateDistanceFlowField("FlowField");
+  // generate a vector field for the SDF gradient
+  sceneVoxelization->generateDistanceGradientField("GradientField");
   // generate a mesh of the vector field with boolean isVectorField set to
   // true
   !Mn::Debug();
 
-  sceneVoxelization->generateMesh("FlowField", true);
+  sceneVoxelization->generateMesh("GradientField");
 
   // draw the vector field
-  simulator_->setSceneVoxelizationDraw(true, "FlowField");
+  simulator_->setSceneVoxelizationDraw(true, "GradientField");
 }
 
 void Viewer::iterateAndDisplaySignedDistanceField() {
@@ -1444,7 +1443,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     }
     case KeyEvent::Key::G: {
-      displaySceneFlowField();
+      displaySceneDistanceGradientField();
       break;
     }
 #endif

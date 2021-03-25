@@ -84,5 +84,48 @@ std::shared_ptr<VoxelGrid> VoxelWrapper::getVoxelGrid() {
   return voxelGrid;
 }
 
+/*void VoxelWrapper::setDraw(const std::string& gridName,
+esp::gfx::DrawableGroup* drawables, bool drawVoxelization){
+  esp::physics::Rigidbase* rigidBase;
+  for (const auto& abstractFeature : SceneNode->features()) {
+      auto feature = dynamic_cast<esp::physics::Rigidbase*>(&abstractFeature);
+      if (feature)
+        rigidBase = feature;
+  }
+
+  if (rigidBase->VoxelNode_ && !drawVoxelization) {
+    // destroy the node
+    delete rigidBase->VoxelNode_;
+    rigidBase->VoxelNode_ = nullptr;
+
+  } else if (drawVoxelization && rigidBase->visualNode_) {
+    if (rigidBase->VoxelNode_) {
+      // if the VoxelNode is already rendering something, destroy it.
+      delete rigidBase->VoxelNode_;
+    }
+
+    // re-create the voxel node
+    rigidBase->VoxelNode_ = &rigidBase->visualNode_->createChild();
+
+    esp::geo::VoxelWrapper* voxelWrapper_ = rigidBase->voxelWrapper.get();
+    gfx::Drawable::Flags meshAttributeFlags{};
+    resourceManager_.createDrawable(
+        voxelWrapper_->getVoxelGrid()->getMeshGL(gridName), meshAttributeFlags,
+        *rigidBase->VoxelNode_, DEFAULT_LIGHTING_KEY,
+        PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
+
+    // If the RigidBase is a stage, need to set the BB to make culling work.
+    if (dynamic_cast<esp::physics::RigidStage*>(rigidBase) != nullptr) {
+      // set bounding box for the node to be the bb computed by vhacd
+      Mn::Range3D bb{rigidBase->voxelWrapper->getVoxelGrid()->getOffset(),
+                     rigidBase->voxelWrapper->getVoxelGrid()->getMaxOffset()};
+      rigidBase->VoxelNode_->setMeshBB(bb);
+      //
+      rigidBase->node().computeCumulativeBB();
+    }
+  }
+
+}*/
+
 }  // namespace geo
 }  // namespace esp

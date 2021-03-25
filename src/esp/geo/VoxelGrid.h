@@ -37,6 +37,12 @@ namespace geo {
 enum class VoxelGridType { Bool, Int, Float, Vector3 };
 
 class VoxelGrid {
+  struct GridEntry {
+    VoxelGridType type;
+    Cr::Containers::Array<char> data;
+    Cr::Containers::StridedArrayView3D<void> view;
+  };
+
  public:
 #ifdef ESP_BUILD_WITH_VHACD
   /**
@@ -84,20 +90,48 @@ class VoxelGrid {
   void addGrid(const std::string& gridName) {
     VoxelGridType type = voxelGridTypeFor<T>();
 
+    unsigned long dims[3]{static_cast<unsigned long>(m_voxelGridDimensions[0]),
+                          static_cast<unsigned long>(m_voxelGridDimensions[1]),
+                          static_cast<unsigned long>(m_voxelGridDimensions[2])};
+
+    Cr::Containers::StridedDimensions<3, long> strides{
+        static_cast<long>(m_voxelGridDimensions[2] * m_voxelGridDimensions[1] *
+                          sizeof(T)),
+        static_cast<long>(m_voxelGridDimensions[2] * sizeof(T)),
+        static_cast<long>(sizeof(T))};
+
     if (grids_.find(gridName) != grids_.end()) {
       // grid exists, simply overwrite
       Mn::Debug() << gridName << "exists, overwriting.";
-      Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                               gridSize() * sizeof(T)};
-      grids_[gridName].second = std::move(cr_grid);
-      grids_[gridName].first = type;
+
+      grids_[gridName].data = Corrade::Containers::Array<char>(
+          Corrade::Containers::ValueInit, gridSize() * sizeof(T));
+      // auto view1 = Cr::Containers::arrayCast<bool>();
+      Cr::Containers::StridedArrayView<3, void> view{grids_[gridName].data,
+                                                     dims, strides};
+      grids_[gridName].view = view;
+      grids_[gridName].type = type;
       return;
     }
-    Corrade::Containers::Array<char> cr_grid{Corrade::Containers::ValueInit,
-                                             gridSize() * sizeof(T)};
-    grids_.insert(
-        std::make_pair(gridName, std::make_pair(type, std::move(cr_grid))));
+
+    GridEntry new_grid;
+    new_grid.data = Corrade::Containers::Array<char>(
+        Corrade::Containers::ValueInit, gridSize() * sizeof(T));
+
+    Cr::Containers::StridedArrayView<3, void> view{new_grid.data, dims,
+                                                   strides};
+
+    new_grid.view = view;
+    new_grid.type = type;
+    grids_.insert(std::make_pair(gridName, std::move(new_grid)));
   }
+
+  /**
+   * @brief Returns a list of existing voxel grids and their types.
+   * @return A vector of pairs, where the first element is the voxel grid's
+   * name, and the second element is the string of the object's type.
+   */
+  std::vector<std::pair<std::string, std::string>> getExistingGrids();
 
   /**
    * @brief Removes a grid and frees up memory.
@@ -116,12 +150,7 @@ class VoxelGrid {
    */
   template <typename T>
   Cr::Containers::StridedArrayView<3, T> getGrid(const std::string& gridName) {
-    VoxelGridType type = grids_[gridName].first;
-    unsigned long dims[3]{static_cast<unsigned long>(m_voxelGridDimensions[0]),
-                          static_cast<unsigned long>(m_voxelGridDimensions[1]),
-                          static_cast<unsigned long>(m_voxelGridDimensions[2])};
-    return Cr::Containers::StridedArrayView<3, T>{
-        Cr::Containers::arrayCast<T>(grids_[gridName].second), dims};
+    return Cr::Containers::arrayCast<T>(grids_[gridName].view);
   }
 
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
@@ -318,21 +347,20 @@ class VoxelGrid {
       const std::string& gridName = "ESignedDistanceField");
 
   /**
-   * @brief Generates a Vector3 field where each vector of a cell points away
-   * from it's closest Boundary cell.
+   * @brief Generates a Vector3 field where each vector of a cell is the
+   * gradient of how the SDF changes.
    * @param gridName The name underwhich to register the newly created distance
-   * flow field.
+   * gradient field.
    */
-  void generateDistanceFlowField(
-      const std::string& gridName = "DistanceFlowField");
+  void generateDistanceGradientField(
+      const std::string& gridName = "DistanceGradientField");
 
   /**
    * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.
    * @param gridName The name of the voxel grid to be converted into a mesh.
    * @param isVectorField If set to true, a vector field mesh will be generated.
    */
-  void generateMesh(const std::string& gridName = "Boundary",
-                    bool isVectorField = false);
+  void generateMesh(const std::string& gridName = "Boundary");
 
   /**
    * @brief Generates a colored slice of a mesh.
@@ -483,8 +511,7 @@ class VoxelGrid {
   // The GL Mesh dictionary for visualizing the voxel.
   std::map<std::string, Mn::GL::Mesh> meshGLDict_;
 
-  std::map<std::string, std::pair<VoxelGridType, Cr::Containers::Array<char>>>
-      grids_;
+  std::map<std::string, GridEntry> grids_;
 };
 
 }  // namespace geo

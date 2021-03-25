@@ -70,11 +70,12 @@ void VoxelGrid::testVoxelGrid() {
     CORRADE_VERIFY(voxelWrapper->getVoxelIndexFromGlobalCoords(
                        global_coords[i]) == voxel_indices[i]);
   }
-  // Generate SDFs and FlowFields. Ensures nothing is blatantly broken.
+  // Generate SDFs and Distance Gradient Fields. Ensures nothing is blatantly
+  // broken.
   // TODO validate with pre-computed values
   voxelWrapper->generateEuclideanDistanceSDF("EuclideanSDF");
   voxelWrapper->generateManhattanDistanceSDF("ManhattanSDF");
-  voxelWrapper->generateDistanceFlowField("FlowField");
+  voxelWrapper->generateDistanceGradientField("GradientField");
   auto grid = voxelWrapper->getGrid<float>("EuclideanSDF");
 
   // "Hardcoded" values for the Euclidean SDF values corresponding to the voxel
