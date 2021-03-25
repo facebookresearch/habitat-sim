@@ -98,7 +98,7 @@ class VoxelGrid {
 
     Cr::Containers::StridedDimensions<3, long> strides{
         // NOLINT
-        static_cast<long>(m_voxelGridDimensions[2] *
+        static_cast<long>(m_voxelGridDimensions[2] *  // NOLINT
                           m_voxelGridDimensions[1] *  // NOLINT
                           sizeof(T)),
         static_cast<long>(m_voxelGridDimensions[2] * sizeof(T)),  // NOLINT
