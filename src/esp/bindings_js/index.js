@@ -27,6 +27,7 @@ function preload(url) {
       if (!FS.analyzePath(file_parents_str).exists) {
         FS.mkdir(file_parents_str, 777);
       }
+      file_parents_str += "/";
     }
   }
   FS.createPreloadedFile(file_parents_str, file, url, true, false);
