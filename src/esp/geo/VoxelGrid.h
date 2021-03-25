@@ -91,15 +91,18 @@ class VoxelGrid {
     VoxelGridType type = voxelGridTypeFor<T>();
 
     unsigned long dims[3]{
-        static_cast<unsigned long>(m_voxelGridDimensions[0]),
-        static_cast<unsigned long>(m_voxelGridDimensions[1]),
+        // NOLINT
+        static_cast<unsigned long>(m_voxelGridDimensions[0]),   // NOLINT
+        static_cast<unsigned long>(m_voxelGridDimensions[1]),   // NOLINT
         static_cast<unsigned long>(m_voxelGridDimensions[2])};  // NOLINT
 
     Cr::Containers::StridedDimensions<3, long> strides{
-        static_cast<long>(m_voxelGridDimensions[2] * m_voxelGridDimensions[1] *
+        // NOLINT
+        static_cast<long>(m_voxelGridDimensions[2] *
+                          m_voxelGridDimensions[1] *  // NOLINT
                           sizeof(T)),
-        static_cast<long>(m_voxelGridDimensions[2] * sizeof(T)),
-        static_cast<long>(sizeof(T))};
+        static_cast<long>(m_voxelGridDimensions[2] * sizeof(T)),  // NOLINT
+        static_cast<long>(sizeof(T))};                            // NOLINT
 
     if (grids_.find(gridName) != grids_.end()) {
       // grid exists, simply overwrite
@@ -241,120 +244,6 @@ class VoxelGrid {
    * @param coords The new offset.
    */
   void setOffset(const Mn::Vector3& coords);
-
-  // --== BUILT-IN VOXELGRID GENERATORS ==--
-
-  /**
-   * @brief Generates a boolean voxel grid based on an integer grid. Values in
-   * the boolean grid are true if the value for a voxel in the integer grid
-   * falls between startRange and endRange.
-   * @param intGridName The name of the integer grid.
-   * @param boolGridName The name of the newly created boolean grid.
-   * @param startRange The lowerbound in the true range.
-   * @param endRange The upperbound in the true range.
-   * @return An integer representing the number of cells that fell imbetween
-   * startRange and endRange and were set to true in the boolean grid.
-   */
-  int generateBoolGridFromIntGrid(const std::string& intGridName,
-                                  const std::string& boolGridName,
-                                  int startRange,
-                                  int endRange);
-
-  /**
-   * @brief Generates a boolean voxel grid based on an float grid. Values in the
-   * boolean grid are true if the value for a voxel in the float grid falls
-   * between startRange and endRange.
-   * @param floatGridName The name of the float grid.
-   * @param boolGridName The name of the newly created boolean grid.
-   * @param startRange The lowerbound in the true range.
-   * @param endRange The upperbound in the true range.
-   * @return An integer representing the number of cells that fell imbetween
-   * startRange and endRange and were set to true in the boolean grid.
-   */
-  int generateBoolGridFromFloatGrid(const std::string& floatGridName,
-                                    const std::string& boolGridName,
-                                    float startRange,
-                                    float endRange);
-
-  /**
-   * @brief Generates a boolean voxel grid based on an Vector3 grid. Values in
-   * the boolean grid are true if the value for a voxel in the Vector3 grid
-   * returns true when evaluated by the function func which is passed in.
-   * @param vector3GridName The name of the vector3 grid.
-   * @param boolGridName The name of the newly created boolean grid.
-   * @param func A pointer to a function used for evaluating whether a voxel
-   * value should be true or not.
-   * @return An integer representing the number of cells that were set to true
-   * in the boolean grid.
-   */
-  int generateBoolGridFromVector3Grid(const std::string& vector3GridName,
-                                      const std::string& boolGridName,
-                                      bool func(Mn::Vector3));
-
-  /**
-   * @brief Returns a vector of all filled/true voxels.
-   * @param boolGridName The name of the boolean grid to be processed.
-   * @return A vector of Vector3i's
-   */
-  std::vector<Mn::Vector3i> getVoxelSetFromBoolGrid(
-      const std::string& boolGridName);
-
-  /**
-   * @brief Fills a vector with voxel indices that meet some criteria.
-   * @param intGridName The name of the int grid to be processed.
-   * @param lb The lower bound of voxel values to include.
-   * @param ub The uppper bound of voxel values to include
-   * @return A vector of Vector3i's
-   */
-  std::vector<Mn::Vector3i>
-  getVoxelSetFromIntGrid(const std::string& intGridName, int lb, int ub);
-
-  /**
-   * @brief Fills a vector with voxel indices that meet some criteria.
-   * @param floatGridName The name of the float grid to be processed.
-   * @param lb The lower bound of voxel values to include.
-   * @param ub The uppper bound of voxel values to include
-   * @return A vector of Vector3i's
-   */
-  std::vector<Mn::Vector3i> getVoxelSetFromFloatGrid(
-      const std::string& floatGridName,
-      float lb,
-      float ub);
-
-  /**
-   * @brief Generates an integer grid registered under "InteriorExterior" which
-   * stores +inf for exterior cells, -inf for interior cells, and 0 for Boundary
-   * cells.
-   */
-  void generateInteriorExteriorVoxelGrid();
-
-  /**
-   * @brief Generates a signed distance field using manhattan distance as a
-   * distance metric.
-   * @param gridName The name underwhich to register the newly created manhattan
-   * SDF.
-   */
-  void generateManhattanDistanceSDF(
-      const std::string& gridName = "MSignedDistanceField");
-
-  /**
-   * @brief Generates a signed distance field using euclidean distance as a
-   * distance metric. Also created a "ClosestBoundaryCell" vector3 grid which
-   * holds the index of the closest Boundary grid.
-   * @param gridName The name underwhich to register the newly created euclidean
-   * SDF.
-   */
-  void generateEuclideanDistanceSDF(
-      const std::string& gridName = "ESignedDistanceField");
-
-  /**
-   * @brief Generates a Vector3 field where each vector of a cell is the
-   * gradient of how the SDF changes.
-   * @param gridName The name underwhich to register the newly created distance
-   * gradient field.
-   */
-  void generateDistanceGradientField(
-      const std::string& gridName = "DistanceGradientField");
 
   /**
    * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.

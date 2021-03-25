@@ -853,28 +853,6 @@ std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getSceneVoxelization() {
   return physicsManager_->getSceneVoxelization();
 }
 
-void Simulator::createGlobalVoxelization(const std::string& handle,
-                                         Mn::Vector3& voxelSize,
-                                         Mn::Vector3i& voxelDimensions,
-                                         const Mn::Vector3& offset) {
-  // ensure the handle given has not been used before.
-  assert(voxelWrapperDict_.find(handle) == voxelWrapperDict_.end());
-
-  auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
-  auto& rootNode = sceneGraph.getRootNode();
-
-  esp::geo::VoxelWrapper voxelWrapper = esp::geo::VoxelWrapper(
-      handle, &rootNode, *resourceManager_.get(), voxelSize, voxelDimensions);
-  voxelWrapperDict_.emplace(
-      handle, std::make_shared<esp::geo::VoxelWrapper>(voxelWrapper));
-}
-
-std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getGlobalVoxelization(
-    const std::string& handle) {
-  assert(voxelWrapperDict_.find(handle) != voxelWrapperDict_.end());
-  return voxelWrapperDict_[handle];
-}
-
 void Simulator::setObjectSemanticId(uint32_t semanticId,
                                     const int objectID,
                                     const int sceneID) {

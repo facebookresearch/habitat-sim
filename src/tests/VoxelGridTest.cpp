@@ -68,51 +68,15 @@ void VoxelGrid::testVoxelGridWithVHACD() {
     CORRADE_VERIFY(voxelization->getVoxelIndexFromGlobalCoords(
                        global_coords[i]) == voxel_indices[i]);
   }
-  // Generate SDFs and Distance Gradient Fields. Ensures nothing is blatantly
-  // broken.
-  // TODO validate with pre-computed values
-  voxelization->generateEuclideanDistanceSDF("EuclideanSDF");
-  voxelization->generateManhattanDistanceSDF("ManhattanSDF");
-  voxelization->generateDistanceGradientField("GradientField");
-  auto sdf_grid = voxelization->getGrid<float>("EuclideanSDF");
-
-  // "Hardcoded" values for the Euclidean SDF values corresponding to the voxel
-  // indices.
-  std::vector<float> distances = std::vector<float>{7, 1.73205};
-  for (int i = 0; i < voxel_indices.size(); i++) {
-    Mn::Vector3i coord = voxel_indices[i];
-    CORRADE_VERIFY(abs(sdf_grid[coord[0]][coord[1]][coord[2]] - distances[i]) <
-                   0.1);
-    // Test setting voxel values
-    sdf_grid[coord[0]][coord[1]][coord[2]] = 0;
-    CORRADE_VERIFY(abs(sdf_grid[coord[0]][coord[1]][coord[2]] - 0) < 0.1);
-  }
-
-  // test voxel set getters
-  std::vector<Mn::Vector3i> voxelSet =
-      voxelization->getVoxelSetFromFloatGrid("EuclideanSDF", -5, -4);
-  bool voxelsAreInValidRange = true;
-  for (auto ind : voxelSet) {
-    if (!(sdf_grid[ind[0]][ind[1]][ind[2]] <= -4 &&
-          sdf_grid[ind[0]][ind[1]][ind[2]] >= -5)) {
-      voxelsAreInValidRange = false;
-    }
-  }
-  CORRADE_VERIFY(voxelSet.size() == 18291);
-  CORRADE_VERIFY(voxelsAreInValidRange);
 
   // Ensure mesh generation & mesh visualization doesn't crash simulator
   voxelization->generateMesh("Boundary");
-  voxelization->generateMesh("GradientField");
-  voxelization->generateSliceMesh("EuclideanSDF", 0, -10, 0);
 
   // Only one mesh can be visualized at a time
   simulator_->setSceneVoxelizationDraw(true, "Boundary");
-  simulator_->setSceneVoxelizationDraw(true, "GradientField");
-  simulator_->setSceneVoxelizationDraw(true, "EuclideanSDF");
 
   // Turn off visualization
-  simulator_->setSceneVoxelizationDraw(false, "EuclideanSDF");
+  simulator_->setSceneVoxelizationDraw(false, "Boundary");
 }
 #endif
 

@@ -581,32 +581,6 @@ class Simulator {
                          const std::string& key);
 
   /**
-   * @brief Generates a free VoxelWrapper, and registers the result in
-   * voxelWrapperDict_.
-   *
-   * @param handle The name underwhich to register the voxel wrapper.
-   * @param voxelSize The size of an individual voxel.
-   * @param voxelDimensions The dimensionality of the voxel grid.
-   * @param offset The offset of the voxel grids's positioning
-   */
-  void createGlobalVoxelization(const std::string& handle,
-                                Mn::Vector3& voxelSize,
-                                Mn::Vector3i& voxelDimensions,
-                                const Mn::Vector3& offset = Mn::Vector3(0,
-                                                                        0,
-                                                                        0));
-
-  /**
-   * @brief Returns the global VoxelWrapper registered under a particular
-   * handle.
-   * @param handle The handle underwhich the VoxelWrapper was originally
-   * registered.
-   * @return A shared ptr to the global VoxelWrapper.
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> getGlobalVoxelization(
-      const std::string& handle);
-
-  /**
    * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
    * belonging to an object.
    *
@@ -1098,14 +1072,6 @@ class Simulator {
    * *not* be changed without calling close() first
    */
   Corrade::Containers::Optional<bool> requiresTextures_;
-
-  /**
-   * @brief Storage for VoxelWrapper's without specified scene nodes.
-   *
-   * Maps absolute path keys to VoxelWrappers.
-   */
-  std::map<std::string, std::shared_ptr<esp::geo::VoxelWrapper>>
-      voxelWrapperDict_;
 
   ESP_SMART_POINTERS(Simulator)
 };
