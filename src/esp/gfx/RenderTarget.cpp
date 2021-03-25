@@ -18,7 +18,7 @@
 #include <Magnum/PixelFormat.h>
 
 #include "RenderTarget.h"
-#include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/VisualSensor.h"
 #include "magnum.h"
 
 #include "esp/gfx/DepthUnprojection.h"
@@ -46,7 +46,8 @@ struct RenderTarget::Impl {
   Impl(const Mn::Vector2i& size,
        const Mn::Vector2& depthUnprojection,
        DepthShader* depthShader,
-       Flags flags)
+       Flags flags,
+       const sensor::VisualSensor* visualSensor)
       : colorBuffer_{},
         objectIdBuffer_{},
         depthRenderTexture_{},
@@ -56,7 +57,8 @@ struct RenderTarget::Impl {
         unprojectedDepth_{Mn::NoCreate},
         depthUnprojectionMesh_{Mn::NoCreate},
         depthUnprojectionFrameBuffer_{Mn::NoCreate},
-        flags_{flags} {
+        flags_{flags},
+        visualSensor_{visualSensor} {
     if (depthShader_) {
       CORRADE_INTERNAL_ASSERT(depthShader_->flags() &
                               DepthShader::Flag::UnprojectExistingDepth);
@@ -146,12 +148,16 @@ struct RenderTarget::Impl {
         .draw(depthUnprojectionMesh_);
   }
 
-  void renderEnter(sensor::CameraSensor& cameraSensor) {
+  void renderEnter() {
     framebuffer_.clearDepth(1.0);
     if (flags_ & Flag::RgbaBuffer) {
-      framebuffer_.clearColor(0, static_cast<esp::sensor::CameraSensorSpec*>(
-                                     cameraSensor.specification().get())
-                                     ->clearColor);
+      if (visualSensor_) {
+        framebuffer_.clearColor(0, static_cast<esp::sensor::VisualSensorSpec*>(
+                                       visualSensor_->specification().get())
+                                       ->clearColor);
+      } else {
+        framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
+      }
     }
     if (flags_ & Flag::ObjectIdBuffer) {
       framebuffer_.clearColor(1, Mn::Vector4ui{});
@@ -324,6 +330,8 @@ struct RenderTarget::Impl {
 
   Flags flags_;
 
+  const sensor::VisualSensor* visualSensor_ = nullptr;
+
 #ifdef ESP_BUILD_WITH_CUDA
   cudaGraphicsResource_t colorBufferCugl_ = nullptr;
   cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
@@ -334,14 +342,16 @@ struct RenderTarget::Impl {
 RenderTarget::RenderTarget(const Mn::Vector2i& size,
                            const Mn::Vector2& depthUnprojection,
                            DepthShader* depthShader,
-                           Flags flags)
+                           Flags flags,
+                           const sensor::VisualSensor* visualSensor)
     : pimpl_(spimpl::make_unique_impl<Impl>(size,
                                             depthUnprojection,
                                             depthShader,
-                                            flags)) {}
+                                            flags,
+                                            visualSensor)) {}
 
-void RenderTarget::renderEnter(sensor::CameraSensor& cameraSensor) {
-  pimpl_->renderEnter(cameraSensor);
+void RenderTarget::renderEnter() {
+  pimpl_->renderEnter();
 }
 
 void RenderTarget::renderReEnter() {

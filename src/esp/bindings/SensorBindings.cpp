@@ -89,14 +89,14 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("far", &VisualSensorSpec::far)
       .def_readwrite("resolution", &VisualSensorSpec::resolution)
       .def_readwrite("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer)
-      .def_readwrite("channels", &VisualSensorSpec::channels);
+      .def_readwrite("channels", &VisualSensorSpec::channels)
+      .def_readwrite("clear_color", &CameraSensorSpec::clearColor);
 
   // ====CameraSensorSpec ====
   py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec,
              SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
-      .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale)
-      .def_readwrite("clear_color", &CameraSensorSpec::clearColor);
+      .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
   // ==== SensorFactory ====
   py::class_<SensorFactory>(m, "SensorFactory")

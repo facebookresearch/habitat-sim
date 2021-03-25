@@ -14,7 +14,6 @@ namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
   float orthoScale = 0.1f;
-  Mn::Color4 clearColor{0, 0, 0, 1};
   CameraSensorSpec();
   void sanityCheck() override;
   bool operator==(const CameraSensorSpec& a) const;

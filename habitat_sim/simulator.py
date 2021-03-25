@@ -579,7 +579,6 @@ class Sensor:
             render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
 
         with self._sensor_object.render_target:
-            self._sensor_object.render_target.render_enter(self._sensor_object)
             self._sim.renderer.draw(self._sensor_object, scene, render_flags)
 
         # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
