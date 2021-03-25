@@ -73,7 +73,7 @@ class VoxelGrid {
    * @param filepath Can either be the path to a directory or a single .svx
    * file.
    */
-  explicit VoxelGrid(const std::string filepath);
+  explicit VoxelGrid(const std::string& filepath);
 
   /**
    * @brief Gets the enumerated type of a particular voxel grid type.
@@ -90,9 +90,10 @@ class VoxelGrid {
   void addGrid(const std::string& gridName) {
     VoxelGridType type = voxelGridTypeFor<T>();
 
-    unsigned long dims[3]{static_cast<unsigned long>(m_voxelGridDimensions[0]),
-                          static_cast<unsigned long>(m_voxelGridDimensions[1]),
-                          static_cast<unsigned long>(m_voxelGridDimensions[2])};
+    unsigned long dims[3]{
+        static_cast<unsigned long>(m_voxelGridDimensions[0]),
+        static_cast<unsigned long>(m_voxelGridDimensions[1]),
+        static_cast<unsigned long>(m_voxelGridDimensions[2])};  // NOLINT
 
     Cr::Containers::StridedDimensions<3, long> strides{
         static_cast<long>(m_voxelGridDimensions[2] * m_voxelGridDimensions[1] *
@@ -295,7 +296,7 @@ class VoxelGrid {
    * @param boolGridName The name of the boolean grid to be processed.
    * @return A vector of Vector3i's
    */
-  std::vector<Mn::Vector3i> fillVoxelSetFromBoolGrid(
+  std::vector<Mn::Vector3i> getVoxelSetFromBoolGrid(
       const std::string& boolGridName);
 
   /**
@@ -306,7 +307,7 @@ class VoxelGrid {
    * @return A vector of Vector3i's
    */
   std::vector<Mn::Vector3i>
-  fillVoxelSetFromIntGrid(const std::string& intGridName, int lb, int ub);
+  getVoxelSetFromIntGrid(const std::string& intGridName, int lb, int ub);
 
   /**
    * @brief Fills a vector with voxel indices that meet some criteria.
@@ -315,7 +316,7 @@ class VoxelGrid {
    * @param ub The uppper bound of voxel values to include
    * @return A vector of Vector3i's
    */
-  std::vector<Mn::Vector3i> fillVoxelSetFromFloatGrid(
+  std::vector<Mn::Vector3i> getVoxelSetFromFloatGrid(
       const std::string& floatGridName,
       float lb,
       float ub);
@@ -366,7 +367,7 @@ class VoxelGrid {
    * @brief Generates a colored slice of a mesh.
    * @param gridName The name of the voxel grid to be converted into a mesh
    * slice.
-   * @param ind The index long the x axis for the slicing plane.
+   * @param ind The index value the x axis for the slicing plane.
    * @param minVal The minimum value of the grid. Used for determining heatmap
    * colors.
    * @param maxVal The maximum value of the grid. Used for determining heatmap
@@ -426,7 +427,7 @@ class VoxelGrid {
    * @param normals The normals of the mesh.
    * @param colors The colors of the mesh.
    */
-  void generateMeshDataAndMeshGL(const std::string gridName,
+  void generateMeshDataAndMeshGL(const std::string& gridName,
                                  std::vector<Mn::UnsignedInt>& indices,
                                  std::vector<Mn::Vector3>& positions,
                                  std::vector<Mn::Vector3>& normals,

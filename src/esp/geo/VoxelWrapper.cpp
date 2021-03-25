@@ -10,7 +10,7 @@ namespace esp {
 namespace geo {
 
 #ifdef ESP_BUILD_WITH_VHACD
-VoxelWrapper::VoxelWrapper(std::string& renderAssetHandle,
+VoxelWrapper::VoxelWrapper(const std::string& renderAssetHandle,
                            esp::scene::SceneNode* sceneNode,
                            esp::assets::ResourceManager& resourceManager_,
                            int resolution = 1000000)
@@ -27,12 +27,12 @@ VoxelWrapper::VoxelWrapper(std::string& renderAssetHandle,
     objMesh = resourceManager_.createJoinedCollisionMesh(renderAssetHandle);
     voxelGrid =
         std::make_shared<VoxelGrid>(objMesh, renderAssetHandle, resolution);
-    resourceManager_.registerVoxelGrid(voxelGridHandle, voxelGrid);
+    assert(resourceManager_.registerVoxelGrid(voxelGridHandle, voxelGrid));
   }
 }
 #endif
 
-VoxelWrapper::VoxelWrapper(std::string& handle,
+VoxelWrapper::VoxelWrapper(const std::string& handle,
                            esp::scene::SceneNode* sceneNode,
                            esp::assets::ResourceManager& resourceManager_,
                            Mn::Vector3& voxelSize,
@@ -46,7 +46,7 @@ VoxelWrapper::VoxelWrapper(std::string& handle,
     voxelGrid = resourceManager_.getVoxelGrid(voxelGridHandle);
   } else {  // if not, create a new voxel
     voxelGrid = std::make_shared<VoxelGrid>(voxelSize, voxelDimensions);
-    resourceManager_.registerVoxelGrid(voxelGridHandle, voxelGrid);
+    assert(resourceManager_.registerVoxelGrid(voxelGridHandle, voxelGrid));
   }
 }
 

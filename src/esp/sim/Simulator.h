@@ -589,7 +589,7 @@ class Simulator {
    * @param voxelDimensions The dimensionality of the voxel grid.
    * @param offset The offset of the voxel grids's positioning
    */
-  void createGlobalVoxelization(std::string& handle,
+  void createGlobalVoxelization(const std::string& handle,
                                 Mn::Vector3& voxelSize,
                                 Mn::Vector3i& voxelDimensions,
                                 const Mn::Vector3& offset = Mn::Vector3(0,

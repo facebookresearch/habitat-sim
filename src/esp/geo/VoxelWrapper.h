@@ -30,7 +30,7 @@ class VoxelWrapper {
    * @param sceneNode The scene node the voxel wrapper will be pointing to.
    * @param resourceManager_ Used for retrieving or registering the voxel grid.
    */
-  VoxelWrapper(std::string& renderAssetHandle,
+  VoxelWrapper(const std::string& renderAssetHandle,
                esp::scene::SceneNode* sceneNode,
                esp::assets::ResourceManager& resourceManager_,
                int resolution);
@@ -45,7 +45,7 @@ class VoxelWrapper {
    * @param voxelSize The size of an individual voxel cell.
    * @param voxelDimensions The dimensions of the voxel grid.
    */
-  VoxelWrapper(std::string& handle,
+  VoxelWrapper(const std::string& handle,
                esp::scene::SceneNode* sceneNode,
                esp::assets::ResourceManager& resourceManager_,
                Mn::Vector3& voxelSize,
@@ -267,9 +267,9 @@ class VoxelWrapper {
    * @param boolGridName The name of the boolean grid to be processed.
    * @return A vector of Vector3i's
    */
-  std::vector<Mn::Vector3i> fillVoxelSetFromBoolGrid(
+  std::vector<Mn::Vector3i> getVoxelSetFromBoolGrid(
       const std::string& boolGridName) {
-    return voxelGrid->fillVoxelSetFromBoolGrid(boolGridName);
+    return voxelGrid->getVoxelSetFromBoolGrid(boolGridName);
   }
 
   /**
@@ -280,8 +280,8 @@ class VoxelWrapper {
    * @return A vector of Vector3i's
    */
   std::vector<Mn::Vector3i>
-  fillVoxelSetFromIntGrid(const std::string& intGridName, int lb, int ub) {
-    return voxelGrid->fillVoxelSetFromIntGrid(intGridName, lb, ub);
+  getVoxelSetFromIntGrid(const std::string& intGridName, int lb, int ub) {
+    return voxelGrid->getVoxelSetFromIntGrid(intGridName, lb, ub);
   }
 
   /**
@@ -291,11 +291,11 @@ class VoxelWrapper {
    * @param ub The uppper bound of voxel values to include
    * @return A vector of Vector3i's
    */
-  std::vector<Mn::Vector3i> fillVoxelSetFromFloatGrid(
+  std::vector<Mn::Vector3i> getVoxelSetFromFloatGrid(
       const std::string& floatGridName,
       float lb,
       float ub) {
-    return voxelGrid->fillVoxelSetFromFloatGrid(floatGridName, lb, ub);
+    return voxelGrid->getVoxelSetFromFloatGrid(floatGridName, lb, ub);
   }
 
   /**

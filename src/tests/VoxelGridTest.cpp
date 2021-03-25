@@ -17,17 +17,17 @@ namespace Mn = Magnum;
 struct VoxelGrid : Cr::TestSuite::Tester {
   explicit VoxelGrid();
 
-  void testVoxelGrid();
+  void testVoxelGridWithVHACD();
 };
 
 VoxelGrid::VoxelGrid() {
 #ifdef ESP_BUILD_WITH_VHACD
-  addTests({&VoxelGrid::testVoxelGrid});
+  addTests({&VoxelGrid::testVoxelGridWithVHACD});
 #endif
 }
 
 #ifdef ESP_BUILD_WITH_VHACD
-void VoxelGrid::testVoxelGrid() {
+void VoxelGrid::testVoxelGridWithVHACD() {
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
   simConfig.activeSceneName = Cr::Utility::Directory::join(
@@ -41,16 +41,14 @@ void VoxelGrid::testVoxelGrid() {
   // Voxelize the scene with resolution = 1,000,000 and make asserts
   const int resolution = 1000000;
   simulator_->createSceneVoxelization(resolution);
-  auto voxelWrapper = simulator_->getSceneVoxelization().get();
-
-  // TODO Validate boundary grid (pick a few cells..)
+  auto voxelization = simulator_->getSceneVoxelization().get();
 
   // Verify coordinate conversion works in both directions
   Mn::Vector3i voxelIndex(2, 1, 7);
   Mn::Vector3 globalCoords =
-      voxelWrapper->getGlobalCoordsFromVoxelIndex(voxelIndex);
+      voxelization->getGlobalCoordsFromVoxelIndex(voxelIndex);
   Mn::Vector3i deconvertedVoxelIndex =
-      voxelWrapper->getVoxelIndexFromGlobalCoords(globalCoords);
+      voxelization->getVoxelIndexFromGlobalCoords(globalCoords);
   CORRADE_VERIFY(voxelIndex == deconvertedVoxelIndex);
 
   // "Golden Value Tests" - Verify that certain values return the correct
@@ -58,40 +56,63 @@ void VoxelGrid::testVoxelGrid() {
   // TODO Add a few more values
   std::vector<Mn::Vector3i> voxel_indices = std::vector<Mn::Vector3i>{
       Mn::Vector3i(0, 0, 0),
-      voxelWrapper->getVoxelGridDimensions() - Mn::Vector3i(1, 1, 1)};
+      voxelization->getVoxelGridDimensions() - Mn::Vector3i(1, 1, 1)};
   // "Hardcoded" values for the global coordinates corresponding to the
   // positions of the voxel indices.
   std::vector<Mn::Vector3> global_coords =
       std::vector<Mn::Vector3>{Mn::Vector3(-9.75916, -0.390074, 0.973851),
                                Mn::Vector3(8.89573, 7.07188, 25.5983)};
   for (int i = 0; i < voxel_indices.size(); i++) {
-    CORRADE_VERIFY(voxelWrapper->getGlobalCoordsFromVoxelIndex(
+    CORRADE_VERIFY(voxelization->getGlobalCoordsFromVoxelIndex(
                        voxel_indices[i]) == global_coords[i]);
-    CORRADE_VERIFY(voxelWrapper->getVoxelIndexFromGlobalCoords(
+    CORRADE_VERIFY(voxelization->getVoxelIndexFromGlobalCoords(
                        global_coords[i]) == voxel_indices[i]);
   }
   // Generate SDFs and Distance Gradient Fields. Ensures nothing is blatantly
   // broken.
   // TODO validate with pre-computed values
-  voxelWrapper->generateEuclideanDistanceSDF("EuclideanSDF");
-  voxelWrapper->generateManhattanDistanceSDF("ManhattanSDF");
-  voxelWrapper->generateDistanceGradientField("GradientField");
-  auto grid = voxelWrapper->getGrid<float>("EuclideanSDF");
+  voxelization->generateEuclideanDistanceSDF("EuclideanSDF");
+  voxelization->generateManhattanDistanceSDF("ManhattanSDF");
+  voxelization->generateDistanceGradientField("GradientField");
+  auto sdf_grid = voxelization->getGrid<float>("EuclideanSDF");
 
   // "Hardcoded" values for the Euclidean SDF values corresponding to the voxel
   // indices.
   std::vector<float> distances = std::vector<float>{7, 1.73205};
   for (int i = 0; i < voxel_indices.size(); i++) {
     Mn::Vector3i coord = voxel_indices[i];
-    CORRADE_VERIFY(abs(grid[coord[0]][coord[1]][coord[2]] - distances[i]) <
+    CORRADE_VERIFY(abs(sdf_grid[coord[0]][coord[1]][coord[2]] - distances[i]) <
                    0.1);
+    // Test setting voxel values
+    sdf_grid[coord[0]][coord[1]][coord[2]] = 0;
+    CORRADE_VERIFY(abs(sdf_grid[coord[0]][coord[1]][coord[2]] - 0) < 0.1);
   }
-  // TODO Slicing, setters, mesh generation & validation, test global grid
-  // (create scene node, attach global grid to it, test coord -> index, set
-  // index to value, get list of set voxels, etc) test vector field mesh getter
-  // as well, test grid removal & grid list retrieval Test generate bool from
-  // int/float grid Test voxel set (make sure length & first value is expected)
-  // Test simulator set visualiztion draw to ensure no crashing
+
+  // test voxel set getters
+  std::vector<Mn::Vector3i> voxelSet =
+      voxelization->getVoxelSetFromFloatGrid("EuclideanSDF", -5, -4);
+  bool voxelsAreInValidRange = true;
+  for (auto ind : voxelSet) {
+    if (!(sdf_grid[ind[0]][ind[1]][ind[2]] <= -4 &&
+          sdf_grid[ind[0]][ind[1]][ind[2]] >= -5)) {
+      voxelsAreInValidRange = false;
+    }
+  }
+  CORRADE_VERIFY(voxelSet.size() == 18291);
+  CORRADE_VERIFY(voxelsAreInValidRange);
+
+  // Ensure mesh generation & mesh visualization doesn't crash simulator
+  voxelization->generateMesh("Boundary");
+  voxelization->generateMesh("GradientField");
+  voxelization->generateSliceMesh("EuclideanSDF", 0, -10, 0);
+
+  // Only one mesh can be visualized at a time
+  simulator_->setSceneVoxelizationDraw(true, "Boundary");
+  simulator_->setSceneVoxelizationDraw(true, "GradientField");
+  simulator_->setSceneVoxelizationDraw(true, "EuclideanSDF");
+
+  // Turn off visualization
+  simulator_->setSceneVoxelizationDraw(false, "EuclideanSDF");
 }
 #endif
 

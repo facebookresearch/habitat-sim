@@ -853,10 +853,13 @@ std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getSceneVoxelization() {
   return physicsManager_->getSceneVoxelization();
 }
 
-void Simulator::createGlobalVoxelization(std::string& handle,
+void Simulator::createGlobalVoxelization(const std::string& handle,
                                          Mn::Vector3& voxelSize,
                                          Mn::Vector3i& voxelDimensions,
                                          const Mn::Vector3& offset) {
+  // ensure the handle given has not been used before.
+  assert(voxelWrapperDict_.find(handle) == voxelWrapperDict_.end());
+
   auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   auto& rootNode = sceneGraph.getRootNode();
 

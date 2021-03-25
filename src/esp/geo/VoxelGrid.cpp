@@ -212,7 +212,7 @@ int VoxelGrid::generateBoolGridFromFloatGrid(const std::string& floatGridName,
   return num_filled;
 }
 
-std::vector<Mn::Vector3i> VoxelGrid::fillVoxelSetFromBoolGrid(
+std::vector<Mn::Vector3i> VoxelGrid::getVoxelSetFromBoolGrid(
     const std::string& boolGridName) {
   std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
   assert(grids_.find(boolGridName) != grids_.end());
@@ -230,7 +230,7 @@ std::vector<Mn::Vector3i> VoxelGrid::fillVoxelSetFromBoolGrid(
   return voxelSet;
 }
 
-std::vector<Mn::Vector3i> VoxelGrid::fillVoxelSetFromIntGrid(
+std::vector<Mn::Vector3i> VoxelGrid::getVoxelSetFromIntGrid(
     const std::string& intGridName,
     int lb,
     int ub) {
@@ -250,7 +250,7 @@ std::vector<Mn::Vector3i> VoxelGrid::fillVoxelSetFromIntGrid(
   return voxelSet;
 }
 
-std::vector<Mn::Vector3i> VoxelGrid::fillVoxelSetFromFloatGrid(
+std::vector<Mn::Vector3i> VoxelGrid::getVoxelSetFromFloatGrid(
     const std::string& floatGridName,
     float lb,
     float ub) {
@@ -277,9 +277,13 @@ void VoxelGrid::generateInteriorExteriorVoxelGrid() {
 
   // Create a temporary grid (unregistered) to hold 6 booleans for each cell -
   // each for a specified direction of raycasts
-  unsigned long dims[3]{static_cast<unsigned long>(m_voxelGridDimensions[0]),
-                        static_cast<unsigned long>(m_voxelGridDimensions[1]),
-                        static_cast<unsigned long>(m_voxelGridDimensions[2])};
+
+  // Magnum expects an unsigned long array, but clang-tidy suggests uint64_t
+  unsigned long dims[3]{
+      static_cast<unsigned long>(m_voxelGridDimensions[0]),
+      static_cast<unsigned long>(m_voxelGridDimensions[1]),
+      static_cast<unsigned long>(m_voxelGridDimensions[2])};  // NOLINT
+
   Corrade::Containers::Array<char> cr_grid{
       Corrade::Containers::ValueInit,
       gridSize() * sizeof(Mn::Math::BoolVector<6>)};
@@ -771,7 +775,7 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   }
 }
 
-void VoxelGrid::generateMeshDataAndMeshGL(const std::string gridName,
+void VoxelGrid::generateMeshDataAndMeshGL(const std::string& gridName,
                                           std::vector<Mn::UnsignedInt>& indices,
                                           std::vector<Mn::Vector3>& positions,
                                           std::vector<Mn::Vector3>& normals,
