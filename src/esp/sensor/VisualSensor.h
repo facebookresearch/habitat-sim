@@ -119,9 +119,7 @@ class VisualSensor : public Sensor {
    * @param[in] sim Instance of Simulator class for which the observation needs
    *                to be drawn
    */
-  virtual bool drawObservation(CORRADE_UNUSED sim::Simulator& sim) {
-    return false;
-  };
+  virtual bool drawObservation(CORRADE_UNUSED sim::Simulator& sim) = 0;
 
   /**
    * @brief Read the observation that was rendered by the simulator
