@@ -835,7 +835,7 @@ void Viewer::displayVoxelField(int objectID) {
     simulator_->createObjectVoxelization(objectID, resolution);
     voxelWrapper = simulator_->getObjectVoxelization(objectID);
   }
-  Mn::Debug() << objectDisplayed << objectID;
+
   // turn off the voxel grid visualization for the last voxelized object
   if (objectDisplayed == -1) {
     simulator_->setSceneVoxelizationDraw(false, "Boundary");

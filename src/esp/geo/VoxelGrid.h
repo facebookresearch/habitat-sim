@@ -271,7 +271,6 @@ class VoxelGrid {
     std::vector<Mn::Vector3> positions;
     std::vector<Mn::Vector3> normals;
     std::vector<Mn::Color3> colors;
-    int num_filled = 0;
     auto grid = getGrid<T>(gridName);
     // TODO: generate underlying structure without registering it
     // fill the grid
