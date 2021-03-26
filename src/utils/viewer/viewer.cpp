@@ -824,29 +824,33 @@ bool Viewer::isInRange(float val) {
 }
 
 void Viewer::displayVoxelField(int objectID) {
-  // create a voxelization and get a pointer to the underlying VoxelGrid class
+  // create a voxelization and get a pointer to the underlying VoxelWrapper
+  // class
   unsigned int resolution = 2000000;
-  std::shared_ptr<esp::geo::VoxelWrapper> voxelGrid;
+  std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper;
   if (objectID == -1) {
     simulator_->createSceneVoxelization(resolution);
-    voxelGrid = simulator_->getSceneVoxelization();
+    voxelWrapper = simulator_->getSceneVoxelization();
   } else {
     simulator_->createObjectVoxelization(objectID, resolution);
-    voxelGrid = simulator_->getObjectVoxelization(objectID);
+    voxelWrapper = simulator_->getObjectVoxelization(objectID);
   }
   Mn::Debug() << objectDisplayed << objectID;
   // turn off the voxel grid visualization for the last voxelized object
   if (objectDisplayed == -1) {
-    simulator_->setSceneVoxelizationDraw(false);
+    simulator_->setSceneVoxelizationDraw(false, "Boundary");
   } else if (objectDisplayed >= 0) {
-    simulator_->setObjectVoxelizationDraw(false, objectDisplayed);
+    simulator_->setObjectVoxelizationDraw(false, objectDisplayed, "Boundary");
   }
+
+  // Generate the mesh for the boundary voxel grid
+  voxelWrapper->generateMesh("Boundary");
 
   // visualizes the Boundary voxel grid
   if (objectID == -1) {
-    simulator_->setSceneVoxelizationDraw(true);
+    simulator_->setSceneVoxelizationDraw(true, "Boundary");
   } else {
-    simulator_->setObjectVoxelizationDraw(true, objectID);
+    simulator_->setObjectVoxelizationDraw(true, objectID, "Boundary");
   }
 
   objectDisplayed = objectID;
@@ -1169,13 +1173,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       auto ray = renderCamera_->unproject(viewportPoint);
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
-      for (auto res : raycastResults.hits) {
-        Mn::Debug() << res.objectId;
-      }
-
       if (raycastResults.hasHits()) {
         auto objID = raycastResults.hits[0].objectId;
-        Mn::Debug() << objID;
 #ifdef ESP_BUILD_WITH_VHACD
         displayVoxelField(objID);
 #endif

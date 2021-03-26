@@ -90,20 +90,17 @@ class VoxelGrid {
   void addGrid(const std::string& gridName) {
     VoxelGridType type = voxelGridTypeFor<T>();
 
+    // NOLINTNEXTLINE(google-runtime-int)
     unsigned long dims[3]{
-        // NOLINT
         static_cast<unsigned long>(m_voxelGridDimensions[0]),   // NOLINT
         static_cast<unsigned long>(m_voxelGridDimensions[1]),   // NOLINT
         static_cast<unsigned long>(m_voxelGridDimensions[2])};  // NOLINT
 
     Cr::Containers::StridedDimensions<3, std::ptrdiff_t> strides{
-        // NOLINT
-        static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] *  // NOLINT
-                                    m_voxelGridDimensions[1] *  // NOLINT
-                                    sizeof(T)),
         static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] *
-                                    sizeof(T)),   // NOLINT
-        static_cast<std::ptrdiff_t>(sizeof(T))};  // NOLINT
+                                    m_voxelGridDimensions[1] * sizeof(T)),
+        static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] * sizeof(T)),
+        static_cast<std::ptrdiff_t>(sizeof(T))};
 
     if (grids_.find(gridName) != grids_.end()) {
       // grid exists, simply overwrite
