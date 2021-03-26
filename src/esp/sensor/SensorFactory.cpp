@@ -6,6 +6,7 @@
 
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
 #include "esp/sensor/Sensor.h"
 
 namespace esp {
@@ -18,8 +19,11 @@ SensorFactory::createSensors(scene::SceneNode& node,
         node.createChild({scene::SceneNodeTag::Leaf});
     // VisualSensor Setup
     if (spec->isVisualSensorSpec()) {
-      if (spec->sensorSubType == SensorSubType::Orthographic ||
-          spec->sensorSubType == SensorSubType::Pinhole) {
+      if (spec->sensorSubType == sensor::SensorSubType::Fisheye) {
+        sensorNode.addFeature<sensor::FisheyeSensor>(
+            std::dynamic_pointer_cast<FisheyeSensorSpec>(spec));
+      } else if (spec->sensorSubType == SensorSubType::Orthographic ||
+                 spec->sensorSubType == SensorSubType::Pinhole) {
         sensorNode.addFeature<sensor::CameraSensor>(
             std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
       }

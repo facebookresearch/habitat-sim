@@ -18,17 +18,18 @@ class Simulator;
 
 namespace sensor {
 // Enumeration of types of sensors
-enum class SensorType {
+enum class SensorType : int32_t {
   None = 0,
-  Color = 1,
-  Depth = 2,
-  Normal = 3,
-  Semantic = 4,
-  Path = 5,
-  Goal = 6,
-  Force = 7,
-  Tensor = 8,
-  Text = 9,
+  Color,
+  Depth,
+  Normal,
+  Semantic,
+  Path,
+  Goal,
+  Force,
+  Tensor,
+  Text,
+  SensorTypeCount,  // add new type above this term!!
 };
 
 enum class ObservationSpaceType {
@@ -37,10 +38,12 @@ enum class ObservationSpaceType {
   Text = 2,
 };
 
-enum class SensorSubType {
+enum class SensorSubType : int32_t {
   None = 0,
-  Pinhole = 1,
-  Orthographic = 2,
+  Pinhole,
+  Orthographic,
+  Fisheye,
+  SensorSubTypeCount,  // add new type above this term!!
 };
 
 // Specifies the configuration parameters of a sensor
