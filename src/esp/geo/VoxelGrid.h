@@ -96,13 +96,14 @@ class VoxelGrid {
         static_cast<unsigned long>(m_voxelGridDimensions[1]),   // NOLINT
         static_cast<unsigned long>(m_voxelGridDimensions[2])};  // NOLINT
 
-    Cr::Containers::StridedDimensions<3, long> strides{
+    Cr::Containers::StridedDimensions<3, std::ptrdiff_t> strides{
         // NOLINT
-        static_cast<long>(m_voxelGridDimensions[2] *  // NOLINT
-                          m_voxelGridDimensions[1] *  // NOLINT
-                          sizeof(T)),
-        static_cast<long>(m_voxelGridDimensions[2] * sizeof(T)),  // NOLINT
-        static_cast<long>(sizeof(T))};                            // NOLINT
+        static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] *  // NOLINT
+                                    m_voxelGridDimensions[1] *  // NOLINT
+                                    sizeof(T)),
+        static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] *
+                                    sizeof(T)),   // NOLINT
+        static_cast<std::ptrdiff_t>(sizeof(T))};  // NOLINT
 
     if (grids_.find(gridName) != grids_.end()) {
       // grid exists, simply overwrite

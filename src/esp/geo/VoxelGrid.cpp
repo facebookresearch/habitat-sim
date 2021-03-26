@@ -24,9 +24,7 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
                      int resolution)
     : m_renderAssetHandle(renderAssetHandle) {
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
-  /*VHACD::IVHACD::Parameters params;
-  params.m_resolution = resolution;
-  params.m_oclAcceleration = false;*/
+
   Mn::Debug() << "Voxelizing mesh..";
 
   // run VHACD

@@ -834,7 +834,7 @@ void Viewer::displayVoxelField(int objectID) {
     simulator_->createObjectVoxelization(objectID, resolution);
     voxelGrid = simulator_->getObjectVoxelization(objectID);
   }
-
+  Mn::Debug() << objectDisplayed << objectID;
   // turn off the voxel grid visualization for the last voxelized object
   if (objectDisplayed == -1) {
     simulator_->setSceneVoxelizationDraw(false);
@@ -1169,8 +1169,13 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       auto ray = renderCamera_->unproject(viewportPoint);
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
+      for (auto res : raycastResults.hits) {
+        Mn::Debug() << res.objectId;
+      }
+
       if (raycastResults.hasHits()) {
         auto objID = raycastResults.hits[0].objectId;
+        Mn::Debug() << objID;
 #ifdef ESP_BUILD_WITH_VHACD
         displayVoxelField(objID);
 #endif
