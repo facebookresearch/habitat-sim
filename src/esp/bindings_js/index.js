@@ -15,6 +15,7 @@ import {
   getInfoSemanticUrl,
   buildConfigFromURLParameters
 } from "./modules/utils";
+import TestPage from "./modules/test_page";
 
 function preload(url) {
   let file_parents_str = "/";
@@ -35,6 +36,12 @@ function preload(url) {
 }
 
 Module.preRun.push(() => {
+  if (window.isTestPage) {
+    Module.testPage = new TestPage();
+    Module.testPage.preRun(preload);
+    return;
+  }
+
   let config = {};
   config.scene = defaultScene;
   buildConfigFromURLParameters(config);
@@ -57,6 +64,12 @@ Module.preRun.push(() => {
 
 Module.onRuntimeInitialized = async function() {
   console.log("hsim_bindings initialized");
+
+  if (window.isTestPage) {
+    Module.testPage.onRuntimeInitialized();
+    return;
+  }
+
   let demo;
   if (window.vrEnabled) {
     const supported = await navigator.xr.isSessionSupported("immersive-vr");

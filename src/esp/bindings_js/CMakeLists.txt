@@ -57,6 +57,7 @@ add_custom_command(
 set(
   bundle_files
   bindings.html
+  test_page.html
   webvr.html
   viewer.html
   bindings.css
@@ -70,6 +71,7 @@ set(
   modules/web_demo.js
   modules/viewer_demo.js
   modules/defaults.js
+  modules/test_page.js
   modules/vr_demo.js
   modules/utils.js
 )
