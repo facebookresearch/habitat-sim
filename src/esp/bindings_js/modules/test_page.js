@@ -11,9 +11,7 @@ import { defaultScene, defaultPhysicsConfigFilepath } from "./defaults";
 // should use extensive logging to enable test troubleshooting directly from
 // CI logs.
 class TestPage {
-  constructor() {
-    this.allExpectsPassed = true;
-  }
+  constructor() {}
 
   expect(condition, conditionAsStr) {
     if (!condition) {
