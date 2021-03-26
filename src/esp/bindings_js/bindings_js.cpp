@@ -121,11 +121,20 @@ void loadAllObjectConfigsFromPath(Simulator& sim, const std::string& path) {
   objectAttrManager->loadAllConfigsFromPath(path);
 }
 
+bool isBuildWithBulletPhysics() {
+#ifdef ESP_BUILD_WITH_BULLET
+  return true;
+#else
+  return false;
+#endif
+}
+
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::function("toQuaternion", &toQuaternion);
   em::function("toVec3f", &toVec3f);
   em::function("toVec4f", &toVec4f);
   em::function("loadAllObjectConfigsFromPath", &loadAllObjectConfigsFromPath);
+  em::function("isBuildWithBulletPhysics", &isBuildWithBulletPhysics);
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");

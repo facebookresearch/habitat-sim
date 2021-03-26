@@ -70,9 +70,12 @@ class TestPage {
     console.log("sim.stepWorld");
     sim.stepWorld(0.1);
 
-    console.log("sim.getTranslation");
-    trans = sim.getTranslation(objId, 0);
-    this.expect(trans.y() < dropPos.y(), "trans.y() < dropY");
+    // if Bullet build, expect object to drop due to gravity
+    console.log("Module.isBuildWithBulletPhysics");
+    if (Module.isBuildWithBulletPhysics()) {
+      trans = sim.getTranslation(objId, 0);
+      this.expect(trans.y() < dropPos.y(), "trans.y() < dropPos.y()");
+    }
 
     console.log("The test page has loaded successfully.");
     window.didTestPageLoad = true;
