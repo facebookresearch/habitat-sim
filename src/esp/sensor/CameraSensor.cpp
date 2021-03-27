@@ -2,6 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "CameraSensor.h"
+#include <Corrade/Utility/Assert.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/PixelFormat.h>
@@ -46,6 +48,7 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
       cameraSensorSpec_,
       "CameraSensor::CameraSensor(): The input sensorSpec is illegal", );
   cameraSensorSpec_->sanityCheck();
+
   // Initialize renderCamera_ first to avoid segfaults
   // NOLINTNEXTLINE(cplusplus.NewDeleteLeaks)
   renderCamera_ = new gfx::RenderCamera(cameraNode);

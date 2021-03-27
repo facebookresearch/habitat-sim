@@ -18,6 +18,7 @@
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
 #include "esp/sensor/Sensor.h"
+#include "esp/sensor/SensorFactory.h"
 #include "esp/sim/Simulator.h"
 
 namespace py = pybind11;
@@ -95,6 +96,28 @@ void initSensorBindings(py::module& m) {
              SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
+
+  // ==== SensorFactory ====
+  py::class_<SensorFactory>(m, "SensorFactory")
+      .def("create_sensors", &SensorFactory::createSensors)
+      .def("delete_sensor", &SensorFactory::deleteSensor)
+      .def("delete_subtree_sensor", &SensorFactory::deleteSubtreeSensor);
+
+  // ==== SensorSuite ====
+  py::class_<SensorSuite, Magnum::SceneGraph::PyFeature<SensorSuite>,
+             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::PyFeatureHolder<SensorSuite>>(m, "SensorSuite")
+      .def("add", &SensorSuite::add)
+      .def("remove", py::overload_cast<const Sensor&>(&SensorSuite::remove))
+      .def("remove",
+           py::overload_cast<const std::string&>(&SensorSuite::remove))
+      .def("clear", &SensorSuite::clear)
+      .def("get", &SensorSuite::get)
+      .def("get_sensors",
+           py::overload_cast<>(&SensorSuite::getSensors, py::const_))
+      .def_property_readonly("node", nodeGetter<Sensor>,
+                             "Node this object is attached to")
+      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
 
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
