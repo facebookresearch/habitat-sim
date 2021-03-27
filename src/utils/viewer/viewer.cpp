@@ -436,10 +436,12 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
   agentConfig.sensorSpecifications.emplace_back(
       esp::sensor::EquirectangularSensorSpec::create());
   {
-    auto equirectangularSensorSpec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
+    auto equirectangularSensorSpec =
+        static_cast<esp::sensor::EquirectangularSensorSpec*>(
+            agentConfig.sensorSpecifications.back().get());
     equirectangularSensorSpec->uuid = "equirectangular";
-    equirectangularSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    equirectangularSensorSpec->resolution =
+        esp::vec2i(viewportSize[1], viewportSize[0]);
   }
 }
 
@@ -618,7 +620,14 @@ Viewer::Viewer(const Arguments& arguments)
   cameraSensorSpec->orientation = {0, 0, 0};
   cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
 
-  agentConfig.sensorSpecifications = {cameraSensorSpec};
+  auto equirectangularSensorSpec =
+      esp::sensor::EquirectangularSensorSpec::create();
+  equirectangularSensorSpec->uuid = "equirectangular";
+  equirectangularSensorSpec->resolution =
+      esp::vec2i(viewportSize[1], viewportSize[0]);
+
+  agentConfig.sensorSpecifications = {cameraSensorSpec,
+                                      equirectangularSensorSpec};
   simulator_->addAgent(agentConfig);
 
   // Set up camera
@@ -687,7 +696,7 @@ void Viewer::switchCameraType() {
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
       return;
     }
-    case esp::sensor::SensorSubType::Fisheye:{
+    case esp::sensor::SensorSubType::Fisheye: {
       return;
     }
     case esp::sensor::SensorSubType::Equirectangular: {
@@ -994,14 +1003,6 @@ void Viewer::drawEvent() {
         } break;
         */
     }  // switch
-  } else if (flyingCameraMode_) {
-    visibles = 0;
-    Mn::GL::defaultFramebuffer.bind();
-    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-      esp::gfx::RenderCamera::Flags flags =
-          esp::gfx::RenderCamera::Flag::FrustumCulling;
-      visibles += renderCamera_->draw(it.second, flags);
-    }
   } else if (equirectangularMode_) {
     simulator_->drawObservation(defaultAgentId_, "equirectangular");
     esp::gfx::RenderTarget* sensorRenderTarget =
@@ -1010,6 +1011,14 @@ void Viewer::drawEvent() {
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
     sensorRenderTarget->blitRgbaToDefault();
+  } else if (flyingCameraMode_) {
+    visibles = 0;
+    Mn::GL::defaultFramebuffer.bind();
+    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
+      esp::gfx::RenderCamera::Flags flags =
+          esp::gfx::RenderCamera::Flag::FrustumCulling;
+      visibles += renderCamera_->draw(it.second, flags);
+    }
 
   } else {
     // using polygon offset to increase mesh depth to avoid z-fighting with

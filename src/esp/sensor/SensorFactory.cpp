@@ -27,9 +27,9 @@ SensorFactory::createSensors(scene::SceneNode& node,
                  spec->sensorSubType == SensorSubType::Pinhole) {
         sensorNode.addFeature<sensor::CameraSensor>(
             std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
-      }
-      else if (spec->sensorSubType == SensorSubType::Equirectangular) {
-        sensorNode.addFeature<sensor::EquirectangularSensor>(std::dynamic_pointer_cast<EquirectangularSensorSpec>(spec));
+      } else if (spec->sensorSubType == SensorSubType::Equirectangular) {
+        sensorNode.addFeature<sensor::EquirectangularSensor>(
+            std::dynamic_pointer_cast<EquirectangularSensorSpec>(spec));
       }
     }
     // TODO: Implement NonVisualSensorSpecs
