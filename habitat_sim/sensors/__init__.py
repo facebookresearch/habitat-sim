@@ -6,6 +6,4 @@
 
 from habitat_sim.sensors import noise_models
 
-from .sensor_suite import SensorSuite
-
-__all__ = ["SensorSuite", "noise_models"]
+__all__ = ["noise_models"]

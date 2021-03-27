@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "esp/gfx/RenderTarget.h"
-
 namespace esp {
 namespace sensor {
 
