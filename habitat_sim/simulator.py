@@ -269,11 +269,9 @@ class Simulator(SimulatorBackend):
         return noise_model
 
     def get_noise_model(self, sensor_spec: SensorSpec):
-        if sensor_spec.noise_model not in self.__noise_models:
-            self.__noise_models[sensor_spec.noise_model] = self.make_noise_model(
-                sensor_spec
-            )
-        return self.__noise_models[sensor_spec.noise_model]
+        if sensor_spec.uuid not in self.__noise_models:
+            self.__noise_models[sensor_spec.uuid] = self.make_noise_model(sensor_spec)
+        return self.__noise_models[sensor_spec.uuid]
 
     def add_sensor(
         self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
@@ -478,18 +476,19 @@ class Simulator(SimulatorBackend):
         self.renderer.bind_render_target(sensor)
         tgt = sensor.render_target
         noise_model = self.get_noise_model(sensor.specification())
-        buffer = sensor.buffer(self.gpu_device)
+        obs_buffer = sensor.buffer()
 
         if sensor.specification().gpu2gpu_transfer:
+            obs_buffer.device = self.gpu_device
             with torch.cuda.device(self.gpu_device):  # type: ignore[attr-defined]
                 if sensor.specification().sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(buffer.data_ptr())  # type: ignore[attr-defined]
+                    tgt.read_frame_object_id_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
                 elif sensor.specification().sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(buffer.data_ptr())  # type: ignore[attr-defined]
+                    tgt.read_frame_depth_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
                 else:
-                    tgt.read_frame_rgba_gpu(buffer.data_ptr())  # type: ignore[attr-defined]
+                    tgt.read_frame_rgba_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
 
-                obs = buffer.flip(0)
+                obs = obs_buffer.flip(0)
         else:
             size = sensor.framebuffer_size
 
@@ -498,7 +497,7 @@ class Simulator(SimulatorBackend):
                     mn.MutableImageView2D(
                         mn.PixelFormat.R32UI,
                         size,
-                        np.array(buffer),
+                        obs_buffer,
                     )
                 )
             elif sensor.specification().sensor_type == SensorType.DEPTH:
@@ -506,21 +505,18 @@ class Simulator(SimulatorBackend):
                     mn.MutableImageView2D(
                         mn.PixelFormat.R32F,
                         size,
-                        np.array(buffer),
+                        obs_buffer,
                     )
                 )
             else:
-
                 tgt.read_frame_rgba(
                     mn.MutableImageView2D(
                         mn.PixelFormat.RGBA8_UNORM,
                         size,
-                        np.array(buffer).reshape(
-                            sensor.specification().resolution[0], -1
-                        ),
+                        obs_buffer.reshape(sensor.specification().resolution[0], -1),
                     )
                 )
 
-            obs = np.flip(buffer, axis=0)
+            obs = np.flip(obs_buffer, axis=0)
 
         return noise_model(obs)
