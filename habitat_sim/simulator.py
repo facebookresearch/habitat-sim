@@ -473,13 +473,13 @@ class Simulator(SimulatorBackend):
         self.step_world(dt)
 
     def get_observation(self, sensor: Sensor) -> Union[ndarray, "Tensor"]:
-        self.renderer.bind_render_target(sensor)
+        if not sensor.has_render_target():
+            self.renderer.bind_render_target(sensor)
         tgt = sensor.render_target
         noise_model = self.get_noise_model(sensor.specification())
-        obs_buffer = sensor.buffer()
+        obs_buffer = sensor.buffer(self.gpu_device)
 
         if sensor.specification().gpu2gpu_transfer:
-            obs_buffer.device = self.gpu_device
             with torch.cuda.device(self.gpu_device):  # type: ignore[attr-defined]
                 if sensor.specification().sensor_type == SensorType.SEMANTIC:
                     tgt.read_frame_object_id_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]

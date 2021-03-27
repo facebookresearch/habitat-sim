@@ -136,6 +136,7 @@ void initSensorBindings(py::module& m) {
       .def(
           "draw_observation", &VisualSensor::drawObservation,
           R"(Draw an observation to the frame buffer using simulator's renderer)")
+      .def("has_render_target", &VisualSensor::hasRenderTarget)
       .def_property_readonly(
           "render_camera", &VisualSensor::getRenderCamera,
           R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",
@@ -192,7 +193,7 @@ void initSensorBindings(py::module& m) {
           R"(The distance to the far clipping plane for this CameraSensor uses.)")
       .def(
           "buffer",
-          [](CameraSensor& self) {
+          [](CameraSensor& self, int gpuDevice) {
             py::handle handle = py::cast(self);
             if (!py::hasattr(handle, "__buffer")) {
               if (self.specification()->gpu2gpuTransfer) {
@@ -205,8 +206,8 @@ void initSensorBindings(py::module& m) {
                           (py::int_(self.specification()->resolution[0]),
                            py::int_(self.specification()->resolution[1])),
                           "dtype"_a = torch.attr("int32"),
-                          "device"_a = torch.attr("device")(py::str("cuda"),
-                                                            py::int_(0))));
+                          "device"_a = torch.attr("device")(
+                              py::str("cuda"), py::int_(gpuDevice))));
                 } else if (self.specification()->sensorType ==
                            esp::sensor::SensorType::Depth) {
                   py::setattr(
@@ -215,8 +216,8 @@ void initSensorBindings(py::module& m) {
                           (py::int_(self.specification()->resolution[0]),
                            py::int_(self.specification()->resolution[1])),
                           "dtype"_a = torch.attr("float32"),
-                          "device"_a = torch.attr("device")(py::str("cuda"),
-                                                            py::int_(0))));
+                          "device"_a = torch.attr("device")(
+                              py::str("cuda"), py::int_(gpuDevice))));
                 } else {
                   py::setattr(
                       handle, "__buffer",
@@ -225,8 +226,8 @@ void initSensorBindings(py::module& m) {
                            py::int_(self.specification()->resolution[1]),
                            py::int_(self.specification()->channels)),
                           "dtype"_a = torch.attr("uint32"),
-                          "device"_a = torch.attr("device")(py::str("cuda"),
-                                                            py::int_(0))));
+                          "device"_a = torch.attr("device")(
+                              py::str("cuda"), py::int_(gpuDevice))));
                 }
               } else {
                 if (self.specification()->sensorType ==
