@@ -847,7 +847,7 @@ void Viewer::displayVoxelField(int objectID) {
   // Generate the mesh for the boundary voxel grid
   voxelWrapper->generateMesh("Boundary");
 
-  // esp::geo::generateManhattanDistanceSDF("Hey!! @@@@");
+  esp::geo::generateManhattanDistanceSDF("Hey!! @@@@");
 
   // visualizes the Boundary voxel grid
   if (objectID == -1) {
