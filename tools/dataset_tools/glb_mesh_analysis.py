@@ -1,57 +1,31 @@
 #!/usr/bin/env python
 
 # glb_mesh_analysis : This program provides tools for analyzing
-# glb-based meshes for constituent object stats, using the trimesh library
+# glb-based meshes for constituent object stats
 
-from collections import defaultdict
 from glob import glob
 
 import glb_mesh_tools as gut
 import numpy as np
 
-# new scene instance glbs dir, where files to analyze reside
+# Scene glbs dir, where scenes to analyze reside
 STAT_SCENE_GLBS_DIR = "../../data/datasets/replicaCAD_extra_scenes/"
 
-# This function will take a .glb file and find the objects contained inside
-def get_new_scene_info():
-    # build list of all new scenes
-    new_scene_glbs = glob(STAT_SCENE_GLBS_DIR + "*.glb")
-    each_scene_obj_dict = {}
-    for new_scene_filename in new_scene_glbs:
-        # returns a default dict with key == object name and value is a list of transformations
-        each_scene_obj_dict[new_scene_filename] = gut.process_scene_for_objects(
-            new_scene_filename
-        )
+# Ignore objects within queried scenes that have these substrings in their names
+IGNORE_OBJECT_NAMES = ["door", "frl_apartment_lower_shelf_01_part_01"]
 
-    all_scene_translations_dict = defaultdict(list)
-    # per object scene population
-    obj_per_scene_dict = defaultdict(dict)
-    # per object max counts
-    obj_max_per_scene_counts = defaultdict(int)
-    for scene_name, obj_in_scene_dict in each_scene_obj_dict.items():
-        # obj_in_scene_dict is a scene's default dict
-        # print("\n{}\nObjects and counts : ".format(scene_name))
-        for obj, transforms in obj_in_scene_dict.items():
-            translations = gut.get_trans_list_from_transforms(transforms)
-            # print("{} | {}".format(obj, translations))
-            all_scene_translations_dict[obj].extend(translations)
-            obj_per_scene_dict[obj][scene_name] = translations
-            if obj_max_per_scene_counts[obj] < len(translations):
-                obj_max_per_scene_counts[obj] = len(translations)
-    print("\nTotals:\n")
-    for obj, translations in all_scene_translations_dict.items():
-        print("{} | {}  ".format(obj, len(translations)))
-    print("\n")
-
+# Build a dictionary containing all scene object statatistics
+def calc_object_stats(obj_per_scene_transforms, obj_max_per_scene_counts):
     all_obj_location_stats = {}
-    for obj, scene_dict in obj_per_scene_dict.items():
-        if "door" in obj or "frl_apartment_lower_shelf_01_part_01" in obj:
-            continue
 
+    for obj, scene_dict in obj_per_scene_transforms.items():
+        # This really ought to be solved using a Bipartite perfect matching
         if obj_max_per_scene_counts[obj] == 1:
             location = []
             # easy stats, just average location of all scenes present in
-            for _, translations in scene_dict.items():
+            for _, transforms in scene_dict.items():
+                # will always be a length 1 list
+                translations = gut.get_trans_list_from_transforms(transforms)
                 location.append(translations[0])
             obj_location_stats = gut.calc_stats(location)
             all_obj_location_stats[obj] = {
@@ -69,26 +43,32 @@ def get_new_scene_info():
                 )
             )
         else:
-            # harder stats, need to do clustering
-            # take every scene individually, check each object copy to see where that copy belongs in particular clustering.
+            # harder stats, need to do clustering to build correct
+            # correspondence between instances across scenes
+            # First, take every scene individually, check each object copy to
+            # see where that copy belongs in particular clustering.
             # every entry has at most 2 representations per scene
             # find a scene with 2 objects
             saved_scene = ""
-            for scene, translations in scene_dict.items():
-                if len(translations) == 2:
+            for scene, transforms in scene_dict.items():
+                if len(transforms) == 2:
                     saved_scene = scene
                     break
             # use the two entries in saved_scene as exemplars
-            base_obj_0_loc = scene_dict[saved_scene][0]
+            base_translations = gut.get_trans_list_from_transforms(
+                scene_dict[saved_scene]
+            )
+            base_obj_0_loc = base_translations[0]
             obj_0_location = []
             obj_0_location.append(base_obj_0_loc)
-            base_obj_1_loc = scene_dict[saved_scene][1]
+            base_obj_1_loc = base_translations[1]
             obj_1_location = []
             obj_1_location.append(base_obj_1_loc)
 
-            for scene, translations in scene_dict.items():
+            for scene, transforms in scene_dict.items():
                 if scene == saved_scene:
                     continue
+                translations = gut.get_trans_list_from_transforms(transforms)
                 if len(translations) == 1:
                     # find closest of 2 entries in saved_scene
                     obj_loc = translations[0]
@@ -147,12 +127,20 @@ def get_new_scene_info():
 def write_results_csv(filename, all_object_stats):
     import csv
 
-    header_string = "object name, number of scenes, max number per scene, obj 0 count, obj 0 mean location, obj 0 location std, obj 1 count, obj 1 mean location, obj 1 location std".split(
-        ","
-    )
+    header_list = [
+        "object name",
+        "number of scenes",
+        "max number per scene",
+        "obj 0 count",
+        "obj 0 mean location",
+        "obj 0 location std",
+        "obj 1 count",
+        "obj 1 mean location",
+        "obj 1 location std",
+    ]
     with open(filename, "w", newline="") as csvfile:
         writer = csv.writer(csvfile, delimiter=",")
-        writer.writerow(header_string)
+        writer.writerow(header_list)
         for obj, entry in all_object_stats.items():
             write_list = [obj, entry["number_of_scenes"], entry["max_per_scene"]]
             for objstats in entry["object_stats"]:
@@ -163,8 +151,17 @@ def write_results_csv(filename, all_object_stats):
 
 
 def main():
+    # build list of all new scenes
+    new_scene_glbs = glob(STAT_SCENE_GLBS_DIR + "*.glb")
     # find all stats for object locations in each scene
-    all_object_stats = get_new_scene_info()
+    obj_per_scene_transforms, obj_max_per_scene_counts = gut.get_objects_in_scenes(
+        new_scene_glbs, IGNORE_OBJECT_NAMES
+    )
+    # calculate per-object stats
+    all_object_stats = calc_object_stats(
+        obj_per_scene_transforms, obj_max_per_scene_counts
+    )
+    # save resuts
     write_results_csv("temp_res.csv", all_object_stats)
     # print(all_object_stats, sep='\n')
 

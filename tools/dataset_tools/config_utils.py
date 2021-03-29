@@ -3,6 +3,7 @@
 import json
 import os
 import re
+from typing import Any, Dict, Optional, Tuple
 
 # sub-extensions used with json config files to denote the type
 # of configuration.  Append ".json" to make full file name
@@ -15,12 +16,22 @@ CONFIG_EXTENSIONS = {
     "stage": ".stage_config",
 }
 
-# transform passed src_file_path to be relative to passed target_path, verify,
-# and return result.  If fails, returns None
-def transform_path_relative(src_file_path, target_path, checkExists=False):
+
+def transform_path_relative(
+    src_file_path: str, target_path: str, check_exists: Optional[bool] = False
+) -> str:
+    """transform passed src_file_path to be relative to passed target_path, verify,
+    and return result.  If fails, returns None
+    :param src_file_path: Path and file name of source file
+    :param target_path: Path to use to find relative path
+    :param check_exists: Whether to verify that the specified source file exists
+    before the relative path is constructed
+    :return: The file name of src_file_path including path relative to target, or the
+    absolute file path if check_exists is specified and the source file does not exist.
+    """
     abs_src_file_path = os.path.normpath(src_file_path)
     # verify this is an existing file if requested
-    if not (checkExists) or (os.path.isfile(abs_src_file_path)):
+    if not (check_exists) or (os.path.isfile(abs_src_file_path)):
         return os.path.relpath(abs_src_file_path, start=target_path)
     else:
         print(
@@ -29,10 +40,21 @@ def transform_path_relative(src_file_path, target_path, checkExists=False):
         return abs_src_file_path
 
 
-# Takes a loaded json config and for all the path data
-# values, will modify them to be relative to destination dir
-# instead of src_dir
-def mod_config_paths_rel_dest(file_tuple, json_data, debug=False):
+def mod_config_paths_rel_dest(
+    file_tuple: Tuple[str, str],
+    json_data: Dict[str, Any],
+    debug: Optional[bool] = False,
+):
+    """Takes the passed json_data configuration and re-maps all the file paths
+    it references to be relative to a new directory, specified in file_tuple.
+    :param file_tuple: A tuple containing the source file name of the given json
+    config, and the destination file directory, which is most likely where the JSON file
+    will be written.
+    :param json_data: Dictionary holding the JSON configuration file.
+    :param debug: Display when remapped relative paths are found. Not found paths
+    are always displayed.
+    """
+
     src_file = os.path.abspath(file_tuple[0])
     dest_dir = os.path.dirname(os.path.abspath(file_tuple[1]))
     # all possible tags that might have file paths
@@ -70,16 +92,38 @@ def mod_config_paths_rel_dest(file_tuple, json_data, debug=False):
                 print("{} not found, so no changes were made.".format(base_string))
 
 
-# this will load an object's config file, add/modify the specified field
-# using the given tag, and save the file to the specified location/file name.
-# If dry_run is specified, nothing will be written but rather the expected output
-# will be displaed
-def mod_json_val_and_save(file_tuple, indent=2, dry_run=False):
-    # file_tuple[0] is config json src file loc - if empty, create dest_file
-    # file_tuple[1] is dest file loc.
-    # file_tuple[2] is dict : key is json tag for data, value is value to set in json
-    # file_tuple[3] is boolean : whether or not to make config file name values absolute paths.
-    # indent is indention to use for json file writing
+def update_dict_recurse(dest_dict, update_dict):
+    from collections.abc import Mapping
+
+    for k, v in update_dict.items():
+        if isinstance(v, Mapping):
+            dest_dict[k] = update_dict_recurse(dest_dict.get(k, {}), v)
+        else:
+            dest_dict[k] = v
+    return dest_dict
+
+
+def mod_json_val_and_save(
+    file_tuple: Tuple[str, str, Dict[str, Any], bool],
+    indent: Optional[int] = 2,
+    dry_run: Optional[bool] = False,
+):
+    """This function will either load an existing config file, add/modify the specified field
+    using the given tag, and save the file to the specified location/file name, or, if the given src_name is empty,
+    it will save the passed dictionary as json using the provided dest_file naem
+    If dry_run is specified, nothing will be written but rather the expected output
+    will be displayed.
+
+    :param file_tuple: A 3-4 element tuple that contains the following information
+        file_tuple[0] is config json src file loc - if empty, create dest_file
+        file_tuple[1] is dest file loc.
+        file_tuple[2] is dict : key is json tag for data, value is value to set in json
+        file_tuple[3] is boolean : whether or not to make config file paths in existing config files
+            relative to new dest_file location. Only relevant if modifying an existing json
+    :param indent: JSON indention to use when writing file
+    :dry_run: If True, display results of modifications but do not write output.
+    """
+
     src_file = file_tuple[0]
     dest_file = file_tuple[1]
     json_mod_vals = file_tuple[2]
@@ -90,13 +134,16 @@ def mod_json_val_and_save(file_tuple, indent=2, dry_run=False):
     else:
         # whether paths in resultant configs should stay relative to old
         # config location or should be changed to be relative to new destination
-        set_paths_rel_dest = file_tuple[3]
+        set_paths_rel_dest = False
+        if len(file_tuple) > 3:
+            set_paths_rel_dest = file_tuple[3]
+
         with open(src_file, "r") as src:
             json_data = json.load(src)
             if set_paths_rel_dest:
                 mod_config_paths_rel_dest(file_tuple, json_data)
-    for tag, value in json_mod_vals.items():
-        json_data[tag] = value
+        json_data = update_dict_recurse(json_data, json_mod_vals)
+
     if not dry_run:
         with open(dest_file, "w") as dest:
             json.dump(json_data, dest, indent=indent)
@@ -107,9 +154,17 @@ def mod_json_val_and_save(file_tuple, indent=2, dry_run=False):
         )
 
 
-# takes a source file directory, returns a list of tuples of paths, dirnames, filenames
-# if no regex_str is specified, returns all files
-def get_files_matching_regex(src_dir, regex_str="", debug=False):
+def get_files_matching_regex(
+    src_dir: str, regex_str: Optional[str] = "", debug: Optional[bool] = False
+):
+    """This function walks a given source directory for all files matching
+    passed regex string.  If no regex is specified, it returns all files found.
+    :param src_dir: Directory to walk
+    :param regex_str: String describing regex to match when building file list.
+    If unspecified or empty, return all files, optional.
+    :param debug: Whether to display files not matching given regex in src_dir.
+    :return: List of tuples containing path, dirname and file name for each result.
+    """
     res_list = []
     found_count = 0
     if regex_str == "":
@@ -141,7 +196,17 @@ def get_files_matching_regex(src_dir, regex_str="", debug=False):
 
 # takes a source directory, returns a list of tuples of paths amd dirnames
 # list of filenames if no regex_str is specified, returns all directories
-def get_directories_matching_regex(src_dir, regex_str="", debug=False):
+def get_directories_matching_regex(
+    src_dir: str, regex_str: Optional[str] = "", debug: Optional[bool] = False
+):
+    """This function walks a given source directory for all subdirectories matching
+    passed regex string.  If no regex is specified, it returns all subdirectories found.
+    :param src_dir: Directory to walk
+    :param regex_str: String describing regex to match when building subdirectories list.
+    If unspecified or empty, return all subdirectories, optional.
+    :param debug: Whether to display subdirectories not matching given regex in src_dir.
+    :return: List of tuples containing path and subdirectory name each result.
+    """
     res_list = []
     found_count = 0
     if regex_str == "":
