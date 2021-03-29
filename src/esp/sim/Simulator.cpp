@@ -1132,7 +1132,7 @@ agent::Agent::ptr Simulator::addAgent(
   sampleRandomAgentState(state);
   ag->setInitialState(state);
 
-  // Add a RenderTarget to each of the agent's sensors
+  // Add a RenderTarget to each of the agent's visual sensors
   for (auto& it : ag->getSubtreeSensors()) {
     if (it.second.get().isVisualSensor()) {
       sensor::VisualSensor& sensor =

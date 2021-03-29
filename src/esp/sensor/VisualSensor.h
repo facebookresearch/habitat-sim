@@ -16,7 +16,8 @@
 namespace esp {
 namespace gfx {
 class RenderTarget;
-}
+class SensorInfoVisualizer;
+}  // namespace gfx
 
 namespace sensor {
 
