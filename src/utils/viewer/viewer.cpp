@@ -25,10 +25,7 @@
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
-#ifdef ESP_BUILD_WITH_VHACD
-#include "esp/geo/VoxelUtils.h"
-#include "esp/geo/VoxelWrapper.h"
-#endif
+#include "esp/core/configure.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -54,6 +51,10 @@
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
+
+#ifdef ESP_BUILD_WITH_VHACD
+#include "esp/geo/VoxelUtils.h"
+#endif
 
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
@@ -149,6 +150,10 @@ class Viewer : public Mn::Platform::Application {
   void invertGravity();
 
 #ifdef ESP_BUILD_WITH_VHACD
+  void displaySceneDistanceGradientField();
+
+  void iterateAndDisplaySignedDistanceField();
+
   void displayVoxelField(int objectID);
 
   int objectDisplayed = -1;
@@ -271,7 +276,7 @@ Key Commands:
   bool agentLocRecordOn_ = false;
 
 #ifdef ESP_BUILD_WITH_VHACD
-  //! Resolution selection for voxelization.
+  //! The slice of the grid's SDF to visualize.
   int voxelDistance = 0;
 #endif
   /**
@@ -808,6 +813,61 @@ void Viewer::invertGravity() {
 
 #ifdef ESP_BUILD_WITH_VHACD
 
+void Viewer::displaySceneDistanceGradientField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> sceneVoxelization;
+  sceneVoxelization = simulator_->getSceneVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  !Mn::Debug();
+  if (sceneVoxelization == nullptr) {
+    simulator_->createSceneVoxelization(2000000);
+    sceneVoxelization = simulator_->getSceneVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(sceneVoxelization,
+                                           "ESignedDistanceField");
+  }
+  !Mn::Debug();
+
+  // generate a vector field for the SDF gradient
+  esp::geo::generateDistanceGradientField(sceneVoxelization, "GradientField");
+  // generate a mesh of the vector field with boolean isVectorField set to
+  // true
+  !Mn::Debug();
+
+  sceneVoxelization->generateMesh("GradientField");
+
+  // draw the vector field
+  simulator_->setSceneVoxelizationDraw(true, "GradientField");
+}
+
+void Viewer::iterateAndDisplaySignedDistanceField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> sceneVoxelization;
+  sceneVoxelization = simulator_->getSceneVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  if (sceneVoxelization == nullptr) {
+    simulator_->createSceneVoxelization(2000000);
+    sceneVoxelization = simulator_->getSceneVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(sceneVoxelization,
+                                           "ESignedDistanceField");
+  }
+
+  // Set the range of distances to render, and generate a mesh for this (18
+  // is set to be the max distance)
+  Mn::Vector3i dims = sceneVoxelization->getVoxelGridDimensions();
+  int curDistanceVisualization = (voxelDistance % dims[0]);
+  /*sceneVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
+     "SDFSubset", curDistanceVisualization, curDistanceVisualization + 1);*/
+  sceneVoxelization->generateSliceMesh("ESignedDistanceField",
+                                       curDistanceVisualization, -15.0f, 0.0f);
+
+  // Draw the voxel grid
+  simulator_->setSceneVoxelizationDraw(true, "ESignedDistanceField");
+}
+
 bool isTrue(bool val) {
   return val;
 }
@@ -847,7 +907,7 @@ void Viewer::displayVoxelField(int objectID) {
   // Generate the mesh for the boundary voxel grid
   voxelWrapper->generateMesh("Boundary");
 
-  esp::geo::generateManhattanDistanceSDF("Hey!! @@@@");
+  esp::geo::generateEuclideanDistanceSDF(voxelWrapper, "ESignedDistanceField");
 
   // visualizes the Boundary voxel grid
   if (objectID == -1) {
@@ -1391,6 +1451,19 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
+#ifdef ESP_BUILD_WITH_VHACD
+    case KeyEvent::Key::L: {
+      iterateAndDisplaySignedDistanceField();
+      // Increase the distance visualized for next time (Pressing L repeatedly
+      // will visualize different distances)
+      voxelDistance++;
+      break;
+    }
+    case KeyEvent::Key::G: {
+      displaySceneDistanceGradientField();
+      break;
+    }
+#endif
     default:
       break;
   }

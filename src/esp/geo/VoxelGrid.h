@@ -136,6 +136,15 @@ class VoxelGrid {
   std::vector<std::pair<std::string, std::string>> getExistingGrids();
 
   /**
+   * @brief Returns a bool true if a grid exists, false otherwise.
+   * @param gridName The name of the grid.
+   * @return A bool representing whether or not the specified grid exists.
+   */
+  bool gridExists(const std::string& gridName) {
+    return grids_.find(gridName) != grids_.end();
+  }
+
+  /**
    * @brief Removes a grid and frees up memory.
    * @param name The name of the grid to be removed.
    */
@@ -153,6 +162,19 @@ class VoxelGrid {
   template <typename T>
   Cr::Containers::StridedArrayView<3, T> getGrid(const std::string& gridName) {
     return Cr::Containers::arrayCast<T>(grids_[gridName].view);
+  }
+
+  /**
+   * @brief Checks to see if a given 3D voxel index is valid and does not go out
+   * of bounds.
+   * @param coords The voxel index.
+   * @return True if the voxel index is valid, false otherwise.
+   */
+  bool isValidIndex(const Mn::Vector3i& coords) const {
+    return coords[0] >= 0 && coords[1] >= 0 && coords[2] >= 0 &&
+           coords[0] < m_voxelGridDimensions[0] &&
+           coords[1] < m_voxelGridDimensions[1] &&
+           coords[2] < m_voxelGridDimensions[2];
   }
 
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
@@ -195,6 +217,15 @@ class VoxelGrid {
    * @return The Vector3 value representing the size of a voxel.
    */
   Mn::Vector3 getVoxelSize() { return m_voxelSize; }
+
+  /**
+   * @brief Gets the length of the voxel grid.
+   * @return The length of the 1 dimensional array voxel grid.
+   */
+  int gridSize() {
+    return m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+           m_voxelGridDimensions[2];
+  }
 
   /**
    * @brief Returns the bounding box minimum offset used for generating an
@@ -320,19 +351,6 @@ class VoxelGrid {
                                  std::vector<Mn::Color3>& colors);
 
   /**
-   * @brief Checks to see if a given 3D voxel index is valid and does not go out
-   * of bounds.
-   * @param coords The voxel index.
-   * @return True if the voxel index is valid, false otherwise.
-   */
-  bool isValidIndex(const Mn::Vector3i& coords) const {
-    return coords[0] >= 0 && coords[1] >= 0 && coords[2] >= 0 &&
-           coords[0] < m_voxelGridDimensions[0] &&
-           coords[1] < m_voxelGridDimensions[1] &&
-           coords[2] < m_voxelGridDimensions[2];
-  }
-
-  /**
    * @brief Helper function for generate mesh. Adds a cube voxel to a mesh.
    * @param positions A vector of vertices for the mesh.
    * @param colors A vector of per-pertice colors
@@ -364,15 +382,6 @@ class VoxelGrid {
                                  std::vector<Mn::UnsignedInt>& indices,
                                  const Mn::Vector3i& local_coords,
                                  const Mn::Vector3& vec);
-
-  /**
-   * @brief Gets the length of the voxel grid.
-   * @return The length of the 1 dimensional array voxel grid.
-   */
-  int gridSize() {
-    return m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-           m_voxelGridDimensions[2];
-  }
 
  private:
   // The number of voxels on the x, y, and z dimensions of the grid
