@@ -90,11 +90,9 @@ class VoxelGrid {
   void addGrid(const std::string& gridName) {
     VoxelGridType type = voxelGridTypeFor<T>();
 
-    // NOLINTNEXTLINE(google-runtime-int)
-    unsigned long dims[3]{
-        static_cast<unsigned long>(m_voxelGridDimensions[0]),   // NOLINT
-        static_cast<unsigned long>(m_voxelGridDimensions[1]),   // NOLINT
-        static_cast<unsigned long>(m_voxelGridDimensions[2])};  // NOLINT
+    std::size_t dims[3]{static_cast<std::size_t>(m_voxelGridDimensions[0]),
+                        static_cast<std::size_t>(m_voxelGridDimensions[1]),
+                        static_cast<std::size_t>(m_voxelGridDimensions[2])};
 
     Cr::Containers::StridedDimensions<3, std::ptrdiff_t> strides{
         static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] *
