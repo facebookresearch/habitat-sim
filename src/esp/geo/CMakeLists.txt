@@ -10,6 +10,8 @@ add_library(
   VoxelGrid.h
   VoxelWrapper.cpp
   VoxelWrapper.h
+  VoxelUtils.cpp
+  VoxelUtils.h
 )
 
 target_link_libraries(
