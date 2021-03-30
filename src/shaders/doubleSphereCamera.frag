@@ -28,19 +28,15 @@ void main(void) {
   // MUST flip the x axis
   m.x = -m.x;
   float r2 = dot(m.xy, m.xy);
-  float sq1 = 1.0 - (2.0 * Alpha - 1.0) * r2;
-  if (sq1 < 0.0) {
+  float sq1 = 1.0 - (2 * Alpha - 1.0) * r2;
+  if (sq1 < 0.0)
     discard;
-  }
-  // If you're worried about sqrt() called with a negative value, that's fine,
-  // you just get a NaN, which on most drivers would result in a black color
-  // output.
-  m.z = (1.0 - Alpha * Alpha * r2) / (Alpha * sqrt(sq1) + 1.0 - Alpha);
+  m.z = (1 - Alpha * Alpha * r2) / (Alpha * sqrt(sq1) + 1.0 - Alpha);
   float mz2 = m.z * m.z;
+  // unproject to get the ray direction
   float sq2 = mz2 + (1.0 - Xi * Xi) * r2;
-  if (sq2 < 0.0) {
+  if (sq2 < 0.0)
     discard;
-  }
 
   // unproject to get the ray direction
   vec3 ray = (m.z * Xi + sqrt(sq2)) / (mz2 + r2) * m - vec3(0.0, 0.0, Xi);

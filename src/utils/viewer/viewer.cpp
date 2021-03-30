@@ -965,7 +965,6 @@ void Viewer::drawEvent() {
     cubeMapMode_ = !cubeMapMode_;
   }
 #endif
-
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 

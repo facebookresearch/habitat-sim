@@ -53,6 +53,16 @@ void specSanityCheck(FisheyeSensorSpec* spec) {
   actualSpec->sanityCheck();
 }
 
+int computeCubemapSize(const esp::vec2i& resolution,
+                       const Cr::Containers::Optional<int>& cubemapSize) {
+  int size = resolution[0] < resolution[1] ? resolution[0] : resolution[1];
+  // if user sets the size of the cubemap, use it
+  if (cubemapSize != Corrade::Containers::NullOpt) {
+    size = *cubemapSize;
+  }
+  return size;
+}
+
 FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
                              const FisheyeSensorSpec::ptr& spec)
     : VisualSensor(cameraNode, spec) {
@@ -63,12 +73,8 @@ FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
   };
 
   // initialize a cubemap
-  auto& res = fisheyeSensorSpec_->resolution;
-  int size = res[0] < res[1] ? res[0] : res[1];
-  // if user sets the size of the cubemap, use it
-  if (fisheyeSensorSpec_->cubemapSize != Corrade::Containers::NullOpt) {
-    size = *fisheyeSensorSpec_->cubemapSize;
-  }
+  int size = computeCubemapSize(fisheyeSensorSpec_->resolution,
+                                fisheyeSensorSpec_->cubemapSize);
   gfx::CubeMap::Flags cubeMapFlags = {};
   switch (fisheyeSensorSpec_->sensorType) {
     case SensorType::Color:
@@ -132,8 +138,8 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
 
   // in case the fisheye sensor resolution changed at runtime
   {
-    auto& res = fisheyeSensorSpec_->resolution;
-    int size = res[0] < res[1] ? res[0] : res[1];
+    int size = computeCubemapSize(fisheyeSensorSpec_->resolution,
+                                  fisheyeSensorSpec_->cubemapSize);
     bool reset = cubeMap_->reset(size);
     if (reset) {
       cubeMapCamera_->setProjectionMatrix(size, fisheyeSensorSpec_->near,

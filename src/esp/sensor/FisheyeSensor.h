@@ -132,13 +132,11 @@ class FisheyeSensor : public VisualSensor {
   // raw pointer only, we can create it but let magnum to handle the memory
   // recycling when releasing it.
   gfx::CubeMapCamera* cubeMapCamera_;
-  // std::unique_ptr<esp::gfx::CubeMap> cubeMap_ = nullptr;
   Corrade::Containers::Optional<esp::gfx::CubeMap> cubeMap_;
 
   // fisheye shader resource manager, which manages different shaders such as
   // DoubleSphereCameraShader, FieldOfViewCameraShader (TODO) ...
   Magnum::ResourceManager<gfx::FisheyeShader> fisheyeShaderManager_;
-  // Magnum::Resource<gfx::FisheyeShader> shader_;
   // a big triangles that covers the whole screen
   Magnum::GL::Mesh mesh_;
 

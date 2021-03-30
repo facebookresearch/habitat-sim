@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "io.h"
+#include <glob.h>
 #include <fstream>
 #include <set>
 
@@ -106,6 +107,17 @@ std::string removeExtension(const std::string& file) {
   return changeExtension(file, "");
 }
 */
+
+std::vector<std::string> globDirs(const std::string& pattern) {
+  glob_t glob_result;
+  glob(pattern.c_str(), GLOB_MARK, nullptr, &glob_result);
+  std::vector<std::string> ret(glob_result.gl_pathc);
+  for (int i = 0; i < glob_result.gl_pathc; ++i) {
+    ret[i] = std::string(glob_result.gl_pathv[i]);
+  }
+  globfree(&glob_result);
+  return ret;
+}
 
 std::vector<std::string> tokenize(const std::string& string,
                                   const std::string& delimiterCharList,

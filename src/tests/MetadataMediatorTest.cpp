@@ -21,19 +21,32 @@ using esp::metadata::MetadataMediator;
 const std::string physicsConfigFile =
     Cr::Utility::Directory::join(DATA_DIR,
                                  "test_assets/testing.physics_config.json");
-const std::string sceneDatasetConfigFile = Cr::Utility::Directory::join(
-    DATA_DIR,
-    "test_assets/dataset_tests/test_dataset.scene_dataset_config.json");
+
+const std::string datasetTestDirs =
+    Cr::Utility::Directory::join(DATA_DIR, "test_assets/dataset_tests/");
+
+const std::string sceneDatasetConfigFile_0 = Cr::Utility::Directory::join(
+    datasetTestDirs,
+    "dataset_0/test_dataset_0.scene_dataset_config.json");
+
+const std::string sceneDatasetConfigFile_1 = Cr::Utility::Directory::join(
+    datasetTestDirs,
+    "dataset_1/test_dataset_1.scene_dataset_config.json");
 
 class MetadataMediatorTest : public testing::Test {
  protected:
   void SetUp() override {
     // create an appropriate configuration with dataset and physics config to
     // use
-    auto cfg = esp::sim::SimulatorConfiguration{};
-    cfg.sceneDatasetConfigFile = sceneDatasetConfigFile;
-    cfg.physicsConfigFile = physicsConfigFile;
-    MM_ = MetadataMediator::create(cfg);
+    auto cfg_1 = esp::sim::SimulatorConfiguration{};
+    cfg_1.sceneDatasetConfigFile = sceneDatasetConfigFile_1;
+    cfg_1.physicsConfigFile = physicsConfigFile;
+    MM_ = MetadataMediator::create(cfg_1);
+    // reference althernate dataset
+    auto cfg_0 = esp::sim::SimulatorConfiguration{};
+    cfg_0.sceneDatasetConfigFile = sceneDatasetConfigFile_0;
+    cfg_0.physicsConfigFile = physicsConfigFile;
+    MM_->setSimulatorConfiguration(cfg_0);
   };
 
   MetadataMediator::ptr MM_ = nullptr;
