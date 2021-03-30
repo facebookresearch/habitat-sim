@@ -12,6 +12,10 @@ from habitat_sim._ext.habitat_sim_bindings.geo import (
     UP,
     compute_gravity_aligned_MOBB,
     get_transformed_bb,
+    generate_interior_exterior_voxel_grid,
+    generate_manhattan_distance_sdf,
+    generate_euclidean_distance_sdf,
+    generate_distance_gradient_field
 )
 
 __all__ = [
@@ -26,4 +30,8 @@ __all__ = [
     "compute_gravity_aligned_MOBB",
     "get_transformed_bb",
     "Ray",
+    "generate_interior_exterior_voxel_grid",
+    "generate_manhattan_distance_sdf",
+    "generate_euclidean_distance_sdf",
+    "generate_distance_gradient_field"
 ]

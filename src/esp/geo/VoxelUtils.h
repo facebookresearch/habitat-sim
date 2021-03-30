@@ -54,7 +54,7 @@ void generateEuclideanDistanceSDF(
  */
 void generateDistanceGradientField(
     std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
-    const std::string& gridName = "DistanceGradientField");
+    const std::string& gridName);
 
 }  // namespace geo
 }  // namespace esp
