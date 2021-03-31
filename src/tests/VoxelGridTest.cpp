@@ -38,10 +38,10 @@ void VoxelGrid::testVoxelGridWithVHACD() {
 
   auto simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
-  // Voxelize the scene with resolution = 1,000,000 and make asserts
+  // Voxelize the stage with resolution = 1,000,000 and make asserts
   const int resolution = 1000000;
-  simulator_->createSceneVoxelization(resolution);
-  auto voxelization = simulator_->getSceneVoxelization().get();
+  simulator_->createStageVoxelization(resolution);
+  auto voxelization = simulator_->getStageVoxelization().get();
 
   // Verify coordinate conversion works in both directions
   Mn::Vector3i voxelIndex(2, 1, 7);
@@ -73,10 +73,10 @@ void VoxelGrid::testVoxelGridWithVHACD() {
   voxelization->generateMesh("Boundary");
 
   // Only one mesh can be visualized at a time
-  simulator_->setSceneVoxelizationDraw(true, "Boundary");
+  simulator_->setStageVoxelizationDraw(true, "Boundary");
 
   // Turn off visualization
-  simulator_->setSceneVoxelizationDraw(false, "Boundary");
+  simulator_->setStageVoxelizationDraw(false, "Boundary");
 }
 #endif
 
