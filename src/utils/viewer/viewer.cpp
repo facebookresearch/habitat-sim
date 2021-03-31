@@ -150,7 +150,7 @@ class Viewer : public Mn::Platform::Application {
   void invertGravity();
 
 #ifdef ESP_BUILD_WITH_VHACD
-  void displaySceneDistanceGradientField();
+  void displayStageDistanceGradientField();
 
   void iterateAndDisplaySignedDistanceField();
 
@@ -240,8 +240,8 @@ Key Commands:
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
-  'g': (physics) Display a scene vector field.
-  'l': (physics) Iterate through different ranges of the scene's voxelized signed distance field.
+  'g': (physics) Display a stage vector field.
+  'l': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
   ==================================================
   )";
 
@@ -813,58 +813,58 @@ void Viewer::invertGravity() {
 
 #ifdef ESP_BUILD_WITH_VHACD
 
-void Viewer::displaySceneDistanceGradientField() {
+void Viewer::displayStageDistanceGradientField() {
   // Temporary key event used for testing & visualizing Voxel Grid framework
-  std::shared_ptr<esp::geo::VoxelWrapper> sceneVoxelization;
-  sceneVoxelization = simulator_->getSceneVoxelization();
+  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
+  stageVoxelization = simulator_->getStageVoxelization();
 
   // if the object hasn't been voxelized, do that and generate an SDF as
   // well
   !Mn::Debug();
-  if (sceneVoxelization == nullptr) {
-    simulator_->createSceneVoxelization(2000000);
-    sceneVoxelization = simulator_->getSceneVoxelization();
-    esp::geo::generateEuclideanDistanceSDF(sceneVoxelization,
+  if (stageVoxelization == nullptr) {
+    simulator_->createStageVoxelization(2000000);
+    stageVoxelization = simulator_->getStageVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
                                            "ESignedDistanceField");
   }
   !Mn::Debug();
 
   // generate a vector field for the SDF gradient
-  esp::geo::generateDistanceGradientField(sceneVoxelization, "GradientField");
+  esp::geo::generateDistanceGradientField(stageVoxelization, "GradientField");
   // generate a mesh of the vector field with boolean isVectorField set to
   // true
   !Mn::Debug();
 
-  sceneVoxelization->generateMesh("GradientField");
+  stageVoxelization->generateMesh("GradientField");
 
   // draw the vector field
-  simulator_->setSceneVoxelizationDraw(true, "GradientField");
+  simulator_->setStageVoxelizationDraw(true, "GradientField");
 }
 
 void Viewer::iterateAndDisplaySignedDistanceField() {
   // Temporary key event used for testing & visualizing Voxel Grid framework
-  std::shared_ptr<esp::geo::VoxelWrapper> sceneVoxelization;
-  sceneVoxelization = simulator_->getSceneVoxelization();
+  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
+  stageVoxelization = simulator_->getStageVoxelization();
 
   // if the object hasn't been voxelized, do that and generate an SDF as
   // well
-  if (sceneVoxelization == nullptr) {
-    simulator_->createSceneVoxelization(2000000);
-    sceneVoxelization = simulator_->getSceneVoxelization();
-    esp::geo::generateEuclideanDistanceSDF(sceneVoxelization,
+  if (stageVoxelization == nullptr) {
+    simulator_->createStageVoxelization(2000000);
+    stageVoxelization = simulator_->getStageVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
                                            "ESignedDistanceField");
   }
 
   // Set the range of distances to render, and generate a mesh for this (18
   // is set to be the max distance)
-  Mn::Vector3i dims = sceneVoxelization->getVoxelGridDimensions();
+  Mn::Vector3i dims = stageVoxelization->getVoxelGridDimensions();
   int curDistanceVisualization = (voxelDistance % dims[0]);
-  /*sceneVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
+  /*stageVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
      "SDFSubset", curDistanceVisualization, curDistanceVisualization + 1);*/
-  sceneVoxelization->generateSliceMesh("ESignedDistanceField",
+  stageVoxelization->generateSliceMesh("ESignedDistanceField",
                                        curDistanceVisualization, -15.0f, 0.0f);
   // Draw the voxel grid's slice
-  simulator_->setSceneVoxelizationDraw(true, "ESignedDistanceField");
+  simulator_->setStageVoxelizationDraw(true, "ESignedDistanceField");
 }
 
 bool isTrue(bool val) {
@@ -1459,7 +1459,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     }
     case KeyEvent::Key::G: {
-      displaySceneDistanceGradientField();
+      displayStageDistanceGradientField();
       break;
     }
 #endif
