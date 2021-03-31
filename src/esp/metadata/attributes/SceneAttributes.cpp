@@ -34,8 +34,8 @@ const std::map<std::string, managers::SceneInstanceTranslationOrigin>
 };
 SceneAttributes::SceneAttributes(const std::string& handle)
     : AbstractAttributes("SceneAttributes", handle) {
-  // defaults to no lights
-  setLightingHandle(NO_LIGHT_KEY);
+  // defaults to default lighting
+  setLightingHandle(DEFAULT_LIGHTING_KEY);
   // defaults to asset local
   setTranslationOrigin(
       static_cast<int>(managers::SceneInstanceTranslationOrigin::AssetLocal));
