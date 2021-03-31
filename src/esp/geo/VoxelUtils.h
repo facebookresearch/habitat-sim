@@ -56,6 +56,44 @@ void generateDistanceGradientField(
     std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
     const std::string& gridName = "DistanceGradientField");
 
+/**
+ * @brief Returns a vector of all filled/true voxels.
+ * @param voxelWrapper The voxelization.
+ * @param boolGridName The name of the boolean grid to be processed.
+ * @return A vector of Vector3i's
+ */
+std::vector<Mn::Vector3i> getVoxelSetFromBoolGrid(
+    std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
+    const std::string& boolGridName);
+
+/**
+ * @brief Fills a vector with voxel indices that meet some criteria.
+ * @param voxelWrapper The voxelization.
+ * @param intGridName The name of the int grid to be processed.
+ * @param lb The lower bound of voxel values to include.
+ * @param ub The uppper bound of voxel values to include
+ * @return A vector of Vector3i's
+ */
+std::vector<Mn::Vector3i> getVoxelSetFromIntGrid(
+    std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
+    const std::string& intGridName,
+    int lb,
+    int ub);
+
+/**
+ * @brief Fills a vector with voxel indices that meet some criteria.
+ * @param voxelWrapper The voxelization.
+ * @param floatGridName The name of the float grid to be processed.
+ * @param lb The lower bound of voxel values to include.
+ * @param ub The uppper bound of voxel values to include
+ * @return A vector of Vector3i's
+ */
+std::vector<Mn::Vector3i> getVoxelSetFromFloatGrid(
+    std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
+    const std::string& floatGridName,
+    float lb,
+    float ub);
+
 }  // namespace geo
 }  // namespace esp
 #endif
