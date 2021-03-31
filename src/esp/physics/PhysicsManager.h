@@ -585,7 +585,7 @@ class PhysicsManager {
    * @param resolution Represents the approximate number of voxels in the new
    * voxelization.
    */
-  void generateSceneVoxelization(const int resolution = 1000000);
+  void generateStageVoxelization(const int resolution = 1000000);
 #endif
 
   // ============ Object Getter functions =============
@@ -673,7 +673,7 @@ class PhysicsManager {
   /** @brief Gets the VoxelWrapper associated with the scene.
    * @return A pointer to the scene's Voxel Wrapper.
    */
-  std::shared_ptr<esp::geo::VoxelWrapper> getSceneVoxelization() const;
+  std::shared_ptr<esp::geo::VoxelWrapper> getStageVoxelization() const;
 
   // ============= Platform dependent function =============
 
@@ -833,7 +833,7 @@ class PhysicsManager {
    * @param drawables The drawables group with which to render the voxelization.
    * @param drawBB Set rendering of the voxelization to true or false.
    */
-  void setSceneVoxelizationDraw(const std::string& gridName,
+  void setStageVoxelizationDraw(const std::string& gridName,
                                 DrawableGroup* drawables,
                                 bool drawBB);
 

@@ -9,12 +9,13 @@
 namespace esp {
 namespace geo {
 
-// When an object is voxelized, it is given a VoxelWrapper which points to an
-// underlying VoxelGrid and the scene node of the object. This class handles
-// object-specific functionality. Multiple objects will each have there own
-// VoxelWrapper, but each of those VoxelWrappers could share a VoxelGrid if they
-// have the same underlying RenderAssetHandle and Voxel resolution.
-
+/**
+ * @brief When an object is voxelized, it is given a VoxelWrapper which points
+ * to an underlying VoxelGrid and the scene node of the object. This class
+ * handles object-specific functionality. Multiple objects will each have there
+ * own VoxelWrapper, but each of those VoxelWrappers could share a VoxelGrid if
+ * they have the same underlying RenderAssetHandle and Voxel resolution.
+ */
 class VoxelWrapper {
  private:
   esp::scene::SceneNode* SceneNode;
@@ -23,12 +24,13 @@ class VoxelWrapper {
  public:
 #ifdef ESP_BUILD_WITH_VHACD
   /**
-   * @brief Generates or retrieves a voxelization of a render asset mesh
-   * depending on whether it exists or not.
+   * @brief Generates (using VHACD's voxelization functionality) or retrieves a
+   * voxelization of a render asset mesh depending on whether it exists or not.
    * @param renderAssetHandle The handle for the render asset to which the voxel
    * grid corresponds.
    * @param sceneNode The scene node the voxel wrapper will be pointing to.
    * @param resourceManager_ Used for retrieving or registering the voxel grid.
+   * @param resolution The approximate number of voxels for the voxelization.
    */
   VoxelWrapper(const std::string& renderAssetHandle,
                esp::scene::SceneNode* sceneNode,
@@ -37,7 +39,9 @@ class VoxelWrapper {
 #endif
 
   /**
-   * @brief Generates a voxelization with a specified size and dimensions.
+   * @brief Generates a voxelization with a specified size and dimensions. The
+   * voxelization is corner aligned with the object's cumulative bounding box's
+   * corner.
    * @param renderAssetHandle The handle for the render asset to which the voxel
    * grid corresponds.
    * @param sceneNode The scene node the voxel wrapper will be pointing to.
@@ -56,7 +60,7 @@ class VoxelWrapper {
    * @param coords The global coordinate.
    * @return The voxel index corresponding to the global coordinate.
    */
-  Mn::Vector3i getVoxelIndexFromGlobalCoords(Mn::Vector3 coords);
+  Mn::Vector3i getVoxelIndexFromGlobalCoords(const Mn::Vector3& coords);
 
   /**
    * @brief Converts a voxel coordinate into the global coordinates of the
@@ -64,13 +68,13 @@ class VoxelWrapper {
    * @param index The voxel index.
    * @return The global coordinate of the middle of the specified voxel cell.
    */
-  Mn::Vector3 getGlobalCoordsFromVoxelIndex(Mn::Vector3i index);
+  Mn::Vector3 getGlobalCoordsFromVoxelIndex(const Mn::Vector3i& index);
 
   /**
    * @brief Returns the underlying voxel grid for direct manipulation.
    * @return The underlying voxel grid.
    */
-  std::shared_ptr<VoxelGrid> getVoxelGrid();
+  std::shared_ptr<VoxelGrid> getVoxelGrid() { return voxelGrid; }
 
   /**
    * @brief Returns a list of existing voxel grids and their types.
@@ -90,7 +94,6 @@ class VoxelWrapper {
   template <typename T>
   void addGrid(const std::string& gridName) {
     voxelGrid->addGrid<T>(gridName);
-    // return getGrid<T>(gridName);
   }
 
   /**
@@ -104,7 +107,7 @@ class VoxelWrapper {
   /**
    * @brief Returns a StridedArrayView3D of a grid for easy index access and
    * manipulation.
-   * @param name The name of the grid to be removed.
+   * @param gridName The name of the grid to be removed.
    * @return A StridedArrayView3D of the specified grid.
    */
   template <typename T>
@@ -121,7 +124,7 @@ class VoxelWrapper {
    * @param value The new value.
    */
   template <typename T>
-  void setVoxel(Mn::Vector3i index,
+  void setVoxel(const Mn::Vector3i& index,
                 const std::string& gridName,
                 const T& value) {
     auto arrayView3D = getGrid<T>(gridName);
@@ -136,7 +139,7 @@ class VoxelWrapper {
    * @return The value from the specified voxel grid.
    */
   template <typename T>
-  T getVoxel(Mn::Vector3i index, const std::string& gridName) {
+  T getVoxel(const Mn::Vector3i& index, const std::string& gridName) {
     auto arrayView3D = getGrid<T>(gridName);
     return arrayView3D[index[0]][index[1]][index[2]];
   }
@@ -205,9 +208,9 @@ class VoxelWrapper {
   void setOffset(const Mn::Vector3& coords) { voxelGrid->setOffset(coords); }
 
   /**
-   * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.
+   * @brief Generates both a MeshData and MeshGL for a particular voxelGrid. Can
+   * be a Bool grid or a Vector3 grid.
    * @param gridName The name of the voxel grid to be converted into a mesh.
-   * @param isVectorField If set to true, a vector field mesh will be generated.
    */
   void generateMesh(const std::string& gridName = "Boundary") {
     voxelGrid->generateMesh(gridName);

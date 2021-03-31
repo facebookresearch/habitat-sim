@@ -461,7 +461,7 @@ void PhysicsManager::generateVoxelization(const int physObjectID,
       ->generateVoxelization(resourceManager_, resolution);
 }
 
-void PhysicsManager::generateSceneVoxelization(const int resolution) {
+void PhysicsManager::generateStageVoxelization(const int resolution) {
   staticStageObject_->generateVoxelization(resourceManager_, resolution);
 }
 #endif
@@ -517,7 +517,7 @@ std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getObjectVoxelization(
   return existingObjects_.at(physObjectID)->getVoxelization();
 }
 
-std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getSceneVoxelization()
+std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getStageVoxelization()
     const {
   return staticStageObject_->getVoxelization();
 }
@@ -555,17 +555,16 @@ void PhysicsManager::setObjectVoxelizationDraw(int physObjectID,
                                                bool drawVoxelization) {
   assertIDValidity(physObjectID);
   setVoxelizationDraw(gridName,
-                      dynamic_cast<esp::physics::RigidBase*>(
+                      static_cast<esp::physics::RigidBase*>(
                           existingObjects_.at(physObjectID).get()),
                       drawables, drawVoxelization);
 }
 
-void PhysicsManager::setSceneVoxelizationDraw(const std::string& gridName,
+void PhysicsManager::setStageVoxelizationDraw(const std::string& gridName,
                                               DrawableGroup* drawables,
                                               bool drawVoxelization) {
   setVoxelizationDraw(
-      gridName,
-      dynamic_cast<esp::physics::RigidBase*>(staticStageObject_.get()),
+      gridName, static_cast<esp::physics::RigidBase*>(staticStageObject_.get()),
       drawables, drawVoxelization);
 }
 

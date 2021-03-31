@@ -829,8 +829,8 @@ void Viewer::displayVoxelField(int objectID) {
   unsigned int resolution = 2000000;
   std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper;
   if (objectID == -1) {
-    simulator_->createSceneVoxelization(resolution);
-    voxelWrapper = simulator_->getSceneVoxelization();
+    simulator_->createStageVoxelization(resolution);
+    voxelWrapper = simulator_->getStageVoxelization();
   } else {
     simulator_->createObjectVoxelization(objectID, resolution);
     voxelWrapper = simulator_->getObjectVoxelization(objectID);
@@ -838,7 +838,7 @@ void Viewer::displayVoxelField(int objectID) {
 
   // turn off the voxel grid visualization for the last voxelized object
   if (objectDisplayed == -1) {
-    simulator_->setSceneVoxelizationDraw(false, "Boundary");
+    simulator_->setStageVoxelizationDraw(false, "Boundary");
   } else if (objectDisplayed >= 0) {
     simulator_->setObjectVoxelizationDraw(false, objectDisplayed, "Boundary");
   }
@@ -848,7 +848,7 @@ void Viewer::displayVoxelField(int objectID) {
 
   // visualizes the Boundary voxel grid
   if (objectID == -1) {
-    simulator_->setSceneVoxelizationDraw(true, "Boundary");
+    simulator_->setStageVoxelizationDraw(true, "Boundary");
   } else {
     simulator_->setObjectVoxelizationDraw(true, objectID, "Boundary");
   }

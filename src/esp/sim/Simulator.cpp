@@ -837,20 +837,20 @@ std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getObjectVoxelization(
 }
 
 #ifdef ESP_BUILD_WITH_VHACD
-void Simulator::createSceneVoxelization(int resolution) {
-  physicsManager_->generateSceneVoxelization(resolution);
+void Simulator::createStageVoxelization(int resolution) {
+  physicsManager_->generateStageVoxelization(resolution);
 }
 #endif
 
-void Simulator::setSceneVoxelizationDraw(bool drawV,
+void Simulator::setStageVoxelizationDraw(bool drawV,
                                          const std::string& gridName) {
   auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
   auto& drawables = sceneGraph_.getDrawables();
-  physicsManager_->setSceneVoxelizationDraw(gridName, &drawables, drawV);
+  physicsManager_->setStageVoxelizationDraw(gridName, &drawables, drawV);
 }
 
-std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getSceneVoxelization() {
-  return physicsManager_->getSceneVoxelization();
+std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getStageVoxelization() {
+  return physicsManager_->getStageVoxelization();
 }
 
 void Simulator::setObjectSemanticId(uint32_t semanticId,

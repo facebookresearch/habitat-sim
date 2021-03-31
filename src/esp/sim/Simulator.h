@@ -548,7 +548,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void createSceneVoxelization(int resolution = 1000000);
+  void createStageVoxelization(int resolution = 1000000);
 #endif
 
   /**
@@ -562,14 +562,14 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void setSceneVoxelizationDraw(bool drawV,
+  void setStageVoxelizationDraw(bool drawV,
                                 const std::string& gridName = "Boundary");
 
   /**
    * @brief Returns the VoxelWrapper for a particular object.
    * @return A shared ptr to the object's VoxelWrapper .
    */
-  std::shared_ptr<esp::geo::VoxelWrapper> getSceneVoxelization();
+  std::shared_ptr<esp::geo::VoxelWrapper> getStageVoxelization();
 
   /**
    * @brief Registers a voxel wrapper in a a dictionary.
