@@ -132,38 +132,19 @@ Mn::GL::Mesh& VoxelGrid::getMeshGL(const std::string& gridName) {
 }
 
 Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
-  Mn::Vector3 global_coords((coords[0]) * m_voxelSize[0],
-                            (coords[1]) * m_voxelSize[1],
-                            (coords[2]) * m_voxelSize[2]);
-  global_coords += m_offset;
-  return global_coords;
+  return Mn::Vector3(coords) * m_voxelSize + m_offset;
 }
 
 void VoxelGrid::fillBoolGridNeighborhood(std::vector<bool>& neighbors,
                                          const std::string& gridName,
                                          const Mn::Vector3i& index) {
-  for (int i = 0; i < 6; i++) {
-    neighbors.push_back(false);
-  }
+  std::vector<Mn::Vector3i> increments = {{0, 0, 1},  {1, 0, 0},  {0, 1, 0},
+                                          {0, 0, -1}, {0, -1, 0}, {-1, 0, 0}};
   auto grid = getGrid<bool>(gridName);
-  neighbors[0] = isValidIndex(index + Mn::Vector3i(0, 0, 1))
-                     ? grid[index[0]][index[1]][index[2] + 1]
-                     : false;
-  neighbors[1] = isValidIndex(index + Mn::Vector3i(1, 0, 0))
-                     ? grid[index[0] + 1][index[1]][index[2]]
-                     : false;
-  neighbors[2] = isValidIndex(index + Mn::Vector3i(0, 1, 0))
-                     ? grid[index[0]][index[1] + 1][index[2]]
-                     : false;
-  neighbors[3] = isValidIndex(index + Mn::Vector3i(0, 0, -1))
-                     ? grid[index[0]][index[1]][index[2] - 1]
-                     : false;
-  neighbors[4] = isValidIndex(index + Mn::Vector3i(0, -1, 0))
-                     ? grid[index[0]][index[1] - 1][index[2]]
-                     : false;
-  neighbors[5] = isValidIndex(index + Mn::Vector3i(-1, 0, 0))
-                     ? grid[index[0] - 1][index[1]][index[2]]
-                     : false;
+  for (int i = 0; i < 6; i++) {
+    auto n = index + increments[i];
+    neighbors.push_back(isValidIndex(n) ? grid[n[0]][n[1]][n[2]] : false);
+  }
 }
 
 void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
@@ -293,44 +274,22 @@ void VoxelGrid::generateMeshDataAndMeshGL(const std::string& gridName,
                                           std::vector<Mn::Color3>& colors) {
   // If the mesh already exists, replace it. Otherwise, create a new entry in
   // the dict
-  if (meshDataDict_.find(gridName) != meshDataDict_.end()) {
-    Mn::Trade::MeshData positionMeshData{
-        Mn::MeshPrimitive::Triangles,
-        {},
-        indices,
-        Mn::Trade::MeshIndexData{indices},
-        {},
-        positions,
-        {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
-                                      Cr::Containers::arrayView(positions)}}};
-    meshDataDict_[gridName] =
-        std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::interleave(
-            positionMeshData,
-            {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color,
-                                          Cr::Containers::arrayView(colors)},
-             Mn::Trade::MeshAttributeData{
-                 Mn::Trade::MeshAttribute::Normal,
-                 Cr::Containers::arrayView(normals)}}));
-  } else {
-    Mn::Trade::MeshData positionMeshData{
-        Mn::MeshPrimitive::Triangles,
-        {},
-        indices,
-        Mn::Trade::MeshIndexData{indices},
-        {},
-        positions,
-        {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
-                                      Cr::Containers::arrayView(positions)}}};
-    meshDataDict_.insert(std::make_pair(
-        gridName,
-        std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::interleave(
-            positionMeshData,
-            {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color,
-                                          Cr::Containers::arrayView(colors)},
-             Mn::Trade::MeshAttributeData{
-                 Mn::Trade::MeshAttribute::Normal,
-                 Cr::Containers::arrayView(normals)}}))));
-  }
+  Mn::Trade::MeshData positionMeshData{
+      Mn::MeshPrimitive::Triangles,
+      {},
+      indices,
+      Mn::Trade::MeshIndexData{indices},
+      {},
+      positions,
+      {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
+                                    Cr::Containers::arrayView(positions)}}};
+  meshDataDict_[gridName] =
+      std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::interleave(
+          positionMeshData,
+          {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color,
+                                        Cr::Containers::arrayView(colors)},
+           Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal,
+                                        Cr::Containers::arrayView(normals)}}));
 
   // If the mesh already exists, replace it. Otherwise, create a new entry in
   // the dict

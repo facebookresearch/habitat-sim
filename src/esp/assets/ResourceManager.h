@@ -313,7 +313,7 @@ class ResourceManager {
    * registered or not.
    * @param voxelGridName The key identifying the asset in @ref resourceDict_.
    * Typically the filepath of file-based assets.
-   * @return The asset's @ref MeshMetaData object.
+   * @return Whether or not the specified grid exists.
    */
   bool voxelGridExists(const std::string& voxelGridName) const {
     return voxelGridDict_.count(voxelGridName) > 0;
@@ -323,7 +323,7 @@ class ResourceManager {
    * @brief Retrieve a VoxelGrid given a particular voxel grid handle.
    * @param voxelGridName The key identifying the asset in @ref resourceDict_.
    * Typically the filepath of file-based assets.
-   * @return The asset's @ref MeshMetaData object.
+   * @return The specified VoxelGrid.
    */
   std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
       const std::string& voxelGridName) const {
@@ -336,6 +336,7 @@ class ResourceManager {
    * voxelGridDict_ if no such VoxelGrid has been registered.
    * @param VoxelGrid The pointer to the VoxelGrid
    * @param voxelGridHandle The key to register the VoxelGrid under.
+   * @return Whether or not the registration succeeded.
    */
   bool registerVoxelGrid(
       const std::string& voxelGridHandle,
@@ -467,8 +468,6 @@ class ResourceManager {
    * and @ref ShaderType.
    *
    * Add this drawable to the @ref DrawableGroup if provided.
-   * @param shaderType Indentifies the desired shader program for rendering
-   * the @ref gfx::Drawable.
    * @param mesh The render mesh.
    * @param meshAttributeFlags flags for the attributes of the render mesh
    * @param node The @ref scene::SceneNode to which the drawable will be
@@ -477,13 +476,8 @@ class ResourceManager {
    * for the drawable.
    * @param materialKey The @ref MaterialData key that will be used
    * for the drawable.
-   * @param meshID Optional, the index of this mesh component stored in
-   * meshes_
    * @param group Optional @ref DrawableGroup with which the render the @ref
    * gfx::Drawable.
-   * @param texture Optional texture for the mesh.
-   * @param color Optional color parameter for the shader program. Defaults to
-   * white.
    */
 
   void createDrawable(Mn::GL::Mesh& mesh,

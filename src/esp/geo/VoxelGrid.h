@@ -49,6 +49,7 @@ class VoxelGrid {
    * @brief Generates a Boundary voxel grid using VHACD's voxelization
    * framework.
    * @param MeshData The mesh that will be voxelized
+   * @param renderAssetHandle The handle for the render asset.
    * @param resolution The approximate number of voxels in the voxel grid.
    */
   VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
@@ -66,16 +67,6 @@ class VoxelGrid {
             const Mn::Vector3i& voxelGridDimensions);
 
   /**
-   * @brief Loads a Voxel grid in from a file path. If the filepath points to a
-   * directory, all .svx files will be loaded. If file path points to a file,
-   * this file must represent a boolean voxel grid which will represent the
-   * voxel grid's Boundary grid.
-   * @param filepath Can either be the path to a directory or a single .svx
-   * file.
-   */
-  explicit VoxelGrid(const std::string& filepath);
-
-  /**
    * @brief Gets the enumerated type of a particular voxel grid type.
    * @return The enumerated type.
    */
@@ -84,17 +75,16 @@ class VoxelGrid {
 
   /**
    * @brief Generates a new empty voxel grid of a specified type.
-   * @param name The key underwhich the grid will be registered and accessed.
+   * @param gridName The key under which the grid will be registered and
+   * accessed.
    */
   template <typename T>
   void addGrid(const std::string& gridName) {
     VoxelGridType type = voxelGridTypeFor<T>();
 
-    // NOLINTNEXTLINE(google-runtime-int)
-    std::size_t dims[3]{
-        static_cast<std::size_t>(m_voxelGridDimensions[0]),   // NOLINT
-        static_cast<std::size_t>(m_voxelGridDimensions[1]),   // NOLINT
-        static_cast<std::size_t>(m_voxelGridDimensions[2])};  // NOLINT
+    std::size_t dims[3]{static_cast<std::size_t>(m_voxelGridDimensions[0]),
+                        static_cast<std::size_t>(m_voxelGridDimensions[1]),
+                        static_cast<std::size_t>(m_voxelGridDimensions[2])};
 
     Cr::Containers::StridedDimensions<3, std::ptrdiff_t> strides{
         static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] *
@@ -108,7 +98,7 @@ class VoxelGrid {
 
       grids_[gridName].data = Corrade::Containers::Array<char>(
           Corrade::Containers::ValueInit, gridSize() * sizeof(T));
-      // auto view1 = Cr::Containers::arrayCast<bool>();
+
       Cr::Containers::StridedArrayView<3, void> view{grids_[gridName].data,
                                                      dims, strides};
       grids_[gridName].view = view;
@@ -156,7 +146,7 @@ class VoxelGrid {
   /**
    * @brief Returns a StridedArrayView3D of a grid for easy index access and
    * manipulation.
-   * @param name The name of the grid to be removed.
+   * @param gridName The name of the grid to be removed.
    * @return A StridedArrayView3D of the specified grid.
    */
   template <typename T>
@@ -171,10 +161,7 @@ class VoxelGrid {
    * @return True if the voxel index is valid, false otherwise.
    */
   bool isValidIndex(const Mn::Vector3i& coords) const {
-    return coords[0] >= 0 && coords[1] >= 0 && coords[2] >= 0 &&
-           coords[0] < m_voxelGridDimensions[0] &&
-           coords[1] < m_voxelGridDimensions[1] &&
-           coords[2] < m_voxelGridDimensions[2];
+    return bool(coords >= Mn::Vector3i() && coords < m_voxelGridDimensions);
   }
 
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
@@ -186,7 +173,7 @@ class VoxelGrid {
    * @param value The new value.
    */
   template <typename T>
-  void setVoxel(Mn::Vector3i index,
+  void setVoxel(const Mn::Vector3i& index,
                 const std::string& gridName,
                 const T& value) {
     auto arrayView3D = getGrid<T>(gridName);
@@ -201,7 +188,7 @@ class VoxelGrid {
    * @return The value from the specified voxel grid.
    */
   template <typename T>
-  T getVoxel(Mn::Vector3i index, const std::string& gridName) {
+  T getVoxel(const Mn::Vector3i& index, const std::string& gridName) {
     auto arrayView3D = getGrid<T>(gridName);
     return arrayView3D[index[0]][index[1]][index[2]];
   }
@@ -277,7 +264,6 @@ class VoxelGrid {
   /**
    * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.
    * @param gridName The name of the voxel grid to be converted into a mesh.
-   * @param isVectorField If set to true, a vector field mesh will be generated.
    */
   void generateMesh(const std::string& gridName = "Boundary");
 
@@ -303,9 +289,7 @@ class VoxelGrid {
     std::vector<Mn::Vector3> normals;
     std::vector<Mn::Color3> colors;
     auto grid = getGrid<T>(gridName);
-    // TODO: generate underlying structure without registering it
-    // fill the grid
-    // add
+
     // iterate through each voxel grid cell
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
@@ -326,7 +310,7 @@ class VoxelGrid {
  protected:
   /**
    * @brief Fills vector neighbors with 6 booleans representing the top (y+1),
-   * bottom (y-1), right (x+1), left (x-1), back (z + 1) and front (z-1)
+   * bottom (x+1), right (y+1), left (y-1), back (z-1) and front (x-1)
    * neighboring voxel's status.
    * @param [in] neighbors The vector of booleans to be filled.
    * @param gridName The name of the boolean grid to be checked.
@@ -371,7 +355,8 @@ class VoxelGrid {
    * @brief Helper function for generate mesh. Adds a vector voxel to a mesh
    * which points in a specified direction.
    * @param positions A vector of vertices for the mesh.
-   * @param colors A vector of per-pertice colors
+   * @param normals A vector of per-vertex normals for the mesh
+   * @param colors A vector of per-vertex colors
    * @param indices A vector of indicies for the faces on the mesh.
    * @param local_coords A voxel index specifying the location of the voxel.
    * @param vec The vector to be converted into a mesh.
