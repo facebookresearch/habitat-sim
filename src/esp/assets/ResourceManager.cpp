@@ -1106,6 +1106,10 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
   importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  Cr::PluginManager::PluginMetadata* const assimpmetadata =
+      importerManager_.metadata("AssimpImporter");
+  assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
+                                           "true");
 #endif
   {
     Cr::PluginManager::PluginMetadata* const metadata =
