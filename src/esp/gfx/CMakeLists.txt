@@ -1,5 +1,7 @@
 set(
   gfx_SOURCES
+  CubeMap.cpp
+  CubeMap.h
   DepthUnprojection.cpp
   DepthUnprojection.h
   Drawable.cpp
@@ -43,8 +45,10 @@ set(
   PbrDrawable.h
   DepthVisualizerShader.cpp
   DepthVisualizerShader.h
-  SensorInfoVisualizer.cpp
-  SensorInfoVisualizer.h
+  DoubleSphereCameraShader.cpp
+  DoubleSphereCameraShader.h
+  FisheyeShader.cpp
+  FisheyeShader.h
 )
 
 # If ptex support is enabled add relevant source files

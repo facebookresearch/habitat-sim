@@ -10,7 +10,9 @@
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/gfx/replay/Player.h"
 #include "esp/gfx/replay/Recorder.h"
+#include "esp/gfx/replay/ReplayManager.h"
 #include "esp/scene/SceneManager.h"
+#include "esp/sim/Simulator.h"
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Directory.h>
@@ -27,6 +29,8 @@ namespace Mn = Magnum;
 using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
+using esp::sim::Simulator;
+using esp::sim::SimulatorConfiguration;
 
 // Helper function to get numberOfChildrenOfRoot
 int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
@@ -306,6 +310,48 @@ TEST(GfxReplayTest, playerReadInvalidFile) {
   bool success = Corrade::Utility::Directory::rm(testFilepath);
   if (!success) {
     LOG(WARNING) << "GfxReplayTest::playerReadInvalidFile : unable to remove "
+                    "temporary test JSON file "
+                 << testFilepath;
+  }
+}
+
+// test recording and playback through the simulator interface
+TEST(GfxReplayTest, simulatorIntegration) {
+  std::string boxFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+  auto testFilepath =
+      Corrade::Utility::Directory::join(DATA_DIR, "./gfx_replay_test.json");
+
+  SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = boxFile;
+  simConfig.enableGfxReplaySave = true;
+
+  auto sim = Simulator::create_unique(simConfig);
+  auto& sceneGraph = sim->getActiveSceneGraph();
+  auto& rootNode = sceneGraph.getRootNode();
+  auto prevNumberOfChildrenOfRoot = getNumberOfChildrenOfRoot(rootNode);
+
+  const auto recorder = sim->getGfxReplayManager()->getRecorder();
+  EXPECT_TRUE(recorder);
+  recorder->saveKeyframe();
+  recorder->writeSavedKeyframesToFile(testFilepath);
+
+  auto player = sim->getGfxReplayManager()->readKeyframesFromFile(testFilepath);
+  EXPECT_TRUE(player);
+  EXPECT_EQ(player->getNumKeyframes(), 1);
+  player->setKeyframeIndex(0);
+  // second copy of box was loaded
+  EXPECT_EQ(getNumberOfChildrenOfRoot(rootNode),
+            prevNumberOfChildrenOfRoot + 1);
+
+  player = nullptr;
+  // second copy of box removed when Player is deleted
+  EXPECT_EQ(getNumberOfChildrenOfRoot(rootNode), prevNumberOfChildrenOfRoot);
+
+  // remove file created for this test
+  bool success = Corrade::Utility::Directory::rm(testFilepath);
+  if (!success) {
+    LOG(WARNING) << "GfxReplayTest::simulatorIntegration : unable to remove "
                     "temporary test JSON file "
                  << testFilepath;
   }

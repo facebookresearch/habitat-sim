@@ -730,9 +730,9 @@ class Simulator {
    * @return            handle to sensor initialized
    *
    */
-  esp::sensor::Sensor::ptr addSensorToObject(
+  esp::sensor::Sensor& addSensorToObject(
       const int objectId,
-      esp::sensor::SensorSpec::ptr& sensorSpec);
+      const esp::sensor::SensorSpec::ptr& sensorSpec);
 
   /**
    * @brief Displays observations on default frame buffer for a
@@ -950,7 +950,7 @@ class Simulator {
     return isValidScene(sceneID) && physicsManager_ != nullptr;
   }
 
-  void reconfigureReplayManager();
+  void reconfigureReplayManager(bool enableGfxReplaySave);
 
   gfx::WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<gfx::Renderer> renderer_ = nullptr;

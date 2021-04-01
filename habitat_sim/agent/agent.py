@@ -107,9 +107,7 @@ class AgentConfiguration(object):
     linear_friction: float = 0.5
     angular_friction: float = 1.0
     coefficient_of_restitution: float = 0.0
-    sensor_specifications: List[hsim.SensorSpec] = attr.Factory(
-        lambda: [hsim.SensorSpec()]
-    )
+    sensor_specifications: List[hsim.SensorSpec] = []
     action_space: Dict[Any, ActionSpec] = attr.Factory(_default_action_space)
     body_type: str = "cylinder"
 
@@ -181,7 +179,8 @@ class Agent(object):
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        self._sensors.add(hsim.CameraSensor(self.scene_node.create_child(), spec))
+        sensor_suite = hsim.SensorFactory.create_sensors(self.scene_node, [spec])
+        self._sensors.add(sensor_suite[spec.uuid])
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id

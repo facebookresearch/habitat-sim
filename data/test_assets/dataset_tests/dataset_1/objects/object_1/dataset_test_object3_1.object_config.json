@@ -1,0 +1,9 @@
+{
+  "render_asset": "dataset_test_object3_1.glb",
+  "collision_asset": "icosphereSolid_subdivs_1",
+  "collision_asset_size": [
+    0.25,
+    0.25,
+    0.25
+  ]
+}

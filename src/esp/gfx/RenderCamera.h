@@ -42,7 +42,6 @@ class RenderCamera : public MagnumCamera {
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
   CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
-
   /**
    * @brief Constructor
    * @param node, the scene node to which the camera is attached

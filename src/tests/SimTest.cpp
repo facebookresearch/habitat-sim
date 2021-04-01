@@ -34,10 +34,10 @@ using esp::metadata::attributes::AbstractPrimitiveAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 using esp::nav::PathFinder;
 using esp::sensor::CameraSensor;
+using esp::sensor::CameraSensorSpec;
 using esp::sensor::Observation;
 using esp::sensor::ObservationSpace;
 using esp::sensor::ObservationSpaceType;
-using esp::sensor::SensorSpec;
 using esp::sensor::SensorType;
 using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
@@ -214,7 +214,7 @@ void SimTest::reset() {
   CORRADE_VERIFY(true);
   auto testReset = [&](Simulator& simulator) {
     PathFinder::ptr pathfinder = simulator.getPathFinder();
-    auto pinholeCameraSpec = SensorSpec::create();
+    auto pinholeCameraSpec = CameraSensorSpec::create();
     pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
     pinholeCameraSpec->sensorType = SensorType::Color;
     pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
@@ -254,7 +254,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
     Magnum::Float maxThreshold,
     Magnum::Float meanThreshold) {
   // do not rely on default SensorSpec default constructor to remain constant
-  auto pinholeCameraSpec = SensorSpec::create();
+  auto pinholeCameraSpec = CameraSensorSpec::create();
   pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
   pinholeCameraSpec->sensorType = SensorType::Color;
   pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
@@ -728,22 +728,19 @@ void SimTest::addSensorToObject() {
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("sphere");
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
 
   // Add sensor to sphere object
-  esp::sensor::SensorSuite sensorSuite;
-  esp::sensor::SensorSpec::ptr objectSensorSpec =
-      esp::sensor::SensorSpec::create();
+  auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
   objectSensorSpec->uuid = std::to_string(objectID);
   objectSensorSpec->position = {0, 0, 0};
   objectSensorSpec->orientation = {0, 0, 0};
   objectSensorSpec->resolution = {128, 128};
-  sensorSuite.add(simulator->addSensorToObject(objectID, objectSensorSpec));
+  simulator->addSensorToObject(objectID, objectSensorSpec);
   std::string expectedUUID = std::to_string(objectID);
-  CORRADE_VERIFY(
-      sensorSuite.get(expectedUUID));  // Verify that Sensor exists with uuid
-  CameraSensor* cameraSensor =
-      dynamic_cast<CameraSensor*>(sensorSuite.get(expectedUUID).get());
-  cameraSensor->setTransformationFromSpec();
+  CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
+      objectNode.getNodeSensorSuite().get(expectedUUID));
+  cameraSensor.setTransformationFromSpec();
 
   simulator->setTranslation({1.0f, 1.5f, 1.0f},
                             objectID);  // Move camera to same place as agent
@@ -752,12 +749,14 @@ void SimTest::addSensorToObject() {
   int objectID2 = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
+  esp::scene::SceneNode& objectNode2 =
+      *simulator->getObjectSceneNode(objectID2);
 
   Observation observation;
   ObservationSpace obsSpace;
-  simulator->getRenderer()->bindRenderTarget(*cameraSensor);
-  CORRADE_VERIFY(cameraSensor->getObservation(*simulator, observation));
-  CORRADE_VERIFY(cameraSensor->getObservationSpace(obsSpace));
+  simulator->getRenderer()->bindRenderTarget(cameraSensor);
+  CORRADE_VERIFY(cameraSensor.getObservation(*simulator, observation));
+  CORRADE_VERIFY(cameraSensor.getObservationSpace(obsSpace));
 
   esp::vec2i defaultResolution = {128, 128};
   std::vector<size_t> expectedShape{{static_cast<size_t>(defaultResolution[0]),

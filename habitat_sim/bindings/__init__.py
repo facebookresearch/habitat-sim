@@ -9,6 +9,7 @@
 
 from habitat_sim._ext.habitat_sim_bindings import (
     CameraSensor,
+    CameraSensorSpec,
     ConfigurationGroup,
     GreedyFollowerCodes,
     GreedyGeodesicFollowerImpl,
@@ -19,6 +20,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
     SceneNode,
     SceneNodeType,
     Sensor,
+    SensorFactory,
     SensorSpec,
     SensorSubType,
     SensorType,
@@ -27,6 +29,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
 from habitat_sim._ext.habitat_sim_bindings import (
     SimulatorConfiguration,
+    VisualSensorSpec,
     cuda_enabled,
     vhacd_enabled,
 )

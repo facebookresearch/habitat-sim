@@ -154,34 +154,39 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 ## Installation
 
 Habitat-Sim can be installed in 3 ways:
-1. Via Conda - Recommended method for most users. Nightly and stable release builds.
+1. Via Conda - Recommended method for most users. Stable release and nightly builds.
 2. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/).
 3. Via Source - For active development.
 
 ### [Recommended] Conda Packages
 
-We provide conda packages for [the most recent release](https://anaconda.org/aihabitat) and built [nightly for the master branch](https://anaconda.org/aihabitat-nightly). Packages are provided for standard (with display) and headless (without display) systems, with and without Bullet physics support.
+Habitat is under active development, and we advise users to restrict themselves to [stable releases](https://github.com/facebookresearch/habitat-sim/releases).
+Starting with v0.1.4, we provide [conda packages for each release](https://anaconda.org/aihabitat). This is the recommended and easiest way to install Habitat-Sim.
 
-
-To install habitat-sim on machines with an attached display:
-
-```
-conda install habitat-sim -c conda-forge -c aihabitat
-```
-
-To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs:
-
-```
-conda install habitat-sim headless -c conda-forge -c aihabitat
+Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) installed, let's prepare a conda env:
+```bash
+# We require python>=3.6 and cmake>=3.10
+conda create -n habitat python=3.6 cmake=3.14.0
+conda activate habitat
+pip install -r requirements.txt
 ```
 
-To install habitat-sim with bullet physics [on a headless system]
+Next, pick one of the options below depending on your system/needs:
 
-```
-conda install habitat-sim withbullet [headless] -c conda-forge -c aihabitat
-```
+- To install habitat-sim on machines with an attached display:
+   ```bash
+     conda install habitat-sim -c conda-forge -c aihabitat
+   ```
+- To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs:
+   ```
+   conda install habitat-sim headless -c conda-forge -c aihabitat
+   ```
+- To install habitat-sim with bullet physics [on a headless system]
+   ```
+   conda install habitat-sim withbullet [headless] -c conda-forge -c aihabitat
+   ```
 
-To get the nightly build of the latest master, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
+Conda packages for older versions can installed by explicitly specifying the version, e.g. `condo install habitat-sim=0.1.6 -c conda-forge -c aihabitat`. We also provide a [nightly conda build for the master branch](https://anaconda.org/aihabitat-nightly). However, this should only be used if you need a specific feature not yet in the latest release version. To get the nightly build of the latest master, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
 
 
 ### Docker Image

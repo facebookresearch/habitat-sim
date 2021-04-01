@@ -31,10 +31,11 @@ class WebDemo {
 
     this.simenv.addAgent(agentConfig);
 
-    if (initializeTopDown) {
+    let topdownElement = document.getElementById("topdown");
+    if (initializeTopDown && topdownElement) {
       this.topdown = new TopDownMap(
         this.simenv.getPathFinder(),
-        document.getElementById("topdown")
+        topdownElement
       );
     } else {
       this.topdown = null;
@@ -59,21 +60,25 @@ class WebDemo {
     const sensorConfigs = [
       {
         uuid: "rgb",
-        sensorType: Module.SensorType.COLOR
+        sensorType: Module.SensorType.COLOR,
+        sensorSubType: Module.SensorSubType.PINHOLE
       },
       {
         uuid: "left_eye",
         sensorType: Module.SensorType.COLOR,
+        sensorSubType: Module.SensorSubType.PINHOLE,
         resolution: [1024, 1024]
       },
       {
         uuid: "right_eye",
         sensorType: Module.SensorType.COLOR,
+        sensorSubType: Module.SensorSubType.PINHOLE,
         resolution: [1024, 1024]
       },
       {
         uuid: "semantic",
         sensorType: Module.SensorType.SEMANTIC,
+        sensorSubType: Module.SensorSubType.PINHOLE,
         channels: 1
       }
     ];
