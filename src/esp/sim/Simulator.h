@@ -503,13 +503,13 @@ class Simulator {
 
 #ifdef ESP_BUILD_WITH_VHACD
   /**
-   * @brief Creates a voxelization for a particular object.
+   * @brief Creates a voxelization for a particular object. Initializes the
+   * voxelization with a boundary voxel grid using VHACD's voxelization library.
    *
    * @param objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
-   * @param resolution The resolution of the voxel grid to be created.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
+   * @param resolution The approximate number of voxels for the voxel grid that
+   * is created.
    */
   void createObjectVoxelization(int objectID, int resolution = 1000000);
 #endif
@@ -519,13 +519,12 @@ class Simulator {
    * component.
    *
    * If a voxel grid for the object has not been created, it will make one with
-   * default arguments using createObjectVisualization().
+   * default arguments using @ref createObjectVoxelization().
    *
    * @param drawV Whether or not the render the voxel grid.
    * @param objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
+   * @param gridName The name of the voxel grid to be visualized.
    */
   void setObjectVoxelizationDraw(bool drawV,
                                  int objectID,
@@ -542,11 +541,11 @@ class Simulator {
 
 #ifdef ESP_BUILD_WITH_VHACD
   /**
-   * @brief Creates a voxelization for the scene.
+   * @brief Creates a voxelization for the scene. Initializes the voxelization
+   * with a boundary voxel grid using VHACD's voxelization library.
    *
-   * @param resolution The resolution of the voxel grid to be created.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
+   * @param resolution The approximate number of voxels for the voxel grid that
+   * is created.
    */
   void createStageVoxelization(int resolution = 1000000);
 #endif
@@ -556,11 +555,10 @@ class Simulator {
    * component.
    *
    * If a voxel grid for the scene has not been created, it will make one with
-   * default arguments using createObjectVisualization().
+   * default arguments using @ref createStageVoxelization().
    *
    * @param drawV Whether or not the render the voxel grid.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
+   * @param gridName The name of the voxel grid to be visualized.
    */
   void setStageVoxelizationDraw(bool drawV,
                                 const std::string& gridName = "Boundary");

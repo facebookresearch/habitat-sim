@@ -570,8 +570,8 @@ class PhysicsManager {
   void setAngularDamping(const int physObjectID, const double angDamping);
 
 #ifdef ESP_BUILD_WITH_VHACD
-  /** @brief Initializes a new VoxelWrapper with a specified resolution and
-   * assigns it to a rigid body.
+  /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
+   * VHACD's voxelization libary and assigns it to a rigid body.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param resolution Represents the approximate number of voxels in the new
@@ -580,8 +580,8 @@ class PhysicsManager {
   void generateVoxelization(const int physObjectID,
                             const int resolution = 1000000);
 
-  /** @brief Initializes a new VoxelWrapper with a specified resolution and
-   * assigns it to the scene's rigid body.
+  /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
+   * VHACD's voxelization libary and assigns it to the stage's rigid body.
    * @param resolution Represents the approximate number of voxels in the new
    * voxelization.
    */
@@ -821,21 +821,23 @@ class PhysicsManager {
   /** @brief Set the voxelization visualization for the object true or false.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
+   * @param gridName The voxel grid to be visualized.
    * @param drawables The drawables group with which to render the voxelization.
-   * @param drawBB Set rendering of the voxelization to true or false.
+   * @param drawVoxelization Set rendering of the voxelization to true or false.
    */
   void setObjectVoxelizationDraw(int physObjectID,
                                  const std::string& gridName,
                                  DrawableGroup* drawables,
-                                 bool drawBB);
+                                 bool drawVoxelization);
 
   /** @brief Set the voxelization visualization for the scene true or false.
+   * @param gridName The voxel grid to be visualized.
    * @param drawables The drawables group with which to render the voxelization.
-   * @param drawBB Set rendering of the voxelization to true or false.
+   * @param drawVoxelization Set rendering of the voxelization to true or false.
    */
   void setStageVoxelizationDraw(const std::string& gridName,
                                 DrawableGroup* drawables,
-                                bool drawBB);
+                                bool drawVoxelization);
 
   /**
    * @brief Get a const reference to the specified object's SceneNode for info
@@ -1061,7 +1063,7 @@ class PhysicsManager {
   /** @brief Set the voxelization visualization for a scene node to be true or
    * false.
    * @param drawables The drawables group with which to render the voxelization.
-   * @param drawBB Set rendering of the voxelization to true or false.
+   * @param drawVoxelization Set rendering of the voxelization to true or false.
    */
   void setVoxelizationDraw(const std::string& gridName,
                            esp::physics::RigidBase* rigidBase,

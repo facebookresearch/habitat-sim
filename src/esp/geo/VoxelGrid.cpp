@@ -7,7 +7,9 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
+#include <Magnum/Primitives/Cone.h>
 #include <Magnum/Primitives/Cube.h>
+#include <Magnum/Primitives/Cylinder.h>
 
 #include "VoxelGrid.h"
 #include "esp/assets/ResourceManager.h"
@@ -192,9 +194,32 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                           std::vector<Mn::UnsignedInt>& indices,
                                           const Mn::Vector3i& local_coords,
                                           const Mn::Vector3& vec) {
-  Mn::Trade::MeshData cubeData = Mn::Primitives::cubeSolid();
+  Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(2, 2, 1);
 
+  // add cube to mesh
+  // midpoint of a voxel
   Mn::Vector3 mid = getGlobalCoords(local_coords);
+
+  unsigned int sz = positions.size();
+  auto conePositions = coneData.positions3DAsArray();
+  auto coneNormals = coneData.normalsAsArray();
+  auto coneIndices = coneData.indices();
+
+  for (auto ind : conePositions) {
+    Mn::Vector3 transformedInd = ind * Mn::Vector3(0.2, 0.4, 0.2);
+    positions.push_back(transformedInd + mid);
+    colors.push_back(Mn::Color3(0, .3, 1));
+  }
+
+  for (auto norm : coneNormals) {
+    normals.push_back(norm);
+  }
+
+  for (auto index : coneIndices) {
+    indices.push_back(sz + index[0]);
+  }
+
+  /*Mn::Vector3 mid = getGlobalCoords(local_coords);
   Mn::Vector3 pos1 = vec.normalized() * m_voxelSize * 1 / 3 + mid;
   Mn::Vector3 orthog1 = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
   if (orthog1 == Mn::Vector3(0, 0, 0)) {
@@ -230,12 +255,12 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                  0, 4, 1, 1, 3, 2, 1, 4, 3};
   for (auto index : inds) {
     indices.push_back(sz + index);
-  }
+  }*/
 
   // Add mesh information for the stem of the arrow
 
   // cube indices
-  sz = positions.size();
+  /*sz = positions.size();
   Mn::Vector3 pos6 = mid + orthog1.normalized() * m_voxelSize * 1 / 40;
   Mn::Vector3 pos7 = mid + orthog2.normalized() * m_voxelSize * 1 / 40;
   Mn::Vector3 pos8 = mid - orthog1.normalized() * m_voxelSize * 1 / 40;
@@ -264,7 +289,7 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                       3, 4, 3, 7, 2, 6, 7, 2, 7, 3};
   for (auto index : cube_inds) {
     indices.push_back(sz + index);
-  }
+  }*/
 }
 
 void VoxelGrid::generateMeshDataAndMeshGL(const std::string& gridName,
