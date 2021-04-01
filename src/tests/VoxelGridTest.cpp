@@ -5,6 +5,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/Magnum.h>
 
+#include "esp/geo/VoxelUtils.h"
 #include "esp/geo/VoxelWrapper.h"
 #include "esp/sim/Simulator.h"
 
@@ -18,11 +19,13 @@ struct VoxelGrid : Cr::TestSuite::Tester {
   explicit VoxelGrid();
 
   void testVoxelGridWithVHACD();
+  void testVoxelUtilityFunctions();
 };
 
 VoxelGrid::VoxelGrid() {
 #ifdef ESP_BUILD_WITH_VHACD
   addTests({&VoxelGrid::testVoxelGridWithVHACD});
+  addTests({&VoxelGrid::testVoxelUtilityFunctions});
 #endif
 }
 
@@ -40,8 +43,8 @@ void VoxelGrid::testVoxelGridWithVHACD() {
 
   // Voxelize the scene with resolution = 1,000,000 and make asserts
   const int resolution = 1000000;
-  simulator_->createSceneVoxelization(resolution);
-  auto voxelization = simulator_->getSceneVoxelization().get();
+  simulator_->createStageVoxelization(resolution);
+  auto voxelization = simulator_->getStageVoxelization().get();
 
   // Verify coordinate conversion works in both directions
   Mn::Vector3i voxelIndex(2, 1, 7);
@@ -73,11 +76,46 @@ void VoxelGrid::testVoxelGridWithVHACD() {
   voxelization->generateMesh("Boundary");
 
   // Only one mesh can be visualized at a time
-  simulator_->setSceneVoxelizationDraw(true, "Boundary");
+  simulator_->setStageVoxelizationDraw(true, "Boundary");
 
   // Turn off visualization
-  simulator_->setSceneVoxelizationDraw(false, "Boundary");
+  simulator_->setStageVoxelizationDraw(false, "Boundary");
 }
+
+void VoxelGrid::testVoxelUtilityFunctions() {
+  // configure and intialize Simulator
+  auto simConfig = esp::sim::SimulatorConfiguration();
+  simConfig.activeSceneName = Cr::Utility::Directory::join(
+      SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.glb");
+  simConfig.enablePhysics = true;
+  simConfig.frustumCulling = true;
+  simConfig.requiresTextures = true;
+
+  auto simulator_ = esp::sim::Simulator::create_unique(simConfig);
+
+  // Voxelize the scene with resolution = 1,000,000 and make asserts
+  const int resolution = 1000000;
+  simulator_->createStageVoxelization(resolution);
+  auto voxelization = simulator_->getStageVoxelization();
+
+  // Generate Euclidean SDF for the voxelization
+  esp::geo::generateEuclideanDistanceSDF(voxelization, "ESDF");
+
+  // Get a vector of indices who's SDF value lies between -13 and -12
+  std::vector<Mn::Vector3i> indices =
+      esp::geo::getVoxelSetFromFloatGrid(voxelization, "ESDF", -13, -12);
+
+  // ensure that the values were correctly retrieved.
+  bool valuesAreInRange = true;
+  for (auto& ind : indices) {
+    float val = voxelization->getVoxel<float>(ind, "ESDF");
+    if (val > -12 || val < -13) {
+      valuesAreInRange = false;
+    }
+  }
+  CORRADE_VERIFY(valuesAreInRange);
+}
+
 #endif
 
 CORRADE_TEST_MAIN(VoxelGrid)

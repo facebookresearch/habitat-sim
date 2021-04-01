@@ -14,9 +14,9 @@ void generateInteriorExteriorVoxelGrid(
   auto m_voxelGridDimensions = v_grid->getVoxelGridDimensions();
   // Create a temporary grid (unregistered) to hold 6 booleans for each cell -
   // each for a specified direction of raycasts
-  unsigned long dims[3]{static_cast<unsigned long>(m_voxelGridDimensions[0]),
-                        static_cast<unsigned long>(m_voxelGridDimensions[1]),
-                        static_cast<unsigned long>(m_voxelGridDimensions[2])};
+  std::size_t dims[3]{static_cast<std::size_t>(m_voxelGridDimensions[0]),
+                      static_cast<std::size_t>(m_voxelGridDimensions[1]),
+                      static_cast<std::size_t>(m_voxelGridDimensions[2])};
   Corrade::Containers::Array<char> cr_grid{
       Corrade::Containers::ValueInit,
       v_grid->gridSize() * sizeof(Mn::Math::BoolVector<6>)};
@@ -377,6 +377,73 @@ void generateDistanceGradientField(
       }
     }
   }
+}
+
+std::vector<Mn::Vector3i> getVoxelSetFromBoolGrid(
+    std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
+    const std::string& boolGridName) {
+  std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
+  auto v_grid = voxelWrapper->getVoxelGrid();
+  auto m_voxelGridDimensions = v_grid->getVoxelGridDimensions();
+
+  assert(v_grid->gridExists(boolGridName));
+  auto boolGrid = v_grid->getGrid<bool>(boolGridName);
+  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+        if (boolGrid[i][j][k]) {
+          voxelSet.push_back(Mn::Vector3i(i, j, k));
+        }
+      }
+    }
+  }
+  return voxelSet;
+}
+
+std::vector<Mn::Vector3i> getVoxelSetFromIntGrid(
+    std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
+    const std::string& intGridName,
+    int lb,
+    int ub) {
+  std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
+  auto v_grid = voxelWrapper->getVoxelGrid();
+  auto m_voxelGridDimensions = v_grid->getVoxelGridDimensions();
+
+  assert(v_grid->gridExists(intGridName));
+  auto intGrid = v_grid->getGrid<int>(intGridName);
+  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+        if (intGrid[i][j][k] >= lb && intGrid[i][j][k] <= ub) {
+          voxelSet.push_back(Mn::Vector3i(i, j, k));
+        }
+      }
+    }
+  }
+  return voxelSet;
+}
+
+std::vector<Mn::Vector3i> getVoxelSetFromFloatGrid(
+    std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
+    const std::string& floatGridName,
+    float lb,
+    float ub) {
+  std::vector<Mn::Vector3i> voxelSet = std::vector<Mn::Vector3i>();
+  auto v_grid = voxelWrapper->getVoxelGrid();
+  auto m_voxelGridDimensions = v_grid->getVoxelGridDimensions();
+
+  assert(v_grid->gridExists(floatGridName));
+  auto floatGrid = v_grid->getGrid<float>(floatGridName);
+  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+        if (floatGrid[i][j][k] >= lb && floatGrid[i][j][k] <= ub) {
+          voxelSet.push_back(Mn::Vector3i(i, j, k));
+        }
+      }
+    }
+  }
+  return voxelSet;
 }
 
 }  // namespace geo

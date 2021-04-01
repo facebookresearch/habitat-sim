@@ -240,7 +240,7 @@ Key Commands:
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
-  'g': (physics) Display a stage vector field.
+  'g': (physics) Display a stage's signed distance gradient vector field.
   'l': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
   ==================================================
   )";
