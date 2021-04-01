@@ -13,7 +13,6 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-// TODO: Add tests for different Sensors
 struct VoxelGrid : Cr::TestSuite::Tester {
   explicit VoxelGrid();
 

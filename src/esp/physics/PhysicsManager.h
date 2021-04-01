@@ -570,8 +570,8 @@ class PhysicsManager {
   void setAngularDamping(const int physObjectID, const double angDamping);
 
 #ifdef ESP_BUILD_WITH_VHACD
-  /** @brief Initializes a new VoxelWrapper with a specified resolution and
-   * assigns it to a rigid body.
+  /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
+   * VHACD's voxelization libary and assigns it to a rigid body.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param resolution Represents the approximate number of voxels in the new
@@ -580,8 +580,8 @@ class PhysicsManager {
   void generateVoxelization(const int physObjectID,
                             const int resolution = 1000000);
 
-  /** @brief Initializes a new VoxelWrapper with a specified resolution and
-   * assigns it to the scene's rigid body.
+  /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
+   * VHACD's voxelization libary and assigns it to the stage's rigid body.
    * @param resolution Represents the approximate number of voxels in the new
    * voxelization.
    */
