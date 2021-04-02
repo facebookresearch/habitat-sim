@@ -11,7 +11,6 @@
 
 #include "esp/gfx/DepthVisualizerShader.h"
 #include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/SensorInfoVisualizer.h"
 
 namespace esp {
 namespace sensor {
@@ -75,6 +74,7 @@ void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
   tgt_ = std::move(tgt);
 }
 
+/*
 void VisualSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer,
                                         float depthScaling) {
   auto sensorType = this->spec_->sensorType;
@@ -103,6 +103,7 @@ void VisualSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer,
       break;
   }
 }
+*/
 
 bool VisualSensor::displayObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {

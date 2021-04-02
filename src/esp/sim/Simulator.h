@@ -35,7 +35,6 @@ class SemanticScene;
 }  // namespace scene
 namespace gfx {
 class Renderer;
-class SensorInfoVisualizer;
 namespace replay {
 class ReplayManager;
 }  // namespace replay
@@ -778,9 +777,11 @@ class Simulator {
    * @param visualizer an object of the helper class that provides and manages
    * framebuffer, renderbuffer, shaders etc. necessary in the visualization
    */
+  /*
   bool visualizeObservation(int agentId,
                             const std::string& sensorId,
                             gfx::SensorInfoVisualizer& visualizer);
+  */
 
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,

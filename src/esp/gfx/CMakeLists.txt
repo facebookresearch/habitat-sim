@@ -43,8 +43,8 @@ set(
   PbrShader.h
   PbrDrawable.cpp
   PbrDrawable.h
-  DepthVisualizerShader.cpp
-  DepthVisualizerShader.h
+  TextureVisualizerShader.cpp
+  TextureVisualizerShader.h
   DoubleSphereCameraShader.cpp
   DoubleSphereCameraShader.h
   FisheyeShader.cpp

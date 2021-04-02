@@ -16,7 +16,6 @@
 namespace esp {
 namespace gfx {
 class RenderTarget;
-class SensorInfoVisualizer;
 }  // namespace gfx
 
 namespace sensor {
@@ -138,8 +137,10 @@ class VisualSensor : public Sensor {
    * visualized result. The smaller, the brighter. A good initial guess .e.g,
    * can be the far plane value.
    */
+  /*
   virtual void visualizeObservation(gfx::SensorInfoVisualizer& visualizer,
                                     float depthScaling = 50.0f);
+  */
 
   /*
    * @brief Display next observation from Simulator on default frame buffer

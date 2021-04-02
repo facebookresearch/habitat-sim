@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_GFX_DEPTHVISUALIZERSHADER_H_
-#define ESP_GFX_DEPTHVISUALIZERSHADER_H_
+#ifndef ESP_GFX_TEXTUREVISUALIZERSHADER_H_
+#define ESP_GFX_TEXTUREVISUALIZERSHADER_H_
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include "esp/core/esp.h"
@@ -14,22 +14,22 @@ namespace gfx {
 /**
 @brief A shader to visualize the depth buffer information
 */
-class DepthVisualizerShader : public Magnum::GL::AbstractShaderProgram {
+class TextureVisualizerShader : public Magnum::GL::AbstractShaderProgram {
  public:
   /** @brief Constructor */
-  explicit DepthVisualizerShader();
+  explicit TextureVisualizerShader();
 
   /**
    * @brief Bind depth texture
    * @return Reference to self (for method chaining)
    */
-  DepthVisualizerShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
+  TextureVisualizerShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
 
   /**
    * @brief Set the depth unprojection parameters directly
    * @return Reference to self (for method chaining)
    */
-  DepthVisualizerShader& setDepthUnprojection(
+  TextureVisualizerShader& setDepthUnprojection(
       const Magnum::Vector2& depthUnprojection);
 
   /**
@@ -37,7 +37,7 @@ class DepthVisualizerShader : public Magnum::GL::AbstractShaderProgram {
    * visual result Note: the value should less than or equal to the far plane
    * @return Reference to self (for method chaining)
    */
-  DepthVisualizerShader& setDepthScaling(float depthScaling);
+  TextureVisualizerShader& setDepthScaling(float depthScaling);
 
  protected:
   GLint depthUnprojectionUniform_ = ID_UNDEFINED;
@@ -47,4 +47,4 @@ class DepthVisualizerShader : public Magnum::GL::AbstractShaderProgram {
 }  // namespace gfx
 }  // namespace esp
 
-#endif  // ESP_GFX_DEPTHVISUALIZERSHADER_H_
+#endif  // ESP_GFX_TEXTUREVISUALIZERSHADER_H_

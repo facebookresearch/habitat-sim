@@ -27,7 +27,6 @@
 #include <Magnum/Timeline.h>
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
-#include "esp/gfx/SensorInfoVisualizer.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/nav/PathFinder.h"
@@ -358,7 +357,6 @@ Key Commands:
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
   bool depthMode_ = false;
-  esp::gfx::SensorInfoVisualizer sensorInfoVisualizer_;
 
   Mn::DebugTools::GLFrameProfiler profiler_{};
 

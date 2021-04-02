@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "DepthVisualizerShader.h"
+#include "TextureVisualizerShader.h"
 
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Reference.h>
@@ -25,7 +25,7 @@ namespace gfx {
 
 enum { DepthTextureUnit = 1 };
 
-DepthVisualizerShader::DepthVisualizerShader() {
+TextureVisualizerShader::TextureVisualizerShader() {
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -62,19 +62,19 @@ DepthVisualizerShader::DepthVisualizerShader() {
   CORRADE_INTERNAL_ASSERT(depthScalingUniform_ != ID_UNDEFINED);
 }
 
-DepthVisualizerShader& DepthVisualizerShader::bindDepthTexture(
+TextureVisualizerShader& TextureVisualizerShader::bindDepthTexture(
     Mn::GL::Texture2D& texture) {
   texture.bind(DepthTextureUnit);
   return *this;
 }
 
-DepthVisualizerShader& DepthVisualizerShader::setDepthUnprojection(
+TextureVisualizerShader& TextureVisualizerShader::setDepthUnprojection(
     const Mn::Vector2& depthUnprojection) {
   setUniform(depthUnprojectionUniform_, depthUnprojection);
   return *this;
 }
 
-DepthVisualizerShader& DepthVisualizerShader::setDepthScaling(
+TextureVisualizerShader& TextureVisualizerShader::setDepthScaling(
     float depthScaling) {
   setUniform(depthScalingUniform_, depthScaling);
   return *this;

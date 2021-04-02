@@ -1177,6 +1177,7 @@ bool Simulator::drawObservation(const int agentId,
   return false;
 }
 
+/*
 bool Simulator::visualizeObservation(int agentId,
                                      const std::string& sensorId,
                                      gfx::SensorInfoVisualizer& visualizer) {
@@ -1189,6 +1190,7 @@ bool Simulator::visualizeObservation(int agentId,
   }
   return false;
 }
+*/
 
 bool Simulator::getAgentObservation(const int agentId,
                                     const std::string& sensorId,

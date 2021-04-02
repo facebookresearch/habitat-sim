@@ -51,7 +51,8 @@ struct Renderer::Impl {
     draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
   }
 
-  void bindRenderTarget(sensor::VisualSensor& sensor) {
+  void bindRenderTarget(sensor::VisualSensor& sensor,
+                        RenderTargetBindingFlags bindingFlags) {
     auto depthUnprojection = sensor.depthUnprojection();
     CORRADE_ASSERT(depthUnprojection,
                    "Renderer::Impl::bindRenderTarget(): Sensor does not have a "
@@ -62,7 +63,7 @@ struct Renderer::Impl {
           DepthShader::Flag::UnprojectExistingDepth);
     }
 
-    RenderTarget::Flags renderTargetFlags_ = {};
+    RenderTarget::Flags renderTargetFlags = {};
     switch (sensor.specification()->sensorType) {
       case sensor::SensorType::Color:
         CORRADE_ASSERT(
@@ -70,15 +71,21 @@ struct Renderer::Impl {
             "Renderer::Impl::bindRenderTarget(): Tried to setup a color "
             "render buffer while the simulator was initialized with "
             "requiresTextures = false", );
-        renderTargetFlags_ |= RenderTarget::Flag::RgbaBuffer;
+        renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
         break;
 
       case sensor::SensorType::Depth:
-        renderTargetFlags_ |= RenderTarget::Flag::DepthTexture;
+        if (bindingFlags & RenderTargetBindingFlag::VisualizeTexture) {
+          renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
+        }
+        renderTargetFlags |= RenderTarget::Flag::DepthTexture;
         break;
 
       case sensor::SensorType::Semantic:
-        renderTargetFlags_ |= RenderTarget::Flag::ObjectIdBuffer;
+        if (bindingFlags & RenderTargetBindingFlag::VisualizeTexture) {
+          renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
+        }
+        renderTargetFlags |= RenderTarget::Flag::ObjectIdBuffer;
         break;
 
       default:
@@ -89,7 +96,7 @@ struct Renderer::Impl {
 
     sensor.bindRenderTarget(RenderTarget::create_unique(
         sensor.framebufferSize(), *depthUnprojection, depthShader_.get(),
-        renderTargetFlags_, &sensor));
+        renderTargetFlags, &sensor));
   }
 
  private:
@@ -112,8 +119,9 @@ void Renderer::draw(sensor::VisualSensor& visualSensor,
   pimpl_->draw(visualSensor, sceneGraph, flags);
 }
 
-void Renderer::bindRenderTarget(sensor::VisualSensor& sensor) {
-  pimpl_->bindRenderTarget(sensor);
+void Renderer::bindRenderTarget(sensor::VisualSensor& sensor,
+                                RenderTargetBindingFlags bindingFlags) {
+  pimpl_->bindRenderTarget(sensor, bindingFlags);
 }
 
 }  // namespace gfx
