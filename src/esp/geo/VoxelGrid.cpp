@@ -201,9 +201,9 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   Mn::Vector3 mid = getGlobalCoords(local_coords);
 
   unsigned int sz = positions.size();
-  auto conePositions = coneData.positions3DAsArray();
-  auto coneNormals = coneData.normalsAsArray();
-  auto coneIndices = coneData.indices();
+  const auto&& conePositions = coneData.positions3DAsArray();
+  const auto&& coneNormals = coneData.normalsAsArray();
+  const auto&& coneIndices = coneData.indices();
 
   // Get rotation quaternion
   Mn::Rad angle{acos(Mn::Math::dot(vec.normalized(), Mn::Vector3(0, 1, 0)))};
@@ -214,18 +214,19 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
     crossProduct = Mn::Vector3(0, 1, 0);
   }
   vecRotation = vecRotation.rotation(-angle, crossProduct.normalized());
-  for (auto ind : conePositions) {
-    Mn::Vector3 transformedInd = vecRotation.transformVector(
-        ind * Mn::Vector3(0.02, 0.04, 0.02) + Mn::Vector3(0, 0.025, 0));
-    positions.push_back(transformedInd + mid);
+  for (const auto& ind : conePositions) {
+    positions.push_back(
+        vecRotation.transformVector(ind * Mn::Vector3(0.02, 0.04, 0.02) +
+                                    Mn::Vector3(0, 0.025, 0)) +
+        mid);
     colors.push_back(Mn::Color3(0, .3, 1));
   }
 
-  for (auto norm : coneNormals) {
+  for (const auto& norm : coneNormals) {
     normals.push_back(norm);
   }
 
-  for (auto index : coneIndices) {
+  for (const auto&& index : coneIndices) {
     indices.push_back(sz + index[0]);
   }
 
@@ -236,24 +237,25 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   // midpoint of a voxel
 
   sz = positions.size();
-  auto cylinderPositions = cylinderData.positions3DAsArray();
-  auto cylinderNormals = cylinderData.normalsAsArray();
-  auto cylinderIndices = cylinderData.indices();
+  const auto&& cylinderPositions = cylinderData.positions3DAsArray();
+  const auto&& cylinderNormals = cylinderData.normalsAsArray();
+  const auto&& cylinderIndices = cylinderData.indices();
 
-  for (auto ind : cylinderPositions) {
-    Mn::Vector3 transformedInd = vecRotation.transformVector(
-        ind * Mn::Vector3(0.01, 0.03, 0.01) - Mn::Vector3(0, 0.025, 0));
-    positions.push_back(transformedInd + mid);
+  for (const auto& ind : cylinderPositions) {
+    positions.push_back(
+        vecRotation.transformVector(ind * Mn::Vector3(0.01, 0.03, 0.01) -
+                                    Mn::Vector3(0, 0.025, 0)) +
+        mid);
     colors.push_back(Mn::Color3(0, .3, 1));
   }
 
-  for (auto norm : cylinderNormals) {
+  for (const auto& norm : cylinderNormals) {
     Mn::Vector3 transformedNorm =
         vecRotation.transformVector(norm * Mn::Vector3(0.01, 0.04, 0.01));
     normals.push_back(transformedNorm);
   }
 
-  for (auto index : cylinderIndices) {
+  for (const auto&& index : cylinderIndices) {
     indices.push_back(sz + index[0]);
   }
 
