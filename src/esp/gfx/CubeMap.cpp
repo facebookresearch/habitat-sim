@@ -155,6 +155,7 @@ void CubeMap::recreateTexture() {
   // color texture
   if (flags_ & Flag::ColorTexture) {
     auto& colorTexture = texture(TextureType::Color);
+    colorTexture = Mn::GL::CubeMapTexture{};
     colorTexture.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
                                Mn::GL::SamplerMipmap::Linear)
@@ -172,6 +173,7 @@ void CubeMap::recreateTexture() {
   // depth texture
   if (flags_ & Flag::DepthTexture) {
     auto& depthTexture = texture(TextureType::Depth);
+    depthTexture = Mn::GL::CubeMapTexture{};
     depthTexture.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)

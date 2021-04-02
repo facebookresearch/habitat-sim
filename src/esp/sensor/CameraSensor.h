@@ -27,7 +27,6 @@ class CameraSensor : public VisualSensor {
   // user can use them immediately
   explicit CameraSensor(scene::SceneNode& cameraNode,
                         const CameraSensorSpec::ptr& spec);
-  ~CameraSensor() override { LOG(INFO) << "Deconstructing CameraSensor"; }
 
   /** @brief Updates this sensor's CameraSensorSpec cameraSensorSpec_ to reflect
    * the passed new values

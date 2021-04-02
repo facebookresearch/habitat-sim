@@ -51,6 +51,15 @@ std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
   return spaces;
 }
 
+std::map<std::string, Sensor::ptr> Agent_getSubtreeSensors(Agent& agent) {
+  std::map<std::string, Sensor::ptr> jsSensors =
+      std::map<std::string, Sensor::ptr>();
+  for (auto& entry : agent.node().getSubtreeSensors()) {
+    jsSensors[entry.first] = std::shared_ptr<Sensor>(&entry.second.get());
+  }
+  return jsSensors;
+}
+
 template <class T, typename... Targs>
 static inline auto create(Targs&&... args) {
   return std::make_shared<T>(std::forward<Targs>(args)...);
@@ -102,7 +111,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
   em::register_vector<std::shared_ptr<SemanticObject>>("VectorSemanticObjects");
-
   em::register_map<std::string, float>("MapStringFloat");
   em::register_map<std::string, std::string>("MapStringString");
   em::register_map<std::string, Sensor::ptr>("MapStringSensor");
@@ -192,10 +200,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("bounds", &PathFinder::bounds)
       .function("isNavigable", &PathFinder::isNavigable);
 
-  em::class_<SensorSuite>("SensorSuite")
-      .smart_ptr_constructor("SensorSuite", &SensorSuite::create<>)
-      .function("get", &SensorSuite::get);
-
   em::enum_<SensorType>("SensorType")
       .value("NONE", SensorType::None)
       .value("COLOR", SensorType::Color)
@@ -212,6 +216,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .value("NONE", SensorSubType::None)
       .value("PINHOLE", SensorSubType::Pinhole)
       .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
+
   em::class_<SensorSpec>("SensorSpec")
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
       .property("uuid", &SensorSpec::uuid)
@@ -261,12 +266,11 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("config",
                 em::select_overload<const AgentConfiguration&() const>(
                     &Agent::getConfig))
-      .property("sensorSuite", em::select_overload<const SensorSuite&() const>(
-                                   &Agent::getSensorSuite))
       .function("getState", &Agent::getState)
       .function("setState", &Agent::setState)
       .function("hasAction", &Agent::hasAction)
-      .function("act", &Agent::act);
+      .function("act", &Agent::act)
+      .function("getSubtreeSensors", &Agent_getSubtreeSensors);
 
   em::class_<Observation>("Observation")
       .smart_ptr_constructor("Observation", &Observation::create<>)

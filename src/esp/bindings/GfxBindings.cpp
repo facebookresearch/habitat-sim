@@ -19,6 +19,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
+#include "esp/sensor/CameraSensor.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;

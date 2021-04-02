@@ -370,7 +370,7 @@ struct Renderer::Impl {
 
     sensor.bindRenderTarget(RenderTarget::create_unique(
         sensor.framebufferSize(), *depthUnprojection, depthShader_.get(),
-        renderTargetFlags_));
+        renderTargetFlags_, &sensor));
   }
 
  private:

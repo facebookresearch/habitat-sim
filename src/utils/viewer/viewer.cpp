@@ -50,6 +50,7 @@
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
+#include "esp/sensor/FisheyeSensor.h"
 
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
@@ -562,7 +563,7 @@ class Viewer : public Mn::Platform::Application {
 
   esp::sensor::CameraSensor& getAgentCamera() {
     esp::sensor::Sensor& cameraSensor =
-        *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+        agentBodyNode_->getNodeSensorSuite().get("rgba_camera");
     return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
   }
 
@@ -748,9 +749,81 @@ Key Commands:
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
-
   Mn::DebugTools::GLFrameProfiler profiler_{};
+
+  int fisheyeMode_ = 0;
 };
+
+void addSensors(esp::agent::AgentConfiguration& agentConfig,
+                const Cr::Utility::Arguments& args) {
+  const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
+  // add a rgb sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::CameraSensorSpec::create());
+  {
+    auto cameraSensorSpec = static_cast<esp::sensor::CameraSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    cameraSensorSpec->sensorSubType =
+        args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
+                                   : esp::sensor::SensorSubType::Pinhole;
+    cameraSensorSpec->sensorType = esp::sensor::SensorType::Color;
+    cameraSensorSpec->position = {0.0f, 1.5f, 0.0f};
+    cameraSensorSpec->orientation = {0, 0, 0};
+    cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  }
+
+  // add the new fisheye sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::FisheyeSensorDoubleSphereSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+
+    spec->uuid = "fisheye";
+    spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
+    spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->alpha = 0.59;
+    spec->xi = -0.18;
+    int size =
+        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
+    spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+    spec->principalPointOffset =
+        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+  }
+
+  // add the depth sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::CameraSensorSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "depth";
+    spec->sensorType = esp::sensor::SensorType::Depth;
+    spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  }
+
+  // add the fisheye depth sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::FisheyeSensorDoubleSphereSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "depth_fisheye";
+    spec->sensorType = esp::sensor::SensorType::Depth;
+    spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
+    spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->xi = -0.18;
+    spec->alpha = 0.59;
+    int size =
+        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
+    spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+    spec->principalPointOffset =
+        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+  }
+}
 
 Viewer::Viewer(const Arguments& arguments)
     : Mn::Platform::Application{
@@ -917,16 +990,10 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
-  auto cameraSensorSpec = esp::sensor::CameraSensorSpec::create();
-  cameraSensorSpec->sensorSubType =
-      args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
-                                 : esp::sensor::SensorSubType::Pinhole;
-  cameraSensorSpec->sensorType = esp::sensor::SensorType::Color;
-  cameraSensorSpec->position = {0.0f, 1.5f, 0.0f};
-  cameraSensorSpec->orientation = {0, 0, 0};
-  cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  agentConfig.sensorSpecifications = {cameraSensorSpec};
 
+  addSensors(agentConfig, args);
+  // add selects a random initial state and sets up the default controls and
+  // step filter
   simulator_->addAgent(agentConfig);
 
   // Set up camera
@@ -1326,7 +1393,6 @@ void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
   // RenderCamera
   profiler_.beginFrame();
-
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
@@ -1354,8 +1420,33 @@ void Viewer::drawEvent() {
     // reset timeSinceLastSimulation, accounting for potential overflow
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
-  uint32_t visibles = 0;
-  if (flyingCameraMode_) {
+
+  uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
+
+  if (fisheyeMode_ != 0) {
+    std::string sensorId = fisheyeMode_ == 1 ? "fisheye" : "depth_fisheye";
+    simulator_->drawObservation(defaultAgentId_, sensorId);
+
+    switch (fisheyeMode_) {
+      case 1: {
+        // color fisheye
+        esp::gfx::RenderTarget* sensorRenderTarget =
+            simulator_->getRenderTarget(defaultAgentId_, sensorId);
+        CORRADE_ASSERT(sensorRenderTarget,
+                       "Error in Viewer::drawEvent: sensor's rendering target "
+                       "cannot be nullptr.", );
+        sensorRenderTarget->blitRgbaToDefault();
+      } break;
+        /*
+        case 2: {
+          simulator_->visualizeObservation(defaultAgentId_, "depth_fisheye",
+                                           sensorInfoVisualizer_);
+          sensorInfoVisualizer_.blitRgbaToDefault();
+        } break;
+        */
+    }  // switch
+  } else if (flyingCameraMode_) {
+    visibles = 0;
     Mn::GL::defaultFramebuffer.bind();
     for (auto& it : activeSceneGraph_->getDrawableGroups()) {
       esp::gfx::RenderCamera::Flags flags =
@@ -1363,7 +1454,7 @@ void Viewer::drawEvent() {
       visibles += renderCamera_->draw(it.second, flags);
     }
   } else {
-    // using polygon offset to increase mesh depth to a avoid z-fighting with
+    // using polygon offset to increase mesh depth to avoid z-fighting with
     // debug draw (since lines will not respond to offset).
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
     Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
@@ -1407,20 +1498,18 @@ void Viewer::drawEvent() {
         flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
       }
       renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
       Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
     }
     sensorRenderTarget->blitRgbaToDefault();
-    // Immediately bind the main buffer back so that the "imgui" below can work
-    // properly
-    Mn::GL::defaultFramebuffer.bind();
   }
-
-  // Do not include ImGui content drawing in per frame profiler measurements
-  profiler_.endFrame();
 
   // Immediately bind the main buffer back so that the "imgui" below can work
   // properly
   Mn::GL::defaultFramebuffer.bind();
+
+  // Do not include ImGui content drawing in per frame profiler measurements
+  profiler_.endFrame();
 
   imgui_.newFrame();
   if (showFPS_) {
@@ -1432,12 +1521,19 @@ void Viewer::drawEvent() {
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
-    ImGui::Text("%u culled", total - visibles);
+    if (fisheyeMode_ == 0) {
+      ImGui::Text("%u culled", total - visibles);
+    }
     auto& cam = getAgentCamera();
-    ImGui::Text("%s camera",
-                (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
-                     ? "Orthographic"
-                     : "Pinhole"));
+
+    if (fisheyeMode_) {
+      ImGui::Text("Fisheye camera");
+    } else if (cam.getCameraType() ==
+               esp::sensor::SensorSubType::Orthographic) {
+      ImGui::Text("Orthographic camera");
+    } else if (cam.getCameraType() == esp::sensor::SensorSubType::Pinhole) {
+      ImGui::Text("Pinhole camera");
+    };
     ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
@@ -1522,15 +1618,29 @@ void Viewer::moveAndLook(int repetitions) {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  auto& sensors = defaultAgent_->getSensorSuite();
-  for (auto entry : sensors.getSensors()) {
-    auto visualSensor =
-        dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
-    if (visualSensor != nullptr) {
-      visualSensor->setResolution(event.framebufferSize()[1],
-                                  event.framebufferSize()[0]);
-      renderCamera_->setViewport(visualSensor->framebufferSize());
-      simulator_->getRenderer()->bindRenderTarget(*visualSensor);
+  for (auto& it : agentBodyNode_->getSubtreeSensors()) {
+    if (it.second.get().isVisualSensor()) {
+      esp::sensor::VisualSensor& visualSensor =
+          static_cast<esp::sensor::VisualSensor&>(it.second.get());
+      visualSensor.setResolution(event.framebufferSize()[1],
+                                 event.framebufferSize()[0]);
+      renderCamera_->setViewport(visualSensor.framebufferSize());
+      simulator_->getRenderer()->bindRenderTarget(visualSensor);
+
+      if ((visualSensor.specification()->uuid == "fisheye") ||
+          (visualSensor.specification()->uuid == "depth_fisheye")) {
+        auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
+            visualSensor.specification().get());
+
+        // const auto viewportSize =
+        // Mn::GL::defaultFramebuffer.viewport().size();
+        const auto viewportSize = event.framebufferSize();
+        int size = viewportSize[0] < viewportSize[1] ? viewportSize[0]
+                                                     : viewportSize[1];
+        spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+        spec->principalPointOffset =
+            Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+      }
     }
   }
   Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
@@ -1769,11 +1879,11 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
     auto& controls = *defaultAgent_->getControls().get();
     controls(*agentBodyNode_, "turnRight", delta.x());
     // apply the transformation to all sensors
-    for (auto p : defaultAgent_->getSensorSuite().getSensors()) {
-      controls(p.second->object(),  // SceneNode
-               "lookDown",          // action name
-               delta.y(),           // amount
-               false);              // applyFilter
+    for (auto& p : agentBodyNode_->getSubtreeSensors()) {
+      controls(p.second.get().object(),  // SceneNode
+               "lookDown",               // action name
+               delta.y(),                // amount
+               false);                   // applyFilter
       redraw();
     }
   } else if (mouseGrabber_ != nullptr) {
@@ -1884,6 +1994,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       defaultAgent_->act("moveUp");
       recAgentLocation();
       break;
+
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
       break;

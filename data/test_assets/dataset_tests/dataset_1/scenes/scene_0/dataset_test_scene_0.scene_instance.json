@@ -1,0 +1,23 @@
+{
+	"translation_origin":"com",
+	"stage_instance":{
+		"translation_origin":"asset_local",
+		"template_name":"modified_test_stage",
+		"translation":[1.1,2.2,3.3]
+	},
+	"object_instances":[
+	{
+		"translation_origin":"asset_local",
+		"template_name":"dataset_test_object1",
+		"translation":[0.1,0.2,0.3]
+	},
+	{
+		"translation_origin":"asset_local",
+		"template_name":"dataset_test_object2",
+		"translation":[0.3,0.4,0.5]
+	}
+	],
+	"default_lighting":"modified_test_lights",
+	"navmesh_instance":"navmesh_path1",
+	"semantic_scene_instance":"semantic_descriptor_path1"
+}

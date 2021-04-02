@@ -16,17 +16,26 @@
 namespace esp {
 namespace gfx {
 class RenderTarget;
-}
+class SensorInfoVisualizer;
+}  // namespace gfx
 
 namespace sensor {
 
 using Mn::Math::Literals::operator""_degf;
 
 struct VisualSensorSpec : public SensorSpec {
-  vec2i resolution = {128, 128};  // height x width
-  int channels =
-      4;  // Number of components in buffer values, eg. 4 channels for RGBA
-  bool gpu2gpuTransfer = false;  // True for pytorch tensor support
+  /**
+   * @brief height x width
+   */
+  vec2i resolution = {128, 128};
+  /**
+   * @brief Number of components in buffer values, eg. 4 channels for RGBA
+   */
+  int channels = 4;
+  /**
+   * @brief True for pytorch tensor support
+   */
+  bool gpu2gpuTransfer = false;
   /**
    * @brief near clipping plane
    */
@@ -35,6 +44,10 @@ struct VisualSensorSpec : public SensorSpec {
    * @brief far clipping plane
    */
   float far = 1000.0f;
+  /**
+   * @brief color used to clear the framebuffer
+   */
+  Mn::Color4 clearColor = {0, 0, 0, 1};
   VisualSensorSpec();
   void sanityCheck() override;
   bool isVisualSensorSpec() const override { return true; }
@@ -46,7 +59,6 @@ struct VisualSensorSpec : public SensorSpec {
 class VisualSensor : public Sensor {
  public:
   explicit VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec);
-  ~VisualSensor() override;
 
   /**
    * @brief Return the size of the framebuffer corresponding to the sensor's
@@ -66,6 +78,9 @@ class VisualSensor : public Sensor {
    */
   bool displayObservation(sim::Simulator& sim) override;
 
+  /**
+   * @brief Return whether or not this Sensor is a VisualSensor
+   */
   bool isVisualSensor() const override { return true; }
 
   /**

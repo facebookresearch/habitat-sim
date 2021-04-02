@@ -68,7 +68,7 @@ class VRDemo extends WebDemo {
 
     this.sensorSpecs = new Array(VIEW_SENSORS.length);
     for (var iView = 0; iView < VIEW_SENSORS.length; ++iView) {
-      const sensor = agent.sensorSuite.get(VIEW_SENSORS[iView]);
+      const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
 
       this.sensorSpecs[iView] = sensor.specification();
     }
@@ -351,7 +351,7 @@ class VRDemo extends WebDemo {
     for (var iView = 0; iView < pose.views.length; ++iView) {
       const view = pose.views[iView];
 
-      const sensor = agent.sensorSuite.get(VIEW_SENSORS[iView]);
+      const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
 
       const pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
       sensor.setLocalTransform(
@@ -393,7 +393,7 @@ class VRDemo extends WebDemo {
       const viewport = layer.getViewport(view);
       this.gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
-      const sensor = agent.sensorSuite.get(VIEW_SENSORS[iView]);
+      const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
       const texRes = this.sensorSpecs[iView].resolution;
       const texData = sensor.getObservation(this.simenv.sim).getData();
       this.drawTextureData(texRes, texData);
