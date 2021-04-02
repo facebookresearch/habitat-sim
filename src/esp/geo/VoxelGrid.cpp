@@ -194,7 +194,7 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                           std::vector<Mn::UnsignedInt>& indices,
                                           const Mn::Vector3i& local_coords,
                                           const Mn::Vector3& vec) {
-  Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(2, 2, 1);
+  Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(1, 3, 1.0f);
 
   // add cube to mesh
   // midpoint of a voxel
@@ -205,8 +205,18 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   auto coneNormals = coneData.normalsAsArray();
   auto coneIndices = coneData.indices();
 
+  // Get rotation quaternion
+  Mn::Rad angle{acos(Mn::Math::dot(vec.normalized(), Mn::Vector3(0, 1, 0)))};
+  Mn::Vector3 crossProduct = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
+  Mn::Quaternion vecRotation{Mn::Math::IdentityInit};
+
+  if (vec[0] == 0 && vec[2] == 0) {
+    crossProduct = Mn::Vector3(0, 1, 0);
+  }
+  vecRotation = vecRotation.rotation(-angle, crossProduct.normalized());
   for (auto ind : conePositions) {
-    Mn::Vector3 transformedInd = ind * Mn::Vector3(0.2, 0.4, 0.2);
+    Mn::Vector3 transformedInd = vecRotation.transformVector(
+        ind * Mn::Vector3(0.02, 0.04, 0.02) + Mn::Vector3(0, 0.025, 0));
     positions.push_back(transformedInd + mid);
     colors.push_back(Mn::Color3(0, .3, 1));
   }
@@ -216,6 +226,34 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   }
 
   for (auto index : coneIndices) {
+    indices.push_back(sz + index[0]);
+  }
+
+  // render cylinder
+  Mn::Trade::MeshData cylinderData = Mn::Primitives::cylinderSolid(1, 3, 1.0f);
+
+  // add cube to mesh
+  // midpoint of a voxel
+
+  sz = positions.size();
+  auto cylinderPositions = cylinderData.positions3DAsArray();
+  auto cylinderNormals = cylinderData.normalsAsArray();
+  auto cylinderIndices = cylinderData.indices();
+
+  for (auto ind : cylinderPositions) {
+    Mn::Vector3 transformedInd = vecRotation.transformVector(
+        ind * Mn::Vector3(0.01, 0.03, 0.01) - Mn::Vector3(0, 0.025, 0));
+    positions.push_back(transformedInd + mid);
+    colors.push_back(Mn::Color3(0, .3, 1));
+  }
+
+  for (auto norm : cylinderNormals) {
+    Mn::Vector3 transformedNorm =
+        vecRotation.transformVector(norm * Mn::Vector3(0.01, 0.04, 0.01));
+    normals.push_back(transformedNorm);
+  }
+
+  for (auto index : cylinderIndices) {
     indices.push_back(sz + index[0]);
   }
 
@@ -255,12 +293,12 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                  0, 4, 1, 1, 3, 2, 1, 4, 3};
   for (auto index : inds) {
     indices.push_back(sz + index);
-  }*/
+  }
 
   // Add mesh information for the stem of the arrow
 
   // cube indices
-  /*sz = positions.size();
+  sz = positions.size();
   Mn::Vector3 pos6 = mid + orthog1.normalized() * m_voxelSize * 1 / 40;
   Mn::Vector3 pos7 = mid + orthog2.normalized() * m_voxelSize * 1 / 40;
   Mn::Vector3 pos8 = mid - orthog1.normalized() * m_voxelSize * 1 / 40;

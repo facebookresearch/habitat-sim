@@ -161,7 +161,8 @@ class VoxelGrid {
    * @return True if the voxel index is valid, false otherwise.
    */
   bool isValidIndex(const Mn::Vector3i& coords) const {
-    return bool(coords >= Mn::Vector3i() && coords < m_voxelGridDimensions);
+    return bool((coords >= Mn::Vector3i()).all() &&
+                (coords < m_voxelGridDimensions).all());
   }
 
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
