@@ -51,7 +51,7 @@ class TextureVisualizerShader : public Magnum::GL::AbstractShaderProgram {
    * color map bound with bindColorMapTexture(). Here we use the Magnum built-in
    * color map: Magnum::DebugTools::ColorMap::turbo();
    *
-   * Default Value:
+   * Default Value (set in the constructor):
    * For depth texture, the initial value is 1.0f/512.0f and 1.0 / 1000.f.
    * For object id texture, the initial value is 1.0f/512.0f and 1.0/256.0f,
    * meaning that for a 256-entry colormap the first 256 values get an exact
