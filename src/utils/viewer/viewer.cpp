@@ -140,6 +140,7 @@ class Viewer : public Mn::Platform::Application {
    */
   int addPrimitiveObject();
   void pokeLastObject();
+  void snapLastObject();
   void pushLastObject();
   void torqueLastObject();
   void removeLastObject();
@@ -219,7 +220,7 @@ Key Commands:
   'u': Remove most recently instanced object.
   'b': Toggle display of object bounding boxes.
   'k': Kinematically wiggle the most recently added object.
-  'p': (physics) Poke the most recently added object.
+  'p': (navmesh) snap recent object to the agent's navmesh island
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
@@ -854,6 +855,26 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
+void Viewer::snapLastObject() {
+  auto existingObjectIDs = simulator_->getExistingObjectIDs();
+  if (existingObjectIDs.size() == 0) {
+    return;
+  }
+
+  auto pos = simulator_->getTranslation(existingObjectIDs.back());
+
+  auto agentPos = agentBodyNode_->absoluteTranslation();
+
+  auto snappedPos =
+      simulator_->getPathFinder().get()->snapPointWithBase(pos, agentPos);
+
+  if (std::isnan(snappedPos.x())) {
+    return;
+  }
+
+  simulator_->setTranslation(snappedPos, existingObjectIDs.back());
+}
+
 void Viewer::pokeLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0)
@@ -1405,7 +1426,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       addTemplateObject();
       break;
     case KeyEvent::Key::P:
-      pokeLastObject();
+      // pokeLastObject();
+      snapLastObject();
       break;
     case KeyEvent::Key::Q:
       // query the agent state
