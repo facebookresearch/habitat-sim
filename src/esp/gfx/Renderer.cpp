@@ -74,7 +74,7 @@ struct Renderer::Impl {
         shader->bindDepthTexture(tgt.getDepthTexture());
         shader->setDepthUnprojection(*visualSensor.depthUnprojection());
         shader->setColorMapTransformation(1.0f / 512.0f,
-                                          1.0f / visualSensor.getFar());
+                                          20.0f / visualSensor.getFar());
         tgt.renderReEnter();
         shader->draw(*mesh_);
         tgt.renderExit();
