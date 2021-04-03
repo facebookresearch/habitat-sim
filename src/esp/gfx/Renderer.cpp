@@ -24,8 +24,6 @@
 #include "esp/gfx/magnum.h"
 #include "esp/sensor/VisualSensor.h"
 
-#include <typeinfo>
-
 namespace Mn = Magnum;
 
 namespace esp {
