@@ -59,10 +59,10 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
 
   vert.addSource("#define OUTPUT_UV\n").addSource(rs.get("bigTriangle.vert"));
 
-  frag.addSource(Cr::Utility::formatString(
-      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput));
-
-  frag.addSource(flags_ == Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
+  frag.addSource("#define EXPLICIT_ATTRIB_LOCATION\n")
+      .addSource(Cr::Utility::formatString(
+          "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
+      .addSource(flags_ == Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
       // .addSource(flags_ == Flag::ObjectIdTexture? "#define
       // OBJECT_ID_TEXTURE\n" : "")
       .addSource(rs.get("textureVisualizer.frag"));

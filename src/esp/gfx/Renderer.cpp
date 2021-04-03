@@ -134,6 +134,7 @@ struct Renderer::Impl {
   }
 
  private:
+  // TODO: shall we use shader resource manager from now?
   std::unique_ptr<DepthShader> depthShader_;
   const Flags flags_;
   Corrade::Containers::Optional<Mn::GL::Mesh> mesh_;
@@ -168,8 +169,9 @@ struct Renderer::Impl {
     if (!shader) {
       if (type == RendererShaderType::DepthShader) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-            shader.key(), new DepthShader{}, Mn::ResourceDataState::Final,
-            Mn::ResourcePolicy::ReferenceCounted);
+            shader.key(),
+            new DepthShader{DepthShader::Flag::UnprojectExistingDepth},
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
       } else if (type == RendererShaderType::DepthTextureVisualizer) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
             shader.key(),

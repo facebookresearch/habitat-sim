@@ -19,7 +19,10 @@ uniform highp vec2 depthUnprojection;
 #endif
 
 //------------- output ----------------------
-layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
+#ifdef EXPLICIT_ATTRIB_LOCATION
+layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR)
+#endif
+out highp vec4 fragmentColor;
 
 //------------- shader ----------------------
 void main() {
