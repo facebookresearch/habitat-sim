@@ -30,7 +30,6 @@ void main() {
   highp float depth = texture(sourceTexture, textureCoordinates).r;
   highp float originalDepth =
       depthUnprojection[1] / (depth + depthUnprojection[0]);
-  // originalDepth / depthScaling;
 #elif defined(OBJECT_ID_TEXTURE)
 #error sorry, visualizing object_id texture is under construction.
 #endif
