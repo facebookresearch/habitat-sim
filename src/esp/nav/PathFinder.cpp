@@ -211,6 +211,26 @@ class IslandSystem {
     }
   }
 };
+
+class SingleIslandQueryFilter : public dtQueryFilter {
+ public:
+  SingleIslandQueryFilter(dtPolyRef target, const IslandSystem* islandSystem)
+      : target_(target), islandSystem_(islandSystem) {}
+
+  bool passFilter(const dtPolyRef ref,
+                  const dtMeshTile* tile,
+                  const dtPoly* poly) const override {
+    // temp only snap to actual target poly
+    // return (ref == target_);
+
+    return islandSystem_->hasConnection(ref, target_);
+  }
+
+ private:
+  dtPolyRef target_;
+  const IslandSystem* islandSystem_;
+};
+
 }  // namespace impl
 
 struct PathFinder::Impl {
@@ -236,6 +256,9 @@ struct PathFinder::Impl {
 
   template <typename T>
   T snapPoint(const T& pt);
+
+  template <typename T>
+  T snapPointWithBase(const T& pt, const T& basePt);
 
   bool loadNavMesh(const std::string& path);
 
@@ -1190,8 +1213,38 @@ template <typename T>
 T PathFinder::Impl::snapPoint(const T& pt) {
   dtStatus status = 0;
   vec3f projectedPt;
+
   std::tie(status, std::ignore, projectedPt) =
       projectToPoly(pt, navQuery_.get(), filter_.get());
+
+  if (dtStatusSucceed(status)) {
+    return T{projectedPt};
+  } else {
+    return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
+  }
+}
+
+template <typename T>
+T PathFinder::Impl::snapPointWithBase(const T& pt, const T& basePt) {
+  dtStatus status = 0;
+  vec3f projectedPt;
+
+  dtPolyRef basePolyRef = 0;
+  {
+    std::tie(status, basePolyRef, projectedPt) =
+        projectToPoly(basePt, navQuery_.get(), filter_.get());
+    if (!dtStatusSucceed(status)) {
+      LOG(WARNING) << "snapPointWithBase: invalid basePt";
+      return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
+    }
+  }
+
+  // different filter
+  auto filter = std::make_unique<impl::SingleIslandQueryFilter>(
+      basePolyRef, islandSystem_.get());
+
+  std::tie(status, std::ignore, projectedPt) =
+      projectToPoly(pt, navQuery_.get(), filter.get());
 
   if (dtStatusSucceed(status)) {
     return T{projectedPt};
@@ -1378,9 +1431,18 @@ T PathFinder::tryStepNoSliding(const T& start, const T& end) {
 template vec3f PathFinder::snapPoint<vec3f>(const vec3f& pt);
 template Mn::Vector3 PathFinder::snapPoint<Mn::Vector3>(const Mn::Vector3& pt);
 
+template Mn::Vector3 PathFinder::snapPointWithBase<Mn::Vector3>(
+    const Mn::Vector3& pt,
+    const Mn::Vector3& basePt);
+
 template <typename T>
 T PathFinder::snapPoint(const T& pt) {
   return pimpl_->snapPoint(pt);
+}
+
+template <typename T>
+T PathFinder::snapPointWithBase(const T& pt, const T& basePt) {
+  return pimpl_->snapPointWithBase(pt, basePt);
 }
 
 bool PathFinder::loadNavMesh(const std::string& path) {

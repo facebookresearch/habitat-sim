@@ -250,6 +250,9 @@ class PathFinder {
   template <typename T>
   T snapPoint(const T& pt);
 
+  template <typename T>
+  T snapPointWithBase(const T& pt, const T& basePt);
+
   /**
    * @brief Loads a navigation meshed saved by @ref saveNavMesh
    *
