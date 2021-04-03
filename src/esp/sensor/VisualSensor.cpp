@@ -9,8 +9,8 @@
 
 #include <utility>
 
-#include "esp/gfx/DepthVisualizerShader.h"
 #include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/TextureVisualizerShader.h"
 
 namespace esp {
 namespace sensor {
@@ -87,8 +87,8 @@ void VisualSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer,
   switch (sensorType) {
     case SensorType::Depth: {
       // setup the shader
-      Mn::Resource<Mn::GL::AbstractShaderProgram, gfx::DepthVisualizerShader>
-          shader = visualizer.getShader<gfx::DepthVisualizerShader>(
+      Mn::Resource<Mn::GL::AbstractShaderProgram, gfx::TextureVisualizerShader>
+          shader = visualizer.getShader<gfx::TextureVisualizerShader>(
               gfx::SensorInfoType::Depth);
       shader->bindDepthTexture(renderTarget().getDepthTexture())
           .setDepthUnprojection(*depthUnprojection())
@@ -166,6 +166,16 @@ bool VisualSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   readObservation(obs);
 
   return true;
+}
+
+Cr::Containers::Optional<Mn::Vector2> VisualSensor::depthUnprojection() const {
+  float f = visualSensorSpec_->far;
+  float n = visualSensorSpec_->near;
+  float d = f - n;
+  // in projection matrix, two entries related to the depth are:
+  // -(f+n)/(f-n), -2fn/(f-n), where f is the far plane, and n is the near
+  // plane. depth parameters = 0.5 * vector(proj[2][2] - 1.0f, proj[3][2])
+  return {0.5 * Mn::Vector2{-(f + n) / d - 1.0f, -2.0f * f * n / d}};
 }
 
 }  // namespace sensor

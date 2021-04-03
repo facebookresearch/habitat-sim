@@ -58,7 +58,15 @@ class Renderer {
             RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling});
 
   /**
+   * @brief visualize the observation of a non-rgb visual sensor, e.g., depth,
+   * semantic
+   */
+  void visualize(sensor::VisualSensor& visualSensor);
+
+  /**
    * @brief Binds a @ref RenderTarget to the sensor
+   * @param[in] sensor the target sensor
+   * @param[in] bindingFlags flags, such as to control the bindings
    */
   void bindRenderTarget(sensor::VisualSensor& sensor,
                         RenderTargetBindingFlags bindingFlags = {});

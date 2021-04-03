@@ -113,13 +113,9 @@ class FisheyeSensor : public VisualSensor {
   bool drawObservation(sim::Simulator& sim) override;
 
   /**
-   * @brief Returns the parameters needed to unproject depth for the sensor.
-   *
-   * Will always be @ref Corrade::Containers::NullOpt for the base sensor
-   * class as it has no projection parameters
+   * @brief Return a pointer to this fisheye sensor's spec
    */
-  Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
-      const override;
+  FisheyeSensorSpec::ptr specification() const { return fisheyeSensorSpec_; }
 
   static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
       "fisheye-model-type={}-flags={}";

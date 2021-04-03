@@ -8,6 +8,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/ConfigurationValue.h>
 
+#include "esp/core/Check.h"
 #include "esp/core/esp.h"
 
 #include "esp/gfx/RenderCamera.h"
@@ -84,14 +85,9 @@ class VisualSensor : public Sensor {
 
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
-   *
-   * Will always be @ref Corrade::Containers::NullOpt for the base sensor class
-   * as it has no projection parameters
    */
   virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
-      const {
-    return Corrade::Containers::NullOpt;
-  };
+      const;
 
   /**
    * @brief Checks to see if this sensor has a RenderTarget bound or not
@@ -108,8 +104,8 @@ class VisualSensor : public Sensor {
    * @brief Returns a reference to the sensors render target
    */
   gfx::RenderTarget& renderTarget() {
-    if (!hasRenderTarget())
-      throw std::runtime_error("Sensor has no rendering target");
+    ESP_CHECK(hasRenderTarget(),
+              "VisualSensor::renderTarget(): Sensor has no rendering target");
     return *tgt_;
   }
 
@@ -180,6 +176,11 @@ class VisualSensor : public Sensor {
                    "width must be greater than 0", );
     visualSensorSpec_->resolution = {resolution[0], resolution[1]};
   }
+
+  /**
+   * @brief Return a pointer to this Visual Sensor's spec
+   */
+  VisualSensorSpec::ptr specification() const { return visualSensorSpec_; }
 
   /**
    * @brief Returns RenderCamera

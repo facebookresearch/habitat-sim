@@ -774,14 +774,16 @@ class Simulator {
    *                   be returned
    * @param sensorId   Id of the sensor for which the observation is to
    *                   be returned
-   * @param visualizer an object of the helper class that provides and manages
-   * framebuffer, renderbuffer, shaders etc. necessary in the visualization
+   *
+   * NOTE: it assumes:
+   * -) it is a non-rgb sensor (such as a depth or semantic sensor);
+   * -) the drawObservation is called;
+   * -) when the render target is bound to the sensor, "VisualizeTexture" is
+   * enabled. See @ref Renderer::bindRenderTarget and @ref
+   * Renderer::RenderTargetBindingFlag for more info
+   * @return false if the sensor's observation cannot be visualized.
    */
-  /*
-  bool visualizeObservation(int agentId,
-                            const std::string& sensorId,
-                            gfx::SensorInfoVisualizer& visualizer);
-  */
+  bool visualizeObservation(int agentId, const std::string& sensorId);
 
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,

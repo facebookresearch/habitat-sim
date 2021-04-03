@@ -360,7 +360,9 @@ Key Commands:
 
   Mn::DebugTools::GLFrameProfiler profiler_{};
 
-  int fisheyeMode_ = 0;
+  bool fisheyeMode_ = false;
+
+  void bindRenderTarget();
 };
 
 void addSensors(esp::agent::AgentConfiguration& agentConfig,
@@ -950,28 +952,28 @@ void Viewer::drawEvent() {
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
-  if (fisheyeMode_ != 0) {
-    std::string sensorId = fisheyeMode_ == 1 ? "fisheye" : "depth_fisheye";
+  if (depthMode_) {
+    // ================ Depth Visualization ==================================
+    std::string sensorId = "depth";
+    if (fisheyeMode_) {
+      sensorId = "depth_fisheye";
+    }
     simulator_->drawObservation(defaultAgentId_, sensorId);
-
-    switch (fisheyeMode_) {
-      case 1: {
-        // color fisheye
-        esp::gfx::RenderTarget* sensorRenderTarget =
-            simulator_->getRenderTarget(defaultAgentId_, sensorId);
-        CORRADE_ASSERT(sensorRenderTarget,
-                       "Error in Viewer::drawEvent: sensor's rendering target "
-                       "cannot be nullptr.", );
-        sensorRenderTarget->blitRgbaToDefault();
-      } break;
-        /*
-        case 2: {
-          simulator_->visualizeObservation(defaultAgentId_, "depth_fisheye",
-                                           sensorInfoVisualizer_);
-          sensorInfoVisualizer_.blitRgbaToDefault();
-        } break;
-        */
-    }  // switch
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, sensorId);
+    simulator_->visualizeObservation(defaultAgentId_, sensorId);
+    sensorRenderTarget->blitRgbaToDefault();
+  } else if (fisheyeMode_) {
+    // ================ fisheye RGB =========================================
+    std::string sensorId = "fisheye";
+    simulator_->drawObservation(defaultAgentId_, sensorId);
+    // color fisheye
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, sensorId);
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    sensorRenderTarget->blitRgbaToDefault();
   } else if (flyingCameraMode_) {
     visibles = 0;
     Mn::GL::defaultFramebuffer.bind();
@@ -980,7 +982,7 @@ void Viewer::drawEvent() {
           esp::gfx::RenderCamera::Flag::FrustumCulling;
       visibles += renderCamera_->draw(it.second, flags);
     }
-  } else {
+  } else {  // ============= regular RGB with object picking =================
     // using polygon offset to increase mesh depth to avoid z-fighting with
     // debug draw (since lines will not respond to offset).
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
@@ -1137,6 +1139,22 @@ void Viewer::moveAndLook(int repetitions) {
   }
 }
 
+void Viewer::bindRenderTarget() {
+  for (auto& it : agentBodyNode_->getSubtreeSensors()) {
+    if (it.second.get().isVisualSensor()) {
+      esp::sensor::VisualSensor& visualSensor =
+          static_cast<esp::sensor::VisualSensor&>(it.second.get());
+      if (depthMode_) {
+        simulator_->getRenderer()->bindRenderTarget(
+            visualSensor,
+            {esp::gfx::Renderer::RenderTargetBindingFlag::VisualizeTexture});
+      } else {
+        simulator_->getRenderer()->bindRenderTarget(visualSensor);
+      }
+    }
+  }
+}
+
 void Viewer::viewportEvent(ViewportEvent& event) {
   for (auto& it : agentBodyNode_->getSubtreeSensors()) {
     if (it.second.get().isVisualSensor()) {
@@ -1145,8 +1163,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
       visualSensor.setResolution(event.framebufferSize()[1],
                                  event.framebufferSize()[0]);
       renderCamera_->setViewport(visualSensor.framebufferSize());
-      simulator_->getRenderer()->bindRenderTarget(visualSensor);
-
+      // before, here we will bind the render target, but now we defer it
       if ((visualSensor.specification()->uuid == "fisheye") ||
           (visualSensor.specification()->uuid == "depth_fisheye")) {
         auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
@@ -1163,6 +1180,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
       }
     }
   }
+  bindRenderTarget();
   Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
 
   if (flyingCameraMode_) {
@@ -1332,8 +1350,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
 
     case KeyEvent::Key::Four:
-      fisheyeMode_ = (fisheyeMode_ + 1) % 2;
-      LOG(INFO) << "Fisheye sensor mode is " << fisheyeMode_;
+      fisheyeMode_ = !fisheyeMode_;
+      LOG(INFO) << "Fisheye sensor mode is " << (fisheyeMode_ ? "ON" : "OFF");
       break;
 
     case KeyEvent::Key::Five:
@@ -1346,6 +1364,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::Seven:
       depthMode_ = !depthMode_;
+      bindRenderTarget();
       LOG(INFO) << "Depth sensor is " << (depthMode_ ? "ON" : "OFF");
       break;
     case KeyEvent::Key::Eight:

@@ -16,11 +16,15 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/ResourceManager.h>
 
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/TextureVisualizerShader.h"
 #include "esp/gfx/magnum.h"
 #include "esp/sensor/VisualSensor.h"
+
+#include <typeinfo>
 
 namespace Mn = Magnum;
 
@@ -28,7 +32,8 @@ namespace esp {
 namespace gfx {
 
 struct Renderer::Impl {
-  explicit Impl(Flags flags) : depthShader_{nullptr}, flags_{flags} {
+  explicit Impl(Flags flags)
+      : depthShader_{nullptr}, flags_{flags}, mesh_{Cr::Containers::NullOpt} {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
@@ -49,6 +54,37 @@ struct Renderer::Impl {
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags) {
     draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
+  }
+
+  void visualize(sensor::VisualSensor& visualSensor) {
+    sensor::SensorType& type = visualSensor.specification()->sensorType;
+    if (type == sensor::SensorType::Depth ||
+        type == sensor::SensorType::Semantic) {
+      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::DepthTest);
+      gfx::RenderTarget& tgt = visualSensor.renderTarget();
+      if (!mesh_) {
+        // prepare a big triangle mesh to cover the screen
+        mesh_ = Mn::GL::Mesh{};
+        mesh_->setCount(3);
+      }
+      if (type == sensor::SensorType::Depth) {
+        Magnum::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
+            shader = this->getShader<TextureVisualizerShader>(
+                esp::gfx::Renderer::Impl::RendererShaderType::
+                    DepthTextureVisualizer);
+
+        shader->bindDepthTexture(tgt.getDepthTexture());
+        shader->setDepthUnprojection(*visualSensor.depthUnprojection());
+        shader->setColorMapTransformation(1.0f / 512.0f,
+                                          1.0f / visualSensor.getFar());
+        tgt.renderReEnter();
+        shader->draw(*mesh_);
+        tgt.renderExit();
+      }
+
+      // TODO object id
+      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
+    }
   }
 
   void bindRenderTarget(sensor::VisualSensor& sensor,
@@ -102,6 +138,52 @@ struct Renderer::Impl {
  private:
   std::unique_ptr<DepthShader> depthShader_;
   const Flags flags_;
+  Corrade::Containers::Optional<Mn::GL::Mesh> mesh_;
+  Magnum::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+
+  enum class RendererShaderType : uint8_t {
+    DepthShader = 0,
+    DepthTextureVisualizer = 1,
+    // ObjectIdTextureVisualizer = 2,
+  };
+  template <typename T>
+  Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
+      RendererShaderType type) {
+    Mn::ResourceKey key;
+    switch (type) {
+      case RendererShaderType::DepthShader:
+        key = Mn::ResourceKey{"depthShader"};
+        break;
+
+      case RendererShaderType::DepthTextureVisualizer:
+        key = Mn::ResourceKey{"depthVisualizer"};
+        break;
+
+      // TODO: object id
+      default:
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        break;
+    }
+    Mn::Resource<Mn::GL::AbstractShaderProgram, T> shader =
+        shaderManager_.get<Mn::GL::AbstractShaderProgram, T>(key);
+
+    if (!shader) {
+      if (type == RendererShaderType::DepthShader) {
+        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+            shader.key(), new DepthShader{}, Mn::ResourceDataState::Final,
+            Mn::ResourcePolicy::ReferenceCounted);
+      } else if (type == RendererShaderType::DepthTextureVisualizer) {
+        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+            shader.key(),
+            new TextureVisualizerShader{
+                {TextureVisualizerShader::Flag::DepthTexture}},
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+      }
+    }
+    CORRADE_INTERNAL_ASSERT(shader);
+
+    return shader;
+  }
 };
 
 Renderer::Renderer(Flags flags)
@@ -122,6 +204,10 @@ void Renderer::draw(sensor::VisualSensor& visualSensor,
 void Renderer::bindRenderTarget(sensor::VisualSensor& sensor,
                                 RenderTargetBindingFlags bindingFlags) {
   pimpl_->bindRenderTarget(sensor, bindingFlags);
+}
+
+void Renderer::visualize(sensor::VisualSensor& sensor) {
+  pimpl_->visualize(sensor);
 }
 
 }  // namespace gfx
