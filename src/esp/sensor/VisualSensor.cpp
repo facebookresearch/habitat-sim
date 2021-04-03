@@ -74,37 +74,6 @@ void VisualSensor::bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
   tgt_ = std::move(tgt);
 }
 
-/*
-void VisualSensor::visualizeObservation(gfx::SensorInfoVisualizer& visualizer,
-                                        float depthScaling) {
-  auto sensorType = this->spec_->sensorType;
-  CORRADE_ASSERT(
-      sensorType == SensorType::Depth,
-      "CameraSensor::visualizeObservation: sensor type is not supported.", );
-
-  // prepare: setup and clear framebuffer
-  visualizer.prepareToDraw(framebufferSize());
-  switch (sensorType) {
-    case SensorType::Depth: {
-      // setup the shader
-      Mn::Resource<Mn::GL::AbstractShaderProgram, gfx::TextureVisualizerShader>
-          shader = visualizer.getShader<gfx::TextureVisualizerShader>(
-              gfx::SensorInfoType::Depth);
-      shader->bindDepthTexture(renderTarget().getDepthTexture())
-          .setDepthUnprojection(*depthUnprojection())
-          .setDepthScaling(depthScaling);
-      // draw to the framebuffer
-      visualizer.draw(shader.key());
-    } break;
-
-    default:
-      // Have to had this default, otherwise the clang-tidy will be pissed off,
-      // and will not let me pass
-      break;
-  }
-}
-*/
-
 bool VisualSensor::displayObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;

@@ -783,7 +783,10 @@ class Simulator {
    * Renderer::RenderTargetBindingFlag for more info
    * @return false if the sensor's observation cannot be visualized.
    */
-  bool visualizeObservation(int agentId, const std::string& sensorId);
+  bool visualizeObservation(int agentId,
+                            const std::string& sensorId,
+                            float colorMapOffset,
+                            float colorMapScale);
 
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,

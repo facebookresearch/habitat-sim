@@ -61,7 +61,9 @@ class Renderer {
    * @brief visualize the observation of a non-rgb visual sensor, e.g., depth,
    * semantic
    */
-  void visualize(sensor::VisualSensor& visualSensor);
+  void visualize(sensor::VisualSensor& visualSensor,
+                 float colorMapOffset = 1.0f / 512.0f,
+                 float colorMapScale = 1.0f / 256.0f);
 
   /**
    * @brief Binds a @ref RenderTarget to the sensor

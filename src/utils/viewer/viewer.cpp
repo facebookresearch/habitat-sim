@@ -961,7 +961,9 @@ void Viewer::drawEvent() {
     simulator_->drawObservation(defaultAgentId_, sensorId);
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, sensorId);
-    simulator_->visualizeObservation(defaultAgentId_, sensorId);
+    simulator_->visualizeObservation(defaultAgentId_, sensorId,
+                                     1.0f / 512.0f,  // colorMapOffset
+                                     1.0f / 24.0f);  // colorMapScale
     sensorRenderTarget->blitRgbaToDefault();
   } else if (fisheyeMode_) {
     // ================ fisheye RGB =========================================

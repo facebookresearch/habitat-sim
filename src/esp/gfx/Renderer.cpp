@@ -54,7 +54,9 @@ struct Renderer::Impl {
     draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
   }
 
-  void visualize(sensor::VisualSensor& visualSensor) {
+  void visualize(sensor::VisualSensor& visualSensor,
+                 float colorMapOffset,
+                 float colorMapScale) {
     sensor::SensorType& type = visualSensor.specification()->sensorType;
     if (type == sensor::SensorType::Depth ||
         type == sensor::SensorType::Semantic) {
@@ -73,8 +75,7 @@ struct Renderer::Impl {
 
         shader->bindDepthTexture(tgt.getDepthTexture());
         shader->setDepthUnprojection(*visualSensor.depthUnprojection());
-        shader->setColorMapTransformation(1.0f / 512.0f,
-                                          20.0f / visualSensor.getFar());
+        shader->setColorMapTransformation(colorMapOffset, colorMapScale);
         tgt.renderReEnter();
         shader->draw(*mesh_);
         tgt.renderExit();
@@ -206,8 +207,10 @@ void Renderer::bindRenderTarget(sensor::VisualSensor& sensor,
   pimpl_->bindRenderTarget(sensor, bindingFlags);
 }
 
-void Renderer::visualize(sensor::VisualSensor& sensor) {
-  pimpl_->visualize(sensor);
+void Renderer::visualize(sensor::VisualSensor& sensor,
+                         float colorMapOffset,
+                         float colorMapScale) {
+  pimpl_->visualize(sensor, colorMapOffset, colorMapScale);
 }
 
 }  // namespace gfx

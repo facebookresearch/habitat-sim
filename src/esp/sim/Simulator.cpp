@@ -1180,13 +1180,17 @@ bool Simulator::drawObservation(const int agentId,
   return false;
 }
 
-bool Simulator::visualizeObservation(int agentId, const std::string& sensorId) {
+bool Simulator::visualizeObservation(int agentId,
+                                     const std::string& sensorId,
+                                     float colorMapOffset,
+                                     float colorMapScale) {
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
     sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
     if (sensor.isVisualSensor()) {
-      renderer_->visualize(static_cast<sensor::VisualSensor&>(sensor));
+      renderer_->visualize(static_cast<sensor::VisualSensor&>(sensor),
+                           colorMapOffset, colorMapScale);
     }
     return true;
   }
