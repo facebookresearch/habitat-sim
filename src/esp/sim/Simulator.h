@@ -770,10 +770,14 @@ class Simulator {
    * @brief visualize the undisplayable observations such as depth, semantic, to
    * the frame buffer stored in the @ref SensorInfoVisualizer
    * Note: it will not display the observation on the default frame buffer
-   * @param agentId    Id of the agent for which the observation is to
+   * @param[in] agentId    Id of the agent for which the observation is to
    *                   be returned
-   * @param sensorId   Id of the sensor for which the observation is to
+   * @param[in] sensorId   Id of the sensor for which the observation is to
    *                   be returned
+   * @param[in] colorMapOffset the offset of the color map
+   * @param[in] colorMapScale the scale of the color map
+   * See details in @ref TextureVisualizerShader::setColorMapTransformation for
+   * more info.
    *
    * NOTE: it assumes:
    * -) it is a non-rgb sensor (such as a depth or semantic sensor);

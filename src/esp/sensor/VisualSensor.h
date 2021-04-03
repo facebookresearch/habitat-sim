@@ -124,20 +124,6 @@ class VisualSensor : public Sensor {
    */
   virtual void readObservation(Observation& obs);
 
-  /**
-   * @brief visualize originally undisplayable info (such as depth, semantic
-   * info) to the frame buffer using simulator's renderer
-   * @param[in] sim Instance of Simulator class for which the observation needs
-   *                to be drawn
-   * @param[in] depthScaling a scaling factor to adjust the intensity of the
-   * visualized result. The smaller, the brighter. A good initial guess .e.g,
-   * can be the far plane value.
-   */
-  /*
-  virtual void visualizeObservation(gfx::SensorInfoVisualizer& visualizer,
-                                    float depthScaling = 50.0f);
-  */
-
   /*
    * @brief Display next observation from Simulator on default frame buffer
    * @brief Draws an observation to the frame buffer using simulator's renderer,
