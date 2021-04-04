@@ -51,6 +51,10 @@ struct Renderer::Impl {
     draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
   }
 
+  void draw(sensor::VisualSensor& visualSensor, sim::Simulator& sim) {
+    visualSensor.drawObservation(sim);
+  }
+
   void bindRenderTarget(sensor::VisualSensor& sensor) {
     auto depthUnprojection = sensor.depthUnprojection();
     CORRADE_ASSERT(depthUnprojection,

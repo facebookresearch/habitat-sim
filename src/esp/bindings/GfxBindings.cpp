@@ -20,6 +20,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sim/Simulator.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -97,6 +98,12 @@ void initGfxBindings(py::module& m) {
           },
           R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
           "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
+      .def(
+          "draw",
+          [](Renderer& self, sensor::VisualSensor& visualSensor,
+             sim::Simulator& sim) { self.draw(visualSensor, sim); },
+          R"(Draw the active scene in current simulator using the visual sensor)",
+          "visualSensor"_a, "sim"_a)
       .def("bind_render_target", &Renderer::bindRenderTarget);
 
   py::class_<RenderTarget>(m, "RenderTarget")

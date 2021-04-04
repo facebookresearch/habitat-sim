@@ -147,12 +147,29 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
     }
   }
 
-  esp::gfx::RenderCamera::Flags flags;
+  esp::gfx::RenderCamera::Flags flags = {gfx::RenderCamera::Flag::ClearColor |
+                                         gfx::RenderCamera::Flag::ClearDepth};
   if (sim.isFrustumCullingEnabled()) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
   }
+
   // generate the cubemap texture
-  cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), flags);
+  if (fisheyeSensorSpec_->sensorType == SensorType::Semantic) {
+    cubeMap_->renderToTexture(*cubeMapCamera_,
+                              sim.getActiveSemanticSceneGraph(), flags);
+    if (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph()) {
+      flags |= gfx::RenderCamera::Flag::ObjectsOnly;
+      // BE AWARE that here "ClearColor" and "ClearDepth" is NOT set at this
+      // point!! So the rendering will be on top of whatever existing there.
+      flags &= ~gfx::RenderCamera::Flag::ClearColor;
+      flags &= ~gfx::RenderCamera::Flag::ClearDepth;
+      cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
+                                flags);
+    }
+  } else {
+    cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
+                              flags);
+  }
 
   auto drawWith = [&](auto& shader) {
     if (fisheyeSensorSpec_->sensorType == SensorType::Color) {

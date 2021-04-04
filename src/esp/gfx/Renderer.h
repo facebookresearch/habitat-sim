@@ -11,8 +11,10 @@
 #include "esp/sensor/VisualSensor.h"
 
 namespace esp {
+namespace sim {
+class Simulator;
+}
 namespace gfx {
-
 class Renderer {
  public:
   enum class Flag {
@@ -38,10 +40,21 @@ class Renderer {
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling});
 
+  // TODO: deprecate the following function: draw(visualSensor, sceneGraph,
+  // flags);
   // draw the scene graph with the visual sensor provided by user
   void draw(sensor::VisualSensor& visualSensor,
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling});
+
+  /**
+   * @brief draw the active scene in current sim using the specified visual
+   * sensor
+   * @param[in] visualSensor, the visual sensor, from which the observation is
+   * obtained
+   * @param[in] sim, the simulator instance
+   */
+  void draw(sensor::VisualSensor& visualSensor, sim::Simulator& sim);
 
   /**
    * @brief Binds a @ref RenderTarget to the sensor

@@ -553,45 +553,7 @@ class Sensor:
                  (has it been detached from a scene node?)"
             )
 
-        # get the correct scene graph based on application
-        if self._spec.sensor_type == SensorType.SEMANTIC:
-            if self._sim.semantic_scene is None:
-                raise RuntimeError(
-                    "SemanticSensor observation requested but no SemanticScene is loaded"
-                )
-            scene = self._sim.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
-
-        # now, connect the agent to the root node of the current scene graph
-
-        # sanity check is not needed on agent:
-        # because if a sensor is attached to a scene graph,
-        # it implies the agent is attached to the same scene graph
-        # (it assumes backend simulator will guarantee it.)
-
-        agent_node = self._agent.scene_node
-        agent_node.parent = scene.get_root_node()
-
-        render_flags = habitat_sim.gfx.Camera.Flags.NONE
-
-        if self._sim.frustum_culling:
-            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
-
-        with self._sensor_object.render_target:
-            self._sim.renderer.draw(self._sensor_object, scene, render_flags)
-
-        # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
-        if (
-            self._spec.sensor_type == SensorType.SEMANTIC
-            and self._sim.get_active_scene_graph()
-            is not self._sim.get_active_semantic_scene_graph()
-        ):
-            agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
-            render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
-            self._sim.renderer.draw(
-                self._sensor_object, self._sim.get_active_scene_graph(), render_flags
-            )
+        self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def get_observation(self) -> Union[ndarray, "Tensor"]:
 
