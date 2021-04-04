@@ -130,13 +130,35 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
 
   if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
     // TODO: check sim has semantic scene graph
-    draw(sim.getActiveSemanticSceneGraph(), flags);
-    if (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph()) {
+    bool twoSceneGraphs =
+        (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
+
+    if (twoSceneGraphs) {
+      // *assume* the sensor is always in the regular scene graph.
+      // backup first
+      Mn::Matrix4 relativeTransform = node().transformation();
+      Mn::Matrix4 absTransform = node().absoluteTransformation();
+      scene::SceneNode* p = static_cast<scene::SceneNode*>(node().parent());
+      // take the sensor from the current regular scene graph and connect it to
+      // the root node of semantic scene graph, set the *correct* transformation
+      node().setParent(&sim.getActiveSemanticSceneGraph().getRootNode());
+      node().setTransformation(absTransform);
+      draw(sim.getActiveSemanticSceneGraph(), flags);
+      // after drawing, put the node back to the regular scene graph.
+      // MUST use the setParent function! Otherwise the sensorSuite in the node
+      // will be wrong!!!
+      node().setParent(p);
+      node().setTransformation(relativeTransform);
+    } else {
+      draw(sim.getActiveSemanticSceneGraph(), flags);
+    }
+
+    if (twoSceneGraphs) {
       flags |= gfx::RenderCamera::Flag::ObjectsOnly;
       draw(sim.getActiveSceneGraph(), flags);
     }
   } else {
-    // SensorType is Depth or any other type
+    // SensorType is Color, Depth or any other type
     draw(sim.getActiveSceneGraph(), flags);
   }
 
