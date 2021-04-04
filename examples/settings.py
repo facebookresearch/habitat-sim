@@ -61,7 +61,6 @@ def make_cfg(settings):
     sensor_specs = []
     if settings["color_sensor"]:
         color_sensor_spec = habitat_sim.CameraSensorSpec()
-        # color_sensor_spec = habitat_sim.SensorSpec()
         color_sensor_spec.uuid = "color_sensor"
         color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         color_sensor_spec.resolution = [settings["height"], settings["width"]]

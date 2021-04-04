@@ -116,6 +116,10 @@ void Renderer::draw(sensor::VisualSensor& visualSensor,
   pimpl_->draw(visualSensor, sceneGraph, flags);
 }
 
+void Renderer::draw(sensor::VisualSensor& visualSensor, sim::Simulator& sim) {
+  pimpl_->draw(visualSensor, sim);
+}
+
 void Renderer::bindRenderTarget(sensor::VisualSensor& sensor) {
   pimpl_->bindRenderTarget(sensor);
 }
