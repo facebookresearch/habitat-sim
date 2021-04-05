@@ -110,8 +110,8 @@ void initGfxBindings(py::module& m) {
              Renderer::Flag flags) {
             self.bindRenderTarget(visualSensor, Renderer::Flags{flags});
           },
-          R"(Binds a RenderTarget to the sensor)", "sensor"_a,
-          "bindingFlags"_a = Renderer::Flag{});
+          R"(Binds a RenderTarget to the sensor)", "visualSensor"_a,
+          "flags"_a = Renderer::Flag{});
 
   py::class_<RenderTarget>(m, "RenderTarget")
       .def("__enter__",
