@@ -79,14 +79,11 @@ void initGfxBindings(py::module& m) {
 
   // ==== Renderer ====
   py::class_<Renderer, Renderer::ptr> renderer(m, "Renderer");
-  py::enum_<Renderer::RenderTargetBindingFlag> renderTargetBindingFlags{
-      renderer, "RenderTargetBindingFlags", "RenderTargetBindingFlags"};
+  py::enum_<Renderer::Flag> renderTargetFlags{renderer, "Flags", "Flags"};
 
-  renderTargetBindingFlags
-      .value("VISUALIZE_TEXTURE",
-             Renderer::RenderTargetBindingFlag::VisualizeTexture)
-      .value("NONE", Renderer::RenderTargetBindingFlag{});
-  corrade::enumOperators(renderTargetBindingFlags);
+  renderTargetFlags.value("VISUALIZE_TEXTURE", Renderer::Flag::VisualizeTexture)
+      .value("NONE", Renderer::Flag{});
+  corrade::enumOperators(renderTargetFlags);
 
   renderer.def(py::init(&Renderer::create<>))
       .def(
@@ -109,12 +106,11 @@ void initGfxBindings(py::module& m) {
       .def(
           "bind_render_target",
           [](Renderer& self, sensor::VisualSensor& visualSensor,
-             Renderer::RenderTargetBindingFlag flags) {
-            self.bindRenderTarget(visualSensor,
-                                  Renderer::RenderTargetBindingFlags{flags});
+             Renderer::Flag flags) {
+            self.bindRenderTarget(visualSensor, Renderer::Flags{flags});
           },
           R"(Binds a RenderTarget to the sensor)", "sensor"_a,
-          "bindingFlags"_a = Renderer::RenderTargetBindingFlag{});
+          "bindingFlags"_a = Renderer::Flag{});
 
   py::class_<RenderTarget>(m, "RenderTarget")
       .def("__enter__",

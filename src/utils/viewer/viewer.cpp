@@ -1148,8 +1148,7 @@ void Viewer::bindRenderTarget() {
           static_cast<esp::sensor::VisualSensor&>(it.second.get());
       if (depthMode_) {
         simulator_->getRenderer()->bindRenderTarget(
-            visualSensor,
-            {esp::gfx::Renderer::RenderTargetBindingFlag::VisualizeTexture});
+            visualSensor, {esp::gfx::Renderer::Flag::VisualizeTexture});
       } else {
         simulator_->getRenderer()->bindRenderTarget(visualSensor);
       }

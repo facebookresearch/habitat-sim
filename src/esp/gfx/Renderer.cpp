@@ -86,8 +86,7 @@ struct Renderer::Impl {
     }
   }
 
-  void bindRenderTarget(sensor::VisualSensor& sensor,
-                        RenderTargetBindingFlags bindingFlags) {
+  void bindRenderTarget(sensor::VisualSensor& sensor, Flags bindingFlags) {
     auto depthUnprojection = sensor.depthUnprojection();
     CORRADE_ASSERT(depthUnprojection,
                    "Renderer::Impl::bindRenderTarget(): Sensor does not have a "
@@ -110,14 +109,14 @@ struct Renderer::Impl {
         break;
 
       case sensor::SensorType::Depth:
-        if (bindingFlags & RenderTargetBindingFlag::VisualizeTexture) {
+        if (bindingFlags & Flag::VisualizeTexture) {
           renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
         }
         renderTargetFlags |= RenderTarget::Flag::DepthTexture;
         break;
 
       case sensor::SensorType::Semantic:
-        if (bindingFlags & RenderTargetBindingFlag::VisualizeTexture) {
+        if (bindingFlags & Flag::VisualizeTexture) {
           renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
         }
         renderTargetFlags |= RenderTarget::Flag::ObjectIdBuffer;
@@ -203,7 +202,7 @@ void Renderer::draw(sensor::VisualSensor& visualSensor,
 }
 
 void Renderer::bindRenderTarget(sensor::VisualSensor& sensor,
-                                RenderTargetBindingFlags bindingFlags) {
+                                Flags bindingFlags) {
   pimpl_->bindRenderTarget(sensor, bindingFlags);
 }
 

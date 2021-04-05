@@ -23,24 +23,18 @@ class Renderer {
      * Note: Cannot set this flag when doing RGB rendering
      */
     NoTextures = 1 << 0,
-  };
 
-  typedef Corrade::Containers::EnumSet<Flag> Flags;
-  CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
-
-  enum class RenderTargetBindingFlag {
     /**
      * When binding the render target to a depth or a sementic sensor,
      * setting this flag will give the render target the ability to visualize
      * the depth, or sementic info
+     * see @ref bindRenderTarget for more info.
      */
-    VisualizeTexture = 1 << 0,
+    VisualizeTexture = 1 << 1,
   };
 
-  typedef Corrade::Containers::EnumSet<RenderTargetBindingFlag>
-      RenderTargetBindingFlags;
-
-  CORRADE_ENUMSET_FRIEND_OPERATORS(RenderTargetBindingFlags)
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+  CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
 
   /**
    * @brief Constructor
@@ -70,8 +64,7 @@ class Renderer {
    * @param[in] sensor the target sensor
    * @param[in] bindingFlags flags, such as to control the bindings
    */
-  void bindRenderTarget(sensor::VisualSensor& sensor,
-                        RenderTargetBindingFlags bindingFlags = {});
+  void bindRenderTarget(sensor::VisualSensor& sensor, Flags bindingFlags = {});
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(Renderer)
 };
