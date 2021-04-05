@@ -102,8 +102,7 @@ VoxelGridType VoxelGrid::voxelGridTypeFor<Mn::Vector3>() {
 
 std::vector<std::pair<std::string, esp::geo::VoxelGridType>>
 VoxelGrid::getExistingGrids() {
-  std::vector<std::pair<std::string, esp::geo::VoxelGridType>> existingGrids =
-      std::vector<std::pair<std::string, VoxelGridType>>();
+  std::vector<std::pair<std::string, esp::geo::VoxelGridType>> existingGrids;
   std::map<std::string, GridEntry>::iterator it;
   for (it = grids_.begin(); it != grids_.end(); it++) {
     std::string typeName;
