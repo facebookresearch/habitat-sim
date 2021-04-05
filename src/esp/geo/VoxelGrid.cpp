@@ -198,7 +198,8 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   const auto&& coneIndices = coneData.indices();
 
   // Get rotation quaternion
-  Mn::Rad angle{acos(Mn::Math::dot(vec.normalized(), Mn::Vector3(0, 1, 0)))};
+  Mn::Rad angle{static_cast<float>(
+      acos(Mn::Math::dot(vec.normalized(), Mn::Vector3(0, 1, 0))))};
   Mn::Vector3 crossProduct = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
   Mn::Quaternion vecRotation{Mn::Math::IdentityInit};
 
