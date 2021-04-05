@@ -97,7 +97,9 @@ void initGfxBindings(py::module& m) {
           },
           R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
           "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
-      .def("bind_render_target", &Renderer::bindRenderTarget);
+      .def("bind_render_target", &Renderer::bindRenderTarget,
+           R"(Binds a RenderTarget to the sensor)", "sensor"_a,
+           "bindingFlags"_a = RenderTarget::RenderTargetBindingFlags{});
 
   py::class_<RenderTarget>(m, "RenderTarget")
       .def("__enter__",
