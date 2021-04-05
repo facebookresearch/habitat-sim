@@ -186,102 +186,70 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                           std::vector<Mn::UnsignedInt>& indices,
                                           const Mn::Vector3i& local_coords,
                                           const Mn::Vector3& vec) {
-  Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(2, 2, 1);
+  Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(1, 3, 1.0f);
 
   // add cube to mesh
   // midpoint of a voxel
   Mn::Vector3 mid = getGlobalCoords(local_coords);
 
   unsigned int sz = positions.size();
-  auto conePositions = coneData.positions3DAsArray();
-  auto coneNormals = coneData.normalsAsArray();
-  auto coneIndices = coneData.indices();
+  const auto&& conePositions = coneData.positions3DAsArray();
+  const auto&& coneNormals = coneData.normalsAsArray();
+  const auto&& coneIndices = coneData.indices();
 
-  for (auto ind : conePositions) {
-    Mn::Vector3 transformedInd = ind * Mn::Vector3(0.2, 0.4, 0.2);
-    positions.push_back(transformedInd + mid);
+  // Get rotation quaternion
+  Mn::Rad angle{acos(Mn::Math::dot(vec.normalized(), Mn::Vector3(0, 1, 0)))};
+  Mn::Vector3 crossProduct = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
+  Mn::Quaternion vecRotation{Mn::Math::IdentityInit};
+
+  if (vec[0] == 0 && vec[2] == 0) {
+    crossProduct = Mn::Vector3(0, 1, 0);
+  }
+  vecRotation = vecRotation.rotation(-angle, crossProduct.normalized());
+  for (const auto& ind : conePositions) {
+    positions.push_back(
+        vecRotation.transformVector(ind * Mn::Vector3(0.02, 0.04, 0.02) +
+                                    Mn::Vector3(0, 0.025, 0)) +
+        mid);
     colors.push_back(Mn::Color3(0, .3, 1));
   }
 
-  for (auto norm : coneNormals) {
+  for (const auto& norm : coneNormals) {
     normals.push_back(norm);
   }
 
-  for (auto index : coneIndices) {
+  for (const auto&& index : coneIndices) {
     indices.push_back(sz + index[0]);
   }
 
-  /*Mn::Vector3 mid = getGlobalCoords(local_coords);
-  Mn::Vector3 pos1 = vec.normalized() * m_voxelSize * 1 / 3 + mid;
-  Mn::Vector3 orthog1 = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
-  if (orthog1 == Mn::Vector3(0, 0, 0)) {
-    orthog1 = Mn::Vector3(1, 0, 0);
-  }
-  Mn::Vector3 orthog2 = Mn::Math::cross(vec, orthog1);
+  // render cylinder
+  Mn::Trade::MeshData cylinderData = Mn::Primitives::cylinderSolid(1, 3, 1.0f);
 
-  Mn::Vector3 pos2 = mid + orthog1.normalized() * m_voxelSize * 1 / 15;
-  Mn::Vector3 pos3 = mid + orthog2.normalized() * m_voxelSize * 1 / 15;
-  Mn::Vector3 pos4 = mid - orthog1.normalized() * m_voxelSize * 1 / 15;
-  Mn::Vector3 pos5 = mid - orthog2.normalized() * m_voxelSize * 1 / 15;
+  // add cube to mesh
+  // midpoint of a voxel
 
-  unsigned int sz = positions.size();
-  positions.push_back(pos1);
-  positions.push_back(pos2);
-  positions.push_back(pos3);
-  positions.push_back(pos4);
-  positions.push_back(pos5);
+  sz = positions.size();
+  const auto&& cylinderPositions = cylinderData.positions3DAsArray();
+  const auto&& cylinderNormals = cylinderData.normalsAsArray();
+  const auto&& cylinderIndices = cylinderData.indices();
 
-  colors.push_back(Mn::Color3(1, 1, 1));
-  colors.push_back(Mn::Color3(0, .3, 1));
-  colors.push_back(Mn::Color3(0, .3, 1));
-  colors.push_back(Mn::Color3(0, .3, 1));
-  colors.push_back(Mn::Color3(0, .3, 1));
-
-  normals.push_back(vec.normalized());
-  normals.push_back((pos1 - mid).normalized());
-  normals.push_back((pos2 - mid).normalized());
-  normals.push_back((pos3 - mid).normalized());
-  normals.push_back((pos4 - mid).normalized());
-
-  std::vector<unsigned int> inds{0, 1, 2, 0, 2, 3, 0, 3, 4,
-                                 0, 4, 1, 1, 3, 2, 1, 4, 3};
-  for (auto index : inds) {
-    indices.push_back(sz + index);
-  }*/
-
-  // Add mesh information for the stem of the arrow
-
-  // cube indices
-  /*sz = positions.size();
-  Mn::Vector3 pos6 = mid + orthog1.normalized() * m_voxelSize * 1 / 40;
-  Mn::Vector3 pos7 = mid + orthog2.normalized() * m_voxelSize * 1 / 40;
-  Mn::Vector3 pos8 = mid - orthog1.normalized() * m_voxelSize * 1 / 40;
-  Mn::Vector3 pos9 = mid - orthog2.normalized() * m_voxelSize * 1 / 40;
-
-  Mn::Vector3 pos10 = mid + orthog1.normalized() * m_voxelSize * 1 / 40 -
-                      vec.normalized() * m_voxelSize * 1 / 4;
-  Mn::Vector3 pos11 = mid + orthog2.normalized() * m_voxelSize * 1 / 40 -
-                      vec.normalized() * m_voxelSize * 1 / 4;
-  Mn::Vector3 pos12 = mid - orthog1.normalized() * m_voxelSize * 1 / 40 -
-                      vec.normalized() * m_voxelSize * 1 / 4;
-  Mn::Vector3 pos13 = mid - orthog2.normalized() * m_voxelSize * 1 / 40 -
-                      vec.normalized() * m_voxelSize * 1 / 4;
-
-  std::vector<Mn::Vector3> cubeVerts{pos6,  pos7,  pos8,  pos9,
-                                     pos10, pos11, pos12, pos13};
-  for (auto vert : cubeVerts) {
-    positions.push_back(vert);
+  for (const auto& ind : cylinderPositions) {
+    positions.push_back(
+        vecRotation.transformVector(ind * Mn::Vector3(0.01, 0.03, 0.01) -
+                                    Mn::Vector3(0, 0.025, 0)) +
+        mid);
     colors.push_back(Mn::Color3(0, .3, 1));
-    normals.push_back((vert - mid).normalized());
   }
-  // add indices
 
-  std::vector<unsigned int> cube_inds{4, 6, 5, 4, 7, 6, 6, 2, 5, 5,
-                                      2, 1, 4, 5, 1, 4, 1, 0, 4, 0,
-                                      3, 4, 3, 7, 2, 6, 7, 2, 7, 3};
-  for (auto index : cube_inds) {
-    indices.push_back(sz + index);
-  }*/
+  for (const auto& norm : cylinderNormals) {
+    Mn::Vector3 transformedNorm =
+        vecRotation.transformVector(norm * Mn::Vector3(0.01, 0.04, 0.01));
+    normals.push_back(transformedNorm);
+  }
+
+  for (const auto&& index : cylinderIndices) {
+    indices.push_back(sz + index[0]);
+  }
 }
 
 void VoxelGrid::generateMeshDataAndMeshGL(const std::string& gridName,
