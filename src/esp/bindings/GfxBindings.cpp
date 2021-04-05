@@ -79,11 +79,12 @@ void initGfxBindings(py::module& m) {
 
   // ==== Renderer ====
   py::class_<Renderer, Renderer::ptr> renderer(m, "Renderer");
-  py::enum_<Renderer::Flag> renderTargetFlags{renderer, "Flags", "Flags"};
+  py::enum_<Renderer::Flag> rendererFlags{renderer, "RendererFlags",
+                                          "RendererFlags"};
 
-  renderTargetFlags.value("VISUALIZE_TEXTURE", Renderer::Flag::VisualizeTexture)
+  rendererFlags.value("VISUALIZE_TEXTURE", Renderer::Flag::VisualizeTexture)
       .value("NONE", Renderer::Flag{});
-  corrade::enumOperators(renderTargetFlags);
+  corrade::enumOperators(rendererFlags);
 
   renderer.def(py::init(&Renderer::create<>))
       .def(
