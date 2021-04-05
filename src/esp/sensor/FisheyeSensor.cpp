@@ -155,12 +155,36 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
 
   // generate the cubemap texture
   if (fisheyeSensorSpec_->sensorType == SensorType::Semantic) {
-    cubeMap_->renderToTexture(*cubeMapCamera_,
-                              sim.getActiveSemanticSceneGraph(), flags);
-    if (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph()) {
+    bool twoSceneGraphs =
+        (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
+
+    if (twoSceneGraphs) {
+      // *assume* the sensor is always in the regular scene graph.
+      // backup first
+      Mn::Matrix4 relativeTransform = node().transformation();
+      Mn::Matrix4 absTransform = node().absoluteTransformation();
+      scene::SceneNode* p = static_cast<scene::SceneNode*>(node().parent());
+      // take the sensor from the current regular scene graph and connect it to
+      // the root node of semantic scene graph, set the *correct* transformation
+      node().setParent(&sim.getActiveSemanticSceneGraph().getRootNode());
+      node().setTransformation(absTransform);
+      cubeMap_->renderToTexture(*cubeMapCamera_,
+                                sim.getActiveSemanticSceneGraph(), flags);
+      // after drawing, put the node back to the regular scene graph.
+      // MUST use the setParent function! Otherwise the sensorSuite in the node
+      // will be wrong!!!
+      node().setParent(p);
+      node().setTransformation(relativeTransform);
+    } else {
+      cubeMap_->renderToTexture(*cubeMapCamera_,
+                                sim.getActiveSemanticSceneGraph(), flags);
+    }
+
+    if (twoSceneGraphs) {
       flags |= gfx::RenderCamera::Flag::ObjectsOnly;
-      // BE AWARE that here "ClearColor" and "ClearDepth" is NOT set at this
-      // point!! So the rendering will be on top of whatever existing there.
+      // Incremental rendering:
+      // BE AWARE that here "ClearColor" and "ClearDepth" is NOT set!!
+      // Rendering happens on top of whatever existing there.
       flags &= ~gfx::RenderCamera::Flag::ClearColor;
       flags &= ~gfx::RenderCamera::Flag::ClearDepth;
       cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
