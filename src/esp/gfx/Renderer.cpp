@@ -47,12 +47,6 @@ struct Renderer::Impl {
     }
   }
 
-  void draw(sensor::VisualSensor& visualSensor,
-            scene::SceneGraph& sceneGraph,
-            RenderCamera::Flags flags) {
-    draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
-  }
-
   void draw(sensor::VisualSensor& visualSensor, sim::Simulator& sim) {
     if (visualSensor.specification()->sensorType ==
         sensor::SensorType::Semantic) {
@@ -116,12 +110,6 @@ void Renderer::draw(RenderCamera& camera,
                     scene::SceneGraph& sceneGraph,
                     RenderCamera::Flags flags) {
   pimpl_->draw(camera, sceneGraph, flags);
-}
-
-void Renderer::draw(sensor::VisualSensor& visualSensor,
-                    scene::SceneGraph& sceneGraph,
-                    RenderCamera::Flags flags) {
-  pimpl_->draw(visualSensor, sceneGraph, flags);
 }
 
 void Renderer::draw(sensor::VisualSensor& visualSensor, sim::Simulator& sim) {

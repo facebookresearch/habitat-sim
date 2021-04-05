@@ -83,15 +83,6 @@ void initGfxBindings(py::module& m) {
       .def(py::init(&Renderer::create<>))
       .def(
           "draw",
-          [](Renderer& self, sensor::VisualSensor& visualSensor,
-             scene::SceneGraph& sceneGraph, RenderCamera::Flag flags) {
-            self.draw(visualSensor, sceneGraph, RenderCamera::Flags{flags});
-          },
-          R"(Draw given scene using the visual sensor)", "visualSensor"_a,
-          "scene"_a,
-          "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
-      .def(
-          "draw",
           [](Renderer& self, RenderCamera& camera,
              scene::SceneGraph& sceneGraph, RenderCamera::Flag flags) {
             self.draw(camera, sceneGraph, RenderCamera::Flags{flags});
