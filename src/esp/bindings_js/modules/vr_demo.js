@@ -59,15 +59,11 @@ class VRDemo extends WebDemo {
     // /build_js/esp/bindings_js/data. (See "resources" in
     // src/esp/bindings_js/CMakeLists.txt.)
     let dataUrlBase = "data";
-    // preloadFunc(dataUrlBase + "/objects/cheezit.glb", true);
-    // preloadFunc(dataUrlBase + "/objects/cheezit.object_config.json", true);
-    // preloadFunc(dataUrlBase + "/objects/skillet.glb", true);
-    // preloadFunc(dataUrlBase + "/objects/skillet.object_config.json", true);
-    // preloadFunc(dataUrlBase + "/objects/chefcan.glb", true);
-    // preloadFunc(dataUrlBase + "/objects/chefcan.object_config.json", true);
-    preloadFunc(dataUrlBase + "/objects/banana_convex.glb", true);
+    preloadFunc(dataUrlBase + "/objects/hand_r_open.glb", true);
+    preloadFunc(dataUrlBase + "/objects/hand_r_open.object_config.json", true);
+    preloadFunc(dataUrlBase + "/objects/hand_r_closed.glb", true);
     preloadFunc(
-      dataUrlBase + "/objects/banana_convex.object_config.json",
+      dataUrlBase + "/objects/hand_r_closed.object_config.json",
       true
     );
   }
@@ -105,23 +101,33 @@ class VRDemo extends WebDemo {
     agent.setState(state, false);
 
     Module.loadAllObjectConfigsFromPath(this.simenv.sim, "/data/objects");
-    // todo: use simenv wrapper?
-    this.handObjId = this.simenv.sim.addObjectByHandle(
-      "/data/objects/banana_convex.object_config.json",
-      null,
-      "",
-      0
-    );
-    this.simenv.sim.setObjectMotionType(
-      Module.MotionType.KINEMATIC,
-      this.handObjId,
-      0
-    );
-    this.simenv.sim.setTranslation(
-      new Module.Vector3(0.0, 0.0, 0.0),
-      this.handObjId,
-      0
-    );
+
+    this.handObjIds = [];
+    const handFilepaths = [
+      "/data/objects/hand_r_open.object_config.json",
+      "/data/objects/hand_r_closed.object_config.json"
+    ];
+
+    for (const filepath of handFilepaths) {
+      console.log("addObjectByHandle " + filepath);
+      let objId = this.simenv.sim.addObjectByHandle(filepath, null, "", 0);
+      console.log("objId = " + objId);
+      this.simenv.sim.setObjectMotionType(
+        Module.MotionType.KINEMATIC,
+        objId,
+        0
+      );
+      this.simenv.sim.setTranslation(
+        new Module.Vector3(0.0, 0.0, 0.0),
+        objId,
+        0
+      );
+      this.handObjIds.push(objId);
+    }
+
+    this.prevButtonStates = [false, false];
+    this.heldObjId = -1;
+    this.recentSpawnObjId = -1;
   }
 
   // Compiles a GLSL shader. Returns null on failure
@@ -250,6 +256,10 @@ class VRDemo extends WebDemo {
     );
 
     this.renderDisplay();
+
+    this.physicsStepFunction = setInterval(() => {
+      this.simenv.sim.stepWorld(1.0 / 60);
+    }, 1000.0 / 60);
   }
 
   // remove the event listener
@@ -373,28 +383,110 @@ class VRDemo extends WebDemo {
           this.xrReferenceSpace
         );
 
-        {
-          let poseTransform = inputPose.transform;
+        let gp = inputSource.gamepad;
+        let buttonStates = [false, false];
+        for (let i = 0; i < gp.buttons.length; i++) {
+          // Not sure what all these buttons are. Let's just use two.
+          let remappedIndex = i == 0 ? 0 : 1;
+          buttonStates[remappedIndex] ||=
+            gp.buttons[i].value > 0 || gp.buttons[i].pressed == true;
+        }
+        let closed = buttonStates[0];
+        let handObjId = closed ? this.handObjIds[1] : this.handObjIds[0];
+        let hiddenHandObjId = closed ? this.handObjIds[0] : this.handObjIds[1];
 
-          //const view = inputPose.views[0];
-          //const pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
-          const pos = pointToArray(poseTransform.position).slice(0, -1); // don't need w for position
+        let poseTransform = inputPose.transform;
+        const handPos = new Module.Vector3(
+          ...pointToArray(poseTransform.position).slice(0, -1)
+        ); // don't need w for position
+
+        let handRot = Module.toQuaternion(
+          pointToArray(poseTransform.orientation)
+        );
+        {
+          this.simenv.sim.setTranslation(handPos, handObjId, 0);
+
+          this.simenv.sim.setRotation(handRot, handObjId, 0);
+        }
+
+        if (buttonStates[0] && !this.prevButtonStates[0]) {
+          // grab the recent object
+          if (this.recentSpawnObjId != -1) {
+            this.heldObjId = this.recentSpawnObjId;
+
+            let currTrans = this.simenv.sim.getTranslation(this.heldObjId, 0);
+            let currRot = this.simenv.sim.getRotation(this.heldObjId, 0);
+            console.log("currRot.scalar: " + currRot.scalar());
+            console.log("currRot.vector().x(): " + currRot.vector().x());
+
+            let handRotInverted = handRot.inverted();
+            console.log("handRotInverted.scalar: " + handRotInverted.scalar());
+            this.heldRelRot = Module.Quaternion.mul(handRotInverted, currRot);
+            this.heldRelTrans = handRotInverted.transformVector(
+              Module.Vector3.sub(currTrans, handPos)
+            );
+
+            // set held obj to kinematic
+            this.simenv.sim.setObjectMotionType(
+              Module.MotionType.KINEMATIC,
+              this.heldObjId,
+              0
+            );
+          }
+        }
+
+        if (this.heldObjId != -1) {
+          // set transform relative to hand
 
           this.simenv.sim.setTranslation(
             Module.Vector3.add(
-              new Module.Vector3(...pos),
-              new Module.Vector3(0.0, 0.0, 0.0)
+              handPos,
+              handRot.transformVector(this.heldRelTrans)
             ),
-            this.handObjId,
+            this.heldObjId,
             0
           );
 
           this.simenv.sim.setRotation(
-            Module.toQuaternion(pointToArray(poseTransform.orientation)),
-            this.handObjId,
+            Module.Quaternion.mul(handRot, this.heldRelRot),
+            this.heldObjId,
             0
           );
         }
+
+        if (this.heldObjId != -1 && !buttonStates[0]) {
+          // set held object to dynamic
+          this.simenv.sim.setObjectMotionType(
+            Module.MotionType.DYNAMIC,
+            this.heldObjId,
+            0
+          );
+          this.heldObjId = -1;
+        }
+
+        // if (this.heldObjId != -1) {
+        // }
+
+        if (buttonStates[1] && !this.prevButtonStates[1]) {
+          // cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true
+          let filepath = "cubeSolid";
+          console.log("addObjectByHandle " + filepath);
+          let objId = this.simenv.sim.addObjectByHandle(filepath, null, "", 0);
+          this.recentSpawnObjId = objId;
+          console.log("objId = " + objId);
+          if (objId != -1) {
+            this.simenv.sim.setTranslation(handPos, objId, 0);
+          }
+        }
+
+        // hack hide other hand by translating far away
+        this.simenv.sim.setTranslation(
+          new Module.Vector3(-1000.0, -1000.0, -1000.0),
+          hiddenHandObjId,
+          0
+        );
+
+        this.prevButtonStates = buttonStates;
       }
     }
   }
