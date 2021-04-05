@@ -21,7 +21,7 @@ namespace esp {
 namespace geo {
 
 #ifdef ESP_BUILD_WITH_VHACD
-VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
+VoxelGrid::VoxelGrid(const assets::MeshData& meshData,
                      const std::string& renderAssetHandle,
                      int resolution)
     : m_renderAssetHandle(renderAssetHandle) {
@@ -30,8 +30,8 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
   Mn::Debug() << "Voxelizing mesh..";
 
   // run VHACD
-  interfaceVHACD->computeVoxelField(&meshData->vbo[0][0], meshData->vbo.size(),
-                                    &meshData->ibo[0], meshData->ibo.size() / 3,
+  interfaceVHACD->computeVoxelField(&meshData.vbo[0][0], meshData.vbo.size(),
+                                    &meshData.ibo[0], meshData.ibo.size() / 3,
                                     resolution);
 
   // get VHACD volume, set scale and dimensions
@@ -51,7 +51,8 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
 
   // create empty VoxelGrid
   addGrid<bool>("Boundary");
-  auto boundaryGrid = getGrid<bool>("Boundary");
+  Cr::Containers::StridedArrayView3D<bool> boundaryGrid =
+      getGrid<bool>("Boundary");
 
   int num_filled = 0;
   // Transfer data from Volume to VoxelGrid
@@ -99,23 +100,15 @@ VoxelGridType VoxelGrid::voxelGridTypeFor<Mn::Vector3>() {
 
 //  --== GETTERS AND SETTERS FOR VOXELS ==--
 
-std::vector<std::pair<std::string, std::string>> VoxelGrid::getExistingGrids() {
-  std::vector<std::pair<std::string, std::string>> existingGrids =
-      std::vector<std::pair<std::string, std::string>>();
+std::vector<std::pair<std::string, esp::geo::VoxelGridType>>
+VoxelGrid::getExistingGrids() {
+  std::vector<std::pair<std::string, esp::geo::VoxelGridType>> existingGrids =
+      std::vector<std::pair<std::string, VoxelGridType>>();
   std::map<std::string, GridEntry>::iterator it;
   for (it = grids_.begin(); it != grids_.end(); it++) {
     std::string typeName;
     VoxelGridType type = it->second.type;
-    if (type == VoxelGridType::Bool) {
-      typeName = "Bool";
-    } else if (type == VoxelGridType::Int) {
-      typeName = "Int";
-    } else if (type == VoxelGridType::Float) {
-      typeName = "Float";
-    } else if (type == VoxelGridType::Vector3) {
-      typeName = "Vector3";
-    }
-    existingGrids.push_back(std::make_pair(it->first, typeName));
+    existingGrids.push_back(std::make_pair(it->first, type));
   }
   return existingGrids;
 }
@@ -140,9 +133,9 @@ Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
 void VoxelGrid::fillBoolGridNeighborhood(std::vector<bool>& neighbors,
                                          const std::string& gridName,
                                          const Mn::Vector3i& index) {
-  std::vector<Mn::Vector3i> increments = {{0, 0, 1},  {1, 0, 0},  {0, 1, 0},
-                                          {0, 0, -1}, {0, -1, 0}, {-1, 0, 0}};
-  auto grid = getGrid<bool>(gridName);
+  Mn::Vector3i increments[] = {{0, 0, 1},  {1, 0, 0},  {0, 1, 0},
+                               {0, 0, -1}, {0, -1, 0}, {-1, 0, 0}};
+  Cr::Containers::StridedArrayView3D<bool> grid = getGrid<bool>(gridName);
   for (int i = 0; i < 6; i++) {
     auto n = index + increments[i];
     neighbors.push_back(isValidIndex(n) ? grid[n[0]][n[1]][n[2]] : false);
@@ -333,7 +326,7 @@ void VoxelGrid::generateMesh(const std::string& gridName) {
   std::vector<Mn::Vector3> normals;
   std::vector<Mn::Color3> colors;
   int num_filled = 0;
-  auto type = grids_[gridName].type;
+  VoxelGridType type = grids_[gridName].type;
   // iterate through each voxel grid cell
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
