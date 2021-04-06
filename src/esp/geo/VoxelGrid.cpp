@@ -21,7 +21,7 @@ namespace esp {
 namespace geo {
 
 #ifdef ESP_BUILD_WITH_VHACD
-VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
+VoxelGrid::VoxelGrid(const assets::MeshData& meshData,
                      const std::string& renderAssetHandle,
                      int resolution)
     : m_renderAssetHandle(renderAssetHandle) {
@@ -30,8 +30,8 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
   Mn::Debug() << "Voxelizing mesh..";
 
   // run VHACD
-  interfaceVHACD->computeVoxelField(&meshData->vbo[0][0], meshData->vbo.size(),
-                                    &meshData->ibo[0], meshData->ibo.size() / 3,
+  interfaceVHACD->computeVoxelField(&meshData.vbo[0][0], meshData.vbo.size(),
+                                    &meshData.ibo[0], meshData.ibo.size() / 3,
                                     resolution);
 
   // get VHACD volume, set scale and dimensions
@@ -51,7 +51,8 @@ VoxelGrid::VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
 
   // create empty VoxelGrid
   addGrid<bool>("Boundary");
-  auto boundaryGrid = getGrid<bool>("Boundary");
+  Cr::Containers::StridedArrayView3D<bool> boundaryGrid =
+      getGrid<bool>("Boundary");
 
   int num_filled = 0;
   // Transfer data from Volume to VoxelGrid
@@ -99,23 +100,14 @@ VoxelGridType VoxelGrid::voxelGridTypeFor<Mn::Vector3>() {
 
 //  --== GETTERS AND SETTERS FOR VOXELS ==--
 
-std::vector<std::pair<std::string, std::string>> VoxelGrid::getExistingGrids() {
-  std::vector<std::pair<std::string, std::string>> existingGrids =
-      std::vector<std::pair<std::string, std::string>>();
+std::vector<std::pair<std::string, esp::geo::VoxelGridType>>
+VoxelGrid::getExistingGrids() {
+  std::vector<std::pair<std::string, esp::geo::VoxelGridType>> existingGrids;
   std::map<std::string, GridEntry>::iterator it;
   for (it = grids_.begin(); it != grids_.end(); it++) {
     std::string typeName;
     VoxelGridType type = it->second.type;
-    if (type == VoxelGridType::Bool) {
-      typeName = "Bool";
-    } else if (type == VoxelGridType::Int) {
-      typeName = "Int";
-    } else if (type == VoxelGridType::Float) {
-      typeName = "Float";
-    } else if (type == VoxelGridType::Vector3) {
-      typeName = "Vector3";
-    }
-    existingGrids.push_back(std::make_pair(it->first, typeName));
+    existingGrids.push_back(std::make_pair(it->first, type));
   }
   return existingGrids;
 }
@@ -140,9 +132,9 @@ Mn::Vector3 VoxelGrid::getGlobalCoords(const Mn::Vector3i& coords) {
 void VoxelGrid::fillBoolGridNeighborhood(std::vector<bool>& neighbors,
                                          const std::string& gridName,
                                          const Mn::Vector3i& index) {
-  std::vector<Mn::Vector3i> increments = {{0, 0, 1},  {1, 0, 0},  {0, 1, 0},
-                                          {0, 0, -1}, {0, -1, 0}, {-1, 0, 0}};
-  auto grid = getGrid<bool>(gridName);
+  Mn::Vector3i increments[] = {{0, 0, 1},  {1, 0, 0},  {0, 1, 0},
+                               {0, 0, -1}, {0, -1, 0}, {-1, 0, 0}};
+  Cr::Containers::StridedArrayView3D<bool> grid = getGrid<bool>(gridName);
   for (int i = 0; i < 6; i++) {
     auto n = index + increments[i];
     neighbors.push_back(isValidIndex(n) ? grid[n[0]][n[1]][n[2]] : false);
@@ -206,7 +198,8 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   const auto&& coneIndices = coneData.indices();
 
   // Get rotation quaternion
-  Mn::Rad angle{acos(Mn::Math::dot(vec.normalized(), Mn::Vector3(0, 1, 0)))};
+  Mn::Rad angle{static_cast<float>(
+      acos(Mn::Math::dot(vec.normalized(), Mn::Vector3(0, 1, 0))))};
   Mn::Vector3 crossProduct = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
   Mn::Quaternion vecRotation{Mn::Math::IdentityInit};
 
@@ -258,78 +251,6 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   for (const auto&& index : cylinderIndices) {
     indices.push_back(sz + index[0]);
   }
-
-  /*Mn::Vector3 mid = getGlobalCoords(local_coords);
-  Mn::Vector3 pos1 = vec.normalized() * m_voxelSize * 1 / 3 + mid;
-  Mn::Vector3 orthog1 = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
-  if (orthog1 == Mn::Vector3(0, 0, 0)) {
-    orthog1 = Mn::Vector3(1, 0, 0);
-  }
-  Mn::Vector3 orthog2 = Mn::Math::cross(vec, orthog1);
-
-  Mn::Vector3 pos2 = mid + orthog1.normalized() * m_voxelSize * 1 / 15;
-  Mn::Vector3 pos3 = mid + orthog2.normalized() * m_voxelSize * 1 / 15;
-  Mn::Vector3 pos4 = mid - orthog1.normalized() * m_voxelSize * 1 / 15;
-  Mn::Vector3 pos5 = mid - orthog2.normalized() * m_voxelSize * 1 / 15;
-
-  unsigned int sz = positions.size();
-  positions.push_back(pos1);
-  positions.push_back(pos2);
-  positions.push_back(pos3);
-  positions.push_back(pos4);
-  positions.push_back(pos5);
-
-  colors.push_back(Mn::Color3(1, 1, 1));
-  colors.push_back(Mn::Color3(0, .3, 1));
-  colors.push_back(Mn::Color3(0, .3, 1));
-  colors.push_back(Mn::Color3(0, .3, 1));
-  colors.push_back(Mn::Color3(0, .3, 1));
-
-  normals.push_back(vec.normalized());
-  normals.push_back((pos1 - mid).normalized());
-  normals.push_back((pos2 - mid).normalized());
-  normals.push_back((pos3 - mid).normalized());
-  normals.push_back((pos4 - mid).normalized());
-
-  std::vector<unsigned int> inds{0, 1, 2, 0, 2, 3, 0, 3, 4,
-                                 0, 4, 1, 1, 3, 2, 1, 4, 3};
-  for (auto index : inds) {
-    indices.push_back(sz + index);
-  }
-
-  // Add mesh information for the stem of the arrow
-
-  // cube indices
-  sz = positions.size();
-  Mn::Vector3 pos6 = mid + orthog1.normalized() * m_voxelSize * 1 / 40;
-  Mn::Vector3 pos7 = mid + orthog2.normalized() * m_voxelSize * 1 / 40;
-  Mn::Vector3 pos8 = mid - orthog1.normalized() * m_voxelSize * 1 / 40;
-  Mn::Vector3 pos9 = mid - orthog2.normalized() * m_voxelSize * 1 / 40;
-
-  Mn::Vector3 pos10 = mid + orthog1.normalized() * m_voxelSize * 1 / 40 -
-                      vec.normalized() * m_voxelSize * 1 / 4;
-  Mn::Vector3 pos11 = mid + orthog2.normalized() * m_voxelSize * 1 / 40 -
-                      vec.normalized() * m_voxelSize * 1 / 4;
-  Mn::Vector3 pos12 = mid - orthog1.normalized() * m_voxelSize * 1 / 40 -
-                      vec.normalized() * m_voxelSize * 1 / 4;
-  Mn::Vector3 pos13 = mid - orthog2.normalized() * m_voxelSize * 1 / 40 -
-                      vec.normalized() * m_voxelSize * 1 / 4;
-
-  std::vector<Mn::Vector3> cubeVerts{pos6,  pos7,  pos8,  pos9,
-                                     pos10, pos11, pos12, pos13};
-  for (auto vert : cubeVerts) {
-    positions.push_back(vert);
-    colors.push_back(Mn::Color3(0, .3, 1));
-    normals.push_back((vert - mid).normalized());
-  }
-  // add indices
-
-  std::vector<unsigned int> cube_inds{4, 6, 5, 4, 7, 6, 6, 2, 5, 5,
-                                      2, 1, 4, 5, 1, 4, 1, 0, 4, 0,
-                                      3, 4, 3, 7, 2, 6, 7, 2, 7, 3};
-  for (auto index : cube_inds) {
-    indices.push_back(sz + index);
-  }*/
 }
 
 void VoxelGrid::generateMeshDataAndMeshGL(const std::string& gridName,
@@ -373,7 +294,7 @@ void VoxelGrid::generateMesh(const std::string& gridName) {
   std::vector<Mn::Vector3> normals;
   std::vector<Mn::Color3> colors;
   int num_filled = 0;
-  auto type = grids_[gridName].type;
+  VoxelGridType type = grids_[gridName].type;
   // iterate through each voxel grid cell
   for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {

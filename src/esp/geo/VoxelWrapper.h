@@ -81,7 +81,8 @@ class VoxelWrapper {
    * @return A vector of pairs, where the first element is the voxel grid's
    * name, and the second element is the string of the object's type.
    */
-  std::vector<std::pair<std::string, std::string>> getExistingGrids() {
+  std::vector<std::pair<std::string, esp::geo::VoxelGridType>>
+  getExistingGrids() {
     return voxelGrid->getExistingGrids();
   }
 
