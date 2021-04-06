@@ -167,7 +167,7 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
   const std::string JSONTypeExt_;
 
  public:
-  ESP_SMART_POINTERS(AttributesManager<T, Access>);
+  ESP_SMART_POINTERS(AttributesManager<T, Access>)
 
 };  // class AttributesManager
 

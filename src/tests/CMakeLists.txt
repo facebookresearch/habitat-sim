@@ -54,7 +54,7 @@ target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 test(GfxReplayTest assets gfx sim)
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(ResourceManagerTest assets)
+test(ResourceManagerTest assets sim sensor)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
