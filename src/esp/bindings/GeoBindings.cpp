@@ -116,6 +116,16 @@ void initGeoBindings(py::module& m) {
       .def("get_vector3_voxel", &VoxelWrapper::getVoxel<Mn::Vector3>, "index"_a,
            "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
 
+      .def("get_bool_grid", &VoxelWrapper::getGrid<bool>, "grid_name"_a,
+           R"(Gets a specified bool grid by the grid's name.)")
+      .def("get_int_grid", &VoxelWrapper::getGrid<int>, "grid_name"_a,
+           R"(Gets a specified int grid by the grid's name.)")
+      .def("get_float_grid", &VoxelWrapper::getGrid<float>, "grid_name"_a,
+           R"(Gets a specified float grid by the grid's name.)")
+      .def("get_vector3_grid", &VoxelWrapper::getGrid<Mn::Vector3>,
+           "grid_name"_a,
+           R"(Gets a specified Vector3 grid by the grid's name.)")
+
       .def("add_bool_grid", &VoxelWrapper::addGrid<bool>, "grid_name"_a,
            R"(Creates an empty new bool grid.)")
       .def("add_int_grid", &VoxelWrapper::addGrid<int>, "grid_name"_a,

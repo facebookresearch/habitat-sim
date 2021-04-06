@@ -122,6 +122,9 @@ if __name__ == "__main__":
         voxelization.generate_mesh("GradientField")
         sim.set_stage_voxelization_draw(True, "GradientField")
 
+        gradientFieldGrid = voxelization.get_float_grid("ESDF")
+        print(gradientFieldGrid[0][0][0])
+
 
         simulate(sim, dt=1, get_frames=True, data=data)
 
