@@ -123,7 +123,6 @@ commands:
                 rm ~/miniconda.sh
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.6
-                # conda clean -i # Clean Conda cache
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
                 pip install pytest-sugar pytest-xdist typeguard
@@ -347,7 +346,7 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               conda install -y -c conda-forge doxygen==1.8.16
-              conda install -y  jinja2 pygments "docutils<0.17"
+              conda install -y  jinja2 pygments docutils
               git submodule update --init --recursive --jobs 4
               while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
@@ -407,7 +406,7 @@ jobs:
 
               cd docs
               conda install -y -c conda-forge doxygen==1.8.16
-              conda install -y  jinja2 pygments "docutils<0.17"
+              conda install -y  jinja2 pygments docutils
               ./build-public.sh
       - save_cache:
           key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
