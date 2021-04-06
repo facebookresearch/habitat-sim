@@ -132,7 +132,8 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     std::unique_ptr<btBvhTriangleMeshShape> meshShape =
         std::make_unique<btBvhTriangleMeshShape>(indexedVertexArray.get(),
                                                  true);
-    meshShape->setMargin(initializationAttributes_->getMargin());
+    // meshShape->setMargin(initializationAttributes_->getMargin());
+    meshShape->setMargin(0.01);  // temp
     meshShape->setLocalScaling(
         btVector3{transformFromLocalToWorld
                       .scaling()});  // scale is a property of the shape
