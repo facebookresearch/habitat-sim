@@ -11,14 +11,76 @@ const BUTTON_ID = "vr_button";
 const VIEW_SENSORS = ["left_eye", "right_eye"];
 const pointToArray = p => [p.x, p.y, p.z, p.w];
 
+const replicaCadObjectBaseFilepath = "data/replica/objects/";
+const replicaCadObjectNames = [
+  "frl_apartment_vase_02", // gray
+  "frl_apartment_plate_02", // double-layer
+  "frl_apartment_pan_01", // blue, with handle
+
+  "frl_apartment_kitchen_utensil_05", // serving tray
+  "banana_fixed",
+
+  "frl_apartment_plate_01",
+
+  "frl_apartment_kitchen_utensil_06", // white handleless cup
+
+  "frl_apartment_bowl_06", // small white
+
+  "frl_apartment_kitchen_utensil_02", // green spice shaker
+  "frl_apartment_kitchen_utensil_03" // orange spice shaker
+
+  // "frl_apartment_bowl_01", // orange/white
+  //"frl_apartment_bowl_02", // red
+  //"frl_apartment_bowl_03", // silver
+  // "frl_apartment_bowl_07", // large white with base
+  // "frl_apartment_cup_01", // latte mug
+  // "frl_apartment_cup_02", // coffee mug
+  // "frl_apartment_cup_03", // wider latte mug
+  // "frl_apartment_cup_05", // blacl latte mug
+  // "frl_apartment_kitchen_utensil_01", // cooking pot with lid
+  // "frl_apartment_kitchen_utensil_04", // three-tier drawer
+  // "frl_apartment_kitchen_utensil_08", // cylindrical storage container
+  // "frl_apartment_kitchen_utensil_09", // gray thermos
+  // "frl_apartment_vase_01", // white
+  // "frl_apartment_choppingboard_02",
+];
+
+const replicaCadObjectInstanceNames = [
+  "frl_apartment_vase_02", // gray
+  "frl_apartment_plate_02", // double-layer
+  "frl_apartment_pan_01", // blue, with handle
+
+  "frl_apartment_kitchen_utensil_05", // serving tray
+  "banana_fixed",
+  "banana_fixed",
+  "banana_fixed",
+
+  "frl_apartment_plate_01",
+  "frl_apartment_plate_01",
+
+  "frl_apartment_kitchen_utensil_06", // white handleless cup
+  "frl_apartment_kitchen_utensil_06", // white handleless cup
+
+  "frl_apartment_bowl_06", // small white
+  "frl_apartment_bowl_06", // small white
+
+  "frl_apartment_kitchen_utensil_02", // green spice shaker
+  "frl_apartment_kitchen_utensil_03" // orange spice shaker
+];
+
 ///////////
 // INPUT //
 ///////////
-const HANDEDNESS = "right";
-const REPEAT_TIMEOUT = 500;
-const LEFT_RIGHT_AXIS = 2;
-const FWD_AXIS = 3;
-const VIEW_YAW_STEP = Math.PI * 0.1;
+//const REPEAT_TIMEOUT = 500;
+//const LEFT_RIGHT_AXIS = 2;
+//const FWD_AXIS = 3;
+//const VIEW_YAW_STEP = Math.PI * 0.1;
+
+class HandRecord {
+  objIds = [];
+  prevButtonStates = [false, false];
+  heldObjId = -1;
+}
 
 class VRDemo extends WebDemo {
   fpsElement;
@@ -51,6 +113,15 @@ class VRDemo extends WebDemo {
     this.fpsElement = document.getElementById(fpsId);
   }
 
+  static getReplicaCadObjectConfigFilepath(name) {
+    let configFilepath =
+      replicaCadObjectBaseFilepath +
+      "configs_convex/" +
+      name +
+      ".object_config.json";
+    return configFilepath;
+  }
+
   static preloadFiles(preloadFunc) {
     // For dataUrlBase, if you specify a relative path here like "data", it is relative
     // to the bindings_js folder where index.js is served. You can alternately specify a
@@ -66,6 +137,27 @@ class VRDemo extends WebDemo {
       dataUrlBase + "/objects/hand_r_closed.object_config.json",
       true
     );
+
+    preloadFunc(dataUrlBase + "/objects/hand_l_open.glb", true);
+    preloadFunc(dataUrlBase + "/objects/hand_l_open.object_config.json", true);
+    preloadFunc(dataUrlBase + "/objects/hand_l_closed.glb", true);
+    preloadFunc(
+      dataUrlBase + "/objects/hand_l_closed.object_config.json",
+      true
+    );
+
+    for (const name of replicaCadObjectNames) {
+      let renderGlbFilepath = replicaCadObjectBaseFilepath + name + ".glb";
+      let collisionGlbFilepath =
+        replicaCadObjectBaseFilepath +
+        "configs_convex/" +
+        name +
+        "_cv_decomp.glb";
+      let configFilepath = VRDemo.getReplicaCadObjectConfigFilepath(name);
+      preloadFunc(renderGlbFilepath);
+      preloadFunc(collisionGlbFilepath);
+      preloadFunc(configFilepath);
+    }
   }
 
   display(agentConfig = defaultAgentConfig, episodePath = undefined) {
@@ -96,38 +188,47 @@ class VRDemo extends WebDemo {
     const agent = this.simenv.sim.getAgent(this.simenv.selectedAgentId);
     let state = new Module.AgentState();
     agent.getState(state);
-    state.position = [0.0, 0.0, 0.0];
+    state.position = [2.0, 0.1, 5.8];
     state.rotation = [0.0, 0.0, 0.0, 1.0];
     agent.setState(state, false);
 
     Module.loadAllObjectConfigsFromPath(this.simenv.sim, "/data/objects");
+    Module.loadAllObjectConfigsFromPath(
+      this.simenv.sim,
+      replicaCadObjectBaseFilepath + "configs_convex"
+    );
 
-    this.handObjIds = [];
-    const handFilepaths = [
-      "/data/objects/hand_r_open.object_config.json",
-      "/data/objects/hand_r_closed.object_config.json"
+    this.handRecords = [new HandRecord(), new HandRecord()];
+
+    const handFilepathsByHandIndex = [
+      [
+        "/data/objects/hand_l_open.object_config.json",
+        "/data/objects/hand_l_closed.object_config.json"
+      ],
+      [
+        "/data/objects/hand_r_open.object_config.json",
+        "/data/objects/hand_r_closed.object_config.json"
+      ]
     ];
 
-    for (const filepath of handFilepaths) {
-      console.log("addObjectByHandle " + filepath);
-      let objId = this.simenv.sim.addObjectByHandle(filepath, null, "", 0);
-      console.log("objId = " + objId);
-      this.simenv.sim.setObjectMotionType(
-        Module.MotionType.KINEMATIC,
-        objId,
-        0
-      );
-      this.simenv.sim.setTranslation(
-        new Module.Vector3(0.0, 0.0, 0.0),
-        objId,
-        0
-      );
-      this.handObjIds.push(objId);
+    for (const handIndex of [0, 1]) {
+      for (const filepath of handFilepathsByHandIndex[handIndex]) {
+        let objId = this.simenv.sim.addObjectByHandle(filepath, null, "", 0);
+        this.simenv.sim.setObjectMotionType(
+          Module.MotionType.KINEMATIC,
+          objId,
+          0
+        );
+        this.simenv.sim.setTranslation(
+          new Module.Vector3(0.0, 0.0, 0.0),
+          objId,
+          0
+        );
+        this.handRecords[handIndex].objIds.push(objId);
+      }
     }
 
-    this.prevButtonStates = [false, false];
-    this.heldObjId = -1;
-    this.recentSpawnObjId = -1;
+    this.objectCounter = 0;
   }
 
   // Compiles a GLSL shader. Returns null on failure
@@ -342,39 +443,46 @@ class VRDemo extends WebDemo {
 
   handleInput(frame) {
     for (let inputSource of frame.session.inputSources) {
-      if (inputSource.handedness != HANDEDNESS) {
-        continue;
-      }
-      if (inputSource.gamepad) {
-        const demo = this;
+      let handIndex = inputSource.handedness == "left" ? 0 : 1;
+      let otherHandIndex = handIndex == 0 ? 1 : 0;
+      let handRecord = this.handRecords[handIndex];
+      let otherHandRecord = this.handRecords[otherHandIndex];
 
-        const fwdHeld = inputSource.gamepad.axes[FWD_AXIS] < -0.5;
-        if (fwdHeld && !this.prevFwdHeld) {
-          this.task.handleAction("moveForward");
-          window.setTimeout(function() {
-            demo.prevFwdHeld = false;
-          }, REPEAT_TIMEOUT);
-        }
-        this.prevFwdHeld = fwdHeld;
+      // if (inputSource.gamepad) {
+      //   const demo = this;
 
-        const leftHeld = inputSource.gamepad.axes[LEFT_RIGHT_AXIS] > 0.5;
-        if (leftHeld && !this.prevleftHeld) {
-          this.viewYawOffset += VIEW_YAW_STEP;
-          window.setTimeout(function() {
-            demo.prevLeftHeld = false;
-          }, REPEAT_TIMEOUT);
-        }
-        this.prevLeftHeld = leftHeld;
+      //   const fwdHeld = inputSource.gamepad.axes[FWD_AXIS] < -0.5;
+      //   if (fwdHeld && !this.prevFwdHeld) {
+      //     this.task.handleAction("moveForward");
+      //     window.setTimeout(function() {
+      //       demo.prevFwdHeld = false;
+      //     }, REPEAT_TIMEOUT);
+      //   }
+      //   this.prevFwdHeld = fwdHeld;
 
-        const rightHeld = inputSource.gamepad.axes[LEFT_RIGHT_AXIS] < -0.5;
-        if (rightHeld && !this.prevRightHeld) {
-          this.viewYawOffset -= VIEW_YAW_STEP;
-          window.setTimeout(function() {
-            demo.prevRightHeld = false;
-          }, REPEAT_TIMEOUT);
-        }
-        this.prevRightHeld = rightHeld;
-      }
+      //   const leftHeld = inputSource.gamepad.axes[LEFT_RIGHT_AXIS] > 0.5;
+      //   if (leftHeld && !this.prevleftHeld) {
+      //     this.viewYawOffset += VIEW_YAW_STEP;
+      //     window.setTimeout(function() {
+      //       demo.prevLeftHeld = false;
+      //     }, REPEAT_TIMEOUT);
+      //   }
+      //   this.prevLeftHeld = leftHeld;
+
+      //   const rightHeld = inputSource.gamepad.axes[LEFT_RIGHT_AXIS] < -0.5;
+      //   if (rightHeld && !this.prevRightHeld) {
+      //     this.viewYawOffset -= VIEW_YAW_STEP;
+      //     window.setTimeout(function() {
+      //       demo.prevRightHeld = false;
+      //     }, REPEAT_TIMEOUT);
+      //   }
+      //   this.prevRightHeld = rightHeld;
+      // }
+
+      const agent = this.simenv.sim.getAgent(this.simenv.selectedAgentId);
+      let state = new Module.AgentState();
+      agent.getState(state);
+      let agentPos = new Module.Vector3(...state.position);
 
       // 6DoF pose example
       if (inputSource.gripSpace) {
@@ -392,90 +500,141 @@ class VRDemo extends WebDemo {
             gp.buttons[i].value > 0 || gp.buttons[i].pressed == true;
         }
         let closed = buttonStates[0];
-        let handObjId = closed ? this.handObjIds[1] : this.handObjIds[0];
-        let hiddenHandObjId = closed ? this.handObjIds[0] : this.handObjIds[1];
+        let handObjId = closed ? handRecord.objIds[1] : handRecord.objIds[0];
+        let hiddenHandObjId = closed
+          ? handRecord.objIds[0]
+          : handRecord.objIds[1];
 
+        // update hand obj pose
         let poseTransform = inputPose.transform;
-        const handPos = new Module.Vector3(
-          ...pointToArray(poseTransform.position).slice(0, -1)
-        ); // don't need w for position
+        const handPos = Module.Vector3.add(
+          new Module.Vector3(
+            ...pointToArray(poseTransform.position).slice(0, -1)
+          ),
+          agentPos
+        );
 
         let handRot = Module.toQuaternion(
           pointToArray(poseTransform.orientation)
         );
-        {
-          this.simenv.sim.setTranslation(handPos, handObjId, 0);
+        this.simenv.sim.setTranslation(handPos, handObjId, 0);
+        this.simenv.sim.setRotation(handRot, handObjId, 0);
 
-          this.simenv.sim.setRotation(handRot, handObjId, 0);
-        }
+        let palmFacingSign = handIndex == 0 ? 1.0 : -1.0;
+        let palmFacingDir = handRot.transformVector(
+          new Module.Vector3(palmFacingSign, 0.0, 0.0)
+        );
 
-        if (buttonStates[0] && !this.prevButtonStates[0]) {
-          // grab the recent object
-          if (this.recentSpawnObjId != -1) {
-            this.heldObjId = this.recentSpawnObjId;
+        // try grab
+        if (buttonStates[0] && !handRecord.prevButtonStates[0]) {
+          let maxDistance = 0.15;
 
-            let currTrans = this.simenv.sim.getTranslation(this.heldObjId, 0);
-            let currRot = this.simenv.sim.getRotation(this.heldObjId, 0);
-            console.log("currRot.scalar: " + currRot.scalar());
-            console.log("currRot.vector().x(): " + currRot.vector().x());
+          let hitObjId = Module.castRay(
+            this.simenv.sim,
+            handPos,
+            palmFacingDir,
+            maxDistance
+          );
+
+          if (hitObjId != -1) {
+            handRecord.heldObjId = hitObjId;
+
+            if (otherHandRecord.heldObjId == hitObjId) {
+              // release from other hand
+              otherHandRecord.heldObjId = -1;
+            }
+
+            let currTrans = this.simenv.sim.getTranslation(
+              handRecord.heldObjId,
+              0
+            );
+            let currRot = this.simenv.sim.getRotation(handRecord.heldObjId, 0);
 
             let handRotInverted = handRot.inverted();
-            console.log("handRotInverted.scalar: " + handRotInverted.scalar());
-            this.heldRelRot = Module.Quaternion.mul(handRotInverted, currRot);
-            this.heldRelTrans = handRotInverted.transformVector(
+            handRecord.heldRelRot = Module.Quaternion.mul(
+              handRotInverted,
+              currRot
+            );
+            handRecord.heldRelTrans = handRotInverted.transformVector(
               Module.Vector3.sub(currTrans, handPos)
             );
 
             // set held obj to kinematic
             this.simenv.sim.setObjectMotionType(
               Module.MotionType.KINEMATIC,
-              this.heldObjId,
+              handRecord.heldObjId,
               0
             );
           }
         }
 
-        if (this.heldObjId != -1) {
-          // set transform relative to hand
+        // update held object pose
+        if (handRecord.heldObjId != -1) {
+          let pad =
+            Math.min(0.5, Math.max(0.3, palmFacingDir.y())) *
+            0.05 *
+            palmFacingSign;
+          let adjustedRelTrans = Module.Vector3.add(
+            handRecord.heldRelTrans,
+            new Module.Vector3(pad, 0.0, 0.0)
+          );
 
           this.simenv.sim.setTranslation(
             Module.Vector3.add(
               handPos,
-              handRot.transformVector(this.heldRelTrans)
+              handRot.transformVector(adjustedRelTrans)
             ),
-            this.heldObjId,
+            handRecord.heldObjId,
             0
           );
-
           this.simenv.sim.setRotation(
-            Module.Quaternion.mul(handRot, this.heldRelRot),
-            this.heldObjId,
+            Module.Quaternion.mul(handRot, handRecord.heldRelRot),
+            handRecord.heldObjId,
             0
           );
         }
 
-        if (this.heldObjId != -1 && !buttonStates[0]) {
+        // handle release
+        if (handRecord.heldObjId != -1 && !buttonStates[0]) {
           // set held object to dynamic
           this.simenv.sim.setObjectMotionType(
             Module.MotionType.DYNAMIC,
-            this.heldObjId,
+            handRecord.heldObjId,
             0
           );
-          this.heldObjId = -1;
+          handRecord.heldObjId = -1;
         }
 
-        // if (this.heldObjId != -1) {
-        // }
-
-        if (buttonStates[1] && !this.prevButtonStates[1]) {
+        if (buttonStates[1] && !handRecord.prevButtonStates[1]) {
           // cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true
-          let filepath = "cubeSolid";
-          console.log("addObjectByHandle " + filepath);
-          let objId = this.simenv.sim.addObjectByHandle(filepath, null, "", 0);
-          this.recentSpawnObjId = objId;
-          console.log("objId = " + objId);
-          if (objId != -1) {
-            this.simenv.sim.setTranslation(handPos, objId, 0);
+          //let filepath = "cubeSolid";
+
+          if (this.objectCounter < replicaCadObjectInstanceNames.length) {
+            let nextIndex = this.objectCounter;
+            this.objectCounter++;
+
+            const offsetDist = 0.25;
+            let spawnPos = Module.Vector3.add(
+              handPos,
+              new Module.Vector3(
+                palmFacingDir.x() * offsetDist,
+                palmFacingDir.y() * offsetDist,
+                palmFacingDir.z() * offsetDist
+              )
+            );
+
+            let filepath = VRDemo.getReplicaCadObjectConfigFilepath(
+              replicaCadObjectInstanceNames[nextIndex]
+            );
+            let objId = this.simenv.sim.addObjectByHandle(
+              filepath,
+              null,
+              "",
+              0
+            );
+            if (objId != -1) {
+              this.simenv.sim.setTranslation(spawnPos, objId, 0);
+            }
           }
         }
 
@@ -486,7 +645,7 @@ class VRDemo extends WebDemo {
           0
         );
 
-        this.prevButtonStates = buttonStates;
+        handRecord.prevButtonStates = buttonStates;
       }
     }
   }

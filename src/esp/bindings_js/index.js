@@ -41,12 +41,14 @@ Module.preRun.push(() => {
   window.config = config;
   const scene = config.scene;
   Module.scene = preload(scene);
+  console.log("Module.scene = " + Module.scene);
 
   Module.physicsConfigFile = preload(defaultPhysicsConfigFilepath);
 
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
 
   preload(fileNoExtension + ".navmesh");
+  preload(fileNoExtension + ".stage_config.json");
   if (config.semantic === "mp3d") {
     preload(fileNoExtension + ".house");
     preload(fileNoExtension + "_semantic.ply");
