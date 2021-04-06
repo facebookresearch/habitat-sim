@@ -195,6 +195,13 @@ class VisualSensor : public Sensor {
   std::unique_ptr<gfx::RenderTarget> tgt_;
   VisualSensorSpec::ptr visualSensorSpec_ =
       std::dynamic_pointer_cast<VisualSensorSpec>(spec_);
+
+  void moveSemanticSensorToSemanticSceneGraph(sim::Simulator& sim);
+  void moveSemanticSensorBackToRegularSceneGraph(sim::Simulator& sim);
+  Corrade::Containers::Optional<Magnum::Matrix4> relativeTransformBackup_ =
+      Corrade::Containers::NullOpt;
+  scene::SceneNode* semanticSensorParentNodeBackup_ = nullptr;
+
   ESP_SMART_POINTERS(VisualSensor)
 };
 

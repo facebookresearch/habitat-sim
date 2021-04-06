@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "esp/gfx/RenderTarget.h"
+#include "esp/sim/Simulator.h"
 
 namespace esp {
 namespace sensor {
@@ -134,6 +135,40 @@ bool VisualSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   readObservation(obs);
 
   return true;
+}
+
+void VisualSensor::moveSemanticSensorToSemanticSceneGraph(sim::Simulator& sim) {
+  CORRADE_INTERNAL_ASSERT(visualSensorSpec_->sensorType ==
+                          SensorType::Semantic);
+  // check if the sensor is already in this semantic scene graph
+  if (node().parent() ==
+      sim.getActiveSemanticSceneGraph().getRootNode().scene()) {
+    return;
+  }
+  // back up
+  relativeTransformBackup_ = node().transformation();
+  Mn::Matrix4 absTransform = node().absoluteTransformation();
+  semanticSensorParentNodeBackup_ =
+      static_cast<scene::SceneNode*>(node().parent());
+
+  // now, take the sensor from the current scene graph and connect it to
+  // the root node of semantic scene graph, set the *correct* transformation
+  node().setParent(&sim.getActiveSemanticSceneGraph().getRootNode());
+  node().setTransformation(absTransform);
+}
+
+void VisualSensor::moveSemanticSensorBackToRegularSceneGraph(
+    sim::Simulator& sim) {
+  CORRADE_INTERNAL_ASSERT(visualSensorSpec_->sensorType ==
+                          SensorType::Semantic);
+
+  // check if the sensor is already in this semantic scene graph
+  if (node().scene() == sim.getActiveSceneGraph().getRootNode().scene()) {
+    return;
+  }
+
+  node().setParent(semanticSensorParentNodeBackup_);
+  node().setTransformation(*relativeTransformBackup_);
 }
 
 }  // namespace sensor

@@ -159,22 +159,10 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
         (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
 
     if (twoSceneGraphs) {
-      // *assume* the sensor is always in the regular scene graph.
-      // backup first
-      Mn::Matrix4 relativeTransform = node().transformation();
-      Mn::Matrix4 absTransform = node().absoluteTransformation();
-      scene::SceneNode* p = static_cast<scene::SceneNode*>(node().parent());
-      // take the sensor from the current regular scene graph and connect it to
-      // the root node of semantic scene graph, set the *correct* transformation
-      node().setParent(&sim.getActiveSemanticSceneGraph().getRootNode());
-      node().setTransformation(absTransform);
+      moveSemanticSensorToSemanticSceneGraph(sim);
       cubeMap_->renderToTexture(*cubeMapCamera_,
                                 sim.getActiveSemanticSceneGraph(), flags);
-      // after drawing, put the node back to the regular scene graph.
-      // MUST use the setParent function! Otherwise the sensorSuite in the node
-      // will be wrong!!!
-      node().setParent(p);
-      node().setTransformation(relativeTransform);
+      moveSemanticSensorBackToRegularSceneGraph(sim);
     } else {
       cubeMap_->renderToTexture(*cubeMapCamera_,
                                 sim.getActiveSemanticSceneGraph(), flags);
