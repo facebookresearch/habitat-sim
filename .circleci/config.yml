@@ -124,7 +124,7 @@ commands:
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.6
                 . activate habitat
-                conda install -q -y -v -v -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
+                conda install -q -y -v -v -c conda-forge import_metadata ninja numpy pytest pytest-cov ccache hypothesis
                 pip install pytest-sugar pytest-xdist typeguard
               fi
       - run:
