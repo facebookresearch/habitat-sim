@@ -406,7 +406,7 @@ jobs:
 
               cd docs
               conda install -y -c conda-forge doxygen==1.8.16
-              conda install -y  jinja2 pygments docutils
+              conda install -y  jinja2 pygments "docutils<0.17"
               ./build-public.sh
       - save_cache:
           key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
