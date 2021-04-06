@@ -106,7 +106,8 @@ def write_replay_file(glb_filepath, camera_matrix_per_observation, output_filepa
         text_file.write(replay_json)
 
 
-def create_sim(
+def create_sim_with_stage(
+    stage_filepath,
     resolution_x=1024,
     resolution_y=768,
     hfov=90,
@@ -114,11 +115,56 @@ def create_sim(
     texture_downsample_factor=0,
 ):
 
+    sim_cfg = habitat_sim.SimulatorConfiguration()
+    sim_cfg.scene_id = stage_filepath
+
+    return create_sim(
+        sim_cfg,
+        resolution_x=resolution_x,
+        resolution_y=resolution_y,
+        hfov=hfov,
+        do_depth=do_depth,
+        texture_downsample_factor=texture_downsample_factor,
+    )
+
+
+def create_sim_for_replay_playback(
+    resolution_x=1024,
+    resolution_y=768,
+    hfov=90,
+    do_depth=False,
+    texture_downsample_factor=0,
+):
+
+    sim_cfg = gfx_replay_utils.make_backend_configuration_for_playback(
+        need_separate_semantic_scene_graph=False
+    )
+
+    return create_sim(
+        sim_cfg,
+        resolution_x=resolution_x,
+        resolution_y=resolution_y,
+        hfov=hfov,
+        do_depth=do_depth,
+        texture_downsample_factor=texture_downsample_factor,
+    )
+
+
+def create_sim(
+    sim_cfg,
+    resolution_x=1024,
+    resolution_y=768,
+    hfov=90,
+    do_depth=False,
+    texture_downsample_factor=0,
+):
     agent_cfg = AgentConfiguration()
 
     rgbd_sensor_cfg = habitat_sim.SensorSpec()
-    rgbd_sensor_cfg.uuid = "rgba_camera"
+    rgbd_sensor_cfg.uuid = "rgba_camera_1stperson"
     rgbd_sensor_cfg.resolution = [resolution_y, resolution_x]
+    rgbd_sensor_cfg.sensor_type = habitat_sim.SensorType.COLOR
+
     assert resolution_y >= 1 and resolution_x >= 1
     assert hfov > 0 and hfov < 180.0
     params = habitat_sim.MapStringString()
@@ -136,12 +182,7 @@ def create_sim(
         depth_sensor_cfg.parameters = params
         agent_cfg.sensor_specifications.append(depth_sensor_cfg)
 
-    playback_cfg = habitat_sim.Configuration(
-        gfx_replay_utils.make_backend_configuration_for_playback(
-            need_separate_semantic_scene_graph=False
-        ),
-        [agent_cfg],
-    )
+    playback_cfg = habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
     playback_cfg.sim_cfg.texture_downsample_factor = texture_downsample_factor
 
@@ -149,6 +190,39 @@ def create_sim(
     agent_state = habitat_sim.AgentState()
     sim.initialize_agent(0, agent_state)
     return sim
+
+
+def render_observations_from_camera_transform_pairs(
+    sim, camera_transform_pairs, output_base_filepath, do_depth
+):
+
+    agent_node = sim.get_agent(0).body.object
+    sensor_node = sim._sensors["rgba_camera"]._sensor_object.object
+    if do_depth:
+        depth_sensor_node = sim._sensors["depth_sensor"]._sensor_object.object
+
+    # We place a dummy agent at the origin and then transform the sensor using the "camera" user transform stored in the replay.
+    agent_node.translation = [0.0, 0.0, 0.0]
+    agent_node.rotation = mn.Quaternion()
+
+    num_renders = 0
+    for transform_pair in camera_transform_pairs:
+        (sensor_node.translation, sensor_node.rotation) = transform_pair
+        if do_depth:
+            depth_sensor_node.translation = sensor_node.translation
+            depth_sensor_node.rotation = sensor_node.rotation
+        observation = sim.get_sensor_observations()
+
+        save_rgb_image(
+            observation["rgba_camera"],
+            output_base_filepath + "." + str(num_renders) + ".png",
+        )
+
+        if do_depth:
+            save_depth_image(
+                observation["depth_sensor"],
+                output_base_filepath + "." + str(num_renders) + ".depth.png",
+            )
 
 
 def render_observations_from_replay(
@@ -194,6 +268,55 @@ def render_observations_from_replay(
     if num_renders == 0:
         print("Error: missing 'camera' user transform in replay")
         quit()
+
+
+def demo2():
+
+    stage_filepath = "/data/projects/matterport/v1/tasks/mp3d_habitat/mp3d/Z6MFQCViBuw/Z6MFQCViBuw.glb"
+
+    objects_directory = "/home/eundersander/projects/ycb/objects"
+    object_filepath = objects_directory + "/002_master_chef_can.object_config.json"
+    # object_filepath = "/home/eundersander/projects/ycb/objects/ycb/002_master_chef_can/google_16k/textured.obj"
+
+    # todo: find reasonable random positions using the navmesh
+    object_translation = [1, 2, 3]
+    object_rotation_quat = mn.Quaternion(
+        mn.Vector3(-0.965926, 1.58481e-17, -0.258819), -5.91459e-17
+    )
+
+    camera_rotation_quat = mn.Quaternion(
+        mn.Vector3(-0.965926, 1.58481e-17, -0.258819), -5.91459e-17
+    )
+    camera_translation = [8.38665, 1.442450000000001, -13.7832]
+
+    resolution_x = 600
+    resolution_y = 600
+    hfov = 90
+    do_depth = False
+
+    output_base_filepath = "./output"
+
+    sim = create_sim_with_stage(
+        stage_filepath,
+        resolution_x=resolution_x,
+        resolution_y=resolution_y,
+        hfov=hfov,
+        do_depth=do_depth,
+    )
+
+    obj_templates_mgr = sim.get_object_template_manager()
+    obj_templates_mgr.load_configs(objects_directory)
+
+    obj_id = sim.add_object_by_handle(object_filepath)
+    assert obj_id != -1
+    sim.set_translation(object_translation, obj_id)
+    sim.set_rotation(object_rotation_quat, obj_id)
+
+    camera_transform_pairs = [(camera_translation, camera_rotation_quat)]
+
+    render_observations_from_camera_transform_pairs(
+        sim, camera_transform_pairs, output_base_filepath, do_depth
+    )
 
 
 def demo():
@@ -270,7 +393,7 @@ def demo():
 
     # camera intrinsics: resolution and horizontal FOV (aspect ratio and vertical FOV
     # are derived from resolution)
-    sim = create_sim(
+    sim = create_sim_for_replay_playback(
         resolution_x=resolution_x,
         resolution_y=resolution_y,
         hfov=hfov,
