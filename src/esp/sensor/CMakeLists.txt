@@ -24,6 +24,7 @@ add_library(
 target_link_libraries(
   sensor
   PUBLIC core gfx scene
+  PRIVATE sim
 )
 
 if(BUILD_WITH_CUDA)
