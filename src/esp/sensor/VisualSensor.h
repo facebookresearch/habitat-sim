@@ -196,7 +196,18 @@ class VisualSensor : public Sensor {
   VisualSensorSpec::ptr visualSensorSpec_ =
       std::dynamic_pointer_cast<VisualSensorSpec>(spec_);
 
+  /**
+   * @brief if this is a semantic sensor, this function saves its transformation
+   * and parent node, moves it to the semantic scene graph, connects it to the
+   * root node, and sets the relative transformation (wrt to the root) to the
+   * absolute transformation in the previous scene graph.
+   */
   void moveSemanticSensorToSemanticSceneGraph(sim::Simulator& sim);
+  /**
+   * @brief if this is a semantic sensor, this function moves it back to the
+   * regular scene graph, restores its relative transformation to its parent
+   * based on the values saved previously.
+   */
   void moveSemanticSensorBackToRegularSceneGraph(sim::Simulator& sim);
   Corrade::Containers::Optional<Magnum::Matrix4> relativeTransformBackup_ =
       Corrade::Containers::NullOpt;
