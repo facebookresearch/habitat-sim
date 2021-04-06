@@ -132,12 +132,25 @@ bool isBuildWithBulletPhysics() {
 #endif
 }
 
+int castRay(Simulator& sim,
+            const Magnum::Vector3& pos,
+            const Magnum::Vector3& dir,
+            float maxDistance) {
+  esp::geo::Ray ray;
+  ray.origin = pos;
+  ray.direction = dir;
+  auto result = sim.castRay(ray, maxDistance, 0);
+  // note that hits[0].objectId may be -1 to indicate hit on stage
+  return result.hasHits() ? result.hits[0].objectId : -1;
+}
+
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::function("toQuaternion", &toQuaternion);
   em::function("toVec3f", &toVec3f);
   em::function("toVec4f", &toVec4f);
   em::function("loadAllObjectConfigsFromPath", &loadAllObjectConfigsFromPath);
   em::function("isBuildWithBulletPhysics", &isBuildWithBulletPhysics);
+  em::function("castRay", &castRay);
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");

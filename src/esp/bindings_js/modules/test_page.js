@@ -31,10 +31,14 @@ class TestPage {
     );
     preloadFunc(fileNoExtension + ".navmesh");
 
-    preloadFunc("data/objects/example_objects/cheezit.glb", true);
+    preloadFunc("data/objects/example_objects/cheezit.glb");
     this.objHandle = preloadFunc(
-      "data/objects/example_objects/cheezit.object_config.json",
-      true
+      "data/objects/example_objects/cheezit.object_config.json"
+    );
+
+    preloadFunc("data/objects/example_objects/banana.glb");
+    this.bananaHandle = preloadFunc(
+      "data/objects/example_objects/banana.object_config.json"
     );
 
     console.log("TestPage.preRun finished");
@@ -74,6 +78,26 @@ class TestPage {
       trans = sim.getTranslation(objId, 0);
       this.expect(trans.y() < dropPos.y(), "trans.y() < dropPos.y()");
     }
+
+    console.log("Testing raycast");
+    // add an object
+    let banana1id = sim.addObjectByHandle(this.bananaHandle, null, "", 0);
+    sim.setTranslation(new Module.Vector3(0, 0.2, 9), banana1id, 0);
+    // point a ray at the object
+    let origin = new Module.Vector3(2, 0.2, 9);
+    let direction = new Module.Vector3(-1, 0, 0);
+    // check that castRay returns the object
+    this.expect(Module.castRay(sim, origin, direction, 10) == banana1id);
+    // check that castRay doesn't find the object if maxDistance is too small
+    this.expect(Module.castRay(sim, origin, direction, 1) == -1);
+    // add an object behind the first one
+    let banana2id = sim.addObjectByHandle(this.bananaHandle, null, "", 0);
+    sim.setTranslation(new Module.Vector3(-2, 0.2, 9), banana2id, 0);
+    // check that castRay returns closest object
+    let origin2 = new Module.Vector3(-4, 0.2, 9);
+    let direction2 = new Module.Vector3(1, 0, 0);
+    this.expect(Module.castRay(sim, origin, direction, 10) == banana1id);
+    this.expect(Module.castRay(sim, origin2, direction2, 10) == banana2id);
 
     console.log("The test page has loaded successfully.");
     window.didTestPageLoad = true;
