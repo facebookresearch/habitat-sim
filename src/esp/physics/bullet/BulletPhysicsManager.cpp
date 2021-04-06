@@ -43,6 +43,8 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
       collisionObjToObjIds_);
   Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
 
+  gDeactivationTime = 0.3;  // btRigidBody.h
+
   return true;
 }
 
