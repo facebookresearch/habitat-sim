@@ -52,7 +52,7 @@ class VoxelGrid {
    * @param renderAssetHandle The handle for the render asset.
    * @param resolution The approximate number of voxels in the voxel grid.
    */
-  VoxelGrid(const std::unique_ptr<assets::MeshData>& meshData,
+  VoxelGrid(const assets::MeshData& meshData,
             const std::string& renderAssetHandle,
             int resolution);
 #endif
@@ -99,8 +99,8 @@ class VoxelGrid {
       grids_[gridName].data = Corrade::Containers::Array<char>(
           Corrade::Containers::ValueInit, gridSize() * sizeof(T));
 
-      Cr::Containers::StridedArrayView<3, void> view{grids_[gridName].data,
-                                                     dims, strides};
+      Cr::Containers::StridedArrayView3D<void> view{grids_[gridName].data, dims,
+                                                    strides};
       grids_[gridName].view = view;
       grids_[gridName].type = type;
       return;
@@ -110,8 +110,7 @@ class VoxelGrid {
     new_grid.data = Corrade::Containers::Array<char>(
         Corrade::Containers::ValueInit, gridSize() * sizeof(T));
 
-    Cr::Containers::StridedArrayView<3, void> view{new_grid.data, dims,
-                                                   strides};
+    Cr::Containers::StridedArrayView3D<void> view{new_grid.data, dims, strides};
 
     new_grid.view = view;
     new_grid.type = type;
@@ -123,7 +122,7 @@ class VoxelGrid {
    * @return A vector of pairs, where the first element is the voxel grid's
    * name, and the second element is the string of the object's type.
    */
-  std::vector<std::pair<std::string, std::string>> getExistingGrids();
+  std::vector<std::pair<std::string, VoxelGridType>> getExistingGrids();
 
   /**
    * @brief Returns a bool true if a grid exists, false otherwise.
@@ -150,7 +149,7 @@ class VoxelGrid {
    * @return A StridedArrayView3D of the specified grid.
    */
   template <typename T>
-  Cr::Containers::StridedArrayView<3, T> getGrid(const std::string& gridName) {
+  Cr::Containers::StridedArrayView3D<T> getGrid(const std::string& gridName) {
     return Cr::Containers::arrayCast<T>(grids_[gridName].view);
   }
 
@@ -161,7 +160,8 @@ class VoxelGrid {
    * @return True if the voxel index is valid, false otherwise.
    */
   bool isValidIndex(const Mn::Vector3i& coords) const {
-    return bool(coords >= Mn::Vector3i() && coords < m_voxelGridDimensions);
+    return bool((coords >= Mn::Vector3i()).all() &&
+                (coords < m_voxelGridDimensions).all());
   }
 
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
@@ -176,7 +176,7 @@ class VoxelGrid {
   void setVoxel(const Mn::Vector3i& index,
                 const std::string& gridName,
                 const T& value) {
-    auto arrayView3D = getGrid<T>(gridName);
+    Cr::Containers::StridedArrayView3D<T> arrayView3D = getGrid<T>(gridName);
     arrayView3D[index[0]][index[1]][index[2]] = value;
   }
 
@@ -189,7 +189,7 @@ class VoxelGrid {
    */
   template <typename T>
   T getVoxel(const Mn::Vector3i& index, const std::string& gridName) {
-    auto arrayView3D = getGrid<T>(gridName);
+    Cr::Containers::StridedArrayView3D<T> arrayView3D = getGrid<T>(gridName);
     return arrayView3D[index[0]][index[1]][index[2]];
   }
 
@@ -288,7 +288,7 @@ class VoxelGrid {
     std::vector<Mn::Vector3> positions;
     std::vector<Mn::Vector3> normals;
     std::vector<Mn::Color3> colors;
-    auto grid = getGrid<T>(gridName);
+    Cr::Containers::StridedArrayView3D<T> grid = getGrid<T>(gridName);
 
     // iterate through each voxel grid cell
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {

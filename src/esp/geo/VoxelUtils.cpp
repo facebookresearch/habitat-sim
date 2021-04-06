@@ -369,11 +369,12 @@ void generateDistanceGradientField(
           if (v_grid->isValidIndex(neighbor + index)) {
             result += (Mn::Vector3(index + neighbor) -
                        closestBoundaryCell[i + neighbor[0]][j + neighbor[1]]
-                                          [k + neighbor[2]])
-                          .normalized();
+                                          [k + neighbor[2]]);
           }
         }
-        gradientGrid[i][j][k] = result.normalized();
+
+        gradientGrid[i][j][k] =
+            result == Mn::Vector3() ? Mn::Vector3() : result.normalized();
       }
     }
   }

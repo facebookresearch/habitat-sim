@@ -14,7 +14,6 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-// TODO: Add tests for different Sensors
 struct VoxelGrid : Cr::TestSuite::Tester {
   explicit VoxelGrid();
 
@@ -41,7 +40,7 @@ void VoxelGrid::testVoxelGridWithVHACD() {
 
   auto simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
-  // Voxelize the scene with resolution = 1,000,000 and make asserts
+  // Voxelize the stage with resolution = 1,000,000 and make asserts
   const int resolution = 1000000;
   simulator_->createStageVoxelization(resolution);
   auto voxelization = simulator_->getStageVoxelization().get();

@@ -559,10 +559,14 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
 
 #ifdef ESP_BUILD_WITH_VHACD
 
-  /** @brief Initializes a new VoxelWrapper with a specified resolution.
+  /** @brief Initializes a new VoxelWrapper with a specified resolution. Creates
+   * a boundary voxelization (registered under the key "Boundary" in the
+   * VoxelGrid) using VHACD.
+   * @param resourceManager_ A reference to the current resource manager, used
+   * for registering the newly created voxel grid within the resource manager's
+   * VoxelGrid dictionary.
    * @param resolution Represents the approximate number of voxels in the new
    * voxelization.
-   * @todo necessary for @ref MotionType::KINEMATIC?
    */
   void generateVoxelization(esp::assets::ResourceManager& resourceManager_,
                             int resolution = 1000000) {
@@ -660,7 +664,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   //! SceneGraph
   std::vector<esp::scene::SceneNode*> visualNodes_;
 
-  // ptr to the VoxelWrapper associated with this RigidBase
+  //! ptr to the VoxelWrapper associated with this RigidBase
   std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper = nullptr;
 
  protected:
