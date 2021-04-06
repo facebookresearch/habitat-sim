@@ -346,7 +346,7 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               conda install -y -c conda-forge doxygen==1.8.16
-              conda install -y  jinja2 pygments docutils
+              conda install -y  jinja2 pygments "docutils<0.17"
               git submodule update --init --recursive --jobs 4
               while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
