@@ -366,6 +366,13 @@ void initSimBindings(py::module& m) {
            &Simulator::getArticulatedObjectVelocities, "object_id"_a)
       .def("get_articulated_object_forces",
            &Simulator::getArticulatedObjectForces, "object_id"_a)
+      .def("get_articulated_object_position_limits",
+           &Simulator::getArticulatedObjectPositionLimits, "object_id"_a,
+           "upper_limits"_a = false)
+      .def("get_auto_clamp_joint_limits", &Simulator::getAutoClampJointLimits,
+           "object_id"_a)
+      .def("set_auto_clamp_joint_limits", &Simulator::setAutoClampJointLimits,
+           "object_id"_a, "auto_clamp"_a)
       .def("reset_articulated_object", &Simulator::resetArticulatedObject,
            "object_id"_a)
       .def("set_articulated_object_sleep",

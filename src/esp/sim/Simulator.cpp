@@ -1383,6 +1383,29 @@ std::vector<float> Simulator::getArticulatedObjectForces(int objectId) {
   return std::vector<float>();
 };
 
+std::vector<float> Simulator::getArticulatedObjectPositionLimits(
+    int objectId,
+    bool upperLimits) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getArticulatedObjectPositionLimits(objectId,
+                                                               upperLimits);
+  }
+  return std::vector<float>();
+}
+
+void Simulator::setAutoClampJointLimits(int objectId, bool autoClamp) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->setAutoClampJointLimits(objectId, autoClamp);
+  }
+}
+
+bool Simulator::getAutoClampJointLimits(int objectId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getAutoClampJointLimits(objectId);
+  }
+  return false;
+}
+
 void Simulator::resetArticulatedObject(int objectId) {
   if (sceneHasPhysics(0)) {
     physicsManager_->resetArticulatedObject(objectId);

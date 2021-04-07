@@ -97,10 +97,8 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   virtual std::vector<float> getPositions() override;
 
-  // TODO: This is tough in Bullet. We'll need to construct a map from link
-  // indices to MultiBody constraint pointers in the world to track these...
-  // virtual std::vector<float> getPositionLowerLimits() override;
-  // virtual std::vector<float> getPositionUpperLimits() override;
+  virtual std::vector<float> getPositionLimits(
+      bool upperLimits = false) override;
 
   virtual void addArticulatedLinkForce(int linkId,
                                        Magnum::Vector3 force) override;
@@ -165,7 +163,11 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   std::map<int, std::unique_ptr<btMultiBodyJointMotor>> articulatedJointMotors;
 
+  //! maps local link id to parent joint's limit constraint
   std::map<int, JointLimitConstraintInfo> jointLimitConstraints;
+
+  //! clamp current pose to joint limits
+  void clampJointLimits() override;
 
  protected:
   virtual bool attachGeometry(
