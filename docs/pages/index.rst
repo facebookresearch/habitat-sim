@@ -37,6 +37,8 @@ Extracting Images                                   :ref:`Page <std:doc:image-ex
 
 Interactive Rigid Objects                           :ref:`Page <std:doc:rigid-object-tutorial>`                                                                                                                    `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/rigid_object_tutorial.ipynb>`__
 
+Voxel Framework Tutorial                            :ref:`Page <std:doc:voxelization-framework-tutorial>`                                                                                                                    `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/rigid_object_tutorial.ipynb>`__
+
 Gfx Replay                                          `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/replay_tutorial.ipynb>`__
 =================================================== ========================================================================================================================================================== ======================
 

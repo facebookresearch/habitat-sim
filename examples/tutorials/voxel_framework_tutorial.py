@@ -120,7 +120,6 @@ if __name__ == "__main__":
 
 
         # generate a mesh for the voxels which are greater than 11 voxels away from the nearest boundary.
-
         esdf_grid = voxelization.get_float_grid("ESDF")
 
         # create a new, empty bool grid
