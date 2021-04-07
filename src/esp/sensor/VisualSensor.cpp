@@ -147,7 +147,7 @@ VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
   CORRADE_ASSERT(
       !scene::SceneGraph::isRootNode(node),
       "VisualSensor::moveSemanticSensorToSemanticSceneGraph(): the semantic "
-      "sensor is attached to the root node, and thus cannot move it.", );
+      "sensor is attached to the root node, and thus cannot be moved.", );
 
   // check if the sensor is already in this semantic scene graph
   if (node.scene() == sim.getActiveSemanticSceneGraph().getRootNode().scene()) {
