@@ -154,11 +154,11 @@ VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
     return;
   }
 
-  // no back exists
+  // no backup exists
   CORRADE_INTERNAL_ASSERT(semanticSensorParentNodeBackup_ == nullptr);
   CORRADE_INTERNAL_ASSERT(relativeTransformBackup_ == Cr::Containers::NullOpt);
 
-  // back up
+  // back up the data
   relativeTransformBackup_ = node.transformation();
   Mn::Matrix4 absTransform = node.absoluteTransformation();
   semanticSensorParentNodeBackup_ =
