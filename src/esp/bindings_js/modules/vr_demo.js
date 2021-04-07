@@ -82,6 +82,38 @@ class HandRecord {
   heldObjId = -1;
 }
 
+export class FpsHelper {
+  // eslint-disable-next-line
+  constructor(fpsComponent) {
+    this.updateFpsFunction = setInterval(() => {
+      var duration;
+      var fps_desc;
+      if (window.performance.now) {
+        var timestamp = window.performance.now();
+        if (this.lastTimestamp) {
+          duration = (timestamp - this.lastTimestamp) / 1000.0;
+        }
+        this.lastTimestamp = timestamp;
+        fps_desc = "FPS";
+      } else {
+        duration = 0.5;
+        fps_desc = "APPROX FPS";
+      }
+      // fpsComponent.innerHTML =
+      console.log(
+        fps_desc +
+          " " +
+          (this.numRendersSinceLastUpdate / duration).toFixed(1).toString()
+      );
+      this.numRendersSinceLastUpdate = 0;
+    }, 2000.0);
+  }
+
+  onFrame() {
+    this.numRendersSinceLastUpdate += 1;
+  }
+}
+
 class VRDemo extends WebDemo {
   fpsElement;
   lastPaintTime;
@@ -111,6 +143,7 @@ class VRDemo extends WebDemo {
     super();
     this.canvasElement = document.getElementById(canvasId);
     this.fpsElement = document.getElementById(fpsId);
+    this.fpsHelper = new FpsHelper(this.fpsElement);
   }
 
   static getReplicaCadObjectConfigFilepath(name) {
@@ -188,7 +221,10 @@ class VRDemo extends WebDemo {
     const agent = this.simenv.sim.getAgent(this.simenv.selectedAgentId);
     let state = new Module.AgentState();
     agent.getState(state);
+    // ReplicaCAD
     state.position = [2.0, 0.1, 5.8];
+    // ConvoAI
+    // state.position = [-1.43794, 0, -1.01545];
     state.rotation = [0.0, 0.0, 0.0, 1.0];
     agent.setState(state, false);
 
@@ -723,26 +759,7 @@ class VRDemo extends WebDemo {
       this.drawTextureData(texRes, texData);
     }
 
-    this.updateFPS();
-  }
-
-  updateFPS() {
-    if (this.currentFramesSkipped != this.skipFrames) {
-      this.currentFramesSkipped++;
-      return;
-    }
-
-    this.currentFramesSkipped = 0;
-
-    if (!this.lastPaintTime) {
-      this.lastPaintTime = performance.now();
-    } else {
-      const current = performance.now();
-      const secondsElapsed = (current - this.lastPaintTime) / 1000;
-      this.fps = this.skipFrames / secondsElapsed;
-      this.lastPaintTime = current;
-      this.fpsElement.innerHTML = `FPS: ${this.fps.toFixed(2)}`;
-    }
+    this.fpsHelper.onFrame();
   }
 }
 
