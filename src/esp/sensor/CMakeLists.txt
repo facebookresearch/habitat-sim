@@ -26,10 +26,10 @@ target_link_libraries(
   PUBLIC core gfx scene sim
 )
 
-# ATTETION!!!!!!!!!!!!!!!!!!!!
-# the codebase has a deep architectural problem
-# that needs solving -- lib dependency cycles !!!!
+# ATTENTION developers !!!!!!!!!!!!!!!!!!!!
+# the codebase has a deep architectural problem that needs solving -- lib dependency cycles !!!!
 # the following is just a "crutch", a temporary remedy here.
+# https://cmake.org/cmake/help/latest/prop_tgt/LINK_INTERFACE_MULTIPLICITY.html
 set_target_properties(sensor PROPERTIES LINK_INTERFACE_MULTIPLICITY 3)
 
 if(BUILD_WITH_CUDA)
