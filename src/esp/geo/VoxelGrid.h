@@ -28,9 +28,6 @@
 #include "VHACD.h"
 #endif
 
-namespace Mn = Magnum;
-namespace Cr = Corrade;
-
 namespace esp {
 namespace geo {
 
@@ -39,8 +36,8 @@ enum class VoxelGridType { Bool, Int, Float, Vector3 };
 class VoxelGrid {
   struct GridEntry {
     VoxelGridType type;
-    Cr::Containers::Array<char> data;
-    Cr::Containers::StridedArrayView3D<void> view;
+    Corrade::Containers::Array<char> data;
+    Corrade::Containers::StridedArrayView3D<void> view;
   };
 
  public:
@@ -63,8 +60,8 @@ class VoxelGrid {
    * @param voxelSize The size of a single voxel
    * @param VoxelGridDimensions The dimensions of the voxel grid.
    */
-  VoxelGrid(const Mn::Vector3& voxelSize,
-            const Mn::Vector3i& voxelGridDimensions);
+  VoxelGrid(const Magnum::Vector3& voxelSize,
+            const Magnum::Vector3i& voxelGridDimensions);
 
   /**
    * @brief Gets the enumerated type of a particular voxel grid type.
@@ -86,7 +83,7 @@ class VoxelGrid {
                         static_cast<std::size_t>(m_voxelGridDimensions[1]),
                         static_cast<std::size_t>(m_voxelGridDimensions[2])};
 
-    Cr::Containers::StridedDimensions<3, std::ptrdiff_t> strides{
+    Corrade::Containers::StridedDimensions<3, std::ptrdiff_t> strides{
         static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] *
                                     m_voxelGridDimensions[1] * sizeof(T)),
         static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] * sizeof(T)),
@@ -94,13 +91,13 @@ class VoxelGrid {
 
     if (grids_.find(gridName) != grids_.end()) {
       // grid exists, simply overwrite
-      Mn::Debug() << gridName << "exists, overwriting.";
+      Magnum::Debug() << gridName << "exists, overwriting.";
 
       grids_[gridName].data = Corrade::Containers::Array<char>(
           Corrade::Containers::ValueInit, gridSize() * sizeof(T));
 
-      Cr::Containers::StridedArrayView3D<void> view{grids_[gridName].data, dims,
-                                                    strides};
+      Corrade::Containers::StridedArrayView3D<void> view{grids_[gridName].data,
+                                                         dims, strides};
       grids_[gridName].view = view;
       grids_[gridName].type = type;
       return;
@@ -110,7 +107,8 @@ class VoxelGrid {
     new_grid.data = Corrade::Containers::Array<char>(
         Corrade::Containers::ValueInit, gridSize() * sizeof(T));
 
-    Cr::Containers::StridedArrayView3D<void> view{new_grid.data, dims, strides};
+    Corrade::Containers::StridedArrayView3D<void> view{new_grid.data, dims,
+                                                       strides};
 
     new_grid.view = view;
     new_grid.type = type;
@@ -140,8 +138,9 @@ class VoxelGrid {
    * @return A StridedArrayView3D of the specified grid.
    */
   template <typename T>
-  Cr::Containers::StridedArrayView3D<T> getGrid(const std::string& gridName) {
-    return Cr::Containers::arrayCast<T>(grids_[gridName].view);
+  Corrade::Containers::StridedArrayView3D<T> getGrid(
+      const std::string& gridName) {
+    return Corrade::Containers::arrayCast<T>(grids_[gridName].view);
   }
 
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
@@ -153,23 +152,25 @@ class VoxelGrid {
    * @param value The new value.
    */
   template <typename T>
-  void setVoxel(const Mn::Vector3i& index,
+  void setVoxel(const Magnum::Vector3i& index,
                 const std::string& gridName,
                 const T& value) {
-    Cr::Containers::StridedArrayView3D<T> arrayView3D = getGrid<T>(gridName);
+    Corrade::Containers::StridedArrayView3D<T> arrayView3D =
+        getGrid<T>(gridName);
     arrayView3D[index[0]][index[1]][index[2]] = value;
   }
 
   /**
    * @brief Retrieves the voxel value from a grid of a specified type (bool,
-   * int, float, Mn::Vector3).
+   * int, float, Magnum::Vector3).
    * @param index The index of the voxel
    * @param gridName The voxel grid.
    * @return The value from the specified voxel grid.
    */
   template <typename T>
-  T getVoxel(const Mn::Vector3i& index, const std::string& gridName) {
-    Cr::Containers::StridedArrayView3D<T> arrayView3D = getGrid<T>(gridName);
+  T getVoxel(const Magnum::Vector3i& index, const std::string& gridName) {
+    Corrade::Containers::StridedArrayView3D<T> arrayView3D =
+        getGrid<T>(gridName);
     return arrayView3D[index[0]][index[1]][index[2]];
   }
 
@@ -177,27 +178,27 @@ class VoxelGrid {
    * @brief Returns the dimensions of the voxel grid.
    * @return The Vector3i value representing the dimensions.
    */
-  Mn::Vector3i getVoxelGridDimensions() { return m_voxelGridDimensions; }
+  Magnum::Vector3i getVoxelGridDimensions() { return m_voxelGridDimensions; }
 
   /**
    * @brief Returns the size of a voxel.
    * @return The Vector3 value representing the size of a voxel.
    */
-  Mn::Vector3 getVoxelSize() { return m_voxelSize; }
+  Magnum::Vector3 getVoxelSize() { return m_voxelSize; }
 
   /**
    * @brief Returns the bounding box minimum offset used for generating an
    * aligned mesh.
    * @return The Vector3 value representing the offset.
    */
-  Mn::Vector3 getOffset() { return m_offset; }
+  Magnum::Vector3 getOffset() { return m_offset; }
 
   /**
    * @brief Returns the bounding box maximum offset used for generating an
    * aligned mesh.
    * @return The Vector3 value representing the offset.
    */
-  Mn::Vector3 getMaxOffset() { return m_BBMaxOffset; }
+  Magnum::Vector3 getMaxOffset() { return m_BBMaxOffset; }
 
   /**
    * @brief Retrieves the MeshData for a particular voxelGrid. If it does not
@@ -205,7 +206,7 @@ class VoxelGrid {
    * @param gridName The key underwhich the desired voxel grid is registered.
    * @return A shared pointer to the MeshData.
    */
-  std::shared_ptr<Mn::Trade::MeshData> getMeshData(
+  std::shared_ptr<Magnum::Trade::MeshData> getMeshData(
       const std::string& gridName = "Boundary");
 
   /**
@@ -214,7 +215,7 @@ class VoxelGrid {
    * @param gridName The key underwhich the desired voxel grid is registered.
    * @return A reference to the MeshGL.
    */
-  Mn::GL::Mesh& getMeshGL(const std::string& gridName = "Boundary");
+  Magnum::GL::Mesh& getMeshGL(const std::string& gridName = "Boundary");
 
   /**
    * @brief Converts a voxel index into global coords by applying the offset and
@@ -224,13 +225,13 @@ class VoxelGrid {
    * @return A Vector3 value representing the global coordinates of the voxel
    * index.
    */
-  Mn::Vector3 getGlobalCoords(const Mn::Vector3i& coords);
+  Magnum::Vector3 getGlobalCoords(const Magnum::Vector3i& coords);
 
   /**
    * @brief Sets the offset of the voxel grid.
    * @param coords The new offset.
    */
-  void setOffset(const Mn::Vector3& coords);
+  void setOffset(const Magnum::Vector3& coords);
 
   /**
    * @brief Generates both a MeshData and MeshGL for a particular voxelGrid.
@@ -255,11 +256,11 @@ class VoxelGrid {
                          T maxVal = 1) {
     assert(grids_.find(gridName) != grids_.end());
     assert(minVal != maxVal);
-    std::vector<Mn::UnsignedInt> indices;
-    std::vector<Mn::Vector3> positions;
-    std::vector<Mn::Vector3> normals;
-    std::vector<Mn::Color3> colors;
-    Cr::Containers::StridedArrayView3D<T> grid = getGrid<T>(gridName);
+    std::vector<Magnum::UnsignedInt> indices;
+    std::vector<Magnum::Vector3> positions;
+    std::vector<Magnum::Vector3> normals;
+    std::vector<Magnum::Color3> colors;
+    Corrade::Containers::StridedArrayView3D<T> grid = getGrid<T>(gridName);
 
     // iterate through each voxel grid cell
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
@@ -267,8 +268,8 @@ class VoxelGrid {
         T val = clamp(grid[ind][j][k], minVal, maxVal);
         val -= minVal;
         float colorVal = float(val) / float(maxVal - minVal);
-        Mn::Vector3i local_coords(ind, j, k);
-        Mn::Color3 col = Mn::Color3(1 - colorVal, colorVal, 0);
+        Magnum::Vector3i local_coords(ind, j, k);
+        Magnum::Color3 col = Magnum::Color3(1 - colorVal, colorVal, 0);
         std::vector<bool> neighbors{false, false, false, false, false, false};
         addVoxelToMeshPrimitives(positions, normals, colors, indices,
                                  local_coords, neighbors, col);
@@ -289,7 +290,7 @@ class VoxelGrid {
    */
   void fillBoolGridNeighborhood(std::vector<bool>& neighbors,
                                 const std::string& gridName,
-                                const Mn::Vector3i& index);
+                                const Magnum::Vector3i& index);
 
   /**
    * @brief Generates the Magnum MeshData and MeshGL given indices, positions,
@@ -300,10 +301,10 @@ class VoxelGrid {
    * @param colors The colors of the mesh.
    */
   void generateMeshDataAndMeshGL(const std::string& gridName,
-                                 std::vector<Mn::UnsignedInt>& indices,
-                                 std::vector<Mn::Vector3>& positions,
-                                 std::vector<Mn::Vector3>& normals,
-                                 std::vector<Mn::Color3>& colors);
+                                 std::vector<Magnum::UnsignedInt>& indices,
+                                 std::vector<Magnum::Vector3>& positions,
+                                 std::vector<Magnum::Vector3>& normals,
+                                 std::vector<Magnum::Color3>& colors);
 
   /**
    * @brief Checks to see if a given 3D voxel index is valid and does not go out
@@ -311,8 +312,8 @@ class VoxelGrid {
    * @param coords The voxel index.
    * @return True if the voxel index is valid, false otherwise.
    */
-  bool isValidIndex(const Mn::Vector3i& coords) const {
-    return bool(coords >= Mn::Vector3i() && coords < m_voxelGridDimensions);
+  bool isValidIndex(const Magnum::Vector3i& coords) const {
+    return bool(coords >= Magnum::Vector3i() && coords < m_voxelGridDimensions);
   }
 
   /**
@@ -321,16 +322,20 @@ class VoxelGrid {
    * @param colors A vector of per-pertice colors
    * @param indices A vector of indicies for the faces on the mesh.
    * @param local_coords A voxel index specifying the location of the voxel.
+   * @param voxel_neighbors A boolean with 6 booleans representing whether the
+   * voxel on the top (y+1), bottom (x+1), right (y+1), left (y-1), back (z-1)
+   * and front (x-1) are filled.
+   * @param color A Magnum::Color3 object specifying the color for a particular
+   * voxel. Used primarily for generating the heatmap slices.
    */
-  void addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
-                                std::vector<Mn::Vector3>& normals,
-                                std::vector<Mn::Color3>& colors,
-                                std::vector<Mn::UnsignedInt>& indices,
-                                const Mn::Vector3i& local_coords,
-                                const std::vector<bool>& voxel_neighbors,
-                                const Mn::Color3& color = Mn::Color3(.4,
-                                                                     .8,
-                                                                     1));
+  void addVoxelToMeshPrimitives(
+      std::vector<Magnum::Vector3>& positions,
+      std::vector<Magnum::Vector3>& normals,
+      std::vector<Magnum::Color3>& colors,
+      std::vector<Magnum::UnsignedInt>& indices,
+      const Magnum::Vector3i& local_coords,
+      const std::vector<bool>& voxel_neighbors,
+      const Magnum::Color3& color = Magnum::Color3(.4, .8, 1));
 
   /**
    * @brief Helper function for generate mesh. Adds a vector voxel to a mesh
@@ -342,12 +347,12 @@ class VoxelGrid {
    * @param local_coords A voxel index specifying the location of the voxel.
    * @param vec The vector to be converted into a mesh.
    */
-  void addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
-                                 std::vector<Mn::Vector3>& normals,
-                                 std::vector<Mn::Color3>& colors,
-                                 std::vector<Mn::UnsignedInt>& indices,
-                                 const Mn::Vector3i& local_coords,
-                                 const Mn::Vector3& vec);
+  void addVectorToMeshPrimitives(std::vector<Magnum::Vector3>& positions,
+                                 std::vector<Magnum::Vector3>& normals,
+                                 std::vector<Magnum::Color3>& colors,
+                                 std::vector<Magnum::UnsignedInt>& indices,
+                                 const Magnum::Vector3i& local_coords,
+                                 const Magnum::Vector3& vec);
 
   /**
    * @brief Gets the length of the voxel grid.
@@ -360,27 +365,27 @@ class VoxelGrid {
 
  private:
   // The number of voxels on the x, y, and z dimensions of the grid
-  Mn::Vector3i m_voxelGridDimensions;
+  Magnum::Vector3i m_voxelGridDimensions;
 
   // The unit lengths for each voxel dimension
-  Mn::Vector3 m_voxelSize;
+  Magnum::Vector3 m_voxelSize;
 
   // The relative positioning of the voxel grid to the simulation (May not
   // need). VoxelGrid corner is anchored to the world origin, so grid[0] is at
   // global position VoxelSize/2 + offset.dot(VoxelSize). m_offset is in
   // world coordinates (not voxel).
-  Mn::Vector3 m_offset;
+  Magnum::Vector3 m_offset;
 
-  Mn::Vector3 m_BBMaxOffset;
+  Magnum::Vector3 m_BBMaxOffset;
 
   // The underlying render asset handle the asset is tied to
   std::string m_renderAssetHandle;
 
   // The MeshData dictionary of various voxelizations, used for visualization
-  std::map<std::string, std::shared_ptr<Mn::Trade::MeshData>> meshDataDict_;
+  std::map<std::string, std::shared_ptr<Magnum::Trade::MeshData>> meshDataDict_;
 
   // The GL Mesh dictionary for visualizing the voxel.
-  std::map<std::string, Mn::GL::Mesh> meshGLDict_;
+  std::map<std::string, Magnum::GL::Mesh> meshGLDict_;
 
   std::map<std::string, GridEntry> grids_;
 };

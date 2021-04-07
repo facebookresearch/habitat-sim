@@ -188,10 +188,10 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
                                           const Mn::Vector3& vec) {
   Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(1, 3, 1.0f);
 
-  // add cube to mesh
   // midpoint of a voxel
   Mn::Vector3 mid = getGlobalCoords(local_coords);
 
+  // add cone to mesh (tip of arrow)
   unsigned int sz = positions.size();
   const auto&& conePositions = coneData.positions3DAsArray();
   const auto&& coneNormals = coneData.normalsAsArray();
@@ -223,11 +223,8 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
     indices.push_back(sz + index[0]);
   }
 
-  // render cylinder
+  // render cylinder (arrow stem)
   Mn::Trade::MeshData cylinderData = Mn::Primitives::cylinderSolid(1, 3, 1.0f);
-
-  // add cube to mesh
-  // midpoint of a voxel
 
   sz = positions.size();
   const auto&& cylinderPositions = cylinderData.positions3DAsArray();

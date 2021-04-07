@@ -1062,6 +1062,8 @@ class PhysicsManager {
 
   /** @brief Set the voxelization visualization for a scene node to be true or
    * false.
+   * @param gridName The name of the grid to be drawn.
+   * @param rigidBase The rigidBase of the object or scene.
    * @param drawables The drawables group with which to render the voxelization.
    * @param drawVoxelization Set rendering of the voxelization to true or false.
    */
