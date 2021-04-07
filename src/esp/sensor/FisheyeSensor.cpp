@@ -159,10 +159,9 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
         (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
 
     if (twoSceneGraphs) {
-      moveSemanticSensorToSemanticSceneGraph(sim);
+      VisualSensor::MoveSemanticSensorNodeHelper helper(*this, sim);
       cubeMap_->renderToTexture(*cubeMapCamera_,
                                 sim.getActiveSemanticSceneGraph(), flags);
-      moveSemanticSensorBackToRegularSceneGraph(sim);
     } else {
       cubeMap_->renderToTexture(*cubeMapCamera_,
                                 sim.getActiveSemanticSceneGraph(), flags);

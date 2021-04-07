@@ -158,6 +158,11 @@ class CameraSensor : public VisualSensor {
     recomputeBaseProjectionMatrix();
   }
 
+  /**
+   * @brief Return a pointer to this camera sensor's SensorSpec
+   */
+  CameraSensorSpec::ptr specification() const { return cameraSensorSpec_; }
+
  protected:
   /**
    * @brief Recalculate the base projection matrix, based on camera type and

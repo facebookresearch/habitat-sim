@@ -429,8 +429,7 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
     // low-quality textures.
 
     for (auto& it : sceneGraph.getDrawableGroups()) {
-      // TODO: remove || true
-      if (it.second.prepareForDraw(camera) || true) {
+      if (it.second.prepareForDraw(camera)) {
         camera.draw(it.second, flags);
       }
     }

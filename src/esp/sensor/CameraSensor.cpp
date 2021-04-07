@@ -109,8 +109,7 @@ gfx::RenderCamera* CameraSensor::getRenderCamera() const {
 void CameraSensor::draw(scene::SceneGraph& sceneGraph,
                         gfx::RenderCamera::Flags flags) {
   for (auto& it : sceneGraph.getDrawableGroups()) {
-    // TODO: remove || true
-    if (it.second.prepareForDraw(*renderCamera_) || true) {
+    if (it.second.prepareForDraw(*renderCamera_)) {
       renderCamera_->draw(it.second, flags);
     }
   }
@@ -134,9 +133,8 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
         (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
 
     if (twoSceneGraphs) {
-      moveSemanticSensorToSemanticSceneGraph(sim);
+      VisualSensor::MoveSemanticSensorNodeHelper helper(*this, sim);
       draw(sim.getActiveSemanticSceneGraph(), flags);
-      moveSemanticSensorBackToRegularSceneGraph(sim);
     } else {
       draw(sim.getActiveSemanticSceneGraph(), flags);
     }

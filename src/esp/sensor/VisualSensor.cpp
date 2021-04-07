@@ -137,52 +137,57 @@ bool VisualSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   return true;
 }
 
-void VisualSensor::moveSemanticSensorToSemanticSceneGraph(sim::Simulator& sim) {
-  CORRADE_INTERNAL_ASSERT(visualSensorSpec_->sensorType ==
+VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
+    VisualSensor& visualSensor,
+    sim::Simulator& sim)
+    : visualSensor_(visualSensor), sim_(sim) {
+  CORRADE_INTERNAL_ASSERT(visualSensor_.specification()->sensorType ==
                           SensorType::Semantic);
-
+  scene::SceneNode& node = visualSensor_.node();
   CORRADE_ASSERT(
-      !scene::SceneGraph::isRootNode(node()),
+      !scene::SceneGraph::isRootNode(node),
       "VisualSensor::moveSemanticSensorToSemanticSceneGraph(): the semantic "
       "sensor is attached to the root node, and thus cannot move it.", );
 
   // check if the sensor is already in this semantic scene graph
-  if (node().scene() ==
-      sim.getActiveSemanticSceneGraph().getRootNode().scene()) {
+  if (node.scene() == sim.getActiveSemanticSceneGraph().getRootNode().scene()) {
     return;
   }
 
   // no back exists
   CORRADE_INTERNAL_ASSERT(semanticSensorParentNodeBackup_ == nullptr);
+  CORRADE_INTERNAL_ASSERT(relativeTransformBackup_ == Cr::Containers::NullOpt);
 
   // back up
-  relativeTransformBackup_ = node().transformation();
-  Mn::Matrix4 absTransform = node().absoluteTransformation();
+  relativeTransformBackup_ = node.transformation();
+  Mn::Matrix4 absTransform = node.absoluteTransformation();
   semanticSensorParentNodeBackup_ =
-      static_cast<scene::SceneNode*>(node().parent());
+      static_cast<scene::SceneNode*>(node.parent());
 
   // now, take the sensor from the current scene graph and connect it to
   // the root node of semantic scene graph, set the *correct* transformation
-  node().setParent(&sim.getActiveSemanticSceneGraph().getRootNode());
-  node().setTransformation(absTransform);
+  node.setParent(&sim.getActiveSemanticSceneGraph().getRootNode());
+  node.setTransformation(absTransform);
 }
 
-void VisualSensor::moveSemanticSensorBackToRegularSceneGraph(
-    sim::Simulator& sim) {
-  CORRADE_INTERNAL_ASSERT(visualSensorSpec_->sensorType ==
+VisualSensor::MoveSemanticSensorNodeHelper::~MoveSemanticSensorNodeHelper() {
+  CORRADE_INTERNAL_ASSERT(visualSensor_.specification()->sensorType ==
                           SensorType::Semantic);
 
+  scene::SceneNode& node = visualSensor_.node();
   // check if the sensor is already in this scene graph
-  if (node().scene() == sim.getActiveSceneGraph().getRootNode().scene()) {
+  if (node.scene() == sim_.getActiveSceneGraph().getRootNode().scene()) {
     return;
   }
 
   CORRADE_INTERNAL_ASSERT(semanticSensorParentNodeBackup_);
+  CORRADE_INTERNAL_ASSERT(relativeTransformBackup_ != Cr::Containers::NullOpt);
 
-  node().setParent(semanticSensorParentNodeBackup_);
-  node().setTransformation(*relativeTransformBackup_);
+  node.setParent(semanticSensorParentNodeBackup_);
+  node.setTransformation(*relativeTransformBackup_);
 
   semanticSensorParentNodeBackup_ = nullptr;
+  relativeTransformBackup_ = Cr::Containers::NullOpt;
 }
 
 }  // namespace sensor
