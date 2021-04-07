@@ -11,6 +11,7 @@ from PIL import Image
 import habitat_sim
 import habitat_sim.agent
 from habitat_sim.agent.agent import AgentConfiguration
+from habitat_sim.gfx import LightInfo, LightPositionModel
 from habitat_sim.utils import gfx_replay_utils
 
 
@@ -39,6 +40,12 @@ def save_depth_image(depth_obs, filepath):
 
     depth_img = Image.fromarray((depth_obs / 10 * 255).astype(np.uint8), mode="L")
     depth_img.save(filepath)
+
+
+def save_semantic_image(semantic_obs, filepath):
+
+    semantic_img = Image.fromarray(semantic_obs.astype(np.uint8), mode="L")
+    semantic_img.save(filepath)
 
 
 def write_replay_file(glb_filepath, camera_matrix_per_observation, output_filepath):
@@ -112,6 +119,7 @@ def create_sim_with_stage(
     resolution_y=768,
     hfov=90,
     do_depth=False,
+    do_semantic=True,
     texture_downsample_factor=0,
 ):
 
@@ -124,6 +132,7 @@ def create_sim_with_stage(
         resolution_y=resolution_y,
         hfov=hfov,
         do_depth=do_depth,
+        do_semantic=do_semantic,
         texture_downsample_factor=texture_downsample_factor,
     )
 
@@ -146,6 +155,7 @@ def create_sim_for_replay_playback(
         resolution_y=resolution_y,
         hfov=hfov,
         do_depth=do_depth,
+        do_semantic=False,
         texture_downsample_factor=texture_downsample_factor,
     )
 
@@ -156,14 +166,24 @@ def create_sim(
     resolution_y=768,
     hfov=90,
     do_depth=False,
+    do_semantic=False,
     texture_downsample_factor=0,
 ):
     agent_cfg = AgentConfiguration()
 
-    rgbd_sensor_cfg = habitat_sim.SensorSpec()
-    rgbd_sensor_cfg.uuid = "rgba_camera_1stperson"
-    rgbd_sensor_cfg.resolution = [resolution_y, resolution_x]
+    # rgbd_sensor_cfg = habitat_sim.SensorSpec()
+    # rgbd_sensor_cfg.uuid = "rgba_camera_1stperson"
+    # rgbd_sensor_cfg.resolution = [resolution_y, resolution_x]
+    # rgbd_sensor_cfg.sensor_type = habitat_sim.SensorType.COLOR
+
+    # sensor_cfg = habitat_sim.CameraSensorSpec()
+    # sensor_cfg.resolution = [resolution_y, resolution_x]
+
+    rgbd_sensor_cfg = habitat_sim.CameraSensorSpec()
+    rgbd_sensor_cfg.uuid = "rgba_camera"
     rgbd_sensor_cfg.sensor_type = habitat_sim.SensorType.COLOR
+    rgbd_sensor_cfg.resolution = [resolution_y, resolution_x]
+    rgbd_sensor_cfg.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
 
     assert resolution_y >= 1 and resolution_x >= 1
     assert hfov > 0 and hfov < 180.0
@@ -182,9 +202,23 @@ def create_sim(
         depth_sensor_cfg.parameters = params
         agent_cfg.sensor_specifications.append(depth_sensor_cfg)
 
+    if do_semantic:
+        semantic_camera_spec = habitat_sim.CameraSensorSpec()
+        semantic_camera_spec.uuid = "semantic_camera"
+        semantic_camera_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
+        semantic_camera_spec.resolution = rgbd_sensor_cfg.resolution
+        semantic_camera_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        agent_cfg.sensor_specifications.append(semantic_camera_spec)
+
     playback_cfg = habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
-    playback_cfg.sim_cfg.texture_downsample_factor = texture_downsample_factor
+    if hasattr(playback_cfg.sim_cfg, "texture_downsample_factor"):
+        playback_cfg.sim_cfg.texture_downsample_factor = texture_downsample_factor
+    else:
+        if texture_downsample_factor != 0:
+            print(
+                "error: Your Habitat-sim build doesn't support texture_downsample_factor. Did you build from source? Are you on branch github.com/eundersander/habitat-sim/tree/eundersander/offline_render_utils?"
+            )
 
     sim = habitat_sim.Simulator(playback_cfg)
     agent_state = habitat_sim.AgentState()
@@ -193,15 +227,18 @@ def create_sim(
 
 
 def render_observations_from_camera_transform_pairs(
-    sim, camera_transform_pairs, output_base_filepath, do_depth
+    sim, camera_transform_pairs, output_base_filepath, do_depth, do_semantic
 ):
 
     agent_node = sim.get_agent(0).body.object
     sensor_node = sim._sensors["rgba_camera"]._sensor_object.object
     if do_depth:
         depth_sensor_node = sim._sensors["depth_sensor"]._sensor_object.object
+    if do_semantic:
+        semantic_sensor_node = sim._sensors["semantic_camera"]._sensor_object.object
 
-    # We place a dummy agent at the origin and then transform the sensor using the "camera" user transform stored in the replay.
+    # We place a dummy agent at the origin and then later transform the sensor
+    # using the desired camera transform.
     agent_node.translation = [0.0, 0.0, 0.0]
     agent_node.rotation = mn.Quaternion()
 
@@ -211,6 +248,9 @@ def render_observations_from_camera_transform_pairs(
         if do_depth:
             depth_sensor_node.translation = sensor_node.translation
             depth_sensor_node.rotation = sensor_node.rotation
+        if do_semantic:
+            semantic_sensor_node.translation = sensor_node.translation
+            semantic_sensor_node.rotation = sensor_node.rotation
         observation = sim.get_sensor_observations()
 
         save_rgb_image(
@@ -222,6 +262,12 @@ def render_observations_from_camera_transform_pairs(
             save_depth_image(
                 observation["depth_sensor"],
                 output_base_filepath + "." + str(num_renders) + ".depth.png",
+            )
+
+        if do_semantic:
+            save_semantic_image(
+                observation["semantic_camera"],
+                output_base_filepath + "." + str(num_renders) + ".semantic.png",
             )
 
 
@@ -270,56 +316,119 @@ def render_observations_from_replay(
         quit()
 
 
-def demo2():
+# This is sample code to load a stage and object into Habitat and render RGB
+# and semantic images.
+def demo_using_stage_and_object():
 
-    stage_filepath = "/data/projects/matterport/v1/tasks/mp3d_habitat/mp3d/Z6MFQCViBuw/Z6MFQCViBuw.glb"
+    # the stage (background). As an example, I've downloaded the habitat version
+    # of the MP3D scene dataset to my local machine and named one scene here.
+    # See https://github.com/facebookresearch/habitat-lab#data.
+    stage_filepath = "/home/eundersander/projects/matterport/v1/tasks/mp3d_habitat/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
 
+    # the object. In addition to a 3D model (glb or obj), you need an
+    # object_config.json file, which should look like this:
+    # {
+    #    "render_asset": "ycb/002_master_chef_can/google_16k/textured.obj",
+    #    "requires_lighting": true
+    #    "scale": [1, 1, 1]
+    # }
+    # For this example, I've used a YCB object "002_master_chef_can". YCB objects
+    # can be downloaded here: https://www.ycbbenchmarks.com/object-models/.
+
+    # the directory where all your object_config.json files are located
     objects_directory = "/home/eundersander/projects/ycb/objects"
+
+    # the specific object to render for this image
     object_filepath = objects_directory + "/002_master_chef_can.object_config.json"
-    # object_filepath = "/home/eundersander/projects/ycb/objects/ycb/002_master_chef_can/google_16k/textured.obj"
 
-    # todo: find reasonable random positions using the navmesh
-    object_translation = [1, 2, 3]
-    object_rotation_quat = mn.Quaternion(
-        mn.Vector3(-0.965926, 1.58481e-17, -0.258819), -5.91459e-17
-    )
+    # position and rotation for the object in the scene
+    object_translation = [2.05658, 0.072447, -1.65367]
+    object_rotation_quat = mn.Quaternion(mn.Vector3(0, 0, 0), 1)
 
+    # object semantic id (integer). This value will appear at the object's pixels in
+    # the semantic image output. See also examples/tutorials/semantic_id_tutorial.py.
+    object_semantic_id = 255
+
+    # position and rotation for the camera
+    camera_translation = [2.66093, 1.57245, -3.36188]
     camera_rotation_quat = mn.Quaternion(
-        mn.Vector3(-0.965926, 1.58481e-17, -0.258819), -5.91459e-17
+        mn.Vector3(-0.0153043, 0.977763, 0.194489), 0.0769398
     )
-    camera_translation = [8.38665, 1.442450000000001, -13.7832]
 
+    # light setup. For each light, choose a position/direction and color. See
+    # also examples/tutorials/lighting_tutorial.py.
+    lighting_setup = [
+        LightInfo(
+            vector=[1.0, 1.0, 0.0, 0.0],
+            color=[2.75, 2.75, 2.75],
+            model=LightPositionModel.GLOBAL,
+        ),
+        LightInfo(
+            vector=[-0.5, 0.0, -1.0, 0.0],
+            color=[2.75, 2.75, 2.75],
+            model=LightPositionModel.GLOBAL,
+        ),
+    ]
+
+    # output image properties
     resolution_x = 600
     resolution_y = 600
     hfov = 90
     do_depth = False
 
+    # Look for output.0.png and output.0.semantic.png. See also
+    # render_observations_from_camera_transform_pairs
     output_base_filepath = "./output"
 
+    # Semantic output. With some python post-processing, you can extract the
+    # object's 2D bbox. See also object_semantic_id above.
+    do_semantic = True
+
+    do_visualize_bbox = True  # for debugging
+
+    # initialize the sim, sensors, and stage
     sim = create_sim_with_stage(
         stage_filepath,
         resolution_x=resolution_x,
         resolution_y=resolution_y,
         hfov=hfov,
         do_depth=do_depth,
+        do_semantic=do_semantic,
     )
 
-    obj_templates_mgr = sim.get_object_template_manager()
-    obj_templates_mgr.load_configs(objects_directory)
+    # apply desired lighting
+    sim.set_light_setup(lighting_setup)
 
+    # add the object to the scene at the desired pose
+    sim.get_object_template_manager().load_configs(objects_directory)
     obj_id = sim.add_object_by_handle(object_filepath)
     assert obj_id != -1
     sim.set_translation(object_translation, obj_id)
     sim.set_rotation(object_rotation_quat, obj_id)
+    sim.set_object_semantic_id(object_semantic_id, obj_id)
 
+    # print the bbox size of the 3D model
+    bb = sim.get_object_scene_node(obj_id).cumulative_bb
+    print(
+        "bbbox size (x,y,z): [{:.2f}, {:.2f}, {:.2f}]".format(
+            bb.size_x(), bb.size_y(), bb.size_z()
+        )
+    )
+
+    if do_visualize_bbox:
+        sim.set_object_bb_draw(True, obj_id)
+
+    # produce images from the desired camera pose
     camera_transform_pairs = [(camera_translation, camera_rotation_quat)]
 
     render_observations_from_camera_transform_pairs(
-        sim, camera_transform_pairs, output_base_filepath, do_depth
+        sim, camera_transform_pairs, output_base_filepath, do_depth, do_semantic
     )
 
 
-def demo():
+# Whereas demo_using_stage_and_object loads a stage and physics objects, this
+# sample code uses gfx-replay to directly load and pose a 3D model.
+def demo_using_replay():
     # The goal of these utils is to help a user produce renders (images) given a user-specified model, camera intrinsics and camera transforms.
     #
     # Steps shown below:
@@ -332,7 +441,7 @@ def demo():
     # scene_filepath = "/data/projects/matterport/v1/tasks/mp3d_habitat/mp3d/2t7WUuJeko7/2t7WUuJeko7.glb"
     mp3d_scene_name = "Z6MFQCViBuw"
     scene_filepath = (
-        "/data/projects/matterport/v1/tasks/mp3d_habitat/mp3d/"
+        "/home/eundersander/projects/matterport/v1/tasks/mp3d_habitat/mp3d/"
         + mp3d_scene_name
         + "/"
         + mp3d_scene_name
@@ -383,10 +492,7 @@ def demo():
     # write a Habitat replay file. This format stores a reference to our model plus
     # camera transforms (stored as Vector3 translation plus Quaternion rotation).
     write_replay_file(
-        # "/data/projects/habitat-sim3/data/scene_datasets/habitat-test-scenes/apartment_1.glb",
         scene_filepath,
-        # "/data/projects/p-viz-plan/orp/start_data/frl_apartment_stage_pvizplan_full.glb",
-        # "/data/projects/habitat-sim3/data/test_assets/objects/sphere.glb",
         camera_matrices,
         replay_filepath,
     )
@@ -405,4 +511,4 @@ def demo():
 
 
 if __name__ == "__main__":
-    demo()
+    demo_using_stage_and_object()
