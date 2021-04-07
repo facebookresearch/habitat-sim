@@ -205,7 +205,7 @@ class VoxelWrapper {
 
   /**
    * @brief Sets the SceneNode of the voxel grid.
-   * @param coords The new sceneNode.
+   * @param sceneNode_ The new sceneNode.
    */
   void setSceneNode(esp::scene::SceneNode* sceneNode_) {
     SceneNode = sceneNode_;
