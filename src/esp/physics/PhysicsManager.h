@@ -1363,6 +1363,24 @@ class PhysicsManager {
     existingArticulatedObjects_.at(objectId)->setPositions(positions);
   };
 
+  std::vector<float> getArticulatedObjectPositionLimits(
+      int objectId,
+      bool upperLimits = false) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getPositionLimits(
+        upperLimits);
+  };
+
+  void setAutoClampJointLimits(int objectId, bool autoClamp) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setAutoClampJointLimits(
+        autoClamp);
+  };
+
+  bool getAutoClampJointLimits(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getAutoClampJointLimits();
+  };
   std::vector<float> getArticulatedObjectPositions(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getPositions();

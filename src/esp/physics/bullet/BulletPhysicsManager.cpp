@@ -223,6 +223,14 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     }
   }
 
+  // extra step to validate joint states against limits for corrective clamping
+  for (auto& objectItr : existingArticulatedObjects_) {
+    if (objectItr.second->getAutoClampJointLimits()) {
+      static_cast<BulletArticulatedObject*>(objectItr.second.get())
+          ->clampJointLimits();
+    }
+  }
+
   // ==== Physics stepforward ======
   // NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =

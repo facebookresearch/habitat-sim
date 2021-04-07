@@ -303,9 +303,9 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual std::vector<float> getPositions() { return {}; };
 
-  virtual std::vector<float> getPositionLowerLimits() { return {}; };
-
-  virtual std::vector<float> getPositionUpperLimits() { return {}; };
+  virtual std::vector<float> getPositionLimits(bool upperLimits = false) {
+    return {};
+  };
 
   virtual void addArticulatedLinkForce(CORRADE_UNUSED int linkId,
                                        CORRADE_UNUSED Magnum::Vector3 force){};
@@ -401,6 +401,28 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
     return std::map<int, int>();
   };
 
+  /**
+   * @brief Set whether articulated object state is automatically clamped to
+   * configured joint limits before physics simulation.
+   */
+  void setAutoClampJointLimits(bool autoClamp) {
+    autoClampJointLimits_ = autoClamp;
+  }
+
+  /**
+   * @brief Query whether articulated object state is automatically clamped to
+   * configured joint limits before physics simulation.
+   */
+  bool getAutoClampJointLimits() { return autoClampJointLimits_; }
+
+  /**
+   * @brief Clamp current pose to joint limits.
+   * See derived implementations.
+   */
+  virtual void clampJointLimits() {
+    Magnum::Debug{} << "No base implementation of \"clampJointLimits\". ";
+  };
+
   //=========== END - Joint Motor API ===========
 
   //! map PhysicsManager objectId to local multibody linkId
@@ -431,6 +453,10 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   //! This ArticulatedObject's id in PhysicsManager::existingArticulatedObjects
   int objectId_;
+
+  //! if true, automatically clamp dofs to joint limits before physics
+  //! simulation steps
+  bool autoClampJointLimits_ = false;
 
   ESP_SMART_POINTERS(ArticulatedObject)
 };

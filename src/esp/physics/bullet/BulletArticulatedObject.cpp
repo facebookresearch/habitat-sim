@@ -133,10 +133,12 @@ bool BulletArticulatedObject::initializeFromURDF(
       mb->setBaseWorldTransform(btTransform(rootTransformInWorldSpace) *
                                 localInertialFrameRoot);
     }
-    btAlignedObjectArray<btQuaternion> scratch_q;
-    btAlignedObjectArray<btVector3> scratch_m;
-    mb->forwardKinematics(scratch_q, scratch_m);
-    mb->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+    {
+      btAlignedObjectArray<btQuaternion> scratch_q;
+      btAlignedObjectArray<btVector3> scratch_m;
+      mb->forwardKinematics(scratch_q, scratch_m);
+      mb->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+    }
 
     btMultiBody_.reset(
         mb);  // take ownership of the object in the URDFImporter cache
@@ -343,10 +345,12 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
   }
   // update the simulation state
   // TODO: make this optional?
-  btAlignedObjectArray<btQuaternion> scratch_q;
-  btAlignedObjectArray<btVector3> scratch_m;
-  btMultiBody_->forwardKinematics(scratch_q, scratch_m);
-  btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+  {
+    btAlignedObjectArray<btQuaternion> scratch_q;
+    btAlignedObjectArray<btVector3> scratch_m;
+    btMultiBody_->forwardKinematics(scratch_q, scratch_m);
+    btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+  }
   // sync visual shapes
   updateNodes(true);
 }
@@ -455,6 +459,29 @@ std::vector<float> BulletArticulatedObject::getPositions() {
   return pos;
 }
 
+std::vector<float> BulletArticulatedObject::getPositionLimits(
+    bool upperLimits) {
+  std::vector<float> dofLimits(btMultiBody_->getNumDofs());
+  int dofCount = 0;
+  for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
+    if (jointLimitConstraints.count(i) > 0) {
+      // a joint limit constraint exists for this link's parent joint
+      auto& jlc = jointLimitConstraints.at(i);
+      dofLimits[dofCount] = upperLimits ? jlc.upperLimit : jlc.lowerLimit;
+      dofCount++;
+    } else {
+      // iterate through joint dofs. Note: multi-dof joints cannot be limited,
+      // so ok to skip.
+      for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
+        dofLimits[dofCount] = upperLimits ? INFINITY : -INFINITY;
+        dofCount++;
+      }
+    }
+  }
+  CHECK(dofCount == btMultiBody_->getNumDofs());
+  return dofLimits;
+}
+
 void BulletArticulatedObject::addArticulatedLinkForce(int linkId,
                                                       Magnum::Vector3 force) {
   CHECK(getNumLinks() > linkId);
@@ -479,10 +506,12 @@ void BulletArticulatedObject::reset() {
   std::vector<float> zeros(btMultiBody_->getNumDofs(), 0);
   setPositions(zeros);
   // btMultiBody_->setPosUpdated(true);
-  btAlignedObjectArray<btQuaternion> scratch_q;
-  btAlignedObjectArray<btVector3> scratch_m;
-  btMultiBody_->forwardKinematics(scratch_q, scratch_m);
-  btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+  {
+    btAlignedObjectArray<btQuaternion> scratch_q;
+    btAlignedObjectArray<btVector3> scratch_m;
+    btMultiBody_->forwardKinematics(scratch_q, scratch_m);
+    btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+  }
   btMultiBody_->clearConstraintForces();
   btMultiBody_->clearVelocities();
   btMultiBody_->clearForcesAndTorques();
@@ -633,6 +662,40 @@ void BulletArticulatedObject::updateJointMotor(
   motor->setPositionTarget(settings.positionTarget, settings.positionGain);
   motor->setVelocityTarget(settings.velocityTarget, settings.velocityGain);
   motor->setMaxAppliedImpulse(settings.maxImpulse);
+}
+
+void BulletArticulatedObject::clampJointLimits() {
+  auto pose = getPositions();
+  bool poseModified = false;
+
+  // some small contrived error term for overflow
+  float corrective_eps = 0.000001;
+
+  int dofCount = 0;
+  for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
+    if (jointLimitConstraints.count(i) > 0) {
+      // a joint limit constraint exists for this link
+      auto& jlc = jointLimitConstraints.at(i);
+
+      // position clamping:
+      if (pose[dofCount] < jlc.lowerLimit - corrective_eps) {
+        poseModified = true;
+        pose[dofCount] = jlc.lowerLimit;
+      } else if (pose[dofCount] > jlc.upperLimit + corrective_eps) {
+        poseModified = true;
+        pose[dofCount] = jlc.upperLimit;
+      }
+    }
+
+    // continue incrementing the dof counter
+    for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
+      dofCount++;
+    }
+  }
+
+  if (poseModified) {
+    setPositions(pose);
+  }
 }
 
 }  // namespace physics

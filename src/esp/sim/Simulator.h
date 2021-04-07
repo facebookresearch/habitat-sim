@@ -573,6 +573,38 @@ class Simulator {
 
   std::vector<float> getArticulatedObjectForces(int objectId);
 
+  /**
+   * @brief Get the joint limits for all dofs of an articulated object.
+   *
+   * Note: Dofs with no limits will return inf or -inf for upper and lower
+   * limits.
+   *
+   * @param objectID The object ID and key identifying the object in the
+   * simulator.
+   * @param upperLimits If true, get the upper joints limits, otherwise get
+   * lower limits.
+   * @return vector of requesteed upper or lower joint limits for all dofs
+   */
+  std::vector<float> getArticulatedObjectPositionLimits(
+      int objectId,
+      bool upperLimits = false);
+
+  /**
+   * @brief Set whether articulated object state is automatically clamped to
+   * configured joint limits before physics simulation.
+   * @param objectID The object ID and key identifying the object in the
+   * simulator.
+   */
+  void setAutoClampJointLimits(int objectId, bool autoClamp);
+
+  /**
+   * @brief Query whether articulated object state is automatically clamped to
+   * configured joint limits before physics simulation.
+   * @param objectID The object ID and key identifying the object in the
+   * simulator.
+   */
+  bool getAutoClampJointLimits(int objectId);
+
   void resetArticulatedObject(int objectId);
 
   void setArticulatedObjectSleep(int objectId, bool sleep);
