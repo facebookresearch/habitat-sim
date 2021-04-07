@@ -16,7 +16,8 @@
 namespace esp {
 namespace gfx {
 class RenderTarget;
-}
+class SensorInfoVisualizer;
+}  // namespace gfx
 
 namespace sensor {
 
@@ -43,6 +44,10 @@ struct VisualSensorSpec : public SensorSpec {
    * @brief far clipping plane
    */
   float far = 1000.0f;
+  /**
+   * @brief color used to clear the framebuffer
+   */
+  Mn::Color4 clearColor = {0, 0, 0, 1};
   VisualSensorSpec();
   void sanityCheck() override;
   bool isVisualSensorSpec() const override { return true; }

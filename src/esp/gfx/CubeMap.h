@@ -37,7 +37,6 @@ class CubeMap {
     // TODO: ObjectId
     // TODO: HDR color
 
-    // you will have to update it when new type is added
     Count,
   };
 
