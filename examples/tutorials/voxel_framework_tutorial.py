@@ -7,6 +7,7 @@ import numpy as np
 import habitat_sim
 import habitat_sim.geo as geo
 from habitat_sim.utils import viz_utils as vut
+import magnum as mn
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
@@ -105,7 +106,7 @@ if __name__ == "__main__":
 
         # running SDF calculations
         # compute a euclidean signed distance field and register the result under "ESDF"
-        geo.generate_manhattan_distance_sdf(voxelization, "ESDF")
+        geo.generate_euclidean_distance_sdf(voxelization, "ESDF")
 
         # generate a distance flow field and register the result under "FlowField"
         geo.generate_distance_gradient_field(voxelization, "GradientField")
@@ -113,20 +114,31 @@ if __name__ == "__main__":
         # Now generate heatmap slices of the ESDF grid
         dimensions = voxelization.get_voxel_grid_dimensions()
         for i in range(dimensions[0]):
-            voxelization.generate_int_slice_mesh("ESDF", i, -15, 0)
+            voxelization.generate_float_slice_mesh("ESDF", i, -15, 0)
             sim.set_stage_voxelization_draw(True, "ESDF")
             simulate(sim, dt=4.0 / dimensions[0], get_frames=True, data=data)
 
 
-        # generate a mesh for the flow field (with is_vector boolean = true) and display is for a second.
-        voxelization.generate_mesh("GradientField")
-        sim.set_stage_voxelization_draw(True, "GradientField")
+        # generate a mesh for the voxels which are greater than 11 voxels away from the nearest boundary.
 
-        gradientFieldGrid = voxelization.get_float_grid("ESDF")
-        print(gradientFieldGrid[0][0][0])
+        esdf_grid = voxelization.get_float_grid("ESDF")
+
+        # create a new, empty bool grid
+        voxelization.add_bool_grid("ESDF_Range")
+        esdf_range = voxelization.get_bool_grid("ESDF_Range")
+
+        for i in range(dimensions[0]):
+            for j in range(dimensions[1]):
+                for k in range(dimensions[2]):
+                    val = esdf_grid[i][j][k]
+                    if val > -15 and val < -11:
+                        esdf_range[i][j][k] = True
+
+        voxelization.generate_mesh("ESDF_Range")
+        sim.set_stage_voxelization_draw(True, "ESDF_Range")
 
 
-        simulate(sim, dt=1, get_frames=True, data=data)
+        simulate(sim, dt=2, get_frames=True, data=data)
 
         # Turn stage voxelization visualization off
         sim.set_stage_voxelization_draw(False)

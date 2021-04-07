@@ -9,8 +9,28 @@
 #include "esp/geo/VoxelWrapper.h"
 #include "esp/geo/geo.h"
 
+#include <Corrade/Containers/PythonBindings.h>
+#include <Corrade/Containers/StridedArrayViewPythonBindings.h>
+
 namespace py = pybind11;
 using py::literals::operator""_a;
+
+namespace Corrade {
+namespace Containers {
+namespace Implementation {
+template <>
+constexpr const char* formatString<Mn::Vector3>() {
+  return "fff";
+}
+
+template <>
+constexpr const char* formatString<bool>() {
+  return "b";
+}
+
+}  // namespace Implementation
+}  // namespace Containers
+}  // namespace Corrade
 
 namespace esp {
 namespace geo {
@@ -67,6 +87,7 @@ void initGeoBindings(py::module& m) {
       "key_points"_a, "num_interpolations"_a, "alpha"_a = .5f);
 
   // ==== Voxel Utilities ====
+
   geo.def(
       "generate_interior_exterior_voxel_grid",
       &geo::generateInteriorExteriorVoxelGrid,
@@ -89,6 +110,17 @@ void initGeoBindings(py::module& m) {
           R"(Generates a vector field where each vector is the gradient of the
   euclidean signed distance field.)",
           "voxelization"_a, "grid_name"_a);
+  geo.def("get_voxel_set_from_bool_grid", &geo::getVoxelSetFromBoolGrid,
+          R"(Returns a vector of all filled/true voxels.)", "voxelization"_a,
+          "grid_name"_a);
+  geo.def(
+      "get_voxel_set_from_int_grid", &geo::getVoxelSetFromIntGrid,
+      R"(Fills a vector with voxel indices that contain a value imbetween the specified lower_bound and upper_bound.)",
+      "voxelization"_a, "grid_name"_a, "lower_bound"_a, "upper_bound"_a);
+  geo.def(
+      "get_voxel_set_from_float_grid", &geo::getVoxelSetFromFloatGrid,
+      R"(Fills a vector with voxel indices that contain a value imbetween the specified lower_bound and upper_bound.)",
+      "voxelization"_a, "grid_name"_a, "lower_bound"_a, "upper_bound"_a);
 
   // ==== VoxelWrapper ====
   py::class_<VoxelWrapper, VoxelWrapper::ptr>(m, "VoxelWrapper")
@@ -116,7 +148,36 @@ void initGeoBindings(py::module& m) {
       .def("get_vector3_voxel", &VoxelWrapper::getVoxel<Mn::Vector3>, "index"_a,
            "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
 
-      .def("get_bool_grid", &VoxelWrapper::getGrid<bool>, "grid_name"_a,
+      .def("get_bool_grid",
+           [](VoxelWrapper& self, const std::string& gridName) {
+             return Cr::Containers::pyArrayViewHolder(
+                 Cr::Containers::PyStridedArrayView<3, char>{
+                     self.getGrid<bool>(gridName)},
+                 py::cast(self));
+           })
+      .def("get_int_grid",
+           [](VoxelWrapper& self, const std::string& gridName) {
+             return Cr::Containers::pyArrayViewHolder(
+                 Cr::Containers::PyStridedArrayView<3, char>{
+                     self.getGrid<int>(gridName)},
+                 py::cast(self));
+           })
+      .def("get_float_grid",
+           [](VoxelWrapper& self, const std::string& gridName) {
+             return Cr::Containers::pyArrayViewHolder(
+                 Cr::Containers::PyStridedArrayView<3, char>{
+                     self.getGrid<float>(gridName)},
+                 py::cast(self));
+           })
+      .def("get_vector3_grid",
+           [](VoxelWrapper& self, const std::string& gridName) {
+             return Cr::Containers::pyArrayViewHolder(
+                 Cr::Containers::PyStridedArrayView<3, char>{
+                     self.getGrid<Mn::Vector3>(gridName)},
+                 py::cast(self));
+           })
+
+      /*.def("get_bool_grid", &VoxelWrapper::getGrid<bool>, "grid_name"_a,
            R"(Gets a specified bool grid by the grid's name.)")
       .def("get_int_grid", &VoxelWrapper::getGrid<int>, "grid_name"_a,
            R"(Gets a specified int grid by the grid's name.)")
@@ -124,7 +185,7 @@ void initGeoBindings(py::module& m) {
            R"(Gets a specified float grid by the grid's name.)")
       .def("get_vector3_grid", &VoxelWrapper::getGrid<Mn::Vector3>,
            "grid_name"_a,
-           R"(Gets a specified Vector3 grid by the grid's name.)")
+           R"(Gets a specified Vector3 grid by the grid's name.)")*/
 
       .def("add_bool_grid", &VoxelWrapper::addGrid<bool>, "grid_name"_a,
            R"(Creates an empty new bool grid.)")

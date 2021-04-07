@@ -15,7 +15,10 @@ from habitat_sim._ext.habitat_sim_bindings.geo import (
     generate_interior_exterior_voxel_grid,
     generate_manhattan_distance_sdf,
     generate_euclidean_distance_sdf,
-    generate_distance_gradient_field
+    generate_distance_gradient_field,
+    get_voxel_set_from_bool_grid,
+    get_voxel_set_from_int_grid,
+    get_voxel_set_from_float_grid
 )
 
 __all__ = [
@@ -33,5 +36,8 @@ __all__ = [
     "generate_interior_exterior_voxel_grid",
     "generate_manhattan_distance_sdf",
     "generate_euclidean_distance_sdf",
-    "generate_distance_gradient_field"
+    "generate_distance_gradient_field",
+    "get_voxel_set_from_bool_grid",
+    "get_voxel_set_from_int_grid",
+    "get_voxel_set_from_float_grid"
 ]
