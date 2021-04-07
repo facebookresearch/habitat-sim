@@ -33,6 +33,13 @@ namespace geo {
 
 enum class VoxelGridType { Bool, Int, Float, Vector3 };
 
+// Used for generating voxel meshes
+struct VoxelVertex {
+  Mn::Vector3 position;
+  Mn::Vector3 normal;
+  Mn::Vector3 color;
+};
+
 class VoxelGrid {
   struct GridEntry {
     VoxelGridType type;
@@ -256,10 +263,8 @@ class VoxelGrid {
                          T maxVal = 1) {
     assert(grids_.find(gridName) != grids_.end());
     assert(minVal != maxVal);
-    std::vector<Magnum::UnsignedInt> indices;
-    std::vector<Magnum::Vector3> positions;
-    std::vector<Magnum::Vector3> normals;
-    std::vector<Magnum::Color3> colors;
+    Corrade::Containers::Array<VoxelVertex> vertices;
+    Corrade::Containers::Array<Mn::UnsignedInt> indices;
     Corrade::Containers::StridedArrayView3D<T> grid = getGrid<T>(gridName);
 
     // iterate through each voxel grid cell
@@ -271,11 +276,11 @@ class VoxelGrid {
         Magnum::Vector3i local_coords(ind, j, k);
         Magnum::Color3 col = Magnum::Color3(1 - colorVal, colorVal, 0);
         std::vector<bool> neighbors{false, false, false, false, false, false};
-        addVoxelToMeshPrimitives(positions, normals, colors, indices,
-                                 local_coords, neighbors, col);
+        addVoxelToMeshPrimitives(vertices, indices, local_coords, neighbors,
+                                 col);
       }
     }
-    generateMeshDataAndMeshGL(gridName, indices, positions, normals, colors);
+    generateMeshDataAndMeshGL(gridName, vertices, indices);
   }
 
   ESP_SMART_POINTERS(VoxelGrid)
@@ -295,16 +300,17 @@ class VoxelGrid {
   /**
    * @brief Generates the Magnum MeshData and MeshGL given indices, positions,
    * normals, and colors.
-   * @param indices The indices of the mesh.
-   * @param positions The positions of the mesh.
-   * @param normals The normals of the mesh.
-   * @param colors The colors of the mesh.
+   * @param gridName The grid name corresponding to the mesh's grid.
+   * @param vertexData A Corrade Array of VoxelVertex which each contain a
+   * vertex's position, normal, and color
+   * @param indexData A Corrade Array of indicies for the faces on the mesh.
    */
-  void generateMeshDataAndMeshGL(const std::string& gridName,
-                                 std::vector<Magnum::UnsignedInt>& indices,
-                                 std::vector<Magnum::Vector3>& positions,
-                                 std::vector<Magnum::Vector3>& normals,
-                                 std::vector<Magnum::Color3>& colors);
+  void generateMeshDataAndMeshGL(
+      const std::string& gridName,
+      Corrade::Containers::Array<VoxelVertex>& vertexData,
+      Corrade::Containers::Array<Mn::UnsignedInt>&
+          indexData  // note the &&s (!)
+  );
 
   /**
    * @brief Checks to see if a given 3D voxel index is valid and does not go out
@@ -318,9 +324,9 @@ class VoxelGrid {
 
   /**
    * @brief Helper function for generate mesh. Adds a cube voxel to a mesh.
-   * @param positions A vector of vertices for the mesh.
-   * @param colors A vector of per-pertice colors
-   * @param indices A vector of indicies for the faces on the mesh.
+   * @param vertexData A Corrade Array of VoxelVertex which each contain a
+   * vertex's position, normal, and color
+   * @param indexData A Corrade Array of indicies for the faces on the mesh.
    * @param local_coords A voxel index specifying the location of the voxel.
    * @param voxel_neighbors A boolean with 6 booleans representing whether the
    * voxel on the top (y+1), bottom (x+1), right (y+1), left (y-1), back (z-1)
@@ -329,10 +335,8 @@ class VoxelGrid {
    * voxel. Used primarily for generating the heatmap slices.
    */
   void addVoxelToMeshPrimitives(
-      std::vector<Magnum::Vector3>& positions,
-      std::vector<Magnum::Vector3>& normals,
-      std::vector<Magnum::Color3>& colors,
-      std::vector<Magnum::UnsignedInt>& indices,
+      Corrade::Containers::Array<VoxelVertex>& vertexData,
+      Corrade::Containers::Array<Mn::UnsignedInt>& indexData,
       const Magnum::Vector3i& local_coords,
       const std::vector<bool>& voxel_neighbors,
       const Magnum::Color3& color = Magnum::Color3(.4, .8, 1));
@@ -340,19 +344,17 @@ class VoxelGrid {
   /**
    * @brief Helper function for generate mesh. Adds a vector voxel to a mesh
    * which points in a specified direction.
-   * @param positions A vector of vertices for the mesh.
-   * @param normals A vector of per-vertex normals for the mesh
-   * @param colors A vector of per-vertex colors
-   * @param indices A vector of indicies for the faces on the mesh.
+   * @param vertexData A Corrade Array of VoxelVertex which each contain a
+   * vertex's position, normal, and color
+   * @param indexData A Corrade Array of indicies for the faces on the mesh.
    * @param local_coords A voxel index specifying the location of the voxel.
    * @param vec The vector to be converted into a mesh.
    */
-  void addVectorToMeshPrimitives(std::vector<Magnum::Vector3>& positions,
-                                 std::vector<Magnum::Vector3>& normals,
-                                 std::vector<Magnum::Color3>& colors,
-                                 std::vector<Magnum::UnsignedInt>& indices,
-                                 const Magnum::Vector3i& local_coords,
-                                 const Magnum::Vector3& vec);
+  void addVectorToMeshPrimitives(
+      Corrade::Containers::Array<VoxelVertex>& vertexData,
+      Corrade::Containers::Array<Mn::UnsignedInt>& indexData,
+      const Magnum::Vector3i& local_coords,
+      const Magnum::Vector3& vec);
 
   /**
    * @brief Gets the length of the voxel grid.
