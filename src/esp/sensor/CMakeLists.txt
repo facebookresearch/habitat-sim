@@ -26,6 +26,12 @@ target_link_libraries(
   PUBLIC core gfx scene sim
 )
 
+# ATTETION!!!!!!!!!!!!!!!!!!!!
+# the codebase has a deep architectural problem
+# that needs solving -- lib dependency cycles !!!!
+# the following is just a "crutch", a temporary remedy here.
+set_target_properties(sensor PROPERTIES LINK_INTERFACE_MULTIPLICITY 3)
+
 if(BUILD_WITH_CUDA)
   add_library(noise_model_kernels STATIC RedwoodNoiseModel.cu RedwoodNoiseModel.cuh)
   target_link_libraries(noise_model_kernels PUBLIC ${CUDART_LIBRARY})
