@@ -25,6 +25,9 @@
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
+#ifdef ESP_BUILD_WITH_VHACD
+#include "esp/geo/VoxelGrid.h"
+#endif
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -145,6 +148,14 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
+
+#ifdef ESP_BUILD_WITH_VHACD
+  void displayVoxelField(int objectID);
+
+  int objectDisplayed = -1;
+#endif
+
+  bool isInRange(float val);
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -180,6 +191,8 @@ Mouse Functions:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
   SHIFT-RIGHT:
     Click a mesh to highlight it.
+  CTRL-RIGHT:
+    (With 'enable-physics') Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 
@@ -223,6 +236,8 @@ Key Commands:
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
+  'g': (physics) Display a scene vector field.
+  'l': (physics) Iterate through different ranges of the scene's voxelized signed distance field.
   ==================================================
   )";
 
@@ -256,6 +271,10 @@ Key Commands:
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
 
+#ifdef ESP_BUILD_WITH_VHACD
+  //! Resolution selection for voxelization.
+  int voxelDistance = 0;
+#endif
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
    * on then clear old locations
@@ -854,6 +873,58 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
+
+bool isTrue(bool val) {
+  return val;
+}
+
+bool isHorizontal(Mn::Vector3 val) {
+  return abs(val.normalized()[0]) * abs(val.normalized()[0]) +
+             abs(val.normalized()[2]) * abs(val.normalized()[2]) <=
+         0;
+  // return val[0] == 1;
+}
+
+bool Viewer::isInRange(float val) {
+  int curDistanceVisualization = 1 * (voxelDistance % 18);
+  return val >= curDistanceVisualization - 1 && val < curDistanceVisualization;
+}
+
+void Viewer::displayVoxelField(int objectID) {
+  // create a voxelization and get a pointer to the underlying VoxelWrapper
+  // class
+  unsigned int resolution = 2000000;
+  std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper;
+  if (objectID == -1) {
+    simulator_->createStageVoxelization(resolution);
+    voxelWrapper = simulator_->getStageVoxelization();
+  } else {
+    simulator_->createObjectVoxelization(objectID, resolution);
+    voxelWrapper = simulator_->getObjectVoxelization(objectID);
+  }
+
+  // turn off the voxel grid visualization for the last voxelized object
+  if (objectDisplayed == -1) {
+    simulator_->setStageVoxelizationDraw(false, "Boundary");
+  } else if (objectDisplayed >= 0) {
+    simulator_->setObjectVoxelizationDraw(false, objectDisplayed, "Boundary");
+  }
+
+  // Generate the mesh for the boundary voxel grid
+  voxelWrapper->generateMesh("Boundary");
+
+  // visualizes the Boundary voxel grid
+  if (objectID == -1) {
+    simulator_->setStageVoxelizationDraw(true, "Boundary");
+  } else {
+    simulator_->setObjectVoxelizationDraw(true, objectID, "Boundary");
+  }
+
+  objectDisplayed = objectID;
+}
+#endif
+
 void Viewer::pokeLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0)
@@ -1205,7 +1276,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     createPickedObjectVisualizer(pickedObject);
     return;
   }  // drawable selection
-
   // add primitive w/ right click if a collision object is hit by a raycast
   else if (event.button() == MouseEvent::Button::Right) {
     if (simulator_->getPhysicsSimulationLibrary() !=
@@ -1215,6 +1285,15 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
       if (raycastResults.hasHits()) {
+        // If VHACD is enabled, and Ctrl + Right Click is used, voxelized the
+        // object clicked on.
+#ifdef ESP_BUILD_WITH_VHACD
+        if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
+          auto objID = raycastResults.hits[0].objectId;
+          displayVoxelField(objID);
+          return;
+        }
+#endif
         addPrimitiveObject();
         auto existingObjectIDs = simulator_->getExistingObjectIDs();
         // use the bounding box to create a safety margin for adding the

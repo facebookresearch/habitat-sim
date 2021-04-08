@@ -816,6 +816,43 @@ void Simulator::setObjectBBDraw(bool drawBB,
   }
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
+void Simulator::createObjectVoxelization(int objectID, int resolution) {
+  physicsManager_->generateVoxelization(objectID, resolution);
+}
+#endif
+
+void Simulator::setObjectVoxelizationDraw(bool drawV,
+                                          int objectID,
+                                          const std::string& gridName) {
+  auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& drawables = sceneGraph_.getDrawables();
+  physicsManager_->setObjectVoxelizationDraw(objectID, gridName, &drawables,
+                                             drawV);
+}
+
+std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getObjectVoxelization(
+    int objectID) {
+  return physicsManager_->getObjectVoxelization(objectID);
+}
+
+#ifdef ESP_BUILD_WITH_VHACD
+void Simulator::createStageVoxelization(int resolution) {
+  physicsManager_->generateStageVoxelization(resolution);
+}
+#endif
+
+void Simulator::setStageVoxelizationDraw(bool drawV,
+                                         const std::string& gridName) {
+  auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& drawables = sceneGraph_.getDrawables();
+  physicsManager_->setStageVoxelizationDraw(gridName, &drawables, drawV);
+}
+
+std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getStageVoxelization() {
+  return physicsManager_->getStageVoxelization();
+}
+
 void Simulator::setObjectSemanticId(uint32_t semanticId,
                                     const int objectID,
                                     const int sceneID) {

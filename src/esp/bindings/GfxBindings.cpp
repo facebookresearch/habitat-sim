@@ -59,12 +59,13 @@ void initGfxBindings(py::module& m) {
   render_camera
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const vec3f&, const vec3f&, const vec3f&>())
-      .def("set_projection_matrix",
-           static_cast<RenderCamera& (RenderCamera::*)(int, int, float, float,
-                                                       Mn::Deg)>(
-               &RenderCamera::setProjectionMatrix),
-           R"(Set this `Camera`'s projection matrix.)", "width"_a, "height"_a,
-           "znear"_a, "zfar"_a, "hfov"_a)
+      .def(
+          "set_projection_matrix",
+          [](RenderCamera& self, int w, int h, float n, float f, Mn::Degd fov) {
+            self.setProjectionMatrix(w, h, n, f, Mn::Deg(fov));
+          },
+          R"(Set this `Camera`'s projection matrix.)", "width"_a, "height"_a,
+          "znear"_a, "zfar"_a, "hfov"_a)
       .def("set_orthographic_projection_matrix",
            &RenderCamera::setOrthoProjectionMatrix,
            R"(Set this `Orthographic Camera`'s projection matrix.)", "width"_a,

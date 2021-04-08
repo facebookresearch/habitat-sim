@@ -2198,6 +2198,7 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
   return mesh;
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
 bool ResourceManager::outputMeshMetaDataToObj(
     const std::string& MeshMetaDataFile,
     const std::string& new_filename,
@@ -2251,7 +2252,6 @@ bool ResourceManager::isAssetDataRegistered(
   return (resourceDict_.count(resourceName) > 0);
 }
 
-#ifdef ESP_BUILD_WITH_VHACD
 void ResourceManager::createConvexHullDecomposition(
     const std::string& filename,
     const std::string& chdFilename,
