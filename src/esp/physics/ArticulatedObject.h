@@ -307,7 +307,8 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual std::vector<float> getPositions() { return {}; };
 
-  virtual std::vector<float> getPositionLimits(bool upperLimits = false) {
+  virtual std::vector<float> getPositionLimits(
+      CORRADE_UNUSED bool upperLimits = false) {
     return {};
   };
 
