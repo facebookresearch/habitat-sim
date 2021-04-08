@@ -146,8 +146,9 @@ void initSensorBindings(py::module& m) {
       .def_property_readonly(
           "far", &VisualSensor::getFar,
           R"(The distance to the far clipping plane this VisualSensor uses.)")
-      .def_property_readonly("hfov", &VisualSensor::getFOV,
-                             R"(The Field of View this VisualSensor uses.)")
+      .def_property_readonly(
+          "hfov", [](VisualSensor& self) { return Mn::Degd(self.getFOV()); },
+          R"(The Field of View this VisualSensor uses.)")
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 
@@ -175,9 +176,10 @@ void initSensorBindings(py::module& m) {
           "set_height", &CameraSensor::setHeight,
           R"(Set the height of the resolution in the SensorSpec for this CameraSensor.)")
       .def_property(
-          "fov",
-          static_cast<Mn::Deg (CameraSensor::*)() const>(&CameraSensor::getFOV),
-          static_cast<void (CameraSensor::*)(Mn::Deg)>(&CameraSensor::setFOV),
+          "fov", [](CameraSensor& self) { return Mn::Degd(self.getFOV()); },
+          [](CameraSensor& self, Mn::Degd angle) {
+            self.setFOV(Mn::Deg(angle));
+          },
           R"(Set the field of view to use for this CameraSensor.  Only applicable to
           Pinhole Camera Types)")
       .def_property(
