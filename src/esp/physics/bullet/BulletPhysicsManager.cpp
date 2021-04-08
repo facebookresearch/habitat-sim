@@ -33,6 +33,31 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   staticStageObject_.reset(nullptr);
 }
 
+void BulletPhysicsManager::removeObject(const int physObjectID,
+                                        bool deleteObjectNode,
+                                        bool deleteVisualNode) {
+  // remove constraints referencing this object
+  if (objectConstraints_.count(physObjectID) > 0) {
+    for (auto c_id : objectConstraints_.at(physObjectID)) {
+      removeConstraint(c_id);
+    }
+    objectConstraints_.erase(physObjectID);
+  }
+  PhysicsManager::removeObject(physObjectID, deleteObjectNode,
+                               deleteVisualNode);
+}
+
+void BulletPhysicsManager::removeArticulatedObject(int id) {
+  // remove constraints referencing this object
+  if (objectConstraints_.count(id) > 0) {
+    for (auto c_id : objectConstraints_.at(id)) {
+      removeConstraint(c_id);
+    }
+    objectConstraints_.erase(id);
+  }
+  PhysicsManager::removeArticulatedObject(id);
+}
+
 bool BulletPhysicsManager::initPhysicsFinalize() {
   activePhysSimLib_ = BULLET;
 
@@ -328,6 +353,7 @@ void BulletPhysicsManager::overrideCollisionGroup(const int physObjectID,
       ->overrideCollisionGroup(group);
 }
 
+// rigid object -> world
 int BulletPhysicsManager::createRigidP2PConstraint(
     int objectId,
     const Magnum::Vector3& position,
@@ -338,7 +364,6 @@ int BulletPhysicsManager::createRigidP2PConstraint(
         static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
             ->bObjectRigidBody_.get();
     rb->setActivationState(DISABLE_DEACTIVATION);
-    // TODO: need to reactivate sleeping at some point
 
     Magnum::Vector3 localOffset = position;
     if (!positionLocal) {
@@ -351,6 +376,7 @@ int BulletPhysicsManager::createRigidP2PConstraint(
         new btPoint2PointConstraint(*rb, btVector3(localOffset));
     bWorld_->addConstraint(p2p);
     rigidP2ps.emplace(nextConstraintId_, p2p);
+    objectConstraints_[objectId].push_back(nextConstraintId_);
     return nextConstraintId_++;
   } else {
     Corrade::Utility::Debug()
@@ -360,6 +386,7 @@ int BulletPhysicsManager::createRigidP2PConstraint(
   }
 }
 
+// rigid object -> articulated object
 int BulletPhysicsManager::createArticulatedP2PConstraint(
     int articulatedObjectId,
     int linkId,
@@ -376,6 +403,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
   if (existingObjects_.at(objectId)->getMotionType() == MotionType::DYNAMIC) {
     rb = static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
              ->bObjectRigidBody_.get();
+    rb->setActivationState(DISABLE_DEACTIVATION);
   } else {
     Corrade::Utility::Debug()
         << "Cannot create a dynamic P2P constraint for object with "
@@ -406,9 +434,12 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
   p2p->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(p2p);
   articulatedP2ps.emplace(nextConstraintId_, p2p);
+  objectConstraints_[articulatedObjectId].push_back(nextConstraintId_);
+  objectConstraints_[objectId].push_back(nextConstraintId_);
   return nextConstraintId_++;
 }
 
+// rigid object -> articulated object (fixed)
 int BulletPhysicsManager::createArticulatedFixedConstraint(
     int articulatedObjectId,
     int linkId,
@@ -465,9 +496,12 @@ int BulletPhysicsManager::createArticulatedFixedConstraint(
   constraint->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(constraint);
   articulatedFixedConstraints.emplace(nextConstraintId_, constraint);
+  objectConstraints_[objectId].push_back(nextConstraintId_);
+  objectConstraints_[articulatedObjectId].push_back(nextConstraintId_);
   return nextConstraintId_++;
 }
 
+// articulated object -> articulated object (general)
 int BulletPhysicsManager::createArticulatedP2PConstraint(
     int articulatedObjectIdA,
     int linkIdA,
@@ -492,7 +526,6 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
           existingArticulatedObjects_.at(articulatedObjectIdB).get())
           ->btMultiBody_.get();
 
-  // TODO: need to reactivate sleeping at some point
   mbA->setCanSleep(false);
   mbB->setCanSleep(false);
 
@@ -502,9 +535,12 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
   p2p->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(p2p);
   articulatedP2ps.emplace(nextConstraintId_, p2p);
+  objectConstraints_[articulatedObjectIdA].push_back(nextConstraintId_);
+  objectConstraints_[articulatedObjectIdB].push_back(nextConstraintId_);
   return nextConstraintId_++;
 }
 
+// articulated object -> articulated object (global)
 int BulletPhysicsManager::createArticulatedP2PConstraint(
     int articulatedObjectIdA,
     int linkIdA,
@@ -538,6 +574,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
                                         maxImpulse);
 }
 
+// articulated object -> world (w/ offset)
 int BulletPhysicsManager::createArticulatedP2PConstraint(
     int articulatedObjectId,
     int linkId,
@@ -552,15 +589,16 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
           existingArticulatedObjects_.at(articulatedObjectId).get())
           ->btMultiBody_.get();
   mb->setCanSleep(false);
-  // TODO: need to reactivate sleeping at some point
   btMultiBodyPoint2Point* p2p = new btMultiBodyPoint2Point(
       mb, linkId, 0, btVector3(linkOffset), btVector3(pickPos));
   p2p->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(p2p);
   articulatedP2ps.emplace(nextConstraintId_, p2p);
+  objectConstraints_[articulatedObjectId].push_back(nextConstraintId_);
   return nextConstraintId_++;
 }
 
+// articulated object -> world (global)
 int BulletPhysicsManager::createArticulatedP2PConstraint(
     int articulatedObjectId,
     int linkId,
@@ -611,6 +649,15 @@ void BulletPhysicsManager::removeConstraint(int constraintId) {
     articulatedFixedConstraints.erase(constraintId);
   } else {
     Corrade::Utility::Debug() << "No constraint with ID: " << constraintId;
+    return;
+  }
+  // remove the constraint from any referencing object maps
+  for (auto itr : objectConstraints_) {
+    auto conIdItr =
+        std::find(itr.second.begin(), itr.second.end(), constraintId);
+    if (conIdItr != itr.second.end()) {
+      itr.second.erase(conIdItr);
+    }
   }
 };
 
