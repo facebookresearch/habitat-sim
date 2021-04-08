@@ -14,6 +14,7 @@ target_link_libraries(
           nav
           scene
           sim
+          geo
           Magnum::DebugTools
           MagnumIntegration::ImGui
 )

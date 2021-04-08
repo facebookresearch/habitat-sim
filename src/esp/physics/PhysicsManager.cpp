@@ -453,6 +453,19 @@ void PhysicsManager::setAngularDamping(const int physObjectID,
   existingObjects_.at(physObjectID)->setAngularDamping(angDamping);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
+void PhysicsManager::generateVoxelization(const int physObjectID,
+                                          const int resolution) {
+  assertIDValidity(physObjectID);
+  existingObjects_.at(physObjectID)
+      ->generateVoxelization(resourceManager_, resolution);
+}
+
+void PhysicsManager::generateStageVoxelization(const int resolution) {
+  staticStageObject_->generateVoxelization(resourceManager_, resolution);
+}
+#endif
+
 //============ Object Getter functions =============
 double PhysicsManager::getMass(const int physObjectID) const {
   assertIDValidity(physObjectID);
@@ -498,6 +511,16 @@ double PhysicsManager::getAngularDamping(const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getAngularDamping();
 }
+std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getObjectVoxelization(
+    const int physObjectID) const {
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->getVoxelization();
+}
+
+std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getStageVoxelization()
+    const {
+  return staticStageObject_->getVoxelization();
+}
 
 void PhysicsManager::setObjectBBDraw(int physObjectID,
                                      DrawableGroup* drawables,
@@ -523,6 +546,62 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
                 .center());
     resourceManager_.addPrimitiveToDrawables(
         0, *existingObjects_.at(physObjectID)->BBNode_, drawables);
+  }
+}
+
+void PhysicsManager::setObjectVoxelizationDraw(int physObjectID,
+                                               const std::string& gridName,
+                                               DrawableGroup* drawables,
+                                               bool drawVoxelization) {
+  assertIDValidity(physObjectID);
+  setVoxelizationDraw(gridName,
+                      static_cast<esp::physics::RigidBase*>(
+                          existingObjects_.at(physObjectID).get()),
+                      drawables, drawVoxelization);
+}
+
+void PhysicsManager::setStageVoxelizationDraw(const std::string& gridName,
+                                              DrawableGroup* drawables,
+                                              bool drawVoxelization) {
+  setVoxelizationDraw(
+      gridName, static_cast<esp::physics::RigidBase*>(staticStageObject_.get()),
+      drawables, drawVoxelization);
+}
+
+void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
+                                         esp::physics::RigidBase* rigidBase,
+                                         DrawableGroup* drawables,
+                                         bool drawVoxelization) {
+  if (rigidBase->VoxelNode_ && !drawVoxelization) {
+    // destroy the node
+    delete rigidBase->VoxelNode_;
+    rigidBase->VoxelNode_ = nullptr;
+
+  } else if (drawVoxelization && rigidBase->visualNode_) {
+    if (rigidBase->VoxelNode_) {
+      // if the VoxelNode is already rendering something, destroy it.
+      delete rigidBase->VoxelNode_;
+    }
+
+    // re-create the voxel node
+    rigidBase->VoxelNode_ = &rigidBase->visualNode_->createChild();
+
+    esp::geo::VoxelWrapper* voxelWrapper_ = rigidBase->voxelWrapper.get();
+    gfx::Drawable::Flags meshAttributeFlags{};
+    resourceManager_.createDrawable(
+        voxelWrapper_->getVoxelGrid()->getMeshGL(gridName), meshAttributeFlags,
+        *rigidBase->VoxelNode_, DEFAULT_LIGHTING_KEY,
+        PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
+
+    // If the RigidBase is a stage, need to set the BB to make culling work.
+    if (dynamic_cast<esp::physics::RigidStage*>(rigidBase) != nullptr) {
+      // set bounding box for the node to be the bb computed by vhacd
+      Mn::Range3D bb{rigidBase->voxelWrapper->getVoxelGrid()->getOffset(),
+                     rigidBase->voxelWrapper->getVoxelGrid()->getMaxOffset()};
+      rigidBase->VoxelNode_->setMeshBB(bb);
+      //
+      rigidBase->node().computeCumulativeBB();
+    }
   }
 }
 
