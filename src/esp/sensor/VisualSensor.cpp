@@ -150,9 +150,13 @@ VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
       "sensor is attached to the root node, and thus cannot be moved.", );
 
   // check if the sensor is already in this semantic scene graph
-  if (node.scene() == sim.getActiveSemanticSceneGraph().getRootNode().scene()) {
-    return;
-  }
+  CORRADE_ASSERT(
+      node.scene() != sim_.getActiveSemanticSceneGraph().getRootNode().scene(),
+      "VisualSensor::MoveSemanticSensorNodeHelper::"
+      "MoveSemanticSensorNodeHelper(): Cannot move the semantic sensor since "
+      "it is already in the "
+      "semantic scene graph. Make sure the semantic sensor is in the regular "
+      "rgb scene graph to begin with.", );
 
   // no backup exists
   CORRADE_INTERNAL_ASSERT(semanticSensorParentNodeBackup_ == nullptr);
@@ -166,7 +170,7 @@ VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
 
   // now, take the sensor from the current scene graph and connect it to
   // the root node of semantic scene graph, set the *correct* transformation
-  node.setParent(&sim.getActiveSemanticSceneGraph().getRootNode());
+  node.setParent(&sim_.getActiveSemanticSceneGraph().getRootNode());
   node.setTransformation(absTransform);
 }
 
@@ -175,10 +179,12 @@ VisualSensor::MoveSemanticSensorNodeHelper::~MoveSemanticSensorNodeHelper() {
                           SensorType::Semantic);
 
   scene::SceneNode& node = visualSensor_.node();
-  // check if the sensor is already in this scene graph
-  if (node.scene() == sim_.getActiveSceneGraph().getRootNode().scene()) {
-    return;
-  }
+  CORRADE_ASSERT(
+      node.scene() != sim_.getActiveSceneGraph().getRootNode().scene(),
+      "VisualSensor::MoveSemanticSensorNodeHelper::"
+      "~MoveSemanticSensorNodeHelper(): Cannot move the semantic sensor since "
+      "it is already in the regular rgb scene graph. Did you move it manually "
+      "by yourself?", );
 
   CORRADE_INTERNAL_ASSERT(semanticSensorParentNodeBackup_);
   CORRADE_INTERNAL_ASSERT(relativeTransformBackup_ != Cr::Containers::NullOpt);
