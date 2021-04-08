@@ -501,6 +501,85 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, int objectID, int sceneID = 0);
 
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Creates a voxelization for a particular object. Initializes the
+   * voxelization with a boundary voxel grid using VHACD's voxelization library.
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param resolution The approximate number of voxels for the voxel grid that
+   * is created.
+   */
+  void createObjectVoxelization(int objectID, int resolution = 1000000);
+#endif
+
+  /**
+   * @brief Turn on/off rendering for the voxel grid of the object's visual
+   * component.
+   *
+   * If a voxel grid for the object has not been created, it will make one with
+   * default arguments using @ref createObjectVoxelization().
+   *
+   * @param drawV Whether or not the render the voxel grid.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param gridName The name of the voxel grid to be visualized.
+   */
+  void setObjectVoxelizationDraw(bool drawV,
+                                 int objectID,
+                                 const std::string& gridName = "Boundary");
+
+  /**
+   * @brief Returns the VoxelWrapper for a particular object.
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @return A shared ptr to the object's VoxelWrapper .
+   */
+  std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelization(int objectID);
+
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Creates a voxelization for the scene. Initializes the voxelization
+   * with a boundary voxel grid using VHACD's voxelization library.
+   *
+   * @param resolution The approximate number of voxels for the voxel grid that
+   * is created.
+   */
+  void createStageVoxelization(int resolution = 1000000);
+#endif
+
+  /**
+   * @brief Turn on/off rendering for the voxel grid of the scene's visual
+   * component.
+   *
+   * If a voxel grid for the scene has not been created, it will make one with
+   * default arguments using @ref createStageVoxelization().
+   *
+   * @param drawV Whether or not the render the voxel grid.
+   * @param gridName The name of the voxel grid to be visualized.
+   */
+  void setStageVoxelizationDraw(bool drawV,
+                                const std::string& gridName = "Boundary");
+
+  /**
+   * @brief Returns the VoxelWrapper for a particular object.
+   * @return A shared ptr to the object's VoxelWrapper .
+   */
+  std::shared_ptr<esp::geo::VoxelWrapper> getStageVoxelization();
+
+  /**
+   * @brief Registers a voxel wrapper in a dictionary. This ensures that two
+   * assets with the same render asset handle and voxelization resolution share
+   * the same underlying Voxel Grid.
+   *
+   * @param voxelWrapper The voxel wrapper to be registered.
+   * @param key The name underwhich to register the voxel wrapper
+   */
+  void registerVoxelGrid(esp::geo::VoxelWrapper& voxelWrapper,
+                         const std::string& key);
+
   /**
    * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
    * belonging to an object.

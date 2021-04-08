@@ -32,6 +32,7 @@
 #include "MeshData.h"
 #include "MeshMetaData.h"
 #include "RenderAssetInstanceCreationInfo.h"
+#include "esp/geo/VoxelGrid.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
@@ -308,6 +309,47 @@ class ResourceManager {
   }
 
   /**
+   * @brief check to see if a particular voxel grid has been created &
+   * registered or not.
+   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
+   * Typically the filepath of file-based assets.
+   * @return Whether or not the specified grid exists.
+   */
+  bool voxelGridExists(const std::string& voxelGridName) const {
+    return voxelGridDict_.count(voxelGridName) > 0;
+  }
+
+  /**
+   * @brief Retrieve a VoxelGrid given a particular voxel grid handle.
+   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
+   * Typically the filepath of file-based assets.
+   * @return The specified VoxelGrid.
+   */
+  std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
+      const std::string& voxelGridName) const {
+    CHECK(voxelGridDict_.count(voxelGridName) > 0);
+    return voxelGridDict_.at(voxelGridName);
+  }
+
+  /**
+   * @brief Registers a given VoxelGrid pointer under the given handle in the
+   * voxelGridDict_ if no such VoxelGrid has been registered.
+   * @param VoxelGrid The pointer to the VoxelGrid
+   * @param voxelGridHandle The key to register the VoxelGrid under.
+   * @return Whether or not the registration succeeded.
+   */
+  bool registerVoxelGrid(
+      const std::string& voxelGridHandle,
+      const std::shared_ptr<esp::geo::VoxelGrid>& VoxelGridPtr) {
+    if (voxelGridDict_.count(voxelGridHandle) > 0)
+      return false;
+    else {
+      voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
+      return true;
+    }
+  }
+
+  /**
    * @brief Get a named @ref LightSetup
    */
   Mn::Resource<gfx::LightSetup> getLightSetup(
@@ -343,6 +385,7 @@ class ResourceManager {
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
       const std::string& filename) const;
 
+#ifdef ESP_BUILD_WITH_VHACD
   /**
    * @brief Converts a MeshMetaData into a obj file.
    *
@@ -362,7 +405,6 @@ class ResourceManager {
    */
   bool isAssetDataRegistered(const std::string& resourceName) const;
 
-#ifdef ESP_BUILD_WITH_VHACD
   /**
    * @brief Runs convex hull decomposition on a specified file.
    *
@@ -420,6 +462,30 @@ class ResourceManager {
   void addPrimitiveToDrawables(int primitiveID,
                                scene::SceneNode& node,
                                DrawableGroup* drawables);
+
+  /**
+   * @brief Create a @ref gfx::Drawable for the specified mesh, node,
+   * and @ref ShaderType.
+   *
+   * Add this drawable to the @ref DrawableGroup if provided.
+   * @param mesh The render mesh.
+   * @param meshAttributeFlags flags for the attributes of the render mesh
+   * @param node The @ref scene::SceneNode to which the drawable will be
+   * attached.
+   * @param lightSetupKey The @ref LightSetup key that will be used
+   * for the drawable.
+   * @param materialKey The @ref MaterialData key that will be used
+   * for the drawable.
+   * @param group Optional @ref DrawableGroup with which the render the @ref
+   * gfx::Drawable.
+   */
+
+  void createDrawable(Mn::GL::Mesh& mesh,
+                      gfx::Drawable::Flags& meshAttributeFlags,
+                      scene::SceneNode& node,
+                      const Mn::ResourceKey& lightSetupKey,
+                      const Mn::ResourceKey& materialKey,
+                      DrawableGroup* group = nullptr);
 
   /**
    * @brief Remove the specified primitive mesh.
@@ -903,37 +969,6 @@ class ResourceManager {
 
   // ======== Rendering Utility Functions ========
 
-  /**
-   * @brief Create a @ref gfx::Drawable for the specified mesh, node,
-   * and @ref ShaderType.
-   *
-   * Add this drawable to the @ref DrawableGroup if provided.
-   * @param shaderType Indentifies the desired shader program for rendering
-   * the @ref gfx::Drawable.
-   * @param mesh The render mesh.
-   * @param meshAttributeFlags flags for the attributes of the render mesh
-   * @param node The @ref scene::SceneNode to which the drawable will be
-   * attached.
-   * @param lightSetupKey The @ref LightSetup key that will be used
-   * for the drawable.
-   * @param materialKey The @ref MaterialData key that will be used
-   * for the drawable.
-   * @param meshID Optional, the index of this mesh component stored in
-   * meshes_
-   * @param group Optional @ref DrawableGroup with which the render the @ref
-   * gfx::Drawable.
-   * @param texture Optional texture for the mesh.
-   * @param color Optional color parameter for the shader program. Defaults to
-   * white.
-   */
-
-  void createDrawable(Mn::GL::Mesh& mesh,
-                      gfx::Drawable::Flags& meshAttributeFlags,
-                      scene::SceneNode& node,
-                      const Mn::ResourceKey& lightSetupKey,
-                      const Mn::ResourceKey& materialKey,
-                      DrawableGroup* group = nullptr);
-
   Flags flags_;
 
   // ======== General geometry data ========
@@ -965,6 +1000,14 @@ class ResourceManager {
    * @brief The next available unique ID for loaded materials
    */
   int nextMaterialID_ = 0;
+
+  /**
+   * @brief Storage for precomuted voxel grids. Useful for when multiple objects
+   * in a scene are using the same VoxelGrid.
+   *
+   * Maps absolute path keys to VoxelGrid.
+   */
+  std::map<std::string, std::shared_ptr<esp::geo::VoxelGrid>> voxelGridDict_;
 
   /**
    * @brief Asset metadata linking meshes, textures, materials, and the
