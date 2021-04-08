@@ -71,6 +71,34 @@ void VoxelGrid::testVoxelGridWithVHACD() {
                        global_coords[i]) == voxel_indices[i]);
   }
 
+  // Ensure voxel grid setters and getters work, specifically direct grid
+  // manipulation using a strided array view
+  voxelization->addGrid<int>("intGrid");
+  auto intGrid = voxelization->getGrid<int>("intGrid");
+
+  Mn::Vector3i dims = voxelization->getVoxelGridDimensions();
+  for (int i = 0; i < dims[0]; i++) {
+    for (int j = 0; j < dims[1]; j++) {
+      for (int k = 0; k < dims[2]; k++) {
+        intGrid[i][j][k] = 10;
+      }
+    }
+  }
+  bool settersWorked = true;
+
+  for (int i = 0; i < dims[0]; i++) {
+    for (int j = 0; j < dims[1]; j++) {
+      for (int k = 0; k < dims[2]; k++) {
+        if (voxelization->getVoxel<int>(Mn::Vector3i(i, j, k), "intGrid") !=
+            10) {
+          settersWorked = false;
+        }
+      }
+    }
+  }
+
+  CORRADE_VERIFY(settersWorked);
+
   // Ensure mesh generation & mesh visualization doesn't crash simulator
   voxelization->generateMesh("Boundary");
 

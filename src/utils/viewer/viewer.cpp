@@ -1226,23 +1226,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     createPickedObjectVisualizer(pickedObject);
     return;
   }  // drawable selection
-  // Ctrl + Right click will visualize the voxel mesh of an object.
-  else if (event.button() == MouseEvent::Button::Right &&
-           event.modifiers() & MouseEvent::Modifier::Ctrl) {
-    if (simulator_->getPhysicsSimulationLibrary() !=
-        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NONE) {
-      auto viewportPoint = event.position();
-      auto ray = renderCamera_->unproject(viewportPoint);
-      esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
-
-      if (raycastResults.hasHits()) {
-        auto objID = raycastResults.hits[0].objectId;
-#ifdef ESP_BUILD_WITH_VHACD
-        displayVoxelField(objID);
-#endif
-      }
-    }
-  }
   // add primitive w/ right click if a collision object is hit by a raycast
   else if (event.button() == MouseEvent::Button::Right) {
     if (simulator_->getPhysicsSimulationLibrary() !=
@@ -1252,6 +1235,15 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
       if (raycastResults.hasHits()) {
+        // If VHACD is enabled, and Ctrl + Right Click is used, voxelized the
+        // object clicked on.
+#ifdef ESP_BUILD_WITH_VHACD
+        if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
+          auto objID = raycastResults.hits[0].objectId;
+          displayVoxelField(objID);
+          return;
+        }
+#endif
         addPrimitiveObject();
         auto existingObjectIDs = simulator_->getExistingObjectIDs();
         // use the bounding box to create a safety margin for adding the

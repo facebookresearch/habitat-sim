@@ -14,6 +14,11 @@
 #include "esp/gfx/Renderer.h"
 
 namespace esp {
+
+namespace sensor {
+class VisualSensor;
+}
+
 namespace gfx {
 
 /**
@@ -59,31 +64,38 @@ class RenderTarget {
    *                           Must be not nullptr to use @ref
    *                           readFrameDepthGPU()
    * @param flags              The flags of the renderer target
+   * @param visualSensor       (optional) The visual sensor for this render
+   * target
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
                DepthShader* depthShader,
                Flags flags = {Flag::RgbaBuffer | Flag::ObjectIdBuffer |
-                              Flag::DepthTexture});
+                              Flag::DepthTexture},
+               const sensor::VisualSensor* visualSensor = nullptr);
 
   /**
    * @brief Constructor
    * @param size               The size of the underlying framebuffers in WxH
    * @param depthUnprojection  Depth unrpojection parameters.  See @ref
    *                           calculateDepthUnprojection()
+   * @param visualSensor       (optional) The visual sensor for this render
+   * target
    *
    * Equivalent to calling
    * @ref RenderTarget(size, depthUnprojection, nullptr, {})
    */
   RenderTarget(const Magnum::Vector2i& size,
-               const Magnum::Vector2& depthUnprojection)
-      : RenderTarget{size, depthUnprojection, nullptr, {}} {}
+               const Magnum::Vector2& depthUnprojection,
+               const sensor::VisualSensor* visualSensor = nullptr)
+      : RenderTarget{size, depthUnprojection, nullptr, {}, visualSensor} {}
 
   ~RenderTarget() = default;
 
   /**
    * @brief Called before any draw calls that target this RenderTarget
-   * Clears the framebuffer and binds it
+   * Clears the framebuffer to the color specified by the VisualSensorSpec and
+   * binds it.
    */
   void renderEnter();
 

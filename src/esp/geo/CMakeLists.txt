@@ -8,10 +8,10 @@ add_library(
   OBB.h
   VoxelGrid.cpp
   VoxelGrid.h
-  VoxelWrapper.cpp
-  VoxelWrapper.h
   VoxelUtils.cpp
   VoxelUtils.h
+  VoxelWrapper.cpp
+  VoxelWrapper.h
 )
 
 target_link_libraries(

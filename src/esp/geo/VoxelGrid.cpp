@@ -3,8 +3,10 @@
 #include <limits.h>
 #include <cmath>
 
+#include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Utility/Algorithms.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
+#include <Magnum/Math/Vector.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
 #include <Magnum/Primitives/Cone.h>
@@ -141,13 +143,12 @@ void VoxelGrid::fillBoolGridNeighborhood(std::vector<bool>& neighbors,
   }
 }
 
-void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
-                                         std::vector<Mn::Vector3>& normals,
-                                         std::vector<Mn::Color3>& colors,
-                                         std::vector<Mn::UnsignedInt>& indices,
-                                         const Mn::Vector3i& local_coords,
-                                         const std::vector<bool>& neighbors,
-                                         const Mn::Color3& color) {
+void VoxelGrid::addVoxelToMeshPrimitives(
+    Cr::Containers::Array<VoxelVertex>& vertexData,
+    Cr::Containers::Array<Mn::UnsignedInt>& indexData,
+    const Mn::Vector3i& local_coords,
+    const std::vector<bool>& neighbors,
+    const Mn::Color3& color) {
   // Using the data of a cubeSolid to create the voxel cube
   assert(neighbors.size() >= 6);
   Mn::Trade::MeshData cubeData = Mn::Primitives::cubeSolid();
@@ -155,51 +156,51 @@ void VoxelGrid::addVoxelToMeshPrimitives(std::vector<Mn::Vector3>& positions,
   // add cube to mesh
   // midpoint of a voxel
   Mn::Vector3 mid = getGlobalCoords(local_coords);
-
-  unsigned int sz = positions.size();
-  auto cubePositions = cubeData.positions3DAsArray();
-  auto cubeNormals = cubeData.normalsAsArray();
-  auto cubeIndices = cubeData.indices();
-
-  // TODO: Only add neccessary faces (based on neighborhood)
-  for (int i = 0; i < 24; i++) {
-    Mn::Vector3 vertOffset = cubePositions[i] * m_voxelSize / 2;
-    positions.push_back(vertOffset + mid);
-    // Set the normals to be weighted such that cubes look slightly curved
-    normals.push_back(cubePositions[i].normalized() * 1 / 4 +
-                      cubeNormals[i].normalized() * 3 / 4);
-    colors.push_back(color);
+  unsigned int sz = vertexData.size();
+  Corrade::Containers::StridedArrayView1D<const Magnum::Vector3> cubePositions =
+      cubeData.attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Position);
+  Corrade::Containers::StridedArrayView1D<const Magnum::Vector3> cubeNormals =
+      cubeData.attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Normal);
+  Cr::Containers::ArrayView<const Mn::UnsignedShort> cubeIndices =
+      cubeData.indices<Mn::UnsignedShort>();
+  for (std::size_t i = 0; i != cubeData.vertexCount(); ++i) {
+    arrayAppend(vertexData, Cr::Containers::InPlaceInit,
+                cubePositions[i] * m_voxelSize / 2 + mid,
+                cubePositions[i].normalized() * 1 / 4 +
+                    cubeNormals[i].normalized() * 3 / 4,
+                color);
   }
 
   for (int i = 0; i < 6; i++) {
     if (!neighbors[i]) {
       for (int j = 0; j < 6; j++) {
-        indices.push_back(sz + cubeIndices[i * 6 + j][0]);
+        arrayAppend(indexData, sz + cubeIndices[i * 6 + j]);
       }
     }
   }
 }
 
-void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
-                                          std::vector<Mn::Vector3>& normals,
-                                          std::vector<Mn::Color3>& colors,
-                                          std::vector<Mn::UnsignedInt>& indices,
-                                          const Mn::Vector3i& local_coords,
-                                          const Mn::Vector3& vec) {
-  Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(1, 3, 1.0f);
+void VoxelGrid::addVectorToMeshPrimitives(
+    Cr::Containers::Array<VoxelVertex>& vertexData,
+    Cr::Containers::Array<Mn::UnsignedInt>& indexData,
+    const Mn::Vector3i& local_coords,
+    const Mn::Vector3& vec) {
+  Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(1, 4, 1.0f);
 
-  // add cube to mesh
   // midpoint of a voxel
   Mn::Vector3 mid = getGlobalCoords(local_coords);
-
-  unsigned int sz = positions.size();
-  const auto&& conePositions = coneData.positions3DAsArray();
-  const auto&& coneNormals = coneData.normalsAsArray();
-  const auto&& coneIndices = coneData.indices();
-
+  // add cone to mesh (tip of arrow)
+  unsigned int sz = vertexData.size();
+  Corrade::Containers::StridedArrayView1D<const Magnum::Vector3> conePositions =
+      coneData.attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Position);
+  Corrade::Containers::StridedArrayView1D<const Magnum::Vector3> coneNormals =
+      coneData.attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Normal);
+  Cr::Containers::ArrayView<const Mn::UnsignedInt> coneIndices =
+      coneData.indices<Mn::UnsignedInt>();
   // Get rotation quaternion
-  Mn::Rad angle{static_cast<float>(
-      acos(Mn::Math::dot(vec.normalized(), Mn::Vector3(0, 1, 0))))};
+  Mn::Rad angle = Mn::Math::angle(vec, Mn::Vector3(0, 1, 0));
+
+  // Cross product
   Mn::Vector3 crossProduct = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
   Mn::Quaternion vecRotation{Mn::Math::IdentityInit};
 
@@ -207,75 +208,80 @@ void VoxelGrid::addVectorToMeshPrimitives(std::vector<Mn::Vector3>& positions,
     crossProduct = Mn::Vector3(0, 1, 0);
   }
   vecRotation = vecRotation.rotation(-angle, crossProduct.normalized());
-  for (const auto& ind : conePositions) {
-    positions.push_back(
-        vecRotation.transformVector(ind * Mn::Vector3(0.02, 0.04, 0.02) +
-                                    Mn::Vector3(0, 0.025, 0)) +
-        mid);
-    colors.push_back(Mn::Color3(0, .3, 1));
+  for (std::size_t i = 0; i != coneData.vertexCount(); ++i) {
+    arrayAppend(vertexData, Cr::Containers::InPlaceInit,
+                vecRotation.transformVector(conePositions[i] *
+                                                Mn::Vector3(0.02, 0.035, 0.02) +
+                                            Mn::Vector3(0, 0.025, 0)) +
+                    mid,
+                coneNormals[i], Mn::Color3{0.4f, 0.8f, 1.0f});
   }
 
-  for (const auto& norm : coneNormals) {
-    normals.push_back(norm);
+  for (const Mn::UnsignedInt index : coneIndices) {
+    arrayAppend(indexData, sz + index);
   }
-
-  for (const auto&& index : coneIndices) {
-    indices.push_back(sz + index[0]);
-  }
-
-  // render cylinder
+  // render cylinder (arrow stem)
   Mn::Trade::MeshData cylinderData = Mn::Primitives::cylinderSolid(1, 3, 1.0f);
 
-  // add cube to mesh
-  // midpoint of a voxel
+  sz = vertexData.size();
+  Corrade::Containers::StridedArrayView1D<const Magnum::Vector3>
+      cylinderPositions = cylinderData.attribute<Mn::Vector3>(
+          Mn::Trade::MeshAttribute::Position);
+  Corrade::Containers::StridedArrayView1D<const Magnum::Vector3>
+      cylinderNormals =
+          cylinderData.attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Normal);
+  Cr::Containers::ArrayView<const Mn::UnsignedInt> cylinderIndices =
+      cylinderData.indices<Mn::UnsignedInt>();
 
-  sz = positions.size();
-  const auto&& cylinderPositions = cylinderData.positions3DAsArray();
-  const auto&& cylinderNormals = cylinderData.normalsAsArray();
-  const auto&& cylinderIndices = cylinderData.indices();
-
-  for (const auto& ind : cylinderPositions) {
-    positions.push_back(
-        vecRotation.transformVector(ind * Mn::Vector3(0.01, 0.03, 0.01) -
-                                    Mn::Vector3(0, 0.025, 0)) +
-        mid);
-    colors.push_back(Mn::Color3(0, .3, 1));
+  for (std::size_t i = 0; i != cylinderData.vertexCount(); ++i) {
+    arrayAppend(vertexData, Cr::Containers::InPlaceInit,
+                vecRotation.transformVector(
+                    cylinderPositions[i] * Mn::Vector3(0.007, 0.025, 0.007) -
+                    Mn::Vector3(0, 0.025, 0)) +
+                    mid,
+                cylinderNormals[i], Mn::Color3{0.3f, 0.7f, 0.9f});
   }
 
-  for (const auto& norm : cylinderNormals) {
-    Mn::Vector3 transformedNorm =
-        vecRotation.transformVector(norm * Mn::Vector3(0.01, 0.04, 0.01));
-    normals.push_back(transformedNorm);
-  }
-
-  for (const auto&& index : cylinderIndices) {
-    indices.push_back(sz + index[0]);
+  for (const Mn::UnsignedInt index : cylinderIndices) {
+    arrayAppend(indexData, sz + index);
   }
 }
 
-void VoxelGrid::generateMeshDataAndMeshGL(const std::string& gridName,
-                                          std::vector<Mn::UnsignedInt>& indices,
-                                          std::vector<Mn::Vector3>& positions,
-                                          std::vector<Mn::Vector3>& normals,
-                                          std::vector<Mn::Color3>& colors) {
-  // If the mesh already exists, replace it. Otherwise, create a new entry in
-  // the dict
-  Mn::Trade::MeshData positionMeshData{
+void VoxelGrid::generateMeshDataAndMeshGL(
+    const std::string& gridName,
+    Cr::Containers::Array<VoxelVertex>& vertexData,
+    Cr::Containers::Array<Mn::UnsignedInt>& indexData) {
+  // need to make the index/attribute views first, before calling std::move() on
+  // the data
+  Mn::Trade::MeshIndexData indices{indexData};
+  Mn::Trade::MeshAttributeData positions{
+      Mn::Trade::MeshAttribute::Position,
+      Cr::Containers::stridedArrayView(vertexData)
+          .slice(&VoxelVertex::position)};  // view on just the position member
+  Mn::Trade::MeshAttributeData colors{
+      Mn::Trade::MeshAttribute::Color,
+      Cr::Containers::stridedArrayView(vertexData)
+          .slice(&VoxelVertex::color)};  // view on just the color member
+  Mn::Trade::MeshAttributeData normals{
+      Mn::Trade::MeshAttribute::Normal,
+      Cr::Containers::stridedArrayView(vertexData)
+          .slice(&VoxelVertex::normal)};  // view on just the normal member
+
+  // now move the data into a MeshData, together with all metadata describing
+  // indices and attributes
+  Mn::Trade::MeshData data{
       Mn::MeshPrimitive::Triangles,
-      {},
+      // the cast takes an Array<UnsignedInt> and turns it into an Array<char>
+      // without having to copy everything again
+      Cr::Containers::arrayAllocatorCast<char>(std::move(indexData)),
       indices,
-      Mn::Trade::MeshIndexData{indices},
-      {},
-      positions,
-      {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
-                                    Cr::Containers::arrayView(positions)}}};
+      Cr::Containers::arrayAllocatorCast<char>(std::move(vertexData)),
+      {positions, colors, normals}};
+
+  // and save those, again move because the neither the Array nor MeshData are
+  // copyable
   meshDataDict_[gridName] =
-      std::make_shared<Mn::Trade::MeshData>(Mn::MeshTools::interleave(
-          positionMeshData,
-          {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color,
-                                        Cr::Containers::arrayView(colors)},
-           Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal,
-                                        Cr::Containers::arrayView(normals)}}));
+      std::make_shared<Mn::Trade::MeshData>(std::move(data));
 
   // If the mesh already exists, replace it. Otherwise, create a new entry in
   // the dict
@@ -289,10 +295,8 @@ void VoxelGrid::generateMeshDataAndMeshGL(const std::string& gridName,
 
 void VoxelGrid::generateMesh(const std::string& gridName) {
   assert(grids_.find(gridName) != grids_.end());
-  std::vector<Mn::UnsignedInt> indices;
-  std::vector<Mn::Vector3> positions;
-  std::vector<Mn::Vector3> normals;
-  std::vector<Mn::Color3> colors;
+  Cr::Containers::Array<VoxelVertex> vertices;
+  Cr::Containers::Array<Mn::UnsignedInt> indices;
   int num_filled = 0;
   VoxelGridType type = grids_[gridName].type;
   // iterate through each voxel grid cell
@@ -303,23 +307,22 @@ void VoxelGrid::generateMesh(const std::string& gridName) {
         if (type == VoxelGridType::Vector3) {
           Mn::Vector3 vec = getVoxel<Mn::Vector3>(local_coords, gridName);
           if (vec != Mn::Vector3(0, 0, 0))
-            addVectorToMeshPrimitives(positions, normals, colors, indices,
-                                      local_coords, vec);
+            addVectorToMeshPrimitives(vertices, indices, local_coords, vec);
         } else {
           bool val = getVoxel<bool>(local_coords, gridName);
           if (val) {
             num_filled++;
             std::vector<bool> neighbors{};
             fillBoolGridNeighborhood(neighbors, gridName, local_coords);
-            addVoxelToMeshPrimitives(positions, normals, colors, indices,
-                                     local_coords, neighbors);
+            addVoxelToMeshPrimitives(vertices, indices, local_coords,
+                                     neighbors);
           }
         }
       }
     }
   }
 
-  generateMeshDataAndMeshGL(gridName, indices, positions, normals, colors);
+  generateMeshDataAndMeshGL(gridName, vertices, indices);
 }
 
 }  // namespace geo
