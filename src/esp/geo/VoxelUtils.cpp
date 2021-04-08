@@ -339,7 +339,6 @@ void generateEuclideanDistanceSDF(
       }
     }
   }
-  !Mn::Debug();
 }
 
 void generateDistanceGradientField(
