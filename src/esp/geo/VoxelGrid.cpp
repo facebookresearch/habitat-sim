@@ -211,7 +211,7 @@ void VoxelGrid::addVectorToMeshPrimitives(
   for (std::size_t i = 0; i != coneData.vertexCount(); ++i) {
     arrayAppend(vertexData, Cr::Containers::InPlaceInit,
                 vecRotation.transformVector(conePositions[i] *
-                                                Mn::Vector3(0.02, 0.04, 0.02) +
+                                                Mn::Vector3(0.02, 0.035, 0.02) +
                                             Mn::Vector3(0, 0.025, 0)) +
                     mid,
                 coneNormals[i], Mn::Color3{0.4f, 0.8f, 1.0f});
