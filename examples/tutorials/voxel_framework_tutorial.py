@@ -87,8 +87,9 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
     if "collisions" in data:
         data["collisions"] += collisions
 
-
+# [/setup]
 if __name__ == "__main__":
+    # [initialize]
     cfg = make_configuration()
     with habitat_sim.Simulator(cfg) as sim:
         sim.initialize_agent(
@@ -99,8 +100,13 @@ if __name__ == "__main__":
             ),
         )
 
-        data = {"observations": []}
 
+        # Frames are stored in data["observations"] for use in video creation.
+        data = {"observations": []}
+        # [/initialize]
+
+
+        # [objectVoxelization]
         # First, we'll create a few objects and voxelize them to varying resolutions.
 
         # path to the asset
@@ -173,6 +179,10 @@ if __name__ == "__main__":
         remove_all_objects(sim)
         simulate(sim, dt=1, get_frames=True, data=data)
 
+        # [/objectVoxelization]
+
+        # [stageVoxelization]
+
         # Voxelize the stage, and set the stage voxelizaton to be drawn
         resolution = 2000000
         sim.voxelize_stage(resolution)
@@ -180,6 +190,9 @@ if __name__ == "__main__":
 
         # Show for 2 seconds
         simulate(sim, dt=2, get_frames=True, data=data)
+
+        # [/stageVoxelization]
+        # [voxelizationSDF]
 
         # get the stage's voxelization for direct grid access, manipulation, and for using voxel utility functions
         voxelization = sim.get_stage_voxelization()
@@ -201,6 +214,9 @@ if __name__ == "__main__":
             sim.set_stage_voxelization_draw(True, "ESDF")
             simulate(sim, dt=4.0 / dimensions[0], get_frames=True, data=data)
 
+        # [/voxelizationSDF]
+        # [voxelizationDistanceGradient]
+
         # Now let's visualize the distance gradient vector field.
 
         # generate a distance flow field and register the result under 'GradientField'
@@ -212,6 +228,9 @@ if __name__ == "__main__":
         # visualize the vector field for 3 seconds
         sim.set_stage_voxelization_draw(True, "GradientField")
         simulate(sim, dt=3, get_frames=True, data=data)
+
+        # [/voxelizationDistanceGradient]
+        # [voxelizationCustomGrid]
 
         # Now, we'll illustrate the use of creating a custom grid and visualizing it.
         # create a new, empty bool grid
@@ -239,6 +258,7 @@ if __name__ == "__main__":
 
         simulate(sim, dt=1, get_frames=True, data=data)
 
+        # [/voxelizationCustomGrid]
 
         if not os.path.exists(output_path):
             os.mkdir(output_path)

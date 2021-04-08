@@ -19,110 +19,65 @@ The example code below is  runnable via:
 
     $ python path/to/habitat-sim/examples/tutorials/voxel_framework_tutorial.py
 
-First, download the `example objects`_ and extract them into path/to/habitat-sim/data/objects/.
-
-.. _example objects: http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip
 
 Import necessary modules, define some convenience functions, and initialize the :ref:`Simulator` and :ref:`Agent`.
 
-.. include:: ../../examples/tutorials/nb_python/rigid_object_tutorial.py
+.. include:: ../../examples/tutorials/voxel_framework_tutorial.py
     :code: py
     :start-after: # [setup]
     :end-before: # [/setup]
 
-.. include:: ../../examples/tutorials/nb_python/rigid_object_tutorial.py
+.. include:: ../../examples/tutorials/voxel_framework_tutorial.py
     :code: py
     :start-after: # [initialize]
     :end-before: # [/initialize]
 
-`Simulation Quickstart`_
+`Object Voxelization`_
 ========================
 
-Basic rigid body simulation can be achieved by simply loading a template, instancing an object, and stepping the physical world.
-In this example, a sphere object template is loaded and the object is instanced in the scene above the table.
-When the simulation is stepped, it falls under the force of gravity and reacts to collisions with the scene.
+Objects can easily be voxelized to a specified resolution, where resolution represents the approximate number of voxels for that object's voxel grid.
+Here, we'll spawn in three donuts and voxelize them with resolutions of 100000, 1000, and 100.
 
-.. include:: ../../examples/tutorials/nb_python/rigid_object_tutorial.py
+.. include:: ../../examples/tutorials/voxel_framework_tutorial.py
     :code: py
-    :start-after: # [basics]
-    :end-before: # [/basics]
+    :start-after: # [objectVoxelization]
+    :end-before: # [/objectVoxelization]
 
 .. image:: images/rigid-object-tutorial-images/sim_basics.gif
     :width: 20em
 
-Forces and torques can be applied to the object with :ref:`Simulator.apply_force` and :ref:`Simulator.apply_torque`.
-Instantanious initial velocities can also be set with :ref:`Simulator.set_linear_velocity` and :ref:`Simulator.set_angular_velocity`.
+`Stage Voxelization`_
+========================
 
-In the example below, a constant anti-gravity force is applied to the boxes' centers of mass (COM) causing them to float in the air.
-A constant torque is also applied which gradually increases the angular velocity of the boxes.
-A sphere is then thrown at the boxes by applying an initial velocity.
+In addition to individual objects, the stage can be voxelized to a certain resolution.
+Here, we'll voxelize the stage with a resolution of 2,000,000 and display the resulting boundary voxelization.
 
-Note that forces and torques are treated as constant within each call to :ref:`Simulator.step_physics` and are cleared afterward.
-
-.. include:: ../../examples/tutorials/nb_python/rigid_object_tutorial.py
+.. include:: ../../examples/tutorials/voxel_framework_tutorial.py
     :code: py
-    :start-after: # [dynamic_control]
-    :end-before: # [/dynamic_control]
+    :start-after: # [stageVoxelization]
+    :end-before: # [/stageVoxelization]
 
 .. image:: images/rigid-object-tutorial-images/dynamic_control.gif
     :width: 20em
 
 
-`Kinematic Object Placement`_
-=============================
+`Voxelization Signed Distance Field`_
+======================================
 
-Often it is enough to set the desired state of an object directly.
-In these cases the computational overhead of running full dynamic simulation may not be necessary to achieve a desired result.
-Setting the object to :ref:`habitat_sim.physics.MotionType.KINEMATIC` with :ref:`Simulator.set_object_motion_type` specifies that the object's state will be directly controlled.
+In some cases, it can be helpful to get an idea of which parts of the room are considered 'free space', meaning they are inside a room and are far from obstacles.
+We can accomplish this by generating a signed distance field of the voxelization we just created. This voxelization framework also allows for the visualization of individual slices of this voxelization along the x-axis.
+The voxelization framework is capable of creating boolean, integer, floating point, and Magnum Vector3 grids.
+There are built-in utility functions for creating these grids, including generate_euclidean_distance_sdf which creates a Vector3 grid called "ClosestBoundaryCell"
 
-In the example below, a kinematic can is placed in the scene which will not react to physical events such as collision with dynamically simulated objects.
-However, it will still act as a collision object for other scene objects as in the following example.
-
-.. include:: ../../examples/tutorials/nb_python/rigid_object_tutorial.py
+.. include:: ../../examples/tutorials/voxel_framework_tutorial.py
     :code: py
-    :start-after: # [kinematic_interactions]
-    :end-before: # [/kinematic_interactions]
+    :start-after: # [voxelizationSDF]
+    :end-before: # [/voxelizationSDF]
 
 .. image:: images/rigid-object-tutorial-images/kinematic_interactions.gif
     :width: 20em
 
 
-`Kinematic Velocity Control`_
-=============================
-
-
-To move a kinematic object, the state can be set directly before each simulation step.
-This is useful for synchronizing the simulation state of objects to a known state such as a dataset trajectory, input device, or motion capture.
-
-.. include:: ../../examples/tutorials/nb_python/rigid_object_tutorial.py
-    :code: py
-    :start-after: # [kinematic_update]
-    :end-before: # [/kinematic_update]
-
-.. image:: images/rigid-object-tutorial-images/kinematic_update.gif
-    :width: 20em
-
-However, when applying model or algorithmic control it is more convenient to specify a constant linear and angular velocity for the object which will be simulated without manual integration.
-The object's :ref:`habitat_sim.physics.VelocityControl` structure provides this functionality and can be acquired via :ref:`Simulator.get_object_velocity_control`.
-Once paramters are set, control takes affect immediately on the next simulation step as shown in the following example.
-
-.. include:: ../../examples/tutorials/nb_python/rigid_object_tutorial.py
-    :code: py
-    :start-after: # [velocity_control]
-    :end-before: # [/velocity_control]
-
-.. image:: images/rigid-object-tutorial-images/velocity_control.gif
-    :width: 20em
-
-Velocities can also be specified in the local space of the object to easily apply velocity control for continuous agent actions.
-
-.. include:: ../../examples/tutorials/nb_python/rigid_object_tutorial.py
-    :code: py
-    :start-after: # [local_velocity_control]
-    :end-before: # [/local_velocity_control]
-
-.. image:: images/rigid-object-tutorial-images/local_velocity_control.gif
-    :width: 20em
 
 `Embodied Agents`_
 ==================
