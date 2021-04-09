@@ -8,6 +8,7 @@ import itertools
 import json
 from os import path as osp
 
+import magnum as mn
 import numpy as np
 import pytest
 import quaternion  # noqa: F401
@@ -36,6 +37,15 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
     obs = sim.step("move_forward")
 
     assert sensor_type in obs, f"{sensor_type} not in obs"
+
+    # now that sensors are constructed, test some getter/setters
+    sim.get_agent(0)._sensors[sensor_type].fov = mn.Deg(80)
+    assert sim.get_agent(0)._sensors[sensor_type].fov == mn.Deg(
+        80
+    ), "fov not set correctly"
+    assert sim.get_agent(0)._sensors[sensor_type].hfov == mn.Deg(
+        80
+    ), "hfov not set correctly"
 
     gt_obs_file = osp.abspath(
         osp.join(
