@@ -198,14 +198,15 @@ void VoxelGrid::addVectorToMeshPrimitives(
   Cr::Containers::ArrayView<const Mn::UnsignedInt> coneIndices =
       coneData.indices<Mn::UnsignedInt>();
   // Get rotation quaternion
-  Mn::Rad angle = Mn::Math::angle(vec, Mn::Vector3(0, 1, 0));
+  Mn::Rad angle = Mn::Math::angle(vec.normalized(), Mn::Vector3(0, 1, 0));
 
   // Cross product
-  Mn::Vector3 crossProduct = Mn::Math::cross(vec, Mn::Vector3(0, 1, 0));
+  Mn::Vector3 crossProduct =
+      Mn::Math::cross(vec.normalized(), Mn::Vector3(0, 1, 0));
   Mn::Quaternion vecRotation{Mn::Math::IdentityInit};
 
   if (vec[0] == 0 && vec[2] == 0) {
-    crossProduct = Mn::Vector3(0, 1, 0);
+    crossProduct = Mn::Vector3(1, 0, 0);
   }
   vecRotation = vecRotation.rotation(-angle, crossProduct.normalized());
   for (std::size_t i = 0; i != coneData.vertexCount(); ++i) {

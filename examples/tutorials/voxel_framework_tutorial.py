@@ -219,14 +219,14 @@ if __name__ == "__main__":
 
         # Now let's visualize the distance gradient vector field.
 
-        # generate a distance flow field and register the result under 'GradientField'
-        geo.generate_distance_gradient_field(voxelization, "GradientField")
+        # generate a gradient of the euclidean signed distance field grid and register the result under 'GradientField'
+        geo.generate_scalar_gradient_field(voxelization, "ESDF", "DistanceGradientField")
 
         # generate the mesh for the gradient field
-        voxelization.generate_mesh("GradientField")
+        voxelization.generate_mesh("DistanceGradientField")
 
         # visualize the vector field for 3 seconds
-        sim.set_stage_voxelization_draw(True, "GradientField")
+        sim.set_stage_voxelization_draw(True, "DistanceGradientField")
         simulate(sim, dt=3, get_frames=True, data=data)
 
         # [/voxelizationDistanceGradient]
