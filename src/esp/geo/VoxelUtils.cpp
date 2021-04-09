@@ -24,75 +24,37 @@ void generateInteriorExteriorVoxelGrid(
       Cr::Containers::StridedArrayView<3, Mn::Math::BoolVector<6>>{
           Cr::Containers::arrayCast<Mn::Math::BoolVector<6>>(cr_grid), dims};
 
-  // fill each grids with ray cast
+  // fill each grid with ray cast
   bool hit = false;
   int ind = 0;
-  std::string gridName = "InteriorExterior";
-  // X axis ray casts
-  for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-    for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-      // fill negX
-      hit = false;
-      ind = m_voxelGridDimensions[0] - 1;
-      while (ind--) {
-        hit = (hit || boundaryGrid[ind][j][k]);
-        if (hit)
-          shadowGrid_[ind][j][k].set(0, true);
-      }
-      // fill posX
-      hit = false;
-      ind = -1;
-      while (++ind < m_voxelGridDimensions[0]) {
-        hit = (hit || boundaryGrid[ind][j][k]);
-        if (hit)
-          shadowGrid_[ind][j][k].set(1, true);
-      }
-    }
-  }
-  // Y axis ray casts
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-      // fill negX
-      hit = false;
-      ind = m_voxelGridDimensions[1] - 1;
-      while (ind--) {
-        hit = (hit || boundaryGrid[i][ind][k]);
-        if (hit)
-          shadowGrid_[i][ind][k].set(2, true);
-      }
-      // fill posX
-      hit = false;
-      ind = -1;
-      while (++ind < m_voxelGridDimensions[1]) {
-        hit = (hit || boundaryGrid[i][ind][k]);
-        if (hit)
-          shadowGrid_[i][ind][k].set(3, true);
-      }
-    }
-  }
-  // Z axis ray casts
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      // fill negX
-      hit = false;
-      ind = m_voxelGridDimensions[2] - 1;
-      while (ind--) {
-        hit = (hit || boundaryGrid[i][j][ind]);
-        if (hit)
-          shadowGrid_[i][j][ind].set(4, true);
-      }
-      // fill posX
-      hit = false;
-      ind = -1;
-      while (++ind < m_voxelGridDimensions[2]) {
-        hit = (hit || boundaryGrid[i][j][ind]);
-        if (hit)
-          shadowGrid_[i][j][ind].set(5, true);
+  int increment = 0;
+  Mn::Vector3i indices;
+  for (int castAxis = 0; castAxis < 3; ++castAxis) {
+    int a1 = castAxis ? 0 : 1;
+    int a2 = castAxis == 2 ? 1 : 2;
+    for (int j = 0; j < m_voxelGridDimensions[a1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[a2]; k++) {
+        indices[a1] = j;
+        indices[a2] = k;
+        // fill from front and back of each 1D slice
+        for (int direction = -1; direction < 2; direction += 2) {  //-1 and 1
+          hit = false;
+          ind = (direction > 0 ? 0 : m_voxelGridDimensions[castAxis] - 1);
+          while (ind >= 0 && ind < m_voxelGridDimensions[castAxis]) {
+            indices[castAxis] = ind;
+            hit = (hit || boundaryGrid[indices[0]][indices[1]][indices[2]]);
+            if (hit)
+              shadowGrid_[indices[0]][indices[1]][indices[2]].set(
+                  castAxis * 2 + (direction < 0 ? 0 : 1), true);
+            ind += direction;
+          }
+        }
       }
     }
   }
 
   // create int grid
+  std::string gridName = "InteriorExterior";
   v_grid->addGrid<int>(gridName);
   auto intExtGrid = v_grid->getGrid<int>(gridName);
   bool nX = false, pX = false, nY = false, pY = false, nZ = false, pZ = false;
@@ -233,113 +195,68 @@ void generateEuclideanDistanceSDF(
     generateInteriorExteriorVoxelGrid(voxelWrapper);
   }
 
-  // create new vector3Grid and fill data from interior/exterior grid
-  v_grid->addGrid<Mn::Vector3>("ClosestBoundaryCell");
-  auto intExtGrid = v_grid->getGrid<int>("InteriorExterior");
-  auto closestCellGrid = v_grid->getGrid<Mn::Vector3>("ClosestBoundaryCell");
-
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        Mn::Vector3i index = Mn::Vector3i(i, j, k);
-        int label = intExtGrid[i][j][k];
-        if (label == 0) {
-          closestCellGrid[i][j][k] = Mn::Vector3(i, j, k);
-        } else {
-          // intializing the closest boundary cell to be very far / invalid, so
-          // it is ensured to be overwritten in the SDF calculation sweeps.
-          closestCellGrid[i][j][k] = Mn::Vector3(m_voxelGridDimensions) * 2;
-        }
-      }
-    }
-  }
-  // 1st sweep
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        Mn::Vector3 i_behind = Mn::Vector3(m_voxelGridDimensions) * 2,
-                    j_behind = Mn::Vector3(m_voxelGridDimensions) * 2,
-                    k_behind = Mn::Vector3(m_voxelGridDimensions) * 2;
-        if (v_grid->isValidIndex(Mn::Vector3i(i - 1, j, k))) {
-          i_behind = closestCellGrid[i - 1][j][k];
-        }
-        if (v_grid->isValidIndex(Mn::Vector3i(i, j - 1, k))) {
-          j_behind = closestCellGrid[i][j - 1][k];
-        }
-        if (v_grid->isValidIndex(Mn::Vector3i(i, j, k - 1))) {
-          k_behind = closestCellGrid[i][j][k - 1];
-        }
-        Mn::Vector3 coords(i, j, k);
-
-        // get the currently recorded closest boundary distance
-        float cur_dist = (closestCellGrid[i][j][k] - coords).length();
-
-        // get the current distances from each point's closest boundary and
-        // the current coordinates.
-        float i_dist = NAN, j_dist = NAN, k_dist = NAN;
-        i_dist = (i_behind - coords).length();
-        j_dist = (j_behind - coords).length();
-        k_dist = (k_behind - coords).length();
-
-        if (i_dist <= j_dist && i_dist <= k_dist && i_dist <= cur_dist) {
-          closestCellGrid[i][j][k] = i_behind;
-        } else if (j_dist <= i_dist && j_dist <= k_dist && j_dist <= cur_dist) {
-          closestCellGrid[i][j][k] = j_behind;
-        } else if (k_dist <= i_dist && k_dist <= j_dist && k_dist <= cur_dist) {
-          closestCellGrid[i][j][k] = k_behind;
-        }
-      }
-    }
-  }
-  // create float grid for distances, will be filled in this sweep.
+  // create float grid for distances, will be filled in the sweep.
   v_grid->addGrid<float>(gridName);
   auto sdfGrid = v_grid->getGrid<float>(gridName);
-  // second sweep
-  for (int i = m_voxelGridDimensions[0] - 1; i >= 0; i--) {
-    for (int j = m_voxelGridDimensions[1] - 1; j >= 0; j--) {
-      for (int k = m_voxelGridDimensions[2] - 1; k >= 0; k--) {
-        Mn::Vector3 i_ahead = Mn::Vector3(m_voxelGridDimensions) * 2,
-                    j_ahead = Mn::Vector3(m_voxelGridDimensions) * 2,
-                    k_ahead = Mn::Vector3(m_voxelGridDimensions) * 2;
-        if (v_grid->isValidIndex(Mn::Vector3i(i + 1, j, k))) {
-          i_ahead = closestCellGrid[i + 1][j][k];
-        }
-        if (v_grid->isValidIndex(Mn::Vector3i(i, j + 1, k))) {
-          j_ahead = closestCellGrid[i][j + 1][k];
-        }
-        if (v_grid->isValidIndex(Mn::Vector3i(i, j, k + 1))) {
-          k_ahead = closestCellGrid[i][j][k + 1];
-        }
-        Mn::Vector3 coords(i, j, k);
 
-        // get the currently recorded closest boundary distance
-        float cur_dist = (closestCellGrid[i][j][k] - coords).length();
-        // get whether the coord is considered interior or exterior
-        int intOrExtVal = intExtGrid[i][j][k];
-        int intOrExtSign = (intOrExtVal > 0) - (intOrExtVal < 0);
+  auto intExtGrid = v_grid->getGrid<int>("InteriorExterior");
 
-        // get the current distances from each point's closest boundary and
-        // the current coordinates.
-        float i_dist = NAN, j_dist = NAN, k_dist = NAN;
-        i_dist = (i_ahead - coords).length();
-        j_dist = (j_ahead - coords).length();
-        k_dist = (k_ahead - coords).length();
-        if (i_dist <= j_dist && i_dist <= k_dist && i_dist <= cur_dist) {
-          closestCellGrid[i][j][k] = i_ahead;
-          sdfGrid[i][j][k] = intOrExtSign * i_dist;
-        } else if (j_dist <= i_dist && j_dist <= k_dist && j_dist <= cur_dist) {
-          closestCellGrid[i][j][k] = j_ahead;
-          sdfGrid[i][j][k] = intOrExtSign * j_dist;
-        } else if (k_dist <= i_dist && k_dist <= j_dist && k_dist <= cur_dist) {
-          closestCellGrid[i][j][k] = k_ahead;
-          sdfGrid[i][j][k] = intOrExtSign * k_dist;
-        } else {
-          sdfGrid[i][j][k] = intOrExtSign * cur_dist;
+  // create new vector3Grid to track closest boundaries
+  v_grid->addGrid<Mn::Vector3>("ClosestBoundaryCell");
+  auto closestCellGrid = v_grid->getGrid<Mn::Vector3>("ClosestBoundaryCell");
+
+  // initialize non-boundaries with some far away point which will be overriden
+  // by any valid boundary cell
+  Mn::Vector3 farAway = Mn::Vector3(m_voxelGridDimensions) * 3;
+  Mn::Vector3i bestNeighbor;
+  Mn::Vector3i behind;
+  Mn::Vector3i curIndex;
+  float bestDistance = MAXFLOAT;
+  float neighborDistance = MAXFLOAT;
+  for (int sweep = 1; sweep > -2; sweep -= 2) {  // 1, -1
+    Mn::Vector3i start =
+        sweep > 0 ? Mn::Vector3i(0) : m_voxelGridDimensions - Mn::Vector3i(1);
+    Mn::Vector3i end = sweep < 0 ? Mn::Vector3i(-1) : m_voxelGridDimensions;
+    for (int i = start[0]; i != end[0]; i += sweep) {
+      for (int j = start[1]; j != end[1]; j += sweep) {
+        for (int k = start[2]; k != end[2]; k += sweep) {
+          curIndex = {i, j, k};
+          if (sweep == 1) {
+            // initialize the SDF
+            closestCellGrid[i][j][k] =
+                intExtGrid[i][j][k] == 0 ? Mn::Vector3(i, j, k) : farAway;
+            sdfGrid[i][j][k] =
+                (closestCellGrid[i][j][k] - Mn::Vector3(curIndex)).length();
+          }
+          // find the best neighbor "behind" the current voxel
+          bestDistance = MAXFLOAT;
+          for (int bAxis = 0; bAxis < 3; bAxis++) {
+            behind = curIndex;
+            behind[bAxis] -= sweep;  // check
+            if (v_grid->isValidIndex(behind)) {
+              // distance check
+              neighborDistance =
+                  (closestCellGrid[behind[0]][behind[1]][behind[2]] -
+                   Mn::Vector3(curIndex))
+                      .length();
+              if (neighborDistance < bestDistance) {
+                bestDistance = neighborDistance;
+                bestNeighbor = behind;
+              }
+            }
+          }
+          // set best values
+          if (bestDistance < abs(sdfGrid[i][j][k])) {
+            sdfGrid[i][j][k] =
+                intExtGrid[i][j][k] < 0 ? -bestDistance : bestDistance;
+            closestCellGrid[i][j][k] =
+                closestCellGrid[bestNeighbor[0]][bestNeighbor[1]]
+                               [bestNeighbor[2]];
+          }
         }
       }
     }
   }
-  !Mn::Debug();
 }
 
 void generateDistanceGradientField(
