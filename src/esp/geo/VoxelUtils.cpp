@@ -259,41 +259,18 @@ void generateEuclideanDistanceSDF(
   }
 }
 
-void generateDistanceGradientField(
+void generateScalarGradientField(
     std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
-    const std::string& gridName) {
+    const std::string& scalarGridName,
+    const std::string& gradientGridName) {
   auto v_grid = voxelWrapper->getVoxelGrid();
-  auto m_voxelGridDimensions = v_grid->getVoxelGridDimensions();
-
-  // generate the ESDF if not already created
-  if (!v_grid->gridExists("ClosestBoundaryCell")) {
-    generateEuclideanDistanceSDF(voxelWrapper, "EuclideanSDF");
-  }
-
-  v_grid->addGrid<Mn::Vector3>(gridName);
-  auto gradientGrid = v_grid->getGrid<Mn::Vector3>(gridName);
-  auto closestBoundaryCell =
-      v_grid->getGrid<Mn::Vector3>("ClosestBoundaryCell");
-  std::vector<Mn::Vector3i> neighbors{
-      Mn::Vector3i(1, 0, 0),  Mn::Vector3i(-1, 0, 0), Mn::Vector3i(0, 1, 0),
-      Mn::Vector3i(0, -1, 0), Mn::Vector3i(0, 1, 0),  Mn::Vector3i(0, -1, 0)};
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-        Mn::Vector3i index = Mn::Vector3i(i, j, k);
-        Mn::Vector3 result(0, 0, 0);
-        for (auto neighbor : neighbors) {
-          if (v_grid->isValidIndex(neighbor + index)) {
-            result += (Mn::Vector3(index + neighbor) -
-                       closestBoundaryCell[i + neighbor[0]][j + neighbor[1]]
-                                          [k + neighbor[2]]);
-          }
-        }
-
-        gradientGrid[i][j][k] =
-            result == Mn::Vector3() ? Mn::Vector3() : result.normalized();
-      }
-    }
+  VoxelGridType type = v_grid->getGridType(scalarGridName);
+  if (type == VoxelGridType::Int) {
+    generateScalarGradientField<int>(voxelWrapper, scalarGridName,
+                                     gradientGridName);
+  } else if (type == VoxelGridType::Float) {
+    generateScalarGradientField<float>(voxelWrapper, scalarGridName,
+                                       gradientGridName);
   }
 }
 

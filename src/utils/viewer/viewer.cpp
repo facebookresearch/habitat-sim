@@ -898,7 +898,8 @@ void Viewer::displayStageDistanceGradientField() {
   !Mn::Debug();
 
   // generate a vector field for the SDF gradient
-  esp::geo::generateDistanceGradientField(stageVoxelization, "GradientField");
+  esp::geo::generateScalarGradientField(
+      stageVoxelization, "ESignedDistanceField", "GradientField");
   // generate a mesh of the vector field with boolean isVectorField set to
   // true
   !Mn::Debug();

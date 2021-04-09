@@ -75,7 +75,18 @@ class VoxelGrid {
    * @return The enumerated type.
    */
   template <typename T>
-  VoxelGridType voxelGridTypeFor();  // no definition here
+  VoxelGridType voxelGridTypeFor();
+
+  /**
+   * @brief Returns the type of the specified voxel grid.
+   * @param gridName The name of the grid.
+   * @return The enumerated type.
+   *
+   */
+  VoxelGridType getGridType(const std::string& gridName) {
+    assert(grids_.find(gridName) != grids_.end());
+    return grids_[gridName].type;
+  }
 
   /**
    * @brief Generates a new empty voxel grid of a specified type.
