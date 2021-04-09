@@ -220,7 +220,9 @@ if __name__ == "__main__":
         # Now let's visualize the distance gradient vector field.
 
         # generate a gradient of the euclidean signed distance field grid and register the result under 'GradientField'
-        geo.generate_scalar_gradient_field(voxelization, "ESDF", "DistanceGradientField")
+        geo.generate_scalar_gradient_field(
+            voxelization, "ESDF", "DistanceGradientField"
+        )
 
         # generate the mesh for the gradient field
         voxelization.generate_mesh("DistanceGradientField")
