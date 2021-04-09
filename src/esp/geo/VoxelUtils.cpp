@@ -39,7 +39,6 @@ void generateInteriorExteriorVoxelGrid(
         indices[a2] = k;
         // fill from front and back of each 1D slice
         for (int direction = -1; direction < 2; direction += 2) {  //-1 and 1
-          shadowGridIndex = castAxis * 2 + (direction < 0 ? 0 : 1);
           hit = false;
           ind = (direction > 0 ? 0 : m_voxelGridDimensions[castAxis] - 1);
           while (ind >= 0 && ind < m_voxelGridDimensions[castAxis]) {
