@@ -1,6 +1,7 @@
 
 #include "VoxelUtils.h"
 #include <Corrade/Utility/Algorithms.h>
+#include <limits>
 
 namespace esp {
 namespace geo {
@@ -211,8 +212,8 @@ void generateEuclideanDistanceSDF(
   Mn::Vector3i bestNeighbor;
   Mn::Vector3i behind;
   Mn::Vector3i curIndex;
-  float bestDistance = MAXFLOAT;
-  float neighborDistance = MAXFLOAT;
+  float bestDistance = std::numeric_limits<float>::max();
+  float neighborDistance = std::numeric_limits<float>::max();
   for (int sweep = 1; sweep > -2; sweep -= 2) {  // 1, -1
     Mn::Vector3i start =
         sweep > 0 ? Mn::Vector3i(0) : m_voxelGridDimensions - Mn::Vector3i(1);
@@ -229,7 +230,7 @@ void generateEuclideanDistanceSDF(
                 (closestCellGrid[i][j][k] - Mn::Vector3(curIndex)).length();
           }
           // find the best neighbor "behind" the current voxel
-          bestDistance = MAXFLOAT;
+          bestDistance = std::numeric_limits<float>::max();
           for (int bAxis = 0; bAxis < 3; bAxis++) {
             behind = curIndex;
             behind[bAxis] -= sweep;  // check
