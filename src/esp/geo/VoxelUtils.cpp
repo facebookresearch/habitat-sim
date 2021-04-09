@@ -24,75 +24,39 @@ void generateInteriorExteriorVoxelGrid(
       Cr::Containers::StridedArrayView<3, Mn::Math::BoolVector<6>>{
           Cr::Containers::arrayCast<Mn::Math::BoolVector<6>>(cr_grid), dims};
 
-  // fill each grids with ray cast
+  // fill each grid with ray cast
   bool hit = false;
   int ind = 0;
-  std::string gridName = "InteriorExterior";
-  // X axis ray casts
-  for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-    for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-      // fill negX
-      hit = false;
-      ind = m_voxelGridDimensions[0] - 1;
-      while (ind--) {
-        hit = (hit || boundaryGrid[ind][j][k]);
-        if (hit)
-          shadowGrid_[ind][j][k].set(0, true);
-      }
-      // fill posX
-      hit = false;
-      ind = -1;
-      while (++ind < m_voxelGridDimensions[0]) {
-        hit = (hit || boundaryGrid[ind][j][k]);
-        if (hit)
-          shadowGrid_[ind][j][k].set(1, true);
-      }
-    }
-  }
-  // Y axis ray casts
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
-      // fill negX
-      hit = false;
-      ind = m_voxelGridDimensions[1] - 1;
-      while (ind--) {
-        hit = (hit || boundaryGrid[i][ind][k]);
-        if (hit)
-          shadowGrid_[i][ind][k].set(2, true);
-      }
-      // fill posX
-      hit = false;
-      ind = -1;
-      while (++ind < m_voxelGridDimensions[1]) {
-        hit = (hit || boundaryGrid[i][ind][k]);
-        if (hit)
-          shadowGrid_[i][ind][k].set(3, true);
-      }
-    }
-  }
-  // Z axis ray casts
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      // fill negX
-      hit = false;
-      ind = m_voxelGridDimensions[2] - 1;
-      while (ind--) {
-        hit = (hit || boundaryGrid[i][j][ind]);
-        if (hit)
-          shadowGrid_[i][j][ind].set(4, true);
-      }
-      // fill posX
-      hit = false;
-      ind = -1;
-      while (++ind < m_voxelGridDimensions[2]) {
-        hit = (hit || boundaryGrid[i][j][ind]);
-        if (hit)
-          shadowGrid_[i][j][ind].set(5, true);
+  int increment = 0;
+  Mn::Vector3i indices;
+  int shadowGridIndex = 0;
+  for (int castAxis = 0; castAxis < 3; ++castAxis) {
+    int a1 = castAxis ? 0 : 1;
+    int a2 = castAxis == 2 ? 1 : 2;
+    for (int j = 0; j < m_voxelGridDimensions[a1]; j++) {
+      for (int k = 0; k < m_voxelGridDimensions[a2]; k++) {
+        indices[a1] = j;
+        indices[a2] = k;
+        // fill from front and back of each 1D slice
+        for (int direction = -1; direction < 2; direction += 2) {  //-1 and 1
+          shadowGridIndex = castAxis * 2 + (direction < 0 ? 0 : 1);
+          hit = false;
+          ind = (direction > 0 ? 0 : m_voxelGridDimensions[castAxis] - 1);
+          while (ind >= 0 && ind < m_voxelGridDimensions[castAxis]) {
+            indices[castAxis] = ind;
+            hit = (hit || boundaryGrid[indices[0]][indices[1]][indices[2]]);
+            if (hit)
+              shadowGrid_[indices[0]][indices[1]][indices[2]].set(
+                  castAxis * 2 + (direction < 0 ? 0 : 1), true);
+            ind += direction;
+          }
+        }
       }
     }
   }
 
   // create int grid
+  std::string gridName = "InteriorExterior";
   v_grid->addGrid<int>(gridName);
   auto intExtGrid = v_grid->getGrid<int>(gridName);
   bool nX = false, pX = false, nY = false, pY = false, nZ = false, pZ = false;
