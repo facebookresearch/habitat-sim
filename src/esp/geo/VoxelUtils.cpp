@@ -247,7 +247,7 @@ void generateEuclideanDistanceSDF(
             }
           }
           // set best values
-          if (bestDistance < abs(sdfGrid[i][j][k])) {
+          if (bestDistance < std::abs(sdfGrid[i][j][k])) {
             sdfGrid[i][j][k] =
                 intExtGrid[i][j][k] < 0 ? -bestDistance : bestDistance;
             closestCellGrid[i][j][k] =
