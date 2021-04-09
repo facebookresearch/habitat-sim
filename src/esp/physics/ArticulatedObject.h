@@ -271,7 +271,11 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual Magnum::Matrix4 getRootState() { return {}; };
 
   // update the SceneNode state to match the simulation state
-  virtual void updateNodes(CORRADE_UNUSED bool force = false){};
+  virtual void updateNodes(CORRADE_UNUSED bool force = false) {
+    isDeferringUpdate_ = false;
+  };
+
+  virtual void deferUpdate() { isDeferringUpdate_ = true; }
 
   ArticulatedLink& getLink(int id) {
     CHECK(links_.count(id));
@@ -303,7 +307,8 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual std::vector<float> getPositions() { return {}; };
 
-  virtual std::vector<float> getPositionLimits(bool upperLimits = false) {
+  virtual std::vector<float> getPositionLimits(
+      CORRADE_UNUSED bool upperLimits = false) {
     return {};
   };
 
@@ -457,6 +462,10 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   //! if true, automatically clamp dofs to joint limits before physics
   //! simulation steps
   bool autoClampJointLimits_ = false;
+
+  //! if true visual nodes are not updated from physics simulation such that the
+  //! SceneGraph is not polluted during render
+  bool isDeferringUpdate_ = false;
 
   ESP_SMART_POINTERS(ArticulatedObject)
 };
