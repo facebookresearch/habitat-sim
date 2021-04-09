@@ -1,14 +1,16 @@
 # [setup]
+import math
 import os
 import time
 
+import magnum as mn
 import numpy as np
 
 import habitat_sim
 import habitat_sim.geo as geo
 from habitat_sim.utils import viz_utils as vut
-import magnum as mn
-import math
+
+
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
@@ -22,8 +24,11 @@ def remove_all_objects(sim):
     for id_ in sim.get_existing_object_ids():
         sim.remove_object(id_)
 
+
 def_offset = np.array([0, 1, -1.5])
 def_orientation = mn.Quaternion(((0, 0, 0), 1))
+
+
 def set_object_state_from_agent(
     sim,
     ob_id,
@@ -34,6 +39,7 @@ def set_object_state_from_agent(
     ob_translation = agent_transform.transform_point(offset)
     sim.set_translation(ob_translation, ob_id)
     sim.set_rotation(orientation, ob_id)
+
 
 def make_configuration():
     # simulator configuration
@@ -87,6 +93,7 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
     if "collisions" in data:
         data["collisions"] += collisions
 
+
 # [/setup]
 if __name__ == "__main__":
     # [initialize]
@@ -96,15 +103,13 @@ if __name__ == "__main__":
             0,
             habitat_sim.AgentState(
                 [6.45, -1.3, -0.2],
-                np.quaternion(0.7071068,0,0.7071068,0),
+                np.quaternion(0.7071068, 0, 0.7071068, 0),
             ),
         )
-
 
         # Frames are stored in data["observations"] for use in video creation.
         data = {"observations": []}
         # [/initialize]
-
 
         # [objectVoxelization]
         # First, we'll create a few objects and voxelize them to varying resolutions.
@@ -116,9 +121,9 @@ if __name__ == "__main__":
         obj_templates_mgr = sim.get_object_template_manager()
 
         # load object template
-        obj_id = obj_templates_mgr.load_configs(
-            str(os.path.join(data_path, obj_path))
-        )[0]
+        obj_id = obj_templates_mgr.load_configs(str(os.path.join(data_path, obj_path)))[
+            0
+        ]
         obj_template = obj_templates_mgr.get_template_by_ID(obj_id)
         obj_handle = obj_template.render_asset_handle
         obj_templates_mgr.register_template(obj_template, force_registration=True)
@@ -151,7 +156,7 @@ if __name__ == "__main__":
             sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, cur_id)
             vel_control = sim.get_object_velocity_control(cur_id)
             vel_control.controlling_ang_vel = True
-            vel_control.angular_velocity = np.array([ 0, 0, -1.56/2])
+            vel_control.angular_velocity = np.array([0, 0, -1.56 / 2])
 
         # Show the objects for 1 seconds with no voxelization
         simulate(sim, dt=1, get_frames=True, data=data)
@@ -171,7 +176,7 @@ if __name__ == "__main__":
         for i in range(3):
             vel_control = sim.get_object_velocity_control(cur_ids[i])
             vel_control.controlling_ang_vel = True
-            vel_control.angular_velocity = np.array([0,-1.56, 0])
+            vel_control.angular_velocity = np.array([0, -1.56, 0])
 
         simulate(sim, dt=4, get_frames=True, data=data)
 
