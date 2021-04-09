@@ -5,6 +5,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/StridedArrayView.h>
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Assert.h>
@@ -283,7 +284,7 @@ bool CubeMap::saveTexture(TextureType type,
         filename = Cr::Utility::formatString("{}.{}.{}.png", imageFilePrefix,
                                              getTextureTypeFilenameString(type),
                                              coordStrings[iFace]);
-        if (!converter->exportToFile(image, filename)) {
+        if (!converter->convertToFile(image, filename)) {
           return false;
         }
       } break;
@@ -297,7 +298,7 @@ bool CubeMap::saveTexture(TextureType type,
             {Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float});
         Mn::ImageView2D depthAsRedChannel{
             image.storage(), Mn::PixelFormat::R32F, image.size(), image.data()};
-        if (!converter->exportToFile(depthAsRedChannel, filename)) {
+        if (!converter->convertToFile(depthAsRedChannel, filename)) {
           return false;
         }
       } break;
