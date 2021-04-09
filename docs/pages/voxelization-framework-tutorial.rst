@@ -43,7 +43,7 @@ Here, we'll spawn in three donuts and voxelize them with resolutions of 100000, 
     :start-after: # [objectVoxelization]
     :end-before: # [/objectVoxelization]
 
-.. image:: images/rigid-object-tutorial-images/sim_basics.gif
+.. image:: images/voxelization-framework-tutorial-images/object_voxelization.gif
     :width: 20em
 
 `Stage Voxelization`_
@@ -57,7 +57,7 @@ Here, we'll voxelize the stage with a resolution of 2,000,000 and display the re
     :start-after: # [stageVoxelization]
     :end-before: # [/stageVoxelization]
 
-.. image:: images/rigid-object-tutorial-images/dynamic_control.gif
+.. image:: images/voxelization-framework-tutorial-images/stage_voxelization.gif
     :width: 20em
 
 
@@ -74,7 +74,7 @@ There are built-in utility functions for creating these grids, including generat
     :start-after: # [voxelizationSDF]
     :end-before: # [/voxelizationSDF]
 
-.. image:: images/rigid-object-tutorial-images/kinematic_interactions.gif
+.. image:: images/voxelization-framework-tutorial-images/signed_distance_field.gif
     :width: 20em
 
 
@@ -89,7 +89,7 @@ This is illustrated below, where we generate a distance gradient field. We then 
     :start-after: # [voxelizationDistanceGradient]
     :end-before: # [/voxelizationDistanceGradient]
 
-.. image:: images/rigid-object-tutorial-images/kinematic_interactions.gif
+.. image:: images/voxelization-framework-tutorial-images/vector_field.gif
     :width: 20em
 
 
@@ -103,10 +103,5 @@ Finally, let's experiment with custom-created voxel grids. We'll start out by cr
     :start-after: # [voxelizationCustomGrid]
     :end-before: # [/voxelizationCustomGrid]
 
-.. image:: images/rigid-object-tutorial-images/kinematic_interactions.gif
+.. image:: images/voxelization-framework-tutorial-images/custom_grid.gif
     :width: 20em
-
-
-
-`Summary`_
-===========
