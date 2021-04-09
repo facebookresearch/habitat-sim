@@ -126,6 +126,11 @@ class FisheyeSensor : public VisualSensor {
 
   gfx::RenderCamera* getRenderCamera() = delete;
 
+  /**
+   * @brief Return a pointer to this fisheye sensor's SensorSpec
+   */
+  FisheyeSensorSpec::ptr specification() const { return fisheyeSensorSpec_; }
+
  protected:
   FisheyeSensorSpec::ptr fisheyeSensorSpec_ =
       std::dynamic_pointer_cast<FisheyeSensorSpec>(spec_);

@@ -532,15 +532,14 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
-  CHECK_GE(activeSceneID_, 0);
-  CHECK_LT(activeSceneID_, sceneID_.size());
+  CORRADE_INTERNAL_ASSERT(std::size_t(activeSceneID_) < sceneID_.size());
   return sceneManager_->getSceneGraph(activeSceneID_);
 }
 
 //! return the semantic scene's SceneGraph for rendering
 scene::SceneGraph& Simulator::getActiveSemanticSceneGraph() {
-  CHECK_GE(activeSemanticSceneID_, 0);
-  CHECK_LT(activeSemanticSceneID_, sceneID_.size());
+  CORRADE_INTERNAL_ASSERT(std::size_t(activeSemanticSceneID_) <
+                          sceneID_.size());
   return sceneManager_->getSceneGraph(activeSemanticSceneID_);
 }
 

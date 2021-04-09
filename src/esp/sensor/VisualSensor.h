@@ -16,7 +16,6 @@
 namespace esp {
 namespace gfx {
 class RenderTarget;
-class SensorInfoVisualizer;
 }  // namespace gfx
 
 namespace sensor {
@@ -187,6 +186,11 @@ class VisualSensor : public Sensor {
    */
   Mn::Deg getFOV() const { return hfov_; }
 
+  /**
+   * @brief Return a pointer to this visual sensor's SensorSpec
+   */
+  VisualSensorSpec::ptr specification() const { return visualSensorSpec_; }
+
  protected:
   /** @brief field of view
    */
@@ -195,6 +199,34 @@ class VisualSensor : public Sensor {
   std::unique_ptr<gfx::RenderTarget> tgt_;
   VisualSensorSpec::ptr visualSensorSpec_ =
       std::dynamic_pointer_cast<VisualSensorSpec>(spec_);
+
+  class MoveSemanticSensorNodeHelper {
+   public:
+    /**
+     * @brief constructor.
+     * This function saves the semantic sensor's transformation and parent node,
+     * moves it to the semantic scene graph, connects it to the root node, and
+     * sets the relative transformation (wrt to the root) to the absolute
+     * transformation in the previous scene graph.
+     */
+    MoveSemanticSensorNodeHelper(VisualSensor& visualSensor,
+                                 sim::Simulator& sim);
+    /**
+     * @brief Destructor.
+     * This function moves the semantic sensor back to the regular scene graph,
+     * restores its relative transformation to its parent based on the values
+     * saved previously.
+     */
+    ~MoveSemanticSensorNodeHelper();
+
+   protected:
+    VisualSensor& visualSensor_;
+    sim::Simulator& sim_;
+    Corrade::Containers::Optional<Magnum::Matrix4> relativeTransformBackup_ =
+        Corrade::Containers::NullOpt;
+    scene::SceneNode* semanticSensorParentNodeBackup_ = nullptr;
+  };
+
   ESP_SMART_POINTERS(VisualSensor)
 };
 

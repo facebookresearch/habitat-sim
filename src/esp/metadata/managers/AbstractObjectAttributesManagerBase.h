@@ -153,7 +153,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
   // ======== Typedefs and Instance Variables ========
 
  public:
-  ESP_SMART_POINTERS(AbstractObjectAttributesManager<T, Access>);
+  ESP_SMART_POINTERS(AbstractObjectAttributesManager<T, Access>)
 
 };  // class AbstractObjectAttributesManager<T>
 
