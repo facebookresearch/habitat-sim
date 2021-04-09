@@ -11,11 +11,11 @@ namespace core {
 
 void (*throwInPython)(const char*) = nullptr;
 
-/* NORETURN will help the compiler optimize -- it basically tells it that the
-   condition passed to HABITAT_EXCEPTION() can be assumed to be always true in
-   the following code, because if not then the execution ends in this
+/* [[noreturn]] will help the compiler optimize -- it basically tells it that
+   the condition passed to HABITAT_EXCEPTION() can be assumed to be always true
+   in the following code, because if not then the execution ends in this
    function. */
-CORRADE_NORETURN void throwIfInPythonOtherwiseAbort(const char* message) {
+[[noreturn]] void throwIfInPythonOtherwiseAbort(const char* message) {
   /* The throwInPython function pointer gets filled during Python bindings
      startup. If it's nullptr, we're in plain C++ code. */
   if (throwInPython) {
