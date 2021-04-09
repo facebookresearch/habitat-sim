@@ -161,12 +161,17 @@ class VoxelGrid {
   /**
    * @brief Returns a StridedArrayView3D of a grid for easy index access and
    * manipulation.
-   * @param gridName The name of the grid to be removed.
+   * @param gridName The name of the grid to be retrieved.
    * @return A StridedArrayView3D of the specified grid.
    */
   template <typename T>
   Corrade::Containers::StridedArrayView3D<T> getGrid(
       const std::string& gridName) {
+    VoxelGridType type = voxelGridTypeFor<T>();
+    CORRADE_ASSERT(grids_[gridName].type == type,
+                   "VoxelGrid::getGrid(\"" + gridName +
+                       "\") - Error: incorrect grid type cast requested.",
+                   {});
     return Corrade::Containers::arrayCast<T>(grids_[gridName].view);
   }
 
