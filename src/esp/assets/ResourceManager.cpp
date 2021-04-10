@@ -1790,6 +1790,10 @@ bool ResourceManager::instantiateAssetsOnDemand(
   ObjectAttributes::ptr ObjectAttributes =
       getObjectAttributesManager()->getObjectByHandle(objectTemplateHandle);
 
+  if (!ObjectAttributes) {
+    return false;
+  }
+
   // if attributes are "dirty" (important values have changed since last
   // registered) then re-register.  Should never return ID_UNDEFINED - this
   // would mean something has corrupted the library.
