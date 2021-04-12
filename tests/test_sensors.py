@@ -39,13 +39,14 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
     assert sensor_type in obs, f"{sensor_type} not in obs"
 
     # now that sensors are constructed, test some getter/setters
-    sim.get_agent(0)._sensors[sensor_type].fov = mn.Deg(80)
-    assert sim.get_agent(0)._sensors[sensor_type].fov == mn.Deg(
-        80
-    ), "fov not set correctly"
-    assert sim.get_agent(0)._sensors[sensor_type].hfov == mn.Deg(
-        80
-    ), "hfov not set correctly"
+    if hasattr(sim.get_agent(0)._sensors[sensor_type], "fov"):
+        sim.get_agent(0)._sensors[sensor_type].fov = mn.Deg(80)
+        assert sim.get_agent(0)._sensors[sensor_type].fov == mn.Deg(
+            80
+        ), "fov not set correctly"
+        assert sim.get_agent(0)._sensors[sensor_type].hfov == mn.Deg(
+            80
+        ), "hfov not set correctly"
 
     gt_obs_file = osp.abspath(
         osp.join(
@@ -97,7 +98,7 @@ all_sensor_types = [
     "color_sensor",
     "depth_sensor",
     "semantic_sensor",
-    "ortho_sensor",
+    #"ortho_sensor",
     "fisheye_sensor",
 ]
 
@@ -105,8 +106,9 @@ all_sensor_types = [
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
     "scene,sensor_type",
-    list(itertools.product(_test_scenes[0:2], all_sensor_types))
-    + list(itertools.product(_test_scenes[2:], all_sensor_types[0:2])),
+    list(itertools.product(_test_scenes[0:2], all_sensor_types[:3]))
+    + list(itertools.product(_test_scenes[2:], all_sensor_types[0:2]))
+    + list(itertools.product(_test_scenes, all_sensor_types[3:])),
 )
 @pytest.mark.parametrize("gpu2gpu", [True, False])
 # NB: This should go last, we have to force a close on the simulator when

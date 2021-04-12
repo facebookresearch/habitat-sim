@@ -55,7 +55,11 @@ void initSensorBindings(py::module& m) {
   py::enum_<SensorSubType>(m, "SensorSubType")
       .value("NONE", SensorSubType::None)
       .value("PINHOLE", SensorSubType::Pinhole)
-      .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
+      .value("ORTHOGRAPHIC", SensorSubType::Orthographic)
+      .value("FISHEYE", SensorSubType::Fisheye);
+
+  py::enum_<FisheyeSensorModelType>(m, "FisheyeSensorModelType")
+      .value("DOUBLESPHERE", FisheyeSensorModelType::DoubleSphere);
 
   // ==== SensorSpec ====
   py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())
@@ -106,14 +110,16 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("focal_length", &FisheyeSensorSpec::focalLength)
       .def_readwrite("principal_point_offset",
                      &FisheyeSensorSpec::principalPointOffset)
-      .def_readwrite("cubemap_size", &FisheyeSensorSpec::cubemapSize);
+      .def_readwrite("cubemap_size", &FisheyeSensorSpec::cubemapSize)
+      .def_readwrite("sensor_subtype", &FisheyeSensorSpec::fisheyeModelType);
 
-  //   // ====FisheyeSensorDoubleSphereSpec ====
-  //   py::class_<FisheyeSensorDoubleSphereSpec,
-  //   FisheyeSensorDoubleSphereSpec::ptr, FisheyeSensorSpec, VisualSensorSpec,
-  //              SensorSpec>(m, "FisheyeSensorDoubleSphereSpec",
-  //              py::dynamic_attr())
-  //       .def(py::init(&FisheyeSensorDoubleSphereSpec::create<>));
+  // ====FisheyeSensorDoubleSphereSpec ====
+  py::class_<FisheyeSensorDoubleSphereSpec, FisheyeSensorDoubleSphereSpec::ptr,
+             FisheyeSensorSpec, VisualSensorSpec, SensorSpec>(
+      m, "FisheyeSensorDoubleSphereSpec", py::dynamic_attr())
+      .def(py::init(&FisheyeSensorDoubleSphereSpec::create<>))
+      .def_readwrite("alpha", &FisheyeSensorDoubleSphereSpec::alpha)
+      .def_readwrite("xi", &FisheyeSensorDoubleSphereSpec::xi);
 
   // ==== SensorFactory ====
   py::class_<SensorFactory>(m, "SensorFactory")
