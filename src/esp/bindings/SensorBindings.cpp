@@ -13,6 +13,7 @@
 #include <utility>
 
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
 #include "esp/sensor/VisualSensor.h"
 #ifdef ESP_BUILD_WITH_CUDA
 #include "esp/sensor/RedwoodNoiseModel.h"
@@ -97,6 +98,22 @@ void initSensorBindings(py::module& m) {
              SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
+
+  // ====FisheyeSensorSpec ====
+  py::class_<FisheyeSensorSpec, FisheyeSensorSpec::ptr, VisualSensorSpec,
+             SensorSpec>(m, "FisheyeSensorSpec", py::dynamic_attr())
+      .def(py::init(&FisheyeSensorSpec::create<>))
+      .def_readwrite("focal_length", &FisheyeSensorSpec::focalLength)
+      .def_readwrite("principal_point_offset",
+                     &FisheyeSensorSpec::principalPointOffset)
+      .def_readwrite("cubemap_size", &FisheyeSensorSpec::cubemapSize);
+
+  //   // ====FisheyeSensorDoubleSphereSpec ====
+  //   py::class_<FisheyeSensorDoubleSphereSpec,
+  //   FisheyeSensorDoubleSphereSpec::ptr, FisheyeSensorSpec, VisualSensorSpec,
+  //              SensorSpec>(m, "FisheyeSensorDoubleSphereSpec",
+  //              py::dynamic_attr())
+  //       .def(py::init(&FisheyeSensorDoubleSphereSpec::create<>));
 
   // ==== SensorFactory ====
   py::class_<SensorFactory>(m, "SensorFactory")
@@ -192,6 +209,13 @@ void initSensorBindings(py::module& m) {
       .def_property(
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
           R"(The distance to the far clipping plane for this CameraSensor uses.)");
+
+  // === FisheyeSensor ====
+  py::class_<FisheyeSensor, Magnum::SceneGraph::PyFeature<FisheyeSensor>,
+             VisualSensor, Magnum::SceneGraph::PyFeatureHolder<FisheyeSensor>>(
+      m, "FisheyeSensor")
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const FisheyeSensorSpec::ptr&>());
 
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
