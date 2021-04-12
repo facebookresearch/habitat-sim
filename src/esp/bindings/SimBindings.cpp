@@ -84,7 +84,8 @@ void initSimBindings(py::module& m) {
            &Simulator::getActiveSemanticSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
-      .def_property_readonly("semantic_scene", &Simulator::getSemanticScene, R"(
+      .def_property_readonly("semantic_scene", &Simulator::getSemanticScene,
+                             R"(
         The semantic scene graph
 
         .. note-warning::
@@ -300,7 +301,27 @@ void initSimBindings(py::module& m) {
           "vhacd_params"_a = assets::ResourceManager::VHACDParameters(),
           "render_chd_result"_a = false, "save_chd_to_obj"_a = false,
           R"(Decomposite an object into its constituent convex hulls with specified VHACD parameters.)")
+      .def(
+          "voxelize_object", &Simulator::createObjectVoxelization,
+          "object_id"_a, "resolution"_a,
+          R"(Generates a voxelization for a object with a specified resolution, where resolution is approximately the number of voxels.)")
+      .def(
+          "voxelize_stage", &Simulator::createStageVoxelization, "resolution"_a,
+          R"(Generates a stage voxelization with a specified resolution, where resolution is approximately the number of voxels.)")
 #endif
+      .def(
+          "set_object_voxelization_draw", &Simulator::setObjectVoxelizationDraw,
+          "draw_voxels"_a, "object_id"_a, "grid_name"_a = "Boundary",
+          R"(Specifies whether or not to draw one of a particular object's voxel grids.)")
+      .def(
+          "set_stage_voxelization_draw", &Simulator::setStageVoxelizationDraw,
+          "draw_voxels"_a, "grid_name"_a = "Boundary",
+          R"(Specifies whether or not to draw one of the stage's voxel grids.)")
+      .def("get_object_voxelization", &Simulator::getObjectVoxelization,
+           "object_id"_a,
+           R"(Returns the voxel wrapper for a specified object.)")
+      .def("get_stage_voxelization", &Simulator::getStageVoxelization,
+           R"(Returns the voxel wrapper for the stage.)")
       .def("add_trajectory_object", &Simulator::addTrajectoryObject,
            "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,
            "radius"_a = .001, "color"_a = Mn::Color4{0.9, 0.1, 0.1, 1.0},

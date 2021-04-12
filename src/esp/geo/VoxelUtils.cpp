@@ -267,11 +267,11 @@ void generateScalarGradientField(
   auto v_grid = voxelWrapper->getVoxelGrid();
   VoxelGridType type = v_grid->getGridType(scalarGridName);
   if (type == VoxelGridType::Int) {
-    generateScalarGradientField<int>(voxelWrapper, scalarGridName,
-                                     gradientGridName);
+    generateScalarGradientFieldHelper<int>(voxelWrapper, scalarGridName,
+                                           gradientGridName);
   } else if (type == VoxelGridType::Float) {
-    generateScalarGradientField<float>(voxelWrapper, scalarGridName,
-                                       gradientGridName);
+    generateScalarGradientFieldHelper<float>(voxelWrapper, scalarGridName,
+                                             gradientGridName);
   }
 }
 

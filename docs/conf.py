@@ -39,6 +39,7 @@ INPUT_PAGES = [
     "pages/lighting-setups.rst",
     "pages/image-extractor.rst",
     "pages/rigid-object-tutorial.rst",
+    "pages/voxelization-framework-tutorial.rst",
 ]
 
 PLUGINS = [
@@ -79,6 +80,7 @@ LINKS_NAVBAR1 = [
             ("Lighting Setups", "lighting-setups"),
             ("Image extraction", "image-extractor"),
             ("Rigid Object Tutorial", "rigid-object-tutorial"),
+            ("Voxelization Framework Tutorial", "voxelization-framework-tutorial"),
         ],
     ),
     ("Classes", "classes", []),

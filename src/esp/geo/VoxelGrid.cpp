@@ -222,7 +222,7 @@ void VoxelGrid::addVectorToMeshPrimitives(
     arrayAppend(indexData, sz + index);
   }
   // render cylinder (arrow stem)
-  Mn::Trade::MeshData cylinderData = Mn::Primitives::cylinderSolid(1, 3, 1.0f);
+  Mn::Trade::MeshData cylinderData = Mn::Primitives::cylinderSolid(1, 4, 1.0f);
 
   sz = vertexData.size();
   Corrade::Containers::StridedArrayView1D<const Magnum::Vector3>

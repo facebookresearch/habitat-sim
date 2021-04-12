@@ -5,10 +5,32 @@
 #include "esp/bindings/bindings.h"
 
 #include "esp/geo/OBB.h"
+#include "esp/geo/VoxelUtils.h"
+#include "esp/geo/VoxelWrapper.h"
 #include "esp/geo/geo.h"
+
+#include <Corrade/Containers/PythonBindings.h>
+#include <Corrade/Containers/StridedArrayViewPythonBindings.h>
 
 namespace py = pybind11;
 using py::literals::operator""_a;
+
+namespace Corrade {
+namespace Containers {
+namespace Implementation {
+template <>
+constexpr const char* formatString<Mn::Vector3>() {
+  return "fff";
+}
+
+template <>
+constexpr const char* formatString<bool>() {
+  return "b";
+}
+
+}  // namespace Implementation
+}  // namespace Containers
+}  // namespace Corrade
 
 namespace esp {
 namespace geo {
@@ -63,6 +85,144 @@ void initGeoBindings(py::module& m) {
            0.5 is a centripetal Catmull-Rom spline
            1.0 is a chordal Catmull-Rom spline)",
       "key_points"_a, "num_interpolations"_a, "alpha"_a = .5f);
+
+  // ==== Voxel Utilities ====
+
+  geo.def(
+      "generate_interior_exterior_voxel_grid",
+      &geo::generateInteriorExteriorVoxelGrid,
+      R"(This utility function generates an integer grid where marking boundary
+  (0), interior (-inf), and exterior (+inf) cells and registers this grid under
+  "InteriorExterior".)",
+      "voxelization"_a);
+  geo.def(
+      "generate_manhattan_distance_sdf", &geo::generateManhattanDistanceSDF,
+      R"(This utility function generates a manhattan distance signed distance
+  field for a voxelization and registers it under the specified grid name.)",
+      "voxelization"_a, "grid_name"_a);
+  geo.def(
+      "generate_euclidean_distance_sdf", &geo::generateEuclideanDistanceSDF,
+      R"(This utility function generates a euclidean distance signed distance
+  field for a voxelization and registers it under the specified grid name.)",
+      "voxelization"_a, "grid_name"_a);
+  geo.def(
+      "generate_scalar_gradient_field", &geo::generateScalarGradientField,
+      R"(Generates a gradient vector field gradient given a scalar (float or int) voxel field.)",
+      "voxel_wrapper"_a, "scalar_grid_name"_a, "gradient_grid_name"_a);
+  geo.def("get_voxel_set_from_bool_grid", &geo::getVoxelSetFromBoolGrid,
+          R"(Returns a vector of all filled/true voxels.)", "voxelization"_a,
+          "grid_name"_a);
+  geo.def(
+      "get_voxel_set_from_int_grid", &geo::getVoxelSetFromIntGrid,
+      R"(Fills a vector with voxel indices that contain a value imbetween the specified lower_bound and upper_bound.)",
+      "voxelization"_a, "grid_name"_a, "lower_bound"_a, "upper_bound"_a);
+  geo.def(
+      "get_voxel_set_from_float_grid", &geo::getVoxelSetFromFloatGrid,
+      R"(Fills a vector with voxel indices that contain a value imbetween the specified lower_bound and upper_bound.)",
+      "voxelization"_a, "grid_name"_a, "lower_bound"_a, "upper_bound"_a);
+
+  // ==== VoxelWrapper ====
+  py::class_<VoxelWrapper, VoxelWrapper::ptr>(m, "VoxelWrapper")
+      // TODO: Replace with magnum binded Strided Array views (Not sure how to
+      // do this yet..)
+      .def("set_bool_voxel", &VoxelWrapper::setVoxel<bool>, "index"_a,
+           "grid_name"_a, "value"_a,
+           R"(Sets a voxel at an index in a specified grid to a value.)")
+      .def("set_int_voxel", &VoxelWrapper::setVoxel<int>, "index"_a,
+           "grid_name"_a, "value"_a,
+           R"(Sets a voxel at an index in a specified grid to a value.)")
+      .def("set_float_voxel", &VoxelWrapper::setVoxel<float>, "index"_a,
+           "grid_name"_a, "value"_a,
+           R"(Sets a voxel at an index in a specified grid to a value.)")
+      .def("set_vector3_voxel", &VoxelWrapper::setVoxel<Mn::Vector3>, "index"_a,
+           "grid_name"_a, "value"_a,
+           R"(Sets a voxel at an index in a specified grid to a value.)")
+
+      .def("get_bool_voxel", &VoxelWrapper::getVoxel<bool>, "index"_a,
+           "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
+      .def("get_int_voxel", &VoxelWrapper::getVoxel<int>, "index"_a,
+           "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
+      .def("get_float_voxel", &VoxelWrapper::getVoxel<float>, "index"_a,
+           "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
+      .def("get_vector3_voxel", &VoxelWrapper::getVoxel<Mn::Vector3>, "index"_a,
+           "grid_name"_a, R"(Gets a voxel at an index in a specified grid.)")
+
+      .def("get_bool_grid",
+           [](VoxelWrapper& self, const std::string& gridName) {
+             return Cr::Containers::pyArrayViewHolder(
+                 Cr::Containers::PyStridedArrayView<3, char>{
+                     self.getGrid<bool>(gridName)},
+                 py::cast(self));
+           })
+      .def("get_int_grid",
+           [](VoxelWrapper& self, const std::string& gridName) {
+             return Cr::Containers::pyArrayViewHolder(
+                 Cr::Containers::PyStridedArrayView<3, char>{
+                     self.getGrid<int>(gridName)},
+                 py::cast(self));
+           })
+      .def("get_float_grid",
+           [](VoxelWrapper& self, const std::string& gridName) {
+             return Cr::Containers::pyArrayViewHolder(
+                 Cr::Containers::PyStridedArrayView<3, char>{
+                     self.getGrid<float>(gridName)},
+                 py::cast(self));
+           })
+      .def("get_vector3_grid",
+           [](VoxelWrapper& self, const std::string& gridName) {
+             return Cr::Containers::pyArrayViewHolder(
+                 Cr::Containers::PyStridedArrayView<3, char>{
+                     self.getGrid<Mn::Vector3>(gridName)},
+                 py::cast(self));
+           })
+
+      /*.def("get_bool_grid", &VoxelWrapper::getGrid<bool>, "grid_name"_a,
+           R"(Gets a specified bool grid by the grid's name.)")
+      .def("get_int_grid", &VoxelWrapper::getGrid<int>, "grid_name"_a,
+           R"(Gets a specified int grid by the grid's name.)")
+      .def("get_float_grid", &VoxelWrapper::getGrid<float>, "grid_name"_a,
+           R"(Gets a specified float grid by the grid's name.)")
+      .def("get_vector3_grid", &VoxelWrapper::getGrid<Mn::Vector3>,
+           "grid_name"_a,
+           R"(Gets a specified Vector3 grid by the grid's name.)")*/
+
+      .def("add_bool_grid", &VoxelWrapper::addGrid<bool>, "grid_name"_a,
+           R"(Creates an empty new bool grid.)")
+      .def("add_int_grid", &VoxelWrapper::addGrid<int>, "grid_name"_a,
+           R"(Creates an empty new int grid.)")
+      .def("add_float_grid", &VoxelWrapper::addGrid<float>, "grid_name"_a,
+           R"(Creates an empty new float grid.)")
+      .def("add_vector3_grid", &VoxelWrapper::addGrid<Mn::Vector3>,
+           "grid_name"_a, R"(Creates an empty new vector3 grid.)")
+
+      .def("remove_grid", &VoxelWrapper::removeGrid, "grid_name"_a,
+           R"(Deletes a specified grid and frees its memory.)")
+
+      .def("get_voxel_index_from_global_coords",
+           &VoxelWrapper::getVoxelIndexFromGlobalCoords, "coords"_a,
+           R"(Gets the voxel index located at a coordinate in world space.)")
+      .def("get_global_coords_from_voxel_index",
+           &VoxelWrapper::getGlobalCoordsFromVoxelIndex, "coords"_a,
+           R"(Gets the world positioning of a particular voxel in a
+  voxelization.)")
+      .def("get_voxel_grid_dimensions", &VoxelWrapper::getVoxelGridDimensions,
+           R"(Returns a numpy array with the
+  dimensions of the voxel grid.)")
+      .def("get_voxel_size", &VoxelWrapper::getVoxelSize,
+           R"(Returns a numpy array with the size of a
+  single voxel.)")
+      .def("generate_mesh", &VoxelWrapper::generateMesh,
+           "grid_name"_a = "Boundary",
+           R"(Generates a distance flow vector field, where each vector points
+  away from the closest boundary cell.)")
+      .def("generate_float_slice_mesh", &VoxelWrapper::generateSliceMesh<float>,
+           "grid_name"_a = "Boundary", "x_value"_a = 0, "min_value"_a = 0,
+           "max_value"_a = 1, R"(Generates a mesh of
+  a slice of a given float grid.)")
+      .def("generate_int_slice_mesh", &VoxelWrapper::generateSliceMesh<int>,
+           "grid_name"_a = "Boundary", "x_value"_a = 0, "min_value"_a = 0,
+           "max_value"_a = 1,
+           R"(Generates a mesh of a slice of a given int grid.)");
 
 }  // initGeoBindings
 

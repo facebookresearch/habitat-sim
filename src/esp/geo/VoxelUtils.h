@@ -69,7 +69,7 @@ void generateScalarGradientField(
  * scalar gradient field.
  */
 template <typename T>
-void generateScalarGradientField(
+void generateScalarGradientFieldHelper(
     std::shared_ptr<esp::geo::VoxelWrapper>& voxelWrapper,
     const std::string& scalarGridName,
     const std::string& gradientGridName) {
