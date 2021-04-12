@@ -25,9 +25,7 @@
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
-#ifdef ESP_BUILD_WITH_VHACD
-#include "esp/geo/VoxelGrid.h"
-#endif
+#include "esp/core/configure.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -53,6 +51,10 @@
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
+
+#ifdef ESP_BUILD_WITH_VHACD
+#include "esp/geo/VoxelUtils.h"
+#endif
 
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
@@ -150,6 +152,10 @@ class Viewer : public Mn::Platform::Application {
   void invertGravity();
 
 #ifdef ESP_BUILD_WITH_VHACD
+  void displayStageDistanceGradientField();
+
+  void iterateAndDisplaySignedDistanceField();
+
   void displayVoxelField(int objectID);
 
   int objectDisplayed = -1;
@@ -236,8 +242,8 @@ Key Commands:
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
-  'g': (physics) Display a scene vector field.
-  'l': (physics) Iterate through different ranges of the scene's voxelized signed distance field.
+  'g': (physics) Display a stage's signed distance gradient vector field.
+  'l': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
   ==================================================
   )";
 
@@ -272,7 +278,7 @@ Key Commands:
   bool agentLocRecordOn_ = false;
 
 #ifdef ESP_BUILD_WITH_VHACD
-  //! Resolution selection for voxelization.
+  //! The slice of the grid's SDF to visualize.
   int voxelDistance = 0;
 #endif
   /**
@@ -482,7 +488,7 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
-      .addOption("object-dir", "./data/objects")
+      .addOption("object-dir", "data/objects")
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
@@ -555,8 +561,7 @@ Viewer::Viewer(const Arguments& arguments)
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
   objectAttrManager_ = simulator_->getObjectAttributesManager();
-  objectAttrManager_->loadAllConfigsFromPath(Cr::Utility::Directory::join(
-      Corrade::Utility::Directory::current(), args.value("object-dir")));
+  objectAttrManager_->loadAllConfigsFromPath(args.value("object-dir"));
   assetAttrManager_ = simulator_->getAssetAttributesManager();
   stageAttrManager_ = simulator_->getStageAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();
@@ -875,6 +880,61 @@ void Viewer::invertGravity() {
 
 #ifdef ESP_BUILD_WITH_VHACD
 
+void Viewer::displayStageDistanceGradientField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
+  stageVoxelization = simulator_->getStageVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  !Mn::Debug();
+  if (stageVoxelization == nullptr) {
+    simulator_->createStageVoxelization(2000000);
+    stageVoxelization = simulator_->getStageVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
+                                           "ESignedDistanceField");
+  }
+  !Mn::Debug();
+
+  // generate a vector field for the SDF gradient
+  esp::geo::generateScalarGradientField(
+      stageVoxelization, "ESignedDistanceField", "GradientField");
+  // generate a mesh of the vector field with boolean isVectorField set to
+  // true
+  !Mn::Debug();
+
+  stageVoxelization->generateMesh("GradientField");
+
+  // draw the vector field
+  simulator_->setStageVoxelizationDraw(true, "GradientField");
+}
+
+void Viewer::iterateAndDisplaySignedDistanceField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
+  stageVoxelization = simulator_->getStageVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  if (stageVoxelization == nullptr) {
+    simulator_->createStageVoxelization(2000000);
+    stageVoxelization = simulator_->getStageVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
+                                           "ESignedDistanceField");
+  }
+
+  // Set the range of distances to render, and generate a mesh for this (18
+  // is set to be the max distance)
+  Mn::Vector3i dims = stageVoxelization->getVoxelGridDimensions();
+  int curDistanceVisualization = (voxelDistance % dims[0]);
+  /*sceneVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
+     "SDFSubset", curDistanceVisualization, curDistanceVisualization + 1);*/
+  stageVoxelization->generateSliceMesh("ESignedDistanceField",
+                                       curDistanceVisualization, -15.0f, 0.0f);
+  // Draw the voxel grid's slice
+  simulator_->setStageVoxelizationDraw(true, "ESignedDistanceField");
+}
+
 bool isTrue(bool val) {
   return val;
 }
@@ -913,6 +973,8 @@ void Viewer::displayVoxelField(int objectID) {
 
   // Generate the mesh for the boundary voxel grid
   voxelWrapper->generateMesh("Boundary");
+
+  esp::geo::generateEuclideanDistanceSDF(voxelWrapper, "ESignedDistanceField");
 
   // visualizes the Boundary voxel grid
   if (objectID == -1) {
@@ -1499,6 +1561,19 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
+#ifdef ESP_BUILD_WITH_VHACD
+    case KeyEvent::Key::L: {
+      iterateAndDisplaySignedDistanceField();
+      // Increase the distance visualized for next time (Pressing L repeatedly
+      // will visualize different distances)
+      voxelDistance++;
+      break;
+    }
+    case KeyEvent::Key::G: {
+      displayStageDistanceGradientField();
+      break;
+    }
+#endif
     default:
       break;
   }
