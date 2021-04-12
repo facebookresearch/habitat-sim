@@ -5,6 +5,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/StridedArrayView.h>
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Assert.h>
@@ -222,17 +223,22 @@ void CubeMap::attachFramebufferRenderbuffer() {
   }
 }
 
-void CubeMap::prepareToDraw(unsigned int cubeSideIndex) {
+void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
+                            RenderCamera::Flags flags) {
   // Note: we ONLY need to map shader output to color attachment when necessary,
   // which means in depth texture mode, we do NOT need to do this
   if (flags_ & CubeMap::Flag::ColorTexture) {
     mapForDraw(cubeSideIndex);
-    frameBuffer_[cubeSideIndex].clearColor(0,                // color attachment
-                                           Mn::Vector4ui{0}  // clear color
-    );
+    if (flags & RenderCamera::Flag::ClearColor) {
+      frameBuffer_[cubeSideIndex].clearColor(0,  // color attachment
+                                             Mn::Vector4ui{0}  // clear color
+      );
+    }
   }
 
-  frameBuffer_[cubeSideIndex].clearDepth(1.0f);
+  if (flags & RenderCamera::Flag::ClearDepth) {
+    frameBuffer_[cubeSideIndex].clearDepth(1.0f);
+  }
 
   CORRADE_INTERNAL_ASSERT(frameBuffer_[cubeSideIndex].checkStatus(
                               Mn::GL::FramebufferTarget::Draw) ==
@@ -278,7 +284,7 @@ bool CubeMap::saveTexture(TextureType type,
         filename = Cr::Utility::formatString("{}.{}.{}.png", imageFilePrefix,
                                              getTextureTypeFilenameString(type),
                                              coordStrings[iFace]);
-        if (!converter->exportToFile(image, filename)) {
+        if (!converter->convertToFile(image, filename)) {
           return false;
         }
       } break;
@@ -292,7 +298,7 @@ bool CubeMap::saveTexture(TextureType type,
             {Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float});
         Mn::ImageView2D depthAsRedChannel{
             image.storage(), Mn::PixelFormat::R32F, image.size(), image.data()};
-        if (!converter->exportToFile(depthAsRedChannel, filename)) {
+        if (!converter->convertToFile(depthAsRedChannel, filename)) {
           return false;
         }
       } break;
@@ -416,7 +422,7 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   for (int iFace = 0; iFace < 6; ++iFace) {
     frameBuffer_[iFace].bind();
     camera.switchToFace(iFace);
-    prepareToDraw(iFace);
+    prepareToDraw(iFace, flags);
 
     // TODO:
     // camera should have flags so that it can do "low quality" rendering,
@@ -424,8 +430,7 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
     // low-quality textures.
 
     for (auto& it : sceneGraph.getDrawableGroups()) {
-      // TODO: remove || true
-      if (it.second.prepareForDraw(camera) || true) {
+      if (it.second.prepareForDraw(camera)) {
         camera.draw(it.second, flags);
       }
     }

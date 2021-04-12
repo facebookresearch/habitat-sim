@@ -118,8 +118,7 @@ std::vector<Mn::Vector3i> getVoxelSetFromBoolGrid(
     const std::string& boolGridName);
 
 /**
- * @brief Fills a vector with voxel indices that contain a value imbetween the
- * specified lower_bound and upper_bound.
+ * @brief Fills a vector with voxel indices that meet some criteria.
  * @param voxelWrapper The voxelization.
  * @param intGridName The name of the int grid to be processed.
  * @param lb The lower bound of voxel values to include.
@@ -133,8 +132,7 @@ std::vector<Mn::Vector3i> getVoxelSetFromIntGrid(
     int ub);
 
 /**
- * @brief Fills a vector with voxel indices that contain a value imbetween the
- * specified lower_bound and upper_bound.
+ * @brief Fills a vector with voxel indices that meet some criteria.
  * @param voxelWrapper The voxelization.
  * @param floatGridName The name of the float grid to be processed.
  * @param lb The lower bound of voxel values to include.

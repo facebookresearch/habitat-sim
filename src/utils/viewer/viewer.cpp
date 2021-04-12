@@ -414,7 +414,7 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
-      .addOption("object-dir", "./data/objects")
+      .addOption("object-dir", "data/objects")
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
@@ -487,8 +487,7 @@ Viewer::Viewer(const Arguments& arguments)
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
   objectAttrManager_ = simulator_->getObjectAttributesManager();
-  objectAttrManager_->loadAllConfigsFromPath(Cr::Utility::Directory::join(
-      Corrade::Utility::Directory::current(), args.value("object-dir")));
+  objectAttrManager_->loadAllConfigsFromPath(args.value("object-dir"));
   assetAttrManager_ = simulator_->getAssetAttributesManager();
   stageAttrManager_ = simulator_->getStageAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();
@@ -860,7 +859,7 @@ void Viewer::iterateAndDisplaySignedDistanceField() {
   // is set to be the max distance)
   Mn::Vector3i dims = stageVoxelization->getVoxelGridDimensions();
   int curDistanceVisualization = (voxelDistance % dims[0]);
-  /*stageVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
+  /*sceneVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
      "SDFSubset", curDistanceVisualization, curDistanceVisualization + 1);*/
   stageVoxelization->generateSliceMesh("ESignedDistanceField",
                                        curDistanceVisualization, -15.0f, 0.0f);

@@ -15,10 +15,12 @@ namespace em = emscripten;
 
 using namespace esp;
 using namespace esp::agent;
+using namespace esp::assets;
 using namespace esp::core;
 using namespace esp::geo;
 using namespace esp::gfx;
 using namespace esp::nav;
+using namespace esp::physics;
 using namespace esp::scene;
 using namespace esp::sensor;
 using namespace esp::sim;
@@ -74,6 +76,16 @@ Magnum::Quaternion Quaternion_mul(const Magnum::Quaternion& q1,
   return q1 * q2;
 }
 
+Magnum::Vector3 Vector3_add(const Magnum::Vector3& v1,
+                            const Magnum::Vector3& v2) {
+  return v1 + v2;
+}
+
+Magnum::Vector3 Vector3_sub(const Magnum::Vector3& v1,
+                            const Magnum::Vector3& v2) {
+  return v1 - v2;
+}
+
 Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
   Observation ret;
   if (CameraSensor * camera{dynamic_cast<CameraSensor*>(&sensor)})
@@ -100,13 +112,33 @@ void Sensor_setLocalTransform(Sensor& sensor,
   node.setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 }
 
+/**
+ * @brief Call ObjectAttributesManager loadAllConfigsFromPath to load object
+ * configs. This is required before using Simulator.addObjectByHandle.
+ */
+void loadAllObjectConfigsFromPath(Simulator& sim, const std::string& path) {
+  auto objectAttrManager = sim.getObjectAttributesManager();
+  objectAttrManager->loadAllConfigsFromPath(path);
+}
+
+bool isBuildWithBulletPhysics() {
+#ifdef ESP_BUILD_WITH_BULLET
+  return true;
+#else
+  return false;
+#endif
+}
+
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::function("toQuaternion", &toQuaternion);
   em::function("toVec3f", &toVec3f);
   em::function("toVec4f", &toVec4f);
+  em::function("loadAllObjectConfigsFromPath", &loadAllObjectConfigsFromPath);
+  em::function("isBuildWithBulletPhysics", &isBuildWithBulletPhysics);
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
+  em::register_vector<int>("VectorInt");
   em::register_vector<std::string>("VectorString");
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
@@ -162,14 +194,22 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("z", em::select_overload<float&()>(&Magnum::Vector3::z))
       .class_function("xAxis", &Magnum::Vector3::xAxis)
       .class_function("yAxis", &Magnum::Vector3::yAxis)
-      .class_function("zAxis", &Magnum::Vector3::zAxis);
+      .class_function("zAxis", &Magnum::Vector3::zAxis)
+      // add class method instead of operator+
+      .class_function("add", &Vector3_add)
+      .class_function("sub", &Vector3_sub);
 
   em::class_<Magnum::Quaternion>("Quaternion")
       .constructor<Magnum::Vector3, float>()
       .constructor<Magnum::Vector3>()
+      .function("scalar",
+                em::select_overload<float&()>(&Magnum::Quaternion::scalar))
+      .function("vector", em::select_overload<Magnum::Vector3&()>(
+                              &Magnum::Quaternion::vector))
       .function("normalized", &Magnum::Quaternion::normalized)
       .function("inverted", &Magnum::Quaternion::inverted)
       .function("transformVector", &Magnum::Quaternion::transformVector)
+      // mul class method instead of operator*
       .class_function("mul", &Quaternion_mul)
       .class_function("rotation", &Magnum::Quaternion::rotation);
 
@@ -250,7 +290,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
-      .property("compressTextures", &SimulatorConfiguration::compressTextures);
+      .property("compressTextures", &SimulatorConfiguration::compressTextures)
+      .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
+      .property("physicsConfigFile",
+                &SimulatorConfiguration::physicsConfigFile);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
@@ -295,6 +338,16 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
 
+  em::class_<SceneNode>("SceneNode")
+      .function("getId", &SceneNode::getId)
+      .function("getSemanticId", &SceneNode::getSemanticId);
+
+  em::enum_<MotionType>("MotionType")
+      .value("UNDEFINED", MotionType::UNDEFINED)
+      .value("STATIC", MotionType::STATIC)
+      .value("KINEMATIC", MotionType::KINEMATIC)
+      .value("DYNAMIC", MotionType::DYNAMIC);
+
   em::class_<Simulator>("Simulator")
       .smart_ptr_constructor("Simulator",
                              &Simulator::create<const SimulatorConfiguration&>)
@@ -316,5 +369,20 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("addAgentToNode",
                 em::select_overload<Agent::ptr(const AgentConfiguration&,
                                                scene::SceneNode&)>(
-                    &Simulator::addAgent));
+                    &Simulator::addAgent))
+      .function("getExistingObjectIDs", &Simulator::getExistingObjectIDs)
+      .function("setObjectMotionType", &Simulator::setObjectMotionType)
+      .function("getObjectMotionType", &Simulator::getObjectMotionType)
+      .function("addObject", &Simulator::addObject, em::allow_raw_pointers())
+      .function("addObjectByHandle", &Simulator::addObjectByHandle,
+                em::allow_raw_pointers())
+      .function("removeObject", &Simulator::removeObject)
+      .function("setTranslation", &Simulator::setTranslation)
+      .function("getTranslation", &Simulator::getTranslation)
+      .function("setRotation", &Simulator::setRotation)
+      .function("getRotation", &Simulator::getRotation)
+      .function("setObjectLightSetup", &Simulator::setObjectLightSetup)
+      .function("getLightSetup", &Simulator::getLightSetup)
+      .function("setLightSetup", &Simulator::setLightSetup)
+      .function("stepWorld", &Simulator::stepWorld);
 }

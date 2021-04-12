@@ -185,7 +185,7 @@ void VoxelGrid::addVectorToMeshPrimitives(
     Cr::Containers::Array<Mn::UnsignedInt>& indexData,
     const Mn::Vector3i& local_coords,
     const Mn::Vector3& vec) {
-  Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(1, 5, 1.0f);
+  Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(1, 4, 1.0f);
 
   // midpoint of a voxel
   Mn::Vector3 mid = getGlobalCoords(local_coords);
@@ -211,10 +211,9 @@ void VoxelGrid::addVectorToMeshPrimitives(
   vecRotation = vecRotation.rotation(-angle, crossProduct.normalized());
   for (std::size_t i = 0; i != coneData.vertexCount(); ++i) {
     arrayAppend(vertexData, Cr::Containers::InPlaceInit,
-                vecRotation.transformVector(
-                    (conePositions[i] * Mn::Vector3(0.1, 0.2, 0.1) +
-                     Mn::Vector3(0, 0.2, 0)) *
-                    m_voxelSize) +
+                vecRotation.transformVector(conePositions[i] *
+                                                Mn::Vector3(0.02, 0.035, 0.02) +
+                                            Mn::Vector3(0, 0.025, 0)) +
                     mid,
                 coneNormals[i], Mn::Color3{0.4f, 0.8f, 1.0f});
   }
@@ -238,9 +237,8 @@ void VoxelGrid::addVectorToMeshPrimitives(
   for (std::size_t i = 0; i != cylinderData.vertexCount(); ++i) {
     arrayAppend(vertexData, Cr::Containers::InPlaceInit,
                 vecRotation.transformVector(
-                    (cylinderPositions[i] * Mn::Vector3(0.03, 0.15, 0.03) -
-                     Mn::Vector3(0, 0.15, 0)) *
-                    m_voxelSize) +
+                    cylinderPositions[i] * Mn::Vector3(0.007, 0.025, 0.007) -
+                    Mn::Vector3(0, 0.025, 0)) +
                     mid,
                 cylinderNormals[i], Mn::Color3{0.3f, 0.7f, 0.9f});
   }

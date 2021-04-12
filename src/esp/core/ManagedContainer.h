@@ -703,7 +703,7 @@ class ManagedContainer : public ManagedContainerBase {
   ManagedPtr defaultObj_ = nullptr;
 
  public:
-  ESP_SMART_POINTERS(ManagedContainer<T, Access>);
+  ESP_SMART_POINTERS(ManagedContainer<T, Access>)
 
 };  // class ManagedContainer
 

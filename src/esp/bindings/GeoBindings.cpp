@@ -105,10 +105,10 @@ void initGeoBindings(py::module& m) {
       R"(This utility function generates a euclidean distance signed distance
   field for a voxelization and registers it under the specified grid name.)",
       "voxelization"_a, "grid_name"_a);
-  geo.def("generate_scalar_gradient_field", &geo::generateScalarGradientField,
-          R"(Generates a vector field where each vector is the gradient of the
-  euclidean signed distance field.)",
-          "voxelization"_a, "scalar_grid_name"_a, "gradient_grid_name"_a);
+  geo.def(
+      "generate_scalar_gradient_field", &geo::generateScalarGradientField,
+      R"(Generates a gradient vector field gradient given a scalar (float or int) voxel field.)",
+      "voxel_wrapper"_a, "scalar_grid_name"_a, "gradient_grid_name"_a);
   geo.def("get_voxel_set_from_bool_grid", &geo::getVoxelSetFromBoolGrid,
           R"(Returns a vector of all filled/true voxels.)", "voxelization"_a,
           "grid_name"_a);

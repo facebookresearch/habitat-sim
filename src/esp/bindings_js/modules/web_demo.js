@@ -25,6 +25,9 @@ class WebDemo {
   ) {
     this.config = new Module.SimulatorConfiguration();
     this.config.scene_id = Module.scene;
+    this.config.enablePhysics = true;
+    this.config.physicsConfigFile = Module.physicsConfigFile;
+
     this.simenv = new SimEnv(this.config, episode, 0);
 
     agentConfig = this.updateAgentConfigWithSensors({ ...agentConfig });

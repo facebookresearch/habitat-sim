@@ -73,6 +73,8 @@ class Simulator {
     return semanticScene_;
   }
 
+  bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
+
   scene::SceneGraph& getActiveSceneGraph();
   scene::SceneGraph& getActiveSemanticSceneGraph();
 

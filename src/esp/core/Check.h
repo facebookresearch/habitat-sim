@@ -56,7 +56,7 @@ namespace core {
 extern void (*throwInPython)(const char*);
 
 // For use in ESP_CHECK
-CORRADE_NORETURN void throwIfInPythonOtherwiseAbort(const char* message);
+[[noreturn]] void throwIfInPythonOtherwiseAbort(const char* message);
 
 }  // namespace core
 }  // namespace esp
