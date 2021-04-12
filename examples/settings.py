@@ -16,6 +16,7 @@ default_sim_settings = {
     "semantic_sensor": False,  # semantic sensor (default: OFF)
     "depth_sensor": False,  # depth sensor (default: OFF)
     "ortho_sensor": False,  # Orthographic RGB sensor (default: OFF)
+    "fisheye_sensor": False,
     "seed": 1,
     "silent": False,  # do not print log info (default: OFF)
     # settings exclusive to example.py
@@ -94,6 +95,15 @@ def make_cfg(settings):
         ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
         ortho_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
         sensor_specs.append(ortho_sensor_spec)
+
+    if settings["fisheye_sensor"]:
+        ortho_sensor_spec = habitat_sim.FisheyeSensorSpec()
+        ortho_sensor_spec.uuid = "fisheye_sensor"
+        ortho_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
+        ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
+        sensor_specs.append(ortho_sensor_spec)
+        
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()

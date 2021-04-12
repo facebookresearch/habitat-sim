@@ -54,6 +54,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
     )
     from habitat_sim.bindings import (  # noqa: F401
         CameraSensorSpec,
+        FisheyeSensorSpec,
         RigidState,
         SceneGraph,
         SceneNode,
