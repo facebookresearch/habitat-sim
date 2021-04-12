@@ -115,8 +115,8 @@ void initSensorBindings(py::module& m) {
 
   // ====FisheyeSensorDoubleSphereSpec ====
   py::class_<FisheyeSensorDoubleSphereSpec, FisheyeSensorDoubleSphereSpec::ptr,
-             FisheyeSensorSpec, VisualSensorSpec>(
-      m, "FisheyeSensorDoubleSphereSpec", py::dynamic_attr())
+             FisheyeSensorSpec>(m, "FisheyeSensorDoubleSphereSpec",
+                                py::dynamic_attr())
       .def(py::init(&FisheyeSensorDoubleSphereSpec::create<>))
       .def_readwrite("alpha", &FisheyeSensorDoubleSphereSpec::alpha)
       .def_readwrite("xi", &FisheyeSensorDoubleSphereSpec::xi);
