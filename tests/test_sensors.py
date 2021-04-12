@@ -93,7 +93,13 @@ _test_scenes = [
     ),
 ]
 
-all_sensor_types = ["color_sensor", "depth_sensor", "semantic_sensor", "ortho_sensor", "fisheye_sensor"]
+all_sensor_types = [
+    "color_sensor",
+    "depth_sensor",
+    "semantic_sensor",
+    "ortho_sensor",
+    "fisheye_sensor",
+]
 
 
 @pytest.mark.gfxtest

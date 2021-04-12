@@ -16,12 +16,14 @@ from habitat_sim._ext.habitat_sim_bindings import (
 )
 
 __all__ = [
-    "CameraSensorSpec",
-    "VisualSensorSpec",
     "CameraSensor",
+    "CameraSensorSpec",
+    "FisheyeSensor",
+    "FisheyeSensorSpec",
     "Observation",
     "Sensor",
     "SensorType",
     "SensorSpec",
     "VisualSensor",
+    "VisualSensorSpec",
 ]

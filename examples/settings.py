@@ -103,7 +103,6 @@ def make_cfg(settings):
         ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
         ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
         sensor_specs.append(ortho_sensor_spec)
-        
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()
