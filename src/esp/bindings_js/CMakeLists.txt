@@ -22,7 +22,7 @@ set_target_properties(
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-# copy JS/HTML/CSS resources for WebGL build
+# Create symlinks for specific files as well as the entire data directory.
 set(
   resources
   ${SCENE_DATASETS}/habitat-test-scenes/skokloster-castle.glb
@@ -31,6 +31,7 @@ set(
   ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.navmesh
   ${MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS}
   ${MAGNUM_WEBAPPLICATION_CSS}
+  ${DATA_DIR}
 )
 
 foreach(resource ${resources})
@@ -56,6 +57,7 @@ add_custom_command(
 set(
   bundle_files
   bindings.html
+  test_page.html
   webvr.html
   viewer.html
   bindings.css
@@ -69,6 +71,7 @@ set(
   modules/web_demo.js
   modules/viewer_demo.js
   modules/defaults.js
+  modules/test_page.js
   modules/vr_demo.js
   modules/utils.js
 )
