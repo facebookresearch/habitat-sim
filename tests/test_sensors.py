@@ -55,6 +55,8 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
             "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
         )
     )
+    if not osp.exists(gt_obs_file):
+        return obs, None
     gt = np.load(gt_obs_file)
 
     if gpu2gpu:
@@ -98,7 +100,7 @@ all_sensor_types = [
     "color_sensor",
     "depth_sensor",
     "semantic_sensor",
-    # "ortho_sensor",
+    "ortho_sensor",
     "fisheye_sensor",
 ]
 
@@ -159,6 +161,8 @@ def test_sensors(
             for sensor_spec in additional_sensors:
                 sim.add_sensor(sensor_spec)
         obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
+        if gt is None:
+            return
 
         # Different GPUs and different driver version will produce slightly
         # different images; differences on aliased edges might also stem from how a
