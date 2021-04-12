@@ -98,14 +98,14 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("clear_color", &CameraSensorSpec::clearColor);
 
   // ====CameraSensorSpec ====
-  py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec,
-             SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
+  py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec>(
+      m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
   // ====FisheyeSensorSpec ====
-  py::class_<FisheyeSensorSpec, FisheyeSensorSpec::ptr, VisualSensorSpec,
-             SensorSpec>(m, "FisheyeSensorSpec", py::dynamic_attr())
+  py::class_<FisheyeSensorSpec, FisheyeSensorSpec::ptr, VisualSensorSpec>(
+      m, "FisheyeSensorSpec", py::dynamic_attr())
       .def(py::init(&FisheyeSensorSpec::create<>))
       .def_readwrite("focal_length", &FisheyeSensorSpec::focalLength)
       .def_readwrite("principal_point_offset",
@@ -115,7 +115,7 @@ void initSensorBindings(py::module& m) {
 
   // ====FisheyeSensorDoubleSphereSpec ====
   py::class_<FisheyeSensorDoubleSphereSpec, FisheyeSensorDoubleSphereSpec::ptr,
-             FisheyeSensorSpec, VisualSensorSpec, SensorSpec>(
+             FisheyeSensorSpec, VisualSensorSpec>(
       m, "FisheyeSensorDoubleSphereSpec", py::dynamic_attr())
       .def(py::init(&FisheyeSensorDoubleSphereSpec::create<>))
       .def_readwrite("alpha", &FisheyeSensorDoubleSphereSpec::alpha)
