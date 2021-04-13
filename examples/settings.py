@@ -2,8 +2,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import numpy as np
-
 import habitat_sim
 import habitat_sim.agent
 
@@ -106,12 +104,13 @@ def make_cfg(settings):
             habitat_sim.FisheyeSensorModelType.DOUBLESPHERE
         )
         fisheye_sensor_spec.resolution = [settings["height"], settings["width"]]
-        fisheye_sensor_spec.focal_length = (
-            np.ones(2) * min(settings["height"], settings["width"]) * 0.5
-        )
-        fisheye_sensor_spec.principle_point_offset = np.ones(2, dtype=np.int32) * (
-            min(settings["height"], settings["width"]) // 2
-        )
+        fisheye_sensor_spec.focal_length = [
+            min(settings["height"], settings["width"]) * 0.5
+        ] * 2
+        fisheye_sensor_spec.principle_point_offset = [
+            settings["height"] // 2,
+            settings["width"] // 2,
+        ]
         fisheye_sensor_spec.position = [0, settings["sensor_height"], 0]
         sensor_specs.append(fisheye_sensor_spec)
 
