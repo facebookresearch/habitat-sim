@@ -112,7 +112,7 @@ TextureVisualizerShader& TextureVisualizerShader::setColorMapTransformation(
                      << offset << "is illegal.",
                  *this);
   CORRADE_ASSERT(scale >= 0.0,
-                 "TextureVisualizerShader::setColorMapTransformation(): scale "
+                 "TextureVisualizerShader::setColorMapTransformation(): scale"
                      << scale << "is illegal.",
                  *this);
   setUniform(colorMapOffsetScaleUniform_, Mn::Vector2{offset, scale});
