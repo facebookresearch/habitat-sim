@@ -2,8 +2,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import magnum as mn
-
 import habitat_sim
 import habitat_sim.agent
 
@@ -107,16 +105,23 @@ def make_cfg(settings):
         fisheye_sensor_spec.sensor_model_type = (
             habitat_sim.FisheyeSensorModelType.DOUBLE_SPHERE
         )
-        fisheye_sensor_spec.alpha = 0.59  # default
-        fisheye_sensor_spec.xi = -0.18  # default
+
+        # The default value (alpha, xi) is set to match the lens "BF2M2020S23" found in Table 3 of this paper:
+        # Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
+        # Camera Model, The International Conference on 3D Vision (3DV), 2018
+        # You can find the intrinsic parameters for the other lenses in the same table as well.
+        # fisheye_sensor_spec.alpha = 0.59  # default
+        # fisheye_sensor_spec.xi = -0.18  # default
+
         fisheye_sensor_spec.resolution = [settings["height"], settings["width"]]
         fisheye_sensor_spec.focal_length = [
             min(settings["height"], settings["width"]) * 0.5
         ] * 2
-        fisheye_sensor_spec.principal_point_offset = mn.Vector2(
-            settings["height"] // 2,
-            settings["width"] // 2,
-        )
+        # The default principal_point_offset is the middle of the image
+        # fisheye_sensor_spec.principal_point_offset = mn.Vector2(
+        #    settings["height"] // 2,
+        #    settings["width"] // 2,
+        # )
         fisheye_sensor_spec.position = [0, settings["sensor_height"], 0]
         for k in kw_args:
             setattr(fisheye_sensor_spec, k, kw_args[k])
