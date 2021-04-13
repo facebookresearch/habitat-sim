@@ -11,7 +11,6 @@
 
 #include "CameraSensor.h"
 #include "esp/gfx/DepthUnprojection.h"
-#include "esp/gfx/Renderer.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {
@@ -107,6 +106,15 @@ gfx::RenderCamera* CameraSensor::getRenderCamera() const {
   return renderCamera_;
 }
 
+void CameraSensor::draw(scene::SceneGraph& sceneGraph,
+                        gfx::RenderCamera::Flags flags) {
+  for (auto& it : sceneGraph.getDrawableGroups()) {
+    if (it.second.prepareForDraw(*renderCamera_)) {
+      renderCamera_->draw(it.second, flags);
+    }
+  }
+}
+
 bool CameraSensor::drawObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;
@@ -115,20 +123,29 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
   renderTarget().renderEnter();
 
   gfx::RenderCamera::Flags flags;
-  if (sim.isFrustumCullingEnabled())
+  if (sim.isFrustumCullingEnabled()) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
+  }
 
-  gfx::Renderer::ptr renderer = sim.getRenderer();
   if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
     // TODO: check sim has semantic scene graph
-    renderer->draw(*this, sim.getActiveSemanticSceneGraph(), flags);
-    if (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph()) {
+    bool twoSceneGraphs =
+        (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
+
+    if (twoSceneGraphs) {
+      VisualSensor::MoveSemanticSensorNodeHelper helper(*this, sim);
+      draw(sim.getActiveSemanticSceneGraph(), flags);
+    } else {
+      draw(sim.getActiveSemanticSceneGraph(), flags);
+    }
+
+    if (twoSceneGraphs) {
       flags |= gfx::RenderCamera::Flag::ObjectsOnly;
-      renderer->draw(*this, sim.getActiveSceneGraph(), flags);
+      draw(sim.getActiveSceneGraph(), flags);
     }
   } else {
-    // SensorType is Depth or any other type
-    renderer->draw(*this, sim.getActiveSceneGraph(), flags);
+    // SensorType is Color, Depth or any other type
+    draw(sim.getActiveSceneGraph(), flags);
   }
 
   renderTarget().renderExit();

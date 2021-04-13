@@ -112,15 +112,15 @@ class FisheyeSensor : public VisualSensor {
    */
   bool drawObservation(sim::Simulator& sim) override;
 
-  /**
-   * @brief Return a pointer to this fisheye sensor's spec
-   */
-  FisheyeSensorSpec::ptr specification() const { return fisheyeSensorSpec_; }
-
   static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
       "fisheye-model-type={}-flags={}";
 
   gfx::RenderCamera* getRenderCamera() = delete;
+
+  /**
+   * @brief Return a pointer to this fisheye sensor's SensorSpec
+   */
+  FisheyeSensorSpec::ptr specification() const { return fisheyeSensorSpec_; }
 
  protected:
   FisheyeSensorSpec::ptr fisheyeSensorSpec_ =

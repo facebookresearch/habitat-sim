@@ -75,7 +75,18 @@ class VoxelGrid {
    * @return The enumerated type.
    */
   template <typename T>
-  VoxelGridType voxelGridTypeFor();  // no definition here
+  VoxelGridType voxelGridTypeFor();
+
+  /**
+   * @brief Returns the type of the specified voxel grid.
+   * @param gridName The name of the grid.
+   * @return The enumerated type.
+   *
+   */
+  VoxelGridType getGridType(const std::string& gridName) {
+    assert(grids_.find(gridName) != grids_.end());
+    return grids_[gridName].type;
+  }
 
   /**
    * @brief Generates a new empty voxel grid of a specified type.
@@ -130,6 +141,15 @@ class VoxelGrid {
   std::vector<std::pair<std::string, VoxelGridType>> getExistingGrids();
 
   /**
+   * @brief Returns a bool true if a grid exists, false otherwise.
+   * @param gridName The name of the grid.
+   * @return A bool representing whether or not the specified grid exists.
+   */
+  bool gridExists(const std::string& gridName) {
+    return grids_.find(gridName) != grids_.end();
+  }
+
+  /**
    * @brief Removes a grid and frees up memory.
    * @param name The name of the grid to be removed.
    */
@@ -141,13 +161,29 @@ class VoxelGrid {
   /**
    * @brief Returns a StridedArrayView3D of a grid for easy index access and
    * manipulation.
-   * @param gridName The name of the grid to be removed.
+   * @param gridName The name of the grid to be retrieved.
    * @return A StridedArrayView3D of the specified grid.
    */
   template <typename T>
   Corrade::Containers::StridedArrayView3D<T> getGrid(
       const std::string& gridName) {
+    VoxelGridType type = voxelGridTypeFor<T>();
+    CORRADE_ASSERT(grids_[gridName].type == type,
+                   "VoxelGrid::getGrid(\"" + gridName +
+                       "\") - Error: incorrect grid type cast requested.",
+                   {});
     return Corrade::Containers::arrayCast<T>(grids_[gridName].view);
+  }
+
+  /**
+   * @brief Checks to see if a given 3D voxel index is valid and does not go out
+   * of bounds.
+   * @param coords The voxel index.
+   * @return True if the voxel index is valid, false otherwise.
+   */
+  bool isValidIndex(const Mn::Vector3i& coords) const {
+    return bool((coords >= Mn::Vector3i()).all() &&
+                (coords < m_voxelGridDimensions).all());
   }
 
   //  --== GETTERS AND SETTERS FOR VOXELS ==--
@@ -192,6 +228,15 @@ class VoxelGrid {
    * @return The Vector3 value representing the size of a voxel.
    */
   Magnum::Vector3 getVoxelSize() { return m_voxelSize; }
+
+  /**
+   * @brief Gets the length of the voxel grid.
+   * @return The length of the 1 dimensional array voxel grid.
+   */
+  int gridSize() {
+    return m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
+           m_voxelGridDimensions[2];
+  }
 
   /**
    * @brief Returns the bounding box minimum offset used for generating an
@@ -313,16 +358,6 @@ class VoxelGrid {
   );
 
   /**
-   * @brief Checks to see if a given 3D voxel index is valid and does not go out
-   * of bounds.
-   * @param coords The voxel index.
-   * @return True if the voxel index is valid, false otherwise.
-   */
-  bool isValidIndex(const Magnum::Vector3i& coords) const {
-    return bool(coords >= Magnum::Vector3i() && coords < m_voxelGridDimensions);
-  }
-
-  /**
    * @brief Helper function for generate mesh. Adds a cube voxel to a mesh.
    * @param vertexData A Corrade Array of VoxelVertex which each contain a
    * vertex's position, normal, and color
@@ -355,15 +390,6 @@ class VoxelGrid {
       Corrade::Containers::Array<Mn::UnsignedInt>& indexData,
       const Magnum::Vector3i& local_coords,
       const Magnum::Vector3& vec);
-
-  /**
-   * @brief Gets the length of the voxel grid.
-   * @return The length of the 1 dimensional array voxel grid.
-   */
-  int gridSize() {
-    return m_voxelGridDimensions[0] * m_voxelGridDimensions[1] *
-           m_voxelGridDimensions[2];
-  }
 
  private:
   // The number of voxels on the x, y, and z dimensions of the grid

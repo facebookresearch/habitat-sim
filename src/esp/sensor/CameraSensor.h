@@ -159,7 +159,7 @@ class CameraSensor : public VisualSensor {
   }
 
   /**
-   * @brief Return a pointer to this camera sensor's spec
+   * @brief Return a pointer to this camera sensor's SensorSpec
    */
   CameraSensorSpec::ptr specification() const { return cameraSensorSpec_; }
 
@@ -177,6 +177,13 @@ class CameraSensor : public VisualSensor {
    * change.
    */
   void recomputeProjectionMatrix();
+
+  /**
+   * @brief Draw the scene graph with the specified camera flag
+   * @param[in] sceneGraph, scene graph to be drawn
+   * @param[in] flags, flag for the render camera
+   */
+  void draw(scene::SceneGraph& sceneGraph, gfx::RenderCamera::Flags flags);
 
   /**
    * @brief This camera's projection matrix. Should be recomputeulated every

@@ -18,11 +18,13 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/ResourceManager.h>
 
+#include "esp/core/Check.h"
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/TextureVisualizerShader.h"
 #include "esp/gfx/magnum.h"
 #include "esp/sensor/VisualSensor.h"
+#include "esp/sim/Simulator.h"
 
 namespace Mn = Magnum;
 
@@ -48,10 +50,14 @@ struct Renderer::Impl {
     }
   }
 
-  void draw(sensor::VisualSensor& visualSensor,
-            scene::SceneGraph& sceneGraph,
-            RenderCamera::Flags flags) {
-    draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
+  void draw(sensor::VisualSensor& visualSensor, sim::Simulator& sim) {
+    if (visualSensor.specification()->sensorType ==
+        sensor::SensorType::Semantic) {
+      ESP_CHECK(sim.semanticSceneExists(),
+                "Renderer::Impl::draw(): SemanticSensor observation requested "
+                "but no SemanticScene is loaded");
+    }
+    visualSensor.drawObservation(sim);
   }
 
   void visualize(sensor::VisualSensor& visualSensor,
@@ -195,10 +201,8 @@ void Renderer::draw(RenderCamera& camera,
   pimpl_->draw(camera, sceneGraph, flags);
 }
 
-void Renderer::draw(sensor::VisualSensor& visualSensor,
-                    scene::SceneGraph& sceneGraph,
-                    RenderCamera::Flags flags) {
-  pimpl_->draw(visualSensor, sceneGraph, flags);
+void Renderer::draw(sensor::VisualSensor& visualSensor, sim::Simulator& sim) {
+  pimpl_->draw(visualSensor, sim);
 }
 
 void Renderer::bindRenderTarget(sensor::VisualSensor& sensor,

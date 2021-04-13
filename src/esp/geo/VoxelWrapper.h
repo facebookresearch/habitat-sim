@@ -86,6 +86,15 @@ class VoxelWrapper {
     return voxelGrid->getExistingGrids();
   }
 
+  /**
+   * @brief Returns a bool true if a grid exists, false otherwise.
+   * @param gridName The name of the grid.
+   * @return A bool representing whether or not the specified grid exists.
+   */
+  bool gridExists(const std::string& gridName) {
+    return voxelGrid->gridExists(gridName);
+  }
+
   // --== FUNCTIONS FROM VOXELGRID ==--
   /**
    * @brief Generates a new empty voxel grid of a specified type.
