@@ -59,7 +59,7 @@ void initSensorBindings(py::module& m) {
       .value("FISHEYE", SensorSubType::Fisheye);
 
   py::enum_<FisheyeSensorModelType>(m, "FisheyeSensorModelType")
-      .value("DOUBLESPHERE", FisheyeSensorModelType::DoubleSphere);
+      .value("DOUBLE_SPHERE", FisheyeSensorModelType::DoubleSphere);
 
   // ==== SensorSpec ====
   py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())

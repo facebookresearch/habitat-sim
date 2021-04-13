@@ -3,11 +3,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
 import itertools
 import json
 from os import path as osp
 
+import cv2
 import magnum as mn
 import numpy as np
 import pytest
@@ -47,7 +47,8 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
         assert sim.get_agent(0)._sensors[sensor_type].hfov == mn.Deg(
             80
         ), "hfov not set correctly"
-
+    if sensor_type == "fisheye_sensor":
+        cv2.imwrite("test_fisheye.png", obs[sensor_type])
     gt_obs_file = osp.abspath(
         osp.join(
             osp.dirname(__file__),

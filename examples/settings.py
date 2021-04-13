@@ -2,6 +2,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import magnum as mn
+
 import habitat_sim
 import habitat_sim.agent
 
@@ -101,16 +103,16 @@ def make_cfg(settings):
         fisheye_sensor_spec.uuid = "fisheye_sensor"
         fisheye_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         fisheye_sensor_spec.sensor_subtype = (
-            habitat_sim.FisheyeSensorModelType.DOUBLESPHERE
+            habitat_sim.FisheyeSensorModelType.DOUBLE_SPHERE
         )
         fisheye_sensor_spec.resolution = [settings["height"], settings["width"]]
         fisheye_sensor_spec.focal_length = [
             min(settings["height"], settings["width"]) * 0.5
         ] * 2
-        fisheye_sensor_spec.principle_point_offset = [
+        fisheye_sensor_spec.principal_point_offset = mn.Vector2(
             settings["height"] // 2,
             settings["width"] // 2,
-        ]
+        )
         fisheye_sensor_spec.position = [0, settings["sensor_height"], 0]
         sensor_specs.append(fisheye_sensor_spec)
 
