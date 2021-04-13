@@ -43,6 +43,8 @@ set(
   PbrShader.h
   PbrDrawable.cpp
   PbrDrawable.h
+  TextureVisualizerShader.cpp
+  TextureVisualizerShader.h
   DoubleSphereCameraShader.cpp
   DoubleSphereCameraShader.h
   FisheyeShader.cpp
@@ -68,6 +70,7 @@ find_package(
   AnySceneImporter
   GL
   MeshTools
+  DebugTools
   SceneGraph
   Shaders
   Trade
@@ -109,6 +112,7 @@ target_link_libraries(
          Magnum::GL
          Magnum::Magnum
          Magnum::MeshTools
+         Magnum::DebugTools
          Magnum::SceneGraph
          Magnum::Shaders
          Magnum::Trade

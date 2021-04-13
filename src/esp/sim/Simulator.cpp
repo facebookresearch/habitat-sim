@@ -12,6 +12,7 @@
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/Context.h>
+#include <Magnum/GL/Renderer.h>
 
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
@@ -1208,7 +1209,26 @@ bool Simulator::drawObservation(const int agentId,
 
   if (ag != nullptr) {
     sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
-    return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
+    if (sensor.isVisualSensor()) {
+      return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
+    }
+  }
+  return false;
+}
+
+bool Simulator::visualizeObservation(int agentId,
+                                     const std::string& sensorId,
+                                     float colorMapOffset,
+                                     float colorMapScale) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
+    if (sensor.isVisualSensor()) {
+      renderer_->visualize(static_cast<sensor::VisualSensor&>(sensor),
+                           colorMapOffset, colorMapScale);
+    }
+    return true;
   }
   return false;
 }
