@@ -18,7 +18,7 @@ from examples.settings import make_cfg
 from habitat_sim.utils.common import quat_from_coeffs
 
 
-def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
+def _render_scene(sim, scene, sensor_type, gpu2gpu):
     gt_data_pose_file = osp.abspath(
         osp.join(
             osp.dirname(__file__),
@@ -35,7 +35,20 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
     sim.initialize_agent(0, state)
     obs = sim.step("move_forward")
 
+    if gpu2gpu:
+        torch = pytest.importorskip("torch")
+
+        for k, v in obs.items():
+            if torch.is_tensor(v):
+                obs[k] = v.cpu().numpy()
+
     assert sensor_type in obs, f"{sensor_type} not in obs"
+    return obs
+
+
+def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
+
+    obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
 
     # now that sensors are constructed, test some getter/setters
     if hasattr(sim.get_agent(0)._sensors[sensor_type], "fov"):
@@ -53,16 +66,9 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
             "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
         )
     )
-    if not osp.exists(gt_obs_file):
-        return obs, None
+    # if not osp.exists(gt_obs_file):
+    #    np.save(gt_obs_file, obs[sensor_type])
     gt = np.load(gt_obs_file)
-
-    if gpu2gpu:
-        torch = pytest.importorskip("torch")
-
-        for k, v in obs.items():
-            if torch.is_tensor(v):
-                obs[k] = v.cpu().numpy()
 
     return obs, gt
 
@@ -94,10 +100,14 @@ _test_scenes = [
     ),
 ]
 
-all_sensor_types = [
+all_base_sensor_types = [
     "color_sensor",
     "depth_sensor",
     "semantic_sensor",
+]
+
+# Sensors that don't have GT NPY files (yet)
+all_exotic_sensor_types = [
     "ortho_sensor",
     "fisheye_rgb_sensor",
     "fisheye_depth_sensor",
@@ -107,11 +117,9 @@ all_sensor_types = [
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
     "scene,sensor_type",
-    [
-        (_scene, s_type)
-        for _scene, s_type in itertools.product(_test_scenes, all_sensor_types)
-        if not (_scene in _test_scenes[2:] and "semantic" in s_type)
-    ],
+    list(itertools.product(_test_scenes[0:2], all_base_sensor_types))
+    + list(itertools.product(_test_scenes[2:], all_base_sensor_types[0:2]))
+    + list(itertools.product(_test_scenes, all_exotic_sensor_types)),
 )
 @pytest.mark.parametrize("gpu2gpu", [True, False])
 # NB: This should go last, we have to force a close on the simulator when
@@ -134,12 +142,12 @@ def test_sensors(
 
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
-    add_sensor_lazy = add_sensor_lazy and all_sensor_types[1] == sensor_type
+    add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
 
-    for sens in all_sensor_types:
+    for sens in all_base_sensor_types:
         if add_sensor_lazy:
             make_cfg_settings[sens] = (
-                sens in all_sensor_types[:2] and sens != sensor_type
+                sens in all_base_sensor_types[:2] and sens != sensor_type
             )
         else:
             make_cfg_settings[sens] = False
@@ -161,9 +169,11 @@ def test_sensors(
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
                 sim.add_sensor(sensor_spec)
-        obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
-        if gt is None:
+        if sensor_type in all_exotic_sensor_types:
+            obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
+            # Smoke Test.
             return
+        obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
 
         # Different GPUs and different driver version will produce slightly
         # different images; differences on aliased edges might also stem from how a
@@ -177,7 +187,7 @@ def test_sensors(
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize("scene", _test_scenes)
-@pytest.mark.parametrize("sensor_type", all_sensor_types[0:2])
+@pytest.mark.parametrize("sensor_type", all_base_sensor_types[0:2])
 def test_reconfigure_render(
     scene,
     sensor_type,
@@ -186,7 +196,7 @@ def test_reconfigure_render(
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
-    for sens in all_sensor_types:
+    for sens in all_base_sensor_types:
         make_cfg_settings[sens] = False
 
     make_cfg_settings["scene"] = _test_scenes[-1]
@@ -207,8 +217,6 @@ def test_reconfigure_render(
         ) < 9.0e-2 * np.linalg.norm(
             gt.astype(np.float)
         ), f"Incorrect {sensor_type} output"
-
-    sim.close()
 
 
 # Tests to make sure that no sensors is supported and doesn't crash
