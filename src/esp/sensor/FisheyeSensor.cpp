@@ -63,14 +63,6 @@ int computeCubemapSize(const esp::vec2i& resolution,
   return size;
 }
 
-Magnum::Vector2 getPrinciplePoint(const FisheyeSensorSpec spec) {
-  if (spec.principalPointOffset != Corrade::Containers::NullOpt) {
-    return *spec.principalPointOffset;
-  }
-  auto res = spec.resolution;
-  return Magnum::Vector2(res[0] / 2, res[1] / 2);
-}
-
 FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
                              const FisheyeSensorSpec::ptr& spec)
     : VisualSensor(cameraNode, spec) {
@@ -212,7 +204,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
           static_cast<FisheyeSensorDoubleSphereSpec&>(*fisheyeSensorSpec_);
       (*shader)
           .setFocalLength(actualSpec.focalLength)
-          .setPrincipalPointOffset(getPrinciplePoint(actualSpec))
+          .setPrincipalPointOffset(actualSpec.principalPointOffset)
           .setAlpha(actualSpec.alpha)
           .setXi(actualSpec.xi);
       drawWith(*shader);

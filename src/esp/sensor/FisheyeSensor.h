@@ -43,7 +43,7 @@ struct FisheyeSensorSpec : public VisualSensorSpec {
    * @brief Principal Point Offset in pixel, cx, cy, location of the principal
    * point relative to the image plane's origin.
    */
-  Corrade::Containers::Optional<Magnum::Vector2> principalPointOffset;
+  Magnum::Vector2 principalPointOffset;
 
   /**
    * @brief Constructor
