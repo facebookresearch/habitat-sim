@@ -25,6 +25,14 @@ class Renderer {
      * Note: Cannot set this flag when doing RGB rendering
      */
     NoTextures = 1 << 0,
+
+    /**
+     * When binding the render target to a depth or a sementic sensor,
+     * setting this flag will give the render target the ability to visualize
+     * the depth, or sementic info
+     * see bindRenderTarget for more info.
+     */
+    VisualizeTexture = 1 << 1,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -53,9 +61,19 @@ class Renderer {
   void draw(sensor::VisualSensor& visualSensor, sim::Simulator& sim);
 
   /**
-   * @brief Binds a @ref RenderTarget to the sensor
+   * @brief visualize the observation of a non-rgb visual sensor, e.g., depth,
+   * semantic
    */
-  void bindRenderTarget(sensor::VisualSensor& sensor);
+  void visualize(sensor::VisualSensor& visualSensor,
+                 float colorMapOffset = 1.0f / 512.0f,
+                 float colorMapScale = 1.0f / 256.0f);
+
+  /**
+   * @brief Binds a @ref RenderTarget to the sensor
+   * @param[in] sensor the target sensor
+   * @param[in] bindingFlags flags, such as to control the bindings
+   */
+  void bindRenderTarget(sensor::VisualSensor& sensor, Flags bindingFlags = {});
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(Renderer)
 };

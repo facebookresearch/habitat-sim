@@ -80,8 +80,15 @@ void initGfxBindings(py::module& m) {
                              "Alias to node");
 
   // ==== Renderer ====
-  py::class_<Renderer, Renderer::ptr>(m, "Renderer")
-      .def(py::init(&Renderer::create<>))
+  py::class_<Renderer, Renderer::ptr> renderer(m, "Renderer");
+
+  py::enum_<Renderer::Flag> rendererFlags{renderer, "Flags", "Flags"};
+
+  rendererFlags.value("VISUALIZE_TEXTURE", Renderer::Flag::VisualizeTexture)
+      .value("NONE", Renderer::Flag{});
+  corrade::enumOperators(rendererFlags);
+
+  renderer.def(py::init(&Renderer::create<>))
       .def(
           "draw",
           [](Renderer& self, RenderCamera& camera,
@@ -96,7 +103,14 @@ void initGfxBindings(py::module& m) {
              sim::Simulator& sim) { self.draw(visualSensor, sim); },
           R"(Draw the active scene in current simulator using the visual sensor)",
           "visualSensor"_a, "sim"_a)
-      .def("bind_render_target", &Renderer::bindRenderTarget);
+      .def(
+          "bind_render_target",
+          [](Renderer& self, sensor::VisualSensor& visualSensor,
+             Renderer::Flag flags) {
+            self.bindRenderTarget(visualSensor, Renderer::Flags{flags});
+          },
+          R"(Binds a RenderTarget to the sensor)", "visualSensor"_a,
+          "flags"_a = Renderer::Flag{});
 
   py::class_<RenderTarget>(m, "RenderTarget")
       .def("__enter__",

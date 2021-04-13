@@ -847,6 +847,32 @@ class Simulator {
    */
   bool drawObservation(int agentId, const std::string& sensorId);
 
+  /**
+   * @brief visualize the undisplayable observations such as depth, semantic, to
+   * the frame buffer stored in the @ref SensorInfoVisualizer
+   * Note: it will not display the observation on the default frame buffer
+   * @param[in] agentId    Id of the agent for which the observation is to
+   *                   be returned
+   * @param[in] sensorId   Id of the sensor for which the observation is to
+   *                   be returned
+   * @param[in] colorMapOffset the offset of the color map
+   * @param[in] colorMapScale the scale of the color map
+   * See details in @ref TextureVisualizerShader::setColorMapTransformation for
+   * more info.
+   *
+   * NOTE: it assumes:
+   * -) it is a non-rgb sensor (such as a depth or semantic sensor);
+   * -) the drawObservation is called;
+   * -) when the render target is bound to the sensor, "VisualizeTexture" is
+   * enabled. See @ref Renderer::bindRenderTarget and @ref
+   * Renderer::RenderTargetBindingFlag for more info
+   * @return false if the sensor's observation cannot be visualized.
+   */
+  bool visualizeObservation(int agentId,
+                            const std::string& sensorId,
+                            float colorMapOffset,
+                            float colorMapScale);
+
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,
                            sensor::Observation& observation);

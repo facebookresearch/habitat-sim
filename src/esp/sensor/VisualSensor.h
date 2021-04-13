@@ -8,6 +8,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/ConfigurationValue.h>
 
+#include "esp/core/Check.h"
 #include "esp/core/esp.h"
 
 #include "esp/gfx/RenderCamera.h"
@@ -84,14 +85,9 @@ class VisualSensor : public Sensor {
 
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
-   *
-   * Will always be @ref Corrade::Containers::NullOpt for the base sensor class
-   * as it has no projection parameters
    */
   virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
-      const {
-    return Corrade::Containers::NullOpt;
-  };
+      const;
 
   /**
    * @brief Checks to see if this sensor has a RenderTarget bound or not
@@ -108,8 +104,8 @@ class VisualSensor : public Sensor {
    * @brief Returns a reference to the sensors render target
    */
   gfx::RenderTarget& renderTarget() {
-    if (!hasRenderTarget())
-      throw std::runtime_error("Sensor has no rendering target");
+    ESP_CHECK(hasRenderTarget(),
+              "VisualSensor::renderTarget(): Sensor has no rendering target");
     return *tgt_;
   }
 
@@ -128,7 +124,8 @@ class VisualSensor : public Sensor {
    */
   virtual void readObservation(Observation& obs);
 
-  /**
+  /*
+   * @brief Display next observation from Simulator on default frame buffer
    * @brief Draws an observation to the frame buffer using simulator's renderer,
    * then reads the observation to the sensor's memory buffer
    * @return true if success, otherwise false (e.g., failed to draw or read
@@ -167,6 +164,11 @@ class VisualSensor : public Sensor {
   }
 
   /**
+   * @brief Return a pointer to this visual sensor's SensorSpec
+   */
+  VisualSensorSpec::ptr specification() const { return visualSensorSpec_; }
+
+  /**
    * @brief Returns RenderCamera
    */
   virtual gfx::RenderCamera* getRenderCamera() const { return nullptr; }
@@ -185,11 +187,6 @@ class VisualSensor : public Sensor {
    * @brief Returns the FOV of this Sensor
    */
   Mn::Deg getFOV() const { return hfov_; }
-
-  /**
-   * @brief Return a pointer to this visual sensor's SensorSpec
-   */
-  VisualSensorSpec::ptr specification() const { return visualSensorSpec_; }
 
  protected:
   /** @brief field of view
