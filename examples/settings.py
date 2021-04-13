@@ -18,7 +18,8 @@ default_sim_settings = {
     "semantic_sensor": False,  # semantic sensor (default: OFF)
     "depth_sensor": False,  # depth sensor (default: OFF)
     "ortho_sensor": False,  # Orthographic RGB sensor (default: OFF)
-    "fisheye_sensor": False,
+    "fisheye_rgb_sensor": False,
+    "fisheye_depth_sensor": False,
     "seed": 1,
     "silent": False,  # do not print log info (default: OFF)
     # settings exclusive to example.py
@@ -98,13 +99,16 @@ def make_cfg(settings):
         ortho_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
         sensor_specs.append(ortho_sensor_spec)
 
-    if settings["fisheye_sensor"]:
+    # TODO Figure out how to implement copying of specs
+    def create_fisheye_spec(**kw_args):
         fisheye_sensor_spec = habitat_sim.FisheyeSensorDoubleSphereSpec()
         fisheye_sensor_spec.uuid = "fisheye_sensor"
         fisheye_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         fisheye_sensor_spec.sensor_subtype = (
             habitat_sim.FisheyeSensorModelType.DOUBLE_SPHERE
         )
+        fisheye_sensor_spec.alpha = 0.59  # default
+        fisheye_sensor_spec.xi = -0.18  # default
         fisheye_sensor_spec.resolution = [settings["height"], settings["width"]]
         fisheye_sensor_spec.focal_length = [
             min(settings["height"], settings["width"]) * 0.5
@@ -114,7 +118,18 @@ def make_cfg(settings):
             settings["width"] // 2,
         )
         fisheye_sensor_spec.position = [0, settings["sensor_height"], 0]
-        sensor_specs.append(fisheye_sensor_spec)
+        for k in kw_args:
+            setattr(fisheye_sensor_spec, k, kw_args[k])
+        return fisheye_sensor_spec
+
+    if settings["fisheye_rgb_sensor"]:
+        fisheye_rgb_sensor_spec = create_fisheye_spec(uuid="fisheye_rgb_sensor")
+        sensor_specs.append(fisheye_rgb_sensor_spec)
+    if settings["fisheye_depth_sensor"]:
+        fisheye_depth_sensor_spec = create_fisheye_spec(
+            uuid="fisheye_depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
+        )
+        sensor_specs.append(fisheye_depth_sensor_spec)
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()

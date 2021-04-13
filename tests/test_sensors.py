@@ -7,7 +7,6 @@ import itertools
 import json
 from os import path as osp
 
-import cv2
 import magnum as mn
 import numpy as np
 import pytest
@@ -47,8 +46,6 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
         assert sim.get_agent(0)._sensors[sensor_type].hfov == mn.Deg(
             80
         ), "hfov not set correctly"
-    if sensor_type == "fisheye_sensor":
-        cv2.imwrite("test_fisheye.png", obs[sensor_type])
     gt_obs_file = osp.abspath(
         osp.join(
             osp.dirname(__file__),
@@ -102,16 +99,19 @@ all_sensor_types = [
     "depth_sensor",
     "semantic_sensor",
     "ortho_sensor",
-    "fisheye_sensor",
+    "fisheye_rgb_sensor",
+    "fisheye_depth_sensor",
 ]
 
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
     "scene,sensor_type",
-    list(itertools.product(_test_scenes[0:2], all_sensor_types[:3]))
-    + list(itertools.product(_test_scenes[2:], all_sensor_types[0:2]))
-    + list(itertools.product(_test_scenes, all_sensor_types[3:])),
+    [
+        (_scene, s_type)
+        for _scene, s_type in itertools.product(_test_scenes, all_sensor_types)
+        if not (_scene in _test_scenes[2:] and "semantic" in s_type)
+    ],
 )
 @pytest.mark.parametrize("gpu2gpu", [True, False])
 # NB: This should go last, we have to force a close on the simulator when

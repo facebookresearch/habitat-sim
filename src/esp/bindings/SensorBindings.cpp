@@ -110,10 +110,17 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("focal_length", &FisheyeSensorSpec::focalLength)
       .def_readwrite("principal_point_offset",
                      &FisheyeSensorSpec::principalPointOffset)
-      .def_readwrite("cubemap_size", &FisheyeSensorSpec::cubemapSize)
+      .def_readwrite(
+          "cubemap_size", &FisheyeSensorSpec::cubemapSize,
+          R"(If not set, will be the min(height, width) of resolution)")
       .def_readwrite("sensor_subtype", &FisheyeSensorSpec::fisheyeModelType);
 
   // ====FisheyeSensorDoubleSphereSpec ====
+  /* alpha and xi are specific to "double sphere" camera model.
+    see details (value ranges) in:
+    Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
+    Camera Model, The International Conference on 3D Vision (3DV), 2018
+  */
   py::class_<FisheyeSensorDoubleSphereSpec, FisheyeSensorDoubleSphereSpec::ptr,
              FisheyeSensorSpec>(m, "FisheyeSensorDoubleSphereSpec",
                                 py::dynamic_attr())
