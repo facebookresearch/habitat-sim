@@ -113,7 +113,7 @@ void initSensorBindings(py::module& m) {
       .def_readwrite(
           "cubemap_size", &FisheyeSensorSpec::cubemapSize,
           R"(If not set, will be the min(height, width) of resolution)")
-      .def_readwrite("sensor_subtype", &FisheyeSensorSpec::fisheyeModelType);
+      .def_readwrite("sensor_model_type", &FisheyeSensorSpec::fisheyeModelType);
 
   // ====FisheyeSensorDoubleSphereSpec ====
   /* alpha and xi are specific to "double sphere" camera model.

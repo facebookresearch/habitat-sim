@@ -104,7 +104,7 @@ def make_cfg(settings):
         fisheye_sensor_spec = habitat_sim.FisheyeSensorDoubleSphereSpec()
         fisheye_sensor_spec.uuid = "fisheye_sensor"
         fisheye_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-        fisheye_sensor_spec.sensor_subtype = (
+        fisheye_sensor_spec.sensor_model_type = (
             habitat_sim.FisheyeSensorModelType.DOUBLE_SPHERE
         )
         fisheye_sensor_spec.alpha = 0.59  # default

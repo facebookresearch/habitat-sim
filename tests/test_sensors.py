@@ -43,6 +43,7 @@ def _render_scene(sim, scene, sensor_type, gpu2gpu):
                 obs[k] = v.cpu().numpy()
 
     assert sensor_type in obs, f"{sensor_type} not in obs"
+
     return obs
 
 
