@@ -114,7 +114,7 @@ class ManagedContainer : public ManagedContainerBase {
    */
   ManagedPtr createObjectFromJSONFile(const std::string& filename,
                                       bool registerObject = true) {
-    io::JsonDocument docConfig;
+    io::JsonDocument docConfig = nullptr;
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
       LOG(ERROR) << "ManagedContainer::createObjectFromFile ("
