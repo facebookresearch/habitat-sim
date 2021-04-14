@@ -880,12 +880,11 @@ void ResourceManager::buildPrimitiveAssetData(
   std::unique_ptr<gfx::MaterialData> phongMaterial =
       gfx::PhongMaterialData::create_unique();
 
-  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
-  shaderManager_.set(std::to_string(nextMaterialID_++),
-                     phongMaterial.release());
+  shaderManager_.set(std::to_string(nextMaterialID_), phongMaterial.release());
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
   // store the rotation to world frame upon load - currently superfluous
   const quatf transform = info.frame.rotationFrameToWorld();
   Magnum::Matrix4 R = Magnum::Matrix4::from(
@@ -1343,13 +1342,13 @@ bool ResourceManager::buildTrajectoryVisualization(
   phongMaterial->ambientColor = color;
   phongMaterial->diffuseColor = color;
 
-  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
-  shaderManager_.set(std::to_string(nextMaterialID_++),
+  shaderManager_.set(std::to_string(nextMaterialID_),
                      static_cast<gfx::MaterialData*>(phongMaterial.release()));
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
-  meshMetaData.root.materialIDLocal = 0;
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
+
   // store the rotation to world frame upon load - currently superfluous
   const quatf transform = info.frame.rotationFrameToWorld();
   Magnum::Matrix4 R = Magnum::Matrix4::from(
@@ -1431,7 +1430,6 @@ void ResourceManager::loadMaterials(Importer& importer,
                                     LoadedAssetData& loadedAssetData) {
   int materialStart = nextMaterialID_;
   int materialEnd = materialStart + importer.materialCount() - 1;
-  loadedAssetData.meshMetaData.setMaterialIndices(materialStart, materialEnd);
 
   for (int iMaterial = 0; iMaterial < importer.materialCount(); ++iMaterial) {
     int currentMaterialID = nextMaterialID_++;
@@ -1691,11 +1689,14 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
       meshIDLocal != ID_UNDEFINED) {
     parent.children.back().meshIDLocal = meshIDLocal;
     if (requiresTextures_) {
-      parent.children.back().materialIDLocal =
-          static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
-              ->material();
-    } else {
-      parent.children.back().materialIDLocal = ID_UNDEFINED;
+      auto mod3D =
+          static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get());
+      if (mod3D->material() != ID_UNDEFINED) {
+        // we've already loaded the materials, so we can get the global index
+        // from the material count
+        parent.children.back().materialID = std::to_string(
+            mod3D->material() + nextMaterialID_ - importer.materialCount());
+      }
     }
   }
 
@@ -1923,17 +1924,9 @@ void ResourceManager::addComponent(
 
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
-    const int materialIDLocal = meshTransformNode.materialIDLocal;
     const int meshID = metaData.meshIndex.first + meshIDLocal;
     Magnum::GL::Mesh& mesh = *meshes_.at(meshID)->getMagnumGLMesh();
-    Mn::ResourceKey materialKey;
-    if (materialIDLocal == ID_UNDEFINED ||
-        metaData.materialIndex.second == ID_UNDEFINED) {
-      materialKey = DEFAULT_MATERIAL_KEY;
-    } else {
-      materialKey =
-          std::to_string(metaData.materialIndex.first + materialIDLocal);
-    }
+    Mn::ResourceKey materialKey = meshTransformNode.materialID;
 
     gfx::Drawable::Flags meshAttributeFlags{};
     const auto& meshData = meshes_.at(meshID)->getMeshData();
@@ -2342,16 +2335,8 @@ void ResourceManager::createConvexHullDecomposition(
     MeshTransformNode transformNode;
     transformNode.meshIDLocal = p;
     transformNode.componentID = componentID;
-    transformNode.materialIDLocal = 0;
     meshMetaData.root.children.push_back(transformNode);
   }
-
-  // default material for now
-  auto phongMaterial = gfx::PhongMaterialData::create_unique();
-
-  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
-  shaderManager_.set(std::to_string(nextMaterialID_++),
-                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
