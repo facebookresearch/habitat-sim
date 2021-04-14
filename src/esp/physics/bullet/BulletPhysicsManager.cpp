@@ -456,6 +456,7 @@ int BulletPhysicsManager::createArticulatedFixedConstraint(
   if (existingObjects_.at(objectId)->getMotionType() == MotionType::DYNAMIC) {
     rb = static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
              ->bObjectRigidBody_.get();
+    rb->setActivationState(DISABLE_DEACTIVATION);
   } else {
     Corrade::Utility::Debug()
         << "Cannot create a dynamic fixed constraint for object with "
