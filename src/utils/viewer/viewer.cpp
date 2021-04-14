@@ -2054,12 +2054,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       float URDFScaling = esp::core::Random().uniform_float_01() + 0.5;
       int objectId = addArticulatedObject(urdfFilePath, false, URDFScaling);
       Mn::Debug{} << "URDF Randomly scaled to " << URDFScaling;
-      Mn::Debug{} << "lower limits = "
-                  << simulator_->getArticulatedObjectPositionLimits(objectId);
-      Mn::Debug{} << "upper limits = "
-                  << simulator_->getArticulatedObjectPositionLimits(objectId,
-                                                                    true);
-
       auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
       R.translation() =
           simulator_->getArticulatedObjectRootState(objectId).translation();
@@ -2158,31 +2152,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       Corrade::Utility::Debug() << "done clearing, now generating";
       setupDemoFurniture();
     } break;
-    case KeyEvent::Key::Six: {
-      // add the counter in front of the agent with fixed base
-      std::string urdfFilePath =
-          //    "data/test_assets/URDF/fridge/fridge.urdf";
-          "/Users/alexclegg/AndrewObjectRearrangement/p-viz-plan/orp/"
-          "start_data/URDF/fridge/fridge.urdf";
-      auto fridgeAOId = addArticulatedObject(urdfFilePath, true);
-      simulator_->setAutoClampJointLimits(fridgeAOId, true);
-      Mn::Debug{} << "lower limits = "
-                  << simulator_->getArticulatedObjectPositionLimits(fridgeAOId);
-      Mn::Debug{} << "upper limits = "
-                  << simulator_->getArticulatedObjectPositionLimits(fridgeAOId,
-                                                                    true);
-
-      Mn::Vector3 localFridgeBasePos{0.0f, 0.94f, -2.0f};
-      Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
-      // rotate the object
-      auto R = Magnum::Matrix4::rotationY(Magnum::Rad(-1.56));
-      Mn::Matrix4 initialFridgeTransform = R * T;
-      initialFridgeTransform.translation() =
-          T.transformPoint(localFridgeBasePos);
-      simulator_->setArticulatedObjectRootState(fridgeAOId,
-                                                initialFridgeTransform);
-    } break;
-
     case KeyEvent::Key::Minus: {
       if (simulator_->getExistingArticulatedObjectIDs().size()) {
         for (auto& controller : locobotControllers) {
