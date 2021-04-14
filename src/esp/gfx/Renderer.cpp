@@ -15,6 +15,7 @@
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/ResourceManager.h>
 
@@ -66,6 +67,7 @@ struct Renderer::Impl {
     sensor::SensorType& type = visualSensor.specification()->sensorType;
     if (type == sensor::SensorType::Depth ||
         type == sensor::SensorType::Semantic) {
+      Mn::GL::Renderer::setDepthMask(false);
       Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::DepthTest);
       gfx::RenderTarget& tgt = visualSensor.renderTarget();
       if (!mesh_) {
@@ -79,6 +81,12 @@ struct Renderer::Impl {
                 esp::gfx::Renderer::Impl::RendererShaderType::
                     DepthTextureVisualizer);
 
+        Mn::Image2D image = tgt.getDepthTexture().image(
+            0,
+            {Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float});
+        Mn::ImageView2D imgView{
+            image.storage(), Mn::PixelFormat::R32F, image.size(), image.data()};
+
         shader->bindDepthTexture(tgt.getDepthTexture());
         shader->setDepthUnprojection(*visualSensor.depthUnprojection());
         shader->setColorMapTransformation(colorMapOffset, colorMapScale);
@@ -89,6 +97,7 @@ struct Renderer::Impl {
 
       // TODO object id
       Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
+      Mn::GL::Renderer::setDepthMask(true);
     }
   }
 
