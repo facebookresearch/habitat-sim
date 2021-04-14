@@ -636,9 +636,6 @@ void BulletPhysicsManager::removeConstraint(int constraintId) {
     delete articulatedP2ps.at(constraintId);
     articulatedP2ps.erase(constraintId);
   } else if (rigidP2ps.count(constraintId)) {
-    rigidP2ps.at(constraintId)
-        ->getRigidBodyA()
-        .setActivationState(WANTS_DEACTIVATION);
     bWorld_->removeConstraint(rigidP2ps.at(constraintId));
     delete rigidP2ps.at(constraintId);
     rigidP2ps.erase(constraintId);
@@ -652,11 +649,26 @@ void BulletPhysicsManager::removeConstraint(int constraintId) {
     return;
   }
   // remove the constraint from any referencing object maps
-  for (auto itr : objectConstraints_) {
+  for (auto& itr : objectConstraints_) {
     auto conIdItr =
         std::find(itr.second.begin(), itr.second.end(), constraintId);
     if (conIdItr != itr.second.end()) {
       itr.second.erase(conIdItr);
+      // when no constraints active for the object, allow it to sleep again
+      if (itr.second.empty()) {
+        if (existingArticulatedObjects_.count(itr.first) > 0) {
+          btMultiBody* mb = static_cast<BulletArticulatedObject*>(
+                                existingArticulatedObjects_.at(itr.first).get())
+                                ->btMultiBody_.get();
+          mb->setCanSleep(true);
+        } else if (existingObjects_.count(itr.first) > 0) {
+          btRigidBody* rb = static_cast<BulletRigidObject*>(
+                                existingObjects_.at(itr.first).get())
+                                ->bObjectRigidBody_.get();
+          rb->forceActivationState(ACTIVE_TAG);
+          rb->activate(true);
+        }
+      }
     }
   }
 };
