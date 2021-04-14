@@ -79,6 +79,20 @@ class BulletPhysicsManager : public PhysicsManager {
                                            float massScale = 1.0,
                                            bool forceReload = false) override;
 
+  /**
+   * @brief Override of @ref PhysicsManager::removeObject to also remove any
+   * active Bullet physics constraints for the object.
+   */
+  virtual void removeObject(const int physObjectID,
+                            bool deleteObjectNode = true,
+                            bool deleteVisualNode = true) override;
+
+  /**
+   * @brief Override of @ref PhysicsManager::removeArticulatedObject to also
+   * remove any active Bullet physics constraints for the object.
+   */
+  virtual void removeArticulatedObject(int id) override;
+
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref
    * btMultiBodyDynamicsWorld::stepSimulation.
@@ -337,6 +351,10 @@ class BulletPhysicsManager : public PhysicsManager {
   std::map<int, btMultiBodyPoint2Point*> articulatedP2ps;
   std::map<int, btMultiBodyFixedConstraint*> articulatedFixedConstraints;
   std::map<int, btPoint2PointConstraint*> rigidP2ps;
+
+  //! Maps object ids to a list of active constraints referencing the object for
+  //! use in constraint clean-up and object sleep state management.
+  std::map<int, std::vector<int>> objectConstraints_;
 
   int getNumActiveContactPoints() override {
     return BulletDebugManager::get().getNumActiveContactPoints(bWorld_.get());
