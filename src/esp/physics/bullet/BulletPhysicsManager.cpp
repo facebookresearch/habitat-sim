@@ -134,6 +134,8 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   if (!objectSuccess) {
     delete objectNode;
     deallocateObjectID(articulatedObjectID_);
+    Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
+                       "initialization failed, aborting.";
     return ID_UNDEFINED;
   }
 

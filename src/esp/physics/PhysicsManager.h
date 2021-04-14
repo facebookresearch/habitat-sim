@@ -315,6 +315,8 @@ class PhysicsManager {
       CORRADE_UNUSED float globalScale = 1.0,
       CORRADE_UNUSED float massScale = 1.0,
       CORRADE_UNUSED bool forceReload = false) {
+    Magnum::Debug{} << "addArticulatedObjectFromURDF not implemented in base "
+                       "PhysicsManager.";
     return ID_UNDEFINED;
   };
 
