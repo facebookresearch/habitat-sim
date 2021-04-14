@@ -182,6 +182,8 @@ class RigidObject : public RigidBase {
    */
   VelocityControl::ptr velControl_;
 
+  //! if true visual nodes are not updated from physics simulation such that the
+  //! SceneGraph is not polluted during render
   bool isDeferringUpdate_ = false;
 
  public:

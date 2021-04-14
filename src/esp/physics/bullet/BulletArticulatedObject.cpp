@@ -352,7 +352,9 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
     btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
   }
   // sync visual shapes
-  updateNodes(true);
+  if (!isDeferringUpdate_) {
+    updateNodes(true);
+  }
 }
 
 void BulletArticulatedObject::setForces(const std::vector<float>& forces) {
@@ -442,8 +444,10 @@ void BulletArticulatedObject::setPositions(
   btMultiBody_->forwardKinematics(scratch_q, scratch_m);
   btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
 
-  // sync visual shapes
-  updateNodes(true);
+  if (!isDeferringUpdate_) {
+    // sync visual shapes
+    updateNodes(true);
+  }
 }
 
 std::vector<float> BulletArticulatedObject::getPositions() {

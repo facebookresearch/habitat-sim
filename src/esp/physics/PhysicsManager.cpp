@@ -244,6 +244,8 @@ void PhysicsManager::stepPhysics(double dt) {
 void PhysicsManager::deferNodesUpdate() {
   for (auto& o : existingObjects_)
     o.second->deferUpdate();
+  for (auto& ao : existingArticulatedObjects_)
+    ao.second->deferUpdate();
 }
 
 void PhysicsManager::updateNodes() {
