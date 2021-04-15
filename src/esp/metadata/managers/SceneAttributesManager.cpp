@@ -49,7 +49,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     SceneAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   const std::string attribsDispName = attribs->getSimplifiedHandle();
-  // Check for translation origin.  Default to unknown.
+  // Check for default translation origin for entire scene.  Default to unknown.
   attribs->setTranslationOrigin(getTranslationOriginVal(jsonConfig));
 
   // Check for stage instance existance
