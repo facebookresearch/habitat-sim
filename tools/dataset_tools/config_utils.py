@@ -103,6 +103,30 @@ def update_dict_recurse(dest_dict, update_dict):
     return dest_dict
 
 
+def load_json_into_dict(filename: str) -> Dict[str, Any]:
+    """This function loads a JSON file after verifying that the passed file name
+    references a file in the system. If multiple matches are found, the first is used.
+    :param filename: name of JSON file we wish to load.  If not fully path qualified,
+    will search for file and use first matching path found.
+    :return: Dictionary containing JSON values read from file
+    """
+    from glob import glob
+
+    file_list = glob(os.path.join("**", filename), recursive=True)
+    if len(file_list) == 0:
+        print(
+            "JSON File {} not found, so no configuration data loaded. Aborting. ".format(
+                filename
+            )
+        )
+        return {}
+    src_file = file_list[0]
+
+    with open(src_file, "r") as src:
+        json_data = json.load(src)
+    return json_data
+
+
 def mod_json_val_and_save(
     file_tuple: Tuple[str, str, Dict[str, Any], bool],
     indent: Optional[int] = 2,
@@ -121,7 +145,7 @@ def mod_json_val_and_save(
         file_tuple[3] is boolean : whether or not to make config file paths in existing config files
             relative to new dest_file location. Only relevant if modifying an existing json
     :param indent: JSON indention to use when writing file
-    :dry_run: If True, display results of modifications but do not write output.
+    :param dry_run: If True, display results of modifications but do not write output.
     """
 
     src_file = file_tuple[0]
@@ -138,10 +162,15 @@ def mod_json_val_and_save(
         if len(file_tuple) > 3:
             set_paths_rel_dest = file_tuple[3]
 
-        with open(src_file, "r") as src:
-            json_data = json.load(src)
-            if set_paths_rel_dest:
-                mod_config_paths_rel_dest(file_tuple, json_data)
+        json_data = load_json_into_dict(src_file)
+
+        # with open(src_file, "r") as src:
+        #     json_data = json.load(src)
+
+        if set_paths_rel_dest:
+            mod_config_paths_rel_dest(file_tuple, json_data)
+
+        # Update loaded json with passed modified values
         json_data = update_dict_recurse(json_data, json_mod_vals)
 
     if not dry_run:

@@ -9,6 +9,9 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 import trimesh
 
+# To support the use of trimesh in this code, you need to install
+# conda install -c conda-forge trimesh networkx scikit-image shapely rtree pyembree
+
 
 def convert_glb_to_gltf(glb_file_name: str, gltf_file_name: str, override: bool):
     """Convert the passed glb file to a gltf and save. Uses pygltflib to perform conversion,
@@ -35,7 +38,7 @@ def convert_glb_to_gltf(glb_file_name: str, gltf_file_name: str, override: bool)
 
 
 def extract_json_from_glb(glb_file_name: str):
-    """
+    """Extract the JSON data from the glb file specified.
     :param glb_file_name: the file to acquire the json from.  Must be .glb or .bin
     :return: dict of JSON
     """
@@ -73,13 +76,15 @@ def load_glb_as_scene(src_scene_filename: str):
     """This function attempst to import the given glb file as a Trimesh Scene
     file.
     """
+    import sys
 
     try:
-        scene_graph = trimesh.load(src_scene_filename)
+        with contextlib.redirect_stderr(None):
+            scene_graph = trimesh.load(src_scene_filename)
     except BaseException:
         print(
-            "Unable to load file {} - not recognized as valid mesh file. Aborting".format(
-                src_scene_filename
+            "Unable to load file {} - not recognized as valid mesh file. Error thrown : {}. Aborting".format(
+                src_scene_filename, sys.exc_info()
             )
         )
         return None
@@ -127,6 +132,14 @@ def build_instance_config_json(template_name: str, transform: np.ndarray):
         "rotation": rotation,
         "translation_origin": "asset_local",
     }
+    scale = [
+        np.linalg.norm(transform[:3, 0]),
+        np.linalg.norm(transform[:3, 1]),
+        np.linalg.norm(transform[:3, 2]),
+    ]
+    # do not save near unit scale
+    if not np.allclose(scale, np.ones(3)):
+        json_dict["scale"] = scale
     return json_dict
 
 
@@ -293,15 +306,19 @@ def get_nodes_that_match_set(
     """
 
     res_dict = {}
+    # get a list of all the nodes in the graph
+    all_graph_nodes = graph._node.keys()
 
     for parent_node, sub_str_set in tag_dict.items():
         match_node_names = set()
         # get the sub_graph nodes corresponding to this
         if allOrSuccessor:
-            succ_nodes = graph._node.keys()
+            # use all nodes to check for matches
+            match_nodes = all_graph_nodes
         else:
-            succ_nodes = set(graph.successors(parent_node))
-        for node_name in succ_nodes:
+            # use only successor nodes to check for matches
+            match_nodes = set(graph.successors(parent_node))
+        for node_name in match_nodes:
             for sub_str in sub_str_set:
                 if sub_str.lower() in node_name.lower():
                     match_node_names.add(node_name)
@@ -328,6 +345,7 @@ def extract_obj_mesh_from_scenegraph(
     parent_node_name: str,
     include_obj_dict: Dict[str, Set[str]],
     exclude_obj_dict: Dict[str, Set[str]],
+    recurse_subnodes: bool,
 ):
     """This function takes a trimesh Scene object and will extract a
     new Scene object corresponding to the geometry and connectivity
@@ -343,6 +361,8 @@ def extract_obj_mesh_from_scenegraph(
     :param exclude_obj_dict: dict where key is parent node (ignored here) and
     value is set of substrings to use to find node names to exclude from this
     object that might be connected via the scene graph.
+    :param recurse_subnodes: Whether or not to recurse through node tree to leafs
+    or just use the first level to build edge set.
     :return: The new Scene object corresponding to scene_object_tag,
     and the World-space transformation of the object withiin the parent Scene.
     """
@@ -351,10 +371,7 @@ def extract_obj_mesh_from_scenegraph(
     global_transform = scene_graph.graph.get(scene_object_tag)[0]
     # get scene_graph transformations hierarchy
     transforms_tree = scene_graph.graph.transforms
-    # build set of successor node names of scene graph for scene_object_tag
-    sub_nodes = set(transforms_tree.successors(scene_object_tag))
-    sub_nodes.add(scene_object_tag)
-    # remove any excluded node names
+    # build set of nodes that should be excluded
     exclude_nodes = set()
     if len(exclude_obj_dict) > 0:
         # remove excluded tags
@@ -363,6 +380,20 @@ def extract_obj_mesh_from_scenegraph(
         )
         for node_set in exclude_subnodes.values():
             exclude_nodes.update(node_set)
+
+    # build set of successor node names of scene graph for scene_object_tag
+    if recurse_subnodes:
+        sub_nodes = get_node_set_recurse(
+            transforms_tree, exclude_nodes, scene_object_tag
+        )
+    else:
+        sub_nodes = set(transforms_tree.successors(scene_object_tag))
+    sub_nodes.add(scene_object_tag)
+    # print("{}# of subnodes : {}".format(scene_object_tag,len(sub_nodes)))
+    # for n in sub_nodes:
+    #     print("\t{}".format(n))
+
+    # remove any excluded node names
     if len(exclude_nodes) > 0:
         sub_nodes -= exclude_nodes
         # may have removed all nodes
@@ -378,9 +409,7 @@ def extract_obj_mesh_from_scenegraph(
         if (e[1] not in exclude_nodes) and (e[0] in sub_nodes or e[1] in sub_nodes)
     ]
 
-    # show_edges_geometry("{} Before include edges".format(scene_object_tag), edges)
-
-    # add include tags
+    # add include tags from object subtree and attach to root
     if len(include_obj_dict) > 0:
         # find all nodes with names matching elements in include
         # add node names to this object's scene graph list
@@ -389,14 +418,22 @@ def extract_obj_mesh_from_scenegraph(
         )
 
         for obj_parent_node, node_name_set in incl_node_names_dict.items():
+            # Get rid of anynode names that should be excluded
+            node_name_set -= exclude_nodes
             # include object's nodes
             include_subnodes = set()
             for node_name in node_name_set:
-                new_set = set(transforms_tree.successors(node_name))
+                if recurse_subnodes:
+                    new_set = get_node_set_recurse(
+                        transforms_tree, exclude_nodes, node_name
+                    )
+                else:
+                    new_set = set(transforms_tree.successors(node_name))
                 new_set.add(node_name)
                 include_subnodes.update(new_set)
 
             include_subnodes -= exclude_nodes
+
             # need to build edges from node to included subnodes
             # first build list of child edges, these will not be changed
             include_edges_succ = [
@@ -412,7 +449,7 @@ def extract_obj_mesh_from_scenegraph(
             include_edges_reparent = [
                 (scene_object_tag if e[0] == obj_parent_node else e[0], e[1], e[2])
                 for e in scene_graph.graph.to_edgelist()
-                if e[1] in include_subnodes
+                if e[0] not in exclude_nodes and e[1] in include_subnodes
             ]
             edges.extend(include_edges_reparent)
 
@@ -436,23 +473,28 @@ def extract_obj_mesh_from_scenegraph(
         scene_object_tag, frame_from=parent_node_name, matrix=np.identity(4)
     )
 
-    assert new_scene.is_valid
+    assert new_scene.is_valid, "Constructed {} scene object is not valid!".format(
+        scene_object_tag
+    )
     return new_scene, global_transform
 
 
-def get_node_tree_recurse(transforms_tree, root_node):
+def get_node_set_recurse(transforms_tree, exclude_nodes, root_node):
     """This function will recurse through the transformation graph of the Trimesh Scene
-    and build a set containing the subtree of the root_node
+    and build a set containing the entire subtree of the passed root_node
     """
     # return all successors in a dictionary/tree structure
     node_res = set(transforms_tree.successors(root_node))
     tmp_set = set()
     for n in node_res:
-        if len(transforms_tree.adj[n]) > 0:
-            tmp_set.update(get_node_tree_recurse(transforms_tree, n))
-        else:
-            tmp_set.update(n)
-    node_res.update(tmp_set)
+        # if n is in exclude then we want to prune entire subtree
+        if n not in exclude_nodes:
+            tmp_set.add(n)
+            if len(transforms_tree.adj[n]) > 0:
+                new_set = get_node_set_recurse(transforms_tree, exclude_nodes, n)
+                tmp_set.update(new_set)
+    if len(tmp_set) > 0:
+        node_res.update(tmp_set)
     return node_res
 
 
@@ -460,7 +502,7 @@ def get_node_dict_recurse(transforms_tree, root_node):
     """This function will recurse through the transformation graph of the Trimesh Scene
     and build a dictionary of dictionaries containing the subtree of the root_node
     """
-    # return all successors in a dictionary/tree structure
+
     nodes_present = transforms_tree.successors(root_node)
     res_dict = {}
     for n in nodes_present:
@@ -472,9 +514,9 @@ def get_node_dict_recurse(transforms_tree, root_node):
     return res_dict
 
 
-def print_node_dict_recurse(res_dict, tab_space):
+def print_node_dict_recurse(res_dict: Dict[str, Any], tab_space: str):
     for k, v in res_dict.items():
-        if len(v) > 0:
+        if isinstance(v, dict):
             print("{}{} :".format(tab_space, k))
             print_node_dict_recurse(v, tab_space + "\t")
         else:
@@ -495,7 +537,7 @@ def extract_ligthing_from_scenegraph(
     """
 
     transforms_tree = scene_graph.graph.transforms
-    sub_nodes = get_node_tree_recurse(transforms_tree, lighting_tag)
+    sub_nodes = get_node_set_recurse(transforms_tree, {}, lighting_tag)
     sub_nodes.add(lighting_tag)
     sub_nodes.add(parent_node_name)
     # build list of edges that are part of the named object
@@ -513,19 +555,27 @@ def extract_ligthing_from_scenegraph(
     res_dict = {}
     for k, v in transforms_tree.adj.items():
         if k in sub_nodes:
+            if len(v) == 0:
+                continue
+            print("k : {} | size of map : {}".format(k, len(v)))
             res_dict1 = {}
             for k1, v1 in v.items():
                 res_dict2 = {}
                 if k1 in sub_nodes:
                     print("\tk1 : {} | size of map : {}".format(k1, len(v1)))
                     for k2, v2 in v1.items():
-                        print("\t\tk2 : {} | node : {}".format(k2, v2))
-                        res_dict2[k2] = v2
-                    res_dict1[k1] = res_dict2
-            res_dict[k] = res_dict1
-    print("\n\n")
+                        if "matrix" in k2.lower():
+                            print("\t\tk2 : {} | node : {}".format(k2, v2))
+                            res_dict2[k2] = v2
+                    if len(res_dict2) > 0:
+                        res_dict1[k1] = res_dict2
+            if len(res_dict1) > 0:
+                res_dict[k] = res_dict1
+
     res_dict = {lighting_tag: get_node_dict_recurse(transforms_tree, lighting_tag)}
+    print("\nnode dict recurse:\n")
     print_node_dict_recurse(res_dict, "")
+    print("\nnode dict recurse done\n")
     # base_edge = [e for e in lighting_edges if e[1] in lighting_tag][0]
     # separate into primary and secondary lighting edges
     # primary lighting edges have the lighting tag as parent node
@@ -535,3 +585,83 @@ def extract_ligthing_from_scenegraph(
     # show_edges_geometry("Lighting edges:", lighting_edges)
 
     return res_dict
+
+
+def extract_light_from_json(
+    nodes_list: List[Dict[str, Any]], lights_list, light_nodes_idxs, level_name: str
+):
+    """This function will take the listing of node info and the listing of lights from a gltf JSON and
+    map light instances to specific light configurations, recursively.
+
+    """
+    # check if data dictionary has children nodes - this would indicate a named sub-grouping of lights
+    child_res_dict = {}
+    for idx in light_nodes_idxs:
+        data_dict = nodes_list[idx]
+        # check if data dictionary has children nodes;
+        # this would indicate a named sub-grouping of lights
+        obj_name = data_dict["name"].lower().replace(" ", "_")
+
+        # print("{}:{} : {}".format(level_name, obj_name, data_dict))
+        if "children" in data_dict:
+            child_idxs = data_dict["children"]
+            child_res_dict[obj_name] = extract_light_from_json(
+                nodes_list, lights_list, child_idxs, obj_name
+            )
+        else:
+            # is final entry in chain - light, lightprobe, etc
+            entry_name = (level_name + "_" + obj_name).lower().replace(" ", "_")
+            if "extensions" in data_dict:
+                light_idx = data_dict["extensions"]["KHR_lights_punctual"]["light"]
+                # json entry for this light
+                light_val_dict = lights_list[light_idx].copy()
+                for k, v in data_dict.items():
+                    if "scale" in k.lower() or "extensions" in k.lower():
+                        continue
+                    light_val_dict[k] = v
+            else:
+                # light probe or object that does not map to a light in gltf
+                light_val_dict = data_dict.copy()
+                light_val_dict["type"] = "unknown"
+            del light_val_dict["name"]
+            child_res_dict[entry_name] = light_val_dict
+    return child_res_dict
+
+
+def extract_lighting_from_gltf(scene_filename_glb: str, lights_tag: str):
+
+    # Get json from glb file
+    base_json = extract_json_from_glb(scene_filename_glb)
+    # if nothing found, return empty res
+    if len(base_json) == 0:
+        return {}
+    for k, v in base_json.items():
+        print("K: {} : len V : {}".format(k, len(v)))
+    # list of lights - accessed in scene_graph by idx
+    lights_list = base_json["extensions"]["KHR_lights_punctual"]["lights"]
+    # print("Number of lights: {}".format(len(lights_list)))
+    # for light in lights_list :
+    #     print("{}".format(light))
+
+    # get the list of node idxs of the root of the scene
+    scene_root_nodes = base_json["scenes"][base_json["scene"]]["nodes"]
+
+    # print("Scene root nodes : {}\n".format(scene_root_nodes))
+    nodes_list = base_json["nodes"]
+    # find node index list corresponding to children of lighting node
+    for idx in scene_root_nodes:
+        if lights_tag in nodes_list[idx]["name"]:
+            lighting_nodes = nodes_list[idx]["children"]
+            break
+    # print("Light root nodes : {}\n".format(lighting_nodes))
+
+    # iterate through all known idxs to find hierarchy
+
+    # for idx in lighting_nodes:
+    #     print("{} : {}".format(idx, nodes_list[idx]))
+
+    lighting_dict_res = extract_light_from_json(
+        nodes_list, lights_list, lighting_nodes, "Lighting"
+    )
+
+    return lighting_dict_res
