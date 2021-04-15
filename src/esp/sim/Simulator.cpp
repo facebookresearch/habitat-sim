@@ -430,24 +430,34 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
            curSceneInstanceAttributes->getTranslationOrigin()) ==
        metadata::managers::SceneInstanceTranslationOrigin::AssetLocal);
 
+  std::string errMsgTmplt =
+      "Simulator::createSceneInstance : Error instancing scene : " +
+      activeSceneName + " : ";
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& objInst : objectInstances) {
     const std::string objAttrFullHandle =
         metadataMediator_->getObjAttrFullHandle(objInst->getHandle());
     if (objAttrFullHandle == "") {
-      LOG(WARNING) << "Simulator::createSceneInstance : Unable to find object "
-                      "attributes whose handle contains "
-                   << objInst->getHandle()
-                   << " as specified in object instance attributes, so unable "
-                      "to instance object; skipping. ";
-      continue;
+      LOG(ERROR) << errMsgTmplt
+                 << "Unable to find objectAttributes whose handle contains "
+                 << objInst->getHandle()
+                 << " as specified in object instance attributes.";
+      return false;
     }
 
     // Get ObjectAttributes
     auto objAttributes =
         metadataMediator_->getObjectAttributesManager()->getObjectCopyByHandle(
             objAttrFullHandle);
+    if (!objAttributes) {
+      LOG(ERROR) << errMsgTmplt
+                 << "Missing/improperly configured objectAttributes "
+                 << objAttrFullHandle << ", whose handle contains "
+                 << objInst->getHandle()
+                 << " as specified in object instance attributes.";
+      return false;
+    }
     // set shader type to use for stage
     int objShaderType = objInst->getShaderType();
     if (objShaderType != unknownShaderType) {
@@ -459,11 +469,11 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                                        attachmentNode, lightSetupKey);
     if (objID == ID_UNDEFINED) {
       // instancing failed for some reason.
-      LOG(WARNING)
-          << "Simulator::createSceneInstance : Failed to instantiate object "
-             "specified in Scene Instance Attributes using template named : "
-          << objInst->getHandle();
-      continue;
+      LOG(ERROR) << errMsgTmplt << "Object create failed for objectAttributes "
+                 << objAttrFullHandle << ", whose handle contains "
+                 << objInst->getHandle()
+                 << " as specified in object instance attributes.";
+      return false;
     }
     // set object's location and rotation based on translation and rotation
     // params specified in instance attributes

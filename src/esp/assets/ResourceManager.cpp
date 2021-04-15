@@ -1785,11 +1785,10 @@ void ResourceManager::loadTextures(Importer& importer,
 
 bool ResourceManager::instantiateAssetsOnDemand(
     const metadata::attributes::ObjectAttributes::ptr& objectAttributes) {
-  const std::string& objectTemplateHandle = objectAttributes->getHandle();
-
-  if (!ObjectAttributes) {
+  if (!objectAttributes) {
     return false;
   }
+  const std::string& objectTemplateHandle = objectAttributes->getHandle();
 
   // if attributes are "dirty" (important values have changed since last
   // registered) then re-register.  Should never return ID_UNDEFINED - this
