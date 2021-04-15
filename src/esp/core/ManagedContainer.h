@@ -117,10 +117,10 @@ class ManagedContainer : public ManagedContainerBase {
     io::JsonDocument docConfig = nullptr;
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
-      LOG(ERROR) << "ManagedContainer::createObjectFromFile ("
-                 << this->objectType_
-                 << ") : Failure reading document as JSON : " << filename
-                 << ". Aborting.";
+      !Cr::Utility::Error{}
+          << "ManagedContainer::createObjectFromFile (" << this->objectType_
+          << ") : Failure reading document as JSON : " << filename
+          << ". Aborting.";
       return nullptr;
     }
     // convert doc to const value
@@ -141,7 +141,7 @@ class ManagedContainer : public ManagedContainerBase {
   template <typename U>
   ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
                                        CORRADE_UNUSED const U& config) {
-    LOG(ERROR)
+    !Cr::Utility::Error{}
         << "ManagedContainer::buildManagedObjectFromDoc (" << this->objectType_
         << ") : Failure loading attributes from document of unknown type : "
         << filename << ". Aborting.";
@@ -188,8 +188,9 @@ class ManagedContainer : public ManagedContainerBase {
                      const std::string& objectHandle = "",
                      bool forceRegistration = false) {
     if (nullptr == managedObject) {
-      LOG(ERROR) << "ManagedContainer::registerObject : Invalid "
-                    "(null) managed object passed to registration. Aborting.";
+      !Cr::Utility::Error{}
+          << "ManagedContainer::registerObject : Invalid "
+             "(null) managed object passed to registration. Aborting.";
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
@@ -198,9 +199,10 @@ class ManagedContainer : public ManagedContainerBase {
     }
     std::string handleToSet = managedObject->getHandle();
     if ("" == handleToSet) {
-      LOG(ERROR) << "ManagedContainer::registerObject : No "
-                    "valid handle specified for "
-                 << objectType_ << " managed object to register. Aborting.";
+      !Cr::Utility::Error{} << "ManagedContainer::registerObject : No "
+                               "valid handle specified for "
+                            << objectType_
+                            << " managed object to register. Aborting.";
       return ID_UNDEFINED;
     }
     return registerObjectFinalize(managedObject, handleToSet,
@@ -579,9 +581,10 @@ class ManagedContainer : public ManagedContainerBase {
       return getObjectInternal<T>(objectHandle)->getID();
     } else {
       if (!getNext) {
-        LOG(ERROR) << "ManagedContainer::getObjectIDByHandleOrNew : No "
-                   << objectType_ << " managed object with handle "
-                   << objectHandle << "exists. Aborting";
+        !Cr::Utility::Error{}
+            << "ManagedContainer::getObjectIDByHandleOrNew : No " << objectType_
+            << " managed object with handle " << objectHandle
+            << "exists. Aborting";
         return ID_UNDEFINED;
       } else {
         return getUnusedObjectID();
@@ -733,8 +736,9 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     const std::string& objectHandle,
     const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
-    LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
-              << " managed object " << objectHandle << " : Does not exist.";
+    !Cr::Utility::Debug{} << sourceStr << " : Unable to remove " << objectType_
+                          << " managed object " << objectHandle
+                          << " : Does not exist.";
     return nullptr;
   }
   std::string msg;
@@ -744,8 +748,9 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     msg = "User-locked Object.  To delete managed object, unlock it";
   }
   if (msg.length() != 0) {
-    LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
-              << " managed object " << objectHandle << " : " << msg << ".";
+    !Cr::Utility::Debug{} << sourceStr << " : Unable to remove " << objectType_
+                          << " managed object " << objectHandle << " : " << msg
+                          << ".";
     return nullptr;
   }
 

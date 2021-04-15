@@ -31,8 +31,8 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
       this->createFromJsonOrDefaultInternal(lightConfigName, msg, doRegister);
 
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " light layout attributes created"
-              << (doRegister ? " and registered." : ".");
+    !Cr::Utility::Debug{} << msg << " light layout attributes created"
+                          << (doRegister ? " and registered." : ".");
   }
   return attrs;
 }  // PhysicsAttributesManager::createObject
@@ -74,11 +74,12 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       lightAttribs->addLightInstance(lightInstanceAttribs);
       ++count;
     }
-    LOG(INFO) << "LightLayoutAttributesManager::setValsFromJSONDoc : " << count
-              << " of " << numLightConfigs
-              << " LightInstanceAttributes created successfully and added to "
-                 "LightLayoutAttributes "
-              << layoutName << ".";
+    !Cr::Utility::Debug{}
+        << "LightLayoutAttributesManager::setValsFromJSONDoc : " << count
+        << " of " << numLightConfigs
+        << " LightInstanceAttributes created successfully and added to "
+           "LightLayoutAttributes "
+        << layoutName << ".";
 
     // register
     this->postCreateRegister(lightAttribs, true);
@@ -129,7 +130,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
       typeVal = static_cast<int>(
           LightInstanceAttributes::LightTypeNamesMap.at(strToLookFor));
     } else {
-      LOG(WARNING)
+      !Cr::Utility::Warning{}
           << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "
              "Type Value in json : `"
           << tmpVal
@@ -150,7 +151,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   // read spotlight params
   if (jsonConfig.HasMember("spot")) {
     if (!jsonConfig["spot"].IsObject()) {
-      LOG(WARNING)
+      !Cr::Utility::Warning{}
           << "LightLayoutAttributesManager::setValsFromJSONDoc : \"spot\" "
              "cell in JSON config unable to be parsed to set "
              "spotlight parameters so skipping.";
@@ -231,7 +232,7 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             break;
           }
           default: {
-            LOG(INFO)
+            !Cr::Utility::Debug{}
                 << "LightLayoutAttributesManager::"
                    "createLightSetupFromAttributes : Enum gfx::LightType with "
                    "val "

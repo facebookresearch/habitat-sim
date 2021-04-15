@@ -154,9 +154,10 @@ class AssetAttributesManager
       PrimObjTypes primObjType,
       bool registerTemplate = true) {
     if (primObjType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "AssetAttributesManager::createObject : Illegal "
-                    "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
-                    "Aborting.";
+      !Cr::Utility::Error{}
+          << "AssetAttributesManager::createObject : Illegal "
+             "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
+             "Aborting.";
       return nullptr;
     }
     return this->createObject(PrimitiveNames3DMap.at(primObjType),
@@ -177,9 +178,10 @@ class AssetAttributesManager
       PrimObjTypes primType,
       bool contains = true) const {
     if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "AssetAttributesManager::getTemplateHandlesByPrimType : "
-                    "Illegal primtitive type "
-                    "name PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+      !Cr::Utility::Error{}
+          << "AssetAttributesManager::getTemplateHandlesByPrimType : "
+             "Illegal primtitive type "
+             "name PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
       return {};
     }
     std::string subStr = PrimitiveNames3DMap.at(primType);
@@ -397,9 +399,10 @@ class AssetAttributesManager
   void setDefaultObject(
       CORRADE_UNUSED attributes::AbstractPrimitiveAttributes::ptr& _defaultObj)
       override {
-    LOG(WARNING) << "AssetAttributesManager::setDefaultObject : Overriding "
-                    "defualt objects for PrimitiveAssetAttributes not "
-                    "currently supported.  Aborting.";
+    !Cr::Utility::Warning{}
+        << "AssetAttributesManager::setDefaultObject : Overriding "
+           "defualt objects for PrimitiveAssetAttributes not "
+           "currently supported.  Aborting.";
     this->defaultObj_ = nullptr;
   }  // AssetAttributesManager::setDefaultObject
 
@@ -439,9 +442,10 @@ class AssetAttributesManager
   bool verifyTemplateHandle(const std::string& templateHandle,
                             const std::string& attrType) {
     if (std::string::npos == templateHandle.find(attrType)) {
-      LOG(ERROR) << "AssetAttributesManager::verifyTemplateHandle : Handle : "
-                 << templateHandle << " is not of appropriate type for desired "
-                 << attrType << " primitives. Aborting.";
+      !Cr::Utility::Error{}
+          << "AssetAttributesManager::verifyTemplateHandle : Handle : "
+          << templateHandle << " is not of appropriate type for desired "
+          << attrType << " primitives. Aborting.";
       return false;
     }
     return true;
@@ -477,9 +481,10 @@ class AssetAttributesManager
       const std::string& primClassName,
       CORRADE_UNUSED bool builtFromConfig) override {
     if (primTypeConstructorMap_.count(primClassName) == 0) {
-      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
-                    "primitive class"
-                 << primClassName << "exists in Magnum::Primitives. Aborting.";
+      !Cr::Utility::Error{}
+          << "AssetAttributesManager::buildPrimAttributes : No "
+             "primitive class"
+          << primClassName << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
     // these attributes ignore any default setttings.
@@ -495,7 +500,7 @@ class AssetAttributesManager
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
   attributes::AbstractPrimitiveAttributes::ptr createPrimAttributes() {
     if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR)
+      !Cr::Utility::Error{}
           << "AssetAttributeManager::createPrimAttributes : Cannot instantiate "
              "attributes::AbstractPrimitiveAttributes object for "
              "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";

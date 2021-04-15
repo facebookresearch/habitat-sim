@@ -37,14 +37,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullStageName =
       getFullAttrNameFromStr(stageHandle, stageAttributesManager_);
   if (fullStageName.compare("") == 0) {
-    LOG(INFO)
+    !Cr::Utility::Debug{}
         << infoPrefix << " Stage Attributes '" << stageHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     stageAttributesManager_->createObject(stageHandle, true);
   } else {
-    LOG(INFO) << infoPrefix << " Stage Attributes '" << stageHandle
-              << "' specified in Scene Attributes exists in dataset library.";
+    !Cr::Utility::Debug{}
+        << infoPrefix << " Stage Attributes '" << stageHandle
+        << "' specified in Scene Attributes exists in dataset library.";
   }
 
   // verify each object in sceneInstance exists in SceneDatasetAttributes
@@ -54,13 +55,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const std::string fullObjHandle =
         getFullAttrNameFromStr(objHandle, objectAttributesManager_);
     if (fullObjHandle.compare("") == 0) {
-      LOG(INFO) << infoPrefix << " Object Attributes '" << objHandle
-                << "' specified in Scene Attributes but does not exist in "
-                   "dataset, so creating.";
+      !Cr::Utility::Debug{}
+          << infoPrefix << " Object Attributes '" << objHandle
+          << "' specified in Scene Attributes but does not exist in "
+             "dataset, so creating.";
       objectAttributesManager_->createObject(objHandle, true);
     } else {
-      LOG(INFO) << infoPrefix << " Object Attributes '" << objHandle
-                << "' specified in Scene Attributes exists in dataset library.";
+      !Cr::Utility::Debug{}
+          << infoPrefix << " Object Attributes '" << objHandle
+          << "' specified in Scene Attributes exists in dataset library.";
     }
   }
 
@@ -77,14 +80,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullLightLayoutAttrName =
       getFullAttrNameFromStr(lightHandle, lightLayoutAttributesManager_);
   if (fullLightLayoutAttrName.compare("") == 0) {
-    LOG(INFO)
+    !Cr::Utility::Debug{}
         << infoPrefix << "Lighting Layout Attributes '" << lightHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     lightLayoutAttributesManager_->createObject(lightHandle, true);
   } else {
-    LOG(INFO) << infoPrefix << " Lighting Layout Attributes " << lightHandle
-              << " specified in Scene Attributes exists in dataset library.";
+    !Cr::Utility::Debug{}
+        << infoPrefix << " Lighting Layout Attributes " << lightHandle
+        << " specified in Scene Attributes exists in dataset library.";
   }
 
   const std::string fullSceneInstanceName =
@@ -92,8 +96,9 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
 
   // add scene attributes to scene attributes manager
   if (fullSceneInstanceName.compare("") == 0) {
-    LOG(INFO) << infoPrefix << " Scene Attributes " << sceneInstanceName
-              << " does not exist in dataset so adding.";
+    !Cr::Utility::Debug{} << infoPrefix << " Scene Attributes "
+                          << sceneInstanceName
+                          << " does not exist in dataset so adding.";
     sceneAttributesManager_->registerObject(sceneInstance);
   }
   return true;
@@ -126,17 +131,17 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
           ss << key << "_" << iter++;
           newKey = ss.str();
         } while (map.count(newKey) > 0);
-        LOG(WARNING)
+        !Cr::Utility::Warning{}
             << descString << " : Provided key '" << key
             << "' already references a different value in "
                "map. Modifying key to be "
             << newKey
             << ". Set overwrite to true to overwrite existing entries.";
       } else {  // overwrite entry
-        LOG(WARNING) << descString
-                     << " : Warning : Overwriting existing map entry "
-                     << map.at(newKey) << " at key " << newKey << " with value "
-                     << path << ".";
+        !Cr::Utility::Warning{}
+            << descString << " : Warning : Overwriting existing map entry "
+            << map.at(newKey) << " at key " << newKey << " with value " << path
+            << ".";
       }  // overwrite or not
     }    // found entry is desired or not
   }      // key is found

@@ -237,9 +237,9 @@ class ManagedContainerBase {
   bool verifyLoadDocument(const std::string& filename,
                           CORRADE_UNUSED U& resDoc) {
     // by here always fail
-    LOG(ERROR) << objectType_
-               << "ManagedContainerBase::verifyLoadDocument : File " << filename
-               << " failed due to unknown file type.";
+    !Cr::Utility::Error{} << objectType_
+                          << "ManagedContainerBase::verifyLoadDocument : File "
+                          << filename << " failed due to unknown file type.";
     return false;
   }  // ManagedContainerBase::verifyLoadDocument
   /**
@@ -285,8 +285,9 @@ class ManagedContainerBase {
   bool checkExistsWithMessage(const std::string& objectHandle,
                               const std::string& src) const {
     if (!getObjectLibHasHandle(objectHandle)) {
-      LOG(ERROR) << src << " : Unknown " << objectType_
-                 << " managed object handle :" << objectHandle << ". Aborting";
+      !Cr::Utility::Error{} << src << " : Unknown " << objectType_
+                            << " managed object handle :" << objectHandle
+                            << ". Aborting";
       return false;
     }
     return true;

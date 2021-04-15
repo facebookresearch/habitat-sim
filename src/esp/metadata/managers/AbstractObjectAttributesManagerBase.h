@@ -173,21 +173,23 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
                                                     registerTemplate);
     msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
   } else {
-    LOG(INFO) << "AbstractObjectAttributesManager<T>::createObject  ("
-              << this->objectType_ << ") : Making attributes with handle : "
-              << attributesTemplateHandle;
+    !Cr::Utility::Debug{}
+        << "AbstractObjectAttributesManager<T>::createObject  ("
+        << this->objectType_
+        << ") : Making attributes with handle : " << attributesTemplateHandle;
     attrs = this->createFromJsonOrDefaultInternal(attributesTemplateHandle, msg,
                                                   registerTemplate);
 
-    LOG(INFO) << "AbstractObjectAttributesManager<T>::createObject  ("
-              << this->objectType_
-              << ") : Done making attributes with handle : "
-              << attributesTemplateHandle;
+    !Cr::Utility::Debug{}
+        << "AbstractObjectAttributesManager<T>::createObject  ("
+        << this->objectType_ << ") : Done making attributes with handle : "
+        << attributesTemplateHandle;
 
   }  // if this is prim else
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " " << this->objectType_ << " attributes created"
-              << (registerTemplate ? " and registered." : ".");
+    !Cr::Utility::Debug{} << msg << " " << this->objectType_
+                          << " attributes created"
+                          << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
 
@@ -325,7 +327,7 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     if (T::AssetTypeNamesMap.count(strToLookFor)) {
       typeVal = static_cast<int>(T::AssetTypeNamesMap.at(strToLookFor));
     } else {
-      LOG(WARNING)
+      !Cr::Utility::Warning{}
           << "AbstractObjectAttributesManager::setJSONAssetHandleAndType : "
              "Value in json @ tag : "
           << jsonMeshTypeTag << " : `" << tmpVal

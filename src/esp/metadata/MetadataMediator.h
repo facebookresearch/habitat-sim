@@ -212,7 +212,7 @@ class MetadataMediator {
   const std::string getNavmeshPathByHandle(const std::string& navMeshHandle) {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     if (datasetAttr == nullptr) {
-      LOG(ERROR)
+      !Cr::Utility::Error{}
           << "MetadataMediator::getNavmeshPathByHandle : No active "
              "dataset has been specified so unable to determine path for "
           << navMeshHandle;
@@ -249,7 +249,7 @@ class MetadataMediator {
       const std::string& ssDescrHandle) {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     if (datasetAttr == nullptr) {
-      LOG(ERROR)
+      !Cr::Utility::Error{}
           << "MetadataMediator::getSemanticSceneDescriptorPathByHandle : No "
              "active dataset has been specified so unable to determine path "
              "for "
@@ -292,9 +292,10 @@ class MetadataMediator {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen
     if (datasetAttr == nullptr) {
-      LOG(ERROR) << "MetadataMediator::getNamedStageAttributesCopy : No "
-                    "current active dataset specified/exists named :"
-                 << activeSceneDataset_ << ".";
+      !Cr::Utility::Error{}
+          << "MetadataMediator::getNamedStageAttributesCopy : No "
+             "current active dataset specified/exists named :"
+          << activeSceneDataset_ << ".";
       return nullptr;
     }
     return datasetAttr->getNamedStageAttributesCopy(stageAttrName);
@@ -315,9 +316,10 @@ class MetadataMediator {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen
     if (datasetAttr == nullptr) {
-      LOG(ERROR) << "MetadataMediator::getNamedObjectAttributesCopy : No "
-                    "current active dataset specified/exists named :"
-                 << activeSceneDataset_ << ".";
+      !Cr::Utility::Error{}
+          << "MetadataMediator::getNamedObjectAttributesCopy : No "
+             "current active dataset specified/exists named :"
+          << activeSceneDataset_ << ".";
       return nullptr;
     }
     return datasetAttr->getNamedObjectAttributesCopy(objAttrName);
@@ -336,9 +338,10 @@ class MetadataMediator {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen
     if (datasetAttr == nullptr) {
-      LOG(ERROR) << "MetadataMediator::getNamedLightSetup : No current active "
-                    "dataset specified/exists named :"
-                 << activeSceneDataset_ << ".";
+      !Cr::Utility::Error{}
+          << "MetadataMediator::getNamedLightSetup : No current active "
+             "dataset specified/exists named :"
+          << activeSceneDataset_ << ".";
       return esp::gfx::LightSetup{};
     }
     return datasetAttr->getNamedLightSetup(lightSetupName);
@@ -359,7 +362,7 @@ class MetadataMediator {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen
     if (datasetAttr == nullptr) {
-      LOG(ERROR)
+      !Cr::Utility::Error{}
           << "MetadataMediator::getStageAttrFullHandle : No current active "
              "dataset specified/exists named :"
           << activeSceneDataset_ << ".";
@@ -383,7 +386,7 @@ class MetadataMediator {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen
     if (datasetAttr == nullptr) {
-      LOG(ERROR)
+      !Cr::Utility::Error{}
           << "MetadataMediator::getObjAttrFullHandle : No current active "
              "dataset specified/exists named :"
           << activeSceneDataset_ << ".";
@@ -405,7 +408,7 @@ class MetadataMediator {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen
     if (datasetAttr == nullptr) {
-      LOG(ERROR)
+      !Cr::Utility::Error{}
           << "MetadataMediator::getLightSetupFullHandle : No current active "
              "dataset specified/exists named :"
           << activeSceneDataset_ << ".";
@@ -440,8 +443,9 @@ class MetadataMediator {
       const std::map<std::string, std::string>& assetMapping,
       const std::string& msgString) {
     if (assetMapping.count(assetHandle) == 0) {
-      LOG(WARNING) << msgString << " (getAsset) : Unable to find file path for "
-                   << assetHandle << ".  Aborting.";
+      !Cr::Utility::Warning{} << msgString
+                              << " (getAsset) : Unable to find file path for "
+                              << assetHandle << ".  Aborting.";
       return "";
     }
     return assetMapping.at(assetHandle);
@@ -487,9 +491,10 @@ class MetadataMediator {
     auto datasetAttr =
         sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
     if (datasetAttr == nullptr) {
-      LOG(ERROR) << "MetadataMediator::getActiveDSAttribs : Unable to set "
-                    "active dataset due to Unknown dataset named "
-                 << activeSceneDataset_ << ". Aborting";
+      !Cr::Utility::Error{}
+          << "MetadataMediator::getActiveDSAttribs : Unable to set "
+             "active dataset due to Unknown dataset named "
+          << activeSceneDataset_ << ". Aborting";
       return nullptr;
     }
     return datasetAttr;
