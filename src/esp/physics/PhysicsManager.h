@@ -186,6 +186,12 @@ class PhysicsManager {
     esp::metadata::attributes::ObjectAttributes::ptr attributes =
         resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
             attributesHandle);
+    if (!attributes) {
+      LOG(ERROR) << "PhysicsManager::addObject : "
+                    "Object creation failed due to unknown attributes "
+                 << attributesHandle;
+      return ID_UNDEFINED;
+    }
 
     return addObject(attributes, drawables, attachmentNode, lightSetup);
   }
@@ -193,7 +199,7 @@ class PhysicsManager {
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
    * handle.
-   * @param objectLibId The ID of the object's template in @ref
+   * @param attributesID The ID of the object's template in @ref
    * esp::metadata::managers::ObjectAttributesManager
    * @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
@@ -202,14 +208,19 @@ class PhysicsManager {
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const int objectLibId,
+  int addObject(const int attributesID,
                 DrawableGroup* drawables,
                 scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     const esp::metadata::attributes::ObjectAttributes::ptr attributes =
         resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
-            objectLibId);
-
+            attributesID);
+    if (!attributes) {
+      LOG(ERROR) << "PhysicsManager::addObject : "
+                    "Object creation failed due to unknown attributes ID "
+                 << attributesID;
+      return ID_UNDEFINED;
+    }
     return addObject(attributes, drawables, attachmentNode, lightSetup);
   }
 

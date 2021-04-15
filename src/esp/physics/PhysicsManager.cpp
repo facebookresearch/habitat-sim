@@ -61,7 +61,13 @@ int PhysicsManager::addObject(
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup) {
   //! Make rigid object and add it to existingObjects
-
+  if (!objectAttributes) {
+    // should never run, but just in case
+    LOG(ERROR) << "PhysicsManager::addObject : "
+                  "Object creation failed due to nonexistant "
+                  "objectAttributes";
+    return ID_UNDEFINED;
+  }
   // verify whether necessary assets exist, and if not, instantiate them
   // only make object if asset instantiation succeeds (short circuit)
   bool objectSuccess =
