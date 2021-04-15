@@ -55,3 +55,6 @@
 [submodule "src/deps/v-hacd"]
 	path = src/deps/v-hacd
 	url = https://github.com/ScottCSteinhauser/v-hacd.git
+[submodule "src/deps/meshoptimizer"]
+	path = src/deps/meshoptimizer
+	url = https://github.com/zeux/meshoptimizer.git
