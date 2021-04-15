@@ -1,0 +1,109 @@
+{
+  "dataset_name": "AI2Thor",
+  "dataset_rel_to_home": true,
+  "dataset_src_subdir": "Documents/AI2Thor/",
+  "scenes_src_subdir": "scenes_old/",
+  "stage_tag": "Structure",
+  "objects_tag": "Objects",
+  "lighting_tag": "Lighting",
+  "stage_include_obj_substr": [
+    "floor_",
+    "window",
+    "a-frameshelf",
+    "blinds",
+    "burner",
+    "cabinet",
+    "counter",
+    "curtains",
+    "faucet",
+    "lightfixture",
+    "lightswitch",
+    "shelf",
+    "shelfve",
+    "showercurtain",
+    "showerdoor",
+    "showerglass",
+    "showerhead",
+    "sink",
+    "stoveknob",
+    "toilet_",
+    "toiletpaperhanger",
+    "towelholder"
+  ],
+  "obj_override_names": [
+    "floor_lamp"
+  ],
+  "obj_exclude_names": [
+    "boundingbox",
+    "colliders",
+    "hideandseek",
+    "trigger",
+    "visibilitypoints"
+  ],
+  "obj_created_static": [
+    "bed",
+    "bench",
+    "chair",
+    "cloth",
+    "decor",
+    "decorative",
+    "desk",
+    "dresser",
+    "fridge",
+    "lamp",
+    "microwave",
+    "mirror",
+    "nightstand",
+    "ottoman",
+    "painting",
+    "poster",
+    "safe",
+    "sofa",
+    "tvstand",
+    "television",
+    "table"
+  ],
+  "default_attributes": {
+    "stages": {
+      "requires_lighting": "true",
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ]
+    },
+    "objects": {
+      "requires_lighting": "true",
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ]
+    },
+    "scene_instances": {
+      "translation_origin": "asset_local",
+      "default_lighting": ""
+    },
+    "light_setups": {}
+  }
+}
