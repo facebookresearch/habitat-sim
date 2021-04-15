@@ -1428,9 +1428,6 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
 
 void ResourceManager::loadMaterials(Importer& importer,
                                     LoadedAssetData& loadedAssetData) {
-  int materialStart = nextMaterialID_;
-  int materialEnd = materialStart + importer.materialCount() - 1;
-
   for (int iMaterial = 0; iMaterial < importer.materialCount(); ++iMaterial) {
     int currentMaterialID = nextMaterialID_++;
 
