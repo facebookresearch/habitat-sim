@@ -14,22 +14,20 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-struct VoxelGrid : Cr::TestSuite::Tester {
-  explicit VoxelGrid();
+// Test is not compiled if --vhacd is not enabled
+struct VoxelGridTest : Cr::TestSuite::Tester {
+  explicit VoxelGridTest();
 
   void testVoxelGridWithVHACD();
   void testVoxelUtilityFunctions();
 };
 
-VoxelGrid::VoxelGrid() {
-#ifdef ESP_BUILD_WITH_VHACD
-  addTests({&VoxelGrid::testVoxelGridWithVHACD});
-  addTests({&VoxelGrid::testVoxelUtilityFunctions});
-#endif
+VoxelGridTest::VoxelGridTest() {
+  addTests({&VoxelGridTest::testVoxelGridWithVHACD});
+  addTests({&VoxelGridTest::testVoxelUtilityFunctions});
 }
 
-#ifdef ESP_BUILD_WITH_VHACD
-void VoxelGrid::testVoxelGridWithVHACD() {
+void VoxelGridTest::testVoxelGridWithVHACD() {
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
   simConfig.activeSceneName = Cr::Utility::Directory::join(
@@ -108,7 +106,7 @@ void VoxelGrid::testVoxelGridWithVHACD() {
   simulator_->setStageVoxelizationDraw(false, "Boundary");
 }
 
-void VoxelGrid::testVoxelUtilityFunctions() {
+void VoxelGridTest::testVoxelUtilityFunctions() {
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
   simConfig.activeSceneName = Cr::Utility::Directory::join(
@@ -182,6 +180,4 @@ void VoxelGrid::testVoxelUtilityFunctions() {
   CORRADE_VERIFY(valuesAreInRange);
 }
 
-#endif
-
-CORRADE_TEST_MAIN(VoxelGrid)
+CORRADE_TEST_MAIN(VoxelGridTest)
