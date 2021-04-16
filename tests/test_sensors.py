@@ -277,7 +277,7 @@ def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
 def test_initial_hfov(scene, sensor_type, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
-    make_cfg_settings["hfov"] = mn.Deg(70)
+    make_cfg_settings["hfov"] = 70
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
         assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
             70
