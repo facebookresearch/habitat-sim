@@ -104,7 +104,7 @@ void initSensorBindings(py::module& m) {
       .def(py::init(&CameraSensorSpec::create<>))
       .def_property(
           "hfov", [](CameraSensorSpec& self) { return Mn::Degd(self.hfov); },
-          [](CameraSensorSpec& self, py::object angle) {
+          [](CameraSensorSpec& self, const py::object& angle) {
             auto PyDeg = py::module_::import("magnum").attr("Deg");
             self.hfov = Mn::Deg(PyDeg(angle).cast<Mn::Degd>());
           })
@@ -214,7 +214,7 @@ void initSensorBindings(py::module& m) {
           R"(Set the height of the resolution in the SensorSpec for this CameraSensor.)")
       .def_property(
           "fov", [](CameraSensor& self) { return Mn::Degd(self.getFOV()); },
-          [](CameraSensor& self, py::object angle) {
+          [](CameraSensor& self, const py::object& angle) {
             auto PyDeg = py::module_::import("magnum").attr("Deg");
             self.setFOV(Mn::Deg(PyDeg(angle).cast<Mn::Degd>()));
           },
