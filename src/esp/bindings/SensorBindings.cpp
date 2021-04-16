@@ -105,7 +105,7 @@ void initSensorBindings(py::module& m) {
       .def_property(
           "hfov", [](CameraSensorSpec& self) { return Mn::Degd(self.hfov); },
           [](CameraSensorSpec& self, py::object angle) {
-            py::object PyDeg = py::module_::import("magnum").attr("Deg");
+            auto PyDeg = py::module_::import("magnum").attr("Deg");
             self.hfov = Mn::Deg(PyDeg(angle).cast<Mn::Degd>());
           })
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
@@ -215,7 +215,7 @@ void initSensorBindings(py::module& m) {
       .def_property(
           "fov", [](CameraSensor& self) { return Mn::Degd(self.getFOV()); },
           [](CameraSensor& self, py::object angle) {
-            py::object PyDeg = py::module_::import("magnum").attr("Deg");
+            auto PyDeg = py::module_::import("magnum").attr("Deg");
             self.setFOV(Mn::Deg(PyDeg(angle).cast<Mn::Degd>()));
           },
           R"(Set the field of view to use for this CameraSensor.  Only applicable to
