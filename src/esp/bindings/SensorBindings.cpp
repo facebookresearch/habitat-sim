@@ -101,6 +101,7 @@ void initSensorBindings(py::module& m) {
   py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec>(
       m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
+      .def_readwrite("hfov", &CameraSensorSpec::hfov)
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
   // ====FisheyeSensorSpec ====
