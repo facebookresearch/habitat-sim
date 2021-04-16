@@ -9,6 +9,7 @@
 
 #include <Magnum/PythonBindings.h>
 #include <Magnum/SceneGraph/PythonBindings.h>
+#include <pybind11/pytypes.h>
 
 #include <utility>
 
@@ -101,6 +102,12 @@ void initSensorBindings(py::module& m) {
   py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec>(
       m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
+      .def_property(
+          "hfov", [](CameraSensorSpec& self) { return Mn::Degd(self.hfov); },
+          [](CameraSensorSpec& self, const py::object& angle) {
+            auto PyDeg = py::module_::import("magnum").attr("Deg");
+            self.hfov = Mn::Deg(PyDeg(angle).cast<Mn::Degd>());
+          })
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
   // ====FisheyeSensorSpec ====
@@ -207,8 +214,9 @@ void initSensorBindings(py::module& m) {
           R"(Set the height of the resolution in the SensorSpec for this CameraSensor.)")
       .def_property(
           "fov", [](CameraSensor& self) { return Mn::Degd(self.getFOV()); },
-          [](CameraSensor& self, Mn::Degd angle) {
-            self.setFOV(Mn::Deg(angle));
+          [](CameraSensor& self, const py::object& angle) {
+            auto PyDeg = py::module_::import("magnum").attr("Deg");
+            self.setFOV(Mn::Deg(PyDeg(angle).cast<Mn::Degd>()));
           },
           R"(Set the field of view to use for this CameraSensor.  Only applicable to
           Pinhole Camera Types)")

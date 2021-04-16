@@ -56,6 +56,8 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
       Mn::SceneGraph::AspectRatioPolicy::Extend);
   recomputeProjectionMatrix();
   renderCamera_->setViewport(this->framebufferSize());
+  // Set initial hFOV
+  setFOV(cameraSensorSpec_->hfov);
 }  // ctor
 
 void CameraSensor::setProjectionParameters(const CameraSensorSpec& spec) {

@@ -235,6 +235,8 @@ def test_smoke_no_sensors(make_cfg_settings):
         cfg = make_cfg(make_cfg_settings)
         cfg.agents[0].sensor_specifications = []
         sims.append(habitat_sim.Simulator(cfg))
+    for sim in sims:
+        sim.close()
 
 
 @pytest.mark.gfxtest
@@ -267,6 +269,19 @@ def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
         ), "Incorrect depth_sensor output"
 
     sim.close()
+
+
+@pytest.mark.gfxtest
+@pytest.mark.parametrize("scene", _test_scenes)
+@pytest.mark.parametrize("sensor_type", all_base_sensor_types[:2])
+def test_initial_hfov(scene, sensor_type, make_cfg_settings):
+    if not osp.exists(scene):
+        pytest.skip("Skipping {}".format(scene))
+    make_cfg_settings["hfov"] = 70
+    with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
+        assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
+            70
+        ), "HFOV was not properly set"
 
 
 @pytest.mark.gfxtest
