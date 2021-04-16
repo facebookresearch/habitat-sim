@@ -104,6 +104,7 @@ void initSensorBindings(py::module& m) {
       .def_property(
           "hfov", [](CameraSensorSpec& self) { return Mn::Degd(self.hfov); },
           [](CameraSensorSpec& self, Mn::Degd angle) {
+	    //TODO use Python bindings for Mn::Deg for nicer conversion
             self.hfov = Mn::Deg(angle);
           })
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
