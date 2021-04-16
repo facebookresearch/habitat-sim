@@ -9,6 +9,7 @@
 
 #include <Magnum/PythonBindings.h>
 #include <Magnum/SceneGraph/PythonBindings.h>
+#include <pybind11/pytypes.h>
 
 #include <utility>
 
@@ -213,7 +214,7 @@ void initSensorBindings(py::module& m) {
           R"(Set the height of the resolution in the SensorSpec for this CameraSensor.)")
       .def_property(
           "fov", [](CameraSensor& self) { return Mn::Degd(self.getFOV()); },
-          [](CameraSensor& self, Mn::Degd angle) {
+          [](CameraSensor& self, py::object angle) {
             py::object deg = py::module_::import("magnum").attr("Deg");
             self.setFOV(Mn::Deg(deg(angle).cast<Mn::Degd>()));
           },
