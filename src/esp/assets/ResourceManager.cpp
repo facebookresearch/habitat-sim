@@ -65,6 +65,8 @@
 #include "esp/gfx/PTexMeshShader.h"
 #endif
 
+#include <iomanip>
+
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
@@ -81,6 +83,8 @@ using metadata::managers::StageAttributesManager;
 
 namespace assets {
 
+int ResourceManager::mipLevelsToSkip = 0;
+
 ResourceManager::ResourceManager(
     metadata::MetadataMediator::ptr& _metadataMediator,
     Flags _flags)
@@ -89,7 +93,8 @@ ResourceManager::ResourceManager(
 #ifdef MAGNUM_BUILD_STATIC
       ,
       // avoid using plugins that might depend on different library versions
-      importerManager_("nonexistent")
+      importerManager_("nonexistent"),
+      sceneConverterManager_("nonexistent")
 #endif
 {
 #ifdef ESP_BUILD_WITH_VHACD
@@ -1647,17 +1652,32 @@ void ResourceManager::loadMeshes(Importer& importer,
   nextMeshID_ = meshEnd + 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
 
+  GenericMeshData::totalSourceIndices = 0;
+  GenericMeshData::totalSimplifiedIndices = 0;
+
   for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GenericMeshData>(
         loadedAssetData.assetInfo.requiresLighting);
-    gltfMeshData->importAndSetMeshData(importer, iMesh);
+    gltfMeshData->importAndSetMeshData(importer, iMesh, sceneConverterManager_);
 
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
 
     gltfMeshData->uploadBuffersToGPU(false);
     meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
+  }
+
+  if (GenericMeshData::targetMeshSimplificationFraction < 1.f) {
+    LOG(INFO) << "mesh simplification for "
+              << loadedAssetData.assetInfo.filepath;
+    LOG(INFO) << "reduced triangle count from "
+              << GenericMeshData::totalSourceIndices << " to "
+              << GenericMeshData::totalSimplifiedIndices << " ("
+              << std::setprecision(3)
+              << ((float)GenericMeshData::totalSimplifiedIndices * 100 /
+                  GenericMeshData::totalSourceIndices)
+              << "%)";
   }
 }
 
@@ -1754,22 +1774,32 @@ void ResourceManager::loadTextures(Importer& importer,
         format = Mn::GL::textureFormat(image->format());
       }
 
+      int adjustedLevel = level - mipLevelsToSkip;
+      int adjustedLevelCount = levelCount - mipLevelsToSkip;
+
       // For the very first level, allocate the texture
       if (level == 0) {
         // If there is just one level and the image is not compressed, we'll
         // generate mips ourselves
         if (levelCount == 1 && !image->isCompressed()) {
+          ASSERT(mipLevelsToSkip == 0);
           texture.setStorage(Mn::Math::log2(image->size().max()) + 1, format,
                              image->size());
           generateMipmap = true;
-        } else
-          texture.setStorage(levelCount, format, image->size());
+        } else {
+          auto adjustedSize = image->size() / (1 << mipLevelsToSkip);
+          texture.setStorage(adjustedLevelCount, format, adjustedSize);
+        }
+      }
+
+      if (adjustedLevel < 0) {
+        continue;
       }
 
       if (image->isCompressed())
-        texture.setCompressedSubImage(level, {}, *image);
+        texture.setCompressedSubImage(adjustedLevel, {}, *image);
       else
-        texture.setSubImage(level, {}, *image);
+        texture.setSubImage(adjustedLevel, {}, *image);
     }
 
     // Mip level loading failed, fail the whole texture
