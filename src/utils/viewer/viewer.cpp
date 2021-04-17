@@ -479,6 +479,7 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("recompute-navmesh",
                "Programmatically re-generate the scene navmesh.")
       .addOption("camera-transform-filepath")
+      .addOption("mesh-simplification")
       .setHelp("camera-transform-filepath",
                "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
@@ -523,6 +524,10 @@ Viewer::Viewer(const Arguments& arguments)
   if (args.isSet("stage-requires-lighting")) {
     Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
+  }
+  if (!args.value("mesh-simplification").empty()) {
+    simConfig.meshSimplificationFraction =
+        (float)std::stoi(args.value("mesh-simplification")) / 100;
   }
 
   // setup the PhysicsManager config file

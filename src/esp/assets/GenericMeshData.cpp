@@ -9,11 +9,19 @@
 #include <Corrade/Utility/DebugStl.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Interleave.h>
+
+#include <Corrade/Utility/ConfigurationGroup.h>
+#include <MagnumPlugins/MeshOptimizerSceneConverter/MeshOptimizerSceneConverter.h>
+
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
+
+int GenericMeshData::totalSourceIndices = 0;
+int GenericMeshData::totalSimplifiedIndices = 0;
+float GenericMeshData::targetMeshSimplificationFraction = 1.f;
 
 void GenericMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
@@ -73,11 +81,49 @@ void GenericMeshData::setMeshData(Magnum::Trade::MeshData&& meshData) {
 
 void GenericMeshData::importAndSetMeshData(
     Magnum::Trade::AbstractImporter& importer,
-    int meshID) {
+    int meshID,
+    Corrade::PluginManager::Manager<Mn::Trade::AbstractSceneConverter>&
+        manager) {
   /* Guarantee mesh instance success */
   Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer.mesh(meshID);
   CORRADE_INTERNAL_ASSERT(mesh);
-  setMeshData(*std::move(mesh));
+
+  totalSourceIndices += mesh->indexCount();
+
+  if (targetMeshSimplificationFraction < 1.f) {
+    Mn::Containers::Pointer<Mn::Trade::MeshOptimizerSceneConverter>
+        meshoptimizer = Corrade::Containers::pointerCast<
+            Mn::Trade::MeshOptimizerSceneConverter>(
+            manager.loadAndInstantiate("MeshOptimizerSceneConverter"));
+
+    meshoptimizer->configuration().setValue("simplify", "true");
+    meshoptimizer->configuration().setValue(
+        "simplifyTargetIndexCountThreshold",
+        std::to_string(targetMeshSimplificationFraction));
+    constexpr float simplifyTargetError =
+        0.2;  // I don't think this field has any effect
+    meshoptimizer->configuration().setValue(
+        "simplifyTargetError", std::to_string(simplifyTargetError));
+
+    Mn::Containers::Optional<Mn::Trade::MeshData> simplifiedMesh =
+        meshoptimizer->convert(*mesh);
+    const int count = simplifiedMesh->indexCount();
+    if (count == 0) {
+      LOG(INFO) << "meshID " << meshID << " before: " << mesh->indexCount()
+                << ", failed to simplify";
+      setMeshData(*std::move(mesh));
+      totalSimplifiedIndices += mesh->indexCount();
+    } else {
+      LOG(INFO) << "meshID " << meshID << " before: " << mesh->indexCount()
+                << ", after " << count;
+      setMeshData(*std::move(simplifiedMesh));
+      totalSimplifiedIndices += count;
+    }
+  } else {
+    totalSimplifiedIndices += mesh->indexCount();
+    setMeshData(*std::move(mesh));
+  }
+
 }  // importAndSetMeshData
 
 void GenericMeshData::importAndSetMeshData(

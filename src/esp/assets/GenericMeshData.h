@@ -13,6 +13,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Trade/AbstractImporter.h>
+#include <Magnum/Trade/AbstractSceneConverter.h>
 
 #include "BaseMesh.h"
 #include "esp/core/esp.h"
@@ -69,8 +70,11 @@ class GenericMeshData : public BaseMesh {
    * @param meshID The local identifier of a specific mesh component of the
    * asset.
    */
-  void importAndSetMeshData(Magnum::Trade::AbstractImporter& importer,
-                            int meshID);
+  void importAndSetMeshData(
+      Magnum::Trade::AbstractImporter& importer,
+      int meshID,
+      Corrade::PluginManager::Manager<Magnum::Trade::AbstractSceneConverter>&
+          manager);
   /**
    * @brief Load mesh data from a pre-parsed importer for a specific mesh
    * component name. Sets the @ref collisionMeshData_ references.
@@ -96,6 +100,10 @@ class GenericMeshData : public BaseMesh {
    * @return Pointer to the compiled render mesh data.
    */
   Magnum::GL::Mesh* getMagnumGLMesh() override;
+
+  static float targetMeshSimplificationFraction;
+  static int totalSourceIndices;
+  static int totalSimplifiedIndices;
 
  protected:
   /**

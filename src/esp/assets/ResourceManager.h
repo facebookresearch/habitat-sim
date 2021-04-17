@@ -87,6 +87,7 @@ class ResourceManager {
   using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
   using Importer = Mn::Trade::AbstractImporter;
+  using SceneConverter = Mn::Trade::AbstractSceneConverter;
 
 #ifdef ESP_BUILD_WITH_VHACD
   /**
@@ -993,6 +994,8 @@ class ResourceManager {
    * to load asset data
    */
   Corrade::PluginManager::Manager<Importer> importerManager_;
+
+  Corrade::PluginManager::Manager<SceneConverter> sceneConverterManager_;
 
   /**
    * @brief Importer used to synthesize Magnum Primitives (PrimitiveImporter).

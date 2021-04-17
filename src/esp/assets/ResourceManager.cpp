@@ -65,6 +65,8 @@
 #include "esp/gfx/PTexMeshShader.h"
 #endif
 
+#include <iomanip>
+
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
@@ -91,7 +93,8 @@ ResourceManager::ResourceManager(
 #ifdef MAGNUM_BUILD_STATIC
       ,
       // avoid using plugins that might depend on different library versions
-      importerManager_("nonexistent")
+      importerManager_("nonexistent"),
+      sceneConverterManager_("nonexistent")
 #endif
 {
 #ifdef ESP_BUILD_WITH_VHACD
@@ -1654,17 +1657,32 @@ void ResourceManager::loadMeshes(Importer& importer,
   nextMeshID_ = meshEnd + 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
 
+  GenericMeshData::totalSourceIndices = 0;
+  GenericMeshData::totalSimplifiedIndices = 0;
+
   for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GenericMeshData>(
         loadedAssetData.assetInfo.requiresLighting);
-    gltfMeshData->importAndSetMeshData(importer, iMesh);
+    gltfMeshData->importAndSetMeshData(importer, iMesh, sceneConverterManager_);
 
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
 
     gltfMeshData->uploadBuffersToGPU(false);
     meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
+  }
+
+  if (GenericMeshData::targetMeshSimplificationFraction < 1.f) {
+    LOG(INFO) << "mesh simplification for "
+              << loadedAssetData.assetInfo.filepath;
+    LOG(INFO) << "reduced triangle count from "
+              << GenericMeshData::totalSourceIndices << " to "
+              << GenericMeshData::totalSimplifiedIndices << " ("
+              << std::setprecision(3)
+              << ((float)GenericMeshData::totalSimplifiedIndices * 100 /
+                  GenericMeshData::totalSourceIndices)
+              << "%)";
   }
 }
 

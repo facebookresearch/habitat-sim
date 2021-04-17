@@ -28,6 +28,8 @@
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sensor/VisualSensor.h"
 
+#include "esp/assets/GenericMeshData.h"
+
 namespace Cr = Corrade;
 
 namespace esp {
@@ -101,6 +103,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   resourceManager_->mipLevelsToSkip = cfg.textureDownsampleFactor;
+  esp::assets::GenericMeshData::targetMeshSimplificationFraction =
+      cfg.meshSimplificationFraction;
 
   if (!sceneManager_) {
     sceneManager_ = scene::SceneManager::create_unique();
