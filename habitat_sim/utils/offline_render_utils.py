@@ -143,6 +143,7 @@ def create_sim_for_replay_playback(
     hfov=90,
     do_depth=False,
     texture_downsample_factor=0,
+    mesh_simplification_fraction=1.0,
 ):
 
     sim_cfg = gfx_replay_utils.make_backend_configuration_for_playback(
@@ -157,6 +158,7 @@ def create_sim_for_replay_playback(
         do_depth=do_depth,
         do_semantic=False,
         texture_downsample_factor=texture_downsample_factor,
+        mesh_simplification_fraction=mesh_simplification_fraction,
     )
 
 
@@ -168,6 +170,7 @@ def create_sim(
     do_depth=False,
     do_semantic=False,
     texture_downsample_factor=0,
+    mesh_simplification_fraction=1.0,
 ):
     agent_cfg = AgentConfiguration()
 
@@ -218,6 +221,14 @@ def create_sim(
         if texture_downsample_factor != 0:
             print(
                 "error: Your Habitat-sim build doesn't support texture_downsample_factor. Did you build from source? Are you on branch github.com/eundersander/habitat-sim/tree/eundersander/offline_render_utils?"
+            )
+
+    if hasattr(playback_cfg.sim_cfg, "mesh_simplification_fraction"):
+        playback_cfg.sim_cfg.mesh_simplification_fraction = mesh_simplification_fraction
+    else:
+        if mesh_simplification_fraction != 1.0:
+            print(
+                "error: Your Habitat-sim build doesn't support mesh_simplification_fraction. Did you build from source? Are you on branch github.com/eundersander/habitat-sim/tree/eundersander/offline_render_utils?"
             )
 
     sim = habitat_sim.Simulator(playback_cfg)
@@ -447,6 +458,7 @@ def demo_using_replay():
         + mp3d_scene_name
         + ".glb"
     )
+
     resolution_x = 600
     resolution_y = 600
     hfov = 90
@@ -454,12 +466,31 @@ def demo_using_replay():
         mn.Vector3(-0.965926, 1.58481e-17, -0.258819), -5.91459e-17
     )
     translation = [8.38665, 1.442450000000001, -13.7832]
+
     # 0 = default
     # 1 = 2x downsample (e.g. 256x256 gets downsampled to 128x128)
     # 2 = 4x downsample
-    texture_downsample_factor = 4
+    texture_downsample_factor = 0
 
-    output_image_name = mp3d_scene_name + "_downsample" + str(texture_downsample_factor)
+    # 1.0 = default
+    # 0.75 = reduce triangle count to *approximately* 75% of original count. See
+    # console output for actual result numbers.
+    # In practice, for MP3D, I see lots of gaps and other severe visual artifacts
+    # for fraction < 0.5.
+    mesh_simplification_fraction = 0.5
+
+    if texture_downsample_factor != 0:
+        output_image_name = (
+            mp3d_scene_name + "_texture_downsample" + str(texture_downsample_factor)
+        )
+    elif mesh_simplification_fraction != 1.0:
+        output_image_name = (
+            mp3d_scene_name
+            + "_mesh_simplify"
+            + str(int(mesh_simplification_fraction * 1000))
+        )
+    else:
+        output_image_name = mp3d_scene_name
 
     do_depth = False  # also write grayscale depth image?
 
@@ -505,10 +536,12 @@ def demo_using_replay():
         hfov=hfov,
         do_depth=do_depth,
         texture_downsample_factor=texture_downsample_factor,
+        mesh_simplification_fraction=mesh_simplification_fraction,
     )
 
     render_observations_from_replay(sim, replay_filepath, output_image_name, do_depth)
 
 
 if __name__ == "__main__":
-    demo_using_stage_and_object()
+    # demo_using_stage_and_object()
+    demo_using_replay()
