@@ -47,8 +47,8 @@ set(
   TextureVisualizerShader.h
   DoubleSphereCameraShader.cpp
   DoubleSphereCameraShader.h
-  FisheyeShader.cpp
-  FisheyeShader.h
+  CubeMapShaderBase.cpp
+  CubeMapShaderBase.h
 )
 
 # If ptex support is enabled add relevant source files

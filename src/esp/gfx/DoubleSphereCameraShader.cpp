@@ -25,8 +25,9 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
-DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
-    : FisheyeShader(flags) {
+DoubleSphereCameraShader::DoubleSphereCameraShader(
+    CubeMapShaderBase::Flags flags)
+    : CubeMapShaderBase(flags) {
   if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -49,7 +50,7 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
 
   std::stringstream outputAttributeLocationsStream;
 
-  if (flags_ & FisheyeShader::Flag::ColorTexture) {
+  if (flags_ & CubeMapShaderBase::Flag::ColorTexture) {
     outputAttributeLocationsStream << Cr::Utility::formatString(
         "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
   }
@@ -59,10 +60,10 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
   */
 
   frag.addSource(outputAttributeLocationsStream.str())
-      .addSource(flags_ & FisheyeShader::Flag::ColorTexture
+      .addSource(flags_ & CubeMapShaderBase::Flag::ColorTexture
                      ? "#define COLOR_TEXTURE\n"
                      : "")
-      .addSource(flags_ & FisheyeShader::Flag::DepthTexture
+      .addSource(flags_ & CubeMapShaderBase::Flag::DepthTexture
                      ? "#define DEPTH_TEXTURE\n"
                      : "")
       .addSource(rs.get("doubleSphereCamera.frag"));
@@ -74,13 +75,13 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(FisheyeShader::Flags flags)
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
   // set texture binding points in the shader
-  if (flags_ & FisheyeShader::Flag::ColorTexture) {
+  if (flags_ & CubeMapShaderBase::Flag::ColorTexture) {
     setUniform(uniformLocation("ColorTexture"),
-               fisheyeShaderTexUnitSpace::TextureUnit::Color);
+               CubeMapShaderBaseTexUnitSpace::TextureUnit::Color);
   }
-  if (flags_ & FisheyeShader::Flag::DepthTexture) {
+  if (flags_ & CubeMapShaderBase::Flag::DepthTexture) {
     setUniform(uniformLocation("DepthTexture"),
-               fisheyeShaderTexUnitSpace::TextureUnit::Depth);
+               CubeMapShaderBaseTexUnitSpace::TextureUnit::Depth);
   }
   // TODO: handle the other flags, ObjectIdTexture
 
