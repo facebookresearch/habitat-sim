@@ -1554,7 +1554,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Four:
       sensorMode_ = (sensorMode_ + 1) %
                     (uint8_t)(VisualSensorMode::VisualSensorModeCount);
-      LOG(INFO) << "Sensor mode is set to " << sensorMode_;
+      LOG(INFO) << "Sensor mode is set to " << (int32_t)sensorMode_;
       break;
 
     case KeyEvent::Key::Five:
