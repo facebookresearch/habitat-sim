@@ -19,17 +19,17 @@ FisheyeSensorSpec::FisheyeSensorSpec() : CubeMapSensorBaseSpec() {
   sensorSubType = SensorSubType::Fisheye;
 }
 
-void FisheyeSensorSpec::sanityCheck() {
+void FisheyeSensorSpec::sanityCheck() const {
   CubeMapSensorBaseSpec::sanityCheck();
   ESP_CHECK(sensorSubType == SensorSubType::Fisheye,
-            "FisheyeSensorSpec::sanityCheck(): sensorSpec is not Fisheye");
+            "FisheyeSensorSpec::sanityCheck(): sensor sub-type is not Fisheye");
 
   ESP_CHECK(focalLength[0] > 0 && focalLength[1] > 0,
             "FisheyeSensorSpec::sanityCheck(): focal length," << focalLength
                                                               << "is illegal.");
 }
 
-void FisheyeSensorDoubleSphereSpec::sanityCheck() {
+void FisheyeSensorDoubleSphereSpec::sanityCheck() const {
   FisheyeSensorSpec::sanityCheck();
   ESP_CHECK(fisheyeModelType == FisheyeSensorModelType::DoubleSphere,
             "FisheyeSensorDoubleSphereSpec::sanityCheck(): fisheye model "

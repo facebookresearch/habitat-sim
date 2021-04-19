@@ -53,7 +53,7 @@ struct VisualSensorSpec : public SensorSpec {
    */
   Mn::Color4 clearColor = {0, 0, 0, 1};
   VisualSensorSpec();
-  void sanityCheck() override;
+  void sanityCheck() const override;
   bool isVisualSensorSpec() const override { return true; }
   bool operator==(const VisualSensorSpec& a) const;
   ESP_SMART_POINTERS(VisualSensorSpec)

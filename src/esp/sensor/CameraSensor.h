@@ -16,7 +16,7 @@ struct CameraSensorSpec : public VisualSensorSpec {
   float orthoScale = 0.1f;
   Mn::Deg hfov = 90.0_degf;
   CameraSensorSpec();
-  void sanityCheck() override;
+  void sanityCheck() const override;
   bool operator==(const CameraSensorSpec& a) const;
   ESP_SMART_POINTERS(CameraSensorSpec)
 };

@@ -12,6 +12,8 @@ set(
   VisualSensor.h
   FisheyeSensor.cpp
   FisheyeSensor.h
+  EquirectangularSensor.cpp
+  EquirectangularSensor.h
 )
 
 if(BUILD_WITH_CUDA)

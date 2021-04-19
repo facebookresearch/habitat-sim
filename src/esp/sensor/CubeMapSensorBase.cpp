@@ -21,7 +21,7 @@ CubeMapSensorBaseSpec::CubeMapSensorBaseSpec() : VisualSensorSpec() {
   sensorSubType = SensorSubType::None;
 }
 
-void CubeMapSensorBaseSpec::sanityCheck() {
+void CubeMapSensorBaseSpec::sanityCheck() const {
   VisualSensorSpec::sanityCheck();
   if (cubemapSize != Cr::Containers::NullOpt) {
     ESP_CHECK(*cubemapSize > 0,

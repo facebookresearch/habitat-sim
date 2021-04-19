@@ -41,7 +41,7 @@ struct CubeMapSensorBaseSpec : public VisualSensorSpec {
   /**
    * @brief check if the specification is legal
    */
-  void sanityCheck() override;
+  void sanityCheck() const override;
   ESP_SMART_POINTERS(CubeMapSensorBaseSpec)
 };
 

@@ -63,7 +63,7 @@ struct FisheyeSensorSpec : public CubeMapSensorBaseSpec {
   /**
    * @brief check if the specification is legal
    */
-  void sanityCheck() override;
+  void sanityCheck() const override;
   ESP_SMART_POINTERS(FisheyeSensorSpec)
 };
 
@@ -83,7 +83,7 @@ struct FisheyeSensorDoubleSphereSpec : public FisheyeSensorSpec {
   /**
    * @brief check if the specification is legal
    */
-  void sanityCheck() override;
+  void sanityCheck() const override;
   ESP_SMART_POINTERS(FisheyeSensorDoubleSphereSpec)
 };
 
@@ -93,6 +93,8 @@ struct FisheyeSensorDoubleSphereSpec : public FisheyeSensorSpec {
 
 class FisheyeSensor : public CubeMapSensorBase {
  public:
+  static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
+      "fisheye-model-type={}-flags={}";
   /**
    * @brief constructor
    * NOTE: the status of the camera sensor is "valid" after construction, and
@@ -104,6 +106,7 @@ class FisheyeSensor : public CubeMapSensorBase {
    * @brief destructor
    */
   ~FisheyeSensor() override = default;
+
   /**
    * @brief Draw an observation to the frame buffer
    * @return true if success, otherwise false (e.g., frame buffer is not set)
@@ -112,15 +115,12 @@ class FisheyeSensor : public CubeMapSensorBase {
    */
   bool drawObservation(sim::Simulator& sim) override;
 
-  static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
-      "fisheye-model-type={}-flags={}";
-
-  gfx::RenderCamera* getRenderCamera() = delete;
-
   /**
    * @brief Return a pointer to this fisheye sensor's SensorSpec
    */
   FisheyeSensorSpec::ptr specification() const { return fisheyeSensorSpec_; }
+
+  gfx::RenderCamera* getRenderCamera() = delete;
 
  protected:
   FisheyeSensorSpec::ptr fisheyeSensorSpec_ =

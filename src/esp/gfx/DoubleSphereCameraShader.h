@@ -15,24 +15,6 @@ namespace esp {
 namespace gfx {
 class DoubleSphereCameraShader : public CubeMapShaderBase {
  public:
-  enum : Magnum::UnsignedInt {
-    /**
-     * Color shader output. @ref shaders-generic "Generic output",
-     * present always. Expects three- or four-component floating-point
-     * or normalized buffer attachment.
-     */
-    ColorOutput = Magnum::Shaders::Generic3D::ColorOutput,
-
-    // TODO
-    /**
-     * Object ID shader output. @ref shaders-generic "Generic output",
-     * present only if @ref CubeMapShaderBase::Flag::ObjectId is set. Expects a
-     * single-component unsigned integral attachment. Writes the value
-     * set in @ref setObjectId() there.
-     */
-    // ObjectIdOutput = Magnum::Shaders::Generic3D::ObjectIdOutput,
-  };
-
   explicit DoubleSphereCameraShader(CubeMapShaderBase::Flags flags = {
                                         CubeMapShaderBase::Flag::ColorTexture});
 

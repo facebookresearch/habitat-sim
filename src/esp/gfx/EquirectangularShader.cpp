@@ -1,7 +1,7 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-#include "DoubleSphereCameraShader.h"
+#include "EquirectangularShader.h"
 
 #include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Assert.h>
@@ -10,12 +10,13 @@
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/Version.h>
+#include "esp/gfx/CubeMap.h"
 
 #include <sstream>
 
-// This is to import the "resources" at runtime. When the resource is
-// compiled into static library, it must be explicitly initialized via this
-// macro, and should be called *outside* of any namespace.
+// This is to import the "resources" at runtime.
+// When the resource is compiled into static library, it must be explicitly
+// initialized via this macro, and should be called *outside* of any namespace.
 static void importShaderResources() {
   CORRADE_RESOURCE_INITIALIZE(ShaderResources)
 }
@@ -25,9 +26,12 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
-DoubleSphereCameraShader::DoubleSphereCameraShader(
-    CubeMapShaderBase::Flags flags)
-    : CubeMapShaderBase(flags) {
+
+EquirectangularShader::EquirectangularShader(Flags flags) : flags_(flags) {
+  CORRADE_ASSERT(flags != Flags{},
+                 "EquirectangularShader::EquirectangularShader(): shader "
+                 "flags cannot be empty.", );
+
   if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -50,7 +54,7 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(
 
   std::stringstream outputAttributeLocationsStream;
 
-  if (flags_ & CubeMapShaderBase::Flag::ColorTexture) {
+  if (flags_ & EquirectangularShader::Flag::ColorTexture) {
     outputAttributeLocationsStream << Cr::Utility::formatString(
         "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
   }
@@ -60,13 +64,13 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(
   */
 
   frag.addSource(outputAttributeLocationsStream.str())
-      .addSource(flags_ & CubeMapShaderBase::Flag::ColorTexture
+      .addSource(flags_ & EquirectangularShader::Flag::ColorTexture
                      ? "#define COLOR_TEXTURE\n"
                      : "")
-      .addSource(flags_ & CubeMapShaderBase::Flag::DepthTexture
+      .addSource(flags_ & EquirectangularShader::Flag::DepthTexture
                      ? "#define DEPTH_TEXTURE\n"
                      : "")
-      .addSource(rs.get("doubleSphereCamera.frag"));
+      .addSource(rs.get("equirectangular.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 
@@ -75,49 +79,27 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
   // set texture binding points in the shader
-  if (flags_ & CubeMapShaderBase::Flag::ColorTexture) {
+  if (flags_ & EquirectangularShader::Flag::ColorTexture) {
     setUniform(uniformLocation("ColorTexture"),
                CubeMapShaderBaseTexUnitSpace::TextureUnit::Color);
   }
-  if (flags_ & CubeMapShaderBase::Flag::DepthTexture) {
+  if (flags_ & EquirectangularShader::Flag::DepthTexture) {
     setUniform(uniformLocation("DepthTexture"),
                CubeMapShaderBaseTexUnitSpace::TextureUnit::Depth);
   }
   // TODO: handle the other flags, ObjectIdTexture
 
-  // cache the uniform locations
-  // it hurts the performance to call glGetUniformLocation() every frame due
-  // to string operations. therefore, cache the locations in the constructor
-
-  focalLengthUniform_ = uniformLocation("FocalLength");
-  CORRADE_INTERNAL_ASSERT(focalLengthUniform_ >= 0);
-  principalPointOffsetUniform_ = uniformLocation("PrincipalPointOffset");
-  CORRADE_INTERNAL_ASSERT(principalPointOffsetUniform_ >= 0);
-  alphaUniform_ = uniformLocation("Alpha");
-  CORRADE_INTERNAL_ASSERT(alphaUniform_ >= 0);
-  xiUniform_ = uniformLocation("Xi");
-  CORRADE_INTERNAL_ASSERT(xiUniform_ >= 0);
+  // cache the uniforms
+  viewportHeightUniform_ = uniformLocation("ViewportHeight");
+  CORRADE_INTERNAL_ASSERT(viewportHeightUniform_ >= 0);
+  viewportWidthUniform_ = uniformLocation("ViewportWidth");
+  CORRADE_INTERNAL_ASSERT(viewportWidthUniform_ >= 0);
 }
 
-DoubleSphereCameraShader& DoubleSphereCameraShader::setFocalLength(
-    Magnum::Vector2 focalLength) {
-  setUniform(focalLengthUniform_, focalLength);
-  return *this;
-}
-
-DoubleSphereCameraShader& DoubleSphereCameraShader::setPrincipalPointOffset(
-    Magnum::Vector2 offset) {
-  setUniform(principalPointOffsetUniform_, offset);
-  return *this;
-}
-
-DoubleSphereCameraShader& DoubleSphereCameraShader::setAlpha(float alpha) {
-  setUniform(alphaUniform_, alpha);
-  return *this;
-}
-
-DoubleSphereCameraShader& DoubleSphereCameraShader::setXi(float xi) {
-  setUniform(xiUniform_, xi);
+EquirectangularShader& EquirectangularShader::setViewportSize(
+    esp::vec2i viewportSize) {
+  setUniform(viewportHeightUniform_, viewportSize[0]);
+  setUniform(viewportWidthUniform_, viewportSize[1]);
   return *this;
 }
 
