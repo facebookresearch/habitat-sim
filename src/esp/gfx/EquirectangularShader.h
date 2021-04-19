@@ -28,9 +28,6 @@ class EquirectangularShader : public CubeMapShaderBase {
 
   ~EquirectangularShader() override = default;
 
-  /** @brief Flags */
-  Flags flags() const { return flags_; }
-
   /**
    * @brief Set ViewportSize for calculations in vertex shader
    * @param[in] Vector2i the size of the viewport
@@ -38,8 +35,6 @@ class EquirectangularShader : public CubeMapShaderBase {
   EquirectangularShader& setViewportSize(esp::vec2i viewportSize);
 
  protected:
-  Flags flags_;
-
   // ======= uniforms =======
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor

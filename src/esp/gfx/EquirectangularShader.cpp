@@ -27,7 +27,8 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-EquirectangularShader::EquirectangularShader(Flags flags) : flags_(flags) {
+EquirectangularShader::EquirectangularShader(Flags flags)
+    : CubeMapShaderBase(flags) {
   CORRADE_ASSERT(flags != Flags{},
                  "EquirectangularShader::EquirectangularShader(): shader "
                  "flags cannot be empty.", );
@@ -54,7 +55,7 @@ EquirectangularShader::EquirectangularShader(Flags flags) : flags_(flags) {
 
   std::stringstream outputAttributeLocationsStream;
 
-  if (flags_ & EquirectangularShader::Flag::ColorTexture) {
+  if (flags_ & CubeMapShaderBase::Flag::ColorTexture) {
     outputAttributeLocationsStream << Cr::Utility::formatString(
         "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
   }
@@ -64,10 +65,10 @@ EquirectangularShader::EquirectangularShader(Flags flags) : flags_(flags) {
   */
 
   frag.addSource(outputAttributeLocationsStream.str())
-      .addSource(flags_ & EquirectangularShader::Flag::ColorTexture
+      .addSource(flags_ & CubeMapShaderBase::Flag::ColorTexture
                      ? "#define COLOR_TEXTURE\n"
                      : "")
-      .addSource(flags_ & EquirectangularShader::Flag::DepthTexture
+      .addSource(flags_ & CubeMapShaderBase::Flag::DepthTexture
                      ? "#define DEPTH_TEXTURE\n"
                      : "")
       .addSource(rs.get("equirectangular.frag"));
@@ -79,11 +80,11 @@ EquirectangularShader::EquirectangularShader(Flags flags) : flags_(flags) {
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
   // set texture binding points in the shader
-  if (flags_ & EquirectangularShader::Flag::ColorTexture) {
+  if (flags_ & CubeMapShaderBase::Flag::ColorTexture) {
     setUniform(uniformLocation("ColorTexture"),
                CubeMapShaderBaseTexUnitSpace::TextureUnit::Color);
   }
-  if (flags_ & EquirectangularShader::Flag::DepthTexture) {
+  if (flags_ & CubeMapShaderBase::Flag::DepthTexture) {
     setUniform(uniformLocation("DepthTexture"),
                CubeMapShaderBaseTexUnitSpace::TextureUnit::Depth);
   }
