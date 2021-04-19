@@ -26,9 +26,7 @@ SensorFactory::createSensors(scene::SceneNode& node,
               std::dynamic_pointer_cast<FisheyeSensorSpec>(spec));
           break;
         case sensor::SensorSubType::Orthographic:
-          sensorNode.addFeature<sensor::CameraSensor>(
-              std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
-          break;
+          /* fall through */
         case sensor::SensorSubType::Pinhole:
           sensorNode.addFeature<sensor::CameraSensor>(
               std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
