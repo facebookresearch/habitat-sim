@@ -13,6 +13,7 @@
 #include "esp/gfx/CubeMap.h"
 #include "esp/gfx/CubeMapCamera.h"
 #include "esp/gfx/CubeMapShaderBase.h"
+#include "esp/gfx/RenderTarget.h"
 
 namespace esp {
 

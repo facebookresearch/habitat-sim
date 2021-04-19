@@ -6,6 +6,7 @@
 #define ESP_SENSOR_VISUALSENSOR_H_
 
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/Math/Angle.h>
 #include <Magnum/Math/ConfigurationValue.h>
 
 #include "esp/core/Check.h"
@@ -13,6 +14,9 @@
 
 #include "esp/gfx/RenderCamera.h"
 #include "esp/sensor/Sensor.h"
+
+namespace Mn = Magnum;
+namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
