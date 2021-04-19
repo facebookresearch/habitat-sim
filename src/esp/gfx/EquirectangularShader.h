@@ -31,6 +31,7 @@ class EquirectangularShader : public CubeMapShaderBase {
   /**
    * @brief Set ViewportSize for calculations in vertex shader
    * @param[in] Vector2i the size of the viewport
+   * @return itself for method chaining
    */
   EquirectangularShader& setViewportSize(esp::vec2i viewportSize);
 
@@ -38,8 +39,6 @@ class EquirectangularShader : public CubeMapShaderBase {
   // ======= uniforms =======
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
-  // using the function @ref cacheUniforms()
-  // common material uniforms
   int viewportHeightUniform_ = ID_UNDEFINED;
   int viewportWidthUniform_ = ID_UNDEFINED;
 };

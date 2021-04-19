@@ -8,8 +8,6 @@
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/FormatStl.h>
 
-#include <algorithm>
-
 namespace Mn = Magnum;
 namespace Cr = Corrade;
 
@@ -32,7 +30,7 @@ void CubeMapSensorBaseSpec::sanityCheck() const {
 
 int computeCubemapSize(const esp::vec2i& resolution,
                        const Cr::Containers::Optional<int>& cubemapSize) {
-  int size = std::min<int>(resolution[0], resolution[1]);
+  int size = (resolution[0] < resolution[1] ? resolution[0] : resolution[1]);
   // if user sets the size of the cubemap, use it
   if (cubemapSize != Corrade::Containers::NullOpt) {
     size = *cubemapSize;
