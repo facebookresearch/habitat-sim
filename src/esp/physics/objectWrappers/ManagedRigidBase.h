@@ -22,7 +22,7 @@ class AbstractManagedRigidBase
  public:
   static_assert(
       std::is_base_of<esp::physics::RigidBase, T>::value,
-      "AbstractManagedPhysicsObject :: Managed physics object type must be "
+      "AbstractManagedRigidBase :: Managed physics object type must be "
       "derived from esp::physics::RigidBase");
 
   AbstractManagedRigidBase(std::shared_ptr<T>& objPtr,
