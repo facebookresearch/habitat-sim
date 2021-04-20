@@ -88,15 +88,16 @@ struct Renderer::Impl {
         Mn::ImageView2D imgView{image.storage(), Mn::PixelFormat::R32F,
                                 image.size(), image.data()};
 
-        if (visualizedTex_ == Cr::Containers::NullOpt) {
+        if ((visualizedTex_ == Cr::Containers::NullOpt) ||
+            (visualizedTex_ != Cr::Containers::NullOpt && visualizedTex_->imageSize(0) != image.size())) {
           visualizedTex_ = Mn::GL::Texture2D{};
           (*visualizedTex_)
               .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
               .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
               .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-              .setStorage(1, Mn::GL::TextureFormat::R32F, image.size())
-              .setSubImage(0, {}, imgView);
+              .setStorage(1, Mn::GL::TextureFormat::R32F, image.size());
         }
+        (*visualizedTex_).setSubImage(0, {}, imgView);
         shader->bindDepthTexture(*visualizedTex_);
 #else
         shader->bindDepthTexture(tgt.getDepthTexture());
