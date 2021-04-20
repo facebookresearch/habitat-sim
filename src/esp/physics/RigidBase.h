@@ -42,7 +42,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Virtual destructor for a @ref RigidBase.
    */
-  virtual ~RigidBase() override = default;
+  ~RigidBase() override = default;
 
   /**
    * @brief Initializes the @ref RigidObject or @ref RigidStage that inherits
