@@ -15,6 +15,9 @@
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
+#ifdef CORRADE_TARGET_APPLE
+#include <Magnum/ImageView.h>
+#endif
 #include <Magnum/PixelFormat.h>
 #include <Magnum/ResourceManager.h>
 
@@ -79,7 +82,25 @@ struct Renderer::Impl {
                 esp::gfx::Renderer::Impl::RendererShaderType::
                     DepthTextureVisualizer);
 
+#ifdef CORRADE_TARGET_APPLE
+        Mn::Image2D image = tgt.getDepthTexture().image(
+            0, {Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float});
+        Mn::ImageView2D imgView{image.storage(), Mn::PixelFormat::R32F,
+                                image.size(), image.data()};
+
+        if (visualizedTex_ == Cr::Containers::NullOpt) {
+          visualizedTex_ = Mn::GL::Texture2D{};
+          (*visualizedTex_)
+              .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+              .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+              .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+              .setStorage(1, Mn::GL::TextureFormat::R32F, image.size())
+              .setSubImage(0, {}, imgView);
+        }
+        shader->bindDepthTexture(*visualizedTex_);
+#else
         shader->bindDepthTexture(tgt.getDepthTexture());
+#endif
         shader->setDepthUnprojection(*visualSensor.depthUnprojection());
         shader->setColorMapTransformation(colorMapOffset, colorMapScale);
         tgt.renderReEnter();
@@ -143,8 +164,12 @@ struct Renderer::Impl {
   // TODO: shall we use shader resource manager from now?
   std::unique_ptr<DepthShader> depthShader_;
   const Flags flags_;
-  Corrade::Containers::Optional<Mn::GL::Mesh> mesh_;
-  Magnum::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+  Cr::Containers::Optional<Mn::GL::Mesh> mesh_;
+  Mn::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+#ifdef CORRADE_TARGET_APPLE
+  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_ =
+      Cr::Containers::NullOpt;
+#endif
 
   enum class RendererShaderType : uint8_t {
     DepthShader = 0,
@@ -190,7 +215,7 @@ struct Renderer::Impl {
 
     return shader;
   }
-};
+};  // namespace gfx
 
 Renderer::Renderer(Flags flags)
     : pimpl_(spimpl::make_unique_impl<Impl>(flags)) {}
