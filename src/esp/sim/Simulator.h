@@ -74,6 +74,8 @@ class Simulator {
     return semanticScene_;
   }
 
+  bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
+
   scene::SceneGraph& getActiveSceneGraph();
   scene::SceneGraph& getActiveSemanticSceneGraph();
 
@@ -518,6 +520,88 @@ class Simulator {
    * the object.
    */
   void setObjectBBDraw(bool drawBB, int objectID, int sceneID = 0);
+
+  //===============================================================================//
+  // Voxel Field API
+
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Creates a voxelization for a particular object. Initializes the
+   * voxelization with a boundary voxel grid using VHACD's voxelization library.
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param resolution The approximate number of voxels for the voxel grid that
+   * is created.
+   */
+  void createObjectVoxelization(int objectID, int resolution = 1000000);
+#endif
+
+  /**
+   * @brief Turn on/off rendering for the voxel grid of the object's visual
+   * component.
+   *
+   * If a voxel grid for the object has not been created, it will make one with
+   * default arguments using @ref createObjectVoxelization().
+   *
+   * @param drawV Whether or not the render the voxel grid.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param gridName The name of the voxel grid to be visualized.
+   */
+  void setObjectVoxelizationDraw(bool drawV,
+                                 int objectID,
+                                 const std::string& gridName = "Boundary");
+
+  /**
+   * @brief Returns the VoxelWrapper for a particular object.
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @return A shared ptr to the object's VoxelWrapper .
+   */
+  std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelization(int objectID);
+
+#ifdef ESP_BUILD_WITH_VHACD
+  /**
+   * @brief Creates a voxelization for the scene. Initializes the voxelization
+   * with a boundary voxel grid using VHACD's voxelization library.
+   *
+   * @param resolution The approximate number of voxels for the voxel grid that
+   * is created.
+   */
+  void createStageVoxelization(int resolution = 1000000);
+#endif
+
+  /**
+   * @brief Turn on/off rendering for the voxel grid of the scene's visual
+   * component.
+   *
+   * If a voxel grid for the scene has not been created, it will make one with
+   * default arguments using @ref createStageVoxelization().
+   *
+   * @param drawV Whether or not the render the voxel grid.
+   * @param gridName The name of the voxel grid to be visualized.
+   */
+  void setStageVoxelizationDraw(bool drawV,
+                                const std::string& gridName = "Boundary");
+
+  /**
+   * @brief Returns the VoxelWrapper for a particular object.
+   * @return A shared ptr to the object's VoxelWrapper .
+   */
+  std::shared_ptr<esp::geo::VoxelWrapper> getStageVoxelization();
+
+  /**
+   * @brief Registers a voxel wrapper in a dictionary. This ensures that two
+   * assets with the same render asset handle and voxelization resolution share
+   * the same underlying Voxel Grid.
+   *
+   * @param voxelWrapper The voxel wrapper to be registered.
+   * @param key The name underwhich to register the voxel wrapper
+   */
+  void registerVoxelGrid(esp::geo::VoxelWrapper& voxelWrapper,
+                         const std::string& key);
 
   //===============================================================================//
   // Articulated Object API (UNSTABLE!)
@@ -1141,6 +1225,32 @@ class Simulator {
    *                   be returned
    */
   bool drawObservation(int agentId, const std::string& sensorId);
+
+  /**
+   * @brief visualize the undisplayable observations such as depth, semantic, to
+   * the frame buffer stored in the @ref SensorInfoVisualizer
+   * Note: it will not display the observation on the default frame buffer
+   * @param[in] agentId    Id of the agent for which the observation is to
+   *                   be returned
+   * @param[in] sensorId   Id of the sensor for which the observation is to
+   *                   be returned
+   * @param[in] colorMapOffset the offset of the color map
+   * @param[in] colorMapScale the scale of the color map
+   * See details in @ref TextureVisualizerShader::setColorMapTransformation for
+   * more info.
+   *
+   * NOTE: it assumes:
+   * -) it is a non-rgb sensor (such as a depth or semantic sensor);
+   * -) the drawObservation is called;
+   * -) when the render target is bound to the sensor, "VisualizeTexture" is
+   * enabled. See @ref Renderer::bindRenderTarget and @ref
+   * Renderer::RenderTargetBindingFlag for more info
+   * @return false if the sensor's observation cannot be visualized.
+   */
+  bool visualizeObservation(int agentId,
+                            const std::string& sensorId,
+                            float colorMapOffset,
+                            float colorMapScale);
 
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,

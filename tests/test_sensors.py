@@ -3,11 +3,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
 import itertools
 import json
 from os import path as osp
 
+import magnum as mn
 import numpy as np
 import pytest
 import quaternion  # noqa: F401
@@ -18,7 +18,7 @@ from examples.settings import make_cfg
 from habitat_sim.utils.common import quat_from_coeffs
 
 
-def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
+def _render_scene(sim, scene, sensor_type, gpu2gpu):
     gt_data_pose_file = osp.abspath(
         osp.join(
             osp.dirname(__file__),
@@ -35,8 +35,31 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
     sim.initialize_agent(0, state)
     obs = sim.step("move_forward")
 
+    if gpu2gpu:
+        torch = pytest.importorskip("torch")
+
+        for k, v in obs.items():
+            if torch.is_tensor(v):
+                obs[k] = v.cpu().numpy()
+
     assert sensor_type in obs, f"{sensor_type} not in obs"
 
+    return obs
+
+
+def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
+
+    obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
+
+    # now that sensors are constructed, test some getter/setters
+    if hasattr(sim.get_agent(0)._sensors[sensor_type], "fov"):
+        sim.get_agent(0)._sensors[sensor_type].fov = mn.Deg(80)
+        assert sim.get_agent(0)._sensors[sensor_type].fov == mn.Deg(
+            80
+        ), "fov not set correctly"
+        assert sim.get_agent(0)._sensors[sensor_type].hfov == mn.Deg(
+            80
+        ), "hfov not set correctly"
     gt_obs_file = osp.abspath(
         osp.join(
             osp.dirname(__file__),
@@ -44,14 +67,9 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
             "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
         )
     )
+    # if not osp.exists(gt_obs_file):
+    #    np.save(gt_obs_file, obs[sensor_type])
     gt = np.load(gt_obs_file)
-
-    if gpu2gpu:
-        torch = pytest.importorskip("torch")
-
-        for k, v in obs.items():
-            if torch.is_tensor(v):
-                obs[k] = v.cpu().numpy()
 
     return obs, gt
 
@@ -83,14 +101,26 @@ _test_scenes = [
     ),
 ]
 
-all_sensor_types = ["color_sensor", "depth_sensor", "semantic_sensor"]
+all_base_sensor_types = [
+    "color_sensor",
+    "depth_sensor",
+    "semantic_sensor",
+]
+
+# Sensors that don't have GT NPY files (yet)
+all_exotic_sensor_types = [
+    "ortho_sensor",
+    "fisheye_rgb_sensor",
+    "fisheye_depth_sensor",
+]
 
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
     "scene,sensor_type",
-    list(itertools.product(_test_scenes[0:2], all_sensor_types))
-    + list(itertools.product(_test_scenes[2:], all_sensor_types[0:2])),
+    list(itertools.product(_test_scenes[0:2], all_base_sensor_types))
+    + list(itertools.product(_test_scenes[2:], all_base_sensor_types[0:2]))
+    + list(itertools.product(_test_scenes, all_exotic_sensor_types)),
 )
 @pytest.mark.parametrize("gpu2gpu", [True, False])
 # NB: This should go last, we have to force a close on the simulator when
@@ -113,12 +143,12 @@ def test_sensors(
 
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
-    add_sensor_lazy = add_sensor_lazy and all_sensor_types[1] == sensor_type
+    add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
 
-    for sens in all_sensor_types:
+    for sens in all_base_sensor_types:
         if add_sensor_lazy:
             make_cfg_settings[sens] = (
-                sens in all_sensor_types[:2] and sens != sensor_type
+                sens in all_base_sensor_types[:2] and sens != sensor_type
             )
         else:
             make_cfg_settings[sens] = False
@@ -140,6 +170,10 @@ def test_sensors(
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
                 sim.add_sensor(sensor_spec)
+        if sensor_type in all_exotic_sensor_types:
+            obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
+            # Smoke Test.
+            return
         obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
 
         # Different GPUs and different driver version will produce slightly
@@ -154,7 +188,7 @@ def test_sensors(
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize("scene", _test_scenes)
-@pytest.mark.parametrize("sensor_type", all_sensor_types[0:2])
+@pytest.mark.parametrize("sensor_type", all_base_sensor_types[0:2])
 def test_reconfigure_render(
     scene,
     sensor_type,
@@ -163,7 +197,7 @@ def test_reconfigure_render(
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
-    for sens in all_sensor_types:
+    for sens in all_base_sensor_types:
         make_cfg_settings[sens] = False
 
     make_cfg_settings["scene"] = _test_scenes[-1]
@@ -185,8 +219,6 @@ def test_reconfigure_render(
             gt.astype(np.float)
         ), f"Incorrect {sensor_type} output"
 
-    sim.close()
-
 
 # Tests to make sure that no sensors is supported and doesn't crash
 # Also tests to make sure we can have multiple instances
@@ -203,6 +235,8 @@ def test_smoke_no_sensors(make_cfg_settings):
         cfg = make_cfg(make_cfg_settings)
         cfg.agents[0].sensor_specifications = []
         sims.append(habitat_sim.Simulator(cfg))
+    for sim in sims:
+        sim.close()
 
 
 @pytest.mark.gfxtest
@@ -235,6 +269,19 @@ def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
         ), "Incorrect depth_sensor output"
 
     sim.close()
+
+
+@pytest.mark.gfxtest
+@pytest.mark.parametrize("scene", _test_scenes)
+@pytest.mark.parametrize("sensor_type", all_base_sensor_types[:2])
+def test_initial_hfov(scene, sensor_type, make_cfg_settings):
+    if not osp.exists(scene):
+        pytest.skip("Skipping {}".format(scene))
+    make_cfg_settings["hfov"] = 70
+    with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
+        assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
+            70
+        ), "HFOV was not properly set"
 
 
 @pytest.mark.gfxtest

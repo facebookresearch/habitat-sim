@@ -25,6 +25,7 @@
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
+#include "esp/core/configure.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -51,6 +52,10 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 #include "esp/sensor/FisheyeSensor.h"
+
+#ifdef ESP_BUILD_WITH_VHACD
+#include "esp/geo/VoxelUtils.h"
+#endif
 
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
@@ -544,6 +549,18 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
+
+#ifdef ESP_BUILD_WITH_VHACD
+  void displayStageDistanceGradientField();
+
+  void iterateAndDisplaySignedDistanceField();
+
+  void displayVoxelField(int objectID);
+
+  int objectDisplayed = -1;
+#endif
+
+  bool isInRange(float val);
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -579,6 +596,8 @@ Mouse Functions:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
   SHIFT-RIGHT:
     Click a mesh to highlight it.
+  CTRL-RIGHT:
+    (With 'enable-physics') Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 
@@ -616,6 +635,8 @@ Key Commands:
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
+  'g': (physics) Display a stage's signed distance gradient vector field.
+  'l': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
   ==================================================
   )";
 
@@ -649,6 +670,10 @@ Key Commands:
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
 
+#ifdef ESP_BUILD_WITH_VHACD
+  //! The slice of the grid's SDF to visualize.
+  int voxelDistance = 0;
+#endif
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
    * on then clear old locations
@@ -749,9 +774,13 @@ Key Commands:
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
   // returns the number of visible drawables (meshVisualizer drawables are not
   // included)
+  bool depthMode_ = false;
+
   Mn::DebugTools::GLFrameProfiler profiler_{};
 
-  int fisheyeMode_ = 0;
+  bool fisheyeMode_ = false;
+
+  void bindRenderTarget();
 };
 
 void addSensors(esp::agent::AgentConfiguration& agentConfig,
@@ -856,7 +885,7 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
-      .addOption("object-dir", "./data/objects")
+      .addOption("object-dir", "data/objects")
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
@@ -929,8 +958,7 @@ Viewer::Viewer(const Arguments& arguments)
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
   objectAttrManager_ = simulator_->getObjectAttributesManager();
-  objectAttrManager_->loadAllConfigsFromPath(Cr::Utility::Directory::join(
-      Corrade::Utility::Directory::current(), args.value("object-dir")));
+  objectAttrManager_->loadAllConfigsFromPath(args.value("object-dir"));
   assetAttrManager_ = simulator_->getAssetAttributesManager();
   stageAttrManager_ = simulator_->getStageAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();
@@ -1326,6 +1354,115 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
+
+void Viewer::displayStageDistanceGradientField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
+  stageVoxelization = simulator_->getStageVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  !Mn::Debug();
+  if (stageVoxelization == nullptr) {
+    simulator_->createStageVoxelization(2000000);
+    stageVoxelization = simulator_->getStageVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
+                                           "ESignedDistanceField");
+  }
+  !Mn::Debug();
+
+  // generate a vector field for the SDF gradient
+  esp::geo::generateScalarGradientField(
+      stageVoxelization, "ESignedDistanceField", "GradientField");
+  // generate a mesh of the vector field with boolean isVectorField set to
+  // true
+  !Mn::Debug();
+
+  stageVoxelization->generateMesh("GradientField");
+
+  // draw the vector field
+  simulator_->setStageVoxelizationDraw(true, "GradientField");
+}
+
+void Viewer::iterateAndDisplaySignedDistanceField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
+  stageVoxelization = simulator_->getStageVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  if (stageVoxelization == nullptr) {
+    simulator_->createStageVoxelization(2000000);
+    stageVoxelization = simulator_->getStageVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
+                                           "ESignedDistanceField");
+  }
+
+  // Set the range of distances to render, and generate a mesh for this (18
+  // is set to be the max distance)
+  Mn::Vector3i dims = stageVoxelization->getVoxelGridDimensions();
+  int curDistanceVisualization = (voxelDistance % dims[0]);
+  /*sceneVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
+     "SDFSubset", curDistanceVisualization, curDistanceVisualization + 1);*/
+  stageVoxelization->generateSliceMesh("ESignedDistanceField",
+                                       curDistanceVisualization, -15.0f, 0.0f);
+  // Draw the voxel grid's slice
+  simulator_->setStageVoxelizationDraw(true, "ESignedDistanceField");
+}
+
+bool isTrue(bool val) {
+  return val;
+}
+
+bool isHorizontal(Mn::Vector3 val) {
+  return abs(val.normalized()[0]) * abs(val.normalized()[0]) +
+             abs(val.normalized()[2]) * abs(val.normalized()[2]) <=
+         0;
+  // return val[0] == 1;
+}
+
+bool Viewer::isInRange(float val) {
+  int curDistanceVisualization = 1 * (voxelDistance % 18);
+  return val >= curDistanceVisualization - 1 && val < curDistanceVisualization;
+}
+
+void Viewer::displayVoxelField(int objectID) {
+  // create a voxelization and get a pointer to the underlying VoxelWrapper
+  // class
+  unsigned int resolution = 2000000;
+  std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper;
+  if (objectID == -1) {
+    simulator_->createStageVoxelization(resolution);
+    voxelWrapper = simulator_->getStageVoxelization();
+  } else {
+    simulator_->createObjectVoxelization(objectID, resolution);
+    voxelWrapper = simulator_->getObjectVoxelization(objectID);
+  }
+
+  // turn off the voxel grid visualization for the last voxelized object
+  if (objectDisplayed == -1) {
+    simulator_->setStageVoxelizationDraw(false, "Boundary");
+  } else if (objectDisplayed >= 0) {
+    simulator_->setObjectVoxelizationDraw(false, objectDisplayed, "Boundary");
+  }
+
+  // Generate the mesh for the boundary voxel grid
+  voxelWrapper->generateMesh("Boundary");
+
+  esp::geo::generateEuclideanDistanceSDF(voxelWrapper, "ESignedDistanceField");
+
+  // visualizes the Boundary voxel grid
+  if (objectID == -1) {
+    simulator_->setStageVoxelizationDraw(true, "Boundary");
+  } else {
+    simulator_->setObjectVoxelizationDraw(true, objectID, "Boundary");
+  }
+
+  objectDisplayed = objectID;
+}
+#endif
+
 void Viewer::pokeLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0)
@@ -1423,28 +1560,30 @@ void Viewer::drawEvent() {
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
-  if (fisheyeMode_ != 0) {
-    std::string sensorId = fisheyeMode_ == 1 ? "fisheye" : "depth_fisheye";
+  if (depthMode_) {
+    // ================ Depth Visualization ==================================
+    std::string sensorId = "depth";
+    if (fisheyeMode_) {
+      sensorId = "depth_fisheye";
+    }
     simulator_->drawObservation(defaultAgentId_, sensorId);
-
-    switch (fisheyeMode_) {
-      case 1: {
-        // color fisheye
-        esp::gfx::RenderTarget* sensorRenderTarget =
-            simulator_->getRenderTarget(defaultAgentId_, sensorId);
-        CORRADE_ASSERT(sensorRenderTarget,
-                       "Error in Viewer::drawEvent: sensor's rendering target "
-                       "cannot be nullptr.", );
-        sensorRenderTarget->blitRgbaToDefault();
-      } break;
-        /*
-        case 2: {
-          simulator_->visualizeObservation(defaultAgentId_, "depth_fisheye",
-                                           sensorInfoVisualizer_);
-          sensorInfoVisualizer_.blitRgbaToDefault();
-        } break;
-        */
-    }  // switch
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, sensorId);
+    simulator_->visualizeObservation(defaultAgentId_, sensorId,
+                                     1.0f / 512.0f,  // colorMapOffset
+                                     1.0f / 24.0f);  // colorMapScale
+    sensorRenderTarget->blitRgbaToDefault();
+  } else if (fisheyeMode_) {
+    // ================ fisheye RGB =========================================
+    std::string sensorId = "fisheye";
+    simulator_->drawObservation(defaultAgentId_, sensorId);
+    // color fisheye
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, sensorId);
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    sensorRenderTarget->blitRgbaToDefault();
   } else if (flyingCameraMode_) {
     visibles = 0;
     Mn::GL::defaultFramebuffer.bind();
@@ -1453,7 +1592,7 @@ void Viewer::drawEvent() {
           esp::gfx::RenderCamera::Flag::FrustumCulling;
       visibles += renderCamera_->draw(it.second, flags);
     }
-  } else {
+  } else {  // ============= regular RGB with object picking =================
     // using polygon offset to increase mesh depth to avoid z-fighting with
     // debug draw (since lines will not respond to offset).
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
@@ -1518,6 +1657,9 @@ void Viewer::drawEvent() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(1.5);
+    if (flyingCameraMode_) {
+      ImGui::Text("In flying Camera MODE. Press key '3' to EXIT.");
+    }
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
@@ -1617,6 +1759,21 @@ void Viewer::moveAndLook(int repetitions) {
   }
 }
 
+void Viewer::bindRenderTarget() {
+  for (auto& it : agentBodyNode_->getSubtreeSensors()) {
+    if (it.second.get().isVisualSensor()) {
+      esp::sensor::VisualSensor& visualSensor =
+          static_cast<esp::sensor::VisualSensor&>(it.second.get());
+      if (depthMode_) {
+        simulator_->getRenderer()->bindRenderTarget(
+            visualSensor, {esp::gfx::Renderer::Flag::VisualizeTexture});
+      } else {
+        simulator_->getRenderer()->bindRenderTarget(visualSensor);
+      }
+    }
+  }
+}
+
 void Viewer::viewportEvent(ViewportEvent& event) {
   for (auto& it : agentBodyNode_->getSubtreeSensors()) {
     if (it.second.get().isVisualSensor()) {
@@ -1625,8 +1782,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
       visualSensor.setResolution(event.framebufferSize()[1],
                                  event.framebufferSize()[0]);
       renderCamera_->setViewport(visualSensor.framebufferSize());
-      simulator_->getRenderer()->bindRenderTarget(visualSensor);
-
+      // before, here we will bind the render target, but now we defer it
       if ((visualSensor.specification()->uuid == "fisheye") ||
           (visualSensor.specification()->uuid == "depth_fisheye")) {
         auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
@@ -1643,6 +1799,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
       }
     }
   }
+  bindRenderTarget();
   Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
 
   if (flyingCameraMode_) {
@@ -1724,6 +1881,16 @@ void Viewer::mousePressEvent(MouseEvent& event) {
 
       // update click visualization
       simulator_->setTranslation(hitInfo.point, clickVisObjectID_);
+
+// voxelize the clicked object/stage
+#ifdef ESP_BUILD_WITH_VHACD
+      if (event.button() == MouseEvent::Button::Right &&
+          event.modifiers() & MouseEvent::Modifier::Ctrl) {
+        auto objID = raycastResults.hits[0].objectId;
+        displayVoxelField(objID);
+        return;
+      }
+#endif
 
       if (hitInfo.objectId != esp::ID_UNDEFINED) {
         // we hit an non-stage collision object
@@ -1994,7 +2161,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       defaultAgent_->act("moveUp");
       recAgentLocation();
       break;
-
+    case KeyEvent::Key::Seven:
+      depthMode_ = !depthMode_;
+      bindRenderTarget();
+      LOG(INFO) << "Depth sensor is " << (depthMode_ ? "ON" : "OFF");
+      break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
       break;
@@ -2190,6 +2361,19 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
+#ifdef ESP_BUILD_WITH_VHACD
+    case KeyEvent::Key::L: {
+      iterateAndDisplaySignedDistanceField();
+      // Increase the distance visualized for next time (Pressing L repeatedly
+      // will visualize different distances)
+      voxelDistance++;
+      break;
+    }
+    case KeyEvent::Key::G: {
+      displayStageDistanceGradientField();
+      break;
+    }
+#endif
     default:
       break;
   }

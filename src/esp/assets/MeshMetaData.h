@@ -28,8 +28,8 @@ struct MeshTransformNode {
   /** @brief Local mesh index within @ref MeshMetaData::meshIndex. */
   int meshIDLocal;
 
-  /** @brief Local material index within @ref MeshMetaData::materialIndex */
-  int materialIDLocal;
+  /** @brief Material key within global material manager. */
+  std::string materialID;
 
   /** @brief Object index of asset component in the original file. */
   int componentID;
@@ -44,7 +44,7 @@ struct MeshTransformNode {
   /** @brief Default constructor. */
   MeshTransformNode() {
     meshIDLocal = ID_UNDEFINED;
-    materialIDLocal = ID_UNDEFINED;
+    materialID = "";  // default material
     componentID = ID_UNDEFINED;
   };
 };
@@ -76,11 +76,6 @@ struct MeshMetaData {
   std::pair<start, end> textureIndex =
       std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
 
-  /** @brief Index range (inclusive) of material data for the asset in the
-   * global asset datastructure. */
-  std::pair<start, end> materialIndex =
-      std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
-
   /** @brief The root of the mesh component transformation heirarchy tree which
    * stores the relationship between components of the asset.*/
   MeshTransformNode root;
@@ -92,12 +87,9 @@ struct MeshMetaData {
   MeshMetaData(int meshStart,
                int meshEnd,
                int textureStart = ID_UNDEFINED,
-               int textureEnd = ID_UNDEFINED,
-               int materialStart = ID_UNDEFINED,
-               int materialEnd = ID_UNDEFINED) {
+               int textureEnd = ID_UNDEFINED) {
     meshIndex = std::make_pair(meshStart, meshEnd);
     textureIndex = std::make_pair(textureStart, textureEnd);
-    materialIndex = std::make_pair(materialStart, materialEnd);
   }
 
   /**
@@ -124,19 +116,6 @@ struct MeshMetaData {
   void setTextureIndices(int textureStart, int textureEnd) {
     textureIndex.first = textureStart;
     textureIndex.second = textureEnd;
-  }
-
-  /**
-   * @brief Sets the material indices for the asset. See @ref
-   * ResourceManager::materials_.
-   * @param materialStart First index for asset material data in the global
-   * material datastructure.
-   * @param materialEnd Final index for asset material data in the global
-   * material datastructure.
-   */
-  void setMaterialIndices(int materialStart, int materialEnd) {
-    materialIndex.first = materialStart;
-    materialIndex.second = materialEnd;
   }
 };
 

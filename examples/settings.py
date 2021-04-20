@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+import magnum as mn
 
 import habitat_sim
 import habitat_sim.agent
@@ -12,10 +13,13 @@ default_sim_settings = {
     "height": 480,
     "default_agent": 0,
     "sensor_height": 1.5,
+    "hfov": 90,
     "color_sensor": True,  # RGB sensor (default: ON)
     "semantic_sensor": False,  # semantic sensor (default: OFF)
     "depth_sensor": False,  # depth sensor (default: OFF)
     "ortho_sensor": False,  # Orthographic RGB sensor (default: OFF)
+    "fisheye_rgb_sensor": False,
+    "fisheye_depth_sensor": False,
     "seed": 1,
     "silent": False,  # do not print log info (default: OFF)
     # settings exclusive to example.py
@@ -65,6 +69,7 @@ def make_cfg(settings):
         color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         color_sensor_spec.resolution = [settings["height"], settings["width"]]
         color_sensor_spec.position = [0, settings["sensor_height"], 0]
+        color_sensor_spec.hfov = settings["hfov"]
         color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(color_sensor_spec)
 
@@ -74,6 +79,7 @@ def make_cfg(settings):
         depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
         depth_sensor_spec.resolution = [settings["height"], settings["width"]]
         depth_sensor_spec.position = [0, settings["sensor_height"], 0]
+        depth_sensor_spec.hfov = settings["hfov"]
         depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(depth_sensor_spec)
 
@@ -83,6 +89,7 @@ def make_cfg(settings):
         semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
         semantic_sensor_spec.resolution = [settings["height"], settings["width"]]
         semantic_sensor_spec.position = [0, settings["sensor_height"], 0]
+        semantic_sensor_spec.hfov = settings["hfov"]
         semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(semantic_sensor_spec)
 
@@ -94,6 +101,45 @@ def make_cfg(settings):
         ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
         ortho_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
         sensor_specs.append(ortho_sensor_spec)
+
+    # TODO Figure out how to implement copying of specs
+    def create_fisheye_spec(**kw_args):
+        fisheye_sensor_spec = habitat_sim.FisheyeSensorDoubleSphereSpec()
+        fisheye_sensor_spec.uuid = "fisheye_sensor"
+        fisheye_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        fisheye_sensor_spec.sensor_model_type = (
+            habitat_sim.FisheyeSensorModelType.DOUBLE_SPHERE
+        )
+
+        # The default value (alpha, xi) is set to match the lens "BF2M2020S23" found in Table 3 of this paper:
+        # Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
+        # Camera Model, The International Conference on 3D Vision (3DV), 2018
+        # You can find the intrinsic parameters for the other lenses in the same table as well.
+        # fisheye_sensor_spec.alpha = 0.59  # default
+        # fisheye_sensor_spec.xi = -0.18  # default
+
+        fisheye_sensor_spec.resolution = [settings["height"], settings["width"]]
+        fisheye_sensor_spec.focal_length = [
+            min(settings["height"], settings["width"]) * 0.5
+        ] * 2
+        # The default principal_point_offset is the middle of the image
+        fisheye_sensor_spec.principal_point_offset = mn.Vector2(
+            settings["height"] // 2,
+            settings["width"] // 2,
+        )
+        fisheye_sensor_spec.position = [0, settings["sensor_height"], 0]
+        for k in kw_args:
+            setattr(fisheye_sensor_spec, k, kw_args[k])
+        return fisheye_sensor_spec
+
+    if settings["fisheye_rgb_sensor"]:
+        fisheye_rgb_sensor_spec = create_fisheye_spec(uuid="fisheye_rgb_sensor")
+        sensor_specs.append(fisheye_rgb_sensor_spec)
+    if settings["fisheye_depth_sensor"]:
+        fisheye_depth_sensor_spec = create_fisheye_spec(
+            uuid="fisheye_depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
+        )
+        sensor_specs.append(fisheye_depth_sensor_spec)
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()

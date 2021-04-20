@@ -157,7 +157,10 @@ class CubeMap {
    */
   void renderToTexture(CubeMapCamera& camera,
                        scene::SceneGraph& sceneGraph,
-                       RenderCamera::Flags flags);
+                       RenderCamera::Flags flags = {
+                           RenderCamera::Flag::FrustumCulling |
+                           RenderCamera::Flag::ClearColor |
+                           RenderCamera::Flag::ClearDepth});
 
  private:
   Flags flags_;
@@ -193,10 +196,15 @@ class CubeMap {
 
   /**
    * @brief Prepare to draw to the texture
-   * @param cubeSideIndex, the index of the cube side, can be 0,
+   * @param[in] cubeSideIndex, the index of the cube side, can be 0,
    * 1, 2, 3, 4, or 5
+   * @param[in] flags, the flags to control the rendering
    */
-  void prepareToDraw(unsigned int cubeSideIndex);
+  void prepareToDraw(unsigned int cubeSideIndex,
+                     RenderCamera::Flags flags = {
+                         RenderCamera::Flag::FrustumCulling |
+                         RenderCamera::Flag::ClearColor |
+                         RenderCamera::Flag::ClearDepth});
 
   /**
    * @brief Map shader output to attachments.

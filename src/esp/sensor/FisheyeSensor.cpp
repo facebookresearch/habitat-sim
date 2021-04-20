@@ -147,12 +147,40 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
     }
   }
 
-  esp::gfx::RenderCamera::Flags flags;
+  esp::gfx::RenderCamera::Flags flags = {gfx::RenderCamera::Flag::ClearColor |
+                                         gfx::RenderCamera::Flag::ClearDepth};
   if (sim.isFrustumCullingEnabled()) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
   }
+
   // generate the cubemap texture
-  cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), flags);
+  if (fisheyeSensorSpec_->sensorType == SensorType::Semantic) {
+    bool twoSceneGraphs =
+        (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
+
+    if (twoSceneGraphs) {
+      VisualSensor::MoveSemanticSensorNodeHelper helper(*this, sim);
+      cubeMap_->renderToTexture(*cubeMapCamera_,
+                                sim.getActiveSemanticSceneGraph(), flags);
+    } else {
+      cubeMap_->renderToTexture(*cubeMapCamera_,
+                                sim.getActiveSemanticSceneGraph(), flags);
+    }
+
+    if (twoSceneGraphs) {
+      flags |= gfx::RenderCamera::Flag::ObjectsOnly;
+      // Incremental rendering:
+      // BE AWARE that here "ClearColor" and "ClearDepth" is NOT set!!
+      // Rendering happens on top of whatever existing there.
+      flags &= ~gfx::RenderCamera::Flag::ClearColor;
+      flags &= ~gfx::RenderCamera::Flag::ClearDepth;
+      cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
+                                flags);
+    }
+  } else {
+    cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
+                              flags);
+  }
 
   auto drawWith = [&](auto& shader) {
     if (fisheyeSensorSpec_->sensorType == SensorType::Color) {
@@ -191,16 +219,6 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
   }
 
   return true;
-}
-
-Cr::Containers::Optional<Mn::Vector2> FisheyeSensor::depthUnprojection() const {
-  float f = fisheyeSensorSpec_->far;
-  float n = fisheyeSensorSpec_->near;
-  float d = f - n;
-  // in projection matrix, two entries related to the depth are:
-  // -(f+n)/(f-n), -2fn/(f-n), where f is the far plane, and n is the near
-  // plane. depth parameters = 0.5 * vector(proj[2][2] - 1.0f, proj[3][2])
-  return {0.5 * Mn::Vector2{-(f + n) / d - 1.0f, -2.0f * f * n / d}};
 }
 
 }  // namespace sensor

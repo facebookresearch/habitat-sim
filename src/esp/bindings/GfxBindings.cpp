@@ -20,6 +20,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sim/Simulator.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -58,12 +59,13 @@ void initGfxBindings(py::module& m) {
   render_camera
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const vec3f&, const vec3f&, const vec3f&>())
-      .def("set_projection_matrix",
-           static_cast<RenderCamera& (RenderCamera::*)(int, int, float, float,
-                                                       Mn::Deg)>(
-               &RenderCamera::setProjectionMatrix),
-           R"(Set this `Camera`'s projection matrix.)", "width"_a, "height"_a,
-           "znear"_a, "zfar"_a, "hfov"_a)
+      .def(
+          "set_projection_matrix",
+          [](RenderCamera& self, int w, int h, float n, float f, Mn::Degd fov) {
+            self.setProjectionMatrix(w, h, n, f, Mn::Deg(fov));
+          },
+          R"(Set this `Camera`'s projection matrix.)", "width"_a, "height"_a,
+          "znear"_a, "zfar"_a, "hfov"_a)
       .def("set_orthographic_projection_matrix",
            &RenderCamera::setOrthoProjectionMatrix,
            R"(Set this `Orthographic Camera`'s projection matrix.)", "width"_a,
@@ -78,16 +80,15 @@ void initGfxBindings(py::module& m) {
                              "Alias to node");
 
   // ==== Renderer ====
-  py::class_<Renderer, Renderer::ptr>(m, "Renderer")
-      .def(
-          "draw",
-          [](Renderer& self, sensor::VisualSensor& visualSensor,
-             scene::SceneGraph& sceneGraph, RenderCamera::Flag flags) {
-            self.draw(visualSensor, sceneGraph, RenderCamera::Flags{flags});
-          },
-          R"(Draw given scene using the visual sensor)", "visualSensor"_a,
-          "scene"_a,
-          "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
+  py::class_<Renderer, Renderer::ptr> renderer(m, "Renderer");
+
+  py::enum_<Renderer::Flag> rendererFlags{renderer, "Flags", "Flags"};
+
+  rendererFlags.value("VISUALIZE_TEXTURE", Renderer::Flag::VisualizeTexture)
+      .value("NONE", Renderer::Flag{});
+  corrade::enumOperators(rendererFlags);
+
+  renderer.def(py::init(&Renderer::create<>))
       .def(
           "draw",
           [](Renderer& self, RenderCamera& camera,
@@ -96,6 +97,12 @@ void initGfxBindings(py::module& m) {
           },
           R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
           "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
+      .def(
+          "draw",
+          [](Renderer& self, sensor::VisualSensor& visualSensor,
+             sim::Simulator& sim) { self.draw(visualSensor, sim); },
+          R"(Draw the active scene in current simulator using the visual sensor)",
+          "visualSensor"_a, "sim"_a)
       .def(
           "draw_async",
           [](Renderer& self, sensor::VisualSensor& visualSensor,
@@ -112,7 +119,14 @@ void initGfxBindings(py::module& m) {
       .def("start_draw_jobs", &Renderer::startDrawJobs)
       .def("acquire_gl_context", &Renderer::acquireGlContext)
 
-      .def("bind_render_target", &Renderer::bindRenderTarget);
+      .def(
+          "bind_render_target",
+          [](Renderer& self, sensor::VisualSensor& visualSensor,
+             Renderer::Flag flags) {
+            self.bindRenderTarget(visualSensor, Renderer::Flags{flags});
+          },
+          R"(Binds a RenderTarget to the sensor)", "visualSensor"_a,
+          "flags"_a = Renderer::Flag{});
 
   py::class_<RenderTarget>(m, "RenderTarget")
       .def("__enter__",

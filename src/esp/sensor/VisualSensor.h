@@ -8,6 +8,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/ConfigurationValue.h>
 
+#include "esp/core/Check.h"
 #include "esp/core/esp.h"
 
 #include "esp/gfx/RenderCamera.h"
@@ -16,7 +17,6 @@
 namespace esp {
 namespace gfx {
 class RenderTarget;
-class SensorInfoVisualizer;
 }  // namespace gfx
 
 namespace sensor {
@@ -85,14 +85,9 @@ class VisualSensor : public Sensor {
 
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
-   *
-   * Will always be @ref Corrade::Containers::NullOpt for the base sensor class
-   * as it has no projection parameters
    */
   virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
-      const {
-    return Corrade::Containers::NullOpt;
-  };
+      const;
 
   /**
    * @brief Checks to see if this sensor has a RenderTarget bound or not
@@ -109,8 +104,8 @@ class VisualSensor : public Sensor {
    * @brief Returns a reference to the sensors render target
    */
   gfx::RenderTarget& renderTarget() {
-    if (!hasRenderTarget())
-      throw std::runtime_error("Sensor has no rendering target");
+    ESP_CHECK(hasRenderTarget(),
+              "VisualSensor::renderTarget(): Sensor has no rendering target");
     return *tgt_;
   }
 
@@ -129,7 +124,8 @@ class VisualSensor : public Sensor {
    */
   virtual void readObservation(Observation& obs);
 
-  /**
+  /*
+   * @brief Display next observation from Simulator on default frame buffer
    * @brief Draws an observation to the frame buffer using simulator's renderer,
    * then reads the observation to the sensor's memory buffer
    * @return true if success, otherwise false (e.g., failed to draw or read
@@ -168,6 +164,11 @@ class VisualSensor : public Sensor {
   }
 
   /**
+   * @brief Return a pointer to this visual sensor's SensorSpec
+   */
+  VisualSensorSpec::ptr specification() const { return visualSensorSpec_; }
+
+  /**
    * @brief Returns RenderCamera
    */
   virtual gfx::RenderCamera* getRenderCamera() const { return nullptr; }
@@ -195,6 +196,34 @@ class VisualSensor : public Sensor {
   std::unique_ptr<gfx::RenderTarget> tgt_;
   VisualSensorSpec::ptr visualSensorSpec_ =
       std::dynamic_pointer_cast<VisualSensorSpec>(spec_);
+
+  class MoveSemanticSensorNodeHelper {
+   public:
+    /**
+     * @brief constructor.
+     * This function saves the semantic sensor's transformation and parent node,
+     * moves it to the semantic scene graph, connects it to the root node, and
+     * sets the relative transformation (wrt to the root) to the absolute
+     * transformation in the previous scene graph.
+     */
+    MoveSemanticSensorNodeHelper(VisualSensor& visualSensor,
+                                 sim::Simulator& sim);
+    /**
+     * @brief Destructor.
+     * This function moves the semantic sensor back to the regular scene graph,
+     * restores its relative transformation to its parent based on the values
+     * saved previously.
+     */
+    ~MoveSemanticSensorNodeHelper();
+
+   protected:
+    VisualSensor& visualSensor_;
+    sim::Simulator& sim_;
+    Corrade::Containers::Optional<Magnum::Matrix4> relativeTransformBackup_ =
+        Corrade::Containers::NullOpt;
+    scene::SceneNode* semanticSensorParentNodeBackup_ = nullptr;
+  };
+
   ESP_SMART_POINTERS(VisualSensor)
 };
 

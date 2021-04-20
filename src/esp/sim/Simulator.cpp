@@ -12,6 +12,7 @@
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/Context.h>
+#include <Magnum/GL/Renderer.h>
 
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
@@ -548,15 +549,14 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
-  CHECK_GE(activeSceneID_, 0);
-  CHECK_LT(activeSceneID_, sceneID_.size());
+  CORRADE_INTERNAL_ASSERT(std::size_t(activeSceneID_) < sceneID_.size());
   return sceneManager_->getSceneGraph(activeSceneID_);
 }
 
 //! return the semantic scene's SceneGraph for rendering
 scene::SceneGraph& Simulator::getActiveSemanticSceneGraph() {
-  CHECK_GE(activeSemanticSceneID_, 0);
-  CHECK_LT(activeSemanticSceneID_, sceneID_.size());
+  CORRADE_INTERNAL_ASSERT(std::size_t(activeSemanticSceneID_) <
+                          sceneID_.size());
   return sceneManager_->getSceneGraph(activeSemanticSceneID_);
 }
 
@@ -844,6 +844,43 @@ void Simulator::setObjectBBDraw(bool drawBB,
     auto& drawables = sceneGraph_.getDrawables();
     physicsManager_->setObjectBBDraw(objectID, &drawables, drawBB);
   }
+}
+
+#ifdef ESP_BUILD_WITH_VHACD
+void Simulator::createObjectVoxelization(int objectID, int resolution) {
+  physicsManager_->generateVoxelization(objectID, resolution);
+}
+#endif
+
+void Simulator::setObjectVoxelizationDraw(bool drawV,
+                                          int objectID,
+                                          const std::string& gridName) {
+  auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& drawables = sceneGraph_.getDrawables();
+  physicsManager_->setObjectVoxelizationDraw(objectID, gridName, &drawables,
+                                             drawV);
+}
+
+std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getObjectVoxelization(
+    int objectID) {
+  return physicsManager_->getObjectVoxelization(objectID);
+}
+
+#ifdef ESP_BUILD_WITH_VHACD
+void Simulator::createStageVoxelization(int resolution) {
+  physicsManager_->generateStageVoxelization(resolution);
+}
+#endif
+
+void Simulator::setStageVoxelizationDraw(bool drawV,
+                                         const std::string& gridName) {
+  auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+  auto& drawables = sceneGraph_.getDrawables();
+  physicsManager_->setStageVoxelizationDraw(gridName, &drawables, drawV);
+}
+
+std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getStageVoxelization() {
+  return physicsManager_->getStageVoxelization();
 }
 
 void Simulator::setObjectSemanticId(uint32_t semanticId,
@@ -1216,7 +1253,26 @@ bool Simulator::drawObservation(const int agentId,
 
   if (ag != nullptr) {
     sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
-    return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
+    if (sensor.isVisualSensor()) {
+      return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
+    }
+  }
+  return false;
+}
+
+bool Simulator::visualizeObservation(int agentId,
+                                     const std::string& sensorId,
+                                     float colorMapOffset,
+                                     float colorMapScale) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
+    if (sensor.isVisualSensor()) {
+      renderer_->visualize(static_cast<sensor::VisualSensor&>(sensor),
+                           colorMapOffset, colorMapScale);
+    }
+    return true;
   }
   return false;
 }

@@ -593,38 +593,17 @@ class Sensor:
         )
 
     def draw_observation(self) -> None:
-        self.draw_observation_setup()
-        # get the correct scene graph based on application
-        if self._spec.sensor_type == SensorType.SEMANTIC:
-            scene = self._sim.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
-
-        render_flags = habitat_sim.gfx.Camera.Flags.NONE
-
-        if self._sim.frustum_culling:
-            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
-
-        self._sim.renderer.acquire_gl_context()
-        with self._sensor_object.render_target:
-            self._sim.renderer.draw(self._sensor_object, scene, render_flags)
-
-            # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
-            if (
-                self._spec.sensor_type == SensorType.SEMANTIC
-                and self._sim.get_active_scene_graph()
-                is not self._sim.get_active_semantic_scene_graph()
-            ):
-                agent_node = self._agent.scene_node
-                agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
-                render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
-                self._sim.renderer.draw(
-                    self._sensor_object,
-                    self._sim.get_active_scene_graph(),
-                    render_flags,
-                )
+        # see if the sensor is attached to a scene graph, otherwise it is invalid,
+        # and cannot make any observation
+        if not self._sensor_object.object:
+            raise habitat_sim.errors.InvalidAttachedObject(
+                "Sensor observation requested but sensor is invalid.\
+                 (has it been detached from a scene node?)"
+            )
+        self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def draw_observation_async(self) -> None:
+        # TODO: sync this path with renderer changes as above (render from sensor object)
         self.draw_observation_setup()
         # get the correct scene graph based on application
         if self._spec.sensor_type == SensorType.SEMANTIC:

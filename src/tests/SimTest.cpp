@@ -125,6 +125,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void recomputeNavmeshWithStaticObjects();
   void loadingObjectTemplates();
   void buildingPrimAssetObjectTemplates();
+  void addObjectByHandle();
   void addSensorToObject();
 
   // TODO: remove outlier pixels from image and lower maxThreshold
@@ -164,6 +165,7 @@ SimTest::SimTest() {
             &SimTest::recomputeNavmeshWithStaticObjects,
             &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates,
+            &SimTest::addObjectByHandle,
             &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
   // clang-format on
 }
@@ -717,6 +719,22 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   primObjAssetHandles.clear();
 
 }  // SimTest::buildingPrimAssetObjectTemplates
+
+void SimTest::addObjectByHandle() {
+  Corrade::Utility::Debug() << "Starting Test : addObject ";
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+
+  int objectId = simulator->addObjectByHandle("invalid_handle");
+  CORRADE_VERIFY(objectId == esp::ID_UNDEFINED);
+
+  // pass valid object_config.json filepath as handle to addObjectByHandle
+  const auto validHandle = Cr::Utility::Directory::join(
+      TEST_ASSETS, "objects/nested_box.object_config.json");
+  objectId = simulator->addObjectByHandle(validHandle);
+  CORRADE_VERIFY(objectId != esp::ID_UNDEFINED);
+}
 
 void SimTest::addSensorToObject() {
   Corrade::Utility::Debug() << "Starting Test : addSensorToObject ";
