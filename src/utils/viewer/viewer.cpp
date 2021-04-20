@@ -505,8 +505,8 @@ Viewer::Viewer(const Arguments& arguments)
       .addBooleanOption("recompute-navmesh")
       .setHelp("recompute-navmesh",
                "Programmatically re-generate the scene navmesh.")
-      .addOption("camera-transform-filepath")
-      .setHelp("camera-transform-filepath",
+      .addOption("agent-transform-filepath")
+      .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
 
@@ -535,7 +535,7 @@ Viewer::Viewer(const Arguments& arguments)
     debugBullet_ = true;
   }
 
-  agentTransformLoadPath_ = args.value("camera-transform-filepath");
+  agentTransformLoadPath_ = args.value("agent-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
 
   // configure and intialize Simulator
@@ -789,7 +789,7 @@ void Viewer::loadAgentAndSensorTransformFromFile() {
     // attempting to load from last temporary save
     LOG(INFO)
         << "Camera transform file not specified, attempting to load from "
-           "current instance. Use --camera-transform-filepath to specify file "
+           "current instance. Use --agent-transform-filepath to specify file "
            "to load from.";
     if (!savedAgentTransform_ || !savedSensorTransform_) {
       LOG(INFO) << "Well, no transformation saved in current instance. nothing "
