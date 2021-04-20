@@ -20,6 +20,7 @@
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/Math/Tags.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Generic.h>
@@ -168,12 +169,8 @@ class Viewer : public Mn::Platform::Application {
   void switchCameraType();
   Mn::Vector3 randomDirection();
 
-  void saveCameraTransformToFile();
-  void saveNodeTransformToFile(esp::scene::SceneNode& node,
-                               const std::string& filename);
-  void loadCameraTransformFromFile();
-  void loadNodeTransformFromFile(esp::scene::SceneNode& node,
-                                 const std::string& filename);
+  void saveAgentAndSensorTransformToFile();
+  void loadAgentAndSensorTransformFromFile();
 
   //! string rep of time when viewer application was started
   std::string viewerStartTimeString = getCurrentTimeString();
@@ -365,10 +362,13 @@ Key Commands:
   bool drawObjectBBs = false;
   std::string gfxReplayRecordFilepath_;
 
-  std::string cameraLoadPath_;
-  // bool cameraSaved_ = false;
-  // Mn::Matrix4 lastCameraSave_;
-  Cr::Containers::Optional<Mn::Matrix4> lastCameraSave_;
+  std::string agentTransformLoadPath_;
+  Cr::Containers::Optional<Mn::Matrix4> savedAgentTransform_ =
+      Cr::Containers::NullOpt;
+  // there could be a couple of sensors, just save the rgb CameraSensor's
+  // transformation
+  Cr::Containers::Optional<Mn::Matrix4> savedSensorTransform_ =
+      Cr::Containers::NullOpt;
 
   Mn::Timeline timeline_;
 
@@ -537,7 +537,7 @@ Viewer::Viewer(const Arguments& arguments)
     debugBullet_ = true;
   }
 
-  cameraLoadPath_ = args.value("camera-transform-filepath");
+  agentTransformLoadPath_ = args.value("camera-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
 
   // configure and intialize Simulator
@@ -704,51 +704,9 @@ void Viewer::switchCameraType() {
   }
 }
 
-void Viewer::saveCameraTransformToFile() {
-  const char* saved_transformations_directory = "saved_transformations/";
-  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
-    Cr::Utility::Directory::mkpath(saved_transformations_directory);
-  }
-
-  // update temporary save
-  lastCameraSave_ = renderCamera_->node().absoluteTransformation();
-
-  // update save in file system
-  saveNodeTransformToFile(
-      renderCamera_->node(),
-      Cr::Utility::formatString("{}camera.{}.txt",
-                                saved_transformations_directory,
-                                getCurrentTimeString()));
-}
-
-void Viewer::loadCameraTransformFromFile() {
-  if (!cameraLoadPath_.empty()) {
-    // loading from file system
-    loadNodeTransformFromFile(renderCamera_->node(), cameraLoadPath_);
-  } else {
-    // attempting to load from last temporary save
-    LOG(WARNING)
-        << "Camera transform file not specified, attempting to load from "
-           "current instance. Use --camera-transform-filepath to specify file "
-           "to load from.";
-    if (!lastCameraSave_) {
-      LOG(ERROR) << "No transformation saved in current instance.";
-      return;
-    }
-
-    renderCamera_->node().setTransformation(*lastCameraSave_);
-    LOG(INFO) << "Transformation matrix loaded from current instance : "
-              << Eigen::Map<esp::mat4f>(lastCameraSave_->data());
-  }
-
-  if (!flyingCameraMode_) {
-    LOG(INFO) << "Note: The flying camera mode is currently OFF. You may not "
-                 "see any view change.";
-  }
-}
-
-void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
-                                     const std::string& filename) {
+void saveTransformToFile(const std::string& filename,
+                         const Mn::Matrix4 agentTransform,
+                         const Mn::Matrix4 sensorTransform) {
   std::ofstream file(filename);
   if (!file.good()) {
     LOG(ERROR) << "Cannot open " << filename << " to output data.";
@@ -756,45 +714,98 @@ void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
   }
 
   // saving transformation into file system
-  Mn::Matrix4 transform = node.absoluteTransformation();
-  float* t = transform.data();
-  for (int i = 0; i < 16; ++i) {
-    file << t[i] << " ";
-  }
-  file.close();
+  auto save = [&](const Mn::Matrix4 transform) {
+    const float* t = transform.data();
+    for (int i = 0; i < 16; ++i) {
+      file << t[i] << " ";
+    }
+    LOG(INFO) << "Transformation matrix saved to " << filename << " : "
+              << Eigen::Map<const esp::mat4f>(transform.data());
+  };
+  save(agentTransform);
+  save(sensorTransform);
 
-  LOG(INFO) << "Transformation matrix saved to " << filename << " : "
-            << Eigen::Map<esp::mat4f>(transform.data());
+  file.close();
+}
+void Viewer::saveAgentAndSensorTransformToFile() {
+  const char* saved_transformations_directory = "saved_transformations/";
+  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
+    Cr::Utility::Directory::mkpath(saved_transformations_directory);
+  }
+
+  // update temporary save
+  savedAgentTransform_ = defaultAgent_->node().transformation();
+  savedSensorTransform_ = getAgentCamera().node().transformation();
+
+  // update save in file system
+  saveTransformToFile(Cr::Utility::formatString("{}camera.{}.txt",
+                                                saved_transformations_directory,
+                                                getCurrentTimeString()),
+                      *savedAgentTransform_, *savedSensorTransform_);
 }
 
-void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
-                                       const std::string& filename) {
+bool loadTransformFromFile(const std::string& filename,
+                           Mn::Matrix4& agentTransform,
+                           Mn::Matrix4& sensorTransform) {
   std::ifstream file(filename);
   if (!file.good()) {
     LOG(ERROR) << "Cannot open " << filename << " to load data.";
-    return;
+    return false;
   }
 
   // reading file system data into matrix as transformation
-  Mn::Vector4 cols[4];
-  for (int col = 0; col < 4; ++col) {
-    for (int row = 0; row < 4; ++row) {
-      file >> cols[col][row];
+  auto load = [&](Mn::Matrix4& transform) {
+    Mn::Vector4 cols[4];
+    for (int col = 0; col < 4; ++col) {
+      for (int row = 0; row < 4; ++row) {
+        file >> cols[col][row];
+      }
+    }
+    Mn::Matrix4 temp{cols[0], cols[1], cols[2], cols[3]};
+    if (!temp.isRigidTransformation()) {
+      LOG(WARNING) << "Data loaded from " << filename
+                   << " is not a valid rigid transformation.";
+      return false;
+    }
+    transform = temp;
+    LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
+              << Eigen::Map<esp::mat4f>(transform.data());
+    return true;
+  };
+  // NOTE: load Agent first!!
+  bool status = load(agentTransform) && load(sensorTransform);
+  file.close();
+  return status;
+}
+
+void Viewer::loadAgentAndSensorTransformFromFile() {
+  if (!agentTransformLoadPath_.empty()) {
+    // loading from file system
+    Mn::Matrix4 agentMtx;
+    Mn::Matrix4 sensorMtx;
+    if (!loadTransformFromFile(agentTransformLoadPath_, agentMtx, sensorMtx))
+      return;
+    savedAgentTransform_ = agentMtx;
+    savedSensorTransform_ = sensorMtx;
+  } else {
+    // attempting to load from last temporary save
+    LOG(INFO)
+        << "Camera transform file not specified, attempting to load from "
+           "current instance. Use --camera-transform-filepath to specify file "
+           "to load from.";
+    if (!savedAgentTransform_ || !savedSensorTransform_) {
+      LOG(INFO) << "Well, no transformation saved in current instance. nothing "
+                   "is changed.";
+      return;
     }
   }
-  Mn::Matrix4 transform{cols[0], cols[1], cols[2], cols[3]};
-  file.close();
 
-  // checking for corruption
-  if (!transform.isRigidTransformation()) {
-    LOG(WARNING) << "Data loaded from " << filename
-                 << " is not a valid transformation.";
-    return;
+  defaultAgent_->node().setTransformation(*savedAgentTransform_);
+  for (const auto& p : getAgentCamera().node().getNodeSensors()) {
+    p.second.get().object().setTransformation(*savedSensorTransform_);
   }
-
-  node.setTransformation(transform);
-  LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
-            << Eigen::Map<esp::mat4f>(transform.data());
+  LOG(INFO)
+      << "Transformation matrices are loaded to the agent and the sensors.";
 }
 
 int Viewer::addObject(int ID) {
@@ -1520,10 +1531,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
       break;
     case KeyEvent::Key::LeftBracket:
-      saveCameraTransformToFile();
+      saveAgentAndSensorTransformToFile();
       break;
     case KeyEvent::Key::RightBracket:
-      loadCameraTransformFromFile();
+      loadAgentAndSensorTransformFromFile();
       break;
 
     case KeyEvent::Key::Equal: {
