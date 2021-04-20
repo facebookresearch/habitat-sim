@@ -391,7 +391,7 @@ Key Commands:
     Equirectangular,
     VisualSensorModeCount,
   };
-  uint8_t sensorMode_ = 0;
+  VisualSensorMode sensorMode_ = VisualSensorMode::Camera;
 
   void bindRenderTarget();
 };
@@ -1124,9 +1124,9 @@ void Viewer::drawEvent() {
   if (depthMode_) {
     // ================ Depth Visualization ==================================
     std::string sensorId = "depth";
-    if (sensorMode_ == (uint8_t)VisualSensorMode::Fisheye) {
+    if (sensorMode_ == VisualSensorMode::Fisheye) {
       sensorId = "depth_fisheye";
-    } else if (sensorMode_ == (uint8_t)VisualSensorMode::Equirectangular) {
+    } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
       sensorId = "depth_equirectangular";
     }
 
@@ -1146,7 +1146,7 @@ void Viewer::drawEvent() {
       visibles += renderCamera_->draw(it.second, flags);
     }
   } else {
-    if (sensorMode_ == (uint8_t)VisualSensorMode::Camera) {
+    if (sensorMode_ == VisualSensorMode::Camera) {
       // ============= regular RGB with object picking =================
       // using polygon offset to increase mesh depth to avoid z-fighting with
       // debug draw (since lines will not respond to offset).
@@ -1199,9 +1199,9 @@ void Viewer::drawEvent() {
     } else {
       // ================ NON-regular RGB sensor ==================
       std::string sensorId = "";
-      if (sensorMode_ == (uint8_t)VisualSensorMode::Fisheye) {
+      if (sensorMode_ == VisualSensorMode::Fisheye) {
         sensorId = "fisheye";
-      } else if (sensorMode_ == (uint8_t)VisualSensorMode::Equirectangular) {
+      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
         sensorId = "equirectangular";
       } else {
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -1238,23 +1238,23 @@ void Viewer::drawEvent() {
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
-    if (sensorMode_ == (uint8_t)VisualSensorMode::Camera) {
+    if (sensorMode_ == VisualSensorMode::Camera) {
       ImGui::Text("%u culled", total - visibles);
     }
     auto& cam = getAgentCamera();
 
     switch (sensorMode_) {
-      case (uint8_t)VisualSensorMode::Camera:
+      case VisualSensorMode::Camera:
         if (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic) {
           ImGui::Text("Orthographic camera sensor");
         } else if (cam.getCameraType() == esp::sensor::SensorSubType::Pinhole) {
           ImGui::Text("Pinhole camera sensor");
         };
         break;
-      case (uint8_t)VisualSensorMode::Fisheye:
+      case VisualSensorMode::Fisheye:
         ImGui::Text("Fisheye sensor");
         break;
-      case (uint8_t)VisualSensorMode::Equirectangular:
+      case VisualSensorMode::Equirectangular:
         ImGui::Text("Equirectangular sensor");
         break;
 
@@ -1552,9 +1552,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
 
     case KeyEvent::Key::Four:
-      sensorMode_ = (sensorMode_ + 1) %
-                    (uint8_t)(VisualSensorMode::VisualSensorModeCount);
-      LOG(INFO) << "Sensor mode is set to " << (int32_t)sensorMode_;
+      sensorMode_ = static_cast<VisualSensorMode>(
+          (uint8_t(sensorMode_) + 1) %
+          uint8_t(VisualSensorMode::VisualSensorModeCount));
+      LOG(INFO) << "Sensor mode is set to " << int(sensorMode_);
       break;
 
     case KeyEvent::Key::Five:
