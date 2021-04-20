@@ -120,6 +120,7 @@ urdf_files = {
     "locobot_light": os.path.join(
         data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
     ),
+    "fridge": os.path.join(data_path, "test_assets/urdf/fridge/fridge.urdf"),
 }
 
 
@@ -468,6 +469,79 @@ def test_constraints(make_video=True, show_video=True):
             )
 
 
+# add a fridge to the world and recompute the navmesh in several configurations
+def test_ao_recompute_navmesh(make_video=True, show_video=True):
+    # create the simulator
+    cfg = make_configuration()
+    with habitat_sim.Simulator(cfg) as sim:
+        place_agent(sim)
+
+        # tilt the camera down
+        prev_state = sim.get_agent(0).scene_node.rotation
+        sim.get_agent(0).scene_node.rotation = (
+            mn.Quaternion.rotation(
+                mn.Rad(-0.4), prev_state.transform_vector(mn.Vector3(1.0, 0, 0))
+            )
+            * prev_state
+        )
+
+        # turn on navmesh vis
+        sim.navmesh_visualization = True
+
+        observations = []
+
+        # load a URDF file
+        robot_file = urdf_files["fridge"]
+        robot_id = sim.add_articulated_object_from_urdf(robot_file)
+
+        # place the robot root state relative to the agent
+        place_robot_from_agent(sim, robot_id, angle_correction=0)
+
+        root_transform = sim.get_articulated_object_root_state(robot_id)
+        R = mn.Matrix4.rotation(mn.Rad(3.14), mn.Vector3(0, 1.0, 0))
+        root_transform = mn.Matrix4.from_(
+            R.rotation().__matmul__(root_transform.rotation()),
+            root_transform.translation + mn.Vector3(0, 0.45, 0),
+        )
+        sim.set_articulated_object_root_state(robot_id, root_transform)
+
+        # simulate object settling
+        observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+        # make object STATIC and recompute navmesh
+        sim.set_articulated_object_motion_type(
+            robot_id, habitat_sim.physics.MotionType.STATIC
+        )
+        observations += simulate(sim, dt=1, get_frames=make_video)
+        navmesh_settings = habitat_sim.NavMeshSettings()
+        navmesh_settings.set_defaults()
+        sim.recompute_navmesh(sim.pathfinder, navmesh_settings, True)
+        observations += simulate(sim, dt=1, get_frames=make_video)
+
+        # open a door and recompute navmesh
+        pose = sim.get_articulated_object_positions(robot_id)
+        pose[0] = 2.0
+        sim.set_articulated_object_positions(robot_id, pose)
+        sim.recompute_navmesh(sim.pathfinder, navmesh_settings, True)
+        observations += simulate(sim, dt=1, get_frames=make_video)
+
+        # close a door slightly and recompute navmesh
+        pose = sim.get_articulated_object_positions(robot_id)
+        pose[0] = 1.0
+        sim.set_articulated_object_positions(robot_id, pose)
+        sim.recompute_navmesh(sim.pathfinder, navmesh_settings, True)
+        observations += simulate(sim, dt=1, get_frames=make_video)
+
+        if make_video:
+            vut.make_video(
+                observations,
+                "rgba_camera_1stperson",
+                "color",
+                output_path + "URDF_navmesh",
+                open_vid=show_video,
+            )
+
+
 # This is wrapped such that it can be added to a unit test
 def main(make_video=True, show_video=True):
 
@@ -713,5 +787,6 @@ if __name__ == "__main__":
 
     main(make_video, show_video)
     test_constraints(make_video, show_video)
+    test_ao_recompute_navmesh(make_video, show_video)
     # test_urdf_memory()
     # demo_contact_profile()

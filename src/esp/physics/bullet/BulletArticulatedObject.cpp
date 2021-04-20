@@ -201,16 +201,23 @@ bool BulletArticulatedObject::initializeFromURDF(
           << ", m_linkIndex = " << link.second->m_linkIndex
           << ", bulletLinkIx = " << bulletLinkIx;
        */
-      scene::SceneNode* linkNode = &node();
+      ArticulatedLink* linkObject = nullptr;
       if (bulletLinkIx >= 0) {
         links_[bulletLinkIx] = std::make_unique<BulletArticulatedLink>(
             &physicsNode->createChild(), resMgr_, bWorld_, bulletLinkIx,
             collisionObjToObjIds_);
-        linkNode = &links_[bulletLinkIx]->node();
+        linkObject = links_[bulletLinkIx].get();
+      } else {
+        if (!baseLink_) {
+          baseLink_ = std::make_unique<BulletArticulatedLink>(
+              &node().createChild(), resMgr_, bWorld_, bulletLinkIx,
+              collisionObjToObjIds_);
+        }
+        linkObject = baseLink_.get();
       }
 
       bool success =
-          attachGeometry(*linkNode, link.second,
+          attachGeometry(linkObject, link.second,
                          urdfImporter.getModel()->m_materials, drawables);
       // Corrade::Utility::Debug() << "geomSuccess: " << success;
 
@@ -259,7 +266,7 @@ void BulletArticulatedObject::updateNodes(bool force) {
 ////////////////////////////
 
 bool BulletArticulatedObject::attachGeometry(
-    scene::SceneNode& node,
+    ArticulatedLink* linkObject,
     const std::shared_ptr<io::URDF::Link>& link,
     const std::map<std::string, std::shared_ptr<io::URDF::Material>>& materials,
     gfx::DrawableGroup* drawables) {
@@ -267,7 +274,7 @@ bool BulletArticulatedObject::attachGeometry(
 
   for (auto& visual : link->m_visualArray) {
     // create a new child for each visual component
-    scene::SceneNode& visualGeomComponent = node.createChild();
+    scene::SceneNode& visualGeomComponent = linkObject->node().createChild();
     visualGeomComponent.setTransformation(
         link->m_inertia.m_linkLocalFrame.invertedRigid() *
         visual.m_linkLocalFrame);
@@ -321,6 +328,12 @@ bool BulletArticulatedObject::attachGeometry(
                  : assetMatModName),  // use either a material modified or
                                       // original asset
             visualGeomComponent, drawables);
+
+        // cache the visual component for later query
+        if (geomSuccess) {
+          linkObject->visualAttachments_.push_back(
+              {&visualGeomComponent, visual.m_geometry.m_meshFileName});
+        }
       } break;
       case io::URDF::GEOM_PLANE:
         Corrade::Utility::Debug()
@@ -543,12 +556,18 @@ void BulletArticulatedObject::setMotionType(MotionType mt) {
   if (mt == motionType_) {
     return;
   }
+  if (mt == MotionType::UNDEFINED) {
+    return;
+  }
+
+  // only need to change the state if the previous state was different (i.e.,
+  // DYNAMIC -> other)
   if (mt == MotionType::DYNAMIC) {
     bWorld_->addMultiBody(btMultiBody_.get());
-  } else if (mt == MotionType::KINEMATIC) {
+  } else if (motionType_ == MotionType::DYNAMIC) {
+    // TODO: STATIC and KINEMATIC are equivalent for simplicity. Could manually
+    // limit STATIC...
     bWorld_->removeMultiBody(btMultiBody_.get());
-  } else {
-    return;
   }
   motionType_ = mt;
 }
