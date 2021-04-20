@@ -35,10 +35,10 @@ class AbstractObjectAttributes;
 namespace physics {
 
 /**
-@brief Motion type of a @ref RigidObject.
-Defines its treatment by the simulator and operations which can be performed on
-it.
-*/
+ * @brief Motion type of a @ref RigidObject.
+ * Defines its treatment by the simulator and operations which can be performed
+ * on it.
+ */
 enum class MotionType {
   /**
    * Refers to an error (such as a query to non-existing object) or an
@@ -99,12 +99,12 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Initializes the @ref RigidObject or @ref RigidStage that inherits
    * from this class.  This is overridden
-   * @param resMgr a reference to ResourceManager object
-   * @param handle The handle for the template structure defining relevant
-   * phyiscal parameters for this object
+   * @param initAttributes The template structure defining relevant phyiscal
+   * parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialize(const std::string& handle) = 0;
+  virtual bool initialize(
+      metadata::attributes::AbstractObjectAttributes::ptr initAttributes) = 0;
 
   /**
    * @brief Finalize the creation of @ref RigidObject or @ref RigidStage that

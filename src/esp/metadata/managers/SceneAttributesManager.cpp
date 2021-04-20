@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneAttributesManager.h"
+#include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
 #include "esp/io/io.h"
@@ -133,8 +134,12 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
   // to unknown, which will mean use scene instance-level default.
   instanceAttrs->setTranslationOrigin(getTranslationOriginVal(jCell));
 
-  // motion type of object.  Ignored for stage.  TODO : verify is valid motion
-  // type using standard mechanism of static map comparison.
+  // set specified shader type value.  May be Unknown, which means the default
+  // value specified in the stage or object attributes will be used.
+  instanceAttrs->setShaderType(getShaderTypeFromJsonDoc(jCell));
+
+  // motion type of object.  Ignored for stage.  TODO : verify is valid
+  // motion type using standard mechanism of static map comparison.
 
   int motionTypeVal = static_cast<int>(physics::MotionType::UNDEFINED);
   std::string tmpVal = "";
