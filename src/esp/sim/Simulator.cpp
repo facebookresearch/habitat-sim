@@ -1177,17 +1177,17 @@ agent::Agent::ptr Simulator::addAgent(
   agents_.push_back(ag);
   // TODO: just do this once
   if (pathfinder_->isLoaded()) {
+    scene::ObjectControls::MoveFilterFunc moveFilterFunction;
     if (config_.allowSliding) {
-      ag->getControls()->setMoveFilterFunction(
-          [&](const vec3f& start, const vec3f& end) {
-            return pathfinder_->tryStep(start, end);
-          });
+      moveFilterFunction = [&](const vec3f& start, const vec3f& end) {
+        return pathfinder_->tryStep(start, end);
+      };
     } else {
-      ag->getControls()->setMoveFilterFunction(
-          [&](const vec3f& start, const vec3f& end) {
-            return pathfinder_->tryStepNoSliding(start, end);
-          });
+      moveFilterFunction = [&](const vec3f& start, const vec3f& end) {
+        return pathfinder_->tryStepNoSliding(start, end);
+      };
     }
+    ag->getControls()->setMoveFilterFunction(moveFilterFunction);
   }
 
   return ag;
