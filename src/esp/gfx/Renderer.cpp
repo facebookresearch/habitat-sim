@@ -217,7 +217,7 @@ struct Renderer::Impl {
 
     return shader;
   }
-};  // namespace gfx
+};
 
 Renderer::Renderer(Flags flags)
     : pimpl_(spimpl::make_unique_impl<Impl>(flags)) {}
