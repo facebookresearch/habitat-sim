@@ -20,7 +20,6 @@
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
-#include <Magnum/Math/Tags.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Generic.h>
