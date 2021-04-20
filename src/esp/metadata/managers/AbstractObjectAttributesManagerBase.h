@@ -12,6 +12,7 @@
 
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
+#include "esp/metadata/MetadataUtils.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
 
 namespace Cr = Corrade;
@@ -295,6 +296,17 @@ auto AbstractObjectAttributesManager<T, Access>::
         static_cast<int>(esp::assets::AssetType::UNKNOWN));
     attributes->setUseMeshCollision(true);
   }
+
+  // set attributes shader type to use.  This may be overridden by a scene
+  // instance specification.
+  int shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
+  // if a known shader type val is specified in json, set that value for the
+  // attributes, overriding constructor defaults.
+  if (shaderTypeVal !=
+      static_cast<int>(attributes::ObjectInstanceShaderType::Unknown)) {
+    attributes->setShaderType(shaderTypeVal);
+  }
+
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
 

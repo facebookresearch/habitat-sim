@@ -14,15 +14,16 @@ RigidObject::RigidObject(scene::SceneNode* rigidBodyNode,
   objectId_ = objectId;
 }
 
-bool RigidObject::initialize(const std::string& handle) {
+bool RigidObject::initialize(
+    metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
   if (initializationAttributes_ != nullptr) {
     LOG(ERROR) << "Cannot initialize a RigidObject more than once";
     return false;
   }
 
-  // save a copy of the template at initialization time
-  initializationAttributes_ =
-      resMgr_.getObjectAttributesManager()->getObjectCopyByHandle(handle);
+  // save the copy of the template used to create the object at initialization
+  // time
+  initializationAttributes_ = std::move(initAttributes);
 
   return initialization_LibSpecific();
 }  // RigidObject::initialize

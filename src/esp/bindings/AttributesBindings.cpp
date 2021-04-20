@@ -129,6 +129,10 @@ void initAttributesBindings(py::module& m) {
           R"(Handle of the asset used to calculate collsions for constructions
           built from this template.)")
       .def_property(
+          "shader_type", &AbstractObjectAttributes::getShaderType,
+          &AbstractObjectAttributes::setShaderType,
+          R"(The shader type [0=flat, 1=phong, 2=pbr] to use for this construction)")
+      .def_property(
           "requires_lighting", &AbstractObjectAttributes::getRequiresLighting,
           &AbstractObjectAttributes::setRequiresLighting,
           R"(Whether constructions built from this template should use phong

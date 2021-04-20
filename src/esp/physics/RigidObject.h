@@ -106,12 +106,12 @@ class RigidObject : public RigidBase {
 
   /**
    * @brief Initializes the @ref RigidObject that inherits from this class
-   * @param resMgr a reference to ResourceManager object
-   * @param handle The handle for the template structure defining relevant
+   * @param initAttributes The template structure defining relevant
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialize(const std::string& handle) override;
+  bool initialize(metadata::attributes::AbstractObjectAttributes::ptr
+                      initAttributes) override;
 
   /**
    * @brief Finalize the creation of @ref RigidObject or @ref RigidScene that
