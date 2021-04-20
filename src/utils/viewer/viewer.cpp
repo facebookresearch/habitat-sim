@@ -374,7 +374,6 @@ Key Commands:
 
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = true;
-  bool flyingCameraMode_ = false;
 
   // NOTE: Mouse + shift is to select object on the screen!!
   void createPickedObjectVisualizer(unsigned int objectId);
@@ -801,7 +800,7 @@ void Viewer::loadAgentAndSensorTransformFromFile() {
   }
 
   defaultAgent_->node().setTransformation(*savedAgentTransform_);
-  for (const auto& p : getAgentCamera().node().getNodeSensors()) {
+  for (const auto& p : defaultAgent_->node().getNodeSensors()) {
     p.second.get().object().setTransformation(*savedSensorTransform_);
   }
   LOG(INFO)
@@ -1120,14 +1119,6 @@ void Viewer::drawEvent() {
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
     sensorRenderTarget->blitRgbaToDefault();
-  } else if (flyingCameraMode_) {
-    visibles = 0;
-    Mn::GL::defaultFramebuffer.bind();
-    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-      esp::gfx::RenderCamera::Flags flags =
-          esp::gfx::RenderCamera::Flag::FrustumCulling;
-      visibles += renderCamera_->draw(it.second, flags);
-    }
   } else {  // ============= regular RGB with object picking =================
     // using polygon offset to increase mesh depth to avoid z-fighting with
     // debug draw (since lines will not respond to offset).
@@ -1193,9 +1184,6 @@ void Viewer::drawEvent() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(1.5);
-    if (flyingCameraMode_) {
-      ImGui::Text("In flying Camera MODE. Press key '3' to EXIT.");
-    }
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
@@ -1327,10 +1315,6 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   }
   bindRenderTarget();
   Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
-
-  if (flyingCameraMode_) {
-    renderCamera_->setViewport(event.framebufferSize());
-  }
 
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
@@ -1496,17 +1480,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // agent motion trajectory mesh synthesis with random color
       buildTrajectoryVis();
       break;
-    case KeyEvent::Key::Three:
-      // toggle flying camera mode
-      flyingCameraMode_ = !flyingCameraMode_;
-      LOG(INFO) << "Flying camera mode: " << (flyingCameraMode_ ? "ON" : "OFF");
-      break;
-
     case KeyEvent::Key::Four:
       fisheyeMode_ = !fisheyeMode_;
       LOG(INFO) << "Fisheye sensor mode is " << (fisheyeMode_ ? "ON" : "OFF");
       break;
-
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
       switchCameraType();
