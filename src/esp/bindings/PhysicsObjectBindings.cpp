@@ -4,6 +4,7 @@
 
 #include "esp/bindings/bindings.h"
 #include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
+#include "esp/physics/objectWrappers/ManagedRigidBase.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -16,7 +17,8 @@ void declareBasePhysicsObjectWrapper(py::module& m,
                                      const std::string& objType,
                                      const std::string& classStrPrefix) {
   using PhysObjWrapper = AbstractManagedPhysicsObject<T>;
-  std::string pyclass_name = classStrPrefix + std::string("ObjectWrapper");
+  std::string pyclass_name =
+      classStrPrefix + std::string("PhysicsObjectWrapper");
   // ==== AbstractManagedPhysicsObject ====
   py::class_<PhysObjWrapper, esp::core::AbstractManagedObject,
              typename PhysObjWrapper::ptr>(m, pyclass_name.c_str())
@@ -33,7 +35,16 @@ void declareBasePhysicsObjectWrapper(py::module& m,
 }  // declareBasePhysicsObjectWrapper
 
 template <class T>
-void declareRigidBaseWrapper(py::module& m, const std::string& classStrPrefix) {
+void declareRigidBaseWrapper(py::module& m,
+                             const std::string& objType,
+                             const std::string& classStrPrefix) {
+  declareBaseAttributesManager<T>(m, classStrPrefix);
+
+  using RigidBaseWrapper = AbstractManagedRigidBase<T>;
+  std::string pyclass_name = classStrPrefix + std::string("RigidBaseWrapper");
+  py::class_<RigidBaseWrapper, AbstractManagedPhysicsObject<T>,
+             typename RigidBaseWrapper::ptr>(m, pyclass_name.c_str());
+
 }  // declareRigidBaseWrapper
 
 void initPhysicsObjectBindings(py::module& m) {}  // initPhysicsObjectBindings
