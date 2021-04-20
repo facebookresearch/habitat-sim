@@ -85,22 +85,6 @@ class ArticulatedLink : public RigidBase {
 
   ~ArticulatedLink() override = default;
 
-  /**
-   * @brief Get the scene node being attached to.
-   */
-  scene::SceneNode& node() { return object(); }
-  const scene::SceneNode& node() const { return object(); }
-
-  // Overloads to avoid confusion
-  scene::SceneNode& object() {
-    return static_cast<scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
-  const scene::SceneNode& object() const {
-    return static_cast<const scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
-
   int getIndex() { return mbIndex_; };
 
   // RigidBase overrides
