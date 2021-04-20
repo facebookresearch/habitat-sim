@@ -20,7 +20,7 @@ VisualSensorSpec::VisualSensorSpec() : SensorSpec() {
   sensorType = SensorType::Color;
 }
 
-void VisualSensorSpec::sanityCheck() {
+void VisualSensorSpec::sanityCheck() const {
   SensorSpec::sanityCheck();
   bool isVisualSensor =
       (sensorType == SensorType::Color || sensorType == SensorType::Depth ||

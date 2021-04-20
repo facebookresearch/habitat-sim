@@ -8,33 +8,15 @@
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/Shaders/Generic.h>
 
-#include "FisheyeShader.h"
+#include "CubeMapShaderBase.h"
 #include "esp/core/esp.h"
 
 namespace esp {
 namespace gfx {
-class DoubleSphereCameraShader : public FisheyeShader {
+class DoubleSphereCameraShader : public CubeMapShaderBase {
  public:
-  enum : Magnum::UnsignedInt {
-    /**
-     * Color shader output. @ref shaders-generic "Generic output",
-     * present always. Expects three- or four-component floating-point
-     * or normalized buffer attachment.
-     */
-    ColorOutput = Magnum::Shaders::Generic3D::ColorOutput,
-
-    // TODO
-    /**
-     * Object ID shader output. @ref shaders-generic "Generic output",
-     * present only if @ref FisheyeShader::Flag::ObjectId is set. Expects a
-     * single-component unsigned integral attachment. Writes the value
-     * set in @ref setObjectId() there.
-     */
-    // ObjectIdOutput = Magnum::Shaders::Generic3D::ObjectIdOutput,
-  };
-
-  explicit DoubleSphereCameraShader(FisheyeShader::Flags flags = {
-                                        FisheyeShader::Flag::ColorTexture});
+  explicit DoubleSphereCameraShader(CubeMapShaderBase::Flags flags = {
+                                        CubeMapShaderBase::Flag::ColorTexture});
 
   /**
    *  @brief Set the focal length of the fisheye camera

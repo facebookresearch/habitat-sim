@@ -2,20 +2,21 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_GFX_FISHEYESHADER_H_
-#define ESP_GFX_FISHEYESHADER_H_
+#ifndef ESP_GFX_CUBEMAP_SHADER_BASE_H_
+#define ESP_GFX_CUBEMAP_SHADER_BASE_H_
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Utility/Macros.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/CubeMapTexture.h>
+#include <Magnum/ResourceManager.h>
 #include <Magnum/Shaders/Generic.h>
 
 #include "esp/core/esp.h"
 
 namespace esp {
 namespace gfx {
-namespace fisheyeShaderTexUnitSpace {
+namespace CubeMapShaderBaseTexUnitSpace {
 enum TextureUnit : uint8_t {
   Color = 0,
   Depth = 1,
@@ -23,9 +24,10 @@ enum TextureUnit : uint8_t {
   // ObjectId = 2,
 };
 }
-// Interface class for various fisheye camera shaders, such as "Double Sphere
-// Camera", "Field-of-View Camera", etc.
-class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
+// Interface class for various cubemap based camera shaders, such as "Double
+// Sphere Camera" (fisheye), "Field-of-View Camera" (fisheye), "equiRectanglar"
+// etc.
+class CubeMapShaderBase : public Magnum::GL::AbstractShaderProgram {
  public:
   enum : Magnum::UnsignedInt {
     /**
@@ -64,13 +66,7 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
 
-  /**
-   * @brief constructor
-   * @param[in] flags fisheye shader flags
-   */
-  explicit FisheyeShader(Flags flags = {Flag::ColorTexture});
-
-  ~FisheyeShader() override = default;
+  ~CubeMapShaderBase() override = default;
 
   /** @brief Flags */
   Flags flags() const { return flags_; }
@@ -79,19 +75,28 @@ class FisheyeShader : public Magnum::GL::AbstractShaderProgram {
    * @brief bind cubemap color texture
    * @param[in] texture cubemap color texture
    */
-  virtual FisheyeShader& bindColorTexture(Magnum::GL::CubeMapTexture& texture);
+  virtual CubeMapShaderBase& bindColorTexture(
+      Magnum::GL::CubeMapTexture& texture);
   /**
    * @brief bind cubemap depth texture
    * @param[in] texture cubemap depth texture
    */
-  virtual FisheyeShader& bindDepthTexture(Magnum::GL::CubeMapTexture& texture);
-  // virtual FisheyeShader& bindObjectIdTexture(Magnum::GL::Texture2D&
+  virtual CubeMapShaderBase& bindDepthTexture(
+      Magnum::GL::CubeMapTexture& texture);
+  // virtual CubeMapShaderBase& bindObjectIdTexture(Magnum::GL::Texture2D&
   // texture);
 
  protected:
+  /**
+   * @brief constructor
+   * @param[in] flags cubemap shader flags
+   */
+  explicit CubeMapShaderBase(Flags flags = {Flag::ColorTexture});
+
   Flags flags_;
 };
-CORRADE_ENUMSET_OPERATORS(FisheyeShader::Flags)
+
+CORRADE_ENUMSET_OPERATORS(CubeMapShaderBase::Flags)
 }  // namespace gfx
 }  // namespace esp
 #endif
