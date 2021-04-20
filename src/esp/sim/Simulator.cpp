@@ -956,7 +956,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         meshComponentStates;
 
     // collect RigidObject mesh components
-    for (auto objectID : physicsManager_->getExistingObjectIDs()) {
+    for (auto& objectID : physicsManager_->getExistingObjectIDs()) {
       if (physicsManager_->getObjectMotionType(objectID) ==
           physics::MotionType::STATIC) {
         auto objectTransform = Magnum::EigenIntegration::cast<
@@ -978,7 +978,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
     }
 
     // collect ArticulatedObject mesh components
-    for (auto objectID : physicsManager_->getExistingArticulatedObjectIDs()) {
+    for (auto& objectID : physicsManager_->getExistingArticulatedObjectIDs()) {
       if (physicsManager_->getArticulatedObjectMotionType(objectID) ==
           physics::MotionType::STATIC) {
         for (int linkIx = -1;
@@ -990,7 +990,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                   physicsManager_->getArticulatedObject(objectID)
                       .getLink(linkIx)
                       .visualAttachments_;
-          for (auto visualAttachment : visualAttachments) {
+          for (auto& visualAttachment : visualAttachments) {
             auto objectTransform = Magnum::EigenIntegration::cast<
                 Eigen::Transform<float, 3, Eigen::Affine>>(
                 visualAttachment.first->absoluteTransformationMatrix());
