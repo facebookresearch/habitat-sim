@@ -38,10 +38,9 @@ template <class T>
 void declareRigidBaseWrapper(py::module& m,
                              const std::string& objType,
                              const std::string& classStrPrefix) {
-  declareBaseAttributesManager<T>(m, classStrPrefix);
-
   using RigidBaseWrapper = AbstractManagedRigidBase<T>;
   std::string pyclass_name = classStrPrefix + std::string("RigidBaseWrapper");
+  // ==== AbstractManagedRigidBase ====
   py::class_<RigidBaseWrapper, AbstractManagedPhysicsObject<T>,
              typename RigidBaseWrapper::ptr>(m, pyclass_name.c_str());
 

@@ -106,7 +106,9 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * @param classKey the string handle corresponding to the
    * constructors used to make copies of this object in copy constructor map.
    */
-  void setClassKey(const std::string& classKey) { classKey_ = classKey; }
+  void setClassKey(const std::string& classKey) override {
+    classKey_ = classKey;
+  }
 
   /**
    * @brief Weak ref to object. If user has copy of this wrapper but object has
