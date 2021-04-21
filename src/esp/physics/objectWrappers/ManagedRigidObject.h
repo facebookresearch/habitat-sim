@@ -13,7 +13,8 @@ namespace physics {
 class ManagedRigidObject
     : public esp::physics::AbstractManagedRigidBase<esp::physics::RigidObject> {
  public:
-  ManagedRigidObject(std::shared_ptr<esp::physics::RigidObject>& objPtr)
+  explicit ManagedRigidObject(
+      std::shared_ptr<esp::physics::RigidObject>& objPtr)
       : AbstractManagedRigidBase<esp::physics::RigidObject>(objPtr,
                                                             "RigidObject") {}
 
