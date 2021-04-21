@@ -306,7 +306,12 @@ void BulletRigidObject::setCollisionFromBB() {
 }  // setCollisionFromBB
 
 void BulletRigidObject::setMotionType(MotionType mt) {
-  if ((mt == MotionType::UNDEFINED) || (mt == objectMotionType_)) {
+  if (mt == MotionType::UNDEFINED) {
+    LOG(WARNING) << "BulletRigidObject::setMotionType : Cannot set motion type "
+                    "to MotionType::UNDEFINED.  Aborting.";
+    return;
+  }
+  if (mt == objectMotionType_) {
     return;  // no work
   }
 
@@ -314,6 +319,7 @@ void BulletRigidObject::setMotionType(MotionType mt) {
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
   constructAndAddRigidBody(mt);
   objectMotionType_ = mt;
+  return;
 }  // setMotionType
 
 void BulletRigidObject::setCollidable(bool collidable) {

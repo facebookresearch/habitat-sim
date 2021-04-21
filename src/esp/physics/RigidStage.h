@@ -74,7 +74,10 @@ class RigidStage : public RigidBase {
    * @brief Currently ignored for stage objects.
    * @param mt The desirved @ref MotionType.
    */
-  void setMotionType(CORRADE_UNUSED MotionType mt) override {}
+  void setMotionType(CORRADE_UNUSED MotionType mt) override {
+    LOG(WARNING) << "RigidStage::setMotionType : Stages cannot have their "
+                    "motion type changed from MotionType::STATIC.  Aborting.";
+  }
 
  public:
   ESP_SMART_POINTERS(RigidStage)
