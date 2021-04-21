@@ -37,9 +37,9 @@ __all__ = [
     "Observation",
     "Sensor",
     "SensorFactory",
-    "SensorType",
-    "SensorSubtype",
     "SensorSpec",
+    "SensorSubType",
+    "SensorType",
     "VisualSensor",
     "VisualSensorSpec",
 ]
