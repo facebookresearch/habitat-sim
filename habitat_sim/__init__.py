@@ -53,23 +53,11 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         pyrobot_noisy_controls,
     )
     from habitat_sim.bindings import (  # noqa: F401
-        CameraSensorSpec,
-        EquirectangularSensor,
-        EquirectangularSensorSpec,
-        FisheyeSensorDoubleSphereSpec,
-        FisheyeSensorModelType,
-        FisheyeSensorSpec,
         RigidState,
         SceneGraph,
         SceneNode,
         SceneNodeType,
-        Sensor,
-        SensorFactory,
-        SensorSpec,
-        SensorSubType,
-        SensorType,
         SimulatorConfiguration,
-        VisualSensorSpec,
         cuda_enabled,
         vhacd_enabled,
     )
@@ -84,6 +72,20 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         VectorGreedyCodes,
     )
     from habitat_sim.registry import registry  # noqa: F401
+    from habitat_sim.sensor import (
+        CameraSensorSpec,
+        EquirectangularSensor,
+        EquirectangularSensorSpec,
+        FisheyeSensorDoubleSphereSpec,
+        FisheyeSensorModelType,
+        FisheyeSensorSpec,
+        Sensor,
+        SensorFactory,
+        SensorSpec,
+        SensorSubType,
+        SensorType,
+        VisualSensorSpec,
+    )
     from habitat_sim.simulator import Configuration, Simulator  # noqa: F401
 
     __all__ = [
