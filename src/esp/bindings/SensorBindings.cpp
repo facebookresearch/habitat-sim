@@ -117,7 +117,7 @@ void initSensorBindings(py::module& m) {
 
   py::class_<EquirectangularSensorSpec, EquirectangularSensorSpec::ptr,
              CubeMapSensorBaseSpec>(m, "EquirectangularSensorSpec")
-       .def(py::init(&EquirectangularSensorSpec::create<>));
+      .def(py::init(&EquirectangularSensorSpec::create<>));
 
   // ====FisheyeSensorSpec ====
   py::class_<FisheyeSensorSpec, FisheyeSensorSpec::ptr, CubeMapSensorBaseSpec>(
