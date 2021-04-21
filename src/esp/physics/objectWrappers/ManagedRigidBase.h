@@ -230,11 +230,9 @@ class AbstractManagedRigidBase
     }
   }  // getCollidable()
 
-  bool setCollidable(bool collidable) {
+  void setCollidable(bool collidable) {
     if (auto sp = this->getObjectReference()) {
-      return sp->setCollidable(collidable);
-    } else {
-      return false;
+      sp->setCollidable(collidable);
     }
   }  // setCollidable
 
