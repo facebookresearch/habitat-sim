@@ -87,6 +87,12 @@ class ArticulatedLink : public RigidBase {
 
   int getIndex() { return mbIndex_; };
 
+  //! List of visual components attached to this link. Used for NavMesh
+  //! recomputation. Each entry is a child node of this link's node and a string
+  //! key to reference the asset in ResourceManager.
+  std::vector<std::pair<esp::scene::SceneNode*, std::string>>
+      visualAttachments_;
+
   // RigidBase overrides
 
   /**
@@ -262,6 +268,10 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual void deferUpdate() { isDeferringUpdate_ = true; }
 
   ArticulatedLink& getLink(int id) {
+    // option to get the baseLink_ with id=-1
+    if (id == -1) {
+      return *baseLink_.get();
+    }
     CHECK(links_.count(id));
     return *links_.at(id).get();
   };
@@ -419,17 +429,19 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
 
  protected:
   virtual bool attachGeometry(
-      CORRADE_UNUSED scene::SceneNode& node,
+      CORRADE_UNUSED ArticulatedLink* linkObject,
       CORRADE_UNUSED const std::shared_ptr<io::URDF::Link>& link,
       CORRADE_UNUSED const
-          std::map<std::string, std::shared_ptr<io::URDF::Material> >&
-              materials,
+          std::map<std::string, std::shared_ptr<io::URDF::Material>>& materials,
       CORRADE_UNUSED gfx::DrawableGroup* drawables) {
     return false;
   };
 
   //! map linkId to ArticulatedLink
   std::map<int, ArticulatedLink::uptr> links_;
+
+  //! link object for the AO base
+  ArticulatedLink::uptr baseLink_;
 
   //! map motorId to JointMotor
   std::map<int, JointMotor::uptr> jointMotors_;

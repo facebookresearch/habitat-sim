@@ -945,11 +945,22 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 
   // add STATIC collision objects
   if (includeStaticObjects) {
-    for (auto objectID : physicsManager_->getExistingObjectIDs()) {
+    // update nodes so SceneNode transforms are up-to-date
+    physicsManager_->updateNodes();
+
+    // collect mesh components from all objects and then merge them.
+    // Each mesh component could be duplicated multiple times w/ different
+    // transforms.
+    std::map<std::string,
+             std::vector<Eigen::Transform<float, 3, Eigen::Affine>>>
+        meshComponentStates;
+
+    // collect RigidObject mesh components
+    for (auto& objectID : physicsManager_->getExistingObjectIDs()) {
       if (physicsManager_->getObjectMotionType(objectID) ==
           physics::MotionType::STATIC) {
         auto objectTransform = Magnum::EigenIntegration::cast<
-            Eigen::Transform<float, 3, Eigen::Affine> >(
+            Eigen::Transform<float, 3, Eigen::Affine>>(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
         const metadata::attributes::ObjectAttributes::cptr
@@ -962,8 +973,39 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         if (meshHandle.empty()) {
           meshHandle = initializationTemplate->getRenderAssetHandle();
         }
-        assets::MeshData::uptr joinedObjectMesh =
-            resourceManager_->createJoinedCollisionMesh(meshHandle);
+        meshComponentStates[meshHandle].push_back(objectTransform);
+      }
+    }
+
+    // collect ArticulatedObject mesh components
+    for (auto& objectID : physicsManager_->getExistingArticulatedObjectIDs()) {
+      if (physicsManager_->getArticulatedObjectMotionType(objectID) ==
+          physics::MotionType::STATIC) {
+        for (int linkIx = -1;
+             linkIx < physicsManager_->getNumArticulatedLinks(objectID);
+             ++linkIx) {
+          //-1 is baseLink_
+          std::vector<std::pair<esp::scene::SceneNode*, std::string>>
+              visualAttachments =
+                  physicsManager_->getArticulatedObject(objectID)
+                      .getLink(linkIx)
+                      .visualAttachments_;
+          for (auto& visualAttachment : visualAttachments) {
+            auto objectTransform = Magnum::EigenIntegration::cast<
+                Eigen::Transform<float, 3, Eigen::Affine>>(
+                visualAttachment.first->absoluteTransformationMatrix());
+            std::string meshHandle = visualAttachment.second;
+            meshComponentStates[meshHandle].push_back(objectTransform);
+          }
+        }
+      }
+    }
+
+    // merge mesh components into the final mesh
+    for (auto& meshComponent : meshComponentStates) {
+      assets::MeshData::uptr joinedObjectMesh =
+          resourceManager_->createJoinedCollisionMesh(meshComponent.first);
+      for (auto& meshTransform : meshComponent.second) {
         int prevNumIndices = joinedMesh->ibo.size();
         int prevNumVerts = joinedMesh->vbo.size();
         joinedMesh->ibo.resize(prevNumIndices + joinedObjectMesh->ibo.size());
@@ -973,7 +1015,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         }
         joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
         for (auto& vert : joinedObjectMesh->vbo) {
-          joinedMesh->vbo.push_back(objectTransform * vert);
+          joinedMesh->vbo.push_back(meshTransform * vert);
         }
       }
     }
