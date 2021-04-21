@@ -316,6 +316,15 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("near", &VisualSensor::getNear)
       .property("far", &VisualSensor::getFar);
 
+  em::class_<CubeMapSensorBase, em::base<VisualSensor>>("CubeMapSensorBase")
+      .smart_ptr<CubeMapSensorBase::ptr>("CubeMapSensorBase::ptr");
+
+  em::class_<EquirectangularSensor, em::base<CubeMapSensorBase>>("EquirectangularSensor")
+      .smart_ptr<EquirectangularSensor::ptr>("EquirectangularSensor::ptr");
+
+  em::class_<FisheyeSensor, em::base<CubeMapSensorBase>>("FisheyeSensor")
+      .smart_ptr<FisheyeSensor::ptr>("FisheyeSensor::ptr");
+  
   em::class_<CameraSensor, em::base<VisualSensor>>("CameraSensor")
       .smart_ptr<CameraSensor::ptr>("CameraSensor::ptr");
 
