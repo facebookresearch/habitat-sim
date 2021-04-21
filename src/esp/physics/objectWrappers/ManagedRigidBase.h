@@ -368,7 +368,7 @@ class AbstractManagedRigidBase
 
   std::vector<scene::SceneNode*> getVisualSceneNodes() const {
     if (auto sp = this->getObjectReference()) {
-      sp->getVisualSceneNodes();
+      return sp->getVisualSceneNodes();
     } else {
       return std::vector<scene::SceneNode*>();
     }
@@ -376,7 +376,7 @@ class AbstractManagedRigidBase
 
   scene::SceneNode* getSceneNode() {
     if (auto sp = this->getObjectReference()) {
-      sp->getSceneNode();
+      return &const_cast<scene::SceneNode&>(sp->getSceneNode());
     } else {
       return nullptr;
     }
