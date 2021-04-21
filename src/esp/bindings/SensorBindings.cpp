@@ -112,9 +112,11 @@ void initSensorBindings(py::module& m) {
           })
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
+  // === CubemapSensorBaseSpec ===
   py::class_<CubeMapSensorBaseSpec, CubeMapSensorBaseSpec::ptr,
              VisualSensorSpec>(m, "CubeMapSensorBaseSpec");
 
+  // === EquirectangularSensorSpec ===
   py::class_<EquirectangularSensorSpec, EquirectangularSensorSpec::ptr,
              CubeMapSensorBaseSpec>(m, "EquirectangularSensorSpec")
       .def(py::init(&EquirectangularSensorSpec::create<>));
@@ -246,7 +248,7 @@ void initSensorBindings(py::module& m) {
              Magnum::SceneGraph::PyFeatureHolder<CubeMapSensorBase>>(
       m, "CubeMapSensorBase");
 
-  // === EquirectangularSensorSpec ===
+  // === EquirectangularSensor ===
   py::class_<EquirectangularSensor,
              Magnum::SceneGraph::PyFeature<EquirectangularSensor>,
              CubeMapSensorBase,
