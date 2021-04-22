@@ -580,7 +580,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
 #endif
 
   /** @brief Store whatever object attributes you want here! */
-  esp::core::Configuration attributes_;
+  esp::core::Configuration::ptr attributes_{};
 
   //! The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
   //! drawing is off. See @ref setObjectBBDraw().
