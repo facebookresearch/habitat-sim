@@ -660,13 +660,12 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
   return esp::physics::MotionType::UNDEFINED;
 }
 
-bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
+void Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
                                     const int objectID,
                                     const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    return physicsManager_->setObjectMotionType(objectID, motionType);
+    physicsManager_->setObjectMotionType(objectID, motionType);
   }
-  return false;
 }
 
 physics::VelocityControl::ptr Simulator::getObjectVelocityControl(
@@ -1338,8 +1337,7 @@ void Simulator::setObjectLightSetup(const int objectID,
                                     const std::string& lightSetupKey,
                                     const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    gfx::setLightSetupForSubTree(physicsManager_->getObjectSceneNode(objectID),
-                                 lightSetupKey);
+    physicsManager_->setObjectLightSetup(objectID, lightSetupKey);
   }
 }
 

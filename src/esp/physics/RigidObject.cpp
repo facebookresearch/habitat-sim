@@ -10,9 +10,8 @@ namespace physics {
 RigidObject::RigidObject(scene::SceneNode* rigidBodyNode,
                          int objectId,
                          const assets::ResourceManager& resMgr)
-    : RigidBase(rigidBodyNode, resMgr), velControl_(VelocityControl::create()) {
-  objectId_ = objectId;
-}
+    : RigidBase(rigidBodyNode, objectId, resMgr),
+      velControl_(VelocityControl::create()) {}
 
 bool RigidObject::initialize(
     metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
@@ -60,12 +59,10 @@ bool RigidObject::initialization_LibSpecific() {
   return true;
 }  // RigidObject::initialization_LibSpecific
 
-bool RigidObject::setMotionType(MotionType mt) {
+void RigidObject::setMotionType(MotionType mt) {
   if (mt != MotionType::DYNAMIC) {
+    // can't set DYNAMIC without a dynamics engine.
     objectMotionType_ = mt;
-    return true;
-  } else {
-    return false;  // can't set DYNAMIC without a dynamics engine.
   }
 }
 
