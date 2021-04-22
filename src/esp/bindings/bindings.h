@@ -7,16 +7,15 @@
 
 #include <pybind11/pybind11.h>
 #include "esp/bindings/OpaqueTypes.h"
+#include "esp/core/ManagedContainer.h"
 
 namespace esp {
 
-namespace metadata {
-void initAttributesBindings(pybind11::module& m);
-void initMetadataMediatorBindings(pybind11::module& m);
-namespace managers {
-void initAttributesManagersBindings(pybind11::module& m);
-}  // namespace managers
-}  // namespace metadata
+namespace core {
+
+void initCoreBindings(pybind11::module& m);
+
+}  // namespace core
 
 namespace geo {
 void initGeoBindings(pybind11::module& m);
@@ -26,8 +25,16 @@ namespace gfx {
 void initGfxBindings(pybind11::module& m);
 namespace replay {
 void initGfxReplayBindings(pybind11::module& m);
-}
+}  // namespace replay
 }  // namespace gfx
+
+namespace metadata {
+void initAttributesBindings(pybind11::module& m);
+void initMetadataMediatorBindings(pybind11::module& m);
+namespace managers {
+void initAttributesManagersBindings(pybind11::module& m);
+}  // namespace managers
+}  // namespace metadata
 
 namespace nav {
 void initShortestPathBindings(pybind11::module& m);
