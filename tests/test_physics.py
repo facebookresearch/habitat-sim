@@ -389,24 +389,30 @@ def test_raycast():
             assert abs(raycast_results.hits[0].ray_distance - 6.831) < 0.001
             assert raycast_results.hits[0].object_id == -1
 
-            # add a primitive object to the world
+            # add a primitive object to the world and test a ray away from the origin
             cube_prim_handle = obj_mgr.get_template_handles("cube")[0]
             cube_obj_id = sim.add_object_by_handle(cube_prim_handle)
-            sim.set_translation(mn.Vector3(3.0, 0, 0), cube_obj_id)
+            sim.set_translation(mn.Vector3(2.0, 0, 2.0), cube_obj_id)
+
+            test_ray_1.origin = np.array([0.0, 0, 2.0])
 
             raycast_results = sim.cast_ray(test_ray_1)
 
             assert raycast_results.has_hits()
-            assert len(raycast_results.hits) == 2
+            assert len(raycast_results.hits) == 4
+            print(raycast_results.hits[0].point)
+            print(raycast_results.hits[0].normal)
+            print(raycast_results.hits[0].ray_distance)
+            print(raycast_results.hits[0].object_id)
             assert np.allclose(
-                raycast_results.hits[0].point, np.array([2.89355, 0, 0]), atol=0.07
+                raycast_results.hits[0].point, np.array([1.89048, 0, 2]), atol=0.07
             )
             assert np.allclose(
                 raycast_results.hits[0].normal,
-                np.array([-0.998961, -0.0322245, -0.0322245]),
+                np.array([-0.99774, -0.0475114, -0.0475114]),
                 atol=0.07,
             )
-            assert abs(raycast_results.hits[0].ray_distance - 2.8935) < 0.001
+            assert abs(raycast_results.hits[0].ray_distance - 1.89) < 0.001
             assert raycast_results.hits[0].object_id == 0
 
             # test raycast against a non-collidable object.
@@ -414,7 +420,7 @@ def test_raycast():
             sim.set_object_is_collidable(False, cube_obj_id)
             raycast_results = sim.cast_ray(test_ray_1)
             assert raycast_results.has_hits()
-            assert len(raycast_results.hits) == 1
+            assert len(raycast_results.hits) == 3
 
             # test raycast against a non-collidable stage.
             # should not register any hits.
