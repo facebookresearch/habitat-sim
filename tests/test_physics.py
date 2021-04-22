@@ -53,16 +53,12 @@ def test_kinematics():
 
         # test setting the motion type
 
-        assert sim.set_object_motion_type(
-            habitat_sim.physics.MotionType.STATIC, object_id
-        )
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, object_id)
         assert (
             sim.get_object_motion_type(object_id)
             == habitat_sim.physics.MotionType.STATIC
         )
-        assert sim.set_object_motion_type(
-            habitat_sim.physics.MotionType.KINEMATIC, object_id
-        )
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, object_id)
         assert (
             sim.get_object_motion_type(object_id)
             == habitat_sim.physics.MotionType.KINEMATIC
@@ -224,7 +220,7 @@ def test_dynamics():
                 ]
 
             # test setting DYNAMIC object to KINEMATIC
-            assert sim.set_object_motion_type(
+            sim.set_object_motion_type(
                 habitat_sim.physics.MotionType.KINEMATIC, object2_id
             )
             assert (
