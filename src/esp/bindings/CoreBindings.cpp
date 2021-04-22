@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "esp/bindings/bindings.h"
+#include "esp/core/Configuration.h"
 #include "esp/core/ManagedContainer.h"
 #include "esp/core/random.h"
 

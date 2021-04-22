@@ -79,6 +79,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     return static_cast<const scene::SceneNode&>(
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
+  /**
+   * @brief Get the @ref MotionType of the object. See @ref setMotionType.
+   * @return The object's current @ref MotionType.
+   */
+  MotionType getMotionType() const { return objectMotionType_; };
 
   /**
    * @brief Set the @ref MotionType of the object. If the object is @ref
@@ -90,11 +95,6 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @return true if successfully set, false otherwise.
    */
   virtual bool setMotionType(MotionType mt) = 0;
-  /**
-   * @brief Get the @ref MotionType of the object. See @ref setMotionType.
-   * @return The object's current @ref MotionType.
-   */
-  MotionType getMotionType() const { return objectMotionType_; };
 
   /**
    * @brief Get object's ID

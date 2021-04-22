@@ -110,7 +110,7 @@ class BulletRigidObject : public BulletBase,
    * See @ref btCollisionObject::isActive.
    * @return true if active, false otherwise.
    */
-  bool isActive() override { return bObjectRigidBody_->isActive(); }
+  bool isActive() const override { return bObjectRigidBody_->isActive(); }
 
   /**
    * @brief Set an object as being actively simulated rather than sleeping.

@@ -78,13 +78,12 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   virtual bool finalizeObject_LibSpecific() = 0;
 
  public:
+  bool getCollidable() const { return isCollidable_; }
   /**
    * @brief Set a rigid as collidable or not. Derived implementations handle the
    * specifics of modifying the collision properties.
    */
   virtual bool setCollidable(CORRADE_UNUSED bool collidable) { return false; };
-
-  bool getCollidable() { return isCollidable_; }
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -93,7 +92,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * (kinematics don't count)
    * @return true if active, false otherwise.
    */
-  virtual bool isActive() { return false; }
+  virtual bool isActive() const { return false; }
 
   /**
    * @brief Set an object as being actively simulated rather than sleeping.
@@ -166,49 +165,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   virtual void applyImpulseTorque(
       CORRADE_UNUSED const Magnum::Vector3& impulse) {}
 
-  /**
-   * @brief Virtual linear velocity setter for an object.
-   *
-   * Does nothing for default @ref MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
-   * @param linVel Linear velocity to set.
-   */
-  virtual void setLinearVelocity(CORRADE_UNUSED const Magnum::Vector3& linVel) {
-  }
-
-  /**
-   * @brief Virtual angular velocity setter for an object.
-   *
-   * Does nothing for default @ref MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
-   * @param angVel Angular velocity vector corresponding to world unit axis
-   * angles.
-   */
-  virtual void setAngularVelocity(
-      CORRADE_UNUSED const Magnum::Vector3& angVel) {}
-
-  /**
-   * @brief Virtual linear velocity getter for an object.
-   *
-   * Returns zero for default @ref MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
-   * @return Linear velocity of the object.
-   */
-  virtual Magnum::Vector3 getLinearVelocity() const {
-    return Magnum::Vector3();
-  };
-
-  /**
-   * @brief Virtual angular velocity getter for an object.
-   *
-   * Returns zero for default @ref MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
-   * @return Angular velocity vector corresponding to world unit axis angles.
-   */
-  virtual Magnum::Vector3 getAngularVelocity() const {
-    return Magnum::Vector3();
-  };
-
   // ==== Transformations ===
 
   /** @brief Set the 4x4 transformation matrix of the object kinematically.
@@ -248,18 +204,18 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Get the rotation and translation of the object.
+   */
+  virtual core::RigidState getRigidState() {
+    return core::RigidState(node().rotation(), node().translation());
+  };
+
+  /**
    * @brief Set the rotation and translation of the object.
    */
   virtual void setRigidState(const core::RigidState& rigidState) {
     setTranslation(rigidState.translation);
     setRotation(rigidState.rotation);
-  };
-
-  /**
-   * @brief Get the rotation and translation of the object.
-   */
-  virtual core::RigidState getRigidState() {
-    return core::RigidState(node().rotation(), node().translation());
   };
 
   /** @brief Reset the transformation of the object.
@@ -399,52 +355,43 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
 
   // ==== Getter/Setter functions ===
+
   //! For kinematic objects they are dummies, for dynamic objects
   //! implemented in physics-engine specific ways
-
-  /** @brief Get the mass of the object. Only used for dervied dynamic
-   * implementations of @ref RigidObject.
-   * @return The mass of the object.
-   */
-  virtual double getMass() const { return 0.0; }
-
-  /** @brief Get the scale of the object set during initialization.
-   * @return The scaling for the object relative to its initially loaded meshes.
-   */
-  virtual Magnum::Vector3 getScale() const {
-    return initializationAttributes_->getScale();
-  }
-
-  /** @brief Get the VoxelWrapper for the object.
-   * @return The voxel wrapper for the object.
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> getVoxelization() const {
-    return voxelWrapper;
-  }
-
-  /** @brief Get the scalar friction coefficient of the object. Only used for
-   * dervied dynamic implementations of @ref RigidObject.
-   * @return The scalar friction coefficient of the object.
-   */
-  virtual double getFrictionCoefficient() const { return 0.0; }
-
-  /** @brief Get the scalar coefficient of restitution  of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
-   * @return The scalar coefficient of restitution  of the object.
-   */
-  virtual double getRestitutionCoefficient() const { return 0.0; }
-
-  /** @brief Get the scalar linear damping coefficient of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
-   * @return The scalar linear damping coefficient of the object.
-   */
-  virtual double getLinearDamping() const { return 0.0; }
 
   /** @brief Get the scalar angular damping coefficient of the object. Only used
    * for dervied dynamic implementations of @ref RigidObject.
    * @return The scalar angular damping coefficient of the object.
    */
   virtual double getAngularDamping() const { return 0.0; }
+
+  /** @brief Set the scalar angular damping coefficient for the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
+   * @param angDamping The new scalar angular damping coefficient for the
+   * object.
+   */
+  virtual void setAngularDamping(CORRADE_UNUSED const double angDamping) {}
+
+  /**
+   * @brief Virtual angular velocity getter for an object.
+   *
+   * Returns zero for default @ref MotionType::KINEMATIC or @ref
+   * MotionType::STATIC objects.
+   * @return Angular velocity vector corresponding to world unit axis angles.
+   */
+  virtual Magnum::Vector3 getAngularVelocity() const {
+    return Magnum::Vector3();
+  };
+
+  /** @brief Virtual angular velocity setter for an object.
+   *
+   * Does nothing for default @ref MotionType::KINEMATIC or @ref
+   * MotionType::STATIC objects.
+   * @param angVel Angular velocity vector corresponding to world unit axis
+   * angles.
+   */
+  virtual void setAngularVelocity(
+      CORRADE_UNUSED const Magnum::Vector3& angVel) {}
 
   /** @brief Get the center of mass (COM) of the object.
    * @return Object 3D center of mass in the global coordinate system.
@@ -453,6 +400,35 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   virtual Magnum::Vector3 getCOM() const {
     const Magnum::Vector3 com = Magnum::Vector3();
     return com;
+  }
+  /** @brief Set the center of mass (COM) of the object.
+   * @param COM Object 3D center of mass in the local coordinate system.
+   * @todo necessary for @ref MotionType::KINEMATIC?
+   */
+  virtual void setCOM(CORRADE_UNUSED const Magnum::Vector3& COM) {}
+
+  /** @brief Get the scalar friction coefficient of the object. Only used for
+   * dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar friction coefficient of the object.
+   */
+  virtual double getFrictionCoefficient() const { return 0.0; }
+
+  /** @brief Set the scalar friction coefficient of the object. Only used for
+   * dervied dynamic implementations of @ref RigidObject.
+   * @param frictionCoefficient The new scalar friction coefficient of the
+   * object.
+   */
+  virtual void setFrictionCoefficient(
+      CORRADE_UNUSED const double frictionCoefficient) {}
+
+  /** @brief Get the 3x3 inertia matrix for an object.
+   * @return The object's 3x3 inertia matrix.
+   * @todo provide a setter for the full 3x3 inertia matrix. Not all
+   * implementations will provide this option.
+   */
+  virtual Magnum::Matrix3 getInertiaMatrix() const {
+    const Magnum::Matrix3 inertia = Magnum::Matrix3();
+    return inertia;
   }
 
   /** @brief Get the diagonal of the inertia matrix for an object.
@@ -466,15 +442,65 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
     return inertia;
   }
 
-  /** @brief Get the 3x3 inertia matrix for an object.
-   * @return The object's 3x3 inertia matrix.
-   * @todo provide a setter for the full 3x3 inertia matrix. Not all
-   * implementations will provide this option.
+  /** @brief Set the diagonal of the inertia matrix for the object.
+   * If an object is aligned with its principle axii of inertia, the 3x3 inertia
+   * matrix can be reduced to a diagonal.
+   * @param inertia The new diagonal for the object's inertia matrix.
    */
-  virtual Magnum::Matrix3 getInertiaMatrix() const {
-    const Magnum::Matrix3 inertia = Magnum::Matrix3();
-    return inertia;
+  virtual void setInertiaVector(CORRADE_UNUSED const Magnum::Vector3& inertia) {
   }
+
+  /** @brief Get a copy of the template used to initialize this object
+   * or scene.
+   * @return A copy of the initialization template used to create this object
+   * instance or nullptr if no template exists.
+   */
+  template <class T>
+  std::shared_ptr<T> getInitializationAttributes() const {
+    if (!initializationAttributes_) {
+      return nullptr;
+    }
+    return T::create(*(static_cast<T*>(initializationAttributes_.get())));
+  }
+
+  /** @brief Get the scalar linear damping coefficient of the object. Only used
+   * for dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar linear damping coefficient of the object.
+   */
+  virtual double getLinearDamping() const { return 0.0; }
+
+  /** @brief Set the scalar linear damping coefficient of the object. Only used
+   * for dervied dynamic implementations of @ref RigidObject.
+   * @param linDamping The new scalar linear damping coefficient of the object.
+   */
+  virtual void setLinearDamping(CORRADE_UNUSED const double linDamping) {}
+
+  /**
+   * @brief Virtual linear velocity getter for an object.
+   *
+   * Returns zero for default @ref MotionType::KINEMATIC or @ref
+   * MotionType::STATIC objects.
+   * @return Linear velocity of the object.
+   */
+  virtual Magnum::Vector3 getLinearVelocity() const {
+    return Magnum::Vector3();
+  };
+
+  /**
+   * @brief Virtual linear velocity setter for an object.
+   *
+   * Does nothing for default @ref MotionType::KINEMATIC or @ref
+   * MotionType::STATIC objects.
+   * @param linVel Linear velocity to set.
+   */
+  virtual void setLinearVelocity(CORRADE_UNUSED const Magnum::Vector3& linVel) {
+  }
+
+  /** @brief Get the mass of the object. Only used for dervied dynamic
+   * implementations of @ref RigidObject.
+   * @return The mass of the object.
+   */
+  virtual double getMass() const { return 0.0; }
 
   /** @brief Set the mass of the object. Only used for dervied dynamic
    * implementations of @ref RigidObject.
@@ -482,11 +508,49 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    */
   virtual void setMass(CORRADE_UNUSED const double mass) {}
 
-  /** @brief Set the center of mass (COM) of the object.
-   * @param COM Object 3D center of mass in the local coordinate system.
-   * @todo necessary for @ref MotionType::KINEMATIC?
+  /** @brief Get the scalar coefficient of restitution  of the object. Only used
+   * for dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar coefficient of restitution  of the object.
    */
-  virtual void setCOM(CORRADE_UNUSED const Magnum::Vector3& COM) {}
+  virtual double getRestitutionCoefficient() const { return 0.0; }
+
+  /** @brief Set the scalar coefficient of restitution of the object. Only used
+   * for dervied dynamic implementations of @ref RigidObject.
+   * @param restitutionCoefficient The new scalar coefficient of restitution of
+   * the object.
+   */
+  virtual void setRestitutionCoefficient(
+      CORRADE_UNUSED const double restitutionCoefficient) {}
+
+  /** @brief Get the scale of the object set during initialization.
+   * @return The scaling for the object relative to its initially loaded meshes.
+   */
+  virtual Magnum::Vector3 getScale() const {
+    return initializationAttributes_->getScale();
+  }
+
+  /**
+   * @brief Get the semantic ID for this object.
+   */
+  int getSemanticId() const { return visualNode_->getSemanticId(); }
+
+  /**
+   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
+   * belonging to the object.
+   * @param semanticId The desired semantic id for the object.
+   */
+  void setSemanticId(uint32_t semanticId) {
+    for (auto node : visualNodes_) {
+      node->setSemanticId(semanticId);
+    }
+  }
+
+  /** @brief Get the VoxelWrapper for the object.
+   * @return The voxel wrapper for the object.
+   */
+  std::shared_ptr<esp::geo::VoxelWrapper> getVoxelization() const {
+    return voxelWrapper;
+  }
 
 #ifdef ESP_BUILD_WITH_VHACD
 
@@ -508,69 +572,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
             renderAssetHandle, &node(), resourceManager_, resolution));
   }
 #endif
-
-  /** @brief Set the diagonal of the inertia matrix for the object.
-   * If an object is aligned with its principle axii of inertia, the 3x3 inertia
-   * matrix can be reduced to a diagonal.
-   * @param inertia The new diagonal for the object's inertia matrix.
-   */
-  virtual void setInertiaVector(CORRADE_UNUSED const Magnum::Vector3& inertia) {
-  }
-
-  /** @brief Set the scalar friction coefficient of the object. Only used for
-   * dervied dynamic implementations of @ref RigidObject.
-   * @param frictionCoefficient The new scalar friction coefficient of the
-   * object.
-   */
-  virtual void setFrictionCoefficient(
-      CORRADE_UNUSED const double frictionCoefficient) {}
-
-  /** @brief Set the scalar coefficient of restitution of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
-   * @param restitutionCoefficient The new scalar coefficient of restitution of
-   * the object.
-   */
-  virtual void setRestitutionCoefficient(
-      CORRADE_UNUSED const double restitutionCoefficient) {}
-
-  /** @brief Set the scalar linear damping coefficient of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
-   * @param linDamping The new scalar linear damping coefficient of the object.
-   */
-  virtual void setLinearDamping(CORRADE_UNUSED const double linDamping) {}
-
-  /** @brief Set the scalar angular damping coefficient for the object. Only
-   * used for dervied dynamic implementations of @ref RigidObject.
-   * @param angDamping The new scalar angular damping coefficient for the
-   * object.
-   */
-  virtual void setAngularDamping(CORRADE_UNUSED const double angDamping) {}
-
-  /**
-   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
-   * belonging to the object.
-   *
-   * @param semanticId The desired semantic id for the object.
-   */
-  void setSemanticId(uint32_t semanticId) {
-    for (auto node : visualNodes_) {
-      node->setSemanticId(semanticId);
-    }
-  }
-
-  /**
-   * @brief Get a copy of the template used to initialize this object
-   * or scene.
-   * @return A copy of the initialization template used to create this object
-   * instance or nullptr if no template exists.
-   */
-  template <class T>
-  std::shared_ptr<T> getInitializationAttributes() const {
-    if (!initializationAttributes_) {
-      return nullptr;
-    }
-    return T::create(*(static_cast<T*>(initializationAttributes_.get())));
-  }
 
   /** @brief Store whatever object attributes you want here! */
   esp::core::Configuration attributes_;
