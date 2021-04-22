@@ -83,7 +83,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Get the @ref MotionType of the object. See @ref setMotionType.
    * @return The object's current @ref MotionType.
    */
-  MotionType getMotionType() const { return objectMotionType_; };
+  MotionType getMotionType() const { return objectMotionType_; }
 
   /**
    * @brief Set the @ref MotionType of the object. If the object is @ref
@@ -92,9 +92,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * Only if a dervied @ref PhysicsManager implementing dynamics is in use can
    * the object be set to @ref MotionType::DYNAMIC.
    * @param mt The desirved @ref MotionType.
-   * @return true if successfully set, false otherwise.
    */
-  virtual bool setMotionType(MotionType mt) = 0;
+  virtual void setMotionType(MotionType mt) = 0;
 
   /**
    * @brief Get object's ID
@@ -106,6 +105,13 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   const std::string getObjectName() const { return objectName_; }
   void setObjectName(const std::string& name) { objectName_ = name; }
+
+  /**
+   * @brief Get a const reference to this physica object's root SceneNode for
+   * info query purposes.
+   * @return Const reference to the object's scene node.
+   */
+  const scene::SceneNode& getSceneNode() const { return node(); }
 
  protected:
   /** @brief An assignable name for this object.

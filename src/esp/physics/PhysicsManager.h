@@ -280,9 +280,8 @@ class PhysicsManager {
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param  mt The desired @ref MotionType of the object to set.
-   * @return True if set was successful and False otherwise.
    */
-  bool setObjectMotionType(const int physObjectID, MotionType mt);
+  void setObjectMotionType(const int physObjectID, MotionType mt);
 
   /** @brief Get the @ref MotionType of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
@@ -893,6 +892,11 @@ class PhysicsManager {
   /** @overload */
   scene::SceneNode& getObjectSceneNode(int physObjectID);
 
+  void setObjectLightSetup(const int objectID,
+                           const std::string& lightSetupKey) {
+    existingObjects_.at(objectID)->setLightSetup(lightSetupKey);
+  }
+
   /**
    * @brief Get a const reference to the specified object's visual SceneNode for
    * info query purposes.
@@ -939,9 +943,9 @@ class PhysicsManager {
   /**
    * @brief Set an object to collidable or not.
    */
-  bool setObjectIsCollidable(const int physObjectID, bool collidable) {
+  void setObjectIsCollidable(const int physObjectID, bool collidable) {
     assertIDValidity(physObjectID);
-    return existingObjects_.at(physObjectID)->setCollidable(collidable);
+    existingObjects_.at(physObjectID)->setCollidable(collidable);
   };
 
   /**
@@ -955,8 +959,8 @@ class PhysicsManager {
   /**
    * @brief Set the stage to collidable or not.
    */
-  bool setStageIsCollidable(bool collidable) {
-    return staticStageObject_->setCollidable(collidable);
+  void setStageIsCollidable(bool collidable) {
+    staticStageObject_->setCollidable(collidable);
   };
 
   /**

@@ -305,25 +305,21 @@ void BulletRigidObject::setCollisionFromBB() {
   }
 }  // setCollisionFromBB
 
-bool BulletRigidObject::setMotionType(MotionType mt) {
-  if (mt == MotionType::UNDEFINED) {
-    return false;
-  }
-  if (mt == objectMotionType_) {
-    return true;  // no work
+void BulletRigidObject::setMotionType(MotionType mt) {
+  if ((mt == MotionType::UNDEFINED) || (mt == objectMotionType_)) {
+    return;  // no work
   }
 
   // remove the existing object from the world to change its type
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
   constructAndAddRigidBody(mt);
   objectMotionType_ = mt;
-  return true;
 }  // setMotionType
 
-bool BulletRigidObject::setCollidable(bool collidable) {
+void BulletRigidObject::setCollidable(bool collidable) {
   if (collidable == isCollidable_) {
     // no work
-    return true;
+    return;
   }
 
   isCollidable_ = collidable;
@@ -332,8 +328,6 @@ bool BulletRigidObject::setCollidable(bool collidable) {
   }
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
   constructAndAddRigidBody(objectMotionType_);
-
-  return true;
 }
 
 void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {

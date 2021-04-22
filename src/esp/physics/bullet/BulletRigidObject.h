@@ -125,15 +125,14 @@ class BulletRigidObject : public BulletBase,
    * btCollisionObject::CF_STATIC_OBJECT,CF_KINEMATIC_OBJECT.
    *
    * @param mt The desirved @ref MotionType.
-   * @return true if successfully set, false otherwise.
    */
-  bool setMotionType(MotionType mt) override;
+  void setMotionType(MotionType mt) override;
 
   /**
    * Set the object to be collidable or not by selectively adding or remove the
    * @ref bObjectShape_ from the @ref bRigidObject_.
    */
-  bool setCollidable(bool collidable) override;
+  void setCollidable(bool collidable) override;
 
   /**
    * @brief Shift the object's local origin by translating all children of this

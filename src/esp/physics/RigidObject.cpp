@@ -59,12 +59,10 @@ bool RigidObject::initialization_LibSpecific() {
   return true;
 }  // RigidObject::initialization_LibSpecific
 
-bool RigidObject::setMotionType(MotionType mt) {
+void RigidObject::setMotionType(MotionType mt) {
   if (mt != MotionType::DYNAMIC) {
+    // can't set DYNAMIC without a dynamics engine.
     objectMotionType_ = mt;
-    return true;
-  } else {
-    return false;  // can't set DYNAMIC without a dynamics engine.
   }
 }
 

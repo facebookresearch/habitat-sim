@@ -83,7 +83,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @brief Set a rigid as collidable or not. Derived implementations handle the
    * specifics of modifying the collision properties.
    */
-  virtual bool setCollidable(CORRADE_UNUSED bool collidable) { return false; };
+  virtual void setCollidable(CORRADE_UNUSED bool collidable){};
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -100,26 +100,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * may not be.
    */
   virtual void setActive() {}
-
-  /**
-   * @brief Shift the object's local origin by translating all children of this
-   * object's SceneNode.
-   * @param shift The translation to apply to object's children.
-   */
-  virtual void shiftOrigin(const Magnum::Vector3& shift) {
-    // shift visual components
-    if (visualNode_)
-      visualNode_->translate(shift);
-    node().computeCumulativeBB();
-  }
-
-  /**
-   * @brief Shift the object's local origin to be coincident with the center of
-   * it's bounding box, @ref cumulativeBB_. See @ref shiftOrigin.
-   */
-  void shiftOriginToBBCenter() {
-    shiftOrigin(-node().getCumulativeBB().center());
-  }
 
   /**
    * @brief Apply a force to an object through a dervied dynamics
@@ -179,6 +159,10 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
     }
   }
 
+  virtual Magnum::Matrix4 getTransformation() const {
+    return node().transformation();
+  }
+
   /** @brief Set the 3D position of the object kinematically.
    * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
    * recommended.
@@ -189,6 +173,10 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
       node().setTranslation(vector);
       syncPose();
     }
+  }
+
+  virtual Magnum::Vector3 getTranslation() const {
+    return node().translation();
   }
 
   /** @brief Set the orientation of the object kinematically.
@@ -202,6 +190,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
       syncPose();
     }
   }
+
+  virtual Magnum::Quaternion getRotation() const { return node().rotation(); }
 
   /**
    * @brief Get the rotation and translation of the object.
@@ -463,6 +453,14 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
     return T::create(*(static_cast<T*>(initializationAttributes_.get())));
   }
 
+  /**
+   * @brief Set the light setup of this rigid.
+   * @param lightSetupKey @ref gfx::LightSetup key
+   */
+  void setLightSetup(const std::string& lightSetupKey) {
+    gfx::setLightSetupForSubTree(node(), lightSetupKey);
+  }
+
   /** @brief Get the scalar linear damping coefficient of the object. Only used
    * for dervied dynamic implementations of @ref RigidObject.
    * @return The scalar linear damping coefficient of the object.
@@ -545,6 +543,14 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
     }
   }
 
+  /**
+   * @brief Get pointers to this rigid's visual SceneNodes.
+   * @return vector of pointers to the rigid's visual scene nodes.
+   */
+  std::vector<scene::SceneNode*> getVisualSceneNodes() const {
+    return visualNodes_;
+  }
+
   /** @brief Get the VoxelWrapper for the object.
    * @return The voxel wrapper for the object.
    */
@@ -600,6 +606,26 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper = nullptr;
 
  protected:
+  /**
+   * @brief Shift the object's local origin by translating all children of this
+   * object's SceneNode.
+   * @param shift The translation to apply to object's children.
+   */
+  virtual void shiftOrigin(const Magnum::Vector3& shift) {
+    // shift visual components
+    if (visualNode_)
+      visualNode_->translate(shift);
+    node().computeCumulativeBB();
+  }
+
+  /**
+   * @brief Shift the object's local origin to be coincident with the center of
+   * it's bounding box, @ref cumulativeBB_. See @ref shiftOrigin.
+   */
+  void shiftOriginToBBCenter() {
+    shiftOrigin(-node().getCumulativeBB().center());
+  }
+
   /** @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
    * updates.*/

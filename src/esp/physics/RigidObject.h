@@ -163,7 +163,7 @@ class RigidObject : public RigidBase {
    * @param mt The desirved @ref MotionType.
    * @return true if successfully set, false otherwise.
    */
-  bool setMotionType(MotionType mt) override;
+  void setMotionType(MotionType mt) override;
 
   /**
    * @brief Retrieves a reference to the VelocityControl struct for this object.

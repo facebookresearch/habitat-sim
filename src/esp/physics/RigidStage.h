@@ -71,17 +71,10 @@ class RigidStage : public RigidBase {
 
  public:
   /**
-   * @brief Set the @ref MotionType of the object. If the object is @ref
-   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
-   * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC.
-   * Only if a dervied @ref PhysicsManager implementing dynamics is in use can
-   * the object be set to @ref MotionType::DYNAMIC.
+   * @brief Currently ignored for stage objects.
    * @param mt The desirved @ref MotionType.
-   * @return true if successfully set, false otherwise.
    */
-  bool setMotionType(MotionType mt) override {
-    return mt == MotionType::STATIC;  // only option and default option
-  }
+  void setMotionType(CORRADE_UNUSED MotionType mt) override {}
 
  public:
   ESP_SMART_POINTERS(RigidStage)

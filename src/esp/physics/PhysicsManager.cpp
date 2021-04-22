@@ -141,10 +141,10 @@ void PhysicsManager::removeObject(const int physObjectID,
   }
 }
 
-bool PhysicsManager::setObjectMotionType(const int physObjectID,
+void PhysicsManager::setObjectMotionType(const int physObjectID,
                                          MotionType mt) {
   assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->setMotionType(mt);
+  existingObjects_.at(physObjectID)->setMotionType(mt);
 }
 
 MotionType PhysicsManager::getObjectMotionType(const int physObjectID) const {
@@ -609,14 +609,13 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
 const scene::SceneNode& PhysicsManager::getObjectSceneNode(
     int physObjectID) const {
   assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->node();
+  return existingObjects_.at(physObjectID)->getSceneNode();
 }
 
 scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
   assertIDValidity(physObjectID);
   return const_cast<scene::SceneNode&>(
-      const_cast<const PhysicsManager&>(*this).getObjectSceneNode(
-          physObjectID));
+      existingObjects_.at(physObjectID)->getSceneNode());
 }
 
 const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
