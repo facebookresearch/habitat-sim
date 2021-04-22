@@ -40,7 +40,21 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * constructor. Used as key in constructor function pointer maps in Managed
    * Container.
    */
-  std::string getClassKey() { return classKey_; }
+  std::string getClassKey() const override { return classKey_; }
+
+  std::string getHandle() const override {
+    if (auto sp = getObjectReference()) {
+      return sp->getObjectName();
+    } else {
+      return "";
+    }
+  }
+  void setHandle(const std::string& name) override {
+    if (auto sp = getObjectReference()) {
+      sp->setObjectName(name);
+      // TODO need to update object manager
+    }
+  }
 
   /**
    *  @brief Managed Physics objects manage their own IDs, so this is

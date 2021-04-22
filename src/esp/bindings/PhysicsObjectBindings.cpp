@@ -13,35 +13,30 @@ namespace physics {
 
 template <class T>
 void declareBasePhysicsObjectWrapper(py::module& m,
+                                     const std::string& objType,
                                      const std::string& classStrPrefix) {
+  using PhysObjWrapper = AbstractManagedPhysicsObject<T>;
+  std::string pyclass_name = classStrPrefix + std::string("ObjectWrapper");
+  // ==== AbstractManagedPhysicsObject ====
+  py::class_<PhysObjWrapper, esp::core::AbstractManagedObject,
+             typename PhysObjWrapper::ptr>(m, pyclass_name.c_str())
+      .def(py::init(&PhysObjWrapper::template create<std::shared_ptr<T>&,
+                                                     const std::string&>))
+      .def_property("handle", &PhysObjWrapper::getHandle,
+                    &PhysObjWrapper::setHandle, R"(Name of physics object.)")
+      .def_property_readonly(
+          "ID", &PhysObjWrapper::getID,
+          R"(System-generated ID for object.  Will be unique among )" +
+              objType + R"(s.)")
+      .def_property_readonly("template_class", &PhysObjWrapper::getClassKey,
+                             R"(Class name of physics object.)");
 }  // declareBasePhysicsObjectWrapper
 
 template <class T>
 void declareRigidBaseWrapper(py::module& m, const std::string& classStrPrefix) {
 }  // declareRigidBaseWrapper
 
-void initPhysicsObjectBindings(py::module& m) {
-  // // ==== AbstractManagedPhysicsObject ====
-  // py::class_<AbstractManagedPhysicsObject, esp::core::AbstractManagedObject,
-  //            AbstractAttributes::ptr>(m, "Managed")
-  //     .def(py::init(&AbstractManagedPhysicsObject::create<std::shared_ptr<T>&,
-  //                                                         const
-  //                                                         std::string&>))
-  //     .def_property("handle", &AbstractAttributes::getHandle,
-  //                   &AbstractAttributes::setHandle,
-  //                   R"(Name of attributes template. )")
-  //     .def_property_readonly(
-  //         "file_directory", &AbstractManagedPhysicsObject::getFileDirectory,
-  //         R"(Directory where file-based templates were loaded from.)")
-  //     .def_property_readonly(
-  //         "ID", &AbstractManagedPhysicsObject::getID,
-  //         R"(System-generated ID for template.  Will be unique among
-  //         templates of same type.)")
-  //     .def_property_readonly("template_class",
-  //                            &AbstractManagedPhysicsObject::getClassKey,
-  //                            R"(Class name of physics object.)");
-
-}  // initPhysicsObjectBindings
+void initPhysicsObjectBindings(py::module& m) {}  // initPhysicsObjectBindings
 
 }  // namespace physics
 }  // namespace esp
