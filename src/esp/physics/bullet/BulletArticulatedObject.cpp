@@ -706,6 +706,7 @@ void BulletArticulatedObject::updateKinematicState() {
   for (size_t linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
     bWorld_->updateSingleAabb(btMultiBody_->getLinkCollider(linkIx));
   }
+  bWorld_->updateSingleAabb(btMultiBody_->getBaseCollider());
   if (bFixedObjectRigidBody_) {
     bWorld_->updateSingleAabb(bFixedObjectRigidBody_.get());
   }
