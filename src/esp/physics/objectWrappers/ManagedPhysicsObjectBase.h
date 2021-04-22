@@ -57,11 +57,6 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   }
 
   /**
-   *  @brief Managed Physics objects manage their own IDs, so this is
-   * unsettable.
-   */
-  void setID(CORRADE_UNUSED int ID) override {}
-  /**
    * @brief return the object's ID or nullptr if doesn't exist.
    */
   int getID() const override {
@@ -71,6 +66,26 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
       return ID_UNDEFINED;
     }
   }  // getID()
+
+  /**
+   *  @brief Managed Physics objects manage their own IDs, so this is
+   * unsettable.
+   */
+  void setID(CORRADE_UNUSED int ID) override {}
+
+  MotionType getMotionType() const {
+    if (auto sp = getObjectReference()) {
+      return sp->getMotionType();
+    } else {
+      return MotionType::UNDEFINED;
+    }
+  }
+
+  void setMotionType(MotionType mt) {
+    if (auto sp = getObjectReference()) {
+      sp->setMotionType(mt);
+    }
+  }
 
   /**
    * @brief File directory is unused for managed phyiscs objects

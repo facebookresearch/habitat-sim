@@ -29,22 +29,6 @@ class AbstractManagedRigidBase
                            const std::string& classKey)
       : AbstractManagedPhysicsObject<T>(objPtr, classKey) {}
 
-  bool getCollidable() const {
-    if (auto sp = this->getObjectReference()) {
-      return sp->getCollidable();
-    } else {
-      return false;
-    }
-  }  // getCollidable()
-
-  bool setCollidable(bool collidable) {
-    if (auto sp = this->getObjectReference()) {
-      return sp->setCollidable(collidable);
-    } else {
-      return false;
-    }
-  }  // setCollidable
-
   bool isActive() {
     if (auto sp = this->getObjectReference()) {
       return sp->isActive();
@@ -53,24 +37,11 @@ class AbstractManagedRigidBase
     }
   }  // isActive()
 
-  void activate() {
+  void setActive() {
     if (auto sp = this->getObjectReference()) {
       sp->setActive();
     }
   }  // activate()
-
-  void shiftOrigin(const Magnum::Vector3& shift) {
-    if (auto sp = this->getObjectReference()) {
-      sp->shiftOrigin(shift);
-    }
-
-  }  // shiftOrigin
-
-  void shiftOriginToBBCenter() {
-    if (auto sp = this->getObjectReference()) {
-      sp->shiftOriginToBBCenter();
-    }
-  }  // shiftOriginToBBCenter
 
   void applyForce(const Magnum::Vector3& force, const Magnum::Vector3& relPos) {
     if (auto sp = this->getObjectReference()) {
@@ -98,11 +69,27 @@ class AbstractManagedRigidBase
 
   // ==== Transformations ===
 
+  Magnum::Matrix4 getTransformation() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getTransformation();
+    } else {
+      return Magnum::Matrix4{};
+    }
+  }  // getTransformation
+
   void setTransformation(const Magnum::Matrix4& transformation) {
     if (auto sp = this->getObjectReference()) {
       sp->setTransformation(transformation);
     }
   }  // setTransformation
+
+  Magnum::Vector3 getTranslation() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getTranslation();
+    } else {
+      return Magnum::Vector3{};
+    }
+  }  // getTranslation
 
   void setTranslation(const Magnum::Vector3& vector) {
     if (auto sp = this->getObjectReference()) {
@@ -110,6 +97,13 @@ class AbstractManagedRigidBase
     }
   }  // setTranslation
 
+  Magnum::Quaternion getRotation() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getRotation();
+    } else {
+      return Magnum::Quaternion{};
+    }
+  }  // getTranslation
   void setRotation(const Magnum::Quaternion& quaternion) {
     if (auto sp = this->getObjectReference()) {
       sp->setRotation(quaternion);
@@ -124,9 +118,6 @@ class AbstractManagedRigidBase
     }
   }  // getRigidState()
 
-  /**
-   * @brief Set the rotation and translation of the object.
-   */
   void setRigidState(const core::RigidState& rigidState) {
     if (auto sp = this->getObjectReference()) {
       sp->setRigidState(rigidState);
@@ -231,6 +222,22 @@ class AbstractManagedRigidBase
     }
   }  // setAngularVelocity
 
+  bool getCollidable() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getCollidable();
+    } else {
+      return false;
+    }
+  }  // getCollidable()
+
+  bool setCollidable(bool collidable) {
+    if (auto sp = this->getObjectReference()) {
+      return sp->setCollidable(collidable);
+    } else {
+      return false;
+    }
+  }  // setCollidable
+
   Magnum::Vector3 getCOM() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getCOM();
@@ -267,12 +274,6 @@ class AbstractManagedRigidBase
     }
   }  // getInertiaMatrix
 
-  /** @brief Get the diagonal of the inertia matrix for an object.
-   * If an object is aligned with its principle axii of inertia, the 3x3 inertia
-   * matrix can be reduced to a diagonal. See @ref
-   * RigidObject::setInertiaVector.
-   * @return The diagonal of the object's inertia matrix.
-   */
   Magnum::Vector3 getInertiaVector() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getInertiaVector();
@@ -283,9 +284,11 @@ class AbstractManagedRigidBase
 
   void setInertiaVector(const Magnum::Vector3& inertia) {
     if (auto sp = this->getObjectReference()) {
-      return sp->setInertiaVector(inertia);
+      sp->setInertiaVector(inertia);
     }
   }  // setInertiaVector
+
+  void setLightSetup(const std::string& lightSetupKey) {}
 
   double getLinearDamping() const {
     if (auto sp = this->getObjectReference()) {
@@ -311,7 +314,7 @@ class AbstractManagedRigidBase
 
   void setLinearVelocity(const Magnum::Vector3& linVel) {
     if (auto sp = this->getObjectReference()) {
-      return sp->setLinearVelocity(linVel);
+      sp->setLinearVelocity(linVel);
     }
   }  // setLinearVelocity
 
@@ -359,16 +362,27 @@ class AbstractManagedRigidBase
     }
   }  // getSemanticId
 
-  /**
-   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
-   * belonging to the object.
-   * @param semanticId The desired semantic id for the object.
-   */
   void setSemanticId(uint32_t semanticId) {
     if (auto sp = this->getObjectReference()) {
       sp->setSemanticId(semanticId);
     }
-  }  // semanticId
+  }  // setSemanticId
+
+  std::vector<scene::SceneNode*> getVisualSceneNodes() const {
+    if (auto sp = this->getObjectReference()) {
+      sp->getVisualSceneNodes();
+    } else {
+      return std::vector<scene::SceneNode*>();
+    }
+  }  // getVisualSceneNodes
+
+  scene::SceneNode* getSceneNode() {
+    if (auto sp = this->getObjectReference()) {
+      sp->getSceneNode();
+    } else {
+      return nullptr;
+    }
+  }  // getSceneNode
 
  public:
   ESP_SMART_POINTERS(AbstractManagedRigidBase<T>)
