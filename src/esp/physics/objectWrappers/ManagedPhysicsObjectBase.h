@@ -51,7 +51,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * @brief return the object's ID or nullptr if doesn't exist.
    */
   int getID() const override {
-    if (auto sp = weakObjRef_.lock()) {
+    if (auto sp = getObjectReference()) {
       return sp->getObjectID();
     } else {
       return ID_UNDEFINED;
@@ -66,6 +66,25 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   std::string getFileDirectory() const override { return ""; }
 
  protected:
+  /**
+   * @brief This function accesses the underlying shared pointer of this
+   * object's
+   * @p weakObjRef_ if it exists; if not, it provides a message and executes
+   * appropriate cleanup code.
+   * @return Either a shared pointer of this wrapper's object, or nullptr if
+   * dne.
+   */
+  std::shared_ptr<T> inline getObjectReference() const {
+    std::shared_ptr<T> sp = weakObjRef_.lock();
+    if (!sp) {
+      // TODO: Verify object is removed from manager here?
+      LOG(WARNING)
+          << "This object no longer exists.  Please delete any variable "
+             "references.";
+    }
+    return sp;
+  }  // getObjectReference
+
   /**
    * @brief Set this managed object's class.  Should only be set from
    * constructor. Used as key in constructor function pointer maps in Managed

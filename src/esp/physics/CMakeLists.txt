@@ -10,6 +10,9 @@ configure_file(
 
 add_library(
   physics STATIC
+  objectWrappers/ManagedPhysicsObjectBase.h
+  objectWrappers/ManagedRigidBase.h
+  objectWrappers/ManagedRigidObject.h
   PhysicsManager.cpp
   PhysicsManager.h
   PhysicsObjectBase.h

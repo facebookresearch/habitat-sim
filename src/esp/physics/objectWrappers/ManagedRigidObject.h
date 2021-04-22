@@ -2,23 +2,30 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_PHYSICS_MANAGEDRIGIDPHYSICSOBJECT_H_
-#define ESP_PHYSICS_MANAGEDRIGIDPHYSICSOBJECT_H_
+#ifndef ESP_PHYSICS_MANAGEDRIGIDOBJECT_H_
+#define ESP_PHYSICS_MANAGEDRIGIDOBJECT_H_
 
-#include "ManagedPhysicsObjectBase.h"
+#include "ManagedRigidBase.h"
 #include "esp/physics/RigidObject.h"
 
 namespace esp {
 namespace physics {
-class ManagedRigidObject : public esp::physics::AbstractManagedPhysicsObject<
-                               esp::physics::RigidObject> {
+class ManagedRigidObject
+    : public esp::physics::AbstractManagedRigidBase<esp::physics::RigidObject> {
  public:
   ManagedRigidObject(std::shared_ptr<esp::physics::RigidObject>& objPtr)
-      : AbstractManagedPhysicsObject<esp::physics::RigidObject>(objPtr,
-                                                                "RigidObject") {
-  }
+      : AbstractManagedRigidBase<esp::physics::RigidObject>(objPtr,
+                                                            "RigidObject") {}
 
- protected:
+  std::shared_ptr<metadata::attributes::ObjectAttributes>
+  getInitializationAttributes() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getInitializationAttributes();
+    } else {
+      return nullptr;
+    }
+  }  // getInitializationAttributes()
+
  public:
   ESP_SMART_POINTERS(ManagedRigidObject)
 };
@@ -26,4 +33,4 @@ class ManagedRigidObject : public esp::physics::AbstractManagedPhysicsObject<
 }  // namespace physics
 }  // namespace esp
 
-#endif  // ESP_PHYSICS_MANAGEDRIGIDPHYSICSOBJECT_H_
+#endif  // ESP_PHYSICS_MANAGEDRIGIDOBJECT_H_
