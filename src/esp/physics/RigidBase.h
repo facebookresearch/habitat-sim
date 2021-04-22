@@ -5,18 +5,15 @@
 #ifndef ESP_PHYSICS_RIGIDBASE_H_
 #define ESP_PHYSICS_RIGIDBASE_H_
 
-#include <Corrade/Containers/Optional.h>
-#include <Corrade/Containers/Reference.h>
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
-#include "esp/assets/ResourceManager.h"
 #include "esp/core/RigidState.h"
 #include "esp/core/esp.h"
 #include "esp/geo/VoxelWrapper.h"
 #include "esp/metadata/attributes/AttributesBase.h"
-#include "esp/scene/SceneNode.h"
+#include "esp/physics/PhysicsObjectBase.h"
 
 /** @file
  * @brief Class @ref esp::physics::Rigidbase
@@ -34,68 +31,19 @@ class AbstractObjectAttributes;
 
 namespace physics {
 
-/**
- * @brief Motion type of a @ref RigidObject.
- * Defines its treatment by the simulator and operations which can be performed
- * on it.
- */
-enum class MotionType {
-  /**
-   * Refers to an error (such as a query to non-existing object) or an
-   * unknown/unspecified value.
-   */
-  UNDEFINED = -1,
-
-  /**
-   * The object is not expected to move and should not allow kinematic updates.
-   * Likely treated as static collision geometry. See @ref
-   * RigidObjectType::SCENE.
-   */
-  STATIC,
-
-  /**
-   * The object is expected to move kinematically, but is not simulated. Default
-   * behavior of @ref RigidObject with no physics simulator defined.
-   */
-  KINEMATIC,
-
-  /**
-   * The object is simulated and can, but should not be, updated kinematically .
-   * Default behavior of @ref RigidObject with a physics simulator defined. See
-   * @ref BulletRigidObject.
-   */
-  DYNAMIC
-
-};
-
-class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
+class RigidBase : public esp::physics::PhysicsObjectBase {
  public:
   RigidBase(scene::SceneNode* rigidBodyNode,
+            int objectId,
             const assets::ResourceManager& resMgr)
-      : Magnum::SceneGraph::AbstractFeature3D(*rigidBodyNode),
-        visualNode_(&rigidBodyNode->createChild()),
-        resMgr_(resMgr) {}
+      : PhysicsObjectBase(rigidBodyNode, objectId, resMgr),
+        visualNode_(&rigidBodyNode->createChild()) {}
 
   /**
    * @brief Virtual destructor for a @ref RigidBase.
    */
-  ~RigidBase() override = default;
+  virtual ~RigidBase() override = default;
 
-  /**
-   * @brief Get the scene node being attached to.
-   */
-  scene::SceneNode& node() { return object(); }
-  const scene::SceneNode& node() const { return object(); }
-
-  // Overloads to avoid confusion
-  scene::SceneNode& object() {
-    return static_cast<scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
-  const scene::SceneNode& object() const {
-    return static_cast<const scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
   /**
    * @brief Initializes the @ref RigidObject or @ref RigidStage that inherits
    * from this class.  This is overridden
@@ -131,17 +79,6 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
 
  public:
   /**
-   * @brief Set the @ref MotionType of the object. If the object is @ref
-   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
-   * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC.
-   * Only if a dervied @ref PhysicsManager implementing dynamics is in use can
-   * the object be set to @ref MotionType::DYNAMIC.
-   * @param mt The desirved @ref MotionType.
-   * @return true if successfully set, false otherwise.
-   */
-  virtual bool setMotionType(MotionType mt) = 0;
-
-  /**
    * @brief Set a rigid as collidable or not. Derived implementations handle the
    * specifics of modifying the collision properties.
    */
@@ -164,12 +101,6 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * may not be.
    */
   virtual void setActive() {}
-
-  /**
-   * @brief Get the @ref MotionType of the object. See @ref setMotionType.
-   * @return The object's current @ref MotionType.
-   */
-  MotionType getMotionType() const { return objectMotionType_; };
 
   /**
    * @brief Shift the object's local origin by translating all children of this
@@ -673,10 +604,6 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * updates.*/
   virtual void syncPose() { return; }
 
-  /** @brief The @ref MotionType of the object. Determines what operations can
-   * be performed on this object. */
-  MotionType objectMotionType_{MotionType::UNDEFINED};
-
   /** @brief Flag sepcifying whether or not the object has an active collision
    * shape.
    */
@@ -687,13 +614,6 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   metadata::attributes::AbstractObjectAttributes::ptr
       initializationAttributes_ = nullptr;
-
-  //! Access for the object to its own PhysicsManager id. Scene will keep -1.
-  int objectId_ = -1;
-
-  //! Reference to the ResourceManager for internal access to the object's asset
-  //! data.
-  const assets::ResourceManager& resMgr_;
 
  public:
   ESP_SMART_POINTERS(RigidBase)

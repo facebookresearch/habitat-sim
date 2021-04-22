@@ -10,9 +10,8 @@ namespace physics {
 RigidObject::RigidObject(scene::SceneNode* rigidBodyNode,
                          int objectId,
                          const assets::ResourceManager& resMgr)
-    : RigidBase(rigidBodyNode, resMgr), velControl_(VelocityControl::create()) {
-  objectId_ = objectId;
-}
+    : RigidBase(rigidBodyNode, objectId, resMgr),
+      velControl_(VelocityControl::create()) {}
 
 bool RigidObject::initialize(
     metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
