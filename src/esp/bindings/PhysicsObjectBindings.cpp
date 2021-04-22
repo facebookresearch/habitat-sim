@@ -56,27 +56,33 @@ void declareRigidBaseWrapper(py::module& m,
 
       /* --- Geometry & Transformations --- */
       .def("user_attributes", &RigidBaseWrapper::userAttributes,
-           ("User-defined " + objType + " attributes.").c_str())
-      .def_property("transformation", &RigidBaseWrapper::getTransformation,
-                    &RigidBaseWrapper::setTransformation,
-                    ("Get or set the transformation matrix of this " + objType +
-                     "'s root SceneNode. If set, sim state will be updated.")
-                        .c_str())
-      .def_property("translation", &RigidBaseWrapper::getTranslation,
-                    &RigidBaseWrapper::setTranslation,
-                    ("Get or set the translation vector of this " + objType +
-                     "'s root SceneNode. If set, sim state will be updated.")
-                        .c_str())
-      .def_property("rotation", &RigidBaseWrapper::getRotation,
-                    &RigidBaseWrapper::getRotation,
-                    ("Get or set the rotation quaternion of this " + objType +
-                     "'s root SceneNode. If set, sim state will be updated.")
-                        .c_str())
+           ("User-defined " + objType +
+            " attributes.  These are not used internally by Habitat in any "
+            "capacity, but are available for a user to consume how they wish.")
+               .c_str())
+      .def_property(
+          "transformation", &RigidBaseWrapper::getTransformation,
+          &RigidBaseWrapper::setTransformation,
+          ("Get or set the transformation matrix of this " + objType +
+           "'s root SceneNode. If modified, sim state will be updated.")
+              .c_str())
+      .def_property(
+          "translation", &RigidBaseWrapper::getTranslation,
+          &RigidBaseWrapper::setTranslation,
+          ("Get or set the translation vector of this " + objType +
+           "'s root SceneNode. If modified, sim state will be updated.")
+              .c_str())
+      .def_property(
+          "rotation", &RigidBaseWrapper::getRotation,
+          &RigidBaseWrapper::getRotation,
+          ("Get or set the rotation quaternion of this " + objType +
+           "'s root SceneNode. If modified, sim state will be updated.")
+              .c_str())
       .def_property("rigid_state", &RigidBaseWrapper::getRigidState,
                     &RigidBaseWrapper::setRigidState,
                     ("Get or set this " + objType +
                      "'s transformation as a Rigid State (i.e. vector, "
-                     "quaternion). If set, sim state will be updated.")
+                     "quaternion). If modified, sim state will be updated.")
                         .c_str())
       .def_property_readonly("scale", &RigidBaseWrapper::getScale,
                              ("Get the scale of the " + objType).c_str())
