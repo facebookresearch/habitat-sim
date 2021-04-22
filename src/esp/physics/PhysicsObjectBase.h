@@ -101,7 +101,17 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   int getObjectID() const { return objectId_; }
 
+  /**
+   * @brief Object name, to faciliate access.
+   */
+  const std::string getObjectName() const { return objectName_; }
+  void setObjectName(const std::string& name) { objectName_ = name; }
+
  protected:
+  /** @brief An assignable name for this object.
+   */
+  std::string objectName_;
+
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */
   MotionType objectMotionType_{MotionType::UNDEFINED};
