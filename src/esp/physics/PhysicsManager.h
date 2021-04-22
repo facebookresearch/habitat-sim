@@ -892,6 +892,11 @@ class PhysicsManager {
   /** @overload */
   scene::SceneNode& getObjectSceneNode(int physObjectID);
 
+  /**
+   * @brief Set the desired light setup by name for the passed object
+   * @param objectID The id of the object to set
+   * @param lightSetupKey The string name of the desired lighting setup to use.
+   */
   void setObjectLightSetup(const int objectID,
                            const std::string& lightSetupKey) {
     existingObjects_.at(objectID)->setLightSetup(lightSetupKey);
