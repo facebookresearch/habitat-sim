@@ -400,10 +400,6 @@ def test_raycast():
 
             assert raycast_results.has_hits()
             assert len(raycast_results.hits) == 4
-            print(raycast_results.hits[0].point)
-            print(raycast_results.hits[0].normal)
-            print(raycast_results.hits[0].ray_distance)
-            print(raycast_results.hits[0].object_id)
             assert np.allclose(
                 raycast_results.hits[0].point, np.array([1.89048, 0, 2]), atol=0.07
             )
