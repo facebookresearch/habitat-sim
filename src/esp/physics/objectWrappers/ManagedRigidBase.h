@@ -382,6 +382,14 @@ class AbstractManagedRigidBase
     }
   }  // getSceneNode
 
+  esp::core::Configuration::ptr userAttributes() {
+    if (auto sp = this->getObjectReference()) {
+      return sp->attributes_;
+    } else {
+      return nullptr;
+    }
+  }
+
  public:
   ESP_SMART_POINTERS(AbstractManagedRigidBase<T>)
 };

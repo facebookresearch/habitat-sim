@@ -10,15 +10,13 @@
 #include "esp/physics/RigidStage.h"
 #include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidBase.h"
+#include "esp/physics/objectWrappers/ManagedRigidObject.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace esp {
 namespace physics {
-
-using esp::physics::RigidObject;
-using esp::physics::RigidStage;
 
 template <class T>
 void declareBasePhysicsObjectWrapper(py::module& m,
@@ -57,7 +55,8 @@ void declareRigidBaseWrapper(py::module& m,
              std::shared_ptr<RigidBaseWrapper>>(m, pyclass_name.c_str())
 
       /* --- Geometry & Transformations --- */
-
+      .def("user_attributes", &RigidBaseWrapper::userAttributes,
+           ("User-defined " + objType + " attributes.").c_str())
       .def_property("transformation", &RigidBaseWrapper::getTransformation,
                     &RigidBaseWrapper::setTransformation,
                     ("Get or set the transformation matrix of this " + objType +
@@ -200,6 +199,13 @@ void initPhysicsObjectBindings(py::module& m) {
   declareRigidBaseWrapper<RigidObject>(m, "Rigid Object", "BaseRigidObject");
 
   // rigid object instance
+
+  py::class_<ManagedRigidObject, AbstractManagedRigidBase<RigidObject>,
+             std::shared_ptr<ManagedRigidObject>>(m, "ManagedRigidObject")
+      .def_property_readonly(
+          "creation_attributes",
+          &ManagedRigidObject::getInitializationAttributes,
+          R"(Get a copy of the attributes used to create this rigid object)");
 
   // create bindings for RigidStage
   // declareBasePhysicsObjectWrapper<RigidStage>(m, "Rigid Stage",
