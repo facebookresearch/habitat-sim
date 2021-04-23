@@ -12,6 +12,7 @@ add_library(
   physics STATIC
   PhysicsManager.cpp
   PhysicsManager.h
+  PhysicsObjectBase.h
   RigidBase.h
   RigidObject.cpp
   RigidObject.h

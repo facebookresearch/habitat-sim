@@ -9,7 +9,7 @@ namespace physics {
 
 RigidStage::RigidStage(scene::SceneNode* rigidBodyNode,
                        const assets::ResourceManager& resMgr)
-    : RigidBase(rigidBodyNode, resMgr) {}
+    : RigidBase(rigidBodyNode, ID_UNDEFINED, resMgr) {}
 
 bool RigidStage::initialize(
     metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
