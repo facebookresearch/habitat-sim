@@ -698,10 +698,8 @@ void BulletArticulatedObject::clampJointLimits() {
 }
 
 void BulletArticulatedObject::updateKinematicState() {
-  btAlignedObjectArray<btQuaternion> scratch_q;
-  btAlignedObjectArray<btVector3> scratch_m;
-  btMultiBody_->forwardKinematics(scratch_q, scratch_m);
-  btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
+  btMultiBody_->forwardKinematics(scratch_q_, scratch_m_);
+  btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);
   // Need to update the aabbs manually also for broadphase collision detection
   for (size_t linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
     bWorld_->updateSingleAabb(btMultiBody_->getLinkCollider(linkIx));

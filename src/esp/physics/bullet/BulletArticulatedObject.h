@@ -181,6 +181,10 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! broadphase aabbs for the object. Do this with manual state setters.
   void updateKinematicState();
 
+  // scratch datastrcutures for updateKinematicState
+  btAlignedObjectArray<btQuaternion> scratch_q_;
+  btAlignedObjectArray<btVector3> scratch_m_;
+
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
   std::unique_ptr<btCompoundShape> bFixedObjectShape_;
