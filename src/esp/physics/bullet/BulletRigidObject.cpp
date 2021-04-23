@@ -314,6 +314,7 @@ void BulletRigidObject::syncPose() {
   //! For syncing objects
   bObjectRigidBody_->setWorldTransform(
       btTransform(node().transformationMatrix()));
+  bWorld_->updateSingleAabb(bObjectRigidBody_.get());
 }  // syncPose
 
 std::string BulletRigidObject::getCollisionDebugName() {

@@ -358,17 +358,7 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
     bFixedObjectRigidBody_.get()->setWorldTransform(tr);
   }
   // update the simulation state
-  // TODO: make this optional?
-  {
-    btAlignedObjectArray<btQuaternion> scratch_q;
-    btAlignedObjectArray<btVector3> scratch_m;
-    btMultiBody_->forwardKinematics(scratch_q, scratch_m);
-    btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
-  }
-  // sync visual shapes
-  if (!isDeferringUpdate_) {
-    updateNodes(true);
-  }
+  updateKinematicState();
 }
 
 void BulletArticulatedObject::setForces(const std::vector<float>& forces) {
@@ -452,16 +442,7 @@ void BulletArticulatedObject::setPositions(
   }
 
   // update the simulation state
-  // TODO: make this optional?
-  btAlignedObjectArray<btQuaternion> scratch_q;
-  btAlignedObjectArray<btVector3> scratch_m;
-  btMultiBody_->forwardKinematics(scratch_q, scratch_m);
-  btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
-
-  if (!isDeferringUpdate_) {
-    // sync visual shapes
-    updateNodes(true);
-  }
+  updateKinematicState();
 }
 
 std::vector<float> BulletArticulatedObject::getPositions() {
@@ -522,19 +503,13 @@ void BulletArticulatedObject::reset() {
   // clears forces/torques
   // Note: does not update root state TODO:?
   std::vector<float> zeros(btMultiBody_->getNumDofs(), 0);
+
+  // also updates kinematic state
   setPositions(zeros);
-  // btMultiBody_->setPosUpdated(true);
-  {
-    btAlignedObjectArray<btQuaternion> scratch_q;
-    btAlignedObjectArray<btVector3> scratch_m;
-    btMultiBody_->forwardKinematics(scratch_q, scratch_m);
-    btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q, scratch_m);
-  }
+
   btMultiBody_->clearConstraintForces();
   btMultiBody_->clearVelocities();
   btMultiBody_->clearForcesAndTorques();
-  // sync visual shapes
-  updateNodes(true);
 }
 
 void BulletArticulatedObject::setSleep(bool sleep) {
@@ -719,6 +694,23 @@ void BulletArticulatedObject::clampJointLimits() {
 
   if (poseModified) {
     setPositions(pose);
+  }
+}
+
+void BulletArticulatedObject::updateKinematicState() {
+  btMultiBody_->forwardKinematics(scratch_q_, scratch_m_);
+  btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);
+  // Need to update the aabbs manually also for broadphase collision detection
+  for (size_t linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
+    bWorld_->updateSingleAabb(btMultiBody_->getLinkCollider(linkIx));
+  }
+  bWorld_->updateSingleAabb(btMultiBody_->getBaseCollider());
+  if (bFixedObjectRigidBody_) {
+    bWorld_->updateSingleAabb(bFixedObjectRigidBody_.get());
+  }
+  // update visual shapes
+  if (!isDeferringUpdate_) {
+    updateNodes(true);
   }
 }
 
