@@ -262,6 +262,9 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .value("FISHEYE", SensorSubType::Fisheye)
       .value("EQUIRECTANGULAR", SensorSubType::Equirectangular);
 
+  em::enum_<FisheyeSensorModelType>("FisheyeSensorModelType")
+      .value("DOUBLE_SPHERE", FisheyeSensorModelType::DoubleSphere);
+
   em::class_<SensorSpec>("SensorSpec")
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
       .property("uuid", &SensorSpec::uuid)
