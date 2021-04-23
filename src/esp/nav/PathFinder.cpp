@@ -645,6 +645,8 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
     }
   }
 
+  bounds_ = std::make_pair(vec3f(bmin), vec3f(bmax));
+
   // Added as we also need to remove these on navmesh recomputation
   removeZeroAreaPolys();
 
