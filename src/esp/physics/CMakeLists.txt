@@ -15,6 +15,7 @@ add_library(
   CollisionGroupHelper.h
   PhysicsManager.cpp
   PhysicsManager.h
+  PhysicsObjectBase.h
   RigidBase.h
   RigidObject.cpp
   RigidObject.h

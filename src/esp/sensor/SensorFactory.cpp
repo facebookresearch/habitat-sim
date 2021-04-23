@@ -6,6 +6,7 @@
 
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/EquirectangularSensor.h"
 #include "esp/sensor/FisheyeSensor.h"
 #include "esp/sensor/Sensor.h"
 
@@ -19,18 +20,27 @@ SensorFactory::createSensors(scene::SceneNode& node,
         node.createChild({scene::SceneNodeTag::Leaf});
     // VisualSensor Setup
     if (spec->isVisualSensorSpec()) {
-      if (spec->sensorSubType == sensor::SensorSubType::Fisheye) {
-        sensorNode.addFeature<sensor::FisheyeSensor>(
-            std::dynamic_pointer_cast<FisheyeSensorSpec>(spec));
-      } else if (spec->sensorSubType == SensorSubType::Orthographic ||
-                 spec->sensorSubType == SensorSubType::Pinhole) {
-        sensorNode.addFeature<sensor::CameraSensor>(
-            std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
+      switch (spec->sensorSubType) {
+        case sensor::SensorSubType::Fisheye:
+          sensorNode.addFeature<sensor::FisheyeSensor>(
+              std::dynamic_pointer_cast<FisheyeSensorSpec>(spec));
+          break;
+        case sensor::SensorSubType::Orthographic:
+          /* fall through */
+        case sensor::SensorSubType::Pinhole:
+          sensorNode.addFeature<sensor::CameraSensor>(
+              std::dynamic_pointer_cast<sensor::CameraSensorSpec>(spec));
+          break;
+        case sensor::SensorSubType::Equirectangular:
+          sensorNode.addFeature<sensor::EquirectangularSensor>(
+              std::dynamic_pointer_cast<EquirectangularSensorSpec>(spec));
+          break;
+
+          // TODO: implement Panorama sensor
+        default:
+          CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+          break;
       }
-      // TODO: Implement fisheye sensor, Equirectangular sensor, Panorama sensor
-      // else if(spec->sensorSubType == SensorSubType::Fisheye) {
-      //   sensorSuite.add(sensor::FisheyeSensor::create(sensorNode, spec));
-      //
     }
     // TODO: Implement NonVisualSensorSpecs
     // else if (!spec->isVisualSensorSpec()) {}

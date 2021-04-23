@@ -279,9 +279,8 @@ class Simulator {
    * esp::physics::PhysicsManager::existingObjects_.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * query.
-   * @return whether or not the set was successful.
    */
-  bool setObjectMotionType(const esp::physics::MotionType& motionType,
+  void setObjectMotionType(const esp::physics::MotionType& motionType,
                            int objectID,
                            int sceneID = 0);
 
@@ -987,12 +986,11 @@ class Simulator {
   /**
    * @brief Set an object to collidable or not.
    */
-  bool setObjectIsCollidable(bool collidable, const int objectID) {
+  void setObjectIsCollidable(bool collidable, const int objectID) {
     if (sceneHasPhysics(activeSceneID_)) {
-      return physicsManager_->setObjectIsCollidable(objectID, collidable);
+      physicsManager_->setObjectIsCollidable(objectID, collidable);
     }
-    return false;
-  };
+  }
 
   /**
    * @brief Get whether or not an object is collision active.
@@ -1002,17 +1000,16 @@ class Simulator {
       return physicsManager_->getObjectIsCollidable(objectID);
     }
     return false;
-  };
+  }
 
   /**
    * @brief Set the stage to collidable or not.
    */
-  bool setStageIsCollidable(bool collidable) {
+  void setStageIsCollidable(bool collidable) {
     if (sceneHasPhysics(activeSceneID_)) {
-      return physicsManager_->setStageIsCollidable(collidable);
+      physicsManager_->setStageIsCollidable(collidable);
     }
-    return false;
-  };
+  }
 
   /**
    * @brief Get whether or not the stage is collision active.
@@ -1022,7 +1019,7 @@ class Simulator {
       return physicsManager_->getStageIsCollidable();
     }
     return false;
-  };
+  }
 
   /**
    * @brief Raycast into the collision world of a scene.

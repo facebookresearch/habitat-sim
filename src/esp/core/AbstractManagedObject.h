@@ -5,7 +5,7 @@
 #ifndef ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
 #define ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
 
-#include "Configuration.h"
+#include "esp.h"
 
 namespace esp {
 namespace core {

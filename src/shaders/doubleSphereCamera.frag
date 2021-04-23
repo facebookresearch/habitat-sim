@@ -28,10 +28,10 @@ void main(void) {
   // MUST flip the x axis
   m.x = -m.x;
   float r2 = dot(m.xy, m.xy);
-  float sq1 = 1.0 - (2 * Alpha - 1.0) * r2;
+  float sq1 = 1.0 - (2.0 * Alpha - 1.0) * r2;
   if (sq1 < 0.0)
     discard;
-  m.z = (1 - Alpha * Alpha * r2) / (Alpha * sqrt(sq1) + 1.0 - Alpha);
+  m.z = (1.0 - Alpha * Alpha * r2) / (Alpha * sqrt(sq1) + 1.0 - Alpha);
   float mz2 = m.z * m.z;
   // unproject to get the ray direction
   float sq2 = mz2 + (1.0 - Xi * Xi) * r2;

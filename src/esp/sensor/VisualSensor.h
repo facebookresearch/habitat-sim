@@ -6,6 +6,7 @@
 #define ESP_SENSOR_VISUALSENSOR_H_
 
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/Math/Angle.h>
 #include <Magnum/Math/ConfigurationValue.h>
 
 #include "esp/core/Check.h"
@@ -13,6 +14,9 @@
 
 #include "esp/gfx/RenderCamera.h"
 #include "esp/sensor/Sensor.h"
+
+namespace Mn = Magnum;
+namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
@@ -49,7 +53,7 @@ struct VisualSensorSpec : public SensorSpec {
    */
   Mn::Color4 clearColor = {0, 0, 0, 1};
   VisualSensorSpec();
-  void sanityCheck() override;
+  void sanityCheck() const override;
   bool isVisualSensorSpec() const override { return true; }
   bool operator==(const VisualSensorSpec& a) const;
   ESP_SMART_POINTERS(VisualSensorSpec)

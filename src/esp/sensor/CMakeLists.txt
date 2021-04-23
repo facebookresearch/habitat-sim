@@ -2,6 +2,8 @@ set(
   sensor_SOURCES
   CameraSensor.cpp
   CameraSensor.h
+  CubeMapSensorBase.cpp
+  CubeMapSensorBase.h
   Sensor.cpp
   Sensor.h
   SensorFactory.cpp
@@ -10,6 +12,8 @@ set(
   VisualSensor.h
   FisheyeSensor.cpp
   FisheyeSensor.h
+  EquirectangularSensor.cpp
+  EquirectangularSensor.h
 )
 
 if(BUILD_WITH_CUDA)

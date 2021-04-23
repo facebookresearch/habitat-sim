@@ -43,6 +43,7 @@ enum class SensorSubType : int32_t {
   Pinhole,
   Orthographic,
   Fisheye,
+  Equirectangular,
   SensorSubTypeCount,  // add new type above this term!!
 };
 
@@ -58,7 +59,7 @@ struct SensorSpec {
   SensorSpec() = default;
   virtual ~SensorSpec() = default;
   virtual bool isVisualSensorSpec() const { return false; }
-  virtual void sanityCheck();
+  virtual void sanityCheck() const;
   bool operator==(const SensorSpec& a) const;
   bool operator!=(const SensorSpec& a) const;
   ESP_SMART_POINTERS(SensorSpec)

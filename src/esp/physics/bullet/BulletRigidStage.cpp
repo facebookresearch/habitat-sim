@@ -48,10 +48,10 @@ bool BulletRigidStage::initialization_LibSpecific() {
 
 }  // initialization_LibSpecific
 
-bool BulletRigidStage::setCollidable(bool collidable) {
+void BulletRigidStage::setCollidable(bool collidable) {
   if (collidable == isCollidable_) {
     // no work
-    return true;
+    return;
   }
 
   isCollidable_ = collidable;
@@ -63,8 +63,6 @@ bool BulletRigidStage::setCollidable(bool collidable) {
       bWorld_->removeCollisionObject(object.get());
     }
   }
-
-  return true;
 }
 
 void BulletRigidStage::constructAndAddCollisionObjects() {

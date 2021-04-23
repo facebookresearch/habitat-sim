@@ -57,7 +57,10 @@
 #include "esp/geo/VoxelUtils.h"
 #endif
 
+#include "esp/physics/configure.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/EquirectangularSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
@@ -567,12 +570,8 @@ class Viewer : public Mn::Platform::Application {
   void switchCameraType();
   Mn::Vector3 randomDirection();
 
-  void saveCameraTransformToFile();
-  void saveNodeTransformToFile(esp::scene::SceneNode& node,
-                               const std::string& filename);
-  void loadCameraTransformFromFile();
-  void loadNodeTransformFromFile(esp::scene::SceneNode& node,
-                                 const std::string& filename);
+  void saveAgentAndSensorTransformToFile();
+  void loadAgentAndSensorTransformFromFile();
 
   //! string rep of time when viewer application was started
   std::string viewerStartTimeString = getCurrentTimeString();
@@ -758,16 +757,18 @@ Key Commands:
   bool drawObjectBBs = false;
   std::string gfxReplayRecordFilepath_;
 
-  std::string cameraLoadPath_;
-  // bool cameraSaved_ = false;
-  // Mn::Matrix4 lastCameraSave_;
-  Cr::Containers::Optional<Mn::Matrix4> lastCameraSave_;
+  std::string agentTransformLoadPath_;
+  Cr::Containers::Optional<Mn::Matrix4> savedAgentTransform_ =
+      Cr::Containers::NullOpt;
+  // there could be a couple of sensors, just save the rgb CameraSensor's
+  // transformation
+  Cr::Containers::Optional<Mn::Matrix4> savedSensorTransform_ =
+      Cr::Containers::NullOpt;
 
   Mn::Timeline timeline_;
 
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = true;
-  bool flyingCameraMode_ = false;
 
   // NOTE: Mouse + shift is to select object on the screen!!
   void createPickedObjectVisualizer(unsigned int objectId);
@@ -778,7 +779,13 @@ Key Commands:
 
   Mn::DebugTools::GLFrameProfiler profiler_{};
 
-  bool fisheyeMode_ = false;
+  enum class VisualSensorMode : uint8_t {
+    Camera = 0,
+    Fisheye,
+    Equirectangular,
+    VisualSensorModeCount,
+  };
+  VisualSensorMode sensorMode_ = VisualSensorMode::Camera;
 
   void bindRenderTarget();
 };
@@ -852,6 +859,30 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
   }
+
+  // add the equirectangular sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::EquirectangularSensorSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "equirectangular";
+    spec->sensorType = esp::sensor::SensorType::Color;
+    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  }
+
+  // add the equirectangular depth sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::EquirectangularSensorSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "depth_equirectangular";
+    spec->sensorType = esp::sensor::SensorType::Depth;
+    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  }
 }
 
 Viewer::Viewer(const Arguments& arguments)
@@ -900,8 +931,8 @@ Viewer::Viewer(const Arguments& arguments)
       .addBooleanOption("recompute-navmesh")
       .setHelp("recompute-navmesh",
                "Programmatically re-generate the scene navmesh.")
-      .addOption("camera-transform-filepath")
-      .setHelp("camera-transform-filepath",
+      .addOption("agent-transform-filepath")
+      .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
 
@@ -930,7 +961,7 @@ Viewer::Viewer(const Arguments& arguments)
     debugBullet_ = true;
   }
 
-  cameraLoadPath_ = args.value("camera-transform-filepath");
+  agentTransformLoadPath_ = args.value("agent-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
 
   // configure and intialize Simulator
@@ -1090,6 +1121,12 @@ void Viewer::switchCameraType() {
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
       return;
     }
+    case esp::sensor::SensorSubType::Fisheye: {
+      return;
+    }
+    case esp::sensor::SensorSubType::Equirectangular: {
+      return;
+    }
     case esp::sensor::SensorSubType::None: {
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       return;
@@ -1097,51 +1134,9 @@ void Viewer::switchCameraType() {
   }
 }
 
-void Viewer::saveCameraTransformToFile() {
-  const char* saved_transformations_directory = "saved_transformations/";
-  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
-    Cr::Utility::Directory::mkpath(saved_transformations_directory);
-  }
-
-  // update temporary save
-  lastCameraSave_ = renderCamera_->node().absoluteTransformation();
-
-  // update save in file system
-  saveNodeTransformToFile(
-      renderCamera_->node(),
-      Cr::Utility::formatString("{}camera.{}.txt",
-                                saved_transformations_directory,
-                                getCurrentTimeString()));
-}
-
-void Viewer::loadCameraTransformFromFile() {
-  if (!cameraLoadPath_.empty()) {
-    // loading from file system
-    loadNodeTransformFromFile(renderCamera_->node(), cameraLoadPath_);
-  } else {
-    // attempting to load from last temporary save
-    LOG(WARNING)
-        << "Camera transform file not specified, attempting to load from "
-           "current instance. Use --camera-transform-filepath to specify file "
-           "to load from.";
-    if (!lastCameraSave_) {
-      LOG(ERROR) << "No transformation saved in current instance.";
-      return;
-    }
-
-    renderCamera_->node().setTransformation(*lastCameraSave_);
-    LOG(INFO) << "Transformation matrix loaded from current instance : "
-              << Eigen::Map<esp::mat4f>(lastCameraSave_->data());
-  }
-
-  if (!flyingCameraMode_) {
-    LOG(INFO) << "Note: The flying camera mode is currently OFF. You may not "
-                 "see any view change.";
-  }
-}
-
-void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
-                                     const std::string& filename) {
+void saveTransformToFile(const std::string& filename,
+                         const Mn::Matrix4 agentTransform,
+                         const Mn::Matrix4 sensorTransform) {
   std::ofstream file(filename);
   if (!file.good()) {
     LOG(ERROR) << "Cannot open " << filename << " to output data.";
@@ -1149,45 +1144,98 @@ void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
   }
 
   // saving transformation into file system
-  Mn::Matrix4 transform = node.absoluteTransformation();
-  float* t = transform.data();
-  for (int i = 0; i < 16; ++i) {
-    file << t[i] << " ";
-  }
-  file.close();
+  auto save = [&](const Mn::Matrix4 transform) {
+    const float* t = transform.data();
+    for (int i = 0; i < 16; ++i) {
+      file << t[i] << " ";
+    }
+    LOG(INFO) << "Transformation matrix saved to " << filename << " : "
+              << Eigen::Map<const esp::mat4f>(transform.data());
+  };
+  save(agentTransform);
+  save(sensorTransform);
 
-  LOG(INFO) << "Transformation matrix saved to " << filename << " : "
-            << Eigen::Map<esp::mat4f>(transform.data());
+  file.close();
+}
+void Viewer::saveAgentAndSensorTransformToFile() {
+  const char* saved_transformations_directory = "saved_transformations/";
+  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
+    Cr::Utility::Directory::mkpath(saved_transformations_directory);
+  }
+
+  // update temporary save
+  savedAgentTransform_ = defaultAgent_->node().transformation();
+  savedSensorTransform_ = getAgentCamera().node().transformation();
+
+  // update save in file system
+  saveTransformToFile(Cr::Utility::formatString("{}camera.{}.txt",
+                                                saved_transformations_directory,
+                                                getCurrentTimeString()),
+                      *savedAgentTransform_, *savedSensorTransform_);
 }
 
-void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
-                                       const std::string& filename) {
+bool loadTransformFromFile(const std::string& filename,
+                           Mn::Matrix4& agentTransform,
+                           Mn::Matrix4& sensorTransform) {
   std::ifstream file(filename);
   if (!file.good()) {
     LOG(ERROR) << "Cannot open " << filename << " to load data.";
-    return;
+    return false;
   }
 
   // reading file system data into matrix as transformation
-  Mn::Vector4 cols[4];
-  for (int col = 0; col < 4; ++col) {
-    for (int row = 0; row < 4; ++row) {
-      file >> cols[col][row];
+  auto load = [&](Mn::Matrix4& transform) {
+    Mn::Vector4 cols[4];
+    for (int col = 0; col < 4; ++col) {
+      for (int row = 0; row < 4; ++row) {
+        file >> cols[col][row];
+      }
+    }
+    Mn::Matrix4 temp{cols[0], cols[1], cols[2], cols[3]};
+    if (!temp.isRigidTransformation()) {
+      LOG(WARNING) << "Data loaded from " << filename
+                   << " is not a valid rigid transformation.";
+      return false;
+    }
+    transform = temp;
+    LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
+              << Eigen::Map<esp::mat4f>(transform.data());
+    return true;
+  };
+  // NOTE: load Agent first!!
+  bool status = load(agentTransform) && load(sensorTransform);
+  file.close();
+  return status;
+}
+
+void Viewer::loadAgentAndSensorTransformFromFile() {
+  if (!agentTransformLoadPath_.empty()) {
+    // loading from file system
+    Mn::Matrix4 agentMtx;
+    Mn::Matrix4 sensorMtx;
+    if (!loadTransformFromFile(agentTransformLoadPath_, agentMtx, sensorMtx))
+      return;
+    savedAgentTransform_ = agentMtx;
+    savedSensorTransform_ = sensorMtx;
+  } else {
+    // attempting to load from last temporary save
+    LOG(INFO)
+        << "Camera transform file not specified, attempting to load from "
+           "current instance. Use --agent-transform-filepath to specify file "
+           "to load from.";
+    if (!savedAgentTransform_ || !savedSensorTransform_) {
+      LOG(INFO) << "Well, no transformation saved in current instance. nothing "
+                   "is changed.";
+      return;
     }
   }
-  Mn::Matrix4 transform{cols[0], cols[1], cols[2], cols[3]};
-  file.close();
 
-  // checking for corruption
-  if (!transform.isRigidTransformation()) {
-    LOG(WARNING) << "Data loaded from " << filename
-                 << " is not a valid transformation.";
-    return;
+  defaultAgent_->node().setTransformation(*savedAgentTransform_);
+  for (const auto& p : defaultAgent_->node().getNodeSensors()) {
+    p.second.get().object().setTransformation(*savedSensorTransform_);
   }
-
-  node.setTransformation(transform);
-  LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
-            << Eigen::Map<esp::mat4f>(transform.data());
+  LOG(INFO)
+      << "Transformation matrices are loaded to the agent and the sensors.";
 }
 
 int Viewer::addObject(int ID) {
@@ -1563,9 +1611,12 @@ void Viewer::drawEvent() {
   if (depthMode_) {
     // ================ Depth Visualization ==================================
     std::string sensorId = "depth";
-    if (fisheyeMode_) {
+    if (sensorMode_ == VisualSensorMode::Fisheye) {
       sensorId = "depth_fisheye";
+    } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+      sensorId = "depth_equirectangular";
     }
+
     simulator_->drawObservation(defaultAgentId_, sensorId);
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, sensorId);
@@ -1573,74 +1624,77 @@ void Viewer::drawEvent() {
                                      1.0f / 512.0f,  // colorMapOffset
                                      1.0f / 24.0f);  // colorMapScale
     sensorRenderTarget->blitRgbaToDefault();
-  } else if (fisheyeMode_) {
-    // ================ fisheye RGB =========================================
-    std::string sensorId = "fisheye";
-    simulator_->drawObservation(defaultAgentId_, sensorId);
-    // color fisheye
-    esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, sensorId);
-    CORRADE_ASSERT(sensorRenderTarget,
-                   "Error in Viewer::drawEvent: sensor's rendering target "
-                   "cannot be nullptr.", );
-    sensorRenderTarget->blitRgbaToDefault();
-  } else if (flyingCameraMode_) {
-    visibles = 0;
-    Mn::GL::defaultFramebuffer.bind();
-    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-      esp::gfx::RenderCamera::Flags flags =
-          esp::gfx::RenderCamera::Flag::FrustumCulling;
-      visibles += renderCamera_->draw(it.second, flags);
-    }
-  } else {  // ============= regular RGB with object picking =================
-    // using polygon offset to increase mesh depth to avoid z-fighting with
-    // debug draw (since lines will not respond to offset).
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-    Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
+  } else {
+    if (sensorMode_ == VisualSensorMode::Camera) {
+      // ============= regular RGB with object picking =================
+      // using polygon offset to increase mesh depth to avoid z-fighting with
+      // debug draw (since lines will not respond to offset).
+      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+      Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
 
-    // ONLY draw the content to the frame buffer but not immediately blit the
-    // result to the default main buffer
-    // (this is the reason we do not call displayObservation)
-    simulator_->drawObservation(defaultAgentId_, "rgba_camera");
-    // TODO: enable other sensors to be displayed
+      // ONLY draw the content to the frame buffer but not immediately blit the
+      // result to the default main buffer
+      // (this is the reason we do not call displayObservation)
+      simulator_->drawObservation(defaultAgentId_, "rgba_camera");
+      // TODO: enable other sensors to be displayed
 
-    Mn::GL::Renderer::setDepthFunction(
-        Mn::GL::Renderer::DepthFunction::LessOrEqual);
-    if (debugBullet_) {
-      Mn::Matrix4 camM(renderCamera_->cameraMatrix());
-      Mn::Matrix4 projM(renderCamera_->projectionMatrix());
+      Mn::GL::Renderer::setDepthFunction(
+          Mn::GL::Renderer::DepthFunction::LessOrEqual);
+      if (debugBullet_) {
+        Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+        Mn::Matrix4 projM(renderCamera_->projectionMatrix());
 
-      simulator_->physicsDebugDraw(projM * camM);
-    }
-    Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
-    Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
-    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-
-    visibles = renderCamera_->getPreviousNumVisibleDrawables();
-    esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
-    CORRADE_ASSERT(sensorRenderTarget,
-                   "Error in Viewer::drawEvent: sensor's rendering target "
-                   "cannot be nullptr.", );
-    if (objectPickingHelper_->isObjectPicked()) {
-      // we need to immediately draw picked object to the SAME frame buffer
-      // so bind it first
-      // bind the framebuffer
-      sensorRenderTarget->renderReEnter();
-
-      // setup blending function
-      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
-
-      // render the picked object on top of the existing contents
-      esp::gfx::RenderCamera::Flags flags;
-      if (simulator_->isFrustumCullingEnabled()) {
-        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+        simulator_->physicsDebugDraw(projM * camM);
       }
-      renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+      Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
+      Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
+      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
-      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+      visibles = renderCamera_->getPreviousNumVisibleDrawables();
+      esp::gfx::RenderTarget* sensorRenderTarget =
+          simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
+      CORRADE_ASSERT(sensorRenderTarget,
+                     "Error in Viewer::drawEvent: sensor's rendering target "
+                     "cannot be nullptr.", );
+      if (objectPickingHelper_->isObjectPicked()) {
+        // we need to immediately draw picked object to the SAME frame buffer
+        // so bind it first
+        // bind the framebuffer
+        sensorRenderTarget->renderReEnter();
+
+        // setup blending function
+        Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+        // render the picked object on top of the existing contents
+        esp::gfx::RenderCamera::Flags flags;
+        if (simulator_->isFrustumCullingEnabled()) {
+          flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+        }
+        renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+        Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+      }
+      sensorRenderTarget->blitRgbaToDefault();
+    } else {
+      // ================ NON-regular RGB sensor ==================
+      std::string sensorId = "";
+      if (sensorMode_ == VisualSensorMode::Fisheye) {
+        sensorId = "fisheye";
+      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+        sensorId = "equirectangular";
+      } else {
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      }
+      CORRADE_INTERNAL_ASSERT(!sensorId.empty());
+
+      simulator_->drawObservation(defaultAgentId_, sensorId);
+      esp::gfx::RenderTarget* sensorRenderTarget =
+          simulator_->getRenderTarget(defaultAgentId_, sensorId);
+      CORRADE_ASSERT(sensorRenderTarget,
+                     "Error in Viewer::drawEvent: sensor's rendering target "
+                     "cannot be nullptr.", );
+      sensorRenderTarget->blitRgbaToDefault();
     }
-    sensorRenderTarget->blitRgbaToDefault();
   }
 
   // Immediately bind the main buffer back so that the "imgui" below can work
@@ -1657,25 +1711,32 @@ void Viewer::drawEvent() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(1.5);
-    if (flyingCameraMode_) {
-      ImGui::Text("In flying Camera MODE. Press key '3' to EXIT.");
-    }
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
-    if (fisheyeMode_ == 0) {
+    if (sensorMode_ == VisualSensorMode::Camera) {
       ImGui::Text("%u culled", total - visibles);
     }
     auto& cam = getAgentCamera();
 
-    if (fisheyeMode_) {
-      ImGui::Text("Fisheye camera");
-    } else if (cam.getCameraType() ==
-               esp::sensor::SensorSubType::Orthographic) {
-      ImGui::Text("Orthographic camera");
-    } else if (cam.getCameraType() == esp::sensor::SensorSubType::Pinhole) {
-      ImGui::Text("Pinhole camera");
-    };
+    switch (sensorMode_) {
+      case VisualSensorMode::Camera:
+        if (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic) {
+          ImGui::Text("Orthographic camera sensor");
+        } else if (cam.getCameraType() == esp::sensor::SensorSubType::Pinhole) {
+          ImGui::Text("Pinhole camera sensor");
+        };
+        break;
+      case VisualSensorMode::Fisheye:
+        ImGui::Text("Fisheye sensor");
+        break;
+      case VisualSensorMode::Equirectangular:
+        ImGui::Text("Equirectangular sensor");
+        break;
+
+      default:
+        break;
+    }
     ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
@@ -1801,10 +1862,6 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   }
   bindRenderTarget();
   Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
-
-  if (flyingCameraMode_) {
-    renderCamera_->setViewport(event.framebufferSize());
-  }
 
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
@@ -2144,7 +2201,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::D:
       defaultAgent_->act("moveRight");
       recAgentLocation();
-      break;
     case KeyEvent::Key::S:
       defaultAgent_->act("moveBackward");
       recAgentLocation();
@@ -2160,6 +2216,16 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Z:
       defaultAgent_->act("moveUp");
       recAgentLocation();
+      break;
+    case KeyEvent::Key::J:
+      sensorMode_ = static_cast<VisualSensorMode>(
+          (uint8_t(sensorMode_) + 1) %
+          uint8_t(VisualSensorMode::VisualSensorModeCount));
+      LOG(INFO) << "Sensor mode is set to " << int(sensorMode_);
+      break;
+    case KeyEvent::Key::Y:
+      // switch camera between ortho and perspective
+      switchCameraType();
       break;
     case KeyEvent::Key::Seven:
       depthMode_ = !depthMode_;

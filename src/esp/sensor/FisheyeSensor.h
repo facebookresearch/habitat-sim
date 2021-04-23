@@ -8,15 +8,20 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Magnum.h>
-#include <Magnum/ResourceManager.h>
-#include "VisualSensor.h"
+#include "CubeMapSensorBase.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/CubeMap.h"
 #include "esp/gfx/CubeMapCamera.h"
-#include "esp/gfx/FisheyeShader.h"
-#include "esp/sim/Simulator.h"
+#include "esp/gfx/CubeMapShaderBase.h"
+#include "esp/gfx/RenderTarget.h"
 
 namespace esp {
+
+// forward declaration
+namespace sim {
+class Simulator;
+}
+
 namespace sensor {
 
 enum class FisheyeSensorModelType : Magnum::UnsignedInt {
@@ -30,7 +35,7 @@ enum class FisheyeSensorModelType : Magnum::UnsignedInt {
   // KannalaBrandt = 2,
 };
 
-struct FisheyeSensorSpec : public VisualSensorSpec {
+struct FisheyeSensorSpec : public CubeMapSensorBaseSpec {
   FisheyeSensorModelType fisheyeModelType;
   /**
    * @brief Focal length, fx, fy, the distance between the pinhole and the image
@@ -56,14 +61,9 @@ struct FisheyeSensorSpec : public VisualSensorSpec {
   bool operator==(const FisheyeSensorSpec& a) const;
 
   /**
-   * @brief the size of the cubemap
-   */
-  Corrade::Containers::Optional<int> cubemapSize = Corrade::Containers::NullOpt;
-
-  /**
    * @brief check if the specification is legal
    */
-  void sanityCheck() override;
+  void sanityCheck() const override;
   ESP_SMART_POINTERS(FisheyeSensorSpec)
 };
 
@@ -83,7 +83,7 @@ struct FisheyeSensorDoubleSphereSpec : public FisheyeSensorSpec {
   /**
    * @brief check if the specification is legal
    */
-  void sanityCheck() override;
+  void sanityCheck() const override;
   ESP_SMART_POINTERS(FisheyeSensorDoubleSphereSpec)
 };
 
@@ -91,8 +91,10 @@ struct FisheyeSensorDoubleSphereSpec : public FisheyeSensorSpec {
 // struct FisheyeFieldOfViewSpec : public FisheyeSensorSpec {};
 // struct FisheyeKannalaBrandtSpec : public FisheyeSensorSpec {};
 
-class FisheyeSensor : public VisualSensor {
+class FisheyeSensor : public CubeMapSensorBase {
  public:
+  static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
+      "fisheye-model-type={}-flags={}";
   /**
    * @brief constructor
    * NOTE: the status of the camera sensor is "valid" after construction, and
@@ -104,6 +106,7 @@ class FisheyeSensor : public VisualSensor {
    * @brief destructor
    */
   ~FisheyeSensor() override = default;
+
   /**
    * @brief Draw an observation to the frame buffer
    * @return true if success, otherwise false (e.g., frame buffer is not set)
@@ -112,54 +115,20 @@ class FisheyeSensor : public VisualSensor {
    */
   bool drawObservation(sim::Simulator& sim) override;
 
-  static constexpr const char* FISH_EYE_SHADER_KEY_TEMPLATE =
-      "fisheye-model-type={}-flags={}";
-
-  gfx::RenderCamera* getRenderCamera() = delete;
-
   /**
    * @brief Return a pointer to this fisheye sensor's SensorSpec
    */
   FisheyeSensorSpec::ptr specification() const { return fisheyeSensorSpec_; }
 
+  gfx::RenderCamera* getRenderCamera() = delete;
+
  protected:
   FisheyeSensorSpec::ptr fisheyeSensorSpec_ =
       std::dynamic_pointer_cast<FisheyeSensorSpec>(spec_);
-  // raw pointer only, we can create it but let magnum to handle the memory
-  // recycling when releasing it.
-  gfx::CubeMapCamera* cubeMapCamera_;
-  Corrade::Containers::Optional<esp::gfx::CubeMap> cubeMap_;
-
-  // fisheye shader resource manager, which manages different shaders such as
-  // DoubleSphereCameraShader, FieldOfViewCameraShader (TODO) ...
-  Magnum::ResourceManager<gfx::FisheyeShader> fisheyeShaderManager_;
-  // a big triangles that covers the whole screen
-  Magnum::GL::Mesh mesh_;
-
-  gfx::FisheyeShader::Flags fisheyeShaderFlags_{};
-
-  Magnum::ResourceKey getShaderKey();
-
-  template <typename T>
-  Magnum::Resource<gfx::FisheyeShader, T> getShader();
+  Magnum::ResourceKey getShaderKey() override;
 
   ESP_SMART_POINTERS(FisheyeSensor)
 };
-
-template <typename T>
-Magnum::Resource<gfx::FisheyeShader, T> FisheyeSensor::getShader() {
-  Magnum::Resource<gfx::FisheyeShader, T> shader =
-      fisheyeShaderManager_.get<gfx::FisheyeShader, T>(getShaderKey());
-  if (!shader) {
-    fisheyeShaderManager_.set<gfx::FisheyeShader>(
-        shader.key(), new T{fisheyeShaderFlags_}, Mn::ResourceDataState::Final,
-        Mn::ResourcePolicy::ReferenceCounted);
-  }
-
-  CORRADE_INTERNAL_ASSERT(shader && shader->flags() == fisheyeShaderFlags_);
-
-  return shader;
-}
 
 }  // namespace sensor
 }  // namespace esp

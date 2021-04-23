@@ -25,12 +25,12 @@ class RigidStage : public RigidBase {
   /**
    * @brief Initializes the @ref RigidStage that inherits
    * from this class
-   * @param resMgr a reference to ResourceManager object
-   * @param handle The handle for the template structure defining relevant
+   * @param initAttributes The template structure defining relevant
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialize(const std::string& handle) override;
+  bool initialize(metadata::attributes::AbstractObjectAttributes::ptr
+                      initAttributes) override;
 
   /**
    * @brief Get a copy of the template used to initialize this stage object.
@@ -71,16 +71,12 @@ class RigidStage : public RigidBase {
 
  public:
   /**
-   * @brief Set the @ref MotionType of the object. If the object is @ref
-   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
-   * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC.
-   * Only if a dervied @ref PhysicsManager implementing dynamics is in use can
-   * the object be set to @ref MotionType::DYNAMIC.
+   * @brief Currently ignored for stage objects.
    * @param mt The desirved @ref MotionType.
-   * @return true if successfully set, false otherwise.
    */
-  bool setMotionType(MotionType mt) override {
-    return mt == MotionType::STATIC;  // only option and default option
+  void setMotionType(CORRADE_UNUSED MotionType mt) override {
+    LOG(WARNING) << "RigidStage::setMotionType : Stages cannot have their "
+                    "motion type changed from MotionType::STATIC.  Aborting.";
   }
 
  public:

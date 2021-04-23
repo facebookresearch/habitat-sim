@@ -1,6 +1,5 @@
 #include "esp/bindings/bindings.h"
 #include "esp/physics/PhysicsManager.h"
-#include "esp/physics/RigidObject.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;

@@ -81,7 +81,11 @@ class ArticulatedLink : public RigidBase {
   ArticulatedLink(scene::SceneNode* bodyNode,
                   int index,
                   const assets::ResourceManager& resMgr)
-      : RigidBase(bodyNode, resMgr), mbIndex_(index){};
+      : RigidBase(bodyNode,
+                  0,  // TODO: pass an actual object ID. This is currently
+                      // assigned AFTER creation.
+                  resMgr),
+        mbIndex_(index){};
 
   ~ArticulatedLink() override = default;
 
@@ -102,7 +106,9 @@ class ArticulatedLink : public RigidBase {
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialize(CORRADE_UNUSED const std::string& handle) override {
+  bool initialize(
+      CORRADE_UNUSED metadata::attributes::AbstractObjectAttributes::ptr
+          initAttributes) override {
     return true;
   };
 

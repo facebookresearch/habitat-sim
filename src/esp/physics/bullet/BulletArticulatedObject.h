@@ -42,7 +42,7 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
   };
 
   //! link can't do this.
-  virtual bool setMotionType(MotionType mt) override { return false; };
+  virtual void setMotionType(CORRADE_UNUSED MotionType mt) override{};
 
  protected:
   int mbIndex_;

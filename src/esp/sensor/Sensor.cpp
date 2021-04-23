@@ -22,7 +22,7 @@ bool SensorSpec::operator!=(const SensorSpec& a) const {
   return !(*this == a);
 }
 
-void SensorSpec::sanityCheck() {
+void SensorSpec::sanityCheck() const {
   CORRADE_ASSERT(this, "SensorSpec::sanityCheck(): sensorSpec is illegal", );
   // Check that all parameters are initalized to legal values
   CORRADE_ASSERT(!uuid.empty(),

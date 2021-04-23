@@ -191,48 +191,90 @@ class PhysicsManager {
    * Only one 'scene' may be initialized per simulated world, but this scene may
    * contain several components (e.g. GLB heirarchy).
    *
-   * @param handle The handle to the attributes structure defining physical
-   * properties of the scene.
+   * @param initAttributes The attributes structure defining physical
+   * properties of the scene.  Must be a copy of the attributes stored in the
+   * Attributes Manager.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  bool addStage(const std::string& handle,
-                const std::vector<assets::CollisionMeshData>& meshGroup);
+  bool addStage(
+      const metadata::attributes::StageAttributes::ptr& initAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager.
-   *  @anchor addObject_string
-   *  @param configFile The filename of the object's physical properties file
-   * used as the key to query @ref
-   * esp::metadata::managers::ObjectAttributesManager.
-   *  @param drawables Reference to the scene graph drawables group to enable
+   * @anchor addObject_string
+   * @param attributesHandle The handle of the object attributes used as the key
+   * to query @ref esp::metadata::managers::ObjectAttributesManager.
+   * @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
-   *  @param attachmentNode If supplied, attach the new physical object to an
+   * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
-   *  @return the instanced object's ID, mapping to it in @ref
+   * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const std::string& configFile,
+  int addObject(const std::string& attributesHandle,
                 DrawableGroup* drawables,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
+    esp::metadata::attributes::ObjectAttributes::ptr attributes =
+        resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
+            attributesHandle);
+    if (!attributes) {
+      LOG(ERROR) << "PhysicsManager::addObject : "
+                    "Object creation failed due to unknown attributes "
+                 << attributesHandle;
+      return ID_UNDEFINED;
+    }
+
+    return addObject(attributes, drawables, attachmentNode, lightSetup);
+  }
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
    * handle.
-   *  @param objectLibId The ID of the object's template in @ref
+   * @param attributesID The ID of the object's template in @ref
    * esp::metadata::managers::ObjectAttributesManager
-   *  @param drawables Reference to the scene graph drawables group to enable
+   * @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
-   *  @param attachmentNode If supplied, attach the new physical object to an
+   * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
-   *  @return the instanced object's ID, mapping to it in @ref
+   * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const int objectLibId,
+  int addObject(const int attributesID,
                 DrawableGroup* drawables,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
+    const esp::metadata::attributes::ObjectAttributes::ptr attributes =
+        resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
+            attributesID);
+    if (!attributes) {
+      LOG(ERROR) << "PhysicsManager::addObject : "
+                    "Object creation failed due to unknown attributes ID "
+                 << attributesID;
+      return ID_UNDEFINED;
+    }
+    return addObject(attributes, drawables, attachmentNode, lightSetup);
+  }
+
+  /** @brief Instance a physical object from an object properties template in
+   * the @ref esp::metadata::managers::ObjectAttributesManager by template
+   * handle.
+   * @param objectAttributes The object's template in @ref
+   * esp::metadata::managers::ObjectAttributesManager.
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized object.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObject(
+      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      DrawableGroup* drawables,
+      scene::SceneNode* attachmentNode = nullptr,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -285,9 +327,8 @@ class PhysicsManager {
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param  mt The desired @ref MotionType of the object to set.
-   * @return True if set was successful and False otherwise.
    */
-  bool setObjectMotionType(const int physObjectID, MotionType mt);
+  void setObjectMotionType(const int physObjectID, MotionType mt);
 
   /** @brief Get the @ref MotionType of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
@@ -1193,6 +1234,16 @@ class PhysicsManager {
   scene::SceneNode& getObjectSceneNode(int physObjectID);
 
   /**
+   * @brief Set the desired light setup by name for the passed object
+   * @param objectID The id of the object to set
+   * @param lightSetupKey The string name of the desired lighting setup to use.
+   */
+  void setObjectLightSetup(const int objectID,
+                           const std::string& lightSetupKey) {
+    existingObjects_.at(objectID)->setLightSetup(lightSetupKey);
+  }
+
+  /**
    * @brief Get a const reference to the specified object's visual SceneNode for
    * info query purposes.
    * @param physObjectID The object ID and key identifying the object in @ref
@@ -1255,9 +1306,9 @@ class PhysicsManager {
   /**
    * @brief Set an object to collidable or not.
    */
-  bool setObjectIsCollidable(const int physObjectID, bool collidable) {
+  void setObjectIsCollidable(const int physObjectID, bool collidable) {
     assertIDValidity(physObjectID);
-    return existingObjects_.at(physObjectID)->setCollidable(collidable);
+    existingObjects_.at(physObjectID)->setCollidable(collidable);
   };
 
   /**
@@ -1271,8 +1322,8 @@ class PhysicsManager {
   /**
    * @brief Set the stage to collidable or not.
    */
-  bool setStageIsCollidable(bool collidable) {
-    return staticStageObject_->setCollidable(collidable);
+  void setStageIsCollidable(bool collidable) {
+    staticStageObject_->setCollidable(collidable);
   };
 
   /**
@@ -1522,29 +1573,30 @@ class PhysicsManager {
   virtual bool initPhysicsFinalize();
 
   /**
-   * @brief Finalize scene initialization for kinematic scenes.  Overidden by
+   * @brief Finalize stage initialization for kinematic stage.  Overidden by
    * instancing class if physics is supported.
    *
-   * @param handle the handle to the attributes structure defining physical
-   * properties of the scene.
+   * @param initAttributes the attributes structure defining physical
+   * properties of the stage.
    * @return true if successful and false otherwise
    */
 
-  virtual bool addStageFinalize(const std::string& handle);
+  virtual bool addStageFinalize(
+      const metadata::attributes::StageAttributes::ptr& initAttributes);
 
   /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
-   * @param meshGroup The object's mesh.
-   * @param handle The handle to the physical object's template defining its
+   * @param initAttributes The physical object's template defining its
    * physical parameters.
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map
    */
-  virtual bool makeAndAddRigidObject(int newObjectID,
-                                     const std::string& handle,
-                                     scene::SceneNode* objectNode);
+  virtual bool makeAndAddRigidObject(
+      int newObjectID,
+      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      scene::SceneNode* objectNode);
 
   /** @brief Set the voxelization visualization for a scene node to be true or
    * false.

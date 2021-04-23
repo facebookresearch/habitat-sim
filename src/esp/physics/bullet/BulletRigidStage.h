@@ -68,7 +68,7 @@ class BulletRigidStage : public BulletBase, public RigidStage {
    * @brief Set the stage to collidable or not by adding/removing the static
    * collision shapes from the simulation world.
    */
-  bool setCollidable(bool collidable) override;
+  void setCollidable(bool collidable) override;
 
  public:
   /**
