@@ -1608,7 +1608,9 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     finalMaterial->ambientTexture =
         textures_.at(textureBaseIndex + material.diffuseTexture()).get();
   } else {
-    finalMaterial->ambientColor = material.ambientColor();
+    // finalMaterial->ambientColor = material.ambientColor();
+    finalMaterial->ambientColor = Mn::Color4(1.f, 1.f, 1.f, 1.f);
+    finalMaterial->vertexColored = true;
   }
   return finalMaterial;
 }
