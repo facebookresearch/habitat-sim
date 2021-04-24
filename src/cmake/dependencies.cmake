@@ -103,6 +103,7 @@ set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
 set(RECASTNAVIGATION_TESTS OFF CACHE BOOL "RECASTNAVIGATION_TESTS" FORCE)
 set(RECASTNAVIGATION_EXAMPLES OFF CACHE BOOL "RECASTNAVIGATION_EXAMPLES" FORCE)
 set(RECASTNAVIGATION_STATIC ON CACHE BOOL "RECASTNAVIGATION_STATIC" FORCE)
+include(GNUInstallDirs)
 add_subdirectory("${DEPS_DIR}/recastnavigation/Recast")
 add_subdirectory("${DEPS_DIR}/recastnavigation/Detour")
 # Needed so that Detour doesn't hide the implementation of the method on dtQueryFilter
