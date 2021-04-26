@@ -70,6 +70,19 @@ for key in data_groups:
     assert key not in data_sources, "Duplicate key: " + key
 
 
+def prompt_yes_no(message):
+    print("\n-------------------------")
+    print(message)
+    while True:
+        answer = input("(y|n): ")
+        if answer.lower() == "y":
+            return True
+        elif answer.lower() == "n":
+            return False
+        else:
+            print("Invalid answer...")
+
+
 def clean_data(uid):
     if uid not in data_sources:
         print("Data download failed, no datasource named " + uid)
@@ -80,7 +93,7 @@ def clean_data(uid):
     os.system("rm -r " + data_sources[uid]["root"])
 
 
-def download_and_place(uid):
+def download_and_place(uid, replace=False):
     if uid not in data_sources:
         print("Data download failed, no datasource named " + uid)
         return
@@ -92,6 +105,7 @@ def download_and_place(uid):
     )
     if os.path.exists(data_sources[uid]["root"]):
         resolved_existing = False
+        replace_existing = False
         for file in os.listdir(data_sources[uid]["root"]):
             if "DATA_VERSION" in file:
                 existing_version = file[13:]
@@ -107,17 +121,36 @@ def download_and_place(uid):
                     )
                     return
                 else:
-                    print(
-                        "Found previous data version ("
+                    # found root directory with different version
+                    found_version_message = (
+                        "("
+                        + uid
+                        + ") Found previous data version ("
                         + existing_version
-                        + "), cleaning."
+                        + "). Replace with requested version ("
+                        + data_sources[uid]["version"]
+                        + ")?"
                     )
-                    clean_data(uid)
+                    replace_existing = (
+                        replace if replace else prompt_yes_no(found_version_message)
+                    )
                     resolved_existing = True
         if not resolved_existing:
-            print(
-                "Found unknown data version, aborting. Remove conflict by re-running with `--clean` to resolve."
+            # found root directory with unspecified version
+            found_version_message = (
+                "("
+                + uid
+                + ") Found unknown data version. Replace with requested version ("
+                + data_sources[uid]["version"]
+                + ")?"
             )
+            replace_existing = (
+                replace if replace else prompt_yes_no(found_version_message)
+            )
+        if replace_existing:
+            clean_data(uid)
+        else:
+            print("Not replacing data, aborting download.")
             return
 
     # download
@@ -141,6 +174,9 @@ def download_and_place(uid):
     )
     # print(download_command)
     os.system(download_command)
+    assert os.path.exists(
+        os.path.join(data_dir, data_sources[uid]["package_name"])
+    ), "Download failed, no package found."
 
     # unpack
     package_name = data_sources[uid]["package_name"]
@@ -158,6 +194,9 @@ def download_and_place(uid):
             "Data unpack failed for " + uid + " unsupported filetype: " + package_name
         )
         return
+    assert os.path.exists(
+        os.path.join(data_dir, data_sources[uid]["root"])
+    ), "Unpacking failed, no root directory."
 
     # write version
     with open(version_filepath, "w"):
@@ -186,8 +225,14 @@ if __name__ == "__main__":
         action="store_true",
         help="Remove nested child directories for the datasource.",
     )
+    parser.add_argument(
+        "--replace",
+        action="store_true",
+        help="If set, alternative versions of any dataset found during download will be deleted automatically. Otherwise user will be prompted before overriding existing data.",
+    )
 
     args = parser.parse_args()
+    replace = args.replace
 
     uids = [args.uid]
     if args.uid in data_groups:
@@ -198,4 +243,4 @@ if __name__ == "__main__":
         if args.clean:
             clean_data(uid)
         else:
-            download_and_place(uid)
+            download_and_place(uid, replace)
