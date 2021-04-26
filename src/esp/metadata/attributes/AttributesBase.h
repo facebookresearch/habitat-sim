@@ -6,8 +6,8 @@
 #define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 
 #include <Corrade/Utility/Directory.h>
-#include "esp/core/AbstractManagedObject.h"
 #include "esp/core/Configuration.h"
+#include "esp/core/managedContainers/AbstractManagedObject.h"
 
 namespace esp {
 namespace metadata {

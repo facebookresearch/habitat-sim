@@ -11,7 +11,7 @@
 
 #include "esp/metadata/attributes/AttributesBase.h"
 
-#include "esp/core/ManagedFileBasedContainer.h"
+#include "esp/core/managedContainers/ManagedFileBasedContainer.h"
 #include "esp/io/io.h"
 
 namespace Cr = Corrade;
