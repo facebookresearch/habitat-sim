@@ -44,7 +44,69 @@ class PhysicsObjectBaseManager
         weakPhysManager_(physMgr) {}
   ~PhysicsObjectBaseManager() override = default;
 
+  /**
+   * @brief Creates an instance of a managed object described by passed string.
+   *
+   * If a managed object exists with this handle, the existing managed object
+   * will be overwritten with the newly created one if @ref
+   * registerObject is true.
+   *
+   * @param objectHandle the origin of the desired managed object to be
+   * created.
+   * @param registerObject whether to add this managed object to the
+   * library or not. If the user is going to edit this managed object, this
+   * should be false. Defaults to true. If specified as true, then this function
+   * returns a copy of the registered managed object.
+   * @return a reference to the desired managed object.
+   */
+  ObjWrapperPtr createObject(const std::string& objectHandle,
+                             bool registerObject = true) override;
+
+  /**
+   * @brief Parse passed JSON Document specifically for @ref ManagedPtr object.
+   * It always returns a @ref ManagedPtr object.
+   * @param filename UNUSED The name of the file describing the @ref ManagedPtr,
+   * used as managed object handle/name on create.
+   * @param jsonConfig UNUSED json document to parse - assumed to be legal JSON
+   * doc.
+   * @return nullptr - this function is not supported for physics object
+   * wrappers.
+   */
+  ObjWrapperPtr buildObjectFromJSONDoc(
+      CORRADE_UNUSED const std::string& filename,
+      CORRADE_UNUSED const io::JsonGenericValue& jsonConfig) override {
+    return nullptr;
+  }  // buildObjectFromJSONDoc
+
  protected:
+  /**
+   * @brief implementation of managed object type-specific registration
+   * @param object the managed object to be registered
+   * @param objectHandle the name to register the managed object with.
+   * Expected to be valid.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
+   * @return The unique ID of the managed object being registered, or
+   * ID_UNDEFINED if failed
+   */
+  virtual int registerObjectFinalize(ObjWrapperPtr object,
+                                     const std::string& objectHandle,
+                                     bool forceRegistration) override;
+
+  /**
+   * @brief Used Internally.  Create and configure newly-created managed object
+   * with any default values, before any specific values are set.
+   *
+   * @param objectHandle handle name to be assigned to the managed object.
+   * @param builtFromConfig Managed Object is being constructed from a config
+   * file (i.e. @p objectHandle is config file filename).  If false this means
+   * Manage Object is being constructed as some kind of new/default.
+   * @return Newly created but unregistered ManagedObject pointer, with only
+   * default values set.
+   */
+  virtual ObjWrapperPtr initNewObjectInternal(const std::string& objectHandle,
+                                              bool builtFromConfig) override;
+
   /**
    * @brief return a reference to physicsManager_, or null ptr if it does not
    * exist anymore.  This is necessary since a reference of this manager may
@@ -69,33 +131,6 @@ class PhysicsObjectBaseManager
 
 };  // class PhysicsObjectBaseManager
 
-// /**
-//  * @brief Class template specialization defining responsibilities and
-//  * functionality for managing @ref
-//  esp::physics::AbstractManagedPhysicsObject
-//  * wrappers.
-//  *
-//  */
-
-// template <template <typename> class T,
-//           typename Y,
-//           core::ManagedObjectAccess Access>
-// class PhysicsObjectBaseManager<T<Y>, Access>
-//     : public esp::core::ManagedContainer<T<Y>, Access> {
-//  public:
-//   typedef T<Y> objWrapper;
-//   typedef std::shared_ptr<objWrapper> ObjWrapperPtr;
-
-//   static_assert(
-//       std::is_base_of<esp::physics::AbstractManagedPhysicsObject<Y>,
-//                       objWrapper>::value,
-//       "PhysicsObjectBaseManager :: Managed object type must be derived from
-//       " "AbstractManagedPhysicsObject");
-
-//  public:
-//   ESP_SMART_POINTERS(PhysicsObjectBaseManager<objWrapper, Access>)
-
-// };  // PhysicsObjectBaseManager
 }  // namespace physics
 }  // namespace esp
 

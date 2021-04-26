@@ -15,9 +15,22 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
   RigidObjectManager(std::shared_ptr<esp::physics::PhysicsManager> physMgr,
                      const std::string& objType)
       : RigidBaseManager<ManagedRigidObject>::RigidBaseManager(physMgr,
-                                                               objType) {}
+                                                               objType) {
+    buildCtorFuncPtrMaps();
+  }
 
  protected:
+  /**
+   * @brief This function will build the appropriate @ref copyConstructorMap_
+   * copy constructor function pointer map for this container's managed object,
+   * keyed on the managed object's class type.  This MUST be called in the
+   * constructor of the -instancing- class.
+   */
+  void buildCtorFuncPtrMaps() override {
+    this->copyConstructorMap_["ManagedRigidObject"] =
+        &RigidObjectManager::createObjectCopy<ManagedRigidObject>;
+  }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
+
  public:
   ESP_SMART_POINTERS(RigidObjectManager)
 };

@@ -15,8 +15,9 @@ class ManagedRigidObject
  public:
   explicit ManagedRigidObject(
       std::shared_ptr<esp::physics::RigidObject>& objPtr)
-      : AbstractManagedRigidBase<esp::physics::RigidObject>(objPtr,
-                                                            "RigidObject") {}
+      : AbstractManagedRigidBase<esp::physics::RigidObject>(
+            objPtr,
+            "ManagedRigidObject") {}
 
   std::shared_ptr<metadata::attributes::ObjectAttributes>
   getInitializationAttributes() const {
