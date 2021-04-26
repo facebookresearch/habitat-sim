@@ -54,7 +54,7 @@ repos:
         args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
         exclude: docs/
 
--   repo: https://gitlab.com/pycqa/flake8
+-   repo: https://github.com/pycqa/flake8
     rev: 3.9.1
     hooks:
     -   id: flake8
