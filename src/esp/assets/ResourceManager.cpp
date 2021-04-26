@@ -2047,21 +2047,30 @@ std::string ResourceManager::setupMaterialModifiedAsset(
                           LoadedAssetData(resourceDict_.at(filename)));
   }
 
-  // create/set a new PhongMaterialData
+  // create/set a new PhongMaterialData for the asset
   auto& meshMetaData = resourceDict_.at(modifiedAssetName).meshMetaData;
 
-  // create/register the new material
-  gfx::PhongMaterialData::uptr phongMaterial =
-      gfx::PhongMaterialData::create_unique();
   io::URDF::MaterialColor& color = material->m_matColor;
-  phongMaterial->ambientColor = color.m_rgbaColor;
-  phongMaterial->diffuseColor = color.m_rgbaColor;
-  phongMaterial->specularColor = color.m_specularColor;
+  std::ostringstream matHandleStream;
+  matHandleStream << "phong_amb_" << color.m_rgbaColor.toSrgbAlphaInt()
+                  << "_spec_"
+                  << Mn::Color4(color.m_specularColor).toSrgbAlphaInt();
+  std::string newMaterialID = matHandleStream.str();
 
-  std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
+  auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
 
-  std::string newMaterialID = std::to_string(nextMaterialID_++);
-  shaderManager_.set(newMaterialID, finalMaterial.release());
+  // TODO: is this the right way to check for unfound resource?
+  if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
+    // create/register the new material
+    gfx::PhongMaterialData::uptr phongMaterial =
+        gfx::PhongMaterialData::create_unique();
+    phongMaterial->ambientColor = color.m_rgbaColor;
+    phongMaterial->diffuseColor = color.m_rgbaColor;
+    phongMaterial->specularColor = color.m_specularColor;
+
+    std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
+    shaderManager_.set(newMaterialID, finalMaterial.release());
+  }
 
   // iteratively reset the local material ids for all components
   std::vector<MeshTransformNode*> nodeQueue;
