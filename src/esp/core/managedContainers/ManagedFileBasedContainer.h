@@ -17,10 +17,11 @@ namespace esp {
 namespace core {
 /**
  * @brief Class template defining file-io-based responsibilities and
- * functionality for managing @ref esp::core::AbstractManagedObject constructs.
+ * functionality for managing @ref esp::core::AbstractFileBasedManagedObject
+ * constructs.
  * @tparam T the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
- * esp::core::AbstractManagedObject.
+ * esp::core::AbstractFileBasedManagedObject.
  * @tparam Access Whether the default access (getters) for this
  * container provides copies of the objects held, or the actual objects
  * themselves.
@@ -28,6 +29,9 @@ namespace core {
 template <class T, ManagedObjectAccess Access>
 class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
  public:
+  static_assert(std::is_base_of<AbstractFileBasedManagedObject, T>::value,
+                "ManagedContainer :: Managed object type must be derived from "
+                "AbstractFileBasedManagedObject");
   typedef std::shared_ptr<T> ManagedFileIOPtr;
 
   explicit ManagedFileBasedContainer(const std::string& metadataType)

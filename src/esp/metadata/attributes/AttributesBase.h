@@ -15,10 +15,10 @@ namespace attributes {
 
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref
- * esp::core::AbstractManagedObject so the attributes can be managed by a @ref
- * esp::core::ManagedContainer.
+ * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by
+ * a @ref esp::core::ManagedContainer.
  */
-class AbstractAttributes : public esp::core::AbstractManagedObject,
+class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
                            public esp::core::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
