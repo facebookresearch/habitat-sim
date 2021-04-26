@@ -46,6 +46,7 @@ add_library(
   ManagedContainer.h
   ManagedContainerBase.cpp
   ManagedContainerBase.h
+  ManagedFileBasedContainer.h
   random.h
   spimpl.h
   Utility.h
