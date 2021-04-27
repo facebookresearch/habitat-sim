@@ -6,6 +6,7 @@
 
 import argparse
 import os
+import shutil
 
 import git
 
@@ -107,7 +108,10 @@ def clean_data(uid):
     print(
         "Cleaning datasource " + uid + ' directory: "' + data_sources[uid]["root"] + '"'
     )
-    os.system("rm -r " + data_sources[uid]["root"])
+    try:
+        shutil.rmtree(data_sources[uid]["root"])
+    except OSError as e:
+        print("Error: %s : %s" % (dir_path, e.strerror))
 
 
 def download_and_place(uid, replace=False):
