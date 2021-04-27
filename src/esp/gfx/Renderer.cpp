@@ -88,9 +88,8 @@ struct Renderer::Impl {
         Mn::ImageView2D imgView{image.storage(), Mn::PixelFormat::R32F,
                                 image.size(), image.data()};
 
-        if ((visualizedTex_ == Cr::Containers::NullOpt) ||
-            (visualizedTex_ != Cr::Containers::NullOpt &&
-             visualizedTex_->imageSize(0) != image.size())) {
+        if (!visualizedTex_ ||
+             visualizedTex_->imageSize(0) != image.size()) {
           visualizedTex_ = Mn::GL::Texture2D{};
           (*visualizedTex_)
               .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
