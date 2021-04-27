@@ -104,69 +104,50 @@ def prompt_yes_no(message):
 def clean_data(uid):
     r"""Deletes the "root" directory for the named data-source."""
     if not data_sources.get(uid):
-        print("Data clean failed, no datasource named " + uid)
+        print(f"Data clean failed, no datasource named {uid}")
         return
-    print(
-        "Cleaning datasource " + uid + ' directory: "' + data_sources[uid]["root"] + '"'
-    )
+    root_path = data_sources[uid]["root"]
+    print(f"Cleaning datasource ({uid}) directory: {root_path}")
     try:
-        shutil.rmtree(data_sources[uid]["root"])
+        shutil.rmtree(root_path)
     except OSError as e:
-        print("Error: %s : %s" % (dir_path, e.strerror))
+        print(f"Error: {dir_path} : {e.strerror}")
 
 
 def download_and_place(uid, replace=False):
     r"""Data-source download function. Validates uid, handles existing data version, downloads data, unpacks, writes version, cleans up."""
     if not data_sources.get(uid):
-        print("Data download failed, no datasource named " + uid)
+        print(f"Data download failed, no datasource named {uid}")
         return
 
+    root_path = data_sources[uid]["root"]
+    version_tag = data_sources[uid]["version"]
     # check for current version
     version_filepath = os.path.join(
         data_path,
-        data_sources[uid]["root"] + "DATA_VERSION_" + data_sources[uid]["version"],
+        data_sources[uid]["root"] + "DATA_VERSION_" + version_tag,
     )
     if os.path.exists(data_sources[uid]["root"]):
         resolved_existing = False
         replace_existing = False
-        for file in os.listdir(data_sources[uid]["root"]):
+        for file in os.listdir(root_path):
             if "DATA_VERSION" in file:
                 existing_version = file[13:]
-                if existing_version == data_sources[uid]["version"]:
+                if existing_version == version_tag:
                     print(
-                        "Existing data source ("
-                        + uid
-                        + ") version ("
-                        + existing_version
-                        + ") is current, aborting download."
-                        + " Root directory: "
-                        + data_sources[uid]["root"]
+                        f"Existing data source ({uid}) version ({existing_version}) is current, aborting download. Root directory: {root_path}"
                     )
                     return
                 else:
                     # found root directory with different version
-                    found_version_message = (
-                        "("
-                        + uid
-                        + ") Found previous data version ("
-                        + existing_version
-                        + "). Replace with requested version ("
-                        + data_sources[uid]["version"]
-                        + ")?"
-                    )
+                    found_version_message = f"({uid}) Found previous data version ({existing_version}). Replace with requested version ({version_tag})?"
                     replace_existing = (
                         replace if replace else prompt_yes_no(found_version_message)
                     )
                     resolved_existing = True
         if not resolved_existing:
             # found root directory with unspecified version
-            found_version_message = (
-                "("
-                + uid
-                + ") Found unknown data version. Replace with requested version ("
-                + data_sources[uid]["version"]
-                + ")?"
-            )
+            found_version_message = f"({uid}) Found unknown data version. Replace with requested version ({version_tag})?"
             replace_existing = (
                 replace if replace else prompt_yes_no(found_version_message)
             )
@@ -209,9 +190,7 @@ def download_and_place(uid, replace=False):
 
     else:
         # TODO: support more compression types as necessary
-        print(
-            "Data unpack failed for " + uid + " unsupported filetype: " + package_name
-        )
+        print(f"Data unpack failed for {uid}. Unsupported filetype: {package_name}")
         return
     assert os.path.exists(
         os.path.join(data_path, data_sources[uid]["root"])
@@ -224,12 +203,7 @@ def download_and_place(uid, replace=False):
     # clean-up
     os.remove(data_path + package_name)
 
-    print(
-        "Dataset ("
-        + uid
-        + ") successfully downloaded. Root directory: "
-        + data_sources[uid]["root"]
-    )
+    print(f"Dataset ({uid}) successfully downloaded. Root directory: {root_path}")
 
 
 if __name__ == "__main__":
