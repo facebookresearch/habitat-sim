@@ -7,70 +7,81 @@
 import argparse
 import os
 
-# TODO: is there a better way to do this more generaly? Maybe pybind a cmake compiled DATA_DIR?
-dir_path = os.path.dirname(os.path.realpath(__file__))
-data_dir = os.path.abspath(os.path.join(dir_path, "../../data/")) + "/"
+# Root data directory. Optionaly overridden by input argument "--data_path".
+data_dir = ""
+data_sources = {}
+data_groups = {}
 
-# dict keyed by uids with download specs for various test assets and datasets
-data_sources = {
-    # "example-uid": {
-    #
-    # }
-    "habitat-test-scenes": {
-        "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
-        "package_name": "habitat-test-scenes.zip",
-        "unpack_to": data_dir + "../",
-        "root": data_dir + "scene_datasets/habitat-test-scenes/",
-        "version": "1.0",
-    },
-    "habitat-example-objects": {
-        "source": "http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip",
-        "package_name": "objects_v0.2.zip",
-        "unpack_to": data_dir + "objects/example_objects/",
-        "root": data_dir + "objects/example_objects/",
-        "version": "0.2",
-    },
-    "locobot-merged": {
-        "source": "http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip",
-        "package_name": "locobot_merged_v0.2.zip",
-        "unpack_to": data_dir + "objects/locobot_merged/",
-        "root": data_dir + "objects/locobot_merged/",
-        "version": "0.2",
-    },
-    "mp3d-test-scene": {
-        "source": "http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip",
-        "package_name": "mp3d_example.zip",
-        "unpack_to": data_dir + "scene_datasets/mp3d_test/",
-        "root": data_dir + "scene_datasets/mp3d_test/",
-        "version": "1.0",
-    },
-    "coda-scene": {
-        "source": "'https://docs.google.com/uc?export=download&id=1Pc-J6pZzXEd8RSeLM94t3iwO8q_RQ853'",
-        "package_name": "coda.zip",
-        "download_pre_args": "--no-check-certificate ",
-        "download_post_args": " -O " + data_dir + "coda.zip",
-        "unpack_to": data_dir + "scene_datasets/",
-        "root": data_dir + "scene_datasets/coda/",
-        "version": "1.0",
-    },
-}
 
-data_groups = {
-    "ci-test-assets": [
-        "habitat-test-scenes",
-        "habitat-example-objects",
-        "locobot-merged",
-        "mp3d-test-scene",
-        "coda-scene",
-    ]
-}
+def initialize_test_data_sources(data_dir):
+    global data_sources
+    global data_groups
+    r"""Initializes data_sources and data_groups dicts with a variable data_dir path.
+    """
+    # dict keyed by uids with download specs for various individual test assets and datasets
+    data_sources = {
+        # "example-uid": {
+        #   "source": the URL download link
+        #   "package_name": the filename of the downloaded compressed package
+        #   "download_pre_args": (optional)(wget) commands preceding filename
+        #   "download_post_args": (optional)(wget) commands follow filename
+        #   "unpack_to": destination path for uncompression of the download package
+        #   "root": root of the data directory structure once unpacked
+        #   "version": data version tag
+        # }
+        "habitat-test-scenes": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
+            "package_name": "habitat-test-scenes.zip",
+            "unpack_to": data_dir + "../",
+            "root": data_dir + "scene_datasets/habitat-test-scenes/",
+            "version": "1.0",
+        },
+        "habitat-example-objects": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip",
+            "package_name": "objects_v0.2.zip",
+            "unpack_to": data_dir + "objects/example_objects/",
+            "root": data_dir + "objects/example_objects/",
+            "version": "0.2",
+        },
+        "locobot-merged": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip",
+            "package_name": "locobot_merged_v0.2.zip",
+            "unpack_to": data_dir + "objects/locobot_merged/",
+            "root": data_dir + "objects/locobot_merged/",
+            "version": "0.2",
+        },
+        "mp3d-test-scene": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip",
+            "package_name": "mp3d_example.zip",
+            "unpack_to": data_dir + "scene_datasets/mp3d_test/",
+            "root": data_dir + "scene_datasets/mp3d_test/",
+            "version": "1.0",
+        },
+        "coda-scene": {
+            "source": "'https://docs.google.com/uc?export=download&id=1Pc-J6pZzXEd8RSeLM94t3iwO8q_RQ853'",
+            "package_name": "coda.zip",
+            "download_pre_args": "--no-check-certificate ",
+            "download_post_args": " -O " + data_dir + "coda.zip",
+            "unpack_to": data_dir + "scene_datasets/",
+            "root": data_dir + "scene_datasets/coda/",
+            "version": "1.0",
+        },
+    }
 
-# validatation: ids are unique between groups and sources
-for key in data_groups:
-    assert key not in data_sources, "Duplicate key: " + key
+    # data sources can be grouped for batch commands with a new uid
+    data_groups = {
+        "ci-test-assets": [
+            "habitat-test-scenes",
+            "habitat-example-objects",
+            "locobot-merged",
+            "mp3d-test-scene",
+            "coda-scene",
+        ]
+    }
 
 
 def prompt_yes_no(message):
+    r"""Prints a message and prompts the user for "y" or "n" returning True or False."""
     print("\n-------------------------")
     print(message)
     while True:
@@ -84,6 +95,7 @@ def prompt_yes_no(message):
 
 
 def clean_data(uid):
+    r"""Deletes the "root" directory for the named data-source."""
     if uid not in data_sources:
         print("Data download failed, no datasource named " + uid)
         return
@@ -94,6 +106,7 @@ def clean_data(uid):
 
 
 def download_and_place(uid, replace=False):
+    r"""Data-source download function. Validates uid, handles existing data version, downloads data, unpacks, writes version, cleans up."""
     if uid not in data_sources:
         print("Data download failed, no datasource named " + uid)
         return
@@ -221,6 +234,12 @@ if __name__ == "__main__":
         help="Unique ID of the data to download.",
     )
     parser.add_argument(
+        "--data_path",
+        default="",
+        type=str,
+        help="Optionally provide a path to the desired root data/ directory. Otherwise relative path is used.",
+    )
+    parser.add_argument(
         "--clean",
         action="store_true",
         help="Remove nested child directories for the datasource.",
@@ -233,6 +252,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     replace = args.replace
+
+    # initialize data_sources and data_groups with test and example assets
+    data_dir = os.path.abspath(args.data_path) + "/"
+    initialize_test_data_sources(data_dir=data_dir)
+
+    # validatation: ids are unique between groups and sources
+    for key in data_groups:
+        assert key not in data_sources, "Duplicate key: " + key
 
     uids = [args.uid]
     if args.uid in data_groups:
