@@ -103,8 +103,8 @@ def prompt_yes_no(message):
 
 def clean_data(uid):
     r"""Deletes the "root" directory for the named data-source."""
-    if uid not in data_sources:
-        print("Data download failed, no datasource named " + uid)
+    if not data_sources.get(uid):
+        print("Data clean failed, no datasource named " + uid)
         return
     print(
         "Cleaning datasource " + uid + ' directory: "' + data_sources[uid]["root"] + '"'
@@ -117,7 +117,7 @@ def clean_data(uid):
 
 def download_and_place(uid, replace=False):
     r"""Data-source download function. Validates uid, handles existing data version, downloads data, unpacks, writes version, cleans up."""
-    if uid not in data_sources:
+    if not data_sources.get(uid):
         print("Data download failed, no datasource named " + uid)
         return
 
@@ -179,12 +179,12 @@ def download_and_place(uid, replace=False):
     # download
     download_pre_args = (
         ""
-        if "download_pre_args" not in data_sources[uid]
+        if not data_sources[uid].get("download_pre_args")
         else data_sources[uid]["download_pre_args"]
     )
     download_post_args = (
         ""
-        if "download_post_args" not in data_sources[uid]
+        if not data_sources[uid].get("download_post_args")
         else data_sources[uid]["download_post_args"]
     )
     download_command = (
