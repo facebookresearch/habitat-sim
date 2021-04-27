@@ -112,6 +112,8 @@ all_exotic_sensor_types = [
     "ortho_sensor",
     "fisheye_rgb_sensor",
     "fisheye_depth_sensor",
+    "equirect_rgb_sensor",
+    "equirect_depth_sensor",
 ]
 
 

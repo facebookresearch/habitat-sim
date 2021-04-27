@@ -11,6 +11,9 @@ namespace em = emscripten;
 
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/EquirectangularSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
+#include "esp/sensor/VisualSensor.h"
 #include "esp/sim/Simulator.h"
 
 using namespace esp;
@@ -88,8 +91,8 @@ Magnum::Vector3 Vector3_sub(const Magnum::Vector3& v1,
 
 Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
   Observation ret;
-  if (CameraSensor * camera{dynamic_cast<CameraSensor*>(&sensor)})
-    camera->getObservation(sim, ret);
+  if (VisualSensor * visSensor{dynamic_cast<VisualSensor*>(&sensor)})
+    visSensor->getObservation(sim, ret);
   return ret;
 }
 
@@ -255,7 +258,12 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::enum_<SensorSubType>("SensorSubType")
       .value("NONE", SensorSubType::None)
       .value("PINHOLE", SensorSubType::Pinhole)
-      .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
+      .value("ORTHOGRAPHIC", SensorSubType::Orthographic)
+      .value("FISHEYE", SensorSubType::Fisheye)
+      .value("EQUIRECTANGULAR", SensorSubType::Equirectangular);
+
+  em::enum_<FisheyeSensorModelType>("FisheyeSensorModelType")
+      .value("DOUBLE_SPHERE", FisheyeSensorModelType::DoubleSphere);
 
   em::class_<SensorSpec>("SensorSpec")
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
@@ -273,6 +281,29 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("far", &VisualSensorSpec::far)
       .property("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer);
 
+  em::class_<CubeMapSensorBaseSpec, em::base<VisualSensorSpec>>(
+      "CubeMapSensorBaseSpec");
+
+  em::class_<EquirectangularSensorSpec, em::base<CubeMapSensorBaseSpec>>(
+      "EquirectangularSensorSpec")
+      .smart_ptr_constructor("EquirectangularSensorSpec",
+                             &EquirectangularSensorSpec::create<>);
+
+  em::class_<FisheyeSensorSpec, em::base<CubeMapSensorBaseSpec>>(
+      "FisheyeSensorSpec")
+      .smart_ptr_constructor("FisheyeSensorSpec", &FisheyeSensorSpec::create<>)
+      .property("focal_length", &FisheyeSensorSpec::focalLength)
+      .property("principal_point_offset",
+                &FisheyeSensorSpec::principalPointOffset)
+      .property("sensor_model_type", &FisheyeSensorSpec::fisheyeModelType);
+
+  em::class_<FisheyeSensorDoubleSphereSpec, em::base<FisheyeSensorSpec>>(
+      "FisheyeSensorDoubleSphereSpec")
+      .smart_ptr_constructor("FisheyeSensorDoubleSphereSpec",
+                             &FisheyeSensorDoubleSphereSpec::create<>)
+      .property("alpha", &FisheyeSensorDoubleSphereSpec::alpha)
+      .property("xi", &FisheyeSensorDoubleSphereSpec::xi);
+
   em::class_<CameraSensorSpec, em::base<VisualSensorSpec>>("CameraSensorSpec")
       .smart_ptr_constructor("CameraSensorSpec", &CameraSensorSpec::create<>)
       .property("ortho_scale", &CameraSensorSpec::orthoScale);
@@ -282,6 +313,24 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getObservation", &Sensor_getObservation)
       .function("setLocalTransform", &Sensor_setLocalTransform)
       .function("specification", &Sensor::specification);
+
+  em::class_<VisualSensor, em::base<Sensor>>("VisualSensor")
+      .smart_ptr<VisualSensor::ptr>("VisualSensor::ptr")
+      .property("near", &VisualSensor::getNear)
+      .property("far", &VisualSensor::getFar);
+
+  em::class_<CubeMapSensorBase, em::base<VisualSensor>>("CubeMapSensorBase")
+      .smart_ptr<CubeMapSensorBase::ptr>("CubeMapSensorBase::ptr");
+
+  em::class_<EquirectangularSensor, em::base<CubeMapSensorBase>>(
+      "EquirectangularSensor")
+      .smart_ptr<EquirectangularSensor::ptr>("EquirectangularSensor::ptr");
+
+  em::class_<FisheyeSensor, em::base<CubeMapSensorBase>>("FisheyeSensor")
+      .smart_ptr<FisheyeSensor::ptr>("FisheyeSensor::ptr");
+
+  em::class_<CameraSensor, em::base<VisualSensor>>("CameraSensor")
+      .smart_ptr<CameraSensor::ptr>("CameraSensor::ptr");
 
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",

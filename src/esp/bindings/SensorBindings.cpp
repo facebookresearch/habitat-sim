@@ -9,11 +9,12 @@
 
 #include <Magnum/PythonBindings.h>
 #include <Magnum/SceneGraph/PythonBindings.h>
-#include <pybind11/pytypes.h>
 
 #include <utility>
 
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/CubeMapSensorBase.h"
+#include "esp/sensor/EquirectangularSensor.h"
 #include "esp/sensor/FisheyeSensor.h"
 #include "esp/sensor/VisualSensor.h"
 #ifdef ESP_BUILD_WITH_CUDA
@@ -57,7 +58,8 @@ void initSensorBindings(py::module& m) {
       .value("NONE", SensorSubType::None)
       .value("PINHOLE", SensorSubType::Pinhole)
       .value("ORTHOGRAPHIC", SensorSubType::Orthographic)
-      .value("FISHEYE", SensorSubType::Fisheye);
+      .value("FISHEYE", SensorSubType::Fisheye)
+      .value("EQUIRECTANGULAR", SensorSubType::Equirectangular);
 
   py::enum_<FisheyeSensorModelType>(m, "FisheyeSensorModelType")
       .value("DOUBLE_SPHERE", FisheyeSensorModelType::DoubleSphere);
@@ -110,8 +112,17 @@ void initSensorBindings(py::module& m) {
           })
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
+  // === CubemapSensorBaseSpec ===
+  py::class_<CubeMapSensorBaseSpec, CubeMapSensorBaseSpec::ptr,
+             VisualSensorSpec>(m, "CubeMapSensorBaseSpec");
+
+  // === EquirectangularSensorSpec ===
+  py::class_<EquirectangularSensorSpec, EquirectangularSensorSpec::ptr,
+             CubeMapSensorBaseSpec>(m, "EquirectangularSensorSpec")
+      .def(py::init(&EquirectangularSensorSpec::create<>));
+
   // ====FisheyeSensorSpec ====
-  py::class_<FisheyeSensorSpec, FisheyeSensorSpec::ptr, VisualSensorSpec>(
+  py::class_<FisheyeSensorSpec, FisheyeSensorSpec::ptr, CubeMapSensorBaseSpec>(
       m, "FisheyeSensorSpec", py::dynamic_attr())
       .def(py::init(&FisheyeSensorSpec::create<>))
       .def_readwrite("focal_length", &FisheyeSensorSpec::focalLength)
@@ -231,9 +242,25 @@ void initSensorBindings(py::module& m) {
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
           R"(The distance to the far clipping plane for this CameraSensor uses.)");
 
+  // === CubeMapSensorBase ===
+  py::class_<CubeMapSensorBase,
+             Magnum::SceneGraph::PyFeature<CubeMapSensorBase>, VisualSensor,
+             Magnum::SceneGraph::PyFeatureHolder<CubeMapSensorBase>>(
+      m, "CubeMapSensorBase");
+
+  // === EquirectangularSensor ===
+  py::class_<EquirectangularSensor,
+             Magnum::SceneGraph::PyFeature<EquirectangularSensor>,
+             CubeMapSensorBase,
+             Magnum::SceneGraph::PyFeatureHolder<EquirectangularSensor>>(
+      m, "EquirectangularSensor")
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const EquirectangularSensorSpec::ptr&>());
+
   // === FisheyeSensor ====
   py::class_<FisheyeSensor, Magnum::SceneGraph::PyFeature<FisheyeSensor>,
-             VisualSensor, Magnum::SceneGraph::PyFeatureHolder<FisheyeSensor>>(
+             CubeMapSensorBase,
+             Magnum::SceneGraph::PyFeatureHolder<FisheyeSensor>>(
       m, "FisheyeSensor")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const FisheyeSensorSpec::ptr&>());
