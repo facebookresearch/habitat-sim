@@ -7,7 +7,7 @@
 
 #include <Corrade/Utility/Macros.h>
 
-#include "esp/core/AbstractManagedObject.h"
+#include "esp/core/managedContainers/AbstractManagedObject.h"
 #include "esp/physics/PhysicsObjectBase.h"
 
 namespace esp {
@@ -86,13 +86,6 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
       sp->setMotionType(mt);
     }
   }
-
-  /**
-   * @brief File directory is unused for managed phyiscs objects
-   */
-  void setFileDirectory(
-      CORRADE_UNUSED const std::string& fileDirectory) override {}
-  std::string getFileDirectory() const override { return ""; }
 
  protected:
   /**
