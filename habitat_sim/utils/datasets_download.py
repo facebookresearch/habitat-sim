@@ -7,6 +7,7 @@
 import argparse
 import os
 import shutil
+import zipfile
 
 import git
 
@@ -203,13 +204,9 @@ def download_and_place(uid, replace=False):
     # unpack
     package_name = data_sources[uid]["package_name"]
     if package_name.endswith(".zip"):
-        os.system(
-            "unzip -n "
-            + data_path
-            + package_name
-            + " -d "
-            + data_sources[uid]["unpack_to"]
-        )
+        with zipfile.ZipFile(data_path + package_name, "r") as zip_ref:
+            zip_ref.extractall(data_sources[uid]["unpack_to"])
+
     else:
         # TODO: support more compression types as necessary
         print(
