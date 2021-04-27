@@ -158,16 +158,9 @@ def download_and_place(uid, replace=False):
             return
 
     # download
-    download_pre_args = (
-        ""
-        if not data_sources[uid].get("download_pre_args")
-        else data_sources[uid]["download_pre_args"]
-    )
-    download_post_args = (
-        ""
-        if not data_sources[uid].get("download_post_args")
-        else data_sources[uid]["download_post_args"]
-    )
+    download_pre_args = data_sources[uid].get("download_pre_args", "")
+    download_post_args = data_sources[uid].get("download_post_args", "")
+
     download_command = (
         "wget --continue "
         + download_pre_args
