@@ -7,16 +7,21 @@
 import argparse
 import os
 
+import git
+
+repo = git.Repo(".", search_parent_directories=True)
+dir_path = repo.working_tree_dir
 # Root data directory. Optionaly overridden by input argument "--data_path".
-data_dir = ""
+data_path = os.path.join(dir_path, "data")
+
 data_sources = {}
 data_groups = {}
 
 
-def initialize_test_data_sources(data_dir):
+def initialize_test_data_sources(data_path):
     global data_sources
     global data_groups
-    r"""Initializes data_sources and data_groups dicts with a variable data_dir path.
+    r"""Initializes data_sources and data_groups dicts with a variable data_path path.
     """
     # dict keyed by uids with download specs for various individual test assets and datasets
     data_sources = {
@@ -32,38 +37,38 @@ def initialize_test_data_sources(data_dir):
         "habitat-test-scenes": {
             "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
             "package_name": "habitat-test-scenes.zip",
-            "unpack_to": data_dir + "../",
-            "root": data_dir + "scene_datasets/habitat-test-scenes/",
+            "unpack_to": data_path + "../",
+            "root": data_path + "scene_datasets/habitat-test-scenes/",
             "version": "1.0",
         },
         "habitat-example-objects": {
             "source": "http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip",
             "package_name": "objects_v0.2.zip",
-            "unpack_to": data_dir + "objects/example_objects/",
-            "root": data_dir + "objects/example_objects/",
+            "unpack_to": data_path + "objects/example_objects/",
+            "root": data_path + "objects/example_objects/",
             "version": "0.2",
         },
         "locobot-merged": {
             "source": "http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip",
             "package_name": "locobot_merged_v0.2.zip",
-            "unpack_to": data_dir + "objects/locobot_merged/",
-            "root": data_dir + "objects/locobot_merged/",
+            "unpack_to": data_path + "objects/locobot_merged/",
+            "root": data_path + "objects/locobot_merged/",
             "version": "0.2",
         },
         "mp3d-test-scene": {
             "source": "http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip",
             "package_name": "mp3d_example.zip",
-            "unpack_to": data_dir + "scene_datasets/mp3d_test/",
-            "root": data_dir + "scene_datasets/mp3d_test/",
+            "unpack_to": data_path + "scene_datasets/mp3d_test/",
+            "root": data_path + "scene_datasets/mp3d_test/",
             "version": "1.0",
         },
         "coda-scene": {
             "source": "'https://docs.google.com/uc?export=download&id=1Pc-J6pZzXEd8RSeLM94t3iwO8q_RQ853'",
             "package_name": "coda.zip",
             "download_pre_args": "--no-check-certificate ",
-            "download_post_args": " -O " + data_dir + "coda.zip",
-            "unpack_to": data_dir + "scene_datasets/",
-            "root": data_dir + "scene_datasets/coda/",
+            "download_post_args": " -O " + data_path + "coda.zip",
+            "unpack_to": data_path + "scene_datasets/",
+            "root": data_path + "scene_datasets/coda/",
             "version": "1.0",
         },
     }
@@ -113,7 +118,7 @@ def download_and_place(uid, replace=False):
 
     # check for current version
     version_filepath = os.path.join(
-        data_dir,
+        data_path,
         data_sources[uid]["root"] + "DATA_VERSION_" + data_sources[uid]["version"],
     )
     if os.path.exists(data_sources[uid]["root"]):
@@ -182,13 +187,13 @@ def download_and_place(uid, replace=False):
         + download_pre_args
         + data_sources[uid]["source"]
         + " -P "
-        + data_dir
+        + data_path
         + download_post_args
     )
     # print(download_command)
     os.system(download_command)
     assert os.path.exists(
-        os.path.join(data_dir, data_sources[uid]["package_name"])
+        os.path.join(data_path, data_sources[uid]["package_name"])
     ), "Download failed, no package found."
 
     # unpack
@@ -196,7 +201,7 @@ def download_and_place(uid, replace=False):
     if package_name.endswith(".zip"):
         os.system(
             "unzip -n "
-            + data_dir
+            + data_path
             + package_name
             + " -d "
             + data_sources[uid]["unpack_to"]
@@ -208,7 +213,7 @@ def download_and_place(uid, replace=False):
         )
         return
     assert os.path.exists(
-        os.path.join(data_dir, data_sources[uid]["root"])
+        os.path.join(data_path, data_sources[uid]["root"])
     ), "Unpacking failed, no root directory."
 
     # write version
@@ -216,7 +221,7 @@ def download_and_place(uid, replace=False):
         print("Wrote version file: " + version_filepath)
 
     # clean-up
-    os.system("rm " + data_dir + package_name)
+    os.system("rm " + data_path + package_name)
 
     print(
         "Dataset ("
@@ -235,9 +240,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--data_path",
-        default="",
+        default=data_path,
         type=str,
-        help="Optionally provide a path to the desired root data/ directory. Otherwise relative path is used.",
+        help='Optionally provide a path to the desired root data/ directory. Default is "habitat-sim/data/".',
     )
     parser.add_argument(
         "--clean",
@@ -254,8 +259,10 @@ if __name__ == "__main__":
     replace = args.replace
 
     # initialize data_sources and data_groups with test and example assets
-    data_dir = os.path.abspath(args.data_path) + "/"
-    initialize_test_data_sources(data_dir=data_dir)
+    if not os.path.exists(args.data_path):
+        os.mkdir(args.data_path)
+    data_path = os.path.abspath(args.data_path) + "/"
+    initialize_test_data_sources(data_path=data_path)
 
     # validatation: ids are unique between groups and sources
     for key in data_groups:
