@@ -245,12 +245,13 @@ if __name__ == "__main__":
         type=str,
         help='Optionally provide a path to the desired root data/ directory. Default is "habitat-sim/data/".',
     )
-    parser.add_argument(
+    arg_group = parser.add_mutually_exclusive_group()
+    arg_group.add_argument(
         "--clean",
         action="store_true",
         help="Remove nested child directories for the datasource.",
     )
-    parser.add_argument(
+    arg_group.add_argument(
         "--replace",
         action="store_true",
         help="If set, alternative versions of any dataset found during download will be deleted automatically. Otherwise user will be prompted before overriding existing data.",
