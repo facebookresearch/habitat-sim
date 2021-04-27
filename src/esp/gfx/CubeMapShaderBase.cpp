@@ -1,7 +1,7 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-#include "FisheyeShader.h"
+#include "CubeMapShaderBase.h"
 
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/FormatStl.h>
@@ -15,28 +15,29 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
-FisheyeShader::FisheyeShader(Flags flags) : flags_(flags) {
+CubeMapShaderBase::CubeMapShaderBase(Flags flags) : flags_(flags) {
   CORRADE_ASSERT(flags != Flags{},
-                 "FisheyeShader::FisheyeShader(): shader "
+                 "CubeMapShaderBase::CubeMapShaderBase(): shader "
                  "flags cannot be empty.", );
 }
-FisheyeShader& FisheyeShader::bindColorTexture(
+
+CubeMapShaderBase& CubeMapShaderBase::bindColorTexture(
     Mn::GL::CubeMapTexture& texture) {
-  CORRADE_ASSERT(flags_ & FisheyeShader::Flag::ColorTexture,
-                 "FisheyeShader::bindColorTexture(): the shader was not "
+  CORRADE_ASSERT(flags_ & CubeMapShaderBase::Flag::ColorTexture,
+                 "CubeMapShaderBase::bindColorTexture(): the shader was not "
                  "created with color texture enabled",
                  *this);
-  texture.bind(fisheyeShaderTexUnitSpace::TextureUnit::Color);
+  texture.bind(CubeMapShaderBaseTexUnitSpace::TextureUnit::Color);
   return *this;
 }
 
-FisheyeShader& FisheyeShader::bindDepthTexture(
+CubeMapShaderBase& CubeMapShaderBase::bindDepthTexture(
     Mn::GL::CubeMapTexture& texture) {
-  CORRADE_ASSERT(flags_ & FisheyeShader::Flag::DepthTexture,
-                 "FisheyeShader::bindDepthTexture(): the shader was not "
+  CORRADE_ASSERT(flags_ & CubeMapShaderBase::Flag::DepthTexture,
+                 "CubeMapShaderBase::bindDepthTexture(): the shader was not "
                  "created with depth texture enabled",
                  *this);
-  texture.bind(fisheyeShaderTexUnitSpace::TextureUnit::Depth);
+  texture.bind(CubeMapShaderBaseTexUnitSpace::TextureUnit::Depth);
   return *this;
 }
 

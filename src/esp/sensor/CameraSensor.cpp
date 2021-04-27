@@ -21,7 +21,7 @@ CameraSensorSpec::CameraSensorSpec() : VisualSensorSpec() {
   sensorSubType = SensorSubType::Pinhole;
 }
 
-void CameraSensorSpec::sanityCheck() {
+void CameraSensorSpec::sanityCheck() const {
   VisualSensorSpec::sanityCheck();
   CORRADE_ASSERT(sensorSubType == SensorSubType::Pinhole ||
                      sensorSubType == SensorSubType::Orthographic,

@@ -45,10 +45,12 @@ set(
   PbrDrawable.h
   TextureVisualizerShader.cpp
   TextureVisualizerShader.h
+  CubeMapShaderBase.cpp
+  CubeMapShaderBase.h
   DoubleSphereCameraShader.cpp
   DoubleSphereCameraShader.h
-  FisheyeShader.cpp
-  FisheyeShader.h
+  EquirectangularShader.cpp
+  EquirectangularShader.h
 )
 
 # If ptex support is enabled add relevant source files

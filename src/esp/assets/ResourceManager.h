@@ -184,7 +184,7 @@ class ResourceManager {
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
-      const metadata::attributes::StageAttributes::ptr& sceneAttributes,
+      metadata::attributes::StageAttributes::ptr& sceneAttributes,
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
       std::vector<int>& activeSceneIDs,
@@ -209,12 +209,14 @@ class ResourceManager {
    * collisionMeshGroups_, respectively. Assumes valid render and collisions
    * asset handles have been specified (This is checked/verified during
    * registration.)
-   * @param objTemplateHandle The key for referencing the template in the
-   * @ref esp::metadata::managers::ObjectAttributesManager::objectLibrary_.
+   * @param ObjectAttributes The object template describing the object we wish
+   * to instantiate, copied from an entry in @ref
+   * esp::metadata::managers::ObjectAttributesManager::objectLibrary_.
    * @return whether process succeeded or not - only currently fails if
    * registration call fails.
    */
-  bool instantiateAssetsOnDemand(const std::string& objTemplateHandle);
+  bool instantiateAssetsOnDemand(
+      const metadata::attributes::ObjectAttributes::ptr& ObjectAttributes);
 
   //======== Accessor functions ========
   /**
@@ -579,20 +581,21 @@ class ResourceManager {
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
-   * specified @ref meshType used by @ref objectTemplateHandle
+   * specified @p assetType used by object described by @p objectAttributes
    *
    * @param filename the name of the file describing this mesh
-   * @param objectTemplateHandle the handle for the object attributes owning
-   * this mesh (for error log output)
-   * @param meshType either "render" or "collision" (for error log output)
+   * @param objectAttributes the object attributes owning
+   * this mesh.
+   * @param assetType either "render" or "collision" (for error log output)
    * @param requiresLighting whether or not this mesh asset responds to
    * lighting
    * @return whether or not the mesh was loaded successfully
    */
-  bool loadObjectMeshDataFromFile(const std::string& filename,
-                                  const std::string& objectTemplateHandle,
-                                  const std::string& meshType,
-                                  const bool requiresLighting);
+  bool loadObjectMeshDataFromFile(
+      const std::string& filename,
+      const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      const std::string& meshType,
+      const bool requiresLighting);
 
   /**
    * @brief Build a primitive asset based on passed template parameters.  If

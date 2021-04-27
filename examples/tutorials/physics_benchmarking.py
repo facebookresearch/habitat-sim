@@ -86,7 +86,7 @@ def box_drop_test(
     useVHACD=False,
     VHACDParams=def_params,
 ):  # take in parameters here
-    """Drops a specified number of objects into a box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame. """
+    """Drops a specified number of objects into a box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame."""
 
     data = {
         "observations": [],

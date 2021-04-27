@@ -16,6 +16,15 @@ const std::map<std::string, esp::assets::AssetType>
         {"semantic", esp::assets::AssetType::INSTANCE_MESH},
         {"suncg", esp::assets::AssetType::SUNCG_SCENE},
 };
+
+// All keys must be lowercase
+const std::map<std::string, ObjectInstanceShaderType>
+    AbstractObjectAttributes::ShaderTypeNamesMap = {
+        {"flat", ObjectInstanceShaderType::Flat},
+        {"phong", ObjectInstanceShaderType::Phong},
+        {"pbr", ObjectInstanceShaderType::PBR},
+};
+
 AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& attributesClassKey,
     const std::string& handle)
@@ -53,6 +62,9 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
+  // default to unknown for objects
+  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  // TODO remove this once ShaderType support is complete
   setRequiresLighting(true);
   setIsVisible(true);
   setSemanticId(0);
@@ -62,7 +74,9 @@ StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
-
+  // default to unknown for stages
+  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  // TODO remove this once ShaderType support is complete
   setRequiresLighting(false);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
   setCollisionAssetType(0);

@@ -102,75 +102,6 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::createDefault
 
   /**
-   * @brief Creates an instance of a managed object from a JSON file.
-   *
-   * @param filename the name of the file describing the object managed object.
-   * Assumes it exists and fails if it does not.
-   * @param registerObject whether to add this managed object to the
-   * library. If the user is going to edit this managed object, this should be
-   * false - any subsequent editing will require re-registration. Defaults to
-   * true.
-   * @return a reference to the desired managed object, or nullptr if fails.
-   */
-  ManagedPtr createObjectFromJSONFile(const std::string& filename,
-                                      bool registerObject = true) {
-    io::JsonDocument docConfig = nullptr;
-    bool success = this->verifyLoadDocument(filename, docConfig);
-    if (!success) {
-      LOG(ERROR) << "ManagedContainer::createObjectFromFile ("
-                 << this->objectType_
-                 << ") : Failure reading document as JSON : " << filename
-                 << ". Aborting.";
-      return nullptr;
-    }
-    // convert doc to const value
-    const io::JsonGenericValue config = docConfig.GetObject();
-    ManagedPtr attr = this->buildManagedObjectFromDoc(filename, config);
-    return this->postCreateRegister(attr, registerObject);
-  }  // ManagedContainer::createObjectFromJSONFile
-
-  /**
-   * @brief Method to load a Managed Object's data from a file.  If the file
-   * type is not supported by specialization of this method, this method
-   * executes and an error is thrown.
-   * @tparam type of document to load.
-   * @param filename name of file document to load from
-   * @param config document to read for data
-   * @return a shared pointer of the created Managed Object
-   */
-  template <typename U>
-  ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
-                                       CORRADE_UNUSED const U& config) {
-    LOG(ERROR)
-        << "ManagedContainer::buildManagedObjectFromDoc (" << this->objectType_
-        << ") : Failure loading attributes from document of unknown type : "
-        << filename << ". Aborting.";
-  }
-  /**
-   * @brief Method to load a Managed Object's data from a file.  This is the
-   * JSON specialization, using type inference.
-   * @param filename name of file document to load from
-   * @param config JSON document to read for data
-   * @return a shared pointer of the created Managed Object
-   */
-  ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
-                                       const io::JsonGenericValue& jsonConfig) {
-    return this->buildObjectFromJSONDoc(filename, jsonConfig);
-  }
-
-  /**
-   * @brief Parse passed JSON Document specifically for @ref ManagedPtr object.
-   * It always returns a @ref ManagedPtr object.
-   * @param filename The name of the file describing the @ref ManagedPtr,
-   * used as managed object handle/name on create.
-   * @param jsonConfig json document to parse - assumed to be legal JSON doc.
-   * @return a reference to the desired managed object.
-   */
-  virtual ManagedPtr buildObjectFromJSONDoc(
-      const std::string& filename,
-      const io::JsonGenericValue& jsonConfig) = 0;
-
-  /**
    * @brief Add a copy of @ref esp::core::AbstractManagedObject to the @ref
    * objectLibrary_.
    *
@@ -521,21 +452,6 @@ class ManagedContainer : public ManagedContainerBase {
   }  // postCreateRegister
 
   /**
-   * @brief Get directory component of managed object handle and call @ref
-   * esp::core::AbstractManagedObject::setFileDirectory if a legitimate
-   * directory exists in handle.
-   *
-   * @param object pointer to managed object to set
-   */
-  void setFileDirectoryFromHandle(ManagedPtr object) {
-    std::string handleName = object->getHandle();
-    auto loc = handleName.find_last_of('/');
-    if (loc != std::string::npos) {
-      object->setFileDirectory(handleName.substr(0, loc));
-    }
-  }  // setFileDirectoryFromHandle
-
-  /**
    * @brief Used Internally.  Create and configure newly-created managed object
    * with any default values, before any specific values are set.
    *
@@ -668,8 +584,11 @@ class ManagedContainer : public ManagedContainerBase {
     object->setHandle(objectHandle);
     // return either the ID of the existing managed object referenced by
     // objectHandle, or the next available ID if not found.
-    int objectID = getObjectIDByHandleOrNew(objectHandle, true);
-    object->setID(objectID);
+    object->setID(getObjectIDByHandleOrNew(objectHandle, true));
+    // use object's ID for ID in container - may not match ID synthesized by
+    // getObjectIDByHandle, for objects that manage their own IDs
+    int objectID = object->getID();
+
     // make a copy of this managed object so that user can continue to edit
     // original
     ManagedPtr managedObjectCopy = copyObject(object);

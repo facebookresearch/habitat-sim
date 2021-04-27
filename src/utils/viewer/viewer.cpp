@@ -56,13 +56,13 @@
 #include "esp/geo/VoxelUtils.h"
 #endif
 
+#include "esp/physics/configure.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/EquirectangularSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
-#include "esp/physics/configure.h"
-
-#include "esp/sensor/FisheyeSensor.h"
 
 constexpr float moveSensitivity = 0.07f;
 constexpr float lookSensitivity = 0.9f;
@@ -383,7 +383,13 @@ Key Commands:
 
   Mn::DebugTools::GLFrameProfiler profiler_{};
 
-  bool fisheyeMode_ = false;
+  enum class VisualSensorMode : uint8_t {
+    Camera = 0,
+    Fisheye,
+    Equirectangular,
+    VisualSensorModeCount,
+  };
+  VisualSensorMode sensorMode_ = VisualSensorMode::Camera;
 
   void bindRenderTarget();
 };
@@ -456,6 +462,30 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+  }
+
+  // add the equirectangular sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::EquirectangularSensorSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "equirectangular";
+    spec->sensorType = esp::sensor::SensorType::Color;
+    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  }
+
+  // add the equirectangular depth sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::EquirectangularSensorSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "depth_equirectangular";
+    spec->sensorType = esp::sensor::SensorType::Depth;
+    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
   }
 }
 
@@ -693,6 +723,12 @@ void Viewer::switchCameraType() {
     }
     case esp::sensor::SensorSubType::Orthographic: {
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
+      return;
+    }
+    case esp::sensor::SensorSubType::Fisheye: {
+      return;
+    }
+    case esp::sensor::SensorSubType::Equirectangular: {
       return;
     }
     case esp::sensor::SensorSubType::None: {
@@ -1097,9 +1133,12 @@ void Viewer::drawEvent() {
   if (depthMode_) {
     // ================ Depth Visualization ==================================
     std::string sensorId = "depth";
-    if (fisheyeMode_) {
+    if (sensorMode_ == VisualSensorMode::Fisheye) {
       sensorId = "depth_fisheye";
+    } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+      sensorId = "depth_equirectangular";
     }
+
     simulator_->drawObservation(defaultAgentId_, sensorId);
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, sensorId);
@@ -1107,66 +1146,77 @@ void Viewer::drawEvent() {
                                      1.0f / 512.0f,  // colorMapOffset
                                      1.0f / 24.0f);  // colorMapScale
     sensorRenderTarget->blitRgbaToDefault();
-  } else if (fisheyeMode_) {
-    // ================ fisheye RGB =========================================
-    std::string sensorId = "fisheye";
-    simulator_->drawObservation(defaultAgentId_, sensorId);
-    // color fisheye
-    esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, sensorId);
-    CORRADE_ASSERT(sensorRenderTarget,
-                   "Error in Viewer::drawEvent: sensor's rendering target "
-                   "cannot be nullptr.", );
-    sensorRenderTarget->blitRgbaToDefault();
-  } else {  // ============= regular RGB with object picking =================
-    // using polygon offset to increase mesh depth to avoid z-fighting with
-    // debug draw (since lines will not respond to offset).
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-    Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
+  } else {
+    if (sensorMode_ == VisualSensorMode::Camera) {
+      // ============= regular RGB with object picking =================
+      // using polygon offset to increase mesh depth to avoid z-fighting with
+      // debug draw (since lines will not respond to offset).
+      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+      Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
 
-    // ONLY draw the content to the frame buffer but not immediately blit the
-    // result to the default main buffer
-    // (this is the reason we do not call displayObservation)
-    simulator_->drawObservation(defaultAgentId_, "rgba_camera");
-    // TODO: enable other sensors to be displayed
+      // ONLY draw the content to the frame buffer but not immediately blit the
+      // result to the default main buffer
+      // (this is the reason we do not call displayObservation)
+      simulator_->drawObservation(defaultAgentId_, "rgba_camera");
+      // TODO: enable other sensors to be displayed
 
-    Mn::GL::Renderer::setDepthFunction(
-        Mn::GL::Renderer::DepthFunction::LessOrEqual);
-    if (debugBullet_) {
-      Mn::Matrix4 camM(renderCamera_->cameraMatrix());
-      Mn::Matrix4 projM(renderCamera_->projectionMatrix());
+      Mn::GL::Renderer::setDepthFunction(
+          Mn::GL::Renderer::DepthFunction::LessOrEqual);
+      if (debugBullet_) {
+        Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+        Mn::Matrix4 projM(renderCamera_->projectionMatrix());
 
-      simulator_->physicsDebugDraw(projM * camM);
-    }
-    Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
-    Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
-    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-
-    visibles = renderCamera_->getPreviousNumVisibleDrawables();
-    esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
-    CORRADE_ASSERT(sensorRenderTarget,
-                   "Error in Viewer::drawEvent: sensor's rendering target "
-                   "cannot be nullptr.", );
-    if (objectPickingHelper_->isObjectPicked()) {
-      // we need to immediately draw picked object to the SAME frame buffer
-      // so bind it first
-      // bind the framebuffer
-      sensorRenderTarget->renderReEnter();
-
-      // setup blending function
-      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
-
-      // render the picked object on top of the existing contents
-      esp::gfx::RenderCamera::Flags flags;
-      if (simulator_->isFrustumCullingEnabled()) {
-        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+        simulator_->physicsDebugDraw(projM * camM);
       }
-      renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+      Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
+      Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
+      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
 
-      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+      visibles = renderCamera_->getPreviousNumVisibleDrawables();
+      esp::gfx::RenderTarget* sensorRenderTarget =
+          simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
+      CORRADE_ASSERT(sensorRenderTarget,
+                     "Error in Viewer::drawEvent: sensor's rendering target "
+                     "cannot be nullptr.", );
+      if (objectPickingHelper_->isObjectPicked()) {
+        // we need to immediately draw picked object to the SAME frame buffer
+        // so bind it first
+        // bind the framebuffer
+        sensorRenderTarget->renderReEnter();
+
+        // setup blending function
+        Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+        // render the picked object on top of the existing contents
+        esp::gfx::RenderCamera::Flags flags;
+        if (simulator_->isFrustumCullingEnabled()) {
+          flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+        }
+        renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+        Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+      }
+      sensorRenderTarget->blitRgbaToDefault();
+    } else {
+      // ================ NON-regular RGB sensor ==================
+      std::string sensorId = "";
+      if (sensorMode_ == VisualSensorMode::Fisheye) {
+        sensorId = "fisheye";
+      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+        sensorId = "equirectangular";
+      } else {
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      }
+      CORRADE_INTERNAL_ASSERT(!sensorId.empty());
+
+      simulator_->drawObservation(defaultAgentId_, sensorId);
+      esp::gfx::RenderTarget* sensorRenderTarget =
+          simulator_->getRenderTarget(defaultAgentId_, sensorId);
+      CORRADE_ASSERT(sensorRenderTarget,
+                     "Error in Viewer::drawEvent: sensor's rendering target "
+                     "cannot be nullptr.", );
+      sensorRenderTarget->blitRgbaToDefault();
     }
-    sensorRenderTarget->blitRgbaToDefault();
   }
 
   // Immediately bind the main buffer back so that the "imgui" below can work
@@ -1186,19 +1236,29 @@ void Viewer::drawEvent() {
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
-    if (fisheyeMode_ == 0) {
+    if (sensorMode_ == VisualSensorMode::Camera) {
       ImGui::Text("%u culled", total - visibles);
     }
     auto& cam = getAgentCamera();
 
-    if (fisheyeMode_) {
-      ImGui::Text("Fisheye camera");
-    } else if (cam.getCameraType() ==
-               esp::sensor::SensorSubType::Orthographic) {
-      ImGui::Text("Orthographic camera");
-    } else if (cam.getCameraType() == esp::sensor::SensorSubType::Pinhole) {
-      ImGui::Text("Pinhole camera");
-    };
+    switch (sensorMode_) {
+      case VisualSensorMode::Camera:
+        if (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic) {
+          ImGui::Text("Orthographic camera sensor");
+        } else if (cam.getCameraType() == esp::sensor::SensorSubType::Pinhole) {
+          ImGui::Text("Pinhole camera sensor");
+        };
+        break;
+      case VisualSensorMode::Fisheye:
+        ImGui::Text("Fisheye sensor");
+        break;
+      case VisualSensorMode::Equirectangular:
+        ImGui::Text("Equirectangular sensor");
+        break;
+
+      default:
+        break;
+    }
     ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
@@ -1480,8 +1540,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       buildTrajectoryVis();
       break;
     case KeyEvent::Key::Four:
-      fisheyeMode_ = !fisheyeMode_;
-      LOG(INFO) << "Fisheye sensor mode is " << (fisheyeMode_ ? "ON" : "OFF");
+      sensorMode_ = static_cast<VisualSensorMode>(
+          (uint8_t(sensorMode_) + 1) %
+          uint8_t(VisualSensorMode::VisualSensorModeCount));
+      LOG(INFO) << "Sensor mode is set to " << int(sensorMode_);
       break;
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective

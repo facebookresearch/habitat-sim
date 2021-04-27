@@ -18,6 +18,10 @@ const std::map<std::string, esp::physics::MotionType>
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle)
     : AbstractAttributes("SceneObjectInstanceAttributes", handle) {
+  // default to unknown for object instances, to use attributes-specified
+  // defaults
+  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+
   // defaults to unknown/undefined
   setMotionType(static_cast<int>(esp::physics::MotionType::UNDEFINED));
   // set to no rotation

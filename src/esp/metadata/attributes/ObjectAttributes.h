@@ -14,6 +14,31 @@ namespace metadata {
 namespace attributes {
 
 /**
+ * @brief This enum class defines the possible shader options for rendering
+ * instances of objects or stages in Habitat-sim.
+ */
+enum class ObjectInstanceShaderType {
+  /**
+   * Represents an unknown/unspecified value for the shader type to use. Resort
+   * to defaults for object type.
+   */
+  Unknown = -1,
+  /**
+   * Refers to flat shading, pure color and no lighting.  This is often used for
+   * textured objects
+   */
+  Flat = 0,
+  /**
+   * Refers to phong shading with pure diffuse color.
+   */
+  Phong = 1,
+  /**
+   * Refers to using a shader built with physically-based rendering models.
+   */
+  PBR = 2,
+};
+
+/**
  * @brief base attributes object holding attributes shared by all
  * @ref esp::metadata::attributes::ObjectAttributes and @ref
  * esp::metadata::attributes::StageAttributes objects; Should be treated as
@@ -22,11 +47,16 @@ namespace attributes {
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
   /**
-   * @brief Constant static map to provide mappings from string tags to @ref
-   * esp::assets::AssetType values.  This will be used to map values set in json
-   * for mesh type to @ref esp::assets::AssetType.  Keys must be lowercase.
+   * @brief Constant static map to provide mappings from string tags to
+   * @ref esp::assets::AssetType values.  This will be used to map values
+   * set in json for mesh type to @ref esp::assets::AssetType.  Keys must
+   * be lowercase.
    */
   static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
+
+  static const std::map<std::string, ObjectInstanceShaderType>
+      ShaderTypeNamesMap;
+
   AbstractObjectAttributes(const std::string& classKey,
                            const std::string& handle);
 
@@ -159,6 +189,13 @@ class AbstractObjectAttributes : public AbstractAttributes {
   }
 
   bool getUseMeshCollision() const { return getBool("use_mesh_collision"); }
+
+  /**
+   * @brief Set the default shader to use for an object or stage.  This may be
+   * overridden by a scene instance specification.
+   */
+  void setShaderType(int shader_type) { setInt("shader_type", shader_type); }
+  int getShaderType() const { return getInt("shader_type"); }
 
   // if true use phong illumination model instead of flat shading
   void setRequiresLighting(bool requiresLighting) {

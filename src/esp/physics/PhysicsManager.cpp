@@ -34,7 +34,7 @@ PhysicsManager::~PhysicsManager() {
 }
 
 bool PhysicsManager::addStage(
-    const std::string& handle,
+    const metadata::attributes::StageAttributes::ptr& initAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
   for (const assets::CollisionMeshData& meshData : meshGroup) {
@@ -44,41 +44,34 @@ bool PhysicsManager::addStage(
   }
 
   //! Initialize scene
-  bool sceneSuccess = addStageFinalize(handle);
+  bool sceneSuccess = addStageFinalize(initAttributes);
   return sceneSuccess;
 }
 
-bool PhysicsManager::addStageFinalize(const std::string& handle) {
+bool PhysicsManager::addStageFinalize(
+    const metadata::attributes::StageAttributes::ptr& initAttributes) {
   //! Initialize scene
-  bool sceneSuccess = staticStageObject_->initialize(handle);
+  bool sceneSuccess = staticStageObject_->initialize(initAttributes);
   return sceneSuccess;
 }
 
-int PhysicsManager::addObject(const int objectLibId,
-                              DrawableGroup* drawables,
-                              scene::SceneNode* attachmentNode,
-                              const std::string& lightSetup) {
-  const std::string& configHandle =
-      resourceManager_.getObjectAttributesManager()->getObjectHandleByID(
-          objectLibId);
-
-  return addObject(configHandle, drawables, attachmentNode, lightSetup);
-}
-
-int PhysicsManager::addObject(const std::string& configFileHandle,
-                              DrawableGroup* drawables,
-                              scene::SceneNode* attachmentNode,
-                              const std::string& lightSetup) {
+int PhysicsManager::addObject(
+    const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+    DrawableGroup* drawables,
+    scene::SceneNode* attachmentNode,
+    const std::string& lightSetup) {
   //! Make rigid object and add it to existingObjects
-  int nextObjectID_ = allocateObjectID();
-  scene::SceneNode* objectNode = attachmentNode;
-  if (attachmentNode == nullptr) {
-    objectNode = &staticStageObject_->node().createChild();
+  if (!objectAttributes) {
+    // should never run, but just in case
+    LOG(ERROR) << "PhysicsManager::addObject : "
+                  "Object creation failed due to nonexistant "
+                  "objectAttributes";
+    return ID_UNDEFINED;
   }
   // verify whether necessary assets exist, and if not, instantiate them
   // only make object if asset instantiation succeeds (short circuit)
   bool objectSuccess =
-      resourceManager_.instantiateAssetsOnDemand(configFileHandle);
+      resourceManager_.instantiateAssetsOnDemand(objectAttributes);
   if (!objectSuccess) {
     LOG(ERROR) << "PhysicsManager::addObject : "
                   "ResourceManager::instantiateAssetsOnDemand unsuccessful. "
@@ -86,8 +79,15 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
     return ID_UNDEFINED;
   }
 
+  // derive valid object ID and create new node if necessary
+  int nextObjectID_ = allocateObjectID();
+  scene::SceneNode* objectNode = attachmentNode;
+  if (attachmentNode == nullptr) {
+    objectNode = &staticStageObject_->node().createChild();
+  }
+
   objectSuccess =
-      makeAndAddRigidObject(nextObjectID_, configFileHandle, objectNode);
+      makeAndAddRigidObject(nextObjectID_, objectAttributes, objectNode);
 
   if (!objectSuccess) {
     deallocateObjectID(nextObjectID_);
@@ -141,10 +141,10 @@ void PhysicsManager::removeObject(const int physObjectID,
   }
 }
 
-bool PhysicsManager::setObjectMotionType(const int physObjectID,
+void PhysicsManager::setObjectMotionType(const int physObjectID,
                                          MotionType mt) {
   assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->setMotionType(mt);
+  existingObjects_.at(physObjectID)->setMotionType(mt);
 }
 
 MotionType PhysicsManager::getObjectMotionType(const int physObjectID) const {
@@ -167,12 +167,13 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
   return physObjectID;
 }
 
-bool PhysicsManager::makeAndAddRigidObject(int newObjectID,
-                                           const std::string& handle,
-                                           scene::SceneNode* objectNode) {
+bool PhysicsManager::makeAndAddRigidObject(
+    int newObjectID,
+    const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+    scene::SceneNode* objectNode) {
   auto ptr = physics::RigidObject::create_unique(objectNode, newObjectID,
                                                  resourceManager_);
-  bool objSuccess = ptr->initialize(handle);
+  bool objSuccess = ptr->initialize(objectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
@@ -608,14 +609,13 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
 const scene::SceneNode& PhysicsManager::getObjectSceneNode(
     int physObjectID) const {
   assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->node();
+  return existingObjects_.at(physObjectID)->getSceneNode();
 }
 
 scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
   assertIDValidity(physObjectID);
   return const_cast<scene::SceneNode&>(
-      const_cast<const PhysicsManager&>(*this).getObjectSceneNode(
-          physObjectID));
+      existingObjects_.at(physObjectID)->getSceneNode());
 }
 
 const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
