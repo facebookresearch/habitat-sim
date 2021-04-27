@@ -222,7 +222,7 @@ def download_and_place(uid, replace=False):
         print("Wrote version file: " + version_filepath)
 
     # clean-up
-    os.system("rm " + data_path + package_name)
+    os.remove(data_path + package_name)
 
     print(
         "Dataset ("
