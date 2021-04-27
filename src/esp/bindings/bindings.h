@@ -7,7 +7,6 @@
 
 #include <pybind11/pybind11.h>
 #include "esp/bindings/OpaqueTypes.h"
-#include "esp/core/ManagedContainer.h"
 
 namespace esp {
 

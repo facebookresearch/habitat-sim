@@ -19,7 +19,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
-#include "esp/core/AbstractManagedObject.h"
+#include "esp/core/managedContainers/AbstractManagedObject.h"
 
 #include "esp/io/io.h"
 #include "esp/io/json.h"

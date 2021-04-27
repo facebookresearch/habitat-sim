@@ -11,7 +11,7 @@
 
 #include "esp/metadata/attributes/AttributesBase.h"
 
-#include "esp/core/ManagedContainer.h"
+#include "esp/core/managedContainers/ManagedFileBasedContainer.h"
 #include "esp/io/io.h"
 
 namespace Cr = Corrade;
@@ -19,7 +19,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace core {
 enum class ManagedObjectAccess;
-class ManagedContainerBase;
+class ManagedFileBasedContainerBase;
 }  // namespace core
 namespace metadata {
 namespace managers {
@@ -35,7 +35,8 @@ namespace managers {
  * themselves.
  */
 template <class T, core::ManagedObjectAccess Access>
-class AttributesManager : public esp::core::ManagedContainer<T, Access> {
+class AttributesManager
+    : public esp::core::ManagedFileBasedContainer<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractAttributes, T>::value,
                 "AttributesManager :: Managed object type must be derived from "
@@ -44,7 +45,8 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
   typedef std::shared_ptr<T> AttribsPtr;
 
   AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
-      : esp::core::ManagedContainer<T, Access>::ManagedContainer(attrType),
+      : esp::core::ManagedFileBasedContainer<T, Access>::
+            ManagedFileBasedContainer(attrType),
         JSONTypeExt_(JSONTypeExt) {}
   ~AttributesManager() override = default;
 

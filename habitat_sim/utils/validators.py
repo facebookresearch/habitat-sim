@@ -38,7 +38,7 @@ def all_is_finite(instance, attribute, value) -> None:
         )
 
 
-def is_unit_length(instance, attribute, value, tol=1e-5) -> None:
+def is_unit_length(instance, attribute, value, tol=1e-4) -> None:
     if isinstance(value, mn.Quaternion):
         if not value.is_normalized():
             raise ValueError(
