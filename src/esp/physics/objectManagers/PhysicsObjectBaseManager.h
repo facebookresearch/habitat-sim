@@ -11,7 +11,7 @@
 
 #include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
 
-#include "esp/core/ManagedContainer.h"
+#include "esp/core/managedContainers/ManagedContainer.h"
 
 namespace esp {
 namespace core {
@@ -61,22 +61,6 @@ class PhysicsObjectBaseManager
    */
   ObjWrapperPtr createObject(const std::string& objectHandle,
                              bool registerObject = true) override;
-
-  /**
-   * @brief Parse passed JSON Document specifically for @ref ManagedPtr object.
-   * It always returns a @ref ManagedPtr object.
-   * @param filename UNUSED The name of the file describing the @ref ManagedPtr,
-   * used as managed object handle/name on create.
-   * @param jsonConfig UNUSED json document to parse - assumed to be legal JSON
-   * doc.
-   * @return nullptr - this function is not supported for physics object
-   * wrappers.
-   */
-  ObjWrapperPtr buildObjectFromJSONDoc(
-      CORRADE_UNUSED const std::string& filename,
-      CORRADE_UNUSED const io::JsonGenericValue& jsonConfig) override {
-    return nullptr;
-  }  // buildObjectFromJSONDoc
 
  protected:
   /**

@@ -14,6 +14,7 @@ pybind11_add_module(
   OpaqueTypes.h
   PhysicsBindings.cpp
   PhysicsObjectBindings.cpp
+  PhysicsWrapperManagerBindings.cpp
   SceneBindings.cpp
   SensorBindings.cpp
   ShortestPathBindings.cpp
