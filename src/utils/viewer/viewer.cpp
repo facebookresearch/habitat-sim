@@ -26,6 +26,7 @@
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
 #include "esp/core/configure.h"
+#include "esp/gfx/Debug3DText.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -390,6 +391,8 @@ Key Commands:
     VisualSensorModeCount,
   };
   VisualSensorMode sensorMode_ = VisualSensorMode::Camera;
+
+  esp::gfx::Debug3DText debug3dText_;
 
   void bindRenderTarget();
 };
@@ -1128,6 +1131,22 @@ void Viewer::drawEvent() {
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
 
+  {
+    const auto& existingObjectIDs = simulator_->getExistingObjectIDs();
+    for (const auto id : existingObjectIDs) {
+      std::string name =
+          simulator_->getObjectInitializationTemplate(id)->getHandle();
+      debug3dText_.addText("id " + std::to_string(id),
+                           simulator_->getTranslation(id));
+    }
+
+    debug3dText_.addText("default", Mn::Vector3(0.f, 0.0, 0.0));
+    debug3dText_.addText("red", Mn::Vector3(1.f, 0.0, 0.0),
+                         Mn::Color4(1, 0, 0, 1));
+    debug3dText_.addText("white 50%", Mn::Vector3(2.f, 0.0, 0.0),
+                         Mn::Color4(1, 1, 1, 0.5));
+  }
+
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
   if (depthMode_) {
@@ -1227,6 +1246,14 @@ void Viewer::drawEvent() {
   profiler_.endFrame();
 
   imgui_.newFrame();
+
+  {
+    const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
+    Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+    Mn::Matrix4 projM(renderCamera_->projectionMatrix());
+    debug3dText_.flushToImGui(projM * camM, viewportSize);
+  }
+
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("main", NULL,
