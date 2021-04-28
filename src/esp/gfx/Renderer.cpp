@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/BufferImage.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/PixelFormat.h>
@@ -15,10 +16,6 @@
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
-#include <Magnum/GL/BufferImage.h>
-#ifdef CORRADE_TARGET_APPLE
-#include <Magnum/ImageView.h>
-#endif
 #include <Magnum/PixelFormat.h>
 #include <Magnum/ResourceManager.h>
 
@@ -29,6 +26,13 @@
 #include "esp/gfx/magnum.h"
 #include "esp/sensor/VisualSensor.h"
 #include "esp/sim/Simulator.h"
+
+// There is a depth buffer overriden even when the depth test and depth buffer
+// writing is diabled. It was observed only on Mac OSX, not on linux. Suspect it
+// is a bug in the GL driver on Mac.
+#ifdef CORRADE_TARGET_APPLE
+#define ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
+#endif
 
 namespace Mn = Magnum;
 
@@ -83,29 +87,33 @@ struct Renderer::Impl {
                 esp::gfx::Renderer::Impl::RendererShaderType::
                     DepthTextureVisualizer);
 
-#ifdef CORRADE_TARGET_APPLE
-        Mn::GL::BufferImage2D image = tgt.getDepthTexture().image(
-	            0, {Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float}, Mn::GL::BufferUsage::StaticRead);
-	        Mn::Vector2i size = image.size(); // because release() clears the size/storage, it has to be fetched first
-	        Mn::PixelStorage storage = image.storage();
-          std::size_t dataSize = image.dataSize();
-          // This takes `image` (which is depth) and "reinterprets" it as R32F
-                Mn::GL::BufferImage2D img{
-                    storage, Mn::PixelFormat::R32F, size, image.release(), dataSize};
-                if (!visualizedTex_ ||
-                    visualizedTex_->imageSize(0) != tgt.framebufferSize()) {
-                  visualizedTex_ = Mn::GL::Texture2D{};
-                  (*visualizedTex_)
-                      .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
-                      .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
-                      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-                      .setStorage(1, Mn::GL::TextureFormat::R32F,
-                                  tgt.framebufferSize());
-                }
-        // 
-        // tgt.getFramebuffer().copySubImage({{}, tgt.framebufferSize()}, *visualizedTex_, 0, {});
-        // tgt.getFramebuffer().copySubImage({{}, tgt.framebufferSize()}, *visualizedTex_, 0, {});
-        (*visualizedTex_).setSubImage(0, {}, img);
+#ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
+        depthBufferImage_ = tgt.getDepthTexture().image(
+            0, {Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float},
+            Mn::GL::BufferUsage::StaticRead);
+
+        // This takes the above output image (which is depth) and "reinterprets"
+        // it as R32F. In other words, the image below serves as an "image
+        // view".
+        Mn::GL::BufferImage2D clonedDepthImage{
+            depthBufferImage_->storage(), Mn::PixelFormat::R32F,
+            depthBufferImage_->size(),
+            Mn::GL::Buffer::wrap(depthBufferImage_->buffer().id(),
+                                 Mn::GL::ObjectFlag::Created),
+            depthBufferImage_->dataSize()};
+
+        // setup a texture
+        if (!visualizedTex_ ||
+            visualizedTex_->imageSize(0) != tgt.framebufferSize()) {
+          visualizedTex_ = Mn::GL::Texture2D{};
+          (*visualizedTex_)
+              .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+              .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+              .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+              .setStorage(1, Mn::GL::TextureFormat::R32F,
+                          tgt.framebufferSize());
+        }
+        (*visualizedTex_).setSubImage(0, {}, clonedDepthImage);
         shader->bindDepthTexture(*visualizedTex_);
 #else
         shader->bindDepthTexture(tgt.getDepthTexture());
@@ -175,8 +183,10 @@ struct Renderer::Impl {
   const Flags flags_;
   Cr::Containers::Optional<Mn::GL::Mesh> mesh_;
   Mn::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
-#ifdef CORRADE_TARGET_APPLE
+#ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
   Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_ =
+      Cr::Containers::NullOpt;
+  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage_ =
       Cr::Containers::NullOpt;
 #endif
 

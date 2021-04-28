@@ -111,11 +111,6 @@ class RenderTarget {
   void renderExit();
 
   /**
-   * @brief get framebuffer
-   */
-  Magnum::GL::Framebuffer& getFramebuffer();
-
-  /**
    * @brief The size of the framebuffer in WxH
    */
   Magnum::Vector2i framebufferSize() const;

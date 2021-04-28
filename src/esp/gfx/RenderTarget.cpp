@@ -169,8 +169,6 @@ struct RenderTarget::Impl {
 
   void renderExit() {}
 
-  Mn::GL::Framebuffer& getFramebuffer() { return framebuffer_;}
-
   void blitRgbaToDefault() {
     CORRADE_ASSERT(
         flags_ & Flag::RgbaBuffer,
@@ -388,10 +386,6 @@ Mn::Vector2i RenderTarget::framebufferSize() const {
 
 Mn::GL::Texture2D& RenderTarget::getDepthTexture() {
   return pimpl_->getDepthTexture();
-}
-
-Mn::GL::Framebuffer& RenderTarget::getFramebuffer() {
-  return pimpl_->getFramebuffer();
 }
 
 #ifdef ESP_BUILD_WITH_CUDA
