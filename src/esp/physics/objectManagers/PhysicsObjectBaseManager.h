@@ -37,7 +37,7 @@ class PhysicsObjectBaseManager
  public:
   typedef std::shared_ptr<T> ObjWrapperPtr;
   PhysicsObjectBaseManager(
-      std::shared_ptr<esp::physics::PhysicsManager> physMgr,
+      const std::shared_ptr<esp::physics::PhysicsManager>& physMgr,
       const std::string& objType)
       : esp::core::ManagedContainer<T, core::ManagedObjectAccess::Copy>::
             ManagedContainer(objType),
@@ -73,9 +73,9 @@ class PhysicsObjectBaseManager
    * @return The unique ID of the managed object being registered, or
    * ID_UNDEFINED if failed
    */
-  virtual int registerObjectFinalize(ObjWrapperPtr object,
-                                     const std::string& objectHandle,
-                                     bool forceRegistration) override;
+  int registerObjectFinalize(ObjWrapperPtr object,
+                             const std::string& objectHandle,
+                             bool forceRegistration) override;
 
   /**
    * @brief Used Internally.  Create and configure newly-created managed object
@@ -88,8 +88,8 @@ class PhysicsObjectBaseManager
    * @return Newly created but unregistered ManagedObject pointer, with only
    * default values set.
    */
-  virtual ObjWrapperPtr initNewObjectInternal(const std::string& objectHandle,
-                                              bool builtFromConfig) override;
+  ObjWrapperPtr initNewObjectInternal(const std::string& objectHandle,
+                                      bool builtFromConfig) override;
 
   /**
    * @brief return a reference to physicsManager_, or null ptr if it does not

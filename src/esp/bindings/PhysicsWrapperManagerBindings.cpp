@@ -148,7 +148,7 @@ void declareBaseWrapperManager(py::module& m,
 
 template <class T>
 void declareRigidBaseWrapperManager(py::module& m,
-                                    const std::string& objType,
+                                    CORRADE_UNUSED const std::string& objType,
                                     const std::string& classStrPrefix) {
   using MgrClass = RigidBaseManager<T>;
   // Most, but not all, of these methods are from ManagedContainer class
