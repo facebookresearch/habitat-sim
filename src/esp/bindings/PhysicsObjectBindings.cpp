@@ -199,8 +199,8 @@ void declareRigidBaseWrapper(py::module& m,
 
 void initPhysicsObjectBindings(py::module& m) {
   // create bindings for RigidObjects
-  declareBasePhysicsObjectWrapper<esp::physics::RigidObject>(m, "Rigid Object",
-                                                             "BaseRigidObject");
+  declareBasePhysicsObjectWrapper<RigidObject>(m, "Rigid Object",
+                                               "BasePhysicsObject");
 
   declareRigidBaseWrapper<RigidObject>(m, "Rigid Object", "BaseRigidObject");
 
