@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/BufferImage.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/PixelFormat.h>
@@ -25,6 +26,13 @@
 #include "esp/gfx/magnum.h"
 #include "esp/sensor/VisualSensor.h"
 #include "esp/sim/Simulator.h"
+
+// There is a depth buffer overriden even when the depth test and depth buffer
+// writing is diabled. It was observed only on Mac OSX, not on linux. Suspect it
+// is a bug in the GL driver on Mac.
+#ifdef CORRADE_TARGET_APPLE
+#define ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
+#endif
 
 namespace Mn = Magnum;
 
@@ -79,7 +87,41 @@ struct Renderer::Impl {
                 esp::gfx::Renderer::Impl::RendererShaderType::
                     DepthTextureVisualizer);
 
+#ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
+        // create a BufferImage instance, if not already
+        if (!depthBufferImage_) {
+          depthBufferImage_.emplace(Mn::GL::PixelFormat::DepthComponent,
+                                    Mn::GL::PixelType::Float);
+        }
+        tgt.getDepthTexture().image(0, *depthBufferImage_,
+                                    Mn::GL::BufferUsage::StaticRead);
+
+        // This takes the above output image (which is depth) and "reinterprets"
+        // it as R32F. In other words, the image below serves as an "image
+        // view".
+        Mn::GL::BufferImage2D clonedDepthImage{
+            depthBufferImage_->storage(), Mn::PixelFormat::R32F,
+            depthBufferImage_->size(),
+            Mn::GL::Buffer::wrap(depthBufferImage_->buffer().id(),
+                                 Mn::GL::ObjectFlag::Created),
+            depthBufferImage_->dataSize()};
+
+        // setup a texture
+        if (!visualizedTex_ ||
+            visualizedTex_->imageSize(0) != tgt.framebufferSize()) {
+          visualizedTex_ = Mn::GL::Texture2D{};
+          (*visualizedTex_)
+              .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+              .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+              .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+              .setStorage(1, Mn::GL::TextureFormat::R32F,
+                          tgt.framebufferSize());
+        }
+        (*visualizedTex_).setSubImage(0, {}, clonedDepthImage);
+        shader->bindDepthTexture(*visualizedTex_);
+#else
         shader->bindDepthTexture(tgt.getDepthTexture());
+#endif
         shader->setDepthUnprojection(*visualSensor.depthUnprojection());
         shader->setColorMapTransformation(colorMapOffset, colorMapScale);
         tgt.renderReEnter();
@@ -143,8 +185,12 @@ struct Renderer::Impl {
   // TODO: shall we use shader resource manager from now?
   std::unique_ptr<DepthShader> depthShader_;
   const Flags flags_;
-  Corrade::Containers::Optional<Mn::GL::Mesh> mesh_;
-  Magnum::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+  Cr::Containers::Optional<Mn::GL::Mesh> mesh_;
+  Mn::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+#ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
+  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_;
+  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage_;
+#endif
 
   enum class RendererShaderType : uint8_t {
     DepthShader = 0,

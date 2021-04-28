@@ -384,7 +384,7 @@ Mn::Vector2i RenderTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
 }
 
-Magnum::GL::Texture2D& RenderTarget::getDepthTexture() {
+Mn::GL::Texture2D& RenderTarget::getDepthTexture() {
   return pimpl_->getDepthTexture();
 }
 
