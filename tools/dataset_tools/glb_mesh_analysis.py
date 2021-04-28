@@ -23,7 +23,7 @@ def calc_object_stats(obj_per_scene_transforms, obj_max_per_scene_counts):
         if obj_max_per_scene_counts[obj] == 1:
             location = []
             # easy stats, just average location of all scenes present in
-            for _, transforms in scene_dict.items():
+            for transforms in scene_dict.values():
                 # will always be a length 1 list
                 translations = gut.get_trans_list_from_transforms(transforms)
                 location.append(translations[0])
