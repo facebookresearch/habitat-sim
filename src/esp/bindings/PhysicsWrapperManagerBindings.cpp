@@ -10,6 +10,9 @@
 namespace py = pybind11;
 using py::literals::operator""_a;
 
+namespace PhysWraps = esp::physics;
+using PhysWraps::RigidBaseManager;
+
 namespace esp {
 namespace physics {
 /**
@@ -31,7 +34,7 @@ void declareBaseWrapperManager(py::module& m,
   // template.  However, we use PHysicsObjectBaseManager as the base class
   // because we wish to have appropriate (wrapper-related) access, argument
   // nomenclature and documentation.
-  std::string pyclass_name = classStrPrefix + std::string("WrapperManager");
+  std::string pyclass_name = classStrPrefix + std::string("PhysWrapperManager");
   py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str())
       .def("get_object_handle_by_ID", &MgrClass::getObjectHandleByID,
            ("Returns string handle for the " + objType +
@@ -148,7 +151,13 @@ void declareRigidBaseWrapperManager(py::module& m,
                                     const std::string& objType,
                                     const std::string& classStrPrefix) {
   using MgrClass = RigidBaseManager<T>;
-  using WrapperPtr = std::shared_ptr<T>;
+  // Most, but not all, of these methods are from ManagedContainer class
+  // template.  However, we use PHysicsObjectBaseManager as the base class
+  // because we wish to have appropriate (wrapper-related) access, argument
+  // nomenclature and documentation.
+  std::string pyclass_name = classStrPrefix + std::string("PhysWrapperManager");
+  py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str());
+
 }  //
 
 void initPhysicsWrapperManagerBindings(pybind11::module& m) {
