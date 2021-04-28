@@ -88,9 +88,13 @@ struct Renderer::Impl {
                     DepthTextureVisualizer);
 
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
-        depthBufferImage_ = tgt.getDepthTexture().image(
-            0, {Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float},
-            Mn::GL::BufferUsage::StaticRead);
+        // create a BufferImage instance, if not already
+        if (!depthBufferImage_) {
+          depthBufferImage_.emplace(Mn::GL::PixelFormat::DepthComponent,
+                                    Mn::GL::PixelType::Float);
+        }
+        tgt.getDepthTexture().image(0, *depthBufferImage_,
+                                    Mn::GL::BufferUsage::StaticRead);
 
         // This takes the above output image (which is depth) and "reinterprets"
         // it as R32F. In other words, the image below serves as an "image
@@ -184,10 +188,8 @@ struct Renderer::Impl {
   Cr::Containers::Optional<Mn::GL::Mesh> mesh_;
   Mn::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
-  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_ =
-      Cr::Containers::NullOpt;
-  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage_ =
-      Cr::Containers::NullOpt;
+  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_;
+  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage_;
 #endif
 
   enum class RendererShaderType : uint8_t {
