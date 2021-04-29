@@ -127,6 +127,11 @@ struct Renderer::Impl {
         tgt.renderReEnter();
         shader->draw(*mesh_);
         tgt.renderExit();
+      } else if (type == sensor::SensorType::Semantic) {
+        Magnum::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
+            shader = getShader<TextureVisualizerShader>(
+                esp::gfx::Renderer::Impl::RendererShaderType::
+                    DepthTextureVisualizer);
       }
 
       // TODO object id
@@ -167,7 +172,7 @@ struct Renderer::Impl {
         if (bindingFlags & Flag::VisualizeTexture) {
           renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
         }
-        renderTargetFlags |= RenderTarget::Flag::ObjectIdBuffer;
+        renderTargetFlags |= RenderTarget::Flag::ObjectIdTexture;
         break;
 
       default:
@@ -195,7 +200,7 @@ struct Renderer::Impl {
   enum class RendererShaderType : uint8_t {
     DepthShader = 0,
     DepthTextureVisualizer = 1,
-    // ObjectIdTextureVisualizer = 2,
+    ObjectIdTextureVisualizer = 2,
   };
   template <typename T>
   Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(

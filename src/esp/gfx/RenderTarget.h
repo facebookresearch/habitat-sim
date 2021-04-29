@@ -38,11 +38,11 @@ class RenderTarget {
      */
     RgbaBuffer = 1 << 0,
     /**
-     * create objectId buffer
+     * create objectId texture
      * No need to set it for color sensor, depth sensor etc. as it makes the
      * rendering slower
      */
-    ObjectIdBuffer = 1 << 1,
+    ObjectIdTexture = 1 << 1,
     /**
      * @brief use depth texture, it must be set for the depth sensor.
      * No need to set it for color sensor, objectId sensor etc. as it makes the
@@ -70,7 +70,7 @@ class RenderTarget {
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
                DepthShader* depthShader,
-               Flags flags = {Flag::RgbaBuffer | Flag::ObjectIdBuffer |
+               Flags flags = {Flag::RgbaBuffer | Flag::ObjectIdTexture |
                               Flag::DepthTexture},
                const sensor::VisualSensor* visualSensor = nullptr);
 
@@ -154,6 +154,11 @@ class RenderTarget {
    * @brief get the depth texture
    */
   Magnum::GL::Texture2D& getDepthTexture();
+
+  /**
+   * @brief get the object id texture
+   */
+  Magnum::GL::Texture2D& getObjectIdTexture();
 
   // @brief Delete copy Constructor
   RenderTarget(const RenderTarget&) = delete;

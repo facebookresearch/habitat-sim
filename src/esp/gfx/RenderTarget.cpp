@@ -16,6 +16,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/Shaders/Generic.h>
 
 #include "RenderTarget.h"
 #include "esp/sensor/VisualSensor.h"
@@ -37,7 +38,7 @@ namespace gfx {
 
 const Mn::GL::Framebuffer::ColorAttachment RgbaBuffer =
     Mn::GL::Framebuffer::ColorAttachment{0};
-const Mn::GL::Framebuffer::ColorAttachment ObjectIdBuffer =
+const Mn::GL::Framebuffer::ColorAttachment ObjectIdTextureColorAttachment =
     Mn::GL::Framebuffer::ColorAttachment{1};
 const Mn::GL::Framebuffer::ColorAttachment UnprojectedDepthBuffer =
     Mn::GL::Framebuffer::ColorAttachment{0};
@@ -49,7 +50,7 @@ struct RenderTarget::Impl {
        Flags flags,
        const sensor::VisualSensor* visualSensor)
       : colorBuffer_{},
-        objectIdBuffer_{},
+        objectIdTexture_{},
         depthRenderTexture_{},
         framebuffer_{Mn::NoCreate},
         depthUnprojection_{depthUnprojection},
@@ -67,9 +68,13 @@ struct RenderTarget::Impl {
     if (flags_ & Flag::RgbaBuffer) {
       colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::SRGB8Alpha8, size);
     }
-    if (flags_ & Flag::ObjectIdBuffer) {
-      objectIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32UI, size);
+    if (flags_ & Flag::ObjectIdTexture) {
+      objectIdTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+          .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+          .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+          .setStorage(1, Mn::GL::TextureFormat::R32UI, size);
     }
+
     if (flags_ & Flag::DepthTexture) {
       depthRenderTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
           .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
@@ -86,8 +91,9 @@ struct RenderTarget::Impl {
     if (flags_ & Flag::RgbaBuffer) {
       framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_);
     }
-    if (flags_ & Flag::ObjectIdBuffer) {
-      framebuffer_.attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_);
+    if (flags_ & Flag::ObjectIdTexture) {
+      framebuffer_.attachTexture(ObjectIdTextureColorAttachment,
+                                 objectIdTexture_, 0);
     }
     if (flags_ & Flag::DepthTexture) {
       framebuffer_.attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
@@ -97,12 +103,14 @@ struct RenderTarget::Impl {
           Mn::GL::Framebuffer::BufferAttachment::Depth, unprojectedDepth_);
     }
     if (flags_ & Flag::RgbaBuffer) {
-      framebuffer_.mapForDraw({{0, RgbaBuffer}});
+      framebuffer_.mapForDraw(
+          {{Mn::Shaders::Generic3D::ColorOutput, RgbaBuffer}});
+    }
+    if (flags_ & Flag::ObjectIdTexture) {
+      framebuffer_.mapForDraw({{Mn::Shaders::Generic3D::ObjectIdOutput,
+                                ObjectIdTextureColorAttachment}});
     }
 
-    if (flags_ & Flag::ObjectIdBuffer) {
-      framebuffer_.mapForDraw({{1, ObjectIdBuffer}});
-    }
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
@@ -159,7 +167,7 @@ struct RenderTarget::Impl {
         framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
       }
     }
-    if (flags_ & Flag::ObjectIdBuffer) {
+    if (flags_ & Flag::ObjectIdTexture) {
       framebuffer_.clearColor(1, Mn::Vector4ui{});
     }
     framebuffer_.bind();
@@ -215,11 +223,11 @@ struct RenderTarget::Impl {
 
   void readFrameObjectId(const Mn::MutableImageView2D& view) {
     CORRADE_ASSERT(
-        flags_ & Flag::ObjectIdBuffer,
+        flags_ & Flag::ObjectIdTexture,
         "RenderTarget::Impl::readFrameObjectId(): this render target "
-        "was not created with objectId render buffer enabled.", );
+        "was not created with objectId render texture enabled.", );
 
-    framebuffer_.mapForRead(ObjectIdBuffer).read(framebuffer_.viewport(), view);
+    objectIdTexture_.image(0, view);
   }
 
   Mn::Vector2i framebufferSize() const {
@@ -227,6 +235,7 @@ struct RenderTarget::Impl {
   }
 
   Magnum::GL::Texture2D& getDepthTexture() { return depthRenderTexture_; }
+  Magnum::GL::Texture2D& getObjectIdTexture() { return objectIdTexture_; }
 
 #ifdef ESP_BUILD_WITH_CUDA
   void readFrameRgbaGPU(uint8_t* devPtr) {
@@ -282,13 +291,13 @@ struct RenderTarget::Impl {
 
   void readFrameObjectIdGPU(int32_t* devPtr) {
     CORRADE_ASSERT(
-        flags_ & Flag::ObjectIdBuffer,
+        flags_ & Flag::ObjectIdTexture,
         "RenderTarget::Impl::readFrameObjectIdGPU(): this render target "
-        "was not created with objectId render buffer enabled.", );
+        "was not created with objectId render texture enabled.", );
 
     if (objecIdBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
-          &objecIdBufferCugl_, objectIdBuffer_.id(), GL_RENDERBUFFER,
+          &objecIdBufferCugl_, objectIdTexture_.id(), GL_TEXTURE_2D,
           cudaGraphicsRegisterFlagsReadOnly));
 
     checkCudaErrors(cudaGraphicsMapResources(1, &objecIdBufferCugl_, 0));
@@ -320,7 +329,7 @@ struct RenderTarget::Impl {
 
  private:
   Mn::GL::Renderbuffer colorBuffer_;
-  Mn::GL::Renderbuffer objectIdBuffer_;
+  Mn::GL::Texture2D objectIdTexture_;
   Mn::GL::Texture2D depthRenderTexture_;
   Mn::GL::Framebuffer framebuffer_;
 
@@ -386,6 +395,10 @@ Mn::Vector2i RenderTarget::framebufferSize() const {
 
 Mn::GL::Texture2D& RenderTarget::getDepthTexture() {
   return pimpl_->getDepthTexture();
+}
+
+Mn::GL::Texture2D& RenderTarget::getObjectIdTexture() {
+  return pimpl_->getObjectIdTexture();
 }
 
 #ifdef ESP_BUILD_WITH_CUDA
