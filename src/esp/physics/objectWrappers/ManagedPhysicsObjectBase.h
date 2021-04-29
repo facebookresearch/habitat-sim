@@ -27,11 +27,11 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
 
   typedef std::weak_ptr<T> WeakObjRef;
 
-  AbstractManagedPhysicsObject(std::shared_ptr<T>& objPtr,
-                               const std::string& classKey)
-      : weakObjRef_(objPtr) {
+  AbstractManagedPhysicsObject(const std::string& classKey) {
     setClassKey(classKey);
   }
+
+  void setObjectRef(const std::shared_ptr<T>& objRef) { weakObjRef_ = objRef; }
 
   ~AbstractManagedPhysicsObject() override = default;
 
@@ -122,7 +122,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * @brief Weak ref to object. If user has copy of this wrapper but object has
    * been deleted, this will be nullptr.
    */
-  WeakObjRef weakObjRef_;
+  WeakObjRef weakObjRef_{};
 
   /**
    * @brief Name of instancing class responsible for this managed object
