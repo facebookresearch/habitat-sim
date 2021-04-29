@@ -42,11 +42,11 @@ This configuration is ideal for scene assets with illumination baked into textur
 
 To use a custom light setup for the scene, edit the :ref:`SimulatorConfiguration.scene_light_setup`
 option when creating/reconfiguring the Simulator. This option is ideal for scenes without illuminated textures, to create a custom tailored lighting configuration for the scene, or for domain randomization.
-The second example below demonstrates a custom low-light setup for the room originating at the window.
+The second example below demonstrates a custom low-light setup for the room with a point light source originating at the window. A "0" in the 4-th entry of the `vector` parameter indicates that this is a point lights source position. Alternatively, a "1" in this entry would indicate a directional light source with no position and `vector` direction.
 
 Note that while the scene's light setup can be modified dynamically during runtime, the :ref:`Simulator` will need to
 be reconfigured to switch the scene's light setup key. Also, due to asset loading specifics
-the :ref:`Simulator` **must be closed and re-initialize to swap between Flat and Phong shading setups**.
+the :ref:`Simulator` **must be closed and re-initialize to swap between Flat and PBR (or Phong) shading setups**.
 
 .. include:: ../../examples/tutorials/lighting_tutorial.py
     :code: py
@@ -81,20 +81,20 @@ the :ref:`Simulator` **must be closed and re-initialize to swap between Flat and
 It is often desirable to add new objects (such as furniture, robots, or navigation targets) to the scene which are not part of the static environment mesh.
 These objects are handled separately from the scene and can be configured with the same or different light setups.
 
-By default, object assets are loaded with Phong shading compatibility. This is not ideal for assets with illumination baked into textures.
-Objects can be loaded for Flat shading by using the asset template's :ref:`ObjectAttributes.requires_lighting` property *before* loading the asset.
+By default, object assets are instanced with PBR shading compatibility. This is not ideal for assets with illumination baked into textures.
+Objects can be loaded for Flat shading by using the object template's :ref:`ObjectAttributes.requires_lighting` property *before* instancing the asset.
 Alternatively, this option can be set in the object template's configuration file:
 
-E.g. in ``my_object.phys_properties.json``
+E.g. in ``my_object.object_config.json``
 
 .. code:: json
 
     {
-        "render mesh": "my_object.glb",
-        "requires lighting": false
+        "render_asset": "my_object.glb",
+        "requires_lighting": false
     }
 
-By default, new objects with Phong shading enabled are added to the scene with the :ref:`DEFAULT_LIGHTING_KEY` setup.
+By default, new objects with Phong and PBR shading enabled are added to the scene with the :ref:`DEFAULT_LIGHTING_KEY` setup.
 
 .. include:: ../../examples/tutorials/lighting_tutorial.py
     :code: py
@@ -180,7 +180,7 @@ A light setup consists of a set of :ref:`LightInfo` structures defining the comm
 of a set of point lights used to render objects in a scene. Once defined and registered,
 a light setup can be assigned to any subset of objects in the scene, including the scene asset itself.
 
-Each :ref:`LightInfo` structure in a light setup defines the `color`, `position`, and :ref:`LightPositionModel` of a single point light source.
+Each :ref:`LightInfo` structure in a light setup defines the `color`, `vector` (either [position, 0] or [direction, 1]), and :ref:`LightPositionModel` of a single point or directional light source.
 The :ref:`LightPositionModel` defines the coordinate frame of the light.
 
 Each light setup is registered in the simulator via a unique key. Two default lighting setups are pre-defined:
@@ -188,7 +188,7 @@ Each light setup is registered in the simulator via a unique key. Two default li
 
 - :ref:`DEFAULT_LIGHTING_KEY`
 
-  8 white, GLOBAL lights at scene bounding box corners.
+  2 white, GLOBAL lights defined `here <https://github.com/facebookresearch/habitat-sim/blob/0f77b5c61f89aed82bd835ec59ee79486f6cf90f/src/esp/gfx/LightSetup.cpp#L58>`_.
 
 - :ref:`NO_LIGHT_KEY`
 
