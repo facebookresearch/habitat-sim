@@ -62,7 +62,7 @@ void declareBaseAttributesManager(py::module& m,
   py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str())
       .def("get_template_handle_by_ID", &MgrClass::getObjectHandleByID,
            ("Returns string handle for the " + attrType +
-            " corresponding to passed ID.")
+            " template corresponding to passed ID.")
                .c_str(),
            "ID"_a)
       .def(
