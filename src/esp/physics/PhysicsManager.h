@@ -27,6 +27,7 @@
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -126,19 +127,21 @@ class PhysicsManager {
       const metadata::attributes::PhysicsManagerAttributes::cptr&
           _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
-        physicsManagerAttributes_(_physicsManagerAttributes){};
+        physicsManagerAttributes_(_physicsManagerAttributes),
+        rigidObjectManager_(RigidObjectManager::create()) {}
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();
 
   /**
    * @brief Initialization: load physical properties and setup the world.
-   *
-   *
-   * @param node    The scene graph node which will act as the parent of all
+   * @param node  The scene graph node which will act as the parent of all
    * physical scene and object nodes.
+   * @param physMgr Simulator's shared pointer referencing this physics manager.
    */
-  bool initPhysics(scene::SceneNode* node);
+  bool initPhysics(
+      scene::SceneNode* node,
+      const std::shared_ptr<esp::physics::PhysicsManager>& physMgr);
 
   /**
    * @brief Reset the simulation and physical world.
@@ -1045,6 +1048,14 @@ class PhysicsManager {
 
   virtual int getNumActiveContactPoints() { return -1; }
 
+  /**
+   * @brief returns the wrapper manager for the currently created rigid objects.
+   * @return RigidObject wrapper manager.
+   */
+  std::shared_ptr<RigidObjectManager> getRigidObjectManager() {
+    return rigidObjectManager_;
+  }
+
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This
@@ -1154,14 +1165,19 @@ class PhysicsManager {
    * efficiency in mind. See
    * @ref addStage.
    * */
-  physics::RigidStage::uptr staticStageObject_ = nullptr;
+  physics::RigidStage::ptr staticStageObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
+
+  /** @brief This manager manages the wrapper objects used to provide safe,
+   * direct user access to all existing physics objects.
+   */
+  std::shared_ptr<RigidObjectManager> rigidObjectManager_;
 
   /** @brief Maps object IDs to all existing physical object instances in the
    * world.
    */
-  std::map<int, physics::RigidObject::uptr> existingObjects_;
+  std::map<int, physics::RigidObject::ptr> existingObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing to

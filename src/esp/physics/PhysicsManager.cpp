@@ -10,9 +10,12 @@
 namespace esp {
 namespace physics {
 
-bool PhysicsManager::initPhysics(scene::SceneNode* node) {
+bool PhysicsManager::initPhysics(
+    scene::SceneNode* node,
+    const std::shared_ptr<esp::physics::PhysicsManager>& physMgr) {
   physicsNode_ = node;
-
+  // set the rigidObjectManager's reference to physics manager
+  rigidObjectManager_->setPhysicsManager(physMgr);
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes_->getTimestep();
 
@@ -24,8 +27,8 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
 
 bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
-  staticStageObject_ = physics::RigidStage::create_unique(
-      &physicsNode_->createChild(), resourceManager_);
+  staticStageObject_ = physics::RigidStage::create(&physicsNode_->createChild(),
+                                                   resourceManager_);
   return true;
 }
 
@@ -171,8 +174,8 @@ bool PhysicsManager::makeAndAddRigidObject(
     int newObjectID,
     const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
     scene::SceneNode* objectNode) {
-  auto ptr = physics::RigidObject::create_unique(objectNode, newObjectID,
-                                                 resourceManager_);
+  auto ptr =
+      physics::RigidObject::create(objectNode, newObjectID, resourceManager_);
   bool objSuccess = ptr->initialize(objectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
