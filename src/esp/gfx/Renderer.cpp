@@ -127,7 +127,7 @@ struct Renderer::Impl {
         tgt.renderReEnter();
         shader->draw(*mesh_);
         tgt.renderExit();
-      };
+      }
 
       // TODO object id
       Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
