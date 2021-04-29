@@ -13,7 +13,7 @@ namespace physics {
 class ManagedRigidObject
     : public esp::physics::AbstractManagedRigidBase<esp::physics::RigidObject> {
  public:
-  explicit ManagedRigidObject()
+  ManagedRigidObject()
       : AbstractManagedRigidBase<esp::physics::RigidObject>(
             "ManagedRigidObject") {}
 

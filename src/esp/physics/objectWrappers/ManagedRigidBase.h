@@ -25,7 +25,7 @@ class AbstractManagedRigidBase
       "AbstractManagedRigidBase :: Managed physics object type must be "
       "derived from esp::physics::RigidBase");
 
-  AbstractManagedRigidBase(const std::string& classKey)
+  explicit AbstractManagedRigidBase(const std::string& classKey)
       : AbstractManagedPhysicsObject<T>(classKey) {}
 
   bool isActive() {
