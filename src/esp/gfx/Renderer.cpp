@@ -127,12 +127,7 @@ struct Renderer::Impl {
         tgt.renderReEnter();
         shader->draw(*mesh_);
         tgt.renderExit();
-      } else if (type == sensor::SensorType::Semantic) {
-        Magnum::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
-            shader = getShader<TextureVisualizerShader>(
-                esp::gfx::Renderer::Impl::RendererShaderType::
-                    DepthTextureVisualizer);
-      }
+      };
 
       // TODO object id
       Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
@@ -200,7 +195,7 @@ struct Renderer::Impl {
   enum class RendererShaderType : uint8_t {
     DepthShader = 0,
     DepthTextureVisualizer = 1,
-    ObjectIdTextureVisualizer = 2,
+    // ObjectIdTextureVisualizer = 2,
   };
   template <typename T>
   Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
