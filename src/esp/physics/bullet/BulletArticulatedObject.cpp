@@ -714,5 +714,34 @@ void BulletArticulatedObject::updateKinematicState() {
   }
 }
 
+bool BulletArticulatedObject::contactTest() {
+  SimulationContactResultCallback src;
+
+  // Do a contact test for each piece of the AO and return at soonest contact.
+  // Should be cheaper to hit multiple local aabbs than to check the full scene.
+  if (bFixedObjectRigidBody_) {
+    bWorld_->getCollisionWorld()->contactTest(bFixedObjectRigidBody_.get(),
+                                              src);
+    if (src.bCollision) {
+      return src.bCollision;
+    }
+  }
+  auto baseCollider = btMultiBody_->getBaseCollider();
+  if (baseCollider) {
+    bWorld_->getCollisionWorld()->contactTest(baseCollider, src);
+    if (src.bCollision) {
+      return src.bCollision;
+    }
+  }
+  for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
+    auto linkCollider = btMultiBody_->getLinkCollider(colIx);
+    bWorld_->getCollisionWorld()->contactTest(linkCollider, src);
+    if (src.bCollision) {
+      return src.bCollision;
+    }
+  }
+  return false;
+}  // contactTest
+
 }  // namespace physics
 }  // namespace esp

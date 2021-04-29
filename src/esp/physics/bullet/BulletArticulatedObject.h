@@ -122,6 +122,16 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   virtual void setMotionType(MotionType mt) override;
 
+  /**
+   * @brief Return result of a discrete contact test between the object and
+   * collision world.
+   *
+   * See @ref SimulationContactResultCallback
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest();
+
   //! Bullet supports vel/pos control joint motors for revolute and prismatic
   //! joints (1 Dof) This is the suggested way to implement friction/damping at
   //! dof level

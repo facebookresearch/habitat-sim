@@ -343,11 +343,18 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
 }
 
 bool BulletPhysicsManager::contactTest(const int physObjectID) {
-  assertIDValidity(physObjectID);
-  bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
-  return static_cast<BulletRigidObject*>(
-             existingObjects_.at(physObjectID).get())
-      ->contactTest();
+  CHECK((existingObjects_.count(physObjectID) > 0) ||
+        (existingArticulatedObjects_.count(physObjectID) > 0));
+  if (existingObjects_.count(physObjectID) > 0) {
+    return static_cast<BulletRigidObject*>(
+               existingObjects_.at(physObjectID).get())
+        ->contactTest();
+  } else {
+    return static_cast<BulletArticulatedObject*>(
+               existingArticulatedObjects_.at(physObjectID).get())
+        ->contactTest();
+  }
+  return false;
 }
 
 void BulletPhysicsManager::overrideCollisionGroup(const int physObjectID,
