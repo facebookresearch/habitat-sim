@@ -226,8 +226,12 @@ struct RenderTarget::Impl {
         flags_ & Flag::ObjectIdTexture,
         "RenderTarget::Impl::readFrameObjectId(): this render target "
         "was not created with objectId render texture enabled.", );
-
+#ifdef MAGNUM_TARGET_WEBGL
+    framebuffer_.mapForRead(ObjectIdTextureColorAttachment)
+        .read(framebuffer_.viewport(), view);
+#else
     objectIdTexture_.image(0, view);
+#endif
   }
 
   Mn::Vector2i framebufferSize() const {
