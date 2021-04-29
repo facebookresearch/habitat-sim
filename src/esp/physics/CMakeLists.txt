@@ -12,6 +12,7 @@ add_library(
   physics STATIC
   objectManagers/PhysicsObjectBaseManager.h
   objectManagers/RigidBaseManager.h
+  objectManagers/RigidObjectManager.cpp
   objectManagers/RigidObjectManager.h
   objectWrappers/ManagedPhysicsObjectBase.h
   objectWrappers/ManagedRigidBase.h
