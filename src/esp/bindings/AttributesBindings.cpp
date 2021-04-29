@@ -4,7 +4,6 @@
 
 #include "esp/bindings/bindings.h"
 
-#include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
