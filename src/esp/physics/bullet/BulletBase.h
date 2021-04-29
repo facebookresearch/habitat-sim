@@ -55,21 +55,6 @@ struct SimulationContactResultCallback
       CORRADE_UNUSED const btCollisionObjectWrapper* colObj1Wrap,
       CORRADE_UNUSED int partId1,
       CORRADE_UNUSED int index1) override {
-    const btMultiBodyLinkCollider* mblc1 =
-        btMultiBodyLinkCollider::upcast(colObj0Wrap->getCollisionObject());
-    const btMultiBodyLinkCollider* mblc2 =
-        btMultiBodyLinkCollider::upcast(colObj1Wrap->getCollisionObject());
-    if (mblc1 && mblc2) {
-      // both multibody links
-      if (mblc1->m_multiBody == mblc2->m_multiBody) {
-        // same parent multibody
-        if (!mblc1->m_multiBody->hasSelfCollision()) {
-          // skip if self collisions not enabled
-          return 0;
-        }
-      }
-    }
-
     bCollision = true;
     return 0;  // not used
   }

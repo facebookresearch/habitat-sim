@@ -714,8 +714,77 @@ void BulletArticulatedObject::updateKinematicState() {
   }
 }
 
+/**
+ * @brief Specific callback function for ArticulatedObject::contactTest to
+ * screen self-collisions.
+ */
+struct AOSimulationContactResultCallback
+    : public SimulationContactResultCallback {
+  btMultiBody* mb_ = nullptr;
+  btRigidBody* fixedBaseColObj_ = nullptr;
+
+  /**
+   * @brief Constructor taking the AO's btMultiBody as input to screen
+   * self-collisions.
+   */
+  AOSimulationContactResultCallback(btMultiBody* mb,
+                                    btRigidBody* fixedBaseColObj)
+      : mb_(mb), fixedBaseColObj_(fixedBaseColObj) {
+    bCollision = false;
+  }
+
+  /**
+   * @brief Called when a contact is detected.
+   *
+   * Sets a collision flag on every detected collision screening self-contacts
+   * if necessary.
+   * @param cp Contains detailed information about the contact point being
+   * added.
+   */
+  btScalar addSingleResult(
+      CORRADE_UNUSED btManifoldPoint& cp,
+      CORRADE_UNUSED const btCollisionObjectWrapper* colObj0Wrap,
+      CORRADE_UNUSED int partId0,
+      CORRADE_UNUSED int index0,
+      CORRADE_UNUSED const btCollisionObjectWrapper* colObj1Wrap,
+      CORRADE_UNUSED int partId1,
+      CORRADE_UNUSED int index1) override {
+    // screen self-collisions
+    if (!mb_->hasSelfCollision()) {
+      const btMultiBodyLinkCollider* mblc1 =
+          btMultiBodyLinkCollider::upcast(colObj0Wrap->getCollisionObject());
+      const btMultiBodyLinkCollider* mblc2 =
+          btMultiBodyLinkCollider::upcast(colObj1Wrap->getCollisionObject());
+      if (mblc1 && mblc2) {
+        if (mblc1->m_multiBody == mblc2->m_multiBody) {
+          // link self-collision
+          return 0;
+        }
+      } else if (colObj0Wrap->getCollisionObject() == fixedBaseColObj_) {
+        if (mblc2) {
+          if (mblc2->m_multiBody == mb_) {
+            // link collision with fixed base rigidBody proxy
+            return 0;
+          }
+        }
+      } else if (colObj1Wrap->getCollisionObject() == fixedBaseColObj_) {
+        if (mblc1) {
+          if (mblc1->m_multiBody == mb_) {
+            // link collision with fixed base rigidBody proxy
+            return 0;
+          }
+        }
+      }
+    }
+
+    bCollision = true;
+    return 0;  // not used
+  }
+};
+
 bool BulletArticulatedObject::contactTest() {
-  SimulationContactResultCallback src;
+  AOSimulationContactResultCallback src(btMultiBody_.get(),
+                                        bFixedObjectRigidBody_.get());
 
   // Do a contact test for each piece of the AO and return at soonest contact.
   // Should be cheaper to hit multiple local aabbs than to check the full scene.
