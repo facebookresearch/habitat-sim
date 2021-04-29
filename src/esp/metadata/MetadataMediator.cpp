@@ -37,9 +37,9 @@ bool MetadataMediator::setSimulatorConfiguration(
   bool success = setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile);
   if (!success) {
     // something failed about setting up active scene dataset
-    LOG(ERROR) << "MetadataMediator::setSimulatorConfiguration : Some error "
-                  "prevented current scene dataset name to be changed to "
-               << simConfig_.sceneDatasetConfigFile;
+    Mn::Error{} << "MetadataMediator::setSimulatorConfiguration : Some error "
+                   "prevented current scene dataset name to be changed to "
+                << simConfig_.sceneDatasetConfigFile;
     return false;
   }
 
@@ -47,9 +47,9 @@ bool MetadataMediator::setSimulatorConfiguration(
   success = setCurrPhysicsAttributesHandle(simConfig_.physicsConfigFile);
   if (!success) {
     // something failed about setting up physics attributes
-    LOG(ERROR) << "MetadataMediator::setSimulatorConfiguration : Some error "
-                  "prevented current physics attributes to "
-               << simConfig_.physicsConfigFile;
+    Mn::Error{} << "MetadataMediator::setSimulatorConfiguration : Some error "
+                   "prevented current physics attributes to "
+                << simConfig_.physicsConfigFile;
     return false;
   }
 
@@ -60,19 +60,19 @@ bool MetadataMediator::setSimulatorConfiguration(
     datasetAttr->setCurrCfgVals(simConfig_.sceneLightSetup,
                                 simConfig_.frustumCulling);
   } else {
-    LOG(ERROR) << "MetadataMediator::setSimulatorConfiguration : No active "
-                  "dataset exists or has been specified. Aborting";
+    Mn::Error{} << "MetadataMediator::setSimulatorConfiguration : No active "
+                   "dataset exists or has been specified. Aborting";
     return false;
   }
-  LOG(INFO) << "MetadataMediator::setSimulatorConfiguration : Set new "
-               "simulator config for scene/stage : "
-            << simConfig_.activeSceneName
-            << " and dataset : " << simConfig_.sceneDatasetConfigFile
-            << " which "
-            << (activeSceneDataset_.compare(
-                    simConfig_.sceneDatasetConfigFile) == 0
-                    ? "is currently active dataset."
-                    : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
+  Mn::Debug{} << "MetadataMediator::setSimulatorConfiguration : Set new "
+                 "simulator config for scene/stage : "
+              << simConfig_.activeSceneName
+              << " and dataset : " << simConfig_.sceneDatasetConfigFile
+              << " which "
+              << (activeSceneDataset_.compare(
+                      simConfig_.sceneDatasetConfigFile) == 0
+                      ? "is currently active dataset."
+                      : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
   return true;
 }  // MetadataMediator::setSimulatorConfiguration
 
@@ -86,7 +86,7 @@ bool MetadataMediator::createPhysicsManagerAttributes(
 
     if (physAttrs == nullptr) {
       // something failed during creation process.
-      LOG(WARNING)
+      Mn::Warning{}
           << "MetadataMediator::createPhysicsManagerAttributes : Unknown  "
              "physics manager configuration file : "
           << _physicsManagerAttributesPath
@@ -105,10 +105,10 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
   if (exists) {
     // check if not overwrite and exists already
     if (!overwrite) {
-      LOG(WARNING) << "MetadataMediator::createSceneDataset : Scene Dataset "
-                   << sceneDatasetName
-                   << " already exists.  To reload and overwrite existing "
-                      "data, set overwrite to true. Aborting.";
+      Mn::Warning{} << "MetadataMediator::createSceneDataset : Scene Dataset "
+                    << sceneDatasetName
+                    << " already exists.  To reload and overwrite existing "
+                       "data, set overwrite to true. Aborting.";
       return false;
     }
     // overwrite specified, make sure not locked
@@ -119,14 +119,15 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
       sceneDatasetAttributesManager_->createObject(sceneDatasetName, true);
   if (datasetAttribs == nullptr) {
     // not created, do not set name
-    LOG(WARNING) << "MetadataMediator::createSceneDataset : Unknown dataset "
-                 << sceneDatasetName
-                 << " does not exist and is not able to be created.  Aborting.";
+    Mn::Warning{}
+        << "MetadataMediator::createSceneDataset : Unknown dataset "
+        << sceneDatasetName
+        << " does not exist and is not able to be created.  Aborting.";
     return false;
   }
   // if not null then successfully created
-  LOG(INFO) << "MetadataMediator::createSceneDataset : Dataset "
-            << sceneDatasetName << " successfully created.";
+  Mn::Debug{} << "MetadataMediator::createSceneDataset : Dataset "
+              << sceneDatasetName << " successfully created.";
   // lock dataset to prevent accidental deletion
   sceneDatasetAttributesManager_->setLock(sceneDatasetName, true);
   return true;
@@ -137,7 +138,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   if (!sceneDatasetAttributesManager_->getObjectLibHasHandle(
           sceneDatasetName)) {
     // DNE, do nothing
-    LOG(INFO)
+    Mn::Debug{}
         << "MetadataMediator::removeSceneDataset : SceneDatasetAttributes "
         << sceneDatasetName << " does not exist. Aborting.";
     return false;
@@ -145,10 +146,10 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
 
   // Next check if is current activeSceneDataset_, and if so skip with warning
   if (sceneDatasetName.compare(activeSceneDataset_)) {
-    LOG(WARNING) << "MetadataMediator::removeSceneDataset : Cannot remove "
-                    "active SceneDatasetAttributes "
-                 << sceneDatasetName
-                 << ".  Switch to another dataset before removing.";
+    Mn::Warning{} << "MetadataMediator::removeSceneDataset : Cannot remove "
+                     "active SceneDatasetAttributes "
+                  << sceneDatasetName
+                  << ".  Switch to another dataset before removing.";
     return false;
   }
 
@@ -160,7 +161,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   // if failed here, probably means SceneDatasetAttributes was set to
   // undeletable, return message and false
   if (delDataset == nullptr) {
-    LOG(WARNING)
+    Mn::Warning{}
         << "MetadataMediator::removeSceneDataset : SceneDatasetAttributes "
         << sceneDatasetName << " unable to be deleted. Aborting.";
     return false;
@@ -171,8 +172,9 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
     // dataset.
     createSceneDataset("default");
   }
-  LOG(INFO) << "MetadataMediator::removeSceneDataset : SceneDatasetAttributes "
-            << sceneDatasetName << " successfully removed.";
+  Mn::Debug{}
+      << "MetadataMediator::removeSceneDataset : SceneDatasetAttributes "
+      << sceneDatasetName << " successfully removed.";
   return true;
 
 }  // MetadataMediator::removeSceneDataset
@@ -184,10 +186,10 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
           _physicsManagerAttributesPath)) {
     if (currPhysicsManagerAttributes_.compare(_physicsManagerAttributesPath) !=
         0) {
-      LOG(INFO) << "MetadataMediator::setCurrPhysicsAttributesHandle : Old "
-                   "physics manager attributes "
-                << currPhysicsManagerAttributes_ << " changed to "
-                << _physicsManagerAttributesPath << " successfully.";
+      Mn::Debug{} << "MetadataMediator::setCurrPhysicsAttributesHandle : Old "
+                     "physics manager attributes "
+                  << currPhysicsManagerAttributes_ << " changed to "
+                  << _physicsManagerAttributesPath << " successfully.";
       currPhysicsManagerAttributes_ = _physicsManagerAttributesPath;
     }
     sceneDatasetAttributesManager_->setCurrPhysicsManagerAttributesHandle(
@@ -213,7 +215,7 @@ bool MetadataMediator::setActiveSceneDatasetName(
   // first check if dataset exists/is loaded, if so then set as default
   if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName)) {
     if (activeSceneDataset_.compare(sceneDatasetName) != 0) {
-      LOG(INFO)
+      Mn::Debug{}
           << "MetadataMediator::setActiveSceneDatasetName : Old active dataset "
           << activeSceneDataset_ << " changed to " << sceneDatasetName
           << " successfully.";
@@ -222,19 +224,19 @@ bool MetadataMediator::setActiveSceneDatasetName(
     return true;
   }
   // if does not exist, attempt to create it
-  LOG(INFO) << "MetadataMediator::setActiveSceneDatasetName : Attempting to "
-               "create new dataset "
-            << sceneDatasetName;
+  Mn::Debug{} << "MetadataMediator::setActiveSceneDatasetName : Attempting to "
+                 "create new dataset "
+              << sceneDatasetName;
   bool success = createSceneDataset(sceneDatasetName);
   // if successfully created, set default name to access dataset attributes in
   // SceneDatasetAttributesManager
   if (success) {
     activeSceneDataset_ = sceneDatasetName;
   }
-  LOG(INFO) << "MetadataMediator::setActiveSceneDatasetName : Attempt to "
-               "create new dataset "
-            << sceneDatasetName << " "
-            << (success ? " succeeded." : " failed.");
+  Mn::Debug{} << "MetadataMediator::setActiveSceneDatasetName : Attempt to "
+                 "create new dataset "
+              << sceneDatasetName << " "
+              << (success ? " succeeded." : " failed.");
   return success;
 }  // MetadataMediator::setActiveSceneDatasetName
 
@@ -244,8 +246,8 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
   attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
   // this should never happen
   if (datasetAttr == nullptr) {
-    LOG(ERROR) << "MetadataMediator::getSceneAttributesByName : No dataset "
-                  "specified/exists.";
+    Mn::Error{} << "MetadataMediator::getSceneAttributesByName : No dataset "
+                   "specified/exists.";
     return nullptr;
   }
   // directory to look for attributes for this dataset
@@ -263,11 +265,11 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
   if (sceneList.size() > 0) {
     // 1.  Existing, registered SceneAttributes in current active dataset.
     //    In this case the SceneAttributes is returned.
-    LOG(INFO) << "MetadataMediator::getSceneAttributesByName : Query dataset : "
-              << activeSceneDataset_
-              << " for SceneAttributes named : " << sceneName << " yields "
-              << sceneList.size() << " candidates.  Using " << sceneList[0]
-              << ".";
+    Mn::Debug{}
+        << "MetadataMediator::getSceneAttributesByName : Query dataset : "
+        << activeSceneDataset_ << " for SceneAttributes named : " << sceneName
+        << " yields " << sceneList.size() << " candidates.  Using "
+        << sceneList[0] << ".";
     sceneAttributes = dsSceneAttrMgr->getObjectCopyByHandle(sceneList[0]);
   } else {
     const std::string sceneFilenameCandidate =
@@ -277,13 +279,13 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
       // 2.  Existing, valid SceneAttributes file on disk, but not in dataset.
       //    If this is the case, then the SceneAttributes should be loaded,
       //    registered, added to the dataset and returned.
-      LOG(INFO) << "MetadataMediator::getSceneAttributesByName : Dataset : "
-                << activeSceneDataset_
-                << " does not reference a SceneAttributes named  " << sceneName
-                << " but a SceneAttributes config named "
-                << sceneFilenameCandidate
-                << " was found on disk, so "
-                   "loading.";
+      Mn::Debug{} << "MetadataMediator::getSceneAttributesByName : Dataset : "
+                  << activeSceneDataset_
+                  << " does not reference a SceneAttributes named  "
+                  << sceneName << " but a SceneAttributes config named "
+                  << sceneFilenameCandidate
+                  << " was found on disk, so "
+                     "loading.";
       sceneAttributes = dsSceneAttrMgr->createObjectFromJSONFile(
           sceneFilenameCandidate, true);
     } else {
@@ -295,13 +297,14 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
         //    In this case, a SceneAttributes is created amd registered using
         //    sceneName, referencing the StageAttributes of the same name; This
         //    sceneAttributes is returned.
-        LOG(INFO) << "MetadataMediator::getSceneAttributesByName : No existing "
-                     "scene instance attributes containing name "
-                  << sceneName << " found in Dataset : " << activeSceneDataset_
-                  << " but " << stageList.size()
-                  << " StageAttributes found.  Using " << stageList[0]
-                  << " as stage and to construct a SceneAttributes with same "
-                     "name that will be added to Dataset.";
+        Mn::Debug{}
+            << "MetadataMediator::getSceneAttributesByName : No existing "
+               "scene instance attributes containing name "
+            << sceneName << " found in Dataset : " << activeSceneDataset_
+            << " but " << stageList.size() << " StageAttributes found.  Using "
+            << stageList[0]
+            << " as stage and to construct a SceneAttributes with same "
+               "name that will be added to Dataset.";
         // create a new SceneAttributes, and give it a
         // SceneObjectInstanceAttributes for the stage with the same name.
         sceneAttributes = makeSceneAndReferenceStage(
@@ -312,7 +315,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
         // 4.  Existing stage config/asset on disk, but not in current dataset.
         //    In this case, a stage attributes is loaded and registered, then
         //    added to current dataset, and then 3. is performed.
-        LOG(INFO)
+        Mn::Debug{}
             << "MetadataMediator::getSceneAttributesByName : Dataset : "
             << activeSceneDataset_
             << " has no preloaded SceneAttributes or StageAttributes named : "

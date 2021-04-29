@@ -102,9 +102,9 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
     this->undeletableObjectNames_.insert(tmpltHandle);
   }
 
-  LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
-               "primitive asset templates : "
-            << std::to_string(defaultPrimAttributeHandles_.size());
+  Mn::Debug{} << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
+                 "primitive asset templates : "
+              << std::to_string(defaultPrimAttributeHandles_.size());
 }  // AssetAttributesManager::buildMapOfPrimTypeConstructors
 
 AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
@@ -114,9 +114,9 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
   if (nullptr == primAssetAttributes) {
     return primAssetAttributes;
   }
-  LOG(INFO) << "Asset attributes (" << primClassName << " : "
-            << primAssetAttributes->getHandle() << ") created"
-            << (registerTemplate ? " and registered." : ".");
+  Mn::Debug{} << "Asset attributes (" << primClassName << " : "
+              << primAssetAttributes->getHandle() << ") created"
+              << (registerTemplate ? " and registered." : ".");
 
   return this->postCreateRegister(primAssetAttributes, registerTemplate);
 }  // AssetAttributesManager::createObject
@@ -128,12 +128,12 @@ int AssetAttributesManager::registerObjectFinalize(
   std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
-    LOG(ERROR) << "AssetAttributesManager::registerObjectFinalize "
-                  ": Primitive asset attributes template named"
-               << primAttributesHandle
-               << "is not configured properly for specified prmitive"
-               << primAttributesTemplate->getPrimObjClassName()
-               << ". Aborting.";
+    Mn::Error{} << "AssetAttributesManager::registerObjectFinalize "
+                   ": Primitive asset attributes template named"
+                << primAttributesHandle
+                << "is not configured properly for specified prmitive"
+                << primAttributesTemplate->getPrimObjClassName()
+                << ". Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -158,10 +158,10 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
   // if not legal primitive asset attributes file name, have message and return
   // default sphere attributes.
   if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
-    LOG(ERROR) << "AssetAttributesManager::buildObjectFromJSONDoc :Unknown "
-                  "primitive class type : "
-               << primClassName
-               << " so returning default attributes for solid uvSphere.";
+    Mn::Error{} << "AssetAttributesManager::buildObjectFromJSONDoc :Unknown "
+                   "primitive class type : "
+                << primClassName
+                << " so returning default attributes for solid uvSphere.";
     return this->getObjectCopyByHandle<attributes::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }
@@ -169,7 +169,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
   // create attributes for the primitive described in the JSON file
   auto primAssetAttributes = this->initNewObjectInternal(primClassName, true);
   if (nullptr == primAssetAttributes) {
-    LOG(ERROR)
+    Mn::Error{}
         << "AssetAttributesManager::buildObjectFromJSONDoc : unable to "
            "create default primitive asset attributes from primClassName "
         << primClassName

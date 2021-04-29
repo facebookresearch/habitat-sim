@@ -16,13 +16,13 @@ std::string ManagedContainerBase::convertFilenameToJSON(
       strHandle.find(Cr::Utility::String::lowercase(jsonTypeExt))) {
     resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
                 jsonTypeExt;
-    LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
-              << filename
-              << " changed to proposed JSON configuration filename : "
-              << resHandle;
+    Mn::Debug{} << "ManagedContainerBase::convertFilenameToJSON : Filename : "
+                << filename
+                << " changed to proposed JSON configuration filename : "
+                << resHandle;
   } else {
-    LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
-              << filename << " is appropriate JSON configuration filename.";
+    Mn::Debug{} << "ManagedContainerBase::convertFilenameToJSON : Filename : "
+                << filename << " is appropriate JSON configuration filename.";
   }
   return resHandle;
 }  // ManagedContainerBase::convertFilenameToJSON
@@ -47,8 +47,8 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
     const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
-    LOG(ERROR) << "Attempting to get a random " << type << objectType_
-               << " managed object handle but none are loaded; Aboring";
+    Mn::Error{} << "Attempting to get a random " << type << objectType_
+                << " managed object handle but none are loaded; Aboring";
     return "";
   }
   int randIDX = rand() % numVals;
@@ -150,7 +150,7 @@ bool ManagedContainerBase::verifyLoadDocument(const std::string& filename,
     try {
       jsonDoc = io::parseJsonFile(filename);
     } catch (...) {
-      LOG(ERROR)
+      Mn::Error{}
           << objectType_
           << "ManagedContainerBase::verifyLoadDocument : Failed to parse "
           << filename << " as JSON.";
@@ -159,9 +159,9 @@ bool ManagedContainerBase::verifyLoadDocument(const std::string& filename,
     return true;
   } else {
     // by here always fail
-    LOG(ERROR) << objectType_
-               << "ManagedContainerBase::verifyLoadDocument : File " << filename
-               << " does not exist";
+    Mn::Error{} << objectType_
+                << "ManagedContainerBase::verifyLoadDocument : File "
+                << filename << " does not exist";
     return false;
   }
 }  // ManagedContainerBase::verifyLoadDocument

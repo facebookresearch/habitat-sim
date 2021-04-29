@@ -135,7 +135,7 @@ class SceneDatasetAttributesManager
    * @param tag the name of the cell
    */
   void dispCellConfigError(const std::string& tag) {
-    LOG(WARNING)
+    Mn::Warning{}
         << "SceneDatasetAttributesManager::readDatasetJSONCell : \"" << tag
         << "\" cell in JSON config not appropriately configured. Skipping.";
   }

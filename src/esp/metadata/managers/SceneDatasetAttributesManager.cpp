@@ -20,8 +20,8 @@ SceneDatasetAttributes::ptr SceneDatasetAttributesManager::createObject(
       datasetHandle, msg, registerTemplate);
 
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " dataset attributes created"
-              << (registerTemplate ? " and registered." : ".");
+    Mn::Debug{} << msg << " dataset attributes created"
+                << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
 }  // SceneDatasetAttributesManager::createObject
@@ -93,10 +93,10 @@ void SceneDatasetAttributesManager::loadAndValidateMap(
     if (!Cr::Utility::Directory::exists(loc)) {
       std::string newLoc = Cr::Utility::Directory::join(dsDir, loc);
       if (!Cr::Utility::Directory::exists(newLoc)) {
-        LOG(WARNING) << "SceneDatasetAttributesManager::loadAndValidateMap : "
-                     << jsonTag << " Value : " << loc
-                     << " not found on disk as absolute path or relative to "
-                     << dsDir;
+        Mn::Warning{} << "SceneDatasetAttributesManager::loadAndValidateMap : "
+                      << jsonTag << " Value : " << loc
+                      << " not found on disk as absolute path or relative to "
+                      << dsDir;
       } else {
         // replace value with dataset-augmented absolute path
         map[entry.first] = newLoc;
@@ -122,7 +122,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       // type.
       if (jCell.HasMember("default_attributes")) {
         if (!jCell["default_attributes"].IsObject()) {
-          LOG(WARNING)
+          Mn::Warning{}
               << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
               << tag
               << ".default attributes\" cell in JSON config unable to "
@@ -132,7 +132,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
           auto attr = attrMgr->buildObjectFromJSONDoc(
               "default_attributes", jCell["default_attributes"]);
           if (nullptr == attr) {
-            LOG(WARNING)
+            Mn::Warning{}
                 << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
                 << tag
                 << ".default attributes\" cell failed to successfully "
@@ -140,7 +140,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
           } else {
             // set attributes as defaultObject_ in attrMgr.
             attrMgr->setDefaultObject(attr);
-            LOG(INFO)
+            Mn::Debug{}
                 << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
                 << tag
                 << ".default attributes\" set in Attributes Manager from JSON.";
@@ -152,7 +152,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       // files.
       if (jCell.HasMember("paths")) {
         if (!jCell["paths"].IsObject()) {
-          LOG(WARNING)
+          Mn::Warning{}
               << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
               << tag
               << ".paths\" cell in JSON config unable to be parsed as "
@@ -184,7 +184,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       // existing attributes.
       if (jCell.HasMember("configs")) {
         if (!jCell["configs"].IsArray()) {
-          LOG(WARNING)
+          Mn::Warning{}
               << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
               << tag
               << ".configs\" cell in JSON config unable to be parsed "
@@ -209,7 +209,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     const U& attrMgr) {
   // every cell within configs array must have an attributes tag
   if ((!jCell.HasMember("attributes")) || (!jCell["attributes"].IsObject())) {
-    LOG(WARNING)
+    Mn::Warning{}
         << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
         << tag
         << ".configs\" cell element in JSON config lacks required data to "
@@ -234,7 +234,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     std::vector<std::string> handles =
         attrMgr->getObjectHandlesBySubstring(originalFile, true);
     if (handles.size() == 0) {
-      LOG(WARNING)
+      Mn::Warning{}
           << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
           << tag
           << ".configs\" cell element in JSON config specified source file : "
@@ -257,7 +257,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
   }
   // if neither handle is specified, cell will fail
   if (!validCell) {
-    LOG(WARNING)
+    Mn::Warning{}
         << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
         << tag
         << ".configs\" cell element in JSON config lacks required data to "
@@ -282,14 +282,14 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // is known to be legitimate file
     auto attr = attrMgr->getObjectCopyByHandle(origObjHandle);
     if (nullptr == attr) {
-      LOG(WARNING)
+      Mn::Warning{}
           << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : "
           << attrMgr->getObjectType() << " : Attempting to make a copy of "
           << origObjHandle
           << " failing so creating and registering a new object.";
       attr = attrMgr->createObject(origObjHandle, true);
       if (nullptr == attr) {
-        LOG(WARNING)
+        Mn::Warning{}
             << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
             << tag << ".configs\" cell element's original file ("
             << originalFile
@@ -309,7 +309,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     auto attr = attrMgr->createDefaultObject(newTemplateHandle, false);
     // if null then failed for some reason to create a new default object.
     if (nullptr == attr) {
-      LOG(WARNING)
+      Mn::Warning{}
           << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
           << tag
           << ".configs\" cell element failed to successfully create an "

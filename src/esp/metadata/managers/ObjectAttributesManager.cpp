@@ -28,7 +28,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
-    LOG(ERROR)
+    Mn::Error{}
         << "ObjectAttributesManager::createPrimBasedAttributesTemplate : No "
            "primitive with handle '"
         << primAttrTemplateHandle
@@ -186,7 +186,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     const std::string& objectTemplateHandle,
     bool forceRegistration) {
   if (objectTemplate->getRenderAssetHandle() == "") {
-    LOG(ERROR)
+    Mn::Error{}
         << "ObjectAttributesManager::registerObjectFinalize : "
            "Attributes template named "
         << objectTemplateHandle
@@ -213,7 +213,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     mapToUse = &physicsFileObjTmpltLibByID_;
   } else if (forceRegistration) {
     // Forcing registration in case of computationaly generated assets
-    LOG(WARNING)
+    Mn::Warning{}
         << "ObjectAttributesManager::registerObjectFinalize "
            ": Render asset template handle : "
         << renderAssetHandle << " specified in object template with handle : "
@@ -225,7 +225,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
     // by here always fail
-    LOG(ERROR)
+    Mn::Error{}
         << "ObjectAttributesManager::registerObjectFinalize "
            ": Render asset template handle : "
         << renderAssetHandle << " specified in object template with handle : "
@@ -245,7 +245,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     objectTemplate->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
-    LOG(INFO)
+    Mn::Debug{}
         << "ObjectAttributesManager::registerObjectFinalize "
            ": Collision asset template handle : "
         << collisionAssetHandle
