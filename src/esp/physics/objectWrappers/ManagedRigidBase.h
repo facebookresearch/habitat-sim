@@ -286,7 +286,11 @@ class AbstractManagedRigidBase
     }
   }  // setInertiaVector
 
-  void setLightSetup(const std::string& lightSetupKey) {}
+  void setLightSetup(const std::string& lightSetupKey) {
+    if (auto sp = this->getObjectReference()) {
+      sp->setLightSetup(lightSetupKey);
+    }
+  }  // setLightSetup
 
   double getLinearDamping() const {
     if (auto sp = this->getObjectReference()) {

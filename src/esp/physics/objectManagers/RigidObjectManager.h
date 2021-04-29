@@ -13,10 +13,9 @@ namespace physics {
 class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
  public:
   RigidObjectManager(
-      const std::shared_ptr<esp::physics::PhysicsManager>& physMgr,
-      const std::string& objType)
+      const std::shared_ptr<esp::physics::PhysicsManager>& physMgr)
       : RigidBaseManager<ManagedRigidObject>::RigidBaseManager(physMgr,
-                                                               objType) {
+                                                               "RigidObject") {
     buildCtorFuncPtrMaps();
   }
 
