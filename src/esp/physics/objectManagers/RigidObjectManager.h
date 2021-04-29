@@ -14,7 +14,7 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
  public:
   RigidObjectManager()
       : RigidBaseManager<ManagedRigidObject>::RigidBaseManager("RigidObject") {
-    buildCtorFuncPtrMaps();
+    this->buildCtorFuncPtrMaps();
   }
 
  protected:
@@ -28,7 +28,7 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
    * @return Newly created but unregistered ManagedObject pointer, with only
    * default values set.
    */
-  std::shared_ptr<ManagedRigidObject> initNewObjectInternal(
+  ManagedRigidObject::ptr initNewObjectInternal(
       const std::string& objectHandle,
       CORRADE_UNUSED bool builtFromConfig) override;
 
@@ -53,9 +53,9 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
    * @return The unique ID of the managed object being registered, or
    * ID_UNDEFINED if failed
    */
-  int registerObjectFinalize(ObjWrapperPtr object,
+  int registerObjectFinalize(ManagedRigidObject::ptr object,
                              const std::string& objectHandle,
-                             bool forceRegistration) override;
+                             CORRADE_UNUSED bool forceRegistration) override;
 
  public:
   ESP_SMART_POINTERS(RigidObjectManager)

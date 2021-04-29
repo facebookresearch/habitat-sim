@@ -46,7 +46,6 @@ class PhysicsObjectBaseManager
     weakPhysManager_ = physMgr;
   }
 
- protected:
   /**
    * @brief Creates an instance of a managed object described by passed string.
    *
@@ -66,6 +65,7 @@ class PhysicsObjectBaseManager
       const std::string& objectHandle,
       CORRADE_UNUSED bool registerObject = true) override;
 
+ protected:
   /**
    * @brief Any physics-object-wrapper-specific resetting that needs to happen
    * on reset.

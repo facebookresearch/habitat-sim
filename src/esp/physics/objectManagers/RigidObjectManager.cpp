@@ -8,7 +8,7 @@ namespace physics {
 
 ManagedRigidObject::ptr RigidObjectManager::initNewObjectInternal(
     const std::string& objectHandle,
-    CORRADE_UNUSED bool builtFromConfig) {
+    bool builtFromConfig) {
   ManagedRigidObject::ptr newObjectWrapper =
       this->constructFromDefault(objectHandle);
   if (nullptr == newObjectWrapper) {
@@ -17,10 +17,9 @@ ManagedRigidObject::ptr RigidObjectManager::initNewObjectInternal(
   return newObjectWrapper;
 }  // RigidObjectManager::initNewObjectInternal(
 
-int RigidObjectManager::registerObjectFinalize(
-    ManagedRigidObject::ptr object,
-    const std::string& objectHandle,
-    CORRADE_UNUSED bool forceRegistration) {
+int RigidObjectManager::registerObjectFinalize(ManagedRigidObject::ptr object,
+                                               const std::string& objectHandle,
+                                               bool forceRegistration) {
   // Add object wrapper to template library
   return this->addObjectToLibrary(object, objectHandle);
 }  // RigidObjectManager::registerObjectFinalize
