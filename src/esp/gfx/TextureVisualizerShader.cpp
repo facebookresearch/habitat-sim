@@ -36,7 +36,9 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   if (flags_ & Flag::DepthTexture) {
     ++countMutuallyExclusive;
   }
-  // if(flags & Flag::ObjectIdTexture) ++countMutuallyExclusive;
+  if (flags & Flag::ObjectIdTexture) {
+    ++countMutuallyExclusive;
+  }
   CORRADE_ASSERT(countMutuallyExclusive <= 1,
                  "TextureVisualizerShader::TextureVisualizerShader: "
                  "Flag::DepthTexture and "
@@ -63,8 +65,8 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
       .addSource(Cr::Utility::formatString(
           "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
       .addSource(flags_ == Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
-      // .addSource(flags_ == Flag::ObjectIdTexture? "#define
-      // OBJECT_ID_TEXTURE\n" : "")
+      .addSource(flags_ == Flag::ObjectIdTexture ? "#define OBJECT_ID_TEXTURE\n"
+                                                 : "")
       .addSource(rs.get("textureVisualizer.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
@@ -99,9 +101,10 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   // set default offset, scale based on flags
   if (flags_ & Flag::DepthTexture) {
     setColorMapTransformation(1.0f / 512.0f, 1.0f / 1000.0f);
+  } else if (flags & Flag::ObjectIdTexture) {
+    setColorMapTransformation(1.0f / 512.0f,
+                              1.0f / 108.0f);  // initial guess: 108 objects
   }
-  // TODO:
-  // else set ObjectIdTexture
 }
 
 TextureVisualizerShader& TextureVisualizerShader::setColorMapTransformation(
@@ -125,6 +128,17 @@ TextureVisualizerShader& TextureVisualizerShader::bindDepthTexture(
                  "TextureVisualizerShader::bindDepthTexture(): the shader was "
                  "not created with depth texture enabled",
                  *this);
+  texture.bind(SourceTextureUnit);
+  return *this;
+}
+
+TextureVisualizerShader& TextureVisualizerShader::bindObjectIdTexture(
+    Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(
+      flags_ & Flag::ObjectIdTexture,
+      "TextureVisualizerShader::bindObjectIdTexture(): the shader was "
+      "not created with object Id texture enabled",
+      *this);
   texture.bind(SourceTextureUnit);
   return *this;
 }
