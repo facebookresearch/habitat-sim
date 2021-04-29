@@ -42,7 +42,7 @@ repos:
         additional_dependencies: [toml]
 
 -   repo: https://github.com/ambv/black
-    rev: 21.4b0
+    rev: 21.4b2
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
@@ -83,21 +83,16 @@ repos:
     -   id: nbstripout
         files: '.ipynb'
 
--   repo: local
+-   repo: https://github.com/mwouts/jupytext
+    rev: v1.11.1
     hooks:
-    -   id: jupytext-sync
-        name: Sync scripts and notebooks
+    -   id: jupytext
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
-        entry: jupytext --update-metadata '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}' --set-formats 'nb_python//py:percent,colabs//ipynb' --pipe black --pipe 'isort - --treat-comment-as-code "# %%"' --pipe-fmt 'py:percent' --sync
-        pass_filenames: true
+        args: [--update-metadata, '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}', --set-formats, 'nb_python//py:percent,colabs//ipynb,', --pipe, black, --pipe, 'isort - --treat-comment-as-code "# %%"', --pipe-fmt, 'py:percent', --sync]
         additional_dependencies:
-            - 'jupytext==1.6.0'
             - 'nbformat<=5.0.8'
             - black
             - isort
-        always_run: false
-        language: python
-        require_serial: true
 
 -   repo: local
     hooks:
@@ -132,3 +127,8 @@ repos:
     hooks:
     -   id: shellcheck
         exclude: ^conda-build/ #TODO fix these scripts
+
+-   repo: https://github.com/AleksaC/circleci-cli-py
+    rev: v0.1.15195
+    hooks:
+    -   id: circle-ci-validator
