@@ -119,8 +119,8 @@ class ManagedContainer : public ManagedContainerBase {
                      const std::string& objectHandle = "",
                      bool forceRegistration = false) {
     if (nullptr == managedObject) {
-      LOG(ERROR) << "ManagedContainer::registerObject : Invalid "
-                    "(null) managed object passed to registration. Aborting.";
+      Mn::Error{} << "ManagedContainer::registerObject : Invalid "
+                     "(null) managed object passed to registration. Aborting.";
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
@@ -129,9 +129,9 @@ class ManagedContainer : public ManagedContainerBase {
     }
     std::string handleToSet = managedObject->getHandle();
     if ("" == handleToSet) {
-      LOG(ERROR) << "ManagedContainer::registerObject : No "
-                    "valid handle specified for "
-                 << objectType_ << " managed object to register. Aborting.";
+      Mn::Error{} << "ManagedContainer::registerObject : No "
+                     "valid handle specified for "
+                  << objectType_ << " managed object to register. Aborting.";
       return ID_UNDEFINED;
     }
     return registerObjectFinalize(managedObject, handleToSet,
@@ -495,9 +495,9 @@ class ManagedContainer : public ManagedContainerBase {
       return getObjectInternal<T>(objectHandle)->getID();
     } else {
       if (!getNext) {
-        LOG(ERROR) << "ManagedContainer::getObjectIDByHandleOrNew : No "
-                   << objectType_ << " managed object with handle "
-                   << objectHandle << "exists. Aborting";
+        Mn::Error{} << "ManagedContainer::getObjectIDByHandleOrNew : No "
+                    << objectType_ << " managed object with handle "
+                    << objectHandle << "exists. Aborting";
         return ID_UNDEFINED;
       } else {
         return getUnusedObjectID();
@@ -652,8 +652,8 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     const std::string& objectHandle,
     const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
-    LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
-              << " managed object " << objectHandle << " : Does not exist.";
+    Mn::Debug{} << sourceStr << " : Unable to remove " << objectType_
+                << " managed object " << objectHandle << " : Does not exist.";
     return nullptr;
   }
   std::string msg;
@@ -663,8 +663,8 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     msg = "User-locked Object.  To delete managed object, unlock it";
   }
   if (msg.length() != 0) {
-    LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
-              << " managed object " << objectHandle << " : " << msg << ".";
+    Mn::Debug{} << sourceStr << " : Unable to remove " << objectType_
+                << " managed object " << objectHandle << " : " << msg << ".";
     return nullptr;
   }
 

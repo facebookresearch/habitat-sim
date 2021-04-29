@@ -53,10 +53,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     io::JsonDocument docConfig = nullptr;
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
-      LOG(ERROR) << "ManagedFileBasedContainer::createObjectFromFile ("
-                 << this->objectType_
-                 << ") : Failure reading document as JSON : " << filename
-                 << ". Aborting.";
+      Mn::Error{} << "ManagedFileBasedContainer::createObjectFromFile ("
+                  << this->objectType_
+                  << ") : Failure reading document as JSON : " << filename
+                  << ". Aborting.";
       return nullptr;
     }
     // convert doc to const value
@@ -77,7 +77,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   template <typename U>
   ManagedFileIOPtr buildManagedObjectFromDoc(const std::string& filename,
                                              CORRADE_UNUSED const U& config) {
-    LOG(ERROR)
+    Mn::Error{}
         << "ManagedContainer::buildManagedObjectFromDoc (" << this->objectType_
         << ") : Failure loading attributes from document of unknown type : "
         << filename << ". Aborting.";
