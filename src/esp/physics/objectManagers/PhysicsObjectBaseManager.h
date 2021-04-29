@@ -36,14 +36,17 @@ class PhysicsObjectBaseManager
     : public esp::core::ManagedContainer<T, core::ManagedObjectAccess::Copy> {
  public:
   typedef std::shared_ptr<T> ObjWrapperPtr;
-  PhysicsObjectBaseManager(
-      const std::shared_ptr<esp::physics::PhysicsManager>& physMgr,
-      const std::string& objType)
+  explicit PhysicsObjectBaseManager(const std::string& objType)
       : esp::core::ManagedContainer<T, core::ManagedObjectAccess::Copy>::
-            ManagedContainer(objType),
-        weakPhysManager_(physMgr) {}
+            ManagedContainer(objType) {}
   ~PhysicsObjectBaseManager() override = default;
 
+  void setPhysicsManager(
+      const std::shared_ptr<esp::physics::PhysicsManager>& physMgr) {
+    weakPhysManager_ = physMgr;
+  }
+
+ protected:
   /**
    * @brief Creates an instance of a managed object described by passed string.
    *
@@ -59,37 +62,29 @@ class PhysicsObjectBaseManager
    * returns a copy of the registered managed object.
    * @return a reference to the desired managed object.
    */
-  ObjWrapperPtr createObject(const std::string& objectHandle,
-                             bool registerObject = true) override;
+  ObjWrapperPtr createObject(
+      const std::string& objectHandle,
+      CORRADE_UNUSED bool registerObject = true) override;
 
- protected:
   /**
-   * @brief implementation of managed object type-specific registration
-   * @param object the managed object to be registered
-   * @param objectHandle the name to register the managed object with.
-   * Expected to be valid.
-   * @param forceRegistration Will register object even if conditional
-   * registration checks fail.
-   * @return The unique ID of the managed object being registered, or
-   * ID_UNDEFINED if failed
+   * @brief Any physics-object-wrapper-specific resetting that needs to happen
+   * on reset.
    */
-  int registerObjectFinalize(ObjWrapperPtr object,
-                             const std::string& objectHandle,
-                             bool forceRegistration) override;
+  void resetFinalize() override {}
 
   /**
-   * @brief Used Internally.  Create and configure newly-created managed object
-   * with any default values, before any specific values are set.
+   * @brief This method will perform any necessary updating that is
+   * ManagedContainer specialization-specific upon managed object removal, such
+   * as removing a specific managed object handle from the list of file-based
+   * managed object handles in ObjectAttributesManager.  This should only be
+   * called internally.
    *
-   * @param objectHandle handle name to be assigned to the managed object.
-   * @param builtFromConfig Managed Object is being constructed from a config
-   * file (i.e. @p objectHandle is config file filename).  If false this means
-   * Manage Object is being constructed as some kind of new/default.
-   * @return Newly created but unregistered ManagedObject pointer, with only
-   * default values set.
+   * @param objectID the ID of the managed object to remove
+   * @param objectHandle the string key of the managed object to remove.
    */
-  ObjWrapperPtr initNewObjectInternal(const std::string& objectHandle,
-                                      bool builtFromConfig) override;
+  void updateObjectHandleLists(
+      CORRADE_UNUSED int objectID,
+      CORRADE_UNUSED const std::string& objectHandle) override {}
 
   /**
    * @brief return a reference to physicsManager_, or null ptr if it does not
@@ -100,7 +95,7 @@ class PhysicsObjectBaseManager
     std::shared_ptr<esp::physics::PhysicsManager> sp = weakPhysManager_.lock();
     if (!sp) {
       // TODO: Verify object is removed from manager here?
-      LOG(WARNING) << "This object manager no longer exists.  Please delete "
+      LOG(WARNING) << "This object manager is no longer valid.  Please delete "
                       "any variable references.";
     }
     return sp;
@@ -108,12 +103,25 @@ class PhysicsObjectBaseManager
 
   /** @brief Weak reference to owning physics manager.
    */
-  std::weak_ptr<esp::physics::PhysicsManager> weakPhysManager_;
+  std::weak_ptr<esp::physics::PhysicsManager> weakPhysManager_{};
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBaseManager<T>)
 
 };  // class PhysicsObjectBaseManager
+
+/////////////////////////////
+// Class Template Method Definitions
+
+template <class T>
+auto PhysicsObjectBaseManager<T>::createObject(
+    const std::string& objectWrapperHandle,
+    CORRADE_UNUSED bool registerTemplate) -> ObjWrapperPtr {
+  ObjWrapperPtr objWrapper =
+      this->createDefaultObject(objectWrapperHandle, false);
+
+  return objWrapper;
+}  // PhysicsObjectBaseManager<T>::createObject
 
 }  // namespace physics
 }  // namespace esp

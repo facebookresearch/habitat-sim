@@ -23,10 +23,8 @@ namespace physics {
 template <class T>
 class RigidBaseManager : public PhysicsObjectBaseManager<T> {
  public:
-  RigidBaseManager(const std::shared_ptr<esp::physics::PhysicsManager>& physMgr,
-                   const std::string& objType)
-      : PhysicsObjectBaseManager<T>::PhysicsObjectBaseManager(physMgr,
-                                                              objType) {}
+  explicit RigidBaseManager(const std::string& objType)
+      : PhysicsObjectBaseManager<T>::PhysicsObjectBaseManager(objType) {}
 
  protected:
  public:

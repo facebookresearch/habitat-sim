@@ -12,14 +12,26 @@ namespace physics {
 
 class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
  public:
-  RigidObjectManager(
-      const std::shared_ptr<esp::physics::PhysicsManager>& physMgr)
-      : RigidBaseManager<ManagedRigidObject>::RigidBaseManager(physMgr,
-                                                               "RigidObject") {
+  RigidObjectManager()
+      : RigidBaseManager<ManagedRigidObject>::RigidBaseManager("RigidObject") {
     buildCtorFuncPtrMaps();
   }
 
  protected:
+  /**
+   * @brief Used Internally.  Create and configure newly-created managed object
+   * with any default values, before any specific values are set.
+   *
+   * @param objectHandle handle name to be assigned to the managed object.
+   * @param builtFromConfig Unused for wrapper objects.  All wrappers are
+   * constructed from scratch.
+   * @return Newly created but unregistered ManagedObject pointer, with only
+   * default values set.
+   */
+  std::shared_ptr<ManagedRigidObject> initNewObjectInternal(
+      const std::string& objectHandle,
+      CORRADE_UNUSED bool builtFromConfig) override;
+
   /**
    * @brief This function will build the appropriate @ref copyConstructorMap_
    * copy constructor function pointer map for this container's managed object,
@@ -30,6 +42,20 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
     this->copyConstructorMap_["ManagedRigidObject"] =
         &RigidObjectManager::createObjectCopy<ManagedRigidObject>;
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
+
+  /**
+   * @brief implementation of managed object type-specific registration
+   * @param object the managed object to be registered
+   * @param objectHandle the name to register the managed object with.
+   * Expected to be valid.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
+   * @return The unique ID of the managed object being registered, or
+   * ID_UNDEFINED if failed
+   */
+  int registerObjectFinalize(ObjWrapperPtr object,
+                             const std::string& objectHandle,
+                             bool forceRegistration) override;
 
  public:
   ESP_SMART_POINTERS(RigidObjectManager)
