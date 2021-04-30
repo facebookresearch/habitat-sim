@@ -1598,7 +1598,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           LOG(INFO) << "Visualizing DEPTH sensor observation.";
           break;
         case VisualizeMode::Semantic:
-          LOG(INFO) << "Visualizing Semantic sensor observation.";
+          LOG(INFO) << "Visualizing SEMANTIC sensor observation.";
           break;
         default:
           CORRADE_INTERNAL_ASSERT_UNREACHABLE();
