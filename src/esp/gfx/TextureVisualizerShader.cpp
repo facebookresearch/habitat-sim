@@ -64,9 +64,9 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   frag.addSource("#define EXPLICIT_ATTRIB_LOCATION\n")
       .addSource(Cr::Utility::formatString(
           "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
-      .addSource(flags_ == Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
-      .addSource(flags_ == Flag::ObjectIdTexture ? "#define OBJECT_ID_TEXTURE\n"
-                                                 : "")
+      .addSource(flags_ & Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
+      .addSource(flags_ & Flag::ObjectIdTexture ? "#define OBJECT_ID_TEXTURE\n"
+                                                : "")
       .addSource(rs.get("textureVisualizer.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
