@@ -102,14 +102,16 @@ struct RenderTarget::Impl {
       framebuffer_.attachRenderbuffer(
           Mn::GL::Framebuffer::BufferAttachment::Depth, unprojectedDepth_);
     }
-    if (flags_ & Flag::RgbaAttachment) {
-      framebuffer_.mapForDraw(
-          {{Mn::Shaders::Generic3D::ColorOutput, RgbaBufferAttachment}});
-    }
-    if (flags_ & Flag::ObjectIdAttachment) {
-      framebuffer_.mapForDraw({{Mn::Shaders::Generic3D::ObjectIdOutput,
-                                ObjectIdTextureColorAttachment}});
-    }
+
+    framebuffer_.mapForDraw(
+        {{Mn::Shaders::Generic3D::ColorOutput,
+          (flags_ & Flag::RgbaAttachment
+               ? RgbaBufferAttachment
+               : Mn::GL::Framebuffer::DrawAttachment::None)},
+         {Mn::Shaders::Generic3D::ObjectIdOutput,
+          (flags_ & Flag::ObjectIdAttachment
+               ? ObjectIdTextureColorAttachment
+               : Mn::GL::Framebuffer::DrawAttachment::None)}});
 
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
