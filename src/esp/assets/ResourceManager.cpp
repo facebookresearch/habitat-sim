@@ -2092,12 +2092,12 @@ std::string ResourceManager::setupMaterialModifiedAsset(
 
 bool ResourceManager::attachAsset(const std::string& filename,
                                   scene::SceneNode& node,
+                                  std::vector<scene::SceneNode*>& visNodeCache,
                                   DrawableGroup* drawables) {
   if (drawables != nullptr && resourceDict_.count(filename)) {
     MeshMetaData& meshMetaData = resourceDict_[filename].meshMetaData;
 
     std::vector<StaticDrawableInfo> staticDrawableInfo;
-    std::vector<scene::SceneNode*> visNodeCache;
     addComponent(meshMetaData, node, DEFAULT_LIGHTING_KEY, drawables,
                  meshMetaData.root, visNodeCache, false, staticDrawableInfo);
     // compute the full BB hierarchy for the new tree.

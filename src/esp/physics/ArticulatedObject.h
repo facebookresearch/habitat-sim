@@ -255,6 +255,55 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
 
+  /**
+   * @brief Get a const reference to an ArticulatedLink SceneNode for
+   * info query purposes.
+   * @param linkId The ArticulatedLink ID or -1 for the baseLink.
+   * @return Const reference to the SceneNode.
+   */
+  virtual const scene::SceneNode& getLinkSceneNode(int linkId = -1) const {
+    if (linkId == ID_UNDEFINED) {
+      // base link
+      return baseLink_->node();
+    }
+    CHECK(links_.count(linkId));
+    return links_.at(linkId)->node();
+  }
+
+  /**
+   * @brief Get pointers to a link's visual SceneNodes.
+   * @param linkId The ArticulatedLink ID or -1 for the baseLink.
+   * @return vector of pointers to the link's visual scene nodes.
+   */
+  std::vector<scene::SceneNode*> getLinkVisualSceneNodes(
+      int linkId = -1) const {
+    if (linkId == ID_UNDEFINED) {
+      // base link
+      return baseLink_->visualNodes_;
+    }
+    CHECK(links_.count(linkId));
+    return links_.at(linkId)->visualNodes_;
+  }
+
+  /**
+   * @brief Get pointers to all visual SceneNodes associated to this
+   * ArticulatedObject.
+   * @return vector of pointers to base and all links' visual scene nodes.
+   */
+  std::vector<scene::SceneNode*> getVisualSceneNodes() const {
+    std::vector<scene::SceneNode*> allVisualNodes;
+    // base link
+    allVisualNodes.insert(allVisualNodes.end(), baseLink_->visualNodes_.begin(),
+                          baseLink_->visualNodes_.end());
+    // other links
+    for (auto& link : links_) {
+      allVisualNodes.insert(allVisualNodes.end(),
+                            link.second->visualNodes_.begin(),
+                            link.second->visualNodes_.end());
+    }
+    return allVisualNodes;
+  }
+
   virtual bool initializeFromURDF(
       CORRADE_UNUSED URDFImporter& urdfImporter,
       CORRADE_UNUSED const Magnum::Matrix4& worldTransform,

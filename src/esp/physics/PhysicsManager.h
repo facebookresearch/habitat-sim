@@ -1225,7 +1225,8 @@ class PhysicsManager {
    * @brief Get a const reference to the specified object's SceneNode for info
    * query purposes.
    * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
+   * PhysicsManager::existingObjects_ or @ref
+   * PhysicsManager::existingArticulatedObjects_.
    * @return Const reference to the object scene node.
    */
   const scene::SceneNode& getObjectSceneNode(int physObjectID) const;
@@ -1234,14 +1235,19 @@ class PhysicsManager {
   scene::SceneNode& getObjectSceneNode(int physObjectID);
 
   /**
-   * @brief Set the desired light setup by name for the passed object
-   * @param objectID The id of the object to set
-   * @param lightSetupKey The string name of the desired lighting setup to use.
+   * @brief Get a const reference to the specified ArticulatedLink SceneNode for
+   * info query purposes. Default (-1) returns baseLink SceneNode.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingArticulatedObjects_.
+   * @param linkId The ArticulatedLink ID or -1 for the base.
+   * @return Const reference to the object scene node.
    */
-  void setObjectLightSetup(const int objectID,
-                           const std::string& lightSetupKey) {
-    existingObjects_.at(objectID)->setLightSetup(lightSetupKey);
-  }
+  const scene::SceneNode& getArticulatedLinkSceneNode(int physObjectID,
+                                                      int linkId = -1) const;
+
+  /** @overload */
+  scene::SceneNode& getArticulatedLinkSceneNode(int physObjectID,
+                                                int linkId = -1);
 
   /**
    * @brief Get a const reference to the specified object's visual SceneNode for
@@ -1261,6 +1267,27 @@ class PhysicsManager {
    */
   std::vector<scene::SceneNode*> getObjectVisualSceneNodes(
       const int objectID) const;
+
+  /**
+   * @brief Get pointers to an ArticulatedLink's visual SceneNodes.
+   *
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingArticulatedObjects_.
+   * @return pointers to an ArticulatedLink's visual scene nodes.
+   */
+  std::vector<scene::SceneNode*> getArticulatedLinkVisualSceneNodes(
+      const int objectID,
+      const int linkID = -1) const;
+
+  /**
+   * @brief Set the desired light setup by name for the passed object
+   * @param objectID The id of the object to set
+   * @param lightSetupKey The string name of the desired lighting setup to use.
+   */
+  void setObjectLightSetup(const int objectID,
+                           const std::string& lightSetupKey) {
+    existingObjects_.at(objectID)->setLightSetup(lightSetupKey);
+  }
 
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
