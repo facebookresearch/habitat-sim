@@ -299,6 +299,8 @@ struct RenderTarget::Impl {
         "RenderTarget::Impl::readFrameObjectIdGPU(): this render target "
         "was not created with objectId render texture enabled.", );
 
+    // We replaced the render buffer by the render texture in #1203, and
+    // expected NO performance loss. Let us know if it is not the case.
     if (objecIdBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
           &objecIdBufferCugl_, objectIdTexture_.id(), GL_TEXTURE_2D,
