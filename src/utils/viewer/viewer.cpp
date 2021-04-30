@@ -402,7 +402,7 @@ Key Commands:
 void addSensors(esp::agent::AgentConfiguration& agentConfig,
                 const Cr::Utility::Arguments& args) {
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
-  // add a rgb sensor
+  // add the pinhole sensor
   agentConfig.sensorSpecifications.emplace_back(
       esp::sensor::CameraSensorSpec::create());
   {
@@ -496,7 +496,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->channels = 1;
   }
 
-  // add a pinhole semantic sensor
+  // add the pinhole semantic sensor
   agentConfig.sensorSpecifications.emplace_back(
       esp::sensor::CameraSensorSpec::create());
   {
@@ -505,6 +505,40 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->uuid = "semantic";
     spec->sensorType = esp::sensor::SensorType::Semantic;
     spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->channels = 1;
+  }
+
+  // add the fisheye semantic sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::FisheyeSensorDoubleSphereSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "semantic_fisheye";
+    spec->sensorType = esp::sensor::SensorType::Semantic;
+    spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
+    spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->xi = -0.18;
+    spec->alpha = 0.59;
+    int size =
+        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
+    spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+    spec->principalPointOffset =
+        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+    spec->channels = 1;
+  }
+
+  // add the equirectangular semantic sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::EquirectangularSensorSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "semantic_equirectangular";
+    spec->sensorType = esp::sensor::SensorType::Semantic;
+    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
     spec->channels = 1;
   }
@@ -1163,7 +1197,11 @@ void Viewer::drawEvent() {
       }
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
       sensorId = "semantic";
-      // TODO: add semantic fisheye and equiRec
+      if (sensorMode_ == VisualSensorMode::Fisheye) {
+        sensorId = "semantic_fisheye";
+      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+        sensorId = "semantic_equirectangular";
+      }
     }
 
     simulator_->drawObservation(defaultAgentId_, sensorId);

@@ -52,7 +52,9 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
     case SensorType::Depth:
       cubeMapFlags |= gfx::CubeMap::Flag::DepthTexture;
       break;
-    // TODO: Semantic
+    case SensorType::Semantic:
+      cubeMapFlags |= gfx::CubeMap::Flag::ObjectIdTexture;
+      break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
@@ -74,7 +76,9 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
     case SensorType::Depth:
       cubeMapShaderBaseFlags_ |= gfx::CubeMapShaderBase::Flag::DepthTexture;
       break;
-    // TODO: Semantic
+    case SensorType::Semantic:
+      cubeMapShaderBaseFlags_ |= gfx::CubeMapShaderBase::Flag::ObjectIdTexture;
+      break;
     // sensor type list is too long, have to use default
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
