@@ -1429,7 +1429,8 @@ void Viewer::viewportEvent(ViewportEvent& event) {
       renderCamera_->setViewport(visualSensor.framebufferSize());
       // before, here we will bind the render target, but now we defer it
       if ((visualSensor.specification()->uuid == "fisheye") ||
-          (visualSensor.specification()->uuid == "depth_fisheye")) {
+          (visualSensor.specification()->uuid == "depth_fisheye") ||
+          (visualSensor.specification()->uuid == "semantic_fisheye")) {
         auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
             visualSensor.specification().get());
 
