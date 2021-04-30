@@ -153,6 +153,11 @@ void CubeMapSensorBase::drawWith(gfx::CubeMapShaderBase& shader) {
     shader.bindDepthTexture(
         cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
   }
+  if (cubeMapSensorBaseSpec_->sensorType == SensorType::Semantic) {
+    shader.bindObjectIdTexture(
+        cubeMap_->getTexture(gfx::CubeMap::TextureType::ObjectId));
+  }
+
   renderTarget().renderEnter();
   shader.draw(mesh_);
   renderTarget().renderExit();

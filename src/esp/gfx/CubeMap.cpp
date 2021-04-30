@@ -30,9 +30,10 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-// TODO:
-// const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
-//    Mn::GL::Framebuffer::ColorAttachment{1};
+const Mn::GL::Framebuffer::ColorAttachment rgbaAttachment =
+    Mn::GL::Framebuffer::ColorAttachment{0};
+const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
+    Mn::GL::Framebuffer::ColorAttachment{1};
 
 /**
  * @brief check if the class instance is created with corresponding texture
@@ -53,6 +54,12 @@ void textureTypeSanityCheck(CubeMap::Flags& flag,
       CORRADE_ASSERT(flag & CubeMap::Flag::DepthTexture,
                      functionNameStr.c_str()
                          << "instance was not created with depth "
+                            "texture output enabled.", );
+      return;
+    case CubeMap::TextureType::ObjectId:
+      CORRADE_ASSERT(flag & CubeMap::Flag::ObjectIdTexture,
+                     functionNameStr.c_str()
+                         << "instance was not created with object id"
                             "texture output enabled.", );
       return;
       break;
@@ -89,6 +96,11 @@ const char* getTextureTypeFilenameString(CubeMap::TextureType type) {
     case CubeMap::TextureType::Depth:
       return "depth";
       break;
+    // TODO: object id texture
+    /*
+    case CubeMap::TextureType::ObjectId:
+      break;
+      */
     case CubeMap::TextureType::Count:
       break;
   }
@@ -107,10 +119,9 @@ Mn::PixelFormat getPixelFormat(CubeMap::TextureType type) {
     case CubeMap::TextureType::Depth:
       return Mn::PixelFormat::R32F;
       break;
-      /*
-      case CubeMap::TextureType::ObjectId:
+    case CubeMap::TextureType::ObjectId:
       return Mn::PixelFormat::R32UI;
-      */
+      break;
     case CubeMap::TextureType::Count:
       break;
   }
@@ -211,17 +222,15 @@ void CubeMap::recreateFramebuffer() {
 
 void CubeMap::attachFramebufferRenderbuffer() {
   for (unsigned int index = 0; index < 6; ++index) {
+    Magnum::GL::CubeMapCoordinate cubeMapCoord =
+        convertFaceIndexToCubeMapCoordinate(index);
+
     if (flags_ & Flag::ColorTexture) {
-      Magnum::GL::CubeMapCoordinate cubeMapCoord =
-          convertFaceIndexToCubeMapCoordinate(index);
       frameBuffer_[index].attachCubeMapTexture(
-          Mn::GL::Framebuffer::ColorAttachment{0}, texture(TextureType::Color),
-          cubeMapCoord, 0);
+          rgbaAttachment, texture(TextureType::Color), cubeMapCoord, 0);
     }
 
     if (flags_ & Flag::DepthTexture) {
-      Magnum::GL::CubeMapCoordinate cubeMapCoord =
-          convertFaceIndexToCubeMapCoordinate(index);
       frameBuffer_[index].attachCubeMapTexture(
           Mn::GL::Framebuffer::BufferAttachment::Depth,
           texture(TextureType::Depth), cubeMapCoord, 0);
@@ -230,38 +239,50 @@ void CubeMap::attachFramebufferRenderbuffer() {
           Mn::GL::Framebuffer::BufferAttachment::Depth,
           optionalDepthBuffer_[index]);
     }
+
+    if (flags_ & Flag::ObjectIdTexture) {
+      frameBuffer_[index].attachCubeMapTexture(
+          objectIdAttachment, texture(TextureType::ObjectId), cubeMapCoord, 0);
+    }
   }
 }
 
 void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
-                            RenderCamera::Flags flags) {
+                            RenderCamera::Flags renderCameraFlags) {
   // Note: we ONLY need to map shader output to color attachment when necessary,
   // which means in depth texture mode, we do NOT need to do this
-  if (flags_ & CubeMap::Flag::ColorTexture) {
+  if (flags_ & CubeMap::Flag::ColorTexture ||
+      flags_ & CubeMap::Flag::ObjectIdTexture) {
     mapForDraw(cubeSideIndex);
-    if (flags & RenderCamera::Flag::ClearColor) {
-      frameBuffer_[cubeSideIndex].clearColor(0,  // color attachment
-                                             Mn::Vector4ui{0}  // clear color
-      );
-    }
   }
 
-  if (flags & RenderCamera::Flag::ClearDepth) {
+  if (flags_ & CubeMap::Flag::ColorTexture &&
+      renderCameraFlags & RenderCamera::Flag::ClearColor) {
+    frameBuffer_[cubeSideIndex].clearColor(0,                // color attachment
+                                           Mn::Vector4ui{0}  // clear color
+    );
+  }
+
+  if (renderCameraFlags & RenderCamera::Flag::ClearDepth) {
     frameBuffer_[cubeSideIndex].clearDepth(1.0f);
   }
 
+  // Well, how can we clear the object Ids?
   CORRADE_INTERNAL_ASSERT(frameBuffer_[cubeSideIndex].checkStatus(
                               Mn::GL::FramebufferTarget::Draw) ==
                           Mn::GL::Framebuffer::Status::Complete);
 }
 
 void CubeMap::mapForDraw(unsigned int index) {
-  frameBuffer_[index].mapForDraw({
-      {Mn::Shaders::Generic3D::ColorOutput,
-       Mn::GL::Framebuffer::ColorAttachment{0}},
-      // TODO:
-      //{Mn::Shaders::Generic3D::ObjectIdOutput, objectIdAttachment}
-  });
+  frameBuffer_[index].mapForDraw(
+      {{Mn::Shaders::Generic3D::ColorOutput,
+        (flags_ & CubeMap::Flag::ColorTexture
+             ? rgbaAttachment
+             : Mn::GL::Framebuffer::DrawAttachment::None)},
+       {Mn::Shaders::Generic3D::ObjectIdOutput,
+        (flags_ & CubeMap::Flag::ObjectIdTexture
+             ? objectIdAttachment
+             : Mn::GL::Framebuffer::DrawAttachment::None)}});
 }
 
 Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
@@ -393,6 +414,8 @@ void CubeMap::loadTexture(TextureType type,
                         imageView);
       } break;
 
+        // TODO: object Id texture
+
       case TextureType::Count:
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
@@ -407,7 +430,7 @@ void CubeMap::loadTexture(TextureType type,
 
 void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,
-                              RenderCamera::Flags flags) {
+                              RenderCamera::Flags renderCameraFlags) {
   CORRADE_ASSERT(camera.isInSceneGraph(sceneGraph),
                  "CubeMap::renderToTexture(): camera is NOT attached to the "
                  "current scene graph.", );
@@ -432,16 +455,16 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   for (int iFace = 0; iFace < 6; ++iFace) {
     frameBuffer_[iFace].bind();
     camera.switchToFace(iFace);
-    prepareToDraw(iFace, flags);
+    prepareToDraw(iFace, renderCameraFlags);
 
     // TODO:
-    // camera should have flags so that it can do "low quality" rendering,
-    // e.g., no normal maps, no specular lighting, low-poly meshes,
+    // camera should have renderCameraFlags so that it can do "low quality"
+    // rendering, e.g., no normal maps, no specular lighting, low-poly meshes,
     // low-quality textures.
 
     for (auto& it : sceneGraph.getDrawableGroups()) {
       if (it.second.prepareForDraw(camera)) {
-        camera.draw(it.second, flags);
+        camera.draw(it.second, renderCameraFlags);
       }
     }
   }  // iFace

@@ -417,7 +417,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
   }
 
-  // add the new fisheye sensor
+  // add the fisheye sensor
   agentConfig.sensorSpecifications.emplace_back(
       esp::sensor::FisheyeSensorDoubleSphereSpec::create());
   {
@@ -437,7 +437,19 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
   }
 
-  // add the depth sensor
+  // add the equirectangular sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::EquirectangularSensorSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "equirectangular";
+    spec->sensorType = esp::sensor::SensorType::Color;
+    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  }
+
+  // add the pinhole depth sensor
   agentConfig.sensorSpecifications.emplace_back(
       esp::sensor::CameraSensorSpec::create());
   {
@@ -447,6 +459,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->sensorType = esp::sensor::SensorType::Depth;
     spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->channels = 1;
   }
 
   // add the fisheye depth sensor
@@ -467,18 +480,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
-  }
-
-  // add the equirectangular sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::EquirectangularSensorSpec::create());
-  {
-    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-    spec->uuid = "equirectangular";
-    spec->sensorType = esp::sensor::SensorType::Color;
-    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->channels = 1;
   }
 
   // add the equirectangular depth sensor
@@ -491,9 +493,10 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->sensorType = esp::sensor::SensorType::Depth;
     spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->channels = 1;
   }
 
-  // add a rgb semantic sensor
+  // add a pinhole semantic sensor
   agentConfig.sensorSpecifications.emplace_back(
       esp::sensor::CameraSensorSpec::create());
   {
@@ -503,6 +506,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->sensorType = esp::sensor::SensorType::Semantic;
     spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->channels = 1;
   }
 }
 

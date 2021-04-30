@@ -20,8 +20,7 @@ namespace CubeMapShaderBaseTexUnitSpace {
 enum TextureUnit : uint8_t {
   Color = 0,
   Depth = 1,
-  // TODO
-  // ObjectId = 2,
+  ObjectId = 2,
 };
 }
 // Interface class for various cubemap based camera shaders, such as "Double
@@ -37,14 +36,13 @@ class CubeMapShaderBase : public Magnum::GL::AbstractShaderProgram {
      */
     ColorOutput = Magnum::Shaders::Generic3D::ColorOutput,
 
-    // TODO
     /**
      * Object ID shader output. @ref shaders-generic "Generic output",
      * present only if @ref Flag::ObjectId is set. Expects a
      * single-component unsigned integral attachment. Writes the value
      * set in @ref setObjectId() there.
      */
-    // ObjectIdOutput = Magnum::Shaders::Generic3D::ObjectIdOutput,
+    ObjectIdOutput = Magnum::Shaders::Generic3D::ObjectIdOutput,
   };
 
   /**
@@ -61,7 +59,10 @@ class CubeMapShaderBase : public Magnum::GL::AbstractShaderProgram {
      * cubemap depth texture
      */
     DepthTexture = 1 << 1,
-    // ObjectIdTexture = 1 << 2,
+    /**
+     * cubemap object id texture
+     */
+    ObjectIdTexture = 1 << 2,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -83,8 +84,13 @@ class CubeMapShaderBase : public Magnum::GL::AbstractShaderProgram {
    */
   virtual CubeMapShaderBase& bindDepthTexture(
       Magnum::GL::CubeMapTexture& texture);
-  // virtual CubeMapShaderBase& bindObjectIdTexture(Magnum::GL::Texture2D&
-  // texture);
+
+  /**
+   * @brief bind cubemap object id texture
+   * @param[in] texture cubemap object id texture
+   */
+  virtual CubeMapShaderBase& bindObjectIdTexture(
+      Magnum::GL::CubeMapTexture& texture);
 
  protected:
   /**

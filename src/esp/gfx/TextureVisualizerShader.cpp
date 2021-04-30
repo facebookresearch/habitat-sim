@@ -64,9 +64,9 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   frag.addSource("#define EXPLICIT_ATTRIB_LOCATION\n")
       .addSource(Cr::Utility::formatString(
           "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
-      .addSource(flags_ == Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
-      .addSource(flags_ == Flag::ObjectIdTexture ? "#define OBJECT_ID_TEXTURE\n"
-                                                 : "")
+      .addSource(flags_ & Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
+      .addSource(flags_ & Flag::ObjectIdTexture ? "#define OBJECT_ID_TEXTURE\n"
+                                                : "")
       .addSource(rs.get("textureVisualizer.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
@@ -92,11 +92,11 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   const Mn::Vector2i size{int(map.size()), 1};
   colorMapTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Linear)
       .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setWrapping(Mn::GL::SamplerWrapping::Repeat)
       .setStorage(1, Mn::GL::TextureFormat::SRGB8Alpha8, size)
       .setSubImage(0, {},
                    Mn::ImageView2D{Mn::PixelFormat::RGB8Srgb, size, map});
-  colorMapTexture_.bind(ColorMapTextureUnit);
+  if (flags_)
+    colorMapTexture_.bind(ColorMapTextureUnit);
 
   // set default offset, scale based on flags
   if (flags_ & Flag::DepthTexture) {

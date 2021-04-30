@@ -41,5 +41,15 @@ CubeMapShaderBase& CubeMapShaderBase::bindDepthTexture(
   return *this;
 }
 
+CubeMapShaderBase& CubeMapShaderBase::bindObjectIdTexture(
+    Mn::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(flags_ & CubeMapShaderBase::Flag::ObjectIdTexture,
+                 "CubeMapShaderBase::bindObjectIdTexture(): the shader was not "
+                 "created with object id texture enabled",
+                 *this);
+  texture.bind(CubeMapShaderBaseTexUnitSpace::TextureUnit::ObjectId);
+  return *this;
+}
+
 }  // namespace gfx
 }  // namespace esp
