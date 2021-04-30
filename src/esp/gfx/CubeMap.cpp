@@ -180,6 +180,16 @@ void CubeMap::recreateTexture() {
         .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, size);
   }
+
+  // object id texture
+  if (flags_ & Flag::ObjectIdTexture) {
+    auto& objectIdTexture = texture(TextureType::ObjectId);
+    objectIdTexture = Mn::GL::CubeMapTexture{};
+    objectIdTexture.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+        .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+        .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+        .setStorage(1, Mn::GL::TextureFormat::R32UI, size);
+  }
 }
 
 void CubeMap::recreateFramebuffer() {
