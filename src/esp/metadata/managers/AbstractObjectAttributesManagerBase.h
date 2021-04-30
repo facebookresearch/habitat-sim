@@ -39,8 +39,9 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
 
   AbstractObjectAttributesManager(const std::string& attrType,
                                   const std::string& JSONTypeExt)
-      : AttributesManager<T, Access>::AttributesManager(attrType, JSONTypeExt) {
-  }
+      : AttributesManager<T, Access>::AttributesManager(
+            (attrType + " Template"),
+            JSONTypeExt) {}
   ~AbstractObjectAttributesManager() override = default;
 
   /**

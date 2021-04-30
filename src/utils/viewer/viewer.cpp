@@ -1170,7 +1170,8 @@ void Viewer::drawEvent() {
                                        1.0f / 512.0f,  // colorMapOffset
                                        1.0f / 24.0f);  // colorMapScale
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
-      int estimatedObjects = activeSceneGraph_->getDrawables().size();
+      int estimatedObjects =
+          simulator_->getActiveSemanticSceneGraph().getDrawables().size();
       simulator_->visualizeObservation(
           defaultAgentId_, sensorId,
           1.0f / 512.0f,                    // colorMapOffset
