@@ -92,10 +92,14 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   const Mn::Vector2i size{int(map.size()), 1};
   colorMapTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Linear)
       .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setWrapping(Mn::GL::SamplerWrapping::Repeat)
       .setStorage(1, Mn::GL::TextureFormat::SRGB8Alpha8, size)
       .setSubImage(0, {},
                    Mn::ImageView2D{Mn::PixelFormat::RGB8Srgb, size, map});
+  if (flags_ & Flag::DepthTexture) {
+    colorMapTexture_.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge);
+  } else if (flags_ & Flag::ObjectIdTexture) {
+    colorMapTexture_.setWrapping(Mn::GL::SamplerWrapping::Repeat);
+  }
   colorMapTexture_.bind(ColorMapTextureUnit);
 
   // set default offset, scale based on flags

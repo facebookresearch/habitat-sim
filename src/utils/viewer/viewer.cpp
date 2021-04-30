@@ -1168,7 +1168,7 @@ void Viewer::drawEvent() {
     if (visualizeMode_ == VisualizeMode::Depth) {
       simulator_->visualizeObservation(defaultAgentId_, sensorId,
                                        1.0f / 512.0f,  // colorMapOffset
-                                       1.0f / 24.0f);  // colorMapScale
+                                       1.0f / 12.0f);  // colorMapScale
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
       simulator_->visualizeObservation(defaultAgentId_, sensorId,
                                        1.0f / 512.0f,  // colorMapOffset
