@@ -32,23 +32,24 @@ class RenderTarget {
  public:
   enum class Flag {
     /**
-     * create rgba buffer
+     * create a color attachment for the rgba render buffer
      * No need to set it for depth sensor, semantic sensor etc. as it makes
      * the rendering slower
      */
-    RgbaBuffer = 1 << 0,
+    RgbaAttachment = 1 << 0,
     /**
-     * create objectId buffer
+     * create a color attachment for the objectId texture
      * No need to set it for color sensor, depth sensor etc. as it makes the
      * rendering slower
      */
-    ObjectIdBuffer = 1 << 1,
+    ObjectIdAttachment = 1 << 1,
     /**
-     * @brief use depth texture, it must be set for the depth sensor.
+     * @brief create a depth attachment for the depth texture, it MUST be set
+     * for the depth sensor.
      * No need to set it for color sensor, objectId sensor etc. as it makes the
-     * rendering slower
+     * rendering slower (default depth buffer will be used in this case.)
      */
-    DepthTexture = 1 << 2,
+    DepthTextureAttachment = 1 << 2,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -70,8 +71,8 @@ class RenderTarget {
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
                DepthShader* depthShader,
-               Flags flags = {Flag::RgbaBuffer | Flag::ObjectIdBuffer |
-                              Flag::DepthTexture},
+               Flags flags = {Flag::RgbaAttachment | Flag::ObjectIdAttachment |
+                              Flag::DepthTextureAttachment},
                const sensor::VisualSensor* visualSensor = nullptr);
 
   /**
@@ -154,6 +155,11 @@ class RenderTarget {
    * @brief get the depth texture
    */
   Magnum::GL::Texture2D& getDepthTexture();
+
+  /**
+   * @brief get the object id texture
+   */
+  Magnum::GL::Texture2D& getObjectIdTexture();
 
   // @brief Delete copy Constructor
   RenderTarget(const RenderTarget&) = delete;

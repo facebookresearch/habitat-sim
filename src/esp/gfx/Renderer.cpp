@@ -153,21 +153,21 @@ struct Renderer::Impl {
             "Renderer::Impl::bindRenderTarget(): Tried to setup a color "
             "render buffer while the simulator was initialized with "
             "requiresTextures = false", );
-        renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
+        renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
         break;
 
       case sensor::SensorType::Depth:
         if (bindingFlags & Flag::VisualizeTexture) {
-          renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
+          renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
         }
-        renderTargetFlags |= RenderTarget::Flag::DepthTexture;
+        renderTargetFlags |= RenderTarget::Flag::DepthTextureAttachment;
         break;
 
       case sensor::SensorType::Semantic:
         if (bindingFlags & Flag::VisualizeTexture) {
-          renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
+          renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
         }
-        renderTargetFlags |= RenderTarget::Flag::ObjectIdBuffer;
+        renderTargetFlags |= RenderTarget::Flag::ObjectIdAttachment;
         break;
 
       default:
