@@ -97,7 +97,7 @@ const char* getTextureTypeFilenameString(CubeMap::TextureType type) {
       return "depth";
       break;
     case CubeMap::TextureType::ObjectId:
-      // TODO: object id texture
+      return "objectId";
       break;
     case CubeMap::TextureType::Count:
       break;
@@ -331,10 +331,16 @@ bool CubeMap::saveTexture(TextureType type,
           return false;
         }
       } break;
+      /*
       case CubeMap::TextureType::ObjectId:
         // TODO: object Id
         break;
+        */
       case CubeMap::TextureType::Count:
+        break;
+
+      default:
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
     }
     CORRADE_ASSERT(!filename.empty(),
