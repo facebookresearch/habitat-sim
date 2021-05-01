@@ -96,11 +96,9 @@ const char* getTextureTypeFilenameString(CubeMap::TextureType type) {
     case CubeMap::TextureType::Depth:
       return "depth";
       break;
-    // TODO: object id texture
-    /*
     case CubeMap::TextureType::ObjectId:
+      // TODO: object id texture
       break;
-      */
     case CubeMap::TextureType::Count:
       break;
   }
@@ -333,7 +331,9 @@ bool CubeMap::saveTexture(TextureType type,
           return false;
         }
       } break;
-
+      case CubeMap::TextureType::ObjectId:
+        // TODO: object Id
+        break;
       case CubeMap::TextureType::Count:
         break;
     }
@@ -414,7 +414,10 @@ void CubeMap::loadTexture(TextureType type,
                         imageView);
       } break;
 
+      case TextureType::ObjectId:
         // TODO: object Id texture
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        break;
 
       case TextureType::Count:
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
