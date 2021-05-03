@@ -120,6 +120,7 @@ int PhysicsManager::addObject(
   // finalize rigid object creation
   objectSuccess = obj->finalizeObject();
   if (!objectSuccess) {
+    // if failed for some reason, remove and return
     removeObject(nextObjectID_, true, true);
     LOG(ERROR) << "PhysicsManager::addObject : PhysicsManager::finalizeObject "
                   "unsuccessful.  Aborting.";
@@ -127,7 +128,7 @@ int PhysicsManager::addObject(
   }
 
   return nextObjectID_;
-}
+}  // PhysicsManager::addObject
 
 void PhysicsManager::removeObject(const int physObjectID,
                                   bool deleteObjectNode,

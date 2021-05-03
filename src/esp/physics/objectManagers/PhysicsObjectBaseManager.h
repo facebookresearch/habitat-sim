@@ -41,6 +41,10 @@ class PhysicsObjectBaseManager
             ManagedContainer(objType) {}
   ~PhysicsObjectBaseManager() override = default;
 
+  /**
+   * @brief set the weak reference to the physics manager that owns this wrapper
+   * manager
+   */
   void setPhysicsManager(
       const std::shared_ptr<esp::physics::PhysicsManager>& physMgr) {
     weakPhysManager_ = physMgr;
@@ -117,6 +121,10 @@ template <class T>
 auto PhysicsObjectBaseManager<T>::createObject(
     const std::string& objectWrapperHandle,
     CORRADE_UNUSED bool registerTemplate) -> ObjWrapperPtr {
+  // This creates and returns an empty object wrapper.  The shared_ptr to the
+  // actual @ref esp::physics::PhysicsObjectBase needs to be passed into this
+  // wrapper before it is registered, so that a name for the object wrapper will
+  // be generated.
   ObjWrapperPtr objWrapper =
       this->createDefaultObject(objectWrapperHandle, false);
 
