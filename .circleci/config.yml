@@ -53,7 +53,6 @@ commands:
                   pkg-config \
                   wget \
                   zip \
-                  libbullet-dev\
                   lcov\
                   libhdf5-dev \
                   unzip || true
