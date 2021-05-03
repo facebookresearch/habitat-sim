@@ -22,9 +22,19 @@ class LightInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Constant static map to provide mappings from string tags to @ref
    * esp::gfx::LightType values.  This will be used to map values set in json
-   * for light type to @ref esp::gfx::LightType.  Keys must be lowercase.
+   * for light type to @ref esp::gfx::LightType.  Keys must be lowercase - will
+   * support any case values in JSON.
    */
   static const std::map<std::string, esp::gfx::LightType> LightTypeNamesMap;
+
+  /**
+   * @brief Constant static map to provide mappings from string tags to @ref
+   * esp::gfx::LightPositionModel values.  This will be used to map values set
+   * in json to specify what translations are measured from for a lighting
+   * instance.
+   */
+  static const std::map<std::string, esp::gfx::LightPositionModel>
+      LightPositionNamesMap;
   explicit LightInstanceAttributes(const std::string& handle = "");
 
   /**
@@ -60,6 +70,16 @@ class LightInstanceAttributes : public AbstractAttributes {
    */
   void setType(int type) { setInt("type", type); }
   int getType() const { return getInt("type"); }
+
+  /**
+   * @brief Get/Set the position model to use when placing the light - whether
+   * the lights translation should be relative to the camera, the global scene
+   * origin, or some object.
+   */
+  void setPositionModel(int position_model) {
+    setInt("position_model", position_model);
+  }
+  int getPositionModel() const { return getInt("position_model"); }
 
   /**
    * @brief Get/Set inner cone angle for spotlights.  Should be ignored for
