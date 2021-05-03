@@ -28,9 +28,8 @@ void declareBasePhysicsObjectWrapper(py::module& m,
   // ==== AbstractManagedPhysicsObject ====
   py::class_<PhysObjWrapper, std::shared_ptr<PhysObjWrapper>>(
       m, pyclass_name.c_str())
-      .def_property("handle", &PhysObjWrapper::getHandle,
-                    &PhysObjWrapper::setHandle,
-                    ("Name of this " + objType).c_str())
+      .def_property_readonly("handle", &PhysObjWrapper::getHandle,
+                             ("Name of this " + objType).c_str())
       .def_property(
           "motion_type", &PhysObjWrapper::getMotionType,
           &PhysObjWrapper::setMotionType,
