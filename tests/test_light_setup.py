@@ -22,7 +22,7 @@ def test_set_default_light_setup(make_cfg_settings):
         assert sim.get_light_setup() == light_setup
 
         # ensure modifications to local light setup variable are not reflected in sim
-        light_setup[0].model = LightPositionModel.CAMERA
+        light_setup[0].model = LightPositionModel.Camera
         assert sim.get_light_setup() != light_setup
 
         sim.set_light_setup(light_setup, DEFAULT_LIGHTING_KEY)

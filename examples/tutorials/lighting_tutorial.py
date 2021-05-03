@@ -99,7 +99,7 @@ def main(show_imgs=True, save_imgs=False):
 
     # create and register new light setup:
     my_scene_lighting_setup = [
-        LightInfo(vector=[0.0, 2.0, 0.6, 0.0], model=LightPositionModel.GLOBAL)
+        LightInfo(vector=[0.0, 2.0, 0.6, 0.0], model=LightPositionModel.Global)
     ]
     sim.set_light_setup(my_scene_lighting_setup, "my_scene_lighting")
 
@@ -142,7 +142,7 @@ def main(show_imgs=True, save_imgs=False):
 
     # create a custom light setup
     my_default_lighting = [
-        LightInfo(vector=[2.0, 2.0, 1.0, 0.0], model=LightPositionModel.CAMERA)
+        LightInfo(vector=[2.0, 2.0, 1.0, 0.0], model=LightPositionModel.Camera)
     ]
     # overwrite the default DEFAULT_LIGHTING_KEY light setup
     sim.set_light_setup(my_default_lighting)
@@ -165,7 +165,7 @@ def main(show_imgs=True, save_imgs=False):
         LightInfo(
             vector=[2.0, 1.5, 5.0, 1.0],
             color=[0.0, 100.0, 100.0],
-            model=LightPositionModel.GLOBAL,
+            model=LightPositionModel.Global,
         )
     ]
     sim.set_light_setup(light_setup_2, "my_custom_lighting")
@@ -196,7 +196,7 @@ def main(show_imgs=True, save_imgs=False):
         LightInfo(
             vector=[0.0, 0.0, 1.0, 0.0],
             color=[1.6, 1.6, 1.4],
-            model=LightPositionModel.CAMERA,
+            model=LightPositionModel.Camera,
         )
     ]
 
