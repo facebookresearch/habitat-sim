@@ -13,6 +13,12 @@
 
 #include "ManagedContainer.h"
 
+#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/String.h>
+
+#include "esp/io/io.h"
+#include "esp/io/json.h"
+
 namespace esp {
 namespace core {
 /**
@@ -36,6 +42,17 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
   explicit ManagedFileBasedContainer(const std::string& metadataType)
       : ManagedContainer<T, Access>(metadataType) {}
+
+  /**
+   * @brief Utility function to check if passed string represents an existing,
+   * user-accessible file
+   * @param handle the string to check
+   * @return whether the file exists in the file system and whether the user has
+   * access
+   */
+  bool isValidFileName(const std::string& handle) const {
+    return (Corrade::Utility::Directory::exists(handle));
+  }  // ManagedFileBasedContainer::isValidFileName
 
   /**
    * @brief Creates an instance of a managed object from a JSON file.
@@ -108,6 +125,51 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
       const io::JsonGenericValue& jsonConfig) = 0;
 
  protected:
+  //======== Common File-based import and utility functions ========
+
+  /**
+   * @brief Verify passd @p filename is legal document of type T. Returns loaded
+   * document in passed argument if successful. This requires appropriate
+   * specialization for each type name, so if this method is executed it means
+   * no appropriate specialization exists for passed type of document.
+   *
+   * @tparam type of document
+   * @param filename name of potentia document to load
+   * @param resDoc a reference to the document to be parsed.
+   * @return whether document has been loaded successfully or not
+   */
+  template <class U>
+  bool verifyLoadDocument(const std::string& filename,
+                          CORRADE_UNUSED U& resDoc) {
+    // by here always fail
+    LOG(ERROR) << this->objectType_
+               << "ManagedContainerBase::verifyLoadDocument : File " << filename
+               << " failed due to unknown file type.";
+    return false;
+  }  // ManagedContainerBase::verifyLoadDocument
+  /**
+   * @brief Verify passed @p filename is legal json document, return loaded
+   * document or nullptr if fails
+   *
+   * @param filename name of potential json document to load
+   * @param jsonDoc a reference to the json document to be parsed
+   * @return whether document has been loaded successfully or not
+   */
+  bool verifyLoadDocument(const std::string& filename,
+                          io::JsonDocument& jsonDoc);
+
+  /**
+   * @brief Will build a json file name for @p filename by appending/replacing
+   * the extension with the passed @p jsonTypeExt, if it is missing.  NOTE :
+   * this does not verify that file exists.
+   * @param filename The original file name
+   * @param jsonTypeExt The extension to use.
+   * @return The file name changed so that it has the correct @p jsonTypeExtif
+   * it was missing.
+   */
+  std::string convertFilenameToJSON(const std::string& filename,
+                                    const std::string& jsonTypeExt);
+
   /**
    * @brief Get directory component of managed object handle and call @ref
    * esp::core::AbstractManagedObject::setFileDirectory if a legitimate
@@ -127,6 +189,55 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   ESP_SMART_POINTERS(ManagedFileBasedContainer<T, Access>)
 
 };  // class ManagedFileBasedContainer
+
+/////////////////////////////
+// Class Template Method Definitions
+
+template <class T, ManagedObjectAccess Access>
+
+std::string ManagedFileBasedContainer<T, Access>::convertFilenameToJSON(
+    const std::string& filename,
+    const std::string& jsonTypeExt) {
+  std::string strHandle = Cr::Utility::String::lowercase(filename);
+  std::string resHandle(filename);
+  if (std::string::npos ==
+      strHandle.find(Cr::Utility::String::lowercase(jsonTypeExt))) {
+    resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
+                jsonTypeExt;
+    LOG(INFO) << "ManagedFileBasedContainer<" << this->objectType_
+              << ">::convertFilenameToJSON : Filename : " << filename
+              << " changed to proposed JSON configuration filename : "
+              << resHandle;
+  } else {
+    LOG(INFO) << "ManagedFileBasedContainer<" << this->objectType_
+              << ">::convertFilenameToJSON : Filename : " << filename
+              << " is appropriate JSON configuration filename.";
+  }
+  return resHandle;
+}  // ManagedFileBasedContainer<T, Access>::convertFilenameToJSON
+
+template <class T, ManagedObjectAccess Access>
+bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
+    const std::string& filename,
+    io::JsonDocument& jsonDoc) {
+  if (isValidFileName(filename)) {
+    try {
+      jsonDoc = io::parseJsonFile(filename);
+    } catch (...) {
+      LOG(ERROR) << "ManagedFileBasedContainer<" << this->objectType_
+                 << ">::verifyLoadDocument : Failed to parse " << filename
+                 << " as JSON.";
+      return false;
+    }
+    return true;
+  } else {
+    // by here always fail
+    LOG(ERROR) << "ManagedFileBasedContainer<" << this->objectType_
+               << ">::verifyLoadDocument : File " << filename
+               << " does not exist";
+    return false;
+  }
+}  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument
 
 }  // namespace core
 }  // namespace esp

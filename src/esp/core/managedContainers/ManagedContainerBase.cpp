@@ -7,26 +7,6 @@
 namespace esp {
 namespace core {
 
-std::string ManagedContainerBase::convertFilenameToJSON(
-    const std::string& filename,
-    const std::string& jsonTypeExt) {
-  std::string strHandle = Cr::Utility::String::lowercase(filename);
-  std::string resHandle(filename);
-  if (std::string::npos ==
-      strHandle.find(Cr::Utility::String::lowercase(jsonTypeExt))) {
-    resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
-                jsonTypeExt;
-    LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
-              << filename
-              << " changed to proposed JSON configuration filename : "
-              << resHandle;
-  } else {
-    LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
-              << filename << " is appropriate JSON configuration filename.";
-  }
-  return resHandle;
-}  // ManagedContainerBase::convertFilenameToJSON
-
 bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
@@ -143,28 +123,6 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   }
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
-
-bool ManagedContainerBase::verifyLoadDocument(const std::string& filename,
-                                              io::JsonDocument& jsonDoc) {
-  if (isValidFileName(filename)) {
-    try {
-      jsonDoc = io::parseJsonFile(filename);
-    } catch (...) {
-      LOG(ERROR)
-          << objectType_
-          << "ManagedContainerBase::verifyLoadDocument : Failed to parse "
-          << filename << " as JSON.";
-      return false;
-    }
-    return true;
-  } else {
-    // by here always fail
-    LOG(ERROR) << objectType_
-               << "ManagedContainerBase::verifyLoadDocument : File " << filename
-               << " does not exist";
-    return false;
-  }
-}  // ManagedContainerBase::verifyLoadDocument
 
 }  // namespace core
 }  // namespace esp
