@@ -232,6 +232,8 @@ if(NOT USE_SYSTEM_MAGNUM)
   if(BUILD_WITH_BULLET)
     # Build Magnum's BulletIntegration
     set(WITH_BULLET ON CACHE BOOL "" FORCE)
+  else()
+    set(WITH_BULLET OFF CACHE BOOL "" FORCE)
   endif()
 
   if(BUILD_GUI_VIEWERS)
