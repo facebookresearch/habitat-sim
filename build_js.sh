@@ -45,8 +45,8 @@ cmake ../src \
     -DCMAKE_EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS}" \
     -DBUILD_WITH_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )"
 
-cmake --build . -- -j 4 #TODO: Set to 4 cores only on CirelcCI
-cmake --build . --target install -- -j 4
+cmake --build . -- -j 8 #TODO: Set to 8 cores only on CirelcCI
+cmake --build . --target install -- -j 8
 
 echo "Done building."
 echo "Run:"

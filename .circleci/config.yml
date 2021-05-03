@@ -48,6 +48,7 @@ commands:
                   libjpeg-dev \
                   libglm-dev \
                   libegl1-mesa-dev \
+                  ninja-build \ 
                   xorg-dev \
                   freeglut3-dev \
                   pkg-config \
@@ -478,7 +479,7 @@ jobs:
               . activate habitat
               nvm use v11.9.0
               . ~/emsdk/emsdk_env.sh
-              ./build_js.sh --bullet
+              CMAKE_GENERATOR=Ninja ./build_js.sh --bullet
               # switch back to cmake 3.10
               sudo rm /usr/local/bin/cmake
               sudo ln -s /opt/cmake310/bin/cmake /usr/local/bin/cmake
