@@ -49,7 +49,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
       return "";
     }
   }
-  void setHandle(const std::string& name) override {}
+  void setHandle(CORRADE_UNUSED const std::string& name) override {}
 
   /**
    * @brief return the object's ID or nullptr if doesn't exist.

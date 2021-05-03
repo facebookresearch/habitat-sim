@@ -57,8 +57,7 @@ class PhysicsObjectBaseManager
    * will be overwritten with the newly created one if @ref
    * registerObject is true.
    *
-   * @param objectHandle the origin of the desired managed object to be
-   * created.
+   * @param objectHandle Unused.  Object being wrapped will provide its name.
    * @param registerObject whether to add this managed object to the
    * library or not. If the user is going to edit this managed object, this
    * should be false. Defaults to true. If specified as true, then this function
@@ -89,6 +88,23 @@ class PhysicsObjectBaseManager
   void updateObjectHandleLists(
       CORRADE_UNUSED int objectID,
       CORRADE_UNUSED const std::string& objectHandle) override {}
+
+  /**
+   * @brief implementation of managed object type-specific registration
+   * @param object the managed object to be registered
+   * @param objectHandle the name to register the managed object with.
+   * Expected to be valid.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
+   * @return The unique ID of the managed object being registered, or
+   * ID_UNDEFINED if failed
+   */
+  int registerObjectFinalize(ObjWrapperPtr object,
+                             const std::string& objectHandle,
+                             CORRADE_UNUSED bool forceRegistration) override {
+    // Add wrapper to template library
+    return this->addObjectToLibrary(object, objectHandle);
+  }  // PhysicsObjectBaseManager::registerObjectFinalize
 
   /**
    * @brief return a reference to physicsManager_, or null ptr if it does not
@@ -124,9 +140,12 @@ auto PhysicsObjectBaseManager<T>::createObject(
   // This creates and returns an empty object wrapper.  The shared_ptr to the
   // actual @ref esp::physics::PhysicsObjectBase needs to be passed into this
   // wrapper before it is registered, so that a name for the object wrapper will
-  // be generated.
+  // be generated.  Do not register object, since wrapper object requires actual
+  // object being wrapped to be set separately.
+  // NO default object will exist for wrappers, since they have no independent
+  // data outside of the wrapped object.
   ObjWrapperPtr objWrapper =
-      this->createDefaultObject(objectWrapperHandle, false);
+      this->initNewObjectInternal(objectWrapperHandle, false);
 
   return objWrapper;
 }  // PhysicsObjectBaseManager<T>::createObject

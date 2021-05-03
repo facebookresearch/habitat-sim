@@ -4,22 +4,5 @@
 
 #include "RigidObjectManager.h"
 namespace esp {
-namespace physics {
-
-ManagedRigidObject::ptr RigidObjectManager::initNewObjectInternal(
-    CORRADE_UNUSED const std::string& objectHandle,
-    bool) {
-  ManagedRigidObject::ptr newObjectWrapper = ManagedRigidObject::create();
-
-  return newObjectWrapper;
-}  // RigidObjectManager::initNewObjectInternal(
-
-int RigidObjectManager::registerObjectFinalize(ManagedRigidObject::ptr object,
-                                               const std::string& objectHandle,
-                                               bool) {
-  // Add object wrapper to template library
-  return this->addObjectToLibrary(object, objectHandle);
-}  // RigidObjectManager::registerObjectFinalize
-
-}  // namespace physics
+namespace physics {}  // namespace physics
 }  // namespace esp

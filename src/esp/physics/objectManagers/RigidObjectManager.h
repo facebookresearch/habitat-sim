@@ -31,7 +31,10 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
    */
   ManagedRigidObject::ptr initNewObjectInternal(
       CORRADE_UNUSED const std::string& objectHandle,
-      CORRADE_UNUSED bool builtFromConfig) override;
+      CORRADE_UNUSED bool builtFromConfig) override {
+    ManagedRigidObject::ptr newObjectWrapper = ManagedRigidObject::create();
+    return newObjectWrapper;
+  }  // RigidObjectManager::initNewObjectInternal(
 
   /**
    * @brief This function will build the appropriate @ref copyConstructorMap_
@@ -43,20 +46,6 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
     this->copyConstructorMap_["ManagedRigidObject"] =
         &RigidObjectManager::createObjectCopy<ManagedRigidObject>;
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
-
-  /**
-   * @brief implementation of managed object type-specific registration
-   * @param object the managed object to be registered
-   * @param objectHandle the name to register the managed object with.
-   * Expected to be valid.
-   * @param forceRegistration Will register object even if conditional
-   * registration checks fail.
-   * @return The unique ID of the managed object being registered, or
-   * ID_UNDEFINED if failed
-   */
-  int registerObjectFinalize(ManagedRigidObject::ptr object,
-                             const std::string& objectHandle,
-                             CORRADE_UNUSED bool forceRegistration) override;
 
  public:
   ESP_SMART_POINTERS(RigidObjectManager)

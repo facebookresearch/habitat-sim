@@ -127,6 +127,18 @@ int PhysicsManager::addObject(
     return ID_UNDEFINED;
   }
 
+  // Valid object exists by here.
+  // Now we need to create wrapper, wrap around object,
+  // and register wrapper with wrapper manager
+  // 1.0 Get unique name for object
+
+  // 2.0 Get wrapper
+
+  // 3.0 Put object in wrapper
+
+  // 4.0 register wrapper in manager
+  // rigidObjectManager_
+
   return nextObjectID_;
 }  // PhysicsManager::addObject
 
