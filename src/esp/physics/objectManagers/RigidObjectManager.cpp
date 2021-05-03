@@ -7,13 +7,10 @@ namespace esp {
 namespace physics {
 
 ManagedRigidObject::ptr RigidObjectManager::initNewObjectInternal(
-    const std::string& objectHandle,
+    CORRADE_UNUSED const std::string& objectHandle,
     bool) {
-  ManagedRigidObject::ptr newObjectWrapper =
-      this->constructFromDefault(objectHandle);
-  if (nullptr == newObjectWrapper) {
-    newObjectWrapper = ManagedRigidObject::create();
-  }
+  ManagedRigidObject::ptr newObjectWrapper = ManagedRigidObject::create();
+
   return newObjectWrapper;
 }  // RigidObjectManager::initNewObjectInternal(
 

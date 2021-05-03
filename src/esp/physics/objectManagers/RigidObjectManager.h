@@ -22,14 +22,15 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
    * @brief Used Internally.  Create and configure newly-created managed object
    * with any default values, before any specific values are set.
    *
-   * @param objectHandle handle name to be assigned to the managed object.
+   * @param objectHandle Unused for wrapper objects.  All wrappers use the name
+   * of their underlying objects.
    * @param builtFromConfig Unused for wrapper objects.  All wrappers are
    * constructed from scratch.
    * @return Newly created but unregistered ManagedObject pointer, with only
    * default values set.
    */
   ManagedRigidObject::ptr initNewObjectInternal(
-      const std::string& objectHandle,
+      CORRADE_UNUSED const std::string& objectHandle,
       CORRADE_UNUSED bool builtFromConfig) override;
 
   /**
