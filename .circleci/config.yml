@@ -48,7 +48,7 @@ commands:
                   libjpeg-dev \
                   libglm-dev \
                   libegl1-mesa-dev \
-                  ninja-build \ 
+                  ninja-build \
                   xorg-dev \
                   freeglut3-dev \
                   pkg-config \
