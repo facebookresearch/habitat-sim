@@ -733,70 +733,58 @@ struct AOSimulationContactResultCallback
     bCollision = false;
   }
 
-  /**
-   * @brief Called when a contact is detected.
-   *
-   * Sets a collision flag on every detected collision screening self-contacts
-   * if necessary.
-   * @param cp Contains detailed information about the contact point being
-   * added.
-   */
-  btScalar addSingleResult(
-      CORRADE_UNUSED btManifoldPoint& cp,
-      CORRADE_UNUSED const btCollisionObjectWrapper* colObj0Wrap,
-      CORRADE_UNUSED int partId0,
-      CORRADE_UNUSED int index0,
-      CORRADE_UNUSED const btCollisionObjectWrapper* colObj1Wrap,
-      CORRADE_UNUSED int partId1,
-      CORRADE_UNUSED int index1) override {
-    // screen self-collisions
+  bool needsCollision(btBroadphaseProxy* proxy0) const override {
+    // base method checks for group|mask filter
+    bool collides = SimulationContactResultCallback::needsCollision(proxy0);
+    // check for self-collision
     if (!mb_->hasSelfCollision()) {
-      const btMultiBodyLinkCollider* mblc1 =
-          btMultiBodyLinkCollider::upcast(colObj0Wrap->getCollisionObject());
-      const btMultiBodyLinkCollider* mblc2 =
-          btMultiBodyLinkCollider::upcast(colObj1Wrap->getCollisionObject());
-      if (mblc1 && mblc2) {
-        if (mblc1->m_multiBody == mblc2->m_multiBody) {
-          // link self-collision
-          return 0;
+      // This should always be a valid conversion to btCollisionObject
+      auto co = static_cast<btCollisionObject*>(proxy0->m_clientObject);
+      auto mblc = dynamic_cast<btMultiBodyLinkCollider*>(co);
+      if (mblc) {
+        if (mblc->m_multiBody == mb_) {
+          // screen self-collisions
+          collides = false;
         }
-      } else if (colObj0Wrap->getCollisionObject() == fixedBaseColObj_) {
-        if (mblc2) {
-          if (mblc2->m_multiBody == mb_) {
-            // link collision with fixed base rigidBody proxy
-            return 0;
-          }
-        }
-      } else if (colObj1Wrap->getCollisionObject() == fixedBaseColObj_) {
-        if (mblc1) {
-          if (mblc1->m_multiBody == mb_) {
-            // link collision with fixed base rigidBody proxy
-            return 0;
-          }
-        }
+      } else if (co == fixedBaseColObj_) {
+        // screen self-collisions w/ fixed base rigid
+        collides = false;
       }
     }
-
-    bCollision = true;
-    return 0;  // not used
+    return collides;
   }
 };
 
-bool BulletArticulatedObject::contactTest() {
+bool BulletArticulatedObject::contactTest(bool staticAsStage) {
   AOSimulationContactResultCallback src(btMultiBody_.get(),
                                         bFixedObjectRigidBody_.get());
 
+  auto baseCollider = btMultiBody_->getBaseCollider();
   // Do a contact test for each piece of the AO and return at soonest contact.
   // Should be cheaper to hit multiple local aabbs than to check the full scene.
   if (bFixedObjectRigidBody_) {
+    src.m_collisionFilterGroup =
+        bFixedObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterGroup;
+    src.m_collisionFilterMask =
+        bFixedObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterMask;
+
+    if (!staticAsStage) {
+      // consider the fixed base as "robot" instead of "static"
+      src.m_collisionFilterGroup = int(CollisionGroup::Robot);
+      src.m_collisionFilterMask =
+          CollisionGroupHelper::getMaskForGroup(CollisionGroup::Robot);
+    }
+
     bWorld_->getCollisionWorld()->contactTest(bFixedObjectRigidBody_.get(),
                                               src);
     if (src.bCollision) {
       return src.bCollision;
     }
-  }
-  auto baseCollider = btMultiBody_->getBaseCollider();
-  if (baseCollider) {
+  } else if (baseCollider) {
+    src.m_collisionFilterGroup =
+        baseCollider->getBroadphaseHandle()->m_collisionFilterGroup;
+    src.m_collisionFilterMask =
+        baseCollider->getBroadphaseHandle()->m_collisionFilterMask;
     bWorld_->getCollisionWorld()->contactTest(baseCollider, src);
     if (src.bCollision) {
       return src.bCollision;
@@ -804,6 +792,10 @@ bool BulletArticulatedObject::contactTest() {
   }
   for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
     auto linkCollider = btMultiBody_->getLinkCollider(colIx);
+    src.m_collisionFilterGroup =
+        linkCollider->getBroadphaseHandle()->m_collisionFilterGroup;
+    src.m_collisionFilterMask =
+        linkCollider->getBroadphaseHandle()->m_collisionFilterMask;
     bWorld_->getCollisionWorld()->contactTest(linkCollider, src);
     if (src.bCollision) {
       return src.bCollision;

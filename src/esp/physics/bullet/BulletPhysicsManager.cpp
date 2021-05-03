@@ -342,17 +342,18 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   bWorld_->debugDrawWorld();
 }
 
-bool BulletPhysicsManager::contactTest(const int physObjectID) {
+bool BulletPhysicsManager::contactTest(const int physObjectID,
+                                       bool staticAsStage) {
   CHECK((existingObjects_.count(physObjectID) > 0) ||
         (existingArticulatedObjects_.count(physObjectID) > 0));
   if (existingObjects_.count(physObjectID) > 0) {
     return static_cast<BulletRigidObject*>(
                existingObjects_.at(physObjectID).get())
-        ->contactTest();
+        ->contactTest(staticAsStage);
   } else {
     return static_cast<BulletArticulatedObject*>(
                existingArticulatedObjects_.at(physObjectID).get())
-        ->contactTest();
+        ->contactTest(staticAsStage);
   }
   return false;
 }

@@ -127,10 +127,13 @@ class BulletArticulatedObject : public ArticulatedObject {
    * collision world.
    *
    * See @ref SimulationContactResultCallback
+   * @param staticAsStage When false, override configured collision groups|masks
+   * for articulated fixed base such that contact with other STATICs such as the
+   * stage are considered.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest();
+  bool contactTest(bool staticAsStage = true);
 
   //! Bullet supports vel/pos control joint motors for revolute and prismatic
   //! joints (1 Dof) This is the suggested way to implement friction/damping at
