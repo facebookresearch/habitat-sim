@@ -66,7 +66,7 @@ class PhysicsObjectBaseManager
    */
   ObjWrapperPtr createObject(
       const std::string& objectHandle,
-      CORRADE_UNUSED bool registerObject = true) override;
+      CORRADE_UNUSED bool registerObject = false) override;
 
  protected:
   /**

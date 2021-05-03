@@ -126,18 +126,25 @@ int PhysicsManager::addObject(
                   "unsuccessful.  Aborting.";
     return ID_UNDEFINED;
   }
-
   // Valid object exists by here.
   // Now we need to create wrapper, wrap around object,
   // and register wrapper with wrapper manager
-  // 1.0 Get unique name for object
+  // 1.0 Get unique name for object using simplified attributes name.
+  std::string simpleObjectHandle = objectAttributes->getSimplifiedHandle();
 
-  // 2.0 Get wrapper
+  std::string newObjectHandle =
+      rigidObjectManager_->getUniqueHandleFromCandidate(simpleObjectHandle);
+
+  existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
+  // 2.0 Get wrapper - name is irrelevant, do not register.
+  ManagedRigidObject::ptr objWrapper =
+      rigidObjectManager_->createObject("No Name Yet");
 
   // 3.0 Put object in wrapper
+  objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
 
   // 4.0 register wrapper in manager
-  // rigidObjectManager_
+  rigidObjectManager_->registerObject(objWrapper, newObjectHandle);
 
   return nextObjectID_;
 }  // PhysicsManager::addObject
@@ -148,6 +155,10 @@ void PhysicsManager::removeObject(const int physObjectID,
   assertIDValidity(physObjectID);
   scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
   scene::SceneNode* visualNode = existingObjects_.at(physObjectID)->visualNode_;
+  // remove wrapper
+  rigidObjectManager_->removeObjectByHandle(
+      existingObjects_.at(physObjectID)->getObjectName());
+
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
   if (deleteObjectNode) {
