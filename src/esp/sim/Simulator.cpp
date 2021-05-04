@@ -1454,6 +1454,17 @@ void Simulator::removeArticulatedObject(int objectId) {
   }
 }
 
+scene::SceneNode* Simulator::getArticulatedLinkSceneNode(int objectID,
+                                                         int linkId) {
+  return &physicsManager_->getArticulatedLinkSceneNode(objectID, linkId);
+}
+
+std::vector<scene::SceneNode*> Simulator::getArticulatedLinkVisualSceneNodes(
+    int objectID,
+    int linkId) {
+  return physicsManager_->getArticulatedLinkVisualSceneNodes(objectID, linkId);
+}
+
 std::vector<int> Simulator::getExistingArticulatedObjectIDs(
     CORRADE_UNUSED const int sceneID) {
   if (sceneHasPhysics(0)) {

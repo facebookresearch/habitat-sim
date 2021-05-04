@@ -349,6 +349,12 @@ void initSimBindings(py::module& m) {
            "object_id"_a)
       .def("get_existing_articulated_object_ids",
            &Simulator::getExistingArticulatedObjectIDs, "scene_id"_a = 0)
+      .def("get_articulated_link_scene_node",
+           &Simulator::getArticulatedLinkSceneNode, "object_id"_a,
+           "link_id"_a = -1)
+      .def("get_articulated_link_visual_scene_nodes",
+           &Simulator::getArticulatedLinkVisualSceneNodes, "object_id"_a,
+           "link_id"_a = -1)
       .def("set_articulated_object_root_state",
            &Simulator::setArticulatedObjectRootState, "object_id"_a, "state"_a)
       .def("get_articulated_object_root_state",

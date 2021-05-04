@@ -216,6 +216,7 @@ bool BulletArticulatedObject::initializeFromURDF(
         linkObject = baseLink_.get();
       }
 
+      linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
       bool success =
           attachGeometry(linkObject, link.second,
                          urdfImporter.getModel()->m_materials, drawables);
@@ -223,6 +224,9 @@ bool BulletArticulatedObject::initializeFromURDF(
 
       urdfLinkIx++;
     }
+
+    // top level only valid in initial state, but computes valid sub-part AABBs.
+    node().computeCumulativeBB();
 
     // Build damping motors
     int dofCount = 0;
@@ -276,6 +280,9 @@ bool BulletArticulatedObject::attachGeometry(
   for (auto& visual : link->m_visualArray) {
     // create a new child for each visual component
     scene::SceneNode& visualGeomComponent = linkObject->node().createChild();
+    // cache the visual node
+    linkObject->visualNodes_.push_back(&visualGeomComponent);
+    visualGeomComponent.setType(esp::scene::SceneNodeType::OBJECT);
     visualGeomComponent.setTransformation(
         link->m_inertia.m_linkLocalFrame.invertedRigid() *
         visual.m_linkLocalFrame);
@@ -328,7 +335,7 @@ bool BulletArticulatedObject::attachGeometry(
                  ? visual.m_geometry.m_meshFileName
                  : assetMatModName),  // use either a material modified or
                                       // original asset
-            visualGeomComponent, drawables);
+            visualGeomComponent, linkObject->visualNodes_, drawables);
 
         // cache the visual component for later query
         if (geomSuccess) {

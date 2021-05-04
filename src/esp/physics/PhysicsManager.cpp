@@ -640,14 +640,39 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
 
 const scene::SceneNode& PhysicsManager::getObjectSceneNode(
     int physObjectID) const {
-  assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->getSceneNode();
+  CHECK(existingObjects_.count(physObjectID) > 0 ||
+        existingArticulatedObjects_.count(physObjectID) > 0);
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_.at(physObjectID)->getSceneNode();
+  } else {
+    return existingArticulatedObjects_.at(physObjectID)->node();
+  }
 }
 
 scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
-  assertIDValidity(physObjectID);
+  CHECK(existingObjects_.count(physObjectID) > 0 ||
+        existingArticulatedObjects_.count(physObjectID) > 0);
+  if (existingObjects_.count(physObjectID) > 0) {
+    return const_cast<scene::SceneNode&>(
+        existingObjects_.at(physObjectID)->getSceneNode());
+  } else {
+    return const_cast<scene::SceneNode&>(
+        existingArticulatedObjects_.at(physObjectID)->node());
+  }
+}
+
+const scene::SceneNode& PhysicsManager::getArticulatedLinkSceneNode(
+    int physObjectID,
+    int linkId) const {
+  CHECK(existingArticulatedObjects_.count(physObjectID) > 0);
+  return existingArticulatedObjects_.at(physObjectID)->getLinkSceneNode(linkId);
+}
+
+scene::SceneNode& PhysicsManager::getArticulatedLinkSceneNode(int physObjectID,
+                                                              int linkId) {
+  CHECK(existingArticulatedObjects_.count(physObjectID) > 0);
   return const_cast<scene::SceneNode&>(
-      existingObjects_.at(physObjectID)->getSceneNode());
+      existingArticulatedObjects_.at(physObjectID)->getLinkSceneNode(linkId));
 }
 
 const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
@@ -658,8 +683,21 @@ const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
 
 std::vector<scene::SceneNode*> PhysicsManager::getObjectVisualSceneNodes(
     const int physObjectID) const {
-  assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->visualNodes_;
+  CHECK(existingObjects_.count(physObjectID) > 0 ||
+        existingArticulatedObjects_.count(physObjectID) > 0);
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_.at(physObjectID)->visualNodes_;
+  } else {
+    return existingArticulatedObjects_.at(physObjectID)->getVisualSceneNodes();
+  }
+}
+
+std::vector<scene::SceneNode*>
+PhysicsManager::getArticulatedLinkVisualSceneNodes(const int objectID,
+                                                   const int linkID) const {
+  CHECK(existingArticulatedObjects_.count(objectID) > 0);
+  return existingArticulatedObjects_.at(objectID)->getLinkVisualSceneNodes(
+      linkID);
 }
 
 void PhysicsManager::setSemanticId(const int physObjectID,

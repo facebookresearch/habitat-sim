@@ -573,6 +573,7 @@ class ResourceManager {
   //! Attach a visual asset to a SceneNode as part of a DrawableGroup
   bool attachAsset(const std::string& filename,
                    scene::SceneNode& node,
+                   std::vector<scene::SceneNode*>& visNodeCache,
                    DrawableGroup* drawables);
   /**
    * @brief Set a replay recorder so that ResourceManager can notify it about

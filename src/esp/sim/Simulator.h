@@ -636,6 +636,24 @@ class Simulator {
    */
   std::vector<int> getExistingArticulatedObjectIDs(int sceneID = 0);
 
+  /**
+   * @brief Get a reference to the specified ArticulatedLink SceneNode for info
+   * query purposes. Default (-1) returns baseLink SceneNode.
+   * @param physObjectID The object ID and key identifying the object.
+   * @param linkId The ArticulatedLink ID or -1 for the base.
+   * @return the object scene node or nullptr if failed.
+   */
+  scene::SceneNode* getArticulatedLinkSceneNode(int objectID, int linkId = -1);
+
+  /**
+   * @brief Get references to a link's visual scene nodes or empty if
+   * failed.
+   * @param linkId The ArticulatedLink ID or -1 for the base.
+   */
+  std::vector<scene::SceneNode*> getArticulatedLinkVisualSceneNodes(
+      int objectID,
+      int linkId = -1);
+
   void setArticulatedObjectRootState(int objectId,
                                      const Magnum::Matrix4& state);
 
