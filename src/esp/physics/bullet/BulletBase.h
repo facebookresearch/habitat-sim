@@ -124,15 +124,13 @@ class BulletBase {
    * MeshTransformNode tree to the current node.
    * @param meshGroup Access structure for collision mesh data.
    * @param node The current @ref MeshTransformNode in the recursion.
-   * @param join Whether or not to join sub-meshes into a single con convex
-   * shape, rather than creating individual convexes under the compound.
    */
   void constructConvexShapesFromMeshes(
       const Magnum::Matrix4& transformFromParentToWorld,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       const assets::MeshTransformNode& node,
-      bool join,
-      btCompoundShape* bObjectShape = nullptr);
+      btCompoundShape* bObjectShape,
+      std::vector<std::unique_ptr<btConvexHullShape>>& bObjectConvexShapes);
 
   /** @brief A pointer to the Bullet world to which this object belongs. See
    * @ref btMultiBodyDynamicsWorld.*/
