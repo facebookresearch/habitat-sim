@@ -102,7 +102,7 @@ class BulletRigidObject : public BulletBase,
     if (sleep) {
       bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
     } else {
-      bObjectRigidBody_->activate();
+      bObjectRigidBody_->activate(true);
     }
   }
 
