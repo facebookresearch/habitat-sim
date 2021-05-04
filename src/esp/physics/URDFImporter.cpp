@@ -40,6 +40,11 @@ bool URDFImporter::loadURDF(const std::string& filename,
       urdfParser_.getModel()->printKinematicChain();
     }
 
+    // if reloading, clear the old model
+    if (modelCache_.count(filename)) {
+      modelCache_.erase(filename);
+    }
+
     // register the new model
     modelCache_.emplace(filename, urdfParser_.getModel());
   }
