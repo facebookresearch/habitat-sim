@@ -24,7 +24,7 @@ namespace geo {
 
 #ifdef ESP_BUILD_WITH_VHACD
 VoxelGrid::VoxelGrid(const assets::MeshData& meshData,
-                     const std::string& renderAssetHandle,
+                     std::string renderAssetHandle,
                      int resolution)
     : m_renderAssetHandle(renderAssetHandle) {
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
