@@ -1,4 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 # [setup]
+
 import os
 import time
 
@@ -86,7 +90,7 @@ def box_drop_test(
     useVHACD=False,
     VHACDParams=def_params,
 ):  # take in parameters here
-    """Drops a specified number of objects into a box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame. """
+    """Drops a specified number of objects into a box and returns metrics including the time to simulate each frame, render each frame, and the number of collisions each frame."""
 
     data = {
         "observations": [],

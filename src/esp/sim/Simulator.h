@@ -977,12 +977,15 @@ class Simulator {
    * collision world.
    * @param objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
+   * @param staticAsStage When false, override configured collision groups|masks
+   * for STATIC objects and articulated fixed base such that contact with other
+   * STATICs such as the stage are considered.
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest(int objectID, int sceneID = 0);
+  bool contactTest(int objectID, bool staticAsStage = true, int sceneID = 0);
 
   /**
    * @brief Perform discrete collision detection for the scene.

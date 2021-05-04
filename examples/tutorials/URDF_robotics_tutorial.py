@@ -1,3 +1,6 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 # [setup]
 
 import os
@@ -645,7 +648,7 @@ def main(make_video=True, show_video=True):
                 + " friction coefficient = "
                 + str(sim.get_articulated_link_friction(robot_id, link_id))
             )
-            # Note: set this with 'sim.get_articulated_link_friction(robot_id, link_id, friction)'
+            # Note: set this with 'sim.set_articulated_link_friction(robot_id, link_id, friction)'
             observations += simulate(sim, dt=0.5, get_frames=make_video)
         sim.remove_object(cube_id)
 

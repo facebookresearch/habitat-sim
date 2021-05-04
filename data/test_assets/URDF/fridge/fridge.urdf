@@ -20,55 +20,55 @@
         <mesh filename="body.glb" scale="1.0, 1.0, 1.0"/>
       </geometry>
     </visual>
-    <collision>
+    <collision group="256">
       <origin rpy="0 0 0" xyz="0 -0.002765 -0.94159"/>
       <geometry>
         <box size="0.643 0.691 0.027"/>
       </geometry>
     </collision>
-    <collision>
+    <collision group="256">
       <origin rpy="0 0 0" xyz="0 -0.002765 0.94936"/>
       <geometry>
         <box size="0.643 0.691 0.027"/>
       </geometry>
     </collision>
-    <collision>
+    <collision group="256">
       <origin rpy="0 0 0" xyz="0 -0.002765 -0.585528"/>
       <geometry>
         <box size="0.643 0.691 0.027"/>
       </geometry>
     </collision>
-    <collision>
+    <collision group="256">
       <origin rpy="0 0 0" xyz="0 -0.002765 -0.226826"/>
       <geometry>
         <box size="0.643 0.691 0.027"/>
       </geometry>
     </collision>
-    <collision>
+    <collision group="256">
       <origin rpy="0 0 0" xyz="0 -0.002765 -0.033778"/>
       <geometry>
         <box size="0.643 0.691 0.027"/>
       </geometry>
     </collision>
-    <collision>
+    <collision group="256">
       <origin rpy="0 0 0" xyz="0 -0.002765 0.255839"/>
       <geometry>
         <box size="0.643 0.691 0.042"/>
       </geometry>
     </collision>
-    <collision>
+    <collision group="256">
       <origin rpy="0 0 0" xyz="0 -0.337538 0.005784"/>
       <geometry>
         <box size="0.643 0.03 1.89126"/>
       </geometry>
     </collision>
-    <collision>
+    <collision group="256">
       <origin rpy="0 0 0" xyz="0 0.329773 0.005784"/>
       <geometry>
         <box size="0.643 0.03 1.89126"/>
       </geometry>
     </collision>
-    <collision>
+    <collision group="256">
       <origin rpy="0 0 0" xyz="-0.316502 -0.002765 0"/>
       <geometry>
         <box size="0.029014 0.690834 1.91906"/>
@@ -96,7 +96,7 @@
         <mesh filename="top_door.glb" scale="1.0, 1.0, 1.0"/>
       </geometry>
     </visual>
-    <collision>
+    <collision group="2">
       <origin rpy="0 0 0" xyz="0 -0.33 -0.02"/>
       <geometry>
         <box size="0.097 0.712 1.103"/>
@@ -124,7 +124,7 @@
         <mesh filename="bottom_door.glb" scale="1.0, 1.0, 1.0"/>
       </geometry>
     </visual>
-    <collision>
+    <collision group="2">
       <origin rpy="0 0 0" xyz="0.01, -0.33, 0.01"/>
       <geometry>
         <box size="0.08 0.686 0.788"/>

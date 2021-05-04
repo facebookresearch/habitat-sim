@@ -721,5 +721,95 @@ void BulletArticulatedObject::updateKinematicState() {
   }
 }
 
+/**
+ * @brief Specific callback function for ArticulatedObject::contactTest to
+ * screen self-collisions.
+ */
+struct AOSimulationContactResultCallback
+    : public SimulationContactResultCallback {
+  btMultiBody* mb_ = nullptr;
+  btRigidBody* fixedBaseColObj_ = nullptr;
+
+  /**
+   * @brief Constructor taking the AO's btMultiBody as input to screen
+   * self-collisions.
+   */
+  AOSimulationContactResultCallback(btMultiBody* mb,
+                                    btRigidBody* fixedBaseColObj)
+      : mb_(mb), fixedBaseColObj_(fixedBaseColObj) {
+    bCollision = false;
+  }
+
+  bool needsCollision(btBroadphaseProxy* proxy0) const override {
+    // base method checks for group|mask filter
+    bool collides = SimulationContactResultCallback::needsCollision(proxy0);
+    // check for self-collision
+    if (!mb_->hasSelfCollision()) {
+      // This should always be a valid conversion to btCollisionObject
+      auto co = static_cast<btCollisionObject*>(proxy0->m_clientObject);
+      auto mblc = dynamic_cast<btMultiBodyLinkCollider*>(co);
+      if (mblc) {
+        if (mblc->m_multiBody == mb_) {
+          // screen self-collisions
+          collides = false;
+        }
+      } else if (co == fixedBaseColObj_) {
+        // screen self-collisions w/ fixed base rigid
+        collides = false;
+      }
+    }
+    return collides;
+  }
+};
+
+bool BulletArticulatedObject::contactTest(bool staticAsStage) {
+  AOSimulationContactResultCallback src(btMultiBody_.get(),
+                                        bFixedObjectRigidBody_.get());
+
+  auto baseCollider = btMultiBody_->getBaseCollider();
+  // Do a contact test for each piece of the AO and return at soonest contact.
+  // Should be cheaper to hit multiple local aabbs than to check the full scene.
+  if (bFixedObjectRigidBody_) {
+    src.m_collisionFilterGroup =
+        bFixedObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterGroup;
+    src.m_collisionFilterMask =
+        bFixedObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterMask;
+
+    if (!staticAsStage) {
+      // consider the fixed base as "robot" instead of "static"
+      src.m_collisionFilterGroup = int(CollisionGroup::Robot);
+      src.m_collisionFilterMask =
+          CollisionGroupHelper::getMaskForGroup(CollisionGroup::Robot);
+    }
+
+    bWorld_->getCollisionWorld()->contactTest(bFixedObjectRigidBody_.get(),
+                                              src);
+    if (src.bCollision) {
+      return src.bCollision;
+    }
+  } else if (baseCollider) {
+    src.m_collisionFilterGroup =
+        baseCollider->getBroadphaseHandle()->m_collisionFilterGroup;
+    src.m_collisionFilterMask =
+        baseCollider->getBroadphaseHandle()->m_collisionFilterMask;
+    bWorld_->getCollisionWorld()->contactTest(baseCollider, src);
+    if (src.bCollision) {
+      return src.bCollision;
+    }
+  }
+  for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
+    auto linkCollider = btMultiBody_->getLinkCollider(colIx);
+    src.m_collisionFilterGroup =
+        linkCollider->getBroadphaseHandle()->m_collisionFilterGroup;
+    src.m_collisionFilterMask =
+        linkCollider->getBroadphaseHandle()->m_collisionFilterMask;
+    bWorld_->getCollisionWorld()->contactTest(linkCollider, src);
+    if (src.bCollision) {
+      return src.bCollision;
+    }
+  }
+  return false;
+}  // contactTest
+
 }  // namespace physics
 }  // namespace esp

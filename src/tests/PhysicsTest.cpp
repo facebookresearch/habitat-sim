@@ -276,6 +276,22 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_FALSE(physicsManager_->contactTest(objectId1));
 
+    // set box 0 to KINEMATIC
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::KINEMATIC);
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+
+    // set box 0 to STATIC
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::STATIC);
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0, false));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    // reset MotionType
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::DYNAMIC);
+
     // set stage to non-collidable
     ASSERT_TRUE(physicsManager_->getStageIsCollidable());
     physicsManager_->setStageIsCollidable(false);

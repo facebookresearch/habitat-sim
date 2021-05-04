@@ -478,8 +478,19 @@ Magnum::Vector3 BulletRigidObject::getCOM() const {
   return com;
 }  // getCOM
 
-bool BulletRigidObject::contactTest() {
+bool BulletRigidObject::contactTest(bool staticAsStage) {
   SimulationContactResultCallback src;
+  src.m_collisionFilterGroup =
+      bObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterGroup;
+  src.m_collisionFilterMask =
+      bObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterMask;
+  if (!staticAsStage && objectMotionType_ == MotionType::STATIC) {
+    // override collision filter for STATIC object to include other STATICs such
+    // as the stage
+    src.m_collisionFilterGroup = int(CollisionGroup::FreeObject);
+    src.m_collisionFilterMask =
+        CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject);
+  }
   bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
   return src.bCollision;
 }  // contactTest

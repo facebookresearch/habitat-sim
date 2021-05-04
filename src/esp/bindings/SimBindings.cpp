@@ -281,8 +281,8 @@ void initSimBindings(py::module& m) {
            R"(Set whether or not the static stage is collidable.)")
       .def(
           "contact_test", &Simulator::contactTest, "object_id"_a,
-          "scene_id"_a = 0,
-          R"(Run collision detection and return a binary indicator of penetration between the specified object and any other collision object. Physics must be enabled.)")
+          "static_as_stage"_a = true, "scene_id"_a = 0,
+          R"(Run collision detection and return a binary indicator of contact between the specified object and any other collision object. Physics must be enabled. Setting 'static_as_stage' False will override collision filters such that contacts with other STATICs (such as the stage and articulated fixed bases) will be reported.)")
       .def(
           "perform_discrete_collision_detection",
           &Simulator::performDiscreteCollisionDetection,
@@ -471,20 +471,19 @@ void initSimBindings(py::module& m) {
               &Simulator::createArticulatedFixedConstraint),
           "object_id_a"_a, "link_id"_a, "object_id_b"_a, "max_impulse"_a = 2.0,
           R"(add fixed constraint between articulated object a link and an object; the pivot is at the object's origin; the current relative orientation of the link and the object will be fixed)")
-      .def(
-          "create_articulated_fixed_constraint",
-          py::overload_cast<int, int, int, const Magnum::Vector3&,
-                            const Magnum::Vector3&, float>(
-              &Simulator::createArticulatedFixedConstraint),
-          "object_id_a"_a, "link_id"_a, "object_id_b"_a, "pivot_a"_a,
-          "pivot_b"_a, "max_impulse"_a = 2.0,
-          R"(add fixed constraint between articulated object link and rigid object; pivots are specified in the link/object's local space; the current relative orientation of the link and the object will be fixed)")
+      .def("create_articulated_fixed_constraint",
+           py::overload_cast<int, int, int, const Magnum::Vector3&,
+                             const Magnum::Vector3&, float>(
+               &Simulator::createArticulatedFixedConstraint),
+           "object_id_a"_a, "link_id"_a, "object_id_b"_a, "pivot_a"_a,
+           "pivot_b"_a, "max_impulse"_a = 2.0, R"(add fixed constraint between articulated object link and rigid object; pivots are specified in the link/object's local space; the current relative orientation of the link and the object will be fixed)")
       .def("remove_constraint", &Simulator::removeConstraint, "constraint_id"_a,
            R"(Remove a point-2-point or fixed constraint by id.)")
       /* --- Collision information queries --- */
-      .def("get_physics_num_active_contact_points",
-           &Simulator::getPhysicsNumActiveContactPoints,
-           R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
+      .def(
+          "get_physics_num_active_contact_points",
+          &Simulator::getPhysicsNumActiveContactPoints,
+          R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
       .def(
           "get_physics_num_active_overlapping_pairs",
           &Simulator::getPhysicsNumActiveOverlappingPairs,
