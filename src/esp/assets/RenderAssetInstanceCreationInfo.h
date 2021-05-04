@@ -29,10 +29,10 @@ struct RenderAssetInstanceCreationInfo {
   RenderAssetInstanceCreationInfo() = default;
 
   RenderAssetInstanceCreationInfo(
-      const std::string& _filepath,
-      const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
+      std::string _filepath,
+      Corrade::Containers::Optional<Magnum::Vector3> _scale,
       const Flags& _flags,
-      const std::string& _lightSetupKey);
+      std::string _lightSetupKey);
 
   bool isStatic() const { return bool(flags & Flag::IsStatic); }
   bool isRGBD() const { return bool(flags & Flag::IsRGBD); }

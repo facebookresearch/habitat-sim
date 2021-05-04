@@ -15,6 +15,7 @@
 #include <functional>
 #include <map>
 #include <set>
+#include <utility>
 
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
@@ -35,8 +36,8 @@ namespace core {
  */
 class ManagedContainerBase {
  public:
-  explicit ManagedContainerBase(const std::string& metadataType)
-      : objectType_(metadataType) {}
+  explicit ManagedContainerBase(std::string metadataType)
+      : objectType_(std::move(metadataType)) {}
   virtual ~ManagedContainerBase() = default;
   /**
    * @brief Utility function to check if passed string represents an existing,

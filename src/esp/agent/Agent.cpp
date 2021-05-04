@@ -7,6 +7,8 @@
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
 
+#include <utility>
+
 #include "esp/scene/ObjectControls.h"
 #include "esp/sensor/Sensor.h"
 
@@ -19,9 +21,9 @@ const std::set<std::string> Agent::BodyActions = {"moveRight",   "moveLeft",
                                                   "moveForward", "moveBackward",
                                                   "turnLeft",    "turnRight"};
 
-Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
+Agent::Agent(scene::SceneNode& agentNode, AgentConfiguration cfg)
     : Magnum::SceneGraph::AbstractFeature3D(agentNode),
-      configuration_(cfg),
+      configuration_(std::move(cfg)),
       controls_(scene::ObjectControls::create()) {
   agentNode.setType(scene::SceneNodeType::AGENT);
 }  // Agent::Agent

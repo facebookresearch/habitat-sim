@@ -10,6 +10,8 @@
 
 #include <rapidjson/document.h>
 
+#include <utility>
+
 namespace esp {
 namespace gfx {
 namespace replay {
@@ -19,8 +21,8 @@ void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   esp::io::readMember(d, "keyframes", keyframes_);
 }
 
-Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
-    : loadAndCreateRenderAssetInstanceCallback(callback) {}
+Player::Player(LoadAndCreateRenderAssetInstanceCallback callback)
+    : loadAndCreateRenderAssetInstanceCallback(std::move(callback)) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();

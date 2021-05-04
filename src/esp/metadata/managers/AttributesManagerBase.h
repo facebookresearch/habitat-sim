@@ -9,6 +9,8 @@
  * @brief Class Template @ref esp::metadata::managers::AttributesManager
  */
 
+#include <utility>
+
 #include "esp/metadata/attributes/AttributesBase.h"
 
 #include "esp/core/managedContainers/ManagedFileBasedContainer.h"
@@ -44,10 +46,10 @@ class AttributesManager
 
   typedef std::shared_ptr<T> AttribsPtr;
 
-  AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
+  AttributesManager(const std::string& attrType, std::string JSONTypeExt)
       : esp::core::ManagedFileBasedContainer<T, Access>::
             ManagedFileBasedContainer(attrType),
-        JSONTypeExt_(JSONTypeExt) {}
+        JSONTypeExt_(std::move(JSONTypeExt)) {}
   ~AttributesManager() override = default;
 
   /**

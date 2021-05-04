@@ -7,6 +7,8 @@
 
 #include "SemanticScene.h"
 
+#include <utility>
+
 namespace esp {
 namespace scene {
 
@@ -32,8 +34,8 @@ class SuncgSemanticRegion : public SemanticRegion {
 };
 
 struct SuncgObjectCategory : public SemanticCategory {
-  SuncgObjectCategory(const std::string& nodeId, const std::string& modelId)
-      : nodeId_(nodeId), modelId_(modelId) {}
+  SuncgObjectCategory(std::string nodeId, std::string modelId)
+      : nodeId_(std::move(nodeId)), modelId_(std::move(modelId)) {}
 
   int index(const std::string& mapping) const override;
 
@@ -48,9 +50,8 @@ struct SuncgObjectCategory : public SemanticCategory {
 };
 
 struct SuncgRegionCategory : public SemanticCategory {
-  SuncgRegionCategory(const std::string& nodeId,
-                      const std::vector<std::string>& categories)
-      : nodeId_(nodeId), categories_(categories) {}
+  SuncgRegionCategory(std::string nodeId, std::vector<std::string> categories)
+      : nodeId_(std::move(nodeId)), categories_(std::move(categories)) {}
 
   int index(const std::string& mapping) const override;
 

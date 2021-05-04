@@ -13,6 +13,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 /* Bullet Physics Integration */
@@ -121,12 +122,11 @@ class PhysicsManager {
    * tracks the assets this
    * @ref PhysicsManager will have access to.
    */
-  explicit PhysicsManager(
-      assets::ResourceManager& _resourceManager,
-      const metadata::attributes::PhysicsManagerAttributes::cptr&
-          _physicsManagerAttributes)
+  explicit PhysicsManager(assets::ResourceManager& _resourceManager,
+                          metadata::attributes::PhysicsManagerAttributes::cptr
+                              _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
-        physicsManagerAttributes_(_physicsManagerAttributes){};
+        physicsManagerAttributes_(std::move(_physicsManagerAttributes)){};
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();

@@ -49,7 +49,7 @@ class Player {
    * @brief Construct a Player.
    * @param callback A function to load and create a render asset instance.
    */
-  explicit Player(const LoadAndCreateRenderAssetInstanceCallback& callback);
+  explicit Player(LoadAndCreateRenderAssetInstanceCallback callback);
 
   ~Player();
 

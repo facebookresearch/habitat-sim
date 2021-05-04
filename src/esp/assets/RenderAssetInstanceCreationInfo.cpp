@@ -4,18 +4,20 @@
 
 #include "RenderAssetInstanceCreationInfo.h"
 
+#include <utility>
+
 namespace esp {
 namespace assets {
 
 RenderAssetInstanceCreationInfo::RenderAssetInstanceCreationInfo(
-    const std::string& _filepath,
-    const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
+    std::string _filepath,
+    Corrade::Containers::Optional<Magnum::Vector3> _scale,
     const Flags& _flags,
-    const std::string& _lightSetupKey)
-    : filepath(_filepath),
-      scale(_scale),
+    std::string _lightSetupKey)
+    : filepath(std::move(_filepath)),
+      scale(std::move(_scale)),
       flags(_flags),
-      lightSetupKey(_lightSetupKey) {}
+      lightSetupKey(std::move(_lightSetupKey)) {}
 
 }  // namespace assets
 }  // namespace esp

@@ -7,12 +7,14 @@
 
 #include "SemanticScene.h"
 
+#include <utility>
+
 namespace esp {
 namespace scene {
 
 struct GibsonObjectCategory : public SemanticCategory {
-  GibsonObjectCategory(const int id, const std::string& name)
-      : id_(id), name_(name) {}
+  GibsonObjectCategory(const int id, std::string name)
+      : id_(id), name_(std::move(name)) {}
 
   int index(const std::string& /*mapping*/) const override { return id_; }
 

@@ -15,9 +15,7 @@ namespace geo {
 class OBB {
  public:
   explicit OBB();
-  explicit OBB(const vec3f& center,
-               const vec3f& dimensions,
-               const quatf& rotation);
+  explicit OBB(vec3f center, const vec3f& dimensions, const quatf& rotation);
   explicit OBB(const box3f& aabb);
 
   //! Returns centroid of this OBB

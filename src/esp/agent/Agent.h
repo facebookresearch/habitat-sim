@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 
 #include "esp/core/esp.h"
 #include "esp/scene/ObjectControls.h"
@@ -38,8 +39,8 @@ typedef std::map<std::string, float> ActuationMap;
 
 // Specifies an action (i.e. name -> agent actuation).
 struct ActionSpec {
-  explicit ActionSpec(const std::string& _name, const ActuationMap& _actuation)
-      : name(_name), actuation(_actuation) {}
+  explicit ActionSpec(std::string _name, ActuationMap _actuation)
+      : name(std::move(_name)), actuation(std::move(_actuation)) {}
   // action name
   std::string name;
   // linear, angular forces, joint torques, sensor actuation
@@ -87,7 +88,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   // constructor: the status of the agent, sensors is "valid" after
   // construction; user can use them immediately
-  explicit Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg);
+  explicit Agent(scene::SceneNode& agentNode, AgentConfiguration cfg);
 
   ~Agent() override;
 
