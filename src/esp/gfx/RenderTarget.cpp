@@ -238,8 +238,21 @@ struct RenderTarget::Impl {
     return framebuffer_.viewport().size();
   }
 
-  Magnum::GL::Texture2D& getDepthTexture() { return depthRenderTexture_; }
-  Magnum::GL::Texture2D& getObjectIdTexture() { return objectIdTexture_; }
+  Magnum::GL::Texture2D& getDepthTexture() {
+    CORRADE_ASSERT(flags_ & Flag::DepthTextureAttachment,
+                   "RenderTarget::Impl::getDepthTexture(): this render target "
+                   "was not created with depth texture enabled.",
+                   depthRenderTexture_);
+    return depthRenderTexture_;
+  }
+  Magnum::GL::Texture2D& getObjectIdTexture() {
+    CORRADE_ASSERT(
+        flags_ & Flag::ObjectIdAttachment,
+        "RenderTarget::Impl::getObjectIdTexture(): this render target "
+        "was not created with object id texture enabled.",
+        objectIdTexture_);
+    return objectIdTexture_;
+  }
 
 #ifdef ESP_BUILD_WITH_CUDA
   void readFrameRgbaGPU(uint8_t* devPtr) {

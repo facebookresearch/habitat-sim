@@ -81,12 +81,18 @@ struct Renderer::Impl {
         mesh_ = Mn::GL::Mesh{};
         mesh_->setCount(3);
       }
-      if (type == sensor::SensorType::Depth) {
-        Magnum::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
-            shader = getShader<TextureVisualizerShader>(
-                esp::gfx::Renderer::Impl::RendererShaderType::
-                    DepthTextureVisualizer);
+      esp::gfx::Renderer::Impl::RendererShaderType rendererShaderType =
+          esp::gfx::Renderer::Impl::RendererShaderType::DepthTextureVisualizer;
 
+      if (type == sensor::SensorType::Semantic) {
+        rendererShaderType =
+            gfx::Renderer::Impl::RendererShaderType::ObjectIdTextureVisualizer;
+      }
+
+      Magnum::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
+          shader = getShader<TextureVisualizerShader>(rendererShaderType);
+
+      if (type == sensor::SensorType::Depth) {
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
         // create a BufferImage instance, if not already
         if (!depthBufferImage_) {
@@ -96,9 +102,9 @@ struct Renderer::Impl {
         tgt.getDepthTexture().image(0, *depthBufferImage_,
                                     Mn::GL::BufferUsage::StaticRead);
 
-        // This takes the above output image (which is depth) and "reinterprets"
-        // it as R32F. In other words, the image below serves as an "image
-        // view".
+        // This takes the above output image (which is depth) and
+        // "reinterprets" it as R32F. In other words, the image below serves
+        // as an "image view".
         Mn::GL::BufferImage2D clonedDepthImage{
             depthBufferImage_->storage(), Mn::PixelFormat::R32F,
             depthBufferImage_->size(),
@@ -123,11 +129,13 @@ struct Renderer::Impl {
         shader->bindDepthTexture(tgt.getDepthTexture());
 #endif
         shader->setDepthUnprojection(*visualSensor.depthUnprojection());
-        shader->setColorMapTransformation(colorMapOffset, colorMapScale);
-        tgt.renderReEnter();
-        shader->draw(*mesh_);
-        tgt.renderExit();
+      } else if (type == sensor::SensorType::Semantic) {
+        shader->bindObjectIdTexture(tgt.getObjectIdTexture());
       }
+      shader->setColorMapTransformation(colorMapOffset, colorMapScale);
+      tgt.renderReEnter();
+      shader->draw(*mesh_);
+      tgt.renderExit();
 
       // TODO object id
       Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
@@ -173,6 +181,7 @@ struct Renderer::Impl {
       default:
         // I need this default, since sensor type list is long, and without
         // default clang-tidy will complain
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
     }
 
@@ -195,7 +204,7 @@ struct Renderer::Impl {
   enum class RendererShaderType : uint8_t {
     DepthShader = 0,
     DepthTextureVisualizer = 1,
-    // ObjectIdTextureVisualizer = 2,
+    ObjectIdTextureVisualizer = 2,
   };
   template <typename T>
   Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
@@ -210,7 +219,10 @@ struct Renderer::Impl {
         key = Mn::ResourceKey{"depthVisualizer"};
         break;
 
-      // TODO: object id
+      case RendererShaderType::ObjectIdTextureVisualizer:
+        key = Mn::ResourceKey{"objectIdVisualizer"};
+        break;
+
       default:
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
@@ -229,6 +241,12 @@ struct Renderer::Impl {
             shader.key(),
             new TextureVisualizerShader{
                 {TextureVisualizerShader::Flag::DepthTexture}},
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+      } else if (type == RendererShaderType::ObjectIdTextureVisualizer) {
+        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+            shader.key(),
+            new TextureVisualizerShader{
+                {TextureVisualizerShader::Flag::ObjectIdTexture}},
             Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
       }
     }

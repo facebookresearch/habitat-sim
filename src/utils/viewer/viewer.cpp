@@ -377,9 +377,14 @@ Key Commands:
   // NOTE: Mouse + shift is to select object on the screen!!
   void createPickedObjectVisualizer(unsigned int objectId);
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
-  // returns the number of visible drawables (meshVisualizer drawables are not
-  // included)
-  bool depthMode_ = false;
+
+  enum class VisualizeMode : uint8_t {
+    RGBA = 0,
+    Depth,
+    Semantic,
+    VisualizeModeCount,
+  };
+  VisualizeMode visualizeMode_ = VisualizeMode::RGBA;
 
   Mn::DebugTools::GLFrameProfiler profiler_{};
 
@@ -485,6 +490,18 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->uuid = "depth_equirectangular";
     spec->sensorType = esp::sensor::SensorType::Depth;
     spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  }
+
+  // add a rgb semantic sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::CameraSensorSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "semantic";
+    spec->sensorType = esp::sensor::SensorType::Semantic;
+    spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
   }
 }
@@ -1130,21 +1147,33 @@ void Viewer::drawEvent() {
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
-  if (depthMode_) {
+  if (visualizeMode_ == VisualizeMode::Depth ||
+      visualizeMode_ == VisualizeMode::Semantic) {
     // ================ Depth Visualization ==================================
     std::string sensorId = "depth";
-    if (sensorMode_ == VisualSensorMode::Fisheye) {
-      sensorId = "depth_fisheye";
-    } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
-      sensorId = "depth_equirectangular";
+    if (visualizeMode_ == VisualizeMode::Depth) {
+      if (sensorMode_ == VisualSensorMode::Fisheye) {
+        sensorId = "depth_fisheye";
+      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+        sensorId = "depth_equirectangular";
+      }
+    } else if (visualizeMode_ == VisualizeMode::Semantic) {
+      sensorId = "semantic";
+      // TODO: add semantic fisheye and equiRec
     }
 
     simulator_->drawObservation(defaultAgentId_, sensorId);
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, sensorId);
-    simulator_->visualizeObservation(defaultAgentId_, sensorId,
-                                     1.0f / 512.0f,  // colorMapOffset
-                                     1.0f / 24.0f);  // colorMapScale
+    if (visualizeMode_ == VisualizeMode::Depth) {
+      simulator_->visualizeObservation(defaultAgentId_, sensorId,
+                                       1.0f / 512.0f,  // colorMapOffset
+                                       1.0f / 12.0f);  // colorMapScale
+    } else if (visualizeMode_ == VisualizeMode::Semantic) {
+      simulator_->visualizeObservation(defaultAgentId_, sensorId,
+                                       1.0f / 512.0f,  // colorMapOffset
+                                       1.0f / 50.0f);  // colorMapScale
+    }
     sensorRenderTarget->blitRgbaToDefault();
   } else {
     if (sensorMode_ == VisualSensorMode::Camera) {
@@ -1337,14 +1366,15 @@ void Viewer::bindRenderTarget() {
     if (it.second.get().isVisualSensor()) {
       esp::sensor::VisualSensor& visualSensor =
           static_cast<esp::sensor::VisualSensor&>(it.second.get());
-      if (depthMode_) {
+      if (visualizeMode_ == VisualizeMode::Depth ||
+          visualizeMode_ == VisualizeMode::Semantic) {
         simulator_->getRenderer()->bindRenderTarget(
             visualSensor, {esp::gfx::Renderer::Flag::VisualizeTexture});
       } else {
         simulator_->getRenderer()->bindRenderTarget(visualSensor);
       }
-    }
-  }
+    }  // if
+  }    // for
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
@@ -1554,9 +1584,24 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       getAgentCamera().resetZoom();
       break;
     case KeyEvent::Key::Seven:
-      depthMode_ = !depthMode_;
+      visualizeMode_ = static_cast<VisualizeMode>(
+          (uint8_t(visualizeMode_) + 1) %
+          uint8_t(VisualizeMode::VisualizeModeCount));
       bindRenderTarget();
-      LOG(INFO) << "Depth sensor is " << (depthMode_ ? "ON" : "OFF");
+      switch (visualizeMode_) {
+        case VisualizeMode::RGBA:
+          LOG(INFO) << "Visualizing COLOR sensor observation.";
+          break;
+        case VisualizeMode::Depth:
+          LOG(INFO) << "Visualizing DEPTH sensor observation.";
+          break;
+        case VisualizeMode::Semantic:
+          LOG(INFO) << "Visualizing SEMANTIC sensor observation.";
+          break;
+        default:
+          CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+          break;
+      }
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
