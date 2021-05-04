@@ -32,8 +32,7 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
   ManagedRigidObject::ptr initNewObjectInternal(
       CORRADE_UNUSED const std::string& objectHandle,
       CORRADE_UNUSED bool builtFromConfig) override {
-    ManagedRigidObject::ptr newObjectWrapper = ManagedRigidObject::create();
-    return newObjectWrapper;
+    return ManagedRigidObject::create();
   }  // RigidObjectManager::initNewObjectInternal(
 
   /**

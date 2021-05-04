@@ -644,6 +644,17 @@ class Simulator {
   }
 
   /**
+   * @brief returns the wrapper manager for the currently created rigid objects.
+   * @return RigidObject wrapper manager.
+   */
+  std::shared_ptr<esp::physics::RigidObjectManager> getRigidObjectManager() {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->getRigidObjectManager();
+    }
+    return nullptr;
+  }  // getRigidObjectManager
+
+  /**
    * @brief Raycast into the collision world of a scene.
    *
    * Note: A default @ref physics::PhysicsManager has no collision world, so
