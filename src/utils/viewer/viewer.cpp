@@ -1312,7 +1312,7 @@ int Viewer::addArticulatedObject(std::string urdfFilename,
                                  bool fixedBase,
                                  float globalScale) {
   int articulatedObjectId = simulator_->addArticulatedObjectFromURDF(
-      urdfFilename, fixedBase, globalScale);
+      urdfFilename, fixedBase, globalScale, 1.0, true);
   placeArticulatedObjectAgentFront(articulatedObjectId);
   return articulatedObjectId;
 }
