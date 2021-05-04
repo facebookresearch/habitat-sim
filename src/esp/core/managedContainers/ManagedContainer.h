@@ -586,7 +586,7 @@ class ManagedContainer : public ManagedContainerBase {
     // objectHandle, or the next available ID if not found.
     object->setID(getObjectIDByHandleOrNew(objectHandle, true));
     // use object's ID for ID in container - may not match ID synthesized by
-    // getObjectIDByHandle, for objects that manage their own IDs
+    // getObjectIDByHandle, for managed objects that control their own IDs
     int objectID = object->getID();
 
     // make a copy of this managed object so that user can continue to edit

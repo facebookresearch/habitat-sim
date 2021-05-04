@@ -49,6 +49,11 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
       return "";
     }
   }
+
+  /**
+   *  @brief Managed Physics objects manage their own handles, so this is
+   * currently unsettable.
+   */
   void setHandle(CORRADE_UNUSED const std::string& name) override {}
 
   /**

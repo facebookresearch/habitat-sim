@@ -51,11 +51,8 @@ class PhysicsObjectBaseManager
   }
 
   /**
-   * @brief Creates an instance of a managed object described by passed string.
-   *
-   * If a managed object exists with this handle, the existing managed object
-   * will be overwritten with the newly created one if @ref
-   * registerObject is true.
+   * @brief Creates an empty @ref esp::physics::AbstractManagedPhysicsObject of
+   * the type managed by this manager.
    *
    * @param objectHandle Unused.  Object being wrapped will provide its name.
    * @param registerObject whether to add this managed object to the
