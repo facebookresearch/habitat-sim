@@ -9,6 +9,7 @@
 
 namespace esp {
 namespace physics {
+
 /**
  * @brief Class template defining responsibilities and functionality shared for
  * managing all @ref esp::physics::ManagedRigidBase wrappers.
@@ -21,10 +22,11 @@ namespace physics {
  */
 
 template <class T>
-class RigidBaseManager : public PhysicsObjectBaseManager<T> {
+class RigidBaseManager : public esp::physics::PhysicsObjectBaseManager<T> {
  public:
   explicit RigidBaseManager(const std::string& objType)
-      : PhysicsObjectBaseManager<T>::PhysicsObjectBaseManager(objType) {}
+      : esp::physics::PhysicsObjectBaseManager<T>::PhysicsObjectBaseManager(
+            objType) {}
 
  protected:
  public:

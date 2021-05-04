@@ -66,6 +66,8 @@ struct RaycastResults {
   ESP_SMART_POINTERS(RaycastResults)
 };
 
+class RigidObjectManager;
+
 // TODO: repurpose to manage multiple physical worlds. Currently represents
 // exactly one world.
 
@@ -125,10 +127,7 @@ class PhysicsManager {
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
       const metadata::attributes::PhysicsManagerAttributes::cptr&
-          _physicsManagerAttributes)
-      : resourceManager_(_resourceManager),
-        physicsManagerAttributes_(_physicsManagerAttributes),
-        rigidObjectManager_(RigidObjectManager::create()) {}
+          _physicsManagerAttributes);
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();

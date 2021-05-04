@@ -10,6 +10,14 @@
 namespace esp {
 namespace physics {
 
+PhysicsManager::PhysicsManager(
+    assets::ResourceManager& _resourceManager,
+    const metadata::attributes::PhysicsManagerAttributes::cptr&
+        _physicsManagerAttributes)
+    : resourceManager_(_resourceManager),
+      physicsManagerAttributes_(_physicsManagerAttributes),
+      rigidObjectManager_(RigidObjectManager::create()) {}
+
 bool PhysicsManager::initPhysics(
     scene::SceneNode* node,
     const std::shared_ptr<esp::physics::PhysicsManager>& physMgr) {

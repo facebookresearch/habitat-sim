@@ -170,7 +170,10 @@ if __name__ == "__main__":
 
     # add an object to the scene
     id_1 = sim.add_object(sphere_template_id)
-    sim.set_translation(np.array([2.50, 0, 0.2]), id_1)
+    # get a ref to the object
+    obj_1 = rigid_obj_mgr.get_object_by_ID(id_1)
+    # move object
+    obj_1.translation(np.array([2.50, 0, 0.2]), id_1)
 
     # simulate
     observations = simulate(sim, dt=1.5, get_frames=make_video)

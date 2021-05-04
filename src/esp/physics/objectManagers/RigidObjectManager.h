@@ -10,10 +10,12 @@
 namespace esp {
 namespace physics {
 
-class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
+class RigidObjectManager
+    : public esp::physics::RigidBaseManager<ManagedRigidObject> {
  public:
   RigidObjectManager()
-      : RigidBaseManager<ManagedRigidObject>::RigidBaseManager("RigidObject") {
+      : esp::physics::RigidBaseManager<ManagedRigidObject>::RigidBaseManager(
+            "RigidObject") {
     this->buildCtorFuncPtrMaps();
   }
 
@@ -29,7 +31,7 @@ class RigidObjectManager : public RigidBaseManager<ManagedRigidObject> {
    * @return Newly created but unregistered ManagedObject pointer, with only
    * default values set.
    */
-  ManagedRigidObject::ptr initNewObjectInternal(
+  std::shared_ptr<ManagedRigidObject> initNewObjectInternal(
       CORRADE_UNUSED const std::string& objectHandle,
       CORRADE_UNUSED bool builtFromConfig) override {
     return ManagedRigidObject::create();

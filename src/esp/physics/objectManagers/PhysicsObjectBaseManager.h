@@ -9,9 +9,9 @@
  * @brief Class Template @ref esp::physics::PhysicsObjectBaseManager
  */
 
-#include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
-
 #include "esp/core/managedContainers/ManagedContainer.h"
+//#include "esp/physics/PhysicsManager.h"
+#include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
 
 namespace esp {
 namespace core {
@@ -73,18 +73,21 @@ class PhysicsObjectBaseManager
   void resetFinalize() override {}
 
   /**
-   * @brief This method will perform any necessary updating that is
-   * ManagedContainer specialization-specific upon managed object removal, such
-   * as removing a specific managed object handle from the list of file-based
-   * managed object handles in ObjectAttributesManager.  This should only be
-   * called internally.
+   * @brief This method will remove objects from physics manager.  The wrapper
+   * has already been removed by the time this method is called (this is called
+   * from @ref esp::core::ManagedContainerBase::deleteObjectInternal)
    *
    * @param objectID the ID of the managed object to remove
    * @param objectHandle the string key of the managed object to remove.
    */
   void updateObjectHandleLists(
       CORRADE_UNUSED int objectID,
-      CORRADE_UNUSED const std::string& objectHandle) override {}
+      CORRADE_UNUSED const std::string& objectHandle) override {
+    if (std::shared_ptr<esp::physics::PhysicsManager> physMgr =
+            this->getPhysicsManager()) {
+      // physMgr->removeObject(objectID);
+    }
+  }  // updateObjectHandleLists
 
   /**
    * @brief implementation of managed object type-specific registration
@@ -109,7 +112,7 @@ class PhysicsObjectBaseManager
    * linger in python after simulator/physicsManager get clobbered/rebuilt.
    */
   std::shared_ptr<esp::physics::PhysicsManager> getPhysicsManager() const {
-    std::shared_ptr<esp::physics::PhysicsManager> sp = weakPhysManager_.lock();
+    auto sp = weakPhysManager_.lock();
     if (!sp) {
       // TODO: Verify object is removed from manager here?
       LOG(WARNING) << "This object manager is no longer valid.  Please delete "

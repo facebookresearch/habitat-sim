@@ -3,7 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "esp/bindings/bindings.h"
-#include "esp/core/managedContainers/AbstractManagedObject.h"
 #include "esp/physics/PhysicsObjectBase.h"
 #include "esp/physics/RigidBase.h"
 #include "esp/physics/RigidObject.h"
