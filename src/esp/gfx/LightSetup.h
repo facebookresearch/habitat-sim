@@ -17,11 +17,11 @@ namespace gfx {
 
 enum class LightPositionModel {
   /** @brief Light position is relative to the camera */
-  CAMERA = 0,
+  Camera = 0,
   /** @brief Light position is relative to scene */
-  GLOBAL = 1,
+  Global = 1,
   /** @brief Light position is relative to the object being rendered */
-  OBJECT = 2,
+  Object = 2,
 };
 
 enum class LightType {
@@ -40,7 +40,7 @@ struct LightInfo {
   // directional light with no distance attenuation.
   Magnum::Vector4 vector;
   Magnum::Color3 color{1};
-  LightPositionModel model = LightPositionModel::GLOBAL;
+  LightPositionModel model = LightPositionModel::Global;
 };
 
 bool operator==(const LightInfo& a, const LightInfo& b);

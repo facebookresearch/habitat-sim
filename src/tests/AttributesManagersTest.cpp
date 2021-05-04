@@ -459,6 +459,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
         "intensity": -0.1,
         "color": [2,1,-1],
         "type": "directional",
+        "position_model" : "camera",
         "spot": {
           "innerConeAngle": -0.75,
           "outerConeAngle": -1.57
@@ -486,6 +487,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
   ASSERT_EQ(lightAttr->getIntensity(), -0.1);
   ASSERT_EQ(lightAttr->getType(),
             static_cast<int>(esp::gfx::LightType::Directional));
+  ASSERT_EQ(lightAttr->getPositionModel(),
+            static_cast<int>(esp::gfx::LightPositionModel::Camera));
   ASSERT_EQ(lightAttr->getInnerConeAngle(), -0.75_radf);
   ASSERT_EQ(lightAttr->getOuterConeAngle(), -1.57_radf);
 }  // AttributesManagers_LightJSONLoadTest

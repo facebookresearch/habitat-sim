@@ -230,3 +230,6 @@ The Light Setup attributes JSON should contain a single cell named "lights" that
 "type"
 	- string
 	- The type of the light.  "point" and "directional" are currently supported.
+"position_model"
+  - string
+  - They frame to use to place the light. "global", meaning stage's origin, and "camera", meaning place relative to a (potentially moving) camera, are currently supported.

@@ -542,6 +542,18 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
     spec->channels = 1;
   }
+
+  // add a rgb semantic sensor
+  agentConfig.sensorSpecifications.emplace_back(
+      esp::sensor::CameraSensorSpec::create());
+  {
+    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = "semantic";
+    spec->sensorType = esp::sensor::SensorType::Semantic;
+    spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  }
 }
 
 Viewer::Viewer(const Arguments& arguments)

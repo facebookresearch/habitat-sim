@@ -16,13 +16,9 @@
 #include <map>
 #include <set>
 
-#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
-
-#include "esp/io/io.h"
-#include "esp/io/json.h"
 
 namespace Cr = Corrade;
 
@@ -38,16 +34,6 @@ class ManagedContainerBase {
   explicit ManagedContainerBase(const std::string& metadataType)
       : objectType_(metadataType) {}
   virtual ~ManagedContainerBase() = default;
-  /**
-   * @brief Utility function to check if passed string represents an existing,
-   * user-accessible file
-   * @param handle the string to check
-   * @return whether the file exists in the file system and whether the user has
-   * access
-   */
-  bool isValidFileName(const std::string& handle) const {
-    return (Corrade::Utility::Directory::exists(handle));
-  }  // ManagedContainerBase::isValidFileName
 
   /**
    * @brief Sets/Clears lock state for a managed object, preventing or allowing
@@ -198,7 +184,7 @@ class ManagedContainerBase {
   const std::string& getObjectType() const { return objectType_; }
 
  protected:
-  //======== Internally accessed getter/setter ================
+  //======== Internally accessed getter/setter/utilities ================
 
   /**
    * @brief Retrieve shared pointer to object held in library, NOT a copy.
@@ -219,51 +205,6 @@ class ManagedContainerBase {
                          const std::string& handle) {
     objectLibrary_[handle] = ptr;
   }
-
-  //======== Common JSON import and utility functions ========
-
-  /**
-   * @brief Verify passd @p filename is legal document of type T. Returns loaded
-   * document in passed argument if successful. This requires appropriate
-   * specialization for each type name, so if this method is executed it means
-   * no appropriate specialization exists for passed type of document.
-   *
-   * @tparam type of document
-   * @param filename name of potentia document to load
-   * @param resDoc a reference to the document to be parsed.
-   * @return whether document has been loaded successfully or not
-   */
-  template <class U>
-  bool verifyLoadDocument(const std::string& filename,
-                          CORRADE_UNUSED U& resDoc) {
-    // by here always fail
-    LOG(ERROR) << objectType_
-               << "ManagedContainerBase::verifyLoadDocument : File " << filename
-               << " failed due to unknown file type.";
-    return false;
-  }  // ManagedContainerBase::verifyLoadDocument
-  /**
-   * @brief Verify passed @p filename is legal json document, return loaded
-   * document or nullptr if fails
-   *
-   * @param filename name of potential json document to load
-   * @param jsonDoc a reference to the json document to be parsed
-   * @return whether document has been loaded successfully or not
-   */
-  bool verifyLoadDocument(const std::string& filename,
-                          io::JsonDocument& jsonDoc);
-
-  /**
-   * @brief Will build a json file name for @p filename by appending/replacing
-   * the extension with the passed @p jsonTypeExt, if it is missing.  NOTE :
-   * this does not verify that file exists.
-   * @param filename The original file name
-   * @param jsonTypeExt The extension to use.
-   * @return The file name changed so that it has the correct @p jsonTypeExtif
-   * it was missing.
-   */
-  std::string convertFilenameToJSON(const std::string& filename,
-                                    const std::string& jsonTypeExt);
 
   /**
    * @brief This method will perform any necessary updating that is
@@ -313,8 +254,7 @@ class ManagedContainerBase {
   /**
    * @brief Return a random handle selected from the passed map
    *
-   * @param mapOfHandles map containing the desired attribute-type managed
-   * object handles
+   * @param mapOfHandles map containing the desired managed object handles
    * @param type the type of managed object being retrieved, for debug message
    * @return a random managed object handle of the chosen type, or the empty
    * string if none loaded
@@ -328,10 +268,8 @@ class ManagedContainerBase {
    * handles contain substr, ignoring subStr's case.
    *
    * This version works on std::map<int,std::string> maps' values.
-   * @param mapOfHandles map containing the desired object-type managed object
-   * handles
-   * @param subStr substring to search for within existing primitive object
-   * managed objects
+   * @param mapOfHandles map containing the desired managed object handles
+   * @param subStr substring to search for within existing managed objects
    * @param contains Whether to search for handles containing, or not
    * containting, substr
    * @return vector of 0 or more managed object handles containing/not
@@ -349,8 +287,7 @@ class ManagedContainerBase {
    * This version works on std::map<std::string, std::set<std::string>> maps's
    * keys.
    * @param mapOfHandles map containing the desired keys to search.
-   * @param subStr substring to search for within existing primitive object
-   * managed objects
+   * @param subStr substring to search for within existing managed objects
    * @param contains Whether to search for handles containing, or not
    * containting, substr
    * @return vector of 0 or more managed object handles containing/not
