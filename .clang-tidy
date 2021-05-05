@@ -2,7 +2,6 @@ Checks: '
 bugprone-*,
 clang-analyzer-cplusplus-*,
 cppcoreguidelines-init-variables,
-cppcoreguidelines-prefer-member-initializer,
 cppcoreguidelines-pro-type-member-init,
 google-*,
 misc-definitions-in-headers,
