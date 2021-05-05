@@ -126,7 +126,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       // add and simulate the object
       int num_objects = 7;
       for (int o = 0; o < num_objects; o++) {
-        int objectId = physicsManager_->addObject(objectFile, nullptr);
+        int objectId = physicsManager_->addObject(objectFile);
         objectIds.push_back(objectId);
 
         const esp::scene::SceneNode& node =
@@ -264,8 +264,8 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // generate two centered boxes with dimension 2x2x2
-    int objectId0 = physicsManager_->addObject(objectFile, nullptr);
-    int objectId1 = physicsManager_->addObject(objectFile, nullptr);
+    int objectId0 = physicsManager_->addObject(objectFile);
+    int objectId1 = physicsManager_->addObject(objectFile);
 
     // place them in collision free location (0.1 about ground plane and 0.2
     // apart)

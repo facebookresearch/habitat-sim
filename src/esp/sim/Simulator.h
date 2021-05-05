@@ -732,6 +732,25 @@ class Simulator {
   bool isNavMeshVisualizationActive();
 
   /**
+   * @brief Return a ref to a new drawables in the currently active scene, for
+   * object creation.  Eventually support multi-scene ID
+   * @param sceneID The scene to get the drawables for.  Currently not used.
+   */
+  inline esp::gfx::DrawableGroup& getDrawables(
+      CORRADE_UNUSED const int sceneID) {
+    // TODO eventually use passed sceneID
+    return sceneManager_->getSceneGraph(activeSceneID_).getDrawables();
+  }
+
+  /**
+   * @brief Return a ref to a new drawables in the currently active scene, for
+   * object creation.
+   */
+  inline esp::gfx::DrawableGroup& getDrawables() {
+    return getDrawables(activeSceneID_);
+  }
+
+  /**
    * @brief Compute a trajectory visualization for the passed points.
    * @param trajVisName The name to use for the trajectory visualization
    * @param pts The points of a trajectory, in order

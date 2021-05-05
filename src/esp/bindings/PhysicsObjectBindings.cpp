@@ -209,7 +209,10 @@ void initPhysicsObjectBindings(py::module& m) {
       .def_property_readonly(
           "creation_attributes",
           &ManagedRigidObject::getInitializationAttributes,
-          R"(Get a copy of the attributes used to create this rigid object)");
+          R"(Get a copy of the attributes used to create this rigid object)")
+      .def_property_readonly(
+          "velocity_control", &ManagedRigidObject::getVelocityControl,
+          R"(Retrieves a reference to the VelocityControl struct for this object.)");
 
   // create bindings for RigidStage
   // declareBasePhysicsObjectWrapper<RigidStage>(m, "Rigid Stage",

@@ -19,6 +19,39 @@ class RigidObjectManager
     this->buildCtorFuncPtrMaps();
   }
 
+  /** @brief Instance a physical object from an object properties template in
+   * the @ref esp::metadata::managers::ObjectAttributesManager.  This method
+   * calls the physicsManager method with the same signature that queries for an
+   * DrawableGroup from Simulator.
+   * @anchor addObject_string
+   * @param attributesHandle The handle of the object attributes used as the key
+   * to query @ref esp::metadata::managers::ObjectAttributesManager.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObject(const std::string& attributesHandle,
+                scene::SceneNode* attachmentNode = nullptr,
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /** @brief Instance a physical object from an object properties template in
+   * the @ref esp::metadata::managers::ObjectAttributesManager by template
+   * ID.  This method calls the physicsManager method with the same signature
+   * that queries for an DrawableGroup from Simulator.
+   * @param attributesID The ID of the object's template in @ref
+   * esp::metadata::managers::ObjectAttributesManager
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized object.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObject(const int attributesID,
+                scene::SceneNode* attachmentNode = nullptr,
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
  protected:
   /**
    * @brief Used Internally.  Create and configure newly-created managed object

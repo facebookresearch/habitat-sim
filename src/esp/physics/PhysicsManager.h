@@ -27,11 +27,13 @@
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
-//#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
 //! core physics simulation namespace
+namespace sim {
+class Simulator;
+}
 namespace physics {
 
 //! Holds information about one ray hit instance.
@@ -122,6 +124,8 @@ class PhysicsManager {
    *
    * @param _resourceManager The @ref esp::assets::ResourceManager which
    * tracks the assets this
+   * @param _physicsManagerAttributes The PhysicsManagerAttributes template used
+   * to instantiate this physics manager.
    * @ref PhysicsManager will have access to.
    */
   explicit PhysicsManager(
@@ -131,6 +135,13 @@ class PhysicsManager {
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();
+
+  /**
+   * @brief Set a pointer to this physics manager's owning simulator.
+   * */
+  void setSimulator(esp::sim::Simulator* _simulator) {
+    simulator_ = _simulator;
+  }
 
   /**
    * @brief Initialization: load physical properties and setup the world.
@@ -170,6 +181,39 @@ class PhysicsManager {
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
+   * the @ref esp::metadata::managers::ObjectAttributesManager.  This method
+   * will query for a drawable group from simulator.
+   *
+   * @anchor addObject_string
+   * @param attributesHandle The handle of the object attributes used as the key
+   * to query @ref esp::metadata::managers::ObjectAttributesManager.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObject(const std::string& attributesHandle,
+                scene::SceneNode* attachmentNode = nullptr,
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /** @brief Instance a physical object from an object properties template in
+   * the @ref esp::metadata::managers::ObjectAttributesManager by template
+   * ID.  This method will query for a drawable group from simulator.
+   *
+   * @param attributesID The ID of the object's template in @ref
+   * esp::metadata::managers::ObjectAttributesManager
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized object.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObject(const int attributesID,
+                scene::SceneNode* attachmentNode = nullptr,
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager.
    * @anchor addObject_string
    * @param attributesHandle The handle of the object attributes used as the key
@@ -196,11 +240,11 @@ class PhysicsManager {
     }
 
     return addObject(attributes, drawables, attachmentNode, lightSetup);
-  }
+  }  // addObject
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
-   * handle.
+   * ID.
    * @param attributesID The ID of the object's template in @ref
    * esp::metadata::managers::ObjectAttributesManager
    * @param drawables Reference to the scene graph drawables group to enable
@@ -224,7 +268,7 @@ class PhysicsManager {
       return ID_UNDEFINED;
     }
     return addObject(attributes, drawables, attachmentNode, lightSetup);
-  }
+  }  // addObject
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
@@ -1146,6 +1190,10 @@ class PhysicsManager {
   /** @brief A reference to a @ref esp::assets::ResourceManager which holds
    * assets that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager& resourceManager_;
+
+  /**@brief A pointer to this physics manager's owning simulator.
+   */
+  esp::sim::Simulator* simulator_ = nullptr;
 
   /** @brief A pointer to the @ref
    * esp::metadata::attributes::PhysicsManagerAttributes describing

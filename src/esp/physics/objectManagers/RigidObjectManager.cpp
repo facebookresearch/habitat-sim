@@ -4,5 +4,27 @@
 
 #include "RigidObjectManager.h"
 namespace esp {
-namespace physics {}  // namespace physics
+namespace physics {
+
+int RigidObjectManager::addObject(const std::string& attributesHandle,
+                                  scene::SceneNode* attachmentNode,
+                                  const std::string& lightSetup) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    return physMgr->addObject(attributesHandle, attachmentNode, lightSetup);
+  } else {
+    return ID_UNDEFINED;
+  }
+}  // RigidObjectManager::addObject */
+
+int RigidObjectManager::addObject(const int attributesID,
+                                  scene::SceneNode* attachmentNode,
+                                  const std::string& lightSetup) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    return physMgr->addObject(attributesID, attachmentNode, lightSetup);
+  } else {
+    return ID_UNDEFINED;
+  }
+}  // RigidObjectManager::addObject
+
+}  // namespace physics
 }  // namespace esp

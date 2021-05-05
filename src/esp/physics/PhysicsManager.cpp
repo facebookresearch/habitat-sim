@@ -6,7 +6,7 @@
 #include <Magnum/Math/Range.h>
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
-
+#include "esp/sim/Simulator.h"
 namespace esp {
 namespace physics {
 
@@ -22,7 +22,8 @@ bool PhysicsManager::initPhysics(
     scene::SceneNode* node,
     const std::shared_ptr<esp::physics::PhysicsManager>& physMgr) {
   physicsNode_ = node;
-  // set the rigidObjectManager's reference to physics manager
+  // set the rigidObjectManager's weak reference to physics manager tp be based
+  // on the same shared pointer that Simulator is using.
   rigidObjectManager_->setPhysicsManager(physMgr);
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes_->getTimestep();
@@ -57,14 +58,60 @@ bool PhysicsManager::addStage(
   //! Initialize scene
   bool sceneSuccess = addStageFinalize(initAttributes);
   return sceneSuccess;
-}
+}  // PhysicsManager::addStage
 
 bool PhysicsManager::addStageFinalize(
     const metadata::attributes::StageAttributes::ptr& initAttributes) {
   //! Initialize scene
   bool sceneSuccess = staticStageObject_->initialize(initAttributes);
   return sceneSuccess;
-}
+}  // PhysicsManager::addStageFinalize
+
+int PhysicsManager::addObject(const std::string& attributesHandle,
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
+  esp::metadata::attributes::ObjectAttributes::ptr attributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
+          attributesHandle);
+  if (!attributes) {
+    LOG(ERROR) << "PhysicsManager::addObject : "
+                  "Object creation failed due to unknown attributes "
+               << attributesHandle;
+    return ID_UNDEFINED;
+  } else {
+    // attributes exist, get drawables if valid simulator accessible
+    if (simulator_ != nullptr) {
+      auto& drawables = simulator_->getDrawables();
+      return addObject(attributes, &drawables, attachmentNode, lightSetup);
+    } else {
+      // support creation when simulator DNE
+      return addObject(attributes, nullptr, attachmentNode, lightSetup);
+    }
+  }
+}  // PhysicsManager::addObject
+
+int PhysicsManager::addObject(const int attributesID,
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
+  const esp::metadata::attributes::ObjectAttributes::ptr attributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
+          attributesID);
+  if (!attributes) {
+    LOG(ERROR) << "PhysicsManager::addObject : "
+                  "Object creation failed due to unknown attributes ID "
+               << attributesID;
+    return ID_UNDEFINED;
+  } else {
+    // attributes exist, get drawables if valid simulator accessible
+    if (simulator_ != nullptr) {
+      auto& drawables = simulator_->getDrawables();
+      return addObject(attributes, &drawables, attachmentNode, lightSetup);
+    } else {
+      // support creation when simulator DNE
+      return addObject(attributes, nullptr, attachmentNode, lightSetup);
+    }
+  }
+}  // PhysicsManager::addObject
 
 int PhysicsManager::addObject(
     const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
