@@ -113,7 +113,6 @@ class BulletBase {
       const assets::MeshTransformNode& node,
       btConvexHullShape* bConvexShape);
 
- protected:
   /**
    * @brief Recursively construct a @ref btCompoundShape for collision from
    * loaded mesh assets. A @ref btConvexHullShape is constructed for each
@@ -127,13 +126,14 @@ class BulletBase {
    * @param bObjectShape The compound shape parent for all generated convexes
    * @param bObjectConvexShapes Datastructure to cache generated convex shapes
    */
-  void constructConvexShapesFromMeshes(
+  static void constructConvexShapesFromMeshes(
       const Magnum::Matrix4& transformFromParentToWorld,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       const assets::MeshTransformNode& node,
       btCompoundShape* bObjectShape,
       std::vector<std::unique_ptr<btConvexHullShape>>& bObjectConvexShapes);
 
+ protected:
   /** @brief A pointer to the Bullet world to which this object belongs. See
    * @ref btMultiBodyDynamicsWorld.*/
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;

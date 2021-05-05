@@ -103,15 +103,21 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
         const assets::MeshMetaData& metaData = resourceManager_.getMeshMetaData(
             collision->m_geometry.m_meshFileName);
 
-        auto convexShape = std::make_unique<btConvexHullShape>();
-        esp::physics::BulletBase::constructJoinedConvexShapeFromMeshes(
-            Magnum::Matrix4{}, meshGroup, metaData.root, convexShape.get());
-        convexShape->setLocalScaling(
+        auto compoundShape = std::make_unique<btCompoundShape>();
+        std::vector<std::unique_ptr<btConvexHullShape>> convexShapes;
+        esp::physics::BulletBase::constructConvexShapesFromMeshes(
+            Magnum::Matrix4{}, meshGroup, metaData.root, compoundShape.get(),
+            convexShapes);
+        // move ownership of convexes
+        for (auto& convex : convexShapes) {
+          linkChildShapes.emplace_back(std::move(convex));
+        }
+        compoundShape->setLocalScaling(
             btVector3(collision->m_geometry.m_meshScale));
-        convexShape->recalcLocalAabb();
-        shape = convexShape.get();
-        shape->setMargin(gUrdfDefaultCollisionMargin);
-        linkChildShapes.emplace_back(std::move(convexShape));
+        compoundShape->setMargin(gUrdfDefaultCollisionMargin);
+        compoundShape->recalculateLocalAabb();
+        shape = compoundShape.get();
+        linkChildShapes.emplace_back(std::move(compoundShape));
       } else {
         Mn::Debug{}
             << "BulletURDFImporter::convertURDFToCollisionShape : E - could "
@@ -528,7 +534,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       }
     }
 
-    if (compoundShape->getNumChildShapes() > 0) {
+    {
       btMultiBodyLinkCollider* col =
           new btMultiBodyLinkCollider(cache.m_bulletMultiBody, mbLinkIndex);
 
@@ -614,8 +620,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       // Noncollidable. Then, we will create fixed rigid bodies, separate from
       // the multibody, which will be collidable (CollisionGroup::Static) (see
       // BulletArticulatedObject.cpp).
-      int collisionFilterGroup = isDynamic ? int(CollisionGroup::Robot)
-                                           : int(CollisionGroup::Noncollidable);
+      // int collisionFilterGroup = isDynamic ? int(CollisionGroup::Robot)
+      //                                     :
+      //                                     int(CollisionGroup::Noncollidable);
+      int collisionFilterGroup = int(CollisionGroup::Robot);
 
       int colGroup = 0, colMask = 0;
       int collisionFlags =
@@ -649,9 +657,6 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       std::string linkDebugName = "URDF, " + debugModel->m_name + ", link " +
                                   debugModel->getLink(urdfLinkIndex)->m_name;
       BulletDebugManager::get().mapCollisionObjectTo(col, linkDebugName);
-    } else {
-      Mn::Debug{} << "Oops, we created a compound with no children...";
-      delete compoundShape;
     }
   }
 

@@ -134,8 +134,8 @@ bool BulletArticulatedObject::initializeFromURDF(
 
     bFixedObjectShape_ = std::make_unique<btCompoundShape>();
 
-    // By convention, fixed links in the URDF are assigned Noncollidable, and we
-    // then insert corresponding fixed rigid bodies with group Static.
+    // By convention, when fixed links in the URDF are assigned Noncollidable,
+    // we then insert corresponding fixed rigid bodies with group Static.
     // Collisions with a fixed rigid body are cheaper than collisions with a
     // fixed link, due to problems with multibody sleeping behavior.
     {
