@@ -52,8 +52,8 @@ When the simulation is stepped, it falls under the force of gravity and reacts t
 .. image:: images/rigid-object-tutorial-images/sim_basics.gif
     :width: 20em
 
-Forces and torques can be applied directly to the object with :ref:`<object>.apply_force` and :ref:`Simulator.apply_torque`.
-Instantanious initial velocities can also be set with :ref:`Simulator.set_linear_velocity` and :ref:`Simulator.set_angular_velocity`.
+Forces and torques can be applied directly to the object using 'apply_force()' and 'apply_torque()'.
+Instantanious initial velocities can also be set using the object's properties, :ref:`habitat_sim.physics.ManagedRigidObject.linear_velocity` and :ref:`habitat_sim.physics.ManagedRigidObject.angular_velocity`.
 
 In the example below, a constant anti-gravity force is applied to the boxes' centers of mass (COM) causing them to float in the air.
 A constant torque is also applied which gradually increases the angular velocity of the boxes.
@@ -75,7 +75,7 @@ Note that forces and torques are treated as constant within each call to :ref:`S
 
 Often it is enough to set the desired state of an object directly.
 In these cases the computational overhead of running full dynamic simulation may not be necessary to achieve a desired result.
-Setting the object to :ref:`habitat_sim.physics.MotionType.KINEMATIC` with :ref:`Simulator.set_object_motion_type` specifies that the object's state will be directly controlled.
+An object's motion type can be set to :ref:`habitat_sim.physics.MotionType.KINEMATIC` directly through its 'motion_type` property, which specifies that the object's state will be directly controlled.
 
 In the example below, a kinematic can is placed in the scene which will not react to physical events such as collision with dynamically simulated objects.
 However, it will still act as a collision object for other scene objects as in the following example.
@@ -105,8 +105,8 @@ This is useful for synchronizing the simulation state of objects to a known stat
     :width: 20em
 
 However, when applying model or algorithmic control it is more convenient to specify a constant linear and angular velocity for the object which will be simulated without manual integration.
-The object's :ref:`habitat_sim.physics.VelocityControl` structure provides this functionality and can be acquired via :ref:`Simulator.get_object_velocity_control`.
-Once paramters are set, control takes affect immediately on the next simulation step as shown in the following example.
+The object's :ref:`habitat_sim.physics.VelocityControl` structure provides this functionality and can be acquired directly from the object via the read only property 'velocity_control'.
+Once paramters are set, control takes effect immediately on the next simulation step as shown in the following example.
 
 .. include:: ../../examples/tutorials/nb_python/managed_rigid_object_tutorial.py
     :code: py
@@ -136,7 +136,7 @@ For this tutorial section, you will need to download the `merged locobot asset`_
 Previous stages of this tutorial have covered adding objects to the world and manipulating them by setting positions, velocity, forces, and torques.
 In all of these examples, the agent has been a passive onlooker observing the scene.
 However, the agent can also be attached to a simulated object for embodiement and control.
-This can be done by passing the :ref:`Agent`'s scene node to the :ref:`Simulator.add_object` function.
+This can be done by passing the :ref:`Agent`'s scene node to the :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_handle` or :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_id' functions.
 
 In this example, the agent is embodied by a rigid robot asset and the :ref:`habitat_sim.physics.VelocityControl` structure is used to control the robot's actions.
 
@@ -180,14 +180,15 @@ With NavMesh sliding dis-allowed:
 Adding/Removing Objects
 ***********************
 
-Objects can be instanced from templates (i.e. :ref:`ObjectAttributes`) into the scene by template id with :ref:`Simulator.add_object` or by template string key with :ref:`Simulator.add_object_by_handle`.
-These functions return a unique id which can be used to refer to the object instance. In the case of errors in construction, -1 is returned.
+Objects can be instanced from templates (i.e. :ref:`ObjectAttributes`) into the scene by template id with :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_id` or by template string key with :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_handle`.
+These functions return a reference to the added object instance. In the case of errors in construction, an invalid reference is returned.
 
 By default, a new :ref:`SceneNode` will be created when an object is instanced. However, the object can be attached to an existing :ref:`SceneNode` (e.g. that of the :ref:`Agent`) if provided. This is demonstrated in `Embodied Agents`_.
 
-Object instances can be removed by id with :ref:`Simulator.remove_object`. Optionally, the object's :ref:`SceneNode` can be left behind in the :ref:`SceneGraph` when it is removed (e.g. to prevent deletion of an embodied :ref:`Agent`'s :ref:`SceneNode`).
+Object instances can be removed by id with :ref:`habitat_sim.physics.RigidObjectManager.remove_object_by_ID` or by handle with :ref:`habitat_sim.physics.RigidObjectManager.remove_object_by_handle'.
+Optionally, the object's :ref:`SceneNode` can be left behind in the :ref:`SceneGraph` when it is removed (e.g. to prevent deletion of an embodied :ref:`Agent`'s :ref:`SceneNode`).
 
-:ref:`Simulator.get_existing_object_ids` will return a list of unique object ids for all objects instanced in the scene.
+:ref:`habitat_sim.physics.RigidObjectManager.get_object_handles` will return a list of the string handles for all the existing objects in the scene.
 
 MotionType
 **********
@@ -198,14 +199,14 @@ Objects can be configured to fill different roles in a simulated scene by assign
 
   Dynamic object states are driven by simulation. These objects are affected by scene forces such as gravity, collision impulses, and programmatically applied forces and torques.
 
-  Constant forces and torques can be applied to these objects with :ref:`Simulator.apply_force` and :ref:`Simulator.apply_torque`.
+  Constant forces and torques can be applied to these objects with :ref:`habitat_sim.physics.ManagedRigidObject.apply_force` and :ref:`Simulator.apply_torque`.
   These are cleared after each call to :ref:`Simulator.step_physics`.
 
-  Instantanious initial velocities can also be set for these objects with :ref:`Simulator.set_linear_velocity` and :ref:`Simulator.set_angular_velocity`.
+  Instantanious initial velocities can also be set for these objects using their :ref:`habitat_sim.physics.ManagedRigidObject.linear_velocity` and :ref:`habitat_sim.physics.ManagedRigidObject.angular_velocity` properties.
 
 - :ref:`habitat_sim.physics.MotionType.KINEMATIC`
 
-  Kinematic object states are not affected by scene dynamics, but can be set directly via :ref:`Simulator.set_transformation`, :ref:`Simulator.set_rotation`, and :ref:`Simulator.set_translation`.
+  Kinematic object states are not affected by scene dynamics, but can be set directly via the object's :ref:`habitat_sim.physics.ManagedRigidObject.transformation`, :ref:`habitat_sim.physics.ManagedRigidObject.rotation`, and :ref:`habitat_sim.physics.ManagedRigidObject.translation` properties.
 
 - :ref:`habitat_sim.physics.MotionType.STATIC`
 
