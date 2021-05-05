@@ -27,7 +27,7 @@
 namespace esp {
 namespace nav {
 class PathFinder;
-class NavMeshSettings;
+struct NavMeshSettings;
 class ActionSpacePathFinder;
 }  // namespace nav
 namespace scene {
@@ -1030,7 +1030,7 @@ class Simulator {
    */
   void sampleRandomAgentState(agent::AgentState& agentState);
 
-  bool isValidScene(int sceneID) const {
+  bool isValidScene(std::size_t sceneID) const {
     return sceneID >= 0 && sceneID < sceneID_.size();
   }
 
