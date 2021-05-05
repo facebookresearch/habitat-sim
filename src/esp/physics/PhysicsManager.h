@@ -27,7 +27,7 @@
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
-#include "esp/physics/objectManagers/RigidObjectManager.h"
+//#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -1055,6 +1055,15 @@ class PhysicsManager {
     return rigidObjectManager_;
   }
 
+  /**
+   * @brief Check if @p ohysObjectID represents an existing object.
+   * @param ohysObjectID Object ID to check
+   * @return Whether object exists or not.
+   */
+  inline bool isValidObjectID(const int physObjectID) const {
+    return (existingObjects_.count(physObjectID) > 0);
+  }
+
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This
@@ -1063,8 +1072,8 @@ class PhysicsManager {
    * @param physObjectID The object ID to validate.
    */
   virtual void assertIDValidity(const int physObjectID) const {
-    CHECK(existingObjects_.count(physObjectID) > 0);
-  };
+    CHECK(isValidObjectID(physObjectID));
+  }
 
   /** @brief Check if a particular mesh can be used as a collision mesh for a
    * particular physics implemenation. Always True for base @ref PhysicsManager

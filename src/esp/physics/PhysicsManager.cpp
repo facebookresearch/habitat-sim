@@ -3,9 +3,9 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PhysicsManager.h"
-#include "esp/assets/CollisionMeshData.h"
-
 #include <Magnum/Math/Range.h>
+#include "esp/assets/CollisionMeshData.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 
 namespace esp {
 namespace physics {
@@ -163,9 +163,6 @@ void PhysicsManager::removeObject(const int physObjectID,
   assertIDValidity(physObjectID);
   scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
   scene::SceneNode* visualNode = existingObjects_.at(physObjectID)->visualNode_;
-  // remove wrapper
-  rigidObjectManager_->removeObjectByHandle(
-      existingObjects_.at(physObjectID)->getObjectName());
 
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
@@ -174,7 +171,9 @@ void PhysicsManager::removeObject(const int physObjectID,
   } else if (deleteVisualNode && visualNode) {
     delete visualNode;
   }
-}
+  // remove wrapper
+  rigidObjectManager_->removeObjectByID(physObjectID);
+}  // PhysicsManager::removeObject
 
 void PhysicsManager::setObjectMotionType(const int physObjectID,
                                          MotionType mt) {

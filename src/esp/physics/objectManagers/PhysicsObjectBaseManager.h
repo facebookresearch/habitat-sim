@@ -10,7 +10,7 @@
  */
 
 #include "esp/core/managedContainers/ManagedContainer.h"
-//#include "esp/physics/PhysicsManager.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
 
 namespace esp {
@@ -81,11 +81,13 @@ class PhysicsObjectBaseManager
    * @param objectHandle the string key of the managed object to remove.
    */
   void updateObjectHandleLists(
-      CORRADE_UNUSED int objectID,
+      int objectID,
       CORRADE_UNUSED const std::string& objectHandle) override {
     if (std::shared_ptr<esp::physics::PhysicsManager> physMgr =
             this->getPhysicsManager()) {
-      // physMgr->removeObject(objectID);
+      if (physMgr->isValidObjectID(objectID)) {
+        physMgr->removeObject(objectID);
+      }
     }
   }  // updateObjectHandleLists
 
@@ -114,7 +116,8 @@ class PhysicsObjectBaseManager
   std::shared_ptr<esp::physics::PhysicsManager> getPhysicsManager() const {
     auto sp = weakPhysManager_.lock();
     if (!sp) {
-      // TODO: Verify object is removed from manager here?
+      // This warning message is for python-bound refs to the manager that
+      // persist after Simulator/PhysicsManager have been deleted.
       LOG(WARNING) << "This object manager is no longer valid.  Please delete "
                       "any variable references.";
     }

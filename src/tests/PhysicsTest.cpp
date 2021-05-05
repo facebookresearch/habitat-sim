@@ -127,7 +127,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       int num_objects = 7;
       for (int o = 0; o < num_objects; o++) {
         int objectId = physicsManager_->addObject(objectFile, nullptr);
-        objectIds.push_back(o);
+        objectIds.push_back(objectId);
 
         const esp::scene::SceneNode& node =
             physicsManager_->getObjectSceneNode(objectId);
@@ -149,7 +149,9 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
         physicsManager_->stepPhysics(0.1);
       }
       int numActiveObjects = physicsManager_->checkActiveObjects();
-      LOG(INFO) << " Number of active objects: " << numActiveObjects;
+      LOG(INFO) << " Number of active objects: " << numActiveObjects
+                << " | Num Total Objects : "
+                << physicsManager_->getNumRigidObjects();
 
       if (i == 1) {
         // when collision meshes are joined, objects should be stable
@@ -158,6 +160,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       }
 
       for (int o : objectIds) {
+        LOG(INFO) << " ID of obj to remove : " << o;
         physicsManager_->removeObject(o);
       }
     }
