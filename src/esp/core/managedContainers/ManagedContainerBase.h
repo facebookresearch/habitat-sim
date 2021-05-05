@@ -216,8 +216,9 @@ class ManagedContainerBase {
    * @param objectID the ID of the managed object to remove
    * @param objectHandle the string key of the managed object to remove.
    */
-  virtual void updateObjectHandleLists(int objectID,
-                                       const std::string& objectHandle) = 0;
+  virtual void deleteObjectInternalFinalize(
+      int objectID,
+      const std::string& objectHandle) = 0;
 
   /**
    * @brief Used Internally. Checks if managed object handle exists in map; if
@@ -308,9 +309,9 @@ class ManagedContainerBase {
     objectLibKeyByID_.erase(objectID);
     objectLibrary_.erase(objectHandle);
     availableObjectIDs_.emplace_front(objectID);
-    // call instance-specific update to remove managed object handle from any
-    // local lists
-    updateObjectHandleLists(objectID, objectHandle);
+    // call instance-specific delete code to remove managed object handle from
+    // any local lists and perform any other manager-specific delete functions.
+    deleteObjectInternalFinalize(objectID, objectHandle);
   }  // ManagedContainerBase::deleteObjectInternal
 
   /**
