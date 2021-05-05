@@ -85,11 +85,13 @@ class BulletURDFImporter : public URDFImporter {
   ~BulletURDFImporter() override = default;
 
   btCollisionShape* convertURDFToCollisionShape(
-      const struct io::URDF::CollisionShape* collision);
+      const struct io::URDF::CollisionShape* collision,
+      std::vector<std::unique_ptr<btCollisionShape>>& linkChildShapes);
 
   btCompoundShape* convertLinkCollisionShapes(
       int linkIndex,
-      const btTransform& localInertiaFrame);
+      const btTransform& localInertiaFrame,
+      std::vector<std::unique_ptr<btCollisionShape>>& linkChildShapes);
 
   int getCollisionGroupAndMask(int linkIndex,
                                int& colGroup,
@@ -111,7 +113,9 @@ class BulletURDFImporter : public URDFImporter {
       const Magnum::Matrix4& parentTransformInWorldSpace,
       btMultiBodyDynamicsWorld* world1,
       int flags,
-      std::map<int, std::unique_ptr<btCollisionShape>>& linkCollisionShapes);
+      std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
+      std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
+          linkChildShapes);
 };
 
 void processContactParameters(const io::URDF::LinkContactInfo& contactInfo,

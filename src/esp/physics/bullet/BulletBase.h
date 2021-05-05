@@ -124,6 +124,8 @@ class BulletBase {
    * MeshTransformNode tree to the current node.
    * @param meshGroup Access structure for collision mesh data.
    * @param node The current @ref MeshTransformNode in the recursion.
+   * @param bObjectShape The compound shape parent for all generated convexes
+   * @param bObjectConvexShapes Datastructure to cache generated convex shapes
    */
   void constructConvexShapesFromMeshes(
       const Magnum::Matrix4& transformFromParentToWorld,

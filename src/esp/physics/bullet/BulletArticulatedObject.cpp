@@ -58,19 +58,6 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   collisionObjToObjIds_->erase(baseCollider);
   delete baseCollider;
 
-  // delete children of compound collisionShapes
-  std::map<int, std::unique_ptr<btCollisionShape>>::iterator csIter;
-  for (csIter = linkCollisionShapes_.begin();
-       csIter != linkCollisionShapes_.end(); csIter++) {
-    auto compoundShape = dynamic_cast<btCompoundShape*>(csIter->second.get());
-    if (compoundShape) {
-      for (int i = 0; i < compoundShape->getNumChildShapes(); ++i) {
-        auto childShape = compoundShape->getChildShape(i);
-        compoundShape->removeChildShape(childShape);
-        delete childShape;
-      }
-    }
-  }
   // remove motors from the world
   std::map<int, std::unique_ptr<btMultiBodyJointMotor>>::iterator jmIter;
   for (jmIter = articulatedJointMotors.begin();
@@ -113,7 +100,7 @@ bool BulletArticulatedObject::initializeFromURDF(
   // NOTE: recursive path only
   u2b.ConvertURDF2BulletInternal(cache, urdfLinkIndex,
                                  rootTransformInWorldSpace, bWorld_.get(),
-                                 flags, linkCollisionShapes_);
+                                 flags, linkCompoundShapes_, linkChildShapes_);
 
   if (cache.m_bulletMultiBody) {
     btMultiBody* mb = cache.m_bulletMultiBody;
