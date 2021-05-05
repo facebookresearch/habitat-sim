@@ -14,6 +14,9 @@
 namespace py = pybind11;
 using py::literals::operator""_a;
 
+namespace PhysWraps = esp::physics;
+using PhysWraps::ManagedRigidObject;
+
 namespace esp {
 namespace physics {
 
@@ -72,7 +75,7 @@ void declareRigidBaseWrapper(py::module& m,
               .c_str())
       .def_property(
           "rotation", &RigidBaseWrapper::getRotation,
-          &RigidBaseWrapper::getRotation,
+          &RigidBaseWrapper::setRotation,
           ("Get or set the rotation quaternion of this " + objType +
            "'s root SceneNode. If modified, sim state will be updated.")
               .c_str())
