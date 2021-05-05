@@ -181,7 +181,6 @@ if __name__ == "__main__":
         )
 
     # [/basics]
-
     rigid_obj_mgr.remove_all_objects()
     # %%
     # [dynamic_control]
@@ -207,6 +206,11 @@ if __name__ == "__main__":
     boxes = []
     for b in range(len(box_positions)):
         boxes.append(rigid_obj_mgr.add_object_by_handle(cheezit_template_handle))
+        print(
+            "Cheezit Box {} has ID {} amd handle {}".format(
+                b, boxes[b].ID, boxes[b].handle
+            )
+        )
         boxes[b].translation = box_positions[b]
         boxes[b].rotation = box_orientation
 
@@ -218,6 +222,7 @@ if __name__ == "__main__":
     # throw a sphere at the boxes from the agent position
     sphere_template = obj_templates_mgr.get_template_by_ID(sphere_template_id)
     sphere_template.scale = np.array([0.5, 0.5, 0.5])
+
     obj_templates_mgr.register_template(sphere_template)
 
     # create sphere
@@ -248,9 +253,13 @@ if __name__ == "__main__":
             output_path + "dynamic_control",
             open_vid=show_video,
         )
-
+    print("Cheezit right before remove objects")
+    handle_list = rigid_obj_mgr.get_object_handles()
+    for s in handle_list:
+        print("Handle : {}".format(s))
     # [/dynamic_control]
     rigid_obj_mgr.remove_all_objects()
+    print("Removed all objects cheezit and sphere")
     # %%
     # [kinematic_interactions]
 
@@ -292,8 +301,9 @@ if __name__ == "__main__":
     clamp_template_handle = obj_templates_mgr.get_template_handles(
         "data/objects/largeclamp"
     )[0]
-
+    print("Build clamp w/ handle : {}".format(clamp_template_handle))
     clamp_obj = rigid_obj_mgr.add_object_by_handle(clamp_template_handle)
+    print("Clamp built named : {}".format(clamp_obj.handle))
     clamp_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
     clamp_obj.translation = np.array([0.8, 0, 0.5])
 
@@ -370,6 +380,7 @@ if __name__ == "__main__":
     rigid_obj_mgr.remove_all_objects()
     # %%
     # [embodied_agent]
+    print("374 : Removed all objects")
 
     # load the lobot_merged asset
     locobot_template_id = obj_templates_mgr.load_configs(
@@ -445,11 +456,12 @@ if __name__ == "__main__":
     locobot_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
-
+    print("sim agent 0 : {}".format(sim.agents[0].scene_node))
     # add robot object to the scene with the agent/camera SceneNode attached
     locobot = rigid_obj_mgr.add_object_by_id(
         locobot_template_id, sim.agents[0].scene_node
     )
+    print("locobot made w/id {}".format(locobot.ID))
     initial_rotation = locobot.rotation
 
     # set the agent's body to kinematic since we will be updating position manually

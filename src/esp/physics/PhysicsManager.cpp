@@ -210,7 +210,7 @@ void PhysicsManager::removeObject(const int physObjectID,
   assertIDValidity(physObjectID);
   scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
   scene::SceneNode* visualNode = existingObjects_.at(physObjectID)->visualNode_;
-
+  std::string objName = existingObjects_.at(physObjectID)->getObjectName();
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
   if (deleteObjectNode) {
@@ -218,8 +218,10 @@ void PhysicsManager::removeObject(const int physObjectID,
   } else if (deleteVisualNode && visualNode) {
     delete visualNode;
   }
-  // remove wrapper
-  rigidObjectManager_->removeObjectByID(physObjectID);
+  // remove wrapper if one is present
+  if (rigidObjectManager_->getObjectLibHasHandle(objName)) {
+    rigidObjectManager_->removeObjectByID(physObjectID);
+  }
 }  // PhysicsManager::removeObject
 
 void PhysicsManager::setObjectMotionType(const int physObjectID,
