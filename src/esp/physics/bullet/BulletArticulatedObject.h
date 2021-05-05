@@ -141,7 +141,12 @@ class BulletArticulatedObject : public ArticulatedObject {
   bool supportsJointMotor(int linkIx);
 
   // TODO: should be stored in the link
-  std::map<int, std::unique_ptr<btCollisionShape>> linkCollisionShapes_;
+  // compound parent collision shapes for the links
+  std::map<int, std::unique_ptr<btCompoundShape>> linkCompoundShapes_;
+
+  // child mesh convex and primitive shapes for the link compound shapes
+  std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>
+      linkChildShapes_;
 
   // used to update raycast objectId checks (maps to link ids)
   std::shared_ptr<std::map<const btCollisionObject*, int>>
