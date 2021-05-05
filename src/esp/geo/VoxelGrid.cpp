@@ -109,7 +109,7 @@ VoxelGrid::getExistingGrids() {
   for (it = grids_.begin(); it != grids_.end(); it++) {
     std::string typeName;
     VoxelGridType type = it->second.type;
-    existingGrids.push_back(std::make_pair(it->first, type));
+    existingGrids.emplace_back(it->first, type);
   }
   return existingGrids;
 }
