@@ -258,16 +258,16 @@ if __name__ == "__main__":
         "data/objects/chefcan"
     )[0]
     chefcan_obj = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
-    chefcan_obj.translation(np.array([2.4, -0.64, 0]))
+    chefcan_obj.translation = np.array([2.4, -0.64, 0])
     # set object to kinematic
-    chefcan_obj.motion_type(habitat_sim.physics.MotionType.KINEMATIC)
+    chefcan_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
     # drop some dynamic objects
-    chefcan_obj_2 = sim.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj_2 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
     chefcan_obj_2.translation = np.array([2.4, -0.64, 0.28])
-    chefcan_obj_3 = sim.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj_3 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
     chefcan_obj_3.translation = np.array([2.4, -0.64, -0.28])
-    chefcan_obj_4 = sim.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj_4 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
     chefcan_obj_4.translation = np.array([2.4, -0.3, 0])
 
     # simulate
@@ -375,12 +375,16 @@ if __name__ == "__main__":
     locobot_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
+    print("Locobot template loaded")
 
     # add robot object to the scene with the agent/camera SceneNode attached
-    id_1 = sim.add_object(locobot_template_id, sim.agents[0].scene_node)
-    sim.set_translation(np.array([1.75, -1.02, 0.4]), id_1)
+    locobot = rigid_obj_mgr.add_object_by_id(
+        locobot_template_id, sim.agents[0].scene_node
+    )
+    locobot.translation = np.array([1.75, -1.02, 0.4])
+    print("Locobot loaded and moved")
 
-    vel_control = sim.get_object_velocity_control(id_1)
+    vel_control = locobot.velocity_control
     vel_control.linear_velocity = np.array([0, 0, -1.0])
     vel_control.angular_velocity = np.array([0.0, 2.0, 0])
 
@@ -418,10 +422,10 @@ if __name__ == "__main__":
 
     # simulate settling
     observations += simulate(sim, dt=3.0, get_frames=make_video)
-
+    print("locobot {} being removed".format(locobot.ID))
     # remove the agent's body while preserving the SceneNode
-    sim.remove_object(id_1, False)
-
+    sim.remove_object(locobot.ID, False)
+    print("locobot removed")
     # video rendering with embedded 1st person view
     if make_video:
         vut.make_video(
@@ -480,7 +484,7 @@ if __name__ == "__main__":
         dt = 6.0
         time_step = 1.0 / 60.0
         while sim.get_world_time() < start_time + dt:
-            previous_rigid_state = sim.get_rigid_state(id_1)
+            previous_rigid_state = locobot.rigid_state
 
             # manually integrate the rigid state
             target_rigid_state = vel_control.integrate_transform(
