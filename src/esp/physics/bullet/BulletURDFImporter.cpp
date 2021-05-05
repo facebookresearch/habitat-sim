@@ -51,6 +51,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       auto capsuleShape = std::make_unique<btCapsuleShapeZ>(radius, height);
       shape = capsuleShape.get();
       shape->setMargin(gUrdfDefaultCollisionMargin);
+      linkChildShapes.emplace_back(std::move(capsuleShape));
       break;
     }
 
@@ -63,7 +64,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       btVector3 halfExtents(cylRadius, cylRadius, cylHalfLength);
       auto cylZShape = std::make_unique<btCylinderShapeZ>(halfExtents);
       shape = cylZShape.get();
-
+      linkChildShapes.emplace_back(std::move(cylZShape));
       break;
     }
     case io::URDF::GEOM_BOX: {
@@ -78,6 +79,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       */
       shape = boxShape.get();
       shape->setMargin(gUrdfDefaultCollisionMargin);
+      linkChildShapes.emplace_back(std::move(boxShape));
       break;
     }
     case io::URDF::GEOM_SPHERE: {
@@ -85,6 +87,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       auto sphereShape = std::make_unique<btSphereShape>(radius);
       shape = sphereShape.get();
       shape->setMargin(gUrdfDefaultCollisionMargin);
+      linkChildShapes.emplace_back(std::move(sphereShape));
       break;
     }
     case io::URDF::GEOM_MESH: {
@@ -108,6 +111,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
         convexShape->recalcLocalAabb();
         shape = convexShape.get();
         shape->setMargin(gUrdfDefaultCollisionMargin);
+        linkChildShapes.emplace_back(std::move(convexShape));
       } else {
         Mn::Debug{}
             << "BulletURDFImporter::convertURDFToCollisionShape : E - could "
