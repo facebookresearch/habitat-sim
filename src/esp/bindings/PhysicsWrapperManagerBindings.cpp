@@ -172,18 +172,20 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
   py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,
              std::shared_ptr<RigidObjectManager>>(m, "RigidObjectManager")
 
-      .def("add_object_by_id", &RigidObjectManager::addObjectByID,
-           "object_lib_id"_a, "attachment_node"_a = nullptr,
-           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
-           R"(Instance an object into the scene via a template referenced by
-          library id. Optionally attach the object to an existing SceneNode
-          and assign its initial LightSetup key.)")
-      .def("add_object_by_handle", &RigidObjectManager::addObjectByHandle,
-           "object_lib_handle"_a, "attachment_node"_a = nullptr,
-           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
-           R"(Instance an object into the scene via a template referenced by
-          its handle. Optionally attach the object to an existing SceneNode
-          and assign its initial LightSetup key.)");
+      .def(
+          "add_object_by_id", &RigidObjectManager::addObjectByID,
+          "object_lib_id"_a, "attachment_node"_a = nullptr,
+          "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
+          R"(Instance an object into the scene via a template referenced by library id.
+           Optionally attach the object to an existing SceneNode and assign its initial
+           LightSetup key. Returns a reference to the created object.)")
+      .def(
+          "add_object_by_handle", &RigidObjectManager::addObjectByHandle,
+          "object_lib_handle"_a, "attachment_node"_a = nullptr,
+          "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
+          R"(Instance an object into the scene via a template referenced by its handle.
+           Optionally attach the object to an existing SceneNode and assign its initial
+           LightSetup key. Returns a reference to the created object.)");
 }  // initPhysicsWrapperManagerBindings
 
 }  // namespace physics

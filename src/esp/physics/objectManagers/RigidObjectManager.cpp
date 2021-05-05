@@ -6,23 +6,28 @@
 namespace esp {
 namespace physics {
 
-int RigidObjectManager::addObjectByHandle(const std::string& attributesHandle,
-                                          scene::SceneNode* attachmentNode,
-                                          const std::string& lightSetup) {
+std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByHandle(
+    const std::string& attributesHandle,
+    scene::SceneNode* attachmentNode,
+    const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
-    return physMgr->addObject(attributesHandle, attachmentNode, lightSetup);
+    int newObjID =
+        physMgr->addObject(attributesHandle, attachmentNode, lightSetup);
+    return this->getObjectCopyByID(newObjID);
   } else {
-    return ID_UNDEFINED;
+    return nullptr;
   }
 }  // RigidObjectManager::addObject */
 
-int RigidObjectManager::addObjectByID(const int attributesID,
-                                      scene::SceneNode* attachmentNode,
-                                      const std::string& lightSetup) {
+std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByID(
+    const int attributesID,
+    scene::SceneNode* attachmentNode,
+    const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
-    return physMgr->addObject(attributesID, attachmentNode, lightSetup);
+    int newObjID = physMgr->addObject(attributesID, attachmentNode, lightSetup);
+    return this->getObjectCopyByID(newObjID);
   } else {
-    return ID_UNDEFINED;
+    return nullptr;
   }
 }  // RigidObjectManager::addObject
 
