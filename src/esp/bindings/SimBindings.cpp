@@ -14,7 +14,6 @@
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/ReplayManager.h"
-#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
 #include "esp/sim/SimulatorConfiguration.h"
