@@ -26,6 +26,14 @@ class ManagedRigidObject
     }
   }  // getInitializationAttributes()
 
+  VelocityControl::ptr getVelocityControl() {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getVelocityControl();
+    } else {
+      return nullptr;
+    }
+  }  // getVelocityControl()
+
  public:
   ESP_SMART_POINTERS(ManagedRigidObject)
 };

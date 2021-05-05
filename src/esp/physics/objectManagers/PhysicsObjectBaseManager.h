@@ -83,8 +83,7 @@ class PhysicsObjectBaseManager
   void updateObjectHandleLists(
       int objectID,
       CORRADE_UNUSED const std::string& objectHandle) override {
-    if (std::shared_ptr<esp::physics::PhysicsManager> physMgr =
-            this->getPhysicsManager()) {
+    if (auto physMgr = this->getPhysicsManager()) {
       if (physMgr->isValidObjectID(objectID)) {
         physMgr->removeObject(objectID);
       }

@@ -1213,6 +1213,7 @@ class PhysicsManager {
    * simulated with @ref stepPhysics up to this point. */
   double worldTime_ = 0.0;
 
+ public:
   ESP_SMART_POINTERS(PhysicsManager)
 };
 
