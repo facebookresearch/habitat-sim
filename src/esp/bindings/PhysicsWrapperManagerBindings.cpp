@@ -3,16 +3,18 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "esp/bindings/bindings.h"
+
 #include "esp/physics/objectManagers/PhysicsObjectBaseManager.h"
-#include "esp/physics/objectManagers/RigidBaseManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
+#include "esp/physics/objectWrappers/ManagedRigidObject.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace PhysWraps = esp::physics;
 using PhysWraps::ManagedRigidObject;
-using PhysWraps::RigidBaseManager;
+using PhysWraps::PhysicsObjectBaseManager;
+using PhysWraps::RigidObjectManager;
 
 namespace esp {
 namespace physics {
@@ -152,12 +154,11 @@ void declareRigidBaseWrapperManager(py::module& m,
                                     CORRADE_UNUSED const std::string& objType,
                                     const std::string& classStrPrefix) {
   using MgrClass = RigidBaseManager<T>;
-  // Most, but not all, of these methods are from ManagedContainer class
-  // template.  However, we use PHysicsObjectBaseManager as the base class
-  // because we wish to have appropriate (wrapper-related) access, argument
-  // nomenclature and documentation.
-  std::string pyclass_name = classStrPrefix + std::string("PhysWrapperManager");
-  py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str());
+  std::string pyclass_name =
+      classStrPrefix + std::string("RigidBaseWrapperManager");
+
+  py::class_<MgrClass, PhysicsObjectBaseManager<T>, std::shared_ptr<MgrClass>>(
+      m, pyclass_name.c_str());
 
 }  //
 
@@ -169,7 +170,20 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
                                                      "RigidBaseManager");
   // RigidObject wrapper manager
   py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,
-             std::shared_ptr<RigidObjectManager>>(m, "RigidObjectManager");
+             std::shared_ptr<RigidObjectManager>>(m, "RigidObjectManager")
+
+      .def("add_object_by_id", &RigidObjectManager::addObjectByID,
+           "object_lib_id"_a, "attachment_node"_a = nullptr,
+           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
+           R"(Instance an object into the scene via a template referenced by
+          library id. Optionally attach the object to an existing SceneNode
+          and assign its initial LightSetup key.)")
+      .def("add_object_by_handle", &RigidObjectManager::addObjectByHandle,
+           "object_lib_handle"_a, "attachment_node"_a = nullptr,
+           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
+           R"(Instance an object into the scene via a template referenced by
+          its handle. Optionally attach the object to an existing SceneNode
+          and assign its initial LightSetup key.)");
 }  // initPhysicsWrapperManagerBindings
 
 }  // namespace physics

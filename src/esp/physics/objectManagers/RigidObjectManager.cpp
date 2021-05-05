@@ -6,9 +6,9 @@
 namespace esp {
 namespace physics {
 
-int RigidObjectManager::addObject(const std::string& attributesHandle,
-                                  scene::SceneNode* attachmentNode,
-                                  const std::string& lightSetup) {
+int RigidObjectManager::addObjectByHandle(const std::string& attributesHandle,
+                                          scene::SceneNode* attachmentNode,
+                                          const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
     return physMgr->addObject(attributesHandle, attachmentNode, lightSetup);
   } else {
@@ -16,9 +16,9 @@ int RigidObjectManager::addObject(const std::string& attributesHandle,
   }
 }  // RigidObjectManager::addObject */
 
-int RigidObjectManager::addObject(const int attributesID,
-                                  scene::SceneNode* attachmentNode,
-                                  const std::string& lightSetup) {
+int RigidObjectManager::addObjectByID(const int attributesID,
+                                      scene::SceneNode* attachmentNode,
+                                      const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
     return physMgr->addObject(attributesID, attachmentNode, lightSetup);
   } else {

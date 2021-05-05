@@ -31,9 +31,9 @@ class RigidObjectManager
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const std::string& attributesHandle,
-                scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+  int addObjectByHandle(const std::string& attributesHandle,
+                        scene::SceneNode* attachmentNode = nullptr,
+                        const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
@@ -48,9 +48,9 @@ class RigidObjectManager
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const int attributesID,
-                scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+  int addObjectByID(const int attributesID,
+                    scene::SceneNode* attachmentNode = nullptr,
+                    const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
  protected:
   /**
