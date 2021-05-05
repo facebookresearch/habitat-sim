@@ -48,11 +48,6 @@ output_path = os.path.join(
 )
 
 
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
-
-
 def place_agent(sim):
     # place our agent in the scene
     agent_state = habitat_sim.AgentState()
@@ -189,7 +184,7 @@ if __name__ == "__main__":
 
     # [/basics]
 
-    remove_all_objects(sim)
+    rigid_obj_mgr.remove_all_objects()
     # %%
     # [dynamic_control]
 
@@ -227,9 +222,10 @@ if __name__ == "__main__":
     obj_templates_mgr.register_template(sphere_template)
 
     sphere_id = sim.add_object(sphere_template_id)
-    sim.set_translation(
-        sim.agents[0].get_state().position + np.array([0, 1.0, 0]), sphere_id
-    )
+    # get a ref to the spere
+    sphere_obj = rigid_obj_mgr.get_object_by_ID(sphere_id)
+
+    sphere_obj.translation(sim.agents[0].get_state().position + np.array([0, 1.0, 0]))
     # get the vector from the sphere to a box
     target_direction = sim.get_translation(box_ids[0]) - sim.get_translation(sphere_id)
     # apply an initial velocity for one step
@@ -256,7 +252,7 @@ if __name__ == "__main__":
         )
 
     # [/dynamic_control]
-    remove_all_objects(sim)
+    rigid_obj_mgr.remove_all_objects()
     # %%
     # [kinematic_interactions]
 
@@ -264,9 +260,11 @@ if __name__ == "__main__":
         "data/objects/chefcan"
     )[0]
     id_1 = sim.add_object_by_handle(chefcan_template_handle)
-    sim.set_translation(np.array([2.4, -0.64, 0]), id_1)
-    # set one object to kinematic
-    sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, id_1)
+    # get a ref to the object
+    obj_1 = rigid_obj_mgr.get_object_by_ID(id_1)
+    obj_1.translation(np.array([2.4, -0.64, 0]))
+    # set object to kinematic
+    obj_1.motion_type(habitat_sim.physics.MotionType.KINEMATIC)
 
     # drop some dynamic objects
     id_2 = sim.add_object_by_handle(chefcan_template_handle)
@@ -290,7 +288,7 @@ if __name__ == "__main__":
 
     # [/kinematic_interactions]
 
-    remove_all_objects(sim)
+    rigid_obj_mgr.remove_all_objects()
     # %%
     # [kinematic_update]
     observations = []
@@ -373,7 +371,7 @@ if __name__ == "__main__":
         )
 
     # [/local_velocity_control]
-    remove_all_objects(sim)
+    rigid_obj_mgr.remove_all_objects()
     # %%
     # [embodied_agent]
 
