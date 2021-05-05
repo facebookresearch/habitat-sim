@@ -163,12 +163,10 @@ if __name__ == "__main__":
         str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
 
-    # add an object to the scene
-    id_1 = sim.add_object(sphere_template_id)
-    # get a ref to the object
-    obj_1 = rigid_obj_mgr.get_object_by_ID(id_1)
-    # move object
-    obj_1.translation(np.array([2.50, 0, 0.2]), id_1)
+    # add a sphere to the scene, returns the object
+    sphere_obj = rigid_obj_mgr.add_object_by_id(sphere_template_id)
+    # move sphere
+    sphere_obj.translation = np.array([2.50, 0, 0.2])
 
     # simulate
     observations = simulate(sim, dt=1.5, get_frames=make_video)
@@ -194,6 +192,7 @@ if __name__ == "__main__":
     cheezit_template_handle = obj_templates_mgr.get_template_handles(
         "data/objects/cheezit"
     )[0]
+    # build multiple object initial positions
     box_positions = [
         np.array([2.39, -0.37, 0]),
         np.array([2.39, -0.64, 0]),
@@ -205,14 +204,14 @@ if __name__ == "__main__":
         mn.Rad(math.pi / 2.0), np.array([-1.0, 0, 0])
     )
     # instance and place the boxes
-    box_ids = []
-    for b in range(5):
-        box_ids.append(sim.add_object_by_handle(cheezit_template_handle))
-        sim.set_translation(box_positions[b], box_ids[b])
-        sim.set_rotation(box_orientation, box_ids[b])
+    boxes = []
+    for b in range(len(box_positions)):
+        boxes.append(rigid_obj_mgr.add_object_by_handle(cheezit_template_handle))
+        boxes[b].translation = box_positions[b]
+        boxes[b].rotation = box_orientation
 
     # get the object's initialization attributes (all boxes initialized with same mass)
-    object_init_template = sim.get_object_initialization_template(box_ids[0])
+    object_init_template = boxes[0].creation_attributes
     # anti-gravity force f=m(-g)
     anti_grav_force = -1.0 * sim.get_gravity() * object_init_template.mass
 
@@ -221,24 +220,23 @@ if __name__ == "__main__":
     sphere_template.scale = np.array([0.5, 0.5, 0.5])
     obj_templates_mgr.register_template(sphere_template)
 
-    sphere_id = sim.add_object(sphere_template_id)
-    # get a ref to the spere
-    sphere_obj = rigid_obj_mgr.get_object_by_ID(sphere_id)
+    # create sphere
+    sphere_obj = rigid_obj_mgr.add_object_by_id(sphere_template_id)
 
-    sphere_obj.translation(sim.agents[0].get_state().position + np.array([0, 1.0, 0]))
+    sphere_obj.translation = sim.agents[0].get_state().position + np.array([0, 1.0, 0])
     # get the vector from the sphere to a box
-    target_direction = sim.get_translation(box_ids[0]) - sim.get_translation(sphere_id)
+    target_direction = boxes[0].translation - sphere_obj.translation
     # apply an initial velocity for one step
-    sim.set_linear_velocity(target_direction * 5, sphere_id)
-    sim.set_angular_velocity(np.array([0, -1.0, 0]), sphere_id)
+    sphere_obj.linear_velocity = target_direction * 5
+    sphere_obj.angular_velocity = np.array([0, -1.0, 0])
 
     start_time = sim.get_world_time()
     dt = 3.0
     while sim.get_world_time() < start_time + dt:
         # set forces/torques before stepping the world
-        for box_id in box_ids:
-            sim.apply_force(anti_grav_force, np.array([0, 0.0, 0]), box_id)
-            sim.apply_torque(np.array([0, 0.01, 0]), box_id)
+        for box in boxes:
+            box.apply_force(anti_grav_force, np.array([0, 0.0, 0]))
+            box.apply_torque(np.array([0, 0.01, 0]))
         sim.step_physics(1.0 / 60.0)
         observations.append(sim.get_sensor_observations())
 
@@ -259,20 +257,18 @@ if __name__ == "__main__":
     chefcan_template_handle = obj_templates_mgr.get_template_handles(
         "data/objects/chefcan"
     )[0]
-    id_1 = sim.add_object_by_handle(chefcan_template_handle)
-    # get a ref to the object
-    obj_1 = rigid_obj_mgr.get_object_by_ID(id_1)
-    obj_1.translation(np.array([2.4, -0.64, 0]))
+    chefcan_obj = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj.translation(np.array([2.4, -0.64, 0]))
     # set object to kinematic
-    obj_1.motion_type(habitat_sim.physics.MotionType.KINEMATIC)
+    chefcan_obj.motion_type(habitat_sim.physics.MotionType.KINEMATIC)
 
     # drop some dynamic objects
-    id_2 = sim.add_object_by_handle(chefcan_template_handle)
-    sim.set_translation(np.array([2.4, -0.64, 0.28]), id_2)
-    id_3 = sim.add_object_by_handle(chefcan_template_handle)
-    sim.set_translation(np.array([2.4, -0.64, -0.28]), id_3)
-    id_4 = sim.add_object_by_handle(chefcan_template_handle)
-    sim.set_translation(np.array([2.4, -0.3, 0]), id_4)
+    chefcan_obj_2 = sim.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj_2.translation = np.array([2.4, -0.64, 0.28])
+    chefcan_obj_3 = sim.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj_3.translation = np.array([2.4, -0.64, -0.28])
+    chefcan_obj_4 = sim.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj_4.translation = np.array([2.4, -0.3, 0])
 
     # simulate
     observations = simulate(sim, dt=1.5, get_frames=True)
@@ -296,19 +292,19 @@ if __name__ == "__main__":
     clamp_template_handle = obj_templates_mgr.get_template_handles(
         "data/objects/largeclamp"
     )[0]
-    id_1 = sim.add_object_by_handle(clamp_template_handle)
-    sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, id_1)
-    sim.set_translation(np.array([0.8, 0, 0.5]), id_1)
+
+    clamp_obj = rigid_obj_mgr.add_object_by_handle(clamp_template_handle)
+    clamp_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+    clamp_obj.translation = np.array([0.8, 0, 0.5])
 
     start_time = sim.get_world_time()
     dt = 1.0
     while sim.get_world_time() < start_time + dt:
         # manually control the object's kinematic state
-        sim.set_translation(sim.get_translation(id_1) + np.array([0, 0, 0.01]), id_1)
-        sim.set_rotation(
+        clamp_obj.translation = clamp_obj.translation + np.array([0, 0, 0.01])
+        clamp_obj.rotation = (
             mn.Quaternion.rotation(mn.Rad(0.05), np.array([-1.0, 0, 0]))
-            * sim.get_rotation(id_1),
-            id_1,
+            * clamp_obj.rotation
         )
         sim.step_physics(1.0 / 60.0)
         observations.append(sim.get_sensor_observations())
@@ -327,7 +323,7 @@ if __name__ == "__main__":
     # [velocity_control]
 
     # get object VelocityControl structure and setup control
-    vel_control = sim.get_object_velocity_control(id_1)
+    vel_control = clamp_obj.velocity_control
     vel_control.linear_velocity = np.array([0, 0, -1.0])
     vel_control.angular_velocity = np.array([4.0, 0, 0])
     vel_control.controlling_lin_vel = True
@@ -447,11 +443,13 @@ if __name__ == "__main__":
     )[0]
 
     # add robot object to the scene with the agent/camera SceneNode attached
-    id_1 = sim.add_object(locobot_template_id, sim.agents[0].scene_node)
-    initial_rotation = sim.get_rotation(id_1)
+    locobot = rigid_obj_mgr.add_object_by_id(
+        locobot_template_id, sim.agents[0].scene_node
+    )
+    initial_rotation = locobot.rotation
 
     # set the agent's body to kinematic since we will be updating position manually
-    sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, id_1)
+    locobot.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
     # create and configure a new VelocityControl structure
     # Note: this is NOT the object's VelocityControl, so it will not be consumed automatically in sim.step_physics
@@ -466,8 +464,8 @@ if __name__ == "__main__":
     for iteration in range(2):
         # reset observations and robot state
         observations = []
-        sim.set_translation(np.array([1.75, -1.02, 0.4]), id_1)
-        sim.set_rotation(initial_rotation, id_1)
+        locobot.translation = np.array([1.75, -1.02, 0.4])
+        locobot.rotation = initial_rotation
         vel_control.angular_velocity = np.array([0.0, 0, 0])
 
         video_prefix = "robot_control_sliding"
@@ -493,8 +491,8 @@ if __name__ == "__main__":
             end_pos = sim.step_filter(
                 previous_rigid_state.translation, target_rigid_state.translation
             )
-            sim.set_translation(end_pos, id_1)
-            sim.set_rotation(target_rigid_state.rotation, id_1)
+            locobot.translation = end_pos
+            locobot.rotation = target_rigid_state.rotation
 
             # Check if a collision occured
             dist_moved_before_filter = (
