@@ -80,7 +80,7 @@ class PhysicsObjectBaseManager
    * @param objectID the ID of the managed object to remove
    * @param objectHandle the string key of the managed object to remove.
    */
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       int objectID,
       CORRADE_UNUSED const std::string& objectHandle) override {
     if (auto physMgr = this->getPhysicsManager()) {
