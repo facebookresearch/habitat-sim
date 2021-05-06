@@ -1061,8 +1061,8 @@ class Simulator {
    */
   void sampleRandomAgentState(agent::AgentState& agentState);
 
-  bool isValidScene(std::size_t sceneID) const {
-    return sceneID >= 0 && sceneID < sceneID_.size();
+  bool isValidScene(int sceneID) const {
+    return sceneID >= 0 && (std::size_t)sceneID < sceneID_.size();
   }
 
   bool sceneHasPhysics(int sceneID) const {
