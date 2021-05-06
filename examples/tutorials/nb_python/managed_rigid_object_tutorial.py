@@ -24,7 +24,6 @@
 # %%
 # %cd /content/habitat-sim
 ## [setup]
-import math
 import os
 import random
 import sys
@@ -199,9 +198,7 @@ if __name__ == "__main__":
         np.array([2.39, -0.64, -0.22]),
         np.array([2.39, -0.64, 0.22]),
     ]
-    box_orientation = mn.Quaternion.rotation(
-        mn.Rad(math.pi / 2.0), np.array([-1.0, 0, 0])
-    )
+    box_orientation = mn.Quaternion.rotation(mn.Deg(90.0), np.array([-1.0, 0, 0]))
     # instance and place the boxes
     boxes = []
     for b in range(len(box_positions)):
@@ -424,6 +421,9 @@ if __name__ == "__main__":
 
     # remove the agent's body while preserving the SceneNode
     rigid_obj_mgr.remove_object_by_ID(locobot.ID, delete_object_node=False)
+
+    # demonstrate that the locobot object does not now exist'
+    print("Locobot is still alive : {}".format(locobot.is_alive))
 
     # video rendering with embedded 1st person view
     if make_video:

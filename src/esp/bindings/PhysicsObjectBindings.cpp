@@ -41,6 +41,10 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           ("System-generated ID for this construct.  Will be unique among " +
            objType + "s.")
               .c_str())
+      .def_property_readonly(
+          "is_alive", &PhysObjWrapper::isAlive,
+          ("Whether this " + objType + " still exists and is still valid.")
+              .c_str())
       .def_property_readonly("template_class", &PhysObjWrapper::getClassKey,
                              ("Class name of this " + objType).c_str());
 }  // declareBasePhysicsObjectWrapper

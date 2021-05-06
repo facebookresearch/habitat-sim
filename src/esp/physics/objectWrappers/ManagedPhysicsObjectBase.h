@@ -87,6 +87,11 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }
 
+  /**
+   * @brief Test whether this wrapper's object still exists.
+   */
+  bool isAlive() { return !weakObjRef_.expired(); }
+
  protected:
   /**
    * @brief This function accesses the underlying shared pointer of this
