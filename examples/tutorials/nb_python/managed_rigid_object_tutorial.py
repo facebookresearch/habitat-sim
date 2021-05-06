@@ -165,7 +165,7 @@ if __name__ == "__main__":
     # add a sphere to the scene, returns the object
     sphere_obj = rigid_obj_mgr.add_object_by_id(sphere_template_id)
     # move sphere
-    sphere_obj.translation = np.array([2.50, 0, 0.2])
+    sphere_obj.translation = [2.50, 0.0, 0.2]
 
     # simulate
     observations = simulate(sim, dt=1.5, get_frames=make_video)
@@ -192,13 +192,13 @@ if __name__ == "__main__":
     )[0]
     # build multiple object initial positions
     box_positions = [
-        np.array([2.39, -0.37, 0]),
-        np.array([2.39, -0.64, 0]),
-        np.array([2.39, -0.91, 0]),
-        np.array([2.39, -0.64, -0.22]),
-        np.array([2.39, -0.64, 0.22]),
+        [2.39, -0.37, 0.0],
+        [2.39, -0.64, 0.0],
+        [2.39, -0.91, 0.0],
+        [2.39, -0.64, -0.22],
+        [2.39, -0.64, 0.22],
     ]
-    box_orientation = mn.Quaternion.rotation(mn.Deg(90.0), np.array([-1.0, 0, 0]))
+    box_orientation = mn.Quaternion.rotation(mn.Deg(90.0), [-1.0, 0.0, 0.0])
     # instance and place the boxes
     boxes = []
     for b in range(len(box_positions)):
@@ -213,27 +213,27 @@ if __name__ == "__main__":
 
     # throw a sphere at the boxes from the agent position
     sphere_template = obj_templates_mgr.get_template_by_ID(sphere_template_id)
-    sphere_template.scale = np.array([0.5, 0.5, 0.5])
+    sphere_template.scale = [0.5, 0.5, 0.5]
 
     obj_templates_mgr.register_template(sphere_template)
 
     # create sphere
     sphere_obj = rigid_obj_mgr.add_object_by_id(sphere_template_id)
 
-    sphere_obj.translation = sim.agents[0].get_state().position + np.array([0, 1.0, 0])
+    sphere_obj.translation = sim.agents[0].get_state().position + [0.0, 1.0, 0.0]
     # get the vector from the sphere to a box
     target_direction = boxes[0].translation - sphere_obj.translation
     # apply an initial velocity for one step
     sphere_obj.linear_velocity = target_direction * 5
-    sphere_obj.angular_velocity = np.array([0, -1.0, 0])
+    sphere_obj.angular_velocity = [0.0, -1.0, 0.0]
 
     start_time = sim.get_world_time()
     dt = 3.0
     while sim.get_world_time() < start_time + dt:
         # set forces/torques before stepping the world
         for box in boxes:
-            box.apply_force(anti_grav_force, np.array([0, 0.0, 0]))
-            box.apply_torque(np.array([0, 0.01, 0]))
+            box.apply_force(anti_grav_force, [0.0, 0.0, 0.0])
+            box.apply_torque([0.0, 0.01, 0.0])
         sim.step_physics(1.0 / 60.0)
         observations.append(sim.get_sensor_observations())
 
@@ -245,9 +245,7 @@ if __name__ == "__main__":
             output_path + "dynamic_control",
             open_vid=show_video,
         )
-    handle_list = rigid_obj_mgr.get_object_handles()
-    for s in handle_list:
-        print("Handle : {}".format(s))
+
     # [/dynamic_control]
     rigid_obj_mgr.remove_all_objects()
     # %%
@@ -257,17 +255,17 @@ if __name__ == "__main__":
         "data/objects/chefcan"
     )[0]
     chefcan_obj = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
-    chefcan_obj.translation = np.array([2.4, -0.64, 0])
+    chefcan_obj.translation = [2.4, -0.64, 0.0]
     # set object to kinematic
     chefcan_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
     # drop some dynamic objects
     chefcan_obj_2 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
-    chefcan_obj_2.translation = np.array([2.4, -0.64, 0.28])
+    chefcan_obj_2.translation = [2.4, -0.64, 0.28]
     chefcan_obj_3 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
-    chefcan_obj_3.translation = np.array([2.4, -0.64, -0.28])
+    chefcan_obj_3.translation = [2.4, -0.64, -0.28]
     chefcan_obj_4 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
-    chefcan_obj_4.translation = np.array([2.4, -0.3, 0])
+    chefcan_obj_4.translation = [2.4, -0.3, 0.0]
 
     # simulate
     observations = simulate(sim, dt=1.5, get_frames=True)
@@ -293,16 +291,15 @@ if __name__ == "__main__":
     )[0]
     clamp_obj = rigid_obj_mgr.add_object_by_handle(clamp_template_handle)
     clamp_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-    clamp_obj.translation = np.array([0.8, 0, 0.5])
+    clamp_obj.translation = [0.8, 0.0, 0.5]
 
     start_time = sim.get_world_time()
     dt = 1.0
     while sim.get_world_time() < start_time + dt:
         # manually control the object's kinematic state
-        clamp_obj.translation = clamp_obj.translation + np.array([0, 0, 0.01])
+        clamp_obj.translation = clamp_obj.translation + [0.0, 0.0, 0.01]
         clamp_obj.rotation = (
-            mn.Quaternion.rotation(mn.Rad(0.05), np.array([-1.0, 0, 0]))
-            * clamp_obj.rotation
+            mn.Quaternion.rotation(mn.Rad(0.05), [-1.0, 0.0, 0.0]) * clamp_obj.rotation
         )
         sim.step_physics(1.0 / 60.0)
         observations.append(sim.get_sensor_observations())
@@ -322,15 +319,15 @@ if __name__ == "__main__":
 
     # get object VelocityControl structure and setup control
     vel_control = clamp_obj.velocity_control
-    vel_control.linear_velocity = np.array([0, 0, -1.0])
-    vel_control.angular_velocity = np.array([4.0, 0, 0])
+    vel_control.linear_velocity = [0.0, 0.0, -1.0]
+    vel_control.angular_velocity = [4.0, 0.0, 0.0]
     vel_control.controlling_lin_vel = True
     vel_control.controlling_ang_vel = True
 
     observations = simulate(sim, dt=1.0, get_frames=True)
 
     # reverse linear direction
-    vel_control.linear_velocity = np.array([0, 0, 1.0])
+    vel_control.linear_velocity = [0.0, 0.0, 1.0]
 
     observations += simulate(sim, dt=1.0, get_frames=True)
 
@@ -347,8 +344,8 @@ if __name__ == "__main__":
     # %%
     # [local_velocity_control]
 
-    vel_control.linear_velocity = np.array([0, 0, 2.3])
-    vel_control.angular_velocity = np.array([-4.3, 0.0, 0])
+    vel_control.linear_velocity = [0.0, 0.0, 2.3]
+    vel_control.angular_velocity = [-4.3, 0.0, 0.0]
     vel_control.lin_vel_is_local = True
     vel_control.ang_vel_is_local = True
 
@@ -378,11 +375,11 @@ if __name__ == "__main__":
     locobot = rigid_obj_mgr.add_object_by_id(
         locobot_template_id, sim.agents[0].scene_node
     )
-    locobot.translation = np.array([1.75, -1.02, 0.4])
+    locobot.translation = [1.75, -1.02, 0.4]
 
     vel_control = locobot.velocity_control
-    vel_control.linear_velocity = np.array([0, 0, -1.0])
-    vel_control.angular_velocity = np.array([0.0, 2.0, 0])
+    vel_control.linear_velocity = [0.0, 0.0, -1.0]
+    vel_control.angular_velocity = [0.0, 2.0, 0.0]
 
     # simulate robot dropping into place
     observations = simulate(sim, dt=1.5, get_frames=make_video)
@@ -396,19 +393,19 @@ if __name__ == "__main__":
     observations += simulate(sim, dt=1.0, get_frames=make_video)
 
     vel_control.controlling_lin_vel = False
-    vel_control.angular_velocity = np.array([0.0, 1.0, 0])
+    vel_control.angular_velocity = [0.0, 1.0, 0.0]
 
     # simulate turn only
     observations += simulate(sim, dt=1.5, get_frames=make_video)
 
-    vel_control.angular_velocity = np.array([0.0, 0.0, 0])
+    vel_control.angular_velocity = [0.0, 0.0, 0.0]
     vel_control.controlling_lin_vel = True
     vel_control.controlling_ang_vel = True
 
     # simulate forward only with damped angular velocity (reset angular velocity to 0 after each step)
     observations += simulate(sim, dt=1.0, get_frames=make_video)
 
-    vel_control.angular_velocity = np.array([0.0, -1.25, 0])
+    vel_control.angular_velocity = [0.0, -1.25, 0.0]
 
     # simulate forward and turn
     observations += simulate(sim, dt=2.0, get_frames=make_video)
@@ -460,15 +457,15 @@ if __name__ == "__main__":
     vel_control.lin_vel_is_local = True
     vel_control.controlling_ang_vel = True
     vel_control.ang_vel_is_local = True
-    vel_control.linear_velocity = np.array([0, 0, -1.0])
+    vel_control.linear_velocity = [0.0, 0.0, -1.0]
 
     # try 2 variations of the control experiment
     for iteration in range(2):
         # reset observations and robot state
         observations = []
-        locobot.translation = np.array([1.75, -1.02, 0.4])
+        locobot.translation = [1.75, -1.02, 0.4]
         locobot.rotation = initial_rotation
-        vel_control.angular_velocity = np.array([0.0, 0, 0])
+        vel_control.angular_velocity = [0.0, 0.0, 0.0]
 
         video_prefix = "robot_control_sliding"
         # turn sliding off for the 2nd pass
@@ -518,9 +515,7 @@ if __name__ == "__main__":
             # randomize angular velocity
             last_velocity_set += time_step
             if last_velocity_set >= 1.0:
-                vel_control.angular_velocity = np.array(
-                    [0, (random.random() - 0.5) * 2.0, 0]
-                )
+                vel_control.angular_velocity = [0.0, (random.random() - 0.5) * 2.0, 0.0]
                 last_velocity_set = 0
 
         # video rendering with embedded 1st person views
