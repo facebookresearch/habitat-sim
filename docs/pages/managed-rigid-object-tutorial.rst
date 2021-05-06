@@ -49,7 +49,7 @@ When the simulation is stepped, it falls under the force of gravity and reacts t
     :start-after: # [basics]
     :end-before: # [/basics]
 
-.. image:: images/rigid-object-tutorial-images/sim_basics.gif
+.. image:: images/managed-rigid-object-tutorial-images/sim_basics.gif
     :width: 20em
 
 Forces and torques can be applied directly to the object using 'apply_force()' and 'apply_torque()'.
@@ -66,7 +66,7 @@ Note that forces and torques are treated as constant within each call to :ref:`S
     :start-after: # [dynamic_control]
     :end-before: # [/dynamic_control]
 
-.. image:: images/rigid-object-tutorial-images/dynamic_control.gif
+.. image:: images/managed-rigid-object-tutorial-images/dynamic_control.gif
     :width: 20em
 
 
@@ -85,7 +85,7 @@ However, it will still act as a collision object for other scene objects as in t
     :start-after: # [kinematic_interactions]
     :end-before: # [/kinematic_interactions]
 
-.. image:: images/rigid-object-tutorial-images/kinematic_interactions.gif
+.. image:: images/managed-rigid-object-tutorial-images/kinematic_interactions.gif
     :width: 20em
 
 
@@ -101,7 +101,7 @@ This is useful for synchronizing the simulation state of objects to a known stat
     :start-after: # [kinematic_update]
     :end-before: # [/kinematic_update]
 
-.. image:: images/rigid-object-tutorial-images/kinematic_update.gif
+.. image:: images/managed-rigid-object-tutorial-images/kinematic_update.gif
     :width: 20em
 
 However, when applying model or algorithmic control it is more convenient to specify a constant linear and angular velocity for the object which will be simulated without manual integration.
@@ -113,7 +113,7 @@ Once paramters are set, control takes effect immediately on the next simulation 
     :start-after: # [velocity_control]
     :end-before: # [/velocity_control]
 
-.. image:: images/rigid-object-tutorial-images/velocity_control.gif
+.. image:: images/managed-rigid-object-tutorial-images/velocity_control.gif
     :width: 20em
 
 Velocities can also be specified in the local space of the object to easily apply velocity control for continuous agent actions.
@@ -123,7 +123,7 @@ Velocities can also be specified in the local space of the object to easily appl
     :start-after: # [local_velocity_control]
     :end-before: # [/local_velocity_control]
 
-.. image:: images/rigid-object-tutorial-images/local_velocity_control.gif
+.. image:: images/managed-rigid-object-tutorial-images/local_velocity_control.gif
     :width: 20em
 
 `Embodied Agents`_
@@ -136,7 +136,7 @@ For this tutorial section, you will need to download the `merged locobot asset`_
 Previous stages of this tutorial have covered adding objects to the world and manipulating them by setting positions, velocity, forces, and torques.
 In all of these examples, the agent has been a passive onlooker observing the scene.
 However, the agent can also be attached to a simulated object for embodiement and control.
-This can be done by passing the :ref:`Agent`'s scene node to the :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_handle` or :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_id' functions.
+This can be done by passing the `Agent`'s scene node to the :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_handle` or :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_id' functions.
 
 In this example, the agent is embodied by a rigid robot asset and the :ref:`habitat_sim.physics.VelocityControl` structure is used to control the robot's actions.
 
@@ -145,7 +145,7 @@ In this example, the agent is embodied by a rigid robot asset and the :ref:`habi
     :start-after: # [embodied_agent]
     :end-before: # [/embodied_agent]
 
-.. image:: images/rigid-object-tutorial-images/robot_control.gif
+.. image:: images/managed-rigid-object-tutorial-images/robot_control.gif
     :width: 20em
 
 `Continuous Control on NavMesh`_
@@ -166,12 +166,12 @@ We run this example scenario twice. The first iteration we configure the NavMesh
 
 With NavMesh sliding allowed:
 
-.. image:: images/rigid-object-tutorial-images/robot_control_sliding.gif
+.. image:: images/managed-rigid-object-tutorial-images/robot_control_sliding.gif
     :width: 20em
 
 With NavMesh sliding dis-allowed:
 
-.. image:: images/rigid-object-tutorial-images/robot_control_no_sliding.gif
+.. image:: images/managed-rigid-object-tutorial-images/robot_control_no_sliding.gif
     :width: 20em
 
 `Feature Detail Review`_
