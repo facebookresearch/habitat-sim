@@ -1104,8 +1104,8 @@ class PhysicsManager {
   }
 
   /**
-   * @brief Check if @p ohysObjectID represents an existing object.
-   * @param ohysObjectID Object ID to check
+   * @brief Check if @p physObjectID represents an existing object.
+   * @param physObjectID Object ID to check
    * @return Whether object exists or not.
    */
   inline bool isValidObjectID(const int physObjectID) const {
