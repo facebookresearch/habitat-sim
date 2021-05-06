@@ -423,7 +423,7 @@ if __name__ == "__main__":
     observations += simulate(sim, dt=3.0, get_frames=make_video)
 
     # remove the agent's body while preserving the SceneNode
-    sim.remove_object(locobot.ID, False)
+    rigid_obj_mgr.remove_object_by_ID(locobot.ID, delete_object_node=False)
 
     # video rendering with embedded 1st person view
     if make_video:

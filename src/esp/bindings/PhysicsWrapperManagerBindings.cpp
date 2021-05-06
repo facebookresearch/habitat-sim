@@ -5,6 +5,7 @@
 #include "esp/bindings/bindings.h"
 
 #include "esp/physics/objectManagers/PhysicsObjectBaseManager.h"
+#include "esp/physics/objectManagers/RigidBaseManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
 
@@ -14,6 +15,7 @@ using py::literals::operator""_a;
 namespace PhysWraps = esp::physics;
 using PhysWraps::ManagedRigidObject;
 using PhysWraps::PhysicsObjectBaseManager;
+using PhysWraps::RigidBaseManager;
 using PhysWraps::RigidObjectManager;
 
 namespace esp {
@@ -110,24 +112,24 @@ void declareBaseWrapperManager(py::module& m,
                .c_str(),
            "handles"_a, "lock"_a)
       .def("remove_all_objects", &MgrClass::removeAllObjects,
-           ("This removes, and returns, a list of all the  " + objType +
+           ("This removes a list of all the  " + objType +
             "s referenced in the library that have not been marked undeletable "
             "by the system or read-only by the user.")
                .c_str())
       .def("remove_objects_by_str", &MgrClass::removeObjectsBySubstring,
-           ("This removes, and returns, a list of all the  " + objType +
+           ("This removes a list of all the  " + objType +
             "s referenced in the library that have not been marked undeletable "
             "by the system or read-only by the user and whose handles either "
             "contain or explictly do not contain the passed search_str.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
       .def("remove_object_by_ID", &MgrClass::removeObjectByID,
-           ("This removes, and returns the  " + objType +
+           ("This removes the " + objType +
             " referenced by the passed ID from the library.")
                .c_str(),
            "ID"_a)
       .def("remove_object_by_handle", &MgrClass::removeObjectByHandle,
-           ("This removes, and returns the  " + objType +
+           ("This removes the " + objType +
             " referenced by the passed handle from the library.")
                .c_str(),
            "handle"_a)
@@ -185,7 +187,19 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
           R"(Instance an object into the scene via a template referenced by its handle.
            Optionally attach the object to an existing SceneNode and assign its initial
-           LightSetup key. Returns a reference to the created object.)");
+           LightSetup key. Returns a reference to the created object.)")
+      .def(
+          "remove_object_by_ID", &RigidObjectManager::removePhysObjectByID,
+          "ID"_a, "delete_object_node"_a = true, "delete_visual_node"_a = true,
+          R"(This removes the RigidObject referenced by the passed ID from the library, while allowing for "
+            "the optional retention of the object's scene node and/or the visual node)")
+      .def(
+          "remove_object_by_handle",
+          &RigidObjectManager::removePhysObjectByHandle, "handle"_a,
+          "delete_object_node"_a = true, "delete_visual_node"_a = true,
+          R"(This removes the RigidObject referenced by the passed handle from the library, while allowing "
+            "for the optional retention of the object's scene node and/or the visual node)");
+
 }  // initPhysicsWrapperManagerBindings
 
 }  // namespace physics

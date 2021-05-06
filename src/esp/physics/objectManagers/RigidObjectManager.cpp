@@ -31,5 +31,29 @@ std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByID(
   }
 }  // RigidObjectManager::addObject
 
+std::shared_ptr<ManagedRigidObject> RigidObjectManager::removePhysObjectByID(
+    int objectID,
+    bool deleteObjectNode,
+    bool deleteVisualNode) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    physMgr->removeObject(objectID, deleteObjectNode, deleteVisualNode);
+  }
+  return nullptr;
+}  // RigidObjectManager::removeObjectByID
+
+std::shared_ptr<ManagedRigidObject>
+RigidObjectManager::removePhysObjectByHandle(const std::string& objectHandle,
+                                             bool deleteObjectNode,
+                                             bool deleteVisualNode) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    int objectID = this->getObjectIDByHandle(objectHandle);
+    if (objectID == ID_UNDEFINED) {
+      return nullptr;
+    }
+    physMgr->removeObject(objectID, deleteObjectNode, deleteVisualNode);
+  }
+  return nullptr;
+}  // RigidObjectManager::removeObjectByHandle
+
 }  // namespace physics
 }  // namespace esp

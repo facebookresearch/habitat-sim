@@ -53,6 +53,47 @@ class RigidObjectManager
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
+  /**
+   * @brief Overload of standard @ref
+   * esp::core::ManagedContainer::removeObjectByID to allow for the retention of
+   * scene node or visual node of the underlying RigidObject after it and its
+   * wrapper's removal.
+   *
+   * @param objectID The ID of the managed object to be deleted.
+   * @param deleteObjectNode If true, deletes the object's scene node. Otherwise
+   * detaches the object from simulation.
+   * @param deleteVisualNode If true, deletes the object's visual node.
+   * Otherwise detaches the object from simulation. Is not considered if
+   * deleteObjectNode==true.
+   * @return this always returns a nullptr, since a wrapper of a deleted object
+   * is unusable.
+   */
+
+  std::shared_ptr<ManagedRigidObject> removePhysObjectByID(
+      const int objectID,
+      bool deleteObjectNode = true,
+      bool deleteVisualNode = true);
+
+  /**
+   * @brief Overload of standard @ref
+   * esp::core::ManagedContainer::removeObjectByHandle to allow for the
+   * retention of scene node or visual node of the underlying RigidObject after
+   * it and its wrapper's removal.
+   *
+   * @param objectHandle The handle of the managed object to be deleted.
+   * @param deleteObjectNode If true, deletes the object's scene node. Otherwise
+   * detaches the object from simulation.
+   * @param deleteVisualNode If true, deletes the object's visual node.
+   * Otherwise detaches the object from simulation. Is not considered if
+   * deleteObjectNode==true.
+   * @return this always returns a nullptr, since a wrapper of a deleted object
+   * is unusable.
+   */
+  std::shared_ptr<ManagedRigidObject> removePhysObjectByHandle(
+      const std::string& objectHandle,
+      bool deleteObjectNode = true,
+      bool deleteVisualNode = true);
+
  protected:
   /**
    * @brief Used Internally.  Create and configure newly-created managed object
