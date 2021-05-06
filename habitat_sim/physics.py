@@ -3,14 +3,18 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    ManagedRigidObject,
     MotionType,
     PhysicsSimulationLibrary,
     RaycastResults,
     RayHitInfo,
+    RigidObjectManager,
     VelocityControl,
 )
 
 __all__ = [
+    "ManagedRigidObject",
+    "RigidObjectManager",
     "PhysicsSimulationLibrary",
     "MotionType",
     "VelocityControl",
