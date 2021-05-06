@@ -23,7 +23,6 @@ class RigidObjectManager
    * the @ref esp::metadata::managers::ObjectAttributesManager.  This method
    * calls the physicsManager method with the same signature that queries for an
    * DrawableGroup from Simulator.
-   * @anchor addObject_string
    * @param attributesHandle The handle of the object attributes used as the key
    * to query @ref esp::metadata::managers::ObjectAttributesManager.
    * @param attachmentNode If supplied, attach the new physical object to an

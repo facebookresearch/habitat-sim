@@ -184,11 +184,11 @@ class PhysicsManager {
    * the @ref esp::metadata::managers::ObjectAttributesManager.  This method
    * will query for a drawable group from simulator.
    *
-   * @anchor addObject_string
    * @param attributesHandle The handle of the object attributes used as the key
    * to query @ref esp::metadata::managers::ObjectAttributesManager.
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
@@ -206,6 +206,7 @@ class PhysicsManager {
    * rendering of the newly initialized object.
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
@@ -215,13 +216,14 @@ class PhysicsManager {
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager.
-   * @anchor addObject_string
+   *
    * @param attributesHandle The handle of the object attributes used as the key
    * to query @ref esp::metadata::managers::ObjectAttributesManager.
    * @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
@@ -251,6 +253,7 @@ class PhysicsManager {
    * rendering of the newly initialized object.
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
@@ -279,6 +282,7 @@ class PhysicsManager {
    * rendering of the newly initialized object.
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
