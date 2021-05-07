@@ -10,6 +10,10 @@
 namespace esp {
 namespace physics {
 
+/**
+ * @brief Class template defining responsibilities and functionality shared for
+ * managing all @ref esp::physics::ManagedRigidObject wrappers.
+ */
 class RigidObjectManager
     : public esp::physics::RigidBaseManager<ManagedRigidObject> {
  public:

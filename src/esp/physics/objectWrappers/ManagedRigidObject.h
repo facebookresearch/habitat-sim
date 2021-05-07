@@ -10,6 +10,11 @@
 
 namespace esp {
 namespace physics {
+
+/**
+ * @brief Class describing wrapper for RigidObject constructions.
+ * Provides bindings for all RigidObject-specific functionality.
+ */
 class ManagedRigidObject
     : public esp::physics::AbstractManagedRigidBase<esp::physics::RigidObject> {
  public:
