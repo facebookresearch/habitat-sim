@@ -93,7 +93,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
     throw pybind11::error_already_set{};
   };
 
-  m.import("magnum.scenegraph");
+  py::module_::import("magnum.scenegraph");
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 

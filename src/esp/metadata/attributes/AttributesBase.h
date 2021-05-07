@@ -54,7 +54,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * this attributes, so this should only be used for logging, and not for
    * attempts to search for attributes.
    */
-  std::string getSimplifiedHandle() {
+  std::string getSimplifiedHandle() const {
     // first parse for file name, and then get rid of extension(s).
     return Corrade::Utility::Directory::splitExtension(
                Corrade::Utility::Directory::splitExtension(

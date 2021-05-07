@@ -236,7 +236,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
 
   box3f aabb;
   aabb.setEmpty();
-  for (auto& pt : points) {
+  for (const auto& pt : points) {
     aabb.extend(T_w2b * pt);
   }
 

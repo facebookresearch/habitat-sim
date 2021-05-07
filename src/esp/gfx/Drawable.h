@@ -69,7 +69,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   /**
    * @brief Get the drawable id
    */
-  uint64_t getDrawableId() { return drawableId_; }
+  uint64_t getDrawableId() const { return drawableId_; }
 
   virtual void setLightSetup(
       CORRADE_UNUSED const Magnum::ResourceKey& lightSetup){};
