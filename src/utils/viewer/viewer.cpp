@@ -459,8 +459,9 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
       spec->focalLength = Mn::Vector2(364.84, 364.86);
       spec->xi = -0.27;
       spec->alpha = 0.57;
-      // Certainly you can try different lenses, such as BF2M2020S23, BM2820,
-      // BF5M13720, BM4018S118, whose parameters can be found at:
+      // Certainly you can try your own lenses.
+      // For your convenience, there are some other lenses, e.g., BF2M2020S23,
+      // BM2820, BF5M13720, BM4018S118, whose parameters can be found at:
       //   Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double
       //   Sphere Camera Model, The International Conference on 3D Vision(3DV),
       //   2018
