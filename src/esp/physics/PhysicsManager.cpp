@@ -18,13 +18,11 @@ PhysicsManager::PhysicsManager(
       physicsManagerAttributes_(_physicsManagerAttributes),
       rigidObjectManager_(RigidObjectManager::create()) {}
 
-bool PhysicsManager::initPhysics(
-    scene::SceneNode* node,
-    const std::shared_ptr<esp::physics::PhysicsManager>& physMgr) {
+bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   physicsNode_ = node;
   // set the rigidObjectManager's weak reference to physics manager to be based
   // on the same shared pointer that Simulator is using.
-  rigidObjectManager_->setPhysicsManager(physMgr);
+  rigidObjectManager_->setPhysicsManager(shared_from_this());
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes_->getTimestep();
 

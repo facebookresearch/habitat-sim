@@ -175,7 +175,7 @@ void ResourceManager::initPhysicsManager(
   initDefaultPrimAttributes();
 
   // initialize the physics simulator
-  physicsManager->initPhysics(parent, physicsManager);
+  physicsManager->initPhysics(parent);
 }  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadStage(

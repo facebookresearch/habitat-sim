@@ -42,8 +42,7 @@ class PhysicsObjectBaseManager
    * @brief set the weak reference to the physics manager that owns this wrapper
    * manager
    */
-  void setPhysicsManager(
-      const std::shared_ptr<esp::physics::PhysicsManager>& physMgr) {
+  void setPhysicsManager(std::weak_ptr<esp::physics::PhysicsManager> physMgr) {
     weakPhysManager_ = physMgr;
   }
 

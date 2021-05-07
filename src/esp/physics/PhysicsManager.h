@@ -87,7 +87,7 @@ aware of (e.g. static scene collision geometry).
 Will later manager multiple physical scenes, but currently assumes only one
 unique physical world can exist.
 */
-class PhysicsManager {
+class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
  public:
   //! ==== physics engines ====
 
@@ -149,9 +149,7 @@ class PhysicsManager {
    * physical scene and object nodes.
    * @param physMgr Simulator's shared pointer referencing this physics manager.
    */
-  bool initPhysics(
-      scene::SceneNode* node,
-      const std::shared_ptr<esp::physics::PhysicsManager>& physMgr);
+  bool initPhysics(scene::SceneNode* node);
 
   /**
    * @brief Reset the simulation and physical world.
