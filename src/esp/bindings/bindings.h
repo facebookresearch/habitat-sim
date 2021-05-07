@@ -41,7 +41,11 @@ void initShortestPathBindings(pybind11::module& m);
 
 namespace physics {
 void initPhysicsBindings(pybind11::module& m);
-}
+
+void initPhysicsObjectBindings(pybind11::module& m);
+
+void initPhysicsWrapperManagerBindings(pybind11::module& m);
+}  // namespace physics
 
 namespace scene {
 void initSceneBindings(pybind11::module& m);

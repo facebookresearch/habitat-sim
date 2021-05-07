@@ -16,7 +16,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   LOG(INFO) << "Deconstructing BulletPhysicsManager";
 
   existingObjects_.clear();
-  staticStageObject_.reset(nullptr);
+  staticStageObject_.reset();
 }
 
 bool BulletPhysicsManager::initPhysicsFinalize() {
@@ -38,7 +38,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
 
   Corrade::Utility::Debug() << "creating staticStageObject_";
   //! Create new scene node
-  staticStageObject_ = physics::BulletRigidStage::create_unique(
+  staticStageObject_ = physics::BulletRigidStage::create(
       &physicsNode_->createChild(), resourceManager_, bWorld_,
       collisionObjToObjIds_);
   Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
@@ -60,9 +60,9 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
     int newObjectID,
     const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
     scene::SceneNode* objectNode) {
-  auto ptr = physics::BulletRigidObject::create_unique(
-      objectNode, newObjectID, resourceManager_, bWorld_,
-      collisionObjToObjIds_);
+  auto ptr = physics::BulletRigidObject::create(objectNode, newObjectID,
+                                                resourceManager_, bWorld_,
+                                                collisionObjToObjIds_);
   bool objSuccess = ptr->initialize(objectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
@@ -107,7 +107,7 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
-  for (std::map<int, physics::RigidObject::uptr>::iterator it =
+  for (std::map<int, physics::RigidObject::ptr>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
     it->second->setActive();

@@ -253,6 +253,7 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
 
+ public:
   ESP_SMART_POINTERS(BulletPhysicsManager)
 
 };  // end class BulletPhysicsManager

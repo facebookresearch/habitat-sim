@@ -38,6 +38,7 @@ INPUT_PAGES = [
     "pages/stereo-agent.rst",
     "pages/lighting-setups.rst",
     "pages/image-extractor.rst",
+    "pages/managed-rigid-object-tutorial.rst",
     "pages/rigid-object-tutorial.rst",
 ]
 
@@ -78,6 +79,7 @@ LINKS_NAVBAR1 = [
             ("Stereo agent", "stereo-agent"),
             ("Lighting Setups", "lighting-setups"),
             ("Image extraction", "image-extractor"),
+            ("Managed Rigid Object Tutorial", "managed-rigid-object-tutorial"),
             ("Rigid Object Tutorial", "rigid-object-tutorial"),
         ],
     ),

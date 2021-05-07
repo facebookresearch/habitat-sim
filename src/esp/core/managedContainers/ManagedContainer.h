@@ -216,7 +216,7 @@ class ManagedContainer : public ManagedContainerBase {
                                 "ManagedContainer::removeObjectByID")) {
       return nullptr;
     }
-    return removeObjectInternal(objectHandle,
+    return removeObjectInternal(objectID, objectHandle,
                                 "ManagedContainer::removeObjectByID");
   }
 
@@ -229,7 +229,15 @@ class ManagedContainer : public ManagedContainerBase {
    * exist
    */
   ManagedPtr removeObjectByHandle(const std::string& objectHandle) {
-    return removeObjectInternal(objectHandle,
+    if (!checkExistsWithMessage(objectHandle,
+                                "ManagedContainer::removeObjectByHandle")) {
+      return nullptr;
+    }
+    int objectID = getObjectIDByHandle(objectHandle);
+    if (objectID == ID_UNDEFINED) {
+      return nullptr;
+    }
+    return removeObjectInternal(objectID, objectHandle,
                                 "ManagedContainer::removeObjectByHandle");
   }
 
@@ -469,12 +477,15 @@ class ManagedContainer : public ManagedContainerBase {
    * @brief Used Internally. Remove the managed object referenced by the passed
    * string handle. Will emplace managed object ID within deque of usable IDs
    * and return the managed object being removed.
+   *
+   * @param objectID the id of the managed object desired.
    * @param objectHandle the string key of the managed object desired.
    * @param src String denoting the source of the remove request.
    * @return the desired managed object being deleted, or nullptr if does not
    * exist
    */
-  ManagedPtr removeObjectInternal(const std::string& objectHandle,
+  ManagedPtr removeObjectInternal(int objectID,
+                                  const std::string& objectHandle,
                                   const std::string& src);
 
   /**
@@ -586,7 +597,7 @@ class ManagedContainer : public ManagedContainerBase {
     // objectHandle, or the next available ID if not found.
     object->setID(getObjectIDByHandleOrNew(objectHandle, true));
     // use object's ID for ID in container - may not match ID synthesized by
-    // getObjectIDByHandle, for objects that manage their own IDs
+    // getObjectIDByHandle, for managed objects that control their own IDs
     int objectID = object->getID();
 
     // make a copy of this managed object so that user can continue to edit
@@ -638,8 +649,9 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
   std::vector<std::string> handles =
       getObjectHandlesBySubstring(subStr, contains);
   for (const std::string& objectHandle : handles) {
+    int objID = getObjectIDByHandle(objectHandle);
     ManagedPtr ptr = removeObjectInternal(
-        objectHandle, "ManagedContainer::removeObjectsBySubstring");
+        objID, objectHandle, "ManagedContainer::removeObjectsBySubstring");
     if (nullptr != ptr) {
       res.push_back(ptr);
     }
@@ -649,6 +661,7 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
 
 template <class T, ManagedObjectAccess Access>
 auto ManagedContainer<T, Access>::removeObjectInternal(
+    int objectID,
     const std::string& objectHandle,
     const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
@@ -667,12 +680,12 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
               << " managed object " << objectHandle << " : " << msg << ".";
     return nullptr;
   }
-
-  ManagedPtr attribsTemplate = getObjectInternal<T>(objectHandle);
+  ManagedPtr managedObject = getObjectInternal<T>(objectHandle);
   // remove the object and all references to it from the various internal maps
   // holding them.
-  deleteObjectInternal(attribsTemplate->getID(), objectHandle);
-  return attribsTemplate;
+
+  deleteObjectInternal(objectID, objectHandle);
+  return managedObject;
 }  // ManagedContainer::removeObjectInternal
 
 }  // namespace core

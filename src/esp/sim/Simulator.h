@@ -18,6 +18,7 @@
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/Sensor.h"
@@ -492,7 +493,7 @@ class Simulator {
    *
    * Assumes the new @ref esp::gfx::Drawable for the bounding box should be
    * added to the active @ref esp::gfx::SceneGraph's default drawable group. See
-   * @ref esp::gfx::SceneGraph::getDrawables().
+   * @ref esp::gfx::SceneGraph::getDrawableGroup().
    *
    * @param drawBB Whether or not the render the bounding box.
    * @param objectID The object ID and key identifying the object in @ref
@@ -644,6 +645,17 @@ class Simulator {
   }
 
   /**
+   * @brief returns the wrapper manager for the currently created rigid objects.
+   * @return RigidObject wrapper manager.
+   */
+  std::shared_ptr<esp::physics::RigidObjectManager> getRigidObjectManager() {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->getRigidObjectManager();
+    }
+    return nullptr;
+  }  // getRigidObjectManager
+
+  /**
    * @brief Raycast into the collision world of a scene.
    *
    * Note: A default @ref physics::PhysicsManager has no collision world, so
@@ -718,6 +730,25 @@ class Simulator {
    * @brief Query active state of the current NavMesh visualization.
    */
   bool isNavMeshVisualizationActive();
+
+  /**
+   * @brief Return a ref to a new drawables in the currently active scene, for
+   * object creation.  Eventually support multi-scene ID
+   * @param sceneID The scene to get the drawables for.  Currently not used.
+   */
+  inline esp::gfx::DrawableGroup& getDrawableGroup(
+      CORRADE_UNUSED const int sceneID) {
+    // TODO eventually use passed sceneID
+    return sceneManager_->getSceneGraph(activeSceneID_).getDrawables();
+  }
+
+  /**
+   * @brief Return a ref to a new drawables in the currently active scene, for
+   * object creation.
+   */
+  inline esp::gfx::DrawableGroup& getDrawableGroup() {
+    return getDrawableGroup(activeSceneID_);
+  }
 
   /**
    * @brief Compute a trajectory visualization for the passed points.
@@ -1030,8 +1061,8 @@ class Simulator {
    */
   void sampleRandomAgentState(agent::AgentState& agentState);
 
-  bool isValidScene(std::size_t sceneID) const {
-    return sceneID >= 0 && sceneID < sceneID_.size();
+  bool isValidScene(int sceneID) const {
+    return sceneID >= 0 && static_cast<std::size_t>(sceneID) < sceneID_.size();
   }
 
   bool sceneHasPhysics(int sceneID) const {
