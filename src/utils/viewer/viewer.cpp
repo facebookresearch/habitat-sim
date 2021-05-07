@@ -451,9 +451,12 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
     spec->fisheyeModelType = modelType;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    // default viewport size: 1600 x 1200
     int size =
         viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
-    spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+    // spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+    // spec->focalLength = Mn::Vector2(size / 6, size / 6);
+    spec->focalLength = Mn::Vector2(597.0, 597.0);
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
     if (modelType == esp::sensor::FisheyeSensorModelType::DoubleSphere) {
@@ -1391,7 +1394,9 @@ void Viewer::viewportEvent(ViewportEvent& event) {
         const auto viewportSize = event.framebufferSize();
         int size = viewportSize[0] < viewportSize[1] ? viewportSize[0]
                                                      : viewportSize[1];
-        spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+        // spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5); // XXX
+        LOG(INFO) << viewportSize[0] << " x " << viewportSize[1];
+        spec->focalLength = Mn::Vector2(597.0, 597.0);
         spec->principalPointOffset =
             Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
       }

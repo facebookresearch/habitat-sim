@@ -256,8 +256,9 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
 
   if (flags_ & CubeMap::Flag::ColorTexture &&
       renderCameraFlags & RenderCamera::Flag::ClearColor) {
-    frameBuffer_[cubeSideIndex].clearColor(0,                // color attachment
-                                           Mn::Vector4ui{0}  // clear color
+    frameBuffer_[cubeSideIndex].clearColor(
+        0,                      // color attachment
+        Mn::Color4{0, 0, 0, 1}  // clear color
     );
   }
 
@@ -265,7 +266,11 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
     frameBuffer_[cubeSideIndex].clearDepth(1.0f);
   }
 
-  // Well, how can we clear the object Ids?
+  if (flags_ & CubeMap::Flag::ObjectIdTexture &&
+      renderCameraFlags & RenderCamera::Flag::ClearObjectId) {
+    frameBuffer_[cubeSideIndex].clearColor(1, Mn::Vector4ui{});
+  }
+
   CORRADE_INTERNAL_ASSERT(frameBuffer_[cubeSideIndex].checkStatus(
                               Mn::GL::FramebufferTarget::Draw) ==
                           Mn::GL::Framebuffer::Status::Complete);

@@ -110,8 +110,10 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
     }
   }
 
-  esp::gfx::RenderCamera::Flags flags = {gfx::RenderCamera::Flag::ClearColor |
-                                         gfx::RenderCamera::Flag::ClearDepth};
+  esp::gfx::RenderCamera::Flags flags = {
+      gfx::RenderCamera::Flag::ClearColor |
+      gfx::RenderCamera::Flag::ClearDepth |
+      gfx::RenderCamera::Flag::ClearObjectId};
   if (sim.isFrustumCullingEnabled()) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
   }
@@ -133,10 +135,11 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
     if (twoSceneGraphs) {
       flags |= gfx::RenderCamera::Flag::ObjectsOnly;
       // Incremental rendering:
-      // BE AWARE that here "ClearColor" and "ClearDepth" is NOT set!!
-      // Rendering happens on top of whatever existing there.
+      // BE AWARE that here "ClearColor", "ClearDepth" and "CLearObjectId" are
+      // NOT set!! Rendering happens on top of whatever existing there.
       flags &= ~gfx::RenderCamera::Flag::ClearColor;
       flags &= ~gfx::RenderCamera::Flag::ClearDepth;
+      flags &= ~gfx::RenderCamera::Flag::ClearObjectId;
       cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
                                 flags);
     }

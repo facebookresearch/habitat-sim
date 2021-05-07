@@ -45,9 +45,14 @@ class RenderCamera : public MagnumCamera {
     ClearDepth = 1 << 3,
 
     /**
-     * Clear depth, used in the sub-class CubeMapCamera
+     * Clear color, used in the sub-class CubeMapCamera
      */
     ClearColor = 1 << 4,
+
+    /**
+     * Clear object id, used in the sub-class CubeMapCamera
+     */
+    ClearObjectId = 1 << 5,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
