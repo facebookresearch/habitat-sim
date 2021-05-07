@@ -588,7 +588,7 @@ int Simulator::addObject(const int objectLibId,
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
-    auto& drawables = getDrawables(sceneID);
+    auto& drawables = getDrawableGroup(sceneID);
     return physicsManager_->addObject(objectLibId, &drawables, attachmentNode,
                                       lightSetupKey);
   }
@@ -602,7 +602,7 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
-    auto& drawables = getDrawables(sceneID);
+    auto& drawables = getDrawableGroup(sceneID);
     return physicsManager_->addObject(objectLibHandle, &drawables,
                                       attachmentNode, lightSetupKey);
   }
@@ -842,7 +842,7 @@ void Simulator::setObjectBBDraw(bool drawBB,
                                 const int objectID,
                                 const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    auto& drawables = getDrawables(sceneID);
+    auto& drawables = getDrawableGroup(sceneID);
     physicsManager_->setObjectBBDraw(objectID, &drawables, drawBB);
   }
 }
@@ -856,7 +856,7 @@ void Simulator::createObjectVoxelization(int objectID, int resolution) {
 void Simulator::setObjectVoxelizationDraw(bool drawV,
                                           int objectID,
                                           const std::string& gridName) {
-  auto& drawables = getDrawables();
+  auto& drawables = getDrawableGroup();
   physicsManager_->setObjectVoxelizationDraw(objectID, gridName, &drawables,
                                              drawV);
 }
@@ -874,7 +874,7 @@ void Simulator::createStageVoxelization(int resolution) {
 
 void Simulator::setStageVoxelizationDraw(bool drawV,
                                          const std::string& gridName) {
-  auto& drawables = getDrawables();
+  auto& drawables = getDrawableGroup();
   physicsManager_->setStageVoxelizationDraw(gridName, &drawables, drawV);
 }
 
@@ -1028,7 +1028,7 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const Magnum::Color4& color,
                                    bool smooth,
                                    int numInterp) {
-  auto& drawables = getDrawables();
+  auto& drawables = getDrawableGroup();
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_->buildTrajectoryVisualization(

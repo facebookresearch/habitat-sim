@@ -16,9 +16,6 @@ namespace physics {
  * @tparam T the type of managed physics object a particular specialization
  * of this class works with.  Must inherit from @ref
  * esp::physics::ManagedRigidBase
- * @tparam Access Whether the default access (getters) for this
- * container provides copies of the objects held, or the actual objects
- * themselves.
  */
 
 template <class T>

@@ -493,7 +493,7 @@ class Simulator {
    *
    * Assumes the new @ref esp::gfx::Drawable for the bounding box should be
    * added to the active @ref esp::gfx::SceneGraph's default drawable group. See
-   * @ref esp::gfx::SceneGraph::getDrawables().
+   * @ref esp::gfx::SceneGraph::getDrawableGroup().
    *
    * @param drawBB Whether or not the render the bounding box.
    * @param objectID The object ID and key identifying the object in @ref
@@ -736,7 +736,7 @@ class Simulator {
    * object creation.  Eventually support multi-scene ID
    * @param sceneID The scene to get the drawables for.  Currently not used.
    */
-  inline esp::gfx::DrawableGroup& getDrawables(
+  inline esp::gfx::DrawableGroup& getDrawableGroup(
       CORRADE_UNUSED const int sceneID) {
     // TODO eventually use passed sceneID
     return sceneManager_->getSceneGraph(activeSceneID_).getDrawables();
@@ -746,8 +746,8 @@ class Simulator {
    * @brief Return a ref to a new drawables in the currently active scene, for
    * object creation.
    */
-  inline esp::gfx::DrawableGroup& getDrawables() {
-    return getDrawables(activeSceneID_);
+  inline esp::gfx::DrawableGroup& getDrawableGroup() {
+    return getDrawableGroup(activeSceneID_);
   }
 
   /**

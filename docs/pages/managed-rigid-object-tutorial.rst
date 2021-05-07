@@ -19,7 +19,7 @@ The example code below is available on `Collab`_, or runnable via:
 
 .. code:: shell-session
 
-    $ python path/to/habitat-sim/examples/tutorials/nb_python/managed_managed_rigid_object_tutorial.py
+    $ python path/to/habitat-sim/examples/tutorials/nb_python/managed_rigid_object_tutorial.py
 
 First, download the `example objects`_ and extract them into path/to/habitat-sim/data/objects/.
 
@@ -216,7 +216,7 @@ VelocityControl
 ***************
 
 Each object's :ref:`habitat_sim.physics.VelocityControl` structure provides a simple interface for setting up continuous velocity control of the object in either the global or local coordinate frame.
-This can be queried from the simulator with :ref:`habitat_sim.physics.RigidObjectManager.velocity_control`.
+This can be queried from the simulator with :ref:`habitat_sim.physics.ManagedRigidObject.velocity_control`.
 
 For :ref:`habitat_sim.physics.MotionType.KINEMATIC` objects, velocity control will directly modify the object's rigid state.
 

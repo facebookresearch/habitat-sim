@@ -21,7 +21,7 @@ class RigidObjectManager
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager.  This method
-   * calls the physicsManager method with the same signature that queries for an
+   * calls the physicsManager method with the same signature that queries for a
    * DrawableGroup from Simulator.
    * @param attributesHandle The handle of the object attributes used as the key
    * to query @ref esp::metadata::managers::ObjectAttributesManager.
@@ -38,7 +38,7 @@ class RigidObjectManager
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
    * ID.  This method calls the physicsManager method with the same signature
-   * that queries for an DrawableGroup from Simulator.
+   * that queries for a DrawableGroup from Simulator.
    * @param attributesID The ID of the object's template in @ref
    * esp::metadata::managers::ObjectAttributesManager
    * @param drawables Reference to the scene graph drawables group to enable

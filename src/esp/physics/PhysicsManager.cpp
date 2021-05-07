@@ -22,7 +22,7 @@ bool PhysicsManager::initPhysics(
     scene::SceneNode* node,
     const std::shared_ptr<esp::physics::PhysicsManager>& physMgr) {
   physicsNode_ = node;
-  // set the rigidObjectManager's weak reference to physics manager tp be based
+  // set the rigidObjectManager's weak reference to physics manager to be based
   // on the same shared pointer that Simulator is using.
   rigidObjectManager_->setPhysicsManager(physMgr);
   // Copy over relevant configuration
@@ -81,7 +81,7 @@ int PhysicsManager::addObject(const std::string& attributesHandle,
   } else {
     // attributes exist, get drawables if valid simulator accessible
     if (simulator_ != nullptr) {
-      auto& drawables = simulator_->getDrawables();
+      auto& drawables = simulator_->getDrawableGroup();
       return addObject(attributes, &drawables, attachmentNode, lightSetup);
     } else {
       // support creation when simulator DNE
@@ -104,7 +104,7 @@ int PhysicsManager::addObject(const int attributesID,
   } else {
     // attributes exist, get drawables if valid simulator accessible
     if (simulator_ != nullptr) {
-      auto& drawables = simulator_->getDrawables();
+      auto& drawables = simulator_->getDrawableGroup();
       return addObject(attributes, &drawables, attachmentNode, lightSetup);
     } else {
       // support creation when simulator DNE
