@@ -186,9 +186,12 @@ int PhysicsManager::addObject(
   // and register wrapper with wrapper manager
   // 1.0 Get unique name for object using simplified attributes name.
   std::string simpleObjectHandle = objectAttributes->getSimplifiedHandle();
-
+  LOG(WARNING) << "PhysicsManager::addObject : simpleObjectHandle : "
+               << simpleObjectHandle;
   std::string newObjectHandle =
       rigidObjectManager_->getUniqueHandleFromCandidate(simpleObjectHandle);
+  LOG(WARNING) << "PhysicsManager::addObject : newObjectHandle : "
+               << newObjectHandle;
 
   existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
   // 2.0 Get wrapper - name is irrelevant, do not register.
