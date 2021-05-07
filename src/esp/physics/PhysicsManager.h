@@ -317,6 +317,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::vector<int> getExistingObjectIDs() const {
     std::vector<int> v;
+    v.reserve(existingObjects_.size());
     for (auto& bro : existingObjects_) {
       v.push_back(bro.first);
     }
