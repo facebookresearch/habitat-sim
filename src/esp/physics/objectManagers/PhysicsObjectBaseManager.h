@@ -43,7 +43,7 @@ class PhysicsObjectBaseManager
    * manager
    */
   void setPhysicsManager(std::weak_ptr<esp::physics::PhysicsManager> physMgr) {
-    weakPhysManager_ = physMgr;
+    weakPhysManager_ = std::move(physMgr);
   }
 
   /**
