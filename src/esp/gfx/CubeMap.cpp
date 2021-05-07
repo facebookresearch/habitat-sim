@@ -338,7 +338,7 @@ bool CubeMap::saveTexture(TextureType type,
       } break;
       /*
       case CubeMap::TextureType::ObjectId:
-        // TODO: object Id
+        // TODO: save object Id texture
         break;
         */
       case CubeMap::TextureType::Count:

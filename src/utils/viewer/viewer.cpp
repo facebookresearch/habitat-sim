@@ -452,16 +452,23 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     spec->fisheyeModelType = modelType;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
     // default viewport size: 1600 x 1200
-    int size =
-        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
-    // spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
-    // spec->focalLength = Mn::Vector2(size / 6, size / 6);
-    spec->focalLength = Mn::Vector2(597.0, 597.0);
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
     if (modelType == esp::sensor::FisheyeSensorModelType::DoubleSphere) {
-      spec->alpha = 0.59;
-      spec->xi = -0.18;
+      // in this demo, we choose "GoPro":
+      spec->focalLength = Mn::Vector2(364.84, 364.86);
+      spec->xi = -0.27;
+      spec->alpha = 0.57;
+      // Certainly you can try different lenses, such as BF2M2020S23, BM2820,
+      // BF5M13720, BM4018S118, whose parameters can be found at:
+      //   Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double
+      //   Sphere Camera Model, The International Conference on 3D Vision(3DV),
+      //   2018
+
+      // BF2M2020S23
+      // spec->focalLength = Mn::Vector2(313.21, 313.21);
+      // spec->xi = -0.18;
+      // spec->alpha = 0.59;
     }
   };
   // add the fisheye sensor
@@ -1394,9 +1401,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
         const auto viewportSize = event.framebufferSize();
         int size = viewportSize[0] < viewportSize[1] ? viewportSize[0]
                                                      : viewportSize[1];
-        // spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5); // XXX
-        LOG(INFO) << viewportSize[0] << " x " << viewportSize[1];
-        spec->focalLength = Mn::Vector2(597.0, 597.0);
+        // since the sensor is determined, sensor's focal length is fixed.
         spec->principalPointOffset =
             Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
       }
