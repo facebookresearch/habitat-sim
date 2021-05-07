@@ -315,7 +315,7 @@ void preOrderFeatureTraversalWithCallback(const SceneNode& node,
                                           Callable&& cb) {
   auto featureCb = [&cb](const SceneNode& node) {
     for (const auto& abstractFeature : node.features()) {
-      auto feature = dynamic_cast<const Feature*>(&abstractFeature);
+      const auto* feature = dynamic_cast<const Feature*>(&abstractFeature);
       if (feature)
         std::forward<Callable>(cb)(*feature);
     }

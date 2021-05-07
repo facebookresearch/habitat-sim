@@ -119,7 +119,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
     ASSERT(assetInfos_.count(creation.filepath));
-    auto node = loadAndCreateRenderAssetInstanceCallback(
+    auto* node = loadAndCreateRenderAssetInstanceCallback(
         assetInfos_[creation.filepath], creation);
     if (!node) {
       if (!failedFilepaths_.count(creation.filepath)) {
@@ -143,7 +143,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
 
-    auto node = it->second;
+    auto* node = it->second;
     delete node;
     createdInstances_.erase(deletionInstanceKey);
   }
@@ -155,7 +155,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       // creation
       continue;
     }
-    auto node = it->second;
+    auto* node = it->second;
     const auto& state = pair.second;
     node->setTranslation(state.absTransform.translation);
     node->setRotation(state.absTransform.rotation);

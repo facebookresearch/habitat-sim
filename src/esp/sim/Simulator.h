@@ -928,7 +928,7 @@ class Simulator {
    * @brief Get status, whether frustum culling is enabled or not
    * @return true if enabled, otherwise false
    */
-  bool isFrustumCullingEnabled() { return frustumCulling_; }
+  bool isFrustumCullingEnabled() const { return frustumCulling_; }
 
   /**
    * @brief Get a copy of an existing @ref gfx::LightSetup by its key.

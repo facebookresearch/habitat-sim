@@ -538,7 +538,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @param semanticId The desired semantic id for the object.
    */
   void setSemanticId(uint32_t semanticId) {
-    for (auto node : visualNodes_) {
+    for (auto* node : visualNodes_) {
       node->setSemanticId(semanticId);
     }
   }

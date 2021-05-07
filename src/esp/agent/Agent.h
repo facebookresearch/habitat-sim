@@ -107,7 +107,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   bool act(const std::string& actionName);
 
-  bool hasAction(const std::string& actionName);
+  bool hasAction(const std::string& actionName) const;
 
   void reset();
 

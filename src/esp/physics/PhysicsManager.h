@@ -56,7 +56,7 @@ struct RaycastResults {
   std::vector<RayHitInfo> hits;
   esp::geo::Ray ray;
 
-  bool hasHits() { return hits.size() > 0; }
+  bool hasHits() const { return hits.size() > 0; }
 
   void sortByDistance() {
     std::sort(hits.begin(), hits.end(),
@@ -317,7 +317,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::vector<int> getExistingObjectIDs() const {
     std::vector<int> v;
-    for (auto& bro : existingObjects_) {
+    for (const auto& bro : existingObjects_) {
       v.push_back(bro.first);
     }
     return v;
