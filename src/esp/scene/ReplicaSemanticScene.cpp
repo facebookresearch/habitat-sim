@@ -87,7 +87,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
       object->category_ = scene.categories_[categoryIndex];
     }
 
-    auto& obb = jsonObject["oriented_bbox"];
+    const auto& obb = jsonObject["oriented_bbox"];
     const vec3f aabbCenter = io::jsonToVec3f(obb["abb"]["center"]);
     const vec3f aabbSizes = io::jsonToVec3f(obb["abb"]["sizes"]);
 

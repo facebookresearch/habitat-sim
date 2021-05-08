@@ -261,7 +261,7 @@ struct PathFinder::Impl {
 
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
       const float metersPerPixel,
-      const float height);
+      const float height) const;
 
   const assets::MeshData::ptr getNavMeshData();
 
@@ -1264,7 +1264,7 @@ typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
 PathFinder::Impl::getTopDownView(const float metersPerPixel,
-                                 const float height) {
+                                 const float height) const {
   std::pair<vec3f, vec3f> mapBounds = bounds();
   vec3f bound1 = mapBounds.first;
   vec3f bound2 = mapBounds.second;

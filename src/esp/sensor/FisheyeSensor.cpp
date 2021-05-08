@@ -41,7 +41,7 @@ void FisheyeSensorDoubleSphereSpec::sanityCheck() const {
 
 template <typename T>
 void specSanityCheck(FisheyeSensorSpec* spec) {
-  auto actualSpec = dynamic_cast<T*>(spec);
+  auto* actualSpec = dynamic_cast<T*>(spec);
   ESP_CHECK(actualSpec,
             "FisheyeSensor::FisheyeSensor(): the spec cannot be converted "
             "to any known fiesheye sensor spec.");

@@ -89,7 +89,7 @@ SceneNode& SceneNode::setParent(SceneNode* newParent) {
   }
 
   // Skip if this is an ancestor of newParent
-  auto p = newParent->parent();
+  auto* p = newParent->parent();
   while (p) {
     if (p == this)
       return *this;

@@ -50,7 +50,7 @@ bool Agent::act(const std::string& actionName) {
   }
 }
 
-bool Agent::hasAction(const std::string& actionName) {
+bool Agent::hasAction(const std::string& actionName) const {
   auto actionSpace = configuration_.actionSpace;
   return !(actionSpace.find(actionName) == actionSpace.end());
 }

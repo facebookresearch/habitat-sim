@@ -93,6 +93,19 @@ class ManagedContainerBase {
   }  // ManagedContainerBase::getRandomObjectHandle
 
   /**
+   * @brief return a unique handle given the passed object handle candidate
+   * substring. If there are no existing ManagedObjects with the passed handle,
+   * then the passed value will be returned; Otherwise, an incremented handle
+   * will be returned, based on the names present.
+   * @param name Candidate name for object.  If DNE then this string is
+   * returned; if does exist, then an incrementing scheme will be followed.
+   * @return A valid, unique name to use for a potential managed object.
+   */
+  std::string getUniqueHandleFromCandidate(const std::string& name) const {
+    return getUniqueHandleFromCandidatePerType(objectLibKeyByID_, name);
+  }
+
+  /**
    * @brief Get a list of all managed objects whose origin handles contain
    * subStr, ignoring subStr's case
    * @param subStr substring to search for within existing managed objects.
@@ -263,6 +276,21 @@ class ManagedContainerBase {
   std::string getRandomObjectHandlePerType(
       const std::map<int, std::string>& mapOfHandles,
       const std::string& type) const;
+
+  /**
+   * @brief return a unique handle given the passed object handle candidate
+   * substring among all passed types. If there are no existing ManagedObjects
+   * with the passed handle within the passed map, then the passed value will be
+   * returned; Otherwise, an incremented handle will be returned, based on the
+   * names present.
+   * @param mapOfHandles map containing the desired managed object handles
+   * @param name Candidate name for object.  If DNE then this string is
+   * returned; if does exist, then an incrementing scheme will be followed.
+   * @return A valid, unique name to use for a potential managed object.
+   */
+  std::string getUniqueHandleFromCandidatePerType(
+      const std::map<int, std::string>& mapOfHandles,
+      const std::string& name) const;
 
   /**
    * @brief Get a list of all managed objects of passed type whose origin

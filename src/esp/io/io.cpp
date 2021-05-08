@@ -137,7 +137,7 @@ std::vector<std::string> tokenize(const std::string& string,
       if (pos > start) {
         tokens.push_back(string.substr(start, pos - start));
       } else if (!mergeAdjDelims || start == 0) {
-        tokens.push_back("");
+        tokens.emplace_back("");
       }
       done = (limit > 1 && tokens.size() == limit - 1);
       start = pos + 1;

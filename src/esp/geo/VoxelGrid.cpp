@@ -109,7 +109,7 @@ VoxelGrid::getExistingGrids() {
   for (it = grids_.begin(); it != grids_.end(); it++) {
     std::string typeName;
     VoxelGridType type = it->second.type;
-    existingGrids.push_back(std::make_pair(it->first, type));
+    existingGrids.emplace_back(it->first, type);
   }
   return existingGrids;
 }
@@ -208,7 +208,7 @@ void VoxelGrid::addVectorToMeshPrimitives(
   if (vec[0] == 0 && vec[2] == 0) {
     crossProduct = Mn::Vector3(1, 0, 0);
   }
-  vecRotation = vecRotation.rotation(-angle, crossProduct.normalized());
+  vecRotation = Mn::Quaternion::rotation(-angle, crossProduct.normalized());
   for (std::size_t i = 0; i != coneData.vertexCount(); ++i) {
     arrayAppend(vertexData, Cr::Containers::InPlaceInit,
                 vecRotation.transformVector(conePositions[i] *

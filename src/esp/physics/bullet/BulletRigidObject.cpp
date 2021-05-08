@@ -267,7 +267,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
     }
   }
 
-  for (auto& child : node.children) {
+  for (const auto& child : node.children) {
     constructBulletCompoundFromMeshes(transformFromLocalToWorld, meshGroup,
                                       child, join);
   }
@@ -396,7 +396,7 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
 
   //! Bullet rigid body setup
-  auto motionState =
+  auto* motionState =
       (mt == MotionType::STATIC) ? nullptr : &(this->btMotionState());
 
   btRigidBody::btRigidBodyConstructionInfo info =

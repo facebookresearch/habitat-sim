@@ -93,7 +93,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
     throw pybind11::error_already_set{};
   };
 
-  m.import("magnum.scenegraph");
+  py::module_::import("magnum.scenegraph");
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 
@@ -107,6 +107,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::metadata::managers::initAttributesManagersBindings(m);
   esp::geo::initGeoBindings(m);
   esp::physics::initPhysicsBindings(m);
+  esp::physics::initPhysicsObjectBindings(m);
+  esp::physics::initPhysicsWrapperManagerBindings(m);
   esp::scene::initSceneBindings(m);
   esp::gfx::initGfxBindings(m);
   esp::gfx::replay::initGfxReplayBindings(m);

@@ -13,6 +13,8 @@ pybind11_add_module(
   GfxReplayBindings.cpp
   OpaqueTypes.h
   PhysicsBindings.cpp
+  PhysicsObjectBindings.cpp
+  PhysicsWrapperManagerBindings.cpp
   SceneBindings.cpp
   SensorBindings.cpp
   ShortestPathBindings.cpp
