@@ -19,12 +19,12 @@ def perform_general_tests(attr_mgr, search_string):
 
     template_handle = template_handles[0]
     # get id from handle
-    template_ID = attr_mgr.get_template_ID_by_handle(template_handle)
+    template_id = attr_mgr.get_template_id_by_handle(template_handle)
     assert search_string in template_handle
 
     # verify that access is the same for ID and handle lookup
     template0 = attr_mgr.get_template_by_handle(template_handle)
-    template1 = attr_mgr.get_template_by_ID(template_ID)
+    template1 = attr_mgr.get_template_by_id(template_id)
 
     # verify template 0 and template 1 are copies of the same template
     assert template0.handle == template1.handle

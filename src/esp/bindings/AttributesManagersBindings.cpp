@@ -60,13 +60,13 @@ void declareBaseAttributesManager(py::module& m,
   // documentation.
   std::string pyclass_name = classStrPrefix + std::string("AttributesManager");
   py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str())
-      .def("get_template_handle_by_ID", &MgrClass::getObjectHandleByID,
+      .def("get_template_handle_by_id", &MgrClass::getObjectHandleByID,
            ("Returns string handle for the " + attrType +
             " template corresponding to passed ID.")
                .c_str(),
-           "ID"_a)
+           "id"_a)
       .def(
-          "get_template_ID_by_handle",
+          "get_template_id_by_handle",
           py::overload_cast<const std::string&>(&MgrClass::getObjectIDByHandle),
           ("Returns integer ID for the " + attrType +
            " template with the passed handle.")
@@ -185,11 +185,11 @@ void declareBaseAttributesManager(py::module& m,
             "search_str.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
-      .def("remove_template_by_ID", &MgrClass::removeObjectByID,
+      .def("remove_template_by_id", &MgrClass::removeObjectByID,
            ("This removes, and returns the " + attrType +
             " template referenced by the passed ID from the library.")
                .c_str(),
-           "ID"_a)
+           "id"_a)
       .def("remove_template_by_handle", &MgrClass::removeObjectByHandle,
            ("This removes, and returns the " + attrType +
             " template referenced by the passed handle from the library.")
@@ -201,14 +201,14 @@ void declareBaseAttributesManager(py::module& m,
                .c_str(),
            "template"_a, "specified_handle"_a = "",
            "force_registration"_a = false)
-      .def("get_template_by_ID",
+      .def("get_template_by_id",
            static_cast<AttribsPtr (MgrClass::*)(int)>(
                &MgrClass::getObjectOrCopyByID),
            ("This returns a copy of the " + attrType +
             " template specified by the passed ID if it exists, and NULL if it "
             "does not.")
                .c_str(),
-           "ID"_a)
+           "id"_a)
       .def("get_template_by_handle",
            static_cast<AttribsPtr (MgrClass::*)(const std::string&)>(
                &MgrClass::getObjectOrCopyByHandle),

@@ -41,13 +41,13 @@ void declareBaseWrapperManager(py::module& m,
   // nomenclature and documentation.
   std::string pyclass_name = classStrPrefix + std::string("PhysWrapperManager");
   py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str())
-      .def("get_object_handle_by_ID", &MgrClass::getObjectHandleByID,
+      .def("get_object_handle_by_id", &MgrClass::getObjectHandleByID,
            ("Returns string handle for the " + objType +
             " corresponding to passed ID.")
                .c_str(),
-           "ID"_a)
+           "id"_a)
       .def(
-          "get_object_ID_by_handle",
+          "get_object_id_by_handle",
           py::overload_cast<const std::string&>(&MgrClass::getObjectIDByHandle),
           ("Returns integer ID for the " + objType + " with the passed handle.")
               .c_str(),
@@ -123,24 +123,24 @@ void declareBaseWrapperManager(py::module& m,
             "contain or explictly do not contain the passed search_str.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
-      .def("remove_object_by_ID", &MgrClass::removeObjectByID,
+      .def("remove_object_by_id", &MgrClass::removeObjectByID,
            ("This removes the " + objType +
             " referenced by the passed ID from the library.")
                .c_str(),
-           "ID"_a)
+           "id"_a)
       .def("remove_object_by_handle", &MgrClass::removeObjectByHandle,
            ("This removes the " + objType +
             " referenced by the passed handle from the library.")
                .c_str(),
            "handle"_a)
       .def(
-          "get_object_by_ID",
+          "get_object_by_id",
           static_cast<WrapperPtr (MgrClass::*)(int)>(
               &MgrClass::getObjectOrCopyByID),
           ("This returns a copy of the  " + objType +
            " specified by the passed ID if it exists, and NULL if it does not.")
               .c_str(),
-          "ID"_a)
+          "id"_a)
       .def("get_object_by_handle",
            static_cast<WrapperPtr (MgrClass::*)(const std::string&)>(
                &MgrClass::getObjectOrCopyByHandle),
@@ -189,8 +189,8 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
            Optionally attach the object to an existing SceneNode and assign its initial
            LightSetup key. Returns a reference to the created object.)")
       .def(
-          "remove_object_by_ID", &RigidObjectManager::removePhysObjectByID,
-          "ID"_a, "delete_object_node"_a = true, "delete_visual_node"_a = true,
+          "remove_object_by_id", &RigidObjectManager::removePhysObjectByID,
+          "id"_a, "delete_object_node"_a = true, "delete_visual_node"_a = true,
           R"(This removes the RigidObject referenced by the passed ID from the library, while allowing for "
             "the optional retention of the object's scene node and/or the visual node)")
       .def(
