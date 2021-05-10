@@ -45,7 +45,7 @@ void declareBaseWrapperManager(py::module& m,
            ("Returns string handle for the " + objType +
             " corresponding to passed ID.")
                .c_str(),
-           "id"_a)
+           "object_id"_a)
       .def(
           "get_object_id_by_handle",
           py::overload_cast<const std::string&>(&MgrClass::getObjectIDByHandle),
@@ -127,7 +127,7 @@ void declareBaseWrapperManager(py::module& m,
            ("This removes the " + objType +
             " referenced by the passed ID from the library.")
                .c_str(),
-           "id"_a)
+           "object_id"_a)
       .def("remove_object_by_handle", &MgrClass::removeObjectByHandle,
            ("This removes the " + objType +
             " referenced by the passed handle from the library.")
@@ -140,7 +140,7 @@ void declareBaseWrapperManager(py::module& m,
           ("This returns a copy of the  " + objType +
            " specified by the passed ID if it exists, and NULL if it does not.")
               .c_str(),
-          "id"_a)
+          "object_id"_a)
       .def("get_object_by_handle",
            static_cast<WrapperPtr (MgrClass::*)(const std::string&)>(
                &MgrClass::getObjectOrCopyByHandle),
@@ -190,7 +190,8 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
            LightSetup key. Returns a reference to the created object.)")
       .def(
           "remove_object_by_id", &RigidObjectManager::removePhysObjectByID,
-          "id"_a, "delete_object_node"_a = true, "delete_visual_node"_a = true,
+          "object_id"_a, "delete_object_node"_a = true,
+          "delete_visual_node"_a = true,
           R"(This removes the RigidObject referenced by the passed ID from the library, while allowing for "
             "the optional retention of the object's scene node and/or the visual node)")
       .def(

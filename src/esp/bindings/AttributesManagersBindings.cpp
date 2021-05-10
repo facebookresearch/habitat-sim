@@ -64,7 +64,7 @@ void declareBaseAttributesManager(py::module& m,
            ("Returns string handle for the " + attrType +
             " template corresponding to passed ID.")
                .c_str(),
-           "id"_a)
+           "template_id"_a)
       .def(
           "get_template_id_by_handle",
           py::overload_cast<const std::string&>(&MgrClass::getObjectIDByHandle),
@@ -189,7 +189,7 @@ void declareBaseAttributesManager(py::module& m,
            ("This removes, and returns the " + attrType +
             " template referenced by the passed ID from the library.")
                .c_str(),
-           "id"_a)
+           "template_id"_a)
       .def("remove_template_by_handle", &MgrClass::removeObjectByHandle,
            ("This removes, and returns the " + attrType +
             " template referenced by the passed handle from the library.")
@@ -208,7 +208,7 @@ void declareBaseAttributesManager(py::module& m,
             " template specified by the passed ID if it exists, and NULL if it "
             "does not.")
                .c_str(),
-           "id"_a)
+           "template_id"_a)
       .def("get_template_by_handle",
            static_cast<AttribsPtr (MgrClass::*)(const std::string&)>(
                &MgrClass::getObjectOrCopyByHandle),
