@@ -62,7 +62,7 @@ void initAttributesBindings(py::module& m) {
           "file_directory", &AbstractAttributes::getFileDirectory,
           R"(Directory where file-based templates were loaded from.)")
       .def_property_readonly(
-          "ID", &AbstractAttributes::getID,
+          "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
       .def_property_readonly("template_class", &AbstractAttributes::getClassKey,

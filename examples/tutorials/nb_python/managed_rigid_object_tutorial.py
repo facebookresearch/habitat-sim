@@ -206,13 +206,11 @@ if __name__ == "__main__":
         boxes[b].translation = box_positions[b]
         boxes[b].rotation = box_orientation
 
-    # get the object's initialization attributes (all boxes initialized with same mass)
-    object_init_template = boxes[0].creation_attributes
-    # anti-gravity force f=m(-g)
-    anti_grav_force = -1.0 * sim.get_gravity() * object_init_template.mass
+    # anti-gravity force f=m(-g) using first object's mass (all objects have the same mass)
+    anti_grav_force = -1.0 * sim.get_gravity() * boxes[0].mass
 
     # throw a sphere at the boxes from the agent position
-    sphere_template = obj_templates_mgr.get_template_by_ID(sphere_template_id)
+    sphere_template = obj_templates_mgr.get_template_by_id(sphere_template_id)
     sphere_template.scale = [0.5, 0.5, 0.5]
 
     obj_templates_mgr.register_template(sphere_template)
@@ -291,13 +289,13 @@ if __name__ == "__main__":
     )[0]
     clamp_obj = rigid_obj_mgr.add_object_by_handle(clamp_template_handle)
     clamp_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-    clamp_obj.translation = [0.8, 0.0, 0.5]
+    clamp_obj.translation = [0.8, 0.2, 0.5]
 
     start_time = sim.get_world_time()
     dt = 1.0
     while sim.get_world_time() < start_time + dt:
         # manually control the object's kinematic state
-        clamp_obj.translation = clamp_obj.translation + [0.0, 0.0, 0.01]
+        clamp_obj.translation += [0.0, 0.0, 0.01]
         clamp_obj.rotation = (
             mn.Quaternion.rotation(mn.Rad(0.05), [-1.0, 0.0, 0.0]) * clamp_obj.rotation
         )
@@ -417,7 +415,7 @@ if __name__ == "__main__":
     observations += simulate(sim, dt=3.0, get_frames=make_video)
 
     # remove the agent's body while preserving the SceneNode
-    rigid_obj_mgr.remove_object_by_ID(locobot.ID, delete_object_node=False)
+    rigid_obj_mgr.remove_object_by_id(locobot.object_id, delete_object_node=False)
 
     # demonstrate that the locobot object does not now exist'
     print("Locobot is still alive : {}".format(locobot.is_alive))

@@ -19,16 +19,16 @@ def perform_general_tests(attr_mgr, search_string):
 
     template_handle = template_handles[0]
     # get id from handle
-    template_ID = attr_mgr.get_template_ID_by_handle(template_handle)
+    template_id = attr_mgr.get_template_id_by_handle(template_handle)
     assert search_string in template_handle
 
     # verify that access is the same for ID and handle lookup
     template0 = attr_mgr.get_template_by_handle(template_handle)
-    template1 = attr_mgr.get_template_by_ID(template_ID)
+    template1 = attr_mgr.get_template_by_id(template_id)
 
     # verify template 0 and template 1 are copies of the same template
     assert template0.handle == template1.handle
-    assert template0.ID == template1.ID
+    assert template0.template_id == template1.template_id
 
     # modify template, register, then verify that
     # retrieved template is not same as previous template
@@ -42,7 +42,7 @@ def perform_general_tests(attr_mgr, search_string):
 
     # verify templates have the same identifiers
     assert template1.handle == template2.handle
-    assert template1.ID == template2.ID
+    assert template1.template_id == template2.template_id
 
     # verify the templates hold different data and are not the
     # same object
@@ -154,7 +154,7 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
 
     # verify template 0 and template 1 are copies of the same template
     assert new_template0.handle == new_template1.handle
-    assert new_template0.ID == new_template1.ID
+    assert new_template0.template_id == new_template1.template_id
     assert new_template0.get_string("test_key") == new_template1.get_string("test_key")
 
     # remove newly added default template
@@ -162,7 +162,7 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
 
     # verify added template was one removed
     assert new_template0.handle == new_template2.handle
-    assert new_template0.ID == new_template2.ID
+    assert new_template0.template_id == new_template2.template_id
     assert new_template0.get_string("test_key") == new_template2.get_string("test_key")
 
     # get new size of library after remove and verify same as original
