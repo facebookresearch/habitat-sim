@@ -188,7 +188,7 @@ def make_cfg(settings):
 
     if settings["equirect_semantic_sensor"]:
         equirect_semantic_sensor_spec = habitat_sim.EquirectangularSensorSpec()
-        equirect_semantic_sensor_spec.uuid = "equirect_depth_sensor"
+        equirect_semantic_sensor_spec.uuid = "equirect_semantic_sensor"
         equirect_semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
         equirect_semantic_sensor_spec.resolution = [
             settings["height"],
