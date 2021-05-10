@@ -294,7 +294,7 @@ def test_initial_hfov(scene, sensor_type, make_cfg_settings):
 @pytest.mark.parametrize(
     "model_name",
     [
-        "SpeckleiNoiseModel",
+        "SpeckleNoiseModel",
         "GaussianNoiseModel",
         "SaltAndPepperNoiseModel",
         "PoissonNoiseModel",
