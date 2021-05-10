@@ -189,8 +189,8 @@ def test_sensors(
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene", _test_scenes, ids=str)
-@pytest.mark.parametrize("sensor_type", all_base_sensor_types[0:2], ids=str)
+@pytest.mark.parametrize("scene", _test_scenes)
+@pytest.mark.parametrize("sensor_type", all_base_sensor_types[0:2])
 def test_reconfigure_render(
     scene,
     sensor_type,
@@ -245,7 +245,6 @@ def test_smoke_no_sensors(make_cfg_settings):
 @pytest.mark.parametrize(
     "scene",
     _test_scenes,
-    ids=str,
 )
 @pytest.mark.parametrize("gpu2gpu", [True, False])
 def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
@@ -277,8 +276,8 @@ def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene", _test_scenes, ids=str)
-@pytest.mark.parametrize("sensor_type", all_base_sensor_types[:2], ids=str)
+@pytest.mark.parametrize("scene", _test_scenes)
+@pytest.mark.parametrize("sensor_type", all_base_sensor_types[:2])
 def test_initial_hfov(scene, sensor_type, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
@@ -290,7 +289,7 @@ def test_initial_hfov(scene, sensor_type, make_cfg_settings):
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene", _test_scenes, ids=str)
+@pytest.mark.parametrize("scene", _test_scenes)
 @pytest.mark.parametrize(
     "model_name",
     [
@@ -299,7 +298,6 @@ def test_initial_hfov(scene, sensor_type, make_cfg_settings):
         "SaltAndPepperNoiseModel",
         "PoissonNoiseModel",
     ],
-    ids=str,
 )
 def test_rgb_noise(scene, model_name, make_cfg_settings):
     if not osp.exists(scene):
