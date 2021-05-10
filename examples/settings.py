@@ -17,11 +17,15 @@ default_sim_settings = {
     "color_sensor": True,  # RGB sensor (default: ON)
     "semantic_sensor": False,  # semantic sensor (default: OFF)
     "depth_sensor": False,  # depth sensor (default: OFF)
-    "ortho_sensor": False,  # Orthographic RGB sensor (default: OFF)
+    "ortho_rgb_sensor": False,  # Orthographic RGB sensor (default: OFF)
+    "ortho_depth_sensor": False,  # Orthographic RGB sensor (default: OFF)
+    "ortho_semantic_sensor": False,  # Orthographic RGB sensor (default: OFF)
     "fisheye_rgb_sensor": False,
     "fisheye_depth_sensor": False,
+    "fisheye_semantic_sensor": False,
     "equirect_rgb_sensor": False,
     "equirect_depth_sensor": False,
+    "equirect_semantic_sensor": False,
     "seed": 1,
     "silent": False,  # do not print log info (default: OFF)
     # settings exclusive to example.py
@@ -95,10 +99,28 @@ def make_cfg(settings):
         semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(semantic_sensor_spec)
 
-    if settings["ortho_sensor"]:
+    if settings["ortho_rgb_sensor"]:
         ortho_sensor_spec = habitat_sim.CameraSensorSpec()
-        ortho_sensor_spec.uuid = "ortho_sensor"
+        ortho_sensor_spec.uuid = "ortho_rgb_sensor"
         ortho_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
+        ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
+        ortho_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
+        sensor_specs.append(ortho_sensor_spec)
+
+    if settings["ortho_depth_sensor"]:
+        ortho_depth_sensor_spec = habitat_sim.CameraSensorSpec()
+        ortho_depth_sensor_spec.uuid = "ortho_depth_sensor"
+        ortho_depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
+        ortho_depth_sensor_spec.resolution = [settings["height"], settings["width"]]
+        ortho_depth_sensor_spec.position = [0, settings["sensor_height"], 0]
+        ortho_depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
+        sensor_specs.append(ortho_depth_sensor_spec)
+
+    if settings["ortho_semantic_sensor"]:
+        ortho_sensor_spec = habitat_sim.CameraSensorSpec()
+        ortho_sensor_spec.uuid = "ortho_semantic_sensor"
+        ortho_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
         ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
         ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
         ortho_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
@@ -142,6 +164,11 @@ def make_cfg(settings):
             uuid="fisheye_depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
         )
         sensor_specs.append(fisheye_depth_sensor_spec)
+    if settings["fisheye_semantic_sensor"]:
+        fisheye_semantic_sensor_spec = create_fisheye_spec(
+            uuid="fisheye_semantic_sensor", sensor_type=habitat_sim.SensorType.SEMANTIC
+        )
+        sensor_specs.append(fisheye_semantic_sensor_spec)
 
     if settings["equirect_rgb_sensor"]:
         equirect_rgb_sensor_spec = habitat_sim.EquirectangularSensorSpec()
@@ -158,6 +185,17 @@ def make_cfg(settings):
         equirect_depth_sensor_spec.resolution = [settings["height"], settings["width"]]
         equirect_depth_sensor_spec.position = [0, settings["sensor_height"], 0]
         sensor_specs.append(equirect_depth_sensor_spec)
+
+    if settings["equirect_semantic_sensor"]:
+        equirect_semantic_sensor_spec = habitat_sim.EquirectangularSensorSpec()
+        equirect_semantic_sensor_spec.uuid = "equirect_depth_sensor"
+        equirect_semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
+        equirect_semantic_sensor_spec.resolution = [
+            settings["height"],
+            settings["width"],
+        ]
+        equirect_semantic_sensor_spec.position = [0, settings["sensor_height"], 0]
+        sensor_specs.append(equirect_semantic_sensor_spec)
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()
