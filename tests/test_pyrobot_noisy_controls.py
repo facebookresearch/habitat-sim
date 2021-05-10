@@ -35,6 +35,7 @@ def _delta_rotation(a, b):
     itertools.product(
         [1.0, 0.0], ["LoCoBot", "LoCoBot-Lite"], ["ILQR", "Proportional", "Movebase"]
     ),
+    ids=str,
 )
 def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
     np.random.seed(0)

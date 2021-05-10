@@ -83,6 +83,7 @@ def test_example_modules(args):
         )
         if not (("--compute_action_shortest_path" in p) and ("--enable_physics" in p))
     ],
+    ids=str,
 )
 def test_example_script(args):
     run_main_subproc(args)
