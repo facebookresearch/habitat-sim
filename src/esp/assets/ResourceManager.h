@@ -554,6 +554,45 @@ class ResourceManager {
   inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }
 
   /**
+   * @brief Easy import for an asset resource, creating and registering a
+   * MeshMetaData in resourceDict.
+   * @param filename The asset filepath.
+   * @param requiresLighting Whether or not the asset should be prepared for
+   * rendering with lights.
+   * @return Whether or not the asset is imported.
+   */
+  bool importAsset(const std::string& filename, bool requiresLighting = true);
+
+  /**
+   * @brief Create or modify an <asset>_MatMod resource with a new material.
+   * @param filename The original asset name. Will be converted to
+   * <asset>_MatMod internally.
+   * @param matColor The mat color (ambient and diffuse) for the modified asset.
+   * @param specularColor The specular color for the modified asset.
+   * @return The name of the modified asset for attachement to SceneNode with
+   * @ref attachAsset or empty if failed.
+   */
+  std::string setupMaterialModifiedAsset(const std::string& filename,
+                                         const Magnum::Color4& matColor,
+                                         const Magnum::Color3& specularColor);
+
+  /**
+   * @brief Easy Drawable creation and attachment for a visual asset to a
+   * SceneNode.
+   * @param filename The asset filepath or asset key in resourceDict_.
+   * @param node The parent node under which the visual node hierarchy will be
+   * generated.
+   * @param visNodeCache A reference to a SceneNode* vector which caches all new
+   * SceneNodes created by the attachment process.
+   * @param drawables The DrawableGroup to which new Drawables will be added.
+   * @return Whether or not the attachment succeeded.
+   */
+  bool attachAsset(const std::string& filename,
+                   scene::SceneNode& node,
+                   std::vector<scene::SceneNode*>& visNodeCache,
+                   DrawableGroup* drawables);
+
+  /**
    * @brief Set a replay recorder so that ResourceManager can notify it about
    * render assets.
    */

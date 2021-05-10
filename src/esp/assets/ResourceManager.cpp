@@ -1106,6 +1106,10 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
   importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  Cr::PluginManager::PluginMetadata* const assimpmetadata =
+      importerManager_.metadata("AssimpImporter");
+  assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
+                                           "true");
 #endif
   {
     Cr::PluginManager::PluginMetadata* const metadata =
@@ -1983,6 +1987,112 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
   CHECK(primitive_meshes_.count(primitiveID));
   primitive_meshes_.erase(primitiveID);
+}
+
+bool ResourceManager::importAsset(const std::string& filename,
+                                  bool requiresLighting) {
+  bool meshSuccess = true;
+  if (resourceDict_.count(filename) > 0) {
+    return true;
+  } else {
+    esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, filename};
+    meshinfo.requiresLighting = requiresLighting;
+    meshSuccess = loadRenderAssetGeneral(meshinfo);
+
+    // check if collision handle exists in collision mesh groups yet.  if not
+    // then instance
+    if (collisionMeshGroups_.count(filename) == 0) {
+      // set collision mesh data
+      const MeshMetaData& meshMetaData = getMeshMetaData(filename);
+
+      int start = meshMetaData.meshIndex.first;
+      int end = meshMetaData.meshIndex.second;
+      //! Gather mesh components for meshGroup data
+      std::vector<CollisionMeshData> meshGroup;
+      for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
+        GenericMeshData& gltfMeshData =
+            dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
+        CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
+        meshGroup.push_back(meshData);
+      }
+      collisionMeshGroups_.emplace(filename, meshGroup);
+    }
+  }
+
+  return meshSuccess;
+}
+
+std::string ResourceManager::setupMaterialModifiedAsset(
+    const std::string& filename,
+    const Magnum::Color4& matColor,
+    const Magnum::Color3& specularColor) {
+  assert(resourceDict_.count(filename) > 0);
+
+  std::string modifiedAssetName = filename + "_MatMod";
+
+  if (resourceDict_.count(modifiedAssetName) == 0) {
+    // first register the copied metaData
+    resourceDict_.emplace(modifiedAssetName,
+                          LoadedAssetData(resourceDict_.at(filename)));
+  }
+
+  // create/set a new PhongMaterialData for the asset
+  auto& meshMetaData = resourceDict_.at(modifiedAssetName).meshMetaData;
+
+  std::ostringstream matHandleStream;
+  matHandleStream << "phong_amb_" << matColor.toSrgbAlphaInt() << "_spec_"
+                  << Mn::Color4(specularColor).toSrgbAlphaInt();
+  std::string newMaterialID = matHandleStream.str();
+
+  auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
+
+  // check for unfound resource
+  if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
+    // create/register the new material
+    gfx::PhongMaterialData::uptr phongMaterial =
+        gfx::PhongMaterialData::create_unique();
+    phongMaterial->ambientColor = matColor;
+    phongMaterial->diffuseColor = matColor;
+    phongMaterial->specularColor = specularColor;
+
+    std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
+    shaderManager_.set(newMaterialID, finalMaterial.release());
+  }
+
+  // iteratively reset the local material ids for all components
+  std::vector<MeshTransformNode*> nodeQueue;
+  nodeQueue.push_back(&meshMetaData.root);
+
+  while (!nodeQueue.empty()) {
+    MeshTransformNode* node = nodeQueue.back();
+    nodeQueue.pop_back();
+    for (auto& child : node->children) {
+      nodeQueue.push_back(&child);
+    }
+    if (node->meshIDLocal != ID_UNDEFINED) {
+      node->materialID = newMaterialID;
+    }
+  }
+
+  return modifiedAssetName;
+}
+
+bool ResourceManager::attachAsset(const std::string& filename,
+                                  scene::SceneNode& node,
+                                  std::vector<scene::SceneNode*>& visNodeCache,
+                                  DrawableGroup* drawables) {
+  if (drawables != nullptr && resourceDict_.count(filename)) {
+    MeshMetaData& meshMetaData = resourceDict_[filename].meshMetaData;
+
+    std::vector<StaticDrawableInfo> staticDrawableInfo;
+    addComponent(meshMetaData, node, DEFAULT_LIGHTING_KEY, drawables,
+                 meshMetaData.root, visNodeCache, false, staticDrawableInfo);
+    // compute the full BB hierarchy for the new tree.
+    node.computeCumulativeBB();
+  } else {
+    return false;
+  }
+  return true;
 }
 
 void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
