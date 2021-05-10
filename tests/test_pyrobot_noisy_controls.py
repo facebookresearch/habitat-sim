@@ -4,8 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import itertools
-
 import numpy as np
 import pytest
 import quaternion  # noqa: F401
@@ -30,13 +28,9 @@ def _delta_rotation(a, b):
     return np.arctan2(look_dir[0], -look_dir[2])
 
 
-@pytest.mark.parametrize(
-    "noise_multiplier,robot,controller",
-    itertools.product(
-        [1.0, 0.0], ["LoCoBot", "LoCoBot-Lite"], ["ILQR", "Proportional", "Movebase"]
-    ),
-    ids=str,
-)
+@pytest.mark.parametrize("noise_multiplier", [1.0, 0.0])
+@pytest.mark.parametrize("robot", ["LoCoBot", "LoCoBot-Lite"])
+@pytest.mark.parametrize("controller", ["ILQR", "Proportional", "Movebase"])
 def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
     np.random.seed(0)
     scene_graph = SceneGraph()

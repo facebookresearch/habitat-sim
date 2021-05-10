@@ -51,8 +51,8 @@ num_tested = 0
 total_spl = 0.0
 
 
-@pytest.mark.parametrize("test_navmesh", test_navmeshes, ids=str)
-@pytest.mark.parametrize("move_filter_fn", ["try_step", "try_step_no_sliding"], ids=str)
+@pytest.mark.parametrize("test_navmesh", test_navmeshes)
+@pytest.mark.parametrize("move_filter_fn", ["try_step", "try_step_no_sliding"])
 @pytest.mark.parametrize("action_noise", [False, True])
 def test_greedy_follower(test_navmesh, move_filter_fn, action_noise, pbar):
     global num_fails

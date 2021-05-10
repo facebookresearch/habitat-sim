@@ -30,7 +30,7 @@ def get_shortest_path(sim, samples):
     return path_results
 
 
-@pytest.mark.parametrize("test_scene", test_scenes, ids=str)
+@pytest.mark.parametrize("test_scene", test_scenes)
 def test_recompute_navmesh(test_scene):
     if not osp.exists(test_scene):
         pytest.skip(f"{test_scene} not found")
@@ -119,7 +119,7 @@ def test_recompute_navmesh(test_scene):
         assert some_diff
 
 
-@pytest.mark.parametrize("test_scene", test_scenes, ids=str)
+@pytest.mark.parametrize("test_scene", test_scenes)
 def test_navmesh_area(test_scene):
     if not osp.exists(test_scene):
         pytest.skip(f"{test_scene} not found")

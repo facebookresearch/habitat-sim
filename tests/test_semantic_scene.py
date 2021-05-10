@@ -29,7 +29,7 @@ _test_scenes = [
 ]
 
 
-@pytest.mark.parametrize("scene", _test_scenes, ids=str)
+@pytest.mark.parametrize("scene", _test_scenes)
 def test_semantic_scene(scene, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
