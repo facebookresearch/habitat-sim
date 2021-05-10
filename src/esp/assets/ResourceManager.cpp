@@ -2029,15 +2029,11 @@ bool ResourceManager::importAsset(const std::string& filename,
 
 std::string ResourceManager::setupMaterialModifiedAsset(
     const std::string& filename,
-    const std::shared_ptr<esp::io::URDF::Material>& material) {
-  std::string modifiedAssetName = "";
+    const Magnum::Color4& matColor,
+    const Magnum::Color3& specularColor) {
+  assert(resourceDict_.count(filename) > 0);
 
-  if (resourceDict_.count(filename) == 0 || material == nullptr) {
-    // nothing to do
-    return modifiedAssetName;
-  }
-
-  modifiedAssetName = filename + "_MatMod";
+  std::string modifiedAssetName = filename + "_MatMod";
 
   if (resourceDict_.count(modifiedAssetName) == 0) {
     // first register the copied metaData
@@ -2048,11 +2044,9 @@ std::string ResourceManager::setupMaterialModifiedAsset(
   // create/set a new PhongMaterialData for the asset
   auto& meshMetaData = resourceDict_.at(modifiedAssetName).meshMetaData;
 
-  io::URDF::MaterialColor& color = material->m_matColor;
   std::ostringstream matHandleStream;
-  matHandleStream << "phong_amb_" << color.m_rgbaColor.toSrgbAlphaInt()
-                  << "_spec_"
-                  << Mn::Color4(color.m_specularColor).toSrgbAlphaInt();
+  matHandleStream << "phong_amb_" << matColor.toSrgbAlphaInt() << "_spec_"
+                  << Mn::Color4(specularColor).toSrgbAlphaInt();
   std::string newMaterialID = matHandleStream.str();
 
   auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
@@ -2062,9 +2056,9 @@ std::string ResourceManager::setupMaterialModifiedAsset(
     // create/register the new material
     gfx::PhongMaterialData::uptr phongMaterial =
         gfx::PhongMaterialData::create_unique();
-    phongMaterial->ambientColor = color.m_rgbaColor;
-    phongMaterial->diffuseColor = color.m_rgbaColor;
-    phongMaterial->specularColor = color.m_specularColor;
+    phongMaterial->ambientColor = matColor;
+    phongMaterial->diffuseColor = matColor;
+    phongMaterial->specularColor = specularColor;
 
     std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
     shaderManager_.set(newMaterialID, finalMaterial.release());

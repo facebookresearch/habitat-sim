@@ -37,7 +37,6 @@
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/io/URDFParser.h"
 #include "esp/physics/configure.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -572,9 +571,9 @@ class ResourceManager {
    * @return The name of the modified asset for attachement to SceneNode with
    * @ref attachAsset or empty if failed.
    */
-  std::string setupMaterialModifiedAsset(
-      const std::string& filename,
-      const std::shared_ptr<esp::io::URDF::Material>& material = nullptr);
+  std::string setupMaterialModifiedAsset(const std::string& filename,
+                                         const Magnum::Color4& matColor,
+                                         const Magnum::Color3& specularColor);
 
   /**
    * @brief Easy Drawable creation and attachment for a visual asset to a

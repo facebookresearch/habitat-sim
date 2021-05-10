@@ -10,6 +10,7 @@
  */
 
 #include "RigidBase.h"
+#include "esp/io/URDFParser.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {

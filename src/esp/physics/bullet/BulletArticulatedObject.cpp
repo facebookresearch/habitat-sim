@@ -313,8 +313,12 @@ bool BulletArticulatedObject::attachGeometry(
         // create a modified asset if necessary
         std::shared_ptr<io::URDF::Material> material =
             visual.m_geometry.m_localMaterial;
-        std::string assetMatModName = resMgr_.setupMaterialModifiedAsset(
-            visual.m_geometry.m_meshFileName, material);
+        std::string assetMatModName =
+            material ? resMgr_.setupMaterialModifiedAsset(
+                           visual.m_geometry.m_meshFileName,
+                           material->m_matColor.m_rgbaColor,
+                           material->m_matColor.m_specularColor)
+                     : "";
 
         // then attach
         geomSuccess = resMgr_.attachAsset(

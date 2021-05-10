@@ -30,6 +30,7 @@
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
+#include "esp/io/URDFParser.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
