@@ -446,6 +446,7 @@ class BulletPhysicsManager : public PhysicsManager {
                                int* objectId,
                                int* linkId) const;
 
+ public:
   ESP_SMART_POINTERS(BulletPhysicsManager)
 
 };  // end class BulletPhysicsManager

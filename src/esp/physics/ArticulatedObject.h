@@ -377,9 +377,9 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void reset(){};
 
-  virtual void setSleep(CORRADE_UNUSED bool sleep){};
+  virtual void setActive(CORRADE_UNUSED bool active){};
 
-  virtual bool getSleep() { return false; };
+  virtual bool isActive() { return true; };
 
   //! Check if this object can be de-activated (i.e. sleep).
   virtual bool getCanSleep() { return false; };

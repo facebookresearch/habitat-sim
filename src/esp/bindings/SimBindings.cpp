@@ -147,6 +147,10 @@ void initSimBindings(py::module& m) {
            pybind11::return_value_policy::reference,
            R"(Get the current dataset's StageAttributesManager instance
             for configuring simulation stage templates.)")
+      .def("get_rigid_object_manager", &Simulator::getRigidObjectManager,
+           pybind11::return_value_policy::reference,
+           R"(Get the manager responsible for organizing and accessing all the
+           currently constructed rigid objects.)")
       .def(
           "get_physics_simulation_library",
           &Simulator::getPhysicsSimulationLibrary,

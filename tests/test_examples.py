@@ -31,6 +31,11 @@ def powerset(iterable):
             "--no-make-video",
         ),
         (
+            "examples/tutorials/nb_python/managed_rigid_object_tutorial.py",
+            "--no-show-video",
+            "--no-make-video",
+        ),
+        (
             "examples/tutorials/nb_python/ECCV_2020_Navigation.py",
             "--no-make-video",
             "--no-display",
@@ -78,6 +83,7 @@ def test_example_modules(args):
         )
         if not (("--compute_action_shortest_path" in p) and ("--enable_physics" in p))
     ],
+    ids=str,
 )
 def test_example_script(args):
     run_main_subproc(args)

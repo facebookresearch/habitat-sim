@@ -13,7 +13,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.11.1
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -287,7 +287,7 @@ def sample_object_state(
     tries = 0
     valid_placement = False
     # Note: following assumes sim was not reconfigured without close
-    scene_collision_margin = stage_attr_mgr.get_template_by_ID(0).margin
+    scene_collision_margin = stage_attr_mgr.get_template_by_id(0).margin
     while not valid_placement and tries < max_tries:
         tries += 1
         # initialize sample location to random point in scene bounding box

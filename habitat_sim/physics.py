@@ -4,14 +4,18 @@
 
 from habitat_sim._ext.habitat_sim_bindings import (
     JointMotorSettings,
+    ManagedRigidObject,
     MotionType,
     PhysicsSimulationLibrary,
     RaycastResults,
     RayHitInfo,
+    RigidObjectManager,
     VelocityControl,
 )
 
 __all__ = [
+    "ManagedRigidObject",
+    "RigidObjectManager",
     "PhysicsSimulationLibrary",
     "MotionType",
     "VelocityControl",

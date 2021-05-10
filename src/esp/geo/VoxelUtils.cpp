@@ -288,7 +288,7 @@ std::vector<Mn::Vector3i> getVoxelSetFromBoolGrid(
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
         if (boolGrid[i][j][k]) {
-          voxelSet.push_back(Mn::Vector3i(i, j, k));
+          voxelSet.emplace_back(i, j, k);
         }
       }
     }
@@ -311,7 +311,7 @@ std::vector<Mn::Vector3i> getVoxelSetFromIntGrid(
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
         if (intGrid[i][j][k] >= lb && intGrid[i][j][k] <= ub) {
-          voxelSet.push_back(Mn::Vector3i(i, j, k));
+          voxelSet.emplace_back(i, j, k);
         }
       }
     }
@@ -334,7 +334,7 @@ std::vector<Mn::Vector3i> getVoxelSetFromFloatGrid(
     for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
         if (floatGrid[i][j][k] >= lb && floatGrid[i][j][k] <= ub) {
-          voxelSet.push_back(Mn::Vector3i(i, j, k));
+          voxelSet.emplace_back(i, j, k);
         }
       }
     }

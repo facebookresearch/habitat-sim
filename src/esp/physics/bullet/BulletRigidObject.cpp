@@ -368,7 +368,7 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
 
   //! Bullet rigid body setup
-  auto motionState =
+  auto* motionState =
       (mt == MotionType::STATIC) ? nullptr : &(this->btMotionState());
 
   btRigidBody::btRigidBodyConstructionInfo info =
@@ -422,7 +422,7 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
     bWorld_->addRigidBody(
         bObjectRigidBody_.get(), int(CollisionGroup::FreeObject),
         CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject));
-    setSleep(false);
+    setActive(true);
   }
 }
 

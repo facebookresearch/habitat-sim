@@ -26,7 +26,7 @@ bool writeJsonToFile(const JsonDocument& document,
     outFilePath += ".json";
   }
 
-  auto f = fopen(outFilePath.c_str(), "w");
+  auto* f = fopen(outFilePath.c_str(), "w");
   if (!f) {
     return false;
   }

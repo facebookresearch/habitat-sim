@@ -11,6 +11,7 @@
 
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/BufferImage.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/PixelFormat.h>
@@ -35,6 +36,12 @@
 
 #if !defined(CORRADE_TARGET_EMSCRIPTEN)
 #include <atomic_wait.h>
+#endif
+// There is a depth buffer overriden even when the depth test and depth buffer
+// writing is diabled. It was observed only on Mac OSX, not on linux. Suspect it
+// is a bug in the GL driver on Mac.
+#ifdef CORRADE_TARGET_APPLE
+#define ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
 #endif
 
 namespace Mn = Magnum;
@@ -313,19 +320,61 @@ struct Renderer::Impl {
         mesh_ = Mn::GL::Mesh{};
         mesh_->setCount(3);
       }
-      if (type == sensor::SensorType::Depth) {
-        Magnum::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
-            shader = getShader<TextureVisualizerShader>(
-                esp::gfx::Renderer::Impl::RendererShaderType::
-                    DepthTextureVisualizer);
+      esp::gfx::Renderer::Impl::RendererShaderType rendererShaderType =
+          esp::gfx::Renderer::Impl::RendererShaderType::DepthTextureVisualizer;
 
-        shader->bindDepthTexture(tgt.getDepthTexture());
-        shader->setDepthUnprojection(*visualSensor.depthUnprojection());
-        shader->setColorMapTransformation(colorMapOffset, colorMapScale);
-        tgt.renderReEnter();
-        shader->draw(*mesh_);
-        tgt.renderExit();
+      if (type == sensor::SensorType::Semantic) {
+        rendererShaderType =
+            gfx::Renderer::Impl::RendererShaderType::ObjectIdTextureVisualizer;
       }
+
+      Magnum::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
+          shader = getShader<TextureVisualizerShader>(rendererShaderType);
+
+      if (type == sensor::SensorType::Depth) {
+#ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
+        // create a BufferImage instance, if not already
+        if (!depthBufferImage_) {
+          depthBufferImage_.emplace(Mn::GL::PixelFormat::DepthComponent,
+                                    Mn::GL::PixelType::Float);
+        }
+        tgt.getDepthTexture().image(0, *depthBufferImage_,
+                                    Mn::GL::BufferUsage::StaticRead);
+
+        // This takes the above output image (which is depth) and
+        // "reinterprets" it as R32F. In other words, the image below serves
+        // as an "image view".
+        Mn::GL::BufferImage2D clonedDepthImage{
+            depthBufferImage_->storage(), Mn::PixelFormat::R32F,
+            depthBufferImage_->size(),
+            Mn::GL::Buffer::wrap(depthBufferImage_->buffer().id(),
+                                 Mn::GL::ObjectFlag::Created),
+            depthBufferImage_->dataSize()};
+
+        // setup a texture
+        if (!visualizedTex_ ||
+            visualizedTex_->imageSize(0) != tgt.framebufferSize()) {
+          visualizedTex_ = Mn::GL::Texture2D{};
+          (*visualizedTex_)
+              .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+              .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+              .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+              .setStorage(1, Mn::GL::TextureFormat::R32F,
+                          tgt.framebufferSize());
+        }
+        (*visualizedTex_).setSubImage(0, {}, clonedDepthImage);
+        shader->bindDepthTexture(*visualizedTex_);
+#else
+        shader->bindDepthTexture(tgt.getDepthTexture());
+#endif
+        shader->setDepthUnprojection(*visualSensor.depthUnprojection());
+      } else if (type == sensor::SensorType::Semantic) {
+        shader->bindObjectIdTexture(tgt.getObjectIdTexture());
+      }
+      shader->setColorMapTransformation(colorMapOffset, colorMapScale);
+      tgt.renderReEnter();
+      shader->draw(*mesh_);
+      tgt.renderExit();
 
       // TODO object id
       Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
@@ -394,26 +443,27 @@ struct Renderer::Impl {
             "Renderer::Impl::bindRenderTarget(): Tried to setup a color "
             "render buffer while the simulator was initialized with "
             "requiresTextures = false", );
-        renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
+        renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
         break;
 
       case sensor::SensorType::Depth:
         if (bindingFlags & Flag::VisualizeTexture) {
-          renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
+          renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
         }
-        renderTargetFlags |= RenderTarget::Flag::DepthTexture;
+        renderTargetFlags |= RenderTarget::Flag::DepthTextureAttachment;
         break;
 
       case sensor::SensorType::Semantic:
         if (bindingFlags & Flag::VisualizeTexture) {
-          renderTargetFlags |= RenderTarget::Flag::RgbaBuffer;
+          renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
         }
-        renderTargetFlags |= RenderTarget::Flag::ObjectIdBuffer;
+        renderTargetFlags |= RenderTarget::Flag::ObjectIdAttachment;
         break;
 
       default:
         // I need this default, since sensor type list is long, and without
         // default clang-tidy will complain
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
     }
 
@@ -431,13 +481,17 @@ struct Renderer::Impl {
 #if !defined(CORRADE_TARGET_EMSCRIPTEN)
   std::unique_ptr<BackgroundRenderThread> backgroundRenderer_ = nullptr;
 #endif
-  Corrade::Containers::Optional<Mn::GL::Mesh> mesh_;
-  Magnum::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+  Cr::Containers::Optional<Mn::GL::Mesh> mesh_;
+  Mn::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+#ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
+  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_;
+  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage_;
+#endif
 
   enum class RendererShaderType : uint8_t {
     DepthShader = 0,
     DepthTextureVisualizer = 1,
-    // ObjectIdTextureVisualizer = 2,
+    ObjectIdTextureVisualizer = 2,
   };
   template <typename T>
   Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
@@ -452,7 +506,10 @@ struct Renderer::Impl {
         key = Mn::ResourceKey{"depthVisualizer"};
         break;
 
-      // TODO: object id
+      case RendererShaderType::ObjectIdTextureVisualizer:
+        key = Mn::ResourceKey{"objectIdVisualizer"};
+        break;
+
       default:
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
@@ -471,6 +528,12 @@ struct Renderer::Impl {
             shader.key(),
             new TextureVisualizerShader{
                 {TextureVisualizerShader::Flag::DepthTexture}},
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+      } else if (type == RendererShaderType::ObjectIdTextureVisualizer) {
+        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+            shader.key(),
+            new TextureVisualizerShader{
+                {TextureVisualizerShader::Flag::ObjectIdTexture}},
             Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
       }
     }

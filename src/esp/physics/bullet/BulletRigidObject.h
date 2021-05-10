@@ -96,10 +96,9 @@ class BulletRigidObject : public BulletBase,
 
   /**
    * @brief Set the object to sleep or wake.
-   *
    */
-  virtual void setSleep(bool sleep) override {
-    if (sleep) {
+  virtual void setActive(bool active) override {
+    if (!active) {
       bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
     } else {
       bObjectRigidBody_->activate(true);
@@ -144,7 +143,7 @@ class BulletRigidObject : public BulletBase,
   void applyForce(const Magnum::Vector3& force,
                   const Magnum::Vector3& relPos) override {
     if (objectMotionType_ == MotionType::DYNAMIC) {
-      setSleep(false);
+      setActive(true);
       bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
     }
   }
@@ -163,7 +162,7 @@ class BulletRigidObject : public BulletBase,
   void applyImpulse(const Magnum::Vector3& impulse,
                     const Magnum::Vector3& relPos) override {
     if (objectMotionType_ == MotionType::DYNAMIC) {
-      setSleep(false);
+      setActive(true);
       bObjectRigidBody_->applyImpulse(btVector3(impulse), btVector3(relPos));
     }
   }
@@ -178,7 +177,7 @@ class BulletRigidObject : public BulletBase,
    */
   void applyTorque(const Magnum::Vector3& torque) override {
     if (objectMotionType_ == MotionType::DYNAMIC) {
-      setSleep(false);
+      setActive(true);
       bObjectRigidBody_->applyTorque(btVector3(torque));
     }
   }
@@ -194,7 +193,7 @@ class BulletRigidObject : public BulletBase,
    */
   void applyImpulseTorque(const Magnum::Vector3& impulse) override {
     if (objectMotionType_ == MotionType::DYNAMIC) {
-      setSleep(false);
+      setActive(true);
       bObjectRigidBody_->applyTorqueImpulse(btVector3(impulse));
     }
   }
@@ -303,7 +302,7 @@ class BulletRigidObject : public BulletBase,
    */
   void setLinearVelocity(const Magnum::Vector3& linVel) override {
     if (objectMotionType_ != MotionType::STATIC) {
-      setSleep(false);
+      setActive(true);
       bObjectRigidBody_->setLinearVelocity(btVector3(linVel));
     }
   }
@@ -319,7 +318,7 @@ class BulletRigidObject : public BulletBase,
    */
   void setAngularVelocity(const Magnum::Vector3& angVel) override {
     if (objectMotionType_ != MotionType::STATIC) {
-      setSleep(false);
+      setActive(true);
       bObjectRigidBody_->setAngularVelocity(btVector3(angVel));
     }
   }

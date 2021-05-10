@@ -177,9 +177,9 @@ void initGfxBindings(py::module& m) {
   py::enum_<LightPositionModel>(
       m, "LightPositionModel",
       R"(Defines the coordinate frame of a light source.)")
-      .value("CAMERA", LightPositionModel::CAMERA)
-      .value("GLOBAL", LightPositionModel::GLOBAL)
-      .value("OBJECT", LightPositionModel::OBJECT);
+      .value("Camera", LightPositionModel::Camera)
+      .value("Global", LightPositionModel::Global)
+      .value("Object", LightPositionModel::Object);
 
   py::enum_<LightType>(
       m, "LightType", R"(Defines the type of light described by the LightInfo)")
@@ -194,7 +194,7 @@ void initGfxBindings(py::module& m) {
       .def(py::init())
       .def(py::init<Magnum::Vector4, Magnum::Color3, LightPositionModel>(),
            "vector"_a, "color"_a = Magnum::Color3{1},
-           "model"_a = LightPositionModel::GLOBAL)
+           "model"_a = LightPositionModel::Global)
       .def_readwrite("vector", &LightInfo::vector)
       .def_readwrite("color", &LightInfo::color)
       .def_readwrite("model", &LightInfo::model)

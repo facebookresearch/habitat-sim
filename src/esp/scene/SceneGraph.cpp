@@ -16,7 +16,7 @@ SceneGraph::SceneGraph() : rootNode_{world_} {
 }
 
 bool SceneGraph::isRootNode(SceneNode& node) {
-  auto parent = node.parent();
+  auto* parent = node.parent();
   // if the parent is null, it means the node is the world_ node.
   CORRADE_ASSERT(parent != nullptr,
                  "SceneGraph::isRootNode: the node is illegal.", false);

@@ -199,7 +199,7 @@ class RenderCamera : public MagnumCamera {
    * @return true, if it is to use drawable ids as the object ids in the
    * following rendering pass, otherwise false
    */
-  bool useDrawableIds() { return useDrawableIds_; }
+  bool useDrawableIds() const { return useDrawableIds_; }
   /**
    * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
    * position.

@@ -4,10 +4,9 @@
 
 #include "esp/bindings/bindings.h"
 
-#include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
-#include "esp/core/AbstractManagedObject.h"
+#include "esp/core/managedContainers/AbstractManagedObject.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
@@ -33,6 +32,7 @@ using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
+using esp::core::AbstractFileBasedManagedObject;
 using esp::core::AbstractManagedObject;
 
 namespace esp {
@@ -43,9 +43,14 @@ void initAttributesBindings(py::module& m) {
   // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<AbstractManagedObject, AbstractManagedObject::ptr>(
       m, "AbstractManagedObject");
+  // ==== AbstractFileBasedManagedObject ====
+  // NOLINTNEXTLINE(bugprone-unused-raii)
+  py::class_<AbstractFileBasedManagedObject, esp::core::AbstractManagedObject,
+             AbstractFileBasedManagedObject::ptr>(
+      m, "AbstractFileBasedManagedObject");
 
   // ==== AbstractAttributes ====
-  py::class_<AbstractAttributes, esp::core::AbstractManagedObject,
+  py::class_<AbstractAttributes, esp::core::AbstractFileBasedManagedObject,
              esp::core::Configuration, AbstractAttributes::ptr>(
       m, "AbstractAttributes")
       .def(py::init(
@@ -57,7 +62,7 @@ void initAttributesBindings(py::module& m) {
           "file_directory", &AbstractAttributes::getFileDirectory,
           R"(Directory where file-based templates were loaded from.)")
       .def_property_readonly(
-          "ID", &AbstractAttributes::getID,
+          "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
       .def_property_readonly("template_class", &AbstractAttributes::getClassKey,

@@ -3,16 +3,26 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PhysicsManager.h"
-#include "esp/assets/CollisionMeshData.h"
-
 #include <Magnum/Math/Range.h>
-
+#include "esp/assets/CollisionMeshData.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
+#include "esp/sim/Simulator.h"
 namespace esp {
 namespace physics {
 
+PhysicsManager::PhysicsManager(
+    assets::ResourceManager& _resourceManager,
+    const metadata::attributes::PhysicsManagerAttributes::cptr&
+        _physicsManagerAttributes)
+    : resourceManager_(_resourceManager),
+      physicsManagerAttributes_(_physicsManagerAttributes),
+      rigidObjectManager_(RigidObjectManager::create()) {}
+
 bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   physicsNode_ = node;
-
+  // set the rigidObjectManager's weak reference to physics manager to be based
+  // on the same shared pointer that Simulator is using.
+  rigidObjectManager_->setPhysicsManager(shared_from_this());
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes_->getTimestep();
 
@@ -24,8 +34,8 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
 
 bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
-  staticStageObject_ = physics::RigidStage::create_unique(
-      &physicsNode_->createChild(), resourceManager_);
+  staticStageObject_ = physics::RigidStage::create(&physicsNode_->createChild(),
+                                                   resourceManager_);
   return true;
 }
 
@@ -46,14 +56,60 @@ bool PhysicsManager::addStage(
   //! Initialize scene
   bool sceneSuccess = addStageFinalize(initAttributes);
   return sceneSuccess;
-}
+}  // PhysicsManager::addStage
 
 bool PhysicsManager::addStageFinalize(
     const metadata::attributes::StageAttributes::ptr& initAttributes) {
   //! Initialize scene
   bool sceneSuccess = staticStageObject_->initialize(initAttributes);
   return sceneSuccess;
-}
+}  // PhysicsManager::addStageFinalize
+
+int PhysicsManager::addObject(const std::string& attributesHandle,
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
+  esp::metadata::attributes::ObjectAttributes::ptr attributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
+          attributesHandle);
+  if (!attributes) {
+    LOG(ERROR) << "PhysicsManager::addObject : "
+                  "Object creation failed due to unknown attributes "
+               << attributesHandle;
+    return ID_UNDEFINED;
+  } else {
+    // attributes exist, get drawables if valid simulator accessible
+    if (simulator_ != nullptr) {
+      auto& drawables = simulator_->getDrawableGroup();
+      return addObject(attributes, &drawables, attachmentNode, lightSetup);
+    } else {
+      // support creation when simulator DNE
+      return addObject(attributes, nullptr, attachmentNode, lightSetup);
+    }
+  }
+}  // PhysicsManager::addObject
+
+int PhysicsManager::addObject(const int attributesID,
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
+  const esp::metadata::attributes::ObjectAttributes::ptr attributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
+          attributesID);
+  if (!attributes) {
+    LOG(ERROR) << "PhysicsManager::addObject : "
+                  "Object creation failed due to unknown attributes ID "
+               << attributesID;
+    return ID_UNDEFINED;
+  } else {
+    // attributes exist, get drawables if valid simulator accessible
+    if (simulator_ != nullptr) {
+      auto& drawables = simulator_->getDrawableGroup();
+      return addObject(attributes, &drawables, attachmentNode, lightSetup);
+    } else {
+      // support creation when simulator DNE
+      return addObject(attributes, nullptr, attachmentNode, lightSetup);
+    }
+  }
+}  // PhysicsManager::addObject
 
 int PhysicsManager::addObject(
     const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
@@ -117,14 +173,37 @@ int PhysicsManager::addObject(
   // finalize rigid object creation
   objectSuccess = obj->finalizeObject();
   if (!objectSuccess) {
+    // if failed for some reason, remove and return
     removeObject(nextObjectID_, true, true);
     LOG(ERROR) << "PhysicsManager::addObject : PhysicsManager::finalizeObject "
                   "unsuccessful.  Aborting.";
     return ID_UNDEFINED;
   }
+  // Valid object exists by here.
+  // Now we need to create wrapper, wrap around object,
+  // and register wrapper with wrapper manager
+  // 1.0 Get unique name for object using simplified attributes name.
+  std::string simpleObjectHandle = objectAttributes->getSimplifiedHandle();
+  LOG(WARNING) << "PhysicsManager::addObject : simpleObjectHandle : "
+               << simpleObjectHandle;
+  std::string newObjectHandle =
+      rigidObjectManager_->getUniqueHandleFromCandidate(simpleObjectHandle);
+  LOG(WARNING) << "PhysicsManager::addObject : newObjectHandle : "
+               << newObjectHandle;
+
+  existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
+  // 2.0 Get wrapper - name is irrelevant, do not register.
+  ManagedRigidObject::ptr objWrapper =
+      rigidObjectManager_->createObject("No Name Yet");
+
+  // 3.0 Put object in wrapper
+  objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
+
+  // 4.0 register wrapper in manager
+  rigidObjectManager_->registerObject(objWrapper, newObjectHandle);
 
   return nextObjectID_;
-}
+}  // PhysicsManager::addObject
 
 void PhysicsManager::removeObject(const int physObjectID,
                                   bool deleteObjectNode,
@@ -132,6 +211,7 @@ void PhysicsManager::removeObject(const int physObjectID,
   assertIDValidity(physObjectID);
   scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
   scene::SceneNode* visualNode = existingObjects_.at(physObjectID)->visualNode_;
+  std::string objName = existingObjects_.at(physObjectID)->getObjectName();
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
   if (deleteObjectNode) {
@@ -139,7 +219,11 @@ void PhysicsManager::removeObject(const int physObjectID,
   } else if (deleteVisualNode && visualNode) {
     delete visualNode;
   }
-}
+  // remove wrapper if one is present
+  if (rigidObjectManager_->getObjectLibHasHandle(objName)) {
+    rigidObjectManager_->removeObjectByID(physObjectID);
+  }
+}  // PhysicsManager::removeObject
 
 void PhysicsManager::removeArticulatedObject(int physObjectID) {
   CHECK(existingArticulatedObjects_.count(physObjectID));
@@ -184,8 +268,8 @@ bool PhysicsManager::makeAndAddRigidObject(
     int newObjectID,
     const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
     scene::SceneNode* objectNode) {
-  auto ptr = physics::RigidObject::create_unique(objectNode, newObjectID,
-                                                 resourceManager_);
+  auto ptr =
+      physics::RigidObject::create(objectNode, newObjectID, resourceManager_);
   bool objSuccess = ptr->initialize(objectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
@@ -287,7 +371,7 @@ bool PhysicsManager::isObjectAwake(const int physObjectID) const {
 
 void PhysicsManager::setObjectSleep(const int physObjectID, bool sleep) {
   assertIDValidity(physObjectID);
-  existingObjects_.at(physObjectID)->setSleep(sleep);
+  existingObjects_.at(physObjectID)->setActive(!sleep);
 }
 
 void PhysicsManager::applyForce(const int physObjectID,

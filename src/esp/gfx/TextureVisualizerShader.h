@@ -33,10 +33,13 @@ class TextureVisualizerShader : public Magnum::GL::AbstractShaderProgram {
    */
   enum class Flag : Magnum::UnsignedShort {
     /**
-     * @brief visualize depth texture
+     * visualize depth texture
      */
     DepthTexture = 1 << 0,
-    // ObjectIdTexture = 1 << 1,
+    /**
+     * visualize object-id texture (semantic info)
+     */
+    ObjectIdTexture = 1 << 1,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -75,6 +78,13 @@ class TextureVisualizerShader : public Magnum::GL::AbstractShaderProgram {
    * @return Reference to self (for method chaining)
    */
   TextureVisualizerShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind object Id texture. It can only be called when
+   * Flag::ObjectIdTexture is set.
+   * @return Reference to self (for method chaining)
+   */
+  TextureVisualizerShader& bindObjectIdTexture(Magnum::GL::Texture2D& texture);
 
   /**
    * @brief Set the depth unprojection parameters directly. It can only be

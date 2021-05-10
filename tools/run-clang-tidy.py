@@ -91,7 +91,7 @@ def get_tidy_invocation(
     config,
 ):
     """Gets a command line for clang-tidy."""
-    start = [clang_tidy_binary]
+    start = [clang_tidy_binary, "--use-color"]
     if header_filter is not None:
         start.append("-header-filter=" + header_filter)
     if checks:

@@ -28,11 +28,11 @@ Magnum::Vector4 getLightPositionRelativeToCamera(
                         "w == 1 for a point light");
 
   switch (light.model) {
-    case LightPositionModel::OBJECT:
+    case LightPositionModel::Object:
       return transformationMatrix * light.vector;
-    case LightPositionModel::GLOBAL:
+    case LightPositionModel::Global:
       return cameraMatrix * light.vector;
-    case LightPositionModel::CAMERA:
+    case LightPositionModel::Camera:
       return light.vector;
   }
 

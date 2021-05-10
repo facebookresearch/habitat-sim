@@ -30,7 +30,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
 
   existingObjects_.clear();
   existingArticulatedObjects_.clear();
-  staticStageObject_.reset(nullptr);
+  staticStageObject_.reset();
 }
 
 void BulletPhysicsManager::removeObject(const int physObjectID,
@@ -76,7 +76,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
 
   //! Create new scene node
-  staticStageObject_ = physics::BulletRigidStage::create_unique(
+  staticStageObject_ = physics::BulletRigidStage::create(
       &physicsNode_->createChild(), resourceManager_, bWorld_,
       collisionObjToObjIds_);
 
@@ -99,9 +99,9 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
     int newObjectID,
     const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
     scene::SceneNode* objectNode) {
-  auto ptr = physics::BulletRigidObject::create_unique(
-      objectNode, newObjectID, resourceManager_, bWorld_,
-      collisionObjToObjIds_);
+  auto ptr = physics::BulletRigidObject::create(objectNode, newObjectID,
+                                                resourceManager_, bWorld_,
+                                                collisionObjToObjIds_);
   bool objSuccess = ptr->initialize(objectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
@@ -199,10 +199,15 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
-  for (std::map<int, physics::RigidObject::uptr>::iterator it =
+  for (std::map<int, physics::RigidObject::ptr>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
-    it->second->setSleep(false);
+    it->second->setActive(true);
+  }
+  for (std::map<int, physics::ArticulatedObject::uptr>::iterator it =
+           existingArticulatedObjects_.begin();
+       it != existingArticulatedObjects_.end(); ++it) {
+    it->second->setActive(true);
   }
 }
 
@@ -227,7 +232,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
         objectItr.second->setRigidState(velControl->integrateTransform(
             dt, objectItr.second->getRigidState()));
-        objectItr.second->setSleep(false);
+        objectItr.second->setActive(true);
       }
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
       if (velControl->controllingLinVel) {

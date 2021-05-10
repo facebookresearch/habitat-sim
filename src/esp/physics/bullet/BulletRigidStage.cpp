@@ -158,7 +158,7 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
   }
 
-  for (auto& child : node.children) {
+  for (const auto& child : node.children) {
     constructBulletSceneFromMeshes(transformFromLocalToWorld, meshGroup, child);
   }
 }  // constructBulletSceneFromMeshes
@@ -198,7 +198,7 @@ double BulletRigidStage::getRestitutionCoefficient() const {
 const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   Magnum::Range3D combinedAABB;
   // concatenate all component AABBs
-  for (auto& object : bStaticCollisionObjects_) {
+  for (const auto& object : bStaticCollisionObjects_) {
     btVector3 localAabbMin, localAabbMax;
     object->getCollisionShape()->getAabb(object->getWorldTransform(),
                                          localAabbMin, localAabbMax);

@@ -77,7 +77,7 @@ if(BUILD_ASSIMP_SUPPORT)
   if(NOT USE_SYSTEM_ASSIMP)
     set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
     set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
-    set(BUILD_SHARED_LIBS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "BUILD_SHARED_LIBS" FORCE)
     # The following is important to avoid Assimp appending `d` to all our
     # binaries. Works only with Assimp >= 5.0.0, and after 5.0.1 this option is
     # prefixed with ASSIMP_, so better set both variants to future-proof this.
@@ -106,9 +106,13 @@ endif()
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
 set(RECASTNAVIGATION_TESTS OFF CACHE BOOL "RECASTNAVIGATION_TESTS" FORCE)
 set(RECASTNAVIGATION_EXAMPLES OFF CACHE BOOL "RECASTNAVIGATION_EXAMPLES" FORCE)
-set(RECASTNAVIGATION_STATIC ON CACHE BOOL "RECASTNAVIGATION_STATIC" FORCE)
+# Temp BUILD_SHARED_LIBS override for Recast, has to be reset back after to avoid affecting Bullet (which needs shared) and potentially other submodules
+set(_PREV_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
+include(GNUInstallDirs)
 add_subdirectory("${DEPS_DIR}/recastnavigation/Recast")
 add_subdirectory("${DEPS_DIR}/recastnavigation/Detour")
+set(BUILD_SHARED_LIBS ${_PREV_BUILD_SHARED_LIBS})
 # Needed so that Detour doesn't hide the implementation of the method on dtQueryFilter
 target_compile_definitions(Detour PUBLIC DT_VIRTUAL_QUERYFILTER)
 
@@ -232,6 +236,8 @@ if(NOT USE_SYSTEM_MAGNUM)
   if(BUILD_WITH_BULLET)
     # Build Magnum's BulletIntegration
     set(WITH_BULLET ON CACHE BOOL "" FORCE)
+  else()
+    set(WITH_BULLET OFF CACHE BOOL "" FORCE)
   endif()
 
   if(BUILD_GUI_VIEWERS)

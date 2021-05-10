@@ -510,16 +510,16 @@ void BulletArticulatedObject::reset() {
   btMultiBody_->clearForcesAndTorques();
 }
 
-void BulletArticulatedObject::setSleep(bool sleep) {
-  if (sleep) {
+void BulletArticulatedObject::setActive(bool active) {
+  if (!active) {
     btMultiBody_->goToSleep();
   } else {
     btMultiBody_->wakeUp();
   }
 }
 
-bool BulletArticulatedObject::getSleep() {
-  return !btMultiBody_->isAwake();
+bool BulletArticulatedObject::isActive() {
+  return btMultiBody_->isAwake();
 }
 
 bool BulletArticulatedObject::getCanSleep() {

@@ -7,7 +7,13 @@ precision highp float;
 in highp vec2 textureCoordinates;
 
 // ------------ uniforms --------------------
+#ifdef DEPTH_TEXTURE
 uniform highp sampler2D sourceTexture;
+#endif
+
+#ifdef OBJECT_ID_TEXTURE
+uniform highp usampler2D sourceTexture;
+#endif
 
 uniform highp sampler2D colorMapTexture;
 uniform highp vec2 colorMapOffsetScale;
@@ -31,7 +37,7 @@ void main() {
   highp float originalDepth =
       depthUnprojection[1] / (depth + depthUnprojection[0]);
 #elif defined(OBJECT_ID_TEXTURE)
-#error sorry, visualizing object_id texture is under construction.
+  highp uint objectId = texture(sourceTexture, textureCoordinates).r;
 #endif
 
   fragmentColor = texture(colorMapTexture, vec2(
@@ -42,7 +48,7 @@ void main() {
         #ifdef DEPTH_TEXTURE
         originalDepth
         #elif defined(OBJECT_ID_TEXTURE)
-        #error sorry, visualizing object_id texture is under construction.
+        objectId
         #else
         #error sorry, the type of the texture to be visualized is unknown.
         #endif

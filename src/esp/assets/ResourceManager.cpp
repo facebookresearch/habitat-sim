@@ -1279,7 +1279,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
 
   // set the node type for all cached visual nodes
   if (nodeType != scene::SceneNodeType::EMPTY) {
-    for (auto node : visNodeCache) {
+    for (auto* node : visNodeCache) {
       node->setType(nodeType);
     }
   }
@@ -1684,7 +1684,7 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   }
 
   // Add the new node to the hierarchy and set its transformation
-  parent.children.push_back(MeshTransformNode());
+  parent.children.emplace_back();
   parent.children.back().transformFromLocalToParent =
       objectData->transformation();
   parent.children.back().componentID = componentID;
@@ -1696,7 +1696,7 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
       meshIDLocal != ID_UNDEFINED) {
     parent.children.back().meshIDLocal = meshIDLocal;
     if (requiresTextures_) {
-      auto mod3D =
+      auto* mod3D =
           static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get());
       if (mod3D->material() != ID_UNDEFINED) {
         // we've already loaded the materials, so we can get the global index
@@ -1960,7 +1960,7 @@ void ResourceManager::addComponent(
   }
 
   // Recursively add children
-  for (auto& child : meshTransformNode.children) {
+  for (const auto& child : meshTransformNode.children) {
     addComponent(metaData,       // mesh metadata
                  node,           // parent scene node
                  lightSetupKey,  // lightSetup key
@@ -2241,10 +2241,10 @@ void ResourceManager::initDefaultLightSetups() {
 void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
-  auto whiteMaterialData = new gfx::PhongMaterialData;
+  auto* whiteMaterialData = new gfx::PhongMaterialData;
   whiteMaterialData->ambientColor = Magnum::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
-  auto perVertexObjectId = new gfx::PhongMaterialData{};
+  auto* perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
   perVertexObjectId->vertexColored = true;
   perVertexObjectId->ambientColor = Mn::Color4{1.0};
@@ -2286,7 +2286,7 @@ void ResourceManager::joinHeirarchy(
     }
   }
 
-  for (auto& child : node.children) {
+  for (const auto& child : node.children) {
     joinHeirarchy(mesh, metaData, child, transformFromLocalToWorld);
   }
 }

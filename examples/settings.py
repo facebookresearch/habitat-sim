@@ -20,6 +20,8 @@ default_sim_settings = {
     "ortho_sensor": False,  # Orthographic RGB sensor (default: OFF)
     "fisheye_rgb_sensor": False,
     "fisheye_depth_sensor": False,
+    "equirect_rgb_sensor": False,
+    "equirect_depth_sensor": False,
     "seed": 1,
     "silent": False,  # do not print log info (default: OFF)
     # settings exclusive to example.py
@@ -140,6 +142,22 @@ def make_cfg(settings):
             uuid="fisheye_depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
         )
         sensor_specs.append(fisheye_depth_sensor_spec)
+
+    if settings["equirect_rgb_sensor"]:
+        equirect_rgb_sensor_spec = habitat_sim.EquirectangularSensorSpec()
+        equirect_rgb_sensor_spec.uuid = "equirect_rgb_sensor"
+        equirect_rgb_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        equirect_rgb_sensor_spec.resolution = [settings["height"], settings["width"]]
+        equirect_rgb_sensor_spec.position = [0, settings["sensor_height"], 0]
+        sensor_specs.append(equirect_rgb_sensor_spec)
+
+    if settings["equirect_depth_sensor"]:
+        equirect_depth_sensor_spec = habitat_sim.EquirectangularSensorSpec()
+        equirect_depth_sensor_spec.uuid = "equirect_depth_sensor"
+        equirect_depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
+        equirect_depth_sensor_spec.resolution = [settings["height"], settings["width"]]
+        equirect_depth_sensor_spec.position = [0, settings["sensor_height"], 0]
+        sensor_specs.append(equirect_depth_sensor_spec)
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()

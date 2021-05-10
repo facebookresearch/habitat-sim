@@ -114,9 +114,9 @@ class BulletArticulatedObject : public ArticulatedObject {
    */
   virtual void reset() override;
 
-  virtual void setSleep(bool sleep) override;
+  virtual void setActive(bool active) override;
 
-  virtual bool getSleep() override;
+  virtual bool isActive() override;
 
   virtual bool getCanSleep() override;
 

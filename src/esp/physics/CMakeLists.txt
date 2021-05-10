@@ -13,6 +13,13 @@ add_library(
   ArticulatedObject.h
   CollisionGroupHelper.cpp
   CollisionGroupHelper.h
+  objectManagers/PhysicsObjectBaseManager.h
+  objectManagers/RigidBaseManager.h
+  objectManagers/RigidObjectManager.cpp
+  objectManagers/RigidObjectManager.h
+  objectWrappers/ManagedPhysicsObjectBase.h
+  objectWrappers/ManagedRigidBase.h
+  objectWrappers/ManagedRigidObject.h
   PhysicsManager.cpp
   PhysicsManager.h
   PhysicsObjectBase.h
