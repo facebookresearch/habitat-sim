@@ -81,6 +81,16 @@ def load_glb_as_scene(src_scene_filename: str):
     try:
         with contextlib.redirect_stderr(None):
             scene_graph = trimesh.load(src_scene_filename)
+            # add default dict structure of node hierarchy to scene_graph, to enable faster access later
+            children_dict = defaultdict(list)
+            # append children to parent references
+            # skip self-references to avoid a node loop
+            [
+                children_dict[v].append(u)
+                for u, v in scene_graph.graph.transforms.parents.items()
+                if u != v
+            ]
+            scene_graph.graph.transforms.children_dict = children_dict
     except BaseException:
         print(
             "Unable to load file {} - not recognized as valid mesh file. Error thrown : {}. Aborting".format(
@@ -101,18 +111,18 @@ def build_glb_scene_graph_dict(scene_graph, root_tag: str):
     writing to json
     """
 
-    def build_dict_from_successors(transforms_tree, node_tag):
-        sub_nodes = set(transforms_tree.successors(node_tag))
+    def build_dict_from_children(transforms_tree, node_tag):
+        sub_nodes = set(transforms_tree.children_dict[node_tag])
         sub_nodes_config = []
         for n in sub_nodes:
-            sub_nodes_config.append(build_dict_from_successors(transforms_tree, n))
+            sub_nodes_config.append(build_dict_from_children(transforms_tree, n))
         if len(sub_nodes_config) > 0:
             return {node_tag: sub_nodes_config}
         else:
             return node_tag
 
     transforms_tree = scene_graph.graph.transforms
-    return build_dict_from_successors(transforms_tree, root_tag)
+    return build_dict_from_children(transforms_tree, root_tag)
 
 
 def build_instance_config_json(template_name: str, transform: np.ndarray):
@@ -307,7 +317,7 @@ def get_nodes_that_match_set(
 
     res_dict = {}
     # get a list of all the nodes in the graph
-    all_graph_nodes = graph._node.keys()
+    all_graph_nodes = graph.node_data.keys()
 
     for parent_node, sub_str_set in tag_dict.items():
         match_node_names = set()
@@ -317,7 +327,7 @@ def get_nodes_that_match_set(
             match_nodes = all_graph_nodes
         else:
             # use only successor nodes to check for matches
-            match_nodes = set(graph.successors(parent_node))
+            match_nodes = set(graph.children_dict[parent_node])
         for node_name in match_nodes:
             for sub_str in sub_str_set:
                 if sub_str.lower() in node_name.lower():
@@ -387,7 +397,7 @@ def extract_obj_mesh_from_scenegraph(
             transforms_tree, exclude_nodes, scene_object_tag
         )
     else:
-        sub_nodes = set(transforms_tree.successors(scene_object_tag))
+        sub_nodes = set(transforms_tree.children_dict[scene_object_tag])
     sub_nodes.add(scene_object_tag)
     # print("{}# of subnodes : {}".format(scene_object_tag,len(sub_nodes)))
     # for n in sub_nodes:
@@ -428,7 +438,7 @@ def extract_obj_mesh_from_scenegraph(
                         transforms_tree, exclude_nodes, node_name
                     )
                 else:
-                    new_set = set(transforms_tree.successors(node_name))
+                    new_set = set(transforms_tree.children_dict[node_name])
                 new_set.add(node_name)
                 include_subnodes.update(new_set)
 
@@ -456,7 +466,7 @@ def extract_obj_mesh_from_scenegraph(
     # show_edges_geometry("{} After include edges".format(scene_object_tag), edges)
 
     # build a transformation graqh representing all the components of the object
-    g = trimesh.scene.transforms.TransformForest(base_frame=parent_node_name)
+    g = trimesh.scene.transforms.SceneGraph(base_frame=parent_node_name)
     # add all the edges from the source
     g.from_edgelist(edges)
 
@@ -484,13 +494,13 @@ def get_node_set_recurse(transforms_tree, exclude_nodes, root_node):
     and build a set containing the entire subtree of the passed root_node
     """
     # return all successors in a dictionary/tree structure
-    node_res = set(transforms_tree.successors(root_node))
+    node_res = set(transforms_tree.children_dict[root_node])
     tmp_set = set()
     for n in node_res:
         # if n is in exclude then we want to prune entire subtree
         if n not in exclude_nodes:
             tmp_set.add(n)
-            if len(transforms_tree.adj[n]) > 0:
+            if len(transforms_tree.children_dict[n]) > 0:
                 new_set = get_node_set_recurse(transforms_tree, exclude_nodes, n)
                 tmp_set.update(new_set)
     if len(tmp_set) > 0:
@@ -503,13 +513,13 @@ def get_node_dict_recurse(transforms_tree, root_node):
     and build a dictionary of dictionaries containing the subtree of the root_node
     """
 
-    nodes_present = transforms_tree.successors(root_node)
+    nodes_present = transforms_tree.children_dict[root_node]
     res_dict = {}
     for n in nodes_present:
-        if len(transforms_tree.adj[n]) > 0:
+        if len(transforms_tree.children_dict[n]) > 0:
             res_dict[n] = get_node_dict_recurse(transforms_tree, n)
         else:
-            res_dict[n] = transforms_tree.adj[n]
+            res_dict[n] = transforms_tree.children_dict[n]
 
     return res_dict
 
@@ -553,7 +563,7 @@ def extract_ligthing_from_scenegraph(
     print("\n\n")
 
     res_dict = {}
-    for k, v in transforms_tree.adj.items():
+    for k, v in transforms_tree.children_dict.items():
         if k in sub_nodes:
             if len(v) == 0:
                 continue
