@@ -386,7 +386,7 @@ def extract_objects_from_scene(
     exclude_obj_dict,
     build_configs: bool,
 ):
-    objects_raw = scene_graph.graph.transforms[objects_tag]
+    objects_raw = scene_graph.graph.transforms.children_dict[objects_tag]
     object_instance_configs = []
     objects = []
 
