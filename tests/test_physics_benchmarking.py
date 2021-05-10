@@ -14,6 +14,7 @@ from habitat_sim import vhacd_enabled
             "--no-show-video",
         ),
     ],
+    ids=str,
 )
 def test_example_modules(args):
     utils.run_main_subproc(args)
