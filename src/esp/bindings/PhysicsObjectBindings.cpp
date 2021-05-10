@@ -37,9 +37,9 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           &PhysObjWrapper::setMotionType,
           ("Get or set the MotionType of this " + objType + ".").c_str())
       .def_property_readonly(
-          "ID", &PhysObjWrapper::getID,
-          ("System-generated ID for this construct.  Will be unique among " +
-           objType + "s.")
+          "object_id", &PhysObjWrapper::getID,
+          ("System-generated ID for this " + objType +
+           " construct.  Will be unique among " + objType + "s.")
               .c_str())
       .def_property_readonly(
           "is_alive", &PhysObjWrapper::isAlive,

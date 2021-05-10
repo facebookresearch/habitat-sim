@@ -255,8 +255,10 @@ def test_smoke_no_sensors(make_cfg_settings):
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
-    "scene,gpu2gpu", itertools.product(_test_scenes, [True, False])
+    "scene",
+    _test_scenes,
 )
+@pytest.mark.parametrize("gpu2gpu", [True, False])
 def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))

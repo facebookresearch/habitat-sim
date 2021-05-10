@@ -228,12 +228,12 @@ def test_object_template_editing():
             assert obj_mgr.get_num_templates() > old_library_size
 
             # test getting and editing template reference - changes underlying template
-            sphere_template = obj_mgr.get_template_by_ID(template_ids[0])
+            sphere_template = obj_mgr.get_template_by_id(template_ids[0])
             assert sphere_template.render_asset_handle.endswith("sphere.glb")
             sphere_scale = np.array([2.0, 2.0, 2.0])
             sphere_template.scale = sphere_scale
             obj_mgr.register_template(sphere_template, sphere_template.handle)
-            sphere_template2 = obj_mgr.get_template_by_ID(template_ids[0])
+            sphere_template2 = obj_mgr.get_template_by_id(template_ids[0])
             assert sphere_template2.scale == sphere_scale
 
             # test adding a new object
