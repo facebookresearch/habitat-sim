@@ -186,7 +186,6 @@ def test_sensors(
                 sim.add_sensor(sensor_spec)
         if sensor_type not in all_base_sensor_types:
             obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
-            assert sensor_type in obs
             # Smoke Test.
             return
         obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
