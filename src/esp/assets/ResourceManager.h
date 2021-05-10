@@ -567,7 +567,8 @@ class ResourceManager {
    * @brief Create or modify an <asset>_MatMod resource with a new material.
    * @param filename The original asset name. Will be converted to
    * <asset>_MatMod internally.
-   * @param material The material to attach to the modified asset.
+   * @param matColor The mat color (ambient and diffuse) for the modified asset.
+   * @param specularColor The specular color for the modified asset.
    * @return The name of the modified asset for attachement to SceneNode with
    * @ref attachAsset or empty if failed.
    */
