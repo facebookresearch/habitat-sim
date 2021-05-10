@@ -2,7 +2,7 @@
   "dataset_name": "AI2Thor",
   "dataset_rel_to_home": true,
   "dataset_src_subdir": "Documents/AI2Thor/",
-  "scenes_src_subdir": "scenes_old/",
+  "scenes_src_subdir": "scenes/",
   "stage_tag": "Structure",
   "objects_tag": "Objects",
   "lighting_tag": "Lighting",
