@@ -417,7 +417,7 @@ if __name__ == "__main__":
     observations += simulate(sim, dt=3.0, get_frames=make_video)
 
     # remove the agent's body while preserving the SceneNode
-    rigid_obj_mgr.remove_object_by_ID(locobot.ID, delete_object_node=False)
+    rigid_obj_mgr.remove_object_by_ID(locobot.object_id, delete_object_node=False)
 
     # demonstrate that the locobot object does not now exist'
     print("Locobot is still alive : {}".format(locobot.is_alive))

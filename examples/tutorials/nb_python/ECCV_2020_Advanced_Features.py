@@ -118,7 +118,7 @@ def build_dict_of_Default_attrs(template):
     res_dict = {}
     res_dict["handle"] = (template.handle, True, "string")
     # Read-only values
-    res_dict["ID"] = (template.ID, False, "int")
+    res_dict["template_id"] = (template.template_id, False, "int")
     res_dict["template_class"] = (template.template_class, False, "string")
     res_dict["file_directory"] = (template.file_directory, False, "string")
     return res_dict
