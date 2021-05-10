@@ -27,21 +27,6 @@ class AbstractManagedRigidBase
 
   explicit AbstractManagedRigidBase(const std::string& classKey)
       : AbstractManagedPhysicsObject<T>(classKey) {}
-
-  bool isActive() {
-    if (auto sp = this->getObjectReference()) {
-      return sp->isActive();
-    } else {
-      return false;
-    }
-  }  // isActive()
-
-  void setActive() {
-    if (auto sp = this->getObjectReference()) {
-      sp->setActive();
-    }
-  }  // activate()
-
   void applyForce(const Magnum::Vector3& force, const Magnum::Vector3& relPos) {
     if (auto sp = this->getObjectReference()) {
       sp->applyForce(force, relPos);
@@ -65,131 +50,6 @@ class AbstractManagedRigidBase
       sp->applyImpulseTorque(impulse);
     }
   }  // applyImpulseTorque
-
-  // ==== Transformations ===
-
-  Magnum::Matrix4 getTransformation() const {
-    if (auto sp = this->getObjectReference()) {
-      return sp->getTransformation();
-    } else {
-      return Magnum::Matrix4{};
-    }
-  }  // getTransformation
-
-  void setTransformation(const Magnum::Matrix4& transformation) {
-    if (auto sp = this->getObjectReference()) {
-      sp->setTransformation(transformation);
-    }
-  }  // setTransformation
-
-  Magnum::Vector3 getTranslation() const {
-    if (auto sp = this->getObjectReference()) {
-      return sp->getTranslation();
-    } else {
-      return Magnum::Vector3{};
-    }
-  }  // getTranslation
-
-  void setTranslation(const Magnum::Vector3& vector) {
-    if (auto sp = this->getObjectReference()) {
-      sp->setTranslation(vector);
-    }
-  }  // setTranslation
-
-  Magnum::Quaternion getRotation() const {
-    if (auto sp = this->getObjectReference()) {
-      return sp->getRotation();
-    } else {
-      return Magnum::Quaternion{};
-    }
-  }  // getTranslation
-  void setRotation(const Magnum::Quaternion& quaternion) {
-    if (auto sp = this->getObjectReference()) {
-      sp->setRotation(quaternion);
-    }
-  }  // setRotation
-
-  core::RigidState getRigidState() {
-    if (auto sp = this->getObjectReference()) {
-      return sp->getRigidState();
-    } else {
-      return core::RigidState{};
-    }
-  }  // getRigidState()
-
-  void setRigidState(const core::RigidState& rigidState) {
-    if (auto sp = this->getObjectReference()) {
-      sp->setRigidState(rigidState);
-    }
-  }  // setRigidState
-
-  void resetTransformation() {
-    if (auto sp = this->getObjectReference()) {
-      sp->resetTransformation();
-    }
-  }  // resetTransformation
-
-  void translate(const Magnum::Vector3& vector) {
-    if (auto sp = this->getObjectReference()) {
-      sp->translate(vector);
-    }
-  }  // translate
-
-  void translateLocal(const Magnum::Vector3& vector) {
-    if (auto sp = this->getObjectReference()) {
-      sp->translateLocal(vector);
-    }
-  }  // translateLocal
-
-  void rotate(const Magnum::Rad angleInRad,
-              const Magnum::Vector3& normalizedAxis) {
-    if (auto sp = this->getObjectReference()) {
-      sp->rotate(angleInRad, normalizedAxis);
-    }
-  }  // rotate
-
-  void rotateLocal(const Magnum::Rad angleInRad,
-                   const Magnum::Vector3& normalizedAxis) {
-    if (auto sp = this->getObjectReference()) {
-      sp->rotateLocal(angleInRad, normalizedAxis);
-    }
-  }  // rotateLocal
-
-  void rotateX(const Magnum::Rad angleInRad) {
-    if (auto sp = this->getObjectReference()) {
-      sp->rotateX(angleInRad);
-    }
-  }  // rotateX
-
-  void rotateY(const Magnum::Rad angleInRad) {
-    if (auto sp = this->getObjectReference()) {
-      sp->rotateY(angleInRad);
-    }
-  }  // rotateY
-
-  void rotateZ(const Magnum::Rad angleInRad) {
-    if (auto sp = this->getObjectReference()) {
-      sp->rotateZ(angleInRad);
-    }
-  }  // rotateZ
-
-  void rotateXLocal(const Magnum::Rad angleInRad) {
-    if (auto sp = this->getObjectReference()) {
-      sp->rotateXLocal(angleInRad);
-    }
-  }  // rotateXLocal
-
-  void rotateYLocal(const Magnum::Rad angleInRad) {
-    if (auto sp = this->getObjectReference()) {
-      sp->rotateYLocal(angleInRad);
-    }
-  }  // rotateYLocal
-
-  void rotateZLocal(const Magnum::Rad angleInRad) {
-    if (auto sp = this->getObjectReference()) {
-      sp->rotateZLocal(angleInRad);
-    }
-  }  // rotateZLocal
 
   // ==== Getter/Setter functions ===
 
@@ -285,12 +145,6 @@ class AbstractManagedRigidBase
     }
   }  // setInertiaVector
 
-  void setLightSetup(const std::string& lightSetupKey) {
-    if (auto sp = this->getObjectReference()) {
-      sp->setLightSetup(lightSetupKey);
-    }
-  }  // setLightSetup
-
   double getLinearDamping() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getLinearDamping();
@@ -376,22 +230,6 @@ class AbstractManagedRigidBase
       return std::vector<scene::SceneNode*>();
     }
   }  // getVisualSceneNodes
-
-  scene::SceneNode* getSceneNode() {
-    if (auto sp = this->getObjectReference()) {
-      return &const_cast<scene::SceneNode&>(sp->getSceneNode());
-    } else {
-      return nullptr;
-    }
-  }  // getSceneNode
-
-  esp::core::Configuration::ptr userAttributes() {
-    if (auto sp = this->getObjectReference()) {
-      return sp->attributes_;
-    } else {
-      return nullptr;
-    }
-  }
 
  public:
   ESP_SMART_POINTERS(AbstractManagedRigidBase<T>)
