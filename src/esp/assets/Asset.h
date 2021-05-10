@@ -24,7 +24,6 @@ enum class AssetType {
   UNKNOWN2,
   NAVMESH,
   PRIMITIVE,
-  COLLADA,
 };
 
 // loading and asset info with filepath == EMPTY_SCENE creates a scene graph

@@ -1994,16 +1994,14 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primitiveID);
 }
 
-bool ResourceManager::importAsset(const std::string& filename) {
+bool ResourceManager::importAsset(const std::string& filename,
+                                  bool requiresLighting) {
   bool meshSuccess = true;
   if (resourceDict_.count(filename) > 0) {
     return true;
   } else {
     esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, filename};
-    if (Corrade::Utility::String::endsWith(filename, ".dae")) {
-      meshinfo = esp::assets::AssetInfo::fromPath(filename);
-    }
-    meshinfo.requiresLighting = true;
+    meshinfo.requiresLighting = requiresLighting;
     meshSuccess = loadRenderAssetGeneral(meshinfo);
 
     // check if collision handle exists in collision mesh groups yet.  if not
@@ -2059,7 +2057,7 @@ std::string ResourceManager::setupMaterialModifiedAsset(
 
   auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
 
-  // TODO: is this the right way to check for unfound resource?
+  // check for unfound resource
   if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
     // create/register the new material
     gfx::PhongMaterialData::uptr phongMaterial =
