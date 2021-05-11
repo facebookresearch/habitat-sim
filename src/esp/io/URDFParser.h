@@ -336,17 +336,17 @@ class Parser {
   std::string sourceFilePath_;
 
   // parser functions
-  bool parseTransform(Magnum::Matrix4& tr, tinyxml2::XMLElement* xml);
+  bool parseTransform(Magnum::Matrix4& tr, tinyxml2::XMLElement* xml) const;
   bool parseInertia(Inertia& inertia, tinyxml2::XMLElement* config);
   bool parseGeometry(Geometry& geom, tinyxml2::XMLElement* g);
   bool parseVisual(std::shared_ptr<Model>& model,
                    VisualShape& visual,
                    tinyxml2::XMLElement* config);
   bool parseCollision(CollisionShape& collision, tinyxml2::XMLElement* config);
-  bool initTreeAndRoot(std::shared_ptr<Model>& model);
-  bool parseMaterial(Material& material, tinyxml2::XMLElement* config);
-  bool parseJointLimits(Joint& joint, tinyxml2::XMLElement* config);
-  bool parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config);
+  bool initTreeAndRoot(std::shared_ptr<Model>& model) const;
+  bool parseMaterial(Material& material, tinyxml2::XMLElement* config) const;
+  bool parseJointLimits(Joint& joint, tinyxml2::XMLElement* config) const;
+  bool parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) const;
   bool parseJoint(Joint& joint, tinyxml2::XMLElement* config);
   bool parseLink(std::shared_ptr<Model>&,
                  Link& link,
@@ -374,7 +374,7 @@ class Parser {
     m_urdfScaling = scaling;
     m_urdfModel->setGlobalScaling(m_urdfScaling);
   }
-  float getGlobalScaling() { return m_urdfScaling; }
+  float getGlobalScaling() const { return m_urdfScaling; }
 
   const std::shared_ptr<Model> getModel() const { return m_urdfModel; }
 

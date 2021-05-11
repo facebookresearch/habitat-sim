@@ -184,7 +184,7 @@ static bool parseVector3(Mn::Vector3& vec3,
   return true;
 }
 
-bool Parser::parseMaterial(Material& material, XMLElement* config) {
+bool Parser::parseMaterial(Material& material, XMLElement* config) const {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   if (!config->Attribute("name")) {
     Mn::Debug{} << "E - Material must contain a name attribute";
@@ -518,7 +518,7 @@ bool Parser::parseVisual(std::shared_ptr<Model>& model,
   return true;
 }
 
-bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
+bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) const {
   tr = Mn::Matrix4();  // Identity
 
   Mn::Vector3 vec(0, 0, 0);
@@ -631,7 +631,7 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
         Mn::Debug{} << "W - Scale should be a vector3, not "
                        "single scalar. Workaround activated.";
         std::string scalar_str = shape->Attribute("scale");
-        double scaleFactor = std::stod(scalar_str.c_str());
+        double scaleFactor = std::stod(scalar_str);
         if (scaleFactor) {
           geom.m_meshScale = Mn::Vector3(scaleFactor);
         }
@@ -758,7 +758,7 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
   return meshSuccess;
 }
 
-bool Parser::initTreeAndRoot(std::shared_ptr<Model>& model) {
+bool Parser::initTreeAndRoot(std::shared_ptr<Model>& model) const {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
@@ -829,7 +829,8 @@ bool Parser::initTreeAndRoot(std::shared_ptr<Model>& model) {
   return true;
 }
 
-bool Parser::parseJointLimits(Joint& joint, tinyxml2::XMLElement* config) {
+bool Parser::parseJointLimits(Joint& joint,
+                              tinyxml2::XMLElement* config) const {
   joint.m_lowerLimit = 0.f;
   joint.m_upperLimit = -1.f;
   joint.m_effortLimit = 0.f;
@@ -867,7 +868,8 @@ bool Parser::parseJointLimits(Joint& joint, tinyxml2::XMLElement* config) {
   return true;
 }
 
-bool Parser::parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) {
+bool Parser::parseJointDynamics(Joint& joint,
+                                tinyxml2::XMLElement* config) const {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   joint.m_jointDamping = 0;
   joint.m_jointFriction = 0;
@@ -1060,7 +1062,7 @@ void Model::printKinematicChain() const {
   Mn::Debug{} << "------------------------------------------------------";
   Mn::Debug{} << "Model::printKinematicChain: model = " << m_name;
   int rootIndex = 0;
-  for (auto& root : m_rootLinks) {
+  for (const auto& root : m_rootLinks) {
     Mn::Debug{} << "root L(" << rootIndex << "): " << root->m_name;
     printLinkChildrenHelper(*root);
     rootIndex++;
