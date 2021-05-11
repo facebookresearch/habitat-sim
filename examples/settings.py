@@ -99,32 +99,34 @@ def make_cfg(settings):
         semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(semantic_sensor_spec)
 
-    if settings["ortho_rgb_sensor"]:
+    def create_ortho_spec(**kw_args):
         ortho_sensor_spec = habitat_sim.CameraSensorSpec()
         ortho_sensor_spec.uuid = "ortho_rgb_sensor"
         ortho_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
         ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
         ortho_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
-        sensor_specs.append(ortho_sensor_spec)
+        for k in kw_args:
+            setattr(ortho_sensor_spec, k, kw_args[k])
+        return ortho_sensor_spec
+
+    if settings["ortho_rgb_sensor"]:
+        ortho_rgb_sensor_spec = create_ortho_spec(
+            uuid="ortho_rgb_sensor", sensor_type=habitat_sim.SenorType.COLOR
+        )
+        sensor_specs.append(ortho_rgb_sensor_spec)
 
     if settings["ortho_depth_sensor"]:
-        ortho_depth_sensor_spec = habitat_sim.CameraSensorSpec()
-        ortho_depth_sensor_spec.uuid = "ortho_depth_sensor"
-        ortho_depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
-        ortho_depth_sensor_spec.resolution = [settings["height"], settings["width"]]
-        ortho_depth_sensor_spec.position = [0, settings["sensor_height"], 0]
-        ortho_depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
+        ortho_depth_sensor_spec = create_ortho_spec(
+            uuid="ortho_depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
+        )
         sensor_specs.append(ortho_depth_sensor_spec)
 
     if settings["ortho_semantic_sensor"]:
-        ortho_sensor_spec = habitat_sim.CameraSensorSpec()
-        ortho_sensor_spec.uuid = "ortho_semantic_sensor"
-        ortho_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
-        ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
-        ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
-        ortho_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
-        sensor_specs.append(ortho_sensor_spec)
+        ortho_semantic_sensor_spec = create_ortho_spec(
+            uuid="ortho_semantic_sensor", sensor_type=habitat_sim.SensorType.SEMANTIC
+        )
+        sensor_specs.append(ortho_semantic_sensor_spec)
 
     # TODO Figure out how to implement copying of specs
     def create_fisheye_spec(**kw_args):
