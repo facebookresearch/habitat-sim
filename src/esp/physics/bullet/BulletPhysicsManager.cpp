@@ -76,32 +76,31 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
   if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
     //! Only triangle mesh works
     return true;
-  } else {
-    switch (meshData.primitive) {
-      case Magnum::MeshPrimitive::Lines:
-        LOG(ERROR) << "Invalid primitive: Lines";
-        break;
-      case Magnum::MeshPrimitive::Points:
-        LOG(ERROR) << "Invalid primitive: Points";
-        break;
-      case Magnum::MeshPrimitive::LineLoop:
-        LOG(ERROR) << "Invalid primitive Line loop";
-        break;
-      case Magnum::MeshPrimitive::LineStrip:
-        LOG(ERROR) << "Invalid primitive Line Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleStrip:
-        LOG(ERROR) << "Invalid primitive Triangle Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleFan:
-        LOG(ERROR) << "Invalid primitive Triangle Fan";
-        break;
-      default:
-        LOG(ERROR) << "Invalid primitive " << int(meshData.primitive);
-    }
-    LOG(ERROR) << "Cannot load collision mesh, skipping";
-    return false;
   }
+  switch (meshData.primitive) {
+    case Magnum::MeshPrimitive::Lines:
+      LOG(ERROR) << "Invalid primitive: Lines";
+      break;
+    case Magnum::MeshPrimitive::Points:
+      LOG(ERROR) << "Invalid primitive: Points";
+      break;
+    case Magnum::MeshPrimitive::LineLoop:
+      LOG(ERROR) << "Invalid primitive Line loop";
+      break;
+    case Magnum::MeshPrimitive::LineStrip:
+      LOG(ERROR) << "Invalid primitive Line Strip";
+      break;
+    case Magnum::MeshPrimitive::TriangleStrip:
+      LOG(ERROR) << "Invalid primitive Triangle Strip";
+      break;
+    case Magnum::MeshPrimitive::TriangleFan:
+      LOG(ERROR) << "Invalid primitive Triangle Fan";
+      break;
+    default:
+      LOG(ERROR) << "Invalid primitive " << int(meshData.primitive);
+  }
+  LOG(ERROR) << "Cannot load collision mesh, skipping";
+  return false;
 }
 
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {

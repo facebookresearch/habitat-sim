@@ -78,9 +78,8 @@ class SemanticScene {
   inline int semanticIndexToObjectIndex(int maskIndex) const {
     if (segmentToObjectIndex_.count(maskIndex) > 0) {
       return segmentToObjectIndex_.at(maskIndex);
-    } else {
-      return ID_UNDEFINED;
     }
+    return ID_UNDEFINED;
   }
 
   /**
@@ -252,9 +251,8 @@ class SemanticRegion {
   virtual std::string id() const {
     if (level_ != nullptr) {
       return level_->id() + "_" + std::to_string(index_);
-    } else {
-      return "_" + std::to_string(index_);
     }
+    return "_" + std::to_string(index_);
   }
 
   const SemanticLevel::ptr level() const { return level_; }
@@ -288,9 +286,8 @@ class SemanticObject {
   virtual std::string id() const {
     if (region_ != nullptr) {
       return region_->id() + "_" + std::to_string(index_);
-    } else {
-      return "_" + std::to_string(index_);
     }
+    return "_" + std::to_string(index_);
   }
 
   const SemanticRegion::ptr region() const { return region_; }

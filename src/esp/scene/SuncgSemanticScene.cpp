@@ -32,7 +32,8 @@ int SuncgObjectCategory::index(const std::string&) const {
 std::string SuncgObjectCategory::name(const std::string& mapping) const {
   if (mapping == "model_id") {
     return modelId_;
-  } else if (mapping == "node_id") {
+  }
+  if (mapping == "node_id") {
     return nodeId_;
   } else if (mapping == "category" || mapping == "") {
     if (kSuncgObjectCategoryMap.count(modelId_) > 0) {
@@ -54,7 +55,8 @@ int SuncgRegionCategory::index(const std::string&) const {
 std::string SuncgRegionCategory::name(const std::string& mapping) const {
   if (mapping == "node_id") {
     return nodeId_;
-  } else if (mapping == "" || mapping == "category") {
+  }
+  if (mapping == "" || mapping == "category") {
     return Corrade::Utility::String::join(categories_, ',');
   } else {
     LOG(ERROR) << "Unknown mapping type: " << mapping;

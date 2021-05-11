@@ -218,8 +218,7 @@ void SceneNode::clean(const Magnum::Matrix4& absoluteTransformation) {
 Mn::Vector3 SceneNode::absoluteTranslation() const {
   if (isDirty())
     return absoluteTransformation().translation();
-  else
-    return absoluteTransformation_.translation();
+  return absoluteTransformation_.translation();
 }
 
 Mn::Vector3 SceneNode::absoluteTranslation() {
@@ -230,12 +229,10 @@ Mn::Vector3 SceneNode::absoluteTranslation() {
 const Mn::Range3D& SceneNode::getAbsoluteAABB() const {
   if (aabb_)
     return *aabb_;
-  else {
-    if (!worldCumulativeBB_)
-      worldCumulativeBB_ = {
-          geo::getTransformedBB(getCumulativeBB(), absoluteTransformation_)};
-    return *worldCumulativeBB_;
-  }
+  if (!worldCumulativeBB_)
+    worldCumulativeBB_ = {
+        geo::getTransformedBB(getCumulativeBB(), absoluteTransformation_)};
+  return *worldCumulativeBB_;
 }
 
 }  // namespace scene

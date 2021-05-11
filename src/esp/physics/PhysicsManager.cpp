@@ -76,16 +76,15 @@ int PhysicsManager::addObject(const std::string& attributesHandle,
                   "Object creation failed due to unknown attributes "
                << attributesHandle;
     return ID_UNDEFINED;
+  }  // attributes exist, get drawables if valid simulator accessible
+  if (simulator_ != nullptr) {
+    auto& drawables = simulator_->getDrawableGroup();
+    return addObject(attributes, &drawables, attachmentNode, lightSetup);
   } else {
-    // attributes exist, get drawables if valid simulator accessible
-    if (simulator_ != nullptr) {
-      auto& drawables = simulator_->getDrawableGroup();
-      return addObject(attributes, &drawables, attachmentNode, lightSetup);
-    } else {
-      // support creation when simulator DNE
-      return addObject(attributes, nullptr, attachmentNode, lightSetup);
-    }
+    // support creation when simulator DNE
+    return addObject(attributes, nullptr, attachmentNode, lightSetup);
   }
+
 }  // PhysicsManager::addObject
 
 int PhysicsManager::addObject(const int attributesID,
@@ -99,16 +98,15 @@ int PhysicsManager::addObject(const int attributesID,
                   "Object creation failed due to unknown attributes ID "
                << attributesID;
     return ID_UNDEFINED;
+  }  // attributes exist, get drawables if valid simulator accessible
+  if (simulator_ != nullptr) {
+    auto& drawables = simulator_->getDrawableGroup();
+    return addObject(attributes, &drawables, attachmentNode, lightSetup);
   } else {
-    // attributes exist, get drawables if valid simulator accessible
-    if (simulator_ != nullptr) {
-      auto& drawables = simulator_->getDrawableGroup();
-      return addObject(attributes, &drawables, attachmentNode, lightSetup);
-    } else {
-      // support creation when simulator DNE
-      return addObject(attributes, nullptr, attachmentNode, lightSetup);
-    }
+    // support creation when simulator DNE
+    return addObject(attributes, nullptr, attachmentNode, lightSetup);
   }
+
 }  // PhysicsManager::addObject
 
 int PhysicsManager::addObject(

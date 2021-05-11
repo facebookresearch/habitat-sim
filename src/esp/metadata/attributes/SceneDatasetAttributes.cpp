@@ -115,31 +115,29 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
     if (mapSearch->second.compare(path) == 0) {
       // appropriate entry found, return pair
       return *mapSearch;
-    } else {
-      // key found, points to a different entry
-      if (!overwrite) {
-        // modify existing key to be legal value
-        int iter = 0;
-        std::stringstream ss("");
-        do {
-          ss.str("");
-          ss << key << "_" << iter++;
-          newKey = ss.str();
-        } while (map.count(newKey) > 0);
-        LOG(WARNING)
-            << descString << " : Provided key '" << key
-            << "' already references a different value in "
-               "map. Modifying key to be "
-            << newKey
-            << ". Set overwrite to true to overwrite existing entries.";
-      } else {  // overwrite entry
-        LOG(WARNING) << descString
-                     << " : Warning : Overwriting existing map entry "
-                     << map.at(newKey) << " at key " << newKey << " with value "
-                     << path << ".";
-      }  // overwrite or not
-    }    // found entry is desired or not
-  }      // key is found
+    }  // key found, points to a different entry
+    if (!overwrite) {
+      // modify existing key to be legal value
+      int iter = 0;
+      std::stringstream ss("");
+      do {
+        ss.str("");
+        ss << key << "_" << iter++;
+        newKey = ss.str();
+      } while (map.count(newKey) > 0);
+      LOG(WARNING) << descString << " : Provided key '" << key
+                   << "' already references a different value in "
+                      "map. Modifying key to be "
+                   << newKey
+                   << ". Set overwrite to true to overwrite existing entries.";
+    } else {  // overwrite entry
+      LOG(WARNING) << descString
+                   << " : Warning : Overwriting existing map entry "
+                   << map.at(newKey) << " at key " << newKey << " with value "
+                   << path << ".";
+    }  // overwrite or not
+       // found entry is desired or not
+  }    // key is found
   map[newKey] = path;
   return *(map.find(newKey));
 }  // SceneDatasetAttributes::addNewValToMap

@@ -542,7 +542,8 @@ void PTexMeshData::parsePLY(const std::string& filename,
       if (token == "ply" || token == "PLY" || token == "") {
         // Skip preamble line
         continue;
-      } else if (token == "comment") {
+      }
+      if (token == "comment") {
         // Just store these incase
         comments.push_back(line.erase(0, 8));
       } else if (token == "format") {
@@ -551,7 +552,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
         ls >> s;
         CORRADE_ASSERT(s == "binary_little_endian",
                        "PTexMeshData::parsePLY: the file is not a binary file "
-                       "in little endian byte order", );
+                       "in little endian byte order");
       } else if (token == "element") {
         std::string name;
         size_t size = 0;
@@ -565,10 +566,10 @@ void PTexMeshData::parsePLY(const std::string& filename,
           numFaces = size;
           CORRADE_ASSERT(numFaces > 0,
                          "PTexMeshData::parsePLY: number of faces is not "
-                         "greater than 0.", );
+                         "greater than 0.");
         } else {
           CORRADE_ASSERT(
-              false, "PTexMeshData::parsePLY: Cannot parse element" << name, );
+              false, "PTexMeshData::parsePLY: Cannot parse element" << name);
         }
 
         // Keep track of what element we parsed last to associate the
@@ -589,22 +590,21 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
           CORRADE_ASSERT(countType == "uchar" || countType == "uint8",
                          "PTexMeshData::parsePLY: Don't understand count type"
-                             << countType, );
+                             << countType);
 
           CORRADE_ASSERT(
               type == "int",
-              "PTexMeshData::parsePLY: Don't understand index type" << type, );
+              "PTexMeshData::parsePLY: Don't understand index type" << type);
 
           CORRADE_ASSERT(lastElement == "face",
                          "PTexMeshData::parsePLY: Only expecting list after "
                          "face element, not after"
-                             << lastElement, );
+                             << lastElement);
         }
 
-        CORRADE_ASSERT(
-            type == "float" || type == "int" || type == "uchar" ||
-                type == "uint8",
-            "PTexMeshData::parsePLY: Don't understand type" << type, );
+        CORRADE_ASSERT(type == "float" || type == "int" || type == "uchar" ||
+                           type == "uint8",
+                       "PTexMeshData::parsePLY: Don't understand type" << type);
 
         ls >> name;
 
@@ -612,7 +612,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
         if (lastElement == "vertex") {
           CORRADE_ASSERT(type != "int",
                          "PTexMeshData::parsePLY: Don't support 32-bit integer "
-                         "properties", );
+                         "properties");
 
           // Position information
           if (name == "x") {
@@ -620,21 +620,21 @@ void PTexMeshData::parsePLY(const std::string& filename,
             vertexLayout.push_back(Properties::POSITION);
             CORRADE_ASSERT(type == "float",
                            "PTexMeshData::parsePLY: Don't support 8-bit "
-                           "integer positions", );
+                           "integer positions");
           } else if (name == "y") {
             CORRADE_ASSERT(lastProperty == "x",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "x, y, z, (w) order", );
+                           "x, y, z, (w) order");
             positionDimensions = 2;
           } else if (name == "z") {
             CORRADE_ASSERT(lastProperty == "y",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "x, y, z, (w) order", );
+                           "x, y, z, (w) order");
             positionDimensions = 3;
           } else if (name == "w") {
             CORRADE_ASSERT(lastProperty == "z",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "x, y, z, (w) order", );
+                           "x, y, z, (w) order");
             positionDimensions = 4;
           }
 
@@ -644,16 +644,16 @@ void PTexMeshData::parsePLY(const std::string& filename,
             vertexLayout.push_back(Properties::NORMAL);
             CORRADE_ASSERT(type == "float",
                            "PTexMeshData::parsePLY: Don't support 8-bit "
-                           "integer normals", );
+                           "integer normals");
           } else if (name == "ny") {
             CORRADE_ASSERT(lastProperty == "nx",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "nx, ny, nz order", );
+                           "nx, ny, nz order");
             normalDimensions = 2;
           } else if (name == "nz") {
             CORRADE_ASSERT(lastProperty == "ny",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "nx, ny, nz order", );
+                           "nx, ny, nz order");
             normalDimensions = 3;
           }
 
@@ -663,27 +663,27 @@ void PTexMeshData::parsePLY(const std::string& filename,
             vertexLayout.push_back(Properties::COLOR);
             CORRADE_ASSERT(type == "uchar" || type == "uint8",
                            "PTexMeshData::parsePLY: Don't support non-8-bit "
-                           "integer colors", );
+                           "integer colors");
           } else if (name == "green") {
             CORRADE_ASSERT(lastProperty == "red",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "red, green, blue, (alpha) order", );
+                           "red, green, blue, (alpha) order");
             colorDimensions = 2;
           } else if (name == "blue") {
             CORRADE_ASSERT(lastProperty == "green",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "red, green, blue, (alpha) order", );
+                           "red, green, blue, (alpha) order");
             colorDimensions = 3;
           } else if (name == "alpha") {
             CORRADE_ASSERT(lastProperty == "blue",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "red, green, blue, (alpha) order", );
+                           "red, green, blue, (alpha) order");
             colorDimensions = 4;
           }
         } else if (lastElement == "face") {
           CORRADE_ASSERT(isList,
                          "PTexMeshData::parsePLY: No idea what to do with "
-                         "properties following faces", );
+                         "properties following faces");
         } else {
           // No idea what to do with properties before elements
           CORRADE_INTERNAL_ASSERT_UNREACHABLE();

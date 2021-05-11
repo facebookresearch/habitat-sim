@@ -234,10 +234,10 @@ bool ResourceManager::loadStage(
         LOG(ERROR) << " ResourceManager::loadStage : Semantic Stage mesh "
                       "load failed.";
         return false;
-      } else {
-        LOG(INFO) << "ResourceManager::loadStage : Semantic Stage mesh : "
-                  << semanticStageFilename << " loaded.";
       }
+      LOG(INFO) << "ResourceManager::loadStage : Semantic Stage mesh : "
+                << semanticStageFilename << " loaded.";
+
     } else {  // semantic file name does not exist but house does
       LOG(WARNING)
           << "ResourceManager::loadStage : Not loading semantic mesh - "
@@ -439,14 +439,14 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     const vec3f originEigen{Mn::EigenIntegration::cast<vec3f>(origin)};
     esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
     return frame;
-  } else {
-    LOG(INFO) << "ResourceManager::buildFrameFromAttributes : Specified frame "
-                 "in Attributes : "
-              << attribs->getHandle()
-              << " is not orthogonal, so returning default frame.";
-    esp::geo::CoordinateFrame frame;
-    return frame;
   }
+  LOG(INFO) << "ResourceManager::buildFrameFromAttributes : Specified frame "
+               "in Attributes : "
+            << attribs->getHandle()
+            << " is not orthogonal, so returning default frame.";
+  esp::geo::CoordinateFrame frame;
+  return frame;
+
 }  // ResourceManager::buildCoordFrameFromAttribVals
 
 scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(

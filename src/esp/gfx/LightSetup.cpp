@@ -67,12 +67,10 @@ Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
     // We can achieve this in the Phong shader using an ambient light color of
     // (1,1,1) and no additional light sources.
     return Magnum::Color3(1.0, 1.0, 1.0);
-  } else {
-    // todo: add up ambient terms from all lights in lightSetup
-    // temp: hard-coded ambient light tuned for ReplicaCAD
-    float ambientIntensity = 0.4;
-    return Magnum::Color3(ambientIntensity, ambientIntensity, ambientIntensity);
-  }
+  }  // todo: add up ambient terms from all lights in lightSetup
+  // temp: hard-coded ambient light tuned for ReplicaCAD
+  float ambientIntensity = 0.4;
+  return Magnum::Color3(ambientIntensity, ambientIntensity, ambientIntensity);
 }
 
 }  // namespace gfx

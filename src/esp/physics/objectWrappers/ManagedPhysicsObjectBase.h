@@ -50,9 +50,8 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   std::string getHandle() const override {
     if (auto sp = getObjectReference()) {
       return sp->getObjectName();
-    } else {
-      return "";
     }
+    return "";
   }
 
   /**
@@ -67,9 +66,9 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   int getID() const override {
     if (auto sp = getObjectReference()) {
       return sp->getObjectID();
-    } else {
-      return ID_UNDEFINED;
     }
+    return ID_UNDEFINED;
+
   }  // getID()
 
   /**
@@ -81,9 +80,8 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   MotionType getMotionType() const {
     if (auto sp = getObjectReference()) {
       return sp->getMotionType();
-    } else {
-      return MotionType::UNDEFINED;
     }
+    return MotionType::UNDEFINED;
   }
 
   void setMotionType(MotionType mt) {
@@ -95,9 +93,9 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   bool isActive() {
     if (auto sp = this->getObjectReference()) {
       return sp->isActive();
-    } else {
-      return false;
     }
+    return false;
+
   }  // isActive()
 
   void setActive() {
@@ -115,17 +113,16 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   scene::SceneNode* getSceneNode() {
     if (auto sp = this->getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getSceneNode());
-    } else {
-      return nullptr;
     }
+    return nullptr;
+
   }  // getSceneNode
 
   esp::core::Configuration::ptr userAttributes() {
     if (auto sp = this->getObjectReference()) {
       return sp->attributes_;
-    } else {
-      return nullptr;
     }
+    return nullptr;
   }
 
   // ==== Transformations ===
@@ -133,9 +130,9 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   Magnum::Matrix4 getTransformation() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getTransformation();
-    } else {
-      return Magnum::Matrix4{};
     }
+    return Magnum::Matrix4{};
+
   }  // getTransformation
 
   void setTransformation(const Magnum::Matrix4& transformation) {
@@ -147,9 +144,9 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   Magnum::Vector3 getTranslation() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getTranslation();
-    } else {
-      return Magnum::Vector3{};
     }
+    return Magnum::Vector3{};
+
   }  // getTranslation
 
   void setTranslation(const Magnum::Vector3& vector) {
@@ -161,9 +158,9 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   Magnum::Quaternion getRotation() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getRotation();
-    } else {
-      return Magnum::Quaternion{};
     }
+    return Magnum::Quaternion{};
+
   }  // getTranslation
   void setRotation(const Magnum::Quaternion& quaternion) {
     if (auto sp = this->getObjectReference()) {
@@ -174,9 +171,9 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   core::RigidState getRigidState() {
     if (auto sp = this->getObjectReference()) {
       return sp->getRigidState();
-    } else {
-      return core::RigidState{};
     }
+    return core::RigidState{};
+
   }  // getRigidState()
 
   void setRigidState(const core::RigidState& rigidState) {

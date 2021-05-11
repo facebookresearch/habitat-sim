@@ -947,9 +947,8 @@ vec3f PathFinder::Impl::getRandomNavigablePoint(const int maxTries /*= 10*/) {
     LOG(ERROR) << "Failed to getRandomNavigablePoint.  Try increasing max "
                   "tries if the navmesh is fine but just hard to sample from";
     return vec3f::Constant(Mn::Constants::nan());
-  } else {
-    return pt;
   }
+  return pt;
 }
 
 namespace {
@@ -1197,9 +1196,8 @@ T PathFinder::Impl::snapPoint(const T& pt) {
 
   if (dtStatusSucceed(status)) {
     return T{projectedPt};
-  } else {
-    return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
   }
+  return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
 }
 
 float PathFinder::Impl::islandRadius(const vec3f& pt) const {
@@ -1209,9 +1207,8 @@ float PathFinder::Impl::islandRadius(const vec3f& pt) const {
       projectToPoly(pt, navQuery_.get(), filter_.get());
   if (status != DT_SUCCESS || ptRef == 0) {
     return 0.0;
-  } else {
-    return islandSystem_->islandRadius(ptRef);
   }
+  return islandSystem_->islandRadius(ptRef);
 }
 
 float PathFinder::Impl::distanceToClosestObstacle(
@@ -1231,14 +1228,13 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
   if (status != DT_SUCCESS || ptRef == 0) {
     return {vec3f(0, 0, 0), vec3f(0, 0, 0),
             std::numeric_limits<float>::infinity()};
-  } else {
-    vec3f hitPos, hitNormal;
-    float hitDist = NAN;
-    navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
-                                  filter_.get(), &hitDist, hitPos.data(),
-                                  hitNormal.data());
-    return {hitPos, hitNormal, hitDist};
   }
+  vec3f hitPos, hitNormal;
+  float hitDist = NAN;
+  navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
+                                filter_.get(), &hitDist, hitPos.data(),
+                                hitNormal.data());
+  return {hitPos, hitNormal, hitDist};
 }
 
 bool PathFinder::Impl::isNavigable(const vec3f& pt,

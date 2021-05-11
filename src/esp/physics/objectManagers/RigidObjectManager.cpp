@@ -14,9 +14,9 @@ std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByHandle(
     int newObjID =
         physMgr->addObject(attributesHandle, attachmentNode, lightSetup);
     return this->getObjectCopyByID(newObjID);
-  } else {
-    return nullptr;
   }
+  return nullptr;
+
 }  // RigidObjectManager::addObject */
 
 std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByID(
@@ -26,9 +26,9 @@ std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByID(
   if (auto physMgr = this->getPhysicsManager()) {
     int newObjID = physMgr->addObject(attributesID, attachmentNode, lightSetup);
     return this->getObjectCopyByID(newObjID);
-  } else {
-    return nullptr;
   }
+  return nullptr;
+
 }  // RigidObjectManager::addObject
 
 std::shared_ptr<ManagedRigidObject> RigidObjectManager::removePhysObjectByID(

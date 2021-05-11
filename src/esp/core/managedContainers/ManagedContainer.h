@@ -309,9 +309,9 @@ class ManagedContainer : public ManagedContainerBase {
   ManagedPtr getObjectOrCopyByHandle(const std::string& objectHandle) {
     if (Access == ManagedObjectAccess::Copy) {
       return this->getObjectCopyByHandle(objectHandle);
-    } else {
-      return this->getObjectByHandle(objectHandle);
     }
+    return this->getObjectByHandle(objectHandle);
+
   }  // ManagedContainer::getObjectOrCopyByHandle
 
   /**
@@ -504,16 +504,16 @@ class ManagedContainer : public ManagedContainerBase {
   int getObjectIDByHandleOrNew(const std::string& objectHandle, bool getNext) {
     if (getObjectLibHasHandle(objectHandle)) {
       return getObjectInternal<T>(objectHandle)->getID();
-    } else {
-      if (!getNext) {
-        LOG(ERROR) << "ManagedContainer::getObjectIDByHandleOrNew : No "
-                   << objectType_ << " managed object with handle "
-                   << objectHandle << "exists. Aborting";
-        return ID_UNDEFINED;
-      } else {
-        return getUnusedObjectID();
-      }
     }
+    if (!getNext) {
+      LOG(ERROR) << "ManagedContainer::getObjectIDByHandleOrNew : No "
+                 << objectType_ << " managed object with handle "
+                 << objectHandle << "exists. Aborting";
+      return ID_UNDEFINED;
+    } else {
+      return getUnusedObjectID();
+    }
+
   }  // ManagedContainer::getObjectIDByHandle
 
   /**

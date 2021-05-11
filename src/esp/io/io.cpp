@@ -76,9 +76,8 @@ std::string changeExtension(const std::string& filename,
 
   if (lastDot == std::string::npos) {
     return (filename + correctExt);
-  } else {
-    return (filename.substr(0, lastDot) + correctExt);
   }
+  return (filename.substr(0, lastDot) + correctExt);
 }
 
 std::string removeExtension(const std::string& filename) {

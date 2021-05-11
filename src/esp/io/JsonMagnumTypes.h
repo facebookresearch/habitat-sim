@@ -113,10 +113,9 @@ bool readMember(const rapidjson::Value& value,
   if (value.HasMember(name)) {
     x = T();
     return readMember(value, name, *x);
-  } else {
-    x = Corrade::Containers::NullOpt;
-    return true;
   }
+  x = Corrade::Containers::NullOpt;
+  return true;
 }
 
 /**

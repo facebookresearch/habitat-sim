@@ -77,9 +77,8 @@ bool Player::getUserTransform(const std::string& name,
     *translation = it->second.translation;
     *rotation = it->second.rotation;
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 void Player::close() {

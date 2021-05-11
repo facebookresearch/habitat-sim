@@ -45,9 +45,8 @@ bool Agent::act(const std::string& actionName) {
       }
     }
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 bool Agent::hasAction(const std::string& actionName) const {

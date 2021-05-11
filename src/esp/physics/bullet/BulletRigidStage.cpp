@@ -175,19 +175,16 @@ void BulletRigidStage::setRestitutionCoefficient(
 double BulletRigidStage::getFrictionCoefficient() const {
   if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
-  } else {
-    // Assume uniform friction in scene parts
-    return bStaticCollisionObjects_.back()->getFriction();
-  }
+  }  // Assume uniform friction in scene parts
+  return bStaticCollisionObjects_.back()->getFriction();
 }
 
 double BulletRigidStage::getRestitutionCoefficient() const {
   // Assume uniform restitution in scene parts
   if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
-  } else {
-    return bStaticCollisionObjects_.back()->getRestitution();
   }
+  return bStaticCollisionObjects_.back()->getRestitution();
 }
 
 const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {

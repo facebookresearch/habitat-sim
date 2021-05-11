@@ -368,11 +368,10 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     throw std::invalid_argument(
         "Simulator::createSceneInstance : Cannot load: " +
         stageAttributesHandle);
-  } else {
-    LOG(INFO) << "Simulator::createSceneInstance : Successfully loaded stage "
-                 "named : "
-              << stageAttributes->getHandle();
   }
+  LOG(INFO) << "Simulator::createSceneInstance : Successfully loaded stage "
+               "named : "
+            << stageAttributes->getHandle();
 
   // refresh the NavMesh visualization if necessary after loading a new
   // SceneGraph

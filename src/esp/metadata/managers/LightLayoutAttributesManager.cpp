@@ -247,43 +247,43 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
                              {.vector = {-0.5, 0.0, 1.0, 0.0},
                               .color = {0.4, 0.4, 0.4},
                               .model = gfx::LightPositionModel::Global}};
-    } else {
-      const std::map<std::string, LightInstanceAttributes::ptr>&
-          lightInstances = lightLayoutAttributes->getLightInstances();
-      for (const std::pair<const std::string, LightInstanceAttributes::ptr>&
-               elem : lightInstances) {
-        const LightInstanceAttributes::ptr& lightAttr = elem.second;
-        const int type = lightAttr->getType();
-        const gfx::LightType typeEnum = static_cast<gfx::LightType>(type);
-        const gfx::LightPositionModel posModelEnum =
-            static_cast<gfx::LightPositionModel>(lightAttr->getPositionModel());
-        const Magnum::Color3 color =
-            lightAttr->getColor() * lightAttr->getIntensity();
-        Magnum::Vector4 lightVector;
-        switch (typeEnum) {
-          case gfx::LightType::Point: {
-            lightVector = {lightAttr->getPosition(), 1.0f};
-            break;
-          }
-          case gfx::LightType::Directional: {
-            lightVector = {lightAttr->getDirection(), 0.0f};
-            break;
-          }
-          default: {
-            LOG(INFO)
-                << "LightLayoutAttributesManager::"
-                   "createLightSetupFromAttributes : Enum gfx::LightType with "
-                   "val "
-                << type
-                << " is not supported, so defaulting to gfx::LightType::Point";
-            lightVector = {lightAttr->getPosition(), 1.0f};
-          }
-        }  // switch on type
-        res.push_back(
-            {.vector = lightVector, .color = color, .model = posModelEnum});
-      }  // for each light instance described
-    }    // if >0 light instances described
-  }      // lightLayoutAttributes of requested name exists
+    }
+    const std::map<std::string, LightInstanceAttributes::ptr>& lightInstances =
+        lightLayoutAttributes->getLightInstances();
+    for (const std::pair<const std::string, LightInstanceAttributes::ptr>&
+             elem : lightInstances) {
+      const LightInstanceAttributes::ptr& lightAttr = elem.second;
+      const int type = lightAttr->getType();
+      const gfx::LightType typeEnum = static_cast<gfx::LightType>(type);
+      const gfx::LightPositionModel posModelEnum =
+          static_cast<gfx::LightPositionModel>(lightAttr->getPositionModel());
+      const Magnum::Color3 color =
+          lightAttr->getColor() * lightAttr->getIntensity();
+      Magnum::Vector4 lightVector;
+      switch (typeEnum) {
+        case gfx::LightType::Point: {
+          lightVector = {lightAttr->getPosition(), 1.0f};
+          break;
+        }
+        case gfx::LightType::Directional: {
+          lightVector = {lightAttr->getDirection(), 0.0f};
+          break;
+        }
+        default: {
+          LOG(INFO)
+              << "LightLayoutAttributesManager::"
+                 "createLightSetupFromAttributes : Enum gfx::LightType with "
+                 "val "
+              << type
+              << " is not supported, so defaulting to gfx::LightType::Point";
+          lightVector = {lightAttr->getPosition(), 1.0f};
+        }
+      }  // switch on type
+      res.push_back(
+          {.vector = lightVector, .color = color, .model = posModelEnum});
+    }  // for each light instance described
+       // if >0 light instances described
+  }    // lightLayoutAttributes of requested name exists
   return res;
 
 }  // LightLayoutAttributesManager::createLightSetupFromAttributes

@@ -230,13 +230,12 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
       return false;
     }
     return true;
-  } else {
-    // by here always fail
-    LOG(ERROR) << "ManagedFileBasedContainer<" << this->objectType_
-               << ">::verifyLoadDocument : File " << filename
-               << " does not exist";
-    return false;
-  }
+  }  // by here always fail
+  LOG(ERROR) << "ManagedFileBasedContainer<" << this->objectType_
+             << ">::verifyLoadDocument : File " << filename
+             << " does not exist";
+  return false;
+
 }  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument
 
 }  // namespace core

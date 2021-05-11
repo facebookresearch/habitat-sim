@@ -113,10 +113,10 @@ inline bool readMember(const JsonGenericValue& d,
         }
       }  // for each value
       return true;
-    } else {  // if member is object
-      LOG(ERROR) << "Invalid JSON Object value specified in JSON config at "
-                 << tag << "; Unable to populate std::map.";
-    }
+    }  // if member is object
+    LOG(ERROR) << "Invalid JSON Object value specified in JSON config at "
+               << tag << "; Unable to populate std::map.";
+
   }  // if has tag
   return false;
 }  // readMember<Magnum::Vector3>

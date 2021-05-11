@@ -56,9 +56,9 @@ class AbstractManagedRigidBase
   double getAngularDamping() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getAngularDamping();
-    } else {
-      return 0.0;
     }
+    return 0.0;
+
   }  // getAngularDamping
 
   void setAngularDamping(const double angDamping) {
@@ -70,9 +70,9 @@ class AbstractManagedRigidBase
   Magnum::Vector3 getAngularVelocity() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getAngularVelocity();
-    } else {
-      return Magnum::Vector3();
     }
+    return Magnum::Vector3();
+
   }  // getAngularVelocity
 
   void setAngularVelocity(const Magnum::Vector3& angVel) {
@@ -84,9 +84,9 @@ class AbstractManagedRigidBase
   bool getCollidable() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getCollidable();
-    } else {
-      return false;
     }
+    return false;
+
   }  // getCollidable()
 
   void setCollidable(bool collidable) {
@@ -98,9 +98,9 @@ class AbstractManagedRigidBase
   Magnum::Vector3 getCOM() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getCOM();
-    } else {
-      return Magnum::Vector3();
     }
+    return Magnum::Vector3();
+
   }  // getCOM
 
   void setCOM(const Magnum::Vector3& COM) {
@@ -112,9 +112,9 @@ class AbstractManagedRigidBase
   double getFrictionCoefficient() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getFrictionCoefficient();
-    } else {
-      return 0.0;
     }
+    return 0.0;
+
   }  // getFrictionCoefficient
 
   void setFrictionCoefficient(const double frictionCoefficient) {
@@ -126,17 +126,17 @@ class AbstractManagedRigidBase
   Magnum::Matrix3 getInertiaMatrix() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getInertiaMatrix();
-    } else {
-      return Magnum::Matrix3();
     }
+    return Magnum::Matrix3();
+
   }  // getInertiaMatrix
 
   Magnum::Vector3 getInertiaVector() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getInertiaVector();
-    } else {
-      return Magnum::Vector3();
     }
+    return Magnum::Vector3();
+
   }  // getInertiaVector
 
   void setInertiaVector(const Magnum::Vector3& inertia) {
@@ -148,9 +148,9 @@ class AbstractManagedRigidBase
   double getLinearDamping() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getLinearDamping();
-    } else {
-      return 0.0;
     }
+    return 0.0;
+
   }  // getLinearDamping
 
   void setLinearDamping(const double linDamping) {
@@ -162,9 +162,9 @@ class AbstractManagedRigidBase
   Magnum::Vector3 getLinearVelocity() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getLinearVelocity();
-    } else {
-      return Magnum::Vector3();
     }
+    return Magnum::Vector3();
+
   }  // getLinearVelocity
 
   void setLinearVelocity(const Magnum::Vector3& linVel) {
@@ -176,9 +176,9 @@ class AbstractManagedRigidBase
   double getMass() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getMass();
-    } else {
-      return 0.0;
     }
+    return 0.0;
+
   }  // getMass
 
   void setMass(const double mass) {
@@ -190,9 +190,9 @@ class AbstractManagedRigidBase
   double getRestitutionCoefficient() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getRestitutionCoefficient();
-    } else {
-      return 0.0;
     }
+    return 0.0;
+
   }  // getRestitutionCoefficient
 
   void setRestitutionCoefficient(const double restitutionCoefficient) {
@@ -204,17 +204,17 @@ class AbstractManagedRigidBase
   Magnum::Vector3 getScale() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getScale();
-    } else {
-      return Magnum::Vector3();
     }
+    return Magnum::Vector3();
+
   }  // getScale
 
   int getSemanticId() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getSemanticId();
-    } else {
-      return 0;
     }
+    return 0;
+
   }  // getSemanticId
 
   void setSemanticId(uint32_t semanticId) {
@@ -226,9 +226,9 @@ class AbstractManagedRigidBase
   std::vector<scene::SceneNode*> getVisualSceneNodes() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getVisualSceneNodes();
-    } else {
-      return std::vector<scene::SceneNode*>();
     }
+    return std::vector<scene::SceneNode*>();
+
   }  // getVisualSceneNodes
 
  public:

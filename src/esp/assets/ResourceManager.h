@@ -345,10 +345,8 @@ class ResourceManager {
       const std::shared_ptr<esp::geo::VoxelGrid>& VoxelGridPtr) {
     if (voxelGridDict_.count(voxelGridHandle) > 0)
       return false;
-    else {
-      voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
-      return true;
-    }
+    voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
+    return true;
   }
 
   /**
