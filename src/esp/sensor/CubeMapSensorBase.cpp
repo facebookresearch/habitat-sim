@@ -135,7 +135,7 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
     if (twoSceneGraphs) {
       flags |= gfx::RenderCamera::Flag::ObjectsOnly;
       // Incremental rendering:
-      // BE AWARE that here "ClearColor", "ClearDepth" and "CLearObjectId" are
+      // BE AWARE that here "ClearColor", "ClearDepth" and "ClearObjectId" are
       // NOT set!! Rendering happens on top of whatever existing there.
       flags &= ~gfx::RenderCamera::Flag::ClearColor;
       flags &= ~gfx::RenderCamera::Flag::ClearDepth;
