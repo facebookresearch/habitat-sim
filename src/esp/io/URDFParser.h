@@ -17,7 +17,7 @@
 
 namespace tinyxml2 {
 class XMLElement;
-};
+}
 
 ////////////////////////////////////
 // Utility/storage structs
@@ -271,7 +271,7 @@ class Model {
 
     m_globalScaling = scaling;
   }
-  float getGlobalScaling() { return m_globalScaling; }
+  float getGlobalScaling() const { return m_globalScaling; }
 
   //! Set scaling for mass from initial values configured in URDF. Modifies the
   //! cached model if already parsed.
@@ -292,7 +292,7 @@ class Model {
     m_massScaling = massScaling;
   }
 
-  float getMassScaling() { return m_massScaling; }
+  float getMassScaling() const { return m_massScaling; }
 
  protected:
   // scaling values which can be applied to the model after parsing
@@ -324,7 +324,7 @@ class Model {
       default:
         break;
     }
-  };
+  }
 };
 
 class Parser {

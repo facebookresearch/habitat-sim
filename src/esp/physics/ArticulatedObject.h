@@ -91,7 +91,7 @@ class ArticulatedLink : public RigidBase {
 
   ~ArticulatedLink() override = default;
 
-  int getIndex() { return mbIndex_; };
+  int getIndex() const { return mbIndex_; };
 
   //! List of visual components attached to this link. Used for NavMesh
   //! recomputation. Each entry is a child node of this link's node and a string
@@ -236,7 +236,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
       linkNodes.push_back(&link.second->node());
     }
     links_.clear();
-    for (auto node : linkNodes) {
+    for (auto* node : linkNodes) {
       delete node;
     }
   };
@@ -298,7 +298,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
     allVisualNodes.insert(allVisualNodes.end(), baseLink_->visualNodes_.begin(),
                           baseLink_->visualNodes_.end());
     // other links
-    for (auto& link : links_) {
+    for (const auto& link : links_) {
       allVisualNodes.insert(allVisualNodes.end(),
                             link.second->visualNodes_.begin(),
                             link.second->visualNodes_.end());
@@ -469,7 +469,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Query whether articulated object state is automatically clamped to
    * configured joint limits before physics simulation.
    */
-  bool getAutoClampJointLimits() { return autoClampJointLimits_; }
+  bool getAutoClampJointLimits() const { return autoClampJointLimits_; }
 
   /**
    * @brief Clamp current pose to joint limits.
