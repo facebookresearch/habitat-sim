@@ -74,7 +74,7 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
     return obs, gt
 
 
-_test_scenes = [
+_semantic_scenes = [
     osp.abspath(
         osp.join(
             osp.dirname(__file__),
@@ -87,6 +87,9 @@ _test_scenes = [
             "../data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb",
         )
     ),
+]
+
+_non_semantic_scenes = [
     osp.abspath(
         osp.join(
             osp.dirname(__file__),
@@ -100,6 +103,7 @@ _test_scenes = [
         )
     ),
 ]
+_test_scenes = _semantic_scenes + _non_semantic_scenes
 
 all_base_sensor_types = [
     "color_sensor",
@@ -109,20 +113,28 @@ all_base_sensor_types = [
 
 # Sensors that don't have GT NPY files (yet)
 all_exotic_sensor_types = [
-    "ortho_sensor",
+    "ortho_rgb_sensor",
+    "ortho_depth_sensor",
     "fisheye_rgb_sensor",
     "fisheye_depth_sensor",
     "equirect_rgb_sensor",
     "equirect_depth_sensor",
 ]
 
+all_exotic_semantic_sensor_types = [
+    "ortho_semantic_sensor",
+    "fisheye_semantic_sensor",
+    "equirect_semantic_sensor",
+]
+
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
     "scene,sensor_type",
-    list(itertools.product(_test_scenes[0:2], all_base_sensor_types))
-    + list(itertools.product(_test_scenes[2:], all_base_sensor_types[0:2]))
-    + list(itertools.product(_test_scenes, all_exotic_sensor_types)),
+    list(itertools.product(_semantic_scenes, all_base_sensor_types))
+    + list(itertools.product(_non_semantic_scenes, all_base_sensor_types[0:2]))
+    + list(itertools.product(_test_scenes, all_exotic_sensor_types))
+    + list(itertools.product(_semantic_scenes, all_exotic_semantic_sensor_types)),
 )
 @pytest.mark.parametrize("gpu2gpu", [True, False])
 # NB: This should go last, we have to force a close on the simulator when
@@ -172,7 +184,7 @@ def test_sensors(
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
                 sim.add_sensor(sensor_spec)
-        if sensor_type in all_exotic_sensor_types:
+        if sensor_type not in all_base_sensor_types:
             obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
             # Smoke Test.
             return
