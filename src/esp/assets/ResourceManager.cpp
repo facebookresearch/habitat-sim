@@ -2081,17 +2081,18 @@ bool ResourceManager::attachAsset(const std::string& filename,
                                   scene::SceneNode& node,
                                   std::vector<scene::SceneNode*>& visNodeCache,
                                   DrawableGroup* drawables) {
-  if (drawables != nullptr && resourceDict_.count(filename)) {
-    MeshMetaData& meshMetaData = resourceDict_[filename].meshMetaData;
-
-    std::vector<StaticDrawableInfo> staticDrawableInfo;
-    addComponent(meshMetaData, node, DEFAULT_LIGHTING_KEY, drawables,
-                 meshMetaData.root, visNodeCache, false, staticDrawableInfo);
-    // compute the full BB hierarchy for the new tree.
-    node.computeCumulativeBB();
-  } else {
+  if (!drawables || !resourceDict_.count(filename)) {
+    // no asset or no DrawableGroup provided
     return false;
   }
+
+  MeshMetaData& meshMetaData = resourceDict_[filename].meshMetaData;
+
+  std::vector<StaticDrawableInfo> staticDrawableInfo;
+  addComponent(meshMetaData, node, DEFAULT_LIGHTING_KEY, drawables,
+               meshMetaData.root, visNodeCache, false, staticDrawableInfo);
+  // compute the full BB hierarchy for the new tree.
+  node.computeCumulativeBB();
   return true;
 }
 
