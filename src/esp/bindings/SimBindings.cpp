@@ -327,12 +327,27 @@ void initSimBindings(py::module& m) {
           "set_object_light_setup", &Simulator::setObjectLightSetup,
           "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0,
           R"(Modify the LightSetup used to the render all components of an object by setting the LightSetup key referenced by all Drawables attached to the object's visual SceneNodes.)")
-
       .def(
           "get_num_active_contact_points",
           &Simulator::getNumActiveContactPoints,
-          R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count can be used as a metric for the complexity/cost of collision-handling in the current scene.)");
-  ;
+          R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count can be used as a metric for the complexity/cost of collision-handling in the current scene.)")
+      .def("get_vertices", &Simulator::getVertices, "ID"_a,
+           pybind11::return_value_policy::reference,
+           R"(Return a vector of the vertex locations on a given mesh.)")
+      .def(
+          "get_vertices_color", &Simulator::getVerticesColor, "ID"_a,
+          pybind11::return_value_policy::reference,
+          R"(Return a vector of color per vertex for a specific mesh in the scene.)")
+      .def(
+          "get_surface_ids", &Simulator::getSurfIndexes, "ID"_a,
+          pybind11::return_value_policy::reference,
+          R"(Return a vector of the surface indexes for a specific mesh in the scene.)")
+      .def("get_object_ids", &Simulator::getObjectIds, "ID"_a,
+           pybind11::return_value_policy::reference,
+           R"(Return the object IDs for each vertex in a given mesh.)")
+      .def("get_mesh_keys", &Simulator::getMeshKeys,
+           pybind11::return_value_policy::reference,
+           R"(Return a list of the IDs of existing meshes.)");
 }
 
 }  // namespace sim
