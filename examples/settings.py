@@ -73,7 +73,7 @@ def make_cfg(settings):
         color_sensor_spec = habitat_sim.CameraSensorSpec()
         color_sensor_spec.uuid = "color_sensor"
         color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-        color_sensor_spec.channels = 3
+        #color_sensor_spec.channels = 3
         color_sensor_spec.resolution = [settings["height"], settings["width"]]
         color_sensor_spec.position = [0, settings["sensor_height"], 0]
         color_sensor_spec.hfov = settings["hfov"]
@@ -103,7 +103,7 @@ def make_cfg(settings):
     def create_ortho_spec(**kw_args):
         ortho_sensor_spec = habitat_sim.CameraSensorSpec()
         ortho_sensor_spec.uuid = "ortho_rgb_sensor"
-        ortho_sensor_spec.channels = 3
+        #ortho_sensor_spec.channels = 3
         ortho_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
         ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
@@ -184,7 +184,7 @@ def make_cfg(settings):
     def create_equirect_spec(**kw_args):
         equirect_sensor_spec = habitat_sim.EquirectangularSensorSpec()
         equirect_sensor_spec.uuid = "equirect_rgb_sensor"
-        equirect_sensor_spec.channels = 3
+        #equirect_sensor_spec.channels = 3
         equirect_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         equirect_sensor_spec.resolution = [settings["height"], settings["width"]]
         equirect_sensor_spec.position = [0, settings["sensor_height"], 0]
