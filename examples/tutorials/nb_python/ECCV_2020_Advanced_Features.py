@@ -118,7 +118,7 @@ def build_dict_of_Default_attrs(template):
     res_dict = {}
     res_dict["handle"] = (template.handle, True, "string")
     # Read-only values
-    res_dict["ID"] = (template.ID, False, "int")
+    res_dict["template_id"] = (template.template_id, False, "int")
     res_dict["template_class"] = (template.template_class, False, "string")
     res_dict["file_directory"] = (template.file_directory, False, "string")
     return res_dict
@@ -1144,11 +1144,11 @@ for i in range(5):
     # Make a new handle for the modified template, so we don't overwrite
     new_obj_template_handle = obj_template_handle + "_new_" + str(i)
     # Register modified template with new handle, returns template ID
-    new_tmplt_ID = obj_attr_mgr.register_template(obj_template, new_obj_template_handle)
+    new_tmplt_id = obj_attr_mgr.register_template(obj_template, new_obj_template_handle)
     # Object creation can occur using template ID or handle
     if i % 2 == 0:
         # Add another object instantiated by modified template using handle
-        new_obj = sim.add_object(new_tmplt_ID)
+        new_obj = sim.add_object(new_tmplt_id)
     else:
         # Add another object instantiated by modified template using handle
         new_obj = sim.add_object_by_handle(new_obj_template_handle)
@@ -1282,7 +1282,7 @@ new_template_handle = sel_file_obj_handle + "_new"
 
 
 # register new template and get its new id
-new_template_ID = obj_attr_mgr.register_template(new_template, new_template_handle)
+new_template_id = obj_attr_mgr.register_template(new_template, new_template_handle)
 
 
 # Add object instantiated by original template using template handle
@@ -1295,7 +1295,7 @@ offset = np.array([-0.5, 0.3, -1.5])
 set_object_state_from_agent(sim, orig_obj_id, offset=offset)
 
 # Add new object instantiated by desired template using template handle
-obj_id = sim.add_object(new_template_ID)
+obj_id = sim.add_object(new_template_id)
 
 # Set desired offset from agent location to place object
 offset[0] += 1.0

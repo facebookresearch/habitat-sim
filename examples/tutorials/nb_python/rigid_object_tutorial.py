@@ -214,7 +214,7 @@ if __name__ == "__main__":
     anti_grav_force = -1.0 * sim.get_gravity() * object_init_template.mass
 
     # throw a sphere at the boxes from the agent position
-    sphere_template = obj_templates_mgr.get_template_by_ID(sphere_template_id)
+    sphere_template = obj_templates_mgr.get_template_by_id(sphere_template_id)
     sphere_template.scale = np.array([0.5, 0.5, 0.5])
     obj_templates_mgr.register_template(sphere_template)
 
