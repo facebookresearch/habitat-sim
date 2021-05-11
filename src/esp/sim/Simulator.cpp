@@ -344,7 +344,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   const std::string stageAttributesHandle =
       metadataMediator_->getStageAttrFullHandle(
           stageInstanceAttributes->getHandle());
-  // Get StageAttributes
+  // Get StageAttributes copy
   auto stageAttributes =
       metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
           stageAttributesHandle);
@@ -364,6 +364,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   stageAttributes->setLightSetup(lightSetupKey);
   // set frustum culling from simulator config
   stageAttributes->setFrustumCulling(frustumCulling_);
+  // set scaling values for this instance of stage attributes
+  stageAttributes->setScale(stageAttributes->getScale() *
+                            stageInstanceAttributes->getUniformScale());
 
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage
