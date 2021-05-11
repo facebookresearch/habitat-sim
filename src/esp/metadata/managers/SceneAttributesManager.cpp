@@ -12,6 +12,7 @@
 namespace esp {
 namespace metadata {
 
+using attributes::SceneAOInstanceAttributes;
 using attributes::SceneAttributes;
 using attributes::SceneObjectInstanceAttributes;
 
@@ -93,7 +94,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
       const auto& artObjCell = articulatedObjArray[i];
       if (articulatedObjArray.IsObject()) {
         attribs->addArticulatedObjectInstance(
-            createInstanceAttributesFromJSON(articulatedObjArray));
+            createAOInstanceAttributesFromJSON(articulatedObjArray));
       } else {
         LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : "
                         "Articulated Object "
@@ -149,6 +150,44 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
     const io::JsonGenericValue& jCell) {
   SceneObjectInstanceAttributes::ptr instanceAttrs =
       createEmptyInstanceAttributes("");
+  // populate attributes
+  this->loadAbstractObjectAttributesFromJson(instanceAttrs.get(), jCell);
+  return instanceAttrs;
+}  // SceneAttributesManager::createInstanceAttributesFromJSON
+
+SceneAOInstanceAttributes::ptr
+SceneAttributesManager::createAOInstanceAttributesFromJSON(
+    const io::JsonGenericValue& jCell) {
+  SceneAOInstanceAttributes::ptr instanceAttrs =
+      createEmptyAOInstanceAttributes("");
+  // populate attributes
+  this->loadAbstractObjectAttributesFromJson(instanceAttrs.get(), jCell);
+
+  // only used for articulated objects
+  // fixed base
+  io::jsonIntoSetter<bool>(jCell, "fixed_base",
+                           [instanceAttrs](bool fixed_base) {
+                             instanceAttrs->setFixedBase(fixed_base);
+                           });
+
+  // only used for articulated objects
+  // initial joint pose
+  if ((jCell.HasMember("initial_joint_pose")) &&
+      (jCell["initial_joint_pose"].IsArray())) {
+  }
+
+  // only used for articulated objects
+  // initial joint velocities
+  if ((jCell.HasMember("initial_joint_velocities")) &&
+      (jCell["initial_joint_velocities"].IsArray())) {
+  }
+  return instanceAttrs;
+
+}  // SceneAttributesManager::createAOInstanceAttributesFromJSON
+
+void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
+    attributes::SceneObjectInstanceAttributes* const instanceAttrs,
+    const io::JsonGenericValue& jCell) const {
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
       jCell, "template_name",
@@ -209,30 +248,10 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
                               instanceAttrs->setMassScale(mass_scale);
                             });
 
-  // only used for articulated objects
-  // fixed base
-  io::jsonIntoSetter<bool>(jCell, "fixed_base",
-                           [instanceAttrs](bool fixed_base) {
-                             instanceAttrs->setFixedBase(fixed_base);
-                           });
-
-  // only used for articulated objects
-  // initial joint pose
-  if ((jCell.HasMember("initial_joint_pose")) &&
-      (jCell["initial_joint_pose"].IsArray())) {
-  }
-
-  // only used for articulated objects
-  // initial joint velocities
-  if ((jCell.HasMember("initial_joint_velocities")) &&
-      (jCell["initial_joint_velocities"].IsArray())) {
-  }
-  return instanceAttrs;
-
-}  // SceneAttributesManager::createInstanceAttributesFromJSON
+}  // SceneAttributesManager::loadAbstractObjectAttributesFromJson
 
 int SceneAttributesManager::getTranslationOriginVal(
-    const io::JsonGenericValue& jsonDoc) {
+    const io::JsonGenericValue& jsonDoc) const {
   // Check for translation origin.  Default to unknown.
   int transOrigin = static_cast<int>(SceneInstanceTranslationOrigin::Unknown);
   std::string tmpTransOriginVal = "";

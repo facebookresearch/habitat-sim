@@ -38,7 +38,9 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief SceneObjectInstanceAttributes handle is also the handle of the
    * underlying @ref AbstractObjectAttributes for the object being instanced.
    */
-  explicit SceneObjectInstanceAttributes(const std::string& handle);
+  explicit SceneObjectInstanceAttributes(
+      const std::string& handle,
+      const std::string& type = "SceneObjectInstanceAttributes");
 
   /**
    * @brief Set the translation from the origin of the described
@@ -115,6 +117,24 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   float getMassScale() const { return getFloat("mass_scale"); }
   void setMassScale(float mass_scale) { setFloat("mass_scale", mass_scale); }
 
+ public:
+  ESP_SMART_POINTERS(SceneObjectInstanceAttributes)
+};  // class SceneObjectInstanceAttributes
+
+/**
+ * @brief This class describes an instance of an articulated object in a scene -
+ * along with its template name, translation from the origin, rotation,
+ * motiontype, and other values inherited from SceneObjectInstanceAttributes, it
+ * also holds initial joint pose and joint velocities.
+ */
+class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
+ public:
+  /**
+   * @brief SceneObjectInstanceAttributes handle is also the handle of the
+   * underlying @ref AbstractObjectAttributes for the object being instanced.
+   */
+  explicit SceneAOInstanceAttributes(const std::string& handle);
+
   /**
    * @brief Articulated Object Instance only. Get or set whether or not base is
    * fixed.
@@ -123,8 +143,9 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   void setFixedBase(bool fixed_base) { setBool("fixed_base", fixed_base); }
 
  public:
-  ESP_SMART_POINTERS(SceneObjectInstanceAttributes)
-};  // class SceneObjectInstanceAttributes
+  ESP_SMART_POINTERS(SceneAOInstanceAttributes)
+
+};  // class SceneAOInstanceAttributes
 
 class SceneAttributes : public AbstractAttributes {
  public:
@@ -227,13 +248,13 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Add a description of an object instance to this scene instance
    */
   void addArticulatedObjectInstance(
-      const SceneObjectInstanceAttributes::ptr& _artObjInstance) {
+      const SceneAOInstanceAttributes::ptr& _artObjInstance) {
     articulatedObjectInstances_.push_back(_artObjInstance);
   }
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneObjectInstanceAttributes::ptr>&
+  const std::vector<SceneAOInstanceAttributes::ptr>&
   getArticulatedObjectInstances() const {
     return articulatedObjectInstances_;
   }
@@ -252,7 +273,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief All the articulated object instance descriptors used by the scene
    */
-  std::vector<SceneObjectInstanceAttributes::ptr> articulatedObjectInstances_;
+  std::vector<SceneAOInstanceAttributes::ptr> articulatedObjectInstances_;
 
  public:
   ESP_SMART_POINTERS(SceneAttributes)
