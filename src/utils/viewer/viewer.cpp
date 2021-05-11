@@ -456,7 +456,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
     if (modelType == esp::sensor::FisheyeSensorModelType::DoubleSphere) {
       // in this demo, we choose "GoPro":
-      spec->focalLength = Mn::Vector2(364.84, 364.86);
+      spec->focalLength = {364.84f, 364.86f};
       spec->xi = -0.27;
       spec->alpha = 0.57;
       // Certainly you can try your own lenses.

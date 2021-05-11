@@ -137,17 +137,15 @@ def make_cfg(settings):
             habitat_sim.FisheyeSensorModelType.DOUBLE_SPHERE
         )
 
-        # The default value (alpha, xi) is set to match the lens "BF2M2020S23" found in Table 3 of this paper:
+        # The default value (alpha, xi) is set to match the lens "GoPro" found in Table 3 of this paper:
         # Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
         # Camera Model, The International Conference on 3D Vision (3DV), 2018
         # You can find the intrinsic parameters for the other lenses in the same table as well.
-        # fisheye_sensor_spec.alpha = 0.59  # default
-        # fisheye_sensor_spec.xi = -0.18  # default
+        fisheye_sensor_spec.xi = -0.27
+        fisheye_sensor_spec.alpha = 0.57
+        fisheye_sensor_spec.focal_length = [364.84, 364.86]
 
         fisheye_sensor_spec.resolution = [settings["height"], settings["width"]]
-        fisheye_sensor_spec.focal_length = [
-            min(settings["height"], settings["width"]) * 0.5
-        ] * 2
         # The default principal_point_offset is the middle of the image
         fisheye_sensor_spec.principal_point_offset = mn.Vector2(
             settings["height"] // 2,
@@ -163,40 +161,47 @@ def make_cfg(settings):
         sensor_specs.append(fisheye_rgb_sensor_spec)
     if settings["fisheye_depth_sensor"]:
         fisheye_depth_sensor_spec = create_fisheye_spec(
-            uuid="fisheye_depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
+            uuid="fisheye_depth_sensor",
+            sensor_type=habitat_sim.SensorType.DEPTH,
+            channels=1,
         )
         sensor_specs.append(fisheye_depth_sensor_spec)
     if settings["fisheye_semantic_sensor"]:
         fisheye_semantic_sensor_spec = create_fisheye_spec(
-            uuid="fisheye_semantic_sensor", sensor_type=habitat_sim.SensorType.SEMANTIC
+            uuid="fisheye_semantic_sensor",
+            sensor_type=habitat_sim.SensorType.SEMANTIC,
+            channels=1,
         )
         sensor_specs.append(fisheye_semantic_sensor_spec)
 
+    def create_equirect_spec(**kw_args):
+        equirect_sensor_spec = habitat_sim.EquirectangularSensorSpec()
+        equirect_sensor_spec.uuid = "equirect_rgb_sensor"
+        equirect_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        equirect_sensor_spec.resolution = [settings["height"], settings["width"]]
+        equirect_sensor_spec.position = [0, settings["sensor_height"], 0]
+        for k in kw_args:
+            setattr(equirect_sensor_spec, k, kw_args[k])
+        return equirect_sensor_spec
+
     if settings["equirect_rgb_sensor"]:
-        equirect_rgb_sensor_spec = habitat_sim.EquirectangularSensorSpec()
-        equirect_rgb_sensor_spec.uuid = "equirect_rgb_sensor"
-        equirect_rgb_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-        equirect_rgb_sensor_spec.resolution = [settings["height"], settings["width"]]
-        equirect_rgb_sensor_spec.position = [0, settings["sensor_height"], 0]
+        equirect_rgb_sensor_spec = create_equirect_spec(uuid="equirect_rgb_sensor")
         sensor_specs.append(equirect_rgb_sensor_spec)
 
     if settings["equirect_depth_sensor"]:
-        equirect_depth_sensor_spec = habitat_sim.EquirectangularSensorSpec()
-        equirect_depth_sensor_spec.uuid = "equirect_depth_sensor"
-        equirect_depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
-        equirect_depth_sensor_spec.resolution = [settings["height"], settings["width"]]
-        equirect_depth_sensor_spec.position = [0, settings["sensor_height"], 0]
+        equirect_depth_sensor_spec = create_equirect_spec(
+            uuid="equirect_depth_sensor",
+            sensor_type=habitat_sim.SensorType.DEPTH,
+            channels=1,
+        )
         sensor_specs.append(equirect_depth_sensor_spec)
 
     if settings["equirect_semantic_sensor"]:
-        equirect_semantic_sensor_spec = habitat_sim.EquirectangularSensorSpec()
-        equirect_semantic_sensor_spec.uuid = "equirect_semantic_sensor"
-        equirect_semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
-        equirect_semantic_sensor_spec.resolution = [
-            settings["height"],
-            settings["width"],
-        ]
-        equirect_semantic_sensor_spec.position = [0, settings["sensor_height"], 0]
+        equirect_semantic_sensor_spec = create_equirect_spec(
+            uuid="equirect_semantic_sensor",
+            sensor_type=habitat_sim.SensorType.SEMANTIC,
+            channels=1,
+        )
         sensor_specs.append(equirect_semantic_sensor_spec)
 
     # create agent specifications
