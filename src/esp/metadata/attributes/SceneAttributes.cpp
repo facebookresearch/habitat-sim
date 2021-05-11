@@ -29,6 +29,11 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // defaults to unknown so that obj instances use scene instance setting
   setTranslationOrigin(
       static_cast<int>(managers::SceneInstanceTranslationOrigin::Unknown));
+  // set default multiplicative scaling values
+  setUniformScale(1.0f);
+  setMassScale(1.0f);
+  // set default fixed base value (only used for articulated object)
+  setFixedBase(false);
 }
 
 const std::map<std::string, managers::SceneInstanceTranslationOrigin>

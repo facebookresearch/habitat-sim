@@ -63,6 +63,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
                     "specified for scene "
                  << attribsDispName << ", or specification error.";
   }
+
   // Check for object instances existance
   if ((jsonConfig.HasMember("object_instances")) &&
       (jsonConfig["object_instances"].IsArray())) {
@@ -82,6 +83,31 @@ void SceneAttributesManager::setValsFromJSONDoc(
                     "specified for scene "
                  << attribsDispName << ", or specification error.";
   }
+
+  // Check for articulated object instances existance
+  if ((jsonConfig.HasMember("articulated_object_instances")) &&
+      (jsonConfig["articulated_object_instances"].IsArray())) {
+    const auto& articualtedObjArray =
+        jsonConfig["articulated_object_instances"];
+    for (rapidjson::SizeType i = 0; i < articualtedObjArray.Size(); i++) {
+      const auto& artObjCell = articualtedObjArray[i];
+      if (articualtedObjArray.IsObject()) {
+        attribs->addArticulatedObjectInstance(
+            createInstanceAttributesFromJSON(articualtedObjArray));
+      } else {
+        LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : "
+                        "Articulated Object "
+                        "specification error in scene "
+                     << attribsDispName << " at idx : " << i << ".";
+      }
+    }
+  } else {
+    LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No "
+                    "Articulated Objects "
+                    "specified for scene "
+                 << attribsDispName << ", or specification error.";
+  }
+
   std::string dfltLighting = "";
   if (io::readMember<std::string>(jsonConfig, "default_lighting",
                                   dfltLighting)) {
@@ -138,9 +164,7 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
   // value specified in the stage or object attributes will be used.
   instanceAttrs->setShaderType(getShaderTypeFromJsonDoc(jCell));
 
-  // motion type of object.  Ignored for stage.  TODO : verify is valid
-  // motion type using standard mechanism of static map comparison.
-
+  // motion type of object.  Ignored for stage.
   int motionTypeVal = static_cast<int>(physics::MotionType::UNDEFINED);
   std::string tmpVal = "";
   if (io::readMember<std::string>(jCell, "motion_type", tmpVal)) {
@@ -174,6 +198,35 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
         instanceAttrs->setRotation(rotation);
       });
 
+  // uniform scaling for instance
+  io::jsonIntoSetter<float>(jCell, "uniform_scale",
+                            [instanceAttrs](float uniform_scale) {
+                              instanceAttrs->setUniformScale(uniform_scale);
+                            });
+  // mass scaling for instance
+  io::jsonIntoSetter<float>(jCell, "mass_scale",
+                            [instanceAttrs](float mass_scale) {
+                              instanceAttrs->setMassScale(mass_scale);
+                            });
+
+  // only used for articulated objects
+  // fixed base
+  io::jsonIntoSetter<bool>(jCell, "fixed_base",
+                           [instanceAttrs](bool fixed_base) {
+                             instanceAttrs->setFixedBase(fixed_base);
+                           });
+
+  // only used for articulated objects
+  // initial joint pose
+  if ((jCell.HasMember("initial_joint_pose")) &&
+      (jCell["initial_joint_pose"].IsArray())) {
+  }
+
+  // only used for articulated objects
+  // initial joint velocities
+  if ((jCell.HasMember("initial_joint_velocities")) &&
+      (jCell["initial_joint_velocities"].IsArray())) {
+  }
   return instanceAttrs;
 
 }  // SceneAttributesManager::createInstanceAttributesFromJSON

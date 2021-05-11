@@ -20,9 +20,9 @@ enum class SceneInstanceTranslationOrigin;
 namespace attributes {
 
 /**
- * @brief This class describes an instance of a stage or object in a scene -
- * its template name, translation from the origin, rotation, and (if
- * appropriate) motiontype
+ * @brief This class describes an instance of a stage, object or articulated
+ * object in a scene - its template name, translation from the origin, rotation,
+ * motiontype, and other values required to instantiate the construct described.
  */
 class SceneObjectInstanceAttributes : public AbstractAttributes {
  public:
@@ -100,6 +100,27 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    */
   void setShaderType(int shader_type) { setInt("shader_type", shader_type); }
   int getShaderType() const { return getInt("shader_type"); }
+
+  /**
+   * @brief Get or set the uniform scaling of the instanced object.
+   */
+  float getUniformScale() const { return getFloat("uniform_scale"); }
+  void setUniformScale(float uniform_scale) {
+    setFloat("uniform_scale", uniform_scale);
+  }
+
+  /**
+   * @brief Get or set the mass scaling of the instanced object.
+   */
+  float getMassScale() const { return getFloat("mass_scale"); }
+  void setMassScale(float mass_scale) { setFloat("mass_scale", mass_scale); }
+
+  /**
+   * @brief Articulated Object Instance only. Get or set whether or not base is
+   * fixed.
+   */
+  bool getFixedBase() const { return getBool("fixed_base"); }
+  void setFixedBase(bool fixed_base) { setBool("fixed_base", fixed_base); }
 
  public:
   ESP_SMART_POINTERS(SceneObjectInstanceAttributes)
@@ -202,6 +223,21 @@ class SceneAttributes : public AbstractAttributes {
     return objectInstances_;
   }
 
+  /**
+   * @brief Add a description of an object instance to this scene instance
+   */
+  void addArticulatedObjectInstance(
+      const SceneObjectInstanceAttributes::ptr& _artObjInstance) {
+    articulatedObjectInstances_.push_back(_artObjInstance);
+  }
+  /**
+   * @brief Get the object instance descriptions for this scene
+   */
+  const std::vector<SceneObjectInstanceAttributes::ptr>&
+  getArticulatedObjectInstances() const {
+    return articulatedObjectInstances_;
+  }
+
  protected:
   /**
    * @brief The stage instance used by the scene
@@ -212,6 +248,11 @@ class SceneAttributes : public AbstractAttributes {
    * @brief All the object instance descriptors used by the scene
    */
   std::vector<SceneObjectInstanceAttributes::ptr> objectInstances_;
+
+  /**
+   * @brief All the articulated object instance descriptors used by the scene
+   */
+  std::vector<SceneObjectInstanceAttributes::ptr> articulatedObjectInstances_;
 
  public:
   ESP_SMART_POINTERS(SceneAttributes)
