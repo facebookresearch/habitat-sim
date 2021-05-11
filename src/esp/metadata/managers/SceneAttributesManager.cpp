@@ -3,6 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneAttributesManager.h"
+
+#include <Corrade/Utility/FormatStl.h>
 #include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
@@ -172,14 +174,54 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
 
   // only used for articulated objects
   // initial joint pose
-  if ((jCell.HasMember("initial_joint_pose")) &&
-      (jCell["initial_joint_pose"].IsArray())) {
-  }
+  if (jCell.HasMember("initial_joint_pose")) {
+    if (jCell["initial_joint_pose"].IsArray()) {
+      std::vector<float> poseRes;
+      // read values into vector
+      io::readMember<float>(jCell, "initial_joint_pose", poseRes);
+      int i = 0;
+      for (const float& v : poseRes) {
+        const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
+        instanceAttrs->addInitJointPoseVal(key, v);
+      }
 
+    } else if (jCell["initial_joint_pose"].IsObject()) {
+      // load values into map
+      io::readMember<std::map<std::string, float>>(
+          jCell, "initial_joint_pose", instanceAttrs->getInitJointPose());
+    } else {
+      LOG(WARNING) << "SceneAttributesManager::"
+                      "createAOInstanceAttributesFromJSON : Unknown format for "
+                      "initial_joint_pose specified for instance "
+                   << instanceAttrs->getHandle()
+                   << " in Scene Instance File, so no values are set.";
+    }
+  }
   // only used for articulated objects
   // initial joint velocities
-  if ((jCell.HasMember("initial_joint_velocities")) &&
-      (jCell["initial_joint_velocities"].IsArray())) {
+  if (jCell.HasMember("initial_joint_velocities")) {
+    if (jCell["initial_joint_velocities"].IsArray()) {
+      std::vector<float> poseRes;
+      // read values into vector
+      io::readMember<float>(jCell, "initial_joint_velocities", poseRes);
+      int i = 0;
+      for (const float& v : poseRes) {
+        const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
+        instanceAttrs->addInitJointVelocityVal(key, v);
+      }
+
+    } else if (jCell["initial_joint_velocities"].IsObject()) {
+      // load values into map
+      io::readMember<std::map<std::string, float>>(
+          jCell, "initial_joint_velocities",
+          instanceAttrs->getInitJointVelocities());
+    } else {
+      LOG(WARNING) << "SceneAttributesManager::"
+                      "createAOInstanceAttributesFromJSON : Unknown format for "
+                      "initial_joint_velocities specified for instance "
+                   << instanceAttrs->getHandle()
+                   << " in Scene Instance File, so no values are set.";
+    }
   }
   return instanceAttrs;
 

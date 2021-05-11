@@ -142,6 +142,49 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   bool getFixedBase() const { return getBool("fixed_base"); }
   void setFixedBase(bool fixed_base) { setBool("fixed_base", fixed_base); }
 
+  /**
+   * @brief retrieve a mutable reference to this scene attributes joint initial
+   * pose map
+   */
+  std::map<std::string, float>& getInitJointPose() { return initJointPose_; }
+
+  /**
+   * @brief Add a value to this scene attributes joint initial pose map
+   * @param key the location/joint name to place the value
+   * @param val the joint value to set
+   */
+  void addInitJointPoseVal(const std::string& key, float val) {
+    initJointPose_[key] = val;
+  }
+
+  /**
+   * @brief retrieve a mutable reference to this scene attributes joint initial
+   * velocity map
+   */
+  std::map<std::string, float>& getInitJointVelocities() {
+    return initJointVelocities_;
+  }
+
+  /**
+   * @brief Add a value to this scene attributes joint initial velocity map
+   * @param key the location/joint name to place the value
+   * @param val the joint angular velocity value to set
+   */
+  void addInitJointVelocityVal(const std::string& key, float val) {
+    initJointVelocities_[key] = val;
+  }
+
+ protected:
+  /**
+   * @brief Map of joint names/idxs to values for initial pose
+   */
+  std::map<std::string, float> initJointPose_;
+
+  /**
+   * @brief Map of joint names/idxs to values for initial velocities
+   */
+  std::map<std::string, float> initJointVelocities_;
+
  public:
   ESP_SMART_POINTERS(SceneAOInstanceAttributes)
 
