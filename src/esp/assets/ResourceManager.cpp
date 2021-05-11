@@ -2009,6 +2009,7 @@ bool ResourceManager::importAsset(const std::string& filename,
       int end = meshMetaData.meshIndex.second;
       //! Gather mesh components for meshGroup data
       std::vector<CollisionMeshData> meshGroup;
+      meshGroup.reserve(end - start);
       for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
         GenericMeshData& gltfMeshData =
             dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
