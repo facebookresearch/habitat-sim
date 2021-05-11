@@ -73,7 +73,6 @@ def make_cfg(settings):
         color_sensor_spec = habitat_sim.CameraSensorSpec()
         color_sensor_spec.uuid = "color_sensor"
         color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-        #color_sensor_spec.channels = 3
         color_sensor_spec.resolution = [settings["height"], settings["width"]]
         color_sensor_spec.position = [0, settings["sensor_height"], 0]
         color_sensor_spec.hfov = settings["hfov"]
@@ -103,7 +102,6 @@ def make_cfg(settings):
     def create_ortho_spec(**kw_args):
         ortho_sensor_spec = habitat_sim.CameraSensorSpec()
         ortho_sensor_spec.uuid = "ortho_rgb_sensor"
-        #ortho_sensor_spec.channels = 3
         ortho_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
         ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
@@ -115,7 +113,7 @@ def make_cfg(settings):
     if settings["ortho_rgb_sensor"]:
         ortho_rgb_sensor_spec = create_ortho_spec(
             uuid="ortho_rgb_sensor",
-            sensor_type=habitat_sim.SenorType.COLOR,
+            sensor_type=habitat_sim.SensorType.COLOR,
         )
         sensor_specs.append(ortho_rgb_sensor_spec)
 
@@ -123,7 +121,6 @@ def make_cfg(settings):
         ortho_depth_sensor_spec = create_ortho_spec(
             uuid="ortho_depth_sensor",
             sensor_type=habitat_sim.SensorType.DEPTH,
-            channels=1,
         )
         sensor_specs.append(ortho_depth_sensor_spec)
 
@@ -131,7 +128,6 @@ def make_cfg(settings):
         ortho_semantic_sensor_spec = create_ortho_spec(
             uuid="ortho_semantic_sensor",
             sensor_type=habitat_sim.SensorType.SEMANTIC,
-            channels=1,
         )
         sensor_specs.append(ortho_semantic_sensor_spec)
 
@@ -170,21 +166,18 @@ def make_cfg(settings):
         fisheye_depth_sensor_spec = create_fisheye_spec(
             uuid="fisheye_depth_sensor",
             sensor_type=habitat_sim.SensorType.DEPTH,
-            channels=1,
         )
         sensor_specs.append(fisheye_depth_sensor_spec)
     if settings["fisheye_semantic_sensor"]:
         fisheye_semantic_sensor_spec = create_fisheye_spec(
             uuid="fisheye_semantic_sensor",
             sensor_type=habitat_sim.SensorType.SEMANTIC,
-            channels=1,
         )
         sensor_specs.append(fisheye_semantic_sensor_spec)
 
     def create_equirect_spec(**kw_args):
         equirect_sensor_spec = habitat_sim.EquirectangularSensorSpec()
         equirect_sensor_spec.uuid = "equirect_rgb_sensor"
-        #equirect_sensor_spec.channels = 3
         equirect_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         equirect_sensor_spec.resolution = [settings["height"], settings["width"]]
         equirect_sensor_spec.position = [0, settings["sensor_height"], 0]
@@ -200,7 +193,6 @@ def make_cfg(settings):
         equirect_depth_sensor_spec = create_equirect_spec(
             uuid="equirect_depth_sensor",
             sensor_type=habitat_sim.SensorType.DEPTH,
-            channels=1,
         )
         sensor_specs.append(equirect_depth_sensor_spec)
 
@@ -208,7 +200,6 @@ def make_cfg(settings):
         equirect_semantic_sensor_spec = create_equirect_spec(
             uuid="equirect_semantic_sensor",
             sensor_type=habitat_sim.SensorType.SEMANTIC,
-            channels=1,
         )
         sensor_specs.append(equirect_semantic_sensor_spec)
 
