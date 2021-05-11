@@ -118,6 +118,12 @@ class BulletRigidObject : public BulletBase,
    */
   void setActive() override { bObjectRigidBody_->activate(true); }
 
+  /** @brief Disable deferred updates if active and sets SceneNode states from
+   * internal object physics states.
+   * @param force If set, update sleeping objects as well.
+   */
+  virtual void updateNodes(bool force = false) override;
+
   /**
    * @brief Set the @ref MotionType of the object. The object can be set to @ref
    * MotionType::STATIC, @ref MotionType::KINEMATIC or @ref MotionType::DYNAMIC.
@@ -498,6 +504,13 @@ class BulletRigidObject : public BulletBase,
    * wrapped into one @ref btRigidBody.
    */
   std::unique_ptr<btRigidBody> bObjectRigidBody_;
+
+  void setWorldTransform(const btTransform& worldTrans) override;
+
+  void getWorldTransform(btTransform& worldTrans) const override;
+
+  Corrade::Containers::Optional<btTransform> deferredUpdate_ =
+      Corrade::Containers::NullOpt;
 
   ESP_SMART_POINTERS(BulletRigidObject)
 };

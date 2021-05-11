@@ -126,6 +126,10 @@ target_link_libraries(
          Magnum::AnyImageConverter
 )
 
+if(NOT CORRADE_TARGET_EMSCRIPTEN)
+  target_link_libraries(gfx PUBLIC atomic_wait)
+endif()
+
 # Link windowed application library if needed
 if(BUILD_GUI_VIEWERS)
   if(CORRADE_TARGET_EMSCRIPTEN)

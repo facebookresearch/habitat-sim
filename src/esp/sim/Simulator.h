@@ -59,8 +59,11 @@ class Simulator {
    * set back to nullptr, any members set to their default values, etc.  If this
    * is not done correctly, the pattern for @ref `close` then @ref `reconfigure`
    * to create a "fresh" instance of the simulator may not work correctly
+   *
+   * @param destroy When set, destroy the background rendering thread and gl
+   * context also. Otherwise these persist.
    */
-  virtual void close();
+  virtual void close(bool destroy = false);
 
   virtual void reconfigure(const SimulatorConfiguration& cfg);
 

@@ -7,6 +7,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/gfx/RenderCamera.h"
+#include "esp/gfx/WindowlessContext.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/sensor/VisualSensor.h"
 
@@ -27,12 +28,17 @@ class Renderer {
     NoTextures = 1 << 0,
 
     /**
+     * Use a background thread to overlap rendering with physics simulation.
+     */
+    BackgroundThread = 1 << 1,
+
+    /**
      * When binding the render target to a depth or a sementic sensor,
      * setting this flag will give the render target the ability to visualize
      * the depth, or sementic info
      * see bindRenderTarget for more info.
      */
-    VisualizeTexture = 1 << 1,
+    VisualizeTexture = 1 << 2,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -44,6 +50,11 @@ class Renderer {
   explicit Renderer(Flags flags = {});
 
   /**
+   * @brief Constructor for when creating a background thread
+   */
+  explicit Renderer(WindowlessContext* context, Flags flags = {});
+
+  /*
    * @brief draw the scene graph with the camera specified by user
    * @param[in] camera, the render camera to render the scene
    * @param[in] flags, flags to control the rendering
@@ -67,6 +78,23 @@ class Renderer {
   void visualize(sensor::VisualSensor& visualSensor,
                  float colorMapOffset = 1.0f / 512.0f,
                  float colorMapScale = 1.0f / 256.0f);
+
+#if !defined(CORRADE_TARGET_EMSCRIPTEN)
+  // draw the scene graph with the visual sensor provided by user
+  // async
+  void drawAsync(sensor::VisualSensor& visualSensor,
+                 scene::SceneGraph& sceneGraph,
+                 const Mn::MutableImageView2D& view,
+                 RenderCamera::Flags flags = {
+                     RenderCamera::Flag::FrustumCulling});
+
+  void drawWait();
+  void waitSG();
+
+  void startDrawJobs();
+#endif
+
+  void acquireGlContext();
 
   /**
    * @brief Binds a @ref RenderTarget to the sensor

@@ -337,6 +337,19 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
+  /** @brief Activate deferred updates, preventing SceneNode state changes until
+   * updateNodes is called to prevent SceneGraph pollution during render.
+   */
+  virtual void deferUpdate() { isDeferringUpdate_ = true; }
+
+  /** @brief Disable deferred updates if active and sets SceneNode states from
+   * internal object physics states.
+   * @param force If set, update sleeping nodes as well as active nodes.
+   */
+  virtual void updateNodes(CORRADE_UNUSED bool force = false) {
+    isDeferringUpdate_ = false;
+  }
+
   /** @brief Store whatever object attributes you want here! */
   esp::core::Configuration::ptr attributes_{};
 
@@ -345,6 +358,10 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * after it was changed kinematically. Must be called automatically on
    * kinematic updates.*/
   virtual void syncPose() { return; }
+
+  //! if true visual nodes are not updated from physics simulation such that the
+  //! SceneGraph is not polluted during render
+  bool isDeferringUpdate_ = false;
 
   /** @brief An assignable name for this object.
    */
