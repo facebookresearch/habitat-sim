@@ -337,6 +337,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
+  virtual void deferUpdate() { isDeferringUpdate_ = true; }
+  virtual void updateNodes(CORRADE_UNUSED bool force = false) {
+    isDeferringUpdate_ = false;
+  }
+
   /** @brief Store whatever object attributes you want here! */
   esp::core::Configuration::ptr attributes_{};
 
@@ -345,6 +350,10 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * after it was changed kinematically. Must be called automatically on
    * kinematic updates.*/
   virtual void syncPose() { return; }
+
+  //! if true visual nodes are not updated from physics simulation such that the
+  //! SceneGraph is not polluted during render
+  bool isDeferringUpdate_ = false;
 
   /** @brief An assignable name for this object.
    */

@@ -132,11 +132,6 @@ class RigidObject : public RigidBase {
         metadata::attributes::ObjectAttributes>();
   };
 
-  virtual void deferUpdate() { isDeferringUpdate_ = true; }
-  virtual void updateNodes(CORRADE_UNUSED bool force = false) {
-    isDeferringUpdate_ = false;
-  }
-
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidScene
@@ -181,10 +176,6 @@ class RigidObject : public RigidBase {
    * | angular) applied to the rigid body before each step.
    */
   VelocityControl::ptr velControl_;
-
-  //! if true visual nodes are not updated from physics simulation such that the
-  //! SceneGraph is not polluted during render
-  bool isDeferringUpdate_ = false;
 
  public:
   ESP_SMART_POINTERS(RigidObject)
