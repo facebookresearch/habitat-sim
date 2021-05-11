@@ -1991,33 +1991,32 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
 
 bool ResourceManager::importAsset(const std::string& filename,
                                   bool requiresLighting) {
-  bool meshSuccess = true;
   if (resourceDict_.count(filename) > 0) {
+    // asset already imported
     return true;
-  } else {
-    esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, filename};
-    meshinfo.requiresLighting = requiresLighting;
-    meshSuccess = loadRenderAssetGeneral(meshinfo);
+  }
 
-    // check if collision handle exists in collision mesh groups yet.  if not
-    // then instance
-    if (collisionMeshGroups_.count(filename) == 0) {
-      // set collision mesh data
-      const MeshMetaData& meshMetaData = getMeshMetaData(filename);
+  esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, filename};
+  meshinfo.requiresLighting = requiresLighting;
+  bool meshSuccess = loadRenderAssetGeneral(meshinfo);
 
-      int start = meshMetaData.meshIndex.first;
-      int end = meshMetaData.meshIndex.second;
-      //! Gather mesh components for meshGroup data
-      std::vector<CollisionMeshData> meshGroup;
-      meshGroup.reserve(end - start);
-      for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
-        GenericMeshData& gltfMeshData =
-            dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
-        CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
-      collisionMeshGroups_.emplace(filename, meshGroup);
+  // check if collision handle exists in collision mesh groups yet.  if not
+  // then instance
+  if (collisionMeshGroups_.count(filename) == 0) {
+    // set collision mesh data
+    const MeshMetaData& meshMetaData = getMeshMetaData(filename);
+
+    int start = meshMetaData.meshIndex.first;
+    int end = meshMetaData.meshIndex.second;
+    //! Gather mesh components for meshGroup data
+    std::vector<CollisionMeshData> meshGroup;
+    for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
+      GenericMeshData& gltfMeshData =
+          dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
+      CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
+      meshGroup.push_back(meshData);
     }
+    collisionMeshGroups_.emplace(filename, meshGroup);
   }
 
   return meshSuccess;
