@@ -69,65 +69,64 @@ def make_cfg(settings):
 
     # define default sensor parameters (see src/esp/Sensor/Sensor.h)
     sensor_specs = []
+
+    def create_camera_spec(**kw_args):
+        camera_sensor_spec = habitat_sim.CameraSensorSpec()
+        camera_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        camera_sensor_spec.resolution = [settings["height"], settings["width"]]
+        camera_sensor_spec.position = [0, settings["sensor_height"], 0]
+        for k in kw_args:
+            setattr(camera_sensor_spec, k, kw_args[k])
+        return camera_sensor_spec
+
     if settings["color_sensor"]:
-        color_sensor_spec = habitat_sim.CameraSensorSpec()
-        color_sensor_spec.uuid = "color_sensor"
-        color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-        color_sensor_spec.resolution = [settings["height"], settings["width"]]
-        color_sensor_spec.position = [0, settings["sensor_height"], 0]
-        color_sensor_spec.hfov = settings["hfov"]
-        color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        color_sensor_spec = create_camera_spec(
+            uuid="color_sensor",
+            hfov=settings["hfov"],
+            sensor_type=habitat_sim.SensorType.COLOR,
+            sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+        )
         sensor_specs.append(color_sensor_spec)
 
     if settings["depth_sensor"]:
-        depth_sensor_spec = habitat_sim.CameraSensorSpec()
-        depth_sensor_spec.uuid = "depth_sensor"
-        depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
-        depth_sensor_spec.resolution = [settings["height"], settings["width"]]
-        depth_sensor_spec.position = [0, settings["sensor_height"], 0]
-        depth_sensor_spec.hfov = settings["hfov"]
-        depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        depth_sensor_spec = create_camera_spec(
+            uuid="depth_sensor",
+            hfov=settings["hfov"],
+            sensor_type=habitat_sim.SensorType.DEPTH,
+            sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+        )
         sensor_specs.append(depth_sensor_spec)
 
     if settings["semantic_sensor"]:
-        semantic_sensor_spec = habitat_sim.CameraSensorSpec()
-        semantic_sensor_spec.uuid = "semantic_sensor"
-        semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
-        semantic_sensor_spec.resolution = [settings["height"], settings["width"]]
-        semantic_sensor_spec.position = [0, settings["sensor_height"], 0]
-        semantic_sensor_spec.hfov = settings["hfov"]
-        semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        semantic_sensor_spec = create_camera_spec(
+            uuid="semantic_sensor",
+            hfov=settings["hfov"],
+            sensor_type=habitat_sim.SensorType.SEMANTIC,
+            sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+        )
         sensor_specs.append(semantic_sensor_spec)
 
-    def create_ortho_spec(**kw_args):
-        ortho_sensor_spec = habitat_sim.CameraSensorSpec()
-        ortho_sensor_spec.uuid = "ortho_rgb_sensor"
-        ortho_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-        ortho_sensor_spec.resolution = [settings["height"], settings["width"]]
-        ortho_sensor_spec.position = [0, settings["sensor_height"], 0]
-        ortho_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.ORTHOGRAPHIC
-        for k in kw_args:
-            setattr(ortho_sensor_spec, k, kw_args[k])
-        return ortho_sensor_spec
-
     if settings["ortho_rgb_sensor"]:
-        ortho_rgb_sensor_spec = create_ortho_spec(
+        ortho_rgb_sensor_spec = create_camera_spec(
             uuid="ortho_rgb_sensor",
             sensor_type=habitat_sim.SensorType.COLOR,
+            sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
         )
         sensor_specs.append(ortho_rgb_sensor_spec)
 
     if settings["ortho_depth_sensor"]:
-        ortho_depth_sensor_spec = create_ortho_spec(
+        ortho_depth_sensor_spec = create_camera_spec(
             uuid="ortho_depth_sensor",
             sensor_type=habitat_sim.SensorType.DEPTH,
+            sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
         )
         sensor_specs.append(ortho_depth_sensor_spec)
 
     if settings["ortho_semantic_sensor"]:
-        ortho_semantic_sensor_spec = create_ortho_spec(
+        ortho_semantic_sensor_spec = create_camera_spec(
             uuid="ortho_semantic_sensor",
             sensor_type=habitat_sim.SensorType.SEMANTIC,
+            sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
         )
         sensor_specs.append(ortho_semantic_sensor_spec)
 
