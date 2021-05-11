@@ -6,7 +6,6 @@
 #define ESP_GFX_DOUBLESPHERECAMERASHADER_H_
 
 #include <Corrade/Containers/EnumSet.h>
-#include <Magnum/Shaders/Generic.h>
 
 #include "CubeMapShaderBase.h"
 #include "esp/core/esp.h"

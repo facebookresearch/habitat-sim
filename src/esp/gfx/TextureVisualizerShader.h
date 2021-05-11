@@ -7,7 +7,7 @@
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/Texture.h>
-#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/GenericGL.h>
 #include "esp/core/esp.h"
 
 namespace esp {
@@ -23,7 +23,7 @@ class TextureVisualizerShader : public Magnum::GL::AbstractShaderProgram {
      * present always. Expects three- or four-component floating-point
      * or normalized buffer attachment.
      */
-    ColorOutput = Magnum::Shaders::Generic3D::ColorOutput,
+    ColorOutput = Magnum::Shaders::GenericGL3D::ColorOutput,
   };
 
   /**
