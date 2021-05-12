@@ -82,9 +82,9 @@ struct VelocityControl {
 /**
  * @brief An AbstractFeature3D representing an individual rigid object instance
  * attached to a SceneNode, updating its state through simulation. This may be a
- * @ref MotionType::STATIC scene collision geometry or an object of any @ref
- * MotionType which can interact with other members of a physical world. Must
- * have a collision mesh. By default, a RigidObject is @ref
+ * @ref esp::physics::MotionType::STATIC scene collision geometry or an object
+ * of any @ref MotionType which can interact with other members of a physical
+ * world. Must have a collision mesh. By default, a RigidObject is @ref
  * MotionType::KINEMATIC without an underlying simulator implementation. Derived
  * classes can be used to introduce specific implementations of dynamics.
  */
@@ -156,10 +156,12 @@ class RigidObject : public RigidBase {
  public:
   /**
    * @brief Set the @ref MotionType of the object. If the object is @ref
-   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
-   * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC.
-   * Only if a dervied @ref PhysicsManager implementing dynamics is in use can
-   * the object be set to @ref MotionType::DYNAMIC.
+   * ObjectType::SCENE it can only be @ref esp::physics::MotionType::STATIC. If
+   * the object is
+   * @ref ObjectType::OBJECT is can also be set to @ref
+   * esp::physics::MotionType::KINEMATIC. Only if a dervied @ref PhysicsManager
+   * implementing dynamics is in use can the object be set to @ref
+   * esp::physics::MotionType::DYNAMIC.
    * @param mt The desirved @ref MotionType.
    * @return true if successfully set, false otherwise.
    */
