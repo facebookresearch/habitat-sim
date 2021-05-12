@@ -15,7 +15,7 @@
 #include "esp/physics/PhysicsObjectBase.h"
 
 /** @file
- * @brief Class @ref esp::physics::Rigidbase
+ * @brief Class @ref Rigidbase
  */
 
 namespace esp {
@@ -30,8 +30,19 @@ class AbstractObjectAttributes;
 
 namespace physics {
 
+/**
+ * @brief This class specifies the functionality expected of rigid objects and
+ * stages, particularly with regard to dynamic simulation, if such a library,
+ * such as bullet, is available.
+ */
 class RigidBase : public esp::physics::PhysicsObjectBase {
  public:
+  /**
+   * @brief Constructor for a @ref RigidBase.
+   * @param rigidBodyNode Pointer to the node to be used for this rigid.
+   * @param objectID the desired ID for this rigid construct.
+   * @param resMgr a reference to @ref esp::assets::ResourceManager
+   */
   RigidBase(scene::SceneNode* rigidBodyNode,
             int objectId,
             const assets::ResourceManager& resMgr)
@@ -44,8 +55,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   ~RigidBase() override = default;
 
   /**
-   * @brief Initializes the @ref RigidObject or @ref RigidStage that inherits
-   * from this class.  This is overridden
+   * @brief Initializes the @ref RigidObject or @ref
+   * esp::physics::RigidStage that inherits from this class.  This is overridden
    * @param initAttributes The template structure defining relevant phyiscal
    * parameters for this object
    * @return true if initialized successfully, false otherwise.
@@ -54,24 +65,23 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
       metadata::attributes::AbstractObjectAttributes::ptr initAttributes) = 0;
 
   /**
-   * @brief Finalize the creation of @ref RigidObject or @ref RigidStage that
-   * inherits from this class.
+   * @brief Finalize the creation of @ref RigidObject or @ref
+   * esp::physics::RigidStage that inherits from this class.
    * @return whether successful finalization.
    */
   virtual bool finalizeObject() = 0;
 
  private:
   /**
-   * @brief Finalize the initialization of this @ref RigidBase. This is
-   * overridden by inheriting objects
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the object
+   * @brief Finalize the initialization of this @ref RigidBase.
+   * This is overridden by inheriting objects
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initialization_LibSpecific() = 0;
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
-   * after @ref RigidObject or @ref RigidStage is created.
+   * after @ref RigidObject or @ref RigidStage is
+   * created.
    * @return whether successful finalization.
    */
   virtual bool finalizeObject_LibSpecific() = 0;
@@ -86,8 +96,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
 
   /**
    * @brief Apply a force to an object through a dervied dynamics
-   * implementation. Does nothing for @ref MotionType::STATIC and @ref
-   * MotionType::KINEMATIC objects.
+   * implementation. Does nothing for @ref esp::physics::MotionType::STATIC and
+   * @ref esp::physics::MotionType::KINEMATIC objects.
    * @param force The desired force on the object in the global coordinate
    * system.
    * @param relPos The desired location of force application in the global
@@ -99,8 +109,9 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Apply an impulse to an object through a dervied dynamics
    * implementation. Directly modifies the object's velocity without requiring
-   * integration through simulation. Does nothing for @ref MotionType::STATIC
-   * and @ref MotionType::KINEMATIC objects.
+   * integration through simulation. Does nothing for @ref
+   * esp::physics::MotionType::STATIC and @ref
+   * esp::physics::MotionType::KINEMATIC objects.
    * @param impulse The desired impulse on the object in the global coordinate
    * system.
    * @param relPos The desired location of impulse application in the global
@@ -111,16 +122,17 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
 
   /**
    * @brief Apply an internal torque to an object through a dervied dynamics
-   * implementation. Does nothing for @ref MotionType::STATIC and @ref
-   * MotionType::KINEMATIC objects.
+   * implementation. Does nothing for @ref esp::physics::MotionType::STATIC and
+   * @ref esp::physics::MotionType::KINEMATIC objects.
    * @param torque The desired torque on the object in the local coordinate
    * system.
    */
   virtual void applyTorque(CORRADE_UNUSED const Magnum::Vector3& torque) {}
   /**
    * @brief Apply an internal impulse torque to an object through a dervied
-   * dynamics implementation. Does nothing for @ref MotionType::STATIC and @ref
-   * MotionType::KINEMATIC objects.
+   * dynamics implementation. Does nothing for @ref
+   * esp::physics::MotionType::STATIC and @ref
+   * esp::physics::MotionType::KINEMATIC objects.
    * @param impulse The desired impulse torque on the object in the local
    * coordinate system. Directly modifies the object's angular velocity without
    * requiring integration through simulation.
@@ -149,8 +161,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Virtual angular velocity getter for an object.
    *
-   * Returns zero for default @ref MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
+   * Returns zero for default @ref esp::physics::MotionType::KINEMATIC or @ref
+   * esp::physics::MotionType::STATIC objects.
    * @return Angular velocity vector corresponding to world unit axis angles.
    */
   virtual Magnum::Vector3 getAngularVelocity() const {
@@ -159,8 +171,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
 
   /** @brief Virtual angular velocity setter for an object.
    *
-   * Does nothing for default @ref MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
+   * Does nothing for default @ref esp::physics::MotionType::KINEMATIC or @ref
+   * esp::physics::MotionType::STATIC objects.
    * @param angVel Angular velocity vector corresponding to world unit axis
    * angles.
    */
@@ -169,7 +181,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
 
   /** @brief Get the center of mass (COM) of the object.
    * @return Object 3D center of mass in the global coordinate system.
-   * @todo necessary for @ref MotionType::KINEMATIC?
+   * @todo necessary for @ref esp::physics::MotionType::KINEMATIC?
    */
   virtual Magnum::Vector3 getCOM() const {
     const Magnum::Vector3 com = Magnum::Vector3();
@@ -177,7 +189,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
   /** @brief Set the center of mass (COM) of the object.
    * @param COM Object 3D center of mass in the local coordinate system.
-   * @todo necessary for @ref MotionType::KINEMATIC?
+   * @todo necessary for @ref esp::physics::MotionType::KINEMATIC?
    */
   virtual void setCOM(CORRADE_UNUSED const Magnum::Vector3& COM) {}
 
@@ -252,8 +264,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Virtual linear velocity getter for an object.
    *
-   * Returns zero for default @ref MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
+   * Returns zero for default @ref esp::physics::MotionType::KINEMATIC or @ref
+   * esp::physics::MotionType::STATIC objects.
    * @return Linear velocity of the object.
    */
   virtual Magnum::Vector3 getLinearVelocity() const {
@@ -263,8 +275,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Virtual linear velocity setter for an object.
    *
-   * Does nothing for default @ref MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
+   * Does nothing for default @ref esp::physics::MotionType::KINEMATIC or @ref
+   * esp::physics::MotionType::STATIC objects.
    * @param linVel Linear velocity to set.
    */
   virtual void setLinearVelocity(CORRADE_UNUSED const Magnum::Vector3& linVel) {
