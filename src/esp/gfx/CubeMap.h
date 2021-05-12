@@ -34,7 +34,11 @@ class CubeMap {
      * HDR depth texture
      */
     Depth,
-    // TODO: ObjectId
+    /**
+     * object id (uint) texture
+     */
+    ObjectId,
+
     // TODO: HDR color
 
     Count,
@@ -50,8 +54,9 @@ class CubeMap {
      */
     DepthTexture = 1 << 1,
     /**
-     * TODO: ObjectId
+     * create ObjectId cubemap
      */
+    ObjectIdTexture = 1 << 2,
     /**
      * Build mipmap for cubemap color texture
      * By default, NO mipmap will be built, only 1 level

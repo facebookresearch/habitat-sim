@@ -16,9 +16,19 @@ uniform samplerCube ColorTexture;
 uniform samplerCube DepthTexture;
 #endif
 
+#if defined(OBJECT_ID_TEXTURE)
+uniform usamplerCube ObjectIdTexture;
+#endif
+
 // ------------ output -----------------------
 #if defined(COLOR_TEXTURE)
-layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out vec4 fragmentColor;
+layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR)
+out highp vec4 fragmentColor;
+#endif
+
+#if defined(OBJECT_ID_TEXTURE)
+layout(location = OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID)
+out highp uint fragmentObjectId;
 #endif
 
 // ------------ shader -----------------------
@@ -36,5 +46,8 @@ void main(void) {
 #endif
 #if defined(DEPTH_TEXTURE)
   gl_FragDepth = texture(DepthTexture, normalize(m)).r;
+#endif
+#if defined(OBJECT_ID_TEXTURE)
+  fragmentObjectId = texture(ObjectIdTexture, normalize(m)).r;
 #endif
 }
