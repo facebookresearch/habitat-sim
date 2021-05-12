@@ -89,7 +89,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Set the @ref MotionType of the object. If the construct is a @ref
-   * esp::physics::RigidScene, it can only be @ref
+   * esp::physics::RigidStage, it can only be @ref
    * esp::physics::MotionType::STATIC. If the object is
    * @ref esp::physics::RigidObject it can also be set to @ref
    * esp::physics::MotionType::KINEMATIC. Only if a dervied @ref

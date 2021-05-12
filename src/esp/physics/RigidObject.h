@@ -115,8 +115,7 @@ class RigidObject : public RigidBase {
                       initAttributes) override;
 
   /**
-   * @brief Finalize the creation of @ref esp::physics::RigidObject or @ref
-   * esp::physics::RigidScene that inherits from this class.
+   * @brief Finalize the creation of the RigidObject.
    * @return whether successful finalization.
    */
   bool finalizeObject() override;
