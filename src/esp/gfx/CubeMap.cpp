@@ -20,7 +20,7 @@
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Color.h>
-#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/GenericGL.h>
 #include <Magnum/Trade/AbstractImageConverter.h>
 #include <Magnum/Trade/ImageData.h>
 
@@ -278,11 +278,11 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
 
 void CubeMap::mapForDraw(unsigned int index) {
   frameBuffer_[index].mapForDraw(
-      {{Mn::Shaders::Generic3D::ColorOutput,
+      {{Mn::Shaders::GenericGL3D::ColorOutput,
         (flags_ & CubeMap::Flag::ColorTexture
              ? rgbaAttachment
              : Mn::GL::Framebuffer::DrawAttachment::None)},
-       {Mn::Shaders::Generic3D::ObjectIdOutput,
+       {Mn::Shaders::GenericGL3D::ObjectIdOutput,
         (flags_ & CubeMap::Flag::ObjectIdTexture
              ? objectIdAttachment
              : Mn::GL::Framebuffer::DrawAttachment::None)}});

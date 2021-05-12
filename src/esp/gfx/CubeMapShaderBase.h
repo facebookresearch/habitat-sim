@@ -10,7 +10,7 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/ResourceManager.h>
-#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/esp.h"
 
@@ -34,7 +34,7 @@ class CubeMapShaderBase : public Magnum::GL::AbstractShaderProgram {
      * present always. Expects three- or four-component floating-point
      * or normalized buffer attachment.
      */
-    ColorOutput = Magnum::Shaders::Generic3D::ColorOutput,
+    ColorOutput = Magnum::Shaders::GenericGL3D::ColorOutput,
 
     /**
      * Object ID shader output. @ref shaders-generic "Generic output",
@@ -42,7 +42,7 @@ class CubeMapShaderBase : public Magnum::GL::AbstractShaderProgram {
      * single-component unsigned integral attachment. Writes the value
      * set in @ref setObjectId() there.
      */
-    ObjectIdOutput = Magnum::Shaders::Generic3D::ObjectIdOutput,
+    ObjectIdOutput = Magnum::Shaders::GenericGL3D::ObjectIdOutput,
   };
 
   /**

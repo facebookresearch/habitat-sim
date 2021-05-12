@@ -22,7 +22,6 @@
 #include <Magnum/Image.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
-#include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
 #include "esp/core/configure.h"
@@ -386,7 +385,7 @@ Key Commands:
   };
   VisualizeMode visualizeMode_ = VisualizeMode::RGBA;
 
-  Mn::DebugTools::GLFrameProfiler profiler_{};
+  Mn::DebugTools::FrameProfilerGL profiler_{};
 
   enum class VisualSensorMode : uint8_t {
     Camera = 0,
@@ -704,10 +703,10 @@ Viewer::Viewer(const Arguments& arguments)
    * measure the amount of time to fully complete a set of GL commands without
    * stalling rendering
    */
-  Mn::DebugTools::GLFrameProfiler::Values profilerValues =
-      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
-      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
-      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
+  Mn::DebugTools::FrameProfilerGL::Values profilerValues =
+      Mn::DebugTools::FrameProfilerGL::Value::FrameTime |
+      Mn::DebugTools::FrameProfilerGL::Value::CpuDuration |
+      Mn::DebugTools::FrameProfilerGL::Value::GpuDuration;
 
 // VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
 #ifndef MAGNUM_TARGET_GLES
@@ -715,10 +714,10 @@ Viewer::Viewer(const Arguments& arguments)
           .isExtensionSupported<
               Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
     profilerValues |=
-        Mn::DebugTools::GLFrameProfiler::Value::
+        Mn::DebugTools::FrameProfilerGL::Value::
             VertexFetchRatio |  // Ratio of vertex shader invocations to count
                                 // of vertices submitted
-        Mn::DebugTools::GLFrameProfiler::Value::
+        Mn::DebugTools::FrameProfilerGL::Value::
             PrimitiveClipRatio;  // Ratio of primitives discarded by the
                                  // clipping stage to count of primitives
                                  // submitted

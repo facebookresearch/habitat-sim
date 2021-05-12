@@ -182,11 +182,11 @@ class CubeMap {
 
   // framebuffers (one for every cube side)
   Corrade::Containers::StaticArray<6, Magnum::GL::Framebuffer> frameBuffer_{
-      Corrade::Containers::DirectInit, Magnum::NoCreate};
+      Corrade::DirectInit, Magnum::NoCreate};
 
   // in case there is no need to output depth texture, we need a depth buffer
   Corrade::Containers::StaticArray<6, Magnum::GL::Renderbuffer>
-      optionalDepthBuffer_{Corrade::Containers::DirectInit, Magnum::NoCreate};
+      optionalDepthBuffer_{Corrade::DirectInit, Magnum::NoCreate};
 
   /**
    * @brief recreate the frame buffer
