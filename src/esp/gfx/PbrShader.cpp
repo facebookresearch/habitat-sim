@@ -223,15 +223,15 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     setNormalMatrix(Mn::Matrix3x3{Mn::Math::IdentityInit});
 
     setLightVectors(Cr::Containers::Array<Mn::Vector4>{
-        Cr::Containers::DirectInit, lightCount_,
+        Cr::DirectInit, lightCount_,
         // a single directional "fill" light, coming from the center of the
         // camera.
         Mn::Vector4{0.0f, 0.0f, 1.0f, 0.0f}});
-    Cr::Containers::Array<Mn::Color3> colors{Cr::Containers::DirectInit,
-                                             lightCount_, Mn::Color3{1.0f}};
+    Cr::Containers::Array<Mn::Color3> colors{Cr::DirectInit, lightCount_,
+                                             Mn::Color3{1.0f}};
     setLightColors(colors);
-    setLightRanges(Cr::Containers::Array<Mn::Float>{
-        Cr::Containers::DirectInit, lightCount_, Mn::Constants::inf()});
+    setLightRanges(Cr::Containers::Array<Mn::Float>{Cr::DirectInit, lightCount_,
+                                                    Mn::Constants::inf()});
   }
   setEmissiveColor(Magnum::Color3{0.0f});
 }

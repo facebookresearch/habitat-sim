@@ -164,7 +164,7 @@ void VoxelGrid::addVoxelToMeshPrimitives(
   Cr::Containers::ArrayView<const Mn::UnsignedShort> cubeIndices =
       cubeData.indices<Mn::UnsignedShort>();
   for (std::size_t i = 0; i != cubeData.vertexCount(); ++i) {
-    arrayAppend(vertexData, Cr::Containers::InPlaceInit,
+    arrayAppend(vertexData, Cr::InPlaceInit,
                 cubePositions[i] * m_voxelSize / 2 + mid,
                 cubePositions[i].normalized() * 1 / 4 +
                     cubeNormals[i].normalized() * 3 / 4,
@@ -210,7 +210,7 @@ void VoxelGrid::addVectorToMeshPrimitives(
   }
   vecRotation = Mn::Quaternion::rotation(-angle, crossProduct.normalized());
   for (std::size_t i = 0; i != coneData.vertexCount(); ++i) {
-    arrayAppend(vertexData, Cr::Containers::InPlaceInit,
+    arrayAppend(vertexData, Cr::InPlaceInit,
                 vecRotation.transformVector(conePositions[i] *
                                                 Mn::Vector3(0.02, 0.035, 0.02) +
                                             Mn::Vector3(0, 0.025, 0)) +
@@ -235,7 +235,7 @@ void VoxelGrid::addVectorToMeshPrimitives(
       cylinderData.indices<Mn::UnsignedInt>();
 
   for (std::size_t i = 0; i != cylinderData.vertexCount(); ++i) {
-    arrayAppend(vertexData, Cr::Containers::InPlaceInit,
+    arrayAppend(vertexData, Cr::InPlaceInit,
                 vecRotation.transformVector(
                     cylinderPositions[i] * Mn::Vector3(0.007, 0.025, 0.007) -
                     Mn::Vector3(0, 0.025, 0)) +
