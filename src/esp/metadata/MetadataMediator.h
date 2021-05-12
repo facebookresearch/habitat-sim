@@ -393,13 +393,38 @@ class MetadataMediator {
   }  // getObjAttrFullHandle
 
   /**
+   * @brief Returns articulated object model handle in dataset corresponding to
+   * passed name as substring. Assumes articulated object model with @p
+   * artObjModelName as substring exists in this dataset.
+   * @param artObjModelName substring to handle of AO model that exists in this
+   * dataset. The actual model name will be found via substring search in the
+   * manager, so the name is expected to be sufficiently restrictive to have
+   * exactly 1 match in dataset.
+   * @return name of object attributes with handle containing @p artObjModelName
+   * or empty string if none.
+   */
+  const std::string getArticulatedObjModelFullHandle(
+      const std::string& artObjModelName) {
+    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+    // this should never happen
+    if (datasetAttr == nullptr) {
+      LOG(ERROR) << "MetadataMediator::getArticulatedObjModelFullHandle : No "
+                    "current active "
+                    "dataset specified/exists named :"
+                 << activeSceneDataset_ << ".";
+      return "";
+    }
+    return datasetAttr->getArticulatedObjModelFullHandle(artObjModelName);
+  }  // getArticulatedObjModelFullHandle
+
+  /**
    * @brief Returns the full name of the lightsetup attributes whose
    * handle contains the passed @p lightSetupName
    * @param lightSetupName Name of the attributes desired.  The attributes will
    * be found via substring search, so the name is expected to be sufficiently
    * restrictive to have exactly 1 match in dataset.
-   * @return the full attributes name corresponding to @p lightSetupName , or
-   * the empty string.
+   * @return name of AO model with handle containing @p artObjModelName or
+   * empty string if none.
    */
   const std::string getLightSetupFullHandle(const std::string& lightSetupName) {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();

@@ -61,6 +61,164 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
 
   // process articulated objects
   // TODO Need to construct manager to consume readDatasetJSONCell
+  // All of the below will be replaced by readDatasetJSONCell call
+  const char* tag = "articulated_objects";
+  if (jsonConfig.HasMember(tag)) {
+    if (!jsonConfig[tag].IsObject()) {
+      dispCellConfigError(tag);
+    } else {
+      const auto& jCell = jsonConfig[tag];
+      if (jCell.HasMember("paths")) {
+        if (!jCell["paths"].IsObject()) {
+          LOG(WARNING)
+              << "SceneDatasetAttributesManager::setValsFromJSONDoc("
+                 "Articulated Object) : \""
+              << tag
+              << ".paths\" cell in JSON config unable to be parsed as "
+                 "a JSON object to determine search paths so skipping.";
+        } else {
+          const auto& pathsObj = jCell["paths"];
+          bool pathsWarn = false;
+          std::string pathsWarnType = "";
+          if (pathsObj.HasMember(".xml")) {
+            if (!pathsObj[".xml"].IsArray()) {
+              pathsWarn = true;
+              pathsWarnType = ".xml";
+            } else {
+              const auto& aoPathsObj = pathsObj[".xml"];
+              //** replaces call to buildCfgPathsFromJSONAndLoad in AOManager
+              for (rapidjson::SizeType i = 0; i < aoPathsObj.Size(); ++i) {
+                if (!aoPathsObj[i].IsString()) {
+                  LOG(ERROR)
+                      << "SceneDatasetAttributesManager::setValsFromJSONDoc("
+                         "Articulated Object) : Invalid path "
+                         "value in file path array element @ idx "
+                      << i << ". Skipping.";
+                  continue;
+                }
+                std::string absolutePath = Cr::Utility::Directory::join(
+                    dsDir, aoPathsObj[i].GetString());
+                std::vector<std::string> globPaths = io::globDirs(absolutePath);
+                if (globPaths.size() > 0) {
+                  for (const auto& globPath : globPaths) {
+                    // load all object templates available as configs in
+                    // absolutePath
+                    LOG(WARNING)
+                        << "SceneDatasetAttributesManager::setValsFromJSONDoc("
+                           "Articulated Object) : Glob path result for "
+                        << absolutePath << " : " << globPath;
+
+                    //****replaces call to loadAllConfigsFromPath in AOManager
+                    namespace Dir = Cr::Utility::Directory;
+                    std::vector<std::string> aoFilePaths;
+                    // Check if directory
+                    const bool dirExists = Dir::isDirectory(globPath);
+                    if (dirExists) {
+                      LOG(INFO)
+                          << "SceneDatasetAttributesManager::"
+                             "setValsFromJSONDoc(Articulated Object) : Parsing "
+                             "articulated object library directory: " +
+                                 globPath;
+                      for (auto& file :
+                           Dir::list(globPath, Dir::Flag::SortAscending)) {
+                        std::string absoluteSubfilePath =
+                            Dir::join(globPath, file);
+                        if (Cr::Utility::String::endsWith(absoluteSubfilePath,
+                                                          ".xml")) {
+                          aoFilePaths.push_back(absoluteSubfilePath);
+                        }
+                      }
+                    } else {
+                      // not a directory, perhaps a file
+                      std::string attributesFilepath =
+                          getFormattedJSONFileName(globPath);
+                      const bool fileExists = Dir::exists(attributesFilepath);
+
+                      if (fileExists) {
+                        aoFilePaths.push_back(attributesFilepath);
+                      } else {  // neither a directory or a file
+                        LOG(WARNING) << "SceneDatasetAttributesManager::"
+                                        "setValsFromJSONDoc(Articulated "
+                                        "Object) : Parsing articulated objects "
+                                        " : Cannot find "
+                                     << globPath << " as directory or "
+                                     << attributesFilepath
+                                     << " as config file. Aborting parse.";
+                        continue;
+                      }  // if fileExists else
+                    }    // if dirExists else
+                         //**//** replaces call to loadAllFileBasedTemplates
+
+                    std::vector<int> pathindices(aoFilePaths.size(),
+                                                 ID_UNDEFINED);
+                    if (aoFilePaths.size() > 0) {
+                      std::string ao_dir =
+                          Cr::Utility::Directory::path(aoFilePaths[0]);
+                      LOG(INFO)
+                          << "SceneDatasetAttributesManager::"
+                             "setValsFromJSONDoc(Articulated Object) : Loading "
+                          << aoFilePaths.size() << " " << this->objectType_
+                          << " templates found in " << ao_dir;
+                      for (int i = 0; i < aoFilePaths.size(); ++i) {
+                        auto aoModelName = aoFilePaths[i];
+                        auto aoFullFileName =
+                            Cr::Utility::Directory::filename(aoModelName);
+                        LOG(INFO) << "SceneDatasetAttributesManager::"
+                                     "setValsFromJSONDoc(Articulated Object) : "
+                                     "Found Articulated Object Model file : "
+                                  << aoFullFileName;
+
+                        // set k-v pairs here.
+                        auto key =
+                            Corrade::Utility::Directory::splitExtension(
+                                Corrade::Utility::Directory::splitExtension(
+                                    Corrade::Utility::Directory::filename(
+                                        aoFullFileName))
+                                    .first)
+                                .first;
+
+                        dsAttribs->setArticulatedObjectModelFilename(
+                            key, aoFullFileName);
+                      }
+                    }
+                    LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates "
+                                 ": Specified "
+                              << std::to_string(aoFilePaths.size())
+                              << " artiuclated object model filenames.";
+
+                    //**//** end call to loadAllFileBasedTemplates
+                    //**** end call to loadAllConfigsFromPath in AOManager
+
+                  }  // for each glob path
+                } else {
+                  LOG(WARNING)
+                      << "SceneDatasetAttributesManager::setValsFromJSONDoc("
+                         "Articulated Object) : No Glob path result for "
+                      << absolutePath;
+                }
+              }  // for every path object in list in json
+              LOG(INFO) << "SceneDatasetAttributesManager::setValsFromJSONDoc("
+                           "Articulated Object) : "
+                        << std::to_string(aoPathsObj.Size())
+                        << " paths specified in JSON doc for articulated "
+                           "object model files.";
+              //** end call to buildCfgPathsFromJSONAndLoad in AOManager
+            }
+          }
+
+          if (pathsWarn) {
+            LOG(WARNING)
+                << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
+                << tag << ".paths[" << pathsWarnType
+                << "] cell in JSON config unable to be parsed as an array to "
+                   "determine search paths for json configs so skipping.";
+          }
+        }  // if paths cell is an object
+      }    // if has paths cell
+    }
+  }  // if has articulated_objects tag
+
+  //// End temporary articulated object path loading
 
   // process light setups - implement handling light setups
   readDatasetJSONCell(dsDir, "light_setups", jsonConfig,
@@ -121,8 +279,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     } else {
       const auto& jCell = jsonConfig[tag];
       // process JSON jCell here - this cell potentially holds :
-      // 1. "default_attributes" : a single attributes default of the specified
-      // type.
+      // 1. "default_attributes" : a single attributes default of the
+      // specified type.
       if (jCell.HasMember("default_attributes")) {
         if (!jCell["default_attributes"].IsObject()) {
           LOG(WARNING)
@@ -146,7 +304,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
             LOG(INFO)
                 << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
                 << tag
-                << ".default attributes\" set in Attributes Manager from JSON.";
+                << ".default attributes\" set in Attributes Manager from "
+                   "JSON.";
           }
         }  // if is an object
       }    // if has default attributes cell
@@ -278,11 +437,11 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
   // file is given, will create new default template and save it with template
   // handle.
 
-  // create attributes using original file name if specified, otherwise, create
-  // from default and set new template handle upon registration.
+  // create attributes using original file name if specified, otherwise,
+  // create from default and set new template handle upon registration.
   if (origFileNameSpecified) {
-    // get copy of object if exists, else create object.  By here origObjHandle
-    // is known to be legitimate file
+    // get copy of object if exists, else create object.  By here
+    // origObjHandle is known to be legitimate file
     auto attr = attrMgr->getObjectCopyByHandle(origObjHandle);
     if (nullptr == attr) {
       LOG(WARNING)
@@ -293,7 +452,8 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
       attr = attrMgr->createObject(origObjHandle, true);
       if (nullptr == attr) {
         LOG(WARNING)
-            << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : \""
+            << "SceneDatasetAttributesManager::readDatasetConfigsJSONCell : "
+               "\""
             << tag << ".configs\" cell element's original file ("
             << originalFile
             << ") failed to successfully create a base attributes to modify, "
@@ -335,8 +495,8 @@ int SceneDatasetAttributesManager::registerObjectFinalize(
     const std::string& SceneDatasetAttributesHandle,
     bool) {
   // adds template to library, and returns either the ID of the existing
-  // template referenced by SceneDatasetAttributesHandle, or the next available
-  // ID if not found.
+  // template referenced by SceneDatasetAttributesHandle, or the next
+  // available ID if not found.
   int datasetTemplateID = this->addObjectToLibrary(
       SceneDatasetAttributes, SceneDatasetAttributesHandle);
   return datasetTemplateID;
