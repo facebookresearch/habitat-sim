@@ -351,7 +351,7 @@ jobs:
               pip install imageio imageio-ffmpeg
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
-              git submodule update --init --recursive --jobs 4
+              git submodule update --init --recursive --jobs 16
               while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
                   texlive-base \
@@ -521,12 +521,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest -n auto --cov-report=xml --typeguard-packages=habitat_sim --cov=./
+              pytest -n auto --durations=10 --cov-report=xml --typeguard-packages=habitat_sim --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
-              ./build.sh --headless
-              pytest -n auto --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
+              ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+              pytest -n auto --durations=10 --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               . ~/emsdk/emsdk_env.sh
