@@ -30,6 +30,11 @@ class AbstractObjectAttributes;
 
 namespace physics {
 
+/**
+ * @brief This class specifies the functionality expected of rigid objects and
+ * stages, particularly with regard to dynamic simulation, if such a library,
+ * such as bullet, is available.
+ */
 class RigidBase : public esp::physics::PhysicsObjectBase {
  public:
   /**

@@ -80,7 +80,7 @@ struct VelocityControl {
 };
 
 /**
- * @brief An AbstractFeature3D representing an individual rigid object instance
+ * @brief A @ref RigidBase representing an individual rigid object instance
  * attached to a SceneNode, updating its state through simulation. This may be a
  * @ref esp::physics::MotionType::STATIC scene collision geometry or an object
  * of any @ref MotionType which can interact with other members of a physical
