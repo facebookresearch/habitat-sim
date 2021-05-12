@@ -113,11 +113,11 @@ all_base_sensor_types = [
 
 # Sensors that don't have GT NPY files (yet)
 all_exotic_sensor_types = [
-    "ortho_rgb_sensor",
+    "ortho_rgba_sensor",
     "ortho_depth_sensor",
-    "fisheye_rgb_sensor",
+    "fisheye_rgba_sensor",
     "fisheye_depth_sensor",
-    "equirect_rgb_sensor",
+    "equirect_rgba_sensor",
     "equirect_depth_sensor",
 ]
 
@@ -311,7 +311,7 @@ def test_initial_hfov(scene, sensor_type, make_cfg_settings):
         "PoissonNoiseModel",
     ],
 )
-def test_rgb_noise(scene, model_name, make_cfg_settings):
+def test_rgba_noise(scene, model_name, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
