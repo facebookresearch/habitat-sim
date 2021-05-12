@@ -521,12 +521,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest -n 4 --cov-report=xml --typeguard-packages=habitat_sim --cov=./
+              pytest -n auto --cov-report=xml --typeguard-packages=habitat_sim --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest -n 4 --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
+              pytest -n auto --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               . ~/emsdk/emsdk_env.sh
