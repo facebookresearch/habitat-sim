@@ -36,6 +36,7 @@ namespace esp {
 namespace sim {
 
 using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::SceneAOInstanceAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
@@ -498,6 +499,72 @@ bool Simulator::instanceObjectsForActiveScene() {
     objectsAdded.push_back(objID);
   }  // for each object attributes
   // objectsAdded holds all ids of added objects.
+
+  // 6. Load all articulated object instances
+  // Get all instances of articulated objects described in scene
+  const std::vector<SceneAOInstanceAttributes::ptr> artObjInstances =
+      curSceneInstanceAttributes->getArticulatedObjectInstances();
+
+  // vector holding all articulated objects added
+  std::vector<int> artObjsAdded;
+  int aoID = 0;
+  // Iterate through instances, create object and implement initial
+  // transformation.
+  for (const auto& artObjInst : artObjInstances) {
+    // get model file name
+    const std::string artObjFilePath =
+        metadataMediator_->getArticulatedObjModelFullHandle(
+            artObjInst->getHandle());
+
+    // create articulated object
+    aoID = physicsManager_->addArticulatedObjectFromURDF(
+        artObjFilePath, &drawables, artObjInst->getFixedBase(),
+        artObjInst->getUniformScale(), artObjInst->getMassScale());
+
+    if (aoID == ID_UNDEFINED) {
+      // instancing failed for some reason.
+      LOG(ERROR) << errMsgTmplt
+                 << "Articulatd Object create failed for model filepath "
+                 << artObjFilePath << ", whose handle is "
+                 << artObjInst->getHandle()
+                 << " as specified in articulated object instance attributes.";
+      return false;
+    }
+    // now move objects
+    // set object's location and rotation based on translation and rotation
+    // params specified in instance attributes
+    auto translate = artObjInst->getTranslation();
+    // get instance override value, if exists
+    auto Instance_COM_Origin =
+        static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
+            artObjInst->getTranslationOrigin());
+    if (((Default_COM_Correction) &&
+         (Instance_COM_Origin !=
+          metadata::managers::SceneInstanceTranslationOrigin::COM)) ||
+        (Instance_COM_Origin ==
+         metadata::managers::SceneInstanceTranslationOrigin::AssetLocal)) {
+      // if default COM correction is set and no object-based override, or if
+      // Object set to correct for COM.
+
+      translate -= artObjInst->getRotation().transformVector(
+          physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation());
+    }
+    Magnum::Matrix4 state =
+        Magnum::Matrix4::from(artObjInst->getRotation().toMatrix(), translate);
+    physicsManager_->setArticulatedObjectRootState(aoID, state);
+    // set object's motion type if different than set value
+    const physics::MotionType attrObjMotionType =
+        static_cast<physics::MotionType>(artObjInst->getMotionType());
+    if (attrObjMotionType != physics::MotionType::UNDEFINED) {
+      physicsManager_->setArticulatedObjectMotionType(aoID, attrObjMotionType);
+    }
+
+    artObjsAdded.push_back(aoID);
+  }  // for each articulated object instance
+  // TODO : reset may eventually have all the scene instance instantiation
+  // code so that scenes can be reset
+  reset();
+
   return true;
 }  // Simulator::instanceObjectsForActiveScene()
 
@@ -1190,8 +1257,8 @@ std::string Simulator::convexHullDecomposition(
   chdObjAttr->setCollisionAssetIsPrimitive(false);
   chdObjAttr->setJoinCollisionMeshes(false);
 
-  // if the renderChd flag is set to true, set the convex hull decomposition to
-  // be the render asset (useful for testing)
+  // if the renderChd flag is set to true, set the convex hull decomposition
+  // to be the render asset (useful for testing)
 
   chdObjAttr->setRenderAssetHandle(renderChd ? chdFilename : filename);
 
