@@ -12,6 +12,12 @@
  */
 namespace esp {
 namespace physics {
+
+/**
+ * @brief A @ref RigidBase representing an individual rigid stage instance
+ * attached to a SceneNode. This construction currently may only be
+ * @ref esp::physics::MotionType::STATIC.
+ */
 class RigidStage : public RigidBase {
  public:
   RigidStage(scene::SceneNode* rigidBodyNode,
