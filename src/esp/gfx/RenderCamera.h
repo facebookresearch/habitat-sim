@@ -104,14 +104,30 @@ class RenderCamera : public MagnumCamera {
    */
   ~RenderCamera() override = default;
 
-  // Get the scene node being attached to.
+  /**
+   * @brief Get the scene node being attached to.
+   * @return the current scene node
+   */
   scene::SceneNode& node() { return object(); }
+
+  /**
+   * @brief Get a const ref to the scene node being attached to.
+   * @return the current scene node
+   */
   const scene::SceneNode& node() const { return object(); }
 
-  // Overloads to avoid confusion
+  /**
+   * @brief Overloads to avoid confusion
+   * @return ref to current scene node
+   */
   scene::SceneNode& object() {
     return static_cast<scene::SceneNode&>(MagnumCamera::object());
   }
+
+  /**
+   * @brief Overloads to avoid confusion
+   * @return ref to current scene node
+   */
   const scene::SceneNode& object() const {
     return static_cast<const scene::SceneNode&>(MagnumCamera::object());
   }
@@ -120,6 +136,7 @@ class RenderCamera : public MagnumCamera {
    * @brief Set precalculated projection matrix for this RenderCamera
    * @param width The width of the viewport
    * @param height The height of the viewport
+   * @param projMat The projection matrix to use.
    * @return A reference to this RenderCamera
    */
   RenderCamera& setProjectionMatrix(int width,
@@ -130,6 +147,15 @@ class RenderCamera : public MagnumCamera {
     return *this;
   }
 
+  /**
+   * @brief Set precalculated projection matrix for this RenderCamera
+   * @param width The width of the viewport
+   * @param height The height of the viewport
+   * @param znear The location of the near clipping plane
+   * @param zfar The location of the far clipping plane
+   * @param projMat The projection matrix to use.
+   * @return A reference to this RenderCamera
+   */
   RenderCamera& setProjectionMatrix(int width,
                                     int height,
                                     float znear,
@@ -154,7 +180,7 @@ class RenderCamera : public MagnumCamera {
   /**
    * @brief Overload function to render the drawables
    * @param drawables, a drawable group containing all the drawables
-   * @param frustumCulling, whether do frustum culling or not, default: false
+   * @param flags state flags to direct drawing
    * @return the number of drawables that are drawn
    */
   uint32_t draw(MagnumDrawableGroup& drawables, Flags flags = {});

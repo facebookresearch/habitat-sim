@@ -32,6 +32,12 @@ namespace physics {
 
 class RigidBase : public esp::physics::PhysicsObjectBase {
  public:
+  /**
+   * @brief Constructor for a @ref esp::physics::RigidBase.
+   * @param rigidBodyNode Pointer to the node to be used for this rigid.
+   * @param objectID the desired ID for this rigid construct.
+   * @param resMgr a reference to @ref esp::assets::ResourceManager
+   */
   RigidBase(scene::SceneNode* rigidBodyNode,
             int objectId,
             const assets::ResourceManager& resMgr)
@@ -39,13 +45,13 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
         visualNode_(&rigidBodyNode->createChild()) {}
 
   /**
-   * @brief Virtual destructor for a @ref RigidBase.
+   * @brief Virtual destructor for a @ref esp::physics::RigidBase.
    */
   ~RigidBase() override = default;
 
   /**
-   * @brief Initializes the @ref RigidObject or @ref RigidStage that inherits
-   * from this class.  This is overridden
+   * @brief Initializes the @ref esp::physics::RigidObject or @ref
+   * esp::physics::RigidStage that inherits from this class.  This is overridden
    * @param initAttributes The template structure defining relevant phyiscal
    * parameters for this object
    * @return true if initialized successfully, false otherwise.
@@ -54,24 +60,23 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
       metadata::attributes::AbstractObjectAttributes::ptr initAttributes) = 0;
 
   /**
-   * @brief Finalize the creation of @ref RigidObject or @ref RigidStage that
-   * inherits from this class.
+   * @brief Finalize the creation of @ref esp::physics::RigidObject or @ref
+   * esp::physics::RigidStage that inherits from this class.
    * @return whether successful finalization.
    */
   virtual bool finalizeObject() = 0;
 
  private:
   /**
-   * @brief Finalize the initialization of this @ref RigidBase. This is
-   * overridden by inheriting objects
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the object
+   * @brief Finalize the initialization of this @ref esp::physics::RigidBase.
+   * This is overridden by inheriting objects
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initialization_LibSpecific() = 0;
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
-   * after @ref RigidObject or @ref RigidStage is created.
+   * after @ref esp::physics::RigidObject or @ref esp::physics::RigidStage is
+   * created.
    * @return whether successful finalization.
    */
   virtual bool finalizeObject_LibSpecific() = 0;
@@ -136,13 +141,13 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   //! implemented in physics-engine specific ways
 
   /** @brief Get the scalar angular damping coefficient of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
+   * for dervied dynamic implementations of @ref esp::physics::RigidObject.
    * @return The scalar angular damping coefficient of the object.
    */
   virtual double getAngularDamping() const { return 0.0; }
 
   /** @brief Set the scalar angular damping coefficient for the object. Only
-   * used for dervied dynamic implementations of @ref RigidObject.
+   * used for dervied dynamic implementations of @ref esp::physics::RigidObject.
    * @param angDamping The new scalar angular damping coefficient for the
    * object.
    */
@@ -152,7 +157,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @brief Virtual angular velocity getter for an object.
    *
    * Returns zero for default @ref esp::physics::MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
+   * esp::physics::MotionType::::STATIC objects.
    * @return Angular velocity vector corresponding to world unit axis angles.
    */
   virtual Magnum::Vector3 getAngularVelocity() const {
@@ -162,7 +167,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /** @brief Virtual angular velocity setter for an object.
    *
    * Does nothing for default @ref esp::physics::MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
+   * esp::physics::MotionType::::STATIC objects.
    * @param angVel Angular velocity vector corresponding to world unit axis
    * angles.
    */
@@ -184,13 +189,13 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   virtual void setCOM(CORRADE_UNUSED const Magnum::Vector3& COM) {}
 
   /** @brief Get the scalar friction coefficient of the object. Only used for
-   * dervied dynamic implementations of @ref RigidObject.
+   * dervied dynamic implementations of @ref esp::physics::RigidObject.
    * @return The scalar friction coefficient of the object.
    */
   virtual double getFrictionCoefficient() const { return 0.0; }
 
   /** @brief Set the scalar friction coefficient of the object. Only used for
-   * dervied dynamic implementations of @ref RigidObject.
+   * dervied dynamic implementations of @ref esp::physics::RigidObject.
    * @param frictionCoefficient The new scalar friction coefficient of the
    * object.
    */
@@ -240,13 +245,13 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
 
   /** @brief Get the scalar linear damping coefficient of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
+   * for dervied dynamic implementations of @ref esp::physics::RigidObject.
    * @return The scalar linear damping coefficient of the object.
    */
   virtual double getLinearDamping() const { return 0.0; }
 
   /** @brief Set the scalar linear damping coefficient of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
+   * for dervied dynamic implementations of @ref esp::physics::RigidObject.
    * @param linDamping The new scalar linear damping coefficient of the object.
    */
   virtual void setLinearDamping(CORRADE_UNUSED const double linDamping) {}
@@ -255,7 +260,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @brief Virtual linear velocity getter for an object.
    *
    * Returns zero for default @ref esp::physics::MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
+   * esp::physics::MotionType::::STATIC objects.
    * @return Linear velocity of the object.
    */
   virtual Magnum::Vector3 getLinearVelocity() const {
@@ -266,32 +271,32 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @brief Virtual linear velocity setter for an object.
    *
    * Does nothing for default @ref esp::physics::MotionType::KINEMATIC or @ref
-   * MotionType::STATIC objects.
+   * esp::physics::MotionType::::STATIC objects.
    * @param linVel Linear velocity to set.
    */
   virtual void setLinearVelocity(CORRADE_UNUSED const Magnum::Vector3& linVel) {
   }
 
   /** @brief Get the mass of the object. Only used for dervied dynamic
-   * implementations of @ref RigidObject.
+   * implementations of @ref esp::physics::RigidObject.
    * @return The mass of the object.
    */
   virtual double getMass() const { return 0.0; }
 
   /** @brief Set the mass of the object. Only used for dervied dynamic
-   * implementations of @ref RigidObject.
+   * implementations of @ref esp::physics::RigidObject.
    * @param mass The new mass of the object.
    */
   virtual void setMass(CORRADE_UNUSED const double mass) {}
 
   /** @brief Get the scalar coefficient of restitution  of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
+   * for dervied dynamic implementations of @ref esp::physics::RigidObject.
    * @return The scalar coefficient of restitution  of the object.
    */
   virtual double getRestitutionCoefficient() const { return 0.0; }
 
   /** @brief Set the scalar coefficient of restitution of the object. Only used
-   * for dervied dynamic implementations of @ref RigidObject.
+   * for dervied dynamic implementations of @ref esp::physics::RigidObject.
    * @param restitutionCoefficient The new scalar coefficient of restitution of
    * the object.
    */

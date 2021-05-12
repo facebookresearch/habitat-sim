@@ -51,8 +51,16 @@ class ManagedContainer : public ManagedContainerBase {
                 "ManagedContainer :: Managed object type must be derived from "
                 "AbstractManagedObject");
 
+  /**
+   * @brief Alias for shared pointer to the @ref
+   * esp::core::AbstractManagedObject this container manages.
+   */
   typedef std::shared_ptr<T> ManagedPtr;
 
+  /**
+   * @brief Constructor
+   * @param metadataType The name of the managed object type.
+   */
   explicit ManagedContainer(const std::string& metadataType)
       : ManagedContainerBase(metadataType) {}
 
@@ -221,7 +229,7 @@ class ManagedContainer : public ManagedContainerBase {
   }
 
   /**
-   * @brief  Remove the managed object referenced by the passed string handle.
+   * @brief Remove the managed object referenced by the passed string handle.
    * Will emplace managed object ID within deque of usable IDs and return the
    * managed object being removed.
    * @param objectHandle the string key of the managed object desired.
@@ -282,7 +290,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to, or a copy of, the managed object identified by
-   * the @p managedObjectID, depending on @ref Access value.  This is the
+   * the @p managedObjectID, depending on @p Access value.  This is the
    * function that should be be accessed by the user for general object
    * consumption by ID.
    *
@@ -298,7 +306,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to, or a copy of, the managed object identified by
-   * the @p objectHandle, depending on @ref Access value.  This is the function
+   * the @p objectHandle, depending on @p Access value.  This is the function
    * that should be be accessed by the user for general object consumption by
    * Handle.
    *
@@ -316,7 +324,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to, or a copy of, the managed object identified by
-   * the @p managedObjectID, depending on @ref Access value, and casted to the
+   * the @p managedObjectID, depending on @p Access value, and casted to the
    * appropriate derived managed object class. This is the version that should
    * be accessed by the user for type-casted object consumption by ID.
    *
@@ -333,7 +341,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to, or a copy of, the managed object identified by
-   * the @p managedObjectID, depending on @ref Access value, and casted to the
+   * the @p managedObjectID, depending on @p Access value, and casted to the
    * appropriate derived managed object class. This is the version that should
    * be accessed by the user for type-casted object consumption by
    * Handle.
@@ -544,7 +552,7 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::
 
   /**
-   * @brief This function will build the appropriate @ref copyConstructorMap_
+   * @brief This function will build the appropriate @p copyConstructorMap_
    * copy constructor function pointer map for this container's managed object,
    * keyed on the managed object's class type.  This MUST be called in the
    * constructor of the -instancing- class.
@@ -563,7 +571,7 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::copyObject
 
   /**
-   * @brief Create a new object as a copy of @ref defaultObject_  if it exists,
+   * @brief Create a new object as a copy of @p defaultObject_  if it exists,
    * otherwise return nullptr.
    * @param newHandle the name for the copy of the default.
    * @return New object or nullptr

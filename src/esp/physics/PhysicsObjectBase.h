@@ -81,17 +81,20 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
   /**
-   * @brief Get the @ref MotionType of the object. See @ref setMotionType.
+   * @brief Get the @ref esp::physics::MotionType of the object. See @ref
+   * setMotionType.
    * @return The object's current @ref MotionType.
    */
   MotionType getMotionType() const { return objectMotionType_; }
 
   /**
-   * @brief Set the @ref MotionType of the object. If the object is @ref
-   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
-   * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC.
-   * Only if a dervied @ref PhysicsManager implementing dynamics is in use can
-   * the object be set to @ref MotionType::DYNAMIC.
+   * @brief Set the @ref MotionType of the object. If the construct is a @ref
+   * esp::physics::RigidScene, it can only be @ref
+   * esp::physics::MotionType::STATIC. If the object is
+   * @ref esp::physics::RigidObject it can also be set to @ref
+   * esp::physics::MotionType::KINEMATIC. Only if a dervied @ref
+   * esp::physics::PhysicsManager implementing dynamics is in use can the object
+   * be set to @ref esp::physics::MotionType::DYNAMIC.
    * @param mt The desirved @ref MotionType.
    */
   virtual void setMotionType(MotionType mt) = 0;
@@ -141,8 +144,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   // ==== Transformations ===
 
   /** @brief Set the 4x4 transformation matrix of the object kinematically.
-   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
-   * recommended.
+   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * object is not recommended.
    * @param transformation The desired 4x4 transform of the object.
    */
   virtual void setTransformation(const Magnum::Matrix4& transformation) {
@@ -157,8 +160,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   /** @brief Set the 3D position of the object kinematically.
-   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
-   * recommended.
+   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * object is not recommended.
    * @param vector The desired 3D position of the object.
    */
   virtual void setTranslation(const Magnum::Vector3& vector) {
@@ -173,8 +176,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   /** @brief Set the orientation of the object kinematically.
-   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
-   * recommended.
+   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * object is not recommended.
    * @param quaternion The desired orientation of the object.
    */
   virtual void setRotation(const Magnum::Quaternion& quaternion) {
@@ -212,8 +215,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   /** @brief Modify the 3D position of the object kinematically by translation.
-   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
-   * recommended.
+   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * object is not recommended.
    * @param vector The desired 3D vector by which to translate the object.
    */
   virtual void translate(const Magnum::Vector3& vector) {
@@ -225,7 +228,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the 3D position of the object kinematically by translation
    * with a vector defined in the object's local coordinate system. Calling this
-   * during simulation of a @ref MotionType::DYNAMIC object is not recommended.
+   * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
+   * recommended.
    * @param vector The desired 3D vector in the object's ocal coordiante system
    * by which to translate the object.
    */
@@ -252,7 +256,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying an
    * axis-angle rotation to it in the local coordinate system. Calling this
-   * during simulation of a @ref MotionType::DYNAMIC object is not recommended.
+   * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
+   * recommended.
    * @param angleInRad The angle of rotation in radians.
    * @param normalizedAxis The desired unit vector axis of rotation in the local
    * coordinate system.
@@ -267,7 +272,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the global X axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateX(const Magnum::Rad angleInRad) {
@@ -279,7 +284,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the global Y axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateY(const Magnum::Rad angleInRad) {
@@ -291,7 +296,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the global Z axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateZ(const Magnum::Rad angleInRad) {
@@ -303,7 +308,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the local X axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateXLocal(const Magnum::Rad angleInRad) {
@@ -315,7 +320,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the local Y axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateYLocal(const Magnum::Rad angleInRad) {
@@ -327,7 +332,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the local Z axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateZLocal(const Magnum::Rad angleInRad) {
