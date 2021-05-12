@@ -106,28 +106,20 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief Get the scene node being attached to.
-   * @return the current scene node
    */
   scene::SceneNode& node() { return object(); }
 
   /**
    * @brief Get a const ref to the scene node being attached to.
-   * @return the current scene node
    */
   const scene::SceneNode& node() const { return object(); }
 
-  /**
-   * @brief Overloads to avoid confusion
-   * @return ref to current scene node
-   */
+  /** @overload */
   scene::SceneNode& object() {
     return static_cast<scene::SceneNode&>(MagnumCamera::object());
   }
 
-  /**
-   * @brief Overloads to avoid confusion
-   * @return ref to current scene node
-   */
+  /** @overload */
   const scene::SceneNode& object() const {
     return static_cast<const scene::SceneNode&>(MagnumCamera::object());
   }
@@ -179,7 +171,7 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief Overload function to render the drawables
-   * @param drawables, a drawable group containing all the drawables
+   * @param drawables a drawable group containing all the drawables
    * @param flags state flags to direct drawing
    * @return the number of drawables that are drawn
    */
@@ -187,7 +179,7 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief performs the frustum culling
-   * @param drawableTransforms, a vector of pairs of Drawable3D object and its
+   * @param drawableTransforms a vector of pairs of Drawable3D object and its
    * absolute transformation
    * @return the number of drawables that are not culled
    *
@@ -202,7 +194,7 @@ class RenderCamera : public MagnumCamera {
   /**
    * @brief Cull Drawables for SceneNodes which are not OBJECT type.
    *
-   * @param drawableTransforms, a vector of pairs of Drawable3D object and its
+   * @param drawableTransforms a vector of pairs of Drawable3D object and its
    * absolute transformation
    * @return the number of drawables that are not culled
    */

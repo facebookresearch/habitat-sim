@@ -111,6 +111,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::metadata::initAttributesBindings(m);
   esp::metadata::initMetadataMediatorBindings(m);
   esp::metadata::managers::initAttributesManagersBindings(m);
+  // These depend on SceneNode bindings
   esp::physics::initPhysicsBindings(m);
   esp::physics::initPhysicsObjectBindings(m);
   esp::physics::initPhysicsWrapperManagerBindings(m);
