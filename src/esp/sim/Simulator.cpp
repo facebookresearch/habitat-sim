@@ -549,6 +549,7 @@ bool Simulator::instanceObjectsForActiveScene() {
       translate -= artObjInst->getRotation().transformVector(
           physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation());
     }
+    // construct initial transformation state.
     Magnum::Matrix4 state =
         Magnum::Matrix4::from(artObjInst->getRotation().toMatrix(), translate);
     physicsManager_->setArticulatedObjectRootState(aoID, state);
