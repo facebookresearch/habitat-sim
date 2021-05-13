@@ -312,6 +312,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                                       Mn::ResourceKey{lightSetupKey});
     }
   }
+  config_.sceneLightSetup = lightSetupKey;
+  metadataMediator_->setSimulatorConfiguration(config_);
 
   // 4. Load stage specified by Scene Instance Attributes
   // Get Stage Instance Attributes - contains name of stage and initial
@@ -433,8 +435,7 @@ bool Simulator::instanceObjectsForActiveScene() {
       metadataMediator_->getSceneAttributesByName(activeSceneName);
 
   // get lightSetupKey from the value set when stage was created.
-  const std::string lightSetupKey =
-      physicsManager_->getStageInitAttributes()->getLightSetup();
+  const std::string lightSetupKey = config_.sceneLightSetup;
 
   // Load object instances as spceified by Scene Instance Attributes.
 
