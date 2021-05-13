@@ -34,7 +34,7 @@ __all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agen
 
 
 @attr.s(auto_attribs=True)
-class ActionSpec(object):
+class ActionSpec:
     r"""Defines how a specific action is implemented
 
     :property name: Name of the function implementing the action in the
@@ -62,7 +62,7 @@ def _default_quaternion() -> np.quaternion:
 
 
 @attr.s(auto_attribs=True, slots=True)
-class SixDOFPose(object):
+class SixDOFPose:
     r"""Specifies a position with 6 degrees of freedom
 
     :property position: xyz position
@@ -76,7 +76,7 @@ class SixDOFPose(object):
 
 
 @attr.s(auto_attribs=True, slots=True)
-class AgentState(object):
+class AgentState:
     position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
     rotation: Union[np.quaternion, List, np.ndarray] = attr.ib(
         factory=_default_quaternion, validator=is_unit_length
@@ -98,7 +98,7 @@ class AgentState(object):
 
 
 @attr.s(auto_attribs=True, slots=True)
-class AgentConfiguration(object):
+class AgentConfiguration:
     height: float = 1.5
     radius: float = 0.1
     mass: float = 32.0
@@ -113,7 +113,7 @@ class AgentConfiguration(object):
 
 
 @attr.s(init=False, auto_attribs=True)
-class Agent(object):
+class Agent:
     r"""Implements an agent with multiple sensors
 
     :property agent_config: The configuration of the agent

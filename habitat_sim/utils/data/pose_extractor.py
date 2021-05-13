@@ -10,7 +10,7 @@ from habitat_sim import registry as registry
 from habitat_sim.utils.common import quat_from_two_vectors
 
 
-class TopdownView(object):
+class TopdownView:  # noqa: SIM119
     def __init__(self, sim, height, meters_per_pixel=0.1):
         self.topdown_view = sim.pathfinder.get_topdown_view(
             meters_per_pixel, height
