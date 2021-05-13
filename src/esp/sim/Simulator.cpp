@@ -439,7 +439,10 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // TODO : reset may eventually have all the scene instance instantiation
   // code so that scenes can be reset
   if (success) {
-    reset();
+    success = instanceArticulatedObjectsForActiveScene();
+    if (success) {
+      reset();
+    }
   }
 
   return success;
@@ -477,7 +480,7 @@ bool Simulator::instanceObjectsForActiveScene() {
        metadata::managers::SceneInstanceTranslationOrigin::AssetLocal);
 
   std::string errMsgTmplt =
-      "Simulator::createSceneInstance : Error instancing scene : " +
+      "Simulator::instanceObjectsForActiveScene : Error instancing objects : " +
       activeSceneName + " : ";
   // Iterate through instances, create object and implement initial
   // transformation.
@@ -500,6 +503,26 @@ bool Simulator::instanceObjectsForActiveScene() {
   }  // for each object attributes
   // objectsAdded holds all ids of added objects.
 
+  return true;
+}  // Simulator::instanceObjectsForActiveScene()
+
+bool Simulator::instanceArticulatedObjectsForActiveScene() {
+  // Get scene instance attributes corresponding to current active scene name
+  // This should always just retrieve an existing, appropriately configured
+  // scene instance attributes, depending on what exists in the Scene Dataset
+  // library for the current dataset.
+  const std::string activeSceneName = config_.activeSceneName;
+  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
+      metadataMediator_->getSceneAttributesByName(activeSceneName);
+
+  // get lightSetupKey from the value set when stage was created.
+  const std::string lightSetupKey = config_.sceneLightSetup;
+
+  std::string errMsgTmplt =
+      "Simulator::instanceArticulatedObjectsForActiveScene : Error instancing "
+      "articulated objects : " +
+      activeSceneName + " : ";
+
   // 6. Load all articulated object instances
   // Get all instances of articulated objects described in scene
   const std::vector<SceneAOInstanceAttributes::ptr> artObjInstances =
@@ -508,6 +531,15 @@ bool Simulator::instanceObjectsForActiveScene() {
   // vector holding all articulated objects added
   std::vector<int> artObjsAdded;
   int aoID = 0;
+  // whether or not to correct for COM shift - only do for blender-sourced
+  // scene attributes
+  bool defaultCOMCorrection =
+      (static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
+           curSceneInstanceAttributes->getTranslationOrigin()) ==
+       metadata::managers::SceneInstanceTranslationOrigin::AssetLocal);
+
+  auto& drawables = getDrawableGroup();
+
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& artObjInst : artObjInstances) {
@@ -538,7 +570,7 @@ bool Simulator::instanceObjectsForActiveScene() {
     auto Instance_COM_Origin =
         static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
             artObjInst->getTranslationOrigin());
-    if (((Default_COM_Correction) &&
+    if (((defaultCOMCorrection) &&
          (Instance_COM_Origin !=
           metadata::managers::SceneInstanceTranslationOrigin::COM)) ||
         (Instance_COM_Origin ==
@@ -547,7 +579,7 @@ bool Simulator::instanceObjectsForActiveScene() {
       // Object set to correct for COM.
 
       translate -= artObjInst->getRotation().transformVector(
-          physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation());
+          physicsManager_->getObjectVisualSceneNodes(aoID)[0]->translation());
     }
     // construct initial transformation state.
     Magnum::Matrix4 state =
@@ -562,12 +594,7 @@ bool Simulator::instanceObjectsForActiveScene() {
 
     artObjsAdded.push_back(aoID);
   }  // for each articulated object instance
-  // TODO : reset may eventually have all the scene instance instantiation
-  // code so that scenes can be reset
-  reset();
-
-  return true;
-}  // Simulator::instanceObjectsForActiveScene()
+}  // Simulator::instanceArticulatedObjectsForActiveScene
 
 bool Simulator::createSceneInstanceNoRenderer(
     const std::string& activeSceneName) {

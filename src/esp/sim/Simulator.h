@@ -1469,6 +1469,14 @@ class Simulator {
   bool instanceObjectsForActiveScene();
 
   /**
+   * @brief Instance all the articulated objects in the scene based on the
+   * current active schene's scene instance configuration.
+   * @return whether articulated object creation and placement is completed
+   * succesfully
+   */
+  bool instanceArticulatedObjectsForActiveScene();
+
+  /**
    * @brief sample a random valid AgentState in passed agentState
    * @param agentState [out] The placeholder for the sampled agent state.
    */
