@@ -303,6 +303,8 @@ jobs:
       - run: &download_test_data
           name: Download test data
           command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat;
 
               if [ ! -d ./habitat-sim/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
