@@ -412,13 +412,36 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   }  // if ID has changed - needs to be reset
 
   // 5. Load object instances as spceified by Scene Instance Attributes.
+  bool success = setAllObjectsForCurrentScene();
+
+  // TODO : reset may eventually have all the scene instance instantiation
+  // code so that scenes can be reset
+  if (success) {
+    reset();
+  }
+
+  return success;
+}  // Simulator::createSceneInstance
+
+bool Simulator::setAllObjectsForCurrentScene() {
+  // Get scene instance attributes corresponding to current active scene name
+  // This should always just retrieve an existing, appropriately configured
+  // scene instance attributes, depending on what exists in the Scene Dataset
+  // library for the current dataset.
+  const std::string activeSceneName = config_.activeSceneName;
+  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
+      metadataMediator_->getSceneAttributesByName(activeSceneName);
+
+  // get lightSetupKey from the value set when stage was created.
+  const std::string lightSetupKey =
+      physicsManager_->getStageInitAttributes()->getLightSetup();
+
+  // Load object instances as spceified by Scene Instance Attributes.
 
   // Get all instances of objects described in scene
   const std::vector<SceneObjectInstanceAttributes::ptr> objectInstances =
       curSceneInstanceAttributes->getObjectInstances();
 
-  // current scene graph's drawables
-  auto& drawables = sceneGraph.getDrawables();
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
   // vector holding all objects added
@@ -427,7 +450,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // whether or not to correct for COM shift - only do for blender-sourced
   // scene attributes
-  bool Default_COM_Correction =
+  bool defaultCOMCorrection =
       (static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
            curSceneInstanceAttributes->getTranslationOrigin()) ==
        metadata::managers::SceneInstanceTranslationOrigin::AssetLocal);
@@ -448,71 +471,15 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
       return false;
     }
 
-    // Get ObjectAttributes
-    auto objAttributes =
-        metadataMediator_->getObjectAttributesManager()->getObjectCopyByHandle(
-            objAttrFullHandle);
-    if (!objAttributes) {
-      LOG(ERROR) << errMsgTmplt
-                 << "Missing/improperly configured objectAttributes "
-                 << objAttrFullHandle << ", whose handle contains "
-                 << objInst->getHandle()
-                 << " as specified in object instance attributes.";
-      return false;
-    }
-    // set shader type to use for stage
-    int objShaderType = objInst->getShaderType();
-    if (objShaderType != unknownShaderType) {
-      objAttributes->setShaderType(objShaderType);
-    }
+    objID = physicsManager_->addObjectInstance(objInst, objAttrFullHandle,
+                                               defaultCOMCorrection,
+                                               attachmentNode, lightSetupKey);
 
-    // create object using attributes copy.
-    objID = physicsManager_->addObject(objAttributes, &drawables,
-                                       attachmentNode, lightSetupKey);
-    if (objID == ID_UNDEFINED) {
-      // instancing failed for some reason.
-      LOG(ERROR) << errMsgTmplt << "Object create failed for objectAttributes "
-                 << objAttrFullHandle << ", whose handle contains "
-                 << objInst->getHandle()
-                 << " as specified in object instance attributes.";
-      return false;
-    }
-    // set object's location and rotation based on translation and rotation
-    // params specified in instance attributes
-    auto translate = objInst->getTranslation();
-    // get instance override value, if exists
-    auto Instance_COM_Origin =
-        static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
-            objInst->getTranslationOrigin());
-    if (((Default_COM_Correction) &&
-         (Instance_COM_Origin !=
-          metadata::managers::SceneInstanceTranslationOrigin::COM)) ||
-        (Instance_COM_Origin ==
-         metadata::managers::SceneInstanceTranslationOrigin::AssetLocal)) {
-      // if default COM correction is set and no object-based override, or if
-      // Object set to correct for COM.
-
-      translate -= objInst->getRotation().transformVector(
-          physicsManager_->getObjectVisualSceneNodes(objID)[0]->translation());
-    }
-    physicsManager_->setTranslation(objID, translate);
-    physicsManager_->setRotation(objID, objInst->getRotation());
-    // set object's motion type if different than set value
-    const physics::MotionType attrObjMotionType =
-        static_cast<physics::MotionType>(objInst->getMotionType());
-    if (attrObjMotionType != physics::MotionType::UNDEFINED) {
-      physicsManager_->setObjectMotionType(objID, attrObjMotionType);
-    }
     objectsAdded.push_back(objID);
   }  // for each object attributes
   // objectsAdded holds all ids of added objects.
-
-  // TODO : reset may eventually have all the scene instance instantiation
-  // code so that scenes can be reset
-  reset();
-
   return true;
-}  // Simulator::createSceneInstance
+}  // Simulator::setAllObjectsForCurrentScene()
 
 bool Simulator::createSceneInstanceNoRenderer(
     const std::string& activeSceneName) {

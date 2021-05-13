@@ -1056,6 +1056,13 @@ class Simulator {
       const std::string& activeSceneName);
 
   /**
+   * @brief Instance all the objects in the scene based on the current active
+   * schene's scene instance configuration.
+   * @return whether object creation and placement is completed succesfully
+   */
+  bool setAllObjectsForCurrentScene();
+
+  /**
    * @brief sample a random valid AgentState in passed agentState
    * @param agentState [out] The placeholder for the sampled agent state.
    */
