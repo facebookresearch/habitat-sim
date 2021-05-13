@@ -180,6 +180,29 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       const metadata::attributes::StageAttributes::ptr& initAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
+  /**
+   * @brief Instance and place a physics object from a @ref
+   * esp::metadata::attributes::SceneObjectInstanceAttributes file.
+   * @param objInstAttributes The attributes that describe the desired state to
+   * set this object.
+   * @param attributesHandle The handle of the object attributes used as the key
+   * to query @ref esp::metadata::managers::ObjectAttributesManager.
+   * @param defaultCOMCorrection The default value of whether COM-based
+   * translation correction needs to occur.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObjectInstance(
+      const esp::metadata::attributes::SceneObjectInstanceAttributes::ptr&
+          objInstAttributes,
+      const std::string& attributesHandle,
+      bool defaultCOMCorrection = false,
+      scene::SceneNode* attachmentNode = nullptr,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager.  This method
    * will query for a drawable group from simulator.
