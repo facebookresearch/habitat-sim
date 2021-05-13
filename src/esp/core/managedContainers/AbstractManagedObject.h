@@ -34,12 +34,22 @@ class AbstractManagedObject {
    * @param handle the handle to set.
    */
   virtual void setHandle(const std::string& handle) = 0;
+
+  /**
+   * @brief Retrieve this object's unique handle
+   * @return The handle of the object
+   */
   virtual std::string getHandle() const = 0;
 
   /**
-   *  @brief Unique ID referencing ManagedObject
+   * @brief Set the unique ID referencing ManagedObject
+   * @param ID the ID for this object.
    */
   virtual void setID(int ID) = 0;
+  /**
+   * @brief Retrieve this object's unique ID.
+   * @return Unique ID for this object.
+   */
   virtual int getID() const = 0;
 
  protected:

@@ -59,10 +59,10 @@ EquirectangularShader::EquirectangularShader(Flags flags)
     outputAttributeLocationsStream << Cr::Utility::formatString(
         "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
   }
-  /* TODO:
-  outputAttributeLocationsStream << Cr::Utility::formatString(
-      "#define OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID {}\n", ObjectIdOutput);
-  */
+  if (flags_ & CubeMapShaderBase::Flag::ObjectIdTexture) {
+    outputAttributeLocationsStream << Cr::Utility::formatString(
+        "#define OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID {}\n", ObjectIdOutput);
+  }
 
   frag.addSource(outputAttributeLocationsStream.str())
       .addSource(flags_ & CubeMapShaderBase::Flag::ColorTexture
@@ -70,6 +70,9 @@ EquirectangularShader::EquirectangularShader(Flags flags)
                      : "")
       .addSource(flags_ & CubeMapShaderBase::Flag::DepthTexture
                      ? "#define DEPTH_TEXTURE\n"
+                     : "")
+      .addSource(flags_ & CubeMapShaderBase::Flag::ObjectIdTexture
+                     ? "#define OBJECT_ID_TEXTURE\n"
                      : "")
       .addSource(rs.get("equirectangular.frag"));
 
@@ -81,14 +84,20 @@ EquirectangularShader::EquirectangularShader(Flags flags)
 
   // set texture binding points in the shader
   if (flags_ & CubeMapShaderBase::Flag::ColorTexture) {
+    CORRADE_INTERNAL_ASSERT(uniformLocation("ColorTexture") >= 0);
     setUniform(uniformLocation("ColorTexture"),
                CubeMapShaderBaseTexUnitSpace::TextureUnit::Color);
   }
   if (flags_ & CubeMapShaderBase::Flag::DepthTexture) {
+    CORRADE_INTERNAL_ASSERT(uniformLocation("DepthTexture") >= 0);
     setUniform(uniformLocation("DepthTexture"),
                CubeMapShaderBaseTexUnitSpace::TextureUnit::Depth);
   }
-  // TODO: handle the other flags, ObjectIdTexture
+  if (flags_ & CubeMapShaderBase::Flag::ObjectIdTexture) {
+    CORRADE_INTERNAL_ASSERT(uniformLocation("ObjectIdTexture") >= 0);
+    setUniform(uniformLocation("ObjectIdTexture"),
+               CubeMapShaderBaseTexUnitSpace::TextureUnit::ObjectId);
+  }
 
   // cache the uniforms
   viewportHeightUniform_ = uniformLocation("ViewportHeight");

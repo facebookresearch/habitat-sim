@@ -77,6 +77,7 @@ if(BUILD_ASSIMP_SUPPORT)
   if(NOT USE_SYSTEM_ASSIMP)
     set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
     set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+    set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "BUILD_SHARED_LIBS" FORCE)
     # The following is important to avoid Assimp appending `d` to all our
     # binaries. Works only with Assimp >= 5.0.0, and after 5.0.1 this option is
@@ -245,6 +246,10 @@ if(NOT USE_SYSTEM_MAGNUM)
       set(WITH_EMSCRIPTENAPPLICATION ON CACHE BOOL "WITH_EMSCRIPTENAPPLICATION" FORCE)
     else()
       if(NOT USE_SYSTEM_GLFW)
+        set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+        # These two will be off-by-default when GLFW 3.4 gets released
+        set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         add_subdirectory("${DEPS_DIR}/glfw")
       endif()
       set(WITH_GLFWAPPLICATION ON CACHE BOOL "WITH_GLFWAPPLICATION" FORCE)

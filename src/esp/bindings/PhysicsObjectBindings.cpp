@@ -94,41 +94,80 @@ void declareBasePhysicsObjectWrapper(py::module& m,
       .def(
           "translate", &PhysObjWrapper::translate, "vector"_a,
           ("Move this " + objType + " using passed translation vector").c_str())
-      .def("rotate", &PhysObjWrapper::rotate, "angle_in_rad"_a, "norm_axis"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around passed 3-element normalized "
-            "norm_axis.")
-               .c_str())
-      .def("rotate_local", &PhysObjWrapper::rotateLocal, "angle_in_rad"_a,
-           "norm_axis"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around passed 3-element normalized "
-            "norm_axis in the local frame.")
-               .c_str())
-      .def("rotate_x", &PhysObjWrapper::rotateX, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the x-axis in global frame.")
-               .c_str())
-      .def("rotate_x_local", &PhysObjWrapper::rotateXLocal, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the x-axis in local frame.")
-               .c_str())
-      .def("rotate_y", &PhysObjWrapper::rotateY, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the y-axis in global frame.")
-               .c_str())
-      .def("rotate_y_local", &PhysObjWrapper::rotateYLocal, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the y-axis in local frame.")
-               .c_str())
-      .def("rotate_z", &PhysObjWrapper::rotateZ, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the z-axis in global frame.")
-               .c_str())
-      .def("rotate_z_local", &PhysObjWrapper::rotateZLocal, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the z-axis in local frame.")
-               .c_str())
+      .def(
+          "rotate",
+          [](PhysObjWrapper& self, Mn::Radd angle, Mn::Vector3& normAxis) {
+            self.rotate(Mn::Rad(angle), normAxis);
+          },
+          "angle_in_rad"_a, "norm_axis"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around passed 3-element normalized "
+           "norm_axis.")
+              .c_str())
+      .def(
+          "rotate_local",
+          [](PhysObjWrapper& self, Mn::Radd angle, Mn::Vector3& normAxis) {
+            self.rotateLocal(Mn::Rad(angle), normAxis);
+          },
+          "angle_in_rad"_a, "norm_axis"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around passed 3-element normalized "
+           "norm_axis in the local frame.")
+              .c_str())
+      .def(
+          "rotate_x",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateX(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the x-axis in global frame.")
+              .c_str())
+      .def(
+          "rotate_x_local",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateXLocal(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the x-axis in local frame.")
+              .c_str())
+      .def(
+          "rotate_y",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateY(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the y-axis in global frame.")
+              .c_str())
+      .def(
+          "rotate_y_local",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateYLocal(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the y-axis in local frame.")
+              .c_str())
+      .def(
+          "rotate_z",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateZ(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the z-axis in global frame.")
+              .c_str())
+      .def(
+          "rotate_z_local",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateZLocal(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the z-axis in local frame.")
+              .c_str())
 
       ;
 }  // declareBasePhysicsObjectWrapper

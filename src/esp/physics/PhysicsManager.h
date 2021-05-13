@@ -100,9 +100,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
     /**
      * The default implemenation of kineamtics through the base @ref
-     * PhysicsManager class. Supports @ref MotionType::STATIC and @ref
-     * MotionType::KINEMATIC objects of base class @ref RigidObject. If the
-     * derived @ref PhysicsManager class for a desired @ref
+     * PhysicsManager class. Supports @ref esp::physics::MotionType::STATIC and
+     * @ref esp::physics::MotionType::KINEMATIC objects of base class @ref
+     * RigidObject. If the derived @ref PhysicsManager class for a desired @ref
      * PhysicsSimulationLibrary fails to initialize, it will default to @ref
      * PhysicsSimulationLibrary::NONE.
      */
@@ -110,9 +110,11 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
     /**
      * An implemenation of dynamics through the Bullet Physics library.
-     * Supports @ref MotionType::STATIC, @ref MotionType::KINEMATIC, and @ref
-     * MotionType::DYNAMIC objects of @ref RigidObject derived class @ref
-     * BulletRigidObject. Suggests the use of @ref PhysicsManager derived class
+     * Supports @ref esp::physics::MotionType::STATIC, @ref
+     * esp::physics::MotionType::KINEMATIC, and @ref
+     * esp::physics::MotionType::DYNAMIC objects of @ref RigidObject derived
+     * class @ref BulletRigidObject. Suggests the use of @ref PhysicsManager
+     * derived class
      * @ref BulletPhysicsManager
      */
     BULLET
@@ -420,8 +422,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   // ============ Object Transformation functions =============
 
   /** @brief Set the 4x4 transformation matrix of an object kinematically.
-   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
-   * recommended.
+   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param trans The desired 4x4 transform of the object.
@@ -429,8 +431,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   void setTransformation(const int physObjectID, const Magnum::Matrix4& trans);
 
   /** @brief Set the @ref esp::core::RigidState of an object kinematically.
-   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
-   * recommended.
+   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param trans The desired @ref esp::core::RigidState of the object.
@@ -439,8 +441,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
                      const esp::core::RigidState& rigidState);
 
   /** @brief Set the 3D position of an object kinematically.
-   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
-   * recommended.
+   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param vector The desired 3D position of the object.
@@ -448,8 +450,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   void setTranslation(const int physObjectID, const Magnum::Vector3& vector);
 
   /** @brief Set the orientation of an object kinematically.
-   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
-   * recommended.
+   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param quaternion The desired orientation of the object.
@@ -465,8 +467,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   void resetTransformation(const int physObjectID);
 
   /** @brief Modify the 3D position of an object kinematically by translation.
-   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
-   * recommended.
+   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param vector The desired 3D vector by which to translate the object.
@@ -475,7 +477,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Modify the 3D position of an object kinematically by translation
    * with a vector defined in the object's local coordinate system. Calling this
-   * during simulation of a @ref MotionType::DYNAMIC object is not recommended.
+   * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
+   * recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param vector The desired 3D vector in the object's ocal coordiante system
@@ -497,7 +500,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Modify the orientation of an object kinematically by applying an
    * axis-angle rotation to it in the local coordinate system. Calling this
-   * during simulation of a @ref MotionType::DYNAMIC object is not recommended.
+   * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
+   * recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param angleInRad The angle of rotation in radians.
@@ -510,7 +514,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Modify the orientation of an object kinematically by applying a
    * rotation to it about the global X axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param angleInRad The angle of rotation in radians.
@@ -519,7 +523,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Modify the orientation of an object kinematically by applying a
    * rotation to it about the global Y axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param angleInRad The angle of rotation in radians.
@@ -528,7 +532,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Modify the orientation of an object kinematically by applying a
    * rotation to it about the global Z axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param angleInRad The angle of rotation in radians.
@@ -537,7 +541,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Modify the orientation of an object kinematically by applying a
    * rotation to it about the local X axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param angleInRad The angle of rotation in radians.
@@ -546,7 +550,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Modify the orientation of an object kinematically by applying a
    * rotation to it about the local Y axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param angleInRad The angle of rotation in radians.
@@ -555,7 +559,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Modify the orientation of an object kinematically by applying a
    * rotation to it about the local Z axis. Calling this during simulation of a
-   * @ref MotionType::DYNAMIC object is not recommended.
+   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param angleInRad The angle of rotation in radians.
@@ -850,10 +854,11 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
                           const Magnum::Vector3& impulse);
 
   /**
-   * @brief Set linear velocity for an object with @ref MotionType::DYNAMIC.
+   * @brief Set linear velocity for an object with @ref
+   * esp::physics::MotionType::DYNAMIC.
    *
-   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
-   * objects.
+   * Does nothing for @ref esp::physics::MotionType::KINEMATIC or @ref
+   * esp::physics::MotionType::STATIC objects.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param linVel Linear velocity to set.
@@ -861,10 +866,11 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   void setLinearVelocity(const int physObjectID, const Magnum::Vector3& linVel);
 
   /**
-   * @brief Set angular velocity for an object with @ref MotionType::DYNAMIC.
+   * @brief Set angular velocity for an object with @ref
+   * esp::physics::MotionType::DYNAMIC.
    *
-   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
-   * objects.
+   * Does nothing for @ref esp::physics::MotionType::KINEMATIC or @ref
+   * esp::physics::MotionType::STATIC objects.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param angVel Angular velocity vector corresponding to world unit axis
@@ -874,10 +880,11 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
                           const Magnum::Vector3& angVel);
 
   /**
-   * @brief Get linear velocity of an object with @ref MotionType::DYNAMIC.
+   * @brief Get linear velocity of an object with @ref
+   * esp::physics::MotionType::DYNAMIC.
    *
-   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
-   * objects.
+   * Always zero for @ref esp::physics::MotionType::KINEMATIC or @ref
+   * esp::physics::MotionType::STATIC objects.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return Linear velocity of the object.
@@ -885,10 +892,11 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   Magnum::Vector3 getLinearVelocity(const int physObjectID) const;
 
   /**
-   * @brief Get angular velocity of an object with @ref MotionType::DYNAMIC.
+   * @brief Get angular velocity of an object with @ref
+   * esp::physics::MotionType::DYNAMIC.
    *
-   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
-   * objects.
+   * Always zero for @ref esp::physics::MotionType::KINEMATIC or @ref
+   * esp::physics::MotionType::STATIC objects.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return Angular velocity vector corresponding to world unit axis angles.
