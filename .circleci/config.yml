@@ -129,7 +129,7 @@ commands:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-sugar pytest-xdist typeguard
+                pip install pytest-sugar pytest-xdist
               fi
       - run:
           name: Install emscripten
@@ -447,7 +447,7 @@ jobs:
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
-              git submodule update --init --recursive --jobs 4
+              git submodule update --init --recursive --jobs 16
               python -u setup.py install --headless --vhacd
       - run:
           name: run clang-tidy
