@@ -7,6 +7,8 @@
 import argparse
 import os
 import shutil
+import sys
+import traceback
 import zipfile
 
 import git
@@ -27,62 +29,62 @@ def initialize_test_data_sources(data_path):
     """
     # dict keyed by uids with download specs for various individual test assets and datasets
     data_sources = {
-        # "example-uid": {
+        # "example_uid": {
         #   "source": the URL download link
         #   "package_name": the filename of the downloaded compressed package
         #   "download_pre_args": (optional)(wget) commands preceding filename
         #   "download_post_args": (optional)(wget) commands follow filename
         #   "unpack_to": destination path for uncompression of the download package
-        #   "root": root of the data directory structure once unpacked
+        #   "link": symlink to the data directory pointing to the active version directory
         #   "version": data version tag
         # }
-        "habitat-test-scenes": {
+        "habitat_test_scenes": {
             "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
             "package_name": "habitat-test-scenes.zip",
             "unpack_to": data_path + "../",
-            "root": data_path + "scene_datasets/habitat-test-scenes/",
+            "link": data_path + "scene_datasets/habitat-test-scenes",
             "version": "1.0",
         },
-        "habitat-example-objects": {
+        "habitat_example_objects": {
             "source": "http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip",
             "package_name": "objects_v0.2.zip",
             "unpack_to": data_path + "objects/example_objects/",
-            "root": data_path + "objects/example_objects/",
+            "link": data_path + "objects/example_objects",
             "version": "0.2",
         },
-        "locobot-merged": {
+        "locobot_merged": {
             "source": "http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip",
             "package_name": "locobot_merged_v0.2.zip",
             "unpack_to": data_path + "objects/locobot_merged/",
-            "root": data_path + "objects/locobot_merged/",
+            "link": data_path + "objects/locobot_merged",
             "version": "0.2",
         },
-        "mp3d-test-scene": {
+        "mp3d_test_scene": {
             "source": "http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip",
             "package_name": "mp3d_example.zip",
             "unpack_to": data_path + "scene_datasets/mp3d_test/",
-            "root": data_path + "scene_datasets/mp3d_test/",
+            "link": data_path + "scene_datasets/mp3d_test",
             "version": "1.0",
         },
-        "coda-scene": {
+        "coda_scene": {
             "source": "'https://docs.google.com/uc?export=download&id=1Pc-J6pZzXEd8RSeLM94t3iwO8q_RQ853'",
             "package_name": "coda.zip",
             "download_pre_args": "--no-check-certificate ",
             "download_post_args": " -O " + data_path + "coda.zip",
             "unpack_to": data_path + "scene_datasets/",
-            "root": data_path + "scene_datasets/coda/",
+            "link": data_path + "scene_datasets/coda",
             "version": "1.0",
         },
     }
 
     # data sources can be grouped for batch commands with a new uid
     data_groups = {
-        "ci-test-assets": [
-            "habitat-test-scenes",
-            "habitat-example-objects",
-            "locobot-merged",
-            "mp3d-test-scene",
-            "coda-scene",
+        "ci_test_assets": [
+            "habitat_test_scenes",
+            "habitat_example_objects",
+            "locobot_merged",
+            "mp3d_test_scene",
+            "coda_scene",
         ]
     }
 
@@ -106,12 +108,19 @@ def clean_data(uid):
     if not data_sources.get(uid):
         print(f"Data clean failed, no datasource named {uid}")
         return
-    root_path = data_sources[uid]["root"]
-    print(f"Cleaning datasource ({uid}) directory: {root_path}")
+    link_path = os.path.join(data_path, data_sources[uid]["link"])
+    version_tag = data_sources[uid]["version"]
+    version_dir = os.path.join(data_path, "versioned_data/" + uid + "_" + version_tag)
+    print(
+        f"Cleaning datasource ({uid}). Directory: {version_dir}. Symlink: {link_path}"
+    )
     try:
-        shutil.rmtree(root_path)
-    except OSError as e:
-        print(f"Error: {dir_path} : {e.strerror}")
+        shutil.rmtree(version_dir)
+        os.unlink(link_path)
+    except OSError:
+        print("Removal error:")
+        traceback.print_exc(file=sys.stdout)
+        print("--------------------")
 
 
 def download_and_place(uid, replace=False):
@@ -120,44 +129,35 @@ def download_and_place(uid, replace=False):
         print(f"Data download failed, no datasource named {uid}")
         return
 
-    root_path = data_sources[uid]["root"]
+    link_path = os.path.join(data_path, data_sources[uid]["link"])
     version_tag = data_sources[uid]["version"]
+    version_dir = os.path.join(data_path, "versioned_data/" + uid + "_" + version_tag)
+
     # check for current version
-    version_filepath = os.path.join(
-        data_path,
-        data_sources[uid]["root"] + "DATA_VERSION_" + version_tag,
-    )
-    if os.path.exists(data_sources[uid]["root"]):
-        resolved_existing = False
-        replace_existing = False
-        for file in os.listdir(root_path):
-            if "DATA_VERSION" in file:
-                existing_version = file[13:]
-                if existing_version == version_tag:
-                    print(
-                        f"Existing data source ({uid}) version ({existing_version}) is current, aborting download. Root directory: {root_path}"
-                    )
-                    return
-                else:
-                    # found root directory with different version
-                    found_version_message = f"({uid}) Found previous data version ({existing_version}). Replace with requested version ({version_tag})?"
-                    replace_existing = (
-                        replace if replace else prompt_yes_no(found_version_message)
-                    )
-                    resolved_existing = True
-        if not resolved_existing:
-            # found root directory with unspecified version
-            found_version_message = f"({uid}) Found unknown data version. Replace with requested version ({version_tag})?"
-            replace_existing = (
-                replace if replace else prompt_yes_no(found_version_message)
-            )
+    if os.path.exists(version_dir):
+        print(
+            f"Existing data source ({uid}) version ({version_tag}) is current. Data located: {version_dir}. Symblink: {link_path}"
+        )
+        replace_existing = (
+            replace if replace else prompt_yes_no("Replace versioned data?")
+        )
+
         if replace_existing:
             clean_data(uid)
         else:
-            print("Not replacing data, aborting download.")
+            print("=======================================================")
+            print(
+                f"Not replacing data, generating symlink ({link_path}) and aborting download."
+            )
+            print("=======================================================")
+            # create a symlink to the versioned data
+            if os.path.exists(link_path):
+                os.unlink(link_path)
+            os.symlink(src=version_dir, dst=link_path, target_is_directory=True)
+            assert os.path.exists(link_path), "Failed, no symlink generated."
             return
 
-    # download
+    # download new version
     download_pre_args = data_sources[uid].get("download_pre_args", "")
     download_post_args = data_sources[uid].get("download_post_args", "")
 
@@ -179,24 +179,27 @@ def download_and_place(uid, replace=False):
     package_name = data_sources[uid]["package_name"]
     if package_name.endswith(".zip"):
         with zipfile.ZipFile(data_path + package_name, "r") as zip_ref:
-            zip_ref.extractall(data_sources[uid]["unpack_to"])
-
+            zip_ref.extractall(version_dir)
     else:
         # TODO: support more compression types as necessary
         print(f"Data unpack failed for {uid}. Unsupported filetype: {package_name}")
         return
-    assert os.path.exists(
-        os.path.join(data_path, data_sources[uid]["root"])
-    ), "Unpacking failed, no root directory."
 
-    # write version
-    with open(version_filepath, "w"):
-        print("Wrote version file: " + version_filepath)
+    assert os.path.exists(version_dir), "Unpacking failed, no version directory."
+
+    # create a symlink to the new versioned data
+    os.symlink(src=version_dir, dst=link_path, target_is_directory=True)
+
+    assert os.path.exists(link_path), "Unpacking failed, no symlink generated."
 
     # clean-up
     os.remove(data_path + package_name)
 
-    print(f"Dataset ({uid}) successfully downloaded. Root directory: {root_path}")
+    print("=======================================================")
+    print(f"Dataset ({uid}) successfully downloaded.")
+    print(f"Source: {version_dir}.")
+    print(f"Symlink: {link_path}")
+    print("=======================================================")
 
 
 if __name__ == "__main__":
