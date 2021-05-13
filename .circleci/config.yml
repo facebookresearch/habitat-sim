@@ -307,10 +307,7 @@ jobs:
               if [ ! -d ./habitat-sim/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
                 cd habitat-sim
-                wget http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip
-                unzip habitat-test-scenes.zip
-                rm habitat-test-scenes.zip
-                cd ..
+                python habitat_sim/utils/datasets_download.py --uid habitat_test_scenes --replace
               fi
 
               if [ ! -d ./habitat-sim/data/objects/cheezit.glb ]
