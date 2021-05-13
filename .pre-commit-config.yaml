@@ -81,7 +81,6 @@ repos:
     rev: 0.4.0
     hooks:
     -   id: nbstripout
-        files: '.ipynb'
 
 -   repo: https://github.com/mwouts/jupytext
     rev: v1.11.2
