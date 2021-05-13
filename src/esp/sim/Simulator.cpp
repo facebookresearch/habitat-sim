@@ -412,7 +412,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   }  // if ID has changed - needs to be reset
 
   // 5. Load object instances as spceified by Scene Instance Attributes.
-  bool success = setAllObjectsForCurrentScene();
+  bool success = instanceObjectsForActiveScene();
 
   // TODO : reset may eventually have all the scene instance instantiation
   // code so that scenes can be reset
@@ -423,7 +423,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   return success;
 }  // Simulator::createSceneInstance
 
-bool Simulator::setAllObjectsForCurrentScene() {
+bool Simulator::instanceObjectsForActiveScene() {
   // Get scene instance attributes corresponding to current active scene name
   // This should always just retrieve an existing, appropriately configured
   // scene instance attributes, depending on what exists in the Scene Dataset
@@ -479,7 +479,7 @@ bool Simulator::setAllObjectsForCurrentScene() {
   }  // for each object attributes
   // objectsAdded holds all ids of added objects.
   return true;
-}  // Simulator::setAllObjectsForCurrentScene()
+}  // Simulator::instanceObjectsForActiveScene()
 
 bool Simulator::createSceneInstanceNoRenderer(
     const std::string& activeSceneName) {

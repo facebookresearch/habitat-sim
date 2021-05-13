@@ -1060,7 +1060,7 @@ class Simulator {
    * schene's scene instance configuration.
    * @return whether object creation and placement is completed succesfully
    */
-  bool setAllObjectsForCurrentScene();
+  bool instanceObjectsForActiveScene();
 
   /**
    * @brief sample a random valid AgentState in passed agentState
