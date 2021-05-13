@@ -42,7 +42,7 @@ repos:
         additional_dependencies: [toml]
 
 -   repo: https://github.com/ambv/black
-    rev: 21.4b2
+    rev: 21.5b1
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
@@ -55,7 +55,7 @@ repos:
         exclude: docs/
 
 -   repo: https://github.com/pycqa/flake8
-    rev: 3.9.1
+    rev: 3.9.2
     hooks:
     -   id: flake8
         exclude: docs/
@@ -81,10 +81,9 @@ repos:
     rev: 0.4.0
     hooks:
     -   id: nbstripout
-        files: '.ipynb'
 
 -   repo: https://github.com/mwouts/jupytext
-    rev: v1.11.1
+    rev: v1.11.2
     hooks:
     -   id: jupytext
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
@@ -111,7 +110,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v7.25.0
+    rev: v7.26.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
@@ -129,6 +128,6 @@ repos:
         exclude: ^conda-build/ #TODO fix these scripts
 
 -   repo: https://github.com/AleksaC/circleci-cli-py
-    rev: v0.1.15195
+    rev: v0.1.15224
     hooks:
     -   id: circle-ci-validator
