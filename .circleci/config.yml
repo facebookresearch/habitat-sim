@@ -381,11 +381,6 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
-      - save_cache:
-          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-          background: true
-          paths:
-            - ~/miniconda
       - run:
           name: Run Habitat Lab tests
           no_output_timeout: 25m
@@ -412,6 +407,11 @@ jobs:
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
               ./build-public.sh
+      - save_cache:
+          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+          background: true
+          paths:
+            - ~/miniconda
       - save_cache:
           key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
           background: true
