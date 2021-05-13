@@ -201,11 +201,6 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   virtual Magnum::Quaternion getRotation() const { return node().rotation(); }
 
   /**
-   * @brief Get the orientation of the object.
-   */
-  virtual Magnum::Quaternion getRotation() const { return node().rotation(); }
-
-  /**
    * @brief Set the rotation and translation of the object.
    */
   virtual void setRigidState(const core::RigidState& rigidState) {
