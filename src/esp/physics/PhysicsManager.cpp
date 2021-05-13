@@ -65,6 +65,59 @@ bool PhysicsManager::addStageFinalize(
   return sceneSuccess;
 }  // PhysicsManager::addStageFinalize
 
+int PhysicsManager::addObjectInstance(
+    const esp::metadata::attributes::SceneObjectInstanceAttributes::ptr&
+        objInstAttributes,
+    const std::string& attributesHandle,
+    bool defaultCOMCorrection,
+    scene::SceneNode* attachmentNode,
+    const std::string& lightSetup) {
+  const std::string errMsgTmplt = "PhysicsManager::addObjectInstance : ";
+  // Get ObjectAttributes
+  auto objAttributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
+          attributesHandle);
+  if (!objAttributes) {
+    LOG(ERROR) << errMsgTmplt
+               << "Missing/improperly configured objectAttributes "
+               << attributesHandle << ", whose handle contains "
+               << objInstAttributes->getHandle()
+               << " as specified in object instance attributes.";
+    return false;
+  }
+  // set shader type to use for stage
+  int objShaderType = objInstAttributes->getShaderType();
+  if (objShaderType !=
+      static_cast<int>(
+          metadata::attributes::ObjectInstanceShaderType::Unknown)) {
+    objAttributes->setShaderType(objShaderType);
+  }
+  int objID = 0;
+  if (simulator_ != nullptr) {
+    auto& drawables = simulator_->getDrawableGroup();
+    objID = addObject(objAttributes, &drawables, attachmentNode, lightSetup);
+  } else {
+    // support creation when simulator DNE
+    objID = addObject(objAttributes, nullptr, attachmentNode, lightSetup);
+  }
+
+  if (objID == ID_UNDEFINED) {
+    // instancing failed for some reason.
+    LOG(ERROR) << errMsgTmplt << "Object create failed for objectAttributes "
+               << attributesHandle << ", whose handle contains "
+               << objInstAttributes->getHandle()
+               << " as specified in object instance attributes.";
+    return ID_UNDEFINED;
+  }
+
+  // set object's location, rotation and other pertinent state values based on
+  // scene object instance values
+  this->existingObjects_.at(objID)->setStateFromAttributes(
+      objInstAttributes.get(), defaultCOMCorrection);
+
+  return objID;
+}  // PhysicsManager::addObjectInstance
+
 int PhysicsManager::addObject(const std::string& attributesHandle,
                               scene::SceneNode* attachmentNode,
                               const std::string& lightSetup) {

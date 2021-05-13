@@ -52,7 +52,9 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
     case SensorType::Depth:
       cubeMapFlags |= gfx::CubeMap::Flag::DepthTexture;
       break;
-    // TODO: Semantic
+    case SensorType::Semantic:
+      cubeMapFlags |= gfx::CubeMap::Flag::ObjectIdTexture;
+      break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
@@ -74,7 +76,9 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
     case SensorType::Depth:
       cubeMapShaderBaseFlags_ |= gfx::CubeMapShaderBase::Flag::DepthTexture;
       break;
-    // TODO: Semantic
+    case SensorType::Semantic:
+      cubeMapShaderBaseFlags_ |= gfx::CubeMapShaderBase::Flag::ObjectIdTexture;
+      break;
     // sensor type list is too long, have to use default
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -106,8 +110,10 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
     }
   }
 
-  esp::gfx::RenderCamera::Flags flags = {gfx::RenderCamera::Flag::ClearColor |
-                                         gfx::RenderCamera::Flag::ClearDepth};
+  esp::gfx::RenderCamera::Flags flags = {
+      gfx::RenderCamera::Flag::ClearColor |
+      gfx::RenderCamera::Flag::ClearDepth |
+      gfx::RenderCamera::Flag::ClearObjectId};
   if (sim.isFrustumCullingEnabled()) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
   }
@@ -129,10 +135,11 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
     if (twoSceneGraphs) {
       flags |= gfx::RenderCamera::Flag::ObjectsOnly;
       // Incremental rendering:
-      // BE AWARE that here "ClearColor" and "ClearDepth" is NOT set!!
-      // Rendering happens on top of whatever existing there.
+      // BE AWARE that here "ClearColor", "ClearDepth" and "ClearObjectId" are
+      // NOT set!! Rendering happens on top of whatever existing there.
       flags &= ~gfx::RenderCamera::Flag::ClearColor;
       flags &= ~gfx::RenderCamera::Flag::ClearDepth;
+      flags &= ~gfx::RenderCamera::Flag::ClearObjectId;
       cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
                                 flags);
     }
@@ -153,6 +160,11 @@ void CubeMapSensorBase::drawWith(gfx::CubeMapShaderBase& shader) {
     shader.bindDepthTexture(
         cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
   }
+  if (cubeMapSensorBaseSpec_->sensorType == SensorType::Semantic) {
+    shader.bindObjectIdTexture(
+        cubeMap_->getTexture(gfx::CubeMap::TextureType::ObjectId));
+  }
+
   renderTarget().renderEnter();
   shader.draw(mesh_);
   renderTarget().renderExit();

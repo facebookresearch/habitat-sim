@@ -13,7 +13,7 @@ namespace gfx {
 
 MeshVisualizerDrawable::MeshVisualizerDrawable(
     scene::SceneNode& node,
-    Magnum::Shaders::MeshVisualizer3D& shader,
+    Magnum::Shaders::MeshVisualizerGL3D& shader,
     Magnum::GL::Mesh& mesh,
     DrawableGroup* group)
     : Drawable{node, mesh, group}, shader_(shader) {}

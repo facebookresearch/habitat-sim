@@ -22,7 +22,6 @@
 #include <Magnum/Image.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
-#include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
 #include "esp/core/configure.h"
@@ -782,7 +781,7 @@ Key Commands:
   };
   VisualizeMode visualizeMode_ = VisualizeMode::RGBA;
 
-  Mn::DebugTools::GLFrameProfiler profiler_{};
+  Mn::DebugTools::FrameProfilerGL profiler_{};
 
   enum class VisualSensorMode : uint8_t {
     Camera = 0,
@@ -798,108 +797,110 @@ Key Commands:
 void addSensors(esp::agent::AgentConfiguration& agentConfig,
                 const Cr::Utility::Arguments& args) {
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
-  // add a rgb sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::CameraSensorSpec::create());
-  {
-    auto cameraSensorSpec = static_cast<esp::sensor::CameraSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-    cameraSensorSpec->sensorSubType =
-        args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
-                                   : esp::sensor::SensorSubType::Pinhole;
-    cameraSensorSpec->sensorType = esp::sensor::SensorType::Color;
-    cameraSensorSpec->position = {0.0f, 1.5f, 0.0f};
-    cameraSensorSpec->orientation = {0, 0, 0};
-    cameraSensorSpec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  }
 
-  // add the new fisheye sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::FisheyeSensorDoubleSphereSpec::create());
-  {
+  auto addCameraSensor = [&](const std::string& uuid,
+                             esp::sensor::SensorType sensorType) {
+    agentConfig.sensorSpecifications.emplace_back(
+        esp::sensor::CameraSensorSpec::create());
+    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+
+    spec->uuid = uuid;
+    spec->sensorSubType = args.isSet("orthographic")
+                              ? esp::sensor::SensorSubType::Orthographic
+                              : esp::sensor::SensorSubType::Pinhole;
+    spec->sensorType = sensorType;
+    if (sensorType == esp::sensor::SensorType::Depth ||
+        sensorType == esp::sensor::SensorType::Semantic) {
+      spec->channels = 1;
+    }
+    spec->position = {0.0f, 1.5f, 0.0f};
+    spec->orientation = {0, 0, 0};
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  };
+  // add the camera color sensor
+  // for historical reasons, we call it "rgba_camera"
+  addCameraSensor("rgba_camera", esp::sensor::SensorType::Color);
+  // add the camera depth sensor
+  addCameraSensor("depth_camera", esp::sensor::SensorType::Depth);
+  // add the camera semantic sensor
+  addCameraSensor("semantic_camera", esp::sensor::SensorType::Semantic);
+
+  auto addFisheyeSensor = [&](const std::string& uuid,
+                              esp::sensor::SensorType sensorType,
+                              esp::sensor::FisheyeSensorModelType modelType) {
+    // TODO: support the other model types in the future.
+    CORRADE_INTERNAL_ASSERT(modelType ==
+                            esp::sensor::FisheyeSensorModelType::DoubleSphere);
+    agentConfig.sensorSpecifications.emplace_back(
+        esp::sensor::FisheyeSensorDoubleSphereSpec::create());
     auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
         agentConfig.sensorSpecifications.back().get());
 
-    spec->uuid = "fisheye";
+    spec->uuid = uuid;
+    spec->sensorType = sensorType;
+    if (sensorType == esp::sensor::SensorType::Depth ||
+        sensorType == esp::sensor::SensorType::Semantic) {
+      spec->channels = 1;
+    }
     spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
-    spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
+    spec->fisheyeModelType = modelType;
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-    spec->alpha = 0.59;
-    spec->xi = -0.18;
-    int size =
-        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
-    spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+    // default viewport size: 1600 x 1200
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
-  }
+    if (modelType == esp::sensor::FisheyeSensorModelType::DoubleSphere) {
+      // in this demo, we choose "GoPro":
+      spec->focalLength = {364.84f, 364.86f};
+      spec->xi = -0.27;
+      spec->alpha = 0.57;
+      // Certainly you can try your own lenses.
+      // For your convenience, there are some other lenses, e.g., BF2M2020S23,
+      // BM2820, BF5M13720, BM4018S118, whose parameters can be found at:
+      //   Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double
+      //   Sphere Camera Model, The International Conference on 3D Vision(3DV),
+      //   2018
 
-  // add the depth sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::CameraSensorSpec::create());
-  {
-    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-    spec->uuid = "depth";
-    spec->sensorType = esp::sensor::SensorType::Depth;
-    spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  }
-
+      // BF2M2020S23
+      // spec->focalLength = Mn::Vector2(313.21, 313.21);
+      // spec->xi = -0.18;
+      // spec->alpha = 0.59;
+    }
+  };
+  // add the fisheye sensor
+  addFisheyeSensor("rgba_fisheye", esp::sensor::SensorType::Color,
+                   esp::sensor::FisheyeSensorModelType::DoubleSphere);
   // add the fisheye depth sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::FisheyeSensorDoubleSphereSpec::create());
-  {
-    auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-    spec->uuid = "depth_fisheye";
-    spec->sensorType = esp::sensor::SensorType::Depth;
-    spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
-    spec->fisheyeModelType = esp::sensor::FisheyeSensorModelType::DoubleSphere;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-    spec->xi = -0.18;
-    spec->alpha = 0.59;
-    int size =
-        viewportSize[0] < viewportSize[1] ? viewportSize[0] : viewportSize[1];
-    spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
-    spec->principalPointOffset =
-        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
-  }
+  addFisheyeSensor("depth_fisheye", esp::sensor::SensorType::Depth,
+                   esp::sensor::FisheyeSensorModelType::DoubleSphere);
+  // add the fisheye semantic sensor
+  addFisheyeSensor("semantic_fisheye", esp::sensor::SensorType::Semantic,
+                   esp::sensor::FisheyeSensorModelType::DoubleSphere);
 
+  auto addEquirectangularSensor = [&](const std::string& uuid,
+                                      esp::sensor::SensorType sensorType) {
+    agentConfig.sensorSpecifications.emplace_back(
+        esp::sensor::EquirectangularSensorSpec::create());
+    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = uuid;
+    spec->sensorType = sensorType;
+    if (sensorType == esp::sensor::SensorType::Depth ||
+        sensorType == esp::sensor::SensorType::Semantic) {
+      spec->channels = 1;
+    }
+    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  };
   // add the equirectangular sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::EquirectangularSensorSpec::create());
-  {
-    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-    spec->uuid = "equirectangular";
-    spec->sensorType = esp::sensor::SensorType::Color;
-    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  }
-
+  addEquirectangularSensor("rgba_equirectangular",
+                           esp::sensor::SensorType::Color);
   // add the equirectangular depth sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::EquirectangularSensorSpec::create());
-  {
-    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-    spec->uuid = "depth_equirectangular";
-    spec->sensorType = esp::sensor::SensorType::Depth;
-    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  }
-
-  // add a rgb semantic sensor
-  agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::CameraSensorSpec::create());
-  {
-    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
-    spec->uuid = "semantic";
-    spec->sensorType = esp::sensor::SensorType::Semantic;
-    spec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
-  }
+  addEquirectangularSensor("depth_equirectangular",
+                           esp::sensor::SensorType::Depth);
+  // add the equirectangular semantic sensor
+  addEquirectangularSensor("semantic_equirectangular",
+                           esp::sensor::SensorType::Semantic);
 }
 
 Viewer::Viewer(const Arguments& arguments)
@@ -1098,10 +1099,10 @@ Viewer::Viewer(const Arguments& arguments)
    * measure the amount of time to fully complete a set of GL commands without
    * stalling rendering
    */
-  Mn::DebugTools::GLFrameProfiler::Values profilerValues =
-      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
-      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
-      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
+  Mn::DebugTools::FrameProfilerGL::Values profilerValues =
+      Mn::DebugTools::FrameProfilerGL::Value::FrameTime |
+      Mn::DebugTools::FrameProfilerGL::Value::CpuDuration |
+      Mn::DebugTools::FrameProfilerGL::Value::GpuDuration;
 
 // VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
 #ifndef MAGNUM_TARGET_GLES
@@ -1109,10 +1110,10 @@ Viewer::Viewer(const Arguments& arguments)
           .isExtensionSupported<
               Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
     profilerValues |=
-        Mn::DebugTools::GLFrameProfiler::Value::
+        Mn::DebugTools::FrameProfilerGL::Value::
             VertexFetchRatio |  // Ratio of vertex shader invocations to count
                                 // of vertices submitted
-        Mn::DebugTools::GLFrameProfiler::Value::
+        Mn::DebugTools::FrameProfilerGL::Value::
             PrimitiveClipRatio;  // Ratio of primitives discarded by the
                                  // clipping stage to count of primitives
                                  // submitted
@@ -1628,7 +1629,7 @@ void Viewer::drawEvent() {
   if (visualizeMode_ == VisualizeMode::Depth ||
       visualizeMode_ == VisualizeMode::Semantic) {
     // ================ Depth Visualization ==================================
-    std::string sensorId = "depth";
+    std::string sensorId = "depth_camera";
     if (visualizeMode_ == VisualizeMode::Depth) {
       if (sensorMode_ == VisualSensorMode::Fisheye) {
         sensorId = "depth_fisheye";
@@ -1636,8 +1637,12 @@ void Viewer::drawEvent() {
         sensorId = "depth_equirectangular";
       }
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
-      sensorId = "semantic";
-      // TODO: add semantic fisheye and equiRec
+      sensorId = "semantic_camera";
+      if (sensorMode_ == VisualSensorMode::Fisheye) {
+        sensorId = "semantic_fisheye";
+      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+        sensorId = "semantic_equirectangular";
+      }
     }
 
     simulator_->drawObservation(defaultAgentId_, sensorId);
@@ -1708,9 +1713,9 @@ void Viewer::drawEvent() {
       // ================ NON-regular RGB sensor ==================
       std::string sensorId = "";
       if (sensorMode_ == VisualSensorMode::Fisheye) {
-        sensorId = "fisheye";
+        sensorId = "rgba_fisheye";
       } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
-        sensorId = "equirectangular";
+        sensorId = "rgba_equirectangular";
       } else {
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       }
@@ -1874,8 +1879,8 @@ void Viewer::viewportEvent(ViewportEvent& event) {
                                  event.framebufferSize()[0]);
       renderCamera_->setViewport(visualSensor.framebufferSize());
       // before, here we will bind the render target, but now we defer it
-      if ((visualSensor.specification()->uuid == "fisheye") ||
-          (visualSensor.specification()->uuid == "depth_fisheye")) {
+      if (visualSensor.specification()->sensorSubType ==
+          esp::sensor::SensorSubType::Fisheye) {
         auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
             visualSensor.specification().get());
 
@@ -1884,7 +1889,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
         const auto viewportSize = event.framebufferSize();
         int size = viewportSize[0] < viewportSize[1] ? viewportSize[0]
                                                      : viewportSize[1];
-        spec->focalLength = Mn::Vector2(size * 0.5, size * 0.5);
+        // since the sensor is determined, sensor's focal length is fixed.
         spec->principalPointOffset =
             Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
       }

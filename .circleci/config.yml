@@ -129,7 +129,7 @@ commands:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-sugar pytest-xdist typeguard
+                pip install pytest-sugar pytest-xdist
               fi
       - run:
           name: Install emscripten
@@ -178,8 +178,8 @@ commands:
             - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache:
           keys:
-            - ccache-{{ arch }}-master
             - ccache-{{ arch }}-{{ .Branch }}
+            - ccache-{{ arch }}-master
           paths:
             - /home/circleci/.ccache
       - run:
@@ -347,11 +347,12 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               cd habitat-sim
+              git submodule update --init --recursive --jobs 16
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
-              git submodule update --init --recursive --jobs 4
               while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
                   texlive-base \
@@ -381,11 +382,6 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
-      - save_cache:
-          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-          background: true
-          paths:
-            - ~/miniconda
       - run:
           name: Run Habitat Lab tests
           no_output_timeout: 25m
@@ -412,6 +408,11 @@ jobs:
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
               ./build-public.sh
+      - save_cache:
+          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+          background: true
+          paths:
+            - ~/miniconda
       - save_cache:
           key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
           background: true
@@ -447,7 +448,7 @@ jobs:
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
-              git submodule update --init --recursive --jobs 4
+              git submodule update --init --recursive --jobs 16
               python -u setup.py install --headless --vhacd
       - run:
           name: run clang-tidy
@@ -521,12 +522,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest -n 4 --cov-report=xml --typeguard-packages=habitat_sim --cov=./
+              pytest -n auto --durations=10 --cov-report=xml --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
-              ./build.sh --headless
-              pytest -n 4 --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
+              ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+              pytest -n auto --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               . ~/emsdk/emsdk_env.sh

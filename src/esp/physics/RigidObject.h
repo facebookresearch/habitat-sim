@@ -67,7 +67,7 @@ struct VelocityControl {
    *
    * Default implementation uses explicit Euler integration.
    * @param dt The discrete timestep over which to integrate.
-   * @param objectRotationTranslation The initial state of the object before
+   * @param rigidState The initial state of the object before
    * applying velocity control.
    * @return The new state of the object after applying velocity control over
    * dt.
@@ -80,18 +80,18 @@ struct VelocityControl {
 };
 
 /**
- * @brief An AbstractFeature3D representing an individual rigid object instance
+ * @brief A @ref RigidBase representing an individual rigid object instance
  * attached to a SceneNode, updating its state through simulation. This may be a
- * @ref MotionType::STATIC scene collision geometry or an object of any @ref
- * MotionType which can interact with other members of a physical world. Must
- * have a collision mesh. By default, a RigidObject is @ref
+ * @ref esp::physics::MotionType::STATIC scene collision geometry or an object
+ * of any @ref MotionType which can interact with other members of a physical
+ * world. Must have a collision mesh. By default, a RigidObject is @ref
  * MotionType::KINEMATIC without an underlying simulator implementation. Derived
  * classes can be used to introduce specific implementations of dynamics.
  */
 class RigidObject : public RigidBase {
  public:
   /**
-   * @brief Constructor for a @ref RigidObject.
+   * @brief Constructor for a @ref esp::physics::RigidObject.
    * @param rigidBodyNode The @ref scene::SceneNode this feature will be
    * attached to.
    */
@@ -100,12 +100,13 @@ class RigidObject : public RigidBase {
               const assets::ResourceManager& resMgr);
 
   /**
-   * @brief Virtual destructor for a @ref RigidObject.
+   * @brief Virtual destructor for a @ref esp::physics::RigidObject.
    */
   ~RigidObject() override = default;
 
   /**
-   * @brief Initializes the @ref RigidObject that inherits from this class
+   * @brief Initializes the @ref esp::physics::RigidObject that inherits from
+   * this class
    * @param initAttributes The template structure defining relevant
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
@@ -114,8 +115,7 @@ class RigidObject : public RigidBase {
                       initAttributes) override;
 
   /**
-   * @brief Finalize the creation of @ref RigidObject or @ref RigidScene that
-   * inherits from this class.
+   * @brief Finalize the creation of the RigidObject.
    * @return whether successful finalization.
    */
   bool finalizeObject() override;
@@ -134,12 +134,10 @@ class RigidObject : public RigidBase {
 
  private:
   /**
-   * @brief Finalize the initialization of this @ref RigidScene
+   * @brief Finalize the initialization of this @ref esp::physics::RigidObject's
    * geometry. This is overridden by inheriting class specific to certain
    * physics libraries. Necessary to support kinematic objects without any
    * dynamics support.
-   * @param resMgr Reference to resource manager, to access relevant
-   * components pertaining to the scene object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialization_LibSpecific() override;
@@ -156,10 +154,12 @@ class RigidObject : public RigidBase {
  public:
   /**
    * @brief Set the @ref MotionType of the object. If the object is @ref
-   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
-   * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC.
-   * Only if a dervied @ref PhysicsManager implementing dynamics is in use can
-   * the object be set to @ref MotionType::DYNAMIC.
+   * ObjectType::SCENE it can only be @ref esp::physics::MotionType::STATIC. If
+   * the object is
+   * @ref ObjectType::OBJECT is can also be set to @ref
+   * esp::physics::MotionType::KINEMATIC. Only if a dervied @ref PhysicsManager
+   * implementing dynamics is in use can the object be set to @ref
+   * esp::physics::MotionType::DYNAMIC.
    * @param mt The desirved @ref MotionType.
    * @return true if successfully set, false otherwise.
    */
@@ -169,6 +169,19 @@ class RigidObject : public RigidBase {
    * @brief Retrieves a reference to the VelocityControl struct for this object.
    */
   VelocityControl::ptr getVelocityControl() { return velControl_; };
+
+  /**
+   * @brief Set the object's state from a @ref
+   * esp::metadata::attributes::SceneObjectInstanceAttributes
+   * @param objInstAttr The attributes that describe the desired state to set
+   * this object.
+   * @param defaultCOMCorrection The default value of whether COM-based
+   * translation correction needs to occur.
+   */
+  void setStateFromAttributes(
+      const esp::metadata::attributes::SceneObjectInstanceAttributes* const
+          objInstAttr,
+      bool defaultCOMCorrection = false) override;
 
  protected:
   /**

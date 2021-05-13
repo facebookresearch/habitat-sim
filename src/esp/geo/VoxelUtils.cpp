@@ -19,8 +19,7 @@ void generateInteriorExteriorVoxelGrid(
                       static_cast<std::size_t>(m_voxelGridDimensions[1]),
                       static_cast<std::size_t>(m_voxelGridDimensions[2])};
   Corrade::Containers::Array<char> cr_grid{
-      Corrade::Containers::ValueInit,
-      v_grid->gridSize() * sizeof(Mn::Math::BoolVector<6>)};
+      Corrade::ValueInit, v_grid->gridSize() * sizeof(Mn::Math::BoolVector<6>)};
   auto shadowGrid_ =
       Cr::Containers::StridedArrayView<3, Mn::Math::BoolVector<6>>{
           Cr::Containers::arrayCast<Mn::Math::BoolVector<6>>(cr_grid), dims};
