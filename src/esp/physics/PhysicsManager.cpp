@@ -92,7 +92,7 @@ int PhysicsManager::addObjectInstance(
           metadata::attributes::ObjectInstanceShaderType::Unknown)) {
     objAttributes->setShaderType(objShaderType);
   }
-  int objID;
+  int objID = 0;
   if (simulator_ != nullptr) {
     auto& drawables = simulator_->getDrawableGroup();
     objID = addObject(objAttributes, &drawables, attachmentNode, lightSetup);
