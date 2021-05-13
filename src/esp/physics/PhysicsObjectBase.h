@@ -155,11 +155,15 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
+  /**
+   * @brief Get the 4x4 transformation matrix of the object
+   */
   virtual Magnum::Matrix4 getTransformation() const {
     return node().transformation();
   }
 
-  /** @brief Set the 3D position of the object kinematically.
+  /**
+   * @brief Set the 3D position of the object kinematically.
    * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
    * object is not recommended.
    * @param vector The desired 3D position of the object.
@@ -171,11 +175,15 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
+  /**
+   * @brief Get the 3D position of the object.
+   */
   virtual Magnum::Vector3 getTranslation() const {
     return node().translation();
   }
 
-  /** @brief Set the orientation of the object kinematically.
+  /**
+   * @brief Set the orientation of the object kinematically.
    * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
    * object is not recommended.
    * @param quaternion The desired orientation of the object.
@@ -187,6 +195,9 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
+  /**
+   * @brief Get the orientation of the object.
+   */
   virtual Magnum::Quaternion getRotation() const { return node().rotation(); }
 
   /**
@@ -342,28 +353,48 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Store whatever object attributes you want here! */
+  /**
+   * @brief Store whatever object attributes you want here!
+   */
   esp::core::Configuration::ptr attributes_{};
 
+  /**
+   * @brief Set the object's state from a @ref
+   * esp::metadata::attributes::SceneObjectInstanceAttributes
+   * @param objInstAttr The attributes that describe the desired state to set
+   * this object.
+   * @param defaultCOMCorrection The default value of whether COM-based
+   * translation correction needs to occur.
+   */
+  virtual void setStateFromAttributes(
+      const esp::metadata::attributes::SceneObjectInstanceAttributes* const
+          objInstAttr,
+      bool defaultCOMCorrection = false) = 0;
+
  protected:
-  /** @brief Used to synchronize other simulator's notion of the object state
+  /**
+   * @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Must be called automatically on
    * kinematic updates.*/
   virtual void syncPose() { return; }
 
-  /** @brief An assignable name for this object.
+  /**
+   * @brief An assignable name for this object.
    */
   std::string objectName_;
 
-  /** @brief The @ref MotionType of the object. Determines what operations can
+  /**
+   * @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */
   MotionType objectMotionType_{MotionType::UNDEFINED};
 
-  /** @brief Access for the object to its own PhysicsManager id.
+  /**
+   * @brief Access for the object to its own PhysicsManager id.
    */
   int objectId_;
 
-  /** @brief Reference to the ResourceManager for internal access to the
+  /**
+   * @brief Reference to the ResourceManager for internal access to the
    * object's asset data.
    */
   const assets::ResourceManager& resMgr_;

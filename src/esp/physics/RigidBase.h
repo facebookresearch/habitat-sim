@@ -367,12 +367,16 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
 #endif
 
-  //! The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
-  //! drawing is off. See @ref setObjectBBDraw().
+  /**
+   * @brief The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
+   * drawing is off. See @ref setObjectBBDraw().
+   */
   scene::SceneNode* BBNode_ = nullptr;
 
-  //! The @ref SceneNode of the voxel drawable. If nullptr, Voxel
-  //! drawing is off. See @ref setObjectVoxelizationDraw().
+  /**
+   * @brief  The @ref SceneNode of the voxel drawable. If nullptr, Voxel drawing
+   * is off. See @ref setObjectVoxelizationDraw().
+   */
   scene::SceneNode* VoxelNode_ = nullptr;
 
   /**
@@ -383,11 +387,15 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    */
   scene::SceneNode* visualNode_ = nullptr;
 
-  //! all nodes created when this object's render asset was added to the
-  //! SceneGraph
+  /**
+   * @brief all nodes created when this object's render asset was added to the
+   * SceneGraph
+   */
   std::vector<esp::scene::SceneNode*> visualNodes_;
 
-  //! ptr to the VoxelWrapper associated with this RigidBase
+  /**
+   * @brief ptr to the VoxelWrapper associated with this RigidBase
+   */
   std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper = nullptr;
 
  protected:
