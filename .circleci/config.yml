@@ -284,12 +284,32 @@ jobs:
           paths:
             - ~/.cache/pre-commit
           key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
-
       - run:
           name: Check Code Style using pre-commit
           command: |
             SKIP=clang-format,eslint pre-commit run --show-diff-on-failure --all-files
-  build_and_test_habitat_lab_conda:
+  test_conda_build:
+    <<: *gpu
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - run:
+          name: CPU info
+          no_output_timeout: 1m
+          command: |
+              cat /proc/cpuinfo
+      - install_all_ubuntu_deps
+      - run:
+          name: Build conda Linux packages for CI
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
+              rm -rf build
+              cd conda-build
+              python linux_matrix_builder.py --ci_test
+  lab_build_habitat:
     <<: *gpu
     steps:
       - checkout:
@@ -418,16 +438,6 @@ jobs:
           background: true
           paths:
             - ./habitat-sim/build/docs-public
-      - run:
-          name: Build conda Linux packages for CI
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
-              rm -rf build
-              cd conda-build
-              python linux_matrix_builder.py --ci_test
   install_and_test_ubuntu:
     <<: *gpu
     steps:
@@ -660,7 +670,8 @@ workflows:
       - python_lint
       - cpp_lint
       - js_lint
-      - build_and_test_habitat_lab_conda
+      - lab_build_habitat
+      - test_conda_build
       - install_and_test_ubuntu
       - pre-commit
   nightly:
@@ -671,8 +682,9 @@ workflows:
             branches:
               only: master
     jobs:
-      - build_and_test_habitat_lab_conda
+      - lab_build_habitat
       - install_and_test_ubuntu
+      - test_conda_build
       - update_docs:
           requires:
             - install_and_test_ubuntu
@@ -691,33 +703,24 @@ workflows:
 
   version_conda_release:
     jobs:
-      - build_and_test_habitat_lab_conda:
-          filters:
+      - lab_build_habitat:
+          filters: &version_filter
             tags:
               only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
             branches:
               ignore: /.*/
+      - test_conda_build:
+          filters: *version_filter
       - install_and_test_ubuntu:
-          filters:
-            tags:
-              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
-            branches:
-              ignore: /.*/
+          filters: *version_filter
       - update_docs:
           requires:
-            - build_and_test_habitat_lab_conda
+            - lab_build_habitat
             - install_and_test_ubuntu
-          filters:
-            tags:
-              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
-            branches:
-              ignore: /.*/
+          filters: *version_filter
       - build_conda_binaries:
           requires:
-            - build_and_test_habitat_lab_conda
+            - test_conda_build
+            - lab_build_habitat
             - install_and_test_ubuntu
-          filters:
-            tags:
-              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
-            branches:
-              ignore: /.*/
+          filters: *version_filter
