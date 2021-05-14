@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 import attr
 import magnum as mn
 import numpy as np
-import quaternion
+import quaternion as qt
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
@@ -57,8 +57,8 @@ def _triple_zero() -> np.ndarray:
     return np.zeros(3)
 
 
-def _default_quaternion() -> np.quaternion:
-    return quaternion.quaternion(1, 0, 0, 0)
+def _default_quaternion() -> qt.quaternion:
+    return qt.quaternion(1, 0, 0, 0)
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -70,7 +70,7 @@ class SixDOFPose:
     """
 
     position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    rotation: Union[np.quaternion, List] = attr.ib(
+    rotation: Union[qt.quaternion, List] = attr.ib(
         factory=_default_quaternion, validator=is_unit_length
     )
 
@@ -78,7 +78,7 @@ class SixDOFPose:
 @attr.s(auto_attribs=True, slots=True)
 class AgentState:
     position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    rotation: Union[np.quaternion, List, np.ndarray] = attr.ib(
+    rotation: Union[qt.quaternion, List, np.ndarray] = attr.ib(
         factory=_default_quaternion, validator=is_unit_length
     )
     velocity: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)

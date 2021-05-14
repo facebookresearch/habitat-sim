@@ -6,6 +6,7 @@
 import itertools
 import json
 from os import path as osp
+from typing import Any, Dict
 
 import magnum as mn
 import numpy as np
@@ -180,7 +181,7 @@ def test_sensors(
 
     with habitat_sim.Simulator(cfg) as sim:
         if add_sensor_lazy:
-            obs: np.ndarray = sim.reset()
+            obs: Dict[str, Any] = sim.reset()
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
                 sim.add_sensor(sensor_spec)
@@ -194,10 +195,8 @@ def test_sensors(
         # different images; differences on aliased edges might also stem from how a
         # particular importer parses transforms
         assert np.linalg.norm(
-            obs[sensor_type].astype(np.float) - gt.astype(np.float)
-        ) < 9.0e-2 * np.linalg.norm(
-            gt.astype(np.float)
-        ), f"Incorrect {sensor_type} output"
+            obs[sensor_type].astype(float) - gt.astype(float)
+        ) < 9.0e-2 * np.linalg.norm(gt.astype(float)), f"Incorrect {sensor_type} output"
 
 
 @pytest.mark.gfxtest
@@ -228,10 +227,8 @@ def test_reconfigure_render(
         # different images; differences on aliased edges might also stem from how a
         # particular importer parses transforms
         assert np.linalg.norm(
-            obs[sensor_type].astype(np.float) - gt.astype(np.float)
-        ) < 9.0e-2 * np.linalg.norm(
-            gt.astype(np.float)
-        ), f"Incorrect {sensor_type} output"
+            obs[sensor_type].astype(float) - gt.astype(float)
+        ) < 9.0e-2 * np.linalg.norm(gt.astype(float)), f"Incorrect {sensor_type} output"
 
 
 # Tests to make sure that no sensors is supported and doesn't crash
@@ -279,10 +276,8 @@ def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
         obs, gt = _render_and_load_gt(sim, scene, "depth_sensor", gpu2gpu)
 
         assert np.linalg.norm(
-            obs["depth_sensor"].astype(np.float) - gt.astype(np.float)
-        ) > 1.5e-2 * np.linalg.norm(
-            gt.astype(np.float)
-        ), "Incorrect depth_sensor output"
+            obs["depth_sensor"].astype(float) - gt.astype(float)
+        ) > 1.5e-2 * np.linalg.norm(gt.astype(float)), "Incorrect depth_sensor output"
 
     sim.close()
 
@@ -326,7 +321,5 @@ def test_rgba_noise(scene, model_name, make_cfg_settings):
         obs, gt = _render_and_load_gt(sim, scene, "color_sensor", False)
 
         assert np.linalg.norm(
-            obs["color_sensor"].astype(np.float) - gt.astype(np.float)
-        ) > 1.5e-2 * np.linalg.norm(
-            gt.astype(np.float)
-        ), "Incorrect color_sensor output"
+            obs["color_sensor"].astype(float) - gt.astype(float)
+        ) > 1.5e-2 * np.linalg.norm(gt.astype(float)), "Incorrect color_sensor output"

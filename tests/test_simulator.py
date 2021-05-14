@@ -12,7 +12,7 @@ import habitat_sim
 def is_same_state(initial_state, new_state) -> bool:
     same_position = all(initial_state.position == new_state.position)
     same_rotation = np.isclose(initial_state.rotation, new_state.rotation, rtol=1e-4)
-    return same_position and same_rotation
+    return bool(same_position and same_rotation)
 
 
 def test_no_navmesh_smoke():
