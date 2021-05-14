@@ -10,7 +10,7 @@ __version__ = "0.1.7"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: kept only for compatibiliy with existing code. Please gradually remove
-    from habitat_sim import (  # noqa: F401
+    from habitat_sim import (
         agent,
         attributes,
         attributes_managers,
@@ -27,7 +27,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         simulator,
         utils,
     )
-    from habitat_sim._ext.habitat_sim_bindings import MapStringString  # noqa: F401
+    from habitat_sim._ext.habitat_sim_bindings import MapStringString
 
     try:
         from habitat_sim._ext.habitat_sim_bindings import VHACDParameters  # noqa: F401
@@ -71,7 +71,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         ShortestPath,
         VectorGreedyCodes,
     )
-    from habitat_sim.registry import registry  # noqa: F401
+    from habitat_sim.registry import registry
     from habitat_sim.sensor import (
         CameraSensorSpec,
         EquirectangularSensor,
