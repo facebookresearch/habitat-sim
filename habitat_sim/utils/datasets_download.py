@@ -69,10 +69,10 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "coda_scene": {
-            "source": "'https://docs.google.com/uc?export=download&id=1Pc-J6pZzXEd8RSeLM94t3iwO8q_RQ853'",
-            "package_name": "coda.zip",
+            "source": "https://dl.fbaipublicfiles.com/habitat/coda_v1.0.zip",
+            "package_name": "coda_v1.0.zip",
             "download_pre_args": "--no-check-certificate ",
-            "download_post_args": " -O " + data_path + "coda.zip",
+            "download_post_args": " -O " + data_path + "coda_v1.0.zip",
             "link": data_path + "scene_datasets/coda",
             "version": "1.0",
         },
