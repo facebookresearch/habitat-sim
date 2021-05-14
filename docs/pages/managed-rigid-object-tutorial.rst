@@ -21,9 +21,11 @@ The example code below is available on `Collab`_, or runnable via:
 
     $ python path/to/habitat-sim/examples/tutorials/nb_python/managed_rigid_object_tutorial.py
 
-First, download the `example objects`_ and extract them into path/to/habitat-sim/data/objects/.
+First, download the example objects:
 
-.. _example objects: http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip
+.. code:: shell-session
+
+    $ python habitat_sim/utils/datasets_download.py --uid habitat_example_objects
 
 Import necessary modules, define some convenience functions, and initialize the :ref:`Simulator` and :ref:`Agent`.
 

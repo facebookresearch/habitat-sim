@@ -12,13 +12,6 @@ import sys
 import traceback
 import zipfile
 
-import git
-
-repo = git.Repo(".", search_parent_directories=True)
-dir_path = repo.working_tree_dir
-# Root data directory. Optionaly overridden by input argument "--data_path".
-data_path = os.path.join(dir_path, "data")
-
 data_sources = {}
 data_groups = {}
 
@@ -105,7 +98,7 @@ def prompt_yes_no(message):
             print("Invalid answer...")
 
 
-def clean_data(uid):
+def clean_data(uid, data_path):
     r"""Deletes the "root" directory for the named data-source."""
     if not data_sources.get(uid):
         print(f"Data clean failed, no datasource named {uid}")
@@ -125,7 +118,7 @@ def clean_data(uid):
         print("--------------------")
 
 
-def download_and_place(uid, replace=False):
+def download_and_place(uid, data_path, replace=False):
     r"""Data-source download function. Validates uid, handles existing data version, downloads data, unpacks, writes version, cleans up."""
     if not data_sources.get(uid):
         print(f"Data download failed, no datasource named {uid}")
@@ -146,7 +139,7 @@ def download_and_place(uid, replace=False):
         )
 
         if replace_existing:
-            clean_data(uid)
+            clean_data(uid, data_path)
         else:
             print("=======================================================")
             print(
@@ -234,7 +227,6 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--data_path",
-        default=data_path,
         type=str,
         help='Optionally provide a path to the desired root data/ directory. Default is "habitat-sim/data/".',
     )
@@ -252,6 +244,27 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     replace = args.replace
+
+    # get a default data_path from git
+    data_path = args.data_path
+    if not data_path:
+        try:
+            import git
+
+            repo = git.Repo(".", search_parent_directories=True)
+            dir_path = repo.working_tree_dir
+            # Root data directory. Optionaly overridden by input argument "--data_path".
+            data_path = os.path.join(dir_path, "data")
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+            print("----------------------------------------------------------------")
+            print(
+                "Aborting download, failed to get default data_path from git repo and none provided."
+            )
+            print("Try providing --data_path (e.g. '/path/to/habitat-sim/data/')")
+            print("----------------------------------------------------------------")
+            parser.print_help()
+            exit(2)
 
     # initialize data_sources and data_groups with test and example assets
     if not os.path.exists(args.data_path):
@@ -288,6 +301,6 @@ if __name__ == "__main__":
 
     for uid in uids:
         if args.clean:
-            clean_data(uid)
+            clean_data(uid, data_path)
         else:
-            download_and_place(uid, replace)
+            download_and_place(uid, data_path, replace)
