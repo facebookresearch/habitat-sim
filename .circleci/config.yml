@@ -129,7 +129,7 @@ commands:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-sugar pytest-xdist pytest-mypy
+                pip install pytest-sugar pytest-xdist
               fi
       - run:
           name: Install emscripten
@@ -226,6 +226,9 @@ jobs:
           command: |
               flake8 --version
               flake8 habitat_sim/. examples/. tests/. setup.py
+      - run:
+          name: run mypy
+          command: mypy
   cpp_lint:
     docker:
       - image: circleci/buildpack-deps:18.04
@@ -522,12 +525,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest -n auto --mypy --durations=10 --cov-report=xml --cov=./
+              pytest -n auto --durations=10 --cov-report=xml --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
-              pytest -n auto --mypy --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              pytest -n auto --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               . ~/emsdk/emsdk_env.sh
