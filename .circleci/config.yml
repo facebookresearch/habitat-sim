@@ -207,7 +207,7 @@ jobs:
               sudo rm  llvm-config
               sudo ln -s llvm-config-10 llvm-config
               cd ~/project/
-              pip install -U black flake8 flake8-bugbear flake8-builtins flake8-comprehensions flake8-return flake8-simplify "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
+              pip install -U black flake8 flake8-bugbear flake8-builtins flake8-comprehensions flake8-return flake8-simplify "isort[pyproject]" mypy numpy pytest sphinx pillow tqdm hypothesis
               pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
