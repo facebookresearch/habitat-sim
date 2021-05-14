@@ -6,7 +6,7 @@
 
 import numpy as np
 import pytest
-import quaternion  # noqa: F401
+import quaternion as qt
 
 import habitat_sim
 import habitat_sim.errors
@@ -89,7 +89,7 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
 
     for base_action in {act.replace("noisy_", "") for act in agent_config.action_space}:
         state = agent.state
-        state.rotation = np.quaternion(1, 0, 0, 0)
+        state.rotation = qt.quaternion(1, 0, 0, 0)
         agent.state = state
         agent.act(base_action)
         base_state = agent.state

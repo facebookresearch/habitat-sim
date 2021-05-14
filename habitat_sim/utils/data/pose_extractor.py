@@ -89,7 +89,7 @@ class PoseExtractor:
         self,
         poses: List[Tuple[Tuple[int, int], Tuple[int, int], str]],
         ref_point: Tuple[float32, float32, float32],
-    ) -> List[Tuple[Union[np.ndarray, Tuple[int, int]], quaternion, str]]:
+    ) -> List[Tuple[Tuple[int, int], quaternion, str]]:
         # Convert from topdown map coordinate system to that of the scene
         startw, starty, starth = ref_point
         for i, pose in enumerate(poses):
@@ -112,7 +112,8 @@ class PoseExtractor:
             )
             cam_normal = new_cpi - new_pos
             new_rot = self._compute_quat(cam_normal)
-            poses[i] = (new_pos, new_rot, filepath)
+            new_pos_t: Tuple[int, int] = tuple(new_pos)  # type: ignore[assignment]
+            poses[i] = (new_pos_t, new_rot, filepath)
 
         return poses
 
