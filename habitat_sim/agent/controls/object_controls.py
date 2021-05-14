@@ -25,7 +25,7 @@ def _noop_filter(start: _3d_point, end: _3d_point) -> _3d_point:
 
 
 @attr.s(auto_attribs=True)
-class ObjectControls(object):
+class ObjectControls:
     r"""Used to implement actions
 
     :property move_filter_fn: A function that is applied after actions to

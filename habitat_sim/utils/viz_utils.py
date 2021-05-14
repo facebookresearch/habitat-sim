@@ -266,7 +266,7 @@ def depth_to_rgb(depth_image: np.ndarray, clip_max: float = 10.0) -> np.ndarray:
     d_im = np.clip(depth_image, 0, clip_max)
     d_im /= clip_max
     rgb_d_im = (d_im * 255).astype(np.uint8)
-    return rgb_d_im
+    return np.asarray(rgb_d_im)
 
 
 def semantic_to_rgb(semantic_image: np.ndarray) -> np.ndarray:

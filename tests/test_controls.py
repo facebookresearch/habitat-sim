@@ -9,7 +9,7 @@ import hypothesis
 import magnum as mn
 import numpy as np
 import pytest
-import quaternion  # noqa: F401
+import quaternion as qt
 from hypothesis import strategies as st
 
 import habitat_sim
@@ -48,7 +48,7 @@ def test_no_move_fun():
 @attr.s(auto_attribs=True, cmp=False)
 class ExpectedDelta:
     delta_pos: np.ndarray = attr.Factory(lambda: np.array([0, 0, 0]))
-    delta_rot: np.quaternion = attr.Factory(lambda: np.quaternion(1, 0, 0, 0))
+    delta_rot: qt.quaternion = attr.Factory(lambda: qt.quaternion(1, 0, 0, 0))
 
 
 def _check_state_same(s1, s2):

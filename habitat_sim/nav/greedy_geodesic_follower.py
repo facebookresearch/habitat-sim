@@ -15,7 +15,7 @@ from habitat_sim.utils.common import quat_to_magnum
 
 
 @attr.s(auto_attribs=True, init=False)
-class GreedyGeodesicFollower(object):
+class GreedyGeodesicFollower:
     r"""Planner that greedily fits actions to follow the geodesic shortest path.
 
     The planner plans on perfect actions (assumes actuation noise is unbiased) and thus
