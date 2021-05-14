@@ -558,7 +558,7 @@ bool Simulator::instanceArticulatedObjectsForActiveScene() {
     if (aoID == ID_UNDEFINED) {
       // instancing failed for some reason.
       LOG(ERROR) << errMsgTmplt
-                 << "Articulatd Object create failed for model filepath "
+                 << "Articulated Object create failed for model filepath "
                  << artObjFilePath << ", whose handle is "
                  << artObjInst->getHandle()
                  << " as specified in articulated object instance attributes.";
