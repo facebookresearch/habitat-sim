@@ -51,7 +51,7 @@ class TestPage {
     let sim = new Module.Simulator(config);
 
     console.log("loadAllObjectConfigsFromPath");
-    Module.loadAllObjectConfigsFromPath(sim, "/data/objects");
+    Module.loadAllObjectConfigsFromPath(sim, "/data/objects/example_objects");
 
     console.log("sim.addObjectByHandle");
     let objId = sim.addObjectByHandle(this.objHandle, null, "", 0);
