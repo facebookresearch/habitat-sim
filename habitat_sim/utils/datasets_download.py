@@ -211,29 +211,43 @@ def download_and_place(uid, replace=False):
     print("=======================================================")
 
 
+class AutoHelpParser(argparse.ArgumentParser):
+    def error(self, message):
+        sys.stderr.write("error: %s\n" % message)
+        self.print_help()
+        sys.exit(2)
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
+    parser = AutoHelpParser()
+    arg_group1 = parser.add_mutually_exclusive_group()
+    arg_group1.add_argument(
         "--uid",
         type=str,
         help="Unique ID of the data to download.",
     )
+    arg_group1.add_argument(
+        "--list",
+        action="store_true",
+        help="List available datasource uid options and exit.",
+    )
+
     parser.add_argument(
         "--data_path",
         default=data_path,
         type=str,
         help='Optionally provide a path to the desired root data/ directory. Default is "habitat-sim/data/".',
     )
-    arg_group = parser.add_mutually_exclusive_group()
-    arg_group.add_argument(
+    arg_group2 = parser.add_mutually_exclusive_group()
+    arg_group2.add_argument(
         "--clean",
         action="store_true",
         help="Remove nested child directories for the datasource.",
     )
-    arg_group.add_argument(
+    arg_group2.add_argument(
         "--replace",
         action="store_true",
-        help="If set, alternative versions of any dataset found during download will be deleted automatically. Otherwise user will be prompted before overriding existing data.",
+        help="If set, existing equivalent versions of any dataset found during download will be deleted automatically. Otherwise user will be prompted before overriding existing data.",
     )
 
     args = parser.parse_args()
@@ -249,6 +263,24 @@ if __name__ == "__main__":
     for key in data_groups:
         assert key not in data_sources, "Duplicate key: " + key
 
+    if args.list:
+        print("====================================")
+        print("Currently available datasources are:")
+        print("------------------------------------")
+        for source_uid in data_sources:
+            print(source_uid)
+        print("====================================")
+        print("Currently available datagroups are:")
+        print("------------------------------------")
+        for group in data_groups.items():
+            print(group)
+        print("====================================")
+        exit()
+
+    if not args.uid:
+        print("No datasource uid provided.")
+        parser.print_help()
+        exit(2)
     uids = [args.uid]
     if args.uid in data_groups:
         "Downloading a data group..."
