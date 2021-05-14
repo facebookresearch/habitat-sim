@@ -131,7 +131,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager and
   @ref RigidObject implementing the specific interface to a simulation library.
   */
-  enum PhysicsSimulationLibrary {
+  enum class PhysicsSimulationLibrary {
 
     /**
      * The default implemenation of kineamtics through the base @ref
@@ -369,7 +369,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * PhysicsManager::existingObjects_.
    *  @return The size of @ref PhysicsManager::existingObjects_.
    */
-  int getNumRigidObjects() const { return existingObjects_.size(); };
+  int getNumRigidObjects() const { return existingObjects_.size(); }
 
   /** @brief Get a list of existing object IDs (i.e., existing keys in @ref
    * PhysicsManager::existingObjects_.)
@@ -382,7 +382,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       v.push_back(bro.first);
     }
     return v;
-  };
+  }
 
   /** @brief Get a list of existing object IDs for articulated objects (i.e.,
    * existing keys in @ref PhysicsManager::existingArticulatedObjects_.)
@@ -396,7 +396,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       v.push_back(bro.first);
     }
     return v;
-  };
+  }
 
   /** @brief Set the @ref MotionType of an object, allowing or disallowing its
    * manipulation by dynamic processes or kinematic control.
@@ -435,12 +435,12 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     Magnum::Debug{} << "addArticulatedObjectFromURDF not implemented in base "
                        "PhysicsManager.";
     return ID_UNDEFINED;
-  };
+  }
 
   //! remove an @ref ArticulatedObject from the world by unique id.
   virtual void removeArticulatedObject(int id);
 
-  int getNumArticulatedObjects() { return existingArticulatedObjects_.size(); };
+  int getNumArticulatedObjects() { return existingArticulatedObjects_.size(); }
 
   //! return a list of ids for all existing @ref ArticulatedObjects in the world
   std::vector<int> getArticulatedObjectIds() {
@@ -450,12 +450,12 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       ids.push_back(it->first);
     }
     return ids;
-  };
+  }
 
   ArticulatedObject& getArticulatedObject(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return *existingArticulatedObjects_.at(objectId).get();
-  };
+  }
 
   //============= ArticulatedObject JointMotor API =============
 
@@ -490,7 +490,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getJointMotorSettings(
         motorId);
-  };
+  }
 
   /**
    * @brief Update an ArticulatedObject's JointMotor with new settings.
@@ -501,7 +501,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->updateJointMotor(motorId,
                                                                settings);
-  };
+  }
 
   /**
    * @brief Query a map of motorIds -> dofs for all active JointMotors attached
@@ -510,7 +510,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   std::map<int, int> getExistingJointMotors(const int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getExistingJointMotors();
-  };
+  }
 
   /**
    * @brief Create a new set of default JointMotors for all valid dofs in an
@@ -526,7 +526,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->createMotorsForAllDofs(
         settings);
-  };
+  }
 
   //============= Object Point to Point Constraint API =============
 
@@ -547,7 +547,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     Magnum::Debug{}
         << "createRigidP2PConstraint not implemented in base PhysicsManager.";
     return ID_UNDEFINED;
-  };
+  }
 
   // TODO: document AO->rigid
   virtual int createArticulatedP2PConstraint(
@@ -602,7 +602,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
                        "PhysicsManager.";
     return ID_UNDEFINED;
-  };
+  }
 
   /**
    * @brief Create a ball&socket joint to constrain two links of two
@@ -628,7 +628,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
                        "PhysicsManager.";
     return ID_UNDEFINED;
-  };
+  }
 
   /**
    * @brief Create a ball&socket joint to constrain a single link of an
@@ -650,7 +650,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
                        "PhysicsManager.";
     return ID_UNDEFINED;
-  };
+  }
 
   /**
    * @brief Create a ball&socket joint to constrain a single link of an
@@ -669,7 +669,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
                        "PhysicsManager.";
     return ID_UNDEFINED;
-  };
+  }
 
   /**
    * @brief Update the position target (pivot) of a constraint.
@@ -682,7 +682,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED const Magnum::Vector3& pivot) {
     Magnum::Debug{}
         << "updateP2PConstraintPivot not implemented in base PhysicsManager.";
-  };
+  }
 
   /**
    * @brief Remove a constraint by id.
@@ -692,7 +692,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual void removeConstraint(CORRADE_UNUSED int constraintId) {
     Magnum::Debug{}
         << "removeConstraint not implemented in base PhysicsManager.";
-  };
+  }
 
   //============ Simulator functions =============
 
@@ -733,14 +733,14 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return The increment of time, @ref fixedTimeStep_, by which the physical
    * world will advance.
    */
-  virtual double getTimestep() const { return fixedTimeStep_; };
+  virtual double getTimestep() const { return fixedTimeStep_; }
 
   /** @brief Get the current @ref worldTime_ of the physical world. See @ref
    * stepPhysics.
    * @return The amount of time, @ref worldTime_, by which the physical world
    * has advanced.
    */
-  virtual double getWorldTime() const { return worldTime_; };
+  virtual double getWorldTime() const { return worldTime_; }
 
   /** @brief Get the current gravity in the physical world. By default returns
    * [0,0,0] since their is no notion of force in a kinematic world.
@@ -754,7 +754,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * geometry. See @ref staticStageObject_.
    * @return The scalar friction coefficient of the scene geometry.
    */
-  virtual double getStageFrictionCoefficient() const { return 0.0; };
+  virtual double getStageFrictionCoefficient() const { return 0.0; }
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
    * @ref staticStageObject_.
@@ -762,7 +762,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * geometry.
    */
   virtual void setStageFrictionCoefficient(
-      CORRADE_UNUSED const double frictionCoefficient){};
+      CORRADE_UNUSED const double frictionCoefficient) {}
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
@@ -770,7 +770,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * default this will always return 0, since kinametic scenes have no dynamics.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
-  virtual double getStageRestitutionCoefficient() const { return 0.0; };
+  virtual double getStageRestitutionCoefficient() const { return 0.0; }
 
   /** @brief Set the coefficient of restitution for the scene collision
    * geometry. See @ref staticStageObject_. By default does nothing since
@@ -778,7 +778,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
   virtual void setStageRestitutionCoefficient(
-      CORRADE_UNUSED const double restitutionCoefficient){};
+      CORRADE_UNUSED const double restitutionCoefficient) {}
 
   // ============ Object Transformation functions =============
 
@@ -1140,7 +1140,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   virtual double getMargin(CORRADE_UNUSED const int physObjectID) const {
     return 0.0;
-  };
+  }
 
   /** @brief Set the scalar collision margin of an object.
    * See @ref BulletRigidObject::setMargin. Nothing is set if no implementation
@@ -1150,7 +1150,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param  margin The desired collision margin for the object.
    */
   virtual void setMargin(CORRADE_UNUSED const int physObjectID,
-                         CORRADE_UNUSED const double margin){};
+                         CORRADE_UNUSED const double margin) {}
 
   // =========== Debug functions ===========
 
@@ -1378,7 +1378,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * render camera.
    */
   virtual void debugDraw(
-      CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {};
+      CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {}
 
   /**
    * @brief Check whether an object is in contact with any other objects or the
@@ -1397,15 +1397,16 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual bool contactTest(CORRADE_UNUSED const int physObjectID,
                            CORRADE_UNUSED bool staticAsStage = true) {
     return false;
-  };
+  }
 
   /**
    * @brief Perform discrete collision detection for the scene with the derived
    * PhysicsManager implementation. Not implemented for default @ref
    * PhysicsManager. See @ref BulletPhysicsManager.
    */
-  virtual void performDiscreteCollisionDetection(){
-      /*Does nothing in base PhysicsManager.*/};
+  virtual void performDiscreteCollisionDetection() {
+    /*Does nothing in base PhysicsManager.*/
+  }
 
   virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
 
@@ -1422,7 +1423,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   void setObjectIsCollidable(const int physObjectID, bool collidable) {
     assertIDValidity(physObjectID);
     existingObjects_.at(physObjectID)->setCollidable(collidable);
-  };
+  }
 
   /**
    * @brief Get whether or not an object is collision active.
@@ -1430,31 +1431,31 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   bool getObjectIsCollidable(const int physObjectID) {
     assertIDValidity(physObjectID);
     return existingObjects_.at(physObjectID)->getCollidable();
-  };
+  }
 
   /**
    * @brief Set the stage to collidable or not.
    */
   void setStageIsCollidable(bool collidable) {
     staticStageObject_->setCollidable(collidable);
-  };
+  }
 
   /**
    * @brief Get whether or not the stage is collision active.
    */
-  bool getStageIsCollidable() { return staticStageObject_->getCollidable(); };
+  bool getStageIsCollidable() { return staticStageObject_->getCollidable(); }
 
-  /** @brief Return the library implementation type for the simulator currently
-   * in use. Use to check for a particular implementation.
+  /** @brief Return the library implementation type for the simulator
+   * currently in use. Use to check for a particular implementation.
    * @return The implementation type of this simulator.
    */
   const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
     return activePhysSimLib_;
-  };
+  }
 
   /**
-   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
-   * belonging to an object.
+   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual
+   * nodes belonging to an object.
    *
    * @param objectID The object ID and key identifying the object in @ref
    * existingObjects_.
@@ -1476,15 +1477,16 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /**
    * @brief Get a copy of the template used to initialize the stage.
    *
-   * @return The initialization settings of the stage or nullptr if the stage is
-   * not initialized.
+   * @return The initialization settings of the stage or nullptr if the
+   * stage is not initialized.
    */
   metadata::attributes::StageAttributes::ptr getStageInitAttributes() const {
     return staticStageObject_->getInitializationAttributes();
   }
 
   /**
-   * @brief Get a copy of the template used to initialize this physics manager
+   * @brief Get a copy of the template used to initialize this physics
+   * manager
    *
    * @return The initialization settings for this physics manager
    */
@@ -1495,16 +1497,16 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
 
   /**
-   * @brief Cast a ray into the collision world and return a @ref RaycastResults
-   * with hit information.
+   * @brief Cast a ray into the collision world and return a @ref
+   * RaycastResults with hit information.
    *
    * Note: not implemented here in default PhysicsManager as there are no
    * collision objects without a simulation implementation.
    *
    * @param ray The ray to cast. Need not be unit length, but returned hit
    * distances will be in units of ray length.
-   * @param maxDistance The maximum distance along the ray direction to search.
-   * In units of ray length.
+   * @param maxDistance The maximum distance along the ray direction to
+   * search. In units of ray length.
    * @return The raycast results sorted by distance.
    */
   virtual RaycastResults castRay(const esp::geo::Ray& ray,
@@ -1557,30 +1559,30 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
                                      const Magnum::Matrix4& state) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setRootState(state);
-  };
+  }
 
   const Magnum::Matrix4 getArticulatedObjectRootState(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getRootState();
-  };
+  }
 
   void setArticulatedObjectForces(int objectId,
                                   const std::vector<float>& forces) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setForces(forces);
-  };
+  }
 
   void setArticulatedObjectVelocities(int objectId,
                                       const std::vector<float>& vels) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setVelocities(vels);
-  };
+  }
 
   void setArticulatedObjectPositions(int objectId,
                                      const std::vector<float>& positions) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setPositions(positions);
-  };
+  }
 
   std::vector<float> getArticulatedObjectPositionLimits(
       int objectId,
@@ -1588,42 +1590,42 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getPositionLimits(
         upperLimits);
-  };
+  }
 
   void setAutoClampJointLimits(int objectId, bool autoClamp) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setAutoClampJointLimits(
         autoClamp);
-  };
+  }
 
   bool getAutoClampJointLimits(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getAutoClampJointLimits();
-  };
+  }
   std::vector<float> getArticulatedObjectPositions(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getPositions();
-  };
+  }
 
   std::vector<float> getArticulatedObjectVelocities(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getVelocities();
-  };
+  }
 
   std::vector<float> getArticulatedObjectForces(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getForces();
-  };
+  }
 
   void resetArticulatedObject(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->reset();
-  };
+  }
 
   void setArticulatedObjectSleep(int objectId, bool sleep) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setActive(!sleep);
-  };
+  }
 
   bool getArticulatedObjectSleep(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
@@ -1633,19 +1635,20 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   void setArticulatedObjectMotionType(int objectId, MotionType mt) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->setMotionType(mt);
-  };
+  }
 
   MotionType getArticulatedObjectMotionType(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getMotionType();
-  };
+  }
 
   virtual int getNumActiveContactPoints() { return -1; }
   virtual int getNumActiveOverlappingPairs() { return -1; }
   virtual std::string getStepCollisionSummary() { return "not implemented"; }
 
   /**
-   * @brief returns the wrapper manager for the currently created rigid objects.
+   * @brief returns the wrapper manager for the currently created rigid
+   * objects.
    * @return RigidObject wrapper manager.
    */
   std::shared_ptr<RigidObjectManager> getRigidObjectManager() {
@@ -1663,19 +1666,19 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
-   * existing object). Terminate the program and report an error if not. This
-   * function is intended to unify object ID checking for @ref PhysicsManager
-   * functions.
+   * existing object). Terminate the program and report an error if not.
+   * This function is intended to unify object ID checking for @ref
+   * PhysicsManager functions.
    * @param physObjectID The object ID to validate.
    */
   virtual void assertIDValidity(const int physObjectID) const {
     CHECK(isValidObjectID(physObjectID));
   }
 
-  /** @brief Check if a particular mesh can be used as a collision mesh for a
-   * particular physics implemenation. Always True for base @ref PhysicsManager
-   * class, since the mesh has already been successfully loaded by @ref
-   * esp::assets::ResourceManager.
+  /** @brief Check if a particular mesh can be used as a collision mesh for
+   * a particular physics implemenation. Always True for base @ref
+   * PhysicsManager class, since the mesh has already been successfully
+   * loaded by @ref esp::assets::ResourceManager.
    * @param meshData The mesh to validate.
    * @return true if valid, false otherwise.
    */
@@ -1714,26 +1717,28 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual bool addStageFinalize(
       const metadata::attributes::StageAttributes::ptr& initAttributes);
 
-  /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
-   * it to existingObjects_ map keyed with newObjectID
+  /** @brief Create and initialize a @ref RigidObject, assign it an ID and
+   * add it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
    * @param initAttributes The physical object's template defining its
    * physical parameters.
    * @param objectNode Valid, existing scene node
-   * @return whether the object has been successfully initialized and added to
-   * existingObjects_ map
+   * @return whether the object has been successfully initialized and added
+   * to existingObjects_ map
    */
   virtual bool makeAndAddRigidObject(
       int newObjectID,
       const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
       scene::SceneNode* objectNode);
 
-  /** @brief Set the voxelization visualization for a scene node to be true or
-   * false.
+  /** @brief Set the voxelization visualization for a scene node to be true
+   * or false.
    * @param gridName The name of the grid to be drawn.
    * @param rigidBase The rigidBase of the object or scene.
-   * @param drawables The drawables group with which to render the voxelization.
-   * @param drawVoxelization Set rendering of the voxelization to true or false.
+   * @param drawables The drawables group with which to render the
+   * voxelization.
+   * @param drawVoxelization Set rendering of the voxelization to true or
+   * false.
    */
   void setVoxelizationDraw(const std::string& gridName,
                            esp::physics::RigidBase* rigidBase,
@@ -1758,14 +1763,15 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this
-   * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
-   * to its derived type if necessary.*/
-  PhysicsSimulationLibrary activePhysSimLib_ = NONE;  // default
+   * @ref PhysicsManager. Can be used to correctly cast the @ref
+   * PhysicsManager to its derived type if necessary.*/
+  PhysicsSimulationLibrary activePhysSimLib_ =
+      PhysicsSimulationLibrary::NONE;  // default
 
   /**
-   * @brief The @ref scene::SceneNode which is the parent of all members of the
-   * scene graph which exist in the physical world. Used to keep track of all
-   * SceneNode's that have physical properties.
+   * @brief The @ref scene::SceneNode which is the parent of all members of
+   * the scene graph which exist in the physical world. Used to keep track
+   * of all SceneNode's that have physical properties.
    * */
   scene::SceneNode* physicsNode_ = nullptr;
 
@@ -1786,26 +1792,29 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::shared_ptr<RigidObjectManager> rigidObjectManager_;
 
-  /** @brief Maps object IDs to all existing physical object instances in the
-   * world.
+  /** @brief Maps object IDs to all existing physical object instances in
+   * the world.
    */
   std::map<int, RigidObject::ptr> existingObjects_;
 
-  // TODO: should these be separate maps or somehow combined? What about ids?
+  // TODO: should these be separate maps or somehow combined? What about
+  // ids?
   /** @brief Maps articulated object IDs to all existing physical object
    * instances in the world.
    */
   std::map<int, ArticulatedObject::uptr> existingArticulatedObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to
-   * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing to
-   * check @ref existingObjects_ explicitly.*/
+   * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing
+   * to check @ref existingObjects_ explicitly.*/
   int nextObjectID_ = 0;
 
-  /** @brief A list of available object IDs tracked by @ref deallocateObjectID
-   * which were previously used by objects since removed from the world with
+  /** @brief A list of available object IDs tracked by @ref
+   * deallocateObjectID which were previously used by objects since removed
+   * from the world with
    * @ref removeObject. These IDs will be re-allocated with @ref
-   * allocateObjectID before new IDs are acquired with @ref nextObjectID_. */
+   * allocateObjectID before new IDs are acquired with @ref nextObjectID_.
+   */
   std::vector<int> recycledObjectIDs_;
 
   //! Utilities
@@ -1814,9 +1823,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * initialized with @ref initPhysics. */
   bool initialized_ = false;
 
-  /** @brief The fixed amount of time over which to integrate the simulation in
-   * discrete steps within @ref stepPhysics. Lower values result in better
-   * stability at the cost of worse efficiency and vice versa. */
+  /** @brief The fixed amount of time over which to integrate the simulation
+   * in discrete steps within @ref stepPhysics. Lower values result in
+   * better stability at the cost of worse efficiency and vice versa. */
   double fixedTimeStep_ = 1.0 / 240.0;
 
   /** @brief The current simulation time. Tracks the total amount of time

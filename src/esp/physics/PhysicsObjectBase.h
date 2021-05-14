@@ -364,6 +364,10 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   virtual void deferUpdate() { isDeferringUpdate_ = true; }
+
+  /**
+   * @brief update the SceneNode state to match the simulation state
+   */
   virtual void updateNodes(CORRADE_UNUSED bool force = false) {
     isDeferringUpdate_ = false;
   }

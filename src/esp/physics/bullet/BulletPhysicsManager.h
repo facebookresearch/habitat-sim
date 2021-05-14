@@ -376,7 +376,7 @@ class BulletPhysicsManager : public PhysicsManager {
   virtual void performDiscreteCollisionDetection() override {
     bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
     m_recentNumSubStepsTaken = -1;  // TODO: handle this more gracefully
-  };
+  }
 
  protected:
   //============ Initialization =============

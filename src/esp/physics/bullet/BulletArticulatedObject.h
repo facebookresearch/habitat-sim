@@ -35,15 +35,15 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
                         std::shared_ptr<std::map<const btCollisionObject*, int>>
                             collisionObjToObjIds)
       : ArticulatedLink(bodyNode, index, resMgr),
-        BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)){};
+        BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)) {}
 
   virtual const Magnum::Range3D getCollisionShapeAabb() const override {
     // TODO: collision object should be linked here
     return Magnum::Range3D();
-  };
+  }
 
   //! link can't do this.
-  virtual void setMotionType(CORRADE_UNUSED MotionType mt) override{};
+  virtual void setMotionType(CORRADE_UNUSED MotionType mt) override {}
 
  protected:
   int mbIndex_;
@@ -65,11 +65,11 @@ class BulletArticulatedObject : public ArticulatedObject {
       std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
       std::shared_ptr<std::map<const btCollisionObject*, int>>
           collisionObjToObjIds)
-      : bWorld_(std::move(bWorld)),
-        ArticulatedObject(rootNode, resMgr, objectId) {
-    motionType_ = MotionType::DYNAMIC;
+      : ArticulatedObject(rootNode, resMgr, objectId),
+        bWorld_(std::move(bWorld)) {
+    objectMotionType_ = MotionType::DYNAMIC;
     collisionObjToObjIds_ = std::move(collisionObjToObjIds);
-  };
+  }
 
   virtual ~BulletArticulatedObject();
 
@@ -117,7 +117,7 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   virtual void setActive(bool active) override;
 
-  virtual bool isActive() override;
+  virtual bool isActive() const override;
 
   virtual bool getCanSleep() override;
 

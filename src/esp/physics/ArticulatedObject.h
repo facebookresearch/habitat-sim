@@ -51,7 +51,7 @@ struct JointMotorSettings {
     velocityTarget = _velocityTarget;
     velocityGain = _velocityGain;
     maxImpulse = _maxImpulse;
-  };
+  }
 
   double positionTarget = 0.0;
   double positionGain = 0.0;
@@ -87,11 +87,11 @@ class ArticulatedLink : public RigidBase {
                   0,  // TODO: pass an actual object ID. This is currently
                       // assigned AFTER creation.
                   resMgr),
-        mbIndex_(index){};
+        mbIndex_(index) {}
 
   ~ArticulatedLink() override = default;
 
-  int getIndex() const { return mbIndex_; };
+  int getIndex() const { return mbIndex_; }
 
   //! List of visual components attached to this link. Used for NavMesh
   //! recomputation. Each entry is a child node of this link's node and a string
@@ -112,36 +112,36 @@ class ArticulatedLink : public RigidBase {
       CORRADE_UNUSED metadata::attributes::AbstractObjectAttributes::ptr
           initAttributes) override {
     return true;
-  };
+  }
 
   /**
    * @brief Finalize the creation of the link.
    * @return whether successful finalization.
    */
-  bool finalizeObject() override { return true; };
+  bool finalizeObject() override { return true; }
 
   void setTransformation(
       CORRADE_UNUSED const Magnum::Matrix4& transformation) override {
     Corrade::Utility::Debug()
         << "(setTransformation) - ArticulatedLink can't do this.";
-  };
+  }
 
   void setTranslation(CORRADE_UNUSED const Magnum::Vector3& vector) override {
     Corrade::Utility::Debug()
         << "(setTranslation) - ArticulatedLink can't do this.";
-  };
+  }
 
   void setRotation(
       CORRADE_UNUSED const Magnum::Quaternion& quaternion) override {
     Corrade::Utility::Debug()
         << "(setRotation) - ArticulatedLink can't do this.";
-  };
+  }
 
   void setRigidState(
       CORRADE_UNUSED const core::RigidState& rigidState) override {
     Corrade::Utility::Debug()
         << "(setRigidState) - ArticulatedLink can't do this.";
-  };
+  }
 
   void resetTransformation() override {
     Corrade::Utility::Debug()
@@ -196,13 +196,13 @@ class ArticulatedLink : public RigidBase {
    * @brief Finalize the initialization of this link.
    * @return true if initialized successfully, false otherwise.
    */
-  bool initialization_LibSpecific() override { return true; };
+  bool initialization_LibSpecific() override { return true; }
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
    * after creation.
    * @return whether successful finalization.
    */
-  bool finalizeObject_LibSpecific() override { return true; };
+  bool finalizeObject_LibSpecific() override { return true; }
 
   // end RigidBase overrides
 
@@ -315,7 +315,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
     return false;
   };
 
-  virtual Magnum::Matrix4 getRootState() { return {}; };
+  virtual Magnum::Matrix4 getRootState() { return {}; }
 
   // update the SceneNode state to match the simulation state
   virtual void updateNodes(CORRADE_UNUSED bool force = false) {
@@ -331,9 +331,9 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
     }
     CHECK(links_.count(id));
     return *links_.at(id).get();
-  };
+  }
 
-  int getNumLinks() { return links_.size(); };
+  int getNumLinks() { return links_.size(); }
 
   std::vector<int> getLinkIds() {
     std::vector<int> ids;
@@ -341,30 +341,30 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
       ids.push_back(it->first);
     }
     return ids;
-  };
+  }
 
-  virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state){};
+  virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state) {}
 
-  virtual void setForces(CORRADE_UNUSED const std::vector<float>& forces){};
+  virtual void setForces(CORRADE_UNUSED const std::vector<float>& forces) {}
 
-  virtual std::vector<float> getForces() { return {}; };
+  virtual std::vector<float> getForces() { return {}; }
 
-  virtual void setVelocities(CORRADE_UNUSED const std::vector<float>& vels){};
+  virtual void setVelocities(CORRADE_UNUSED const std::vector<float>& vels) {}
 
-  virtual std::vector<float> getVelocities() { return {}; };
+  virtual std::vector<float> getVelocities() { return {}; }
 
   virtual void setPositions(
-      CORRADE_UNUSED const std::vector<float>& positions){};
+      CORRADE_UNUSED const std::vector<float>& positions) {}
 
-  virtual std::vector<float> getPositions() { return {}; };
+  virtual std::vector<float> getPositions() { return {}; }
 
   virtual std::vector<float> getPositionLimits(
       CORRADE_UNUSED bool upperLimits = false) {
     return {};
-  };
+  }
 
   virtual void addArticulatedLinkForce(CORRADE_UNUSED int linkId,
-                                       CORRADE_UNUSED Magnum::Vector3 force){};
+                                       CORRADE_UNUSED Magnum::Vector3 force) {}
 
   virtual float getArticulatedLinkFriction(CORRADE_UNUSED int linkId) {
     return 0;
@@ -376,16 +376,16 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief reset the articulated rigid body to 0 velocities and positions.
    */
-  virtual void reset(){};
+  virtual void reset() {}
 
   virtual void setActive(CORRADE_UNUSED bool active){};
 
-  virtual bool isActive() { return true; };
+  virtual bool isActive() const { return true; };
 
   //! Check if this object can be de-activated (i.e. sleep).
-  virtual bool getCanSleep() { return false; };
+  virtual bool getCanSleep() { return false; }
 
-  virtual MotionType getMotionType() { return motionType_; };
+  virtual MotionType getMotionType() { return objectMotionType_; };
 
   virtual void setMotionType(CORRADE_UNUSED MotionType mt){};
 
@@ -404,7 +404,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
     Magnum::Debug{} << "No base implementation of \"createJointMotor\". "
                        "Requires a physics simulator implementation.";
     return ID_UNDEFINED;
-  };
+  }
 
   /**
    * @brief Remove and destroy a joint motor.
@@ -412,7 +412,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual void removeJointMotor(const int motorId) {
     CHECK(jointMotors_.count(motorId) > 0);
     jointMotors_.erase(motorId);
-  };
+  }
 
   /**
    * @brief Get a copy of the JointMotorSettings for an existing motor.
@@ -420,7 +420,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual JointMotorSettings getJointMotorSettings(const int motorId) {
     CHECK(jointMotors_.count(motorId) > 0);
     return jointMotors_.at(motorId)->settings;
-  };
+  }
 
   /**
    * @brief Update a JointMotor with new settings.
@@ -429,7 +429,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
                                 const JointMotorSettings& settings) {
     CHECK(jointMotors_.count(motorId) > 0);
     jointMotors_.at(motorId)->settings = settings;
-  };
+  }
 
   /**
    * @brief Query a map of motorIds -> dofs for all active JointMotors.
@@ -440,7 +440,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
       motorIdsToDofIds[motor.first] = motor.second->dof;
     }
     return motorIdsToDofIds;
-  };
+  }
 
   /**
    * @brief Create a new set of default JointMotors for all valid dofs in an
@@ -455,7 +455,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
     Magnum::Debug{} << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
                        "SHOULD NOT BE CALLED WITH BULLET ";
     return std::map<int, int>();
-  };
+  }
 
   /**
    * @brief Set whether articulated object state is automatically clamped to
@@ -477,7 +477,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void clampJointLimits() {
     Magnum::Debug{} << "No base implementation of \"clampJointLimits\". ";
-  };
+  }
 
   //=========== END - Joint Motor API ===========
 
@@ -492,7 +492,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
           std::map<std::string, std::shared_ptr<io::URDF::Material>>& materials,
       CORRADE_UNUSED gfx::DrawableGroup* drawables) {
     return false;
-  };
+  }
 
   //! map linkId to ArticulatedLink
   std::map<int, ArticulatedLink::uptr> links_;
@@ -503,7 +503,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   //! map motorId to JointMotor
   std::map<int, JointMotor::uptr> jointMotors_;
 
-  MotionType motionType_ = MotionType::KINEMATIC;
+  MotionType objectMotionType_ = MotionType::KINEMATIC;
 
   //! Reference to the ResourceManager for internal access to the object's asset
   //! data.

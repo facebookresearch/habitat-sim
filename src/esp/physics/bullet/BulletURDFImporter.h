@@ -81,7 +81,7 @@ struct URDF2BulletCached {
 class BulletURDFImporter : public URDFImporter {
  public:
   BulletURDFImporter(esp::assets::ResourceManager& resourceManager)
-      : URDFImporter(resourceManager){};
+      : URDFImporter(resourceManager) {}
 
   ~BulletURDFImporter() override = default;
 
