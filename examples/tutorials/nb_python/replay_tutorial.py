@@ -214,7 +214,7 @@ observations += simulate_with_moving_agent(
 
 obj_templates_mgr = sim.get_object_template_manager()
 
-obj_templates_mgr.load_configs(str(os.path.join(data_path, "objects")))
+obj_templates_mgr.load_configs(str(os.path.join(data_path, "objects/example_objects")))
 chefcan_template_handle = obj_templates_mgr.get_template_handles(
     "data/objects/example_objects/chefcan"
 )[0]

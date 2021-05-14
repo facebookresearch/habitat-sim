@@ -185,7 +185,9 @@ if __name__ == "__main__":
     # [dynamic_control]
 
     observations = []
-    obj_templates_mgr.load_configs(str(os.path.join(data_path, "objects")))
+    obj_templates_mgr.load_configs(
+        str(os.path.join(data_path, "objects/example_objects/"))
+    )
     # search for an object template by key sub-string
     cheezit_template_handle = obj_templates_mgr.get_template_handles(
         "data/objects/example_objects/cheezit"

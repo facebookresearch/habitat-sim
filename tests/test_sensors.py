@@ -85,7 +85,7 @@ _semantic_scenes = [
     osp.abspath(
         osp.join(
             osp.dirname(__file__),
-            "../data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb",
+            "../data/scene_datasets/mp3d_test/17DRP5sb8fy/17DRP5sb8fy.glb",
         )
     ),
 ]
