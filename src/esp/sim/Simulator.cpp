@@ -436,11 +436,13 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // 5. Load object instances as spceified by Scene Instance Attributes.
   bool success = instanceObjectsForActiveScene();
 
-  // TODO : reset may eventually have all the scene instance instantiation
-  // code so that scenes can be reset
   if (success) {
+    // 6. Load articulated object instances as spceified by Scene Instance
+    // Attributes.
     success = instanceArticulatedObjectsForActiveScene();
     if (success) {
+      // TODO : reset may eventually have all the scene instance instantiation
+      // code so that scenes can be reset
       reset();
     }
   }
@@ -468,7 +470,7 @@ bool Simulator::instanceObjectsForActiveScene() {
 
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
-  // vector holding all objects added
+  // vector holding all objects added (for informational purposes)
   std::vector<int> objectsAdded;
   int objID = 0;
 
@@ -591,9 +593,45 @@ bool Simulator::instanceArticulatedObjectsForActiveScene() {
     if (attrObjMotionType != physics::MotionType::UNDEFINED) {
       physicsManager_->setArticulatedObjectMotionType(aoID, attrObjMotionType);
     }
+    // set initial joint positions
+    std::vector<float> aoJointPose =
+        physicsManager_->getArticulatedObjectPositions(aoID);
+    std::map<std::string, float>& initJointPos = artObjInst->getInitJointPose();
+    // map instance vals into
+    int idx = 0;
+    for (const auto& elem : initJointPos) {
+      aoJointPose[idx++] = elem.second;
+      if (idx >= aoJointPose.size()) {
+        LOG(WARNING) << errMsgTmplt
+                     << "Attempting to specify more initial joint poses than "
+                        "exist in articulated object "
+                     << artObjInst->getHandle() << ", so skipping";
+        break;
+      }
+    }
+    physicsManager_->setArticulatedObjectPositions(aoID, aoJointPose);
+    // set initial joint velocities
+    std::vector<float> aoJointVels =
+        physicsManager_->getArticulatedObjectVelocities(aoID);
+    std::map<std::string, float>& initJointVel =
+        artObjInst->getInitJointVelocities();
+    idx = 0;
+    for (const auto& elem : initJointVel) {
+      aoJointVels[idx++] = elem.second;
+      if (idx >= aoJointVels.size()) {
+        LOG(WARNING)
+            << errMsgTmplt
+            << "Attempting to specify more initial joint velocities than "
+               "exist in articulated object "
+            << artObjInst->getHandle() << ", so skipping";
+        break;
+      }
+    }
 
+    physicsManager_->setArticulatedObjectVelocities(aoID, aoJointVels);
     artObjsAdded.push_back(aoID);
   }  // for each articulated object instance
+  return true;
 }  // Simulator::instanceArticulatedObjectsForActiveScene
 
 bool Simulator::createSceneInstanceNoRenderer(
