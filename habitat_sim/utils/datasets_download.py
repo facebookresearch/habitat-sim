@@ -6,6 +6,7 @@
 
 import argparse
 import os
+import pathlib
 import shutil
 import sys
 import traceback
@@ -34,35 +35,36 @@ def initialize_test_data_sources(data_path):
         #   "package_name": the filename of the downloaded compressed package
         #   "download_pre_args": (optional)(wget) commands preceding filename
         #   "download_post_args": (optional)(wget) commands follow filename
-        #   "unpack_to": destination path for uncompression of the download package
         #   "link": symlink to the data directory pointing to the active version directory
         #   "version": data version tag
         # }
         "habitat_test_scenes": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
-            "package_name": "habitat-test-scenes.zip",
-            "unpack_to": data_path + "../",
+            "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes_v1.0.zip",
+            "package_name": "habitat-test-scenes_v1.0.zip",
             "link": data_path + "scene_datasets/habitat-test-scenes",
+            "version": "1.0",
+        },
+        "habitat_test_pointnav_dataset": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-pointnav-dataset_v1.0.zip",
+            "package_name": "habitat-test-pointnav-dataset_v1.0.zip",
+            "link": data_path + "datasets/pointnav/habitat-test-scenes",
             "version": "1.0",
         },
         "habitat_example_objects": {
             "source": "http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip",
             "package_name": "objects_v0.2.zip",
-            "unpack_to": data_path + "objects/example_objects/",
             "link": data_path + "objects/example_objects",
             "version": "0.2",
         },
         "locobot_merged": {
             "source": "http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip",
             "package_name": "locobot_merged_v0.2.zip",
-            "unpack_to": data_path + "objects/locobot_merged/",
             "link": data_path + "objects/locobot_merged",
             "version": "0.2",
         },
         "mp3d_test_scene": {
             "source": "http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip",
             "package_name": "mp3d_example.zip",
-            "unpack_to": data_path + "scene_datasets/mp3d_test/",
             "link": data_path + "scene_datasets/mp3d_test",
             "version": "1.0",
         },
@@ -71,7 +73,6 @@ def initialize_test_data_sources(data_path):
             "package_name": "coda.zip",
             "download_pre_args": "--no-check-certificate ",
             "download_post_args": " -O " + data_path + "coda.zip",
-            "unpack_to": data_path + "scene_datasets/",
             "link": data_path + "scene_datasets/coda",
             "version": "1.0",
         },
@@ -81,6 +82,7 @@ def initialize_test_data_sources(data_path):
     data_groups = {
         "ci_test_assets": [
             "habitat_test_scenes",
+            "habitat_test_pointnav_dataset",
             "habitat_example_objects",
             "locobot_merged",
             "mp3d_test_scene",
@@ -112,7 +114,7 @@ def clean_data(uid):
     version_tag = data_sources[uid]["version"]
     version_dir = os.path.join(data_path, "versioned_data/" + uid + "_" + version_tag)
     print(
-        f"Cleaning datasource ({uid}). Directory: {version_dir}. Symlink: {link_path}"
+        f"Cleaning datasource ({uid}). Directory: '{version_dir}'. Symlink: '{link_path}'."
     )
     try:
         shutil.rmtree(version_dir)
@@ -129,14 +131,15 @@ def download_and_place(uid, replace=False):
         print(f"Data download failed, no datasource named {uid}")
         return
 
-    link_path = os.path.join(data_path, data_sources[uid]["link"])
+    # link_path = os.path.join(data_path, data_sources[uid]["link"])
+    link_path = pathlib.Path(data_sources[uid]["link"])
     version_tag = data_sources[uid]["version"]
     version_dir = os.path.join(data_path, "versioned_data/" + uid + "_" + version_tag)
 
     # check for current version
     if os.path.exists(version_dir):
         print(
-            f"Existing data source ({uid}) version ({version_tag}) is current. Data located: {version_dir}. Symblink: {link_path}"
+            f"Existing data source ({uid}) version ({version_tag}) is current. Data located: '{version_dir}'. Symblink: '{link_path}'."
         )
         replace_existing = (
             replace if replace else prompt_yes_no("Replace versioned data?")
@@ -151,10 +154,12 @@ def download_and_place(uid, replace=False):
             )
             print("=======================================================")
             # create a symlink to the versioned data
-            if os.path.exists(link_path):
+            if link_path.exists():
                 os.unlink(link_path)
+            elif not link_path.parent.exists():
+                link_path.parent.mkdir(parents=True, exist_ok=True)
             os.symlink(src=version_dir, dst=link_path, target_is_directory=True)
-            assert os.path.exists(link_path), "Failed, no symlink generated."
+            assert link_path.exists(), "Failed, no symlink generated."
             return
 
     # download new version
@@ -188,17 +193,21 @@ def download_and_place(uid, replace=False):
     assert os.path.exists(version_dir), "Unpacking failed, no version directory."
 
     # create a symlink to the new versioned data
+    if link_path.exists():
+        os.unlink(link_path)
+    elif not link_path.parent.exists():
+        link_path.parent.mkdir(parents=True, exist_ok=True)
     os.symlink(src=version_dir, dst=link_path, target_is_directory=True)
 
-    assert os.path.exists(link_path), "Unpacking failed, no symlink generated."
+    assert link_path.exists(), "Unpacking failed, no symlink generated."
 
     # clean-up
     os.remove(data_path + package_name)
 
     print("=======================================================")
     print(f"Dataset ({uid}) successfully downloaded.")
-    print(f"Source: {version_dir}.")
-    print(f"Symlink: {link_path}")
+    print(f"Source: '{version_dir}'")
+    print(f"Symlink: '{link_path}'")
     print("=======================================================")
 
 
