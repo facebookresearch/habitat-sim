@@ -1,6 +1,7 @@
 import collections
 from typing import List, Tuple, Union
 
+import attr
 import numpy as np
 from numpy import bool_, float32, float64, ndarray
 from quaternion import quaternion
@@ -10,7 +11,10 @@ from habitat_sim import registry as registry
 from habitat_sim.utils.common import quat_from_two_vectors
 
 
-class TopdownView(object):
+@attr.s(auto_attribs=True, init=False, slots=True)
+class TopdownView:
+    topdown_view: habitat_sim.nav.PathFinder
+
     def __init__(self, sim, height, meters_per_pixel=0.1):
         self.topdown_view = sim.pathfinder.get_topdown_view(
             meters_per_pixel, height

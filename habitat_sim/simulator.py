@@ -41,7 +41,7 @@ from habitat_sim.utils.common import quat_from_angle_axis
 
 
 @attr.s(auto_attribs=True, slots=True)
-class Configuration(object):
+class Configuration:
     r"""Specifies how to configure the simulator.
 
     :property sim_cfg: The configuration of the backend of the simulator

@@ -117,11 +117,11 @@ def create_summary_from_events(events: List[Event]) -> DefaultDict[str, SummaryI
         # iterate chronologically through later events. Our accumulated
         #  "exclusive duration" is time during which we aren't inside any
         #  overlapping, same-thread event ("child event").
-        recent_exclusive_start_time = event.start
+        recent_exclusive_start_time: Optional[int] = event.start
         child_end_times: Set[int] = set()
         for j in range(i + 1, len(events) + 1):  # note one extra iteration
 
-            other_event = None if j == len(events) else events[j]
+            other_event: Optional[Event] = None if j == len(events) else events[j]
             if other_event:
                 if other_event.thread_id != event.thread_id:
                     continue
