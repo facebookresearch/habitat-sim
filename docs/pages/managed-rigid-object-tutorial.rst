@@ -21,11 +21,13 @@ The example code below is available on `Collab`_, or runnable via:
 
     $ python path/to/habitat-sim/examples/tutorials/nb_python/managed_rigid_object_tutorial.py
 
-First, download the example objects:
+
+First, download the example objects used in this tutorial:
 
 .. code:: shell-session
 
-    $ python habitat_sim/utils/datasets_download.py --uid habitat_example_objects
+    $ python path/to/habitat-sim/habitat_sim/utils/datasets_download.py --uid habitat_example_objects --data_path path/to/habitat-sim/data/
+    $ python path/to/habitat-sim/habitat_sim/utils/datasets_download.py --uid locobot_merged --data_path path/to/habitat-sim/data/
 
 Import necessary modules, define some convenience functions, and initialize the :ref:`Simulator` and :ref:`Agent`.
 
@@ -131,10 +133,6 @@ Velocities can also be specified in the local space of the object to easily appl
 `Embodied Agents`_
 ==================
 
-For this tutorial section, you will need to download the `merged locobot asset`_ and extract it into path/to/habitat-sim/data/objects/
-
-.. _merged locobot asset: http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip
-
 Previous stages of this tutorial have covered adding objects to the world and manipulating them by setting positions, velocity, forces, and torques.
 In all of these examples, the agent has been a passive onlooker observing the scene.
 However, the agent can also be attached to a simulated object for embodiement and control.
@@ -152,10 +150,6 @@ In this example, the agent is embodied by a rigid robot asset and the :ref:`habi
 
 `Continuous Control on NavMesh`_
 ================================
-
-For this tutorial section, if you have not done so, you will need to download the `merged locobot asset`_ and extract it into path/to/habitat-sim/data/objects/
-
-.. _merged locobot asset: http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip
 
 Instead of full dynamic simulation, kinematic state setting and the NavMesh can be used to simulate constrained, continuous navigation tasks.
 In this example the agent is embodied by a robot asset with :ref:`habitat_sim.physics.MotionType.KINEMATIC`. We use a :ref:`habitat_sim.physics.VelocityControl` structure to manually integrate a control velocity and snap the resulting state to the NavMesh before running dynamic simulation.

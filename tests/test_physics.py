@@ -25,7 +25,7 @@ from habitat_sim.utils.common import (
 
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb")
-    or not osp.exists("data/objects/"),
+    or not osp.exists("data/objects/example_objects/"),
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
 def test_kinematics():
@@ -42,7 +42,7 @@ def test_kinematics():
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         obj_mgr = sim.get_object_template_manager()
-        obj_mgr.load_configs("data/objects/", True)
+        obj_mgr.load_configs("data/objects/example_objects/", True)
         assert obj_mgr.get_num_templates() > 0
 
         # test adding an object to the world
@@ -131,7 +131,7 @@ def test_kinematics():
 
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb")
-    or not osp.exists("data/objects/"),
+    or not osp.exists("data/objects/example_objects/"),
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
 def test_dynamics():
@@ -151,7 +151,7 @@ def test_dynamics():
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         obj_mgr = sim.get_object_template_manager()
-        obj_mgr.load_configs("data/objects/", True)
+        obj_mgr.load_configs("data/objects/example_objects/", True)
         # make the simulation deterministic (C++ seed is set in reconfigure)
         np.random.seed(cfg_settings["seed"])
         assert obj_mgr.get_num_templates() > 0

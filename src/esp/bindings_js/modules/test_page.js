@@ -31,9 +31,9 @@ class TestPage {
     );
     preloadFunc(fileNoExtension + ".navmesh");
 
-    preloadFunc("data/objects/cheezit.glb", true);
+    preloadFunc("data/objects/example_objects/cheezit.glb", true);
     this.objHandle = preloadFunc(
-      "data/objects/cheezit.object_config.json",
+      "data/objects/example_objects/cheezit.object_config.json",
       true
     );
 
