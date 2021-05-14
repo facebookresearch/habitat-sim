@@ -206,7 +206,10 @@ Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 ## Testing
 
-1. Download the test scenes from this [link](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally.
+1. Run our python data download utility from the habitat-sim/ directory with your conda env activated to retrieve the test assets:
+   ```bash
+   python habitat_sim/utils/datasets_download.py --uid habitat_test_scenes
+   ```
 
 1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim
    ```bash
@@ -214,21 +217,22 @@ Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
    habitat-viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    You should be able to control an agent in this test scene.
-   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
+   Use W/A/S/D keys to move forward/left/backward/right and arrow keys or mouse to control gaze direction (look up/down/left/right).
    Try to find the picture of a woman surrounded by a wreath.
    Have fun!
 
-1. **Physical interactions**: If you would like to try out habitat with dynamical objects, first download our pre-processed object data-set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip) and extract as `habitat-sim/data/objects/`.
+1. **Physical interactions**: If you would like to try out habitat with dynamical objects using the interactive viewer:
+   First setup the test object assets by running the data download utility from the habitat-sim/ directory:
+   ```bash
+   python habitat_sim/utils/datasets_download.py --uid habitat_example_objects
+   ```
 
    To run an interactive C++ example GUI application with physics enabled run
    ```bash
    # ./build/viewer if compiling locally
-   habitat-viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
+   habitat-viewer --enable-physics --object-dir data/objects/example_objects -- data/scene_datasets/habitat-test-scenes/apartment_1.glb
    ```
-   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
-   Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it.
-   Press 'k' to kinematically nudge the last added object in a random direction.
-   Press 'v' key to invert gravity.
+   The viewer application will output user interface help to the console at runtime.
 
 1. **Non-interactive testing**: Run the example script:
    ```bash
