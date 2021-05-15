@@ -54,7 +54,7 @@ option(USE_SYSTEM_BULLET "Use system Bullet instead of a bundled submodule" OFF)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 cmake_policy(SET CMP0063 NEW)
-if(NOT CORRADE_TARGET_EMSCRIPTEN)
+if(NOT CORRADE_TARGET_EMSCRIPTEN AND NOT CORRADE_TARGET_APPLE)
   set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
   cmake_policy(SET CMP0069 NEW)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
@@ -69,6 +69,9 @@ if(NOT CMAKE_BUILD_TYPE)
           "Choose build, options are: None Debug Release RelWithDebInfo MinSizeRel"
           FORCE
   )
+endif()
+if(NOT CORRADE_TARGET_EMSCRIPTEN AND NOT CORRADE_TARGET_APPLE)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
 # but need cmake_policy(SET CMP0063 NEW) also which seems to not work
