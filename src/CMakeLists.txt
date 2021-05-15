@@ -52,12 +52,9 @@ option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule
 option(USE_SYSTEM_BULLET "Use system Bullet instead of a bundled submodule" OFF)
 
 set(CMAKE_CXX_STANDARD 14)
+# Policy for default visibility
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 cmake_policy(SET CMP0063 NEW)
-#if(NOT CORRADE_TARGET_EMSCRIPTEN AND NOT CORRADE_TARGET_APPLE)
-set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-cmake_policy(SET CMP0069 NEW)
-#endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_BUILD_TYPE)
@@ -69,10 +66,16 @@ if(NOT CMAKE_BUILD_TYPE)
           FORCE
   )
 endif()
-if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=full")
-else()
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # Policy that enable INTERPROCEDURAL_OPTIMIZATIOn
+  set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+  cmake_policy(SET CMP0069 NEW)
+  # Clang has some issues with thinLTO (Segfaults on final linking)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+endif()
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  # FullLTO is slow, but may yield performance improvements.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
 # but need cmake_policy(SET CMP0063 NEW) also which seems to not work
