@@ -178,7 +178,7 @@ commands:
             - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache:
           keys:
-            # - ccache-{{ arch }}-{{ .Branch }}
+            - ccache-{{ arch }}-{{ .Branch }}
             - ccache-{{ arch }}-master
           paths:
             - /home/circleci/.ccache
