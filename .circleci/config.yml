@@ -10,6 +10,14 @@ commands:
     description: "Prepares the dependencies"
     steps:
       - run:
+          name: Install clang-tidy
+          command: |
+              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
+              sudo apt-get update -y || true
+              sudo apt-get install -y clang-tidy-12
+              sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
+              clang-tidy --version
+      - run:
           name: Install cmake
           no_output_timeout: 5m
           # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
@@ -548,14 +556,6 @@ jobs:
       - checkout:
           path: ./habitat-sim
       - install_all_ubuntu_deps
-      - run:
-          name: Install clang-tidy
-          command: |
-              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
-              sudo apt-get update -y || true
-              sudo apt-get install -y clang-tidy-12
-              sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
-              clang-tidy --version
       - run:
           name: Build, install habitat-sim and run benchmark
           no_output_timeout: 25m
