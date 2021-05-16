@@ -556,6 +556,7 @@ jobs:
       - checkout:
           path: ./habitat-sim
       - install_all_ubuntu_deps
+      - run: *download_test_data
       - run:
           name: Build, install habitat-sim and run benchmark
           no_output_timeout: 25m
