@@ -190,7 +190,7 @@ commands:
             ccache --show-stats
             ccache --zero-stats
             ccache --max-size=10.0G
-      - run:
+      - run: &ccache_stats
           name: Ccache stats
           when: always
           command: |
@@ -528,6 +528,7 @@ jobs:
           background: true
           paths:
             - /home/circleci/.ccache
+      - run: *ccache_stats
       - run:
           name: Upload test coverage
           command: |
