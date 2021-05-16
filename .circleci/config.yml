@@ -178,7 +178,7 @@ commands:
             - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache:
           keys:
-            # - ccache-{{ arch }}-{{ .Branch }}
+            - ccache-{{ arch }}-{{ .Branch }}
             - ccache-{{ arch }}-master
           paths:
             - /home/circleci/.ccache
@@ -190,13 +190,7 @@ commands:
             ccache --show-stats
             ccache --zero-stats
             ccache --max-size=10.0G
-      - run:
-          name: Ccache stats
-          when: always
-          command: |
-            export PATH=$HOME/miniconda/bin:$PATH
-            . activate habitat;
-            ccache --show-stats
+
 jobs:
   python_lint:
     docker:
@@ -459,6 +453,31 @@ jobs:
           command: |
               cat /proc/cpuinfo
       - install_all_ubuntu_deps
+      - run:
+          name: Build, install habitat-sim and run benchmark
+          no_output_timeout: 25m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install -r requirements.txt --progress-bar off
+              pip install imageio imageio-ffmpeg
+              git submodule update --init --recursive --jobs 16
+              python -u setup.py install --headless --vhacd
+      - run:
+          name: run clang-tidy
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              python tools/run-clang-tidy.py -header-filter=src/esp src/esp
+      - run:
+          name: Ccache stats
+          when: always
+          command: |
+            export PATH=$HOME/miniconda/bin:$PATH
+            . activate habitat;
+            ccache --show-stats
       - run: *download_test_data
       - run:
           name: Build Javascript bindings
@@ -479,6 +498,12 @@ jobs:
               # switch back to cmake 3.10
               sudo rm /usr/local/bin/cmake
               sudo ln -s /opt/cmake310/bin/cmake /usr/local/bin/cmake
+      - run:
+          name: Run sim benchmark
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
       - run:
           name: Run JavaScript tests
           command: |
@@ -548,38 +573,6 @@ jobs:
               lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
               lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
-
-
-  clang_tidy_and_benchmark:
-    <<: *gpu
-    steps:
-      - checkout:
-          path: ./habitat-sim
-      - install_all_ubuntu_deps
-      - run:
-          name: Build, install habitat-sim and run benchmark
-          no_output_timeout: 25m
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              pip install -r requirements.txt --progress-bar off
-              pip install imageio imageio-ffmpeg
-              git submodule update --init --recursive --jobs 16
-              python -u setup.py install --headless --vhacd
-      - run:
-          name: run clang-tidy
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              python tools/run-clang-tidy.py -header-filter=src/esp src/esp
-      - run:
-          name: Run sim benchmark
-          command: |
-              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat; cd habitat-sim
-              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
 
 
 
@@ -678,7 +671,6 @@ workflows:
   version: 2
   install_and_test:
     jobs:
-      - clang_tidy_and_benchmark
       - python_lint
       - cpp_lint
       - js_lint
@@ -694,7 +686,6 @@ workflows:
             branches:
               only: master
     jobs:
-      - clang_tidy_and_benchmark
       - lab_build_habitat
       - install_and_test_ubuntu
       - test_conda_build
@@ -722,8 +713,6 @@ workflows:
               only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
             branches:
               ignore: /.*/
-      - clang_tidy_and_benchmark:
-          filters: *version_filter
       - test_conda_build:
           filters: *version_filter
       - install_and_test_ubuntu:
