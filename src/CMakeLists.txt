@@ -63,7 +63,6 @@ if(NOT CMAKE_BUILD_TYPE)
           FORCE
   )
 endif()
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -v")
 if(CMAKE_BUILD_TYPE MATCHES "Rel")
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # Clang has some issues with thinLTO (segfaults on final linking)
