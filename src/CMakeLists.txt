@@ -53,8 +53,6 @@ option(USE_SYSTEM_BULLET "Use system Bullet instead of a bundled submodule" OFF)
 
 set(CMAKE_CXX_STANDARD 14)
 # Policy for default visibility
-set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
-cmake_policy(SET CMP0063 NEW)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_BUILD_TYPE)
@@ -66,19 +64,25 @@ if(NOT CMAKE_BUILD_TYPE)
           FORCE
   )
 endif()
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # ThinLTO is causing build issues
+  # FullLTO is slow, but may yield performance improvements.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
+  #else()
   # Policy that enable INTERPROCEDURAL_OPTIMIZATIOn
   set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
   cmake_policy(SET CMP0069 NEW)
   # Clang has some issues with thinLTO (Segfaults on final linking)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-  # FullLTO is slow, but may yield performance improvements.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
-endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
 # but need cmake_policy(SET CMP0063 NEW) also which seems to not work
+# TODO Figure out how to remove the visibility flags from Bullet
+#set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
+#cmake_policy(SET CMP0063 NEW)
+#set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+#set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 
 # ---[ Dependencies
