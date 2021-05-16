@@ -70,10 +70,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 else()
-  # Policy that enable INTERPROCEDURAL_OPTIMIZATIOn
+  # Policy that enables INTERPROCEDURAL_OPTIMIZATION
   set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
   cmake_policy(SET CMP0069 NEW)
-  # Clang has some issues with thinLTO (Segfaults on final linking)
+  # Clang has some issues with thinLTO (segfaults on final linking)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
