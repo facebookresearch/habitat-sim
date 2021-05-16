@@ -52,7 +52,6 @@ option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule
 option(USE_SYSTEM_BULLET "Use system Bullet instead of a bundled submodule" OFF)
 
 set(CMAKE_CXX_STANDARD 14)
-# Policy for default visibility
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_BUILD_TYPE)
