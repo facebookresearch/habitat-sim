@@ -4,7 +4,8 @@
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
 
-#pragma once
+#ifndef ESP_PHYSICS_BULLET_BULLETURDFIMPORTER_H_
+#define ESP_PHYSICS_BULLET_BULLETURDFIMPORTER_H_
 
 #include <btBulletDynamicsCommon.h>
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
@@ -123,3 +124,5 @@ void processContactParameters(const io::URDF::LinkContactInfo& contactInfo,
 
 }  // namespace physics
 }  // namespace esp
+
+#endif  // ESP_PHYSICS_BULLET_BULLETURDFIMPORTER_H_
