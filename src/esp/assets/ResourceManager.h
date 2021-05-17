@@ -555,42 +555,29 @@ class ResourceManager {
 
   /**
    * @brief Easy import for an asset resource, creating and registering a
-   * MeshMetaData in resourceDict.
+   * MeshMetaData in resourceDict and an AssetInfo. Optionally instance an asset
+   * by providing parent node, and drawables. Optionally setup a custom override
+   * material and cache the modified asset.
    * @param filename The asset filepath.
    * @param requiresLighting Whether or not the asset should be prepared for
    * rendering with lights.
-   * @return Whether or not the asset is imported.
-   */
-  bool importAsset(const std::string& filename, bool requiresLighting = true);
-
-  /**
-   * @brief Create or modify an <asset>_MatMod resource with a new material.
-   * @param filename The original asset name. Will be converted to
-   * <asset>_MatMod internally.
-   * @param matColor The mat color (ambient and diffuse) for the modified asset.
-   * @param specularColor The specular color for the modified asset.
-   * @return The name of the modified asset for attachement to SceneNode with
-   * @ref attachAsset or empty if failed.
-   */
-  std::string setupMaterialModifiedAsset(const std::string& filename,
-                                         const Magnum::Color4& matColor,
-                                         const Magnum::Color3& specularColor);
-
-  /**
-   * @brief Easy Drawable creation and attachment for a visual asset to a
-   * SceneNode.
-   * @param filename The asset filepath or asset key in resourceDict_.
-   * @param node The parent node under which the visual node hierarchy will be
+   * @param materialOverride If provided, an additional AssetInfo and
+   * MeshMetaData are created overriding the asset material with a PhongMaterial
+   * generated from these parameters
+   * @param parent The parent node under which the visual node hierarchy will be
    * generated.
+   * @param drawables The DrawableGroup to which new Drawables will be added.
    * @param visNodeCache A reference to a SceneNode* vector which caches all new
    * SceneNodes created by the attachment process.
-   * @param drawables The DrawableGroup to which new Drawables will be added.
-   * @return Whether or not the attachment succeeded.
+   * @return Whether or not the asset is imported.
    */
-  bool attachAsset(const std::string& filename,
-                   scene::SceneNode& node,
-                   std::vector<scene::SceneNode*>& visNodeCache,
-                   DrawableGroup* drawables);
+  bool loadAsset(
+      const std::string& filename,
+      bool requiresLighting = true,
+      const esp::assets::PhongMaterialColor* materialOverride = nullptr,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      std::vector<scene::SceneNode*>* visNodeCache = nullptr);
 
   /**
    * @brief Set a replay recorder so that ResourceManager can notify it about
