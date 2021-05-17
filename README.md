@@ -318,7 +318,7 @@ Load a specific MP3D or Gibson house: `examples/example.py --scene path/to/mp3d/
 
 Additional arguments to `example.py` are provided to change the sensor configuration, print statistics of the semantic annotations in a scene, compute action-space shortest path trajectories, and set other useful functionality. Refer to the `example.py` and `demo_runner.py` source files for an overview.
 
-To reproduce the benchmark table from above run `examples/benchmark.py --scene /path/to/mp3d_test/17DRP5sb8fy/17DRP5sb8fy.glb`.
+To reproduce the benchmark table from above run `examples/benchmark.py --scene /path/to/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb`.
 
 
 ## Code Style

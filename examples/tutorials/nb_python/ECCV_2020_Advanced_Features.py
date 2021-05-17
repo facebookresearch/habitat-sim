@@ -496,7 +496,7 @@ def make_default_settings():
     settings = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
-        "scene": "./data/scene_datasets/mp3d_test/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
+        "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
         "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
@@ -846,7 +846,7 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
 # %%
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
 sim_settings = make_default_settings()
-sim_settings["scene"] = "./data/scene_datasets/mp3d_test/17DRP5sb8fy/17DRP5sb8fy.glb"
+sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 sim_settings["sensor_pitch"] = 0
 
 make_simulator_from_settings(sim_settings)
@@ -1001,7 +1001,7 @@ remove_all_objects(sim)
 # @markdown ###Configuring Object Semantic IDs:
 
 sim_settings = make_default_settings()
-sim_settings["scene"] = "./data/scene_datasets/mp3d_test/17DRP5sb8fy/17DRP5sb8fy.glb"
+sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 sim_settings["sensor_pitch"] = 0
 sim_settings["semantic_sensor_1st_person"] = True
 

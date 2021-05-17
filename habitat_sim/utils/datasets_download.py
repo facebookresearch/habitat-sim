@@ -55,10 +55,10 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "objects/locobot_merged",
             "version": "0.2",
         },
-        "mp3d_test_scene": {
+        "mp3d_example_scene": {
             "source": "http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip",
             "package_name": "mp3d_example.zip",
-            "link": data_path + "scene_datasets/mp3d_test",
+            "link": data_path + "scene_datasets/mp3d_example",
             "version": "1.0",
         },
         "coda_scene": {
@@ -78,7 +78,7 @@ def initialize_test_data_sources(data_path):
             "habitat_test_pointnav_dataset",
             "habitat_example_objects",
             "locobot_merged",
-            "mp3d_test_scene",
+            "mp3d_example_scene",
             "coda_scene",
         ]
     }

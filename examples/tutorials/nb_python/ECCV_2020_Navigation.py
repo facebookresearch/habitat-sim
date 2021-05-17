@@ -157,7 +157,7 @@ if display:
 # %%
 # This is the scene we are going to load.
 # we support a variety of mesh formats, such as .glb, .gltf, .obj, .ply
-test_scene = "./data/scene_datasets/mp3d_test/17DRP5sb8fy/17DRP5sb8fy.glb"
+test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 
 sim_settings = {
     "scene": test_scene,  # Scene path
@@ -281,7 +281,7 @@ navigateAndSee(action)
 # %%
 # @title Configure Sim Settings
 
-test_scene = "./data/scene_datasets/mp3d_test/17DRP5sb8fy/17DRP5sb8fy.glb"
+test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 
 rgb_sensor = True  # @param {type:"boolean"}
 depth_sensor = True  # @param {type:"boolean"}
@@ -956,7 +956,7 @@ if not use_current_scene:
     # reload a default nav scene
     sim_settings[
         "scene"
-    ] = "./data/scene_datasets/mp3d_test/17DRP5sb8fy/17DRP5sb8fy.glb"
+    ] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
     cfg = make_cfg(sim_settings)
     try:  # make initialization Colab cell order proof
         sim.close()
