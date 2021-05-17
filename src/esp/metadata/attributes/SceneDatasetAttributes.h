@@ -272,7 +272,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    */
   void setArticulatedObjectModelFilename(const std::string& key,
                                          const std::string& val) {
-    if (!articulatedObjPaths.count(key) == 0) {
+    if (articulatedObjPaths.count(key) != 0) {
       LOG(WARNING)
           << "SceneDatasetAttributes::setArticulatedObjectModelFilename "
              ": Articulated model filepath named "
