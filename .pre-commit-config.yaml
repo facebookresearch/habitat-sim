@@ -64,7 +64,7 @@ repos:
         - flake8-builtins==1.5.3
         - flake8-comprehensions==3.4.0
         - flake8-return==1.1.2
-        - flake8-simplify==0.14.0
+        - flake8-simplify==0.14.1
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v0.812'
