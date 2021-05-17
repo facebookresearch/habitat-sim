@@ -91,10 +91,8 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       break;
     }
     case io::URDF::GEOM_MESH: {
-      // TODO: implement this from resourceManager_ structures. Share with
-      // RigidBody interface (pull that out?)
       bool meshSuccess =
-          resourceManager_.importAsset(collision->m_geometry.m_meshFileName);
+          resourceManager_.loadAsset(collision->m_geometry.m_meshFileName);
 
       if (meshSuccess) {
         const std::vector<assets::CollisionMeshData>& meshGroup =

@@ -296,37 +296,32 @@ bool BulletArticulatedObject::attachGeometry(
         // TODO:
         break;
       case io::URDF::GEOM_MESH: {
-        // Corrade::Utility::Debug() << "visual.m_geometry.m_meshFileName = "
-        //                          << visual.m_geometry.m_meshFileName;
-        // visual.m_sourceFileLocation
         visualGeomComponent.scale(visual.m_geometry.m_meshScale);
 
-        // first try to import the asset
-        bool meshSuccess =
-            resMgr_.importAsset(visual.m_geometry.m_meshFileName);
-        if (!meshSuccess) {
-          Cr::Utility::Debug() << "Failed to import the render asset: "
-                               << visual.m_geometry.m_meshFileName;
-          return false;
-        }
-
-        // create a modified asset if necessary
+        // create a modified asset if necessary for material override
         std::shared_ptr<io::URDF::Material> material =
             visual.m_geometry.m_localMaterial;
-        std::string assetMatModName =
-            material ? resMgr_.setupMaterialModifiedAsset(
-                           visual.m_geometry.m_meshFileName,
-                           material->m_matColor.m_rgbaColor,
-                           material->m_matColor.m_specularColor)
-                     : "";
 
-        // then attach
-        geomSuccess = resMgr_.attachAsset(
-            (assetMatModName.empty()
-                 ? visual.m_geometry.m_meshFileName
-                 : assetMatModName),  // use either a material modified or
-                                      // original asset
-            visualGeomComponent, linkObject->visualNodes_, drawables);
+        std::unique_ptr<esp::assets::PhongMaterialColor> materialOverrideColor =
+            material ? std::make_unique<esp::assets::PhongMaterialColor>()
+                     : nullptr;
+        if (materialOverrideColor) {
+          materialOverrideColor->ambientColor =
+              material->m_matColor.m_rgbaColor;
+          materialOverrideColor->diffuseColor =
+              material->m_matColor.m_rgbaColor;
+          materialOverrideColor->specularColor =
+              Mn::Color4(material->m_matColor.m_specularColor);
+        }
+        geomSuccess = resMgr_.loadAsset(
+            visual.m_geometry.m_meshFileName,  // original asset filename
+            true,                              // always light URDF assets
+            material ? materialOverrideColor.get()
+                     : nullptr,        // optional override material
+            &visualGeomComponent,      // parent visual node
+            drawables,                 // default drawable group
+            &linkObject->visualNodes_  // cache for new visual nodes
+        );
 
         // cache the visual component for later query
         if (geomSuccess) {

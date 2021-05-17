@@ -1993,21 +1993,25 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primitiveID);
 }
 
-bool ResourceManager::importAsset(const std::string& filename,
-                                  bool requiresLighting) {
+bool ResourceManager::loadAsset(
+    const std::string& assetName,
+    bool requiresLighting,
+    const esp::assets::PhongMaterialColor* materialOverride,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    std::vector<scene::SceneNode*>* visNodeCache) {
+  std::string finalAssetName = assetName;
   bool meshSuccess = true;
-  if (resourceDict_.count(filename) > 0) {
-    return true;
-  } else {
-    esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, filename};
+  if (resourceDict_.count(assetName) == 0) {
+    esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, assetName};
     meshinfo.requiresLighting = requiresLighting;
     meshSuccess = loadRenderAssetGeneral(meshinfo);
 
     // check if collision handle exists in collision mesh groups yet.  if not
     // then instance
-    if (collisionMeshGroups_.count(filename) == 0) {
+    if (collisionMeshGroups_.count(assetName) == 0) {
       // set collision mesh data
-      const MeshMetaData& meshMetaData = getMeshMetaData(filename);
+      const MeshMetaData& meshMetaData = getMeshMetaData(assetName);
 
       int start = meshMetaData.meshIndex.first;
       int end = meshMetaData.meshIndex.second;
@@ -2019,84 +2023,87 @@ bool ResourceManager::importAsset(const std::string& filename,
         CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
-      collisionMeshGroups_.emplace(filename, meshGroup);
+      collisionMeshGroups_.emplace(assetName, meshGroup);
     }
+  }
+
+  // handle the material override
+  if (materialOverride) {
+    // craft a unique string for this combination of material and asset
+    std::ostringstream matHandleStream;
+    matHandleStream << "phong_amb_"
+                    << materialOverride->ambientColor.toSrgbAlphaInt()
+                    << "_dif_"
+                    << materialOverride->diffuseColor.toSrgbAlphaInt()
+                    << "_spec_"
+                    << materialOverride->specularColor.toSrgbAlphaInt();
+    std::string newMaterialID = matHandleStream.str();
+
+    // check for cached material
+    auto materialResource =
+        shaderManager_.get<gfx::MaterialData>(newMaterialID);
+    if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
+      // create/register the new material
+      gfx::PhongMaterialData::uptr phongMaterial =
+          gfx::PhongMaterialData::create_unique();
+      phongMaterial->ambientColor = materialOverride->ambientColor;
+      phongMaterial->diffuseColor = materialOverride->diffuseColor;
+      phongMaterial->specularColor = materialOverride->specularColor;
+
+      std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
+      shaderManager_.set(newMaterialID, finalMaterial.release());
+    }
+
+    // create modified asset filename
+    std::string modifiedAssetName = assetName + "?" + newMaterialID;
+    // register the copy if not done already
+    if (resourceDict_.count(modifiedAssetName) == 0) {
+      // first register the copied metaData
+      resourceDict_.emplace(modifiedAssetName,
+                            LoadedAssetData(resourceDict_.at(assetName)));
+      resourceDict_.at(modifiedAssetName).assetInfo.colorMaterialOverride =
+          true;
+      auto& phongMat =
+          resourceDict_.at(modifiedAssetName).assetInfo.overridePhongMaterial;
+      phongMat.ambientColor = materialOverride->ambientColor;
+      phongMat.diffuseColor = materialOverride->diffuseColor;
+      phongMat.specularColor = materialOverride->specularColor;
+      resourceDict_.at(modifiedAssetName).assetInfo.requiresLighting =
+          requiresLighting;
+
+      // iteratively reset the local material ids for all components
+      std::vector<MeshTransformNode*> nodeQueue;
+      nodeQueue.push_back(
+          &resourceDict_.at(modifiedAssetName).meshMetaData.root);
+      while (!nodeQueue.empty()) {
+        MeshTransformNode* node = nodeQueue.back();
+        nodeQueue.pop_back();
+        for (auto& child : node->children) {
+          nodeQueue.push_back(&child);
+        }
+        if (node->meshIDLocal != ID_UNDEFINED) {
+          node->materialID = newMaterialID;
+        }
+      }
+      // clone the collision data
+      collisionMeshGroups_.emplace(modifiedAssetName,
+                                   collisionMeshGroups_.at(assetName));
+    }
+    finalAssetName = modifiedAssetName;
+  }
+
+  //! Add asset to rendering stack
+  if (meshSuccess and parent != nullptr and drawables != nullptr) {
+    RenderAssetInstanceCreationInfo::Flags flags;
+    flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+    flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+    RenderAssetInstanceCreationInfo creation(finalAssetName, Mn::Vector3{1},
+                                             flags, DEFAULT_LIGHTING_KEY);
+
+    createRenderAssetInstance(creation, parent, drawables, visNodeCache);
   }
 
   return meshSuccess;
-}
-
-std::string ResourceManager::setupMaterialModifiedAsset(
-    const std::string& filename,
-    const Magnum::Color4& matColor,
-    const Magnum::Color3& specularColor) {
-  assert(resourceDict_.count(filename) > 0);
-
-  std::string modifiedAssetName = filename + "_MatMod";
-
-  if (resourceDict_.count(modifiedAssetName) == 0) {
-    // first register the copied metaData
-    resourceDict_.emplace(modifiedAssetName,
-                          LoadedAssetData(resourceDict_.at(filename)));
-  }
-
-  // create/set a new PhongMaterialData for the asset
-  auto& meshMetaData = resourceDict_.at(modifiedAssetName).meshMetaData;
-
-  std::ostringstream matHandleStream;
-  matHandleStream << "phong_amb_" << matColor.toSrgbAlphaInt() << "_spec_"
-                  << Mn::Color4(specularColor).toSrgbAlphaInt();
-  std::string newMaterialID = matHandleStream.str();
-
-  auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
-
-  // check for unfound resource
-  if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
-    // create/register the new material
-    gfx::PhongMaterialData::uptr phongMaterial =
-        gfx::PhongMaterialData::create_unique();
-    phongMaterial->ambientColor = matColor;
-    phongMaterial->diffuseColor = matColor;
-    phongMaterial->specularColor = specularColor;
-
-    std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
-    shaderManager_.set(newMaterialID, finalMaterial.release());
-  }
-
-  // iteratively reset the local material ids for all components
-  std::vector<MeshTransformNode*> nodeQueue;
-  nodeQueue.push_back(&meshMetaData.root);
-
-  while (!nodeQueue.empty()) {
-    MeshTransformNode* node = nodeQueue.back();
-    nodeQueue.pop_back();
-    for (auto& child : node->children) {
-      nodeQueue.push_back(&child);
-    }
-    if (node->meshIDLocal != ID_UNDEFINED) {
-      node->materialID = newMaterialID;
-    }
-  }
-
-  return modifiedAssetName;
-}
-
-bool ResourceManager::attachAsset(const std::string& filename,
-                                  scene::SceneNode& node,
-                                  std::vector<scene::SceneNode*>& visNodeCache,
-                                  DrawableGroup* drawables) {
-  if (drawables != nullptr && resourceDict_.count(filename)) {
-    MeshMetaData& meshMetaData = resourceDict_[filename].meshMetaData;
-
-    std::vector<StaticDrawableInfo> staticDrawableInfo;
-    addComponent(meshMetaData, node, DEFAULT_LIGHTING_KEY, drawables,
-                 meshMetaData.root, visNodeCache, false, staticDrawableInfo);
-    // compute the full BB hierarchy for the new tree.
-    node.computeCumulativeBB();
-  } else {
-    return false;
-  }
-  return true;
 }
 
 void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
