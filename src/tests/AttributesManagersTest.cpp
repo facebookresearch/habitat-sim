@@ -524,6 +524,25 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
               "motion_type": "DYNAMIC"
           }
       ],
+      "articulated_object_instances": [
+          {
+              "template_name": "test_urdf_template0",
+              "translation_origin": "COM",
+              "fixed_base": false,
+              "translation": [5,4,5],
+              "rotation": [0.2, 0.3, 0.4, 0.5],
+              "initial_joint_pose": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+              "initial_joint_velocities": [1.0, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6],
+              "motion_type": "DYNAMIC"
+          },
+          {
+              "template_name": "test_urdf_template1",
+              "fixed_base" : true,
+              "translation": [3, 2, 1],
+              "rotation": [0.5, 0.6, 0.7, 0.8],
+              "motion_type": "KINEMATIC"
+          }
+      ],
       "default_lighting":  "test_lighting_configuration",
       "navmesh_instance": "test_navmesh_path1",
       "semantic_scene_instance": "test_semantic_descriptor_path1"
@@ -550,7 +569,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   auto stageInstance = sceneAttr->getStageInstance();
   ASSERT_EQ(stageInstance->getHandle(), "test_stage_template");
   ASSERT_EQ(stageInstance->getTranslation(), Magnum::Vector3(1, 2, 3));
-  // verify objects
+  // verify object instances
   auto objectInstanceList = sceneAttr->getObjectInstances();
   ASSERT_EQ(objectInstanceList.size(), 2);
   auto objInstance = objectInstanceList[0];
@@ -566,6 +585,43 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, -1, -2));
   ASSERT_EQ(objInstance->getMotionType(),
             static_cast<int>(esp::physics::MotionType::DYNAMIC));
+
+  // verify articulated object instances
+  auto artObjInstances = sceneAttr->getArticulatedObjectInstances();
+  ASSERT_EQ(artObjInstances.size(), 2);
+  auto artObjInstance = artObjInstances[0];
+  ASSERT_EQ(artObjInstance->getHandle(), "test_urdf_template0");
+  ASSERT_EQ(artObjInstance->getTranslationOrigin(),
+            static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
+  ASSERT_EQ(artObjInstance->getFixedBase(), false);
+  ASSERT_EQ(artObjInstance->getTranslation(), Magnum::Vector3(5, 4, 5));
+  ASSERT_EQ(artObjInstance->getMotionType(),
+            static_cast<int>(esp::physics::MotionType::DYNAMIC));
+  // verify init join pose
+  const auto& initJointPoseMap = artObjInstance->getInitJointPose();
+  const std::vector<float> jtPoseVals{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
+  int idx = 0;
+  for (std::map<std::string, float>::const_iterator iter =
+           initJointPoseMap.begin();
+       iter != initJointPoseMap.end(); ++iter) {
+    ASSERT_EQ(iter->second, jtPoseVals[idx++]);
+  }
+  // verify init joint vels
+  const auto& initJoinVelMap = artObjInstance->getInitJointVelocities();
+  const std::vector<float> jtVelVals{1.0, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6};
+  idx = 0;
+  for (std::map<std::string, float>::const_iterator iter =
+           initJoinVelMap.begin();
+       iter != initJoinVelMap.end(); ++iter) {
+    ASSERT_EQ(iter->second, jtVelVals[idx++]);
+  }
+
+  artObjInstance = artObjInstances[1];
+  ASSERT_EQ(artObjInstance->getHandle(), "test_urdf_template1");
+  ASSERT_EQ(artObjInstance->getFixedBase(), true);
+  ASSERT_EQ(artObjInstance->getTranslation(), Magnum::Vector3(3, 2, 1));
+  ASSERT_EQ(artObjInstance->getMotionType(),
+            static_cast<int>(esp::physics::MotionType::KINEMATIC));
 
 }  // AttributesManagers_SceneInstanceJSONLoadTest
 
@@ -584,7 +640,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
         "margin": 0.9,
         "friction_coefficient": 0.321,
         "restitution_coefficient": 0.456,
-        "requires_lighting": false,
+        "requires_lighting": true,
         "units_to_meters": 1.1,
         "up":[2.1,0,0],
         "front":[0,2.1,0],
@@ -610,7 +666,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
   ASSERT_EQ(stageAttr->getMargin(), 0.9);
   ASSERT_EQ(stageAttr->getFrictionCoefficient(), 0.321);
   ASSERT_EQ(stageAttr->getRestitutionCoefficient(), 0.456);
-  ASSERT_EQ(stageAttr->getRequiresLighting(), false);
+  ASSERT_EQ(stageAttr->getRequiresLighting(), true);
   ASSERT_EQ(stageAttr->getUnitsToMeters(), 1.1);
   ASSERT_EQ(stageAttr->getOrientUp(), Magnum::Vector3(2.1, 0, 0));
   ASSERT_EQ(stageAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));

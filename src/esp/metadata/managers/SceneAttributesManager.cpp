@@ -94,9 +94,10 @@ void SceneAttributesManager::setValsFromJSONDoc(
         jsonConfig["articulated_object_instances"];
     for (rapidjson::SizeType i = 0; i < articulatedObjArray.Size(); i++) {
       const auto& artObjCell = articulatedObjArray[i];
-      if (articulatedObjArray.IsObject()) {
+
+      if (artObjCell.IsObject()) {
         attribs->addArticulatedObjectInstance(
-            createAOInstanceAttributesFromJSON(articulatedObjArray));
+            createAOInstanceAttributesFromJSON(artObjCell));
       } else {
         LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : "
                         "Articulated Object "
