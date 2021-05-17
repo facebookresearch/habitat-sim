@@ -224,6 +224,7 @@ def make_simulator_from_settings(sim_settings):
     # Managers of various Attributes templates
     obj_attr_mgr = sim.get_object_template_manager()
     obj_attr_mgr.load_configs(str(os.path.join(data_path, "objects/example_objects")))
+    obj_attr_mgr.load_configs(str(os.path.join(data_path, "objects/locobot_merged")))
     prim_attr_mgr = sim.get_asset_template_manager()
     stage_attr_mgr = sim.get_stage_template_manager()
 
