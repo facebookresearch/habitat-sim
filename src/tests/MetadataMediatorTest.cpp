@@ -29,6 +29,7 @@ const std::string sceneDatasetConfigFile_0 = Cr::Utility::Directory::join(
     datasetTestDirs,
     "dataset_0/test_dataset_0.scene_dataset_config.json");
 
+// test dataset contains glob wildcards in scene dataset config
 const std::string sceneDatasetConfigFile_1 = Cr::Utility::Directory::join(
     datasetTestDirs,
     "dataset_1/test_dataset_1.scene_dataset_config.json");
@@ -36,18 +37,25 @@ const std::string sceneDatasetConfigFile_1 = Cr::Utility::Directory::join(
 class MetadataMediatorTest : public testing::Test {
  protected:
   void SetUp() override {
-    // create an appropriate configuration with dataset and physics config to
-    // use
-    auto cfg_1 = esp::sim::SimulatorConfiguration{};
-    cfg_1.sceneDatasetConfigFile = sceneDatasetConfigFile_1;
-    cfg_1.physicsConfigFile = physicsConfigFile;
-    MM_ = MetadataMediator::create(cfg_1);
-    // reference althernate dataset
+    // create new MM with blank cfg
+    MM_ = MetadataMediator::create();
+
+    // reference alternate dataset
+  };
+
+  void initDatset0() {
     auto cfg_0 = esp::sim::SimulatorConfiguration{};
     cfg_0.sceneDatasetConfigFile = sceneDatasetConfigFile_0;
     cfg_0.physicsConfigFile = physicsConfigFile;
     MM_->setSimulatorConfiguration(cfg_0);
-  };
+  }
+
+  void initDatset1() {
+    auto cfg_1 = esp::sim::SimulatorConfiguration{};
+    cfg_1.sceneDatasetConfigFile = sceneDatasetConfigFile_1;
+    cfg_1.physicsConfigFile = physicsConfigFile;
+    MM_->setSimulatorConfiguration(cfg_1);
+  }
 
   MetadataMediator::ptr MM_ = nullptr;
 
@@ -56,6 +64,8 @@ class MetadataMediatorTest : public testing::Test {
 TEST_F(MetadataMediatorTest, testLoadStages) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadStages";
+  // setup dataset 0 for test
+  initDatset0();
   const auto stageAttributesMgr = MM_->getStageAttributesManager();
   int numHandles = stageAttributesMgr->getNumObjects();
   // should be 4 - one for default NONE stage, one original, one based on
@@ -130,7 +140,8 @@ TEST_F(MetadataMediatorTest, testLoadStages) {
 TEST_F(MetadataMediatorTest, testLoadObjects) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadObjects";
-
+  // setup dataset 0 for test
+  initDatset0();
   const auto objectAttributesMgr = MM_->getObjectAttributesManager();
   int numHandles = objectAttributesMgr->getNumFileTemplateObjects();
   // should be 6 file-based templates - 4 original, one based on an original
@@ -211,6 +222,9 @@ TEST_F(MetadataMediatorTest, testLoadObjects) {
 TEST_F(MetadataMediatorTest, testLoadLights) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadLights";
+  // setup dataset 0 for test
+  initDatset0();
+
   const auto lightsLayoutAttributesMgr = MM_->getLightLayoutAttributesManager();
   // get # of loaded light layout attributes.
   int numHandles = lightsLayoutAttributesMgr->getNumObjects();
@@ -257,6 +271,8 @@ TEST_F(MetadataMediatorTest, testLoadLights) {
 TEST_F(MetadataMediatorTest, testLoadSceneInstances) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadSceneInstances";
+  // setup dataset 0 for test
+  initDatset0();
   //
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
@@ -346,6 +362,8 @@ TEST_F(MetadataMediatorTest, testLoadSceneInstances) {
 TEST_F(MetadataMediatorTest, testLoadNavmesh) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadNavmesh";
+  // setup dataset 0 for test
+  initDatset0();
   // get map of navmeshes
   const std::map<std::string, std::string> navmeshMap =
       MM_->getActiveNavmeshMap();
@@ -363,6 +381,8 @@ TEST_F(MetadataMediatorTest, testLoadNavmesh) {
 TEST_F(MetadataMediatorTest, testLoadSemanticScene) {
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testLoadSemanticScene";
+  // setup dataset 0 for test
+  initDatset0();
   // get map of semantic scene instances
   const std::map<std::string, std::string> semanticMap =
       MM_->getActiveSemanticSceneDescriptorMap();
