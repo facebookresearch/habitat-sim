@@ -29,7 +29,8 @@ const std::string sceneDatasetConfigFile_0 = Cr::Utility::Directory::join(
     datasetTestDirs,
     "dataset_0/test_dataset_0.scene_dataset_config.json");
 
-// test dataset contains glob wildcards in scene dataset config
+// test dataset contains glob wildcards in scene config, and articulated object
+// refs
 const std::string sceneDatasetConfigFile_1 = Cr::Utility::Directory::join(
     datasetTestDirs,
     "dataset_1/test_dataset_1.scene_dataset_config.json");
@@ -43,7 +44,7 @@ class MetadataMediatorTest : public testing::Test {
     // reference alternate dataset
   };
 
-  void initDataset0() {
+  void initDatset0() {
     auto cfg_0 = esp::sim::SimulatorConfiguration{};
     cfg_0.sceneDatasetConfigFile = sceneDatasetConfigFile_0;
     cfg_0.physicsConfigFile = physicsConfigFile;
@@ -428,6 +429,33 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   ASSERT_EQ(numSceneHandles, 2);
 
   // end test LoadSceneInstances
+
+  LOG(INFO) << "Starting test LoadArticulatedObjects";
+
+  namespace Dir = Cr::Utility::Directory;
+  // verify # of urdf filepaths loaded - should be 4;
+  const std::map<std::string, std::string>& urdfTestFilenames =
+      MM_->getArticulatedObjectModelFilenames();
+  ASSERT_EQ(urdfTestFilenames.size(), 4);
+  // test that each stub name key corresponds to the actual file name passed
+  // through the key making process
+  for (std::map<std::string, std::string>::const_iterator iter =
+           urdfTestFilenames.begin();
+       iter != urdfTestFilenames.end(); ++iter) {
+    // TODO replace when model intherits from AbstractManagedObject and
+    // instances proper key synth methods.
+    const std::string shortHandle =
+        Dir::splitExtension(
+            Dir::splitExtension(Dir::filename(iter->second)).first)
+            .first;
+    // test that map key constructed as shortened handle.
+    ASSERT_EQ(shortHandle, iter->first);
+    // test that file name ends in ".urdf"
+    ASSERT_EQ(Dir::splitExtension(Dir::filename(iter->second))
+                  .second.compare(".urdf"),
+              0);
+  }
+  // end test LoadArticulatedObjects
 
   LOG(INFO) << "Starting test LoadNavmesh";
   // get map of navmeshes

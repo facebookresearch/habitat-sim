@@ -283,6 +283,15 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief TEMPORARY get a constant reference to the articulated object model
+   * filenames (.urdf) that have been loaded.
+   */
+  const std::map<std::string, std::string>& getArticulatedObjectModelFilenames()
+      const {
+    return articulatedObjPaths;
+  }
+
+  /**
    * @brief Returns the full name of the lightsetup attributes whose
    * handle contains the passed @p lightSetupName
    * @param lightSetupName Name of the attributes desired.  The attributes will

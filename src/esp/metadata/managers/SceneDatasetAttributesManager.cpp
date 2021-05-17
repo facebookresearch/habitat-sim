@@ -64,6 +64,7 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
   // All of the below will be replaced by readDatasetJSONCell call
   const char* tag = "articulated_objects";
   if (jsonConfig.HasMember(tag)) {
+    namespace Dir = Cr::Utility::Directory;
     if (!jsonConfig[tag].IsObject()) {
       dispCellConfigError(tag);
     } else {
@@ -80,13 +81,15 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
           const auto& pathsObj = jCell["paths"];
           bool pathsWarn = false;
           std::string pathsWarnType = "";
-          if (pathsObj.HasMember(".xml")) {
-            if (!pathsObj[".xml"].IsArray()) {
+          const char* urdfPathExt = ".urdf";
+          if (pathsObj.HasMember(urdfPathExt)) {
+            if (!pathsObj[urdfPathExt].IsArray()) {
               pathsWarn = true;
-              pathsWarnType = ".xml";
+              pathsWarnType = urdfPathExt;
             } else {
-              const auto& aoPathsObj = pathsObj[".xml"];
+              const auto& aoPathsObj = pathsObj[urdfPathExt];
               //** replaces call to buildCfgPathsFromJSONAndLoad in AOManager
+              // for each entry in ao paths array object
               for (rapidjson::SizeType i = 0; i < aoPathsObj.Size(); ++i) {
                 if (!aoPathsObj[i].IsString()) {
                   LOG(ERROR)
@@ -96,10 +99,17 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                       << i << ". Skipping.";
                   continue;
                 }
-                std::string absolutePath = Cr::Utility::Directory::join(
-                    dsDir, aoPathsObj[i].GetString());
+                // aoPathsObj entry is a string, assumed to be relative to the
+                // directory where the ds attribs resides
+                std::string absolutePath =
+                    Dir::join(dsDir, aoPathsObj[i].GetString());
+
+                // getting a list of all directories that match possible glob
+                // wildcards
                 std::vector<std::string> globPaths = io::globDirs(absolutePath);
                 if (globPaths.size() > 0) {
+                  std::vector<std::string> aoFilePaths;
+                  // iterate through every entry
                   for (const auto& globPath : globPaths) {
                     // load all object templates available as configs in
                     // absolutePath
@@ -107,10 +117,10 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                         << "SceneDatasetAttributesManager::setValsFromJSONDoc("
                            "Articulated Object) : Glob path result for "
                         << absolutePath << " : " << globPath;
+                    // each globPath entry represents real unique entry on disk
 
                     //****replaces call to loadAllConfigsFromPath in AOManager
-                    namespace Dir = Cr::Utility::Directory;
-                    std::vector<std::string> aoFilePaths;
+
                     // Check if directory
                     const bool dirExists = Dir::isDirectory(globPath);
                     if (dirExists) {
@@ -124,79 +134,75 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                         std::string absoluteSubfilePath =
                             Dir::join(globPath, file);
                         if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                                          ".xml")) {
+                                                          urdfPathExt)) {
                           aoFilePaths.push_back(absoluteSubfilePath);
                         }
                       }
-                    } else {
-                      // not a directory, perhaps a file
-                      std::string attributesFilepath =
-                          getFormattedJSONFileName(globPath);
-                      const bool fileExists = Dir::exists(attributesFilepath);
+                    } else if (Cr::Utility::String::endsWith(globPath,
+                                                             urdfPathExt)) {
+                      aoFilePaths.push_back(globPath);
+                    } else {  // neither a directory or a file
+                      LOG(WARNING) << "SceneDatasetAttributesManager::"
+                                      "setValsFromJSONDoc(Articulated "
+                                      "Object) : Parsing articulated objects "
+                                      " : Cannot find "
+                                   << globPath
+                                   << " as sub directory or as config file. "
+                                      "Aborting parse.";
+                      continue;
+                    }  // if dirExists else
+                       //**//** replaces call to loadAllFileBasedTemplates
+                  }    // for each glob path
 
-                      if (fileExists) {
-                        aoFilePaths.push_back(attributesFilepath);
-                      } else {  // neither a directory or a file
-                        LOG(WARNING) << "SceneDatasetAttributesManager::"
-                                        "setValsFromJSONDoc(Articulated "
-                                        "Object) : Parsing articulated objects "
-                                        " : Cannot find "
-                                     << globPath << " as directory or "
-                                     << attributesFilepath
-                                     << " as config file. Aborting parse.";
-                        continue;
-                      }  // if fileExists else
-                    }    // if dirExists else
-                         //**//** replaces call to loadAllFileBasedTemplates
+                  // check if any exist, may be more than 1 since may have
+                  // traversing a subdirectory
+                  if (aoFilePaths.size() > 0) {
+                    std::string ao_dir = Dir::path(aoFilePaths[0]);
+                    LOG(INFO)
+                        << "SceneDatasetAttributesManager::"
+                           "setValsFromJSONDoc(Articulated Object) : Loading "
+                        << aoFilePaths.size() << " " << this->objectType_
+                        << " templates found in " << ao_dir;
+                    for (int i = 0; i < aoFilePaths.size(); ++i) {
+                      auto aoModelName = aoFilePaths[i];
+                      auto aoFullFileName = Dir::filename(aoModelName);
+                      LOG(INFO) << "SceneDatasetAttributesManager::"
+                                   "setValsFromJSONDoc(Articulated Object) : "
+                                   "Found Articulated Object Model file : "
+                                << aoFullFileName;
 
-                    std::vector<int> pathindices(aoFilePaths.size(),
-                                                 ID_UNDEFINED);
-                    if (aoFilePaths.size() > 0) {
-                      std::string ao_dir =
-                          Cr::Utility::Directory::path(aoFilePaths[0]);
-                      LOG(INFO)
-                          << "SceneDatasetAttributesManager::"
-                             "setValsFromJSONDoc(Articulated Object) : Loading "
-                          << aoFilePaths.size() << " " << this->objectType_
-                          << " templates found in " << ao_dir;
-                      for (int i = 0; i < aoFilePaths.size(); ++i) {
-                        auto aoModelName = aoFilePaths[i];
-                        auto aoFullFileName =
-                            Cr::Utility::Directory::filename(aoModelName);
-                        LOG(INFO) << "SceneDatasetAttributesManager::"
-                                     "setValsFromJSONDoc(Articulated Object) : "
-                                     "Found Articulated Object Model file : "
-                                  << aoFullFileName;
+                      // set k-v pairs here.
+                      auto key =
+                          Corrade::Utility::Directory::splitExtension(
+                              Corrade::Utility::Directory::splitExtension(
+                                  Corrade::Utility::Directory::filename(
+                                      aoFullFileName))
+                                  .first)
+                              .first;
 
-                        // set k-v pairs here.
-                        auto key =
-                            Corrade::Utility::Directory::splitExtension(
-                                Corrade::Utility::Directory::splitExtension(
-                                    Corrade::Utility::Directory::filename(
-                                        aoFullFileName))
-                                    .first)
-                                .first;
-
-                        dsAttribs->setArticulatedObjectModelFilename(
-                            key, aoFullFileName);
-                      }
+                      dsAttribs->setArticulatedObjectModelFilename(
+                          key, aoFullFileName);
                     }
-                    LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates "
-                                 ": Specified "
-                              << std::to_string(aoFilePaths.size())
-                              << " artiuclated object model filenames.";
+                  }
+                  LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates "
+                               ": Specified "
+                            << std::to_string(aoFilePaths.size())
+                            << " articulated object model filenames specified "
+                               "in path GLOB object : "
+                            << absolutePath << ".";
 
-                    //**//** end call to loadAllFileBasedTemplates
-                    //**** end call to loadAllConfigsFromPath in AOManager
+                  //**//** end call to loadAllFileBasedTemplates
+                  //**** end call to loadAllConfigsFromPath in AOManager
 
-                  }  // for each glob path
                 } else {
                   LOG(WARNING)
                       << "SceneDatasetAttributesManager::setValsFromJSONDoc("
                          "Articulated Object) : No Glob path result for "
                       << absolutePath;
+                  continue;
                 }
               }  // for every path object in list in json
+
               LOG(INFO) << "SceneDatasetAttributesManager::setValsFromJSONDoc("
                            "Articulated Object) : "
                         << std::to_string(aoPathsObj.Size())
