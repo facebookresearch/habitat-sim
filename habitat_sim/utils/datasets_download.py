@@ -211,7 +211,7 @@ class AutoHelpParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
-if __name__ == "__main__":
+def main(args):
     parser = AutoHelpParser()
     arg_group1 = parser.add_mutually_exclusive_group()
     arg_group1.add_argument(
@@ -242,7 +242,7 @@ if __name__ == "__main__":
         help="If set, existing equivalent versions of any dataset found during download will be deleted automatically. Otherwise user will be prompted before overriding existing data.",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     replace = args.replace
 
     # get a default data_path from git
@@ -267,9 +267,9 @@ if __name__ == "__main__":
             exit(2)
 
     # initialize data_sources and data_groups with test and example assets
-    if not os.path.exists(args.data_path):
-        os.mkdir(args.data_path)
-    data_path = os.path.abspath(args.data_path) + "/"
+    if not os.path.exists(data_path):
+        os.mkdir(data_path)
+    data_path = os.path.abspath(data_path) + "/"
     initialize_test_data_sources(data_path=data_path)
 
     # validatation: ids are unique between groups and sources
@@ -304,3 +304,7 @@ if __name__ == "__main__":
             clean_data(uid, data_path)
         else:
             download_and_place(uid, data_path, replace)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

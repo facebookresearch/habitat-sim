@@ -16,13 +16,10 @@ from settings import default_sim_settings, make_cfg
 
 import habitat_sim
 import habitat_sim.agent
+import habitat_sim.utils.datasets_download as data_downloader
 from habitat_sim.nav import ShortestPath
 from habitat_sim.physics import MotionType
-from habitat_sim.utils.common import (
-    d3_40_colors_rgb,
-    download_and_unzip,
-    quat_from_angle_axis,
-)
+from habitat_sim.utils.common import d3_40_colors_rgb, quat_from_angle_axis
 
 _barrier = None
 
@@ -329,7 +326,7 @@ class DemoRunner:
             print(
                 "Test scenes not downloaded locally, downloading and extracting now..."
             )
-            download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
+            data_downloader.main(["--uid", "habitat_test_scenes"])
             print("Downloaded and extracted test scenes data.")
 
         # create a simulator (Simulator python class object, not the backend simulator)
