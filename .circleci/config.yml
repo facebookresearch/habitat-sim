@@ -129,7 +129,7 @@ commands:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-sugar pytest-xdist typeguard
+                pip install pytest-sugar pytest-xdist
               fi
       - run:
           name: Install emscripten
@@ -178,8 +178,8 @@ commands:
             - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache:
           keys:
-            - ccache-{{ arch }}-master
             - ccache-{{ arch }}-{{ .Branch }}
+            - ccache-{{ arch }}-master
           paths:
             - /home/circleci/.ccache
       - run:
@@ -207,8 +207,8 @@ jobs:
               sudo rm  llvm-config
               sudo ln -s llvm-config-10 llvm-config
               cd ~/project/
-              pip install -U black flake8 flake8-bugbear flake8-builtins flake8-comprehensions flake8-return flake8-simplify "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
-              pip install -r requirements.txt --progress-bar off
+              pip install -U black flake8 flake8-bugbear flake8-builtins flake8-comprehensions flake8-return flake8-simplify "isort[pyproject]" mypy numpy pytest sphinx pillow tqdm hypothesis
+              pip install -r requirements.txt torch --progress-bar off
       - run:
           name: run black
           command: |
@@ -226,6 +226,9 @@ jobs:
           command: |
               flake8 --version
               flake8 habitat_sim/. examples/. tests/. setup.py
+      - run:
+          name: run mypy
+          command: mypy
   cpp_lint:
     docker:
       - image: circleci/buildpack-deps:18.04
@@ -284,12 +287,33 @@ jobs:
           paths:
             - ~/.cache/pre-commit
           key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
-
       - run:
           name: Check Code Style using pre-commit
           command: |
             SKIP=clang-format,eslint pre-commit run --show-diff-on-failure --all-files
-  build_and_test_habitat_lab_conda:
+  test_conda_build:
+    <<: *gpu
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - run:
+          name: CPU info
+          no_output_timeout: 1m
+          command: |
+              cat /proc/cpuinfo
+      - install_all_ubuntu_deps
+      - run:
+          name: Build conda Linux packages for CI
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install gitpython
+              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
+              rm -rf build
+              cd conda-build
+              python linux_matrix_builder.py --ci_test
+  lab_build_habitat:
     <<: *gpu
     steps:
       - checkout:
@@ -347,11 +371,12 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               cd habitat-sim
+              git submodule update --init --recursive --jobs 16
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
-              git submodule update --init --recursive --jobs 4
               while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
                   texlive-base \
@@ -381,11 +406,6 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
-      - save_cache:
-          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-          background: true
-          paths:
-            - ~/miniconda
       - run:
           name: Run Habitat Lab tests
           no_output_timeout: 25m
@@ -413,20 +433,15 @@ jobs:
               conda install -y  jinja2 pygments docutils
               ./build-public.sh
       - save_cache:
+          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+          background: true
+          paths:
+            - ~/miniconda
+      - save_cache:
           key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
           background: true
           paths:
             - ./habitat-sim/build/docs-public
-      - run:
-          name: Build conda Linux packages for CI
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
-              rm -rf build
-              cd conda-build
-              python linux_matrix_builder.py --ci_test
   install_and_test_ubuntu:
     <<: *gpu
     steps:
@@ -447,7 +462,7 @@ jobs:
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
-              git submodule update --init --recursive --jobs 4
+              git submodule update --init --recursive --jobs 16
               python -u setup.py install --headless --vhacd
       - run:
           name: run clang-tidy
@@ -521,12 +536,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest -n 4 --cov-report=xml --typeguard-packages=habitat_sim --cov=./
+              pytest -n auto --durations=10 --cov-report=xml --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
-              ./build.sh --headless
-              pytest -n 4 --cov-report=xml --cov=./ --cov-append --typeguard-packages=habitat_sim tests/test_physics.py tests/test_sensors.py
+              ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+              pytest -n auto --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               . ~/emsdk/emsdk_env.sh
@@ -659,7 +674,8 @@ workflows:
       - python_lint
       - cpp_lint
       - js_lint
-      - build_and_test_habitat_lab_conda
+      - lab_build_habitat
+      - test_conda_build
       - install_and_test_ubuntu
       - pre-commit
   nightly:
@@ -670,8 +686,9 @@ workflows:
             branches:
               only: master
     jobs:
-      - build_and_test_habitat_lab_conda
+      - lab_build_habitat
       - install_and_test_ubuntu
+      - test_conda_build
       - update_docs:
           requires:
             - install_and_test_ubuntu
@@ -690,33 +707,24 @@ workflows:
 
   version_conda_release:
     jobs:
-      - build_and_test_habitat_lab_conda:
-          filters:
+      - lab_build_habitat:
+          filters: &version_filter
             tags:
               only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
             branches:
               ignore: /.*/
+      - test_conda_build:
+          filters: *version_filter
       - install_and_test_ubuntu:
-          filters:
-            tags:
-              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
-            branches:
-              ignore: /.*/
+          filters: *version_filter
       - update_docs:
           requires:
-            - build_and_test_habitat_lab_conda
+            - lab_build_habitat
             - install_and_test_ubuntu
-          filters:
-            tags:
-              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
-            branches:
-              ignore: /.*/
+          filters: *version_filter
       - build_conda_binaries:
           requires:
-            - build_and_test_habitat_lab_conda
+            - test_conda_build
+            - lab_build_habitat
             - install_and_test_ubuntu
-          filters:
-            tags:
-              only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
-            branches:
-              ignore: /.*/
+          filters: *version_filter

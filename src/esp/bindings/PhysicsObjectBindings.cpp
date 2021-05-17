@@ -46,7 +46,130 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           ("Whether this " + objType + " still exists and is still valid.")
               .c_str())
       .def_property_readonly("template_class", &PhysObjWrapper::getClassKey,
-                             ("Class name of this " + objType).c_str());
+                             ("Class name of this " + objType).c_str())
+      .def("user_attributes", &PhysObjWrapper::userAttributes,
+           ("User-defined " + objType +
+            " attributes.  These are not used internally by Habitat in any "
+            "capacity, but are available for a user to consume how they wish.")
+               .c_str())
+      .def_property(
+          "transformation", &PhysObjWrapper::getTransformation,
+          &PhysObjWrapper::setTransformation,
+          ("Get or set the transformation matrix of this " + objType +
+           "'s root SceneNode. If modified, sim state will be updated.")
+              .c_str())
+      .def_property(
+          "translation", &PhysObjWrapper::getTranslation,
+          &PhysObjWrapper::setTranslation,
+          ("Get or set the translation vector of this " + objType +
+           "'s root SceneNode. If modified, sim state will be updated.")
+              .c_str())
+      .def_property(
+          "rotation", &PhysObjWrapper::getRotation,
+          &PhysObjWrapper::setRotation,
+          ("Get or set the rotation quaternion of this " + objType +
+           "'s root SceneNode. If modified, sim state will be updated.")
+              .c_str())
+      .def_property("rigid_state", &PhysObjWrapper::getRigidState,
+                    &PhysObjWrapper::setRigidState,
+                    ("Get or set this " + objType +
+                     "'s transformation as a Rigid State (i.e. vector, "
+                     "quaternion). If modified, sim state will be updated.")
+                        .c_str())
+      .def_property_readonly("root_scene_node", &PhysObjWrapper::getSceneNode,
+                             ("Get a reference to the root SceneNode of this " +
+                              objType + "'s  SceneGraph subtree.")
+                                 .c_str())
+
+      .def("set_light_setup", &PhysObjWrapper::setLightSetup,
+           ("Set this " + objType +
+            "'s light setup using passed light_setup_key.")
+               .c_str(),
+           "light_setup_key"_a)
+      .def_property("awake", &PhysObjWrapper::isActive,
+                    &PhysObjWrapper::setActive,
+                    ("Get or set whether this " + objType +
+                     " is actively being simulated, or is sleeping.")
+                        .c_str())
+      .def(
+          "translate", &PhysObjWrapper::translate, "vector"_a,
+          ("Move this " + objType + " using passed translation vector").c_str())
+      .def(
+          "rotate",
+          [](PhysObjWrapper& self, Mn::Radd angle, Mn::Vector3& normAxis) {
+            self.rotate(Mn::Rad(angle), normAxis);
+          },
+          "angle_in_rad"_a, "norm_axis"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around passed 3-element normalized "
+           "norm_axis.")
+              .c_str())
+      .def(
+          "rotate_local",
+          [](PhysObjWrapper& self, Mn::Radd angle, Mn::Vector3& normAxis) {
+            self.rotateLocal(Mn::Rad(angle), normAxis);
+          },
+          "angle_in_rad"_a, "norm_axis"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around passed 3-element normalized "
+           "norm_axis in the local frame.")
+              .c_str())
+      .def(
+          "rotate_x",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateX(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the x-axis in global frame.")
+              .c_str())
+      .def(
+          "rotate_x_local",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateXLocal(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the x-axis in local frame.")
+              .c_str())
+      .def(
+          "rotate_y",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateY(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the y-axis in global frame.")
+              .c_str())
+      .def(
+          "rotate_y_local",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateYLocal(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the y-axis in local frame.")
+              .c_str())
+      .def(
+          "rotate_z",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateZ(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the z-axis in global frame.")
+              .c_str())
+      .def(
+          "rotate_z_local",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateZLocal(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the z-axis in local frame.")
+              .c_str())
+
+      ;
 }  // declareBasePhysicsObjectWrapper
 
 template <class T>
@@ -60,35 +183,7 @@ void declareRigidBaseWrapper(py::module& m,
              std::shared_ptr<RigidBaseWrapper>>(m, pyclass_name.c_str())
 
       /* --- Geometry & Transformations --- */
-      .def("user_attributes", &RigidBaseWrapper::userAttributes,
-           ("User-defined " + objType +
-            " attributes.  These are not used internally by Habitat in any "
-            "capacity, but are available for a user to consume how they wish.")
-               .c_str())
-      .def_property(
-          "transformation", &RigidBaseWrapper::getTransformation,
-          &RigidBaseWrapper::setTransformation,
-          ("Get or set the transformation matrix of this " + objType +
-           "'s root SceneNode. If modified, sim state will be updated.")
-              .c_str())
-      .def_property(
-          "translation", &RigidBaseWrapper::getTranslation,
-          &RigidBaseWrapper::setTranslation,
-          ("Get or set the translation vector of this " + objType +
-           "'s root SceneNode. If modified, sim state will be updated.")
-              .c_str())
-      .def_property(
-          "rotation", &RigidBaseWrapper::getRotation,
-          &RigidBaseWrapper::setRotation,
-          ("Get or set the rotation quaternion of this " + objType +
-           "'s root SceneNode. If modified, sim state will be updated.")
-              .c_str())
-      .def_property("rigid_state", &RigidBaseWrapper::getRigidState,
-                    &RigidBaseWrapper::setRigidState,
-                    ("Get or set this " + objType +
-                     "'s transformation as a Rigid State (i.e. vector, "
-                     "quaternion). If modified, sim state will be updated.")
-                        .c_str())
+
       .def_property_readonly("scale", &RigidBaseWrapper::getScale,
                              ("Get the scale of the " + objType).c_str())
 
@@ -194,11 +289,7 @@ void declareRigidBaseWrapper(py::module& m,
            "' render assets attached. Use this to manipulate this " + objType +
            "'s visual state. Changes to these nodes will not affect physics "
            "simulation.")
-              .c_str())
-      .def_property_readonly("root_scene_node", &RigidBaseWrapper::getSceneNode,
-                             ("Get a reference to the root SceneNode of this " +
-                              objType + "'s  SceneGraph subtree.")
-                                 .c_str());
+              .c_str());
 
 }  // declareRigidBaseWrapper
 

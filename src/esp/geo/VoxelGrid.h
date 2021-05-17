@@ -112,7 +112,7 @@ class VoxelGrid {
       Magnum::Debug() << gridName << "exists, overwriting.";
 
       grids_[gridName].data = Corrade::Containers::Array<char>(
-          Corrade::Containers::ValueInit, gridSize() * sizeof(T));
+          Corrade::ValueInit, gridSize() * sizeof(T));
 
       Corrade::Containers::StridedArrayView3D<void> view{grids_[gridName].data,
                                                          dims, strides};
@@ -122,8 +122,8 @@ class VoxelGrid {
     }
 
     GridEntry new_grid;
-    new_grid.data = Corrade::Containers::Array<char>(
-        Corrade::Containers::ValueInit, gridSize() * sizeof(T));
+    new_grid.data = Corrade::Containers::Array<char>(Corrade::ValueInit,
+                                                     gridSize() * sizeof(T));
 
     Corrade::Containers::StridedArrayView3D<void> view{new_grid.data, dims,
                                                        strides};

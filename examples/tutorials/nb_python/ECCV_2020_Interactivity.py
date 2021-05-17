@@ -13,7 +13,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.1
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -986,7 +986,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # @markdown A python Class to provide waypoints along a path given agent states
 
 
-class ContinuousPathFollower(object):
+class ContinuousPathFollower:
     def __init__(self, sim, path, agent_scene_node, waypoint_threshold):
         self._sim = sim
         self._points = path.points[:]
@@ -1129,7 +1129,7 @@ def track_waypoint(waypoint, rs, vc, dt=1.0 / 60.0):
 
 
 # grip/release and sync gripped object state kineamtically
-class ObjectGripper(object):
+class ObjectGripper:
     def __init__(
         self,
         sim,

@@ -38,10 +38,11 @@ from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
 # TODO maybe clean up types with TypeVars
+ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
 
 
 @attr.s(auto_attribs=True, slots=True)
-class Configuration(object):
+class Configuration:
     r"""Specifies how to configure the simulator.
 
     :property sim_cfg: The configuration of the backend of the simulator
@@ -146,23 +147,16 @@ class Simulator(SimulatorBackend):
         self.pathfinder.seed(new_seed)
 
     @overload
-    def reset(
-        self, agent_ids: List[int]
-    ) -> Dict[int, Dict[str, Union[ndarray, "Tensor"]]]:
+    def reset(self, agent_ids: List[int]) -> Dict[int, ObservationDict]:
         ...
 
     @overload
-    def reset(
-        self, agent_ids: Optional[int] = None
-    ) -> Dict[str, Union[ndarray, "Tensor"]]:
+    def reset(self, agent_ids: Optional[int] = None) -> ObservationDict:
         ...
 
     def reset(
         self, agent_ids: Union[Optional[int], List[int]] = None
-    ) -> Union[
-        Dict[str, Union[ndarray, "Tensor"]],
-        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
-    ]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
@@ -317,23 +311,18 @@ class Simulator(SimulatorBackend):
         return agent
 
     @overload
-    def get_sensor_observations(
-        self, agent_ids: int = 0
-    ) -> Dict[str, Union[ndarray, "Tensor"]]:
+    def get_sensor_observations(self, agent_ids: int = 0) -> ObservationDict:
         ...
 
     @overload
     def get_sensor_observations(
         self, agent_ids: List[int]
-    ) -> Dict[int, Dict[str, Union[ndarray, "Tensor"]]]:
+    ) -> Dict[int, ObservationDict]:
         ...
 
     def get_sensor_observations(
         self, agent_ids: Union[int, List[int]] = 0
-    ) -> Union[
-        Dict[str, Union[ndarray, "Tensor"]],
-        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
-    ]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
@@ -346,9 +335,9 @@ class Simulator(SimulatorBackend):
                 sensor.draw_observation()
 
         # As backport. All Dicts are ordered in Python >= 3.7
-        observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
+        observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
+            agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor.get_observation()
             observations[agent_id] = agent_observations
@@ -382,25 +371,20 @@ class Simulator(SimulatorBackend):
         return self.__last_state[agent_id]
 
     @overload
-    def step(
-        self, action: Union[str, int], dt: float = 1.0 / 60.0
-    ) -> Dict[str, Union[bool, ndarray, "Tensor"]]:
+    def step(self, action: Union[str, int], dt: float = 1.0 / 60.0) -> ObservationDict:
         ...
 
     @overload
     def step(
         self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
-    ) -> Dict[int, Dict[str, Union[bool, ndarray, "Tensor"]]]:
+    ) -> Dict[int, ObservationDict]:
         ...
 
     def step(
         self,
         action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
         dt: float = 1.0 / 60.0,
-    ) -> Union[
-        Dict[str, Union[bool, ndarray, "Tensor"]],
-        Dict[int, Dict[str, Union[bool, ndarray, "Tensor"]]],
-    ]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         self._num_total_frames += 1
         if isinstance(action, MutableMapping):
             return_single = False
@@ -478,6 +462,7 @@ class Sensor:
 
     TODO(MS) define entire Sensor class in python, reducing complexity
     """
+    buffer = Union[np.ndarray, "Tensor"]
 
     def __init__(self, sim: Simulator, agent: Agent, sensor_id: str) -> None:
         self._sim = sim
@@ -499,7 +484,7 @@ class Sensor:
 
             resolution = self._spec.resolution
             if self._spec.sensor_type == SensorType.SEMANTIC:
-                self._buffer = torch.empty(
+                self._buffer: Union[np.ndarray, "Tensor"] = torch.empty(
                     resolution[0], resolution[1], dtype=torch.int32, device=device
                 )
             elif self._spec.sensor_type == SensorType.DEPTH:
@@ -560,15 +545,15 @@ class Sensor:
         tgt = self._sensor_object.render_target
 
         if self._spec.gpu2gpu_transfer:
-            with torch.cuda.device(self._buffer.device):  # type: ignore[attr-defined]
+            with torch.cuda.device(self._buffer.device):  # type: ignore[attr-defined, union-attr]
                 if self._spec.sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
+                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
                 elif self._spec.sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
+                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
                 else:
-                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined]
+                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
 
-                obs = self._buffer.flip(0)
+                obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:
             size = self._sensor_object.framebuffer_size
 

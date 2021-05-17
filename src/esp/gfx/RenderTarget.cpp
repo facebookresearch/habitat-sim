@@ -16,7 +16,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/GenericGL.h>
 
 #include "RenderTarget.h"
 #include "esp/sensor/VisualSensor.h"
@@ -104,11 +104,11 @@ struct RenderTarget::Impl {
     }
 
     framebuffer_.mapForDraw(
-        {{Mn::Shaders::Generic3D::ColorOutput,
+        {{Mn::Shaders::GenericGL3D::ColorOutput,
           (flags_ & Flag::RgbaAttachment
                ? RgbaBufferAttachment
                : Mn::GL::Framebuffer::DrawAttachment::None)},
-         {Mn::Shaders::Generic3D::ObjectIdOutput,
+         {Mn::Shaders::GenericGL3D::ObjectIdOutput,
           (flags_ & Flag::ObjectIdAttachment
                ? ObjectIdTextureColorAttachment
                : Mn::GL::Framebuffer::DrawAttachment::None)}});
