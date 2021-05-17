@@ -44,7 +44,7 @@ class MetadataMediatorTest : public testing::Test {
     // reference alternate dataset
   };
 
-  void initDatset0() {
+  void initDataset0() {
     auto cfg_0 = esp::sim::SimulatorConfiguration{};
     cfg_0.sceneDatasetConfigFile = sceneDatasetConfigFile_0;
     cfg_0.physicsConfigFile = physicsConfigFile;
