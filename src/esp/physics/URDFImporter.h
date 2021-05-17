@@ -4,7 +4,8 @@
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
 
-#pragma once
+#ifndef ESP_PHYSICS_URDFIMPORTER_H_
+#define ESP_PHYSICS_URDFIMPORTER_H_
 
 #include "esp/assets/ResourceManager.h"
 
@@ -154,3 +155,5 @@ class URDFImporter {
 
 }  // namespace physics
 }  // namespace esp
+
+#endif  // ESP_PHYSICS_URDFIMPORTER_H_

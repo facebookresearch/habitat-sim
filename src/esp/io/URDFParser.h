@@ -4,7 +4,9 @@
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
 
-#pragma once
+#ifndef ESP_IO_URDFPARSER_H_
+#define ESP_IO_URDFPARSER_H_
+
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
@@ -384,3 +386,5 @@ class Parser {
 }  // namespace URDF
 }  // namespace io
 }  // namespace esp
+
+#endif  // ESP_IO_URDFPARSER_H_

@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_PHYSICS_COLLISIONGROUPHELPER_H_
+#define ESP_PHYSICS_COLLISIONGROUPHELPER_H_
 
 namespace esp {
 namespace physics {
@@ -42,3 +43,5 @@ class CollisionGroupHelper {
 
 }  // end namespace physics
 }  // end namespace esp
+
+#endif  // ESP_PHYSICS_COLLISIONGROUPHELPER_H_

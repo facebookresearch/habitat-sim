@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_PHYSICS_ARTICULATEDOBJECT_H_
+#define ESP_PHYSICS_ARTICULATEDOBJECT_H_
 
 /** @file
  * @brief Class @ref esp::physics::ArticulatedLink, Class @ref
@@ -524,3 +525,5 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
 
 }  // namespace physics
 }  // namespace esp
+
+#endif  // ESP_PHYSICS_ARTICULATEDOBJECT_H_

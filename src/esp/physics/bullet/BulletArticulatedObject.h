@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_PHYSICS_BULLET_BULLETARTICULATEDOBJECT_H_
+#define ESP_PHYSICS_BULLET_BULLETARTICULATEDOBJECT_H_
 
 /** @file
  * @brief Class @ref esp::physics::BulletArticulatedObject
@@ -213,3 +214,5 @@ class BulletArticulatedObject : public ArticulatedObject {
 
 }  // namespace physics
 }  // namespace esp
+
+#endif  // ESP_PHYSICS_BULLET_BULLETARTICULATEDOBJECT_H_

@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_PHYSICS_BULLET_BULLETDEBUGMANAGER_H_
+#define ESP_PHYSICS_BULLET_BULLETDEBUGMANAGER_H_
 
 #include <string>
 #include <unordered_map>
@@ -77,3 +78,5 @@ class BulletDebugManager {
 
 }  // end namespace physics
 }  // end namespace esp
+
+#endif  // ESP_PHYSICS_BULLET_BULLETDEBUGMANAGER_H_
