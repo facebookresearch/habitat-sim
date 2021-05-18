@@ -29,6 +29,7 @@ const std::string sceneDatasetConfigFile_0 = Cr::Utility::Directory::join(
     datasetTestDirs,
     "dataset_0/test_dataset_0.scene_dataset_config.json");
 
+// test dataset contains glob wildcards in scene dataset config
 const std::string sceneDatasetConfigFile_1 = Cr::Utility::Directory::join(
     datasetTestDirs,
     "dataset_1/test_dataset_1.scene_dataset_config.json");
@@ -36,243 +37,254 @@ const std::string sceneDatasetConfigFile_1 = Cr::Utility::Directory::join(
 class MetadataMediatorTest : public testing::Test {
  protected:
   void SetUp() override {
-    // create an appropriate configuration with dataset and physics config to
-    // use
-    auto cfg_1 = esp::sim::SimulatorConfiguration{};
-    cfg_1.sceneDatasetConfigFile = sceneDatasetConfigFile_1;
-    cfg_1.physicsConfigFile = physicsConfigFile;
-    MM_ = MetadataMediator::create(cfg_1);
-    // reference althernate dataset
+    // create new MM with blank cfg
+    MM_ = MetadataMediator::create();
+
+    // reference alternate dataset
+  };
+
+  void initDataset0() {
     auto cfg_0 = esp::sim::SimulatorConfiguration{};
     cfg_0.sceneDatasetConfigFile = sceneDatasetConfigFile_0;
     cfg_0.physicsConfigFile = physicsConfigFile;
     MM_->setSimulatorConfiguration(cfg_0);
-  };
+  }
+
+  void initDataset1() {
+    auto cfg_1 = esp::sim::SimulatorConfiguration{};
+    cfg_1.sceneDatasetConfigFile = sceneDatasetConfigFile_1;
+    cfg_1.physicsConfigFile = physicsConfigFile;
+    MM_->setSimulatorConfiguration(cfg_1);
+  }
 
   MetadataMediator::ptr MM_ = nullptr;
 
 };  // class MetadataMediatorTest
 
-TEST_F(MetadataMediatorTest, testLoadStages) {
+TEST_F(MetadataMediatorTest, testDataset0) {
+  // setup dataset 0 for test
+  initDataset0();
+
   LOG(INFO) << "Starting "
-               "MetadataMediatorTest::testLoadStages";
+               "MetadataMediatorTest::testDataset0 : test LoadStages";
   const auto stageAttributesMgr = MM_->getStageAttributesManager();
-  int numHandles = stageAttributesMgr->getNumObjects();
+  int numStageHandles = stageAttributesMgr->getNumObjects();
   // should be 4 - one for default NONE stage, one original, one based on
   // original but changed, and one new
-  ASSERT_EQ(numHandles, 4);
+  ASSERT_EQ(numStageHandles, 4);
 
   // get list of matching handles for base - should always only be 1
-  auto attrHandles = stageAttributesMgr->getObjectHandlesBySubstring(
+  auto stageAttrHandles = stageAttributesMgr->getObjectHandlesBySubstring(
       "dataset_test_stage.stage_config.json", true);
-  ASSERT_EQ(attrHandles.size(), 1);
+  ASSERT_EQ(stageAttrHandles.size(), 1);
   // get copy of attributes
-  auto attr = stageAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+  auto stageAttr =
+      stageAttributesMgr->getObjectCopyByHandle(stageAttrHandles[0]);
   // get render asset handle for later comparison
-  auto renderAssetHandle = attr->getRenderAssetHandle();
+  auto renderAssetHandle = stageAttr->getRenderAssetHandle();
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, stageAttr);
   // verify set to values in file
-  ASSERT_EQ(attr->getScale(), Magnum::Vector3(2, 2, 2));
-  ASSERT_EQ(attr->getRequiresLighting(), true);
-  ASSERT_EQ(attr->getMargin(), 0.03);
-  ASSERT_EQ(attr->getFrictionCoefficient(), 0.3);
-  ASSERT_EQ(attr->getRestitutionCoefficient(), 0.3);
-  ASSERT_EQ(attr->getOrigin(), Magnum::Vector3(0, 0, 0));
-  ASSERT_EQ(attr->getOrientUp(), Magnum::Vector3(0, 1, 0));
-  ASSERT_EQ(attr->getOrientFront(), Magnum::Vector3(0, 0, -1));
+  ASSERT_EQ(stageAttr->getScale(), Magnum::Vector3(2, 2, 2));
+  ASSERT_EQ(stageAttr->getRequiresLighting(), true);
+  ASSERT_EQ(stageAttr->getMargin(), 0.03);
+  ASSERT_EQ(stageAttr->getFrictionCoefficient(), 0.3);
+  ASSERT_EQ(stageAttr->getRestitutionCoefficient(), 0.3);
+  ASSERT_EQ(stageAttr->getOrigin(), Magnum::Vector3(0, 0, 0));
+  ASSERT_EQ(stageAttr->getOrientUp(), Magnum::Vector3(0, 1, 0));
+  ASSERT_EQ(stageAttr->getOrientFront(), Magnum::Vector3(0, 0, -1));
 
   // get list of matching handles for modified base - should always only be 1
-  attrHandles = stageAttributesMgr->getObjectHandlesBySubstring(
+  stageAttrHandles = stageAttributesMgr->getObjectHandlesBySubstring(
       "modified_test_stage", true);
-  ASSERT_EQ(attrHandles.size(), 1);
+  ASSERT_EQ(stageAttrHandles.size(), 1);
   // get copy of attributes
-  attr = stageAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+  stageAttr = stageAttributesMgr->getObjectCopyByHandle(stageAttrHandles[0]);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, stageAttr);
   // verify set to override values in dataset_config file
-  ASSERT_EQ(attr->getScale(), Magnum::Vector3(1, 1, 1));
-  ASSERT_EQ(attr->getMargin(), 0.041);
-  ASSERT_EQ(attr->getFrictionCoefficient(), 0.4);
-  ASSERT_EQ(attr->getRestitutionCoefficient(), 0.5);
-  ASSERT_EQ(attr->getUnitsToMeters(), 1.0);
+  ASSERT_EQ(stageAttr->getScale(), Magnum::Vector3(1, 1, 1));
+  ASSERT_EQ(stageAttr->getMargin(), 0.041);
+  ASSERT_EQ(stageAttr->getFrictionCoefficient(), 0.4);
+  ASSERT_EQ(stageAttr->getRestitutionCoefficient(), 0.5);
+  ASSERT_EQ(stageAttr->getUnitsToMeters(), 1.0);
 
   // get list of matching handles for new - should always only be 1
-  attrHandles =
+  stageAttrHandles =
       stageAttributesMgr->getObjectHandlesBySubstring("new_test_stage", true);
-  ASSERT_EQ(attrHandles.size(), 1);
+  ASSERT_EQ(stageAttrHandles.size(), 1);
   // get copy of attributes
-  attr = stageAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+  stageAttr = stageAttributesMgr->getObjectCopyByHandle(stageAttrHandles[0]);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, stageAttr);
   // verify set to values in dataset_config file
-  auto newRenderAssetHandle = attr->getRenderAssetHandle();
+  auto newRenderAssetHandle = stageAttr->getRenderAssetHandle();
   // verify same renderasset handle to loaded stage attributes
   ASSERT_EQ(renderAssetHandle, newRenderAssetHandle);
   // verify values set correctly
-  ASSERT_EQ(attr->getOrientUp(), Magnum::Vector3(0, -1, 0));
-  ASSERT_EQ(attr->getScale(), Magnum::Vector3(2, 2, 2));
-  ASSERT_EQ(attr->getGravity(), Magnum::Vector3(0, 9.8, 0));
-  ASSERT_EQ(attr->getFrictionCoefficient(), 0.35);
-  ASSERT_EQ(attr->getRestitutionCoefficient(), 0.25);
-  ASSERT_EQ(attr->getUnitsToMeters(), 2.0);
-  ASSERT_EQ(attr->getRequiresLighting(), false);
+  ASSERT_EQ(stageAttr->getOrientUp(), Magnum::Vector3(0, -1, 0));
+  ASSERT_EQ(stageAttr->getScale(), Magnum::Vector3(2, 2, 2));
+  ASSERT_EQ(stageAttr->getGravity(), Magnum::Vector3(0, 9.8, 0));
+  ASSERT_EQ(stageAttr->getFrictionCoefficient(), 0.35);
+  ASSERT_EQ(stageAttr->getRestitutionCoefficient(), 0.25);
+  ASSERT_EQ(stageAttr->getUnitsToMeters(), 2.0);
+  ASSERT_EQ(stageAttr->getRequiresLighting(), false);
 
   // get new attributes but don't register
-  attr = stageAttributesMgr->createObject("new_default_attributes", false);
+  stageAttr = stageAttributesMgr->createObject("new_default_attributes", false);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, stageAttr);
   // verify contains default attributes value
-  ASSERT_EQ(attr->getOrigin(), Magnum::Vector3(1.0, 2.0, 3.0));
+  ASSERT_EQ(stageAttr->getOrigin(), Magnum::Vector3(1.0, 2.0, 3.0));
 
-}  // testLoadStages
+  // end test LoadStages
 
-TEST_F(MetadataMediatorTest, testLoadObjects) {
-  LOG(INFO) << "Starting "
-               "MetadataMediatorTest::testLoadObjects";
+  LOG(INFO) << "Starting test LoadObjects";
 
   const auto objectAttributesMgr = MM_->getObjectAttributesManager();
-  int numHandles = objectAttributesMgr->getNumFileTemplateObjects();
+  int numObjHandles = objectAttributesMgr->getNumFileTemplateObjects();
   // should be 6 file-based templates - 4 original, one based on an original
   // but changed, and one new
-  ASSERT_EQ(numHandles, 6);
+  ASSERT_EQ(numObjHandles, 6);
 
   // get list of matching handles for base object - should always only be 1
-  auto attrHandles = objectAttributesMgr->getObjectHandlesBySubstring(
+  auto objAttrHandles = objectAttributesMgr->getObjectHandlesBySubstring(
       "dataset_test_object1.object_config.json", true);
-  ASSERT_EQ(attrHandles.size(), 1);
+  ASSERT_EQ(objAttrHandles.size(), 1);
   // get copy of attributes
-  auto attr = objectAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+  auto objAttr = objectAttributesMgr->getObjectCopyByHandle(objAttrHandles[0]);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, objAttr);
   // verify set to values in file
-  ASSERT_EQ(attr->getScale(), Magnum::Vector3(1, 1, 1));
-  ASSERT_EQ(attr->getRequiresLighting(), true);
-  ASSERT_EQ(attr->getMargin(), 0.03);
-  ASSERT_EQ(attr->getMass(), 0.038);
-  ASSERT_EQ(attr->getFrictionCoefficient(), 0.5);
-  ASSERT_EQ(attr->getRestitutionCoefficient(), 0.2);
-  ASSERT_EQ(attr->getOrientUp(), Magnum::Vector3(0, 1, 0));
-  ASSERT_EQ(attr->getOrientFront(), Magnum::Vector3(0, 0, -1));
-  ASSERT_EQ(attr->getUnitsToMeters(), 1.0);
-  ASSERT_EQ(attr->getBoundingBoxCollisions(), false);
-  ASSERT_EQ(attr->getJoinCollisionMeshes(), true);
+  ASSERT_EQ(objAttr->getScale(), Magnum::Vector3(1, 1, 1));
+  ASSERT_EQ(objAttr->getRequiresLighting(), true);
+  ASSERT_EQ(objAttr->getMargin(), 0.03);
+  ASSERT_EQ(objAttr->getMass(), 0.038);
+  ASSERT_EQ(objAttr->getFrictionCoefficient(), 0.5);
+  ASSERT_EQ(objAttr->getRestitutionCoefficient(), 0.2);
+  ASSERT_EQ(objAttr->getOrientUp(), Magnum::Vector3(0, 1, 0));
+  ASSERT_EQ(objAttr->getOrientFront(), Magnum::Vector3(0, 0, -1));
+  ASSERT_EQ(objAttr->getUnitsToMeters(), 1.0);
+  ASSERT_EQ(objAttr->getBoundingBoxCollisions(), false);
+  ASSERT_EQ(objAttr->getJoinCollisionMeshes(), true);
 
   // get list of matching handles for modified base - should always only be 1
-  attrHandles = objectAttributesMgr->getObjectHandlesBySubstring(
+  objAttrHandles = objectAttributesMgr->getObjectHandlesBySubstring(
       "modified_test_object1_1_slick_heavy", true);
-  ASSERT_EQ(attrHandles.size(), 1);
+  ASSERT_EQ(objAttrHandles.size(), 1);
   // get copy of attributes
-  attr = objectAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+  objAttr = objectAttributesMgr->getObjectCopyByHandle(objAttrHandles[0]);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, objAttr);
   // verify identical to copied object except for override values in
   // dataset_config file
-  ASSERT_EQ(attr->getScale(), Magnum::Vector3(1, 1, 1));
-  ASSERT_EQ(attr->getRequiresLighting(), true);
-  ASSERT_EQ(attr->getMargin(), 0.03);
-  ASSERT_EQ(attr->getMass(), 3.5);
-  ASSERT_EQ(attr->getFrictionCoefficient(), 0.2);
-  ASSERT_EQ(attr->getRestitutionCoefficient(), 0.2);
-  ASSERT_EQ(attr->getOrientUp(), Magnum::Vector3(0, 1, 0));
-  ASSERT_EQ(attr->getOrientFront(), Magnum::Vector3(0, 0, -1));
-  ASSERT_EQ(attr->getUnitsToMeters(), 1.0);
-  ASSERT_EQ(attr->getBoundingBoxCollisions(), false);
-  ASSERT_EQ(attr->getJoinCollisionMeshes(), true);
+  ASSERT_EQ(objAttr->getScale(), Magnum::Vector3(1, 1, 1));
+  ASSERT_EQ(objAttr->getRequiresLighting(), true);
+  ASSERT_EQ(objAttr->getMargin(), 0.03);
+  ASSERT_EQ(objAttr->getMass(), 3.5);
+  ASSERT_EQ(objAttr->getFrictionCoefficient(), 0.2);
+  ASSERT_EQ(objAttr->getRestitutionCoefficient(), 0.2);
+  ASSERT_EQ(objAttr->getOrientUp(), Magnum::Vector3(0, 1, 0));
+  ASSERT_EQ(objAttr->getOrientFront(), Magnum::Vector3(0, 0, -1));
+  ASSERT_EQ(objAttr->getUnitsToMeters(), 1.0);
+  ASSERT_EQ(objAttr->getBoundingBoxCollisions(), false);
+  ASSERT_EQ(objAttr->getJoinCollisionMeshes(), true);
 
   // get list of matching handles for new - should always only be 1
-  attrHandles = objectAttributesMgr->getObjectHandlesBySubstring(
+  objAttrHandles = objectAttributesMgr->getObjectHandlesBySubstring(
       "new_test_object3", true);
-  ASSERT_EQ(attrHandles.size(), 1);
+  ASSERT_EQ(objAttrHandles.size(), 1);
   // get copy of attributes
-  attr = objectAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+  objAttr = objectAttributesMgr->getObjectCopyByHandle(objAttrHandles[0]);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, objAttr);
   // verify set to values in dataset_config file
-  auto newRenderAssetHandle = attr->getRenderAssetHandle();
+  newRenderAssetHandle = objAttr->getRenderAssetHandle();
   // verify same renderasset handle to loaded stage attributes
   ASSERT_NE(std::string::npos,
             newRenderAssetHandle.find("dataset_test_object3.glb"));
   // verify values set correctly
 
-  ASSERT_EQ(attr->getMass(), 1.1);
-  ASSERT_EQ(attr->getFrictionCoefficient(), 0.1);
-  ASSERT_EQ(attr->getInertia(), Magnum::Vector3(3, 2, 1));
+  ASSERT_EQ(objAttr->getMass(), 1.1);
+  ASSERT_EQ(objAttr->getFrictionCoefficient(), 0.1);
+  ASSERT_EQ(objAttr->getInertia(), Magnum::Vector3(3, 2, 1));
 
   // get new attributes but don't register
-  attr = objectAttributesMgr->createObject("new_default_attributes", false);
+  objAttr = objectAttributesMgr->createObject("new_default_attributes", false);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, objAttr);
   // verify contains default attributes value
-  ASSERT_EQ(attr->getMass(), 10.0);
-  ASSERT_EQ(attr->getInertia(), Magnum::Vector3(3, 2, 1));
-}  // testLoadObjects
+  ASSERT_EQ(objAttr->getMass(), 10.0);
+  ASSERT_EQ(objAttr->getInertia(), Magnum::Vector3(3, 2, 1));
 
-TEST_F(MetadataMediatorTest, testLoadLights) {
-  LOG(INFO) << "Starting "
-               "MetadataMediatorTest::testLoadLights";
+  // end test LoadObjects
+
+  LOG(INFO) << "Starting test LoadLights";
+
   const auto lightsLayoutAttributesMgr = MM_->getLightLayoutAttributesManager();
   // get # of loaded light layout attributes.
-  int numHandles = lightsLayoutAttributesMgr->getNumObjects();
+  int numLightAttrHandles = lightsLayoutAttributesMgr->getNumObjects();
   // Should be 3 : file based, copy and new
-  ASSERT_EQ(numHandles, 3);
+  ASSERT_EQ(numLightAttrHandles, 3);
   // get list of matching handles for base light config - should always only
   // be 1
-  auto attrHandles = lightsLayoutAttributesMgr->getObjectHandlesBySubstring(
-      "dataset_test_lights.lighting_config.json", true);
-  ASSERT_EQ(attrHandles.size(), 1);
+  auto lightAttrHandles =
+      lightsLayoutAttributesMgr->getObjectHandlesBySubstring(
+          "dataset_test_lights.lighting_config.json", true);
+  ASSERT_EQ(lightAttrHandles.size(), 1);
   // get copy of attributes
-  auto attr = lightsLayoutAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+  auto lightAttr =
+      lightsLayoutAttributesMgr->getObjectCopyByHandle(lightAttrHandles[0]);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, lightAttr);
   // verify the number of lights within the lighting layout
-  ASSERT_EQ(12, attr->getNumLightInstances());
+  ASSERT_EQ(12, lightAttr->getNumLightInstances());
 
   // get list of matching handles for modified light config - should always
   // only be 1
-  attrHandles = lightsLayoutAttributesMgr->getObjectHandlesBySubstring(
+  lightAttrHandles = lightsLayoutAttributesMgr->getObjectHandlesBySubstring(
       "modified_test_lights", true);
-  ASSERT_EQ(attrHandles.size(), 1);
+  ASSERT_EQ(lightAttrHandles.size(), 1);
   // get copy of attributes
-  attr = lightsLayoutAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+  lightAttr =
+      lightsLayoutAttributesMgr->getObjectCopyByHandle(lightAttrHandles[0]);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, lightAttr);
   // verify the number of lights within the lighting layout
-  ASSERT_EQ(12, attr->getNumLightInstances());
+  ASSERT_EQ(12, lightAttr->getNumLightInstances());
 
   // get list of matching handles for new light config - should always only be
   // 1
-  attrHandles = lightsLayoutAttributesMgr->getObjectHandlesBySubstring(
+  lightAttrHandles = lightsLayoutAttributesMgr->getObjectHandlesBySubstring(
       "new_test_lights_0", true);
-  ASSERT_EQ(attrHandles.size(), 1);
+  ASSERT_EQ(lightAttrHandles.size(), 1);
   // get copy of attributes
-  attr = lightsLayoutAttributesMgr->getObjectCopyByHandle(attrHandles[0]);
+  lightAttr =
+      lightsLayoutAttributesMgr->getObjectCopyByHandle(lightAttrHandles[0]);
   // verify existence
-  ASSERT_NE(nullptr, attr);
+  ASSERT_NE(nullptr, lightAttr);
   // verify the number of lights within the lighting layout
-  ASSERT_EQ(3, attr->getNumLightInstances());
+  ASSERT_EQ(3, lightAttr->getNumLightInstances());
 
-}  // testLoadLights
+  // end test LoadLights
 
-TEST_F(MetadataMediatorTest, testLoadSceneInstances) {
-  LOG(INFO) << "Starting "
-               "MetadataMediatorTest::testLoadSceneInstances";
+  LOG(INFO) << "Starting test LoadSceneInstances";
   //
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
   //
   const auto sceneAttributesMgr = MM_->getSceneAttributesManager();
   // get # of loaded scene attributes.
-  int numHandles = sceneAttributesMgr->getNumObjects();
+  int numSceneHandles = sceneAttributesMgr->getNumObjects();
   // should be 1
-  ASSERT_EQ(numHandles, 1);
+  ASSERT_EQ(numSceneHandles, 1);
   // get handle list matching passed handle
-  auto attrHandles = sceneAttributesMgr->getObjectHandlesBySubstring(
+  auto sceneAttrHandles = sceneAttributesMgr->getObjectHandlesBySubstring(
       "dataset_test_scene", true);
   // make sure there is only 1 matching dataset_test_scene
-  ASSERT_EQ(attrHandles.size(), 1);
+  ASSERT_EQ(sceneAttrHandles.size(), 1);
 
-  const std::string activeSceneName = attrHandles[0];
+  const std::string activeSceneName = sceneAttrHandles[0];
   LOG(WARNING) << "testLoadSceneInstances : Scene instance attr handle : "
                << activeSceneName;
   // get scene instance attributes ref
@@ -341,11 +353,9 @@ TEST_F(MetadataMediatorTest, testLoadSceneInstances) {
   // translation origin
   ASSERT_EQ(objAttr1->getTranslationOrigin(), assetLocalInt);
 
-}  // testLoadSceneInstances
+  // end test LoadSceneInstances
 
-TEST_F(MetadataMediatorTest, testLoadNavmesh) {
-  LOG(INFO) << "Starting "
-               "MetadataMediatorTest::testLoadNavmesh";
+  LOG(INFO) << "Starting test LoadNavmesh";
   // get map of navmeshes
   const std::map<std::string, std::string> navmeshMap =
       MM_->getActiveNavmeshMap();
@@ -358,11 +368,9 @@ TEST_F(MetadataMediatorTest, testLoadNavmesh) {
   // each key should hold specific value
   ASSERT_EQ(navmeshMap.at("navmesh_path1"), "test_navmesh_path1");
   ASSERT_EQ(navmeshMap.at("navmesh_path2"), "test_navmesh_path2");
-}  // testLoadNavmesh
+  // end test LoadNavmesh
 
-TEST_F(MetadataMediatorTest, testLoadSemanticScene) {
-  LOG(INFO) << "Starting "
-               "MetadataMediatorTest::testLoadSemanticScene";
+  LOG(INFO) << "Starting test LoadSemanticScene";
   // get map of semantic scene instances
   const std::map<std::string, std::string> semanticMap =
       MM_->getActiveSemanticSceneDescriptorMap();
@@ -376,5 +384,65 @@ TEST_F(MetadataMediatorTest, testLoadSemanticScene) {
             "test_semantic_descriptor_path1");
   ASSERT_EQ(semanticMap.at("semantic_descriptor_path2"),
             "test_semantic_descriptor_path2");
-}  // testLoadSemanticScene
+  // end test LoadSemanticScene
+}  // testDataset0
+
+TEST_F(MetadataMediatorTest, testDataset1) {
+  // primarily testing glob file wildcard loading
+  initDataset1();
+
+  LOG(INFO) << "Starting "
+               "MetadataMediatorTest::testDataset1 : test LoadStages";
+  const auto stageAttributesMgr = MM_->getStageAttributesManager();
+  int numStageHandles = stageAttributesMgr->getNumObjects();
+  // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages + 2
+  // modified and 1 new stage in scene dataset config
+  ASSERT_EQ(numStageHandles, 6);
+  // end test LoadStages
+
+  LOG(INFO) << "Starting test LoadObjects";
+  const auto objectAttributesMgr = MM_->getObjectAttributesManager();
+  int numObjHandles = objectAttributesMgr->getNumFileTemplateObjects();
+  // glob lookup yields 4 files + 2 modified in config
+  ASSERT_EQ(numObjHandles, 6);
+  // end test LoadObjects
+
+  LOG(INFO) << "Starting test LoadLights";
+  const auto lightsLayoutAttributesMgr = MM_->getLightLayoutAttributesManager();
+  // get # of loaded light layout attributes.
+  int numLightAttrHandles = lightsLayoutAttributesMgr->getNumObjects();
+  // Should be 4 : 2 file based, copy and new
+  ASSERT_EQ(numLightAttrHandles, 4);
+
+  // end test LoadLights
+
+  LOG(INFO) << "Starting test LoadSceneInstances";
+  //
+  // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
+  // instance should be acquired through MM.
+  //
+  const auto sceneAttributesMgr = MM_->getSceneAttributesManager();
+  // get # of loaded scene attributes.
+  int numSceneHandles = sceneAttributesMgr->getNumObjects();
+  // should be 2 - 2 file based
+  ASSERT_EQ(numSceneHandles, 2);
+
+  // end test LoadSceneInstances
+
+  LOG(INFO) << "Starting test LoadNavmesh";
+  // get map of navmeshes
+  const std::map<std::string, std::string> navmeshMap =
+      MM_->getActiveNavmeshMap();
+  // should have 3
+  ASSERT_EQ(navmeshMap.size(), 3);
+  // end test LoadNavmesh
+
+  LOG(INFO) << "Starting test LoadSemanticScene";
+  // get map of semantic scene instances
+  const std::map<std::string, std::string> semanticMap =
+      MM_->getActiveSemanticSceneDescriptorMap();
+  // should have 3
+  ASSERT_EQ(semanticMap.size(), 3);
+  // testLoadSemanticScene
+}  // testDataset1
 }  // namespace

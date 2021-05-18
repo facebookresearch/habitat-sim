@@ -110,11 +110,13 @@
     }
   },
     "navmesh_instances":{
-        "navmesh_path1":"test_navmesh_path1",
-        "navmesh_path2":"test_navmesh_path2"
+      "navmesh_path0":"test_navmesh_path0",
+      "navmesh_path1":"test_navmesh_path1",
+      "navmesh_path2":"test_navmesh_path2"
     },
     "semantic_scene_descriptor_instances": {
-        "semantic_descriptor_path1":"test_semantic_descriptor_path1",
-        "semantic_descriptor_path2":"test_semantic_descriptor_path2"
+      "semantic_descriptor_path0":"test_semantic_descriptor_path0",
+      "semantic_descriptor_path1":"test_semantic_descriptor_path1",
+      "semantic_descriptor_path2":"test_semantic_descriptor_path2"
     }
 }

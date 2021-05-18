@@ -25,11 +25,12 @@ def powerset(iterable):
         ("examples/tutorials/stereo_agent.py", "--no-display"),
         ("examples/tutorials/lighting_tutorial.py", "--no-show-images"),
         ("examples/tutorials/new_actions.py",),
-        (
-            "examples/tutorials/nb_python/rigid_object_tutorial.py",
-            "--no-show-video",
-            "--no-make-video",
-        ),
+        # This is deprecated and replaced by the managed_rigid_object_tutorial
+        # (
+        #     "examples/tutorials/nb_python/rigid_object_tutorial.py",
+        #     "--no-show-video",
+        #     "--no-make-video",
+        # ),
         (
             "examples/tutorials/nb_python/managed_rigid_object_tutorial.py",
             "--no-show-video",
