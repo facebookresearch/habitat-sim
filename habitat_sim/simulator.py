@@ -118,10 +118,7 @@ class Simulator(SimulatorBackend):
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 
-    def close(self, destroy: bool = False) -> None:
-        if self.renderer is not None:
-            self.renderer.acquire_gl_context()
-
+    def close(self) -> None:
         for agent_sensorsuite in self.__sensors:
             for sensor in agent_sensorsuite.values():
                 sensor.close()
@@ -137,7 +134,7 @@ class Simulator(SimulatorBackend):
 
         self.__last_state.clear()
 
-        super().close(destroy)
+        super().close()
 
     def __enter__(self) -> "Simulator":
         return self
@@ -313,42 +310,6 @@ class Simulator(SimulatorBackend):
         self.__last_state[agent_id] = agent.state
         return agent
 
-    def get_sensor_observations_async_start(self, agent_ids: Union[int, List[int]] = 0):
-        if isinstance(agent_ids, int):
-            agent_ids = [agent_ids]
-
-        for agent_id in agent_ids:
-            agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
-                sensor.draw_observation_async()
-
-        self.renderer.start_draw_jobs()
-
-    def get_sensor_observations_async_finish(
-        self, agent_ids: Union[int, List[int]] = 0
-    ) -> Union[
-        Dict[str, Union[ndarray, "Tensor"]],
-        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
-    ]:
-        if isinstance(agent_ids, int):
-            agent_ids = [agent_ids]
-            return_single = True
-        else:
-            return_single = False
-
-        self.renderer.draw_wait()
-        # As backport. All Dicts are ordered in Python >= 3.7
-        observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
-        for agent_id in agent_ids:
-            agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
-            for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                agent_observations[sensor_uuid] = sensor.get_observation_async()
-
-            observations[agent_id] = agent_observations
-        if return_single:
-            return next(iter(observations.values()))
-        return observations
-
     @overload
     def get_sensor_observations(self, agent_ids: int = 0) -> ObservationDict:
         ...
@@ -490,7 +451,7 @@ class Simulator(SimulatorBackend):
         return end_pos
 
     def __del__(self) -> None:
-        self.close(destroy=True)
+        self.close()
 
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
@@ -534,22 +495,15 @@ class Sensor:
                     resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
                 )
         else:
-            size = self._sensor_object.framebuffer_size
             if self._spec.sensor_type == SensorType.SEMANTIC:
                 self._buffer = np.empty(
                     (self._spec.resolution[0], self._spec.resolution[1]),
                     dtype=np.uint32,
                 )
-                self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.R32UI, size, self._buffer
-                )
             elif self._spec.sensor_type == SensorType.DEPTH:
                 self._buffer = np.empty(
                     (self._spec.resolution[0], self._spec.resolution[1]),
                     dtype=np.float32,
-                )
-                self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.R32F, size, self._buffer
                 )
             else:
                 self._buffer = np.empty(
@@ -559,11 +513,6 @@ class Sensor:
                         self._spec.channels,
                     ),
                     dtype=np.uint8,
-                )
-                self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.RGBA8_UNORM,
-                    size,
-                    self._buffer.reshape(self._spec.resolution[0], -1),
                 )
 
         noise_model_kwargs = self._spec.noise_model_kwargs
@@ -578,51 +527,6 @@ class Sensor:
         )
 
     def draw_observation(self) -> None:
-        # see if the sensor is attached to a scene graph, otherwise it is invalid,
-        # and cannot make any observation
-        if not self._sensor_object.object:
-            raise habitat_sim.errors.InvalidAttachedObject(
-                "Sensor observation requested but sensor is invalid.\
-                 (has it been detached from a scene node?)"
-            )
-        self._sim.renderer.draw(self._sensor_object, self._sim)
-
-    def draw_observation_async(self) -> None:
-        # TODO: sync this path with renderer changes as above (render from sensor object)
-        self.draw_observation_setup()
-        # get the correct scene graph based on application
-        if self._spec.sensor_type == SensorType.SEMANTIC:
-            scene = self._sim.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
-
-        render_flags = habitat_sim.gfx.Camera.Flags.NONE
-
-        if self._sim.frustum_culling:
-            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
-
-        self._sim.renderer.draw_async(
-            self._sensor_object, scene, self.view, render_flags
-        )
-
-        # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
-        if (
-            self._spec.sensor_type == SensorType.SEMANTIC
-            and self._sim.get_active_scene_graph()
-            is not self._sim.get_active_semantic_scene_graph()
-        ):
-            raise RuntimeError("This isn't gonna work here")
-            #  agent_node = self._agent.scene_node
-            #  agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
-            #  render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
-            #  self._sim.renderer.draw_async(
-            #  self._sensor_object,
-            #  self._sim.get_active_scene_graph(),
-            #  self.view,
-            #  render_flags,
-            #  )
-
-    def draw_observation_setup(self) -> None:
         # sanity check:
 
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
@@ -633,25 +537,7 @@ class Sensor:
                  (has it been detached from a scene node?)"
             )
 
-        # get the correct scene graph based on application
-        if self._spec.sensor_type == SensorType.SEMANTIC:
-            if self._sim.semantic_scene is None:
-                raise RuntimeError(
-                    "SemanticSensor observation requested but no SemanticScene is loaded"
-                )
-            scene = self._sim.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
-
-        # now, connect the agent to the root node of the current scene graph
-
-        # sanity check is not needed on agent:
-        # because if a sensor is attached to a scene graph,
-        # it implies the agent is attached to the same scene graph
-        # (it assumes backend simulator will guarantee it.)
-
-        agent_node = self._agent.scene_node
-        agent_node.parent = scene.get_root_node()
+        self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def get_observation(self) -> Union[ndarray, "Tensor"]:
 
@@ -668,22 +554,24 @@ class Sensor:
 
                 obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:
-
+            size = self._sensor_object.framebuffer_size
             if self._spec.sensor_type == SensorType.SEMANTIC:
-                tgt.read_frame_object_id(self.view)
+                tgt.read_frame_object_id(
+                    mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)
+                )
             elif self._spec.sensor_type == SensorType.DEPTH:
-                tgt.read_frame_depth(self.view)
+                tgt.read_frame_depth(
+                    mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer)
+                )
             else:
-                tgt.read_frame_rgba(self.view)
+                tgt.read_frame_rgba(
+                    mn.MutableImageView2D(
+                        mn.PixelFormat.RGBA8_UNORM,
+                        size,
+                        self._buffer.reshape(self._spec.resolution[0], -1),
+                    )
+                )
 
-            obs = np.flip(self._buffer, axis=0)
-
-        return self._noise_model(obs)
-
-    def get_observation_async(self) -> Union[ndarray, "Tensor"]:
-        if self._spec.gpu2gpu_transfer:
-            obs = self._buffer.flip(0)
-        else:
             obs = np.flip(self._buffer, axis=0)
 
         return self._noise_model(obs)

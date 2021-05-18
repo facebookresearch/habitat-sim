@@ -292,11 +292,6 @@ if(NOT USE_SYSTEM_MAGNUM)
   endif()
 endif()
 
-if(NOT CORRADE_TARGET_EMSCRIPTEN)
-  add_library(atomic_wait STATIC ${DEPS_DIR}/atomic_wait/atomic_wait.cpp)
-  target_include_directories(atomic_wait PUBLIC ${DEPS_DIR}/atomic_wait)
-endif()
-
 # gtest build
 if(BUILD_TEST)
   # store build shared libs option

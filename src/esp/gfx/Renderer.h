@@ -7,7 +7,6 @@
 
 #include "esp/core/esp.h"
 #include "esp/gfx/RenderCamera.h"
-#include "esp/gfx/WindowlessContext.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/sensor/VisualSensor.h"
 
@@ -26,7 +25,6 @@ class Renderer {
      * Note: Cannot set this flag when doing RGB rendering
      */
     NoTextures = 1 << 0,
-    BackgroundThread = 1 << 1,
 
     /**
      * When binding the render target to a depth or a sementic sensor,
@@ -34,7 +32,7 @@ class Renderer {
      * the depth, or sementic info
      * see bindRenderTarget for more info.
      */
-    VisualizeTexture = 1 << 2,
+    VisualizeTexture = 1 << 1,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -44,11 +42,6 @@ class Renderer {
    * @brief Constructor
    */
   explicit Renderer(Flags flags = {});
-
-  /**
-   * @brief Constructor for when creating a background thread
-   */
-  explicit Renderer(WindowlessContext* context, Flags flags = {});
 
   /*
    * @brief draw the scene graph with the camera specified by user
@@ -74,21 +67,6 @@ class Renderer {
   void visualize(sensor::VisualSensor& visualSensor,
                  float colorMapOffset = 1.0f / 512.0f,
                  float colorMapScale = 1.0f / 256.0f);
-
-#if !defined(CORRADE_TARGET_EMSCRIPTEN)
-  // draw the scene graph with the visual sensor provided by user
-  // async
-  void drawAsync(sensor::VisualSensor& visualSensor,
-                 scene::SceneGraph& sceneGraph,
-                 const Mn::MutableImageView2D& view,
-                 RenderCamera::Flags flags = {
-                     RenderCamera::Flag::FrustumCulling});
-
-  void drawWait();
-  void waitSG();
-
-  void startDrawJobs();
-#endif
 
   void acquireGlContext();
   /**

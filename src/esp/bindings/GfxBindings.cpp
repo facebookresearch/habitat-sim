@@ -104,22 +104,6 @@ void initGfxBindings(py::module& m) {
           R"(Draw the active scene in current simulator using the visual sensor)",
           "visualSensor"_a, "sim"_a)
       .def(
-          "draw_async",
-          [](Renderer& self, sensor::VisualSensor& visualSensor,
-             scene::SceneGraph& sceneGraph, const Mn::MutableImageView2D& view,
-             RenderCamera::Flag flags) {
-            self.drawAsync(visualSensor, sceneGraph, view,
-                           RenderCamera::Flags{flags});
-          },
-          R"(Draw given scene using the visual sensor)", "visualSensor"_a,
-          "scene"_a, "view"_a,
-          "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
-      .def("draw_wait", &Renderer::drawWait)
-      .def("wait_scene_graph", &Renderer::waitSG)
-      .def("start_draw_jobs", &Renderer::startDrawJobs)
-      .def("acquire_gl_context", &Renderer::acquireGlContext)
-
-      .def(
           "bind_render_target",
           [](Renderer& self, sensor::VisualSensor& visualSensor,
              Renderer::Flag flags) {
