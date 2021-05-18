@@ -558,13 +558,14 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
-      - run: *install_cmake
-      - run: *install_clang_tidy
-      - run: *install_deps
-      - restore_cache: *restore_conda_cache
-      - run: *install_conda
-      - run: *install_pytorch
-      - run: *download_test_data
+      - install_all_ubuntu_deps
+            #- run: *install_cmake
+            #- run: *install_clang_tidy
+            #- run: *install_deps
+            #- restore_cache: *restore_conda_cache
+            #- run: *install_conda
+            # - run: *install_pytorch
+            #- run: *download_test_data
       - run:
           name: Build, install habitat-sim and run benchmark
           no_output_timeout: 25m
@@ -575,14 +576,7 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 16
-              python -u setup.py install --headless --vhacd
-
-      - run:
-          name: Run sim benchmark
-          command: |
-              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat; cd habitat-sim
-              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
+              python -u setup.py install --config Release --headless --vhacd
       - run:
           name: run clang-tidy
           command: |
@@ -590,6 +584,13 @@ jobs:
               . activate habitat;
               cd habitat-sim
               python tools/run-clang-tidy.py -header-filter=src/esp src/esp
+      - run:
+          name: Run sim benchmark
+          command: |
+              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
 
 
 
