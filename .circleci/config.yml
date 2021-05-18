@@ -558,6 +558,7 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
+      - run: *install_cmake
       - run: *install_clang_tidy
       - run: *install_deps
       - restore_cache: *restore_conda_cache
