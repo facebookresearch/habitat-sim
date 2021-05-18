@@ -14,6 +14,7 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletDebugManager.h"
 #include "BulletRigidObject.h"
 
 //!  A Few considerations in construction
@@ -41,7 +42,7 @@ BulletRigidObject::BulletRigidObject(
         collisionObjToObjIds)
     : BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)),
       RigidObject(rigidBodyNode, objectId, resMgr),
-      MotionState(*rigidBodyNode) {}
+      MotionState{*rigidBodyNode} {}
 
 BulletRigidObject::~BulletRigidObject() {
   if (!isActive()) {
@@ -122,17 +123,24 @@ bool BulletRigidObject::constructCollisionShape() {
         resMgr_.getMeshMetaData(collisionAssetHandle);
 
     if (!usingBBCollisionShape_) {
-      constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
-                                        metaData.root, joinCollisionMeshes);
-
-      // add the final object after joining meshes
       if (joinCollisionMeshes) {
+        bObjectConvexShapes_.emplace_back(
+            std::make_unique<btConvexHullShape>());
+        constructJoinedConvexShapeFromMeshes(Magnum::Matrix4{}, meshGroup,
+                                             metaData.root,
+                                             bObjectConvexShapes_.back().get());
+
+        // add the final object after joining meshes
         bObjectConvexShapes_.back()->setLocalScaling(
             btVector3(tmpAttr->getCollisionAssetSize()));
         bObjectConvexShapes_.back()->setMargin(0.0);
         bObjectConvexShapes_.back()->recalcLocalAabb();
         bObjectShape_->addChildShape(btTransform::getIdentity(),
                                      bObjectConvexShapes_.back().get());
+      } else {
+        constructConvexShapesFromMeshes(Magnum::Matrix4{}, meshGroup,
+                                        metaData.root, bObjectShape_.get(),
+                                        bObjectConvexShapes_);
       }
     }
   }  // if using prim collider else use mesh collider
@@ -217,61 +225,6 @@ BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
   obj->setMargin(0.0);
   return obj;
 }  // buildPrimitiveCollisionObject
-
-// recursively create the convex mesh shapes and add them to the compound in a
-// flat manner by accumulating transformations down the tree
-void BulletRigidObject::constructBulletCompoundFromMeshes(
-    const Magnum::Matrix4& transformFromParentToWorld,
-    const std::vector<assets::CollisionMeshData>& meshGroup,
-    const assets::MeshTransformNode& node,
-    bool join) {
-  Magnum::Matrix4 transformFromLocalToWorld =
-      transformFromParentToWorld * node.transformFromLocalToParent;
-  if (node.meshIDLocal != ID_UNDEFINED) {
-    // This node has a mesh, so add it to the compound
-
-    const assets::CollisionMeshData& mesh = meshGroup[node.meshIDLocal];
-
-    if (join) {
-      // add all points to a single convex instead of compounding (more
-      // stable)
-      if (bObjectConvexShapes_.empty()) {
-        // create the convex if it does not exist
-        bObjectConvexShapes_.emplace_back(
-            std::make_unique<btConvexHullShape>());
-      }
-
-      // add points
-      for (auto& v : mesh.positions) {
-        bObjectConvexShapes_.back()->addPoint(
-            btVector3(transformFromLocalToWorld.transformPoint(v)), false);
-      }
-
-    } else {
-      bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>());
-      // transform points into world space, including any scale/shear in
-      // transformFromLocalToWorld.
-      for (auto& v : mesh.positions) {
-        bObjectConvexShapes_.back()->addPoint(
-            btVector3(transformFromLocalToWorld.transformPoint(v)), false);
-      }
-      // bObjectConvexShapes_.back()->optimizeConvexHull();
-      // bObjectConvexShapes_.back()->initializePolyhedralFeatures();
-      // Remove local convex margin in favor of margin on the containing
-      // compound
-      bObjectConvexShapes_.back()->setMargin(0.0);
-      bObjectConvexShapes_.back()->recalcLocalAabb();
-      //! Add to compound shape stucture
-      bObjectShape_->addChildShape(btTransform::getIdentity(),
-                                   bObjectConvexShapes_.back().get());
-    }
-  }
-
-  for (const auto& child : node.children) {
-    constructBulletCompoundFromMeshes(transformFromLocalToWorld, meshGroup,
-                                      child, join);
-  }
-}  // constructBulletCompoundFromMeshes
 
 void BulletRigidObject::setCollisionFromBB() {
   btVector3 dim(node().getCumulativeBB().size() / 2.0);
@@ -370,6 +323,25 @@ void BulletRigidObject::syncPose() {
   bWorld_->updateSingleAabb(bObjectRigidBody_.get());
 }  // syncPose
 
+std::string BulletRigidObject::getCollisionDebugName() {
+  // extract a concise name from the handle by trimming directories and file
+  // extensions
+  // TODO: test this for missing '/' or '.'
+  const auto& handle = initializationAttributes_->getHandle();
+  auto start = handle.rfind('/');
+  if (start == std::string::npos) {
+    start = 0;
+  } else {
+    start++;
+  }
+  auto end = handle.find('.', start);
+  if (end == std::string::npos) {
+    end = handle.length();
+  }
+  auto adjustedHandle = handle.substr(start, end - start);
+  return "RigidObject, " + adjustedHandle + ", id " + std::to_string(objectId_);
+}
+
 void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   // get this object's creation template, appropriately cast
   auto tmpAttr = getInitializationAttributes();
@@ -430,6 +402,8 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
+  BulletDebugManager::get().mapCollisionObjectTo(bObjectRigidBody_.get(),
+                                                 getCollisionDebugName());
 
   if (mt == MotionType::KINEMATIC) {
     bObjectRigidBody_->setCollisionFlags(
@@ -442,11 +416,12 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   if (mt == MotionType::STATIC) {
     CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isStaticObject());
     bWorld_->addRigidBody(
-        bObjectRigidBody_.get(),
-        2,       // collisionFilterGroup (2 == StaticFilter)
-        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+        bObjectRigidBody_.get(), int(CollisionGroup::Static),
+        CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static));
   } else {
-    bWorld_->addRigidBody(bObjectRigidBody_.get());
+    bWorld_->addRigidBody(
+        bObjectRigidBody_.get(), int(CollisionGroup::FreeObject),
+        CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject));
     setActive();
   }
 }
@@ -509,8 +484,19 @@ Magnum::Vector3 BulletRigidObject::getCOM() const {
   return com;
 }  // getCOM
 
-bool BulletRigidObject::contactTest() {
+bool BulletRigidObject::contactTest(bool staticAsStage) {
   SimulationContactResultCallback src;
+  src.m_collisionFilterGroup =
+      bObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterGroup;
+  src.m_collisionFilterMask =
+      bObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterMask;
+  if (!staticAsStage && objectMotionType_ == MotionType::STATIC) {
+    // override collision filter for STATIC object to include other STATICs such
+    // as the stage
+    src.m_collisionFilterGroup = int(CollisionGroup::FreeObject);
+    src.m_collisionFilterMask =
+        CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject);
+  }
   bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
   return src.bCollision;
 }  // contactTest
@@ -526,6 +512,30 @@ const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
   return Magnum::Range3D{Magnum::Vector3{localAabbMin},
                          Magnum::Vector3{localAabbMax}};
 }  // getCollisionShapeAabb
+
+bool BulletRigidObject::isMe(const btCollisionObject* collisionObject) {
+  for (auto& sceneObj : bStaticCollisionObjects_) {
+    if (sceneObj.get() == collisionObject) {
+      return true;
+    }
+  }
+  if (bObjectRigidBody_.get() == collisionObject) {
+    return true;
+  }
+
+  return false;
+}
+
+void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
+  if (!bObjectRigidBody_->isInWorld()) {
+    LOG(ERROR) << "BulletRigidObject::overrideCollisionGroup failed because "
+                  "the Bullet body hasn't yet been added to the Bullet world.";
+  }
+
+  bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  bWorld_->addRigidBody(bObjectRigidBody_.get(), int(group),
+                        CollisionGroupHelper::getMaskForGroup(group));
+}
 
 }  // namespace physics
 }  // namespace esp

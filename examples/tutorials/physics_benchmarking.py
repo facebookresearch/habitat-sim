@@ -1,3 +1,7 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 # [setup]
 import os
 import time
@@ -56,7 +60,7 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
         et = time.time()
         physics_step_times.append(mt - st)
         graphics_render_times.append(et - mt)
-        collisions.append(sim.get_num_active_contact_points())
+        collisions.append(sim.get_physics_num_active_contact_points())
 
     if "observations" in data:
         data["observations"] += observations

@@ -136,7 +136,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
         float boxHeight = 2.0 + (o * 2);
-        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.25f, 0.0};
+        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.5f, 0.0};
         physicsManager_->setRotation(
             objectId, Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
         physicsManager_->setTranslation(objectId, initialPosition);
@@ -278,6 +278,22 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     physicsManager_->setTranslation(objectId0, Magnum::Vector3{0, 0.9, 0});
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+
+    // set box 0 to KINEMATIC
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::KINEMATIC);
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+
+    // set box 0 to STATIC
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::STATIC);
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0, false));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    // reset MotionType
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::DYNAMIC);
 
     // set stage to non-collidable
     ASSERT_TRUE(physicsManager_->getStageIsCollidable());

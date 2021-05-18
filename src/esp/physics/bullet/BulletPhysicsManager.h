@@ -18,6 +18,7 @@
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 
+#include "BulletDebugManager.h"
 #include "BulletRigidObject.h"
 #include "BulletRigidStage.h"
 #include "esp/physics/PhysicsManager.h"
@@ -166,10 +167,24 @@ class BulletPhysicsManager : public PhysicsManager {
    *
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
+   * @param staticAsStage When false, override configured collision groups|masks
+   * for STATIC objects and articulated fixed base such that contact with other
+   * STATICs such as the stage are considered.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest(const int physObjectID) override;
+  bool contactTest(const int physObjectID, bool staticAsStage = true) override;
+
+  // TODO: document
+  void overrideCollisionGroup(const int physObjectID,
+                              CollisionGroup group) const override;
+
+  /**
+   * @brief Return ContactPointData objects describing the contacts from the
+   * most recent physics substep. This implementation is roughly identical to
+   * PyBullet's getContactPoints.
+   */
+  std::vector<ContactPointData> getContactPoints() const override;
 
   /**
    * @brief Cast a ray into the collision world and return a @ref RaycastResults
@@ -184,12 +199,24 @@ class BulletPhysicsManager : public PhysicsManager {
   RaycastResults castRay(const esp::geo::Ray& ray,
                          double maxDistance = 100.0) override;
 
-  // The number of contact points that were active during the last step. An
-  // object resting on another object will involve several active contact
-  // points. Once both objects are asleep, the contact points are inactive. This
-  // count can be used as a metric for the complexity/cost of collision-handling
-  // in the current scene.
-  int getNumActiveContactPoints() override;
+  int getNumActiveContactPoints() override {
+    return BulletDebugManager::get().getNumActiveContactPoints(bWorld_.get());
+  }
+  int getNumActiveOverlappingPairs() override {
+    return BulletDebugManager::get().getNumActiveOverlappingPairs(
+        bWorld_.get());
+  }
+  std::string getStepCollisionSummary() override {
+    return BulletDebugManager::get().getStepCollisionSummary(bWorld_.get());
+  }
+
+  /**
+   * @brief Perform discrete collision detection for the scene.
+   */
+  virtual void performDiscreteCollisionDetection() override {
+    bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+    m_recentNumSubStepsTaken = -1;  // TODO: handle this more gracefully
+  }
 
  protected:
   //============ Initialization =============
@@ -243,6 +270,8 @@ class BulletPhysicsManager : public PhysicsManager {
   std::shared_ptr<std::map<const btCollisionObject*, int>>
       collisionObjToObjIds_;
 
+  int m_recentNumSubStepsTaken = -1;  // for recent call to stepPhysics
+
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for
    * Bullet.
@@ -252,6 +281,11 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return true if valid, false otherwise.
    */
   bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
+
+  // TODO: document
+  void lookUpObjectIdAndLinkId(const btCollisionObject* colObj,
+                               int* objectId,
+                               int* linkId) const;
 
  public:
   ESP_SMART_POINTERS(BulletPhysicsManager)

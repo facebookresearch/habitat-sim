@@ -20,6 +20,7 @@
 
 #include "esp/core/esp.h"
 
+#include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/bullet/BulletBase.h"
 
@@ -78,26 +79,6 @@ class BulletRigidObject : public BulletBase,
   std::unique_ptr<btCollisionShape> buildPrimitiveCollisionObject(
       int primTypeVal,
       double halfLength);
-  // const assets::AbstractPrimitiveAttributes& primAttributes);
-
-  /**
-   * @brief Recursively construct a @ref btCompoundShape for collision from
-   * loaded mesh assets. A @ref btConvexHullShape is constructed for each
-   * sub-component, transformed to object-local space and added to the compound
-   * in a flat manner for efficiency.
-   * @param transformFromParentToWorld The cumulative parent-to-world
-   * transformation matrix constructed by composition down the @ref
-   * MeshTransformNode tree to the current node.
-   * @param meshGroup Access structure for collision mesh data.
-   * @param node The current @ref MeshTransformNode in the recursion.
-   * @param join Whether or not to join sub-meshes into a single con convex
-   * shape, rather than creating individual convexes under the compound.
-   */
-  void constructBulletCompoundFromMeshes(
-      const Magnum::Matrix4& transformFromParentToWorld,
-      const std::vector<assets::CollisionMeshData>& meshGroup,
-      const assets::MeshTransformNode& node,
-      bool join);
 
   /**
    * @brief Construct the @ref bObjectShape_ for this object.
@@ -426,10 +407,13 @@ class BulletRigidObject : public BulletBase,
    * collision world.
    *
    * See @ref SimulationContactResultCallback
+   * @param staticAsStage When false, override configured collision groups|masks
+   * for STATIC objects such that contact with other STATICs such as the stage
+   * are considered.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest();
+  bool contactTest(bool staticAsStage = true);
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
@@ -437,6 +421,19 @@ class BulletRigidObject : public BulletBase,
    * @return The Aabb.
    */
   const Magnum::Range3D getCollisionShapeAabb() const override;
+
+  /**
+   * @brief Check whether a specific @ref btCollisionObject belongs to this
+   * object.
+   */
+  bool isMe(const btCollisionObject* collisionObject);
+
+  void overrideCollisionGroup(CollisionGroup group);
+
+  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
+   * wrapped into one @ref btRigidBody.
+   */
+  std::unique_ptr<btRigidBody> bObjectRigidBody_;
 
  private:
   /**
@@ -453,6 +450,9 @@ class BulletRigidObject : public BulletBase,
    * after it was changed kinematically. Called automatically on kinematic
    * updates. See @ref btRigidBody::setWorldTransform. */
   void syncPose() override;
+
+  // TODO: document
+  std::string getCollisionDebugName();
 
   /**
    * @brief construct a @ref btRigidBody for this object configured by
@@ -482,22 +482,10 @@ class BulletRigidObject : public BulletBase,
   //! deffered construction of collision shape
   Mn::Vector3 originShift_;
 
-  //! Object data: Composite convex collision shape
-  std::vector<std::unique_ptr<btConvexHullShape>> bObjectConvexShapes_;
-
-  //! list of @ref btCollisionShape for storing arbitrary collision shapes
-  //! referenced within the @ref bObjectShape_.
-  std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
-
   //! Object data: All components of the collision shape
   std::unique_ptr<btCompoundShape> bObjectShape_;
 
   std::unique_ptr<btCompoundShape> bEmptyShape_;
-
-  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
-   * wrapped into one @ref btRigidBody.
-   */
-  std::unique_ptr<btRigidBody> bObjectRigidBody_;
 
   ESP_SMART_POINTERS(BulletRigidObject)
 };

@@ -10,6 +10,8 @@ configure_file(
 
 add_library(
   physics STATIC
+  CollisionGroupHelper.cpp
+  CollisionGroupHelper.h
   objectManagers/PhysicsObjectBaseManager.h
   objectManagers/RigidBaseManager.h
   objectManagers/RigidObjectManager.cpp

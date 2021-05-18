@@ -23,6 +23,7 @@
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
+#include "esp/physics/bullet/BulletDebugManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
@@ -790,11 +791,21 @@ Magnum::Vector3 Simulator::getAngularVelocity(const int objectID,
   return Magnum::Vector3();
 }
 
-bool Simulator::contactTest(const int objectID, const int sceneID) {
+bool Simulator::contactTest(const int objectID,
+                            bool staticAsStage,
+                            const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    return physicsManager_->contactTest(objectID);
+    return physicsManager_->contactTest(objectID, staticAsStage);
   }
   return false;
+}
+
+std::vector<esp::physics::ContactPointData> Simulator::getPhysicsContactPoints(
+    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getContactPoints();
+  }
+  return {};
 }
 
 esp::physics::RaycastResults Simulator::castRay(const esp::geo::Ray& ray,
