@@ -36,6 +36,7 @@ namespace esp {
 namespace sim {
 
 using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::SceneAOInstanceAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
@@ -344,7 +345,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   const std::string stageAttributesHandle =
       metadataMediator_->getStageAttrFullHandle(
           stageInstanceAttributes->getHandle());
-  // Get StageAttributes
+  // Get StageAttributes copy
   auto stageAttributes =
       metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
           stageAttributesHandle);
@@ -364,6 +365,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   stageAttributes->setLightSetup(lightSetupKey);
   // set frustum culling from simulator config
   stageAttributes->setFrustumCulling(frustumCulling_);
+  // set scaling values for this instance of stage attributes
+  stageAttributes->setScale(stageAttributes->getScale() *
+                            stageInstanceAttributes->getUniformScale());
 
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage
@@ -432,10 +436,15 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // 5. Load object instances as spceified by Scene Instance Attributes.
   bool success = instanceObjectsForActiveScene();
 
-  // TODO : reset may eventually have all the scene instance instantiation
-  // code so that scenes can be reset
   if (success) {
-    reset();
+    // 6. Load articulated object instances as specified by Scene Instance
+    // Attributes.
+    success = instanceArticulatedObjectsForActiveScene();
+    if (success) {
+      // TODO : reset may eventually have all the scene instance instantiation
+      // code so that scenes can be reset
+      reset();
+    }
   }
 
   return success;
@@ -461,7 +470,7 @@ bool Simulator::instanceObjectsForActiveScene() {
 
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
-  // vector holding all objects added
+  // vector holding all objects added (for informational purposes)
   std::vector<int> objectsAdded;
   int objID = 0;
 
@@ -473,7 +482,7 @@ bool Simulator::instanceObjectsForActiveScene() {
        metadata::managers::SceneInstanceTranslationOrigin::AssetLocal);
 
   std::string errMsgTmplt =
-      "Simulator::createSceneInstance : Error instancing scene : " +
+      "Simulator::instanceObjectsForActiveScene : Error instancing objects : " +
       activeSceneName + " : ";
   // Iterate through instances, create object and implement initial
   // transformation.
@@ -495,8 +504,115 @@ bool Simulator::instanceObjectsForActiveScene() {
     objectsAdded.push_back(objID);
   }  // for each object attributes
   // objectsAdded holds all ids of added objects.
+
   return true;
 }  // Simulator::instanceObjectsForActiveScene()
+
+bool Simulator::instanceArticulatedObjectsForActiveScene() {
+  // Get scene instance attributes corresponding to current active scene name
+  // This should always just retrieve an existing, appropriately configured
+  // scene instance attributes, depending on what exists in the Scene Dataset
+  // library for the current dataset.
+  const std::string activeSceneName = config_.activeSceneName;
+  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
+      metadataMediator_->getSceneAttributesByName(activeSceneName);
+
+  // get lightSetupKey from the value set when stage was created.
+  const std::string lightSetupKey = config_.sceneLightSetup;
+
+  std::string errMsgTmplt =
+      "Simulator::instanceArticulatedObjectsForActiveScene : Error instancing "
+      "articulated objects : " +
+      activeSceneName + " : ";
+
+  // 6. Load all articulated object instances
+  // Get all instances of articulated objects described in scene
+  const std::vector<SceneAOInstanceAttributes::ptr> artObjInstances =
+      curSceneInstanceAttributes->getArticulatedObjectInstances();
+
+  // vector holding all articulated objects added
+  std::vector<int> artObjsAdded;
+  int aoID = 0;
+
+  auto& drawables = getDrawableGroup();
+
+  // Iterate through instances, create object and implement initial
+  // transformation.
+  for (const auto& artObjInst : artObjInstances) {
+    // get model file name
+    const std::string artObjFilePath =
+        metadataMediator_->getArticulatedObjModelFullHandle(
+            artObjInst->getHandle());
+
+    // create articulated object
+    aoID = physicsManager_->addArticulatedObjectFromURDF(
+        artObjFilePath, &drawables, artObjInst->getFixedBase(),
+        artObjInst->getUniformScale(), artObjInst->getMassScale());
+
+    if (aoID == ID_UNDEFINED) {
+      // instancing failed for some reason.
+      LOG(ERROR) << errMsgTmplt
+                 << "Articulated Object create failed for model filepath "
+                 << artObjFilePath << ", whose handle is "
+                 << artObjInst->getHandle()
+                 << " as specified in articulated object instance attributes.";
+      return false;
+    }
+    // now move objects
+    // set object's location and rotation based on translation and rotation
+    // params specified in instance attributes
+    auto translate = artObjInst->getTranslation();
+
+    // construct initial transformation state.
+    Magnum::Matrix4 state =
+        Magnum::Matrix4::from(artObjInst->getRotation().toMatrix(), translate);
+    physicsManager_->setArticulatedObjectRootState(aoID, state);
+    // set object's motion type if different than set value
+    const physics::MotionType attrObjMotionType =
+        static_cast<physics::MotionType>(artObjInst->getMotionType());
+    if (attrObjMotionType != physics::MotionType::UNDEFINED) {
+      physicsManager_->setArticulatedObjectMotionType(aoID, attrObjMotionType);
+    }
+    // set initial joint positions
+    std::vector<float> aoJointPose =
+        physicsManager_->getArticulatedObjectPositions(aoID);
+    std::map<std::string, float>& initJointPos = artObjInst->getInitJointPose();
+    // map instance vals into
+    int idx = 0;
+    for (const auto& elem : initJointPos) {
+      aoJointPose[idx++] = elem.second;
+      if (idx >= aoJointPose.size()) {
+        LOG(WARNING) << errMsgTmplt
+                     << "Attempting to specify more initial joint poses than "
+                        "exist in articulated object "
+                     << artObjInst->getHandle() << ", so skipping";
+        break;
+      }
+    }
+    physicsManager_->setArticulatedObjectPositions(aoID, aoJointPose);
+    // set initial joint velocities
+    std::vector<float> aoJointVels =
+        physicsManager_->getArticulatedObjectVelocities(aoID);
+    std::map<std::string, float>& initJointVel =
+        artObjInst->getInitJointVelocities();
+    idx = 0;
+    for (const auto& elem : initJointVel) {
+      aoJointVels[idx++] = elem.second;
+      if (idx >= aoJointVels.size()) {
+        LOG(WARNING)
+            << errMsgTmplt
+            << "Attempting to specify more initial joint velocities than "
+               "exist in articulated object "
+            << artObjInst->getHandle() << ", so skipping";
+        break;
+      }
+    }
+
+    physicsManager_->setArticulatedObjectVelocities(aoID, aoJointVels);
+    artObjsAdded.push_back(aoID);
+  }  // for each articulated object instance
+  return true;
+}  // Simulator::instanceArticulatedObjectsForActiveScene
 
 bool Simulator::createSceneInstanceNoRenderer(
     const std::string& activeSceneName) {
@@ -1187,8 +1303,8 @@ std::string Simulator::convexHullDecomposition(
   chdObjAttr->setCollisionAssetIsPrimitive(false);
   chdObjAttr->setJoinCollisionMeshes(false);
 
-  // if the renderChd flag is set to true, set the convex hull decomposition to
-  // be the render asset (useful for testing)
+  // if the renderChd flag is set to true, set the convex hull decomposition
+  // to be the render asset (useful for testing)
 
   chdObjAttr->setRenderAssetHandle(renderChd ? chdFilename : filename);
 

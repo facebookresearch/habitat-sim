@@ -1300,7 +1300,7 @@ int Viewer::addPrimitiveObject() {
 
 int Viewer::throwSphere(Mn::Vector3 direction) {
   if (simulator_->getPhysicsSimulationLibrary() ==
-      esp::physics::PhysicsManager::NONE) {
+      esp::physics::PhysicsManager::PhysicsSimulationLibrary::NONE) {
     return esp::ID_UNDEFINED;
   }
 
@@ -2469,7 +2469,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::Equal: {
       if (simulator_->getPhysicsSimulationLibrary() ==
-          esp::physics::PhysicsManager::BULLET) {
+          esp::physics::PhysicsManager::PhysicsSimulationLibrary::BULLET) {
         debugBullet_ = !debugBullet_;
         Mn::Debug{} << "debugBullet_ = " << debugBullet_;
       } else {

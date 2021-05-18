@@ -81,7 +81,7 @@ class BulletBase {
    * RigidObjectType::SCENE. See @ref btCompoundShape::getMargin.
    * @return The scalar collision margin of the object.
    */
-  virtual double getMargin() const { return 0.0; };
+  virtual double getMargin() const { return 0.0; }
 
   /** @brief Set the scalar collision margin of an object. Does not affect @ref
    * RigidObjectType::SCENE. See @ref btCompoundShape::setMargin.

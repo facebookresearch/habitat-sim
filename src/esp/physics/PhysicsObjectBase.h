@@ -201,21 +201,22 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   virtual Magnum::Quaternion getRotation() const { return node().rotation(); }
 
   /**
-   * @brief Get the rotation and translation of the object.
-   */
-  virtual core::RigidState getRigidState() {
-    return core::RigidState(node().rotation(), node().translation());
-  };
-
-  /**
    * @brief Set the rotation and translation of the object.
    */
   virtual void setRigidState(const core::RigidState& rigidState) {
     setTranslation(rigidState.translation);
     setRotation(rigidState.rotation);
-  };
+  }
 
-  /** @brief Reset the transformation of the object.
+  /**
+   * @brief Get the rotation and translation of the object.
+   */
+  virtual core::RigidState getRigidState() {
+    return core::RigidState(node().rotation(), node().translation());
+  }
+
+  /**
+   * @brief Reset the transformation of the object.
    * !!NOT IMPLEMENTED!!
    */
   virtual void resetTransformation() {
@@ -237,7 +238,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Modify the 3D position of the object kinematically by translation
+  /**
+   * @brief Modify the 3D position of the object kinematically by translation
    * with a vector defined in the object's local coordinate system. Calling this
    * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
    * recommended.
@@ -251,7 +253,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Modify the orientation of the object kinematically by applying an
+  /**
+   * @brief Modify the orientation of the object kinematically by applying an
    * axis-angle rotation to it. Calling this during simulation of a @ref
    * MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
@@ -265,7 +268,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Modify the orientation of the object kinematically by applying an
+  /**
+   * @brief Modify the orientation of the object kinematically by applying an
    * axis-angle rotation to it in the local coordinate system. Calling this
    * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
    * recommended.
@@ -281,7 +285,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Modify the orientation of the object kinematically by applying a
+  /**
+   * @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the global X axis. Calling this during simulation of a
    * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
@@ -293,7 +298,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Modify the orientation of the object kinematically by applying a
+  /**
+   * @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the global Y axis. Calling this during simulation of a
    * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
@@ -305,7 +311,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Modify the orientation of the object kinematically by applying a
+  /**
+   * @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the global Z axis. Calling this during simulation of a
    * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
@@ -317,7 +324,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Modify the orientation of the object kinematically by applying a
+  /**
+   * @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the local X axis. Calling this during simulation of a
    * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
@@ -329,7 +337,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Modify the orientation of the object kinematically by applying a
+  /**
+   * @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the local Y axis. Calling this during simulation of a
    * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
@@ -341,7 +350,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
-  /** @brief Modify the orientation of the object kinematically by applying a
+  /**
+   * @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the local Z axis. Calling this during simulation of a
    * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
@@ -354,11 +364,17 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   virtual void deferUpdate() { isDeferringUpdate_ = true; }
+
+  /**
+   * @brief update the SceneNode state to match the simulation state
+   */
   virtual void updateNodes(CORRADE_UNUSED bool force = false) {
     isDeferringUpdate_ = false;
   }
 
-  /** @brief Store whatever object attributes you want here! */
+  /**
+   * @brief Store whatever object attributes you want here!
+   */
   esp::core::Configuration::ptr attributes_{};
 
   /**
@@ -379,14 +395,18 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Must be called automatically on
-   * kinematic updates.*/
+   * kinematic updates.
+   */
   virtual void syncPose() { return; }
 
-  //! if true visual nodes are not updated from physics simulation such that the
-  //! SceneGraph is not polluted during render
+  /**
+   * @brief if true visual nodes are not updated from physics simulation such
+   * that the SceneGraph is not polluted during render
+   */
   bool isDeferringUpdate_ = false;
 
-  /** @brief An assignable name for this object.
+  /**
+   * @brief An assignable name for this object.
    */
   std::string objectName_;
 

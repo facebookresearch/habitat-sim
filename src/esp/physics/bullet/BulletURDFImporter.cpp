@@ -32,7 +32,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   Mn::Debug{} << "convertURDFToCollisionShape";
 
-  btCollisionShape* shape = 0;
+  btCollisionShape* shape = nullptr;
 
   switch (collision->m_geometry.m_type) {
     case io::URDF::GEOM_PLANE: {
@@ -383,7 +383,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
         linkTransformInWorldSpace * localInertialFrame;
     bool canSleep = (flags & CUF_ENABLE_SLEEPING) != 0;
 
-    if (cache.m_bulletMultiBody == 0) {
+    if (cache.m_bulletMultiBody == nullptr) {
       bool isFixedBase = (mass == 0);
       int totalNumJoints = cache.m_totalNumJoints1;
       cache.m_bulletMultiBody =

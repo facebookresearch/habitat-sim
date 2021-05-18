@@ -32,7 +32,7 @@ static void setRotationScalingFromBulletTransform(const btTransform& trans,
 
 BulletArticulatedObject::~BulletArticulatedObject() {
   // Corrade::Utility::Debug() << "deconstructing ~BulletArticulatedObject";
-  if (motionType_ != MotionType::KINEMATIC) {
+  if (objectMotionType_ != MotionType::KINEMATIC) {
     // KINEMATIC objects have already been removed from the world.
     bWorld_->removeMultiBody(btMultiBody_.get());
   }
@@ -513,7 +513,7 @@ void BulletArticulatedObject::setActive(bool active) {
   }
 }
 
-bool BulletArticulatedObject::isActive() {
+bool BulletArticulatedObject::isActive() const {
   return btMultiBody_->isAwake();
 }
 
@@ -522,7 +522,7 @@ bool BulletArticulatedObject::getCanSleep() {
 }
 
 void BulletArticulatedObject::setMotionType(MotionType mt) {
-  if (mt == motionType_) {
+  if (mt == objectMotionType_) {
     return;
   }
   if (mt == MotionType::UNDEFINED) {
@@ -533,12 +533,12 @@ void BulletArticulatedObject::setMotionType(MotionType mt) {
   // DYNAMIC -> other)
   if (mt == MotionType::DYNAMIC) {
     bWorld_->addMultiBody(btMultiBody_.get());
-  } else if (motionType_ == MotionType::DYNAMIC) {
+  } else if (objectMotionType_ == MotionType::DYNAMIC) {
     // TODO: STATIC and KINEMATIC are equivalent for simplicity. Could manually
     // limit STATIC...
     bWorld_->removeMultiBody(btMultiBody_.get());
   }
-  motionType_ = mt;
+  objectMotionType_ = mt;
 }
 
 bool BulletArticulatedObject::supportsJointMotor(int linkIx) {
