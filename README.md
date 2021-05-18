@@ -208,7 +208,7 @@ Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 1. Run our python data download utility to retrieve the test assets:
    ```bash
-   python -m habitat_sim.utils.datasets_download --uid habitat_test_scenes --data-path /path/to/data/
+   python -m habitat_sim.utils.datasets_download --uids habitat_test_scenes --data-path /path/to/data/
    ```
 
 1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim
@@ -224,7 +224,7 @@ Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 1. **Physical interactions**: If you would like to try out habitat with dynamical objects using the interactive viewer:
    First setup the test object assets by running the data download utility:
    ```bash
-   python -m habitat_sim.utils.datasets_download --uid habitat_example_objects --data-path /path/to/data/
+   python -m habitat_sim.utils.datasets_download --uids habitat_example_objects --data-path /path/to/data/
    ```
 
    To run an interactive C++ example GUI application with physics enabled run

@@ -332,7 +332,7 @@ class DemoRunner:
             print(
                 "Test scenes not downloaded locally, downloading and extracting now..."
             )
-            data_downloader.main(["--uid", "habitat_test_scenes"])
+            data_downloader.main(["--uids", "habitat_test_scenes"])
             print("Downloaded and extracted test scenes data.")
 
         # create a simulator (Simulator python class object, not the backend simulator)

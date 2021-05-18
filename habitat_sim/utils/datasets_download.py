@@ -215,7 +215,9 @@ def main(args):
     parser = AutoHelpParser()
     arg_group1 = parser.add_mutually_exclusive_group()
     arg_group1.add_argument(
-        "--uid",
+        "--uids",
+        nargs="*",
+        default=None,
         type=str,
         help="Unique ID of the data to download.",
     )
@@ -290,20 +292,21 @@ def main(args):
         print("====================================")
         exit()
 
-    if not args.uid:
-        print("No datasource uid provided.")
+    if not args.uids:
+        print("No datasource uid(s) provided.")
         parser.print_help()
         exit(2)
-    uids = [args.uid]
-    if args.uid in data_groups:
-        "Downloading a data group..."
-        uids = data_groups[args.uid]
+    for uid in args.uids:
+        uids = [uid]
+        if uid in data_groups:
+            "Downloading a data group..."
+            uids = data_groups[uid]
 
-    for uid in uids:
-        if args.clean:
-            clean_data(uid, data_path)
-        else:
-            download_and_place(uid, data_path, replace)
+        for uid in uids:
+            if args.clean:
+                clean_data(uid, data_path)
+            else:
+                download_and_place(uid, data_path, replace)
 
 
 if __name__ == "__main__":
