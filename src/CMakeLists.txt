@@ -95,10 +95,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 
 include(cmake/dependencies.cmake)
 
-#if(CORRADE_TARGET_EMSCRIPTEN)
-#TODO merge this into the right toolchain
-#endif()
-
 # build tests
 if(BUILD_TEST)
   message("Building TESTS")
@@ -144,15 +140,4 @@ endif()
 if(CORRADE_TARGET_EMSCRIPTEN)
   message("Building Emscripten JS bindings")
   add_subdirectory(esp/bindings_js)
-  #set(CMAKE_C_CREATE_STATIC_LIBRARY "<CMAKE_AR> rc <TARGET> <LINK_FLAGS> <OBJECTS>")
-  #	  set(CMAKE_CXX_CREATE_STATIC_LIBRARY "<CMAKE_AR> rc <TARGET> <LINK_FLAGS> ")
-  #set(CMAKE_C_COMPILER_AR "${CMAKE_AR}")
-  #	  set(CMAKE_CXX_COMPILER_AR "${CMAKE_AR}")
-  #	  set(CMAKE_C_COMPILER_RANLIB "${CMAKE_RANLIB}")
-  #set(CMAKE_CXX_COMPILER_RANLIB "${CMAKE_RANLIB}")
-  #set(CMAKE_C_COMPILER_AR "${CMAKE_AR}")
-  # set(CMAKE_CXX_COMPILER_AR "${CMAKE_AR}")
-  # set(CMAKE_C_COMPILER_RANLIB "${CMAKE_RANLIB}")
-  # set(CMAKE_CXX_COMPILER_RANLIB "${CMAKE_RANLIB}")
-  # ---[ Dependencies
 endif()
