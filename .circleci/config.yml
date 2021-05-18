@@ -572,18 +572,20 @@ jobs:
               git submodule update --init --recursive --jobs 16
               python -u setup.py install --headless --vhacd
       - run:
-          name: Run sim benchmark
-          command: |
-              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat; cd habitat-sim
-              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
-      - run:
           name: run clang-tidy
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
               python tools/run-clang-tidy.py -header-filter=src/esp src/esp
+      - run:
+          name: Run sim benchmark
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+              # CUDA install can update the drivers at a bad time and cause a race
+              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
+              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
 
 
 
