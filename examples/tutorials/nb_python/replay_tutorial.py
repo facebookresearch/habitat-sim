@@ -371,12 +371,14 @@ sensor_node.translation = [-1.1, -0.9, -0.2]
 sensor_node.rotation = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3(0.0, 1.0, 0))
 
 prim_attr_mgr = sim.get_asset_template_manager()
-
+# get the rigid object manager, which provides direct
+# access to objects
+rigid_obj_mgr = sim.get_rigid_object_manager()
 # visualize the recorded agent transform as a cylinder
 agent_viz_handle = prim_attr_mgr.get_template_handles("cylinderSolid")[0]
-agent_vi_obj = rigid_obj_mgr.add_object_by_handle(agent_viz_handle)
-agent_vi_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-agent_vi_obj.collidable = False
+agent_viz_obj = rigid_obj_mgr.add_object_by_handle(agent_viz_handle)
+agent_viz_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+agent_viz_obj.collidable = False
 
 # visualize the recorded sensor transform as a cube
 sensor_viz_handle = prim_attr_mgr.get_template_handles("cubeSolid")[0]
@@ -388,8 +390,8 @@ for frame in range(player.get_num_keyframes()):
     player.set_keyframe_index(frame)
 
     (agent_translation, agent_rotation) = player.get_user_transform("agent")
-    agent_vi_obj.translation = agent_translation
-    agent_vi_obj.rotation = agent_rotation
+    agent_viz_obj.translation = agent_translation
+    agent_viz_obj.rotation = agent_rotation
 
     (sensor_translation, sensor_rotation) = player.get_user_transform("sensor")
     sensor_viz_obj.translation = sensor_translation
@@ -406,7 +408,7 @@ if make_video:
         open_vid=show_video,
     )
 
-rigid_obj_mgr.remove_object_by_id(agent_vi_obj.object_id)
+rigid_obj_mgr.remove_object_by_id(agent_viz_obj.object_id)
 rigid_obj_mgr.remove_object_by_id(sensor_viz_obj.object_id)
 
 # clean up the player
