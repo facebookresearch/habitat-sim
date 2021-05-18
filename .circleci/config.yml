@@ -401,6 +401,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
+              git submodule update --init --recursive --jobs 16
               #Rebuild headless
               python setup.py install --headless --with-bullet --with-cuda --vhacd
               cd ..
@@ -463,6 +464,7 @@ jobs:
       - run:
           name: Build Javascript bindings
           command: |
+              cd habitat-sim
               git submodule update --init --recursive --jobs 16
               # wait for npm and emscripten install
               while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
@@ -470,7 +472,6 @@ jobs:
               # static Bullet libs, and Bullet static libs required CMake 3.13+.
               sudo rm /usr/local/bin/cmake
               sudo ln -s /opt/cmake320/bin/cmake /usr/local/bin/cmake
-              cd habitat-sim
               . ~/.bashrc
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat
