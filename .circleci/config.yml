@@ -9,7 +9,7 @@ commands:
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
     steps:
-      - run: &install_clang_tidy
+      - run:
           name: Install clang-tidy
           command: |
               sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
@@ -17,7 +17,7 @@ commands:
               sudo apt-get install -y clang-tidy-12
               sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
               clang-tidy --version
-      - run: &install_cmake
+      - run:
           name: Install cmake
           no_output_timeout: 5m
           # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
@@ -112,7 +112,7 @@ commands:
               sudo apt-get --yes --force-yes install cuda
               touch ~/cuda_installed
               nvidia-smi
-      - restore_cache: &restore_conda_cache
+      - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
       - run: &install_conda
@@ -147,7 +147,7 @@ commands:
                 . ~/emsdk/emsdk_env.sh
                 touch ~/emscripten_installed
               fi
-      - run: &install_pytorch
+      - run:
           name: Install pytorch
           no_output_timeout: 20m
           background: true
@@ -190,13 +190,7 @@ commands:
             ccache --show-stats
             ccache --zero-stats
             ccache --max-size=10.0G
-      - run: &ccache_stats
-          name: Ccache stats
-          when: always
-          command: |
-            export PATH=$HOME/miniconda/bin:$PATH
-            . activate habitat;
-            ccache --show-stats
+
 jobs:
   python_lint:
     docker:
@@ -401,7 +395,6 @@ jobs:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
-              git submodule update --init --recursive --jobs 16
               #Rebuild headless
               python setup.py install --headless --with-bullet --with-cuda --vhacd
               cd ..
@@ -460,18 +453,42 @@ jobs:
           command: |
               cat /proc/cpuinfo
       - install_all_ubuntu_deps
+      - run:
+          name: Build, install habitat-sim and run benchmark
+          no_output_timeout: 25m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install -r requirements.txt --progress-bar off
+              pip install imageio imageio-ffmpeg
+              git submodule update --init --recursive --jobs 16
+              python -u setup.py install --headless --vhacd
+      - run:
+          name: run clang-tidy
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              python tools/run-clang-tidy.py -header-filter=src/esp src/esp
+      - run:
+          name: Ccache stats
+          when: always
+          command: |
+            export PATH=$HOME/miniconda/bin:$PATH
+            . activate habitat;
+            ccache --show-stats
       - run: *download_test_data
       - run:
           name: Build Javascript bindings
           command: |
-              cd habitat-sim
-              git submodule update --init --recursive --jobs 16
               # wait for npm and emscripten install
               while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
               # switch to cmake 3.20 just for this step. The JS build requires
               # static Bullet libs, and Bullet static libs required CMake 3.13+.
               sudo rm /usr/local/bin/cmake
               sudo ln -s /opt/cmake320/bin/cmake /usr/local/bin/cmake
+              cd habitat-sim
               . ~/.bashrc
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat
@@ -481,6 +498,12 @@ jobs:
               # switch back to cmake 3.10
               sudo rm /usr/local/bin/cmake
               sudo ln -s /opt/cmake310/bin/cmake /usr/local/bin/cmake
+      - run:
+          name: Run sim benchmark
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
       - run:
           name: Run JavaScript tests
           command: |
@@ -496,7 +519,7 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
-              pip install -r requirements.txt
+
               export PYTHONPATH=$(pwd):$PYTHONPATH
               #This way, pytest shows partial progress
               export PYTHONUNBUFFERED=1
@@ -530,7 +553,6 @@ jobs:
           background: true
           paths:
             - /home/circleci/.ccache
-      - run: *ccache_stats
       - run:
           name: Upload test coverage
           command: |
@@ -551,45 +573,6 @@ jobs:
               lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
               lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
-
-
-  clang_tidy_and_benchmark:
-    <<: *gpu
-    steps:
-      - checkout:
-          path: ./habitat-sim
-            #- install_all_ubuntu_deps
-      - run: *install_cmake
-      - run: *install_clang_tidy
-      - run: *install_deps
-      - restore_cache: *restore_conda_cache
-      - run: *install_conda
-      - run: *install_pytorch
-      - run: *download_test_data
-      - run:
-          name: Build, install habitat-sim and run benchmark
-          no_output_timeout: 25m
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              pip install -r requirements.txt --progress-bar off
-              pip install imageio imageio-ffmpeg
-              git submodule update --init --recursive --jobs 16
-              python -u setup.py install --headless --vhacd
-      - run:
-          name: Run sim benchmark
-          command: |
-              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat; cd habitat-sim
-              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
-      - run:
-          name: run clang-tidy
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              python tools/run-clang-tidy.py -header-filter=src/esp src/esp
 
 
 
@@ -688,7 +671,6 @@ workflows:
   version: 2
   install_and_test:
     jobs:
-      - clang_tidy_and_benchmark
       - python_lint
       - cpp_lint
       - js_lint
@@ -704,7 +686,6 @@ workflows:
             branches:
               only: master
     jobs:
-      - clang_tidy_and_benchmark
       - lab_build_habitat
       - install_and_test_ubuntu
       - test_conda_build
@@ -732,8 +713,6 @@ workflows:
               only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
             branches:
               ignore: /.*/
-      - clang_tidy_and_benchmark:
-          filters: *version_filter
       - test_conda_build:
           filters: *version_filter
       - install_and_test_ubuntu:
