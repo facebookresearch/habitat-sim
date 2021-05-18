@@ -63,11 +63,12 @@ if(NOT CMAKE_BUILD_TYPE)
           FORCE
   )
 endif()
-if(CMAKE_BUILD_TYPE MATCHES "Release")
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # Clang has some issues with thinLTO (segfaults on final linking)
-    # This enables full LTO through CMake
-    # FullLTO is slow, but may yield performance improvements.
+if(CMAKE_INTERPROCEDURAL_OPTIMIZATION OR CMAKE_BUILD_TYPE MATCHES "Release")
+  if(EMSCRIPTEN)
+    # Magnum's Toolchain has issues with INTERPROCEDURAL_OPTIMIZATION
+    # There is a bug with Magnum's Emscriptem toolchain.
+    # on Emscriptem. Set flags manually
+    # https://github.com/emscripten-core/emscripten/issues/11143#issue-617410308
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
   else()
@@ -75,6 +76,12 @@ if(CMAKE_BUILD_TYPE MATCHES "Release")
     set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
     cmake_policy(SET CMP0069 NEW)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      # Clang has some issues with thinLTO (segfaults on final linking)
+      # This enables full LTO through CMake
+      # FullLTO is slow, but may yield performance improvements.
+      add_compile_options(-flto=full)
+    endif()
   endif()
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
@@ -86,8 +93,11 @@ endif()
 #set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 
-# ---[ Dependencies
 include(cmake/dependencies.cmake)
+
+#if(CORRADE_TARGET_EMSCRIPTEN)
+#TODO merge this into the right toolchain
+#endif()
 
 # build tests
 if(BUILD_TEST)
@@ -134,4 +144,15 @@ endif()
 if(CORRADE_TARGET_EMSCRIPTEN)
   message("Building Emscripten JS bindings")
   add_subdirectory(esp/bindings_js)
+  #set(CMAKE_C_CREATE_STATIC_LIBRARY "<CMAKE_AR> rc <TARGET> <LINK_FLAGS> <OBJECTS>")
+  #	  set(CMAKE_CXX_CREATE_STATIC_LIBRARY "<CMAKE_AR> rc <TARGET> <LINK_FLAGS> ")
+  #set(CMAKE_C_COMPILER_AR "${CMAKE_AR}")
+  #	  set(CMAKE_CXX_COMPILER_AR "${CMAKE_AR}")
+  #	  set(CMAKE_C_COMPILER_RANLIB "${CMAKE_RANLIB}")
+  #set(CMAKE_CXX_COMPILER_RANLIB "${CMAKE_RANLIB}")
+  #set(CMAKE_C_COMPILER_AR "${CMAKE_AR}")
+  # set(CMAKE_CXX_COMPILER_AR "${CMAKE_AR}")
+  # set(CMAKE_C_COMPILER_RANLIB "${CMAKE_RANLIB}")
+  # set(CMAKE_CXX_COMPILER_RANLIB "${CMAKE_RANLIB}")
+  # ---[ Dependencies
 endif()
