@@ -124,7 +124,7 @@ def box_drop_test(
         for i in range(5):
             part_name = "box_part_" + str(i)
             obj_templates_mgr.register_template(box_parts[i], part_name)
-            box_objs += [rigid_obj_mgr.add_object_by_handle(part_name)]
+            box_objs += [rigid_obj_mgr.add_object_by_template_handle(part_name)]
             box_objs[i].motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
         box_objs[0].translation = np.array([2.50, 0.05, 0.4]) * box_size
@@ -172,7 +172,9 @@ def box_drop_test(
 
         # throw objects into box
         for i in range(num_objects):
-            cur_obj = rigid_obj_mgr.add_object_by_id(object_ids[i % len(object_ids)])
+            cur_obj = rigid_obj_mgr.add_object_by_template_id(
+                object_ids[i % len(object_ids)]
+            )
 
             obj_node = cur_obj.root_scene_node
             obj_bb = obj_node.cumulative_bb
