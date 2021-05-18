@@ -112,7 +112,7 @@ commands:
               sudo apt-get --yes --force-yes install cuda
               touch ~/cuda_installed
               nvidia-smi
-      - restore_cache:
+      - restore_cache: &restore_conda_cache
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
       - run: &install_conda
@@ -147,7 +147,7 @@ commands:
                 . ~/emsdk/emsdk_env.sh
                 touch ~/emscripten_installed
               fi
-      - run:
+      - run: &install_pytorch
           name: Install pytorch
           no_output_timeout: 20m
           background: true
@@ -558,7 +558,10 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
-      - install_all_ubuntu_deps
+      - run: *install_deps
+      - restore_cache: *restore_conda_cache
+      - run: *install_conda
+      - run: *install_pytorch
       - run: *download_test_data
       - run:
           name: Build, install habitat-sim and run benchmark
@@ -583,8 +586,6 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
-              # CUDA install can update the drivers at a bad time and cause a race
-              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
 
 
