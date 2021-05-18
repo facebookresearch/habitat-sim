@@ -25,6 +25,7 @@ The example code below is available on `Collab`_, or runnable via:
 First, download the example objects used in this tutorial:
 
 .. code:: shell-session
+
     $ python -m habitat_sim.utils.datasets_download --uids habitat_example_objects locobot_merged --data-path path/to/data/
 
 Import necessary modules, define some convenience functions, and initialize the :ref:`Simulator` and :ref:`Agent`.
