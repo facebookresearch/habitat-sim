@@ -861,7 +861,12 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * PhysicsManager::existingObjects_.
    * @return  Whether or not the object is active.
    */
-  bool isActive(const int physObjectID) const;
+  bool isObjectAwake(const int objectID) const;
+
+  /**
+   * @brief Set the object to sleep or wake.
+   */
+  void setObjectSleep(const int objectID, bool sleep);
 
   //============ Interact with objects =============
   // NOTE: engine specifics handled by objects themselves...

@@ -110,7 +110,7 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   for (std::map<int, physics::RigidObject::ptr>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
-    it->second->setActive();
+    it->second->setActive(true);
   }
 }
 
@@ -135,7 +135,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
         objectItr.second->setRigidState(velControl->integrateTransform(
             dt, objectItr.second->getRigidState()));
-        objectItr.second->setActive();
+        objectItr.second->setActive(true);
       }
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
       if (velControl->controllingLinVel) {

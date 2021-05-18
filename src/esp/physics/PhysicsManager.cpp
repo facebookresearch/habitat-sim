@@ -390,9 +390,14 @@ int PhysicsManager::checkActiveObjects() {
   return numActive;
 }
 
-bool PhysicsManager::isActive(const int physObjectID) const {
+bool PhysicsManager::isObjectAwake(const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->isActive();
+}
+
+void PhysicsManager::setObjectSleep(const int physObjectID, bool sleep) {
+  assertIDValidity(physObjectID);
+  existingObjects_.at(physObjectID)->setActive(!sleep);
 }
 
 void PhysicsManager::applyForce(const int physObjectID,
