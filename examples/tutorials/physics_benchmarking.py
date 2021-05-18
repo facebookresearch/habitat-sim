@@ -14,12 +14,7 @@ data_path = os.path.join(dir_path, "../../data")
 output_path = os.path.join(dir_path, "physics_benchmarking_output/")
 
 
-# Define Helper Functions (Taken from rigid_object_tutorial.py)
-
-
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
+# Define Helper Functions (Taken from managed_rigid_object_tutorial.py)
 
 
 def make_configuration():
@@ -73,7 +68,10 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
         data["collisions"] += collisions
 
 
-def_params = habitat_sim.VHACDParameters()
+try:
+    def_params = habitat_sim.VHACDParameters()
+except BaseException:
+    def_params = None
 
 
 def box_drop_test(
@@ -107,11 +105,14 @@ def box_drop_test(
 
         # get the physics object attributes manager
         obj_templates_mgr = sim.get_object_template_manager()
+        # get the rigid object manager, which provides direct
+        # access to objects
+        rigid_obj_mgr = sim.get_rigid_object_manager()
 
         # build box
         cube_handle = obj_templates_mgr.get_template_handles("cube")[0]
         box_parts = []
-        boxIDs = []
+        box_objs = []
         for _i in range(5):
             box_parts += [obj_templates_mgr.get_template_by_handle(cube_handle)]
         box_parts[0].scale = np.array([1.0, 0.1, 1.0]) * box_size
@@ -123,17 +124,16 @@ def box_drop_test(
         for i in range(5):
             part_name = "box_part_" + str(i)
             obj_templates_mgr.register_template(box_parts[i], part_name)
-            boxIDs += [sim.add_object_by_handle(part_name)]
-            sim.set_object_motion_type(
-                habitat_sim.physics.MotionType.KINEMATIC, boxIDs[i]
-            )
-        sim.set_translation(np.array([2.50, 0.05, 0.4]) * box_size, boxIDs[0])
-        sim.set_translation(np.array([2.50, 0.35, 1.30]) * box_size, boxIDs[1])
-        sim.set_translation(np.array([2.50, 0.35, -0.50]) * box_size, boxIDs[2])
-        sim.set_translation(np.array([3.40, 0.35, 0.4]) * box_size, boxIDs[3])
-        sim.set_translation(np.array([1.60, 0.35, 0.4]) * box_size, boxIDs[4])
+            box_objs += [rigid_obj_mgr.add_object_by_template_handle(part_name)]
+            box_objs[i].motion_type = habitat_sim.physics.MotionType.KINEMATIC
+
+        box_objs[0].translation = np.array([2.50, 0.05, 0.4]) * box_size
+        box_objs[1].translation = np.array([2.50, 0.35, 1.30]) * box_size
+        box_objs[2].translation = np.array([2.50, 0.35, -0.50]) * box_size
+        box_objs[3].translation = np.array([3.40, 0.35, 0.4]) * box_size
+        box_objs[4].translation = np.array([1.60, 0.35, 0.4]) * box_size
         for i in range(5):
-            sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, boxIDs[i])
+            box_objs[i].motion_type = habitat_sim.physics.MotionType.STATIC
 
         # load some object templates from configuration files
         object_ids = []
@@ -172,17 +172,19 @@ def box_drop_test(
 
         # throw objects into box
         for i in range(num_objects):
-            cur_id = sim.add_object(object_ids[i % len(object_ids)])
+            cur_obj = rigid_obj_mgr.add_object_by_template_id(
+                object_ids[i % len(object_ids)]
+            )
 
-            obj_node = sim.get_object_scene_node(cur_id)
+            obj_node = cur_obj.root_scene_node
             obj_bb = obj_node.cumulative_bb
             diagonal_length = obj_bb.size().length()
             time_til_next_obj = diagonal_length / (object_speed * box_size) / 2
 
             # set object position and velocity
-            sim.set_translation(np.multiply(np.array([1.50, 2, 1.2]), box_size), cur_id)
-            sim.set_linear_velocity(
-                mn.Vector3(1, 0, -1).normalized() * object_speed * box_size, cur_id
+            cur_obj.translation = np.multiply(np.array([1.50, 2, 1.2]), box_size)
+            cur_obj.linear_velocity = (
+                mn.Vector3(1, 0, -1).normalized() * object_speed * box_size
             )
 
             # simulate a short amount of time, then add next object
@@ -194,7 +196,7 @@ def box_drop_test(
 
         # [/basics]
         # return total time to run, time to load, time to simulate physics, time for rendering
-        remove_all_objects(sim)
+        rigid_obj_mgr.remove_all_objects()
     return data
 
 
