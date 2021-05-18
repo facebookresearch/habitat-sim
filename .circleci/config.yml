@@ -17,7 +17,7 @@ commands:
               sudo apt-get install -y clang-tidy-12
               sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
               clang-tidy --version
-      - run:
+      - run: &install_cmake
           name: Install cmake
           no_output_timeout: 5m
           # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
@@ -558,6 +558,7 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
+      - run: *install_cmake
       - run: *install_deps
       - restore_cache: *restore_conda_cache
       - run: *install_conda
@@ -571,10 +572,10 @@ jobs:
               . activate habitat;
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
-              pip install cmake imageio imageio-ffmpeg
+              pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 16
               python -u setup.py install --headless --vhacd
-              pip uninstall cmake
+
       - run:
           name: Run sim benchmark
           command: |
