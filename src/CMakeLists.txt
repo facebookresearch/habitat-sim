@@ -63,7 +63,7 @@ if(NOT CMAKE_BUILD_TYPE)
           FORCE
   )
 endif()
-if(CMAKE_BUILD_TYPE MATCHES "Rel")
+if(CMAKE_BUILD_TYPE MATCHES "Release")
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # Clang has some issues with thinLTO (segfaults on final linking)
     # This enables full LTO through CMake

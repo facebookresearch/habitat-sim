@@ -89,7 +89,12 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         action="store_true",
         help="Don't update git submodules",
     )
-
+    parser.add_argument(
+        "--config",
+        dest="config",
+        default=None,
+        help="CMake configuration to build with.",
+    )
     parser.add_argument(
         "--cache-args",
         dest="cache_args",
@@ -228,7 +233,13 @@ class CMakeBuild(build_ext):
         ]
         cmake_args += shlex.split(args.cmake_args)
 
-        cfg = "Debug" if self.debug else "RelWithDebInfo"
+        cfg = args.config
+        #
+        assert not (
+            args.config is not None and self.debug
+        ), "Debug and Config flags conflict"
+        if cfg is None:
+            cfg = "Debug" if self.debug else "RelWithDebInfo"
         build_args = ["--config", cfg]
 
         cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
