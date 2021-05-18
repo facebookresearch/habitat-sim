@@ -131,7 +131,7 @@ def main(show_imgs=True, save_imgs=False):
     )[0]
 
     # create a sphere and place it at a desired location
-    obj_1 = rigid_obj_mgr.add_object_by_id(sphere_template_id)
+    obj_1 = rigid_obj_mgr.add_object_by_template_id(sphere_template_id)
     obj_1.translation = [3.2, 0.23, 0.03]
 
     get_obs(sim, show_imgs, save_imgs)
@@ -154,7 +154,7 @@ def main(show_imgs=True, save_imgs=False):
     # [example 4]
 
     # create a chair and place it at a location with a specified orientation
-    obj_2 = rigid_obj_mgr.add_object_by_id(chair_template_id)
+    obj_2 = rigid_obj_mgr.add_object_by_template_id(chair_template_id)
     obj_2.rotation = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis())
     obj_2.translation = [3.06, 0.47, 1.15]
 
@@ -179,13 +179,13 @@ def main(show_imgs=True, save_imgs=False):
     # [example 6]
 
     # create and place 2 chairs with custom light setups
-    chair_1 = rigid_obj_mgr.add_object_by_id(
+    chair_1 = rigid_obj_mgr.add_object_by_template_id(
         chair_template_id, light_setup_key="my_custom_lighting"
     )
     chair_1.rotation = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis())
     chair_1.translation = [3.06, 0.47, 1.15]
 
-    chair_2 = rigid_obj_mgr.add_object_by_id(
+    chair_2 = rigid_obj_mgr.add_object_by_template_id(
         chair_template_id, light_setup_key="my_custom_lighting"
     )
     chair_2.rotation = mn.Quaternion.rotation(mn.Deg(50), mn.Vector3.y_axis())

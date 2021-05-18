@@ -593,7 +593,7 @@ rotation_z = mn.Quaternion.rotation(mn.Deg(orientation_z), mn.Vector3(1.0, 0, 0)
 orientation = rotation_z * rotation_y * rotation_x
 
 # Add object instantiated by desired template using template handle
-obj_1 = rigid_obj_mgr.add_object_by_handle(obj_template_handle)
+obj_1 = rigid_obj_mgr.add_object_by_template_handle(obj_template_handle)
 
 # @markdown Note: agent local coordinate system is Y up and -Z forward.
 # Move object to be in front of the agent
@@ -636,7 +636,7 @@ rigid_obj_mgr.remove_all_objects()
 scenario_is_kinematic = True  # @param {type:"boolean"}
 
 # add the selected object
-obj_1 = rigid_obj_mgr.add_object_by_handle(sel_file_obj_handle)
+obj_1 = rigid_obj_mgr.add_object_by_template_handle(sel_file_obj_handle)
 
 # place the object
 set_object_state_from_agent(
@@ -673,8 +673,8 @@ rigid_obj_mgr.remove_all_objects()
 
 # @markdown 1. Add the two dynamic objects.
 # add the selected objects
-obj_1 = rigid_obj_mgr.add_object_by_handle(sel_file_obj_handle)
-obj_2 = rigid_obj_mgr.add_object_by_handle(sel_file_obj_handle)
+obj_1 = rigid_obj_mgr.add_object_by_template_handle(sel_file_obj_handle)
+obj_2 = rigid_obj_mgr.add_object_by_template_handle(sel_file_obj_handle)
 
 # place the objects
 set_object_state_from_agent(
@@ -696,7 +696,7 @@ cube_template_cpy.scale = np.array([0.32, 0.075, 0.01])
 # Register the modified template under a new name.
 obj_attr_mgr.register_template(cube_template_cpy, "occluder_cube")
 # Instance and place the occluder object from the template.
-occluder_obj = rigid_obj_mgr.add_object_by_handle("occluder_cube")
+occluder_obj = rigid_obj_mgr.add_object_by_template_handle("occluder_cube")
 set_object_state_from_agent(sim, occluder_obj, offset=np.array([0.0, 1.4, -0.4]))
 occluder_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 # fmt off
@@ -742,7 +742,7 @@ rigid_obj_mgr.remove_all_objects()
 # add a rolling object
 obj_attr_mgr = sim.get_object_template_manager()
 sphere_handle = obj_attr_mgr.get_template_handles("uvSphereSolid")[0]
-obj_1 = rigid_obj_mgr.add_object_by_handle(sphere_handle)
+obj_1 = rigid_obj_mgr.add_object_by_template_handle(sphere_handle)
 set_object_state_from_agent(sim, obj_1, offset=np.array([1.0, 1.6, -1.95]))
 
 if introduce_surface:
@@ -757,7 +757,7 @@ if introduce_surface:
     obj_attr_mgr.register_template(cube_template_cpy, "invisible_surface")
 
     # Instance and place the surface object from the template.
-    surface_obj = rigid_obj_mgr.add_object_by_handle("invisible_surface")
+    surface_obj = rigid_obj_mgr.add_object_by_template_handle("invisible_surface")
     set_object_state_from_agent(sim, surface_obj, offset=np.array([0.4, 0.88, -1.6]))
     surface_obj.motion_type = habitat_sim.physics.MotionType.STATIC
 
@@ -805,7 +805,7 @@ target_zone = mn.Range3D.from_center(
 )
 num_targets = 9  # @param{type:"integer"}
 for _target in range(num_targets):
-    obj = rigid_obj_mgr.add_object_by_handle(cheezit_handle)
+    obj = rigid_obj_mgr.add_object_by_template_handle(cheezit_handle)
     # rotate boxes off of their sides
     obj.rotation = mn.Quaternion.rotation(
         mn.Rad(-mn.math.pi_half), mn.Vector3(1.0, 0, 0)
@@ -825,7 +825,7 @@ if show_target_zone:
     # Register the modified template under a new name.
     obj_attr_mgr.register_template(cube_template_cpy, "target_zone")
     # instance and place the object from the template
-    target_zone_obj = rigid_obj_mgr.add_object_by_handle("target_zone")
+    target_zone_obj = rigid_obj_mgr.add_object_by_template_handle("target_zone")
     target_zone_obj.translation = target_zone.center()
     target_zone_obj.motion_type = habitat_sim.physics.MotionType.STATIC
     # print("target_zone_center = " + str(target_zone_obj.translation))
@@ -840,7 +840,7 @@ ball_mass = 5.01  # @param {type:"slider", min:0.01, max:50.0, step:0.01}
 sphere_template_cpy.mass = ball_mass
 obj_attr_mgr.register_template(sphere_template_cpy, "ball")
 
-ball_obj = rigid_obj_mgr.add_object_by_handle("ball")
+ball_obj = rigid_obj_mgr.add_object_by_template_handle("ball")
 set_object_state_from_agent(sim, ball_obj, offset=np.array([0, 1.4, 0]))
 
 # @markdown Initial linear velocity (m/sec):
@@ -923,7 +923,7 @@ sim.navmesh_visualization = True
 rigid_obj_mgr.remove_all_objects()
 fails = 0
 for _obj in range(num_objects):
-    obj_1 = rigid_obj_mgr.add_object_by_handle("scaled_sel_obj")
+    obj_1 = rigid_obj_mgr.add_object_by_template_handle("scaled_sel_obj")
 
     # place the object
     placement_success = sample_object_state(
@@ -1057,10 +1057,10 @@ def setup_path_visualization(path_follower, vis_samples=100):
     print("template_id = " + str(template_id))
     if template_id < 0:
         return None
-    vis_objs.append(rigid_obj_mgr.add_object_by_handle(sphere_handle))
+    vis_objs.append(rigid_obj_mgr.add_object_by_template_handle(sphere_handle))
 
     for point in path_follower._points:
-        cp_obj = rigid_obj_mgr.add_object_by_handle(sphere_handle)
+        cp_obj = rigid_obj_mgr.add_object_by_template_handle(sphere_handle)
         if cp_obj.object_id < 0:
             print(cp_obj.object_id)
             return None
@@ -1068,7 +1068,7 @@ def setup_path_visualization(path_follower, vis_samples=100):
         vis_objs.append(cp_obj)
 
     for i in range(vis_samples):
-        cp_obj = rigid_obj_mgr.add_object_by_handle("mini-sphere")
+        cp_obj = rigid_obj_mgr.add_object_by_template_handle("mini-sphere")
         if cp_obj.object_id < 0:
             print(cp_obj.object_id)
             return None
@@ -1206,13 +1206,13 @@ sim.config.sim_cfg.allow_sliding = True  # @param {type:"boolean"}
 
 print(sel_file_obj_handle)
 # load a selected target object and place it on the NavMesh
-obj_1 = rigid_obj_mgr.add_object_by_handle(sel_file_obj_handle)
+obj_1 = rigid_obj_mgr.add_object_by_template_handle(sel_file_obj_handle)
 
 # load the locobot_merged asset
 locobot_template_handle = obj_attr_mgr.get_file_template_handles("locobot")[0]
 
 # add robot object to the scene with the agent/camera SceneNode attached
-locobot_obj = rigid_obj_mgr.add_object_by_handle(
+locobot_obj = rigid_obj_mgr.add_object_by_template_handle(
     locobot_template_handle, sim.agents[0].scene_node
 )
 

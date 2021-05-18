@@ -887,7 +887,7 @@ sim.seed(seed)
 np.random.seed(seed)
 
 # add an object and position the agent
-sel_file_obj = rigid_obj_mgr.add_object_by_handle(sel_file_obj_handle)
+sel_file_obj = rigid_obj_mgr.add_object_by_template_handle(sel_file_obj_handle)
 rand_position = np.random.uniform(
     np.array([-0.4, -0.3, -1.0]), np.array([0.4, 0.3, -0.5])
 )
@@ -967,7 +967,7 @@ np.random.seed(seed)
 rigid_obj_mgr.remove_all_objects()
 
 # add an object and plot the COM on the image
-sel_file_obj = rigid_obj_mgr.add_object_by_handle(sel_file_obj_handle)
+sel_file_obj = rigid_obj_mgr.add_object_by_template_handle(sel_file_obj_handle)
 rand_position = np.random.uniform(
     np.array([-0.4, 1.2, -1.0]), np.array([0.4, 1.8, -0.5])
 )
@@ -1044,7 +1044,7 @@ box_template.scale = np.array([0.2, 0.2, 0.2])
 box_template.semantic_id = 10  # @param{type:"integer"}
 box_template_id = obj_attr_mgr.register_template(box_template, "box")
 
-box_obj = rigid_obj_mgr.add_object_by_id(box_template_id)
+box_obj = rigid_obj_mgr.add_object_by_template_id(box_template_id)
 set_object_state_from_agent(
     sim, box_obj, mn.Vector3(0.0, 1.5, -0.75), orientation=object_orientation
 )
@@ -1127,7 +1127,7 @@ obj_template_handle = sel_file_obj_handle
 obj_template = obj_attr_mgr.get_template_by_handle(obj_template_handle)
 
 # Add object instantiated by desired template using template handle.
-file_obj = rigid_obj_mgr.add_object_by_handle(obj_template_handle)
+file_obj = rigid_obj_mgr.add_object_by_template_handle(obj_template_handle)
 
 # Set desired offset from agent location to place object
 offset = np.array([-1.2, 0.1, -1.5])
@@ -1149,10 +1149,10 @@ for i in range(5):
     # Object creation can occur using template ID or handle
     if i % 2 == 0:
         # Add another object instantiated by modified template using handle
-        new_obj = rigid_obj_mgr.add_object_by_id(new_tmplt_id)
+        new_obj = rigid_obj_mgr.add_object_by_template_id(new_tmplt_id)
     else:
         # Add another object instantiated by modified template using handle
-        new_obj = rigid_obj_mgr.add_object_by_handle(new_obj_template_handle)
+        new_obj = rigid_obj_mgr.add_object_by_template_handle(new_obj_template_handle)
     # Move object to the right of previous object
     offset[0] += 0.4
     objs.append(new_obj)
@@ -1288,7 +1288,7 @@ new_template_id = obj_attr_mgr.register_template(new_template, new_template_hand
 
 # Add object instantiated by original template using template handle
 original_template = obj_attr_mgr.get_template_by_handle(sel_file_obj_handle)
-orig_obj = rigid_obj_mgr.add_object_by_handle(original_template.handle)
+orig_obj = rigid_obj_mgr.add_object_by_template_handle(original_template.handle)
 
 # Set desired offset from agent location to place object
 offset = np.array([-0.5, 0.3, -1.5])
@@ -1296,7 +1296,7 @@ offset = np.array([-0.5, 0.3, -1.5])
 set_object_state_from_agent(sim, orig_obj, offset=offset)
 
 # Add new object instantiated by desired template using template handle
-new_obj = rigid_obj_mgr.add_object_by_id(new_template_id)
+new_obj = rigid_obj_mgr.add_object_by_template_id(new_template_id)
 
 # Set desired offset from agent location to place object
 offset[0] += 1.0
@@ -1351,8 +1351,8 @@ offset_wf = np.array([-1.1, 0.6, -1.0])
 objs_to_sim = []
 for i in range(6):
     # Create object from template handle
-    obj_solid = rigid_obj_mgr.add_object_by_handle(prim_solid_obj_handles[i])
-    obj_wf = rigid_obj_mgr.add_object_by_handle(prim_wf_obj_handles[i])
+    obj_solid = rigid_obj_mgr.add_object_by_template_handle(prim_solid_obj_handles[i])
+    obj_wf = rigid_obj_mgr.add_object_by_template_handle(prim_wf_obj_handles[i])
     objs_to_sim.append(obj_solid)
     objs_to_sim.append(obj_wf)
 
@@ -1763,7 +1763,7 @@ for solidHandle in solid_handles_to_use.values():
     obj_template = obj_attr_mgr.create_template(solidHandle)
     # Create object from object template handle
     print("Solid Object being made using handle :{}".format(solidHandle))
-    obj_solid = rigid_obj_mgr.add_object_by_handle(solidHandle)
+    obj_solid = rigid_obj_mgr.add_object_by_template_handle(solidHandle)
     objs_to_sim.append(obj_solid)
     # Place object in scene relative to agent
     set_object_state_from_agent(sim, obj_solid, offset=offset_solid)
@@ -1777,7 +1777,7 @@ for wireframeHandle in wireframe_handles_to_use.values():
     obj_template = obj_attr_mgr.create_template(wireframeHandle)
     # Create object from object template handle
     print("Wireframe Object being made using handle :{}".format(wireframeHandle))
-    obj_wf = rigid_obj_mgr.add_object_by_handle(wireframeHandle)
+    obj_wf = rigid_obj_mgr.add_object_by_template_handle(wireframeHandle)
     objs_to_sim.append(obj_wf)
     # Place object in scene relative to agent
     set_object_state_from_agent(sim, obj_wf, offset=offset_wf)

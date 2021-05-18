@@ -153,7 +153,7 @@ def runVHACDSimulation(obj_path):
         # now display objects
         cur_objs = []
         for i in range(len(obj_ids)):
-            cur_obj = rigid_obj_mgr.add_object_by_id(obj_ids[i])
+            cur_obj = rigid_obj_mgr.add_object_by_template_id(obj_ids[i])
             cur_objs.append(cur_obj)
             # get length
             obj_node = cur_obj.root_scene_node

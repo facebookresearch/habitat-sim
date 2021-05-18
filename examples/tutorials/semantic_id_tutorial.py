@@ -131,8 +131,8 @@ def main(show_imgs=True, save_imgs=False):
 
         # add 2 chairs with default semanticId == 0 and arrange them
         chairs = []
-        chairs.append(rigid_obj_mgr.add_object_by_id(chair_template_id))
-        chairs.append(rigid_obj_mgr.add_object_by_id(chair_template_id))
+        chairs.append(rigid_obj_mgr.add_object_by_template_id(chair_template_id))
+        chairs.append(rigid_obj_mgr.add_object_by_template_id(chair_template_id))
 
         chairs[0].rotation = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis())
 
@@ -163,7 +163,7 @@ def main(show_imgs=True, save_imgs=False):
 
         box_template_id = obj_templates_mgr.register_template(box_template, "box")
 
-        box_obj = rigid_obj_mgr.add_object_by_id(box_template_id)
+        box_obj = rigid_obj_mgr.add_object_by_template_id(box_template_id)
         box_obj.translation = [3.5, 0.47, 0.9]
         box_obj.rotation = mn.Quaternion.rotation(mn.Deg(-30), mn.Vector3.y_axis())
 

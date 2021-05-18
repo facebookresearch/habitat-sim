@@ -190,7 +190,7 @@ class DemoRunner:
                     random.randint(-object_init_grid_dim[1], object_init_grid_dim[1]),
                     random.randint(-object_init_grid_dim[2], object_init_grid_dim[2]),
                 )
-            obj = rigid_obj_mgr.add_object_by_id(rand_obj_index)
+            obj = rigid_obj_mgr.add_object_by_template_id(rand_obj_index)
             object_init_grid[object_init_cell] = obj.object_id
             object_offset = np.array(
                 [

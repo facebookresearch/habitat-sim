@@ -242,7 +242,7 @@ def test_object_template_editing():
             assert sphere_template2.scale == sphere_scale
 
             # test adding a new object
-            obj = rigid_obj_mgr.add_object_by_id(template_ids[0])
+            obj = rigid_obj_mgr.add_object_by_template_id(template_ids[0])
             assert obj.object_id != -1
 
             # test getting initialization templates

@@ -218,11 +218,11 @@ chefcan_template_handle = obj_templates_mgr.get_template_handles(
 )[0]
 
 # drop some dynamic objects
-chefcan_1 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
+chefcan_1 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
 chefcan_1.translation = [2.4, -0.64, 0.0]
-chefcan_2 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
+chefcan_2 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
 chefcan_2.translation = [2.4, -0.64, 0.28]
-chefcan_3 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
+chefcan_3 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
 chefcan_3.translation = [2.4, -0.64, -0.28]
 
 observations += simulate_with_moving_agent(
@@ -376,13 +376,13 @@ prim_attr_mgr = sim.get_asset_template_manager()
 rigid_obj_mgr = sim.get_rigid_object_manager()
 # visualize the recorded agent transform as a cylinder
 agent_viz_handle = prim_attr_mgr.get_template_handles("cylinderSolid")[0]
-agent_viz_obj = rigid_obj_mgr.add_object_by_handle(agent_viz_handle)
+agent_viz_obj = rigid_obj_mgr.add_object_by_template_handle(agent_viz_handle)
 agent_viz_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 agent_viz_obj.collidable = False
 
 # visualize the recorded sensor transform as a cube
 sensor_viz_handle = prim_attr_mgr.get_template_handles("cubeSolid")[0]
-sensor_viz_obj = rigid_obj_mgr.add_object_by_handle(sensor_viz_handle)
+sensor_viz_obj = rigid_obj_mgr.add_object_by_template_handle(sensor_viz_handle)
 sensor_viz_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 sensor_viz_obj.collidable = False
 

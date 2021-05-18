@@ -53,7 +53,7 @@ def test_kinematics():
         # test adding an object to the world
         # get handle for object 0, used to test
         obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
-        cheezit_box = rigid_obj_mgr.add_object_by_handle(obj_handle_list[0])
+        cheezit_box = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
         assert rigid_obj_mgr.get_num_objects() > 0
         assert (
             len(rigid_obj_mgr.get_object_handles()) == rigid_obj_mgr.get_num_objects()
@@ -95,7 +95,7 @@ def test_kinematics():
         assert rigid_obj_mgr.get_num_objects() == 0
 
         obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
-        cheezit_box = rigid_obj_mgr.add_object_by_handle(obj_handle_list[0])
+        cheezit_box = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
 
         prev_time = 0.0
         for _ in range(2):
@@ -115,7 +115,7 @@ def test_kinematics():
         # test attaching/dettaching an Agent to/from physics simulation
         agent_node = sim.agents[0].scene_node
         obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
-        cheezit_agent = rigid_obj_mgr.add_object_by_handle(
+        cheezit_agent = rigid_obj_mgr.add_object_by_template_handle(
             obj_handle_list[0], agent_node
         )
 
@@ -127,7 +127,7 @@ def test_kinematics():
         assert agent_node.translation
 
         # test get/set RigidState
-        cheezit_box = rigid_obj_mgr.add_object_by_handle(obj_handle_list[0])
+        cheezit_box = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
         targetRigidState = habitat_sim.bindings.RigidState(
             mn.Quaternion(), np.array([1.0, 2.0, 3.0])
         )
@@ -171,8 +171,8 @@ def test_dynamics():
 
         # test adding an object to the world
         obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
-        cheezit_box1 = rigid_obj_mgr.add_object_by_handle(obj_handle_list[0])
-        cheezit_box2 = rigid_obj_mgr.add_object_by_handle(obj_handle_list[0])
+        cheezit_box1 = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
+        cheezit_box2 = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
 
         assert rigid_obj_mgr.get_num_objects() > 0
         assert (
@@ -295,7 +295,7 @@ def test_velocity_control():
         for iteration in range(2):
             sim.reset()
 
-            box_object = rigid_obj_mgr.add_object_by_handle(obj_handle)
+            box_object = rigid_obj_mgr.add_object_by_template_handle(obj_handle)
             vel_control = box_object.velocity_control
 
             if iteration == 0:
@@ -399,7 +399,7 @@ def test_raycast():
 
             # add a primitive object to the world and test a ray away from the origin
             cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
-            cube_obj = rigid_obj_mgr.add_object_by_handle(cube_prim_handle)
+            cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
             cube_obj.translation = [2.0, 0.0, 2.0]
 
             test_ray_1.origin = np.array([0.0, 0, 2.0])
