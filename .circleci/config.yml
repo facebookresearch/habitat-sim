@@ -576,6 +576,7 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 16
+              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               python -u setup.py install --config Release --headless --vhacd
       - run:
           name: run clang-tidy
@@ -587,7 +588,6 @@ jobs:
       - run:
           name: Run sim benchmark
           command: |
-              while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
