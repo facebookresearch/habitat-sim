@@ -333,7 +333,7 @@ jobs:
               if [ ! -d ./data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
                 cd habitat-sim
-                python habitat_sim/utils/datasets_download.py --uid ci_test_assets --replace --data_path data/
+                python -m habitat_sim.utils.datasets_download --uid ci_test_assets --replace --data-path data/
               fi
 
       - run:

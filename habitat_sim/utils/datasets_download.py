@@ -226,7 +226,7 @@ def main(args):
     )
 
     parser.add_argument(
-        "--data_path",
+        "--data-path",
         type=str,
         help='Optionally provide a path to the desired root data/ directory. Default is "habitat-sim/data/".',
     )
@@ -253,7 +253,7 @@ def main(args):
 
             repo = git.Repo(".", search_parent_directories=True)
             dir_path = repo.working_tree_dir
-            # Root data directory. Optionaly overridden by input argument "--data_path".
+            # Root data directory. Optionaly overridden by input argument "--data-path".
             data_path = os.path.join(dir_path, "data")
         except Exception:
             traceback.print_exc(file=sys.stdout)
@@ -261,7 +261,7 @@ def main(args):
             print(
                 "Aborting download, failed to get default data_path from git repo and none provided."
             )
-            print("Try providing --data_path (e.g. '/path/to/habitat-sim/data/')")
+            print("Try providing --data-path (e.g. '/path/to/habitat-sim/data/')")
             print("----------------------------------------------------------------")
             parser.print_help()
             exit(2)
