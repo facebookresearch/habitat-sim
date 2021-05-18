@@ -417,7 +417,7 @@ def test_raycast():
                 atol=0.07,
             )
             assert abs(raycast_results.hits[0].ray_distance - 1.89) < 0.001
-            assert raycast_results.hits[0].object_id == 0
+            assert raycast_results.hits[0].object_id == cube_obj.object_id
 
             # test raycast against a non-collidable object.
             # should not register a hit with the object.
