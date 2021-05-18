@@ -463,6 +463,7 @@ jobs:
       - run:
           name: Build Javascript bindings
           command: |
+              git submodule update --init --recursive --jobs 16
               # wait for npm and emscripten install
               while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
               # switch to cmake 3.20 just for this step. The JS build requires
