@@ -1539,11 +1539,6 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
         textures_.at(textureBaseIndex + material.diffuseTexture()).get();
   }
 
-  // temp hack for better Fetch lighting; see
-  // https://cvmlp.slack.com/archives/CFN5TAUSD/p1604448841393900
-  finalMaterial->ambientColor = finalMaterial->diffuseColor;
-  finalMaterial->ambientTexture = finalMaterial->diffuseTexture;
-
   // specular material properties
   finalMaterial->specularColor = material.specularColor();
   if (material.hasSpecularTexture()) {
