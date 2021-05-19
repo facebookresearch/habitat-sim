@@ -500,6 +500,8 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
   }
   ASSERT(assetInfo.filepath == creation.filepath);
 
+  // TODO: handle the material override here
+
   auto& sceneGraph = sceneManagerPtr->getSceneGraph(sceneID);
   auto& rootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
@@ -2041,13 +2043,12 @@ bool ResourceManager::loadAsset(
       // first register the copied metaData
       resourceDict_.emplace(modifiedAssetName,
                             LoadedAssetData(resourceDict_.at(assetName)));
-      resourceDict_.at(modifiedAssetName).assetInfo.colorMaterialOverride =
-          true;
-      auto& phongMat =
+      Cr::Containers::Optional<PhongMaterialColor>& phongMat =
           resourceDict_.at(modifiedAssetName).assetInfo.overridePhongMaterial;
-      phongMat.ambientColor = materialOverride->ambientColor;
-      phongMat.diffuseColor = materialOverride->diffuseColor;
-      phongMat.specularColor = materialOverride->specularColor;
+      phongMat = PhongMaterialColor();
+      phongMat->ambientColor = materialOverride->ambientColor;
+      phongMat->diffuseColor = materialOverride->diffuseColor;
+      phongMat->specularColor = materialOverride->specularColor;
       resourceDict_.at(modifiedAssetName).assetInfo.requiresLighting =
           requiresLighting;
 
