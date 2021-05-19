@@ -150,8 +150,9 @@ void ResourceManager::initPhysicsManager(
   if (isEnabled) {
     if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
 #ifdef ESP_BUILD_WITH_BULLET
-      physicsManager = std::make_shared<physics::BulletPhysicsManager>(
-          *this, physicsManagerAttributes);
+      std::make_shared<physics::BulletPhysicsManager>(*this,
+                                                      physicsManagerAttributes)
+          .swap(physicsManager);
       defaultToNoneSimulator = false;
 #else
       LOG(WARNING)
