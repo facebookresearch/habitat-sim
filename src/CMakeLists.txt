@@ -72,6 +72,7 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     # There is a bug with Magnum's Emscriptem toolchain.
     # on Emscriptem. Set flags manually
     # https://github.com/emscripten-core/emscripten/issues/11143#issue-617410308
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
   else()
