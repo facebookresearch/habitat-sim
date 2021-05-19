@@ -448,6 +448,27 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
   }
 }  // ResourceManager::buildCoordFrameFromAttribVals
 
+std::string ResourceManager::createColorMaterial(
+    const esp::assets::PhongMaterialColor& materialColor) {
+  std::ostringstream matHandleStream;
+  matHandleStream << "phong_amb_" << materialColor.ambientColor.toSrgbAlphaInt()
+                  << "_dif_" << materialColor.diffuseColor.toSrgbAlphaInt()
+                  << "_spec_" << materialColor.specularColor.toSrgbAlphaInt();
+  std::string newMaterialID = matHandleStream.str();
+  auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
+  if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
+    gfx::PhongMaterialData::uptr phongMaterial =
+        gfx::PhongMaterialData::create_unique();
+    phongMaterial->ambientColor = materialColor.ambientColor;
+    phongMaterial->diffuseColor = materialColor.diffuseColor;
+    phongMaterial->specularColor = materialColor.specularColor;
+
+    std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
+    shaderManager_.set(newMaterialID, finalMaterial.release());
+  }
+  return newMaterialID;
+}  // ResourceManager::createColorMaterial
+
 scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     const AssetInfo& assetInfo,
     const RenderAssetInstanceCreationInfo& creation,
@@ -492,20 +513,38 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
       sceneID = creation.isSemantic() ? activeSceneIDs[1] : activeSceneIDs[0];
     }
   }
-  const bool fileIsLoaded = resourceDict_.count(assetInfo.filepath) > 0;
-  if (!fileIsLoaded) {
-    if (!loadRenderAsset(assetInfo)) {
-      return nullptr;
-    }
-  }
-  ASSERT(assetInfo.filepath == creation.filepath);
 
   auto& sceneGraph = sceneManagerPtr->getSceneGraph(sceneID);
   auto& rootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
 
-  return createRenderAssetInstance(creation, &rootNode, &drawables);
+  return loadAndCreateRenderAssetInstance(assetInfo, creation, &rootNode,
+                                          &drawables);
 }  // ResourceManager::loadAndCreateRenderAssetInstance
+
+scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
+    const AssetInfo& assetInfo,
+    const RenderAssetInstanceCreationInfo& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    std::vector<scene::SceneNode*>* visNodeCache) {
+  if (!loadRenderAsset(assetInfo)) {
+    return nullptr;
+  }
+  ASSERT(assetInfo.filepath == creation.filepath);
+
+  // copy the const creation info to modify the key if necessary
+  RenderAssetInstanceCreationInfo finalCreation(creation);
+  if (assetInfo.overridePhongMaterial != Cr::Containers::NullOpt) {
+    // material override is requested so get the id
+    finalCreation.filepath =
+        assetInfo.filepath + "?" +
+        createColorMaterial(*assetInfo.overridePhongMaterial);
+  }
+
+  return createRenderAssetInstance(finalCreation, parent, drawables,
+                                   visNodeCache);
+}
 
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   bool meshSuccess = false;
@@ -591,12 +630,13 @@ bool ResourceManager::loadStageInternal(
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else {
         // load render asset if necessary
-        if (resourceDict_.count(info.filepath) == 0) {
-          if (!loadRenderAsset(info)) {
-            return false;
-          }
+        if (!loadRenderAsset(info)) {
+          return false;
         } else {
           if (resourceDict_[filename].assetInfo != info) {
+            // TODO: support color material modified assets by changing the
+            // "creation" filepath to the modified key
+
             // Right now, we only allow for an asset to be loaded with one
             // configuration, since generated mesh data may be invalid for a new
             // configuration
@@ -1986,119 +2026,6 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
   CHECK(primitive_meshes_.count(primitiveID));
   primitive_meshes_.erase(primitiveID);
-}
-
-bool ResourceManager::loadAsset(
-    const std::string& assetName,
-    bool requiresLighting,
-    const esp::assets::PhongMaterialColor* materialOverride,
-    scene::SceneNode* parent,
-    DrawableGroup* drawables,
-    std::vector<scene::SceneNode*>* visNodeCache) {
-  std::string finalAssetName = assetName;
-  bool meshSuccess = true;
-  if (resourceDict_.count(assetName) == 0) {
-    esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, assetName};
-    meshinfo.requiresLighting = requiresLighting;
-    meshSuccess = loadRenderAssetGeneral(meshinfo);
-
-    // check if collision handle exists in collision mesh groups yet.  if not
-    // then instance
-    if (collisionMeshGroups_.count(assetName) == 0) {
-      // set collision mesh data
-      const MeshMetaData& meshMetaData = getMeshMetaData(assetName);
-
-      int start = meshMetaData.meshIndex.first;
-      int end = meshMetaData.meshIndex.second;
-      //! Gather mesh components for meshGroup data
-      std::vector<CollisionMeshData> meshGroup;
-      for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
-        GenericMeshData& gltfMeshData =
-            dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
-        CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
-      collisionMeshGroups_.emplace(assetName, meshGroup);
-    }
-  }
-
-  // handle the material override
-  if (materialOverride) {
-    // craft a unique string for this combination of material and asset
-    std::ostringstream matHandleStream;
-    matHandleStream << "phong_amb_"
-                    << materialOverride->ambientColor.toSrgbAlphaInt()
-                    << "_dif_"
-                    << materialOverride->diffuseColor.toSrgbAlphaInt()
-                    << "_spec_"
-                    << materialOverride->specularColor.toSrgbAlphaInt();
-    std::string newMaterialID = matHandleStream.str();
-
-    // check for cached material
-    auto materialResource =
-        shaderManager_.get<gfx::MaterialData>(newMaterialID);
-    if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
-      // create/register the new material
-      gfx::PhongMaterialData::uptr phongMaterial =
-          gfx::PhongMaterialData::create_unique();
-      phongMaterial->ambientColor = materialOverride->ambientColor;
-      phongMaterial->diffuseColor = materialOverride->diffuseColor;
-      phongMaterial->specularColor = materialOverride->specularColor;
-
-      std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
-      shaderManager_.set(newMaterialID, finalMaterial.release());
-    }
-
-    // create modified asset filename
-    std::string modifiedAssetName = assetName + "?" + newMaterialID;
-    // register the copy if not done already
-    if (resourceDict_.count(modifiedAssetName) == 0) {
-      // first register the copied metaData
-      resourceDict_.emplace(modifiedAssetName,
-                            LoadedAssetData(resourceDict_.at(assetName)));
-      resourceDict_.at(modifiedAssetName).assetInfo.colorMaterialOverride =
-          true;
-      auto& phongMat =
-          resourceDict_.at(modifiedAssetName).assetInfo.overridePhongMaterial;
-      phongMat.ambientColor = materialOverride->ambientColor;
-      phongMat.diffuseColor = materialOverride->diffuseColor;
-      phongMat.specularColor = materialOverride->specularColor;
-      resourceDict_.at(modifiedAssetName).assetInfo.requiresLighting =
-          requiresLighting;
-
-      // iteratively reset the local material ids for all components
-      std::vector<MeshTransformNode*> nodeQueue;
-      nodeQueue.push_back(
-          &resourceDict_.at(modifiedAssetName).meshMetaData.root);
-      while (!nodeQueue.empty()) {
-        MeshTransformNode* node = nodeQueue.back();
-        nodeQueue.pop_back();
-        for (auto& child : node->children) {
-          nodeQueue.push_back(&child);
-        }
-        if (node->meshIDLocal != ID_UNDEFINED) {
-          node->materialID = newMaterialID;
-        }
-      }
-      // clone the collision data
-      collisionMeshGroups_.emplace(modifiedAssetName,
-                                   collisionMeshGroups_.at(assetName));
-    }
-    finalAssetName = modifiedAssetName;
-  }
-
-  //! Add asset to rendering stack
-  if (meshSuccess and parent != nullptr and drawables != nullptr) {
-    RenderAssetInstanceCreationInfo::Flags flags;
-    flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;
-    flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-    RenderAssetInstanceCreationInfo creation(finalAssetName, Mn::Vector3{1},
-                                             flags, DEFAULT_LIGHTING_KEY);
-
-    createRenderAssetInstance(creation, parent, drawables, visNodeCache);
-  }
-
-  return meshSuccess;
 }
 
 void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,

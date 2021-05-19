@@ -49,8 +49,8 @@ struct AssetInfo {
   bool splitInstanceMesh = true;  // only applies to AssetType::INSTANCE_MESH
 
   //! if set, override the asset material with a procedural Phong material
-  bool colorMaterialOverride = false;
-  PhongMaterialColor overridePhongMaterial;
+  Cr::Containers::Optional<PhongMaterialColor> overridePhongMaterial =
+      Cr::Containers::NullOpt;
 
   //! Populates a preset AssetInfo by matching against known filepaths
   static AssetInfo fromPath(const std::string& filepath);
