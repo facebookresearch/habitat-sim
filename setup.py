@@ -90,7 +90,7 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         help="Don't update git submodules",
     )
     parser.add_argument(
-        "--build_type",
+        "--build-type",
         dest="build_type",
         default=None,
         help="CMake configuration to build with.",
