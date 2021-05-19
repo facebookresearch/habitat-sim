@@ -2002,24 +2002,9 @@ bool ResourceManager::loadAsset(
     meshinfo.requiresLighting = requiresLighting;
     meshSuccess = loadRenderAssetGeneral(meshinfo);
 
-    // check if collision handle exists in collision mesh groups yet.  if not
-    // then instance
-    if (collisionMeshGroups_.count(assetName) == 0) {
-      // set collision mesh data
-      const MeshMetaData& meshMetaData = getMeshMetaData(assetName);
-
-      int start = meshMetaData.meshIndex.first;
-      int end = meshMetaData.meshIndex.second;
-      //! Gather mesh components for meshGroup data
-      std::vector<CollisionMeshData> meshGroup;
-      for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
-        GenericMeshData& gltfMeshData =
-            dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
-        CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
-      collisionMeshGroups_.emplace(assetName, meshGroup);
-    }
+    // create and register the collisionMeshGroups
+    std::vector<CollisionMeshData> meshGroup;
+    meshSuccess = buildMeshGroups(meshinfo, meshGroup);
   }
 
   // handle the material override
