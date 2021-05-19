@@ -278,10 +278,8 @@ auto AbstractObjectAttributesManager<T, Access>::
         attributes->setCollisionAssetType(collision_asset_type);
       });
   // use non-empty result if either result is empty
-  attributes->setRenderAssetHandle(rndrFName.compare("") == 0 ? colFName
-                                                              : rndrFName);
-  attributes->setCollisionAssetHandle(colFName.compare("") == 0 ? rndrFName
-                                                                : colFName);
+  attributes->setRenderAssetHandle(rndrFName == "" ? colFName : rndrFName);
+  attributes->setCollisionAssetHandle(colFName == "" ? rndrFName : colFName);
 
   // check if primitive collision mesh
   auto colAssetHandle = attributes->getCollisionAssetHandle();
@@ -355,7 +353,7 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
   if (io::readMember<std::string>(jsonDoc, jsonMeshHandleTag, assetName)) {
     // value is specified in json doc
     if ((this->isValidPrimitiveAttributes(assetName)) &&
-        (oldFName.compare(assetName) != 0)) {
+        (oldFName != assetName)) {
       // if mesh name is specified and different than old value,
       // perform name-specific mesh-type config.
       setDefaultAssetNameBasedAttributes(attributes, false, assetName,
@@ -364,7 +362,7 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
       // is not valid primitive, assume valid file name
       assetName =
           Cr::Utility::Directory::join(propertiesFileDirectory, assetName);
-      if ((typeVal == -1) && (oldFName.compare(assetName) != 0)) {
+      if ((typeVal == -1) && (oldFName != assetName)) {
         // if file name is different, and type val has not been specified,
         // perform name-specific mesh type config do not override orientation -
         // should be specified in json.

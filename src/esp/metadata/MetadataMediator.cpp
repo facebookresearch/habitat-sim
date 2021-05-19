@@ -69,8 +69,7 @@ bool MetadataMediator::setSimulatorConfiguration(
             << simConfig_.activeSceneName
             << " and dataset : " << simConfig_.sceneDatasetConfigFile
             << " which "
-            << (activeSceneDataset_.compare(
-                    simConfig_.sceneDatasetConfigFile) == 0
+            << (activeSceneDataset_ == simConfig_.sceneDatasetConfigFile
                     ? "is currently active dataset."
                     : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
   return true;
@@ -182,8 +181,7 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
   // first check if physics manager attributes exists, if so then set as current
   if (physicsAttributesManager_->getObjectLibHasHandle(
           _physicsManagerAttributesPath)) {
-    if (currPhysicsManagerAttributes_.compare(_physicsManagerAttributesPath) !=
-        0) {
+    if (currPhysicsManagerAttributes_ != _physicsManagerAttributesPath) {
       LOG(INFO) << "MetadataMediator::setCurrPhysicsAttributesHandle : Old "
                    "physics manager attributes "
                 << currPhysicsManagerAttributes_ << " changed to "
@@ -212,7 +210,7 @@ bool MetadataMediator::setActiveSceneDatasetName(
     const std::string& sceneDatasetName) {
   // first check if dataset exists/is loaded, if so then set as default
   if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName)) {
-    if (activeSceneDataset_.compare(sceneDatasetName) != 0) {
+    if (activeSceneDataset_ != sceneDatasetName) {
       LOG(INFO)
           << "MetadataMediator::setActiveSceneDatasetName : Old active dataset "
           << activeSceneDataset_ << " changed to " << sceneDatasetName
