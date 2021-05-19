@@ -233,7 +233,7 @@ class CMakeBuild(build_ext):
         ]
         cmake_args += shlex.split(args.cmake_args)
 
-        build_type = args.config
+        build_type = args.build_type
         assert not (
             build_type is not None and self.debug
         ), "Debug and Config flags conflict"
