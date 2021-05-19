@@ -37,6 +37,8 @@
 #include <Magnum/Trade/TextureData.h>
 #include <Magnum/VertexFormat.h>
 
+#include <memory>
+
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
@@ -148,8 +150,8 @@ void ResourceManager::initPhysicsManager(
   if (isEnabled) {
     if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
 #ifdef ESP_BUILD_WITH_BULLET
-      physicsManager.reset(
-          new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
+      physicsManager = std::make_shared<physics::BulletPhysicsManager>(
+          *this, physicsManagerAttributes);
       defaultToNoneSimulator = false;
 #else
       LOG(WARNING)
@@ -165,8 +167,8 @@ void ResourceManager::initPhysicsManager(
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
     physicsManagerAttributes->setSimulator("none");
-    physicsManager.reset(
-        new physics::PhysicsManager(*this, physicsManagerAttributes));
+    physicsManager = std::make_shared<physics::PhysicsManager>(
+        *this, physicsManagerAttributes);
   }
 
   // build default primitive asset templates, and default primitive object
