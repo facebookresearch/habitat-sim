@@ -554,32 +554,6 @@ class ResourceManager {
   inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }
 
   /**
-   * @brief Easy import for an asset resource, creating and registering a
-   * MeshMetaData in resourceDict and an AssetInfo. Optionally instance an asset
-   * by providing parent node, and drawables. Optionally setup a custom override
-   * material and cache the modified asset.
-   * @param filename The asset filepath.
-   * @param requiresLighting Whether or not the asset should be prepared for
-   * rendering with lights.
-   * @param materialOverride If provided, an additional AssetInfo and
-   * MeshMetaData are created overriding the asset material with a PhongMaterial
-   * generated from these parameters
-   * @param parent The parent node under which the visual node hierarchy will be
-   * generated.
-   * @param drawables The DrawableGroup to which new Drawables will be added.
-   * @param visNodeCache A reference to a SceneNode* vector which caches all new
-   * SceneNodes created by the attachment process.
-   * @return Whether or not the asset is imported.
-   */
-  bool loadAsset(
-      const std::string& filename,
-      bool requiresLighting = true,
-      const esp::assets::PhongMaterialColor* materialOverride = nullptr,
-      scene::SceneNode* parent = nullptr,
-      DrawableGroup* drawables = nullptr,
-      std::vector<scene::SceneNode*>* visNodeCache = nullptr);
-
-  /**
    * @brief Set a replay recorder so that ResourceManager can notify it about
    * render assets.
    */

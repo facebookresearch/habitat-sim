@@ -298,30 +298,33 @@ bool BulletArticulatedObject::attachGeometry(
       case io::URDF::GEOM_MESH: {
         visualGeomComponent.scale(visual.m_geometry.m_meshScale);
 
+        assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN,
+                                         visual.m_geometry.m_meshFileName};
+        visualMeshInfo.requiresLighting = true;
+
         // create a modified asset if necessary for material override
         std::shared_ptr<io::URDF::Material> material =
             visual.m_geometry.m_localMaterial;
-
-        std::unique_ptr<esp::assets::PhongMaterialColor> materialOverrideColor =
-            material ? std::make_unique<esp::assets::PhongMaterialColor>()
-                     : nullptr;
-        if (materialOverrideColor) {
-          materialOverrideColor->ambientColor =
+        if (material) {
+          visualMeshInfo.overridePhongMaterial = assets::PhongMaterialColor();
+          visualMeshInfo.overridePhongMaterial->ambientColor =
               material->m_matColor.m_rgbaColor;
-          materialOverrideColor->diffuseColor =
+          visualMeshInfo.overridePhongMaterial->diffuseColor =
               material->m_matColor.m_rgbaColor;
-          materialOverrideColor->specularColor =
+          visualMeshInfo.overridePhongMaterial->specularColor =
               Mn::Color4(material->m_matColor.m_specularColor);
         }
-        geomSuccess = resMgr_.loadAsset(
-            visual.m_geometry.m_meshFileName,  // original asset filename
-            true,                              // always light URDF assets
-            material ? materialOverrideColor.get()
-                     : nullptr,        // optional override material
-            &visualGeomComponent,      // parent visual node
-            drawables,                 // default drawable group
-            &linkObject->visualNodes_  // cache for new visual nodes
-        );
+
+        assets::RenderAssetInstanceCreationInfo::Flags flags;
+        flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+        flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+        assets::RenderAssetInstanceCreationInfo creation(
+            visualMeshInfo.filepath, Mn::Vector3{1}, flags,
+            DEFAULT_LIGHTING_KEY);
+
+        geomSuccess = resMgr_.loadAndCreateRenderAssetInstance(
+                          visualMeshInfo, creation, &visualGeomComponent,
+                          drawables, &linkObject->visualNodes_) != nullptr;
 
         // cache the visual component for later query
         if (geomSuccess) {

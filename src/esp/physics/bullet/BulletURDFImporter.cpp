@@ -91,8 +91,9 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       break;
     }
     case io::URDF::GEOM_MESH: {
-      bool meshSuccess =
-          resourceManager_.loadAsset(collision->m_geometry.m_meshFileName);
+      assets::AssetInfo meshAsset{assets::AssetType::UNKNOWN,
+                                  collision->m_geometry.m_meshFileName};
+      bool meshSuccess = resourceManager_.loadRenderAsset(meshAsset);
 
       if (meshSuccess) {
         const std::vector<assets::CollisionMeshData>& meshGroup =
