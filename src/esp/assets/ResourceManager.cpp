@@ -514,6 +514,20 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     }
   }
 
+  auto& sceneGraph = sceneManagerPtr->getSceneGraph(sceneID);
+  auto& rootNode = sceneGraph.getRootNode();
+  auto& drawables = sceneGraph.getDrawables();
+
+  return loadAndCreateRenderAssetInstance(assetInfo, creation, &rootNode,
+                                          &drawables);
+}  // ResourceManager::loadAndCreateRenderAssetInstance
+
+scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
+    const AssetInfo& assetInfo,
+    const RenderAssetInstanceCreationInfo& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    std::vector<scene::SceneNode*>* visNodeCache) {
   if (!loadRenderAsset(assetInfo)) {
     return nullptr;
   }
@@ -528,12 +542,9 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
         createColorMaterial(*assetInfo.overridePhongMaterial);
   }
 
-  auto& sceneGraph = sceneManagerPtr->getSceneGraph(sceneID);
-  auto& rootNode = sceneGraph.getRootNode();
-  auto& drawables = sceneGraph.getDrawables();
-
-  return createRenderAssetInstance(finalCreation, &rootNode, &drawables);
-}  // ResourceManager::loadAndCreateRenderAssetInstance
+  return createRenderAssetInstance(finalCreation, parent, drawables,
+                                   visNodeCache);
+}
 
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   bool registerMaterialOverride =

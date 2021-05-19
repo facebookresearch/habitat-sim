@@ -614,6 +614,32 @@ class ResourceManager {
       esp::scene::SceneManager* sceneManagerPtr,
       const std::vector<int>& activeSceneIDs);
 
+  /**
+   * @brief Load a render asset (if not already loaded) and create a render
+   * asset instance at a known SceneNode and Drawables.
+   *
+   * @param assetInfo the render asset to load
+   * @param creation How to create the instance
+   * @param parent The parent node under which the visual node hierarchy will be
+   * generated.
+   * @param drawables The DrawableGroup to which new Drawables will be added.
+   * @param visNodeCache A reference to a SceneNode* vector which caches all new
+   * SceneNodes created by the attachment process.
+   * @return the root node of the instance, or nullptr (if the load failed)
+   */
+  scene::SceneNode* loadAndCreateRenderAssetInstance(
+      const AssetInfo& assetInfo,
+      const RenderAssetInstanceCreationInfo& creation,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      std::vector<scene::SceneNode*>* visNodeCache = nullptr);
+
+  /**
+   * @brief Load a render asset so it can be instanced. See also
+   * createRenderAssetInstance.
+   */
+  bool loadRenderAsset(const AssetInfo& info);
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -860,12 +886,6 @@ class ResourceManager {
       const metadata::attributes::StageAttributes::ptr& stageAttributes,
       bool createCollisionInfo,
       bool createSemanticInfo);
-
-  /**
-   * @brief Load a render asset so it can be instanced. See also
-   * createRenderAssetInstance.
-   */
-  bool loadRenderAsset(const AssetInfo& info);
 
   /**
    * @brief PTex Mesh backend for loadRenderAsset
