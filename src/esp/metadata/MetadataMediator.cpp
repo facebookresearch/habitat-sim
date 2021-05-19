@@ -143,7 +143,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   }
 
   // Next check if is current activeSceneDataset_, and if so skip with warning
-  if (sceneDatasetName.compare(activeSceneDataset_)) {
+  if (sceneDatasetName != activeSceneDataset_) {
     LOG(WARNING) << "MetadataMediator::removeSceneDataset : Cannot remove "
                     "active SceneDatasetAttributes "
                  << sceneDatasetName
@@ -165,7 +165,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
     return false;
   }
   // Should always have a default dataset.
-  if (sceneDatasetName.compare("default")) {
+  if (sceneDatasetName != "default") {
     // removing default dataset should still create another, empty, default
     // dataset.
     createSceneDataset("default");
