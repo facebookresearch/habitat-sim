@@ -116,9 +116,9 @@ float normalDistribution(vec3 normal, vec3 halfVector, float roughness) {
   float a = roughness * roughness;
   float a2 = a * a;
 #if defined(DOUBLE_SIDED)
-  float n_dot_h = abs(dot(normal, halfVector));
+  float n_dot_h = clamp(abs(dot(normal, halfVector)), 0.0, 1.0);
 #else
-  float n_dot_h = max(dot(normal, halfVector), 0.0);
+  float n_dot_h = clamp(dot(normal, halfVector), 0.0, 1.0);
 #endif
 
   float d = n_dot_h * n_dot_h * (a2 - 1.0) + 1.0;
@@ -145,11 +145,11 @@ float specularGeometricAttenuation(vec3 normal,
                                    vec3 view,
                                    float roughness) {
 #if defined(DOUBLE_SIDED)
-  float n_dot_l = abs(dot(normal, light));
-  float n_dot_v = abs(dot(normal, view));
+  float n_dot_l = clamp(abs(dot(normal, light)), 0.001, 1.0);
+  float n_dot_v = clamp(abs(dot(normal, view)), 0.001, 1.0);
 #else
-  float n_dot_l = max(dot(normal, light), 0.0);
-  float n_dot_v = max(dot(normal, view), 0.0);
+  float n_dot_l = clamp(dot(normal, light), 0.001, 1.0);
+  float n_dot_v = clamp(dot(normal, view), 0.001, 1.0);
 #endif
   float ggx1 = geometrySchlickGGX(n_dot_l, roughness);
   float ggx2 = geometrySchlickGGX(n_dot_v, roughness);
@@ -162,7 +162,7 @@ float specularGeometricAttenuation(vec3 normal,
 // view: camera direction, aka light outgoing direction
 // halfVector: half vector of light and view
 vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 halfVector) {
-  float v_dot_h = max(dot(view, halfVector), 0.0);
+  float v_dot_h = clamp(dot(view, halfVector), 0.0, 1.0);
   return F0 + (1.0 - F0) * pow(1.0 - v_dot_h, 5.0);
 }
 
@@ -195,25 +195,20 @@ vec3 microfacetModel(vec3 baseColor,
   // https://seblagarde.wordpress.com/2012/01/08/pi-or-not-to-pi-in-game-lighting-equation/
   vec3 diffuse = mix(vec3(1.0) - Fresnel, vec3(0.0), metallic) * baseColor;
 
-  // Specular BDDF
+  // Specular BRDF
 #if defined(DOUBLE_SIDED)
-  float temp =
-      max(4.0 * abs(dot(normal, light)) * abs(dot(normal, view)), Epsilon);
+  float n_dot_l = clamp(abs(dot(normal, light)), 0.001, 1.0);
+  float n_dot_v = clamp(abs(dot(normal, view)), 0.001, 1.0);
 #else
-  float temp =
-      max(4.0 * max(dot(normal, light), 0.0) * max(dot(normal, view), 0.0),
-          Epsilon);
+  float n_dot_l = clamp(dot(normal, light), 0.001, 1.0);
+  float n_dot_v = clamp(dot(normal, view), 0.001, 1.0);
 #endif
+  float temp = max(4.0 * n_dot_l * n_dot_v, Epsilon);
   vec3 specular = Fresnel *
                   specularGeometricAttenuation(normal, light, view, roughness) *
                   normalDistribution(normal, halfVector, roughness) / temp;
 
-  return (diffuse + specular) * lightRadiance *
-#if defined(DOUBLE_SIDED)
-  abs(dot(normal, light));
-#else
-  max(dot(normal, light), 0.0);
-#endif
+  return (diffuse + specular) * lightRadiance * n_dot_l;
 }
 
 void main() {
@@ -284,6 +279,10 @@ void main() {
   // TODO: use ALPHA_MASK to discard fragments
   fragmentColor += vec4(finalColor, baseColor.a);
 #endif  // if LIGHT_COUNT > 0
+
+#if defined(IMAGE_BASED_LIGHTING)
+  // TODO: compute lighting contribution from image based lighting (IBL)
+#endif
 
 #if defined(OBJECT_ID)
   fragmentObjectId = ObjectId;
