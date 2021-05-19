@@ -589,6 +589,16 @@ class ResourceManager {
   }
 
   /**
+   * @brief Construct and return a unique string key for the color material and
+   * create an entry in the shaderManager_ if new.
+   *
+   * @param materialColor The color parameters.
+   * @return The unique key string identifying the material in shaderManager_.
+   */
+  std::string createColorMaterial(
+      const esp::assets::PhongMaterialColor& materialColor);
+
+  /**
    * @brief Load a render asset (if not already loaded) and create a render
    * asset instance.
    *
