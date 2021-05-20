@@ -547,20 +547,79 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
 }
 
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
-  bool meshSuccess = false;
-  if (info.type == AssetType::FRL_PTEX_MESH) {
-    meshSuccess = loadRenderAssetPTex(info);
-  } else if (info.type == AssetType::INSTANCE_MESH) {
-    meshSuccess = loadRenderAssetIMesh(info);
-  } else if (isRenderAssetGeneral(info.type)) {
-    meshSuccess = loadRenderAssetGeneral(info);
-  } else {
-    // loadRenderAsset doesn't yet support the requested asset type
-    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  bool registerMaterialOverride =
+      info.overridePhongMaterial != Cr::Containers::NullOpt;
+  bool fileAssetIsLoaded = resourceDict_.count(info.filepath) > 0;
+
+  bool meshSuccess = fileAssetIsLoaded;
+  // first load the file asset as-is if necessary
+  if (!fileAssetIsLoaded) {
+    // clone the AssetInfo and remove the custom material to load a default
+    // AssetInfo first
+    AssetInfo defaultInfo(info);
+    defaultInfo.overridePhongMaterial = Cr::Containers::NullOpt;
+
+    if (info.type == AssetType::FRL_PTEX_MESH) {
+      meshSuccess = loadRenderAssetPTex(defaultInfo);
+    } else if (info.type == AssetType::INSTANCE_MESH) {
+      meshSuccess = loadRenderAssetIMesh(defaultInfo);
+    } else if (isRenderAssetGeneral(info.type)) {
+      meshSuccess = loadRenderAssetGeneral(defaultInfo);
+    } else {
+      // loadRenderAsset doesn't yet support the requested asset type
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+    }
+
+    if (meshSuccess) {
+      // create and register the collisionMeshGroups
+      std::vector<CollisionMeshData> meshGroup;
+      ASSERT(buildMeshGroups(defaultInfo, meshGroup));
+
+      if (gfxReplayRecorder_) {
+        gfxReplayRecorder_->onLoadRenderAsset(defaultInfo);
+      }
+    }
   }
-  if (gfxReplayRecorder_) {
-    gfxReplayRecorder_->onLoadRenderAsset(info);
+
+  // now handle loading the material override AssetInfo if configured
+  if (meshSuccess && registerMaterialOverride) {
+    // register or get the override material id
+    std::string materialId = createColorMaterial(*info.overridePhongMaterial);
+
+    // construct the unique id for the material modified asset
+    std::string modifiedAssetName = info.filepath + "?" + materialId;
+    const bool matModAssetIsRegistered =
+        resourceDict_.count(modifiedAssetName) > 0;
+    if (!matModAssetIsRegistered) {
+      // first register the copied metaData
+      resourceDict_.emplace(modifiedAssetName,
+                            LoadedAssetData(resourceDict_.at(info.filepath)));
+      // Replace the AssetInfo
+      resourceDict_.at(modifiedAssetName).assetInfo = info;
+      // Modify the MeshMetaData local material ids for all components
+      std::vector<MeshTransformNode*> nodeQueue;
+      nodeQueue.push_back(
+          &resourceDict_.at(modifiedAssetName).meshMetaData.root);
+      while (!nodeQueue.empty()) {
+        MeshTransformNode* node = nodeQueue.back();
+        nodeQueue.pop_back();
+        for (auto& child : node->children) {
+          nodeQueue.push_back(&child);
+        }
+        if (node->meshIDLocal != ID_UNDEFINED) {
+          node->materialID = materialId;
+        }
+      }
+      // clone the collision data
+      collisionMeshGroups_.emplace(modifiedAssetName,
+                                   collisionMeshGroups_.at(info.filepath));
+
+      if (gfxReplayRecorder_) {
+        gfxReplayRecorder_->onLoadRenderAsset(info);
+      }
+    }
   }
+
   return meshSuccess;
 }
 
