@@ -37,6 +37,8 @@
 #include <Magnum/Trade/TextureData.h>
 #include <Magnum/VertexFormat.h>
 
+#include <memory>
+
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
@@ -146,10 +148,10 @@ void ResourceManager::initPhysicsManager(
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
-    if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
+    if (physicsManagerAttributes->getSimulator() == "bullet") {
 #ifdef ESP_BUILD_WITH_BULLET
-      physicsManager.reset(
-          new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
+      physicsManager = std::make_shared<physics::BulletPhysicsManager>(
+          *this, physicsManagerAttributes);
       defaultToNoneSimulator = false;
 #else
       LOG(WARNING)
@@ -165,8 +167,8 @@ void ResourceManager::initPhysicsManager(
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
     physicsManagerAttributes->setSimulator("none");
-    physicsManager.reset(
-        new physics::PhysicsManager(*this, physicsManagerAttributes));
+    physicsManager = std::make_shared<physics::PhysicsManager>(
+        *this, physicsManagerAttributes);
   }
 
   // build default primitive asset templates, and default primitive object
@@ -188,8 +190,8 @@ bool ResourceManager::loadStage(
   // are unique.
   bool buildCollisionMesh =
       ((_physicsManager != nullptr) &&
-       (_physicsManager->getInitializationAttributes()->getSimulator().compare(
-            "none") != 0));
+       (_physicsManager->getInitializationAttributes()->getSimulator() !=
+        "none"));
   const std::string renderLightSetupKey(stageAttributes->getLightSetup());
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, buildCollisionMesh,
@@ -308,15 +310,14 @@ bool ResourceManager::loadStage(
     }
     // if we have a collision mesh, and it does not exist already as a
     // collision object, add it
-    if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
+    if (colInfo.filepath != EMPTY_SCENE) {
       infoToUse = colInfo;
     }  // if not colInfo.filepath.compare(EMPTY_SCENE)
   }    // if collision mesh desired
   // build the appropriate mesh groups, either for the collision mesh, or, if
   // the collision mesh is empty scene
 
-  if ((_physicsManager != nullptr) &&
-      (infoToUse.filepath.compare(EMPTY_SCENE) != 0)) {
+  if ((_physicsManager != nullptr) && (infoToUse.filepath != EMPTY_SCENE)) {
     bool success = buildMeshGroups(infoToUse, meshGroup);
     if (!success) {
       return false;
@@ -580,7 +581,7 @@ bool ResourceManager::loadStageInternal(
   LOG(INFO) << "ResourceManager::loadStageInternal : Attempting to load stage "
             << filename << " ";
   bool meshSuccess = true;
-  if (info.filepath.compare(EMPTY_SCENE) != 0) {
+  if (info.filepath != EMPTY_SCENE) {
     if (!Cr::Utility::Directory::exists(filename)) {
       LOG(ERROR)
           << "ResourceManager::loadStageInternal : Cannot find scene file "

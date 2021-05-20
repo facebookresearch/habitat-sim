@@ -37,6 +37,10 @@ mp3d_base = osp.join(base_dir, "data/scene_datasets/mp3d")
 if test_all and osp.exists(mp3d_base):
     test_navmeshes += glob.glob(f"{mp3d_base}/*/*.navmesh")
 
+mp3d_example_base = osp.join(base_dir, "data/scene_datasets/mp3d_example")
+if test_all and osp.exists(mp3d_example_base):
+    test_navmeshes += glob.glob(f"{mp3d_example_base}/*/*.navmesh")
+
 
 @pytest.fixture(scope="module")
 def pbar():
