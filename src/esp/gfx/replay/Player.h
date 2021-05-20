@@ -60,6 +60,8 @@ class Player {
    */
   void readKeyframesFromFile(const std::string& filepath);
 
+  void checkNamedPipe(const std::string& pipeName);
+
   /**
    * @brief Get the currently-set keyframe, or -1 if no keyframe is set.
    */
@@ -110,6 +112,8 @@ class Player {
   std::map<std::string, esp::assets::AssetInfo> assetInfos_;
   std::map<RenderAssetInstanceKey, scene::SceneNode*> createdInstances_;
   std::set<std::string> failedFilepaths_;
+  int m_pipeFd = -1;
+  std::vector<char> m_pipeBuffer;
 
   ESP_SMART_POINTERS(Player)
 };

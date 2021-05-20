@@ -9,9 +9,23 @@
 #include "esp/io/json.h"
 #include "esp/scene/SceneNode.h"
 
+#include <unistd.h>  // for pipe stuff
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <rapidjson/filereadstream.h>
+#include <rapidjson/filewritestream.h>
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
 namespace esp {
 namespace gfx {
 namespace replay {
+
+static const char* pipeName = "my_habitat_pipe";
 
 /**
  * @brief Helper class to get notified when a SceneNode is about to be
@@ -40,6 +54,12 @@ Recorder::~Recorder() {
   for (auto& instanceRecord : instanceRecords_) {
     delete instanceRecord.deletionHelper;
   }
+
+  if (m_pipeFd) {
+    close(m_pipeFd);  // close pipe: generates an end-of-stream marker
+    m_pipeFd = -1;
+    unlink(pipeName);  // unlink from the implementing file
+  }
 }
 
 void Recorder::onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo) {
@@ -65,9 +85,50 @@ void Recorder::onCreateRenderAssetInstance(
       node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
 }
 
+void Recorder::sendLatestKeyframeToPipe() {
+  // temp only send non-empty frames
+  const auto& keyframe = savedKeyframes_.back();
+  if (keyframe.loads.empty() && keyframe.creations.empty() &&
+      keyframe.deletions.empty() && keyframe.stateUpdates.empty()) {
+    return;
+  }
+
+  if (m_pipeFd == -1) {
+    mkfifo(pipeName, 0666); /* read/write perms for user/group/others */
+    LOG(INFO) << "Recorder::sendLatestKeyframeToPipe: waiting for a process to "
+                 "open named pipe "
+              << pipeName << " for reading...";
+    int fd = open(pipeName, O_CREAT | O_WRONLY);
+    LOG(INFO) << "done";
+    CORRADE_INTERNAL_ASSERT(fd >= 0);
+    m_pipeFd = fd;
+  }
+
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  esp::io::addMember(d, "keyframe", savedKeyframes_.back(), allocator);
+
+  rapidjson::StringBuffer buffer;  // todo: avoid dynamic alloc
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+  bool writeSuccess = d.Accept(writer);
+
+  ssize_t result =
+      write(m_pipeFd, reinterpret_cast<const char*>(buffer.GetString()),
+            buffer.GetSize());
+  CORRADE_INTERNAL_ASSERT(result == buffer.GetSize());
+
+  // sloppy hack delimiter here
+  result = write(m_pipeFd, "$", 1);
+  CORRADE_INTERNAL_ASSERT(result == 1);
+
+  CORRADE_INTERNAL_ASSERT(writeSuccess);
+}
+
 void Recorder::saveKeyframe() {
   updateInstanceStates();
   advanceKeyframe();
+
+  sendLatestKeyframeToPipe();
 }
 
 void Recorder::addUserTransformToKeyframe(const std::string& name,

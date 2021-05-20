@@ -9,6 +9,11 @@
 #include "esp/io/JsonAllTypes.h"
 
 #include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 namespace esp {
 namespace gfx {
@@ -37,6 +42,55 @@ void Player::readKeyframesFromFile(const std::string& filepath) {
     LOG(ERROR)
         << "Player::readKeyframesFromFile: failed to parse keyframes from "
         << filepath << ".";
+  }
+}
+
+void Player::checkNamedPipe(const std::string& pipeName) {
+  if (m_pipeFd == -1) {
+    int fd = open(pipeName.c_str(), O_RDONLY | O_NONBLOCK);
+    if (fd < 0) {
+      return;
+    }
+    m_pipeFd = fd;
+  }
+
+  char buffer[65536];
+  ssize_t count = read(m_pipeFd, buffer, sizeof(buffer));
+  CORRADE_INTERNAL_ASSERT(count < 65536);  // need to make buffer bigger?
+
+  if (count == 0 || count == -1) {
+    // todo: close file?
+    return;
+  }
+
+  m_pipeBuffer.insert(m_pipeBuffer.end(), std::begin(buffer),
+                      std::begin(buffer) + count);
+
+  while (true) {
+    int offset = 0;
+    while (offset < m_pipeBuffer.size() && m_pipeBuffer[offset] != '$') {
+      offset++;
+    }
+
+    if (offset == m_pipeBuffer.size()) {
+      // didn't get a whole frame; leave partial frame in pipeBuffer
+      break;
+    }
+
+    rapidjson::MemoryStream ms(&m_pipeBuffer[0], offset);
+
+    esp::io::JsonDocument d;
+    d.ParseStream<0, rapidjson::UTF8<>, rapidjson::MemoryStream>(ms);
+
+    CORRADE_INTERNAL_ASSERT(!d.HasParseError());
+
+    Keyframe keyframe;
+    esp::io::readMember(d, "keyframe", keyframe);
+
+    keyframes_.emplace_back(std::move(keyframe));
+
+    offset++;  // advance past delimiter
+    m_pipeBuffer.erase(m_pipeBuffer.begin(), m_pipeBuffer.begin() + offset);
   }
 }
 

@@ -108,6 +108,8 @@ class Recorder {
   }
 
  private:
+  void sendLatestKeyframeToPipe();
+
   // NodeDeletionHelper calls onDeleteRenderAssetInstance
   friend class NodeDeletionHelper;
 
@@ -140,6 +142,7 @@ class Recorder {
   Keyframe currKeyframe_;
   std::vector<Keyframe> savedKeyframes_;
   RenderAssetInstanceKey nextInstanceKey_ = 0;
+  int m_pipeFd = -1;
 };
 
 }  // namespace replay
