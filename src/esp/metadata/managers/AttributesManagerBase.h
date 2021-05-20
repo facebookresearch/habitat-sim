@@ -81,19 +81,63 @@ class AttributesManager
    * templates.
    * @return A list of template indices for loaded valid configs
    */
-  std::vector<int> loadAllConfigsFromPath(const std::string& path,
-                                          bool saveAsDefaults = false);
+  std::vector<int> loadAllJSONConfigsFromPath(const std::string& path,
+                                              bool saveAsDefaults = false) {
+    return this->loadAllTemplatesFromPathAndExt(path, this->JSONTypeExt_,
+                                                saveAsDefaults);
+  }
 
   /**
-   * @brief This builds a list of paths to this type of attributes's file from a
-   * JSON element.  It then will load all the configs it finds at each path.
+   * @brief Load file-based templates for all @p extType files from the provided
+   * file or directory path.
+   *
+   * This will take the passed @p path string and either treat it as a file
+   * name or a directory, depending on what is found in the filesystem. If @p
+   * path does not end with @p extType, it will append this and check to
+   * see if such a file exists, and load it. It will also check if @p path
+   * exists as a directory, and if so will perform a shallow search to find any
+   * files ending in @p extType and load those that are found.
+   *
+   * @param path A global path to configuration files or a directory containing
+   * such files.
+   * @param exttype The extension of files to be attempted to be loaded as
+   * templates.
+   * @param saveAsDefaults Set the templates loaded as undeleteable default
+   * templates.
+   * @return A list of template indices for loaded valid configs
+   */
+  std::vector<int> loadAllTemplatesFromPathAndExt(const std::string& path,
+                                                  const std::string& extType,
+                                                  bool saveAsDefaults = false);
+
+  /**
+   * @brief This builds a list of paths to this type of attributes's JSON Config
+   * files from the passed @p jsonPaths array element.  It then will load all
+   * the configs it finds at each path.
    * @param configDir The directory to use as a root to search in - may be
-   * different than the config already listed in this manager.
+   * different than the config dir already listed in this manager.
    * @param jsonPaths The json array element
    */
 
-  void buildCfgPathsFromJSONAndLoad(const std::string& configDir,
-                                    const io::JsonGenericValue& jsonPaths);
+  void buildJSONCfgPathsFromJSONAndLoad(const std::string& configDir,
+                                        const io::JsonGenericValue& jsonPaths) {
+    this->buildAttrSrcPathsFromJSONAndLoad(configDir, this->JSONTypeExt_,
+                                           jsonPaths);
+  }
+
+  /**
+   * @brief This builds a list of paths to the @p extType files to use to
+   * construct templates derived from the passed @p jsonPaths array element.  It
+   * then will load all the configs it finds at each path.
+   * @param configDir The directory to use as a root to search in - may be
+   * different than the config dir already listed in this manager.
+   * @param saveAsDefaults Set the templates loaded as undeleteable default
+   * templates.
+   * @param jsonPaths The json array element
+   */
+  void buildAttrSrcPathsFromJSONAndLoad(const std::string& configDir,
+                                        const std::string& extType,
+                                        const io::JsonGenericValue& jsonPaths);
 
   /**
    * @brief Check if currently configured primitive asset template library has
@@ -142,7 +186,7 @@ class AttributesManager
    * manager.
    */
   std::string getFormattedJSONFileName(const std::string& filename) {
-    return this->convertFilenameToJSON(filename, this->JSONTypeExt_);
+    return this->convertFilenameToPassedExt(filename, this->JSONTypeExt_);
   }
 
  protected:
@@ -190,8 +234,11 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
       LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Load "
                 << this->objectType_ << " template: "
                 << Cr::Utility::Directory::filename(attributesFilename);
-      auto tmplt = this->createObjectFromJSONFile(attributesFilename, true);
-
+      auto tmplt = this->createObject(attributesFilename, true);
+      // If failed to load, do not attempt to modify further
+      if (tmplt == nullptr) {
+        continue;
+      }
       // save handles in list of defaults, so they are not removed, if desired.
       if (saveAsDefaults) {
         std::string tmpltHandle = tmplt->getHandle();
@@ -207,37 +254,41 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
 }  // AttributesManager<T>::loadAllObjectTemplates
 
 template <class T, core::ManagedObjectAccess Access>
-std::vector<int> AttributesManager<T, Access>::loadAllConfigsFromPath(
+std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     const std::string& path,
+    const std::string& extType,
     bool saveAsDefaults) {
+  namespace Dir = Cr::Utility::Directory;
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
-  namespace Dir = Cr::Utility::Directory;
 
   // Check if directory
   const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
-    LOG(INFO) << "AttributesManager::loadAllConfigsFromPath : Parsing "
-              << this->objectType_ << " library directory: " + path;
+    LOG(INFO) << "AttributesManager::loadAllTemplatesFromPathAndExt <"
+              << extType << "> : Parsing " << this->objectType_
+              << " library directory: " + path + " for \'" + extType +
+                     "\' files";
     for (auto& file : Dir::list(path, Dir::Flag::SortAscending)) {
       std::string absoluteSubfilePath = Dir::join(path, file);
-      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                        this->JSONTypeExt_)) {
+      if (Cr::Utility::String::endsWith(absoluteSubfilePath, extType)) {
         paths.push_back(absoluteSubfilePath);
       }
     }
   } else {
     // not a directory, perhaps a file
-    std::string attributesFilepath = getFormattedJSONFileName(path);
+    std::string attributesFilepath =
+        this->convertFilenameToPassedExt(path, extType);
     const bool fileExists = Dir::exists(attributesFilepath);
 
     if (fileExists) {
       paths.push_back(attributesFilepath);
     } else {  // neither a directory or a file
-      LOG(WARNING) << "AttributesManager::loadAllConfigsFromPath : Parsing "
-                   << this->objectType_ << " : Cannot find " << path
-                   << " as directory or " << attributesFilepath
-                   << " as config file. Aborting parse.";
+      LOG(WARNING)
+          << "AttributesManager::loadAllTemplatesFromPathAndExt : Parsing "
+          << this->objectType_ << " : Cannot find " << path
+          << " as directory or " << attributesFilepath
+          << " as config file. Aborting parse.";
       return templateIndices;
     }  // if fileExists else
   }    // if dirExists else
@@ -246,39 +297,40 @@ std::vector<int> AttributesManager<T, Access>::loadAllConfigsFromPath(
   templateIndices = this->loadAllFileBasedTemplates(paths, saveAsDefaults);
 
   return templateIndices;
-}  // AttributesManager<T>::loadAllConfigsFromPath
+}  // AttributesManager<T>::loadAllTemplatesFromPathAndExt
 
 template <class T, core::ManagedObjectAccess Access>
-void AttributesManager<T, Access>::buildCfgPathsFromJSONAndLoad(
+void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const std::string& configDir,
-    const io::JsonGenericValue& jsonPaths) {
-  for (rapidjson::SizeType i = 0; i < jsonPaths.Size(); ++i) {
-    if (!jsonPaths[i].IsString()) {
-      LOG(ERROR)
-          << "AttributesManager::buildCfgPathsFromJSONAndLoad : Invalid path "
-             "value in file path array element @ idx "
-          << i << ". Skipping.";
+    const std::string& extType,
+    const io::JsonGenericValue& filePaths) {
+  for (rapidjson::SizeType i = 0; i < filePaths.Size(); ++i) {
+    if (!filePaths[i].IsString()) {
+      LOG(ERROR) << "AttributesManager::buildAttrSrcPathsFromJSONAndLoad : "
+                    "Invalid path "
+                    "value in file path array element @ idx "
+                 << i << ". Skipping.";
       continue;
     }
     std::string absolutePath =
-        Cr::Utility::Directory::join(configDir, jsonPaths[i].GetString());
+        Cr::Utility::Directory::join(configDir, filePaths[i].GetString());
     std::vector<std::string> globPaths = io::globDirs(absolutePath);
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {
         // load all object templates available as configs in absolutePath
         LOG(WARNING) << "Glob path result for " << absolutePath << " : "
                      << globPath;
-        this->loadAllConfigsFromPath(globPath, true);
+        this->loadAllTemplatesFromPathAndExt(globPath, extType, true);
       }
     } else {
       LOG(WARNING) << "No Glob path result for " << absolutePath;
     }
   }
-  LOG(INFO) << "AttributesManager::buildCfgPathsFromJSONAndLoad : "
-            << std::to_string(jsonPaths.Size())
+  LOG(INFO) << "AttributesManager::buildAttrSrcPathsFromJSONAndLoad : "
+            << std::to_string(filePaths.Size())
             << " paths specified in JSON doc for " << this->objectType_
             << " templates.";
-}  // AttributesManager<T>::buildCfgPathsFromJSONAndLoad
+}  // AttributesManager<T>::buildAttrSrcPathsFromJSONAndLoad
 
 template <class T, core::ManagedObjectAccess Access>
 auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
