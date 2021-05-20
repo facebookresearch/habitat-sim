@@ -538,7 +538,7 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
-      .addOption("object-dir", "data/objects")
+      .addOption("object-dir", "data/objects/example_objects")
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")

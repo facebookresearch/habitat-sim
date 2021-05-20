@@ -185,10 +185,12 @@ if __name__ == "__main__":
     # [dynamic_control]
 
     observations = []
-    obj_templates_mgr.load_configs(str(os.path.join(data_path, "objects")))
+    obj_templates_mgr.load_configs(
+        str(os.path.join(data_path, "objects/example_objects/"))
+    )
     # search for an object template by key sub-string
     cheezit_template_handle = obj_templates_mgr.get_template_handles(
-        "data/objects/cheezit"
+        "data/objects/example_objects/cheezit"
     )[0]
     # build multiple object initial positions
     box_positions = [
@@ -252,7 +254,7 @@ if __name__ == "__main__":
     # [kinematic_interactions]
 
     chefcan_template_handle = obj_templates_mgr.get_template_handles(
-        "data/objects/chefcan"
+        "data/objects/example_objects/chefcan"
     )[0]
     chefcan_obj = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
     chefcan_obj.translation = [2.4, -0.64, 0.0]
@@ -287,7 +289,7 @@ if __name__ == "__main__":
     observations = []
 
     clamp_template_handle = obj_templates_mgr.get_template_handles(
-        "data/objects/largeclamp"
+        "data/objects/example_objects/largeclamp"
     )[0]
     clamp_obj = rigid_obj_mgr.add_object_by_template_handle(clamp_template_handle)
     clamp_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
