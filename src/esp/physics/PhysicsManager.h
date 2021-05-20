@@ -96,7 +96,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager and
   @ref RigidObject implementing the specific interface to a simulation library.
   */
-  enum PhysicsSimulationLibrary {
+  enum class PhysicsSimulationLibrary {
 
     /**
      * The default implemenation of kineamtics through the base @ref
@@ -334,7 +334,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * PhysicsManager::existingObjects_.
    *  @return The size of @ref PhysicsManager::existingObjects_.
    */
-  int getNumRigidObjects() const { return existingObjects_.size(); };
+  int getNumRigidObjects() const { return existingObjects_.size(); }
 
   /** @brief Get a list of existing object IDs (i.e., existing keys in @ref
    * PhysicsManager::existingObjects_.)
@@ -347,7 +347,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       v.push_back(bro.first);
     }
     return v;
-  };
+  }
 
   /** @brief Set the @ref MotionType of an object, allowing or disallowing its
    * manipulation by dynamic processes or kinematic control.
@@ -395,14 +395,14 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return The increment of time, @ref fixedTimeStep_, by which the physical
    * world will advance.
    */
-  virtual double getTimestep() const { return fixedTimeStep_; };
+  virtual double getTimestep() const { return fixedTimeStep_; }
 
   /** @brief Get the current @ref worldTime_ of the physical world. See @ref
    * stepPhysics.
    * @return The amount of time, @ref worldTime_, by which the physical world
    * has advanced.
    */
-  virtual double getWorldTime() const { return worldTime_; };
+  virtual double getWorldTime() const { return worldTime_; }
 
   /** @brief Get the current gravity in the physical world. By default returns
    * [0,0,0] since their is no notion of force in a kinematic world.
@@ -416,7 +416,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * geometry. See @ref staticStageObject_.
    * @return The scalar friction coefficient of the scene geometry.
    */
-  virtual double getStageFrictionCoefficient() const { return 0.0; };
+  virtual double getStageFrictionCoefficient() const { return 0.0; }
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
    * @ref staticStageObject_.
@@ -424,7 +424,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * geometry.
    */
   virtual void setStageFrictionCoefficient(
-      CORRADE_UNUSED const double frictionCoefficient){};
+      CORRADE_UNUSED const double frictionCoefficient) {}
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
@@ -432,7 +432,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * default this will always return 0, since kinametic scenes have no dynamics.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
-  virtual double getStageRestitutionCoefficient() const { return 0.0; };
+  virtual double getStageRestitutionCoefficient() const { return 0.0; }
 
   /** @brief Set the coefficient of restitution for the scene collision
    * geometry. See @ref staticStageObject_. By default does nothing since
@@ -440,7 +440,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
   virtual void setStageRestitutionCoefficient(
-      CORRADE_UNUSED const double restitutionCoefficient){};
+      CORRADE_UNUSED const double restitutionCoefficient) {}
 
   // ============ Object Transformation functions =============
 
@@ -802,7 +802,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   virtual double getMargin(CORRADE_UNUSED const int physObjectID) const {
     return 0.0;
-  };
+  }
 
   /** @brief Set the scalar collision margin of an object.
    * See @ref BulletRigidObject::setMargin. Nothing is set if no implementation
@@ -812,7 +812,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param  margin The desired collision margin for the object.
    */
   virtual void setMargin(CORRADE_UNUSED const int physObjectID,
-                         CORRADE_UNUSED const double margin){};
+                         CORRADE_UNUSED const double margin) {}
 
   // =========== Debug functions ===========
 
@@ -994,7 +994,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /**
    * @brief Get pointers to an object's visual SceneNodes.
    *
-   * @param physObjectID The object ID and key identifying the object in @ref
+   * @param objectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return pointers to the object's visual scene nodes.
    */
@@ -1026,32 +1026,50 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   };
 
   /**
+   * @brief Perform discrete collision detection for the scene with the derived
+   * PhysicsManager implementation. Not implemented for default @ref
+   * PhysicsManager. See @ref bullet::BulletPhysicsManager.
+   */
+  virtual void performDiscreteCollisionDetection() {
+    /*Does nothing in base PhysicsManager.*/
+  }
+
+  /**
    * @brief Set an object to collidable or not.
+   *
+   * @param physObjectID The object ID and key identifying the object
    */
   void setObjectIsCollidable(const int physObjectID, bool collidable) {
     assertIDValidity(physObjectID);
     existingObjects_.at(physObjectID)->setCollidable(collidable);
-  };
+  }
 
   /**
    * @brief Get whether or not an object is collision active.
+   *
+   * @param physObjectID The object ID and key identifying the object
+   * @return Whether or not the object is set to be collision active
    */
   bool getObjectIsCollidable(const int physObjectID) {
     assertIDValidity(physObjectID);
     return existingObjects_.at(physObjectID)->getCollidable();
-  };
+  }
 
   /**
    * @brief Set the stage to collidable or not.
+   *
+   * @param collidable Whether or not the object should be collision active
    */
   void setStageIsCollidable(bool collidable) {
     staticStageObject_->setCollidable(collidable);
-  };
+  }
 
   /**
    * @brief Get whether or not the stage is collision active.
+   *
+   * @return Whether or not the stage is set to be collision active
    */
-  bool getStageIsCollidable() { return staticStageObject_->getCollidable(); };
+  bool getStageIsCollidable() { return staticStageObject_->getCollidable(); }
 
   /** @brief Return the library implementation type for the simulator currently
    * in use. Use to check for a particular implementation.
@@ -1059,7 +1077,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
     return activePhysSimLib_;
-  };
+  }
 
   /**
    * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
@@ -1074,6 +1092,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /**
    * @brief Get a copy of the template used to initialize an object.
    *
+   * @param physObjectID Object ID to query
    * @return The initialization settings of the specified object instance.
    */
   metadata::attributes::ObjectAttributes::ptr getObjectInitAttributes(
@@ -1231,20 +1250,23 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief A pointer to the @ref
    * esp::metadata::attributes::PhysicsManagerAttributes describing
-   * this physics manager */
+   * this physics manager
+   */
   const metadata::attributes::PhysicsManagerAttributes::cptr
       physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
-   * to its derived type if necessary.*/
-  PhysicsSimulationLibrary activePhysSimLib_ = NONE;  // default
+   * to its derived type if necessary.
+   */
+  PhysicsSimulationLibrary activePhysSimLib_ =
+      PhysicsSimulationLibrary::NONE;  // default
 
   /**
    * @brief The @ref scene::SceneNode which is the parent of all members of the
    * scene graph which exist in the physical world. Used to keep track of all
    * SceneNode's that have physical properties.
-   * */
+   */
   scene::SceneNode* physicsNode_ = nullptr;
 
   /**
@@ -1254,7 +1276,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * MotionType::STATIC as it is loaded as static geometry with simulation
    * efficiency in mind. See
    * @ref addStage.
-   * */
+   */
   physics::RigidStage::ptr staticStageObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
