@@ -175,8 +175,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
               pathsWarnType = ".glb";
             } else {
               const auto& paths = pathsObj[".glb"];
-              // TODO implement load for .glb files
-              // attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
+              attrMgr->buildAttrSrcPathsFromJSONAndLoad(dsDir, ".glb", paths);
             }
           }
           // TODO support other extention tags
