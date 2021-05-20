@@ -168,6 +168,7 @@ tests/17DRP5sb8fy
 /data/datasets/
 /data/objects/
 /data/scene_datasets/
+/data/versioned_data/
 *.zip
 *.mp4
 habitat_sim/_ext
