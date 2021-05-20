@@ -82,7 +82,33 @@ class AttributesManager
    * @return A list of template indices for loaded valid configs
    */
   std::vector<int> loadAllJSONConfigsFromPath(const std::string& path,
-                                              bool saveAsDefaults = false);
+                                              bool saveAsDefaults = false) {
+    return this->loadAllTemplatesFromPathAndExt(path, this->JSONTypeExt_,
+                                                saveAsDefaults);
+  }
+
+  /**
+   * @brief Load file-based templates for all @p extType files from the provided
+   * file or directory path.
+   *
+   * This will take the passed @p path string and either treat it as a file
+   * name or a directory, depending on what is found in the filesystem. If @p
+   * path does not end with @p extType, it will append this and check to
+   * see if such a file exists, and load it. It will also check if @p path
+   * exists as a directory, and if so will perform a shallow search to find any
+   * files ending in @p extType and load those that are found.
+   *
+   * @param path A global path to configuration files or a directory containing
+   * such files.
+   * @param exttype The extension of files to be attempted to be loaded as
+   * templates.
+   * @param saveAsDefaults Set the templates loaded as undeleteable default
+   * templates.
+   * @return A list of template indices for loaded valid configs
+   */
+  std::vector<int> loadAllTemplatesFromPathAndExt(const std::string& path,
+                                                  const std::string& extType,
+                                                  bool saveAsDefaults = false);
 
   /**
    * @brief This builds a list of paths to this type of attributes's file from a
@@ -190,8 +216,11 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
       LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Load "
                 << this->objectType_ << " template: "
                 << Cr::Utility::Directory::filename(attributesFilename);
-      auto tmplt = this->createObjectFromJSONFile(attributesFilename, true);
-
+      auto tmplt = this->createObject(attributesFilename, true);
+      // If failed to load, do not attempt to modify further
+      if (tmplt == nullptr) {
+        continue;
+      }
       // save handles in list of defaults, so they are not removed, if desired.
       if (saveAsDefaults) {
         std::string tmpltHandle = tmplt->getHandle();
@@ -207,11 +236,10 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
 }  // AttributesManager<T>::loadAllObjectTemplates
 
 template <class T, core::ManagedObjectAccess Access>
-std::vector<int> AttributesManager<T, Access>::loadAllJSONConfigsFromPath(
+std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     const std::string& path,
+    const std::string& extType,
     bool saveAsDefaults) {
-  const std::string extType = this->JSONTypeExt_;
-
   namespace Dir = Cr::Utility::Directory;
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
@@ -219,8 +247,8 @@ std::vector<int> AttributesManager<T, Access>::loadAllJSONConfigsFromPath(
   // Check if directory
   const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
-    LOG(INFO) << "AttributesManager::loadAllJSONConfigsFromPath : Parsing "
-              << this->objectType_
+    LOG(INFO) << "AttributesManager::loadAllTemplatesFromPathAndExt <"
+              << extType << "> : Parsing " << this->objectType_
               << " library directory: " + path + " for \'" + extType +
                      "\' files";
     for (auto& file : Dir::list(path, Dir::Flag::SortAscending)) {
@@ -238,10 +266,11 @@ std::vector<int> AttributesManager<T, Access>::loadAllJSONConfigsFromPath(
     if (fileExists) {
       paths.push_back(attributesFilepath);
     } else {  // neither a directory or a file
-      LOG(WARNING) << "AttributesManager::loadAllJSONConfigsFromPath : Parsing "
-                   << this->objectType_ << " : Cannot find " << path
-                   << " as directory or " << attributesFilepath
-                   << " as config file. Aborting parse.";
+      LOG(WARNING)
+          << "AttributesManager::loadAllTemplatesFromPathAndExt : Parsing "
+          << this->objectType_ << " : Cannot find " << path
+          << " as directory or " << attributesFilepath
+          << " as config file. Aborting parse.";
       return templateIndices;
     }  // if fileExists else
   }    // if dirExists else
@@ -250,7 +279,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllJSONConfigsFromPath(
   templateIndices = this->loadAllFileBasedTemplates(paths, saveAsDefaults);
 
   return templateIndices;
-}  // AttributesManager<T>::loadAllJSONConfigsFromPath
+}  // AttributesManager<T>::loadAllTemplatesFromPathAndExt
 
 template <class T, core::ManagedObjectAccess Access>
 void AttributesManager<T, Access>::buildCfgPathsFromJSONAndLoad(
