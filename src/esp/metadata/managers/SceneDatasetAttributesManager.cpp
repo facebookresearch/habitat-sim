@@ -167,7 +167,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
               pathsWarnType = ".json";
             } else {
               const auto& paths = pathsObj[".json"];
-              attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
+              attrMgr->buildJSONCfgPathsFromJSONAndLoad(dsDir, paths);
             }
           } else if (pathsObj.HasMember(".glb")) {
             if (!pathsObj[".glb"].IsArray()) {
