@@ -353,26 +353,6 @@ void StageAttributesManager::setValsFromJSONDoc(
     stageAttributes->setHouseFilename(houseFName);
   }
 
-  // load the rigid object library metadata (no physics init yet...)
-  if (jsonConfig.HasMember("rigid object paths") &&
-      jsonConfig["rigid object paths"].IsArray()) {
-    std::string configDirectory = stageAttributes->getFileDirectory();
-    const auto& paths = jsonConfig["rigid object paths"];
-    for (rapidjson::SizeType i = 0; i < paths.Size(); ++i) {
-      if (!paths[i].IsString()) {
-        LOG(ERROR)
-            << "StageAttributesManager::setValsFromJSONDoc "
-               ":Invalid value in stage config 'rigid object paths'- array "
-            << i;
-        continue;
-      }
-
-      std::string absolutePath =
-          Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
-      // load all object templates available as configs in absolutePath
-      objectAttributesMgr_->loadAllConfigsFromPath(absolutePath, true);
-    }
-  }  // if load rigid object library metadata
 }  // StageAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers

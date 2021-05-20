@@ -169,6 +169,15 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
               const auto& paths = pathsObj[".json"];
               attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
             }
+          } else if (pathsObj.HasMember(".glb")) {
+            if (!pathsObj[".glb"].IsArray()) {
+              pathsWarn = true;
+              pathsWarnType = ".glb";
+            } else {
+              const auto& paths = pathsObj[".glb"];
+              // TODO implement load for .glb files
+              // attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
+            }
           }
           // TODO support other extention tags
           if (pathsWarn) {
