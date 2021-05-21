@@ -474,7 +474,8 @@ class Sensor:
 
         self._spec = self._sensor_object.specification()
 
-        self._sim.renderer.bind_render_target(self._sensor_object)
+        if self._sim.renderer:
+            self._sim.renderer.bind_render_target(self._sensor_object)
 
         if self._spec.gpu2gpu_transfer:
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
@@ -528,6 +529,8 @@ class Sensor:
         )
 
     def draw_observation(self) -> None:
+        assert self._sim.renderer
+
         # sanity check:
 
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
@@ -541,6 +544,7 @@ class Sensor:
         self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def get_observation(self) -> Union[ndarray, "Tensor"]:
+        assert self._sim.renderer
 
         tgt = self._sensor_object.render_target
 
