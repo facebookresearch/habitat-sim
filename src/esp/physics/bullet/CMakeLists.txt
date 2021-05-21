@@ -3,6 +3,7 @@ find_package(Bullet REQUIRED Dynamics)
 
 add_library(
   bulletphysics STATIC
+  BulletBase.cpp
   BulletBase.h
   BulletPhysicsManager.cpp
   BulletPhysicsManager.h

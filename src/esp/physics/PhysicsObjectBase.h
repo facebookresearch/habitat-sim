@@ -127,11 +127,13 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   virtual bool isActive() const { return false; }
 
   /**
-   * @brief Set an object as being actively simulated rather than sleeping.
+   * @brief Set an object as being actively simulated or sleeping.
    * Kinematic objects are always active, but derived dynamics implementations
    * may not be.
+   *
+   * @param active Whether to activate or sleep the object
    */
-  virtual void setActive() {}
+  virtual void setActive(CORRADE_UNUSED bool active) {}
 
   /**
    * @brief Set the light setup of this rigid.

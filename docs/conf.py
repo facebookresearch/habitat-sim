@@ -39,7 +39,6 @@ INPUT_PAGES = [
     "pages/lighting-setups.rst",
     "pages/image-extractor.rst",
     "pages/managed-rigid-object-tutorial.rst",
-    "pages/rigid-object-tutorial.rst",
 ]
 
 PLUGINS = [
@@ -80,7 +79,6 @@ LINKS_NAVBAR1 = [
             ("Lighting Setups", "lighting-setups"),
             ("Image extraction", "image-extractor"),
             ("Managed Rigid Object Tutorial", "managed-rigid-object-tutorial"),
-            ("Rigid Object Tutorial", "rigid-object-tutorial"),
         ],
     ),
     ("Classes", "classes", []),

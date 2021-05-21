@@ -375,6 +375,25 @@ TEST(IOTest, JsonEspTypesTest) {
     EXPECT_EQ(assetInfo2.virtualUnitToMeters, assetInfo.virtualUnitToMeters);
     EXPECT_EQ(assetInfo2.requiresLighting, assetInfo.requiresLighting);
     EXPECT_EQ(assetInfo2.splitInstanceMesh, assetInfo.splitInstanceMesh);
+    EXPECT_TRUE(assetInfo2.overridePhongMaterial == Cr::Containers::NullOpt);
+    // now test again with override material
+    assetInfo.overridePhongMaterial = esp::assets::PhongMaterialColor();
+    assetInfo.overridePhongMaterial->ambientColor =
+        Mn::Color4(0.1, 0.2, 0.3, 0.4);
+    assetInfo.overridePhongMaterial->diffuseColor =
+        Mn::Color4(0.2, 0.3, 0.4, 0.5);
+    assetInfo.overridePhongMaterial->specularColor =
+        Mn::Color4(0.3, 0.4, 0.5, 0.6);
+    EXPECT_FALSE(assetInfo.overridePhongMaterial == Cr::Containers::NullOpt);
+    addMember(d, "assetInfoColorOverride", assetInfo, allocator);
+    EXPECT_TRUE(readMember(d, "assetInfoColorOverride", assetInfo2));
+    EXPECT_FALSE(assetInfo2.overridePhongMaterial == Cr::Containers::NullOpt);
+    EXPECT_EQ(assetInfo2.overridePhongMaterial->ambientColor,
+              assetInfo.overridePhongMaterial->ambientColor);
+    EXPECT_EQ(assetInfo2.overridePhongMaterial->diffuseColor,
+              assetInfo.overridePhongMaterial->diffuseColor);
+    EXPECT_EQ(assetInfo2.overridePhongMaterial->specularColor,
+              assetInfo.overridePhongMaterial->specularColor);
   }
 
   {

@@ -163,7 +163,7 @@ if __name__ == "__main__":
     )[0]
 
     # add a sphere to the scene, returns the object
-    sphere_obj = rigid_obj_mgr.add_object_by_id(sphere_template_id)
+    sphere_obj = rigid_obj_mgr.add_object_by_template_id(sphere_template_id)
     # move sphere
     sphere_obj.translation = [2.50, 0.0, 0.2]
 
@@ -185,10 +185,12 @@ if __name__ == "__main__":
     # [dynamic_control]
 
     observations = []
-    obj_templates_mgr.load_configs(str(os.path.join(data_path, "objects")))
+    obj_templates_mgr.load_configs(
+        str(os.path.join(data_path, "objects/example_objects/"))
+    )
     # search for an object template by key sub-string
     cheezit_template_handle = obj_templates_mgr.get_template_handles(
-        "data/objects/cheezit"
+        "data/objects/example_objects/cheezit"
     )[0]
     # build multiple object initial positions
     box_positions = [
@@ -202,7 +204,9 @@ if __name__ == "__main__":
     # instance and place the boxes
     boxes = []
     for b in range(len(box_positions)):
-        boxes.append(rigid_obj_mgr.add_object_by_handle(cheezit_template_handle))
+        boxes.append(
+            rigid_obj_mgr.add_object_by_template_handle(cheezit_template_handle)
+        )
         boxes[b].translation = box_positions[b]
         boxes[b].rotation = box_orientation
 
@@ -216,7 +220,7 @@ if __name__ == "__main__":
     obj_templates_mgr.register_template(sphere_template)
 
     # create sphere
-    sphere_obj = rigid_obj_mgr.add_object_by_id(sphere_template_id)
+    sphere_obj = rigid_obj_mgr.add_object_by_template_id(sphere_template_id)
 
     sphere_obj.translation = sim.agents[0].get_state().position + [0.0, 1.0, 0.0]
     # get the vector from the sphere to a box
@@ -250,19 +254,19 @@ if __name__ == "__main__":
     # [kinematic_interactions]
 
     chefcan_template_handle = obj_templates_mgr.get_template_handles(
-        "data/objects/chefcan"
+        "data/objects/example_objects/chefcan"
     )[0]
-    chefcan_obj = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
     chefcan_obj.translation = [2.4, -0.64, 0.0]
     # set object to kinematic
     chefcan_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
     # drop some dynamic objects
-    chefcan_obj_2 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj_2 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
     chefcan_obj_2.translation = [2.4, -0.64, 0.28]
-    chefcan_obj_3 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj_3 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
     chefcan_obj_3.translation = [2.4, -0.64, -0.28]
-    chefcan_obj_4 = rigid_obj_mgr.add_object_by_handle(chefcan_template_handle)
+    chefcan_obj_4 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
     chefcan_obj_4.translation = [2.4, -0.3, 0.0]
 
     # simulate
@@ -285,9 +289,9 @@ if __name__ == "__main__":
     observations = []
 
     clamp_template_handle = obj_templates_mgr.get_template_handles(
-        "data/objects/largeclamp"
+        "data/objects/example_objects/largeclamp"
     )[0]
-    clamp_obj = rigid_obj_mgr.add_object_by_handle(clamp_template_handle)
+    clamp_obj = rigid_obj_mgr.add_object_by_template_handle(clamp_template_handle)
     clamp_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
     clamp_obj.translation = [0.8, 0.2, 0.5]
 
@@ -370,7 +374,7 @@ if __name__ == "__main__":
     )[0]
 
     # add robot object to the scene with the agent/camera SceneNode attached
-    locobot = rigid_obj_mgr.add_object_by_id(
+    locobot = rigid_obj_mgr.add_object_by_template_id(
         locobot_template_id, sim.agents[0].scene_node
     )
     locobot.translation = [1.75, -1.02, 0.4]
@@ -440,7 +444,7 @@ if __name__ == "__main__":
         str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
     # add robot object to the scene with the agent/camera SceneNode attached
-    locobot = rigid_obj_mgr.add_object_by_id(
+    locobot = rigid_obj_mgr.add_object_by_template_id(
         locobot_template_id, sim.agents[0].scene_node
     )
     initial_rotation = locobot.rotation
