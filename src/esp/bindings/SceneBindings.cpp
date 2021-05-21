@@ -40,7 +40,8 @@ void initSceneBindings(py::module& m) {
       .value("EMPTY", SceneNodeType::EMPTY)
       .value("SENSOR", SceneNodeType::SENSOR)
       .value("AGENT", SceneNodeType::AGENT)
-      .value("CAMERA", SceneNodeType::CAMERA);
+      .value("CAMERA", SceneNodeType::CAMERA)
+      .value("OBJECT", SceneNodeType::OBJECT);
 
   // ==== SceneNode ====
   py::class_<SceneNode, Magnum::SceneGraph::PyObject<SceneNode>, MagnumObject,

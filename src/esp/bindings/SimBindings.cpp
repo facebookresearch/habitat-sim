@@ -373,6 +373,10 @@ void initSimBindings(py::module& m) {
           "get_physics_contact_points", &Simulator::getPhysicsContactPoints,
           R"(Return a list of ContactPointData objects describing the contacts from the most recent physics substep.)")
       .def(
+          "perform_discrete_collision_detection",
+          &Simulator::performDiscreteCollisionDetection,
+          R"(Perform discrete collision detection for the scene. Physics must be enabled. Warning: may break simulation determinism.)")
+      .def(
           "cast_ray", &Simulator::castRay, "ray"_a, "max_distance"_a = 100.0,
           "scene_id"_a = 0,
           R"(Cast a ray into the collidable scene and return hit results. Physics must be enabled. max_distance in units of ray length.)")

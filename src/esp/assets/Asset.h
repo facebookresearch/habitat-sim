@@ -5,6 +5,7 @@
 #ifndef ESP_ASSETS_ASSET_H_
 #define ESP_ASSETS_ASSET_H_
 
+#include <Magnum/Math/Color.h>
 #include "esp/core/esp.h"
 #include "esp/geo/CoordinateFrame.h"
 
@@ -30,6 +31,14 @@ enum class AssetType {
 // with no scene mesh (ie. an empty scene)
 static const std::string EMPTY_SCENE = "NONE";
 
+//! stores basic Phong compatible color properties for procedural override
+//! material construction
+struct PhongMaterialColor {
+  Magnum::Color4 ambientColor{0.1};
+  Magnum::Color4 diffuseColor{0.7};
+  Magnum::Color4 specularColor{0.2};
+};
+
 //! AssetInfo stores information necessary to identify and load an Asset
 struct AssetInfo {
   AssetType type = AssetType::UNKNOWN;
@@ -38,6 +47,10 @@ struct AssetInfo {
   float virtualUnitToMeters = 1.0f;
   bool requiresLighting = false;
   bool splitInstanceMesh = true;  // only applies to AssetType::INSTANCE_MESH
+
+  //! if set, override the asset material with a procedural Phong material
+  Cr::Containers::Optional<PhongMaterialColor> overridePhongMaterial =
+      Cr::Containers::NullOpt;
 
   //! Populates a preset AssetInfo by matching against known filepaths
   static AssetInfo fromPath(const std::string& filepath);

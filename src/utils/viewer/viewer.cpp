@@ -611,7 +611,7 @@ Viewer::Viewer(const Arguments& arguments)
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
   objectAttrManager_ = simulator_->getObjectAttributesManager();
-  objectAttrManager_->loadAllConfigsFromPath(args.value("object-dir"));
+  objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
   assetAttrManager_ = simulator_->getAssetAttributesManager();
   stageAttrManager_ = simulator_->getStageAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();
@@ -1454,7 +1454,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   // add primitive w/ right click if a collision object is hit by a raycast
   else if (event.button() == MouseEvent::Button::Right) {
     if (simulator_->getPhysicsSimulationLibrary() !=
-        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NONE) {
+        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
       auto viewportPoint = event.position();
       auto ray = renderCamera_->unproject(viewportPoint);
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);

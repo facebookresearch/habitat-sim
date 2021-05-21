@@ -85,7 +85,7 @@ void declareBaseAttributesManager(py::module& m,
       .def(
           "load_configs",
           static_cast<std::vector<int> (MgrClass::*)(const std::string&, bool)>(
-              &MgrClass::loadAllConfigsFromPath),
+              &MgrClass::loadAllJSONConfigsFromPath),
           ("Build " + attrType +
            " templates for all JSON files with appropriate extension "
            "that exist in the provided file or directory path. If "
@@ -342,7 +342,7 @@ void initAttributesManagersBindings(py::module& m) {
 
       // ObjectAttributesManager-specific bindings
       .def("load_object_configs",
-           &ObjectAttributesManager::loadAllConfigsFromPath,
+           &ObjectAttributesManager::loadAllJSONConfigsFromPath,
            R"(DEPRECATED : use "load_configs" instead.
             Build ObjectAttributes templates for all files with ".object_config.json" extension
             that exist in the provided file or directory path. If save_as_defaults

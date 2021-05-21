@@ -159,16 +159,16 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
                           io::JsonDocument& jsonDoc);
 
   /**
-   * @brief Will build a json file name for @p filename by appending/replacing
-   * the extension with the passed @p jsonTypeExt, if it is missing.  NOTE :
-   * this does not verify that file exists.
+   * @brief Will build a new file name for @p filename by replacing the existing
+   * extension(s) with the passed @p fileTypeExt, if it is missing.  NOTE : this
+   * does not verify that file exists.
    * @param filename The original file name
-   * @param jsonTypeExt The extension to use.
-   * @return The file name changed so that it has the correct @p jsonTypeExtif
+   * @param fileTypeExt The extension to use for the new filename.
+   * @return The file name changed so that it has the correct @p fileTypeExt if
    * it was missing.
    */
-  std::string convertFilenameToJSON(const std::string& filename,
-                                    const std::string& jsonTypeExt);
+  std::string convertFilenameToPassedExt(const std::string& filename,
+                                         const std::string& jsonTypeExt);
 
   /**
    * @brief Get directory component of managed object handle and call @ref
@@ -195,26 +195,27 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
 template <class T, ManagedObjectAccess Access>
 
-std::string ManagedFileBasedContainer<T, Access>::convertFilenameToJSON(
+std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
     const std::string& filename,
-    const std::string& jsonTypeExt) {
+    const std::string& fileTypeExt) {
   std::string strHandle = Cr::Utility::String::lowercase(filename);
   std::string resHandle(filename);
+  // If filename does not already have extension of interest
   if (std::string::npos ==
-      strHandle.find(Cr::Utility::String::lowercase(jsonTypeExt))) {
+      strHandle.find(Cr::Utility::String::lowercase(fileTypeExt))) {
     resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
-                jsonTypeExt;
+                fileTypeExt;
     LOG(INFO) << "ManagedFileBasedContainer<" << this->objectType_
-              << ">::convertFilenameToJSON : Filename : " << filename
+              << ">::convertFilenameToPassedExt : Filename : " << filename
               << " changed to proposed JSON configuration filename : "
               << resHandle;
   } else {
     LOG(INFO) << "ManagedFileBasedContainer<" << this->objectType_
-              << ">::convertFilenameToJSON : Filename : " << filename
+              << ">::convertFilenameToPassedExt : Filename : " << filename
               << " is appropriate JSON configuration filename.";
   }
   return resHandle;
-}  // ManagedFileBasedContainer<T, Access>::convertFilenameToJSON
+}  // ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt
 
 template <class T, ManagedObjectAccess Access>
 bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(

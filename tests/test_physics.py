@@ -377,7 +377,7 @@ def test_raycast():
 
         if (
             sim.get_physics_simulation_library()
-            != habitat_sim.physics.PhysicsSimulationLibrary.NONE
+            != habitat_sim.physics.PhysicsSimulationLibrary.NoPhysics
         ):
             # only test this if we have a physics simulator and therefore a collision world
             test_ray_1 = habitat_sim.geo.Ray()
