@@ -90,10 +90,8 @@ inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
   addMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters, allocator);
   addMember(obj, "requiresLighting", x.requiresLighting, allocator);
   addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
-  if (x.overridePhongMaterial != Cr::Containers::NullOpt) {
-    addMember(obj, "overridePhongMaterial", *x.overridePhongMaterial,
-              allocator);
-  }
+  addMember(obj, "overridePhongMaterial", x.overridePhongMaterial, allocator);
+
   return obj;
 }
 
@@ -105,10 +103,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters);
   readMember(obj, "requiresLighting", x.requiresLighting);
   readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
-  if (obj.HasMember("overridePhongMaterial")) {
-    x.overridePhongMaterial = esp::assets::PhongMaterialColor();
-    readMember(obj, "overridePhongMaterial", *x.overridePhongMaterial);
-  }
+  readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
   return true;
 }
 

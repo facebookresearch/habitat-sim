@@ -124,8 +124,9 @@ TEST(GfxReplayTest, recorder) {
       keyframes[0].creations[0].first;
   ASSERT(keyframes[0].stateUpdates[0].first == instanceKey);
 
-  // verify frame #1 has our translation and semantic Id
+  // verify frame #1 has an updated state for node and state for new node2
   ASSERT(keyframes[1].stateUpdates.size() == 2);
+  // verify frame #1 has our translation and semantic Id
   ASSERT(keyframes[1].stateUpdates[0].second.absTransform.translation ==
          Mn::Vector3(1.f, 2.f, 3.f));
   ASSERT(keyframes[1].stateUpdates[0].second.semanticId == 7);
