@@ -56,7 +56,7 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
         et = time.time()
         physics_step_times.append(mt - st)
         graphics_render_times.append(et - mt)
-        collisions.append(sim.get_num_active_contact_points())
+        collisions.append(sim.get_physics_num_active_contact_points())
 
     if "observations" in data:
         data["observations"] += observations

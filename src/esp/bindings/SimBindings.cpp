@@ -366,6 +366,13 @@ void initSimBindings(py::module& m) {
           "scene_id"_a = 0,
           R"(Run collision detection and return a binary indicator of penetration between the specified object and any other collision object. Physics must be enabled.)")
       .def(
+          "get_physics_num_active_contact_points",
+          &Simulator::getPhysicsNumActiveContactPoints,
+          R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
+      .def(
+          "get_physics_contact_points", &Simulator::getPhysicsContactPoints,
+          R"(Return a list of ContactPointData objects describing the contacts from the most recent physics substep.)")
+      .def(
           "cast_ray", &Simulator::castRay, "ray"_a, "max_distance"_a = 100.0,
           "scene_id"_a = 0,
           R"(Cast a ray into the collidable scene and return hit results. Physics must be enabled. max_distance in units of ray length.)")
@@ -416,11 +423,7 @@ void initSimBindings(py::module& m) {
           to directly access objects instead.
           Modify the LightSetup used to the render all components of an
           object by setting the LightSetup key referenced by all Drawables
-          attached to the object's visual SceneNodes.)")
-      .def(
-          "get_num_active_contact_points",
-          &Simulator::getNumActiveContactPoints,
-          R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count can be used as a metric for the complexity/cost of collision-handling in the current scene.)");
+          attached to the object's visual SceneNodes.)");
   ;
 }
 

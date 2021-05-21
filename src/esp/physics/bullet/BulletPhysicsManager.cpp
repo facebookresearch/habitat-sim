@@ -42,6 +42,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
       &physicsNode_->createChild(), resourceManager_, bWorld_,
       collisionObjToObjIds_);
   Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
+  m_recentNumSubStepsTaken = -1;
 
   return true;
 }
@@ -165,6 +166,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, /*maxSubSteps*/ 10000, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
+  m_recentNumSubStepsTaken = numSubStepsTaken;
 }
 
 void BulletPhysicsManager::setMargin(const int physObjectID,
@@ -261,8 +263,44 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   return results;
 }
 
+void BulletPhysicsManager::lookUpObjectIdAndLinkId(
+    const btCollisionObject* colObj,
+    int* objectId,
+    int* linkId) const {
+  ASSERT(objectId);
+  ASSERT(linkId);
+
+  *linkId = -1;
+  // If the lookup fails, default to the stage. TODO: better error-handling.
+  *objectId = -1;
+
+  if (collisionObjToObjIds_->count(colObj)) {
+    int rawObjectId = collisionObjToObjIds_->at(colObj);
+    if (existingObjects_.count(rawObjectId)) {
+      *objectId = rawObjectId;
+      return;
+    }
+    // TODO: will come with AO support
+    /* else if (existingArticulatedObjects_.count(rawObjectId)) {
+      *objectId = rawObjectId;
+      return;
+    } else {
+      // search articulated objects to see if this is a link
+      for (const auto& pair : existingArticulatedObjects_) {
+        if (pair.second->objectIdToLinkId_.count(rawObjectId)) {
+          *objectId = pair.first;
+          *linkId = pair.second->objectIdToLinkId_.at(rawObjectId);
+          return;
+        }
+      }
+    }
+    */
+  }
+
+  // lookup failed
+}
 int BulletPhysicsManager::getNumActiveContactPoints() {
-  int pointCount = 0;
+  int count = 0;
   auto* dispatcher = bWorld_->getDispatcher();
   for (int i = 0; i < dispatcher->getNumManifolds(); i++) {
     auto* manifold = dispatcher->getManifoldByIndexInternal(i);
@@ -272,13 +310,93 @@ int BulletPhysicsManager::getNumActiveContactPoints() {
         static_cast<const btCollisionObject*>(manifold->getBody1());
 
     // logic copied from btSimulationIslandManager::buildIslands. We want to
-    // count manifold points only if related to non-sleeping bodies.
+    // count manifolds only if related to non-sleeping bodies.
     if (((colObj0) && colObj0->getActivationState() != ISLAND_SLEEPING) ||
         ((colObj1) && colObj1->getActivationState() != ISLAND_SLEEPING)) {
-      pointCount += manifold->getNumContacts();
+      count += manifold->getNumContacts();
     }
   }
-  return pointCount;
+  return count;
+}
+
+std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
+  if (m_recentNumSubStepsTaken != 1) {
+    if (m_recentNumSubStepsTaken == -1) {
+      LOG(WARNING) << "getContactPoints: no previous call to stepPhysics";
+    } else {
+      // todo: proper logging-throttling API
+      static int count = 0;
+      if (count++ < 5) {
+        LOG(WARNING)
+            << "getContactPoints: the previous call to stepPhysics performed "
+            << m_recentNumSubStepsTaken
+            << " substeps, so getContactPoints's behavior may be unexpected.";
+      }
+      if (count == 5) {
+        LOG(WARNING)
+            << "getContactPoints: additional warnings will be suppressed.";
+      }
+    }
+  }
+
+  std::vector<ContactPointData> contactPoints;
+
+  // sloppy: assume fixedTimeStep_ hasn't changed since last call to stepPhysics
+  const float recentSubstepDt = fixedTimeStep_;
+
+  auto* dispatcher = bWorld_->getDispatcher();
+  int numContactManifolds = dispatcher->getNumManifolds();
+  contactPoints.reserve(numContactManifolds * 4);
+  for (int i = 0; i < numContactManifolds; i++) {
+    const btPersistentManifold* manifold =
+        dispatcher->getInternalManifoldPointer()[i];
+
+    int objectIdA = -2;  // stage is -1
+    int objectIdB = -2;
+    int linkIndexA = -1;  // -1 if not a multibody
+    int linkIndexB = -1;
+
+    const btCollisionObject* colObj0 = manifold->getBody0();
+    const btCollisionObject* colObj1 = manifold->getBody1();
+
+    lookUpObjectIdAndLinkId(colObj0, &objectIdA, &linkIndexA);
+    lookUpObjectIdAndLinkId(colObj1, &objectIdB, &linkIndexB);
+
+    // logic copied from btSimulationIslandManager::buildIslands. We count
+    // manifolds as active only if related to non-sleeping bodies.
+    bool isActive =
+        (((colObj0) && colObj0->getActivationState() != ISLAND_SLEEPING) ||
+         ((colObj1) && colObj1->getActivationState() != ISLAND_SLEEPING));
+
+    for (int p = 0; p < manifold->getNumContacts(); p++) {
+      ContactPointData pt;
+      pt.objectIdA = objectIdA;
+      pt.objectIdB = objectIdB;
+      const btManifoldPoint& srcPt = manifold->getContactPoint(p);
+      pt.contactDistance = srcPt.getDistance();
+      pt.linkIndexA = linkIndexA;
+      pt.linkIndexB = linkIndexB;
+      pt.contactNormalOnBInWS = Mn::Vector3(srcPt.m_normalWorldOnB);
+      pt.positionOnAInWS = Mn::Vector3(srcPt.getPositionWorldOnA());
+      pt.positionOnBInWS = Mn::Vector3(srcPt.getPositionWorldOnB());
+
+      pt.normalForce = srcPt.getAppliedImpulse() / recentSubstepDt;
+
+      pt.linearFrictionForce1 =
+          srcPt.m_appliedImpulseLateral1 / recentSubstepDt;
+      pt.linearFrictionForce2 =
+          srcPt.m_appliedImpulseLateral2 / recentSubstepDt;
+
+      pt.linearFrictionDirection1 = Mn::Vector3(srcPt.m_lateralFrictionDir1);
+      pt.linearFrictionDirection2 = Mn::Vector3(srcPt.m_lateralFrictionDir2);
+
+      pt.isActive = isActive;
+
+      contactPoints.push_back(pt);
+    }
+  }
+
+  return contactPoints;
 }
 
 }  // namespace physics
