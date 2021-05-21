@@ -211,7 +211,7 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   virtual void performDiscreteCollisionDetection() override {
     bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
-    m_recentNumSubStepsTaken = -1;  // TODO: handle this more gracefully
+    recentNumSubStepsTaken_ = -1;  // TODO: handle this more gracefully
   }
 
  protected:
@@ -266,7 +266,10 @@ class BulletPhysicsManager : public PhysicsManager {
   std::shared_ptr<std::map<const btCollisionObject*, int>>
       collisionObjToObjIds_;
 
-  int m_recentNumSubStepsTaken = -1;  // for recent call to stepPhysics
+  //! necessary to acquire forces from impulses
+  double recentTimeStep_ = fixedTimeStep_;
+  //! for recent call to stepPhysics
+  int recentNumSubStepsTaken_ = -1;
 
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for

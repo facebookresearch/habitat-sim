@@ -42,7 +42,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
       &physicsNode_->createChild(), resourceManager_, bWorld_,
       collisionObjToObjIds_);
   Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
-  m_recentNumSubStepsTaken = -1;
+  recentNumSubStepsTaken_ = -1;
 
   return true;
 }
@@ -166,7 +166,8 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, /*maxSubSteps*/ 10000, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
-  m_recentNumSubStepsTaken = numSubStepsTaken;
+  recentNumSubStepsTaken_ = numSubStepsTaken;
+  recentTimeStep_ = fixedTimeStep_;
 }
 
 void BulletPhysicsManager::setMargin(const int physObjectID,
@@ -320,8 +321,8 @@ int BulletPhysicsManager::getNumActiveContactPoints() {
 }
 
 std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
-  if (m_recentNumSubStepsTaken != 1) {
-    if (m_recentNumSubStepsTaken == -1) {
+  if (recentNumSubStepsTaken_ != 1) {
+    if (recentNumSubStepsTaken_ == -1) {
       LOG(WARNING) << "getContactPoints: no previous call to stepPhysics";
     } else {
       // todo: proper logging-throttling API
@@ -329,7 +330,7 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
       if (count++ < 5) {
         LOG(WARNING)
             << "getContactPoints: the previous call to stepPhysics performed "
-            << m_recentNumSubStepsTaken
+            << recentNumSubStepsTaken_
             << " substeps, so getContactPoints's behavior may be unexpected.";
       }
       if (count == 5) {
@@ -340,9 +341,6 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
   }
 
   std::vector<ContactPointData> contactPoints;
-
-  // sloppy: assume fixedTimeStep_ hasn't changed since last call to stepPhysics
-  const float recentSubstepDt = fixedTimeStep_;
 
   auto* dispatcher = bWorld_->getDispatcher();
   int numContactManifolds = dispatcher->getNumManifolds();
@@ -380,12 +378,13 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
       pt.positionOnAInWS = Mn::Vector3(srcPt.getPositionWorldOnA());
       pt.positionOnBInWS = Mn::Vector3(srcPt.getPositionWorldOnB());
 
-      pt.normalForce = srcPt.getAppliedImpulse() / recentSubstepDt;
+      // convert impulses to forces w/ recent physics timstep
+      pt.normalForce = srcPt.getAppliedImpulse() / recentTimeStep_;
 
       pt.linearFrictionForce1 =
-          srcPt.m_appliedImpulseLateral1 / recentSubstepDt;
+          srcPt.m_appliedImpulseLateral1 / recentTimeStep_;
       pt.linearFrictionForce2 =
-          srcPt.m_appliedImpulseLateral2 / recentSubstepDt;
+          srcPt.m_appliedImpulseLateral2 / recentTimeStep_;
 
       pt.linearFrictionDirection1 = Mn::Vector3(srcPt.m_lateralFrictionDir1);
       pt.linearFrictionDirection2 = Mn::Vector3(srcPt.m_lateralFrictionDir2);
