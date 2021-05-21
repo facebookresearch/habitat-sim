@@ -359,6 +359,7 @@ Key Commands:
   esp::scene::SceneGraph* activeSceneGraph_ = nullptr;
   bool drawObjectBBs = false;
   std::string gfxReplayRecordFilepath_;
+  std::shared_ptr<esp::gfx::replay::Player> player_;
 
   std::string agentTransformLoadPath_;
   Cr::Containers::Optional<Mn::Matrix4> savedAgentTransform_ =
@@ -726,6 +727,10 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
+
+  if (gfxReplayRecordFilepath_.empty()) {
+    player_ = simulator_->getGfxReplayManager()->createEmptyPlayer();
+  }
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -1140,6 +1145,13 @@ void Viewer::drawEvent() {
       const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
       if (recorder) {
         recorder->saveKeyframe();
+      }
+    }
+
+    if (player_) {
+      player_->checkNamedPipe("my_habitat_pipe");
+      if (player_->getNumKeyframes()) {
+        player_->setKeyframeIndex(player_->getNumKeyframes() - 1);
       }
     }
     // reset timeSinceLastSimulation, accounting for potential overflow
