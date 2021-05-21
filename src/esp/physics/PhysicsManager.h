@@ -104,9 +104,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
      * @ref esp::physics::MotionType::KINEMATIC objects of base class @ref
      * RigidObject. If the derived @ref PhysicsManager class for a desired @ref
      * PhysicsSimulationLibrary fails to initialize, it will default to @ref
-     * PhysicsSimulationLibrary::NONE.
+     * PhysicsSimulationLibrary::NoPhysics.
      */
-    NONE,
+    NoPhysics,
 
     /**
      * An implemenation of dynamics through the Bullet Physics library.
@@ -117,7 +117,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
      * derived class
      * @ref BulletPhysicsManager
      */
-    BULLET
+    Bullet
   };
 
   /**
@@ -1260,7 +1260,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * to its derived type if necessary.
    */
   PhysicsSimulationLibrary activePhysSimLib_ =
-      PhysicsSimulationLibrary::NONE;  // default
+      PhysicsSimulationLibrary::NoPhysics;  // default
 
   /**
    * @brief The @ref scene::SceneNode which is the parent of all members of the

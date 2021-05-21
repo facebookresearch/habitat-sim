@@ -11,8 +11,8 @@ void initPhysicsBindings(py::module& m) {
   // ==== enum object PhysicsSimulationLibrary ====
   py::enum_<PhysicsManager::PhysicsSimulationLibrary>(
       m, "PhysicsSimulationLibrary")
-      .value("NONE", PhysicsManager::PhysicsSimulationLibrary::NONE)
-      .value("BULLET", PhysicsManager::PhysicsSimulationLibrary::BULLET);
+      .value("NoPhysics", PhysicsManager::PhysicsSimulationLibrary::NoPhysics)
+      .value("Bullet", PhysicsManager::PhysicsSimulationLibrary::Bullet);
 
   // ==== enum object MotionType ====
   py::enum_<MotionType>(m, "MotionType")
