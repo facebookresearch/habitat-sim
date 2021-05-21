@@ -78,12 +78,29 @@ TEST(GfxReplayTest, recorder) {
   auto* node = resourceManager.loadAndCreateRenderAssetInstance(
       info, creation, &sceneManager_, tempIDs);
   ASSERT(node);
+
+  // cosntruct an AssetInfo with override color material
+  ASSERT(info.overridePhongMaterial == Cr::Containers::NullOpt);
+  esp::assets::AssetInfo info2(info);
+  info2.overridePhongMaterial = esp::assets::PhongMaterialColor();
+  info2.overridePhongMaterial->ambientColor = Mn::Color4(0.1, 0.2, 0.3, 0.4);
+  info2.overridePhongMaterial->diffuseColor = Mn::Color4(0.2, 0.3, 0.4, 0.5);
+  info2.overridePhongMaterial->specularColor = Mn::Color4(0.3, 0.4, 0.5, 0.6);
+
   esp::gfx::replay::Recorder recorder;
   recorder.onLoadRenderAsset(info);
   recorder.onCreateRenderAssetInstance(node, creation);
   recorder.saveKeyframe();
   node->setTranslation(Mn::Vector3(1.f, 2.f, 3.f));
   node->setSemanticId(7);
+
+  // add the new override AssetInfo after 1st keyframe
+  auto* node2 = resourceManager.loadAndCreateRenderAssetInstance(
+      info2, creation, &sceneManager_, tempIDs);
+  ASSERT(node2);
+  recorder.onLoadRenderAsset(info2);
+  recorder.onCreateRenderAssetInstance(node2, creation);
+
   recorder.saveKeyframe();
   delete node;
   recorder.addUserTransformToKeyframe("my_user_transform",
@@ -107,11 +124,24 @@ TEST(GfxReplayTest, recorder) {
       keyframes[0].creations[0].first;
   ASSERT(keyframes[0].stateUpdates[0].first == instanceKey);
 
+  // verify frame #1 has an updated state for node and state for new node2
+  ASSERT(keyframes[1].stateUpdates.size() == 2);
   // verify frame #1 has our translation and semantic Id
-  ASSERT(keyframes[1].stateUpdates.size() == 1);
   ASSERT(keyframes[1].stateUpdates[0].second.absTransform.translation ==
          Mn::Vector3(1.f, 2.f, 3.f));
   ASSERT(keyframes[1].stateUpdates[0].second.semanticId == 7);
+
+  // verify override material AssetInfo is loaded correctly
+  ASSERT(keyframes[1].loads.size() == 1);
+  ASSERT(keyframes[1].loads[0] == info2);
+  ASSERT(keyframes[1].loads[0].overridePhongMaterial !=
+         Cr::Containers::NullOpt);
+  ASSERT(keyframes[1].loads[0].overridePhongMaterial->ambientColor ==
+         info2.overridePhongMaterial->ambientColor);
+  ASSERT(keyframes[1].loads[0].overridePhongMaterial->diffuseColor ==
+         info2.overridePhongMaterial->diffuseColor);
+  ASSERT(keyframes[1].loads[0].overridePhongMaterial->specularColor ==
+         info2.overridePhongMaterial->specularColor);
 
   // verify frame #2 has our deletion and our user transform
   ASSERT(keyframes[2].deletions.size() == 1);
