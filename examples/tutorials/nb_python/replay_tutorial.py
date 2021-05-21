@@ -69,7 +69,7 @@ output_path = os.path.join(dir_path, "examples/tutorials/replay_tutorial_output/
 # %%
 
 
-def make_configuration():
+def make_configuration(make_video_during_simulation=False):
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
     backend_cfg.scene_id = os.path.join(
@@ -81,6 +81,7 @@ def make_configuration():
     # Enable gfx replay save. See also our call to sim.gfx_replay_manager.save_keyframe()
     # below.
     backend_cfg.enable_gfx_replay_save = True
+    backend_cfg.create_magnum_renderer = make_video_during_simulation
 
     sensor_cfg = habitat_sim.CameraSensorSpec()
     sensor_cfg.resolution = [544, 720]
@@ -154,6 +155,7 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     show_video = args.show_video
     make_video = args.make_video
+    make_video_during_simulation = False
 else:
     show_video = False
     make_video = False
@@ -161,7 +163,7 @@ else:
 if make_video and not os.path.exists(output_path):
     os.mkdir(output_path)
 
-cfg = make_configuration()
+cfg = make_configuration(make_video_during_simulation=make_video_during_simulation)
 sim = None
 replay_filepath = "./replay.json"
 
@@ -200,7 +202,7 @@ observations += simulate_with_moving_agent(
     duration=1.0,
     agent_vel=np.array([0.5, 0.0, 0.0]),
     look_rotation_vel=25.0,
-    get_frames=make_video,
+    get_frames=make_video_during_simulation,
 )
 
 # %% [markdown]
@@ -230,7 +232,7 @@ observations += simulate_with_moving_agent(
     duration=2.0,
     agent_vel=np.array([0.0, 0.0, -0.4]),
     look_rotation_vel=-5.0,
-    get_frames=make_video,
+    get_frames=make_video_during_simulation,
 )
 
 # %% [markdown]
@@ -245,14 +247,14 @@ observations += simulate_with_moving_agent(
     duration=2.0,
     agent_vel=np.array([0.4, 0.0, 0.0]),
     look_rotation_vel=-10.0,
-    get_frames=make_video,
+    get_frames=make_video_during_simulation,
 )
 
 # %% [markdown]
 # ## End the episode. Render the episode observations to a video.
 # %%
 
-if make_video:
+if make_video_during_simulation:
     vut.make_video(
         observations,
         "rgba_camera",
