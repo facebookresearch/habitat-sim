@@ -69,6 +69,8 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
+extern bool g_createMagnumRenderer;
+
 namespace esp {
 using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
@@ -124,6 +126,10 @@ void ResourceManager::buildImporters() {
 }  // buildImporters
 
 void ResourceManager::initDefaultPrimAttributes() {
+  if (!g_createMagnumRenderer) {
+    return;
+  }
+
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
   // wireframe cube no differently than other primivite-based rendered
@@ -868,7 +874,9 @@ void ResourceManager::buildPrimitiveAssetData(
   // compute the mesh bounding box
   primMeshData->BB = computeMeshBB(primMeshData.get());
 
-  primMeshData->uploadBuffersToGPU(false);
+  if (g_createMagnumRenderer) {
+    primMeshData->uploadBuffersToGPU(false);
+  }
 
   // make MeshMetaData
   int meshStart = nextMeshID_++;
@@ -973,7 +981,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
 
-    pTexMeshData->uploadBuffersToGPU(false);
+    if (g_createMagnumRenderer) {
+      pTexMeshData->uploadBuffersToGPU(false);
+    }
 
     for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
       scene::SceneNode& node = instanceRoot->createChild();
@@ -1033,7 +1043,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
 
   for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
        ++meshIDLocal) {
-    instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
+    if (g_createMagnumRenderer) {
+      instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
+    }
     meshes_.emplace(meshStart + meshIDLocal,
                     std::move(instanceMeshes[meshIDLocal]));
 
@@ -1107,7 +1119,10 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
   importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
 #endif
-  {
+
+  if (!requiresTextures_) {
+    // don't configure texture importer
+  } else {
     Cr::PluginManager::PluginMetadata* const metadata =
         importerManager_.metadata("BasisImporter");
     Mn::GL::Context& context = Mn::GL::Context::current();
@@ -1328,6 +1343,8 @@ bool ResourceManager::buildTrajectoryVisualization(
   // compute the mesh bounding box
   visMeshData->BB = computeMeshBB(visMeshData.get());
 
+  ESP_CHECK(g_createMagnumRenderer,
+            "buildTrajectoryVisualization requires a renderer");
   visMeshData->uploadBuffersToGPU(false);
 
   // make MeshMetaData
@@ -1657,7 +1674,9 @@ void ResourceManager::loadMeshes(Importer& importer,
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
 
-    gltfMeshData->uploadBuffersToGPU(false);
+    if (g_createMagnumRenderer) {
+      gltfMeshData->uploadBuffersToGPU(false);
+    }
     meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
   }
 }  // ResourceManager::loadMeshes

@@ -28,10 +28,12 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   bWorld_ = std::make_shared<btMultiBodyDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
 
-  debugDrawer_.setMode(
-      Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe |
-      Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
-  bWorld_->setDebugDrawer(&debugDrawer_);
+  if (debugDrawer_) {
+    debugDrawer_->setMode(
+        Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe |
+        Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
+    bWorld_->setDebugDrawer(debugDrawer_.get());
+  }
 
   // currently GLB meshes are y-up
   bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
@@ -213,8 +215,10 @@ const Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
 }
 
 void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
-  debugDrawer_.setTransformationProjectionMatrix(projTrans);
-  bWorld_->debugDrawWorld();
+  if (debugDrawer_) {
+    debugDrawer_->setTransformationProjectionMatrix(projTrans);
+    bWorld_->debugDrawWorld();
+  }
 }
 
 bool BulletPhysicsManager::contactTest(const int physObjectID) {

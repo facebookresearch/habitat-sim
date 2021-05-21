@@ -13,6 +13,8 @@
 
 namespace Mn = Magnum;
 
+extern bool g_createMagnumRenderer;
+
 namespace esp {
 namespace gfx {
 
@@ -113,6 +115,10 @@ void GenericDrawable::updateShaderLightingParameters(
 
 void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
                            Mn::SceneGraph::Camera3D& camera) {
+  if (!g_createMagnumRenderer) {
+    return;
+  }
+
   updateShader();
 
   updateShaderLightingParameters(transformationMatrix, camera);
@@ -152,6 +158,10 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
 void GenericDrawable::updateShader() {
   Mn::UnsignedInt lightCount = lightSetup_->size();
+
+  if (!g_createMagnumRenderer) {
+    return;
+  }
 
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {

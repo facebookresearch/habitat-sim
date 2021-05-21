@@ -31,6 +31,8 @@
 
 namespace Cr = Corrade;
 
+bool g_createMagnumRenderer = false;
+
 namespace esp {
 namespace sim {
 
@@ -114,6 +116,19 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
+  // createRenderer refers to the magnum renderer plus other things like the
+  // stage and physics manager
+  if (!config_.createRenderer) {
+    config_.createMagnumRenderer = false;
+  }
+
+  // temp hack use a global var to propagate this setting to other code
+  g_createMagnumRenderer = config_.createMagnumRenderer;
+
+  if (!config_.createMagnumRenderer) {
+    config_.requiresTextures = false;
+  }
+
   if (requiresTextures_ == Cr::Containers::NullOpt) {
     requiresTextures_ = config_.requiresTextures;
     resourceManager_->setRequiresTextures(config_.requiresTextures);
@@ -127,8 +142,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   bool success = false;
-  // (re) create scene instance based on whether or not a renderer is requested.
-  if (config_.createRenderer) {
+
+  if (config_.createMagnumRenderer) {
     /* When creating a viewer based app, there is no need to create a
     WindowlessContext since a (windowed) context already exists. */
     if (!context_ && !Magnum::GL::Context::hasCurrent()) {
@@ -142,7 +157,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         flags |= gfx::Renderer::Flag::NoTextures;
       renderer_ = gfx::Renderer::create(flags);
     }
+  } else {
+    CORRADE_INTERNAL_ASSERT(!Magnum::GL::Context::hasCurrent());
+  }
 
+  // (re) create scene instance based on whether or not a renderer is requested.
+  if (config_.createRenderer) {
     // (re) create scene instance
     success = createSceneInstance(config_.activeSceneName);
   } else {

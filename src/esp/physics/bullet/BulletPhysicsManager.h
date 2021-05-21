@@ -23,6 +23,8 @@
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletRigidObject.h"
 
+extern bool g_createMagnumRenderer;
+
 namespace esp {
 namespace physics {
 
@@ -56,6 +58,9 @@ class BulletPhysicsManager : public PhysicsManager {
       : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
     collisionObjToObjIds_ =
         std::make_shared<std::map<const btCollisionObject*, int>>();
+    if (g_createMagnumRenderer) {
+      debugDrawer_ = std::make_unique<Magnum::BulletIntegration::DebugDraw>();
+    }
   };
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
@@ -236,7 +241,7 @@ class BulletPhysicsManager : public PhysicsManager {
   /** @brief A pointer to the Bullet world. See @ref btMultiBodyDynamicsWorld.*/
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
-  mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
+  mutable std::unique_ptr<Magnum::BulletIntegration::DebugDraw> debugDrawer_;
 
   //! keep a map of collision objects to object ids for quick lookups from
   //! Bullet collision checking.
