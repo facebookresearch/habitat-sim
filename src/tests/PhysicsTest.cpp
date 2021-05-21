@@ -37,11 +37,13 @@ const std::string physicsConfigFile =
 class PhysicsManagerTest : public testing::Test {
  protected:
   void SetUp() override {
+    g_createMagnumRenderer = false;
+
     // set up a default simulation config to initialize MM
     auto cfg = esp::sim::SimulatorConfiguration{};
     metadataMediator_ = MetadataMediator::create(cfg);
     resourceManager_ = std::make_unique<ResourceManager>(metadataMediator_);
-    context_ = esp::gfx::WindowlessContext::create_unique(0);
+    resourceManager_->setRequiresTextures(false);
 
     sceneID_ = sceneManager_.initSceneGraph();
     // get attributes manager for physics world attributes
@@ -72,9 +74,6 @@ class PhysicsManagerTest : public testing::Test {
     bool result = resourceManager_->loadStage(stageAttributes, physicsManager_,
                                               &sceneManager_, tempIDs, false);
   }
-
-  // must declare these in this order due to avoid deallocation errors
-  esp::gfx::WindowlessContext::uptr context_;
 
   std::shared_ptr<MetadataMediator> metadataMediator_ = nullptr;
   std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
