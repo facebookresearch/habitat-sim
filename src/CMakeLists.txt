@@ -97,6 +97,7 @@ endif()
 #set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 
+# ---[ Dependencies
 include(cmake/dependencies.cmake)
 
 # build tests
