@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 // This is an implementation of
-// Karis, Brian. “Real Shading in Unreal Engine 4 by.” (2013).
+// Karis, Brian. “Real Shading in Unreal Engine 4” (2013).
 
 precision highp float;
 

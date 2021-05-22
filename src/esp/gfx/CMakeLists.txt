@@ -51,6 +51,10 @@ set(
   DoubleSphereCameraShader.h
   EquirectangularShader.cpp
   EquirectangularShader.h
+  PbrImageBasedLighting.cpp
+  PbrImageBasedLighting.h
+  PbrIrradianceMapShader.cpp
+  PbrIrradianceMapShader.h
 )
 
 # If ptex support is enabled add relevant source files
