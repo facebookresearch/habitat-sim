@@ -93,12 +93,12 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         "--build-type",
         dest="build_type",
         default=None,
-        help="CMake configuration to build with.",
+        help="CMake configuration to build with (Release, Debug, etc...)",
     )
     parser.add_argument(
         "--no-lto",
         action="store_true",
-        help="Disables Link Time Optimization resulting for faster compile times.",
+        help="Disables Link Time Optimization for faster compile times at the expense of performance.",
     )
     parser.add_argument(
         "--cache-args",
@@ -241,7 +241,7 @@ class CMakeBuild(build_ext):
         build_type = args.build_type
         assert not (
             build_type is not None and self.debug
-        ), "Debug and Config flags conflict"
+        ), f"Debug and Build-Type flags conflict: {self.debug}, {build_type}"
         if build_type is None:
             build_type = "Debug" if self.debug else "RelWithDebInfo"
         build_args = ["--config", build_type]
