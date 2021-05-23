@@ -51,7 +51,9 @@ struct Renderer::Impl {
             scene::SceneGraph& sceneGraph,
             RenderCamera::Flags flags) {
     for (auto& it : sceneGraph.getDrawableGroups()) {
-      if (it.second.prepareForDraw(camera)) {
+      // TODO: remove || true and NOLINT below
+      // NOLINTNEXTLINE (readability-simplify-boolean-expr)
+      if (it.second.prepareForDraw(camera) || true) {
         camera.draw(it.second, flags);
       }
     }
