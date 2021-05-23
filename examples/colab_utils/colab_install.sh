@@ -48,12 +48,11 @@ set -e
 python setup.py develop --all
 pip install . #Reinstall to trigger sys.path update
 cd /content/habitat-sim/
-rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
 
 #Download Assets
-wget -c http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip && unzip -o habitat-test-scenes.zip
-wget -c http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip && unzip -o objects_v0.2.zip -d data/objects/
-wget -c http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip && unzip -o locobot_merged_v0.2.zip -d data/objects
+python habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
+
+rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
 
 #symlink assets appear in habitat-api folder
 ln -s /content/habitat-sim/data /content/habitat-lab/.

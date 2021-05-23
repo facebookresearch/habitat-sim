@@ -40,6 +40,25 @@ inline bool fromJsonValue(const JsonGenericValue& obj, esp::vec3f& val) {
   return false;
 }
 
+inline JsonGenericValue toJsonValue(
+    const esp::assets::PhongMaterialColor& material,
+    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "ambient", material.ambientColor, allocator);
+  addMember(obj, "diffuse", material.diffuseColor, allocator);
+  addMember(obj, "specular", material.specularColor, allocator);
+  return obj;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj,
+                          esp::assets::PhongMaterialColor& material) {
+  bool success = true;
+  success &= readMember(obj, "ambient", material.ambientColor);
+  success &= readMember(obj, "diffuse", material.diffuseColor);
+  success &= readMember(obj, "specular", material.specularColor);
+  return success;
+}
+
 inline JsonGenericValue toJsonValue(const esp::geo::CoordinateFrame& frame,
                                     JsonAllocator& allocator) {
   JsonGenericValue obj(rapidjson::kObjectType);
@@ -71,6 +90,8 @@ inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
   addMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters, allocator);
   addMember(obj, "requiresLighting", x.requiresLighting, allocator);
   addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
+  addMember(obj, "overridePhongMaterial", x.overridePhongMaterial, allocator);
+
   return obj;
 }
 
@@ -82,6 +103,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters);
   readMember(obj, "requiresLighting", x.requiresLighting);
   readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
+  readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
   return true;
 }
 

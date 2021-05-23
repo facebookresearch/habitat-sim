@@ -36,7 +36,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string stageHandle = stageInstance->getHandle();
   const std::string fullStageName =
       getFullAttrNameFromStr(stageHandle, stageAttributesManager_);
-  if (fullStageName.compare("") == 0) {
+  if (fullStageName == "") {
     LOG(INFO)
         << infoPrefix << " Stage Attributes '" << stageHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
@@ -53,7 +53,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const std::string objHandle = objInstance->getHandle();
     const std::string fullObjHandle =
         getFullAttrNameFromStr(objHandle, objectAttributesManager_);
-    if (fullObjHandle.compare("") == 0) {
+    if (fullObjHandle == "") {
       LOG(INFO) << infoPrefix << " Object Attributes '" << objHandle
                 << "' specified in Scene Attributes but does not exist in "
                    "dataset, so creating.";
@@ -76,7 +76,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
 
   const std::string fullLightLayoutAttrName =
       getFullAttrNameFromStr(lightHandle, lightLayoutAttributesManager_);
-  if (fullLightLayoutAttrName.compare("") == 0) {
+  if (fullLightLayoutAttrName == "") {
     LOG(INFO)
         << infoPrefix << "Lighting Layout Attributes '" << lightHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
@@ -91,7 +91,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
       getFullAttrNameFromStr(sceneInstanceName, sceneAttributesManager_);
 
   // add scene attributes to scene attributes manager
-  if (fullSceneInstanceName.compare("") == 0) {
+  if (fullSceneInstanceName == "") {
     LOG(INFO) << infoPrefix << " Scene Attributes " << sceneInstanceName
               << " does not exist in dataset so adding.";
     sceneAttributesManager_->registerObject(sceneInstance);
@@ -112,7 +112,7 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
   if (mapSearch != map.end()) {
     // found key, mapsearch points to existing entry.
     // check if existing entry is desired entry
-    if (mapSearch->second.compare(path) == 0) {
+    if (mapSearch->second == path) {
       // appropriate entry found, return pair
       return *mapSearch;
     } else {
@@ -147,7 +147,7 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
 esp::gfx::LightSetup SceneDatasetAttributes::getNamedLightSetup(
     const std::string& lightSetupName) {
   auto lightLayoutAttrName = getLightSetupFullHandle(lightSetupName);
-  if (lightLayoutAttrName.compare(NO_LIGHT_KEY) == 0) {
+  if (lightLayoutAttrName == NO_LIGHT_KEY) {
     return esp::gfx::LightSetup{};
   }
   return lightLayoutAttributesManager_->createLightSetupFromAttributes(
@@ -163,7 +163,7 @@ SceneDatasetAttributes::getNamedStageAttributesCopy(
   auto fullStageName =
       getFullAttrNameFromStr(stageAttrName, stageAttributesManager_);
   // fullStageName will be empty if not found
-  if (fullStageName.compare("") == 0) {
+  if (fullStageName == "") {
     return nullptr;
   }
   return stageAttributesManager_->getObjectCopyByHandle(fullStageName);
@@ -177,7 +177,7 @@ SceneDatasetAttributes::getNamedObjectAttributesCopy(
   auto fullObjName =
       getFullAttrNameFromStr(objAttrName, objectAttributesManager_);
   // fullObjName will be empty if not found
-  if (fullObjName.compare("") == 0) {
+  if (fullObjName == "") {
     return nullptr;
   }
   return objectAttributesManager_->getObjectCopyByHandle(fullObjName);

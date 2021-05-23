@@ -184,12 +184,21 @@ class BulletPhysicsManager : public PhysicsManager {
   RaycastResults castRay(const esp::geo::Ray& ray,
                          double maxDistance = 100.0) override;
 
-  // The number of contact points that were active during the last step. An
-  // object resting on another object will involve several active contact
-  // points. Once both objects are asleep, the contact points are inactive. This
-  // count can be used as a metric for the complexity/cost of collision-handling
-  // in the current scene.
+  /**
+   * @brief The number of contact points that were active during the last step.
+   * An object resting on another object will involve several active contact
+   * points. Once both objects are asleep, the contact points are inactive. This
+   * count can be used as a metric for the complexity/cost of collision-handling
+   * in the current scene.
+   */
   int getNumActiveContactPoints() override;
+
+  /**
+   * @brief Perform discrete collision detection for the scene.
+   */
+  virtual void performDiscreteCollisionDetection() override {
+    bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+  }
 
  protected:
   //============ Initialization =============

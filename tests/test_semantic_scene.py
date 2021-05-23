@@ -17,7 +17,7 @@ _test_scenes = [
     osp.abspath(
         osp.join(
             osp.dirname(__file__),
-            "../data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb",
+            "../data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",
         )
     ),
     osp.abspath(

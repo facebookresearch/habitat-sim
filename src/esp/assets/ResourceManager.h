@@ -563,6 +563,16 @@ class ResourceManager {
   }
 
   /**
+   * @brief Construct and return a unique string key for the color material and
+   * create an entry in the shaderManager_ if new.
+   *
+   * @param materialColor The color parameters.
+   * @return The unique key string identifying the material in shaderManager_.
+   */
+  std::string createColorMaterial(
+      const esp::assets::PhongMaterialColor& materialColor);
+
+  /**
    * @brief Load a render asset (if not already loaded) and create a render
    * asset instance.
    *
@@ -577,6 +587,32 @@ class ResourceManager {
       const RenderAssetInstanceCreationInfo& creation,
       esp::scene::SceneManager* sceneManagerPtr,
       const std::vector<int>& activeSceneIDs);
+
+  /**
+   * @brief Load a render asset (if not already loaded) and create a render
+   * asset instance at a known SceneNode and Drawables.
+   *
+   * @param assetInfo the render asset to load
+   * @param creation How to create the instance
+   * @param parent The parent node under which the visual node hierarchy will be
+   * generated.
+   * @param drawables The DrawableGroup to which new Drawables will be added.
+   * @param visNodeCache A reference to a SceneNode* vector which caches all new
+   * SceneNodes created by the attachment process.
+   * @return the root node of the instance, or nullptr (if the load failed)
+   */
+  scene::SceneNode* loadAndCreateRenderAssetInstance(
+      const AssetInfo& assetInfo,
+      const RenderAssetInstanceCreationInfo& creation,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      std::vector<scene::SceneNode*>* visNodeCache = nullptr);
+
+  /**
+   * @brief Load a render asset so it can be instanced. See also
+   * createRenderAssetInstance.
+   */
+  bool loadRenderAsset(const AssetInfo& info);
 
  private:
   /**
@@ -824,12 +860,6 @@ class ResourceManager {
       const metadata::attributes::StageAttributes::ptr& stageAttributes,
       bool createCollisionInfo,
       bool createSemanticInfo);
-
-  /**
-   * @brief Load a render asset so it can be instanced. See also
-   * createRenderAssetInstance.
-   */
-  bool loadRenderAsset(const AssetInfo& info);
 
   /**
    * @brief PTex Mesh backend for loadRenderAsset

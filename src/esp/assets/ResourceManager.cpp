@@ -37,6 +37,8 @@
 #include <Magnum/Trade/TextureData.h>
 #include <Magnum/VertexFormat.h>
 
+#include <memory>
+
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
@@ -146,10 +148,10 @@ void ResourceManager::initPhysicsManager(
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
-    if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
+    if (physicsManagerAttributes->getSimulator() == "bullet") {
 #ifdef ESP_BUILD_WITH_BULLET
-      physicsManager.reset(
-          new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
+      physicsManager = std::make_shared<physics::BulletPhysicsManager>(
+          *this, physicsManagerAttributes);
       defaultToNoneSimulator = false;
 #else
       LOG(WARNING)
@@ -165,8 +167,8 @@ void ResourceManager::initPhysicsManager(
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
     physicsManagerAttributes->setSimulator("none");
-    physicsManager.reset(
-        new physics::PhysicsManager(*this, physicsManagerAttributes));
+    physicsManager = std::make_shared<physics::PhysicsManager>(
+        *this, physicsManagerAttributes);
   }
 
   // build default primitive asset templates, and default primitive object
@@ -188,8 +190,8 @@ bool ResourceManager::loadStage(
   // are unique.
   bool buildCollisionMesh =
       ((_physicsManager != nullptr) &&
-       (_physicsManager->getInitializationAttributes()->getSimulator().compare(
-            "none") != 0));
+       (_physicsManager->getInitializationAttributes()->getSimulator() !=
+        "none"));
   const std::string renderLightSetupKey(stageAttributes->getLightSetup());
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, buildCollisionMesh,
@@ -308,15 +310,14 @@ bool ResourceManager::loadStage(
     }
     // if we have a collision mesh, and it does not exist already as a
     // collision object, add it
-    if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
+    if (colInfo.filepath != EMPTY_SCENE) {
       infoToUse = colInfo;
     }  // if not colInfo.filepath.compare(EMPTY_SCENE)
   }    // if collision mesh desired
   // build the appropriate mesh groups, either for the collision mesh, or, if
   // the collision mesh is empty scene
 
-  if ((_physicsManager != nullptr) &&
-      (infoToUse.filepath.compare(EMPTY_SCENE) != 0)) {
+  if ((_physicsManager != nullptr) && (infoToUse.filepath != EMPTY_SCENE)) {
     bool success = buildMeshGroups(infoToUse, meshGroup);
     if (!success) {
       return false;
@@ -448,6 +449,27 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
   }
 }  // ResourceManager::buildCoordFrameFromAttribVals
 
+std::string ResourceManager::createColorMaterial(
+    const esp::assets::PhongMaterialColor& materialColor) {
+  std::ostringstream matHandleStream;
+  matHandleStream << "phong_amb_" << materialColor.ambientColor.toSrgbAlphaInt()
+                  << "_dif_" << materialColor.diffuseColor.toSrgbAlphaInt()
+                  << "_spec_" << materialColor.specularColor.toSrgbAlphaInt();
+  std::string newMaterialID = matHandleStream.str();
+  auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
+  if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
+    gfx::PhongMaterialData::uptr phongMaterial =
+        gfx::PhongMaterialData::create_unique();
+    phongMaterial->ambientColor = materialColor.ambientColor;
+    phongMaterial->diffuseColor = materialColor.diffuseColor;
+    phongMaterial->specularColor = materialColor.specularColor;
+
+    std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
+    shaderManager_.set(newMaterialID, finalMaterial.release());
+  }
+  return newMaterialID;
+}  // ResourceManager::createColorMaterial
+
 scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     const AssetInfo& assetInfo,
     const RenderAssetInstanceCreationInfo& creation,
@@ -492,36 +514,113 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
       sceneID = creation.isSemantic() ? activeSceneIDs[1] : activeSceneIDs[0];
     }
   }
-  const bool fileIsLoaded = resourceDict_.count(assetInfo.filepath) > 0;
-  if (!fileIsLoaded) {
-    if (!loadRenderAsset(assetInfo)) {
-      return nullptr;
-    }
-  }
-  ASSERT(assetInfo.filepath == creation.filepath);
 
   auto& sceneGraph = sceneManagerPtr->getSceneGraph(sceneID);
   auto& rootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
 
-  return createRenderAssetInstance(creation, &rootNode, &drawables);
+  return loadAndCreateRenderAssetInstance(assetInfo, creation, &rootNode,
+                                          &drawables);
 }  // ResourceManager::loadAndCreateRenderAssetInstance
 
+scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
+    const AssetInfo& assetInfo,
+    const RenderAssetInstanceCreationInfo& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    std::vector<scene::SceneNode*>* visNodeCache) {
+  if (!loadRenderAsset(assetInfo)) {
+    return nullptr;
+  }
+  ASSERT(assetInfo.filepath == creation.filepath);
+
+  // copy the const creation info to modify the key if necessary
+  RenderAssetInstanceCreationInfo finalCreation(creation);
+  if (assetInfo.overridePhongMaterial != Cr::Containers::NullOpt) {
+    // material override is requested so get the id
+    finalCreation.filepath =
+        assetInfo.filepath + "?" +
+        createColorMaterial(*assetInfo.overridePhongMaterial);
+  }
+
+  return createRenderAssetInstance(finalCreation, parent, drawables,
+                                   visNodeCache);
+}
+
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
-  bool meshSuccess = false;
-  if (info.type == AssetType::FRL_PTEX_MESH) {
-    meshSuccess = loadRenderAssetPTex(info);
-  } else if (info.type == AssetType::INSTANCE_MESH) {
-    meshSuccess = loadRenderAssetIMesh(info);
-  } else if (isRenderAssetGeneral(info.type)) {
-    meshSuccess = loadRenderAssetGeneral(info);
-  } else {
-    // loadRenderAsset doesn't yet support the requested asset type
-    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  bool registerMaterialOverride =
+      info.overridePhongMaterial != Cr::Containers::NullOpt;
+  bool fileAssetIsLoaded = resourceDict_.count(info.filepath) > 0;
+
+  bool meshSuccess = fileAssetIsLoaded;
+  // first load the file asset as-is if necessary
+  if (!fileAssetIsLoaded) {
+    // clone the AssetInfo and remove the custom material to load a default
+    // AssetInfo first
+    AssetInfo defaultInfo(info);
+    defaultInfo.overridePhongMaterial = Cr::Containers::NullOpt;
+
+    if (info.type == AssetType::FRL_PTEX_MESH) {
+      meshSuccess = loadRenderAssetPTex(defaultInfo);
+    } else if (info.type == AssetType::INSTANCE_MESH) {
+      meshSuccess = loadRenderAssetIMesh(defaultInfo);
+    } else if (isRenderAssetGeneral(info.type)) {
+      meshSuccess = loadRenderAssetGeneral(defaultInfo);
+    } else {
+      // loadRenderAsset doesn't yet support the requested asset type
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+    }
+
+    if (meshSuccess) {
+      // create and register the collisionMeshGroups
+      std::vector<CollisionMeshData> meshGroup;
+      ASSERT(buildMeshGroups(defaultInfo, meshGroup));
+
+      if (gfxReplayRecorder_) {
+        gfxReplayRecorder_->onLoadRenderAsset(defaultInfo);
+      }
+    }
   }
-  if (gfxReplayRecorder_) {
-    gfxReplayRecorder_->onLoadRenderAsset(info);
+
+  // now handle loading the material override AssetInfo if configured
+  if (meshSuccess && registerMaterialOverride) {
+    // register or get the override material id
+    std::string materialId = createColorMaterial(*info.overridePhongMaterial);
+
+    // construct the unique id for the material modified asset
+    std::string modifiedAssetName = info.filepath + "?" + materialId;
+    const bool matModAssetIsRegistered =
+        resourceDict_.count(modifiedAssetName) > 0;
+    if (!matModAssetIsRegistered) {
+      // first register the copied metaData
+      resourceDict_.emplace(modifiedAssetName,
+                            LoadedAssetData(resourceDict_.at(info.filepath)));
+      // Replace the AssetInfo
+      resourceDict_.at(modifiedAssetName).assetInfo = info;
+      // Modify the MeshMetaData local material ids for all components
+      std::vector<MeshTransformNode*> nodeQueue;
+      nodeQueue.push_back(
+          &resourceDict_.at(modifiedAssetName).meshMetaData.root);
+      while (!nodeQueue.empty()) {
+        MeshTransformNode* node = nodeQueue.back();
+        nodeQueue.pop_back();
+        for (auto& child : node->children) {
+          nodeQueue.push_back(&child);
+        }
+        if (node->meshIDLocal != ID_UNDEFINED) {
+          node->materialID = materialId;
+        }
+      }
+      // clone the collision data
+      collisionMeshGroups_.emplace(modifiedAssetName,
+                                   collisionMeshGroups_.at(info.filepath));
+
+      if (gfxReplayRecorder_) {
+        gfxReplayRecorder_->onLoadRenderAsset(info);
+      }
+    }
   }
+
   return meshSuccess;
 }
 
@@ -580,7 +679,7 @@ bool ResourceManager::loadStageInternal(
   LOG(INFO) << "ResourceManager::loadStageInternal : Attempting to load stage "
             << filename << " ";
   bool meshSuccess = true;
-  if (info.filepath.compare(EMPTY_SCENE) != 0) {
+  if (info.filepath != EMPTY_SCENE) {
     if (!Cr::Utility::Directory::exists(filename)) {
       LOG(ERROR)
           << "ResourceManager::loadStageInternal : Cannot find scene file "
@@ -591,12 +690,13 @@ bool ResourceManager::loadStageInternal(
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else {
         // load render asset if necessary
-        if (resourceDict_.count(info.filepath) == 0) {
-          if (!loadRenderAsset(info)) {
-            return false;
-          }
+        if (!loadRenderAsset(info)) {
+          return false;
         } else {
           if (resourceDict_[filename].assetInfo != info) {
+            // TODO: support color material modified assets by changing the
+            // "creation" filepath to the modified key
+
             // Right now, we only allow for an asset to be loaded with one
             // configuration, since generated mesh data may be invalid for a new
             // configuration
@@ -1105,6 +1205,10 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
   importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  Cr::PluginManager::PluginMetadata* const assimpmetadata =
+      importerManager_.metadata("AssimpImporter");
+  assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
+                                           "true");
 #endif
   {
     Cr::PluginManager::PluginMetadata* const metadata =

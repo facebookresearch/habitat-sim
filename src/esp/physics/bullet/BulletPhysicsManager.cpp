@@ -20,7 +20,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
 }
 
 bool BulletPhysicsManager::initPhysicsFinalize() {
-  activePhysSimLib_ = BULLET;
+  activePhysSimLib_ = PhysicsSimulationLibrary::Bullet;
 
   //! We can potentially use other collision checking algorithms, by
   //! uncommenting the line below
@@ -36,12 +36,10 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   // currently GLB meshes are y-up
   bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
 
-  Corrade::Utility::Debug() << "creating staticStageObject_";
   //! Create new scene node
   staticStageObject_ = physics::BulletRigidStage::create(
       &physicsNode_->createChild(), resourceManager_, bWorld_,
       collisionObjToObjIds_);
-  Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
 
   return true;
 }
@@ -110,7 +108,7 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   for (std::map<int, physics::RigidObject::ptr>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
-    it->second->setActive();
+    it->second->setActive(true);
   }
 }
 
@@ -135,7 +133,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
         objectItr.second->setRigidState(velControl->integrateTransform(
             dt, objectItr.second->getRigidState()));
-        objectItr.second->setActive();
+        objectItr.second->setActive(true);
       }
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
       if (velControl->controllingLinVel) {

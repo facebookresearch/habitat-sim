@@ -25,7 +25,7 @@ from habitat_sim.utils.common import (
 
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb")
-    or not osp.exists("data/objects/"),
+    or not osp.exists("data/objects/example_objects/"),
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
 def test_kinematics():
@@ -44,7 +44,7 @@ def test_kinematics():
         # get the rigid object attributes manager, which manages
         # templates used to create objects
         obj_template_mgr = sim.get_object_template_manager()
-        obj_template_mgr.load_configs("data/objects/", True)
+        obj_template_mgr.load_configs("data/objects/example_objects/", True)
         assert obj_template_mgr.get_num_templates() > 0
         # get the rigid object manager, which provides direct
         # access to objects
@@ -139,7 +139,7 @@ def test_kinematics():
 
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb")
-    or not osp.exists("data/objects/"),
+    or not osp.exists("data/objects/example_objects/"),
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
 def test_dynamics():
@@ -161,7 +161,7 @@ def test_dynamics():
         # get the rigid object attributes manager, which manages
         # templates used to create objects
         obj_template_mgr = sim.get_object_template_manager()
-        obj_template_mgr.load_configs("data/objects/", True)
+        obj_template_mgr.load_configs("data/objects/example_objects/", True)
         # make the simulation deterministic (C++ seed is set in reconfigure)
         np.random.seed(cfg_settings["seed"])
         assert obj_template_mgr.get_num_templates() > 0
@@ -377,7 +377,7 @@ def test_raycast():
 
         if (
             sim.get_physics_simulation_library()
-            != habitat_sim.physics.PhysicsSimulationLibrary.NONE
+            != habitat_sim.physics.PhysicsSimulationLibrary.NoPhysics
         ):
             # only test this if we have a physics simulator and therefore a collision world
             test_ray_1 = habitat_sim.geo.Ray()

@@ -607,6 +607,13 @@ class Simulator {
   bool contactTest(int objectID, int sceneID = 0);
 
   /**
+   * @brief Perform discrete collision detection for the scene.
+   */
+  void performDiscreteCollisionDetection() {
+    physicsManager_->performDiscreteCollisionDetection();
+  };
+
+  /**
    * @brief Set an object to collidable or not.
    */
   void setObjectIsCollidable(bool collidable, const int objectID) {

@@ -327,43 +327,15 @@ jobs:
       - run: &download_test_data
           name: Download test data
           command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat;
 
-              if [ ! -d ./habitat-sim/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
+              if [ ! -d ./data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
                 cd habitat-sim
-                wget http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip
-                unzip habitat-test-scenes.zip
-                rm habitat-test-scenes.zip
-                cd ..
+                python habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
               fi
 
-              if [ ! -d ./habitat-sim/data/objects/cheezit.glb ]
-              then
-                cd habitat-sim
-                wget http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip
-                unzip -uo objects_v0.2.zip -d data/objects/
-                rm objects_v0.2.zip
-                wget http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip
-                unzip -uo locobot_merged_v0.2.zip -d data/objects/
-                rm locobot_merged_v0.2.zip
-                cd ..
-              fi
-              if [ ! -d ./habitat-sim/data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb ]
-              then
-                cd habitat-sim
-                wget http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip
-                unzip mp3d_example.zip -d data/scene_datasets/mp3d/
-                rm mp3d_example.zip
-                cd ..
-              fi
-              if [ ! -f ./habitat-sim/data/scene_datasets/coda/coda.glb ]
-              then
-                cd habitat-sim
-                wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=1Pc-J6pZzXEd8RSeLM94t3iwO8q_RQ853' -O coda.zip
-                unzip coda.zip -d data/scene_datasets
-                rm coda.zip
-                cd ..
-              fi
       - run:
           name: Build habitat sim and documentation
           no_output_timeout: 20m
@@ -463,7 +435,7 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 16
-              python -u setup.py install --headless --vhacd
+              python -u setup.py install --build-type "Release" --headless --vhacd
       - run:
           name: run clang-tidy
           command: |

@@ -167,7 +167,16 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
               pathsWarnType = ".json";
             } else {
               const auto& paths = pathsObj[".json"];
-              attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
+              attrMgr->buildJSONCfgPathsFromJSONAndLoad(dsDir, paths);
+            }
+          }
+          if (pathsObj.HasMember(".glb")) {
+            if (!pathsObj[".glb"].IsArray()) {
+              pathsWarn = true;
+              pathsWarnType = ".glb";
+            } else {
+              const auto& paths = pathsObj[".glb"];
+              attrMgr->buildAttrSrcPathsFromJSONAndLoad(dsDir, ".glb", paths);
             }
           }
           // TODO support other extention tags
