@@ -25,8 +25,8 @@ VoxelWrapper::VoxelWrapper(const std::string& renderAssetHandle,
     std::unique_ptr<esp::assets::MeshData> objMesh =
         esp::assets::MeshData::create_unique();
     objMesh = resourceManager_.createJoinedCollisionMesh(renderAssetHandle);
-    voxelGrid = std::make_shared<VoxelGrid>(*objMesh.get(), renderAssetHandle,
-                                            resolution);
+    voxelGrid =
+        std::make_shared<VoxelGrid>(objMesh, renderAssetHandle, resolution);
     assert(resourceManager_.registerVoxelGrid(voxelGridHandle, voxelGrid));
   }
 }
