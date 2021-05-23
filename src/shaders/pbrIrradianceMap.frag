@@ -8,7 +8,6 @@ precision highp float;
 in highp vec4 position; // world position
 
 // ------------ uniform ----------------------
-uniform uint SampleCounts;
 uniform samplerCube EnvironmentMap;
 
 // -------------- output ---------------------
@@ -35,7 +34,7 @@ out highp vec4 fragmentColor;
 
  const float PI = 3.14159265358979;
 
- // Uniform Mapping
+ // Uniform Mapping (not used, but put here for reference)
  vec3 hemisphereSample_uniform(float u, float v) {
      float phi = v * 2.0 * PI;
      float cosTheta = 1.0 - u;
@@ -58,19 +57,26 @@ out highp vec4 fragmentColor;
    up = normalize(cross(normal, right));
 
    vec3 irradiance = vec3(0.0);
-   for (uint iPoint = 0u; iPoint < SampleCounts; ++iPoint) {
+   const uint sampleCounts = 8192u;
+   for (uint iPoint = 0u; iPoint < sampleCounts; ++iPoint) {
      // sample point on 2D plane
-     vec2 xi = hammersley2d(iPoint, SampleCounts);
+     vec2 xi = hammersley2d(iPoint, sampleCounts);
 
-     // spherical to cartesian (in tangent space)
+     // spherical to cartesian (in tangent space) z-up
+     // z-up (not y-up) is fine here
      vec3 tangentSample = hemisphereSample_cos(xi.u, xi.v);
 
      // tangent space to world: [R U N][tangentSample] = xR + yU + zN
+     // we make the normal dirction in world space aligned with z-axis in tangent space
      vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
 
-     // Careful: we used cosinus mapping so there is no need to multiply cos(theta) * sin(theta)
+     // Careful:
+     // We used cosinus mapping not uniform mapping.
+     // We generated proportionally fewer rays at the center top of the hemisphere.
+     // So there is no need to compensate for the smaller areas
+     // by scaling the area by sinTheta
      irradiance += texture(environmentMap, sampleVec).rgb;
    }
 
-   fragmentColor = irradiance / float(SampleCounts);
+   fragmentColor = irradiance / float(sampleCounts);
  }

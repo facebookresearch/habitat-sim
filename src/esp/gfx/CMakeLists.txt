@@ -55,6 +55,7 @@ set(
   PbrImageBasedLighting.h
   PbrIrradianceMapShader.cpp
   PbrIrradianceMapShader.h
+  PbrTextureUnit.h
 )
 
 # If ptex support is enabled add relevant source files

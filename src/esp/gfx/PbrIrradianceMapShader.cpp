@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PbrIrradianceMapShader.h"
+#include "PbrTextureUnit.h"
 
 #include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Debug.h>
@@ -29,6 +30,7 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
+
 PbrIrradianceMapShader::PbrIrradianceMapShader(Flags flags) : flags_(flags) {
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
@@ -79,11 +81,9 @@ PbrIrradianceMapShader::PbrIrradianceMapShader(Flags flags) : flags_(flags) {
     bindAttributeLocation(Position::Location, "vertexPosition");
   }  // if
 
-  /*
   CORRADE_INTERNAL_ASSERT(uniformLocation("EnvironmentMap") >= 0);
   setUniform(uniformLocation("EnvironmentMap"),
-             CubeMapShaderBaseTexUnitSpace::TextureUnit::Color)
-  */
+             pbrTextureUnitSpace::TextureUnit::EnvironmentMap);
 }
 }  // namespace gfx
 }  // namespace esp

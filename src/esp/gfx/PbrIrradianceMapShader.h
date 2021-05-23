@@ -7,7 +7,6 @@
 
 #include <initializer_list>
 
-//#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/Shaders/GenericGL.h>

@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PbrShader.h"
+#include "PbrTextureUnit.h"
 
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/Reference.h>
@@ -39,15 +40,6 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
-
-namespace {
-enum TextureUnit : uint8_t {
-  BaseColor = 0,
-  MetallicRoughness = 1,
-  Normal = 2,
-  Emissive = 3,
-};
-}  // namespace
 
 PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     : flags_(originalFlags), lightCount_(lightCount) {
@@ -161,24 +153,27 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   // see PBR vertex, fragment shader code for details
   if (lightCount_) {
     if (flags_ & Flag::BaseColorTexture) {
-      setUniform(uniformLocation("BaseColorTexture"), TextureUnit::BaseColor);
+      setUniform(uniformLocation("BaseColorTexture"),
+                 pbrTextureUnitSpace::TextureUnit::BaseColor);
     }
     if (flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture)) {
       setUniform(uniformLocation("MetallicRoughnessTexture"),
-                 TextureUnit::MetallicRoughness);
+                 pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
     }
     // TODO: explore the normal mapping without the precomputer tangent.
     // see http://www.thetenthplanet.de/archives/1180
     // also:
     // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
     if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::PrecomputedTangent)) {
-      setUniform(uniformLocation("NormalTexture"), TextureUnit::Normal);
+      setUniform(uniformLocation("NormalTexture"),
+                 pbrTextureUnitSpace::TextureUnit::Normal);
     }
     // TODO occlusion texture
   }
   // emissive texture does not depend on lights
   if (flags_ & Flag::EmissiveTexture) {
-    setUniform(uniformLocation("EmissiveTexture"), TextureUnit::Emissive);
+    setUniform(uniformLocation("EmissiveTexture"),
+               pbrTextureUnitSpace::TextureUnit::Emissive);
   }
 
   // cache the uniform locations
@@ -245,7 +240,7 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
                  "created with base color texture enabled",
                  *this);
   if (lightCount_) {
-    texture.bind(TextureUnit::BaseColor);
+    texture.bind(pbrTextureUnitSpace::TextureUnit::BaseColor);
   }
   return *this;
 }
@@ -257,7 +252,7 @@ PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
       "created with metallicRoughness texture enabled.",
       *this);
   if (lightCount_) {
-    texture.bind(TextureUnit::MetallicRoughness);
+    texture.bind(pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
   }
   return *this;
 }
@@ -268,7 +263,7 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
                  "created with normal texture enabled",
                  *this);
   if (lightCount_) {
-    texture.bind(TextureUnit::Normal);
+    texture.bind(pbrTextureUnitSpace::TextureUnit::Normal);
   }
   return *this;
 }
@@ -279,7 +274,7 @@ PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) {
                  "created with emissive texture enabled",
                  *this);
   // emissive texture does not depend on lights
-  texture.bind(TextureUnit::Emissive);
+  texture.bind(pbrTextureUnitSpace::TextureUnit::Emissive);
   return *this;
 }
 
