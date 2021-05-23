@@ -78,6 +78,12 @@ PbrIrradianceMapShader::PbrIrradianceMapShader(Flags flags) : flags_(flags) {
   {
     bindAttributeLocation(Position::Location, "vertexPosition");
   }  // if
+
+  /*
+  CORRADE_INTERNAL_ASSERT(uniformLocation("EnvironmentMap") >= 0);
+  setUniform(uniformLocation("EnvironmentMap"),
+             CubeMapShaderBaseTexUnitSpace::TextureUnit::Color)
+  */
 }
 }  // namespace gfx
 }  // namespace esp
