@@ -112,8 +112,7 @@ class MetadataMediator {
    * @return The current dataset's @ref managers::AssetAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
-  const managers::AssetAttributesManager::ptr getAssetAttributesManager()
-      const {
+  managers::AssetAttributesManager::ptr getAssetAttributesManager() const {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (datasetAttr == nullptr) ? nullptr
                                     : datasetAttr->getAssetAttributesManager();
@@ -126,8 +125,8 @@ class MetadataMediator {
    * managers::LightLayoutAttributesManager::ptr, or nullptr if no current
    * dataset.
    */
-  const managers::LightLayoutAttributesManager::ptr
-  getLightLayoutAttributesManager() const {
+  managers::LightLayoutAttributesManager::ptr getLightLayoutAttributesManager()
+      const {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (datasetAttr == nullptr)
                ? nullptr
@@ -140,8 +139,7 @@ class MetadataMediator {
    * @return The current dataset's @ref managers::ObjectAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
-  const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
-      const {
+  managers::ObjectAttributesManager::ptr getObjectAttributesManager() const {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (datasetAttr == nullptr) ? nullptr
                                     : datasetAttr->getObjectAttributesManager();
@@ -151,8 +149,7 @@ class MetadataMediator {
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
-      const {
+  managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager() const {
     return physicsAttributesManager_;
   }  // getPhysicsAttributesManager
 
@@ -162,8 +159,7 @@ class MetadataMediator {
    * @return The current dataset's @ref managers::SceneAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
-  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
-      const {
+  managers::SceneAttributesManager::ptr getSceneAttributesManager() const {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (datasetAttr == nullptr) ? nullptr
                                     : datasetAttr->getSceneAttributesManager();
@@ -175,8 +171,7 @@ class MetadataMediator {
    * @return The current dataset's @ref managers::StageAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
-  const managers::StageAttributesManager::ptr getStageAttributesManager()
-      const {
+  managers::StageAttributesManager::ptr getStageAttributesManager() const {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     return (datasetAttr == nullptr) ? nullptr
                                     : datasetAttr->getStageAttributesManager();
@@ -194,7 +189,7 @@ class MetadataMediator {
   /**
    * @brief Return copy of map of current active dataset's navmesh handles.
    */
-  const std::map<std::string, std::string> getActiveNavmeshMap() const {
+  std::map<std::string, std::string> getActiveNavmeshMap() const {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
 
     if (datasetAttr == nullptr) {
@@ -209,7 +204,7 @@ class MetadataMediator {
    * @param navMeshHandle The dataset library handle of the navmesh
    * @return The file path of the navmesh.
    */
-  const std::string getNavmeshPathByHandle(const std::string& navMeshHandle) {
+  std::string getNavmeshPathByHandle(const std::string& navMeshHandle) {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     if (datasetAttr == nullptr) {
       LOG(ERROR)
@@ -227,7 +222,7 @@ class MetadataMediator {
    * @brief Return copy of map of current active dataset's semantic scene
    * descriptor handles.
    */
-  const std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap()
+  std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap()
       const {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
 
@@ -245,7 +240,7 @@ class MetadataMediator {
    * descriptor
    * @return The file path of the semantic scene descriptor.
    */
-  const std::string getSemanticSceneDescriptorPathByHandle(
+  std::string getSemanticSceneDescriptorPathByHandle(
       const std::string& ssDescrHandle) {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     if (datasetAttr == nullptr) {
@@ -355,7 +350,7 @@ class MetadataMediator {
    * @return name of stage attributes with handle containing @p stageAttrName ,
    * or empty string if none.
    */
-  const std::string getStageAttrFullHandle(const std::string& stageAttrName) {
+  std::string getStageAttrFullHandle(const std::string& stageAttrName) {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen
     if (datasetAttr == nullptr) {
@@ -379,7 +374,7 @@ class MetadataMediator {
    * @return name of object attributes with handle containing @p objAttrName or
    * empty string if none.
    */
-  const std::string getObjAttrFullHandle(const std::string& objAttrName) {
+  std::string getObjAttrFullHandle(const std::string& objAttrName) {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen
     if (datasetAttr == nullptr) {
@@ -401,7 +396,7 @@ class MetadataMediator {
    * @return the full attributes name corresponding to @p lightSetupName , or
    * the empty string.
    */
-  const std::string getLightSetupFullHandle(const std::string& lightSetupName) {
+  std::string getLightSetupFullHandle(const std::string& lightSetupName) {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen
     if (datasetAttr == nullptr) {
@@ -435,7 +430,7 @@ class MetadataMediator {
    * consisting of who called this function.
    * @return The file path of the asset.
    */
-  const std::string getFilePathForHandle(
+  std::string getFilePathForHandle(
       const std::string& assetHandle,
       const std::map<std::string, std::string>& assetMapping,
       const std::string& msgString) {

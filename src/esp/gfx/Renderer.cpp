@@ -52,9 +52,7 @@ struct Renderer::Impl {
             RenderCamera::Flags flags) {
     for (auto& it : sceneGraph.getDrawableGroups()) {
       // TODO: remove || true
-      if (it.second.prepareForDraw(camera) || true) {
-        camera.draw(it.second, flags);
-      }
+      { camera.draw(it.second, flags); }
     }
   }
 

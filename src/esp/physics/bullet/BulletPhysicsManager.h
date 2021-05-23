@@ -143,14 +143,14 @@ class BulletPhysicsManager : public PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return The Aabb.
    */
-  const Magnum::Range3D getCollisionShapeAabb(const int physObjectID) const;
+  Magnum::Range3D getCollisionShapeAabb(const int physObjectID) const;
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
    * the static stage in its local space. See @ref btCompoundShape::getAabb.
    * @return The stage collision Aabb.
    */
-  const Magnum::Range3D getStageCollisionShapeAabb() const;
+  Magnum::Range3D getStageCollisionShapeAabb() const;
 
   /** @brief Render the debugging visualizations provided by @ref
    * Magnum::BulletIntegration::DebugDraw. This draws wireframes for all
@@ -196,7 +196,7 @@ class BulletPhysicsManager : public PhysicsManager {
   /**
    * @brief Perform discrete collision detection for the scene.
    */
-  virtual void performDiscreteCollisionDetection() override {
+  void performDiscreteCollisionDetection() override {
     bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
   }
 

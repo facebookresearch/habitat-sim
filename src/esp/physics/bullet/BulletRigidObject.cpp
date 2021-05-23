@@ -467,7 +467,7 @@ bool BulletRigidObject::contactTest() {
   return src.bCollision;
 }  // contactTest
 
-const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
+Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
   if (!bObjectShape_) {
     // e.g. empty scene
     return Magnum::Range3D();

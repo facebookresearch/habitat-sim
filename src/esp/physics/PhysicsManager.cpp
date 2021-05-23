@@ -716,10 +716,8 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
     rigidBase->VoxelNode_ = nullptr;
 
   } else if (drawVoxelization && rigidBase->visualNode_) {
-    if (rigidBase->VoxelNode_) {
-      // if the VoxelNode is already rendering something, destroy it.
-      delete rigidBase->VoxelNode_;
-    }
+    // if the VoxelNode is already rendering something, destroy it.
+    delete rigidBase->VoxelNode_;
 
     // re-create the voxel node
     rigidBase->VoxelNode_ = &rigidBase->visualNode_->createChild();

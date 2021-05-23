@@ -263,7 +263,7 @@ struct PathFinder::Impl {
       const float metersPerPixel,
       const float height) const;
 
-  const assets::MeshData::ptr getNavMeshData();
+  assets::MeshData::ptr getNavMeshData();
 
  private:
   struct NavMeshDeleter {
@@ -1292,7 +1292,7 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
   return topdownMap;
 }
 
-const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
+assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
   if (meshData_ == nullptr && isLoaded()) {
     meshData_ = assets::MeshData::create();
     std::vector<esp::vec3f>& vbo = meshData_->vbo;
@@ -1434,7 +1434,7 @@ Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
   return pimpl_->getTopDownView(metersPerPixel, height);
 }
 
-const assets::MeshData::ptr PathFinder::getNavMeshData() {
+assets::MeshData::ptr PathFinder::getNavMeshData() {
   return pimpl_->getNavMeshData();
 }
 
