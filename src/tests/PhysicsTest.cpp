@@ -806,7 +806,7 @@ TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
       ASSERT_LE(cp.contactDistance, 1.0e-4);
     }
     // mass 1 cube under gravity should require normal contact force of ~9.8
-    ASSERT_LE(totalNormalForce - 9.8, 1.0e-4);
+    ASSERT_LE(totalNormalForce - 9.8, 3.0e-4);
 
     // continue simulation until the cube is stable and sleeping
     while (physicsManager_->getWorldTime() < 4.0) {
