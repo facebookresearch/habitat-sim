@@ -6,13 +6,20 @@
 
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Resource.h>
-
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Angle.h>
+#include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/FlipNormals.h>
+#include <Magnum/MeshTools/Reference.h>
+#include <Magnum/Primitives/Cube.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
+#include <Magnum/Trade/MeshData.h>
+
+#include "CubeMapCamera.h"
 
 // This is to import the "resources" at runtime. When the resource is
 // compiled into static library, it must be explicitly initialized via this
@@ -30,10 +37,17 @@ PbrImageBasedLighting::PbrImageBasedLighting(Flags flags,
                                              ShaderManager& shaderManager)
     : flags_(flags), shaderManager_(shaderManager) {
   recreateTextures();
+
+  // load the BRDF lookup table
+  // TODO: should have the capability to compute it by the simulator
   loadBrdfLookUpTable();
 
-  // load environment map
+  // load environment map (cubemap)
+  // TODO: load equirectangular image and convert it to cubemap
   environmentMap_->loadTexture(CubeMap::TextureType::Color, "skybox", "png");
+
+  // compute the irradiance map
+  computeIrradianceMap();
 }
 
 void PbrImageBasedLighting::recreateTextures() {
@@ -118,5 +132,50 @@ void PbrImageBasedLighting::loadBrdfLookUpTable() {
 
   brdfLUT_->setSubImage(0, {}, *imageData);
 }
+
+void PbrImageBasedLighting::computeIrradianceMap() {
+  CORRADE_ASSERT(
+      environmentMap_ != Cr::Containers::NullOpt,
+      "PbrImageBasedLighting::computeIrradianceMap(): the environment "
+      "map cannot be found. Have you loaded it? ", );
+
+  CORRADE_ASSERT(
+      irradianceMap_ != Cr::Containers::NullOpt,
+      "PbrImageBasedLighting::computeIrradianceMap(): the irradiance map "
+      "is empty (not initialized).", );
+
+  Mn::Resource<Mn::GL::AbstractShaderProgram, PbrIrradianceMapShader> shader =
+      getShader<PbrIrradianceMapShader>(PbrIblShaderType::IrradianceMap);
+
+  // TODO: HDR!!
+  shader->bindEnvironmentMap(
+      environmentMap_->getTexture(CubeMap::TextureType::Color));
+
+  // NOLINTNEXTLINE(google-build-using-namespace)
+  using namespace Mn::Math::Literals;
+  shader->setProjectionMatrix(Mn::Matrix4::perspectiveProjection(
+      90.0_degf,  // horizontal field of view angle
+      1.0f,       // aspect ratio (width/height)
+      0.01f,      // z-near plane
+      1000.0f));  // z-far plane
+
+  // prepare a cube
+  // TODO: should I use cubeSolid??
+  Mn::Trade::MeshData cubeData =
+      Mn::MeshTools::owned(Mn::Primitives::cubeSolidStrip());
+  Mn::MeshTools::flipFaceWindingInPlace(cubeData.mutableIndices());
+  Magnum::GL::Mesh cube = Magnum::MeshTools::compile(cubeData);
+
+  for (unsigned iSide = 0; iSide < 6; ++iSide) {
+    Mn::Matrix4 viewMatrix = CubeMapCamera::getCameraLocalTransform(
+                                 CubeMapCamera::cubeMapCoordinate(iSide))
+                                 .inverted();
+    shader->setTransformationMatrix(viewMatrix);
+    // clear color and depth
+    irradianceMap_->prepareToDraw(iSide);
+    shader->draw(cube);
+  }
+}
+
 }  // namespace gfx
 }  // namespace esp

@@ -10,6 +10,7 @@
 #include <Magnum/GL/Texture.h>
 
 #include "CubeMap.h"
+#include "PbrIrradianceMapShader.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/ShaderManager.h"
 
@@ -95,15 +96,56 @@ class PbrImageBasedLighting {
   void loadBrdfLookUpTable();
 
   ShaderManager& shaderManager_;
-  // TODO: shader to generate the irradiance map
-  // Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrIrradianceMapShader>
-  // irradianceMapShader_;
-
-  // TODO: shader to generate the pre-filtered cube map
-  // Magnum::Resource<Magnum::GL::AbstractShaderProgram,
-  // PbrPrefilteredMapShader> prefilteredMapShader_;
 
   void recreateTextures();
+  void computeIrradianceMap();
+
+  enum class PbrIblShaderType : uint8_t {
+    IrradianceMap = 0,
+    // PrefilteredMap = 1,
+    // BrdfLookupTable = 2,
+  };
+  template <typename T>
+  Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
+      PbrIblShaderType type) {
+    Mn::ResourceKey key;
+    switch (type) {
+      case PbrIblShaderType::IrradianceMap:
+        key = Mn::ResourceKey{"irradianceMap"};
+        break;
+        /*
+          case PbrIblShaderType::PrefilteredMap:
+            key = Mn::ResourceKey{"prefilteredMap"};
+            break;
+        */
+
+      default:
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        break;
+    }
+    Mn::Resource<Mn::GL::AbstractShaderProgram, T> shader =
+        shaderManager_.get<Mn::GL::AbstractShaderProgram, T>(key);
+
+    if (!shader) {
+      if (type == PbrIblShaderType::IrradianceMap) {
+        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+            shader.key(), new PbrIrradianceMapShader(),
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+      }
+      /*
+    else if (type == PbrIblShaderType::PrefilteredMap) {
+      // TODO: prefilteredMap shader
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+          shader.key(), new PbrPrefilteredMapShader(),
+          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+    }
+      */
+    }
+    CORRADE_INTERNAL_ASSERT(shader);
+
+    return shader;
+  }
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrImageBasedLighting::Flags)

@@ -89,7 +89,7 @@ struct Renderer::Impl {
             gfx::Renderer::Impl::RendererShaderType::ObjectIdTextureVisualizer;
       }
 
-      Magnum::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
+      Mn::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
           shader = getShader<TextureVisualizerShader>(rendererShaderType);
 
       if (type == sensor::SensorType::Depth) {

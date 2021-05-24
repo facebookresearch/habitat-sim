@@ -9,6 +9,7 @@
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
+#include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/esp.h"
@@ -61,7 +62,7 @@ class PbrIrradianceMapShader : public Magnum::GL::AbstractShaderProgram {
    * @brief Constructor
    * @param flags         Flags
    */
-  explicit PbrIrradianceMapShader(Flags flags = {});
+  explicit PbrIrradianceMapShader();
 
   /** @brief Copying is not allowed */
   PbrIrradianceMapShader(const PbrIrradianceMapShader&) = delete;
@@ -76,19 +77,30 @@ class PbrIrradianceMapShader : public Magnum::GL::AbstractShaderProgram {
   PbrIrradianceMapShader& operator=(PbrIrradianceMapShader&&) noexcept =
       default;
 
-  /** @brief Flags */
-  Flags flags() const { return flags_; }
+  // ======== set uniforms ===========
+  /**
+   *  @brief Set "projection" matrix to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrIrradianceMapShader& setProjectionMatrix(const Magnum::Matrix4& matrix);
+
+  /**
+   *  @brief Set modelview matrix to the uniform on GPU
+   *         modelview = view * model
+   *  @return Reference to self (for method chaining)
+   */
+  PbrIrradianceMapShader& setTransformationMatrix(
+      const Magnum::Matrix4& matrix);
 
   // ======== texture binding ========
   /**
-   * @brief Bind the BaseColor texture
+   * @brief Bind the environment map cubemap texture
    * @return Reference to self (for method chaining)
    */
-  PbrIrradianceMapShader& bindBaseColorTexture(Magnum::GL::Texture2D& texture);
+  PbrIrradianceMapShader& bindEnvironmentMap(
+      Magnum::GL::CubeMapTexture& texture);
 
  protected:
-  Flags flags_;
-
   // ======= uniforms =======
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor

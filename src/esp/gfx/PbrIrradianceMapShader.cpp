@@ -5,6 +5,7 @@
 #include "PbrIrradianceMapShader.h"
 #include "PbrTextureUnit.h"
 
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
@@ -14,6 +15,8 @@
 #include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Version.h>
+#include <Magnum/Magnum.h>
+#include <Magnum/Math/Matrix4.h>
 
 #include <initializer_list>
 #include <sstream>
@@ -31,7 +34,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-PbrIrradianceMapShader::PbrIrradianceMapShader(Flags flags) : flags_(flags) {
+PbrIrradianceMapShader::PbrIrradianceMapShader() {
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -81,9 +84,35 @@ PbrIrradianceMapShader::PbrIrradianceMapShader(Flags flags) : flags_(flags) {
     bindAttributeLocation(Position::Location, "vertexPosition");
   }  // if
 
+  // set texture unit
   CORRADE_INTERNAL_ASSERT(uniformLocation("EnvironmentMap") >= 0);
   setUniform(uniformLocation("EnvironmentMap"),
              pbrTextureUnitSpace::TextureUnit::EnvironmentMap);
+
+  // setup uniforms
+  modelviewMatrixUniform_ = uniformLocation("ModelViewMatrix");
+  CORRADE_INTERNAL_ASSERT(modelviewMatrixUniform_ >= 0);
+  projMatrixUniform_ = uniformLocation("ProjectionMatrix");
+  CORRADE_INTERNAL_ASSERT(projMatrixUniform_ >= 0);
 }
+
+PbrIrradianceMapShader& PbrIrradianceMapShader::bindEnvironmentMap(
+    Mn::GL::CubeMapTexture& texture) {
+  texture.bind(pbrTextureUnitSpace::TextureUnit::EnvironmentMap);
+  return *this;
+}
+
+PbrIrradianceMapShader& PbrIrradianceMapShader::setProjectionMatrix(
+    const Mn::Matrix4& matrix) {
+  setUniform(projMatrixUniform_, matrix);
+  return *this;
+}
+
+PbrIrradianceMapShader& PbrIrradianceMapShader::setTransformationMatrix(
+    const Mn::Matrix4& matrix) {
+  setUniform(modelviewMatrixUniform_, matrix);
+  return *this;
+}
+
 }  // namespace gfx
 }  // namespace esp
