@@ -146,7 +146,9 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest(CORRADE_UNUSED bool staticAsStage = true) { return false; }
+  virtual bool contactTest(CORRADE_UNUSED bool staticAsStage = true) {
+    return false;
+  }
 
   /**
    * @brief Set the light setup of this rigid.

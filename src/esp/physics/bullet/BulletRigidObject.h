@@ -420,7 +420,7 @@ class BulletRigidObject : public BulletBase,
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest(bool staticAsStage = true);
+  virtual bool contactTest(bool staticAsStage = true) override;
 
   /**
    * @brief Manually set the collision group for an object.
