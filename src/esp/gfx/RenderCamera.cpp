@@ -196,7 +196,6 @@ size_t RenderCamera::filterTransforms(DrawableTransforms& drawableTransforms,
   if (useDrawableIds_) {
     useDrawableIds_ = false;
   }
-
   return drawableTransforms.size();
 }
 

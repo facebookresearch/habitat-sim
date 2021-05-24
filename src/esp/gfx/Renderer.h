@@ -43,7 +43,7 @@ class Renderer {
    */
   explicit Renderer(Flags flags = {});
 
-  /*
+  /**
    * @brief draw the scene graph with the camera specified by user
    * @param[in] camera, the render camera to render the scene
    * @param[in] flags, flags to control the rendering
@@ -68,7 +68,6 @@ class Renderer {
                  float colorMapOffset = 1.0f / 512.0f,
                  float colorMapScale = 1.0f / 256.0f);
 
-  void acquireGlContext();
   /**
    * @brief Binds a @ref RenderTarget to the sensor
    * @param[in] sensor the target sensor

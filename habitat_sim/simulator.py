@@ -459,6 +459,7 @@ class Simulator(SimulatorBackend):
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
+
     TODO(MS) define entire Sensor class in python, reducing complexity
     """
     buffer = Union[np.ndarray, "Tensor"]
@@ -555,6 +556,7 @@ class Sensor:
                 obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:
             size = self._sensor_object.framebuffer_size
+
             if self._spec.sensor_type == SensorType.SEMANTIC:
                 tgt.read_frame_object_id(
                     mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)

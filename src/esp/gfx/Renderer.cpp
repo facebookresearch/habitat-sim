@@ -16,9 +16,7 @@
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
-#include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/Platform/GLContext.h>
 #include <Magnum/ResourceManager.h>
 
 #include "esp/core/Check.h"
@@ -47,7 +45,6 @@ struct Renderer::Impl {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
-
   ~Impl() { LOG(INFO) << "Deconstructing Renderer"; }
 
   void draw(RenderCamera& camera,
