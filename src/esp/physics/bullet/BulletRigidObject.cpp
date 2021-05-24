@@ -394,11 +394,12 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   if (mt == MotionType::STATIC) {
     CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isStaticObject());
     bWorld_->addRigidBody(
-        bObjectRigidBody_.get(),
-        2,       // collisionFilterGroup (2 == StaticFilter)
-        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+        bObjectRigidBody_.get(), int(CollisionGroup::Static),
+        CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static));
   } else {
-    bWorld_->addRigidBody(bObjectRigidBody_.get());
+    bWorld_->addRigidBody(
+        bObjectRigidBody_.get(), int(CollisionGroup::FreeObject),
+        CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject));
     setActive(true);
   }
 }
@@ -461,11 +462,33 @@ Magnum::Vector3 BulletRigidObject::getCOM() const {
   return com;
 }  // getCOM
 
-bool BulletRigidObject::contactTest() {
+bool BulletRigidObject::contactTest(bool staticAsStage) {
   SimulationContactResultCallback src;
+  src.m_collisionFilterGroup =
+      bObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterGroup;
+  src.m_collisionFilterMask =
+      bObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterMask;
+  if (!staticAsStage && objectMotionType_ == MotionType::STATIC) {
+    // override collision filter for STATIC object to include other STATICs such
+    // as the stage
+    src.m_collisionFilterGroup = int(CollisionGroup::FreeObject);
+    src.m_collisionFilterMask =
+        CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject);
+  }
   bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
   return src.bCollision;
 }  // contactTest
+
+void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
+  if (!bObjectRigidBody_->isInWorld()) {
+    LOG(ERROR) << "BulletRigidObject::overrideCollisionGroup failed because "
+                  "the Bullet body hasn't yet been added to the Bullet world.";
+  }
+
+  bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  bWorld_->addRigidBody(bObjectRigidBody_.get(), int(group),
+                        CollisionGroupHelper::getMaskForGroup(group));
+}
 
 const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
   if (!bObjectShape_) {

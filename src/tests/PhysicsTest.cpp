@@ -136,7 +136,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
         float boxHeight = 2.0 + (o * 2);
-        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.25f, 0.0};
+        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.5f, 0.0};
         physicsManager_->setRotation(
             objectId, Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
         physicsManager_->setTranslation(objectId, initialPosition);

@@ -17,6 +17,7 @@
 
 /* Bullet Physics Integration */
 
+#include "CollisionGroupHelper.h"
 #include "RigidObject.h"
 #include "RigidStage.h"
 #include "esp/assets/Asset.h"
@@ -1018,10 +1019,14 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * BulletPhysicsManager.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
+   * @param staticAsStage When false, override configured collision groups|masks
+   * for STATIC objects and articulated fixed base such that contact with other
+   * STATICs such as the stage are considered.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  virtual bool contactTest(CORRADE_UNUSED const int physObjectID) {
+  virtual bool contactTest(CORRADE_UNUSED const int physObjectID,
+                           CORRADE_UNUSED bool staticAsStage = true) {
     return false;
   };
 

@@ -20,6 +20,7 @@
 
 #include "esp/core/esp.h"
 
+#include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/bullet/BulletBase.h"
 
@@ -413,10 +414,19 @@ class BulletRigidObject : public BulletBase,
    * collision world.
    *
    * See @ref SimulationContactResultCallback
+   * @param staticAsStage When false, override configured collision groups|masks
+   * for STATIC objects such that contact with other STATICs such as the stage
+   * are considered.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest();
+  bool contactTest(bool staticAsStage = true);
+
+  /**
+   * @brief Manually set the collision group for an object.
+   * @param group The desired CollisionGroup for the object.
+   */
+  void overrideCollisionGroup(CollisionGroup group);
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of

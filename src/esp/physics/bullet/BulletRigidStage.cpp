@@ -13,6 +13,7 @@
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletRigidStage.h"
+#include "esp/physics/CollisionGroupHelper.h"
 
 namespace esp {
 namespace physics {
@@ -87,9 +88,8 @@ void BulletRigidStage::constructAndAddCollisionObjects() {
   // add the objects to the world
   for (auto& object : bStaticCollisionObjects_) {
     bWorld_->addRigidBody(
-        object.get(),
-        2,       // collisionFilterGroup (2 == StaticFilter)
-        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+        object.get(), int(CollisionGroup::Static),
+        CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static));
   }
 }
 
