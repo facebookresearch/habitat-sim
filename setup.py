@@ -249,8 +249,12 @@ class CMakeBuild(build_ext):
 
         cmake_args += ["-DCMAKE_BUILD_TYPE=" + build_type]
 
-        if args.no_lto:
-            cmake_args += ["-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF"]
+        cmake_args += [
+            "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={}".format(
+                "OFF" if args.no_lto else "ON"
+            )
+        ]
+
         build_args += ["--"]
 
         if has_ninja():
