@@ -319,25 +319,6 @@ int BulletPhysicsManager::getNumActiveContactPoints() {
 }
 
 std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
-  if (recentNumSubStepsTaken_ != 1) {
-    if (recentNumSubStepsTaken_ == -1) {
-      LOG(WARNING) << "getContactPoints: no previous call to stepPhysics";
-    } else {
-      // todo: proper logging-throttling API
-      static int count = 0;
-      if (count++ < 5) {
-        LOG(WARNING)
-            << "getContactPoints: the previous call to stepPhysics performed "
-            << recentNumSubStepsTaken_
-            << " substeps, so getContactPoints's behavior may be unexpected.";
-      }
-      if (count == 5) {
-        LOG(WARNING)
-            << "getContactPoints: additional warnings will be suppressed.";
-      }
-    }
-  }
-
   std::vector<ContactPointData> contactPoints;
 
   auto* dispatcher = bWorld_->getDispatcher();
