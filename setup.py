@@ -236,10 +236,9 @@ class CMakeBuild(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
-            "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={}".format(
-                "OFF" if args.no_lto else "ON"
-            ),
         ]
+        if args.no_lto:
+            cmake_args += ["-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF"]
 
         cmake_args += shlex.split(args.cmake_args)
 
