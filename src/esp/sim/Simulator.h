@@ -1002,8 +1002,25 @@ class Simulator {
         objectID, esp::physics::CollisionGroup(group));
   }
 
-  std::vector<esp::physics::ContactPointData> getPhysicsContactPoints(
-      const int sceneID);
+  /**
+   * @brief Query physics simulation implementation for contact point data from
+   * the most recent collision detection cache.
+   *
+   * @return a vector with each entry corresponding to a single contact point.
+   */
+  std::vector<esp::physics::ContactPointData> getPhysicsContactPoints() {
+    return physicsManager_->getContactPoints();
+  }
+
+  /**
+   * @brief Query the number of contact points that were active during the
+   * collision detection check.
+   *
+   * @return the number of active contact points.
+   */
+  int getPhysicsNumActiveContactPoints() {
+    return physicsManager_->getNumActiveContactPoints();
+  }
 
   /**
    * @brief Set an object to collidable or not.
@@ -1369,10 +1386,6 @@ class Simulator {
    * python random or numpy.random modules.
    */
   core::Random::ptr random() { return random_; }
-
-  int getPhysicsNumActiveContactPoints() {
-    return physicsManager_->getNumActiveContactPoints();
-  }
   int getPhysicsNumActiveOverlappingPairs() {
     return physicsManager_->getNumActiveOverlappingPairs();
   }

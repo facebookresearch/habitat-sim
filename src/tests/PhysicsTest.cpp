@@ -820,16 +820,40 @@ TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
     // no active contact points at start
     ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
 
-    // simulate to let cube fall, stabilize and go to sleep
-    bool didHaveActiveContacts = false;
+    // simulate to let cube fall and hit the ground
+    while (physicsManager_->getWorldTime() < 2.0) {
+      physicsManager_->stepPhysics(0.1);
+    }
+
+    auto allContactPoints = physicsManager_->getContactPoints();
+    // expect 4 active contact points for cube
+    ASSERT_EQ(allContactPoints.size(), 4);
+    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 4);
+    float totalNormalForce = 0;
+    for (auto& cp : allContactPoints) {
+      // contacts are still active
+      ASSERT(cp.isActive);
+      // normal direction is unit Y (world up)
+      ASSERT_LE(
+          (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0}).length(),
+          1.0e-4);
+      // one object is the cube (0), other is the stage (-1)
+      ASSERT_EQ(cp.objectIdA, 0);
+      ASSERT_EQ(cp.objectIdB, -1);
+      // accumulate the normal force
+      totalNormalForce += cp.normalForce;
+      // solver should keep the cube at the contact boundary (~0 penetration)
+      ASSERT_LE(cp.contactDistance, 1.0e-4);
+    }
+    // mass 1 cube under gravity should require normal contact force of ~9.8
+    ASSERT_LE(totalNormalForce - 9.8, 3.0e-4);
+
+    // continue simulation until the cube is stable and sleeping
     while (physicsManager_->getWorldTime() < 4.0) {
       physicsManager_->stepPhysics(0.1);
-      if (physicsManager_->getNumActiveContactPoints() > 0) {
-        didHaveActiveContacts = true;
-      }
     }
-    ASSERT(didHaveActiveContacts);
-
+    // 4 inactive contact points at end
+    ASSERT_EQ(physicsManager_->getContactPoints().size(), 4);
     // no active contact points at end
     ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
   }

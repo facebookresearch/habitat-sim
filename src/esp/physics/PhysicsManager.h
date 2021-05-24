@@ -105,9 +105,6 @@ struct ContactPointData {
 
 class RigidObjectManager;
 
-// TODO: repurpose to manage multiple physical worlds. Currently represents
-// exactly one world.
-
 /**
 @brief Kinematic and dynamic scene and object manager.
 
@@ -1408,14 +1405,30 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     /*Does nothing in base PhysicsManager.*/
   }
 
-  virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
-
   /**
    * @brief Manually set the collision group for an object.
    */
   virtual void overrideCollisionGroup(CORRADE_UNUSED const int physObjectID,
                                       CORRADE_UNUSED CollisionGroup
                                           group) const {}
+
+  /**
+   * @brief Query the number of contact points that were active during the
+   * collision detection check.
+   *
+   * Not implemented for default PhysicsManager.
+   * @return the number of active contact points.
+   */
+  virtual int getNumActiveContactPoints() { return -1; }
+
+  /**
+   * @brief Query physics simulation implementation for contact point data from
+   * the most recent collision detection cache.
+   *
+   * Not implemented for default PhysicsManager implementation.
+   * @return a vector with each entry corresponding to a single contact point.
+   */
+  virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
 
   /**
    * @brief Set an object to collidable or not.
@@ -1652,7 +1665,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     return existingArticulatedObjects_.at(objectId)->getMotionType();
   }
 
-  virtual int getNumActiveContactPoints() { return -1; }
   virtual int getNumActiveOverlappingPairs() { return -1; }
   virtual std::string getStepCollisionSummary() { return "not implemented"; }
 

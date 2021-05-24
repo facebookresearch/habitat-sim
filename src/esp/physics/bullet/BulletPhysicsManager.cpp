@@ -80,8 +80,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
       &physicsNode_->createChild(), resourceManager_, bWorld_,
       collisionObjToObjIds_);
 
-  m_recentNumSubStepsTaken = -1;
-
+  recentNumSubStepsTaken_ = -1;
   return true;
 }
 
@@ -270,31 +269,8 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, /*maxSubSteps*/ 10000, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
-  m_recentNumSubStepsTaken = numSubStepsTaken;
-
-#if 0  // print collision debug info periodically?
-  {
-    // Beware getCollisionFilteringSummary is currently only safe to use if your program never removes physics objects. Otherwise it will crash.
-    // However, getStepCollisionSummary is always safe to use.
-#if 0
-    static bool isFirstRun = true;
-    if (isFirstRun) {
-      constexpr bool doVerbose = false;
-      LOG(WARNING) << BulletDebugManager::get().getCollisionFilteringSummary(doVerbose) << std::endl;
-      isFirstRun = false;
-    }
-#endif
-    static int counter = 0;
-    counter++;
-    if (counter == 100) {
-      //LOG(WARNING) << BulletDebugManager::get().getCollisionFilteringSummary(false) << std::endl;
-      //LOG(WARNING) << "---";
-      LOG(WARNING) << getStepCollisionSummary();
-      LOG(WARNING) << "---";
-      counter = 0;
-    }
-  }
-#endif
+  recentNumSubStepsTaken_ = numSubStepsTaken;
+  recentTimeStep_ = fixedTimeStep_;
 }
 
 void BulletPhysicsManager::setMargin(const int physObjectID,
@@ -727,7 +703,6 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   return results;
 }
 
-// todo: unit test for this
 void BulletPhysicsManager::lookUpObjectIdAndLinkId(
     const btCollisionObject* colObj,
     int* objectId,
@@ -761,31 +736,28 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
 
   // lookup failed
 }
+int BulletPhysicsManager::getNumActiveContactPoints() {
+  int count = 0;
+  auto* dispatcher = bWorld_->getDispatcher();
+  for (int i = 0; i < dispatcher->getNumManifolds(); i++) {
+    auto* manifold = dispatcher->getManifoldByIndexInternal(i);
+    const btCollisionObject* colObj0 =
+        static_cast<const btCollisionObject*>(manifold->getBody0());
+    const btCollisionObject* colObj1 =
+        static_cast<const btCollisionObject*>(manifold->getBody1());
 
-std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
-  if (m_recentNumSubStepsTaken != 1) {
-    if (m_recentNumSubStepsTaken == -1) {
-      LOG(WARNING) << "getContactPoints: no previous call to stepPhysics";
-    } else {
-      // todo: proper logging-throttling API
-      static int count = 0;
-      if (count++ < 5) {
-        LOG(WARNING)
-            << "getContactPoints: the previous call to stepPhysics performed "
-            << m_recentNumSubStepsTaken
-            << " substeps, so getContactPoints's behavior may be unexpected.";
-      }
-      if (count == 5) {
-        LOG(WARNING)
-            << "getContactPoints: additional warnings will be suppressed.";
-      }
+    // logic copied from btSimulationIslandManager::buildIslands. We want to
+    // count manifolds only if related to non-sleeping bodies.
+    if (((colObj0) && colObj0->getActivationState() != ISLAND_SLEEPING) ||
+        ((colObj1) && colObj1->getActivationState() != ISLAND_SLEEPING)) {
+      count += manifold->getNumContacts();
     }
   }
+  return count;
+}
 
+std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
   std::vector<ContactPointData> contactPoints;
-
-  // sloppy: assume fixedTimeStep_ hasn't changed since last call to stepPhysics
-  const float recentSubstepDt = fixedTimeStep_;
 
   auto* dispatcher = bWorld_->getDispatcher();
   int numContactManifolds = dispatcher->getNumManifolds();
@@ -823,12 +795,13 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
       pt.positionOnAInWS = Mn::Vector3(srcPt.getPositionWorldOnA());
       pt.positionOnBInWS = Mn::Vector3(srcPt.getPositionWorldOnB());
 
-      pt.normalForce = srcPt.getAppliedImpulse() / recentSubstepDt;
+      // convert impulses to forces w/ recent physics timstep
+      pt.normalForce = srcPt.getAppliedImpulse() / recentTimeStep_;
 
       pt.linearFrictionForce1 =
-          srcPt.m_appliedImpulseLateral1 / recentSubstepDt;
+          srcPt.m_appliedImpulseLateral1 / recentTimeStep_;
       pt.linearFrictionForce2 =
-          srcPt.m_appliedImpulseLateral2 / recentSubstepDt;
+          srcPt.m_appliedImpulseLateral2 / recentTimeStep_;
 
       pt.linearFrictionDirection1 = Mn::Vector3(srcPt.m_lateralFrictionDir1);
       pt.linearFrictionDirection2 = Mn::Vector3(srcPt.m_lateralFrictionDir2);
