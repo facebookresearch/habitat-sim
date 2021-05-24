@@ -9,7 +9,10 @@ import re
 import subprocess
 import sys
 
-MAX_NUMBER_OF_PACKAGES = 30
+# We currently can't have any retention as our average binary
+# size is ~150 MB, so even 1 day of retention would require
+# storing 24 binaries, which is over the 3 GB limit
+MAX_NUMBER_OF_PACKAGES = 0
 
 parser = argparse.ArgumentParser(
     "A tool for removing conda nightly builds in chronical order to reduce conda repo storage usage"
