@@ -166,7 +166,7 @@ void PbrImageBasedLighting::computeIrradianceMap() {
   Mn::MeshTools::flipFaceWindingInPlace(cubeData.mutableIndices());
   Magnum::GL::Mesh cube = Magnum::MeshTools::compile(cubeData);
 
-  for (unsigned iSide = 0; iSide < 6; ++iSide) {
+  for (unsigned int iSide = 0; iSide < 6; ++iSide) {
     Mn::Matrix4 viewMatrix = CubeMapCamera::getCameraLocalTransform(
                                  CubeMapCamera::cubeMapCoordinate(iSide))
                                  .inverted();
