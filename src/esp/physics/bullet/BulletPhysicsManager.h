@@ -185,19 +185,33 @@ class BulletPhysicsManager : public PhysicsManager {
                          double maxDistance = 100.0) override;
 
   /**
-   * @brief The number of contact points that were active during the last step.
+   * @brief Query the number of contact points that were active during the
+   * collision detection check.
+   *
    * An object resting on another object will involve several active contact
    * points. Once both objects are asleep, the contact points are inactive. This
    * count can be used as a metric for the complexity/cost of collision-handling
    * in the current scene.
+   *
+   * @return the number of active contact points.
    */
   int getNumActiveContactPoints() override;
+
+  /**
+   * @brief Return ContactPointData objects describing the contacts from the
+   * most recent physics substep.
+   *
+   * This implementation is roughly identical to PyBullet's getContactPoints.
+   * @return a vector with each entry corresponding to a single contact point.
+   */
+  std::vector<ContactPointData> getContactPoints() const override;
 
   /**
    * @brief Perform discrete collision detection for the scene.
    */
   void performDiscreteCollisionDetection() override {
     bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+    recentNumSubStepsTaken_ = -1;  // TODO: handle this more gracefully
   }
 
  protected:
@@ -252,6 +266,11 @@ class BulletPhysicsManager : public PhysicsManager {
   std::shared_ptr<std::map<const btCollisionObject*, int>>
       collisionObjToObjIds_;
 
+  //! necessary to acquire forces from impulses
+  double recentTimeStep_ = fixedTimeStep_;
+  //! for recent call to stepPhysics
+  int recentNumSubStepsTaken_ = -1;
+
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for
    * Bullet.
@@ -261,6 +280,20 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return true if valid, false otherwise.
    */
   bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
+
+  /**
+   * @brief Helper function for getting object and link unique ids from
+   * btCollisionObject cache
+   *
+   * @param colObj The query collision object for which a corresponding id is
+   * desired.
+   * @param objectId write found RigidObject or ArticulatedObject id or -1 if
+   * failed.
+   * @param linkId write found linkId or -1 if failed or not an ArticulatedLink.
+   */
+  void lookUpObjectIdAndLinkId(const btCollisionObject* colObj,
+                               int* objectId,
+                               int* linkId) const;
 
  public:
   ESP_SMART_POINTERS(BulletPhysicsManager)
