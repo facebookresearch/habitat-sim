@@ -15,11 +15,6 @@ output_path = os.path.join(dir_path, "VHACD_tutorial_output/")
 if not os.path.exists(output_path):
     os.mkdir(output_path)
 
-# Define Helper Functions
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
-
 
 def make_configuration():
     # simulator configuration
@@ -61,14 +56,14 @@ def_orientation = mn.Quaternion(((0, 0, 0), 1))
 
 def set_object_state_from_agent(
     sim,
-    ob_id,
+    obj,
     offset=def_offset,
     orientation=def_orientation,
 ):
     agent_transform = sim.agents[0].scene_node.transformation_matrix()
     ob_translation = agent_transform.transform_point(offset)
-    sim.set_translation(ob_translation, ob_id)
-    sim.set_rotation(orientation, ob_id)
+    obj.translation = ob_translation
+    obj.rotation = orientation
 
 
 # This tutorial walks through how to use VHACD and the time optimizations it can provide.
@@ -93,6 +88,9 @@ def runVHACDSimulation(obj_path):
 
         # get the physics object attributes manager
         obj_templates_mgr = sim.get_object_template_manager()
+        # get the rigid object manager, which provides direct
+        # access to objects
+        rigid_obj_mgr = sim.get_rigid_object_manager()
 
         # create a list that will store the object ids
         obj_ids = []
@@ -153,12 +151,12 @@ def runVHACDSimulation(obj_path):
         obj_ids += [new_obj_template_3.ID]
 
         # now display objects
-        cur_ids = []
+        cur_objs = []
         for i in range(len(obj_ids)):
-            cur_id = sim.add_object(obj_ids[i])
-            cur_ids.append(cur_id)
+            cur_obj = rigid_obj_mgr.add_object_by_template_id(obj_ids[i])
+            cur_objs.append(cur_obj)
             # get length
-            obj_node = sim.get_object_scene_node(cur_id)
+            obj_node = cur_obj.root_scene_node
             obj_bb = obj_node.cumulative_bb
             length = obj_bb.size().length() * 0.8
 
@@ -167,7 +165,7 @@ def runVHACDSimulation(obj_path):
 
             set_object_state_from_agent(
                 sim,
-                cur_id,
+                cur_obj,
                 offset=np.array(
                     [
                         -total_length / 2 + total_length * i / (len(obj_ids) - 1),
@@ -176,16 +174,16 @@ def runVHACDSimulation(obj_path):
                     ]
                 ),
             )
-            sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, cur_id)
-            vel_control = sim.get_object_velocity_control(cur_id)
+            cur_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            vel_control = cur_obj.velocity_control
             vel_control.controlling_ang_vel = True
             vel_control.angular_velocity = np.array([0, -1.56, 0])
 
         # simulate for 4 seconds
         simulate(sim, dt=4, get_frames=True, data=data)
 
-        for cur_id in cur_ids:
-            vel_control = sim.get_object_velocity_control(cur_id)
+        for cur_obj in cur_objs:
+            vel_control = cur_obj.velocity_control
             vel_control.controlling_ang_vel = True
             vel_control.angular_velocity = np.array([-1.56, 0, 0])
 

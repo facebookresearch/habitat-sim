@@ -70,9 +70,19 @@ TEST_F(MetadataMediatorTest, testDataset0) {
                "MetadataMediatorTest::testDataset0 : test LoadStages";
   const auto stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
-  // should be 4 - one for default NONE stage, one original, one based on
-  // original but changed, and one new
-  ASSERT_EQ(numStageHandles, 4);
+  // should be 7 - one for default NONE stage, one original JSON, one based on
+  // original but changed, and one new, and 3 built from .glb files
+  ASSERT_EQ(numStageHandles, 7);
+  // get list of handles matching glb-based attributes
+  auto glbBasedStageAttrHandles =
+      stageAttributesMgr->getObjectHandlesBySubstring(".glb", true);
+  ASSERT_EQ(glbBasedStageAttrHandles.size(), 3);
+  for (const auto& attrHandle : glbBasedStageAttrHandles) {
+    auto glbStageAttr = stageAttributesMgr->getObjectCopyByHandle(attrHandle);
+    // verify that all attributes' names are the same as the render handles
+    // (which were the original files)
+    ASSERT_EQ(glbStageAttr->getHandle(), glbStageAttr->getRenderAssetHandle());
+  }
 
   // get list of matching handles for base - should always only be 1
   auto stageAttrHandles = stageAttributesMgr->getObjectHandlesBySubstring(

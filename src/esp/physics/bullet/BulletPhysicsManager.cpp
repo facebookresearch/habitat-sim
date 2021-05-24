@@ -59,7 +59,7 @@ void BulletPhysicsManager::removeArticulatedObject(int id) {
 }
 
 bool BulletPhysicsManager::initPhysicsFinalize() {
-  activePhysSimLib_ = PhysicsSimulationLibrary::BULLET;
+  activePhysSimLib_ = PhysicsSimulationLibrary::Bullet;
 
   //! We can potentially use other collision checking algorithms, by
   //! uncommenting the line below

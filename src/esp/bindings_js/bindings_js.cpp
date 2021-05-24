@@ -116,12 +116,12 @@ void Sensor_setLocalTransform(Sensor& sensor,
 }
 
 /**
- * @brief Call ObjectAttributesManager loadAllConfigsFromPath to load object
+ * @brief Call ObjectAttributesManager loadAllJSONConfigsFromPath to load object
  * configs. This is required before using Simulator.addObjectByHandle.
  */
 void loadAllObjectConfigsFromPath(Simulator& sim, const std::string& path) {
   auto objectAttrManager = sim.getObjectAttributesManager();
-  objectAttrManager->loadAllConfigsFromPath(path);
+  objectAttrManager->loadAllJSONConfigsFromPath(path);
 }
 
 bool isBuildWithBulletPhysics() {

@@ -97,7 +97,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
   initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     // if we have a simulation implementation then test a joined vs. unjoined
     // object
     // ObjectAttributes ObjectAttributes;
@@ -179,7 +179,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
   initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     // if we have a simulation implementation then test bounding box vs mesh for
     // sphere object
 
@@ -255,7 +255,7 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
   initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
     ObjectAttributes->setRenderAssetHandle(objectFile);
     ObjectAttributes->setMargin(0.0);
@@ -326,7 +326,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   initStage(objectFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
-      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+      PhysicsManager::PhysicsSimulationLibrary::Bullet) {
     // test joined vs. unjoined
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
     ObjectAttributes->setRenderAssetHandle(objectFile);
@@ -431,7 +431,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 // Test Bullet collision shape scaling
 #ifdef ESP_BUILD_WITH_BULLET
     if (physicsManager_->getPhysicsSimulationLibrary() ==
-        PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+        PhysicsManager::PhysicsSimulationLibrary::Bullet) {
       esp::physics::BulletPhysicsManager* bPhysManager =
           static_cast<esp::physics::BulletPhysicsManager*>(
               physicsManager_.get());
@@ -478,7 +478,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
   // test results of getting/setting
   if (physicsManager_->getPhysicsSimulationLibrary() ==
-      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+      PhysicsManager::PhysicsSimulationLibrary::Bullet) {
     physicsManager_->setLinearVelocity(objectId, commandLinVel);
     physicsManager_->setAngularVelocity(objectId, commandAngVel);
 
@@ -486,7 +486,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
     ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), commandAngVel);
 
   } else if (physicsManager_->getPhysicsSimulationLibrary() ==
-             PhysicsManager::PhysicsSimulationLibrary::NONE) {
+             PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     physicsManager_->setLinearVelocity(objectId, commandLinVel);
     physicsManager_->setAngularVelocity(objectId, commandAngVel);
 
@@ -525,7 +525,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   ASSERT_LE(float(angleError), errorEps);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
-      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+      PhysicsManager::PhysicsSimulationLibrary::Bullet) {
     physicsManager_->setObjectMotionType(objectId,
                                          esp::physics::MotionType::DYNAMIC);
     physicsManager_->resetTransformation(objectId);
@@ -662,7 +662,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
 
   // We need dynamics to test this.
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     float boxHalfExtent = 0.2;
 
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
@@ -785,7 +785,7 @@ TEST_F(PhysicsManagerTest, TestURDF) {
 
   // need a library to try loading a URDF
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     int robotId = physicsManager_->addArticulatedObjectFromURDF(
         robotFile, &sceneManager_.getSceneGraph(sceneID_).getDrawables());
 
@@ -804,7 +804,7 @@ TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
 
   // We need dynamics to test this.
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     auto objectAttributesManager =
         metadataMediator_->getObjectAttributesManager();
 
@@ -846,7 +846,7 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
 
   // We need dynamics to test this.
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     auto objectAttributesManager =
         metadataMediator_->getObjectAttributesManager();
 

@@ -934,7 +934,7 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
-      .addOption("object-dir", "data/objects")
+      .addOption("object-dir", "data/objects/example_objects")
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
@@ -1007,7 +1007,7 @@ Viewer::Viewer(const Arguments& arguments)
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
   objectAttrManager_ = simulator_->getObjectAttributesManager();
-  objectAttrManager_->loadAllConfigsFromPath(args.value("object-dir"));
+  objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
   assetAttrManager_ = simulator_->getAssetAttributesManager();
   stageAttrManager_ = simulator_->getStageAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();
@@ -1300,7 +1300,7 @@ int Viewer::addPrimitiveObject() {
 
 int Viewer::throwSphere(Mn::Vector3 direction) {
   if (simulator_->getPhysicsSimulationLibrary() ==
-      esp::physics::PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     return esp::ID_UNDEFINED;
   }
 
@@ -2469,7 +2469,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::Equal: {
       if (simulator_->getPhysicsSimulationLibrary() ==
-          esp::physics::PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+          esp::physics::PhysicsManager::PhysicsSimulationLibrary::Bullet) {
         debugBullet_ = !debugBullet_;
         Mn::Debug{} << "debugBullet_ = " << debugBullet_;
       } else {

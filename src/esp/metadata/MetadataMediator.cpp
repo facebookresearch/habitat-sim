@@ -69,8 +69,7 @@ bool MetadataMediator::setSimulatorConfiguration(
             << simConfig_.activeSceneName
             << " and dataset : " << simConfig_.sceneDatasetConfigFile
             << " which "
-            << (activeSceneDataset_.compare(
-                    simConfig_.sceneDatasetConfigFile) == 0
+            << (activeSceneDataset_ == simConfig_.sceneDatasetConfigFile
                     ? "is currently active dataset."
                     : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
   return true;
@@ -144,7 +143,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   }
 
   // Next check if is current activeSceneDataset_, and if so skip with warning
-  if (sceneDatasetName.compare(activeSceneDataset_)) {
+  if (sceneDatasetName != activeSceneDataset_) {
     LOG(WARNING) << "MetadataMediator::removeSceneDataset : Cannot remove "
                     "active SceneDatasetAttributes "
                  << sceneDatasetName
@@ -166,7 +165,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
     return false;
   }
   // Should always have a default dataset.
-  if (sceneDatasetName.compare("default")) {
+  if (sceneDatasetName != "default") {
     // removing default dataset should still create another, empty, default
     // dataset.
     createSceneDataset("default");
@@ -182,8 +181,7 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
   // first check if physics manager attributes exists, if so then set as current
   if (physicsAttributesManager_->getObjectLibHasHandle(
           _physicsManagerAttributesPath)) {
-    if (currPhysicsManagerAttributes_.compare(_physicsManagerAttributesPath) !=
-        0) {
+    if (currPhysicsManagerAttributes_ != _physicsManagerAttributesPath) {
       LOG(INFO) << "MetadataMediator::setCurrPhysicsAttributesHandle : Old "
                    "physics manager attributes "
                 << currPhysicsManagerAttributes_ << " changed to "
@@ -212,7 +210,7 @@ bool MetadataMediator::setActiveSceneDatasetName(
     const std::string& sceneDatasetName) {
   // first check if dataset exists/is loaded, if so then set as default
   if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName)) {
-    if (activeSceneDataset_.compare(sceneDatasetName) != 0) {
+    if (activeSceneDataset_ != sceneDatasetName) {
       LOG(INFO)
           << "MetadataMediator::setActiveSceneDatasetName : Old active dataset "
           << activeSceneDataset_ << " changed to " << sceneDatasetName

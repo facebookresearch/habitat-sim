@@ -104,7 +104,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     if (auto sp = this->getObjectReference()) {
       sp->setActive(active);
     }
-  }  // activate()
+  }  // setActive()
 
   void setLightSetup(const std::string& lightSetupKey) {
     if (auto sp = this->getObjectReference()) {

@@ -148,7 +148,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   std::string tmpTypeVal = "";
   if (io::readMember<std::string>(jsonConfig, "type", tmpTypeVal)) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpTypeVal);
-    if (strToLookFor.compare("spot") == 0) {
+    if (strToLookFor == "spot") {
       // TODO remove this if block to support spot lights
       LOG(WARNING)
           << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "

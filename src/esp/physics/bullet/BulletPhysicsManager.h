@@ -359,6 +359,13 @@ class BulletPhysicsManager : public PhysicsManager {
   //! use in constraint clean-up and object sleep state management.
   std::map<int, std::vector<int>> objectConstraints_;
 
+  /**
+   * @brief The number of contact points that were active during the last step.
+   * An object resting on another object will involve several active contact
+   * points. Once both objects are asleep, the contact points are inactive. This
+   * count can be used as a metric for the complexity/cost of collision-handling
+   * in the current scene.
+   */
   int getNumActiveContactPoints() override {
     return BulletDebugManager::get().getNumActiveContactPoints(bWorld_.get());
   }

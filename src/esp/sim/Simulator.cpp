@@ -219,7 +219,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(
           curSceneInstanceAttributes->getSemanticSceneHandle());
 
-  if (semanticSceneDescFilename.compare("") != 0) {
+  if (semanticSceneDescFilename != "") {
     bool fileExists = false;
     bool success = false;
     const std::string msgPrefix =
@@ -304,7 +304,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
         << "Simulator::createSceneInstance : Using scene instance-specified "
            "Light key : -"
         << lightSetupKey << "-";
-    if (lightSetupKey.compare(NO_LIGHT_KEY) != 0) {
+    if (lightSetupKey != NO_LIGHT_KEY) {
       // lighting attributes corresponding to this key should exist unless it
       // is empty; if empty, the following does nothing.
       esp::gfx::LightSetup lightingSetup =
@@ -409,7 +409,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
       // empty scene has none to worry about
       if (!(stageType == assets::AssetType::SUNCG_SCENE ||
             stageType == assets::AssetType::INSTANCE_MESH ||
-            stageAttributesHandle.compare(assets::EMPTY_SCENE) == 0)) {
+            stageAttributesHandle == assets::EMPTY_SCENE)) {
         // TODO: programmatic generation of semantic meshes when no
         // annotations are provided.
         LOG(WARNING) << "\n---\nSimulator::createSceneInstance : The active "

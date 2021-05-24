@@ -8,10 +8,10 @@ namespace esp {
 namespace sim {
 bool operator==(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b) {
-  return a.activeSceneName.compare(b.activeSceneName) == 0 &&
+  return a.activeSceneName == b.activeSceneName &&
          a.defaultAgentId == b.defaultAgentId &&
          a.gpuDeviceId == b.gpuDeviceId && a.randomSeed == b.randomSeed &&
-         a.defaultCameraUuid.compare(b.defaultCameraUuid) == 0 &&
+         a.defaultCameraUuid == b.defaultCameraUuid &&
          a.compressTextures == b.compressTextures &&
          a.createRenderer == b.createRenderer &&
          a.allowSliding == b.allowSliding &&
@@ -22,10 +22,10 @@ bool operator==(const SimulatorConfiguration& a,
          a.forceSeparateSemanticSceneGraph ==
              b.forceSeparateSemanticSceneGraph &&
          a.requiresTextures == b.requiresTextures &&
-         a.sceneDatasetConfigFile.compare(b.sceneDatasetConfigFile) == 0 &&
-         a.physicsConfigFile.compare(b.physicsConfigFile) == 0 &&
+         a.sceneDatasetConfigFile == b.sceneDatasetConfigFile &&
+         a.physicsConfigFile == b.physicsConfigFile &&
          a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
-         a.sceneLightSetup.compare(b.sceneLightSetup) == 0;
+         a.sceneLightSetup == b.sceneLightSetup;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

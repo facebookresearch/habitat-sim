@@ -79,7 +79,6 @@ class BulletRigidObject : public BulletBase,
   std::unique_ptr<btCollisionShape> buildPrimitiveCollisionObject(
       int primTypeVal,
       double halfLength);
-  // const assets::AbstractPrimitiveAttributes& primAttributes);
 
   /**
    * @brief Construct the @ref bObjectShape_ for this object.
@@ -96,6 +95,8 @@ class BulletRigidObject : public BulletBase,
 
   /**
    * @brief Set the object to sleep or wake.
+   *
+   * @param active Whether to active or sleep the object
    */
   virtual void setActive(bool active) override {
     if (!active) {
@@ -297,7 +298,7 @@ class BulletRigidObject : public BulletBase,
    *
    * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
    * objects. Sets internal @ref btRigidObject state. Treated as initial
-   * velocity during simulation simulation step.
+   * velocity during simulation simulation step. Activates the object.
    * @param linVel Linear velocity to set.
    */
   void setLinearVelocity(const Magnum::Vector3& linVel) override {
@@ -312,7 +313,7 @@ class BulletRigidObject : public BulletBase,
    *
    * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
    * objects. Sets internal @ref btRigidObject state. Treated as initial
-   * velocity during simulation simulation step.
+   * velocity during simulation simulation step. Activates the object.
    * @param angVel Angular velocity vector corresponding to world unit axis
    * angles.
    */

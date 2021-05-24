@@ -212,37 +212,42 @@ def test_object_template_editing():
             )
             transform_box_template = habitat_sim.attributes.ObjectAttributes()
             transform_box_template.render_asset_handle = transform_box_path
-            obj_mgr = sim.get_object_template_manager()
-            old_library_size = obj_mgr.get_num_templates()
-            transform_box_template_id = obj_mgr.register_template(
+            # get the rigid object attributes manager, which manages
+            # templates used to create objects
+            obj_template_mgr = sim.get_object_template_manager()
+            # get the rigid object manager, which provides direct
+            # access to objects
+            rigid_obj_mgr = sim.get_rigid_object_manager()
+            old_library_size = obj_template_mgr.get_num_templates()
+            transform_box_template_id = obj_template_mgr.register_template(
                 transform_box_template, "transform_box_template"
             )
-            assert obj_mgr.get_num_templates() > old_library_size
+            assert obj_template_mgr.get_num_templates() > old_library_size
             assert transform_box_template_id != -1
 
             # test loading a test asset template from file
             sphere_path = osp.abspath("data/test_assets/objects/sphere")
-            old_library_size = obj_mgr.get_num_templates()
-            template_ids = obj_mgr.load_configs(sphere_path)
+            old_library_size = obj_template_mgr.get_num_templates()
+            template_ids = obj_template_mgr.load_configs(sphere_path)
             assert len(template_ids) > 0
-            assert obj_mgr.get_num_templates() > old_library_size
+            assert obj_template_mgr.get_num_templates() > old_library_size
 
             # test getting and editing template reference - changes underlying template
-            sphere_template = obj_mgr.get_template_by_id(template_ids[0])
+            sphere_template = obj_template_mgr.get_template_by_id(template_ids[0])
             assert sphere_template.render_asset_handle.endswith("sphere.glb")
             sphere_scale = np.array([2.0, 2.0, 2.0])
             sphere_template.scale = sphere_scale
-            obj_mgr.register_template(sphere_template, sphere_template.handle)
-            sphere_template2 = obj_mgr.get_template_by_id(template_ids[0])
+            obj_template_mgr.register_template(sphere_template, sphere_template.handle)
+            sphere_template2 = obj_template_mgr.get_template_by_id(template_ids[0])
             assert sphere_template2.scale == sphere_scale
 
             # test adding a new object
-            object_id = sim.add_object(template_ids[0])
-            assert object_id != -1
+            obj = rigid_obj_mgr.add_object_by_template_id(template_ids[0])
+            assert obj.object_id != -1
 
             # test getting initialization templates
             stage_init_template = sim.get_stage_initialization_template()
             assert stage_init_template.render_asset_handle == cfg_settings["scene"]
 
-            obj_init_template = sim.get_object_initialization_template(object_id)
+            obj_init_template = obj.creation_attributes
             assert obj_init_template.render_asset_handle.endswith("sphere.glb")

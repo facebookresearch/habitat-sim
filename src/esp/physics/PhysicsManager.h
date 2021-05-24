@@ -139,9 +139,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
      * @ref esp::physics::MotionType::KINEMATIC objects of base class @ref
      * RigidObject. If the derived @ref PhysicsManager class for a desired @ref
      * PhysicsSimulationLibrary fails to initialize, it will default to @ref
-     * PhysicsSimulationLibrary::NONE.
+     * PhysicsSimulationLibrary::NoPhysics.
      */
-    NONE,
+    NoPhysics,
 
     /**
      * An implemenation of dynamics through the Bullet Physics library.
@@ -152,7 +152,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
      * derived class
      * @ref BulletPhysicsManager
      */
-    BULLET
+    Bullet
   };
 
   /**
@@ -1343,7 +1343,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /**
    * @brief Get pointers to an object's visual SceneNodes.
    *
-   * @param physObjectID The object ID and key identifying the object in @ref
+   * @param objectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return pointers to the object's visual scene nodes.
    */
@@ -1419,6 +1419,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Set an object to collidable or not.
+   *
+   * @param physObjectID The object ID and key identifying the object
    */
   void setObjectIsCollidable(const int physObjectID, bool collidable) {
     assertIDValidity(physObjectID);
@@ -1427,6 +1429,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Get whether or not an object is collision active.
+   *
+   * @param physObjectID The object ID and key identifying the object
+   * @return Whether or not the object is set to be collision active
    */
   bool getObjectIsCollidable(const int physObjectID) {
     assertIDValidity(physObjectID);
@@ -1435,6 +1440,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Set the stage to collidable or not.
+   *
+   * @param collidable Whether or not the object should be collision active
    */
   void setStageIsCollidable(bool collidable) {
     staticStageObject_->setCollidable(collidable);
@@ -1442,6 +1449,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Get whether or not the stage is collision active.
+   *
+   * @return Whether or not the stage is set to be collision active
    */
   bool getStageIsCollidable() { return staticStageObject_->getCollidable(); }
 
@@ -1466,6 +1475,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /**
    * @brief Get a copy of the template used to initialize an object.
    *
+   * @param physObjectID Object ID to query
    * @return The initialization settings of the specified object instance.
    */
   metadata::attributes::ObjectAttributes::ptr getObjectInitAttributes(
@@ -1758,21 +1768,23 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief A pointer to the @ref
    * esp::metadata::attributes::PhysicsManagerAttributes describing
-   * this physics manager */
+   * this physics manager
+   */
   const metadata::attributes::PhysicsManagerAttributes::cptr
       physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this
-   * @ref PhysicsManager. Can be used to correctly cast the @ref
-   * PhysicsManager to its derived type if necessary.*/
+   * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
+   * to its derived type if necessary.
+   */
   PhysicsSimulationLibrary activePhysSimLib_ =
-      PhysicsSimulationLibrary::NONE;  // default
+      PhysicsSimulationLibrary::NoPhysics;  // default
 
   /**
-   * @brief The @ref scene::SceneNode which is the parent of all members of
-   * the scene graph which exist in the physical world. Used to keep track
-   * of all SceneNode's that have physical properties.
-   * */
+   * @brief The @ref scene::SceneNode which is the parent of all members of the
+   * scene graph which exist in the physical world. Used to keep track of all
+   * SceneNode's that have physical properties.
+   */
   scene::SceneNode* physicsNode_ = nullptr;
 
   /**
@@ -1782,7 +1794,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * MotionType::STATIC as it is loaded as static geometry with simulation
    * efficiency in mind. See
    * @ref addStage.
-   * */
+   */
   physics::RigidStage::ptr staticStageObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
