@@ -9,10 +9,7 @@ import re
 import subprocess
 import sys
 
-# We currently can't have any retention as our average binary
-# size is ~150 MB, so even 1 day of retention would require
-# storing 24 binaries, which is over the 3 GB limit
-MAX_NUMBER_OF_PACKAGES = 0
+MAX_NUMBER_OF_VERSIONS = 1
 
 parser = argparse.ArgumentParser(
     "A tool for removing conda nightly builds in chronical order to reduce conda repo storage usage"
@@ -41,7 +38,8 @@ result = subprocess.run(
 versions = re.findall(
     r"\d\.\d\.\d\.\d{4}\.\d\d\.\d\d", str(result.stdout) + str(result.stderr)
 )
-remove_versions = versions[:-MAX_NUMBER_OF_PACKAGES]
+# Using len(versions) - MAX_NUMBER_OF_VERSIONS to support MAX_NUMBER_OF_VERSIONS == 0
+remove_versions = versions[: len(versions) - MAX_NUMBER_OF_VERSIONS]
 print(
     f"anaconda remove {' '.join(list(map(lambda x: f'aihabitat-nightly/habitat-sim/{x}', remove_versions)))}"
 )
