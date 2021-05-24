@@ -236,7 +236,11 @@ class CMakeBuild(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
+            "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={}".format(
+                "OFF" if args.no_lto else "ON"
+            ),
         ]
+
         cmake_args += shlex.split(args.cmake_args)
 
         build_type = args.build_type
@@ -248,12 +252,6 @@ class CMakeBuild(build_ext):
         build_args = ["--config", build_type]
 
         cmake_args += ["-DCMAKE_BUILD_TYPE=" + build_type]
-
-        cmake_args += [
-            "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={}".format(
-                "OFF" if args.no_lto else "ON"
-            )
-        ]
 
         build_args += ["--"]
 
