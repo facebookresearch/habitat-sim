@@ -98,7 +98,8 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
     parser.add_argument(
         "--no-lto",
         action="store_true",
-        help="Disables Link Time Optimization for faster compile times at the expense of performance.",
+        help="""Disables Link Time Optimization for faster compile times at the expense of
+        performance. Note: This will not update an existing build folder. """,
     )
     parser.add_argument(
         "--cache-args",
