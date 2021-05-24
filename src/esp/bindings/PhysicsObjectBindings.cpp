@@ -91,6 +91,10 @@ void declareBasePhysicsObjectWrapper(py::module& m,
                     ("Get or set whether this " + objType +
                      " is actively being simulated, or is sleeping.")
                         .c_str())
+      .def("contact_test", &PhysObjWrapper::contactTest, "static_as_stage"_a,
+           ("Discrete collision check for contact between an object and the "
+            "collision world. Optionally treat STATICs as stage or free "
+            "objects."))
       .def(
           "translate", &PhysObjWrapper::translate, "vector"_a,
           ("Move this " + objType + " using passed translation vector").c_str())

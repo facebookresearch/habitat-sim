@@ -215,15 +215,6 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   bWorld_->debugDrawWorld();
 }
 
-bool BulletPhysicsManager::contactTest(const int physObjectID,
-                                       bool staticAsStage) {
-  assertIDValidity(physObjectID);
-  bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
-  return static_cast<BulletRigidObject*>(
-             existingObjects_.at(physObjectID).get())
-      ->contactTest(staticAsStage);
-}
-
 RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
                                              double maxDistance) {
   RaycastResults results;

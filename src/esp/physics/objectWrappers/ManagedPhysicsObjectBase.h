@@ -112,6 +112,23 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }  // setLightSetup
 
+  /**
+   * @brief Discrete collision check for contact between an object and the
+   * collision world.
+   * @param staticAsStage When false, override configured collision groups|masks
+   * for STATIC objects and articulated fixed base such that contact with other
+   * STATICs such as the stage are considered.
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest(bool staticAsStage = true) {
+    if (auto sp = this->getObjectReference()) {
+      return sp->contactTest(staticAsStage);
+    } else {
+      return false;
+    }
+  }
+
   scene::SceneNode* getSceneNode() {
     if (auto sp = this->getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getSceneNode());
