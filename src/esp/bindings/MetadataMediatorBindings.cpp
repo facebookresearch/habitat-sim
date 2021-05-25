@@ -25,6 +25,11 @@ void initMetadataMediatorBindings(py::module& m) {
           R"(The currently active dataset being used.  Will attempt to load
             configuration files specified if does not already exist.)")
 
+      /* --- Methods --- */
+      .def(
+          "remove_dataset", &MetadataMediator::removeSceneDataset,
+          R"(Remove the given dataset from MetadataMediator.  If specified dataset is currently active, this will fail.)",
+          "dataset_name"_a)
       /* --- Template Manager accessors --- */
       .def_property_readonly(
           "asset_template_manager",
