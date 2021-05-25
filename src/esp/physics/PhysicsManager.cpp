@@ -83,7 +83,7 @@ int PhysicsManager::addObjectInstance(
                << attributesHandle << ", whose handle contains "
                << objInstAttributes->getHandle()
                << " as specified in object instance attributes.";
-    return false;
+    return 0;
   }
   // set shader type to use for stage
   int objShaderType = objInstAttributes->getShaderType();

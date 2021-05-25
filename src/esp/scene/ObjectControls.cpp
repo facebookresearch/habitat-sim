@@ -89,7 +89,7 @@ ObjectControls& ObjectControls::action(SceneNode& object,
                                        const std::string& actName,
                                        float distance,
                                        bool applyFilter /* = true */) {
-  if (moveFuncMap_.count(actName)) {
+  if (moveFuncMap_.count(actName) != 0u) {
     if (applyFilter) {
       // TODO: use magnum math for the filter func as well?
       const auto startPosition =

@@ -175,7 +175,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   return true;
 }
 
-JsonGenericValue toJsonValue(const esp::gfx::replay::Keyframe& x,
+JsonGenericValue toJsonValue(const esp::gfx::replay::Keyframe& keyframe,
                              JsonAllocator& allocator);
 
 bool fromJsonValue(const JsonGenericValue& keyframeObj,

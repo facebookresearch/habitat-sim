@@ -103,8 +103,8 @@ class GreedyGeodesicFollowerImpl {
    * @param[in] startPos The starting position
    * @param[in] end The end location of the path
    */
-  std::vector<CODES> findPath(const Magnum::Quaternion& startRot,
-                              const Magnum::Vector3& startPos,
+  std::vector<CODES> findPath(const Magnum::Quaternion& currentRot,
+                              const Magnum::Vector3& currentPos,
                               const Magnum::Vector3& end);
 
   CODES nextActionAlong(const core::RigidState& start,

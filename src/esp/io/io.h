@@ -38,7 +38,7 @@ std::vector<std::string> globDirs(const std::string& pattern);
 std::vector<std::string> tokenize(const std::string& string,
                                   const std::string& delimiterCharList,
                                   int limit = 0,
-                                  bool mergeAdjacentDelimiters = false);
+                                  bool mergeAdjDelims = false);
 
 }  // namespace io
 }  // namespace esp

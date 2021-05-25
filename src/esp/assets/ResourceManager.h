@@ -184,7 +184,7 @@ class ResourceManager {
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
-      metadata::attributes::StageAttributes::ptr& sceneAttributes,
+      metadata::attributes::StageAttributes::ptr& stageAttributes,
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
       std::vector<int>& activeSceneIDs,

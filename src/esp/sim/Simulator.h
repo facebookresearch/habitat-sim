@@ -944,7 +944,7 @@ class Simulator {
       std::map<std::string, sensor::ObservationSpace>& spaces);
 
   nav::PathFinder::ptr getPathFinder();
-  void setPathFinder(nav::PathFinder::ptr pf);
+  void setPathFinder(nav::PathFinder::ptr pathfinder);
 
   /**
    * @brief Enable or disable frustum culling (enabled by default)

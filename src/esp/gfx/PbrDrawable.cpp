@@ -113,7 +113,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setEmissiveColor(materialData_->emissiveColor);
 
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
-      materialData_->baseColorTexture) {
+      (materialData_->baseColorTexture != nullptr)) {
     shader_->bindBaseColorTexture(*materialData_->baseColorTexture);
   }
 
@@ -131,12 +131,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   if ((flags_ & PbrShader::Flag::NormalTexture) &&
-      materialData_->normalTexture) {
+      (materialData_->normalTexture != nullptr)) {
     shader_->bindNormalTexture(*materialData_->normalTexture);
   }
 
   if ((flags_ & PbrShader::Flag::EmissiveTexture) &&
-      materialData_->emissiveTexture) {
+      (materialData_->emissiveTexture != nullptr)) {
     shader_->bindEmissiveTexture(*materialData_->emissiveTexture);
   }
 

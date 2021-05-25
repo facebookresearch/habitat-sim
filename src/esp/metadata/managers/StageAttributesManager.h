@@ -70,7 +70,7 @@ class StageAttributesManager
    * @return a reference to the desired stage template, or nullptr if fails.
    */
   attributes::StageAttributes::ptr createPrimBasedAttributesTemplate(
-      const std::string& primAttrTemplateHandle,
+      const std::string& primAssetHandle,
       bool registerTemplate = true) override;
 
   /**
@@ -79,7 +79,7 @@ class StageAttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void setValsFromJSONDoc(attributes::StageAttributes::ptr attribs,
+  void setValsFromJSONDoc(attributes::StageAttributes::ptr stageAttributes,
                           const io::JsonGenericValue& jsonConfig) override;
 
  protected:
@@ -109,7 +109,7 @@ class StageAttributesManager
   void setDefaultAssetNameBasedAttributes(
       attributes::StageAttributes::ptr attributes,
       bool setFrame,
-      const std::string& meshHandle,
+      const std::string& fileName,
       std::function<void(int)> assetTypeSetter) override;
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
@@ -122,7 +122,7 @@ class StageAttributesManager
    * default values set.
    */
   attributes::StageAttributes::ptr initNewObjectInternal(
-      const std::string& handleName,
+      const std::string& attributesHandle,
       bool builtFromConfig) override;
 
   /**

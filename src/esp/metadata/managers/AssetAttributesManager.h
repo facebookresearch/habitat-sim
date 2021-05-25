@@ -128,7 +128,7 @@ class AssetAttributesManager
    */
   attributes::AbstractPrimitiveAttributes::ptr buildObjectFromJSONDoc(
       const std::string& filename,
-      const io::JsonGenericValue& jsonConfig) override;
+      const io::JsonGenericValue& jsonDoc) override;
 
   /**
    * @brief Method to take an existing attributes and set its values from passed

@@ -37,7 +37,7 @@ void addMember(JsonGenericValue& value,
                JsonAllocator& allocator);
 
 template <typename T>
-bool readMember(const JsonGenericValue& value, const char* name, T& x);
+bool readMember(const JsonGenericValue& value, const char* tag, T& x);
 
 /**
  * @brief Fallback implementation for fromJsonValue to produce a runtime error

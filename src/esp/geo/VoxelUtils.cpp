@@ -30,7 +30,7 @@ void generateInteriorExteriorVoxelGrid(
   int increment = 0;
   Mn::Vector3i indices;
   for (int castAxis = 0; castAxis < 3; ++castAxis) {
-    int a1 = castAxis ? 0 : 1;
+    int a1 = castAxis != 0 ? 0 : 1;
     int a2 = castAxis == 2 ? 1 : 2;
     for (int j = 0; j < m_voxelGridDimensions[a1]; j++) {
       for (int k = 0; k < m_voxelGridDimensions[a2]; k++) {
@@ -136,7 +136,7 @@ void generateManhattanDistanceSDF(
         // curVal
         if (closest == INT_MAX)
           closest--;
-        curVal = ((curVal > 0) - (curVal < 0)) *
+        curVal = (static_cast<int>(curVal > 0) - static_cast<int>(curVal < 0)) *
                  std::min(abs(std::max(curVal, -INT_MAX)), closest + 1);
         sdfGrid[i][j][k] = curVal;
       }
@@ -176,7 +176,7 @@ void generateManhattanDistanceSDF(
         // curVal
         if (closest == INT_MAX)
           closest--;
-        curVal = ((curVal > 0) - (curVal < 0)) *
+        curVal = (static_cast<int>(curVal > 0) - static_cast<int>(curVal < 0)) *
                  std::min(abs(std::max(curVal, -INT_MAX)), closest + 1);
         sdfGrid[i][j][k] = curVal;
       }

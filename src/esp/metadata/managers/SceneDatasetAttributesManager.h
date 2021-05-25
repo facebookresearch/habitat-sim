@@ -45,7 +45,7 @@ class SceneDatasetAttributesManager
    * @return a reference to the newly-created template.
    */
   attributes::SceneDatasetAttributes::ptr createObject(
-      const std::string& attributesTemplateHandle,
+      const std::string& datasetHandle,
       bool registerTemplate = true) override;
 
   /**
@@ -152,7 +152,7 @@ class SceneDatasetAttributesManager
    * only default values set.
    */
   attributes::SceneDatasetAttributes::ptr initNewObjectInternal(
-      const std::string& handleName,
+      const std::string& datasetFilename,
       bool builtFromConfig) override;
 
   /**

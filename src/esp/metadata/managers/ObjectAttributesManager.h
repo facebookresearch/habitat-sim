@@ -61,7 +61,7 @@ class ObjectAttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void setValsFromJSONDoc(attributes::ObjectAttributes::ptr attribs,
+  void setValsFromJSONDoc(attributes::ObjectAttributes::ptr objAttributes,
                           const io::JsonGenericValue& jsonConfig) override;
 
   /**
@@ -196,7 +196,7 @@ class ObjectAttributesManager
    * default values set.
    */
   attributes::ObjectAttributes::ptr initNewObjectInternal(
-      const std::string& handleName,
+      const std::string& attributesHandle,
       bool builtFromConfig) override;
 
   /**
@@ -230,10 +230,9 @@ class ObjectAttributesManager
    * @return The index in the @ref objectLibrary_ of object
    * template.
    */
-  int registerObjectFinalize(
-      attributes::ObjectAttributes::ptr attributesTemplate,
-      const std::string& attributesTemplateHandle,
-      bool forceRegistration) override;
+  int registerObjectFinalize(attributes::ObjectAttributes::ptr objectTemplate,
+                             const std::string& objectTemplateHandle,
+                             bool forceRegistration) override;
 
   /**
    * @brief Any object-attributes-specific resetting that needs to happen on

@@ -494,7 +494,7 @@ class ManagedContainer : public ManagedContainerBase {
    */
   ManagedPtr removeObjectInternal(int objectID,
                                   const std::string& objectHandle,
-                                  const std::string& src);
+                                  const std::string& sourceStr);
 
   /**
    * @brief Used Internally. Get the ID of the managed object in @ref

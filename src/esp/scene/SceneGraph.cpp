@@ -35,7 +35,7 @@ const gfx::DrawableGroup* SceneGraph::getDrawableGroup(
 }
 
 bool SceneGraph::deleteDrawableGroup(const std::string& id) {
-  return drawableGroups_.erase(id);
+  return drawableGroups_.erase(id) != 0u;
 }
 
 }  // namespace scene
