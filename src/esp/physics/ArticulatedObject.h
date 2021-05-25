@@ -225,14 +225,12 @@ class ArticulatedLink : public RigidBase {
  * @brief An articulated rigid object (i.e. kinematic chain). Abstract class to
  * be derived by physics simulator specific implementations.
  */
-class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
+class ArticulatedObject : public esp::physics::PhysicsObjectBase {
  public:
   ArticulatedObject(scene::SceneNode* rootNode,
                     assets::ResourceManager& resMgr,
                     int objectId)
-      : Magnum::SceneGraph::AbstractFeature3D(*rootNode),
-        resMgr_(resMgr),
-        objectId_(objectId){};
+      : PhysicsObjectBase(rootNode, objectId, resMgr){};
 
   ~ArticulatedObject() override {
     // clear links and delete their SceneNodes
@@ -245,22 +243,6 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
       delete node;
     }
   };
-
-  /**
-   * @brief Get the scene node being attached to.
-   */
-  scene::SceneNode& node() { return object(); }
-  const scene::SceneNode& node() const { return object(); }
-
-  // Overloads to avoid confusion
-  scene::SceneNode& object() {
-    return static_cast<scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
-  const scene::SceneNode& object() const {
-    return static_cast<const scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
 
   /**
    * @brief Get a const reference to an ArticulatedLink SceneNode for
@@ -322,13 +304,6 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual Magnum::Matrix4 getRootState() { return {}; }
 
-  // update the SceneNode state to match the simulation state
-  virtual void updateNodes(CORRADE_UNUSED bool force = false) {
-    isDeferringUpdate_ = false;
-  };
-
-  virtual void deferUpdate() { isDeferringUpdate_ = true; }
-
   ArticulatedLink& getLink(int id) {
     // option to get the baseLink_ with id=-1
     if (id == -1) {
@@ -383,16 +358,8 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void reset() {}
 
-  virtual void setActive(CORRADE_UNUSED bool active){};
-
-  virtual bool isActive() const { return true; };
-
   //! Check if this object can be de-activated (i.e. sleep).
   virtual bool getCanSleep() { return false; }
-
-  virtual MotionType getMotionType() { return objectMotionType_; };
-
-  virtual void setMotionType(CORRADE_UNUSED MotionType mt){};
 
   //=========== Joint Motor API ===========
 
@@ -511,23 +478,11 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   //! map motorId to JointMotor
   std::map<int, JointMotor::uptr> jointMotors_;
 
-  MotionType objectMotionType_ = MotionType::KINEMATIC;
-
-  //! Reference to the ResourceManager for internal access to the object's asset
-  //! data.
-  assets::ResourceManager& resMgr_;
-
-  //! This ArticulatedObject's id in PhysicsManager::existingArticulatedObjects
-  int objectId_;
-
   //! if true, automatically clamp dofs to joint limits before physics
   //! simulation steps
   bool autoClampJointLimits_ = false;
 
-  //! if true visual nodes are not updated from physics simulation such that the
-  //! SceneGraph is not polluted during render
-  bool isDeferringUpdate_ = false;
-
+ public:
   ESP_SMART_POINTERS(ArticulatedObject)
 };
 
