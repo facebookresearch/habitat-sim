@@ -2282,9 +2282,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           break;
       }
       break;
-    case KeyEvent::Key::Eight:
-      addPrimitiveObject();
-      break;
     case KeyEvent::Key::Nine:
       if (simulator_->getPathFinder()->isLoaded()) {
         const esp::vec3f position =
@@ -2385,13 +2382,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::Two: {
       // switch camera between ortho and perspective
-      // switchCameraType();
-      std::string urdfFilePath = "data/test_assets/urdf/amass_visual.urdf";
-      // std::string urdfFilePath = "data/test_assets/urdf/prim_chain.urdf";
-      int objectId = addArticulatedObject(urdfFilePath, false);
-      for (auto& jmId : simulator_->getExistingJointMotors(objectId)) {
-        simulator_->removeJointMotor(objectId, jmId.first);
-      }
+      switchCameraType();
     } break;
     case KeyEvent::Key::Three: {
       std::string urdfFilePath =
@@ -2454,6 +2445,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           T.transformPoint(localFridgeBasePos);
       simulator_->setArticulatedObjectRootState(fridgeAOId,
                                                 initialFridgeTransform);
+    } break;
+    case KeyEvent::Key::Six: {
+      // load a humanoid made of primitives
+      std::string urdfFilePath = "data/test_assets/urdf/amass_male.urdf";
+      int objectId = addArticulatedObject(urdfFilePath, false);
+      // TODO: simulation unstable: need to setup spherical joint motors
     } break;
     case KeyEvent::Key::Minus: {
       if (simulator_->getExistingArticulatedObjectIDs().size()) {
