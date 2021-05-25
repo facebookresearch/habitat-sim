@@ -420,6 +420,16 @@ class MetadataMediator {
    */
   bool removeSceneDataset(const std::string& sceneDatasetName);
 
+  /**
+   * @brief Checks if passed handle exists as scene dataset.
+   * @param sceneDatasetName The name of the SceneDatasetAttributes to remove.
+   * @return whether successful or not.
+   */
+  inline bool sceneDatasetExists(const std::string& sceneDatasetName) const {
+    return sceneDatasetAttributesManager_->getObjectLibHasHandle(
+        sceneDatasetName);
+  }
+
  protected:
   /**
    * @brief Return the file path corresponding to the passed handle in the
@@ -481,6 +491,8 @@ class MetadataMediator {
     // do not get copy of dataset attributes
     auto datasetAttr =
         sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
+    // this should never happen - there will always be a dataset with the name
+    // activeSceneDataset_
     if (datasetAttr == nullptr) {
       LOG(ERROR) << "MetadataMediator::getActiveDSAttribs : Unable to set "
                     "active dataset due to Unknown dataset named "
@@ -496,7 +508,7 @@ class MetadataMediator {
    * @brief Current Simulator Configuration. A copy (not a ref) so that it can
    * exceed the lifespan of the source config from, for example, Simulator.
    */
-  sim::SimulatorConfiguration simConfig_;
+  sim::SimulatorConfiguration simConfig_{};
 
   /**
    * @brief String name of current, default dataset.
