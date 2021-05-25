@@ -11,7 +11,7 @@ MetadataMediator::MetadataMediator(const sim::SimulatorConfiguration& cfg) {
   buildAttributesManagers();
   // sets simConfig_, activeSceneDataset_ and currPhysicsManagerAttributes_
   // based on config
-  setSimulatorConfiguration(simConfig_);
+  setSimulatorConfiguration(cfg);
 }  // MetadataMediator ctor (SimulatorConfiguration)
 
 void MetadataMediator::buildAttributesManagers() {
