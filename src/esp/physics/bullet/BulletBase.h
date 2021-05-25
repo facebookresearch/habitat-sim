@@ -93,7 +93,7 @@ class BulletBase {
    * the rigid body in its local space. See @ref btCompoundShape::getAabb.
    * @return The Aabb.
    */
-  virtual const Magnum::Range3D getCollisionShapeAabb() const = 0;
+  virtual Magnum::Range3D getCollisionShapeAabb() const = 0;
 
   /**
    * @brief Recursively construct a @ref btConvexHullShape for collision by

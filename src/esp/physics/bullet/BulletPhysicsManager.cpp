@@ -200,7 +200,7 @@ double BulletPhysicsManager::getStageRestitutionCoefficient() const {
   return staticStageObject_->getRestitutionCoefficient();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
+Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
     const int physObjectID) const {
   assertIDValidity(physObjectID);
   return static_cast<BulletRigidObject*>(
@@ -208,7 +208,7 @@ const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
       ->getCollisionShapeAabb();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
+Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
   return static_cast<BulletRigidStage*>(staticStageObject_.get())
       ->getCollisionShapeAabb();
 }

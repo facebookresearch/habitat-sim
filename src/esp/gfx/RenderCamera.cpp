@@ -144,11 +144,8 @@ size_t RenderCamera::removeNonObjects(
       [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>& a) {
         auto& node = static_cast<scene::SceneNode&>(a.first.get().object());
-        if (node.getType() == scene::SceneNodeType::OBJECT) {
-          // don't remove OBJECT types
-          return false;
-        }
-        return true;
+        // don't remove OBJECT types
+        return (node.getType() != scene::SceneNodeType::OBJECT);
       });
   return (newEndIter - drawableTransforms.begin());
 }
