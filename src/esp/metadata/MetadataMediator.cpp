@@ -100,8 +100,7 @@ bool MetadataMediator::createPhysicsManagerAttributes(
 bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
                                           bool overwrite) {
   // see if exists
-  bool exists =
-      sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName);
+  bool exists = sceneDatasetExists(sceneDatasetName);
   if (exists) {
     // check if not overwrite and exists already
     if (!overwrite) {
@@ -134,8 +133,7 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
 
 bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   // First check if SceneDatasetAttributes exists
-  if (!sceneDatasetAttributesManager_->getObjectLibHasHandle(
-          sceneDatasetName)) {
+  if (!sceneDatasetExists(sceneDatasetName)) {
     // DNE, do nothing
     LOG(WARNING)
         << "MetadataMediator::removeSceneDataset : SceneDatasetAttributes "
@@ -211,7 +209,7 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
 bool MetadataMediator::setActiveSceneDatasetName(
     const std::string& sceneDatasetName) {
   // first check if dataset exists/is loaded, if so then set as default
-  if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName)) {
+  if (sceneDatasetExists(sceneDatasetName)) {
     if (activeSceneDataset_ != sceneDatasetName) {
       LOG(INFO) << "MetadataMediator::setActiveSceneDatasetName : Previous "
                    "active dataset "

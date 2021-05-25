@@ -420,6 +420,16 @@ class MetadataMediator {
    */
   bool removeSceneDataset(const std::string& sceneDatasetName);
 
+  /**
+   * @brief Checks if passed handle exists as scene dataset.
+   * @param sceneDatasetName The name of the SceneDatasetAttributes to remove.
+   * @return whether successful or not.
+   */
+  inline bool sceneDatasetExists(const std::string& sceneDatasetName) const {
+    return sceneDatasetAttributesManager_->getObjectLibHasHandle(
+        sceneDatasetName);
+  }
+
  protected:
   /**
    * @brief Return the file path corresponding to the passed handle in the
