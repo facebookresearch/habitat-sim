@@ -1,11 +1,21 @@
 <?xml version="1.0" ?>
 <robot name="prim_chain">
+  <material name="red">
+    <color rgba="0.7 0.0 0.0 1.0"/>
+  </material>
+  <material name="green">
+    <color rgba="0.0 0.7 0.0 1.0"/>
+  </material>
+  <material name="blue">
+    <color rgba="0.0 0.0 0.7 1.0"/>
+  </material>
   <link name="base_box">
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <box size="0.05 0.05 0.05"/>
       </geometry>
+      <material name="red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -25,6 +35,7 @@
       <geometry>
         <sphere radius="0.05"/>
       </geometry>
+      <material name="green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0 0"/>
@@ -47,6 +58,7 @@
       <geometry>
         <cylinder radius="0.05" length="0.1"/>
       </geometry>
+      <material name="blue"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.1 0 0"/>
