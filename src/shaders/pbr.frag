@@ -8,7 +8,7 @@
 precision highp float;
 
 // -------------- input ---------------------
-// position, normal, tangent in camera space
+// position, normal, tangent, biTangent in world space, NOT camera space
 in highp vec3 position;
 in highp vec3 normal;
 #if defined(TEXTURED)
@@ -32,7 +32,8 @@ layout(location = OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID) out highp uint
 uniform vec3 LightColors[LIGHT_COUNT];
 uniform float LightRanges[LIGHT_COUNT];
 
-// if .w == 0, it means it is a dirctional light, .xyz is the direction;
+// lights in world space!
+// if .w == 0, it means it is a directional light, .xyz is the direction;
 // if .w == 1, it means it is a point light, .xyz is the light position;
 // it is NOT put in the Light Structure, simply because we may modify the code
 // so it is computed in the vertex shader.
@@ -80,6 +81,9 @@ uniform mediump float NormalTextureScale
     ;
 #endif
 
+// camera position in world space
+uniform highp vec3 CameraWorldPos;
+
 // -------------- shader ------------------
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
 vec3 getNormalFromNormalMap() {
@@ -99,6 +103,7 @@ vec3 getNormalFromNormalMap() {
 #error Normal mapping requires precomputed tangents.
 #endif
 
+  // TBN transforms tangentNormal from tangent space to world space
   return normalize(TBN * tangentNormal);
 }
 #endif
@@ -243,16 +248,16 @@ void main() {
 
 // normal map will only work if both normal texture and the tangents exist.
 // if only normal texture is set, normal mapping will be safely ignored.
+// n is the normal in *world* space, NOT camera space
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
-  // normal is now in the camera space
   vec3 n = getNormalFromNormalMap();
 #else
   vec3 n = normal;
 #endif
 
   // view direction: a vector from current surface position to camera
-  // in *camera space*, camera is at the origin
-  vec3 view = normalize(-position);
+  // in *world space*
+  vec3 view = normalize(CameraWorldPos - position);
 
   // compute F0, specular reflectance at normal incidence
   // for nonmetal, using constant 0.04

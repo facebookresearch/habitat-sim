@@ -180,36 +180,56 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }
 
   // cache the uniform locations
-  modelviewMatrixUniform_ = uniformLocation("ModelViewMatrix");
+  viewMatrixUniform_ = uniformLocation("ViewMatrix");
+  CORRADE_INTERNAL_ASSERT(viewMatrixUniform_ >= 0);
+  modelMatrixUniform_ = uniformLocation("ModelMatrix");
+  CORRADE_INTERNAL_ASSERT(modelMatrixUniform_ >= 0);
   normalMatrixUniform_ = uniformLocation("NormalMatrix");
+  CORRADE_INTERNAL_ASSERT(normalMatrixUniform_ >= 0);
   projMatrixUniform_ = uniformLocation("ProjectionMatrix");
+  CORRADE_INTERNAL_ASSERT(projMatrixUniform_ >= 0);
+
   if (flags_ & Flag::ObjectId) {
     objectIdUniform_ = uniformLocation("ObjectId");
+    CORRADE_INTERNAL_ASSERT(objectIdUniform_ >= 0);
   }
   if (flags_ & Flag::TextureTransformation) {
     textureMatrixUniform_ = uniformLocation("TextureMatrix");
+    CORRADE_INTERNAL_ASSERT(textureMatrixUniform_ >= 0);
   }
 
   // materials
   baseColorUniform_ = uniformLocation("Material.baseColor");
+  CORRADE_INTERNAL_ASSERT(baseColorUniform_ >= 0);
   roughnessUniform_ = uniformLocation("Material.roughness");
+  CORRADE_INTERNAL_ASSERT(roughnessUniform_ >= 0);
   metallicUniform_ = uniformLocation("Material.metallic");
+  CORRADE_INTERNAL_ASSERT(metallicUniform_ >= 0);
   emissiveColorUniform_ = uniformLocation("Material.emissiveColor");
+  CORRADE_INTERNAL_ASSERT(emissiveColorUniform_ >= 0);
 
   // lights
   if (lightCount_) {
     lightRangesUniform_ = uniformLocation("LightRanges");
+    CORRADE_INTERNAL_ASSERT(lightRangesUniform_ >= 0);
     lightColorsUniform_ = uniformLocation("LightColors");
+    CORRADE_INTERNAL_ASSERT(lightColorsUniform_ >= 0);
     lightDirectionsUniform_ = uniformLocation("LightDirections");
+    CORRADE_INTERNAL_ASSERT(lightDirectionsUniform_ >= 0);
   }
 
   if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::NormalTextureScale) &&
       lightCount_) {
     normalTextureScaleUniform_ = uniformLocation("NormalTextureScale");
+    CORRADE_INTERNAL_ASSERT(normalTextureScaleUniform_ >= 0);
   }
 
+  cameraWorldPosUniform_ = uniformLocation("CameraWorldPos");
+  CORRADE_INTERNAL_ASSERT(cameraWorldPosUniform_ >= 0);
+
   // initialize the shader with some "reasonable defaults"
-  setTransformationMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
+  setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
+  setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   if (lightCount_) {
     setBaseColor(Magnum::Color4{0.7f});
@@ -291,8 +311,13 @@ PbrShader& PbrShader::setNormalMatrix(const Mn::Matrix3x3& matrix) {
   return *this;
 }
 
-PbrShader& PbrShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
-  setUniform(modelviewMatrixUniform_, matrix);
+PbrShader& PbrShader::setViewMatrix(const Mn::Matrix4& matrix) {
+  setUniform(viewMatrixUniform_, matrix);
+  return *this;
+}
+
+PbrShader& PbrShader::setModelMatrix(const Mn::Matrix4& matrix) {
+  setUniform(modelMatrixUniform_, matrix);
   return *this;
 }
 
@@ -327,6 +352,11 @@ PbrShader& PbrShader::setMetallic(float metallic) {
     setUniform(metallicUniform_, metallic);
   }
   return *this;
+}
+
+PbrShader& PbrShader::setCameraWorldPosition(
+    const Magnum::Vector3& cameraWorldPos) {
+  setUniform(cameraWorldPosUniform_, cameraWorldPos);
 }
 
 PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
