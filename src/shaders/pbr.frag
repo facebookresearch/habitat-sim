@@ -104,7 +104,9 @@ vec3 getNormalFromNormalMap() {
 #endif
 
 const float PI = 3.14159265359;
+const float INV_PI = 1.0 / PI;
 const float Epsilon = 0.0001;
+const float DielectricSpecular = 0.04;
 
 // Specular D, normal distribution function (NDF),
 // also known as ggxDistribution
@@ -166,7 +168,9 @@ vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 halfVector) {
   return F0 + (1.0 - F0) * pow(1.0 - v_dot_h, 5.0);
 }
 
-// baseColor: diffuse color
+// F0: specular reflectance at normal incidence
+//     for nonmetal, using constant 0.04
+// c_diff: diffuse color
 // metallic: metalness of the surface
 // roughness: roughness of the surface
 // normal: normal direction
@@ -174,7 +178,8 @@ vec3 fresnelSchlick(vec3 F0, vec3 view, vec3 halfVector) {
 // view: camera direction, aka light outgoing direction
 // lightRadiance: the radiance of the light,
 //                which equals to intensity * attenuation
-vec3 microfacetModel(vec3 baseColor,
+vec3 microfacetModel(vec3 F0,
+                     vec3 c_diff,
                      float metallic,
                      float roughness,
                      vec3 normal,
@@ -182,18 +187,12 @@ vec3 microfacetModel(vec3 baseColor,
                      vec3 view,
                      vec3 lightRadiance) {
   vec3 halfVector = normalize(light + view);
-  // compute F0, specular reflectance at normal incidence
-  // for nonmetal, using constant 0.04
-  vec3 F0 = mix(vec3(0.04), baseColor, metallic);
   vec3 Fresnel = fresnelSchlick(F0, view, halfVector);
 
   // Diffuse BRDF
   // NOTE: energy conservation requires
   // diffuse + specular <= 1.0, where specular = Fresnel
-  // Also: result does not need to be scaled by 1/PI
-  // See details:
-  // https://seblagarde.wordpress.com/2012/01/08/pi-or-not-to-pi-in-game-lighting-equation/
-  vec3 diffuse = mix(vec3(1.0) - Fresnel, vec3(0.0), metallic) * baseColor;
+  vec3 diffuse = (vec3(1.0) - Fresnel) * c_diff * INV_PI;
 
   // Specular BRDF
 #if defined(DOUBLE_SIDED)
@@ -210,6 +209,14 @@ vec3 microfacetModel(vec3 baseColor,
 
   return (diffuse + specular) * lightRadiance * n_dot_l;
 }
+
+#if defined(IMAGE_BASED_LIGHTING)
+// c_diff: diffuse color
+vec3 computeIBL(vec c_diff) {
+  // XXX
+  // diffuse part = c_diff * irradiance
+}
+#endif
 
 void main() {
   vec3 emissiveColor = Material.emissiveColor;
@@ -243,9 +250,18 @@ void main() {
   vec3 n = normal;
 #endif
 
-  // view dirction: a vector from current position to camera
-  // in camera space, camera is at the origin
+  // view direction: a vector from current surface position to camera
+  // in *camera space*, camera is at the origin
   vec3 view = normalize(-position);
+
+  // compute F0, specular reflectance at normal incidence
+  // for nonmetal, using constant 0.04
+  vec3 F0 = mix(vec3(DielectricSpecular), baseColor.rgb, metallic);
+
+  // diffuse color (c_diff in gltf 2.0 spec:
+  // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#metal-brdf-and-dielectric-brdf)
+  // c_diff = lerp(baseColor.rgb * (1 - dielectricSpecular), black, metallic)
+  vec3 c_diff = baseColor.rgb * (1.0 - DielectricSpecular) * (1.0 - metallic);
 
   vec3 finalColor = vec3(0.0);
   // compute contribution of each light using the microfacet model
@@ -272,7 +288,7 @@ void main() {
     vec3 light = normalize(LightDirections[iLight].xyz -
                            position * LightDirections[iLight].w);
 
-    finalColor += microfacetModel(baseColor.rgb, metallic, roughness, n, light,
+    finalColor += microfacetModel(F0, c_diff, metallic, roughness, n, light,
                                   view, lightRadiance);
   }  // for lights
 

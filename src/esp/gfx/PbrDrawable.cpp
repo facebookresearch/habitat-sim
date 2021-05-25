@@ -19,12 +19,14 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          ShaderManager& shaderManager,
                          const Mn::ResourceKey& lightSetupKey,
                          const Mn::ResourceKey& materialDataKey,
-                         DrawableGroup* group)
+                         DrawableGroup* group,
+                         PbrImageBasedLighting* pbrIbl)
     : Drawable{node, mesh, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)} {
+          shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)},
+      pbrIbl_(pbrIbl) {
   if (materialData_->metallicTexture && materialData_->roughnessTexture) {
     CORRADE_ASSERT(
         materialData_->metallicTexture == materialData_->roughnessTexture,
@@ -66,6 +68,10 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   }
   if (materialData_->doubleSided) {
     flags_ |= PbrShader::Flag::DoubleSided;
+  }
+
+  if (pbrIbl_) {
+    flags_ |= PbrShader::Flag::ImageBasedLighting;
   }
 
   // Defer the shader initialization because at this point, the lightSetup may
@@ -143,6 +149,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   if ((flags_ & PbrShader::Flag::TextureTransformation) &&
       (materialData_->textureMatrix != Mn::Matrix3{})) {
     shader_->setTextureMatrix(materialData_->textureMatrix);
+  }
+
+  // setup image based lighting for the shader
+  if (flags_ & PbrShader::Flag::ImageBasedLighting) {
+    CORRADE_INTERNAL_ASSERT(pbrIbl_);
+    // TODO: XXX
   }
 
   shader_->draw(mesh_);

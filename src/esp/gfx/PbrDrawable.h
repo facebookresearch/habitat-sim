@@ -6,6 +6,7 @@
 #define ESP_GFX_PBRDRAWABLE_H_
 
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
 
@@ -25,7 +26,8 @@ class PbrDrawable : public Drawable {
                        ShaderManager& shaderManager,
                        const Magnum::ResourceKey& lightSetupKey,
                        const Magnum::ResourceKey& materialDataKey,
-                       DrawableGroup* group = nullptr);
+                       DrawableGroup* group = nullptr,
+                       PbrImageBasedLighting* pbrIbl = nullptr);
 
   /**
    *  @brief Set the light info
@@ -86,6 +88,7 @@ class PbrDrawable : public Drawable {
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
+  PbrImageBasedLighting* pbrIbl_ = nullptr;
 };
 
 }  // namespace gfx

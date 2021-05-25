@@ -170,10 +170,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Enable object ID output.
      */
     ObjectId = 1 << 11,
+
     /**
      * Enable double-sided rendering.
      */
     DoubleSided = 1 << 12,
+
+    /**
+     * Enable image based lighting
+     */
+    ImageBasedLighting = 1 << 13,
 
     /*
      * TODO: alphaMask

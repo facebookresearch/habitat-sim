@@ -120,6 +120,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
+      .addSource(flags_ & Flag::ImageBasedLighting
+                     ? "#define IMAGE_BASED_LIGHTING\n"
+                     : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
       .addSource(rs.get("pbr.frag"));
