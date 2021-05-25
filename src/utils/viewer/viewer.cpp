@@ -2372,7 +2372,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::One: {
       std::string urdfFilePath =
-          "data/test_assets/URDF/kuka_iiwa/model_free_base.urdf";
+          "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf";
       int objectId = addArticulatedObject(urdfFilePath, true);
       // manually adjust joint damping (half impulse)
       for (auto motor : simulator_->getExistingJointMotors(objectId)) {
@@ -2385,7 +2385,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::Two: {
       // switch camera between ortho and perspective
-      switchCameraType();
+      // switchCameraType();
+      std::string urdfFilePath = "data/test_assets/urdf/prim_chain.urdf";
+      int objectId = addArticulatedObject(urdfFilePath, false);
     } break;
     case KeyEvent::Key::Three: {
       std::string urdfFilePath =
