@@ -28,7 +28,7 @@ void initMetadataMediatorBindings(py::module& m) {
       /* --- Methods --- */
       .def(
           "dataset_exists", &MetadataMediator::sceneDatasetExists,
-          R"(Checks whether the passed name references an existing scene dataset)",
+          R"(Returns whether the passed name references an existing scene dataset or not.)",
           "dataset_name"_a)
       .def(
           "remove_dataset", &MetadataMediator::removeSceneDataset,
