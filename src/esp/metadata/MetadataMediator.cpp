@@ -22,7 +22,9 @@ void MetadataMediator::buildAttributesManagers() {
       managers::SceneDatasetAttributesManager::create(
           physicsAttributesManager_);
 
-  // should always have default dataset
+  // should always have default dataset, but this is managed by MM instead of
+  // made undeletable in SceneDatasetManager, so that it can be easily "reset"
+  // by deleting and remaking.
   createSceneDataset("default");
   // should always have default physicsManagerAttributesPath
   createPhysicsManagerAttributes(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
@@ -211,10 +213,10 @@ bool MetadataMediator::setActiveSceneDatasetName(
   // first check if dataset exists/is loaded, if so then set as default
   if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName)) {
     if (activeSceneDataset_ != sceneDatasetName) {
-      LOG(INFO)
-          << "MetadataMediator::setActiveSceneDatasetName : Old active dataset "
-          << activeSceneDataset_ << " changed to " << sceneDatasetName
-          << " successfully.";
+      LOG(INFO) << "MetadataMediator::setActiveSceneDatasetName : Previous "
+                   "active dataset "
+                << activeSceneDataset_ << " changed to " << sceneDatasetName
+                << " successfully.";
       activeSceneDataset_ = sceneDatasetName;
     }
     return true;
@@ -231,8 +233,8 @@ bool MetadataMediator::setActiveSceneDatasetName(
   }
   LOG(INFO) << "MetadataMediator::setActiveSceneDatasetName : Attempt to "
                "create new dataset "
-            << sceneDatasetName << " "
-            << (success ? " succeeded." : " failed.");
+            << sceneDatasetName << " " << (success ? " succeeded." : " failed.")
+            << " Currently active dataset : " << activeSceneDataset_;
   return success;
 }  // MetadataMediator::setActiveSceneDatasetName
 
