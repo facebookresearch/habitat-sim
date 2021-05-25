@@ -125,6 +125,7 @@ urdf_files = {
     ),
     "fridge": os.path.join(data_path, "test_assets/urdf/fridge/fridge.urdf"),
     "primitive_chain": os.path.join(data_path, "test_assets/urdf/prim_chain.urdf"),
+    "amass_male": os.path.join(data_path, "test_assets/urdf/amass_male.urdf"),
 }
 
 
@@ -817,9 +818,9 @@ if __name__ == "__main__":
     if make_video and not os.path.exists(output_path):
         os.mkdir(output_path)
 
+    main(make_video, show_video)
+    test_constraints(make_video, show_video)
+    test_ao_recompute_navmesh(make_video, show_video)
     test_prim_chain(make_video, show_video)
-    # main(make_video, show_video)
-    # test_constraints(make_video, show_video)
-    # test_ao_recompute_navmesh(make_video, show_video)
     # test_urdf_memory()
     # demo_contact_profile()
