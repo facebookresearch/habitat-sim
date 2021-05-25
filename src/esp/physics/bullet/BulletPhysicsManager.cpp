@@ -273,9 +273,9 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
   // If the lookup fails, default to the stage. TODO: better error-handling.
   *objectId = -1;
 
-  if (collisionObjToObjIds_->count(colObj)) {
+  if (collisionObjToObjIds_->count(colObj) != 0u) {
     int rawObjectId = collisionObjToObjIds_->at(colObj);
-    if (existingObjects_.count(rawObjectId)) {
+    if (existingObjects_.count(rawObjectId) != 0u) {
       *objectId = rawObjectId;
       return;
     }
@@ -341,9 +341,10 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
 
     // logic copied from btSimulationIslandManager::buildIslands. We count
     // manifolds as active only if related to non-sleeping bodies.
-    bool isActive =
-        (((colObj0) && colObj0->getActivationState() != ISLAND_SLEEPING) ||
-         ((colObj1) && colObj1->getActivationState() != ISLAND_SLEEPING));
+    bool isActive = ((((colObj0) != nullptr) &&
+                      colObj0->getActivationState() != ISLAND_SLEEPING) ||
+                     (((colObj1) != nullptr) &&
+                      colObj1->getActivationState() != ISLAND_SLEEPING));
 
     for (int p = 0; p < manifold->getNumContacts(); p++) {
       ContactPointData pt;

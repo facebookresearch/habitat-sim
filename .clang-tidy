@@ -29,6 +29,7 @@ modernize-use-transparent-functors,
 performance-*,
 readability-const-return-type,
 readability-delete-null-pointer,
+readability-implicit-bool-conversion,
 readability-make-member-function-const,
 readability-misplaced-array-index,
 readability-non-const-parameter,
@@ -61,6 +62,8 @@ readability-uniqueptr-delete-release,
 
 CheckOptions:
 - key:             cppcoreguidelines-pro-type-member-init.IgnoreArrays
+  value:           true
+- key:             readability-implicit-bool-conversion.AllowPointerConditions
   value:           true
 
 # Let deprecation warnings through. From time to time, Magnum annotates APIs
