@@ -58,7 +58,7 @@ class PhysicsObjectBaseManager
    * @return a reference to the desired managed object.
    */
   ObjWrapperPtr createObject(
-      const std::string& objectWrapperHandle,
+      const std::string& objectHandle,
       CORRADE_UNUSED bool registerObject = false) override;
 
  protected:

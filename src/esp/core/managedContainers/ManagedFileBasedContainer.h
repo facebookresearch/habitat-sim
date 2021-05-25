@@ -168,7 +168,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * it was missing.
    */
   std::string convertFilenameToPassedExt(const std::string& filename,
-                                         const std::string& fileTypeExt);
+                                         const std::string& jsonTypeExt);
 
   /**
    * @brief Get directory component of managed object handle and call @ref

@@ -97,7 +97,7 @@ class ResourceManager {
    */
   struct VHACDParameters : VHACD::IVHACD::Parameters {
     VHACDParameters() {
-      m_oclAcceleration = false;  // OCL Acceleration does not work on VHACD
+      m_oclAcceleration = 0u;  // OCL Acceleration does not work on VHACD
     }
     ESP_SMART_POINTERS(VHACDParameters)
   };
@@ -184,7 +184,7 @@ class ResourceManager {
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
-      metadata::attributes::StageAttributes::ptr& stageAttributes,
+      metadata::attributes::StageAttributes::ptr& sceneAttributes,
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
       std::vector<int>& activeSceneIDs,

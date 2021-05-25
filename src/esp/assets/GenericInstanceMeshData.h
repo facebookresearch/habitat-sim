@@ -77,9 +77,7 @@ class GenericInstanceMeshData : public BaseMesh {
     PerObjectIdMeshBuilder(GenericInstanceMeshData& data, uint16_t objectId)
         : data_{data}, objectId_{objectId} {}
 
-    void addVertex(uint32_t vertexId,
-                   const vec3f& position,
-                   const vec3uc& color);
+    void addVertex(uint32_t vertexId, const vec3f& vertex, const vec3uc& color);
 
    private:
     GenericInstanceMeshData& data_;

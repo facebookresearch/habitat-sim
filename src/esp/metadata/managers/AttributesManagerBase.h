@@ -61,7 +61,7 @@ class AttributesManager
    * @return vector holding IDs of templates that have been added
    */
   std::vector<int> loadAllFileBasedTemplates(
-      const std::vector<std::string>& paths,
+      const std::vector<std::string>& tmpltFilenames,
       bool saveAsDefaults);
 
   /**
@@ -137,7 +137,7 @@ class AttributesManager
    */
   void buildAttrSrcPathsFromJSONAndLoad(const std::string& configDir,
                                         const std::string& extType,
-                                        const io::JsonGenericValue& filePaths);
+                                        const io::JsonGenericValue& jsonPaths);
 
   /**
    * @brief Check if currently configured primitive asset template library has

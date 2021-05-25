@@ -53,7 +53,7 @@ class OBB {
   bool contains(const vec3f& p, float epsilon = 1e-6f) const;
 
   //! Rotate this OBB by the given rotation and return reference to self
-  OBB& rotate(const quatf& q);
+  OBB& rotate(const quatf& rotation);
 
  protected:
   void recomputeTransforms();
