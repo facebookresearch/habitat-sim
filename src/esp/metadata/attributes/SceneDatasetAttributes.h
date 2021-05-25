@@ -30,36 +30,40 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  managers::AssetAttributesManager::ptr getAssetAttributesManager() const {
+  const managers::AssetAttributesManager::ptr& getAssetAttributesManager()
+      const {
     return assetAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  managers::ObjectAttributesManager::ptr getObjectAttributesManager() const {
+  const managers::ObjectAttributesManager::ptr& getObjectAttributesManager()
+      const {
     return objectAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to light attributes.
    */
-  managers::LightLayoutAttributesManager::ptr getLightLayoutAttributesManager()
-      const {
+  const managers::LightLayoutAttributesManager::ptr&
+  getLightLayoutAttributesManager() const {
     return lightLayoutAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  managers::SceneAttributesManager::ptr getSceneAttributesManager() const {
+  const managers::SceneAttributesManager::ptr& getSceneAttributesManager()
+      const {
     return sceneAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to stage attributes.
    */
-  managers::StageAttributesManager::ptr getStageAttributesManager() const {
+  const managers::StageAttributesManager::ptr& getStageAttributesManager()
+      const {
     return stageAttributesManager_;
   }
 
