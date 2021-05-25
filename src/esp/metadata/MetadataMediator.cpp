@@ -7,11 +7,10 @@
 namespace esp {
 namespace metadata {
 
-MetadataMediator::MetadataMediator(const sim::SimulatorConfiguration& cfg)
-    : activeSceneDataset_(cfg.sceneDatasetConfigFile),
-      currPhysicsManagerAttributes_(cfg.physicsConfigFile),
-      simConfig_(cfg) {
+MetadataMediator::MetadataMediator(const sim::SimulatorConfiguration& cfg) {
   buildAttributesManagers();
+  // sets simConfig_, activeSceneDataset_ and currPhysicsManagerAttributes_
+  // based on config
   setSimulatorConfiguration(simConfig_);
 }  // MetadataMediator ctor (SimulatorConfiguration)
 
@@ -138,7 +137,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   if (!sceneDatasetAttributesManager_->getObjectLibHasHandle(
           sceneDatasetName)) {
     // DNE, do nothing
-    LOG(INFO)
+    LOG(WARNING)
         << "MetadataMediator::removeSceneDataset : SceneDatasetAttributes "
         << sceneDatasetName << " does not exist. Aborting.";
     return false;
@@ -166,7 +165,8 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
         << sceneDatasetName << " unable to be deleted. Aborting.";
     return false;
   }
-  // Should always have a default dataset.
+  // Should always have a default dataset. Use this process to remove extraneous
+  // configs in default Scene Dataset
   if (sceneDatasetName == "default") {
     // removing default dataset should still create another, empty, default
     // dataset.
