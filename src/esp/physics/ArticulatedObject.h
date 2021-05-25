@@ -37,6 +37,8 @@ class URDFImporter;
 // Joint Motor Interface
 ////////////////////////////////////
 
+enum JointMotorType { SingleDof, Spherical };
+
 struct JointMotorSettings {
  public:
   JointMotorSettings() = default;
@@ -53,9 +55,12 @@ struct JointMotorSettings {
     maxImpulse = _maxImpulse;
   }
 
+  JointMotorType motorType = JointMotorType::SingleDof;
   double positionTarget = 0.0;
+  Mn::Quaternion sphericalPositionTarget = {};
   double positionGain = 0.0;
   double velocityTarget = 0.0;
+  Mn::Vector3 sphericalVelocityTarget = {};
   double velocityGain = 1.0;
   double maxImpulse = 1000.0;
 
@@ -64,7 +69,7 @@ struct JointMotorSettings {
 
 struct JointMotor {
   JointMotorSettings settings;
-  int dof;
+  int index;
   int motorId;
 
   ESP_SMART_POINTERS(JointMotor)
@@ -392,14 +397,17 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   //=========== Joint Motor API ===========
 
   /**
-   * @brief Create a new JointMotor for a dof from a JointMotorSettings.
+   * @brief Create a new JointMotor from a JointMotorSettings.
    *
    * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
-   *
+   * @param index DoF (for revolute or prismatic joints) or Link (spherical
+   * joints)
+   * @param settings The settings for the joint motor. Must have JointMotorType
+   * correctly configured.
    * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
    */
   virtual int createJointMotor(
-      CORRADE_UNUSED const int dof,
+      CORRADE_UNUSED const int index,
       CORRADE_UNUSED const JointMotorSettings& settings) {
     Magnum::Debug{} << "No base implementation of \"createJointMotor\". "
                        "Requires a physics simulator implementation.";
@@ -428,16 +436,18 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual void updateJointMotor(const int motorId,
                                 const JointMotorSettings& settings) {
     CHECK(jointMotors_.count(motorId) > 0);
+    CHECK(jointMotors_.at(motorId)->settings.motorType == settings.motorType);
     jointMotors_.at(motorId)->settings = settings;
   }
 
   /**
-   * @brief Query a map of motorIds -> dofs for all active JointMotors.
+   * @brief Query a map of motorIds -> dofs (or links for spherical motors) for
+   * all active JointMotors.
    */
   virtual std::map<int, int> getExistingJointMotors() {
     std::map<int, int> motorIdsToDofIds;
     for (auto& motor : jointMotors_) {
-      motorIdsToDofIds[motor.first] = motor.second->dof;
+      motorIdsToDofIds[motor.first] = motor.second->index;
     }
     return motorIdsToDofIds;
   }
@@ -453,7 +463,7 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual std::map<int, int> createMotorsForAllDofs(
       CORRADE_UNUSED JointMotorSettings settings = JointMotorSettings()) {
     Magnum::Debug{} << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
-                       "SHOULD NOT BE CALLED WITH BULLET ";
+                       "SHOULD NOT BE CALLED WITHOUT BULLET ";
     return std::map<int, int>();
   }
 

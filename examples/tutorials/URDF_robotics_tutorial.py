@@ -124,6 +124,7 @@ urdf_files = {
         data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
     ),
     "fridge": os.path.join(data_path, "test_assets/urdf/fridge/fridge.urdf"),
+    "amass_male": os.path.join(data_path, "test_assets/urdf/amass.urdf"),
 }
 
 
@@ -545,6 +546,23 @@ def test_ao_recompute_navmesh(make_video=True, show_video=True):
             )
 
 
+def test_spherical_joints(make_video=True, show_video=True):
+    cfg = make_configuration()
+    with habitat_sim.Simulator(cfg) as sim:
+        place_agent(sim)
+        observations = []
+
+        # load a URDF file
+        robot_file = urdf_files["amass_male"]
+        robot_id = sim.add_articulated_object_from_urdf(robot_file)
+
+        # place the robot root state relative to the agent
+        place_robot_from_agent(sim, robot_id)
+
+        # simulate
+        observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+
 # This is wrapped such that it can be added to a unit test
 def main(make_video=True, show_video=True):
 
@@ -788,8 +806,9 @@ if __name__ == "__main__":
     if make_video and not os.path.exists(output_path):
         os.mkdir(output_path)
 
-    main(make_video, show_video)
-    test_constraints(make_video, show_video)
-    test_ao_recompute_navmesh(make_video, show_video)
+    # main(make_video, show_video)
+    # test_constraints(make_video, show_video)
+    # test_ao_recompute_navmesh(make_video, show_video)
+    test_spherical_joints(make_video, show_video)
     # test_urdf_memory()
     # demo_contact_profile()
