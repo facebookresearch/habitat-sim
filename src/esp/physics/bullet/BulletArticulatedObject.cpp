@@ -217,16 +217,20 @@ bool BulletArticulatedObject::initializeFromURDF(
     // Build damping motors
     int dofCount = 0;
     for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
+      btMultibodyLink& link = btMultiBody_->getLink(linkIx);
+      JointMotorSettings settings;
+      settings.maxImpulse = link.m_jointDamping;
       if (supportsJointMotor(linkIx)) {
-        btMultibodyLink& link = btMultiBody_->getLink(linkIx);
         for (int dof = 0; dof < link.m_dofCount; ++dof) {
-          JointMotorSettings settings;
-          settings.maxImpulse = link.m_jointDamping;
           createJointMotor(linkIx, dof, dofCount, settings);
           dofCount++;
         }
+      } else if (link.m_jointType == btMultibodyLink::eSpherical) {
+        settings.motorType = JointMotorType::Spherical;
+        createJointMotor(linkIx, -1, -1, settings);
+        dofCount += link.m_dofCount;
       } else {
-        dofCount += btMultiBody_->getLink(linkIx).m_dofCount;
+        dofCount += link.m_dofCount;
       }
     }
   }
@@ -607,7 +611,7 @@ int BulletArticulatedObject::createJointMotor(
   } else if (settings.motorType == JointMotorType::Spherical) {
     // TODO: should we map to global dofs and make this a vector to be more
     // consistent?
-    motor->index = linkIx;
+    jointMotors_.at(nextJointMotorId_)->index = linkIx;
     auto btMotor = std::make_unique<btMultiBodySphericalJointMotor>(
         btMultiBody_.get(), linkIx, settings.maxImpulse);
     btMotor->setPositionTarget(btQuaternion(settings.sphericalPositionTarget),
@@ -617,6 +621,11 @@ int BulletArticulatedObject::createJointMotor(
     bWorld_->addMultiBodyConstraint(btMotor.get());
     articulatedSphericalJointMotors.emplace(
         nextJointMotorId_, std::move(btMotor));  // cache the Bullet structure
+  } else {
+    // shouldn't get here
+    Mn::Debug{} << "BulletArticulatedObject::createJointMotor - invalid "
+                   "settings or incompatible joint.";
+    return -1;
   }
   return nextJointMotorId_++;
 }
