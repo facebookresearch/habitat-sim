@@ -455,4 +455,29 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   ASSERT_EQ(semanticMap.size(), 3);
   // testLoadSemanticScene
 }  // testDataset1
+
+TEST_F(MetadataMediatorTest, testDatasetDelete) {
+  // load dataset 1 and make active
+  initDataset1();
+  const std::string nameDS1 = MM_->getActiveSceneDatasetName();
+  // verify the dataset has been added
+  ASSERT_EQ(MM_->sceneDatasetExists(nameDS1), true);
+  // verify the active dataset is the expected name
+  ASSERT_EQ(nameDS1, sceneDatasetConfigFile_1);
+  // load datsaet 0 and make active
+  initDataset0();
+  // get new active dataset
+  const std::string nameDS0 = MM_->getActiveSceneDatasetName();
+  // verify the dataset has been added
+  ASSERT_EQ(MM_->sceneDatasetExists(nameDS0), true);
+  // verify the active dataset is the expected name
+  ASSERT_EQ(nameDS0, sceneDatasetConfigFile_0);
+
+  // delete dataset 1 and verify delete
+  ASSERT_EQ(MM_->removeSceneDataset(nameDS1), true);
+  // verify the dataset does not exist anymore
+  ASSERT_EQ(MM_->sceneDatasetExists(nameDS1), false);
+
+}  // testDatasetDelete
+
 }  // namespace
