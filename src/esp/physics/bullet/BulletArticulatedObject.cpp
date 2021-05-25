@@ -295,12 +295,15 @@ bool BulletArticulatedObject::attachGeometry(
     switch (visual.m_geometry.m_type) {
       case io::URDF::GEOM_CAPSULE:
         visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
-        Corrade::Utility::Debug()
-            << "Trying to add visual capsule, not implemented";
-        // TODO:
-        visual.m_geometry.m_capsuleRadius;
-        visual.m_geometry.m_capsuleHeight;
-        visualSetupSuccess = false;
+        // should be registered and cached already
+        visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
+        // scale by radius as suggested by magnum docs
+        visualGeomComponent.scale(
+            Mn::Vector3(visual.m_geometry.m_capsuleRadius));
+        // Magnum capsule is Y up, URDF is Z up
+        visualGeomComponent.setTransformation(
+            visualGeomComponent.transformation() *
+            Mn::Matrix4::rotationX(Mn::Rad(M_PI_2)));
         break;
       case io::URDF::GEOM_CYLINDER:
         visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
@@ -321,7 +324,7 @@ bool BulletArticulatedObject::attachGeometry(
       case io::URDF::GEOM_BOX:
         visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
         visualMeshInfo.filepath = "cubeSolid";
-        visualGeomComponent.scale(visual.m_geometry.m_boxSize);
+        visualGeomComponent.scale(visual.m_geometry.m_boxSize * 0.5);
         break;
       case io::URDF::GEOM_SPHERE: {
         visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;

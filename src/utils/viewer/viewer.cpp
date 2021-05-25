@@ -2386,8 +2386,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Two: {
       // switch camera between ortho and perspective
       // switchCameraType();
-      std::string urdfFilePath = "data/test_assets/urdf/prim_chain.urdf";
+      std::string urdfFilePath = "data/test_assets/urdf/amass_visual.urdf";
+      // std::string urdfFilePath = "data/test_assets/urdf/prim_chain.urdf";
       int objectId = addArticulatedObject(urdfFilePath, false);
+      for (auto& jmId : simulator_->getExistingJointMotors(objectId)) {
+        simulator_->removeJointMotor(objectId, jmId.first);
+      }
     } break;
     case KeyEvent::Key::Three: {
       std::string urdfFilePath =
