@@ -358,7 +358,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   virtual void reset() {}
 
-  //! Check if this object can be de-activated (i.e. sleep).
+  /**
+   * @brief Check if this object can be de-activated (i.e. sleep).
+   */
   virtual bool getCanSleep() { return false; }
 
   //=========== Joint Motor API ===========
