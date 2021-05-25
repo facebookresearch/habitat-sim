@@ -357,6 +357,7 @@ PbrShader& PbrShader::setMetallic(float metallic) {
 PbrShader& PbrShader::setCameraWorldPosition(
     const Magnum::Vector3& cameraWorldPos) {
   setUniform(cameraWorldPosUniform_, cameraWorldPos);
+  return *this;
 }
 
 PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
