@@ -575,6 +575,51 @@ def test_ao_recompute_navmesh(make_video=True, show_video=True):
             )
 
 
+def test_spherical_joints(make_video=True, show_video=True):
+    cfg = make_configuration()
+    with habitat_sim.Simulator(cfg) as sim:
+        place_agent(sim)
+        observations = []
+
+        # load a URDF file
+        robot_file = urdf_files["amass_male"]
+        robot_id = sim.add_articulated_object_from_urdf(robot_file)
+
+        # place the robot root state relative to the agent
+        place_robot_from_agent(sim, robot_id, angle_correction=0)
+
+        # tilt the camera down
+        prev_state = sim.get_agent(0).scene_node.rotation
+        sim.get_agent(0).scene_node.rotation = (
+            mn.Quaternion.rotation(
+                mn.Rad(-0.4), prev_state.transform_vector(mn.Vector3(1.0, 0, 0))
+            )
+            * prev_state
+        )
+
+        # query any damping motors created by default
+        existing_joint_motors = sim.get_existing_joint_motors(robot_id)
+        print("default damping motors (motor_id -> dof): " + str(existing_joint_motors))
+
+        # update the of the damping motors to hold pose
+        for motor_id in existing_joint_motors:
+            motor_settings = sim.get_joint_motor_settings(robot_id, motor_id)
+            motor_settings.max_impulse = 100
+            sim.update_joint_motor(robot_id, motor_id, motor_settings)
+
+        # simulate
+        observations += simulate(sim, dt=5, get_frames=make_video)
+
+        if make_video:
+            vut.make_video(
+                observations,
+                "rgba_camera_1stperson",
+                "color",
+                output_path + "URDF_spherical_joint_motors",
+                open_vid=show_video,
+            )
+
+
 # This is wrapped such that it can be added to a unit test
 def main(make_video=True, show_video=True):
 
@@ -822,5 +867,6 @@ if __name__ == "__main__":
     test_constraints(make_video, show_video)
     test_ao_recompute_navmesh(make_video, show_video)
     test_prim_chain(make_video, show_video)
+    test_spherical_joints(make_video, show_video)
     # test_urdf_memory()
     # demo_contact_profile()
