@@ -695,7 +695,7 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
   return ID_UNDEFINED;
 }
 
-const metadata::attributes::ObjectAttributes::cptr
+metadata::attributes::ObjectAttributes::cptr
 Simulator::getObjectInitializationTemplate(const int objectId,
                                            const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
@@ -704,7 +704,7 @@ Simulator::getObjectInitializationTemplate(const int objectId,
   return nullptr;
 }
 
-const metadata::attributes::StageAttributes::cptr
+metadata::attributes::StageAttributes::cptr
 Simulator::getStageInitializationTemplate(const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getStageInitAttributes();

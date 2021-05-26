@@ -126,7 +126,8 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   if (io::readMember<std::string>(jsonConfig, "position_model",
                                   tmpPosMdleVal)) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpPosMdleVal);
-    if (LightInstanceAttributes::LightPositionNamesMap.count(strToLookFor)) {
+    if (LightInstanceAttributes::LightPositionNamesMap.count(strToLookFor) !=
+        0u) {
       posMdleVal = static_cast<int>(
           LightInstanceAttributes::LightPositionNamesMap.at(strToLookFor));
     } else {
@@ -141,10 +142,10 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
       posMdleVal = static_cast<int>(esp::gfx::LightPositionModel::Global);
     }
     lightAttribs->setPositionModel(posMdleVal);
-  }
+  }  // position model
 
   // type of light - should map to enum values in esp::gfx::LightType
-  int typeVal = -1;
+  int specifiedTypeVal = -1;
   std::string tmpTypeVal = "";
   if (io::readMember<std::string>(jsonConfig, "type", tmpTypeVal)) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpTypeVal);
@@ -154,9 +155,10 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
           << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "
              "Type spotlight specified in JSON not currently supported, so "
              "defaulting LightInfo type to esp::gfx::LightType::Point.";
-      typeVal = static_cast<int>(esp::gfx::LightType::Point);
-    } else if (LightInstanceAttributes::LightTypeNamesMap.count(strToLookFor)) {
-      typeVal = static_cast<int>(
+      specifiedTypeVal = static_cast<int>(esp::gfx::LightType::Point);
+    } else if (LightInstanceAttributes::LightTypeNamesMap.count(strToLookFor) !=
+               0u) {
+      specifiedTypeVal = static_cast<int>(
           LightInstanceAttributes::LightTypeNamesMap.at(strToLookFor));
     } else {
       LOG(WARNING)
@@ -166,9 +168,9 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
           << "` does not map to a valid "
              "LightInstanceAttributes::LightTypeNamesMap value, so "
              "defaulting LightInfo type to esp::gfx::LightType::Point.";
-      typeVal = static_cast<int>(esp::gfx::LightType::Point);
+      specifiedTypeVal = static_cast<int>(esp::gfx::LightType::Point);
     }
-    lightAttribs->setType(typeVal);
+    lightAttribs->setType(specifiedTypeVal);
   } else if (posIsSet) {
     // if no value found in attributes, attempt to infer desired type based on
     // whether position or direction were set from JSON.
@@ -176,6 +178,22 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   } else if (dirIsSet) {
     lightAttribs->setType(static_cast<int>(esp::gfx::LightType::Directional));
   }  // if nothing set by here, will default to constructor defaults
+
+  // if the user specifies a type, we will assume that type overrides any
+  // inferred light type based on vector position/direction provided.  If the
+  // vector provided does not match the type specified, we copy the vector into
+  // the appropriate location.
+  if ((specifiedTypeVal ==
+       static_cast<int>(esp::gfx::LightType::Directional)) &&
+      (posIsSet) && !(dirIsSet)) {
+    // position set, direction absent, but directional type explicitly specified
+    lightAttribs->setDirection(lightAttribs->getPosition());
+  } else if ((specifiedTypeVal ==
+              static_cast<int>(esp::gfx::LightType::Point)) &&
+             (dirIsSet) && !(posIsSet)) {
+    // direction set, position absent, but point type explicitly specified
+    lightAttribs->setPosition(lightAttribs->getDirection());
+  }
 
   // read spotlight params
   if (jsonConfig.HasMember("spot")) {
@@ -185,7 +203,8 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
           << "LightLayoutAttributesManager::setValsFromJSONDoc : \"spot\" "
              "cell in JSON config unable to be parsed to set "
              "spotlight parameters so skipping.  NOTE : Spotlights not "
-             "currently supported, so cone anble values are ignored and light "
+             "currently supported, so cone anble values are ignored and "
+             "light "
              "will be created as a point light.";
     } else {
       const auto& spotArea = jsonConfig["spot"];
@@ -270,12 +289,13 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             break;
           }
           default: {
-            LOG(INFO)
-                << "LightLayoutAttributesManager::"
-                   "createLightSetupFromAttributes : Enum gfx::LightType with "
-                   "val "
-                << type
-                << " is not supported, so defaulting to gfx::LightType::Point";
+            LOG(INFO) << "LightLayoutAttributesManager::"
+                         "createLightSetupFromAttributes : Enum "
+                         "gfx::LightType with "
+                         "val "
+                      << type
+                      << " is not supported, so defaulting to "
+                         "gfx::LightType::Point";
             lightVector = {lightAttr->getPosition(), 1.0f};
           }
         }  // switch on type

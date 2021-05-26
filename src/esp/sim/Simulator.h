@@ -104,7 +104,7 @@ class Simulator {
    * @brief Return manager for construction and access to asset attributes for
    * the current dataset.
    */
-  const metadata::managers::AssetAttributesManager::ptr
+  const metadata::managers::AssetAttributesManager::ptr&
   getAssetAttributesManager() const {
     return metadataMediator_->getAssetAttributesManager();
   }
@@ -112,7 +112,7 @@ class Simulator {
    * @brief Return manager for construction and access to light attributes and
    * layouts for the current dataset.
    */
-  const metadata::managers::LightLayoutAttributesManager::ptr
+  const metadata::managers::LightLayoutAttributesManager::ptr&
   getLightLayoutAttributesManager() const {
     return metadataMediator_->getLightLayoutAttributesManager();
   }
@@ -121,7 +121,7 @@ class Simulator {
    * @brief Return manager for construction and access to object attributes and
    * layouts for the current dataset.
    */
-  const metadata::managers::ObjectAttributesManager::ptr
+  const metadata::managers::ObjectAttributesManager::ptr&
   getObjectAttributesManager() const {
     return metadataMediator_->getObjectAttributesManager();
   }
@@ -129,7 +129,7 @@ class Simulator {
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const metadata::managers::PhysicsAttributesManager::ptr
+  const metadata::managers::PhysicsAttributesManager::ptr&
   getPhysicsAttributesManager() const {
     return metadataMediator_->getPhysicsAttributesManager();
   }
@@ -137,7 +137,7 @@ class Simulator {
    * @brief Return manager for construction and access to scene attributes for
    * the current dataset.
    */
-  const metadata::managers::StageAttributesManager::ptr
+  const metadata::managers::StageAttributesManager::ptr&
   getStageAttributesManager() const {
     return metadataMediator_->getStageAttributesManager();
   }
@@ -226,16 +226,17 @@ class Simulator {
    * Use this to query the object's properties when it was initialized.
    * Object pointed at by pointer is const, and can not be modified.
    */
-  const metadata::attributes::ObjectAttributes::cptr
-  getObjectInitializationTemplate(int objectId, int sceneID = 0) const;
+  metadata::attributes::ObjectAttributes::cptr getObjectInitializationTemplate(
+      int objectId,
+      int sceneID = 0) const;
 
   /**
    * @brief Get a copy of a stage's template when the stage was instanced.
    *
    * Use this to query the stage's properties when it was initialized.
    */
-  const metadata::attributes::StageAttributes::cptr
-  getStageInitializationTemplate(int sceneID = 0) const;
+  metadata::attributes::StageAttributes::cptr getStageInitializationTemplate(
+      int sceneID = 0) const;
 
   /**
    * @brief Remove an instanced object by ID. See @ref
@@ -1396,7 +1397,7 @@ class Simulator {
   /**
    * @brief Get this simulator's MetadataMediator
    */
-  const metadata::MetadataMediator::ptr getMetadataMediator() const {
+  metadata::MetadataMediator::ptr getMetadataMediator() const {
     return metadataMediator_;
   }
 

@@ -102,7 +102,7 @@ class ResourceManager {
    */
   struct VHACDParameters : VHACD::IVHACD::Parameters {
     VHACDParameters() {
-      m_oclAcceleration = false;  // OCL Acceleration does not work on VHACD
+      m_oclAcceleration = 0u;  // OCL Acceleration does not work on VHACD
     }
     ESP_SMART_POINTERS(VHACDParameters)
   };
@@ -253,15 +253,15 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const metadata::managers::AssetAttributesManager::ptr
-  getAssetAttributesManager() const {
+  metadata::managers::AssetAttributesManager::ptr getAssetAttributesManager()
+      const {
     return metadataMediator_->getAssetAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to light and lighting
    * layout attributes.
    */
-  const metadata::managers::LightLayoutAttributesManager::ptr
+  metadata::managers::LightLayoutAttributesManager::ptr
   getLightLayoutAttributesManager() const {
     return metadataMediator_->getLightLayoutAttributesManager();
   }
@@ -269,23 +269,23 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const metadata::managers::ObjectAttributesManager::ptr
-  getObjectAttributesManager() const {
+  metadata::managers::ObjectAttributesManager::ptr getObjectAttributesManager()
+      const {
     return metadataMediator_->getObjectAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const metadata::managers::PhysicsAttributesManager::ptr
+  metadata::managers::PhysicsAttributesManager::ptr
   getPhysicsAttributesManager() const {
     return metadataMediator_->getPhysicsAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const metadata::managers::StageAttributesManager::ptr
-  getStageAttributesManager() const {
+  metadata::managers::StageAttributesManager::ptr getStageAttributesManager()
+      const {
     return metadataMediator_->getStageAttributesManager();
   }
 

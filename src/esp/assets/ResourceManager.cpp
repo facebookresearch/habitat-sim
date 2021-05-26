@@ -201,7 +201,7 @@ bool ResourceManager::loadStage(
   // set equal to current Simulator::activeSemanticSceneID_ value
   int activeSemanticSceneID = activeSceneIDs[0];
   // if semantic scene load is requested and possible
-  if (assetInfoMap.count("semantic")) {
+  if (assetInfoMap.count("semantic") != 0u) {
     // check if file names exist
     AssetInfo semanticInfo = assetInfoMap.at("semantic");
     auto semanticStageFilename = semanticInfo.filepath;
@@ -291,7 +291,7 @@ bool ResourceManager::loadStage(
   // declare mesh group variable
   std::vector<CollisionMeshData> meshGroup;
   AssetInfo& infoToUse = renderInfo;
-  if (assetInfoMap.count("collision")) {
+  if (assetInfoMap.count("collision") != 0u) {
     AssetInfo colInfo = assetInfoMap.at("collision");
     if (resourceDict_.count(colInfo.filepath) == 0) {
       LOG(INFO) << "ResourceManager::loadStage : start load collision asset "
@@ -1319,7 +1319,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     for (unsigned int sceneDataID : sceneData->children3D()) {
       loadMeshHierarchy(*fileImporter_, meshMetaData.root, sceneDataID);
     }
-  } else if (fileImporter_->meshCount() &&
+  } else if ((fileImporter_->meshCount() != 0u) &&
              meshes_.at(meshMetaData.meshIndex.first)) {
     // no default scene --- standalone OBJ/PLY files, for example
     // take a wild guess and load the first mesh with the first material

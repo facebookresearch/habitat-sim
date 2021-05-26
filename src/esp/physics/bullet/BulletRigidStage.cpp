@@ -195,7 +195,7 @@ double BulletRigidStage::getRestitutionCoefficient() const {
   }
 }
 
-const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
+Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   Magnum::Range3D combinedAABB;
   // concatenate all component AABBs
   for (const auto& object : bStaticCollisionObjects_) {

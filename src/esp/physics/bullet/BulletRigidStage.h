@@ -76,7 +76,7 @@ class BulletRigidStage : public BulletBase, public RigidStage {
    * the rigid body in its local space. See @ref btCompoundShape::getAabb.
    * @return The Aabb.
    */
-  const Magnum::Range3D getCollisionShapeAabb() const override;
+  Magnum::Range3D getCollisionShapeAabb() const override;
 
   /** @brief Get the scalar friction coefficient of the stage object. Only
    * used for dervied dynamic implementations of @ref RigidStage.

@@ -308,7 +308,7 @@ double BulletPhysicsManager::getStageRestitutionCoefficient() const {
   return staticStageObject_->getRestitutionCoefficient();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
+Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
     const int physObjectID) const {
   assertIDValidity(physObjectID);
   return static_cast<BulletRigidObject*>(
@@ -316,7 +316,7 @@ const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
       ->getCollisionShapeAabb();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
+Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
   return static_cast<BulletRigidStage*>(staticStageObject_.get())
       ->getCollisionShapeAabb();
 }
@@ -717,9 +717,9 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
   // If the lookup fails, default to the stage. TODO: better error-handling.
   *objectId = -1;
 
-  if (collisionObjToObjIds_->count(colObj)) {
+  if (collisionObjToObjIds_->count(colObj) != 0u) {
     int rawObjectId = collisionObjToObjIds_->at(colObj);
-    if (existingObjects_.count(rawObjectId)) {
+    if (existingObjects_.count(rawObjectId) != 0u) {
       *objectId = rawObjectId;
       return;
     } else if (existingArticulatedObjects_.count(rawObjectId)) {
@@ -782,9 +782,10 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
 
     // logic copied from btSimulationIslandManager::buildIslands. We count
     // manifolds as active only if related to non-sleeping bodies.
-    bool isActive =
-        (((colObj0) && colObj0->getActivationState() != ISLAND_SLEEPING) ||
-         ((colObj1) && colObj1->getActivationState() != ISLAND_SLEEPING));
+    bool isActive = ((((colObj0) != nullptr) &&
+                      colObj0->getActivationState() != ISLAND_SLEEPING) ||
+                     (((colObj1) != nullptr) &&
+                      colObj1->getActivationState() != ISLAND_SLEEPING));
 
     for (int p = 0; p < manifold->getNumContacts(); p++) {
       ContactPointData pt;
