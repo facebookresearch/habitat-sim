@@ -31,8 +31,8 @@ static void setRotationScalingFromBulletTransform(const btTransform& trans,
 
 BulletArticulatedObject::~BulletArticulatedObject() {
   // Corrade::Utility::Debug() << "deconstructing ~BulletArticulatedObject";
-  if (objectMotionType_ != MotionType::KINEMATIC) {
-    // KINEMATIC objects have already been removed from the world.
+  if (objectMotionType_ == MotionType::DYNAMIC) {
+    // KINEMATIC and STATIC objects have already been removed from the world.
     bWorld_->removeMultiBody(btMultiBody_.get());
   }
   // remove link collision objects from world
@@ -58,11 +58,10 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   delete baseCollider;
 
   // remove motors from the world
-  std::map<int, std::unique_ptr<btMultiBodyJointMotor>>::iterator jmIter;
-  for (jmIter = articulatedJointMotors.begin();
-       jmIter != articulatedJointMotors.end(); jmIter++) {
-    bWorld_->removeMultiBodyConstraint(jmIter->second.get());
+  for (auto& motorId : getExistingJointMotors()) {
+    removeJointMotor(motorId.first);
   }
+
   std::map<int, JointLimitConstraintInfo>::iterator jlIter;
   for (jlIter = jointLimitConstraints.begin();
        jlIter != jointLimitConstraints.end(); jlIter++) {

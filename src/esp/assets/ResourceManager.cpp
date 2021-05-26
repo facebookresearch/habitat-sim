@@ -2032,11 +2032,8 @@ bool ResourceManager::importURDFAssets(io::URDF::Model& model) {
           capTemplate->setHalfLength(0.5 * visual.m_geometry.m_capsuleHeight /
                                      visual.m_geometry.m_capsuleRadius);
           assetMgr->registerObject(capTemplate);
+          // cache the new capsule asset handle for later instancing
           visual.m_geometry.m_meshFileName = capTemplate->getHandle();
-          Mn::Debug{} << "Capsule handle = "
-                      << visual.m_geometry.m_meshFileName;
-          Mn::Debug{} << "Capsule halflength = "
-                      << capTemplate->getHalfLength();
         } break;
         case io::URDF::GEOM_CYLINDER:
           visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;

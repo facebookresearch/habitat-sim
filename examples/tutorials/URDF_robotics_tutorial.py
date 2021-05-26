@@ -141,7 +141,7 @@ def test_urdf_memory():
     # process_memory_tracking.append(get_process_memory_usage())
 
     # load a URDF file
-    robot_key = "fetch"
+    robot_key = "amass_male"
     robot_file = urdf_files[robot_key]
     for _sample in range(1000):
 
