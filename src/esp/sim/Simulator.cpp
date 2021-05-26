@@ -508,6 +508,8 @@ void Simulator::reset() {
   const Magnum::Range3D& sceneBB =
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
   resourceManager_->setLightSetup(gfx::getDefaultLights());
+  resourceManager_->setLightSetup(gfx::getDefaultThreePointLights(),
+                                  DEFAULT_THREE_POINTS_LIGHTING_KEY);
 }  // Simulator::reset()
 
 void Simulator::seed(uint32_t newSeed) {

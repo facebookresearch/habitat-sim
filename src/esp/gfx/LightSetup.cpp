@@ -78,8 +78,65 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
 }
 
 LightSetup getDefaultLights() {
+  // XXX debug purpose
+  return LightSetup{
+      // position or direction
+      {{10.0f, 10.0f, 10.0f, 0.0},
+       // color with intensity
+       // {5.0, 0.0, 0.0},
+       {2.5, 2.5, 2.5},
+       // position model
+       // LightPositionModel::Camera},  // Key light
+       // LightPositionModel::Object},  // Key light
+       LightPositionModel::Global},  // Key light
+      {{-5.0f, -5.0f, 10.0f, 0.0},
+       //{0.0, 5.0, 0.0},
+       {1.6, 1.6, 1.6},
+       // LightPositionModel::Camera},  // Fill light
+       // LightPositionModel::Object},  // Fill light
+       LightPositionModel::Global},  // Fill light
+      {{0.0f, 10.0f, -10.0f, 0.0},
+       {0.2, 0.2, 0.2},
+       //{0.0, 0.0, 5.0},
+       // LightPositionModel::Camera},  // Rim light
+       // LightPositionModel::Object},  // Rim light
+       LightPositionModel::Global},  // Rim light
+  };
+  /*
+  return LightSetup{
+      // position or direction
+      {{10.0f, 10.0f, 10.0f, 0.0},
+       // color with intensity
+       {1.25, 1.25, 1.25},
+       // position model
+       LightPositionModel::Camera},  // Key light
+      {{-5.0f, -5.0f, 10.0f, 0.0},
+       {0.8, 0.8, 0.8},
+       LightPositionModel::Camera},  // Fill light
+      {{0.0f, 10.0f, -10.0f, 0.0},
+       {0.1, 0.1, 0.1},
+       LightPositionModel::Camera},  // Rim light
+  };
+  */
   return LightSetup{{{1.0, 1.0, 0.0, 0.0}, {0.75, 0.75, 0.75}},
                     {{-0.5, 0.0, 1.0, 0.0}, {0.4, 0.4, 0.4}}};
+}  // namespace gfx
+
+LightSetup getDefaultThreePointLights() {
+  return LightSetup{
+      // position or direction
+      {{10.0f, 10.0f, 10.0f, 0.0},
+       // color with intensity
+       {2.5, 2.5, 2.5},
+       // position model
+       LightPositionModel::Camera},  // Key light
+      {{-5.0f, -5.0f, 10.0f, 0.0},
+       {1.6, 1.6, 1.6},
+       LightPositionModel::Camera},  // Fill light
+      {{0.0f, 10.0f, -10.0f, 0.0},
+       {0.2, 0.2, 0.2},
+       LightPositionModel::Camera},  // Rim light
+  };
 }
 
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
@@ -94,6 +151,18 @@ Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
     // temp: hard-coded ambient light tuned for ReplicaCAD
     float ambientIntensity = 0.4;
     return Magnum::Color3(ambientIntensity, ambientIntensity, ambientIntensity);
+  }
+}
+
+void printOutLightSetup(const LightSetup& lightSetup) {
+  LOG(INFO) << "light number: " << lightSetup.size();
+  for (size_t iLight = 0; iLight < lightSetup.size(); ++iLight) {
+    const auto& c = lightSetup[iLight].color;
+    LOG(INFO) << "light " << iLight << ": ";
+    LOG(INFO) << "color = " << c.r() << ", " << c.g() << ", " << c.b();
+    const auto& v = lightSetup[iLight].vector;
+    LOG(INFO) << "light vector = " << v.r() << ", " << v.g() << ", " << v.b()
+              << ", " << v.a();
   }
 }
 

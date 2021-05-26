@@ -164,6 +164,13 @@ constexpr char DEFAULT_LIGHTING_KEY[] = "";
 
 /**
  *@brief The @ref esp::gfx::ShaderManager key for the default @ref
+ *esp::gfx::LightInfo
+ */
+constexpr char DEFAULT_THREE_POINTS_LIGHTING_KEY[] =
+    "three_point_lights_wrt_camera";
+
+/**
+ *@brief The @ref esp::gfx::ShaderManager key for the default @ref
  *esp::gfx::MaterialInfo
  */
 constexpr char DEFAULT_MATERIAL_KEY[] = "";

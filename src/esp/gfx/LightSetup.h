@@ -69,7 +69,7 @@ Magnum::Vector4 getLightPositionRelativeToCamera(
  * w == 1 for positions and w == 0 for directions
  *
  * @param transformationMatrix Describes object position relative to camera
- * @param cameraMatrix Describes world position relative to camera
+ * @param cameraMatrix Describes world position relative
  * @return Magnum::Vector4 Light position in world space
  */
 Magnum::Vector4 getLightPositionRelativeToWorld(
@@ -91,10 +91,20 @@ LightSetup getLightsAtBoxCorners(
 LightSetup getDefaultLights();
 
 /**
+ * @brief Get a @ref LightSetup with 3 point lights *relative to camera*
+ */
+LightSetup getDefaultThreePointLights();
+
+/**
  * @brief Get get a single, combined ambient light color for use with the Phong
  * lighting model.
  */
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup);
+
+/**
+ * @brief print out the light info
+ */
+void printOutLightSetup(const LightSetup& lightSetup);
 
 }  // namespace gfx
 }  // namespace esp

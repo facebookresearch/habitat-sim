@@ -117,9 +117,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setViewMatrix(camera.cameraMatrix())
       .setModelMatrix(modelMatrix)  // NOT modelview matrix!
       .setNormalMatrix(modelMatrix.normalMatrix())
-      .setCameraWorldPosition(static_cast<scene::SceneNode&>(camera.object())
-                                  .absoluteTransformation()
-                                  .translation())
+      .setCameraWorldPosition(
+          camera.object().absoluteTransformationMatrix().translation())
       .setBaseColor(materialData_->baseColor)
       .setRoughness(materialData_->roughness)
       .setMetallic(materialData_->metallic)
@@ -219,6 +218,7 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     Magnum::SceneGraph::Camera3D& camera) {
   std::vector<Mn::Vector4> lightPositions;
   lightPositions.reserve(lightSetup_->size());
+  // printOutLightSetup(*lightSetup_);
 
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
