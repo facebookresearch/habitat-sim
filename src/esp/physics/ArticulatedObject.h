@@ -302,8 +302,6 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return false;
   };
 
-  virtual Magnum::Matrix4 getRootState() { return {}; }
-
   ArticulatedLink& getLink(int id) {
     // option to get the baseLink_ with id=-1
     if (id == -1) {
@@ -322,8 +320,6 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     }
     return ids;
   }
-
-  virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state) {}
 
   virtual void setForces(CORRADE_UNUSED const std::vector<float>& forces) {}
 
@@ -464,6 +460,20 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   std::map<int, int> objectIdToLinkId_;
 
  protected:
+  /**
+   * @brief Used to synchronize simulator's notion of the object state
+   * after it was changed kinematically. Must be called automatically on
+   * kinematic updates.  For ArticulatedObjects, the transformation of the root
+   * node is used to transform the root physical constructs.
+   */
+  void syncPose() override { this->setRootState(node().transformation()); }
+
+  /**
+   * @brief Called internally.  Used to update physics constructs when kinematic
+   * transformations are performed.  See @ref esp::physics::PhysicsObjectBase
+   */
+
+  virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state) {}
   virtual bool attachGeometry(
       CORRADE_UNUSED ArticulatedLink* linkObject,
       CORRADE_UNUSED const std::shared_ptr<io::URDF::Link>& link,

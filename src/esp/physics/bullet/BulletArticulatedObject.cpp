@@ -238,10 +238,6 @@ bool BulletArticulatedObject::initializeFromURDF(
   return true;
 }
 
-Magnum::Matrix4 BulletArticulatedObject::getRootState() {
-  return Magnum::Matrix4{btMultiBody_->getBaseWorldTransform()};
-}
-
 void BulletArticulatedObject::updateNodes(bool force) {
   isDeferringUpdate_ = false;
   if (force || btMultiBody_->getBaseCollider()->isActive()) {

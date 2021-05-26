@@ -80,13 +80,8 @@ class BulletArticulatedObject : public ArticulatedObject {
                           scene::SceneNode* physicsNode,
                           bool fixedBase = false) override;
 
-  Magnum::Matrix4 getRootState() override;
-
   // update the SceneNode state to match the simulation state
   void updateNodes(bool force = false) override;
-
-  void setRootState(const Magnum::Matrix4& state) override;
-
   void setForces(const std::vector<float>& forces) override;
 
   std::vector<float> getForces() override;
@@ -168,7 +163,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    * correctly configured.
    * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
    */
-  int createJointMotor(const int index,
+  int createJointMotor(const int dof,
                        const JointMotorSettings& settings) override;
 
   //! internal version specific to Bullet setup to simplify the creation
@@ -200,9 +195,12 @@ class BulletArticulatedObject : public ArticulatedObject {
   void clampJointLimits() override;
 
  protected:
-  bool attachGeometry(ArticulatedLink* linkObject,
-                      const std::shared_ptr<io::URDF::Link>& link,
-                      gfx::DrawableGroup* drawables) override;
+  void setRootState(const Magnum::Matrix4& state) override;
+
+  bool attachGeometry(
+      ArticulatedLink* linkObject,
+      const std::shared_ptr<io::URDF::Link>& link,
+      gfx::DrawableGroup* drawables) override;
 
   //! Performs forward kinematics, updates collision object states and
   //! broadphase aabbs for the object. Do this with manual state setters.
