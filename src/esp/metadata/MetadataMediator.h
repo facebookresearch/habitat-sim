@@ -179,7 +179,7 @@ class MetadataMediator {
   /**
    * @brief Return copy of map of current active dataset's navmesh handles.
    */
-  const std::map<std::string, std::string> getActiveNavmeshMap() {
+  std::map<std::string, std::string> getActiveNavmeshMap() {
     return std::map<std::string, std::string>(
         getActiveDSAttribs()->getNavmeshMap());
   }  // getActiveNavmeshMap
@@ -190,7 +190,7 @@ class MetadataMediator {
    * @param navMeshHandle The dataset library handle of the navmesh
    * @return The file path of the navmesh.
    */
-  const std::string getNavmeshPathByHandle(const std::string& navMeshHandle) {
+  std::string getNavmeshPathByHandle(const std::string& navMeshHandle) {
     return getFilePathForHandle(navMeshHandle,
                                 getActiveDSAttribs()->getNavmeshMap(),
                                 "MetadataMediator::getNavmeshPathByHandle");
@@ -201,8 +201,7 @@ class MetadataMediator {
    * @brief Return copy of map of current active dataset's semantic scene
    * descriptor handles.
    */
-  const std::map<std::string, std::string>
-  getActiveSemanticSceneDescriptorMap() {
+  std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap() {
     return std::map<std::string, std::string>(
         getActiveDSAttribs()->getSemanticSceneDescrMap());
   }  // getActiveSemanticSceneDescriptorMap
@@ -291,7 +290,7 @@ class MetadataMediator {
    * @return name of stage attributes with handle containing @p stageAttrName ,
    * or empty string if none.
    */
-  const std::string getStageAttrFullHandle(const std::string& stageAttrName) {
+  std::string getStageAttrFullHandle(const std::string& stageAttrName) {
     return getActiveDSAttribs()->getStageAttrFullHandle(stageAttrName);
   }  // getStageAttrFullHandle
 
@@ -306,7 +305,7 @@ class MetadataMediator {
    * @return name of object attributes with handle containing @p objAttrName or
    * empty string if none.
    */
-  const std::string getObjAttrFullHandle(const std::string& objAttrName) {
+  std::string getObjAttrFullHandle(const std::string& objAttrName) {
     return getActiveDSAttribs()->getObjAttrFullHandle(objAttrName);
   }  // getObjAttrFullHandle
 
@@ -319,7 +318,7 @@ class MetadataMediator {
    * @return the full attributes name corresponding to @p lightSetupName , or
    * the empty string.
    */
-  const std::string getLightSetupFullHandle(const std::string& lightSetupName) {
+  std::string getLightSetupFullHandle(const std::string& lightSetupName) {
     return getActiveDSAttribs()->getLightSetupFullHandle(lightSetupName);
   }  // getLightSetupFullHandle
 
