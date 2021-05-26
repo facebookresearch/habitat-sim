@@ -2026,8 +2026,6 @@ bool ResourceManager::importURDFAssets(io::URDF::Model& model) {
       switch (visual.m_geometry.m_type) {
         case io::URDF::GEOM_CAPSULE: {
           visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
-          visual.m_geometry.m_capsuleRadius;
-          visual.m_geometry.m_capsuleHeight;
           auto assetMgr = getAssetAttributesManager();
           auto capTemplate = assetMgr->getDefaultCapsuleTemplate(false);
           // proportions as suggested on magnum docs
