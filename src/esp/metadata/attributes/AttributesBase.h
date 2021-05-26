@@ -28,7 +28,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
     AbstractAttributes::setHandle(handle);
   }
 
-  virtual ~AbstractAttributes() override = default;
+  ~AbstractAttributes() override = default;
   /**
    * @brief Get this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.
