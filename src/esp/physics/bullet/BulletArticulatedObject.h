@@ -38,7 +38,7 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
       : ArticulatedLink(bodyNode, index, resMgr),
         BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)) {}
 
-  virtual const Magnum::Range3D getCollisionShapeAabb() const override {
+  virtual Magnum::Range3D getCollisionShapeAabb() const override {
     // TODO: collision object should be linked here
     return Magnum::Range3D();
   }

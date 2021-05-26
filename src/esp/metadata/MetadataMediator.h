@@ -339,8 +339,8 @@ class MetadataMediator {
    * filenames (.urdf) that have been loaded.  Once ArticulatedModelMangaer is
    * built, this will be accomplished using Managed Container functionality.
    */
-  const std::map<std::string, std::string>& getArticulatedObjectModelFilenames()
-      const {
+  const std::map<std::string, std::string>&
+  getArticulatedObjectModelFilenames() {
     return getActiveDSAttribs()->getArticulatedObjectModelFilenames();
   }
 
