@@ -14,6 +14,7 @@
 #include "../ArticulatedObject.h"
 #include "BulletBase.h"
 #include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
+#include "BulletDynamics/Featherstone/btMultiBodySphericalJointMotor.h"
 
 namespace esp {
 
@@ -159,7 +160,17 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   //============ Joint Motor Constraints =============
 
-  virtual int createJointMotor(const int dof,
+  /**
+   * @brief Create a new JointMotor from a JointMotorSettings.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   * @param index DoF (for revolute or prismatic joints) or Link (spherical
+   * joints)
+   * @param settings The settings for the joint motor. Must have JointMotorType
+   * correctly configured.
+   * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
+   */
+  virtual int createJointMotor(const int index,
                                const JointMotorSettings& settings) override;
 
   //! internal version specific to Bullet setup to simplify the creation
@@ -181,6 +192,8 @@ class BulletArticulatedObject : public ArticulatedObject {
   int nextJointMotorId_ = 0;
 
   std::map<int, std::unique_ptr<btMultiBodyJointMotor>> articulatedJointMotors;
+  std::map<int, std::unique_ptr<btMultiBodySphericalJointMotor>>
+      articulatedSphericalJointMotors;
 
   //! maps local link id to parent joint's limit constraint
   std::map<int, JointLimitConstraintInfo> jointLimitConstraints;
