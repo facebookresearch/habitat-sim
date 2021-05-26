@@ -113,7 +113,7 @@ TEST(IOTest, tokenizeTest) {
 
 TEST(IOTest, parseURDF) {
   const std::string iiwaURDF = Cr::Utility::Directory::join(
-      TEST_ASSETS, "URDF/kuka_iiwa/model_free_base.urdf");
+      TEST_ASSETS, "urdf/kuka_iiwa/model_free_base.urdf");
 
   URDF::Parser parser;
 

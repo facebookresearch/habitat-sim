@@ -91,40 +91,28 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       break;
     }
     case io::URDF::GEOM_MESH: {
-      assets::AssetInfo meshAsset{assets::AssetType::UNKNOWN,
-                                  collision->m_geometry.m_meshFileName};
-      bool meshSuccess = resourceManager_.loadRenderAsset(meshAsset);
+      const std::vector<assets::CollisionMeshData>& meshGroup =
+          resourceManager_.getCollisionMesh(
+              collision->m_geometry.m_meshFileName);
+      const assets::MeshMetaData& metaData = resourceManager_.getMeshMetaData(
+          collision->m_geometry.m_meshFileName);
 
-      if (meshSuccess) {
-        const std::vector<assets::CollisionMeshData>& meshGroup =
-            resourceManager_.getCollisionMesh(
-                collision->m_geometry.m_meshFileName);
-        const assets::MeshMetaData& metaData = resourceManager_.getMeshMetaData(
-            collision->m_geometry.m_meshFileName);
-
-        auto compoundShape = std::make_unique<btCompoundShape>();
-        std::vector<std::unique_ptr<btConvexHullShape>> convexShapes;
-        esp::physics::BulletBase::constructConvexShapesFromMeshes(
-            Magnum::Matrix4{}, meshGroup, metaData.root, compoundShape.get(),
-            convexShapes);
-        // move ownership of convexes
-        for (auto& convex : convexShapes) {
-          linkChildShapes.emplace_back(std::move(convex));
-        }
-        compoundShape->setLocalScaling(
-            btVector3(collision->m_geometry.m_meshScale));
-        compoundShape->setMargin(gUrdfDefaultCollisionMargin);
-        compoundShape->recalculateLocalAabb();
-        shape = compoundShape.get();
-        linkChildShapes.emplace_back(std::move(compoundShape));
-      } else {
-        Mn::Debug{}
-            << "BulletURDFImporter::convertURDFToCollisionShape : E - could "
-               "not load collision mesh \""
-            << collision->m_geometry.m_meshFileName << "\"";
+      auto compoundShape = std::make_unique<btCompoundShape>();
+      std::vector<std::unique_ptr<btConvexHullShape>> convexShapes;
+      esp::physics::BulletBase::constructConvexShapesFromMeshes(
+          Magnum::Matrix4{}, meshGroup, metaData.root, compoundShape.get(),
+          convexShapes);
+      // move ownership of convexes
+      for (auto& convex : convexShapes) {
+        linkChildShapes.emplace_back(std::move(convex));
       }
-      break;
-    }  // mesh case
+      compoundShape->setLocalScaling(
+          btVector3(collision->m_geometry.m_meshScale));
+      compoundShape->setMargin(gUrdfDefaultCollisionMargin);
+      compoundShape->recalculateLocalAabb();
+      shape = compoundShape.get();
+      linkChildShapes.emplace_back(std::move(compoundShape));
+    } break;  // mesh case
 
     default:
       Mn::Debug{} << "E - unknown collision geometry type: "

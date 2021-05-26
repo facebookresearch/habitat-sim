@@ -1,0 +1,92 @@
+<?xml version="1.0" ?>
+<robot name="prim_chain">
+  <material name="red">
+    <color rgba="0.7 0.0 0.0 1.0"/>
+  </material>
+  <material name="green">
+    <color rgba="0.0 0.7 0.0 1.0"/>
+  </material>
+  <material name="blue">
+    <color rgba="0.0 0.0 0.7 1.0"/>
+  </material>
+  <link name="base_box">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="floating_base" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0.1 0"/>
+    <parent link="base_box"/>
+    <child link="link_sphere"/>
+  </joint>
+  <link name="link_sphere">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0 0 0"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="sphere_to_cylinder" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0.1 0"/>
+    <parent link="link_sphere"/>
+    <child link="link_cylinder"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0" friction="0"/>
+    <limit effort="44.4" lower="-1.2217304764" upper="1.2217304764" velocity="40"/>
+  </joint>
+  <link name="link_cylinder">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.1 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.1"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.1 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.1"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="cylinder_to_capsule" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0.1 0"/>
+    <parent link="link_cylinder"/>
+    <child link="link_capsule"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0" friction="0"/>
+    <limit effort="44.4" lower="-1.2217304764" upper="1.2217304764" velocity="40"/>
+  </joint>
+  <link name="link_capsule">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <capsule radius="0.05" length="0.1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <capsule radius="0.05" length="0.1"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

@@ -776,7 +776,7 @@ TEST_F(PhysicsManagerTest, TestURDF) {
   LOG(INFO) << "Starting physics test: TestURDF";
 
   std::string robotFile = Cr::Utility::Directory::join(
-      TEST_ASSETS, "URDF/kuka_iiwa/model_free_base.urdf");
+      TEST_ASSETS, "urdf/kuka_iiwa/model_free_base.urdf");
 
   std::string stageFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");

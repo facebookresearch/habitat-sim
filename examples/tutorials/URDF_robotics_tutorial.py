@@ -124,6 +124,8 @@ urdf_files = {
         data_path, "URDF_demo_assets/aliengo/urdf/aliengo.urdf"
     ),
     "fridge": os.path.join(data_path, "test_assets/urdf/fridge/fridge.urdf"),
+    "primitive_chain": os.path.join(data_path, "test_assets/urdf/prim_chain.urdf"),
+    "amass_male": os.path.join(data_path, "test_assets/urdf/amass_male.urdf"),
 }
 
 
@@ -472,6 +474,34 @@ def test_constraints(make_video=True, show_video=True):
             )
 
 
+def test_prim_chain(make_video=True, show_video=True):
+    # load a URDF with visual and collision geometry constructed from all supported primitive types
+
+    cfg = make_configuration()
+    observations = []
+    with habitat_sim.Simulator(cfg) as sim:
+        place_agent(sim)
+
+        # load a URDF file
+        robot_file = urdf_files["primitive_chain"]
+        robot_id = sim.add_articulated_object_from_urdf(robot_file)
+
+        # place the robot root state relative to the agent
+        place_robot_from_agent(sim, robot_id, angle_correction=0)
+
+        # simulate object settling
+        observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+        if make_video:
+            vut.make_video(
+                observations,
+                "rgba_camera_1stperson",
+                "color",
+                output_path + "primtive_URDF",
+                open_vid=show_video,
+            )
+
+
 # add a fridge to the world and recompute the navmesh in several configurations
 def test_ao_recompute_navmesh(make_video=True, show_video=True):
     # create the simulator
@@ -791,5 +821,6 @@ if __name__ == "__main__":
     main(make_video, show_video)
     test_constraints(make_video, show_video)
     test_ao_recompute_navmesh(make_video, show_video)
+    test_prim_chain(make_video, show_video)
     # test_urdf_memory()
     # demo_contact_profile()
