@@ -349,7 +349,7 @@ class PathFinder {
    *
    * @return The object containing triangulated NavMesh polys.
    */
-  const std::shared_ptr<assets::MeshData> getNavMeshData();
+  std::shared_ptr<assets::MeshData> getNavMeshData();
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder)
 };

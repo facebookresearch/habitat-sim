@@ -126,7 +126,8 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   if (io::readMember<std::string>(jsonConfig, "position_model",
                                   tmpPosMdleVal)) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpPosMdleVal);
-    if (LightInstanceAttributes::LightPositionNamesMap.count(strToLookFor)) {
+    if (LightInstanceAttributes::LightPositionNamesMap.count(strToLookFor) !=
+        0u) {
       posMdleVal = static_cast<int>(
           LightInstanceAttributes::LightPositionNamesMap.at(strToLookFor));
     } else {
@@ -155,7 +156,8 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
              "Type spotlight specified in JSON not currently supported, so "
              "defaulting LightInfo type to esp::gfx::LightType::Point.";
       typeVal = static_cast<int>(esp::gfx::LightType::Point);
-    } else if (LightInstanceAttributes::LightTypeNamesMap.count(strToLookFor)) {
+    } else if (LightInstanceAttributes::LightTypeNamesMap.count(strToLookFor) !=
+               0u) {
       typeVal = static_cast<int>(
           LightInstanceAttributes::LightTypeNamesMap.at(strToLookFor));
     } else {

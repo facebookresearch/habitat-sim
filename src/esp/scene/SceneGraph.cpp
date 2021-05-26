@@ -20,7 +20,7 @@ bool SceneGraph::isRootNode(SceneNode& node) {
   // if the parent is null, it means the node is the world_ node.
   CORRADE_ASSERT(parent != nullptr,
                  "SceneGraph::isRootNode: the node is illegal.", false);
-  return (parent->parent() == nullptr ? true : false);
+  return (parent->parent() == nullptr);
 }
 
 gfx::DrawableGroup* SceneGraph::getDrawableGroup(const std::string& id) {
@@ -35,7 +35,7 @@ const gfx::DrawableGroup* SceneGraph::getDrawableGroup(
 }
 
 bool SceneGraph::deleteDrawableGroup(const std::string& id) {
-  return drawableGroups_.erase(id);
+  return drawableGroups_.erase(id) != 0u;
 }
 
 }  // namespace scene

@@ -377,7 +377,7 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
 
   //! Create rigid body
-  if (collisionObjToObjIds_->count(bObjectRigidBody_.get())) {
+  if (collisionObjToObjIds_->count(bObjectRigidBody_.get()) != 0u) {
     collisionObjToObjIds_->erase(bObjectRigidBody_.get());
   }
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
@@ -467,7 +467,7 @@ bool BulletRigidObject::contactTest() {
   return src.bCollision;
 }  // contactTest
 
-const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
+Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
   if (!bObjectShape_) {
     // e.g. empty scene
     return Magnum::Range3D();
