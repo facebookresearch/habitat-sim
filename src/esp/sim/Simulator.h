@@ -103,15 +103,15 @@ class Simulator {
    * @brief Return manager for construction and access to asset attributes for
    * the current dataset.
    */
-  metadata::managers::AssetAttributesManager::ptr getAssetAttributesManager()
-      const {
+  const metadata::managers::AssetAttributesManager::ptr&
+  getAssetAttributesManager() const {
     return metadataMediator_->getAssetAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to light attributes and
    * layouts for the current dataset.
    */
-  metadata::managers::LightLayoutAttributesManager::ptr
+  const metadata::managers::LightLayoutAttributesManager::ptr&
   getLightLayoutAttributesManager() const {
     return metadataMediator_->getLightLayoutAttributesManager();
   }
@@ -120,15 +120,15 @@ class Simulator {
    * @brief Return manager for construction and access to object attributes and
    * layouts for the current dataset.
    */
-  metadata::managers::ObjectAttributesManager::ptr getObjectAttributesManager()
-      const {
+  const metadata::managers::ObjectAttributesManager::ptr&
+  getObjectAttributesManager() const {
     return metadataMediator_->getObjectAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  metadata::managers::PhysicsAttributesManager::ptr
+  const metadata::managers::PhysicsAttributesManager::ptr&
   getPhysicsAttributesManager() const {
     return metadataMediator_->getPhysicsAttributesManager();
   }
@@ -136,8 +136,8 @@ class Simulator {
    * @brief Return manager for construction and access to scene attributes for
    * the current dataset.
    */
-  metadata::managers::StageAttributesManager::ptr getStageAttributesManager()
-      const {
+  const metadata::managers::StageAttributesManager::ptr&
+  getStageAttributesManager() const {
     return metadataMediator_->getStageAttributesManager();
   }
 
