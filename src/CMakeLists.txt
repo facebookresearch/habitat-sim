@@ -80,8 +80,15 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
       # Clang has some issues with thinLTO (segfaults on final linking)
       # This enables full LTO through CMake
       # FullLTO is slow, but may yield performance improvements.
-      #set(CMAKE_CXX_COMPILE_OPTIONS_IPO "-flto") alternate undoc. way to set it
-      add_compile_options(-flto=full)
+      set(CMAKE_CXX_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO} -flto)
+      #add_compile_options(-flto) # alternate way of setting LTO.
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+      # If we are on GCC, override CMake do parallel LTO.
+      include(ProcessorCount)
+      ProcessorCount(N_LTO_JOBS)
+      set(CMAKE_CXX_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO}
+                                        -flto=${N_LTO_JOBS}
+      )
     endif()
   endif()
 endif()
