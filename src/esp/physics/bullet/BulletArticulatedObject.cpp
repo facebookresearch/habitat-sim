@@ -357,9 +357,10 @@ bool BulletArticulatedObject::attachGeometry(
       assets::RenderAssetInstanceCreationInfo creation(
           visualMeshInfo.filepath, Mn::Vector3{1}, flags, DEFAULT_LIGHTING_KEY);
 
-      geomSuccess = resMgr_.loadAndCreateRenderAssetInstance(
-                        visualMeshInfo, creation, &visualGeomComponent,
-                        drawables, &linkObject->visualNodes_) != nullptr;
+      geomSuccess = const_cast<esp::assets::ResourceManager&>(resMgr_)
+                        .loadAndCreateRenderAssetInstance(
+                            visualMeshInfo, creation, &visualGeomComponent,
+                            drawables, &linkObject->visualNodes_) != nullptr;
 
       // cache the visual component for later query
       if (geomSuccess) {
