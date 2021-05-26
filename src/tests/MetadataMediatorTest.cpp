@@ -466,6 +466,11 @@ TEST_F(MetadataMediatorTest, testDatasetDelete) {
   ASSERT_EQ(MM_->sceneDatasetExists(nameDS1), true);
   // verify the active dataset is the expected name
   ASSERT_EQ(nameDS1, sceneDatasetConfigFile_1);
+  // get the stage attributes manager for the scene dataset
+  const auto& stageAttrMgr_DS1 = MM_->getStageAttributesManager();
+  // verify not nullptr
+  ASSERT_NE(stageAttrMgr_DS1, nullptr);
+
   // load datsaet 0 and make active
   initDataset0();
   // get new active dataset
@@ -479,6 +484,9 @@ TEST_F(MetadataMediatorTest, testDatasetDelete) {
   ASSERT_EQ(MM_->removeSceneDataset(nameDS1), true);
   // verify the dataset does not exist anymore
   ASSERT_EQ(MM_->sceneDatasetExists(nameDS1), false);
+
+  // verify deleted scene dataset's stage manager is nullptr
+  ASSERT_EQ(stageAttrMgr_DS1, nullptr);
 
 }  // testDatasetDelete
 

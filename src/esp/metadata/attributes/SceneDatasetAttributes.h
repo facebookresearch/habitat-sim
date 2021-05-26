@@ -27,6 +27,19 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& datasetName,
       const managers::PhysicsAttributesManager::ptr& physAttrMgr);
 
+  ~SceneDatasetAttributes() override {
+    // These are to clear any external refs persisting after this scene dataset
+    // is deleted.  Accessing these refs should result in errors instead of
+    // leaks/undefined behavior.
+    assetAttributesManager_ = nullptr;
+    lightLayoutAttributesManager_ = nullptr;
+    objectAttributesManager_ = nullptr;
+    sceneAttributesManager_ = nullptr;
+    stageAttributesManager_ = nullptr;
+    navmeshMap_.clear();
+    semanticSceneDescrMap_.clear();
+  }
+
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
