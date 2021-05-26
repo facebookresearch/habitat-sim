@@ -2450,7 +2450,15 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // load a humanoid made of primitives
       std::string urdfFilePath = "data/test_assets/urdf/amass_male.urdf";
       int objectId = addArticulatedObject(urdfFilePath, false);
-      // TODO: simulation unstable: need to setup spherical joint motors
+      // spherical joint motors created by default but require tuning for
+      // stability
+      for (auto& motorId : simulator_->getExistingJointMotors(objectId)) {
+        auto motorSettings =
+            simulator_->getJointMotorSettings(objectId, motorId.first);
+        motorSettings.maxImpulse = 50;
+        simulator_->updateJointMotor(objectId, motorId.first, motorSettings);
+      }
+
     } break;
     case KeyEvent::Key::Minus: {
       if (simulator_->getExistingArticulatedObjectIDs().size()) {
