@@ -77,6 +77,8 @@ struct Geometry {
   Magnum::Vector3 m_capsuleTo{1, 0, 0};
 
   Magnum::Vector3 m_planeNormal{0, 0, 1};
+
+  //! Note: also used to cache primitive handles for custom visual prims
   std::string m_meshFileName;
   Magnum::Vector3 m_meshScale{1, 1, 1};
 

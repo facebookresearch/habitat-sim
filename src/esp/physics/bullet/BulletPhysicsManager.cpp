@@ -129,6 +129,9 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
                                              articulatedObjectID_, bWorld_,
                                              collisionObjToObjIds_);
 
+  // before initializing the URDF, import all necessary assets in advance
+  resourceManager_.importURDFAssets(*urdfImporter_->getModel().get());
+
   bool objectSuccess = articulatedObject->initializeFromURDF(
       *urdfImporter_.get(), {}, drawables, physicsNode_, fixedBase);
 
