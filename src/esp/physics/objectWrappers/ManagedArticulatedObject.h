@@ -15,19 +15,16 @@ namespace physics {
  * @brief Class describing wrapper for ArticulatedObject constructions.
  * Provides bindings for all ArticulatedObject-specific functionality.
  */
-template <class T>
-class AbstractManagedArticulatedObject
-    : public esp::physics::AbstractManagedPhysicsObject<T> {
+class ManagedArticulatedObject
+    : public esp::physics::AbstractManagedPhysicsObject<
+          esp::physics::ArticulatedObject> {
  public:
-  static_assert(
-      std::is_base_of<esp::physics::ArticulatedObject, T>::value,
-      "AbstractManagedRigidBase :: Managed physics object type must be "
-      "derived from esp::physics::ArticulatedObject");
-  AbstractManagedArticulatedObject()
-      : AbstractManagedPhysicsObject<T>("ManagedArticulatedObject") {}
+  ManagedArticulatedObject()
+      : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
+            "ManagedArticulatedObject") {}
 
  public:
-  ESP_SMART_POINTERS(AbstractManagedArticulatedObject<T>)
+  ESP_SMART_POINTERS(ManagedArticulatedObject)
 };
 
 }  // namespace physics

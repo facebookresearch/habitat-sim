@@ -6,6 +6,7 @@
 #define ESP_PHYSICS_ARTICULATEDOBJECTMANAGER_H
 
 #include "PhysicsObjectBaseManager.h"
+#include "esp/physics/objectWrappers/ManagedArticulatedObject.h"
 
 namespace esp {
 namespace physics {
@@ -13,23 +14,35 @@ namespace physics {
 /**
  * @brief Class template defining responsibilities and functionality shared for
  * managing all @ref esp::physics::ManagedArticulatedObject wrappers.
- * @tparam T the type of managed physics object a particular specialization
- * of this class works with.  Must inherit from @ref
- * esp::physics::ManagedArticulatedObject
  */
 
-template <class T>
 class ArticulatedObjectManager
-    : public esp::physics::PhysicsObjectBaseManager<T> {
+    : public esp::physics::PhysicsObjectBaseManager<ManagedArticulatedObject> {
  public:
-  explicit ArticulatedObjectManager(const std::string& objType)
-      : esp::physics::PhysicsObjectBaseManager<T>::PhysicsObjectBaseManager(
-            objType) {}
+  explicit ArticulatedObjectManager()
+      : esp::physics::PhysicsObjectBaseManager<ManagedArticulatedObject>::
+            PhysicsObjectBaseManager("ArticulatedObject") {}
 
  protected:
+  /**
+   * @brief Used Internally.  Create and configure newly-created managed object
+   * with any default values, before any specific values are set.
+   *
+   * @param objectHandle Unused for wrapper objects.  All wrappers use the name
+   * of their underlying objects.
+   * @param builtFromConfig Unused for wrapper objects.  All wrappers are
+   * constructed from scratch.
+   * @return Newly created but unregistered ManagedObject pointer, with only
+   * default values set.
+   */
+  std::shared_ptr<ManagedArticulatedObject> initNewObjectInternal(
+      CORRADE_UNUSED const std::string& objectHandle,
+      CORRADE_UNUSED bool builtFromConfig) override {
+    return ManagedArticulatedObject::create();
+  }  // ArticulatedObjectManager::initNewObjectInternal(
  public:
-  ESP_SMART_POINTERS(ArticulatedObjectManager<T>)
-};  // class RigidBaseManage
+  ESP_SMART_POINTERS(ArticulatedObjectManager)
+};  // class ArticulatedObjectManager
 
 }  // namespace physics
 }  // namespace esp

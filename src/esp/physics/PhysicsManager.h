@@ -105,6 +105,7 @@ struct ContactPointData {
 };
 
 class RigidObjectManager;
+class ArticulatedObjectManager;
 
 /**
 @brief Kinematic and dynamic scene and object manager.
@@ -1306,6 +1307,11 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * direct user access to all existing physics objects.
    */
   std::shared_ptr<RigidObjectManager> rigidObjectManager_;
+
+  /** @brief This manager manages the wrapper objects used to provide safe,
+   * direct user access to all existing physics objects.
+   */
+  std::shared_ptr<ArticulatedObjectManager> articulatedObjectManager_;
 
   /** @brief Maps object IDs to all existing physical object instances in
    * the world.

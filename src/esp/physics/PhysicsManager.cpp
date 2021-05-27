@@ -5,6 +5,7 @@
 #include "PhysicsManager.h"
 #include <Magnum/Math/Range.h>
 #include "esp/assets/CollisionMeshData.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sim/Simulator.h"
 namespace esp {
@@ -16,13 +17,18 @@ PhysicsManager::PhysicsManager(
         _physicsManagerAttributes)
     : resourceManager_(_resourceManager),
       physicsManagerAttributes_(_physicsManagerAttributes),
-      rigidObjectManager_(RigidObjectManager::create()) {}
+      rigidObjectManager_(RigidObjectManager::create()),
+      articulatedObjectManager_(ArticulatedObjectManager::create()) {}
 
 bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   physicsNode_ = node;
   // set the rigidObjectManager's weak reference to physics manager to be based
   // on the same shared pointer that Simulator is using.
   rigidObjectManager_->setPhysicsManager(shared_from_this());
+
+  // set articulated object manager here, and in
+  articulatedObjectManager_->setPhysicsManager(shared_from_this());
+
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes_->getTimestep();
 
@@ -36,6 +42,7 @@ bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
   staticStageObject_ = physics::RigidStage::create(&physicsNode_->createChild(),
                                                    resourceManager_);
+
   return true;
 }
 
