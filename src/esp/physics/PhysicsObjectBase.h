@@ -140,15 +140,10 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * collision world.
    *
    * See @ref SimulationContactResultCallback
-   * @param staticAsStage When false, override configured collision groups|masks
-   * for STATIC objects such that contact with other STATICs such as the stage
-   * are considered.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  virtual bool contactTest(CORRADE_UNUSED bool staticAsStage = true) {
-    return false;
-  }
+  virtual bool contactTest() { return false; }
 
   /**
    * @brief Set the light setup of this rigid.

@@ -1017,15 +1017,12 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    *
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @param staticAsStage When false, override configured collision groups|masks
-   * for STATIC objects and articulated fixed base such that contact with other
-   * STATICs such as the stage are considered.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  virtual bool contactTest(const int physObjectID, bool staticAsStage = true) {
+  virtual bool contactTest(const int physObjectID) {
     if (existingObjects_.count(physObjectID) > 0) {
-      return existingObjects_.at(physObjectID)->contactTest(staticAsStage);
+      return existingObjects_.at(physObjectID)->contactTest();
     }
     return false;
   };

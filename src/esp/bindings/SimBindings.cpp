@@ -363,7 +363,7 @@ void initSimBindings(py::module& m) {
            R"(Set whether or not the static stage is collidable.)")
       .def(
           "contact_test", &Simulator::contactTest, "object_id"_a,
-          "static_as_stage"_a = true, "scene_id"_a = 0,
+          "scene_id"_a = 0,
           R"(DEPRECATED AND WILL BE REMOVED IN HABITAT-SIM 2.0. Run collision detection and return a binary indicator of penetration between the specified object and any other collision object. Physics must be enabled.)")
       .def(
           "perform_discrete_collision_detection",

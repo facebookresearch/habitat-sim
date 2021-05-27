@@ -414,13 +414,10 @@ class BulletRigidObject : public BulletBase,
    * collision world.
    *
    * See @ref SimulationContactResultCallback
-   * @param staticAsStage When false, override configured collision groups|masks
-   * for STATIC objects such that contact with other STATICs such as the stage
-   * are considered.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  virtual bool contactTest(bool staticAsStage = true) override;
+  virtual bool contactTest() override;
 
   /**
    * @brief Manually set the collision group for an object.
