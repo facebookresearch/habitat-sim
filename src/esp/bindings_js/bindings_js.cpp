@@ -132,20 +132,12 @@ bool isBuildWithBulletPhysics() {
 #endif
 }
 
-RaycastResults castRay(Simulator& sim,
-                       const Ray& ray,
-                       float maxDistance,
-                       int sceneID) {
-  return sim.castRay(ray, maxDistance, sceneID);
-}
-
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::function("toQuaternion", &toQuaternion);
   em::function("toVec3f", &toVec3f);
   em::function("toVec4f", &toVec4f);
   em::function("loadAllObjectConfigsFromPath", &loadAllObjectConfigsFromPath);
   em::function("isBuildWithBulletPhysics", &isBuildWithBulletPhysics);
-  em::function("castRay", &castRay);
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
@@ -248,8 +240,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("actuation", &ActionSpec::actuation);
 
   em::class_<Ray>("Ray")
-      //.constructor("Ray", &Ray::create<>)
-      .smart_ptr_constructor("Ray", &Ray::create<Magnum::Vector3, Magnum::Vector3>);
+      .constructor<>()
+      .constructor<Magnum::Vector3, Magnum::Vector3>();
 
   em::class_<RayHitInfo>("RayHitInfo")
       .property("objectId", &RayHitInfo::objectId)
@@ -459,5 +451,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setObjectLightSetup", &Simulator::setObjectLightSetup)
       .function("getLightSetup", &Simulator::getLightSetup)
       .function("setLightSetup", &Simulator::setLightSetup)
-      .function("stepWorld", &Simulator::stepWorld);
+      .function("stepWorld", &Simulator::stepWorld)
+      .function("castRay", &Simulator::castRay);
 }
