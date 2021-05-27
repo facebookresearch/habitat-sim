@@ -83,12 +83,7 @@ class RigidStage : public RigidBase {
    * translation correction needs to occur.
    */
   void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) override {
-    auto sceneInstanceAttr = getSceneInstanceAttributes();
-    if (!sceneInstanceAttr) {
-      return;
-    }
-  }
+      CORRADE_UNUSED bool defaultCOMCorrection = false) override {}
 
   /**
    * @brief Currently ignored for stage objects.
