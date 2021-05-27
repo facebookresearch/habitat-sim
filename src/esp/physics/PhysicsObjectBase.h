@@ -386,7 +386,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * translation correction needs to occur.
    */
   virtual void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false){};
+      CORRADE_UNUSED bool defaultCOMCorrection = false) = 0;
 
   /**
    * @brief Set this object's @ref
