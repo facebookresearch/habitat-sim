@@ -230,7 +230,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
                                              double maxDistance) {
   RaycastResults results;
   results.ray = ray;
-  double rayLength = ray.direction.length();
+  double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
     LOG(ERROR) << "BulletPhysicsManager::castRay : Cannot case ray with zero "
                   "length, aborting. ";
@@ -351,7 +351,7 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
       pt.objectIdA = objectIdA;
       pt.objectIdB = objectIdB;
       const btManifoldPoint& srcPt = manifold->getContactPoint(p);
-      pt.contactDistance = srcPt.getDistance();
+      pt.contactDistance = static_cast<double>(srcPt.getDistance());
       pt.linkIndexA = linkIndexA;
       pt.linkIndexB = linkIndexB;
       pt.contactNormalOnBInWS = Mn::Vector3(srcPt.m_normalWorldOnB);
@@ -359,12 +359,13 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
       pt.positionOnBInWS = Mn::Vector3(srcPt.getPositionWorldOnB());
 
       // convert impulses to forces w/ recent physics timstep
-      pt.normalForce = srcPt.getAppliedImpulse() / recentTimeStep_;
+      pt.normalForce =
+          static_cast<double>(srcPt.getAppliedImpulse() / recentTimeStep_);
 
       pt.linearFrictionForce1 =
-          srcPt.m_appliedImpulseLateral1 / recentTimeStep_;
+          static_cast<double>(srcPt.m_appliedImpulseLateral1 / recentTimeStep_);
       pt.linearFrictionForce2 =
-          srcPt.m_appliedImpulseLateral2 / recentTimeStep_;
+          static_cast<double>(srcPt.m_appliedImpulseLateral2 / recentTimeStep_);
 
       pt.linearFrictionDirection1 = Mn::Vector3(srcPt.m_lateralFrictionDir1);
       pt.linearFrictionDirection2 = Mn::Vector3(srcPt.m_lateralFrictionDir2);

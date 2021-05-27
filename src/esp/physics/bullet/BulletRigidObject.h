@@ -219,7 +219,7 @@ class BulletRigidObject : public BulletBase,
    * @return The mass of the object.
    */
   double getMass() const override {
-    return 1.0 / bObjectRigidBody_->getInvMass();
+    return static_cast<double>(1.0 / bObjectRigidBody_->getInvMass());
   }
 
   /** @brief Get the center of mass (COM) of the object. For Bullet, COM is
