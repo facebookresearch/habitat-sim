@@ -86,8 +86,8 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
       # If we are on GCC, override CMake do parallel LTO.
       include(ProcessorCount)
       ProcessorCount(N_LTO_JOBS)
-      set(CMAKE_CXX_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO}
-                                        -flto=${N_LTO_JOBS}
+      string(REPLACE "<LINK_FLAGS>" "<LINK_FLAGS> -flto=${N_LTO_JOBS}"
+                     CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}"
       )
     endif()
   endif()
