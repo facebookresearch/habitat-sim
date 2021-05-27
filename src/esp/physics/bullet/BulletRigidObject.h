@@ -288,7 +288,9 @@ class BulletRigidObject : public BulletBase,
    * btCompoundShape::getMargin.
    * @return The scalar collision margin of the object.
    */
-  double getMargin() const override { return bObjectShape_->getMargin(); }
+  double getMargin() const override {
+    return static_cast<double>(bObjectShape_->getMargin());
+  }
 
   /**
    * @brief Linear velocity setter for an object.
