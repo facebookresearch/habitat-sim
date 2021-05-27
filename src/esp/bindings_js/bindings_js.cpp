@@ -132,16 +132,11 @@ bool isBuildWithBulletPhysics() {
 #endif
 }
 
-int castRay(Simulator& sim,
-            const Magnum::Vector3& pos,
-            const Magnum::Vector3& dir,
-            float maxDistance) {
-  esp::geo::Ray ray;
-  ray.origin = pos;
-  ray.direction = dir;
-  auto result = sim.castRay(ray, maxDistance, 0);
-  // note that hits[0].objectId may be -1 to indicate hit on stage
-  return result.hasHits() ? result.hits[0].objectId : -1;
+RaycastResults castRay(Simulator& sim,
+                       const Ray& ray,
+                       float maxDistance,
+                       int sceneID) {
+  return sim.castRay(ray, maxDistance, sceneID);
 }
 
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
@@ -159,6 +154,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
   em::register_vector<std::shared_ptr<SemanticObject>>("VectorSemanticObjects");
+  em::register_vector<RayHitInfo>("VectorRayHitInfo");
   em::register_map<std::string, float>("MapStringFloat");
   em::register_map<std::string, std::string>("MapStringString");
   em::register_map<std::string, Sensor::ptr>("MapStringSensor");
@@ -250,6 +246,23 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
           &ActionSpec::create<const std::string&, const ActuationMap&>)
       .property("name", &ActionSpec::name)
       .property("actuation", &ActionSpec::actuation);
+
+  em::class_<Ray>("Ray")
+      //.constructor("Ray", &Ray::create<>)
+      .smart_ptr_constructor("Ray", &Ray::create<Magnum::Vector3, Magnum::Vector3>);
+
+  em::class_<RayHitInfo>("RayHitInfo")
+      .property("objectId", &RayHitInfo::objectId)
+      .property("point", &RayHitInfo::point)
+      .property("normal", &RayHitInfo::normal)
+      .property("rayDistance", &RayHitInfo::rayDistance);
+
+  em::class_<RaycastResults>("RaycastResults")
+      .smart_ptr_constructor("RaycastResults", &RaycastResults::create<>)
+      .function("hasHits", &RaycastResults::hasHits)
+      .function("sortByDistance", &RaycastResults::sortByDistance)
+      .property("hits", &RaycastResults::hits)
+      .property("ray", &RaycastResults::ray);
 
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
