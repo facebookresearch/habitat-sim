@@ -268,8 +268,8 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
     const btCollisionObject* colObj,
     int* objectId,
     int* linkId) const {
-  ASSERT(objectId);
-  ASSERT(linkId);
+  ASSERT(objectId, );
+  ASSERT(linkId, );
 
   *linkId = -1;
   // If the lookup fails, default to the stage. TODO: better error-handling.
