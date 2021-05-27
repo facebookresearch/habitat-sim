@@ -76,10 +76,10 @@ VoxelGrid::VoxelGrid(const assets::MeshData& meshData,
 #endif
 
 VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
-                     const Mn::Vector3i& voxelGridDimensions) {
-  m_voxelSize = voxelSize;
-  m_voxelGridDimensions = voxelGridDimensions;
-  m_offset = Mn::Vector3(0.0, 0.0, 0.0);
+                     const Mn::Vector3i& voxelGridDimensions)
+    : m_voxelSize(voxelSize),
+      m_voxelGridDimensions(voxelGridDimensions),
+      m_offset(Mn::Vector3(0.0, 0.0, 0.0)) {
   addGrid<bool>("Boundary");
 }
 

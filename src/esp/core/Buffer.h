@@ -30,9 +30,8 @@ enum class DataType {
 class Buffer {
  public:
   explicit Buffer() = default;
-  explicit Buffer(const std::vector<size_t>& shape, const DataType dataType) {
-    this->shape = shape;
-    this->dataType = dataType;
+  explicit Buffer(const std::vector<size_t>& shape, const DataType dataType)
+      : dataType(dataType), shape(shape) {
     alloc();
   }
   void clear();
