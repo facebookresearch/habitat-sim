@@ -8,7 +8,6 @@
 #include <Magnum/Primitives/Circle.h>
 #include <Magnum/Trade/MeshData.h>
 #include <cmath>
-#include <cstddef>
 #include <numeric>
 
 namespace Mn = Magnum;
@@ -322,8 +321,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
 
   // 3. Create polys between all points
   Cr::Containers::Array<char> indexData{
-      Cr::NoInit, static_cast<unsigned long>(6 * numSegments*) trajSize *
-                      sizeof(Mn::UnsignedInt)};
+      Cr::NoInit, 6 * numSegments * trajSize * sizeof(Mn::UnsignedInt)};
   Cr::Containers::ArrayView<Mn::UnsignedInt> indices =
       Cr::Containers::arrayCast<Mn::UnsignedInt>(indexData);
 

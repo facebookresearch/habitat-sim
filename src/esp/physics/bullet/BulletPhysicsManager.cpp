@@ -6,8 +6,6 @@
 //#include "BulletCollision/Gimpact/btGImpactShape.h"
 
 #include "BulletPhysicsManager.h"
-
-#include <cstddef>
 #include "BulletRigidObject.h"
 #include "esp/assets/ResourceManager.h"
 
@@ -325,10 +323,7 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
 
   auto* dispatcher = bWorld_->getDispatcher();
   int numContactManifolds = dispatcher->getNumManifolds();
-  contactPoints.reserve(
-      static_cast<
-          std::vector<struct esp::physics::ContactPointData>::size_type>(
-          numContactManifolds*) 4);
+  contactPoints.reserve(numContactManifolds * 4);
   for (int i = 0; i < numContactManifolds; i++) {
     const btPersistentManifold* manifold =
         dispatcher->getInternalManifoldPointer()[i];

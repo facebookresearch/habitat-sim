@@ -4,7 +4,6 @@
 
 #include "PTexMeshData.h"
 
-#include <cstddef>
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
@@ -236,8 +235,7 @@ std::vector<PTexMeshData::MeshData> splitMesh(
     std::vector<uint32_t> refdVerts;
     // it maps indices from original mesh to the new ones in the chunk
     std::unordered_map<uint32_t, uint32_t> refdVertsMap;
-    subMeshes[i].ibo.resize(
-        static_cast<std::vector<unsigned int>::size_type>(chunkSize*) 4);
+    subMeshes[i].ibo.resize(chunkSize * 4);
 
     for (size_t j = 0; j < chunkSize; j++) {
       size_t faceIdx = chunkStart[i] + j;
@@ -331,7 +329,7 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
     for (size_t jFace = 0; jFace < numFaces; ++jFace) {
       uint32_t f = originalFaces[jFace];  // face index in original mesh
       for (size_t v = 0; v < 4; ++v) {
-        uint32_t global = mesh.ibo[static_cast<unsigned long>(f*) 4 + v];
+        uint32_t global = mesh.ibo[f * 4 + v];
         if (globalToLocal.find(global) == globalToLocal.end()) {
           globalToLocal[global] = localToGlobal.size();
           localToGlobal.push_back(global);
@@ -346,7 +344,7 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
     for (size_t jFace = 0; jFace < numFaces; ++jFace) {
       uint32_t f = originalFaces[jFace];
       for (size_t v = 0; v < 4; ++v) {
-        uint32_t global = mesh.ibo[static_cast<unsigned long>(f*) 4 + v];
+        uint32_t global = mesh.ibo[f * 4 + v];
         CORRADE_ASSERT(globalToLocal.find(global) != globalToLocal.end(),
                        "PTexMeshData::loadSubMeshes: vertex "
                            << global << " is not in the sub-mesh " << iMesh,
@@ -921,9 +919,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     // divided by 6, since there are 3 channels, R, G, B, each of which takes
     // 1 half_float (2 bytes)
     const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
-    CORRADE_ASSERT(static_cast<unsigned long>(dim * dim*) 6 == data.size(),
+    CORRADE_ASSERT(dim * dim * 6 == data.size(),
                    "PTexMeshData::uploadBuffersToGPU: the atlas texture is not "
-                   "a square");
+                   "a square", );
 
     // atlas
     // the size of each image is dim x dim x 3 (RGB) x 2 (half_float), which

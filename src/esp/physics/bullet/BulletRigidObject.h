@@ -257,7 +257,7 @@ class BulletRigidObject : public BulletBase,
    * @return The scalar friction coefficient of the object.
    */
   double getFrictionCoefficient() const override {
-    return bObjectRigidBody_->getFriction();
+    return static_cast<double> bObjectRigidBody_->getFriction();
   }
 
   /** @brief Get the scalar coefficient of restitution  of the object.
@@ -265,7 +265,7 @@ class BulletRigidObject : public BulletBase,
    * @return The scalar coefficient of restitution  of the object.
    */
   double getRestitutionCoefficient() const override {
-    return bObjectRigidBody_->getRestitution();
+    return static_cast<double> bObjectRigidBody_->getRestitution();
   }
 
   /** @brief Get the scalar linear damping coefficient of the object.
@@ -273,7 +273,7 @@ class BulletRigidObject : public BulletBase,
    * @return The scalar linear damping coefficient of the object.
    */
   double getLinearDamping() const override {
-    return bObjectRigidBody_->getLinearDamping();
+    return static_cast<double> bObjectRigidBody_->getLinearDamping();
   }
 
   /** @brief Get the scalar angular damping coefficient of the object.
@@ -281,7 +281,7 @@ class BulletRigidObject : public BulletBase,
    * @return The scalar angular damping coefficient of the object.
    */
   double getAngularDamping() const override {
-    return bObjectRigidBody_->getAngularDamping();
+    return static_cast<double> bObjectRigidBody_->getAngularDamping();
   }
 
   /** @brief Get the scalar collision margin of an object. See @ref

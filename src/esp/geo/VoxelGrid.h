@@ -5,7 +5,6 @@
 #ifndef ESP_GEO_VOXEL_GRID_H_
 #define ESP_GEO_VOXEL_GRID_H_
 
-#include <cstddef>
 #include <vector>
 
 #include <Corrade/Containers/ArrayViewStl.h>
@@ -103,8 +102,8 @@ class VoxelGrid {
                         static_cast<std::size_t>(m_voxelGridDimensions[2])};
 
     Corrade::Containers::StridedDimensions<3, std::ptrdiff_t> strides{
-        static_cast<std::ptrdiff_t>(static_cast<unsigned long>(m_voxelGridDimensions[2] *
-                                    m_voxelGridDimensions[1)] * sizeof(T)),
+        static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] *
+                                    m_voxelGridDimensions[1] * sizeof(T)),
         static_cast<std::ptrdiff_t>(m_voxelGridDimensions[2] * sizeof(T)),
         static_cast<std::ptrdiff_t>(sizeof(T))};
 
