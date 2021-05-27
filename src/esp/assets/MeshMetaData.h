@@ -43,9 +43,9 @@ struct MeshTransformNode {
 
   /** @brief Default constructor. */
   MeshTransformNode()
-      : meshIDLocal(ID_UNDEFINED), materialID(""), componentID(ID_UNDEFINED) {
-    // "" materialID means default
-  }
+      : meshIDLocal(ID_UNDEFINED),
+        materialID(""),  // default material id
+        componentID(ID_UNDEFINED){};
 };
 
 /**
