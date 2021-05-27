@@ -1,6 +1,6 @@
 
-#include <assert.h>
-#include <limits.h>
+#include <cassert>
+#include <climits>
 #include <cmath>
 
 #include <Corrade/Containers/GrowableArray.h>
