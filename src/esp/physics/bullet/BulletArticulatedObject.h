@@ -194,6 +194,15 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! clamp current pose to joint limits
   void clampJointLimits() override;
 
+  /**
+   * @brief Set or reset the articulated object's state using the object's
+   * specified @p sceneAOInstanceAttributes_ (down cast in method).
+   * @param defaultCOMCorrection Not used in AO currently. The default value of
+   * whether COM-based translation correction needs to occur.
+   */
+  void resetStateFromSceneInstanceAttr(
+      CORRADE_UNUSED bool defaultCOMCorrection = false) override;
+
  protected:
   void setRootState(const Magnum::Matrix4& state) override;
 

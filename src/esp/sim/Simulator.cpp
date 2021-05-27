@@ -531,70 +531,10 @@ bool Simulator::instanceArticulatedObjectsForActiveScene() {
             artObjInst->getHandle());
 
     // create articulated object
-    aoID = physicsManager_->addArticulatedObjectFromURDF(
-        artObjFilePath, &drawables, artObjInst->getFixedBase(),
-        artObjInst->getUniformScale(), artObjInst->getMassScale());
+    aoID = physicsManager_->addArticulatedObjectInstance(artObjFilePath,
+                                                         artObjInst);
 
-    if (aoID == ID_UNDEFINED) {
-      // instancing failed for some reason.
-      LOG(ERROR) << errMsgTmplt
-                 << "Articulated Object create failed for model filepath "
-                 << artObjFilePath << ", whose handle is "
-                 << artObjInst->getHandle()
-                 << " as specified in articulated object instance attributes.";
-      return false;
-    }
-    // now move objects
-    // set object's location and rotation based on translation and rotation
-    // params specified in instance attributes
-    auto translate = artObjInst->getTranslation();
-
-    // construct initial transformation state.
-    Magnum::Matrix4 state =
-        Magnum::Matrix4::from(artObjInst->getRotation().toMatrix(), translate);
-    physicsManager_->setArticulatedObjectRootState(aoID, state);
-    // set object's motion type if different than set value
-    const physics::MotionType attrObjMotionType =
-        static_cast<physics::MotionType>(artObjInst->getMotionType());
-    if (attrObjMotionType != physics::MotionType::UNDEFINED) {
-      physicsManager_->setArticulatedObjectMotionType(aoID, attrObjMotionType);
-    }
-    // set initial joint positions
-    std::vector<float> aoJointPose =
-        physicsManager_->getArticulatedObjectPositions(aoID);
-    std::map<std::string, float>& initJointPos = artObjInst->getInitJointPose();
-    // map instance vals into
-    int idx = 0;
-    for (const auto& elem : initJointPos) {
-      aoJointPose[idx++] = elem.second;
-      if (idx >= aoJointPose.size()) {
-        LOG(WARNING) << errMsgTmplt
-                     << "Attempting to specify more initial joint poses than "
-                        "exist in articulated object "
-                     << artObjInst->getHandle() << ", so skipping";
-        break;
-      }
-    }
-    physicsManager_->setArticulatedObjectPositions(aoID, aoJointPose);
-    // set initial joint velocities
-    std::vector<float> aoJointVels =
-        physicsManager_->getArticulatedObjectVelocities(aoID);
-    std::map<std::string, float>& initJointVel =
-        artObjInst->getInitJointVelocities();
-    idx = 0;
-    for (const auto& elem : initJointVel) {
-      aoJointVels[idx++] = elem.second;
-      if (idx >= aoJointVels.size()) {
-        LOG(WARNING)
-            << errMsgTmplt
-            << "Attempting to specify more initial joint velocities than "
-               "exist in articulated object "
-            << artObjInst->getHandle() << ", so skipping";
-        break;
-      }
-    }
-
-    physicsManager_->setArticulatedObjectVelocities(aoID, aoJointVels);
+    // physicsManager_->setArticulatedObjectVelocities(aoID, aoJointVels);
     artObjsAdded.push_back(aoID);
   }  // for each articulated object instance
   return true;

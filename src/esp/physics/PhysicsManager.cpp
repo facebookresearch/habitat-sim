@@ -260,6 +260,44 @@ int PhysicsManager::addObject(
   return nextObjectID_;
 }  // PhysicsManager::addObject
 
+int PhysicsManager::addArticulatedObjectInstance(
+    const std::string& filepath,
+    const std::shared_ptr<esp::metadata::attributes::SceneAOInstanceAttributes>&
+        aObjInstAttributes) {
+  std::string errMsgTmplt = "PhysicsManager::addObjectInstance : ";
+
+  // Get drawables from simulator. TODO: Support non-existant simulator?
+  auto& drawables = simulator_->getDrawableGroup();
+
+  // call object creation (resides only in physics library-based derived physics
+  // managers)
+  int aObjID = this->addArticulatedObjectFromURDF(
+      filepath, &drawables, aObjInstAttributes->getFixedBase(),
+      aObjInstAttributes->getUniformScale(),
+      aObjInstAttributes->getMassScale());
+  if (aObjID == ID_UNDEFINED) {
+    // instancing failed for some reason.
+    LOG(ERROR) << errMsgTmplt
+               << "Articulated Object create failed for model filepath "
+               << filepath << ", whose handle is "
+               << aObjInstAttributes->getHandle()
+               << " as specified in articulated object instance attributes.";
+    return ID_UNDEFINED;
+  }
+
+  // set articulated object's scene instancing attributes
+  this->existingArticulatedObjects_.at(aObjID)->setSceneInstanceAttr(
+      aObjInstAttributes);
+
+  // set articulated object's location, rotation and other pertinent state
+  // values based on
+  // scene object instance attributes set in the object above.
+  this->existingArticulatedObjects_.at(aObjID)
+      ->resetStateFromSceneInstanceAttr();
+
+  return aObjID;
+}  // PhysicsManager::addArticulatedObjectInstance
+
 esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
   return rigidObjectManager_->createObject("ManagedRigidObject");
 }

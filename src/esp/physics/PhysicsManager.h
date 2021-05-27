@@ -402,6 +402,23 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   //============= ArticulatedObject functions =============
   // TODO: think more about how these should be incorporated into the existing
   // framework
+
+  /**
+   * @brief Add an instance of an  @ref ArticulatedObject in the world.
+   *
+   * @param filepath the file location for the articulated object's model
+   * @param aObjInstAttributes the relevant instancing values for the
+   * articulated object
+   * @return A unique id for the @ref ArticulatedObject, allocated from the same
+   * id set as rigid objects.
+   */
+
+  int addArticulatedObjectInstance(
+      const std::string& filepath,
+      const std::shared_ptr<
+          esp::metadata::attributes::SceneAOInstanceAttributes>&
+          aObjInstAttributes);
+
   /**
    * @brief Load, parse, and import a URDF file instantiating an @ref
    * ArticulatedObject in the world.

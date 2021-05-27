@@ -196,6 +196,18 @@ class ArticulatedLink : public RigidBase {
         << "(rotateZLocal) - ArticulatedLink can't do this.";
   }
 
+  /**
+   * @brief Not used for articulated links.  Set or reset the object's state
+   * using the object's specified @p sceneInstanceAttributes_.
+   * @param defaultCOMCorrection The default value of whether COM-based
+   * translation correction needs to occur.
+   */
+  void resetStateFromSceneInstanceAttr(
+      CORRADE_UNUSED bool defaultCOMCorrection = false) override {
+    Corrade::Utility::Debug()
+        << "(resetStateFromSceneInstanceAttr) - ArticulatedLink can't do this.";
+  }
+
  private:
   /**
    * @brief Finalize the initialization of this link.
@@ -458,6 +470,19 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   //! map PhysicsManager objectId to local multibody linkId
   std::map<int, int> objectIdToLinkId_;
+
+  /**
+   * @brief Returns the @ref
+   * metadata::attributes::SceneAOInstanceAttributes used to place this
+   * Articulated object in the scene.
+   * @return a copy of the scene instance attributes used to place this object
+   * in the scene.
+   */
+  std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  getSceneInstanceAttributes() const {
+    return PhysicsObjectBase::getSceneInstanceAttrInternal<
+        metadata::attributes::SceneAOInstanceAttributes>();
+  }
 
  protected:
   /**

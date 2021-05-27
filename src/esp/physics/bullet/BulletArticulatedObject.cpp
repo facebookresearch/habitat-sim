@@ -373,6 +373,73 @@ bool BulletArticulatedObject::attachGeometry(
   return geomSuccess;
 }
 
+void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
+    CORRADE_UNUSED bool defaultCOMCorrection) {
+  auto sceneInstanceAttr = getSceneInstanceAttributes();
+  if (!sceneInstanceAttr) {
+    // if no scene instance attributes specified, no initial state is set
+    return;
+  }
+
+  // now move objects
+  // set object's location and rotation based on translation and rotation
+  // params specified in instance attributes
+  auto translate = sceneInstanceAttr->getTranslation();
+
+  // construct initial transformation state.
+  Magnum::Matrix4 state = Magnum::Matrix4::from(
+      sceneInstanceAttr->getRotation().toMatrix(), translate);
+  setTransformation(state);
+  // set object's motion type if different than set value
+  const physics::MotionType attrObjMotionType =
+      static_cast<physics::MotionType>(sceneInstanceAttr->getMotionType());
+  if (attrObjMotionType != physics::MotionType::UNDEFINED) {
+    setMotionType(attrObjMotionType);
+  }
+  // set initial joint positions
+  // get array of existing joint dofs
+  std::vector<float> aoJointPose = getPositions();
+  // get instance-specified initial joint positions
+  std::map<std::string, float>& initJointPos =
+      sceneInstanceAttr->getInitJointPose();
+  // map instance vals into
+  size_t idx = 0;
+  for (const auto& elem : initJointPos) {
+    if (idx >= aoJointPose.size()) {
+      LOG(WARNING)
+          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr : "
+          << "Attempting to specify more initial joint poses than "
+             "exist in articulated object "
+          << sceneInstanceAttr->getHandle() << ", so skipping";
+      break;
+    }
+    aoJointPose[idx++] = elem.second;
+  }
+  setPositions(aoJointPose);
+
+  // set initial joint velocities
+  // get array of existing joint vel dofs
+  std::vector<float> aoJointVels = getVelocities();
+  // get instance-specified initial joint velocities
+  std::map<std::string, float>& initJointVel =
+      sceneInstanceAttr->getInitJointVelocities();
+  idx = 0;
+  for (const auto& elem : initJointVel) {
+    if (idx >= aoJointVels.size()) {
+      LOG(WARNING)
+          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr : "
+          << "Attempting to specify more initial joint velocities than "
+             "exist in articulated object "
+          << sceneInstanceAttr->getHandle() << ", so skipping";
+      break;
+    }
+    aoJointVels[idx++] = elem.second;
+  }
+
+  setVelocities(aoJointVels);
+
+}  // BulletArticulatedObject::resetStateFromSceneInstanceAttr
+
 void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
   btTransform tr{state};
   btMultiBody_->setBaseWorldTransform(tr);
