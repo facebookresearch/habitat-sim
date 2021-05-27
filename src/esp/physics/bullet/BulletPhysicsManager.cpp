@@ -237,7 +237,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     return results;
   }
   btVector3 from(ray.origin);
-  btVector3 to(ray.origin + ray.direction * maxDistance);
+  btVector3 to(static_cast<double>(ray.origin + ray.direction) * maxDistance);
 
   btCollisionWorld::AllHitsRayResultCallback allResults(from, to);
   bWorld_->rayTest(from, to, allResults);
@@ -360,12 +360,12 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
 
       // convert impulses to forces w/ recent physics timstep
       pt.normalForce =
-          static_cast<double>(srcPt.getAppliedImpulse() / recentTimeStep_);
+          static_cast<double>(srcPt.getAppliedImpulse()) / recentTimeStep_;
 
       pt.linearFrictionForce1 =
-          static_cast<double>(srcPt.m_appliedImpulseLateral1 / recentTimeStep_);
+          static_cast<double>(srcPt.m_appliedImpulseLateral1) / recentTimeStep_;
       pt.linearFrictionForce2 =
-          static_cast<double>(srcPt.m_appliedImpulseLateral2 / recentTimeStep_);
+          static_cast<double>(srcPt.m_appliedImpulseLateral2) / recentTimeStep_;
 
       pt.linearFrictionDirection1 = Mn::Vector3(srcPt.m_lateralFrictionDir1);
       pt.linearFrictionDirection2 = Mn::Vector3(srcPt.m_lateralFrictionDir2);
