@@ -50,7 +50,9 @@ class SceneAttributesManager
       : AttributesManager<attributes::SceneAttributes,
                           core::ManagedObjectAccess::Copy>::
             AttributesManager("Scene Instance", "scene_instance.json") {
-    buildCtorFuncPtrMaps();
+    // build this manager's copy constructor map
+    this->copyConstructorMap_["SceneAttributes"] =
+        &SceneAttributesManager::createObjectCopy<attributes::SceneAttributes>;
   }
 
   /**
@@ -166,19 +168,6 @@ class SceneAttributesManager
   int registerObjectFinalize(attributes::SceneAttributes::ptr sceneAttributes,
                              const std::string& sceneAttributesHandle,
                              CORRADE_UNUSED bool forceRegistration) override;
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
-   *
-   * NOTE : currently this will only perform a shallow copy of the
-   * SceneAttributes.
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["SceneAttributes"] =
-        &SceneAttributesManager::createObjectCopy<attributes::SceneAttributes>;
-  }  // SceneAttributesManager::buildCtorFuncPtrMaps
 
   /**
    * @brief This function is meaningless for this manager's ManagedObjects.

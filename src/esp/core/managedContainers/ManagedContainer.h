@@ -552,14 +552,6 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::
 
   /**
-   * @brief This function will build the appropriate @p copyConstructorMap_
-   * copy constructor function pointer map for this container's managed object,
-   * keyed on the managed object's class type.  This MUST be called in the
-   * constructor of the -instancing- class.
-   */
-  virtual void buildCtorFuncPtrMaps() = 0;
-
-  /**
    * @brief Build an @ref esp::core::AbstractManagedObject object of type
    * associated with passed object.
    * @param origAttr The ptr to the original AbstractManagedObject object to
@@ -630,7 +622,7 @@ class ManagedContainer : public ManagedContainerBase {
   /**
    * @brief Map of function pointers to instantiate a copy of a managed
    * object. A managed object is instanced by accessing the approrpiate
-   * function pointer.
+   * function pointer.  THIS MUST BE INSTANCED IN SPECIALIZATION CONSTRUCTOR.
    */
   Map_Of_CopyCtors copyConstructorMap_;
 

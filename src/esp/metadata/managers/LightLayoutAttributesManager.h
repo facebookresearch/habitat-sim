@@ -23,7 +23,10 @@ class LightLayoutAttributesManager
       : AttributesManager<attributes::LightLayoutAttributes,
                           core::ManagedObjectAccess::Copy>::
             AttributesManager("Lighting Layout", "lighting_config.json") {
-    buildCtorFuncPtrMaps();
+    // build this manager's copy constructor map
+    this->copyConstructorMap_["LightLayoutAttributes"] =
+        &LightLayoutAttributesManager::createObjectCopy<
+            attributes::LightLayoutAttributes>;
   }
 
   /**
@@ -126,17 +129,6 @@ class LightLayoutAttributesManager
    * reset.
    */
   void resetFinalize() override {}
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<LightLayoutAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["LightLayoutAttributes"] =
-        &LightLayoutAttributesManager::createObjectCopy<
-            attributes::LightLayoutAttributes>;
-  }  // LightLayoutAttributesManager::buildCtorFuncPtrMaps
 
   /**
    * @brief Light Attributes has no reason to check this value
