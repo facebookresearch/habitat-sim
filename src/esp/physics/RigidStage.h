@@ -77,17 +77,12 @@ class RigidStage : public RigidBase {
 
  public:
   /**
-   * @brief Currently not supported.  Set the stage's state from a @ref
-   * esp::metadata::attributes::SceneObjectInstanceAttributes
-   * @param stageInstAttr The attributes that describe the desired state to set
-   * this object.
+   * @brief Currently not supported. Set or reset the stages's state using the
+   * object's specified @p sceneInstanceAttributes_.
    * @param defaultCOMCorrection The default value of whether COM-based
    * translation correction needs to occur.
    */
-  void setStateFromAttributes(
-      CORRADE_UNUSED const
-          esp::metadata::attributes::SceneObjectInstanceAttributes* const
-              stageInstAttr,
+  void resetStateFromSceneInstanceAttr(
       CORRADE_UNUSED bool defaultCOMCorrection = false) override {}
 
   /**
