@@ -3,72 +3,71 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "CollisionGroupHelper.h"
-#include <Corrade/Utility/Assert.h>
-#include "esp/core/logging.h"
 
 namespace esp {
 namespace physics {
 
-/*
-  enum class CollisionGroup {
-    Default = 1,
-    Static = 2,
-    Kinematic = 4,
-    FreeObject = 8,
-    GraspedObject = 16,
-    Robot = 32,
-  };
-*/
+// initialize the default collision group names
+std::map<std::string, int> CollisionGroupHelper::collisionGroupNames = {
+    {"Default", int(CollisionGroup::Default)},
+    {"Static", int(CollisionGroup::Static)},
+    {"Kinematic", int(CollisionGroup::Kinematic)},
+    {"FreeObject", int(CollisionGroup::FreeObject)},
+    {"Robot", int(CollisionGroup::Robot)},
+    {"Noncollidable", int(CollisionGroup::Noncollidable)},
+    {"UserGroup1", int(CollisionGroup::UserGroup1)},
+    {"UserGroup2", int(CollisionGroup::UserGroup2)},
+    {"UserGroup3", int(CollisionGroup::UserGroup3)},
+    {"UserGroup4", int(CollisionGroup::UserGroup4)},
+    {"UserGroup5", int(CollisionGroup::UserGroup5)},
+    {"UserGroup6", int(CollisionGroup::UserGroup6)},
+    {"UserGroup7", int(CollisionGroup::UserGroup7)},
+    {"UserGroup8", int(CollisionGroup::UserGroup8)},
+    {"UserGroup9", int(CollisionGroup::UserGroup9)},
+    {"AllFilter", int(CollisionGroup::AllFilter)},
+};
 
-int CollisionGroupHelper::getMaskForGroup(CollisionGroup group) {
-  // TODO: refactor this in terms of enabling collision between specific pairs
-  // of groups
-  switch (group) {
-    case CollisionGroup::Default:
-      // everything
-      return -1 & ~int(CollisionGroup::Noncollidable);
+// initialize the default collision group masks
+std::map<CollisionGroup, int> CollisionGroupHelper::collisionGroupMasks = {
+    // everything except Noncollidable
+    {CollisionGroup::Default, -1 & ~int(CollisionGroup::Noncollidable)},
+    // all but Static and Kinematic
+    {CollisionGroup::Static, -1 & ~int(CollisionGroup::Kinematic) &
+                                 ~int(CollisionGroup::Static) &
+                                 ~int(CollisionGroup::Noncollidable)},
+    // all but Static and Kinematic
+    {CollisionGroup::Kinematic, -1 & ~int(CollisionGroup::Kinematic) &
+                                    ~int(CollisionGroup::Static) &
+                                    ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::FreeObject, -1 & ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::Robot, -1 & ~int(CollisionGroup::Noncollidable)},
+    // nothing
+    {CollisionGroup::Noncollidable, 0},
 
-    case CollisionGroup::Static:
-    case CollisionGroup::Kinematic:
-      // everything but [kinematic, static]
-      return int(-1) & ~int(CollisionGroup::Kinematic) &
-             ~int(CollisionGroup::Static) & ~int(CollisionGroup::Noncollidable);
+    // everything except Noncollidable
+    {CollisionGroup::UserGroup1, -1 & ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::UserGroup2, -1 & ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::UserGroup3, -1 & ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::UserGroup4, -1 & ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::UserGroup5, -1 & ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::UserGroup6, -1 & ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::UserGroup7, -1 & ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::UserGroup8, -1 & ~int(CollisionGroup::Noncollidable)},
+    // everything except Noncollidable
+    {CollisionGroup::UserGroup9, -1 & ~int(CollisionGroup::Noncollidable)},
 
-    case CollisionGroup::FreeObject:
-      // everything
-      return int(-1) & ~int(CollisionGroup::Noncollidable);
-
-    case CollisionGroup::GraspedObject:
-      // everything but robot
-      return int(-1) & ~int(CollisionGroup::Robot) &
-             ~int(CollisionGroup::Noncollidable);
-
-    case CollisionGroup::Robot:
-      // everything but grasped object
-      return int(-1) & ~int(CollisionGroup::GraspedObject) &
-             ~int(CollisionGroup::Noncollidable);
-
-    case CollisionGroup::EeMargin:
-      // everything but grasped object or the robot
-      return int(-1) & ~int(CollisionGroup::GraspedObject) &
-             ~int(CollisionGroup::Robot) & ~int(CollisionGroup::Noncollidable);
-
-    case CollisionGroup::SelObj:
-      // everything but the ee margin
-      return int(-1) & ~(int(CollisionGroup::EeMargin)) &
-             ~int(CollisionGroup::Noncollidable);
-
-    case CollisionGroup::Noncollidable:
-      // nothing
-      return 0;
-
-    default:
-      CORRADE_ASSERT(
-          false,
-          "Collision group specified does not exist or no mask configured.", 0);
-      return 0;
-  }
-}
+    // everything except Noncollidable
+    {CollisionGroup::AllFilter, -1 & ~int(CollisionGroup::Noncollidable)},
+};
 
 }  // namespace physics
 }  // namespace esp
