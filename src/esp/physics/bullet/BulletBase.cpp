@@ -41,7 +41,7 @@ void BulletBase::constructConvexShapesFromMeshes(
     }
   }
 
-  for (auto& child : node.children) {
+  for (const auto& child : node.children) {
     constructConvexShapesFromMeshes(transformFromLocalToWorld, meshGroup, child,
                                     bObjectShape, bObjectConvexShapes);
   }
@@ -66,7 +66,7 @@ void BulletBase::constructJoinedConvexShapeFromMeshes(
           btVector3(transformFromLocalToWorld.transformPoint(v)), false);
     }
   }
-  for (auto& child : node.children) {
+  for (const auto& child : node.children) {
     constructJoinedConvexShapeFromMeshes(transformFromLocalToWorld, meshGroup,
                                          child, bConvexShape);
   }

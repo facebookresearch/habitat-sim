@@ -263,7 +263,7 @@ struct PathFinder::Impl {
       const float metersPerPixel,
       const float height) const;
 
-  const assets::MeshData::ptr getNavMeshData();
+  assets::MeshData::ptr getNavMeshData();
 
  private:
   struct NavMeshDeleter {
@@ -786,7 +786,7 @@ void PathFinder::Impl::removeZeroAreaPolys() {
       float polygonArea = polyArea(poly, tile);
       if (polygonArea < 1e-5) {
         navMesh_->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
-      } else if (poly->flags & POLYFLAGS_WALK) {
+      } else if ((poly->flags & POLYFLAGS_WALK) != 0) {
         navMeshArea_ += polygonArea;
       }
     }
@@ -836,7 +836,7 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
       return false;
     }
 
-    if (!tileHeader.tileRef || !tileHeader.dataSize)
+    if ((tileHeader.tileRef == 0u) || (tileHeader.dataSize == 0))
       break;
 
     unsigned char* data = static_cast<unsigned char*>(
@@ -889,7 +889,7 @@ bool PathFinder::Impl::saveNavMesh(const std::string& path) {
   header.numTiles = 0;
   for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
     const dtMeshTile* tile = navMesh->getTile(i);
-    if (!tile || !tile->header || !tile->dataSize)
+    if (!tile || !tile->header || (tile->dataSize == 0))
       continue;
     header.numTiles++;
   }
@@ -899,7 +899,7 @@ bool PathFinder::Impl::saveNavMesh(const std::string& path) {
   // Store tiles.
   for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
     const dtMeshTile* tile = navMesh->getTile(i);
-    if (!tile || !tile->header || !tile->dataSize)
+    if (!tile || !tile->header || (tile->dataSize == 0))
       continue;
 
     NavMeshTileHeader tileHeader{};
@@ -1292,7 +1292,7 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
   return topdownMap;
 }
 
-const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
+assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
   if (meshData_ == nullptr && isLoaded()) {
     meshData_ = assets::MeshData::create();
     std::vector<esp::vec3f>& vbo = meshData_->vbo;
@@ -1434,7 +1434,7 @@ Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
   return pimpl_->getTopDownView(metersPerPixel, height);
 }
 
-const assets::MeshData::ptr PathFinder::getNavMeshData() {
+assets::MeshData::ptr PathFinder::getNavMeshData() {
   return pimpl_->getNavMeshData();
 }
 

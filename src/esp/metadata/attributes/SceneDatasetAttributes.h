@@ -30,40 +30,36 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const managers::AssetAttributesManager::ptr getAssetAttributesManager()
-      const {
+  managers::AssetAttributesManager::ptr getAssetAttributesManager() const {
     return assetAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
-      const {
+  managers::ObjectAttributesManager::ptr getObjectAttributesManager() const {
     return objectAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to light attributes.
    */
-  const managers::LightLayoutAttributesManager::ptr
-  getLightLayoutAttributesManager() const {
+  managers::LightLayoutAttributesManager::ptr getLightLayoutAttributesManager()
+      const {
     return lightLayoutAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
-      const {
+  managers::SceneAttributesManager::ptr getSceneAttributesManager() const {
     return sceneAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to stage attributes.
    */
-  const managers::StageAttributesManager::ptr getStageAttributesManager()
-      const {
+  managers::StageAttributesManager::ptr getStageAttributesManager() const {
     return stageAttributesManager_;
   }
 
@@ -219,8 +215,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return name of stage attributes with handle containing @p stageAttrName ,
    * or empty string if none.
    */
-  inline const std::string getStageAttrFullHandle(
-      const std::string& stageAttrName) {
+  inline std::string getStageAttrFullHandle(const std::string& stageAttrName) {
     return getFullAttrNameFromStr(stageAttrName, stageAttributesManager_);
   }  // getStageAttrFullHandle
 
@@ -235,8 +230,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return name of object attributes with handle containing @p objAttrName or
    * empty string if none.
    */
-  inline const std::string getObjAttrFullHandle(
-      const std::string& objAttrName) {
+  inline std::string getObjAttrFullHandle(const std::string& objAttrName) {
     return getFullAttrNameFromStr(objAttrName, objectAttributesManager_);
   }  // getObjAttrFullHandle
 
@@ -249,7 +243,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return the full attributes name corresponding to @p lightSetupName , or
    * the empty string.
    */
-  inline const std::string getLightSetupFullHandle(
+  inline std::string getLightSetupFullHandle(
       const std::string& lightSetupName) {
     if (lightSetupName == DEFAULT_LIGHTING_KEY) {
       return DEFAULT_LIGHTING_KEY;
@@ -271,7 +265,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return actual name of attributes in attrMgr, or empty string if does not
    * exist.
    */
-  inline const std::string getFullAttrNameFromStr(
+  inline std::string getFullAttrNameFromStr(
       const std::string& attrName,
       const esp::core::ManagedContainerBase::ptr& attrMgr) {
     auto handleList = attrMgr->getObjectHandlesBySubstring(attrName);

@@ -124,8 +124,15 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setMetallic(materialData_->metallic)
       .setEmissiveColor(materialData_->emissiveColor);
 
+  // XXX
+  PbrShader::PbrDebugToggle toggles;
+  // toggles.DisableDirectDiffuse = true;
+  toggles.DisableDirectSpecular = true;
+  (*shader_).setDebugToggles(toggles);
+  (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);
+
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
-      materialData_->baseColorTexture) {
+      (materialData_->baseColorTexture != nullptr)) {
     shader_->bindBaseColorTexture(*materialData_->baseColorTexture);
   }
 
@@ -143,12 +150,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   if ((flags_ & PbrShader::Flag::NormalTexture) &&
-      materialData_->normalTexture) {
+      (materialData_->normalTexture != nullptr)) {
     shader_->bindNormalTexture(*materialData_->normalTexture);
   }
 
   if ((flags_ & PbrShader::Flag::EmissiveTexture) &&
-      materialData_->emissiveTexture) {
+      (materialData_->emissiveTexture != nullptr)) {
     shader_->bindEmissiveTexture(*materialData_->emissiveTexture);
   }
 

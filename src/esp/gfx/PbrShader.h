@@ -426,7 +426,38 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& setLightRanges(std::initializer_list<float> ranges);
 
+  /**
+   *  @brief Set the scale of the normal texture
+   *  @param scale
+   *  @return Reference to self (for method chaining)
+   */
   PbrShader& setNormalTextureScale(float scale);
+
+  /**
+   * Toggles that control contributions from different components
+   */
+  struct PbrDebugToggle {
+    bool DisableDirectDiffuse = false;
+    bool DisableDirectSpecular = false;
+    bool DisableIblDiffuse = false;
+    bool DisableIblSpecular = false;
+  };
+
+  /**
+   *  @brief Set the debug toggles
+   *  @param scale
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setDebugToggles(const PbrDebugToggle& toggles);
+
+  enum class PbrDebugDisplay : uint8_t {
+    None = 0,
+    Normal,
+  };
+  /**
+   *@brief debug display visualization
+   */
+  PbrShader& setDebugDisplay(PbrDebugDisplay index);
 
  protected:
   Flags flags_;
@@ -456,6 +487,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int lightDirectionsUniform_ = ID_UNDEFINED;
 
   int cameraWorldPosUniform_ = ID_UNDEFINED;
+
+  // pbr debug info
+  int debugDirectDiffuseUniform_ = ID_UNDEFINED;
+  int debugDirectSpecularUniform_ = ID_UNDEFINED;
+  int debugIblDiffuseUniform_ = ID_UNDEFINED;
+  int debugIblSpecularUniform_ = ID_UNDEFINED;
+  int pbrDebugDisplayUniform_ = ID_UNDEFINED;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)

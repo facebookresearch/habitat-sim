@@ -102,7 +102,7 @@ void Player::clearFrame() {
 void Player::applyKeyframe(const Keyframe& keyframe) {
   for (const auto& assetInfo : keyframe.loads) {
     ASSERT(assetInfos_.count(assetInfo.filepath) == 0);
-    if (failedFilepaths_.count(assetInfo.filepath)) {
+    if (failedFilepaths_.count(assetInfo.filepath) != 0u) {
       continue;
     }
     assetInfos_[assetInfo.filepath] = assetInfo;
@@ -110,8 +110,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
 
   for (const auto& pair : keyframe.creations) {
     const auto& creation = pair.second;
-    if (!assetInfos_.count(creation.filepath)) {
-      if (!failedFilepaths_.count(creation.filepath)) {
+    if (assetInfos_.count(creation.filepath) == 0u) {
+      if (failedFilepaths_.count(creation.filepath) == 0u) {
         LOG(WARNING) << "Player: missing asset info for [" << creation.filepath
                      << "]";
         failedFilepaths_.insert(creation.filepath);
@@ -122,7 +122,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     auto* node = loadAndCreateRenderAssetInstanceCallback(
         assetInfos_[creation.filepath], creation);
     if (!node) {
-      if (!failedFilepaths_.count(creation.filepath)) {
+      if (failedFilepaths_.count(creation.filepath) == 0u) {
         LOG(WARNING) << "Player: load failed for asset [" << creation.filepath
                      << "]";
         failedFilepaths_.insert(creation.filepath);

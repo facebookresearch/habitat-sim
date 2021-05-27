@@ -66,7 +66,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   attributeLocationsStream << Cr::Utility::formatString(
       "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
   if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent) &&
-      lightCount_) {
+      (lightCount_ != 0u)) {
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
@@ -141,7 +141,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 #endif
   {
     bindAttributeLocation(Position::Location, "vertexPosition");
-    if (lightCount_) {
+    if (lightCount_ != 0u) {
       bindAttributeLocation(Normal::Location, "vertexNormal");
       if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent)) {
         bindAttributeLocation(Tangent4::Location, "vertexTangent");
@@ -154,7 +154,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
-  if (lightCount_) {
+  if (lightCount_ != 0u) {
     if (flags_ & Flag::BaseColorTexture) {
       setUniform(uniformLocation("BaseColorTexture"),
                  pbrTextureUnitSpace::TextureUnit::BaseColor);
@@ -181,57 +181,49 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   // cache the uniform locations
   viewMatrixUniform_ = uniformLocation("ViewMatrix");
-  CORRADE_INTERNAL_ASSERT(viewMatrixUniform_ >= 0);
   modelMatrixUniform_ = uniformLocation("ModelMatrix");
-  CORRADE_INTERNAL_ASSERT(modelMatrixUniform_ >= 0);
   normalMatrixUniform_ = uniformLocation("NormalMatrix");
-  CORRADE_INTERNAL_ASSERT(normalMatrixUniform_ >= 0);
   projMatrixUniform_ = uniformLocation("ProjectionMatrix");
-  CORRADE_INTERNAL_ASSERT(projMatrixUniform_ >= 0);
 
   if (flags_ & Flag::ObjectId) {
     objectIdUniform_ = uniformLocation("ObjectId");
-    CORRADE_INTERNAL_ASSERT(objectIdUniform_ >= 0);
   }
   if (flags_ & Flag::TextureTransformation) {
     textureMatrixUniform_ = uniformLocation("TextureMatrix");
-    CORRADE_INTERNAL_ASSERT(textureMatrixUniform_ >= 0);
   }
 
   // materials
   baseColorUniform_ = uniformLocation("Material.baseColor");
-  CORRADE_INTERNAL_ASSERT(baseColorUniform_ >= 0);
   roughnessUniform_ = uniformLocation("Material.roughness");
-  CORRADE_INTERNAL_ASSERT(roughnessUniform_ >= 0);
   metallicUniform_ = uniformLocation("Material.metallic");
-  CORRADE_INTERNAL_ASSERT(metallicUniform_ >= 0);
   emissiveColorUniform_ = uniformLocation("Material.emissiveColor");
-  CORRADE_INTERNAL_ASSERT(emissiveColorUniform_ >= 0);
 
   // lights
-  if (lightCount_) {
+  if (lightCount_ != 0u) {
     lightRangesUniform_ = uniformLocation("LightRanges");
-    CORRADE_INTERNAL_ASSERT(lightRangesUniform_ >= 0);
     lightColorsUniform_ = uniformLocation("LightColors");
-    CORRADE_INTERNAL_ASSERT(lightColorsUniform_ >= 0);
     lightDirectionsUniform_ = uniformLocation("LightDirections");
-    CORRADE_INTERNAL_ASSERT(lightDirectionsUniform_ >= 0);
   }
 
   if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::NormalTextureScale) &&
-      lightCount_) {
+      (lightCount_ != 0u)) {
     normalTextureScaleUniform_ = uniformLocation("NormalTextureScale");
-    CORRADE_INTERNAL_ASSERT(normalTextureScaleUniform_ >= 0);
   }
 
   cameraWorldPosUniform_ = uniformLocation("CameraWorldPos");
-  CORRADE_INTERNAL_ASSERT(cameraWorldPosUniform_ >= 0);
+
+  // for debug info
+  debugDirectDiffuseUniform_ = uniformLocation("PbrDebug.directDiffuse");
+  debugDirectSpecularUniform_ = uniformLocation("PbrDebug.directSpecular");
+  debugIblDiffuseUniform_ = uniformBlockIndex("PbrDebug.iblDiffuse");
+  debugIblSpecularUniform_ = uniformLocation("PbrDebug.iblSpecular");
+  pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
 
   // initialize the shader with some "reasonable defaults"
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
-  if (lightCount_) {
+  if (lightCount_ != 0u) {
     setBaseColor(Magnum::Color4{0.7f});
     setRoughness(0.9f);
     setMetallic(0.1f);
@@ -252,6 +244,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                                                     Mn::Constants::inf()});
   }
   setEmissiveColor(Magnum::Color3{0.0f});
+  setDebugToggles({});
+  setDebugDisplay(PbrDebugDisplay::None);
 }
 
 // Note: the texture binding points are explicitly specified above.
@@ -329,7 +323,7 @@ PbrShader& PbrShader::setObjectId(unsigned int objectId) {
 }
 
 PbrShader& PbrShader::setBaseColor(const Mn::Color4& color) {
-  if (lightCount_) {
+  if (lightCount_ != 0u) {
     setUniform(baseColorUniform_, color);
   }
   return *this;
@@ -341,15 +335,44 @@ PbrShader& PbrShader::setEmissiveColor(const Magnum::Color3& color) {
 }
 
 PbrShader& PbrShader::setRoughness(float roughness) {
-  if (lightCount_) {
+  if (lightCount_ != 0u) {
     setUniform(roughnessUniform_, roughness);
   }
   return *this;
 }
 
 PbrShader& PbrShader::setMetallic(float metallic) {
-  if (lightCount_) {
+  if (lightCount_ != 0u) {
     setUniform(metallicUniform_, metallic);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setDebugToggles(const PbrDebugToggle& toggles) {
+  setUniform(debugDirectDiffuseUniform_,
+             (toggles.DisableDirectDiffuse ? 0.0f : 1.0f));
+  setUniform(debugDirectSpecularUniform_,
+             (toggles.DisableDirectSpecular ? 0.0f : 1.0f));
+  setUniform(debugIblDiffuseUniform_,
+             (toggles.DisableIblDiffuse ? 0.0f : 1.0f));
+  setUniform(debugIblSpecularUniform_,
+             (toggles.DisableIblSpecular ? 0.0f : 1.0f));
+  return *this;
+}
+
+PbrShader& PbrShader::setDebugDisplay(PbrDebugDisplay index) {
+  switch (index) {
+    case PbrDebugDisplay::None:
+      setUniform(pbrDebugDisplayUniform_, 0);
+      break;
+
+    case PbrDebugDisplay::Normal:
+      setUniform(pbrDebugDisplayUniform_, 1);
+      break;
+
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
   }
   return *this;
 }
@@ -466,7 +489,7 @@ PbrShader& PbrShader::setNormalTextureScale(float scale) {
                  "PbrShader::setNormalTextureScale(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  if ((flags_ & Flag::NormalTextureScale) && lightCount_) {
+  if ((flags_ & Flag::NormalTextureScale) && (lightCount_ != 0u)) {
     setUniform(normalTextureScaleUniform_, scale);
   }
   return *this;

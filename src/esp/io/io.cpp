@@ -133,7 +133,7 @@ std::vector<std::string> tokenize(const std::string& string,
   int pos = 0;
   bool done = false;
   for (pos = 0; pos < string.length(); ++pos) {
-    if (delimiterSet.count(string[pos])) {
+    if (delimiterSet.count(string[pos]) != 0u) {
       if (pos > start) {
         tokens.push_back(string.substr(start, pos - start));
       } else if (!mergeAdjDelims || start == 0) {
