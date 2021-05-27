@@ -110,10 +110,12 @@ int PhysicsManager::addObjectInstance(
     return ID_UNDEFINED;
   }
 
+  // save the scene init attributes used to configure object's initial state
+  this->existingObjects_.at(objID)->setSceneInstanceAttr(objInstAttributes);
   // set object's location, rotation and other pertinent state values based on
-  // scene object instance values
-  this->existingObjects_.at(objID)->setStateFromAttributes(
-      objInstAttributes.get(), defaultCOMCorrection);
+  // scene object instance attributes set in the object above.
+  this->existingObjects_.at(objID)->resetStateFromSceneInstanceAttr(
+      defaultCOMCorrection);
 
   return objID;
 }  // PhysicsManager::addObjectInstance

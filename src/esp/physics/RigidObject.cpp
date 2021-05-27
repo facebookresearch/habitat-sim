@@ -66,37 +66,38 @@ void RigidObject::setMotionType(MotionType mt) {
   }
 }
 
-void RigidObject::setStateFromAttributes(
-    const esp::metadata::attributes::SceneObjectInstanceAttributes* const
-        objInstAttr,
-    bool defaultCOMCorrection) {
+void RigidObject::resetStateFromSceneInstanceAttr(bool defaultCOMCorrection) {
+  auto sceneInstanceAttr = getSceneInstanceAttributes();
+  if (!sceneInstanceAttr) {
+    return;
+  }
   // set object's location and rotation based on translation and rotation
   // params specified in instance attributes
-  auto translate = objInstAttr->getTranslation();
+  auto translate = sceneInstanceAttr->getTranslation();
   // get instance override value, if exists
   auto instanceCOMOrigin =
       static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
-          objInstAttr->getTranslationOrigin());
-  if (((defaultCOMCorrection) &&
+          sceneInstanceAttr->getTranslationOrigin());
+  if ((defaultCOMCorrection &&
        (instanceCOMOrigin !=
         metadata::managers::SceneInstanceTranslationOrigin::COM)) ||
       (instanceCOMOrigin ==
        metadata::managers::SceneInstanceTranslationOrigin::AssetLocal)) {
     // if default COM correction is set and no object-based override, or if
     // Object set to correct for COM.
-    translate -=
-        objInstAttr->getRotation().transformVector(visualNode_->translation());
+    translate -= sceneInstanceAttr->getRotation().transformVector(
+        visualNode_->translation());
   }
 
   setTranslation(translate);
-  setRotation(objInstAttr->getRotation());
+  setRotation(sceneInstanceAttr->getRotation());
   // set object's motion type if different than set value
   const physics::MotionType attrObjMotionType =
-      static_cast<physics::MotionType>(objInstAttr->getMotionType());
+      static_cast<physics::MotionType>(sceneInstanceAttr->getMotionType());
   if (attrObjMotionType != physics::MotionType::UNDEFINED) {
     this->setMotionType(attrObjMotionType);
   }
-}  // RigidObject::setStateFromAttributes
+}  // RigidObject::resetStateFromSceneInstanceAttr
 
 //////////////////
 // VelocityControl

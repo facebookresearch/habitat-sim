@@ -36,7 +36,10 @@ const std::map<PrimObjTypes, const char*>
         {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
         {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
 
-void AssetAttributesManager::buildCtorFuncPtrMaps() {
+AssetAttributesManager::AssetAttributesManager()
+    : AttributesManager<attributes::AbstractPrimitiveAttributes,
+                        core::ManagedObjectAccess::Copy>::
+          AttributesManager("Primitive Asset", "prim_config.json") {
   // function pointers to asset attributes constructors
   primTypeConstructorMap_["capsule3DSolid"] =
       &AssetAttributesManager::createPrimAttributes<
@@ -102,10 +105,10 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
     this->undeletableObjectNames_.insert(tmpltHandle);
   }
 
-  LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
+  LOG(INFO) << "AssetAttributesManager::constructor : Built default "
                "primitive asset templates : "
             << std::to_string(defaultPrimAttributeHandles_.size());
-}  // AssetAttributesManager::buildMapOfPrimTypeConstructors
+}  // AssetAttributesManager::ctor
 
 AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
     const std::string& primClassName,
