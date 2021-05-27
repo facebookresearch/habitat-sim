@@ -237,7 +237,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     return results;
   }
   btVector3 from(ray.origin);
-  btVector3 to(static_cast<double>(ray.origin + ray.direction) * maxDistance);
+  btVector3 to((ray.origin + ray.direction) * maxDistance);
 
   btCollisionWorld::AllHitsRayResultCallback allResults(from, to);
   bWorld_->rayTest(from, to, allResults);
@@ -248,7 +248,9 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
 
     hit.normal = Magnum::Vector3{allResults.m_hitNormalWorld[i]};
     hit.point = Magnum::Vector3{allResults.m_hitPointWorld[i]};
-    hit.rayDistance = (allResults.m_hitFractions[i] * maxDistance) / rayLength;
+    hit.rayDistance =
+        (static_cast<double>(allResults.m_hitFractions[i]) * maxDistance) /
+        rayLength;
     // default to -1 for "scene collision" if we don't know which object was
     // involved
     hit.objectId = -1;
