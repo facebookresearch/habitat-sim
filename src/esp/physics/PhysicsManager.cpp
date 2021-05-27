@@ -292,15 +292,16 @@ int PhysicsManager::addArticulatedObjectInstance(
     return ID_UNDEFINED;
   }
 
+  // set articulated object up using scene instance
+
   // set articulated object's scene instancing attributes
-  this->existingArticulatedObjects_.at(aObjID)->setSceneInstanceAttr(
+  existingArticulatedObjects_.at(aObjID)->setSceneInstanceAttr(
       aObjInstAttributes);
 
   // set articulated object's location, rotation and other pertinent state
   // values based on
   // scene object instance attributes set in the object above.
-  this->existingArticulatedObjects_.at(aObjID)
-      ->resetStateFromSceneInstanceAttr();
+  existingArticulatedObjects_.at(aObjID)->resetStateFromSceneInstanceAttr();
 
   return aObjID;
 }  // PhysicsManager::addArticulatedObjectInstance

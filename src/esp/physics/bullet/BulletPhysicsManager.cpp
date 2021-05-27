@@ -121,14 +121,14 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     return ID_UNDEFINED;
   }
 
-  int articulatedObjectID_ = allocateObjectID();
+  int articulatedObjectID = allocateObjectID();
 
   // parse succeeded, attempt to create the articulated object
   scene::SceneNode* objectNode = &staticStageObject_->node().createChild();
-  BulletArticulatedObject::uptr articulatedObject =
-      BulletArticulatedObject::create_unique(objectNode, resourceManager_,
-                                             articulatedObjectID_, bWorld_,
-                                             collisionObjToObjIds_);
+  BulletArticulatedObject::ptr articulatedObject =
+      BulletArticulatedObject::create(objectNode, resourceManager_,
+                                      articulatedObjectID, bWorld_,
+                                      collisionObjToObjIds_);
 
   // before initializing the URDF, import all necessary assets in advance
   resourceManager_.importURDFAssets(*urdfImporter_->getModel());
@@ -138,7 +138,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   if (!objectSuccess) {
     delete objectNode;
-    deallocateObjectID(articulatedObjectID_);
+    deallocateObjectID(articulatedObjectID);
     Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
                        "initialization failed, aborting.";
     return ID_UNDEFINED;
@@ -157,13 +157,45 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   }
   // base collider refers to the articulated object's id
   collisionObjToObjIds_->emplace(
-      articulatedObject->btMultiBody_->getBaseCollider(), articulatedObjectID_);
+      articulatedObject->btMultiBody_->getBaseCollider(), articulatedObjectID);
 
-  existingArticulatedObjects_.emplace(articulatedObjectID_,
+  existingArticulatedObjects_.emplace(articulatedObjectID,
                                       std::move(articulatedObject));
 
-  return articulatedObjectID_;
-}
+  // get a simplified name of the handle for the object
+  std::string simpleArtObjHandle =
+      Corrade::Utility::Directory::splitExtension(
+          Corrade::Utility::Directory::splitExtension(
+              Corrade::Utility::Directory::filename(filepath))
+              .first)
+          .first;
+
+  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
+                     "simpleObjectHandle : "
+                  << simpleArtObjHandle;
+  std::string newArtObjectHandle =
+      articulatedObjectManager_->getUniqueHandleFromCandidate(
+          simpleArtObjHandle);
+  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
+                     "newArtObjectHandle : "
+                  << newArtObjectHandle;
+
+  existingArticulatedObjects_.at(articulatedObjectID)
+      ->setObjectName(newArtObjectHandle);
+
+  // 2.0 Get wrapper - name is irrelevant, do not register on create.
+  ManagedArticulatedObject::ptr AObjWrapper =
+      articulatedObjectManager_->createObject("No Name Yet");
+
+  // 3.0 Put articulated object in wrapper
+  AObjWrapper->setObjectRef(
+      existingArticulatedObjects_.at(articulatedObjectID));
+
+  // 4.0 register wrapper in manager
+  articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
+
+  return articulatedObjectID;
+}  // BulletPhysicsManager::addArticulatedObjectFromURDF
 
 esp::physics::ManagedRigidObject::ptr
 BulletPhysicsManager::getRigidObjectWrapper() {
@@ -213,7 +245,7 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
        it != existingObjects_.end(); ++it) {
     it->second->setActive(true);
   }
-  for (std::map<int, physics::ArticulatedObject::uptr>::iterator it =
+  for (std::map<int, physics::ArticulatedObject::ptr>::iterator it =
            existingArticulatedObjects_.begin();
        it != existingArticulatedObjects_.end(); ++it) {
     it->second->setActive(true);

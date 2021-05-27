@@ -21,7 +21,11 @@ class ArticulatedObjectManager
  public:
   explicit ArticulatedObjectManager()
       : esp::physics::PhysicsObjectBaseManager<ManagedArticulatedObject>::
-            PhysicsObjectBaseManager("ArticulatedObject") {}
+            PhysicsObjectBaseManager("ArticulatedObject") {
+    // build this manager's copy constructor map
+    this->copyConstructorMap_["ManagedArticulatedObject"] =
+        &ArticulatedObjectManager::createObjectCopy<ManagedArticulatedObject>;
+  }
 
  protected:
   /**

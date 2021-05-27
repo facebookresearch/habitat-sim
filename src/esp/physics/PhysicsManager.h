@@ -1323,7 +1323,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /** @brief Maps articulated object IDs to all existing physical object
    * instances in the world.
    */
-  std::map<int, ArticulatedObject::uptr> existingArticulatedObjects_;
+  std::map<int, ArticulatedObject::ptr> existingArticulatedObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing
