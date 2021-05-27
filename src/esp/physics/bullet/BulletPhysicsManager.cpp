@@ -237,7 +237,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     return results;
   }
   btVector3 from(ray.origin);
-  btVector3 to((ray.origin + ray.direction) * maxDistance);
+  btVector3 to(ray.origin + ray.direction * maxDistance);
 
   btCollisionWorld::AllHitsRayResultCallback allResults(from, to);
   bWorld_->rayTest(from, to, allResults);
