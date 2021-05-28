@@ -772,10 +772,6 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
             // take single sub-steps for velocity control precision
             physicsManager_->stepPhysics(-1);
           }
-          Mn::Debug{} << "state0 = "
-                      << physicsManager_->getTranslation(instancedObjects[0]);
-          Mn::Debug{} << "state1 = "
-                      << physicsManager_->getTranslation(instancedObjects[1]);
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
                      Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
                         .length(),
