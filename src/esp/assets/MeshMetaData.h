@@ -42,11 +42,10 @@ struct MeshTransformNode {
   Magnum::Matrix4 transformFromLocalToParent;
 
   /** @brief Default constructor. */
-  MeshTransformNode() {
-    meshIDLocal = ID_UNDEFINED;
-    materialID = "";  // default material
-    componentID = ID_UNDEFINED;
-  };
+  MeshTransformNode()
+      : meshIDLocal(ID_UNDEFINED),
+        materialID(""),  // default material id
+        componentID(ID_UNDEFINED){};
 };
 
 /**
