@@ -94,6 +94,8 @@ void declareBasePhysicsObjectWrapper(py::module& m,
       .def("contact_test", &PhysObjWrapper::contactTest,
            ("Discrete collision check for contact between an object and the "
             "collision world."))
+      .def("override_collision_group", &PhysObjWrapper::overrideCollisionGroup,
+           ("Manually set the collision group for an object."))
       .def(
           "translate", &PhysObjWrapper::translate, "vector"_a,
           ("Move this " + objType + " using passed translation vector").c_str())

@@ -112,19 +112,19 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }  // setLightSetup
 
-  /**
-   * @brief Discrete collision check for contact between an object and the
-   * collision world.
-   * @return Whether or not the object is in contact with any other collision
-   * enabled objects.
-   */
   bool contactTest() {
     if (auto sp = this->getObjectReference()) {
       return sp->contactTest();
     } else {
       return false;
     }
-  }
+  }  // contactTest
+
+  void overrideCollisionGroup(CollisionGroup group) {
+    if (auto sp = this->getObjectReference()) {
+      return sp->overrideCollisionGroup(group);
+    }
+  }  // overrideCollisionGroup
 
   scene::SceneNode* getSceneNode() {
     if (auto sp = this->getObjectReference()) {

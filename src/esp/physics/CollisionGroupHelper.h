@@ -6,6 +6,7 @@
 #define ESP_PHYSICS_COLLISIONGROUPHELPER_H_
 
 #include <Corrade/Utility/Assert.h>
+#include <Magnum/Magnum.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -70,9 +71,29 @@ class CollisionGroupHelper {
 
  public:
   //! get the mask for a group
-  static int getMaskForGroup(CollisionGroup group) {
+  static int getMaskForGroup(const CollisionGroup& group) {
     return collisionGroupMasks.at(group);
   }
+  static int getMaskForGroup(const std::string& groupName) {
+    return collisionGroupMasks.at(getGroup(groupName));
+  }
+
+  /**
+   * @brief Set groupA's collision mask to a specific interaction state with
+   * respect to groupB.
+   *
+   * Convenience function equivalent to setting groupB bit in groupA's mask.
+   * @param groupA The group for which the mask will be modified.
+   * @param groupB The group which will be masked.
+   */
+  static void setGroupInteractsWith(const CollisionGroup& groupA,
+                                    const CollisionGroup& groupB,
+                                    bool interacts) {
+    int groupAMask = collisionGroupMasks.at(groupA);
+    groupAMask =
+        interacts ? groupAMask | int(groupB) : groupAMask & !int(groupB);
+    collisionGroupMasks.at(groupA) = groupAMask;
+  };
 
   /**
    * @brief Set the mask for a group defining which other groups it will
@@ -85,19 +106,19 @@ class CollisionGroupHelper {
    * @param group The group to modify
    * @param mask The mask to apply
    */
-  static void setMaskForGroup(CollisionGroup group, int mask) {
+  static void setMaskForGroup(const CollisionGroup& group, int mask) {
     collisionGroupMasks.at(group) = mask;
   }
 
   //! return the group given the name
-  static CollisionGroup getGroup(std::string groupName) {
+  static CollisionGroup getGroup(const std::string& groupName) {
     ESP_CHECK(collisionGroupNames.count(groupName) != 0,
               "Invalid groupName provided. Matches no CollisionGroup.");
     return collisionGroupNames.at(groupName);
   }
 
   // return the group name given the group
-  static std::string getGroupName(CollisionGroup group) {
+  static std::string getGroupName(const CollisionGroup& group) {
     for (std::map<std::string, CollisionGroup>::iterator it =
              collisionGroupNames.begin();
          it != collisionGroupNames.end(); ++it) {
@@ -110,7 +131,8 @@ class CollisionGroupHelper {
     return "";
   }
 
-  static bool setGroupName(CollisionGroup group, std::string newName) {
+  static bool setGroupName(const CollisionGroup& group,
+                           const std::string& newName) {
     auto currentName = getGroupName(group);
     if (collisionGroupNames.count(newName) != 0) {
       LOG(WARNING) << "CollisionGroupHelper::setGroupName - requested group "
@@ -124,7 +146,7 @@ class CollisionGroupHelper {
 
   //! query all available groups (by name)
   static std::vector<std::string> getAllGroupNames() {
-    std::vector<std::string> groupNames(collisionGroupNames.size());
+    std::vector<std::string> groupNames;
     for (std::map<std::string, CollisionGroup>::iterator it =
              collisionGroupNames.begin();
          it != collisionGroupNames.end(); ++it) {
@@ -133,30 +155,24 @@ class CollisionGroupHelper {
     return groupNames;
   }
 
-  //! query a boolean matrix fully describing the collision group|mask
-  //! configuration
-  static std::vector<std::vector<bool>> getGroupMaskMatrix() {
-    std::vector<std::vector<bool>> groupMaskMatrix;
-    groupMaskMatrix.resize(15, std::vector<bool>(15));
-    int group1Index = 0;
-    for (std::map<CollisionGroup, int>::iterator it1 =
+  //! get the mask for group split into boolean indicators of interaction with
+  //! each CollisionGroup
+  static std::map<CollisionGroup, bool> getSplitMask(
+      const CollisionGroup& group) {
+    std::map<CollisionGroup, bool> splitMask;
+    auto groupMask = getMaskForGroup(group);
+    for (std::map<CollisionGroup, int>::iterator it2 =
              collisionGroupMasks.begin();
-         it1 != collisionGroupMasks.end(); ++it1) {
-      int group2Index = 0;
-      for (std::map<CollisionGroup, int>::iterator it2 =
-               collisionGroupMasks.begin();
-           it2 != collisionGroupMasks.end(); ++it2) {
-        // does the
-        groupMaskMatrix[group1Index][group2Index] =
-            it1->second & int(it2->first);
-        ++group2Index;
-      }
-      ++group1Index;
+         it2 != collisionGroupMasks.end(); ++it2) {
+      splitMask[it2->first] = groupMask & int(it2->first);
     }
-    return groupMaskMatrix;
+    return splitMask;
+  }
+  static std::map<CollisionGroup, bool> getSplitMask(
+      const std::string& groupName) {
+    return getSplitMask(getGroup(groupName));
   }
 };
-
 }  // end namespace physics
 }  // end namespace esp
 

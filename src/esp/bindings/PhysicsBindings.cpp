@@ -100,19 +100,41 @@ void initPhysicsBindings(py::module& m) {
       .def_static("set_group_name", &CollisionGroupHelper::setGroupName,
                   "group"_a, "name"_a, R"(Assign a name to a CollisionGroup.)")
       .def_static(
-          "get_mask_for_group", &CollisionGroupHelper::getMaskForGroup,
+          "get_mask_for_group",
+          py::overload_cast<const std::string&>(
+              &CollisionGroupHelper::getMaskForGroup),
+          "group_name"_a,
+          R"(Get the mask for a collision group describing its interaction with other groups.)")
+      .def_static(
+          "get_mask_for_group",
+          py::overload_cast<const CollisionGroup&>(
+              &CollisionGroupHelper::getMaskForGroup),
           "group"_a,
           R"(Get the mask for a collision group describing its interaction with other groups.)")
       .def_static(
           "set_mask_for_group", &CollisionGroupHelper::setMaskForGroup,
           "group"_a, "mask"_a,
           R"(Set the mask for a collision group describing its interaction with other groups. It is not recommended to modify the mask for default, non-user groups.)")
+      .def_static(
+          "set_group_interacts_with",
+          &CollisionGroupHelper::setGroupInteractsWith, "group_a"_a,
+          "group_b"_a, "interact"_a,
+          R"(Set groupA's collision mask to a specific interaction state with respect to groupB.)")
+      .def_static(
+          "get_split_mask",
+          py::overload_cast<const CollisionGroup&>(
+              &CollisionGroupHelper::getSplitMask),
+          "group"_a,
+          R"(Get the mask for a collision group describing its interaction with other groups split into a dict of individual booleans keyed by each group.)")
+      .def_static(
+          "get_split_mask",
+          py::overload_cast<const std::string&>(
+              &CollisionGroupHelper::getSplitMask),
+          "group_name"_a,
+          R"(Get the mask for a collision group describing its interaction with other groups split into a dict of individual booleans keyed by each group.)")
       .def_static("get_all_group_names",
                   &CollisionGroupHelper::getAllGroupNames,
-                  R"(Get a list of all configured collision group names.)")
-      .def_static(
-          "get_group_mask_matrix", &CollisionGroupHelper::getGroupMaskMatrix,
-          R"(Get a square boolean 2D array encoding the masking of each group wrt. all others. For example, entry [1][2] is True if group 1's mask includes group 2.)");
+                  R"(Get a list of all configured collision group names.)");
 }
 
 }  // namespace physics

@@ -9,6 +9,7 @@
 #include <Corrade/Containers/Reference.h>
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/RigidState.h"
+#include "esp/physics/CollisionGroupHelper.h"
 
 /** @file
  * @brief Class @ref esp::physics::PhysicsObjectBase is the base class for any
@@ -144,6 +145,12 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * enabled objects.
    */
   virtual bool contactTest() { return false; }
+
+  /**
+   * @brief Manually set the collision group for an object.
+   * @param group The desired CollisionGroup for the object.
+   */
+  virtual void overrideCollisionGroup(CORRADE_UNUSED CollisionGroup group) {}
 
   /**
    * @brief Set the light setup of this rigid.
