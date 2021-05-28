@@ -47,6 +47,72 @@ void initPhysicsBindings(py::module& m) {
       .def_readonly("hits", &RaycastResults::hits)
       .def_readonly("ray", &RaycastResults::ray)
       .def("has_hits", &RaycastResults::hasHits);
+
+  // ==== struct object ContactPointData ====
+  py::class_<ContactPointData, ContactPointData::ptr>(m, "ContactPointData")
+      .def(py::init(&ContactPointData::create<>))
+      .def_readwrite("object_id_a", &ContactPointData::objectIdA)
+      .def_readwrite("object_id_b", &ContactPointData::objectIdB)
+      .def_readwrite("link_id_a", &ContactPointData::linkIndexA)
+      .def_readwrite("link_id_b", &ContactPointData::linkIndexB)
+      .def_readwrite("position_on_a_in_ws", &ContactPointData::positionOnAInWS)
+      .def_readwrite("position_on_b_in_ws", &ContactPointData::positionOnBInWS)
+      .def_readwrite("contact_normal_on_b_in_ws",
+                     &ContactPointData::contactNormalOnBInWS)
+      .def_readwrite("contact_distance", &ContactPointData::contactDistance)
+      .def_readwrite("normal_force", &ContactPointData::normalForce)
+      .def_readwrite("linear_friction_force1",
+                     &ContactPointData::linearFrictionForce1)
+      .def_readwrite("linear_friction_force2",
+                     &ContactPointData::linearFrictionForce2)
+      .def_readwrite("linear_friction_direction1",
+                     &ContactPointData::linearFrictionDirection1)
+      .def_readwrite("linear_friction_direction2",
+                     &ContactPointData::linearFrictionDirection2)
+      .def_readwrite("is_active", &ContactPointData::isActive);
+
+  // ==== enum object CollisionGroup ====
+  py::enum_<CollisionGroup>(m, "CollisionGroup")
+      .value("Default", CollisionGroup::Default)
+      .value("Static", CollisionGroup::Static)
+      .value("Kinematic", CollisionGroup::Kinematic)
+      .value("FreeObject", CollisionGroup::FreeObject)
+      .value("Robot", CollisionGroup::Robot)
+      .value("Noncollidable", CollisionGroup::Noncollidable)
+      .value("UserGroup1", CollisionGroup::UserGroup1)
+      .value("UserGroup2", CollisionGroup::UserGroup2)
+      .value("UserGroup3", CollisionGroup::UserGroup3)
+      .value("UserGroup4", CollisionGroup::UserGroup4)
+      .value("UserGroup5", CollisionGroup::UserGroup5)
+      .value("UserGroup6", CollisionGroup::UserGroup6)
+      .value("UserGroup7", CollisionGroup::UserGroup7)
+      .value("UserGroup8", CollisionGroup::UserGroup8)
+      .value("UserGroup9", CollisionGroup::UserGroup9)
+      .value("AllFilter", CollisionGroup::AllFilter);
+
+  // ==== class object CollisionGroupHelper ====
+  py::class_<CollisionGroupHelper, std::shared_ptr<CollisionGroupHelper>>(
+      m, "CollisionGroupHelper")
+      .def_static("get_group", &CollisionGroupHelper::getGroup, "name"_a,
+                  R"(Get a group by assigned name.)")
+      .def_static("get_group_name", &CollisionGroupHelper::getGroupName,
+                  "group"_a, R"(Get the name assigned to a CollisionGroup.)")
+      .def_static("set_group_name", &CollisionGroupHelper::setGroupName,
+                  "group"_a, "name"_a, R"(Assign a name to a CollisionGroup.)")
+      .def_static(
+          "get_mask_for_group", &CollisionGroupHelper::getMaskForGroup,
+          "group"_a,
+          R"(Get the mask for a collision group describing its interaction with other groups.)")
+      .def_static(
+          "set_mask_for_group", &CollisionGroupHelper::setMaskForGroup,
+          "group"_a, "mask"_a,
+          R"(Set the mask for a collision group describing its interaction with other groups. It is not recommended to modify the mask for default, non-user groups.)")
+      .def_static("get_all_group_names",
+                  &CollisionGroupHelper::getAllGroupNames,
+                  R"(Get a list of all configured collision group names.)")
+      .def_static(
+          "get_group_mask_matrix", &CollisionGroupHelper::getGroupMaskMatrix,
+          R"(Get a square boolean 2D array encoding the masking of each group wrt. all others. For example, entry [1][2] is True if group 1's mask includes group 2.)");
 }
 
 }  // namespace physics

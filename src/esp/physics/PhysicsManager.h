@@ -69,10 +69,38 @@ struct RaycastResults {
   ESP_SMART_POINTERS(RaycastResults)
 };
 
-class RigidObjectManager;
+// based on Bullet b3ContactPointData
+struct ContactPointData {
+  int objectIdA = -2;  // stage is -1
+  int objectIdB = -2;
+  int linkIndexA = -1;  // -1 if not a multibody
+  int linkIndexB = -1;
 
-// TODO: repurpose to manage multiple physical worlds. Currently represents
-// exactly one world.
+  Magnum::Vector3 positionOnAInWS;  // contact point location on object A, in
+                                    // world space coordinates
+  Magnum::Vector3 positionOnBInWS;  // contact point location on object B, in
+                                    // world space coordinates
+  Magnum::Vector3
+      contactNormalOnBInWS;  // the separating contact normal, pointing from
+                             // object B towards object A
+  double contactDistance =
+      0.0;  // negative number is penetration, positive is distance.
+
+  double normalForce = 0.0;
+
+  double linearFrictionForce1 = 0.0;
+  double linearFrictionForce2 = 0.0;
+  Magnum::Vector3 linearFrictionDirection1;
+  Magnum::Vector3 linearFrictionDirection2;
+
+  // the contact is considered active if at least one object is active (not
+  // asleep)
+  bool isActive = false;
+
+  ESP_SMART_POINTERS(ContactPointData)
+};
+
+class RigidObjectManager;
 
 /**
 @brief Kinematic and dynamic scene and object manager.
@@ -1037,6 +1065,24 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
 
   /**
+   * @brief Query the number of contact points that were active during the
+   * collision detection check.
+   *
+   * Not implemented for default PhysicsManager.
+   * @return the number of active contact points.
+   */
+  virtual int getNumActiveContactPoints() { return -1; }
+
+  /**
+   * @brief Query physics simulation implementation for contact point data from
+   * the most recent collision detection cache.
+   *
+   * Not implemented for default PhysicsManager implementation.
+   * @return a vector with each entry corresponding to a single contact point.
+   */
+  virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
+
+  /**
    * @brief Set an object to collidable or not.
    *
    * @param physObjectID The object ID and key identifying the object
@@ -1143,8 +1189,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     results.ray = ray;
     return results;
   }
-
-  virtual int getNumActiveContactPoints() { return -1; }
 
   /**
    * @brief returns the wrapper manager for the currently created rigid objects.

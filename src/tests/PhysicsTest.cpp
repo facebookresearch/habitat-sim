@@ -276,8 +276,20 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
 
     // move box 0 into floor
     physicsManager_->setTranslation(objectId0, Magnum::Vector3{0, 0.9, 0});
+    // DYNAMIC vs STATIC stage
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    // set box 0 STATIC (STATIC vs STATIC stage)
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::STATIC);
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    // set box 0 KINEMATIC (KINEMATIC vs STATIC stage)
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::KINEMATIC);
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    // reset to DYNAMIC
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::DYNAMIC);
 
     // set stage to non-collidable
     ASSERT_TRUE(physicsManager_->getStageIsCollidable());
@@ -285,8 +297,33 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     ASSERT_FALSE(physicsManager_->getStageIsCollidable());
     ASSERT_FALSE(physicsManager_->contactTest(objectId0));
 
-    // move box 0 into box 1
+    // move box 0 into box 1 (DYNAMIC vs. DYNAMIC)
     physicsManager_->setTranslation(objectId0, Magnum::Vector3{1.1, 1.1, 0});
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
+    ASSERT_TRUE(physicsManager_->contactTest(objectId1));
+    // set box 0 STATIC (STATIC vs DYNAMIC)
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::STATIC);
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
+    ASSERT_TRUE(physicsManager_->contactTest(objectId1));
+    // set box 1 STATIC (STATIC vs STATIC)
+    physicsManager_->setObjectMotionType(objectId1,
+                                         esp::physics::MotionType::STATIC);
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    // set box 0 KINEMATIC (KINEMATIC vs STATIC)
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::KINEMATIC);
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    // set box 1 KINEMATIC (KINEMATIC vs KINEMATIC)
+    physicsManager_->setObjectMotionType(objectId1,
+                                         esp::physics::MotionType::KINEMATIC);
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    // reset box 0 DYNAMIC (DYNAMIC vs KINEMATIC)
+    physicsManager_->setObjectMotionType(objectId0,
+                                         esp::physics::MotionType::DYNAMIC);
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_TRUE(physicsManager_->contactTest(objectId1));
 
@@ -732,16 +769,21 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
                                           {0, boxHalfExtent * 5, 0});
 
           while (physicsManager_->getWorldTime() < 3.0) {
-            physicsManager_->stepPhysics(0.1);
+            // take single sub-steps for velocity control precision
+            physicsManager_->stepPhysics(-1);
           }
+          Mn::Debug{} << "state0 = "
+                      << physicsManager_->getTranslation(instancedObjects[0]);
+          Mn::Debug{} << "state1 = "
+                      << physicsManager_->getTranslation(instancedObjects[1]);
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
-                     Magnum::Vector3{0.62, boxHalfExtent * 2, 0.0})
+                     Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
                         .length(),
-                    1.0e-4);
+                    1.0e-3);
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
-                     Magnum::Vector3{0.578, boxHalfExtent * 4, 0.0})
+                     Magnum::Vector3{0.5, boxHalfExtent * 4, 0.0})
                         .length(),
-                    2.0e-2);
+                    2.0e-3);
         } break;
       }
 
@@ -780,16 +822,40 @@ TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
     // no active contact points at start
     ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
 
-    // simulate to let cube fall, stabilize and go to sleep
-    bool didHaveActiveContacts = false;
+    // simulate to let cube fall and hit the ground
+    while (physicsManager_->getWorldTime() < 2.0) {
+      physicsManager_->stepPhysics(0.1);
+    }
+
+    auto allContactPoints = physicsManager_->getContactPoints();
+    // expect 4 active contact points for cube
+    ASSERT_EQ(allContactPoints.size(), 4);
+    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 4);
+    float totalNormalForce = 0;
+    for (auto& cp : allContactPoints) {
+      // contacts are still active
+      ASSERT(cp.isActive);
+      // normal direction is unit Y (world up)
+      ASSERT_LE(
+          (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0}).length(),
+          1.0e-4);
+      // one object is the cube (0), other is the stage (-1)
+      ASSERT_EQ(cp.objectIdA, 0);
+      ASSERT_EQ(cp.objectIdB, -1);
+      // accumulate the normal force
+      totalNormalForce += cp.normalForce;
+      // solver should keep the cube at the contact boundary (~0 penetration)
+      ASSERT_LE(cp.contactDistance, 1.0e-4);
+    }
+    // mass 1 cube under gravity should require normal contact force of ~9.8
+    ASSERT_LE(totalNormalForce - 9.8, 3.0e-4);
+
+    // continue simulation until the cube is stable and sleeping
     while (physicsManager_->getWorldTime() < 4.0) {
       physicsManager_->stepPhysics(0.1);
-      if (physicsManager_->getNumActiveContactPoints() > 0) {
-        didHaveActiveContacts = true;
-      }
     }
-    ASSERT(didHaveActiveContacts);
-
+    // 4 inactive contact points at end
+    ASSERT_EQ(physicsManager_->getContactPoints().size(), 4);
     // no active contact points at end
     ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
   }

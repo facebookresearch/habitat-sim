@@ -98,7 +98,7 @@ class BulletRigidObject : public BulletBase,
    *
    * @param active Whether to active or sleep the object
    */
-  virtual void setActive(bool active) override {
+  void setActive(bool active) override {
     if (!active) {
       bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
     } else {
@@ -430,7 +430,7 @@ class BulletRigidObject : public BulletBase,
    * the rigid body in its local space. See @ref btCompoundShape::getAabb.
    * @return The Aabb.
    */
-  const Magnum::Range3D getCollisionShapeAabb() const override;
+  Magnum::Range3D getCollisionShapeAabb() const override;
 
  private:
   /**

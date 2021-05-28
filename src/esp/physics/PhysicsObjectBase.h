@@ -107,7 +107,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Object name, to faciliate access.
    */
-  const std::string getObjectName() const { return objectName_; }
+  std::string getObjectName() const { return objectName_; }
   void setObjectName(const std::string& name) { objectName_ = name; }
 
   /**

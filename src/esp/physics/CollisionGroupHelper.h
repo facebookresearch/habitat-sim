@@ -64,7 +64,7 @@ enum class CollisionGroup {
 
 class CollisionGroupHelper {
   //! maps custom names to collision groups
-  static std::map<std::string, int> collisionGroupNames;
+  static std::map<std::string, CollisionGroup> collisionGroupNames;
   // maps collision groups to collision group filter masks
   static std::map<CollisionGroup, int> collisionGroupMasks;
 
@@ -93,30 +93,21 @@ class CollisionGroupHelper {
   static CollisionGroup getGroup(std::string groupName) {
     ESP_CHECK(collisionGroupNames.count(groupName) != 0,
               "Invalid groupName provided. Matches no CollisionGroup.");
-    return CollisionGroup(collisionGroupNames.at(groupName));
+    return collisionGroupNames.at(groupName);
   }
 
   // return the group name given the group
   static std::string getGroupName(CollisionGroup group) {
-    for (std::map<std::string, int>::iterator it = collisionGroupNames.begin();
+    for (std::map<std::string, CollisionGroup>::iterator it =
+             collisionGroupNames.begin();
          it != collisionGroupNames.end(); ++it) {
-      if (int(group) == it->second) {
+      if (group == it->second) {
         return it->first;
       }
     }
     // enum input, so should not get here unless the map is corrupted
     CORRADE_INTERNAL_ASSERT_UNREACHABLE();
     return "";
-  }
-
-  //! query all available groups (by name)
-  static std::vector<std::string> getAllGroupNames() {
-    std::vector<std::string> groupNames(collisionGroupNames.size());
-    for (std::map<std::string, int>::iterator it = collisionGroupNames.begin();
-         it != collisionGroupNames.end(); ++it) {
-      groupNames.push_back(it->first);
-    }
-    return groupNames;
   }
 
   static bool setGroupName(CollisionGroup group, std::string newName) {
@@ -129,6 +120,40 @@ class CollisionGroupHelper {
     collisionGroupNames[newName] = collisionGroupNames.at(currentName);
     collisionGroupNames.erase(currentName);
     return true;
+  }
+
+  //! query all available groups (by name)
+  static std::vector<std::string> getAllGroupNames() {
+    std::vector<std::string> groupNames(collisionGroupNames.size());
+    for (std::map<std::string, CollisionGroup>::iterator it =
+             collisionGroupNames.begin();
+         it != collisionGroupNames.end(); ++it) {
+      groupNames.push_back(it->first);
+    }
+    return groupNames;
+  }
+
+  //! query a boolean matrix fully describing the collision group|mask
+  //! configuration
+  static std::vector<std::vector<bool>> getGroupMaskMatrix() {
+    std::vector<std::vector<bool>> groupMaskMatrix;
+    groupMaskMatrix.resize(15, std::vector<bool>(15));
+    int group1Index = 0;
+    for (std::map<CollisionGroup, int>::iterator it1 =
+             collisionGroupMasks.begin();
+         it1 != collisionGroupMasks.end(); ++it1) {
+      int group2Index = 0;
+      for (std::map<CollisionGroup, int>::iterator it2 =
+               collisionGroupMasks.begin();
+           it2 != collisionGroupMasks.end(); ++it2) {
+        // does the
+        groupMaskMatrix[group1Index][group2Index] =
+            it1->second & int(it2->first);
+        ++group2Index;
+      }
+      ++group1Index;
+    }
+    return groupMaskMatrix;
   }
 };
 

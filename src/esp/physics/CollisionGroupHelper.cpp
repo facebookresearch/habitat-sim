@@ -8,23 +8,24 @@ namespace esp {
 namespace physics {
 
 // initialize the default collision group names
-std::map<std::string, int> CollisionGroupHelper::collisionGroupNames = {
-    {"Default", int(CollisionGroup::Default)},
-    {"Static", int(CollisionGroup::Static)},
-    {"Kinematic", int(CollisionGroup::Kinematic)},
-    {"FreeObject", int(CollisionGroup::FreeObject)},
-    {"Robot", int(CollisionGroup::Robot)},
-    {"Noncollidable", int(CollisionGroup::Noncollidable)},
-    {"UserGroup1", int(CollisionGroup::UserGroup1)},
-    {"UserGroup2", int(CollisionGroup::UserGroup2)},
-    {"UserGroup3", int(CollisionGroup::UserGroup3)},
-    {"UserGroup4", int(CollisionGroup::UserGroup4)},
-    {"UserGroup5", int(CollisionGroup::UserGroup5)},
-    {"UserGroup6", int(CollisionGroup::UserGroup6)},
-    {"UserGroup7", int(CollisionGroup::UserGroup7)},
-    {"UserGroup8", int(CollisionGroup::UserGroup8)},
-    {"UserGroup9", int(CollisionGroup::UserGroup9)},
-    {"AllFilter", int(CollisionGroup::AllFilter)},
+std::map<std::string, CollisionGroup>
+    CollisionGroupHelper::collisionGroupNames = {
+        {"Default", CollisionGroup::Default},
+        {"Static", CollisionGroup::Static},
+        {"Kinematic", CollisionGroup::Kinematic},
+        {"FreeObject", CollisionGroup::FreeObject},
+        {"Robot", CollisionGroup::Robot},
+        {"Noncollidable", CollisionGroup::Noncollidable},
+        {"UserGroup1", CollisionGroup::UserGroup1},
+        {"UserGroup2", CollisionGroup::UserGroup2},
+        {"UserGroup3", CollisionGroup::UserGroup3},
+        {"UserGroup4", CollisionGroup::UserGroup4},
+        {"UserGroup5", CollisionGroup::UserGroup5},
+        {"UserGroup6", CollisionGroup::UserGroup6},
+        {"UserGroup7", CollisionGroup::UserGroup7},
+        {"UserGroup8", CollisionGroup::UserGroup8},
+        {"UserGroup9", CollisionGroup::UserGroup9},
+        {"AllFilter", CollisionGroup::AllFilter},
 };
 
 // initialize the default collision group masks
