@@ -35,7 +35,9 @@ void declareBasePhysicsObjectWrapper(py::module& m,
       .def_property(
           "motion_type", &PhysObjWrapper::getMotionType,
           &PhysObjWrapper::setMotionType,
-          ("Get or set the MotionType of this " + objType + ".").c_str())
+          ("Get or set the MotionType of this " + objType +
+           ". Changing MotionType will override any custom collision group.")
+              .c_str())
       .def_property_readonly(
           "object_id", &PhysObjWrapper::getID,
           ("System-generated ID for this " + objType +
@@ -95,7 +97,8 @@ void declareBasePhysicsObjectWrapper(py::module& m,
            ("Discrete collision check for contact between an object and the "
             "collision world."))
       .def("override_collision_group", &PhysObjWrapper::overrideCollisionGroup,
-           ("Manually set the collision group for an object."))
+           ("Manually set the collision group for an object. Setting a new "
+            "MotionType will override this change."))
       .def(
           "translate", &PhysObjWrapper::translate, "vector"_a,
           ("Move this " + objType + " using passed translation vector").c_str())

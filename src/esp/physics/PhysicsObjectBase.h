@@ -22,10 +22,10 @@ namespace esp {
 namespace physics {
 
 /**
-@brief Motion type of a @ref RigidObject.
-Defines its treatment by the simulator and operations which can be performed on
-it.
-*/
+ * @brief Motion type of a @ref RigidObject.
+ * Defines its treatment by the simulator and operations which can be performed
+ * on it.
+ */
 enum class MotionType {
   /**
    * Refers to an error (such as a query to non-existing object) or an

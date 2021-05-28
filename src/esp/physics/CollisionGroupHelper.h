@@ -13,6 +13,13 @@
 #include "esp/core/Check.h"
 #include "esp/core/esp.h"
 
+/** @file
+ * @brief Class @ref esp::physics::CollisionGroupHelper is a convenience class
+ * with all static functions providing an interface for customizing collision
+ * masking behavior for simulated objects. Enum Class @ref
+ * esp::physics::CollisionGroup defines available collision groups.
+ */
+
 namespace esp {
 namespace physics {
 
@@ -32,6 +39,13 @@ namespace physics {
         };
 */
 
+/**
+ * @brief Defined available collision groups with bitwise integer correspondance
+ * for use in collision filtering masks.
+ *
+ * Contains several named default groups used by Habitat-sim and a set of unused
+ * user groups for custom behavior.
+ */
 enum class CollisionGroup {
   //! Default group for unspecified object (e.g. raycast)
   Default = 1,
@@ -63,17 +77,28 @@ enum class CollisionGroup {
   AllFilter = -1
 };
 
+/**
+ * @brief A convenience class with all static functions providing an interface
+ * for customizing collision masking behavior for simulated objects.
+ */
 class CollisionGroupHelper {
   //! maps custom names to collision groups
   static std::map<std::string, CollisionGroup> collisionGroupNames;
-  // maps collision groups to collision group filter masks
+  //! maps collision groups to collision group filter masks
   static std::map<CollisionGroup, int> collisionGroupMasks;
 
  public:
-  //! get the mask for a group
+  /**
+   * @brief Get the collision mask for a group.
+   *
+   * @param group The collision group being queried.
+   * @return The integer collision mask where each bit corresponds to the
+   * group's interaction with another group.
+   */
   static int getMaskForGroup(const CollisionGroup& group) {
     return collisionGroupMasks.at(group);
   }
+  //! convenience override allowing the group to be referenced by name.
   static int getMaskForGroup(const std::string& groupName) {
     return collisionGroupMasks.at(getGroup(groupName));
   }
@@ -103,21 +128,30 @@ class CollisionGroupHelper {
    * MaskA) Note: Editing default engine group (Default, Static, Kinematic,
    * FreeObject, Robot, Noncollidable, AllFilter) behavior is discouraged.
    *
-   * @param group The group to modify
-   * @param mask The mask to apply
+   * @param group The group to modify.
+   * @param mask The mask to apply.
    */
   static void setMaskForGroup(const CollisionGroup& group, int mask) {
     collisionGroupMasks.at(group) = mask;
   }
 
-  //! return the group given the name
+  /**
+   * @brief Get the collision group by its name. Must pass a valid name.
+   *
+   * @param groupName The collision group's configured name.
+   */
   static CollisionGroup getGroup(const std::string& groupName) {
     ESP_CHECK(collisionGroupNames.count(groupName) != 0,
               "Invalid groupName provided. Matches no CollisionGroup.");
     return collisionGroupNames.at(groupName);
   }
 
-  // return the group name given the group
+  /**
+   * @brief Get a collision group's configured name.
+   *
+   * @param group The collision group.
+   * @return The group's configured name.
+   */
   static std::string getGroupName(const CollisionGroup& group) {
     for (std::map<std::string, CollisionGroup>::iterator it =
              collisionGroupNames.begin();
@@ -131,6 +165,14 @@ class CollisionGroupHelper {
     return "";
   }
 
+  /**
+   * @brief Set a custom name for a collision group.
+   *
+   * Fails if the desired name is already in use.
+   *
+   * @param group The collision group.
+   * @return Whether or not the set was successful.
+   */
   static bool setGroupName(const CollisionGroup& group,
                            const std::string& newName) {
     auto currentName = getGroupName(group);
@@ -144,7 +186,12 @@ class CollisionGroupHelper {
     return true;
   }
 
-  //! query all available groups (by name)
+  /**
+   * @brief Get a list of all configured collision group names for easy
+   * iteration over groups.
+   *
+   * @return List of configured group names
+   */
   static std::vector<std::string> getAllGroupNames() {
     std::vector<std::string> groupNames;
     for (std::map<std::string, CollisionGroup>::iterator it =
@@ -157,6 +204,15 @@ class CollisionGroupHelper {
 
   //! get the mask for group split into boolean indicators of interaction with
   //! each CollisionGroup
+  /**
+   * @brief Get the collision mask for a group split into a map with entries
+   * corresponding to whether a mask bit is set indicating interaction with each
+   * other group.
+   *
+   * @param group The collision group for which the mask will be queried.
+   * @return The group mask split into per-group booleans indicating interaction
+   * with each group.
+   */
   static std::map<CollisionGroup, bool> getSplitMask(
       const CollisionGroup& group) {
     std::map<CollisionGroup, bool> splitMask;
@@ -168,6 +224,7 @@ class CollisionGroupHelper {
     }
     return splitMask;
   }
+  //! convenience override allowing the group to be referenced by name.
   static std::map<CollisionGroup, bool> getSplitMask(
       const std::string& groupName) {
     return getSplitMask(getGroup(groupName));
