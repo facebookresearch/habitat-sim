@@ -92,8 +92,12 @@ class TestPage {
     let direction2 = new Module.Vector3(1, 0, 0);
     let ray2 = new Module.Ray(origin2, direction2);
 
-    // check that castRay returns the object
-    this.expect(sim.castRay(ray1, 6, 0).hits.get(0).objectId == banana1id);
+    // check that castRay returns the object and that the hit location is correct
+    let hit = sim.castRay(ray1, 6, 0).hits.get(0);
+    this.expect(hit.objectId == banana1id);
+    this.expect(Math.abs(hit.point.x() - 0.0172938) < 0.001);
+    this.expect(Math.abs(hit.point.y() - 0.2) < 0.001);
+    this.expect(Math.abs(hit.point.z() - 9.0) < 0.001);
 
     // check that castRay doesn't find the object if maxDistance is too small
     this.expect(!sim.castRay(ray1, 1, 0).hasHits());
