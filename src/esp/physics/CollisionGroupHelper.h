@@ -116,7 +116,7 @@ class CollisionGroupHelper {
                                     bool interacts) {
     int groupAMask = collisionGroupMasks.at(groupA);
     groupAMask =
-        interacts ? groupAMask | int(groupB) : groupAMask & !int(groupB);
+        interacts ? groupAMask | int(groupB) : groupAMask & ~int(groupB);
     collisionGroupMasks.at(groupA) = groupAMask;
   };
 
@@ -220,7 +220,7 @@ class CollisionGroupHelper {
     for (std::map<CollisionGroup, int>::iterator it2 =
              collisionGroupMasks.begin();
          it2 != collisionGroupMasks.end(); ++it2) {
-      splitMask[it2->first] = groupMask & int(it2->first);
+      splitMask[it2->first] = (groupMask & int(it2->first)) != 0;
     }
     return splitMask;
   }
