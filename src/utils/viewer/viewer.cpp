@@ -610,10 +610,6 @@ Viewer::Viewer(const Arguments& arguments)
 
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
-  // adding stuff
-  auto cubeid = simulator_->addObjectByHandle("cubeSolid", nullptr, "", 0);
-  simulator_->setTranslation(Mn::Vector3(0.0f, 0.2f, 9.0f), cubeid, 0);
-
   objectAttrManager_ = simulator_->getObjectAttributesManager();
   objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
   assetAttrManager_ = simulator_->getAssetAttributesManager();
