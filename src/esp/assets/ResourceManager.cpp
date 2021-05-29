@@ -101,6 +101,10 @@ ResourceManager::ResourceManager(
   initDefaultLightSetups();
   initDefaultMaterials();
   buildImporters();
+
+  if (flags_ & Flag::PbrImageBasedLighting) {
+    initPbrImageBasedLighting();
+  }
 }
 
 ResourceManager::~ResourceManager() {
@@ -2224,6 +2228,22 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
 void ResourceManager::initDefaultLightSetups() {
   shaderManager_.set(NO_LIGHT_KEY, gfx::LightSetup{});
   shaderManager_.setFallback(gfx::LightSetup{});
+}
+
+void ResourceManager::initPbrImageBasedLighting() {
+  // TODO:
+  // should work with the scene instance config, initialize
+  // different PBR IBLs at different positions in the scene.
+
+  // TODO: HDR Image!
+  // TODO: Indirect specular
+  activePbrIbl_ = 0;
+  pbrImageBasedLightings_.emplace(
+      activePbrIbl_, std::make_unique<gfx::PbrImageBasedLighting>(
+                         gfx::PbrImageBasedLighting::Flags{
+                             gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
+                             gfx::PbrImageBasedLighting::Flag::UseLDRImages},
+                         shaderManager_));
 }
 
 void ResourceManager::initDefaultMaterials() {

@@ -86,21 +86,21 @@ LightSetup getDefaultLights() {
        // {5.0, 0.0, 0.0},
        {2.5, 2.5, 2.5},
        // position model
-       // LightPositionModel::Camera},  // Key light
-       // LightPositionModel::Object},  // Key light
-       LightPositionModel::Global},  // Key light
+       LightPositionModel::Camera},  // Key light
+      // LightPositionModel::Object},  // Key light
+      // LightPositionModel::Global},  // Key light
       {{-5.0f, -5.0f, 10.0f, 0.0},
        //{0.0, 5.0, 0.0},
        {1.6, 1.6, 1.6},
-       // LightPositionModel::Camera},  // Fill light
-       // LightPositionModel::Object},  // Fill light
-       LightPositionModel::Global},  // Fill light
+       LightPositionModel::Camera},  // Fill light
+      // LightPositionModel::Object},  // Fill light
+      // LightPositionModel::Global},  // Fill light
       {{0.0f, 10.0f, -10.0f, 0.0},
        {0.2, 0.2, 0.2},
        //{0.0, 0.0, 5.0},
-       // LightPositionModel::Camera},  // Rim light
-       // LightPositionModel::Object},  // Rim light
-       LightPositionModel::Global},  // Rim light
+       LightPositionModel::Camera},  // Rim light
+      // LightPositionModel::Object},  // Rim light
+      // LightPositionModel::Global},  // Rim light
   };
   /*
   return LightSetup{

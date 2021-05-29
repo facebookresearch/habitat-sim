@@ -57,14 +57,14 @@ out highp vec4 fragmentColor;
    up = normalize(cross(normal, right));
 
    vec3 irradiance = vec3(0.0);
-   const uint sampleCounts = 8192u;
+   const uint sampleCounts = 4096u;
    for (uint iPoint = 0u; iPoint < sampleCounts; ++iPoint) {
      // sample point on 2D plane
      vec2 xi = hammersley2d(iPoint, sampleCounts);
 
      // spherical to cartesian (in tangent space) z-up
      // z-up (not y-up) is fine here
-     vec3 tangentSample = hemisphereSample_cos(xi.u, xi.v);
+     vec3 tangentSample = hemisphereSample_cos(xi.x, xi.y);
 
      // tangent space to world: [R U N][tangentSample] = xR + yU + zN
      // we make the normal dirction in world space aligned with z-axis in tangent space
@@ -75,8 +75,8 @@ out highp vec4 fragmentColor;
      // We generated proportionally fewer rays at the center top of the hemisphere.
      // So there is no need to compensate for the smaller areas
      // by scaling the area by sinTheta
-     irradiance += texture(environmentMap, sampleVec).rgb;
+     irradiance += texture(EnvironmentMap, sampleVec).rgb;
    }
 
-   fragmentColor = irradiance / float(sampleCounts);
+   fragmentColor = vec4(irradiance / float(sampleCounts), 1.0);
  }

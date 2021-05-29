@@ -607,6 +607,7 @@ Viewer::Viewer(const Arguments& arguments)
     Mn::Debug{} << "Using PhysicsManager config: " << physicsConfig;
     simConfig.physicsConfigFile = physicsConfig;
   }
+  simConfig.pbrImageBasedLighting = true;
 
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 

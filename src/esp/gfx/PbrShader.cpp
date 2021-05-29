@@ -116,7 +116,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      ? "#define NORMAL_TEXTURE_SCALE\n"
                      : "")
       .addSource(flags_ & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
-      .addSource(flags_ & Flag::DoubleSided ? "#define DOUBLE_SIDED\n" : "")
       .addSource(flags_ & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
@@ -177,6 +176,12 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ & Flag::EmissiveTexture) {
     setUniform(uniformLocation("EmissiveTexture"),
                pbrTextureUnitSpace::TextureUnit::Emissive);
+  }
+
+  // IBL related textures
+  if (flags_ & Flag::ImageBasedLighting) {
+    setUniform(uniformLocation("IrradianceMap"),
+               pbrTextureUnitSpace::TextureUnit::IrradianceMap);
   }
 
   // cache the uniform locations
@@ -292,6 +297,15 @@ PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) {
                  *this);
   // emissive texture does not depend on lights
   texture.bind(pbrTextureUnitSpace::TextureUnit::Emissive);
+  return *this;
+}
+
+PbrShader& PbrShader::bindIrradianceCubeMap(Mn::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+                 "PbrShader::bindIrradianceCubeMap(): the shader was not "
+                 "created with image based lighting enabled",
+                 *this);
+  texture.bind(pbrTextureUnitSpace::TextureUnit::IrradianceMap);
   return *this;
 }
 

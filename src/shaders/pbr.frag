@@ -7,7 +7,6 @@
 
 precision highp float;
 
-#undef DOUBLE_SIDED // XXX
 // -------------- input ---------------------
 // position, normal, tangent, biTangent in world space, NOT camera space
 in highp vec3 position;
@@ -69,6 +68,10 @@ uniform sampler2D NormalTexture;
 uniform sampler2D EmissiveTexture;
 #endif
 
+#if defined(IMAGE_BASED_LIGHTING)
+uniform samplerCube IrradianceMap;
+#endif
+
 // -------------- uniforms ----------------
 #if defined(OBJECT_ID)
 uniform highp uint ObjectId;
@@ -96,9 +99,8 @@ uniform PbrDebugToggle PbrDebug;
 uniform int PbrDebugDisplay;
 
 // -------------- shader ------------------
-#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
+#if defined(NORMAL_TEXTURE)
 vec3 getNormalFromNormalMap() {
-#error hahaha Normal mapping requires precomputed tangents. // XXX
   vec3 tangentNormal =
 #if defined(NORMAL_TEXTURE_SCALE)
       normalize((texture(NormalTexture, texCoord).xyz * 2.0 - 1.0) *
@@ -107,35 +109,42 @@ vec3 getNormalFromNormalMap() {
       texture(NormalTexture, texCoord).xyz * 2.0 - 1.0;
 #endif
 
-//XXX
+#if defined(PRECOMPUTED_TANGENT)
+  vec3 T = normalize(tangent);
+  vec3 B = normalize(biTangent);
+  vec3 N = normalize(normal);
+#else
 	// Perturb normal, see http://www.thetenthplanet.de/archives/1180
-	// vec3 tangentNormal = texture(normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0 - 1.0;
-  tangentNormal = texture(NormalTexture, texCoord).xyz * 2.0 - 1.0;
-
-	vec3 q1 = dFdx(position);
+  // material_info.glsl from https://github.com/KhronosGroup/glTF-Sample-Viewer
+	vec3 pos_dx = dFdx(position);
+	vec3 pos_dy = dFdy(position);
+	vec3 uv_dx = dFdx(vec3(texCoord, 0.0));
+	vec3 uv_dy = dFdy(vec3(texCoord, 0.0));
+	vec3 T_ = (uv_dy.t * pos_dx - uv_dx.t * pos_dy) /
+            (uv_dx.s * uv_dy.t - uv_dy.s * uv_dx.t);
+	vec3 N = normalize(normal);
+  // othewise one can approximate the N using:
+  // vec3 N = normalize(cross(pos_dx, pos_dy));
+  vec3 T = normalize(T_ - N * dot(N, T_));
+	vec3 B = normalize(cross(N, T));
+  /*
+  vec3 q1 = dFdx(position);
 	vec3 q2 = dFdy(position);
 	vec2 st1 = dFdx(texCoord);
 	vec2 st2 = dFdy(texCoord);
 
-	vec3 N = normalize(inNormal);
+	vec3 N = normalize(normal);
 	vec3 T = normalize(q1 * st2.t - q2 * st1.t);
 	vec3 B = -normalize(cross(N, T));
-  N = vec3(0.0, 0.0, 1.0);
-  T = vec3(1.0, 0.0, 0.0);
-  B = vec3(0.0, 1.0, 0.0);
-	mat3 TBN = mat3(T, B, N);
-
-	return normalize(TBN * tangentNormal);
-
-// XXXX
-
-#if defined(PRECOMPUTED_TANGENT)
-  mat3 TBN = mat3(tangent, biTangent, normal);
-#else
-// TODO:
-// explore robust screen-space normal mapping withOUT precomputed tangents
-#error Normal mapping requires precomputed tangents.
+  */
 #endif
+  // negate the TBN matrix for back-facing primitives
+  if (gl_FrontFacing == false) {
+    T *= -1.0;
+    B *= -1.0;
+    N *= -1.0;
+  }
+	mat3 TBN = mat3(T, B, N);
 
   // TBN transforms tangentNormal from tangent space to world space
   return normalize(TBN * tangentNormal);
@@ -156,11 +165,7 @@ const float DielectricSpecular = 0.04;
 float normalDistribution(vec3 normal, vec3 halfVector, float roughness) {
   float a = roughness * roughness;
   float a2 = a * a;
-#if defined(DOUBLE_SIDED)
-  float n_dot_h = clamp(abs(dot(normal, halfVector)), 0.0, 1.0);
-#else
   float n_dot_h = clamp(dot(normal, halfVector), 0.0, 1.0);
-#endif
 
   float d = n_dot_h * n_dot_h * (a2 - 1.0) + 1.0;
   d = PI * d * d;
@@ -185,13 +190,8 @@ float specularGeometricAttenuation(vec3 normal,
                                    vec3 light,
                                    vec3 view,
                                    float roughness) {
-#if defined(DOUBLE_SIDED)
-  float n_dot_l = clamp(abs(dot(normal, light)), 0.001, 1.0);
-  float n_dot_v = clamp(abs(dot(normal, view)), 0.001, 1.0);
-#else
   float n_dot_l = clamp(dot(normal, light), 0.001, 1.0);
   float n_dot_v = clamp(dot(normal, view), 0.001, 1.0);
-#endif
   float ggx1 = geometrySchlickGGX(n_dot_l, roughness);
   float ggx2 = geometrySchlickGGX(n_dot_v, roughness);
 
@@ -246,13 +246,8 @@ vec3 microfacetModel(vec3 specularReflectance,
   vec3 diffuse = (vec3(1.0) - Fresnel) * c_diff * INV_PI;
 
   // Specular BRDF
-#if defined(DOUBLE_SIDED)
-  float n_dot_l = clamp(abs(dot(normal, light)), 0.001, 1.0);
-  float n_dot_v = clamp(abs(dot(normal, view)), 0.001, 1.0);
-#else
   float n_dot_l = clamp(dot(normal, light), 0.001, 1.0);
   float n_dot_v = clamp(dot(normal, view), 0.001, 1.0);
-#endif
   float temp = max(4.0 * n_dot_l * n_dot_v, Epsilon);
   vec3 specular = Fresnel *
                   specularGeometricAttenuation(normal, light, view, roughness) *
@@ -263,9 +258,11 @@ vec3 microfacetModel(vec3 specularReflectance,
 
 #if defined(IMAGE_BASED_LIGHTING)
 // c_diff: diffuse color
-vec3 computeIBL(vec c_diff) {
-  // XXX
+// n: normal on shading location in world space
+vec3 computeIBLDiffuse(vec3 c_diff, vec3 n) {
   // diffuse part = c_diff * irradiance
+  // TODO: SRGB to Linear, and tone mapping
+  return c_diff * texture(IrradianceMap, n).rgb;
 }
 #endif
 
@@ -292,13 +289,14 @@ void main() {
   metallic *= texture(MetallicRoughnessTexture, texCoord).b;
 #endif
 
-// normal map will only work if both normal texture and the tangents exist.
-// if only normal texture is set, normal mapping will be safely ignored.
 // n is the normal in *world* space, NOT camera space
-#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
+#if defined(NORMAL_TEXTURE)
   vec3 n = getNormalFromNormalMap();
 #else
-  vec3 n = normal;
+  vec3 n = normalize(normal);
+  if (gl_FrontFacing == false) {
+    // n *= -1.0;
+  }
 #endif
 
   // view is the normalized vector from the shading location to the camera
@@ -357,8 +355,9 @@ void main() {
 #endif  // if LIGHT_COUNT > 0
 
 #if defined(IMAGE_BASED_LIGHTING)
-  // TODO: compute lighting contribution from image based lighting (IBL)
-#endif
+vec3 iblDiffuseContrib = PbrDebug.iblDiffuse * computeIBLDiffuse(c_diff, n);
+frgmentColor.rgb += iblDiffuseContrib;
+#endif // IMAGE_BASED_LIGHTING
 
 #if defined(OBJECT_ID)
   fragmentObjectId = ObjectId;
@@ -371,7 +370,7 @@ void main() {
 	if (PbrDebugDisplay > 0) {
 		switch (PbrDebugDisplay) {
 			case 1:
-				fragmentColor.rgb = normal;
+				fragmentColor.rgb = n;
 				break;
     /*
 			case 2:

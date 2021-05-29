@@ -36,6 +36,7 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
+#include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/ShaderManager.h"
 #include "esp/physics/configure.h"
 #include "esp/scene/SceneManager.h"
@@ -115,6 +116,11 @@ class ResourceManager {
      * build phong material from PBR material
      */
     BuildPhongFromPbr = 1 << 0,
+
+    /**
+     * use pbr image based lighting
+     */
+    PbrImageBasedLighting = 1 << 1,
   };
 
   /**
@@ -939,6 +945,11 @@ class ResourceManager {
   void initDefaultLightSetups();
 
   /**
+   * @brief initialize pbr image based lighting
+   */
+  void initPbrImageBasedLighting();
+
+  /**
    * @brief initialize default material setups in the current ShaderManager
    */
   void initDefaultMaterials();
@@ -1028,6 +1039,15 @@ class ResourceManager {
    * @brief The texture data for loaded assets.
    */
   std::map<int, std::shared_ptr<Mn::GL::Texture2D>> textures_;
+
+  /**
+   * @brief The imaged based lighting for PBR, each is a collection of
+   * an environment map, an irradiance map, a BRDF lookup table (2D texture),
+   * and a pre-fitered map
+   */
+  std::map<int, std::unique_ptr<esp::gfx::PbrImageBasedLighting>>
+      pbrImageBasedLightings_;
+  int activePbrIbl_ = ID_UNDEFINED;
 
   /**
    * @brief The next available unique ID for loaded materials

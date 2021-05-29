@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree
 
 // ------------ input ------------------------
-layout(location = ATTRIBUTE_LOCATION_POSITION) in highp vec4 vertexPosition
+layout(location = ATTRIBUTE_LOCATION_POSITION) in highp vec4 vertexPosition;
 
 // ------------ uniform ----------------------
 uniform highp mat4 ModelViewMatrix;

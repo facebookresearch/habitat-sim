@@ -48,6 +48,9 @@ PbrImageBasedLighting::PbrImageBasedLighting(Flags flags,
 
   // compute the irradiance map
   computeIrradianceMap();
+
+  irradianceMap_->saveTexture(CubeMap::TextureType::Color, "irradianceMap");
+  exit(0);
 }
 
 void PbrImageBasedLighting::recreateTextures() {
@@ -122,7 +125,7 @@ void PbrImageBasedLighting::loadBrdfLookUpTable() {
   // TODO: HDR, No LDR in the future!
   // temporarily using the brdflut from here:
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/screenshots/tex_brdflut.png
-  std::string filename = "/data/pbr/brdflut_ldr_512x512.png";
+  std::string filename = "./data/pbr/brdflut_ldr_512x512.png";
 
   importer->openFile(filename);
   Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
@@ -162,8 +165,8 @@ void PbrImageBasedLighting::computeIrradianceMap() {
   // prepare a cube
   // TODO: should I use cubeSolid??
   Mn::Trade::MeshData cubeData =
-      Mn::MeshTools::owned(Mn::Primitives::cubeSolidStrip());
-  Mn::MeshTools::flipFaceWindingInPlace(cubeData.mutableIndices());
+      Mn::MeshTools::owned(Mn::Primitives::cubeSolid());
+  // Mn::MeshTools::flipFaceWindingInPlace(cubeData.mutableIndices());
   Magnum::GL::Mesh cube = Magnum::MeshTools::compile(cubeData);
 
   for (unsigned int iSide = 0; iSide < 6; ++iSide) {

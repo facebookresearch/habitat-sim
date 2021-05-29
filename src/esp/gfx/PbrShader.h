@@ -10,6 +10,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
+#include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/esp.h"
@@ -173,6 +174,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
     /**
      * Enable double-sided rendering.
+     * (Temporarily STOP supporting this functionality. See comments in the
+     * PbrDrawable::draw() function)
      */
     DoubleSided = 1 << 12,
 
@@ -258,7 +261,18 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& bindEmissiveTexture(Magnum::GL::Texture2D& texture);
 
+  /**
+   * @brief Bind the irradiance cubemap texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindIrradianceCubeMap(Magnum::GL::CubeMapTexture& texture);
+
+  /**
+   * @brief set the texture transformation matrix
+   * @return Reference to self (for method chaining)
+   */
   PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
+
   // ======== set uniforms ===========
   /**
    *  @brief Set "projection" matrix to the uniform on GPU

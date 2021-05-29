@@ -69,6 +69,11 @@ struct SimulatorConfiguration {
   /** @brief Light setup key for scene */
   std::string sceneLightSetup = esp::NO_LIGHT_KEY;
 
+  /**
+   * @brief setup the image based lighting for pbr rendering
+   */
+  bool pbrImageBasedLighting = false;
+
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
 bool operator==(const SimulatorConfiguration& a,

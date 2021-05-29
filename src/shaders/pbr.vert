@@ -44,6 +44,7 @@ void main() {
   vec4 vertexWorldPosition = ModelMatrix * vertexPosition;
   position = vertexWorldPosition.xyz;
   normal = normalize(NormalMatrix * vertexNormal);
+  // normal = normalize(transpose(inverse(mat3(ModelMatrix))) * vertexNormal);
 #if defined(TEXTURED)
   texCoord =
 #if defined(TEXTURE_TRANSFORMATION)
