@@ -47,10 +47,9 @@ class RigidObjectManager
    * that queries for a DrawableGroup from Simulator.
    * @param attributesID The ID of the object's template in @ref
    * esp::metadata::managers::ObjectAttributesManager
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
+   * @param lightSetup An optional custom lightsetup for the object.
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */

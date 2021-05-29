@@ -382,7 +382,7 @@ class Simulator {
 
   /**
    * @brief Set the @ref esp::core::RigidState of an object kinematically.
-   * @param transform The desired @ref esp::core::RigidState of the object.
+   * @param rigidState The desired @ref esp::core::RigidState of the object.
    * @param  objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
    * @param sceneID !! Not used currently !! Specifies which physical scene of
