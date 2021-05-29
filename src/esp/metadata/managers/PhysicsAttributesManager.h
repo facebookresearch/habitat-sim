@@ -25,8 +25,10 @@ class PhysicsAttributesManager
       : AttributesManager<attributes::PhysicsManagerAttributes,
                           core::ManagedObjectAccess::Copy>::
             AttributesManager("Physics Manager", "physics_config.json") {
-    buildCtorFuncPtrMaps();
-  }
+    this->copyConstructorMap_["PhysicsManagerAttributes"] =
+        &PhysicsAttributesManager::createObjectCopy<
+            attributes::PhysicsManagerAttributes>;
+  }  // ctor
 
   /**
    * @brief Creates an instance of a physics world template described by passed
@@ -138,17 +140,6 @@ class PhysicsAttributesManager
    * reset.
    */
   void resetFinalize() override {}
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["PhysicsManagerAttributes"] =
-        &PhysicsAttributesManager::createObjectCopy<
-            attributes::PhysicsManagerAttributes>;
-  }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars
 

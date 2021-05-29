@@ -12,6 +12,19 @@ namespace metadata {
 
 using attributes::SceneDatasetAttributes;
 namespace managers {
+
+SceneDatasetAttributesManager::SceneDatasetAttributesManager(
+    PhysicsAttributesManager::ptr physicsAttributesMgr)
+    : AttributesManager<attributes::SceneDatasetAttributes,
+                        core::ManagedObjectAccess::Share>::
+          AttributesManager("Dataset", "scene_dataset_config.json"),
+      physicsAttributesManager_(std::move(physicsAttributesMgr)) {
+  // build this manager's copy ctor map
+  this->copyConstructorMap_["SceneDatasetAttributes"] =
+      &SceneDatasetAttributesManager::createObjectCopy<
+          attributes::SceneDatasetAttributes>;
+}  // SceneDatasetAttributesManager ctor
+
 SceneDatasetAttributes::ptr SceneDatasetAttributesManager::createObject(
     const std::string& datasetHandle,
     bool registerTemplate) {

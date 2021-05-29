@@ -86,12 +86,7 @@ class AssetAttributesManager
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
 
-  AssetAttributesManager()
-      : AttributesManager<attributes::AbstractPrimitiveAttributes,
-                          core::ManagedObjectAccess::Copy>::
-            AttributesManager("Primitive Asset", "prim_config.json") {
-    buildCtorFuncPtrMaps();
-  }  // AssetAttributesManager::ctor
+  AssetAttributesManager();
 
   /**
    * @brief Should only be called internally. Creates an instance of a primtive
@@ -521,14 +516,6 @@ class AssetAttributesManager
       createObject(elem.second, true);
     }
   }  // AssetAttributesManager::resetFinalize()
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointers for @ref createPrimAttributes calls for each type of
-   * supported primitive to the @ref primTypeConstructorMap_, keyed by type of
-   * primtive
-   */
-  void buildCtorFuncPtrMaps() override;
 
   // ======== Typedefs and Instance Variables ========
 

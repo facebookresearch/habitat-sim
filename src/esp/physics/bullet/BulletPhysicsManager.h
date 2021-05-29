@@ -390,6 +390,13 @@ class BulletPhysicsManager : public PhysicsManager {
     recentNumSubStepsTaken_ = -1;  // TODO: handle this more gracefully
   }
 
+  /**
+   * @brief utilize PhysicsManager's enable shared
+   */
+  BulletPhysicsManager::ptr shared_from_this() {
+    return esp::shared_from(this);
+  }
+
  protected:
   //============ Initialization =============
   /**

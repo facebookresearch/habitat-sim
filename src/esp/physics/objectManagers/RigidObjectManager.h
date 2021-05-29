@@ -20,7 +20,9 @@ class RigidObjectManager
   RigidObjectManager()
       : esp::physics::RigidBaseManager<ManagedRigidObject>::RigidBaseManager(
             "RigidObject") {
-    this->buildCtorFuncPtrMaps();
+    // build this manager's copy constructor map
+    this->copyConstructorMap_["ManagedRigidObject"] =
+        &RigidObjectManager::createObjectCopy<ManagedRigidObject>;
   }
 
   /** @brief Instance a physical object from an object properties template in
@@ -115,17 +117,6 @@ class RigidObjectManager
       CORRADE_UNUSED bool builtFromConfig) override {
     return ManagedRigidObject::create();
   }  // RigidObjectManager::initNewObjectInternal(
-
-  /**
-   * @brief This function will build the appropriate @ref copyConstructorMap_
-   * copy constructor function pointer map for this container's managed object,
-   * keyed on the managed object's class type.  This MUST be called in the
-   * constructor of the -instancing- class.
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["ManagedRigidObject"] =
-        &RigidObjectManager::createObjectCopy<ManagedRigidObject>;
-  }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
 
  public:
   ESP_SMART_POINTERS(RigidObjectManager)
