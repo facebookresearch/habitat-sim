@@ -402,6 +402,12 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     _sceneInstanceAttributes = std::move(instanceAttr);
   }  // setSceneInstanceAttr
 
+  /**
+   * @brief Get pointers to this physics object's visual scene nodes
+   * @return vector of pointers to the object's visual scene nodes.
+   */
+  virtual std::vector<scene::SceneNode*> getVisualSceneNodes() const = 0;
+
  protected:
   /**
    * @brief Used to synchronize other simulator's notion of the object state

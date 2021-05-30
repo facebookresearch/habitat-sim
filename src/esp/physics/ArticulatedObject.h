@@ -291,7 +291,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * ArticulatedObject.
    * @return vector of pointers to base and all links' visual scene nodes.
    */
-  std::vector<scene::SceneNode*> getVisualSceneNodes() const {
+  std::vector<scene::SceneNode*> getVisualSceneNodes() const override {
     std::vector<scene::SceneNode*> allVisualNodes;
     // base link
     allVisualNodes.insert(allVisualNodes.end(), baseLink_->visualNodes_.begin(),
@@ -494,8 +494,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   void syncPose() override { this->setRootState(node().transformation()); }
 
   /**
-   * @brief Called internally.  Used to update physics constructs when kinematic
-   * transformations are performed.  See @ref esp::physics::PhysicsObjectBase
+   * @brief Called internally from syncPose()  Used to update physics
+   * constructs when kinematic transformations are performed manually.  See @ref
+   * esp::physics::PhysicsObjectBase for the transformations.
    */
 
   virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state) {}

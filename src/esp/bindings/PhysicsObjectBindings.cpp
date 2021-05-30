@@ -171,8 +171,13 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           ("Rotate this " + objType +
            " by passed angle_in_rad around the z-axis in local frame.")
               .c_str())
-
-      ;
+      .def_property_readonly(
+          "visual_scene_nodes", &PhysObjWrapper::getVisualSceneNodes,
+          ("Get a list of references to the SceneNodes with this " + objType +
+           "' render assets attached. Use this to manipulate this " + objType +
+           "'s visual state. Changes to these nodes will not affect physics "
+           "simulation.")
+              .c_str());
 }  // declareBasePhysicsObjectWrapper
 
 template <class T>
@@ -285,14 +290,7 @@ void declareRigidBaseWrapper(py::module& m,
       /* --- Miscellaneous --- */
       .def_property("semantic_id", &RigidBaseWrapper::getSemanticId,
                     &RigidBaseWrapper::setSemanticId,
-                    ("Get or set this " + objType + "'s semantic ID.").c_str())
-      .def_property_readonly(
-          "visual_scene_nodes", &RigidBaseWrapper::getVisualSceneNodes,
-          ("Get a list of references to the SceneNodes with this " + objType +
-           "' render assets attached. Use this to manipulate this " + objType +
-           "'s visual state. Changes to these nodes will not affect physics "
-           "simulation.")
-              .c_str());
+                    ("Get or set this " + objType + "'s semantic ID.").c_str());
 
 }  // declareRigidBaseWrapper
 

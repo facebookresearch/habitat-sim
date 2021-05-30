@@ -243,6 +243,13 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }  // rotateZLocal
 
+  std::vector<scene::SceneNode*> getVisualSceneNodes() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getVisualSceneNodes();
+    }
+    return std::vector<scene::SceneNode*>();
+  }  // getVisualSceneNodes
+
  protected:
   /**
    * @brief This function accesses the underlying shared pointer of this
