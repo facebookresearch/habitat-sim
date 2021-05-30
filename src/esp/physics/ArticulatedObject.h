@@ -226,6 +226,7 @@ class ArticulatedLink : public RigidBase {
  protected:
   int mbIndex_;
 
+ public:
   ESP_SMART_POINTERS(ArticulatedLink)
 };
 
@@ -498,7 +499,6 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * constructs when kinematic transformations are performed manually.  See @ref
    * esp::physics::PhysicsObjectBase for the transformations.
    */
-
   virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state) {}
   virtual bool attachGeometry(
       CORRADE_UNUSED ArticulatedLink* linkObject,

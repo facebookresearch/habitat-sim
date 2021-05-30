@@ -188,6 +188,11 @@ class BulletArticulatedObject : public ArticulatedObject {
       CORRADE_UNUSED bool defaultCOMCorrection = false) override;
 
  protected:
+  /**
+   * @brief Called internally from syncPose()  Used to update physics
+   * constructs when kinematic transformations are performed manually.  See @ref
+   * esp::physics::PhysicsObjectBase for the transformations.
+   */
   void setRootState(const Magnum::Matrix4& state) override;
 
   bool attachGeometry(
