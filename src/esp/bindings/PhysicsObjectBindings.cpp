@@ -10,6 +10,7 @@
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #endif
+#include "esp/physics/objectWrappers/ManagedArticulatedObject.h"
 #include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
@@ -18,6 +19,7 @@ namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace PhysWraps = esp::physics;
+using PhysWraps::ManagedArticulatedObject;
 using PhysWraps::ManagedRigidObject;
 
 namespace esp {
@@ -342,6 +344,16 @@ void initPhysicsObjectBindings(py::module& m) {
           &ManagedBulletRigidObject::getCollisionShapeAabb,
           R"(The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
 #endif
+  // create bindings for ArticulatedObjects
+  // physics object base instance for articulated object
+  declareBasePhysicsObjectWrapper<ArticulatedObject>(m, "Articulated Object",
+                                                     "ArticulatedObject");
+  // articulated object wrapper instance
+  py::class_<ManagedArticulatedObject,
+             AbstractManagedPhysicsObject<ArticulatedObject>,
+             std::shared_ptr<ManagedArticulatedObject>>(
+      m, "ManagedArticulatedObject");
+
 }  // initPhysicsObjectBindings
 
 }  // namespace physics
