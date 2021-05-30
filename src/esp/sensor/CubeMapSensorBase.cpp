@@ -40,7 +40,9 @@ int computeCubemapSize(const esp::vec2i& resolution,
 
 CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
                                      const CubeMapSensorBaseSpec::ptr& spec)
-    : VisualSensor(cameraNode, spec) {
+    : VisualSensor(cameraNode, spec),
+      cubeMapCamera_(new gfx::CubeMapCamera(cameraNode)),
+      mesh_(Mn::GL::Mesh()) {
   // initialize a cubemap
   int size = computeCubemapSize(cubeMapSensorBaseSpec_->resolution,
                                 cubeMapSensorBaseSpec_->cubemapSize);
@@ -61,10 +63,9 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
   }
   cubeMap_ = esp::gfx::CubeMap{size, cubeMapFlags};
 
-  // initialize the cubemap camera, it attaches to the same node as the sensor
+  // Sets the cubemap camera, it attaches to the same node as the sensor
   // You do not have to release it in the dtor since magnum scene graph will
-  // handle it
-  cubeMapCamera_ = new gfx::CubeMapCamera(cameraNode);
+  // handle it. The cubemap is initialized in the member list above.
   cubeMapCamera_->setProjectionMatrix(size, cubeMapSensorBaseSpec_->near,
                                       cubeMapSensorBaseSpec_->far);
 
@@ -86,7 +87,7 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
   }
 
   // prepare a big triangle mesh to cover the screen
-  mesh_ = Mn::GL::Mesh{};
+  // initialied in member initializer list
   mesh_.setCount(3);
 }
 
