@@ -19,6 +19,7 @@
 #include "esp/physics/ArticulatedObject.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -1216,6 +1217,19 @@ class Simulator {
     }
     return nullptr;
   }  // getRigidObjectManager
+
+  /**
+   * @brief returns the wrapper manager for the currently created articulated
+   * objects.
+   * @return ArticulatedObject wrapper manager
+   */
+  std::shared_ptr<esp::physics::ArticulatedObjectManager>
+  getArticulatedObjectManager() {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->getArticulatedObjectManager();
+    }
+    return nullptr;
+  }
 
   /**
    * @brief Raycast into the collision world of a scene.

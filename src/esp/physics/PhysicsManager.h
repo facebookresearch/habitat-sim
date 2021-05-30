@@ -1171,6 +1171,15 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
 
   /**
+   * @brief returns the wrapper manager for the currently created articulated
+   * objects.
+   * @return ArticulatedObject wrapper manager
+   */
+  std::shared_ptr<ArticulatedObjectManager> getArticulatedObjectManager() {
+    return articulatedObjectManager_;
+  }
+
+  /**
    * @brief Check if @p physObjectID represents an existing object.
    * @param physObjectID Object ID to check
    * @return Whether object exists or not.
