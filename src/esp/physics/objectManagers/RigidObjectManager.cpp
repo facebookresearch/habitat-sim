@@ -6,6 +6,24 @@
 namespace esp {
 namespace physics {
 
+RigidObjectManager::RigidObjectManager()
+    : esp::physics::RigidBaseManager<ManagedRigidObject>::RigidBaseManager(
+          "RigidObject") {
+  // build this manager's copy constructor map, keyed by the type name of the
+  // wrappers it will manage
+  this->copyConstructorMap_["ManagedRigidObject"] =
+      &RigidObjectManager::createObjectCopy<ManagedRigidObject>;
+  this->copyConstructorMap_["ManagedBulletRigidObject"] =
+      &RigidObjectManager::createObjectCopy<ManagedBulletRigidObject>;
+
+  // build the function pointers to proper wrapper construction methods, keyed
+  // by the wrapper names
+  managedObjTypeConstructorMap_["ManagedRigidObject"] =
+      &RigidObjectManager::createPhysicsObjectWrapper<ManagedRigidObject>;
+  managedObjTypeConstructorMap_["ManagedBulletRigidObject"] =
+      &RigidObjectManager::createPhysicsObjectWrapper<ManagedBulletRigidObject>;
+}
+
 std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByHandle(
     const std::string& attributesHandle,
     scene::SceneNode* attachmentNode,

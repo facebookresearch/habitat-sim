@@ -11,6 +11,7 @@ add_library(
   BulletRigidObject.h
   BulletRigidStage.cpp
   BulletRigidStage.h
+  objectWrappers/ManagedBulletRigidObject.h
 )
 
 target_link_libraries(

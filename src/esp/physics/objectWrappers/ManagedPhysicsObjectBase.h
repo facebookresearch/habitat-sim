@@ -256,9 +256,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
  protected:
   /**
    * @brief This function accesses the underlying shared pointer of this
-   * object's
-   * @p weakObjRef_ if it exists; if not, it provides a message and executes
-   * appropriate cleanup code.
+   * object's @p weakObjRef_ if it exists; if not, it provides a message.
    * @return Either a shared pointer of this wrapper's object, or nullptr if
    * dne.
    */

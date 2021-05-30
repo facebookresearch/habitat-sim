@@ -15,12 +15,14 @@ namespace physics {
  * @brief Class describing wrapper for RigidObject constructions.
  * Provides bindings for all RigidObject-specific functionality.
  */
+
 class ManagedRigidObject
     : public esp::physics::AbstractManagedRigidBase<esp::physics::RigidObject> {
  public:
-  ManagedRigidObject()
-      : AbstractManagedRigidBase<esp::physics::RigidObject>(
-            "ManagedRigidObject") {}
+  explicit ManagedRigidObject(
+      const std::string& classKey = "ManagedRigidObject")
+      : AbstractManagedRigidBase<
+            esp::physics::RigidObject>::AbstractManagedRigidBase(classKey) {}
 
   std::shared_ptr<metadata::attributes::ObjectAttributes>
   getInitializationAttributes() const {

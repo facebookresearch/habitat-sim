@@ -8,6 +8,7 @@
 #include "BulletPhysicsManager.h"
 #include "BulletRigidObject.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 
 namespace esp {
 namespace physics {
@@ -67,6 +68,12 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
   return objSuccess;
+}
+
+esp::physics::ManagedRigidObject::ptr
+BulletPhysicsManager::getRigidObjectWrapper() {
+  // TODO make sure this is appropriately cast
+  return rigidObjectManager_->createObject("ManagedBulletRigidObject");
 }
 
 //! Check if mesh primitive is compatible with physics

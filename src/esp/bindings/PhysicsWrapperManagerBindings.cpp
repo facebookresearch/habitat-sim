@@ -29,7 +29,7 @@ namespace physics {
  * @param classStrPrefix string prefix for python class name specification.
  */
 
-template <class T>
+template <typename T>
 void declareBaseWrapperManager(py::module& m,
                                const std::string& objType,
                                const std::string& classStrPrefix) {
@@ -151,7 +151,7 @@ void declareBaseWrapperManager(py::module& m,
            "handle"_a);
 }  // declareBaseWrapperManager
 
-template <class T>
+template <typename T>
 void declareRigidBaseWrapperManager(py::module& m,
                                     CORRADE_UNUSED const std::string& objType,
                                     const std::string& classStrPrefix) {
